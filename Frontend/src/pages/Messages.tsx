@@ -12,6 +12,16 @@ import MembersSheet from '../components/messaging/MembersSheet';
 import SettingsModal from '../components/messaging/SettingsModal';
 import { getChatSocket } from '../utils/chatSocket';
 
+const FALLBACK_CHANNEL: Channel = {
+  id: 'fallback',
+  name: 'general',
+  description: '',
+  memberCount: 0,
+  unreadCount: 0,
+  lastMessage: '',
+  lastMessageTime: '',
+};
+
 const Messages: React.FC = () => {
   const [channels, setChannels] = useState<Channel[]>([
     // ... (unchanged seed data)
@@ -22,7 +32,7 @@ const Messages: React.FC = () => {
   ]);
 
   const [messages, setMessages] = useState<Message[]>([]);
-  const [activeChannel, setActiveChannel] = useState<Channel>(channels[0]);
+  const [activeChannel, setActiveChannel] = useState<Channel | null>(channels[0] ?? null);
   const [activeDM, setActiveDM] = useState<DirectMessage | null>(null);
 
   // ✅ keep value + setter
@@ -40,6 +50,19 @@ const Messages: React.FC = () => {
   const [channelMembers] = useState<Member[]>([
     // ... (unchanged)
   ]);
+
+  useEffect(() => {
+    if (channels.length === 0) {
+      setActiveChannel(null);
+      return;
+    }
+
+    setActiveChannel((prev) => {
+      if (!prev) return channels[0];
+      const exists = channels.find((c) => c.id === prev.id);
+      return exists ?? channels[0];
+    });
+  }, [channels]);
 
   useEffect(() => {
     // Load messages for active channel or DM
@@ -110,9 +133,11 @@ const Messages: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    const chatId = activeDM ? activeDM.id : activeChannel?.id;
+    if (!chatId) return;
+
     try {
       const s = getChatSocket();
-      const chatId = activeDM ? activeDM.id : activeChannel.id;
       const type = activeDM ? 'dm' : 'channel';
       if (s.connected) {
         s.emit('chat:read', { chatId, type });
@@ -123,7 +148,7 @@ const Messages: React.FC = () => {
 
     if (activeDM) {
       setDirectMessages((prev) => prev.map((dm) => (dm.id === activeDM.id ? { ...dm, unreadCount: 0 } : dm)));
-    } else {
+    } else if (activeChannel) {
       setChannels((prev) => prev.map((c) => (c.id === activeChannel.id ? { ...c, unreadCount: 0 } : c)));
     }
   }, [activeChannel, activeDM]);
@@ -152,7 +177,7 @@ const Messages: React.FC = () => {
       setDirectMessages((prev) =>
         prev.map((dm) => (dm.id === activeDM.id ? { ...dm, lastMessage: content, lastMessageTime: new Date().toISOString() } : dm)),
       );
-    } else {
+    } else if (activeChannel) {
       setChannels((prev) =>
         prev.map((channel) =>
           channel.id === activeChannel.id ? { ...channel, lastMessage: content, lastMessageTime: new Date().toISOString() } : channel,
@@ -202,13 +227,16 @@ const Messages: React.FC = () => {
 
   const handleDeleteChat = (type: 'channel' | 'dm', id: string) => {
     if (type === 'channel') {
-      setChannels((prev) => prev.filter((channel) => channel.id !== id));
-      if (activeChannel.id === id) setActiveChannel(channels[0]);
+      setChannels((prev) => {
+        const next = prev.filter((channel) => channel.id !== id);
+        setActiveChannel((curr) => (curr && curr.id === id ? next[0] ?? null : curr));
+        return next;
+      });
     } else {
       setDirectMessages((prev) => prev.filter((dm) => dm.id !== id));
       if (activeDM?.id === id) {
         setActiveDM(null);
-        setActiveChannel(channels[0]);
+        setActiveChannel((curr) => curr ?? (channels[0] ?? null));
       }
     }
   };
@@ -217,7 +245,6 @@ const Messages: React.FC = () => {
     const dm = directMessages.find((dm) => dm.userId === userId);
     if (dm) {
       setActiveDM(dm);
-      setActiveChannel(channels[0]); // Reset active channel
     }
   };
 
@@ -227,7 +254,7 @@ const Messages: React.FC = () => {
         <ChatSidebar
           channels={channels}
           directMessages={directMessages}
-          activeChannelId={activeDM ? activeDM.id : activeChannel.id}
+          activeChannelId={activeDM ? activeDM.id : activeChannel?.id}
           onChannelSelect={(channelId) => {
             const channel = channels.find((c) => c.id === channelId);
             if (channel) {
@@ -242,33 +269,47 @@ const Messages: React.FC = () => {
         />
 
         <div className="flex-1 flex flex-col">
-          <ChatHeader
-            channel={activeChannel}
-            onToggleMembers={() => setMembersOpen(true)}
-            onToggleSettings={() => setSettingsOpen(true)}
-            onSearch={() => setSearchOpen(true)}
-            members={channelMembers}
-          />
+          {channels.length === 0 && !activeDM ? (
+            <div className="flex-1 flex items-center justify-center text-neutral-500">
+              No channels available
+            </div>
+          ) : (
+            <>
+              {activeDM ? null : activeChannel && (
+                <ChatHeader
+                  channel={activeChannel ?? FALLBACK_CHANNEL}
+                  onToggleMembers={() => setMembersOpen(true)}
+                  onToggleSettings={() => setSettingsOpen(true)}
+                  onSearch={() => setSearchOpen(true)}
+                  members={channelMembers}
+                />
+              )}
 
-          <MessageList messages={messages} currentUserId="currentUser" />
+              <MessageList messages={messages} currentUserId="currentUser" />
 
-          <ChatInput
-            onSendMessage={handleSendMessage}
-            onUploadFiles={handleUploadFiles}
-            onTyping={handleTyping}
-            isTyping={Boolean(typingUser)}
-          />
+              <ChatInput
+                onSendMessage={handleSendMessage}
+                onUploadFiles={handleUploadFiles}
+                onTyping={handleTyping}
+                isTyping={Boolean(typingUser)}
+              />
+            </>
+          )}
         </div>
       </div>
 
-      <MessageSearchModal
-        isOpen={searchOpen}
-        channelId={activeChannel.id}
-        onClose={() => setSearchOpen(false)}
-        onSelect={scrollToMessage}
-      />
-      <MembersSheet isOpen={membersOpen} channelId={activeChannel.id} onClose={() => setMembersOpen(false)} />
-      <SettingsModal isOpen={settingsOpen} channelId={activeChannel.id} onClose={() => setSettingsOpen(false)} />
+      {activeChannel && (
+        <>
+          <MessageSearchModal
+            isOpen={searchOpen}
+            channelId={activeChannel.id}
+            onClose={() => setSearchOpen(false)}
+            onSelect={scrollToMessage}
+          />
+          <MembersSheet isOpen={membersOpen} channelId={activeChannel.id} onClose={() => setMembersOpen(false)} />
+          <SettingsModal isOpen={settingsOpen} channelId={activeChannel.id} onClose={() => setSettingsOpen(false)} />
+        </>
+      )}
     </Layout>
   );
 };

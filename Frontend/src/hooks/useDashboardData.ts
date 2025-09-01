@@ -5,6 +5,13 @@ import {
   fetchUpcomingMaintenance,
   fetchCriticalAlerts,
 } from '../utils/api';
+import type {
+  StatusCount,
+  UpcomingMaintenanceResponse,
+  UpcomingMaintenanceItem,
+  CriticalAlertResponse,
+  CriticalAlertItem,
+} from '../types';
 
 interface WorkOrderStatusCounts {
   open: number;
@@ -33,8 +40,10 @@ const useDashboardData = (role?: string) => {
     'In Repair': 0,
   });
 
-  const [upcomingMaintenance, setUpcomingMaintenance] = useState<any[]>([]);
-  const [criticalAlerts, setCriticalAlerts] = useState<any[]>([]);
+  const [upcomingMaintenance, setUpcomingMaintenance] = useState<
+    UpcomingMaintenanceItem[]
+  >([]);
+  const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlertItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
@@ -42,10 +51,10 @@ const useDashboardData = (role?: string) => {
     try {
       const params = role ? { role } : undefined;
       const [assetSummaryData, workOrders, upcoming, alerts] = await Promise.all([
-        fetchAssetSummary(params),
-        fetchWorkOrderSummary(params),
-        fetchUpcomingMaintenance(params),
-        fetchCriticalAlerts(params),
+        fetchAssetSummary<StatusCount[]>(params),
+        fetchWorkOrderSummary<StatusCount[]>(params),
+        fetchUpcomingMaintenance<UpcomingMaintenanceResponse[]>(params),
+        fetchCriticalAlerts<CriticalAlertResponse[]>(params),
       ]);
 
       const statusCounts: WorkOrderStatusCounts = {
@@ -75,8 +84,8 @@ const useDashboardData = (role?: string) => {
 
       setUpcomingMaintenance(
         Array.isArray(upcoming)
-          ? upcoming.map((t) => ({
-              id: t._id ?? t.id,
+          ? upcoming.map<UpcomingMaintenanceItem>((t) => ({
+              id: t._id ?? t.id ?? '',
               assetName: t.asset?.name || 'Unknown',
               assetId: t.asset?._id ?? '',
               date: t.nextDue,
@@ -89,11 +98,11 @@ const useDashboardData = (role?: string) => {
 
       setCriticalAlerts(
         Array.isArray(alerts)
-          ? alerts.map((a) => ({
-              id: a._id ?? a.id,
+          ? alerts.map<CriticalAlertItem>((a) => ({
+              id: a._id ?? a.id ?? '',
               assetName: a.asset?.name || 'Unknown',
               severity: a.priority,
-              issue: a.description || a.title,
+              issue: a.description || a.title || '',
               timestamp: a.createdAt,
             }))
           : [],

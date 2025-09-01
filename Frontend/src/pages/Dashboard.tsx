@@ -20,9 +20,14 @@ import { AlertTriangle, ArrowRight, BarChart3, Clock, Filter, Calendar } from 'l
 import api from '../utils/api';
 import useDashboardData from '../hooks/useDashboardData';
 import { useSummary } from '../hooks/useSummaryData';
- import { getChatSocket } from '../utils/chatSocket';
- 
-import type { Department } from '../types';
+import { getChatSocket } from '../utils/chatSocket';
+
+import type {
+  Department,
+  DashboardSummary,
+  LowStockPart,
+  LowStockPartResponse,
+} from '../types';
 import { useSocketStore } from '../store/socketStore';
 
 
@@ -68,19 +73,25 @@ const Dashboard: React.FC = () => {
     refresh,
     loading,
   } = useDashboardData(selectedRole);
-  const [stats, setStats] = useState({
+  interface DashboardStats {
+    totalAssets: number;
+    activeWorkOrders: number;
+    maintenanceCompliance: number;
+    inventoryAlerts: number;
+  }
+  const [stats, setStats] = useState<DashboardStats>({
     totalAssets: 0,
     activeWorkOrders: 0,
     maintenanceCompliance: 0,
     inventoryAlerts: 0,
   });
-  const [lowStockParts, setLowStockParts] = useState<any[]>([]);
+  const [lowStockParts, setLowStockParts] = useState<LowStockPart[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [summary] = useSummary<any>(
+  const [summary] = useSummary<DashboardSummary>(
     `/summary${selectedRole ? `?role=${selectedRole}` : ''}`,
     [selectedRole],
   );
-  const [lowStock] = useSummary<any[]>(
+  const [lowStock] = useSummary<LowStockPartResponse[]>(
     `/summary/low-stock${selectedRole ? `?role=${selectedRole}` : ''}`,
     [selectedRole],
   );
@@ -90,7 +101,9 @@ const Dashboard: React.FC = () => {
     { ttlMs: 60_000 },
   );
 
-  const [analytics, setAnalytics] = useState<any | null>(null);
+  const [analytics, setAnalytics] = useState<Record<string, unknown> | null>(
+    null,
+  );
 
 
   useEffect(() => {
@@ -119,8 +132,8 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     const mapped = Array.isArray(lowStock)
-      ? lowStock.map((p) => ({
-          id: p._id ?? p.id,
+      ? lowStock.map<LowStockPart>((p) => ({
+          id: p._id ?? p.id ?? '',
           name: p.name,
           quantity: p.quantity,
           reorderPoint: p.reorderThreshold ?? p.reorderPoint ?? 0,
@@ -151,10 +164,10 @@ const Dashboard: React.FC = () => {
       }
     };
 
-    const handleLowStockUpdate = (parts: any[]) => {
+    const handleLowStockUpdate = (parts: LowStockPartResponse[]) => {
       const mapped = Array.isArray(parts)
-        ? parts.map((p) => ({
-            id: p._id ?? p.id,
+        ? parts.map<LowStockPart>((p) => ({
+            id: p._id ?? p.id ?? '',
             name: p.name,
             quantity: p.quantity,
             reorderPoint: p.reorderThreshold ?? p.reorderPoint ?? 0,
@@ -164,11 +177,13 @@ const Dashboard: React.FC = () => {
       setStats((s) => ({ ...s, inventoryAlerts: mapped.length }));
     };
 
-    const handlePmCompletionUpdate = (data: any) => {
+    const handlePmCompletionUpdate = (
+      data: number | { maintenanceCompliance?: number },
+    ) => {
       const value =
         typeof data === 'number'
           ? data
-          : typeof data?.maintenanceCompliance === 'number'
+          : typeof data.maintenanceCompliance === 'number'
           ? data.maintenanceCompliance
           : 0;
       setStats((s) => ({ ...s, maintenanceCompliance: value }));

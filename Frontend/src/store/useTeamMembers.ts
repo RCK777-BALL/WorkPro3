@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import api from '../utils/api';
-import type { TeamMember } from '../types';
+import type { TeamMember, TeamMemberResponse } from '../types';
 
 interface TeamMemberState {
   members: TeamMember[];
@@ -13,9 +13,9 @@ interface TeamMemberState {
 export const useTeamMembers = create<TeamMemberState>((set, get) => ({
   members: [],
   fetchMembers: async () => {
-    const res = await api.get('/team');
-    const members = (res.data as any[]).map((m) => ({
-      id: m._id ?? m.id,
+    const res = await api.get<TeamMemberResponse[]>('/team');
+    const members = res.data.map<TeamMember>((m) => ({
+      id: m._id ?? m.id ?? '',
       name: m.name,
       email: m.email,
       role: m.role,
@@ -23,17 +23,17 @@ export const useTeamMembers = create<TeamMemberState>((set, get) => ({
       employeeId: m.employeeId,
       managerId: m.managerId ?? m.reportsTo ?? null,
       avatar: m.avatar,
-    })) as TeamMember[];
+    }));
     set({ members });
     return members;
   },
   addMember: async (data) => {
     const isForm = data instanceof FormData;
-    const res = await api.post('/team', data, {
+    const res = await api.post<TeamMemberResponse>('/team', data, {
       headers: isForm ? { 'Content-Type': 'multipart/form-data' } : undefined,
     });
-    const member = {
-      id: res.data._id ?? res.data.id,
+    const member: TeamMember = {
+      id: res.data._id ?? res.data.id ?? '',
       name: res.data.name,
       email: res.data.email,
       role: res.data.role,
@@ -41,17 +41,17 @@ export const useTeamMembers = create<TeamMemberState>((set, get) => ({
       employeeId: res.data.employeeId,
       managerId: res.data.managerId ?? res.data.reportsTo ?? null,
       avatar: res.data.avatar,
-    } as TeamMember;
+    };
     set((state) => ({ members: [...state.members, member] }));
     return member;
   },
   updateMember: async (id, data) => {
     const isForm = data instanceof FormData;
-    const res = await api.put(`/team/${id}`, data, {
+    const res = await api.put<TeamMemberResponse>(`/team/${id}`, data, {
       headers: isForm ? { 'Content-Type': 'multipart/form-data' } : undefined,
     });
-    const member = {
-      id: res.data._id ?? res.data.id,
+    const member: TeamMember = {
+      id: res.data._id ?? res.data.id ?? '',
       name: res.data.name,
       email: res.data.email,
       role: res.data.role,
@@ -59,7 +59,7 @@ export const useTeamMembers = create<TeamMemberState>((set, get) => ({
       employeeId: res.data.employeeId,
       managerId: res.data.managerId ?? res.data.reportsTo ?? null,
       avatar: res.data.avatar,
-    } as TeamMember;
+    };
     set((state) => ({
       members: state.members.map((m) => (m.id === id ? member : m)),
     }));

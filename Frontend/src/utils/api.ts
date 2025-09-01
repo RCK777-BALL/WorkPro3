@@ -10,6 +10,10 @@ import type {
   Member,
   Message,
   Channel,
+  StatusCount,
+  UpcomingMaintenanceResponse,
+  CriticalAlertResponse,
+  LowStockPartResponse,
 } from "../types";
 
 const baseURL = import.meta.env.VITE_API_URL ?? 'http://localhost:5010/api';
@@ -63,20 +67,28 @@ api.interceptors.response.use(
   },
 );
 
-export const fetchSummary = (params?: Record<string, any>) =>
+export const fetchSummary = (params?: Record<string, unknown>) =>
   api.get<DashboardSummary>("/summary", { params }).then((res) => res.data);
-export const fetchAssetSummary = (params?: Record<string, any>) =>
-  api.get("/summary/assets", { params }).then((res) => res.data);
-export const fetchWorkOrderSummary = (params?: Record<string, any>) =>
-  api.get("/summary/workorders", { params }).then((res) => res.data);
-export const fetchUpcomingMaintenance = (params?: Record<string, any>) =>
-  api.get("/summary/upcoming-maintenance", { params }).then((res) => res.data);
-export const fetchCriticalAlerts = (params?: Record<string, any>) =>
-  api.get("/summary/critical-alerts", { params }).then((res) => res.data);
-export const fetchLowStock = (params?: Record<string, any>) =>
-  api.get("/summary/low-stock", { params }).then((res) => res.data);
+export const fetchAssetSummary = <T = StatusCount[]>(
+  params?: Record<string, unknown>,
+) => api.get<T>("/summary/assets", { params }).then((res) => res.data);
+export const fetchWorkOrderSummary = <T = StatusCount[]>(
+  params?: Record<string, unknown>,
+) => api.get<T>("/summary/workorders", { params }).then((res) => res.data);
+export const fetchUpcomingMaintenance = <T = UpcomingMaintenanceResponse[]>(
+  params?: Record<string, unknown>,
+) =>
+  api
+    .get<T>("/summary/upcoming-maintenance", { params })
+    .then((res) => res.data);
+export const fetchCriticalAlerts = <T = CriticalAlertResponse[]>(
+  params?: Record<string, unknown>,
+) => api.get<T>("/summary/critical-alerts", { params }).then((res) => res.data);
+export const fetchLowStock = <T = LowStockPartResponse[]>(
+  params?: Record<string, unknown>,
+) => api.get<T>("/summary/low-stock", { params }).then((res) => res.data);
 
-export const fetchNotifications = (params?: Record<string, any>) =>
+export const fetchNotifications = (params?: Record<string, unknown>) =>
   api
     .get<NotificationType[]>("/notifications", { params })
     .then((res) => res.data);
@@ -90,7 +102,7 @@ export const fetchDepartments = () =>
   api
     .get<Department[]>("/departments")
     .then((res) =>
-      (res.data as any[]).map((d) => ({ id: d._id ?? d.id, name: d.name })),
+      (res.data as unknown[]).map((d: any) => ({ id: (d as any)._id ?? (d as any).id, name: (d as any).name })),
     );
 
 export const getLines = () => api.get<Line[]>("/lines").then((res) => res.data);
@@ -116,7 +128,7 @@ export const markNotificationRead = (id: string) =>
     .then((res) => res.data);
 
 // Channels
-export const listChannels = (params?: Record<string, any>) =>
+export const listChannels = (params?: Record<string, unknown>) =>
   api.get<Channel[]>("/channels", { params }).then((res) => res.data);
 
 export const createChannel = (payload: Partial<Channel>) =>
@@ -144,7 +156,7 @@ export const removeMember = (channelId: string, memberId: string) =>
 // Messages
 export const listMessages = (
   channelId: string,
-  params?: Record<string, any>,
+  params?: Record<string, unknown>,
 ) =>
   api
     .get<Message[]>(`/channels/${channelId}/messages`, { params })

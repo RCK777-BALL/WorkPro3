@@ -37,6 +37,11 @@ import mongoose from 'mongoose';
 import errorHandler from './middleware/errorHandler';
 import { validateEnv } from './config/validateEnv';
 import { initChatSocket } from './socket/chatSocket';
+import type {
+  WorkOrderUpdatePayload,
+  InventoryUpdatePayload,
+  NotificationPayload,
+} from './types/Payloads';
 
 
 dotenv.config();
@@ -162,15 +167,15 @@ if (process.env.NODE_ENV !== 'test') {
     });
 }
 
-export const emitWorkOrderUpdate = (workOrder: any) => {
+export const emitWorkOrderUpdate = (workOrder: WorkOrderUpdatePayload) => {
   void sendKafkaEvent('workOrderUpdates', workOrder);
 };
 
-export const emitInventoryUpdate = (item: any) => {
+export const emitInventoryUpdate = (item: InventoryUpdatePayload) => {
   void sendKafkaEvent('inventoryUpdates', item);
 };
 
-export const emitNotification = (notification: any) => {
+export const emitNotification = (notification: NotificationPayload) => {
   io.emit('notification', notification);
 };
 

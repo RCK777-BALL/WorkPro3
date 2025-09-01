@@ -8,7 +8,6 @@ import { useDashboardStore } from '../store/dashboardStore';
 import { useSocketStore } from '../store/socketStore';
 import useDashboardData from '../hooks/useDashboardData';
 import { useSummary } from '../hooks/useSummaryData';
-import api from '../utils/api';
 import FiltersBar from '../components/dashboard/FiltersBar';
 import {
   getNotificationsSocket,
@@ -103,7 +102,6 @@ const Dashboard: React.FC = () => {
   });
   const [lowStockParts, setLowStockParts] = useState<LowStockPart[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [analytics, setAnalytics] = useState<any | null>(null);
   const [customize, setCustomize] = useState(false);
   const dashboardRef = useRef<HTMLDivElement>(null);
 
@@ -194,19 +192,6 @@ const Dashboard: React.FC = () => {
     if (Array.isArray(departmentsData)) setDepartments(departmentsData);
   }, [departmentsData]);
 
-  // analytics (optional)
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      try {
-        const res = await api.get(`/reports/analytics${buildQuery()}`);
-        setAnalytics(res.data);
-      } catch (err) {
-        console.error('Error fetching analytics', err);
-      }
-    };
-    fetchAnalytics();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDepartment, selectedRole, selectedTimeframe, customRange]);
 
   // socket-driven refresh with polling fallback
   useEffect(() => {

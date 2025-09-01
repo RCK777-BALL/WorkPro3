@@ -21,6 +21,7 @@ import LineRoutes from './routes/LineRoutes';
 import StationRoutes from './routes/StationRoutes';
 import departmentRoutes from './routes/DepartmentRoutes';
 import inventoryRoutes from './routes/InventoryRoutes';
+import analyticsRoutes from './routes/AnalyticsRoutes';
  
 import teamRoutes from './routes/TeamRoutes';
 import notificationsRoutes from './routes/notifications';
@@ -134,6 +135,7 @@ app.use('/api/reports', reportsRoutes);
 app.use('/api/lines', LineRoutes);
 app.use('/api/stations', StationRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/v1/analytics', analyticsRoutes);
 app.use('/api/team', teamRoutes);
 app.use('/api/theme', ThemeRoutes);
 app.use('/api/request-portal', requestPortalRoutes);

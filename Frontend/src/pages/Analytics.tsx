@@ -7,6 +7,8 @@ import Badge from '../components/common/Badge';
 import api from '../utils/api';
 import { useDashboardStore } from '../store/dashboardStore';
 import { useAuth } from '../context/AuthContext';
+import KpiWidget from '../components/kpi/KpiWidget';
+import KpiExportButtons from '../components/kpi/KpiExportButtons';
 
 interface AnalyticsData {
   workOrderCompletionRate: number;
@@ -18,21 +20,30 @@ interface AnalyticsData {
   topAssets: { name: string; downtime: number; issues: number; cost: number }[];
 }
 
+interface KPIData {
+  mttr: number;
+  mtbf: number;
+  backlog: number;
+}
+
 const Analytics: React.FC = () => {
   const [data, setData] = useState<AnalyticsData | null>(null);
+  const [kpis, setKpis] = useState<KPIData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
- 
+
   const [showFilters, setShowFilters] = useState(false);
- 
+
   const { selectedRole: role, setSelectedRole } = useDashboardStore();
- 
+
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const res = await api.get('/reports/analytics', { params: { role } });
       setData(res.data);
+      const kpiRes = await api.get('/v1/analytics/kpis');
+      setKpis(kpiRes.data);
       setError(null);
     } catch (err) {
       console.error('Error fetching analytics:', err);
@@ -41,11 +52,11 @@ const Analytics: React.FC = () => {
       setLoading(false);
     }
   };
- 
+
 
   useEffect(() => {
     fetchData();
- 
+
   }, [role]);
 
   const handleRoleChange = (role: string) => {
@@ -142,6 +153,15 @@ const Analytics: React.FC = () => {
             </div>
           </Card>
         )}
+
+        <div className="space-y-4">
+          <KpiExportButtons />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <KpiWidget label="MTTR" value={kpis?.mttr.toFixed(1) ?? '0'} suffix="h" />
+            <KpiWidget label="MTBF" value={kpis?.mtbf.toFixed(1) ?? '0'} suffix="h" />
+            <KpiWidget label="Backlog" value={kpis?.backlog ?? 0} />
+          </div>
+        </div>
 
         {/* KPI Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

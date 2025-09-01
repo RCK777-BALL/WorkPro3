@@ -7,6 +7,7 @@ import useDashboardData from '../hooks/useDashboardData';
 import { useSummary } from '../hooks/useSummaryData';
 import api from '../utils/api';
 import { getChatSocket } from '../utils/chatSocket';
+import FiltersBar from '../components/dashboard/FiltersBar';
 
 import type {
   Department,
@@ -31,7 +32,13 @@ const getTimeAgo = (timestamp: string): string => {
 
 const Dashboard: React.FC = () => {
   const user = useAuthStore((s) => s.user);
-  const selectedRole = useDashboardStore((s) => s.selectedRole);
+  const { selectedRole, selectedDepartment, selectedTimeframe, customRange } =
+    useDashboardStore((s) => ({
+      selectedRole: s.selectedRole,
+      selectedDepartment: s.selectedDepartment,
+      selectedTimeframe: s.selectedTimeframe,
+      customRange: s.customRange,
+    }));
   const connected = useSocketStore((s) => s.connected);
 
   const {
@@ -41,7 +48,12 @@ const Dashboard: React.FC = () => {
     criticalAlerts,
     refresh,
     loading,
-  } = useDashboardData(selectedRole);
+  } = useDashboardData(
+    selectedRole,
+    selectedDepartment,
+    selectedTimeframe,
+    customRange,
+  );
 
   const [stats, setStats] = useState({
     totalAssets: 0,
@@ -53,14 +65,31 @@ const Dashboard: React.FC = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [analytics, setAnalytics] = useState<any>(null);
 
-  // summaries (auto-refetch when selectedRole changes)
+  const buildQuery = () => {
+    const params = new URLSearchParams();
+    if (selectedDepartment !== 'all') params.append('department', selectedDepartment);
+    if (selectedRole !== 'all') params.append('role', selectedRole);
+    if (selectedTimeframe) {
+      params.append('timeframe', selectedTimeframe);
+      if (selectedTimeframe === 'custom') {
+        params.append('start', customRange.start);
+        params.append('end', customRange.end);
+      }
+    }
+    const q = params.toString();
+    return q ? `?${q}` : '';
+  };
+
+  const query = buildQuery();
+
+  // summaries (auto-refetch when filters change)
   const [summary] = useSummary<DashboardSummary>(
-    `/summary${selectedRole ? `?role=${selectedRole}` : ''}`,
-    [selectedRole],
+    `/summary${query}`,
+    [selectedDepartment, selectedRole, selectedTimeframe, customRange.start, customRange.end],
   );
   const [lowStock] = useSummary<LowStockPartResponse[]>(
-    `/summary/low-stock${selectedRole ? `?role=${selectedRole}` : ''}`,
-    [selectedRole],
+    `/summary/low-stock${query}`,
+    [selectedDepartment, selectedRole, selectedTimeframe, customRange.start, customRange.end],
   );
   const [departmentsData] = useSummary<Department[]>('/departments', [], { ttlMs: 60_000 });
 
@@ -96,15 +125,14 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const query = selectedRole ? `?role=${selectedRole}` : '';
-        const res = await api.get(`/reports/analytics${query}`);
+        const res = await api.get(`/reports/analytics${buildQuery()}`);
         setAnalytics(res.data);
       } catch (err) {
         console.error('Error fetching analytics', err);
       }
     };
     fetchAnalytics();
-  }, [selectedRole]);
+  }, [selectedDepartment, selectedRole, selectedTimeframe, customRange]);
 
   // socket-driven refresh
   useEffect(() => {
@@ -156,6 +184,8 @@ const Dashboard: React.FC = () => {
           <h1 className="text-2xl font-semibold">Welcome{user?.name ? `, ${user.name}` : ''}</h1>
           {loading && <span className="text-sm opacity-70">Refreshing…</span>}
         </div>
+
+        <FiltersBar departments={departments} />
 
         {/* Top stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

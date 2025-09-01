@@ -7,6 +7,7 @@ import type {
   UpcomingMaintenanceItem,
   CriticalAlertItem,
 } from '../types';
+import type { DateRange, Timeframe } from '../store/dashboardStore';
 
 // normalize backend work-order status keys to camelCase
 const normalizeWOKey = (key: string): keyof WorkOrderStatusMap => {
@@ -41,7 +42,12 @@ const defaultAssetStatus: AssetStatusMap = {
   'In Repair': 0,
 };
 
-export default function useDashboardData(role?: string) {
+export default function useDashboardData(
+  role?: string,
+  department?: string,
+  timeframe?: Timeframe,
+  range?: DateRange,
+) {
   const [workOrdersByStatus, setWorkOrdersByStatus] = useState<WorkOrderStatusMap>(defaultWOStatus);
   const [assetsByStatus, setAssetsByStatus] = useState<AssetStatusMap>(defaultAssetStatus);
   const [upcomingMaintenance, setUpcomingMaintenance] = useState<UpcomingMaintenanceItem[]>([]);
@@ -51,7 +57,17 @@ export default function useDashboardData(role?: string) {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const query = role ? `?role=${role}` : '';
+      const params = new URLSearchParams();
+      if (role && role !== 'all') params.append('role', role);
+      if (department && department !== 'all') params.append('department', department);
+      if (timeframe) {
+        params.append('timeframe', timeframe);
+        if (timeframe === 'custom' && range) {
+          params.append('start', range.start);
+          params.append('end', range.end);
+        }
+      }
+      const query = params.toString() ? `?${params.toString()}` : '';
       const [woRes, assetRes, upcomingRes, alertRes] = await Promise.all([
         api.get<StatusCountResponse[]>(`/summary/workorders${query}`),
         api.get<StatusCountResponse[]>(`/summary/assets${query}`),
@@ -106,7 +122,7 @@ export default function useDashboardData(role?: string) {
     } finally {
       setLoading(false);
     }
-  }, [role]);
+  }, [role, department, timeframe, range?.start, range?.end]);
 
   useEffect(() => {
     refresh().catch(() => {});

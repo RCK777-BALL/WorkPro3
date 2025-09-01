@@ -1,4 +1,3 @@
- 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDashboardStore } from '../../store/dashboardStore';
@@ -20,10 +19,26 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import Card from '../common/Card';
-import { ArrowUp, ArrowDown, PenTool as Tool, Clipboard, CheckCircle, AlertTriangle, Plus, Settings, Users, Clock, Activity, DollarSign, Gauge, Wrench, Package, BarChart2, GripVertical } from 'lucide-react';
+import {
+  ArrowUp,
+  ArrowDown,
+  PenTool as Tool,
+  Clipboard,
+  CheckCircle,
+  AlertTriangle,
+  Plus,
+  Users,
+  Clock,
+  Activity,
+  DollarSign,
+  Gauge,
+  Wrench,
+  Package,
+  BarChart2,
+  GripVertical,
+} from 'lucide-react';
 
 interface StatCardProps {
-  onClick: any;
   id: string;
   title: string;
   value: string | number;
@@ -32,7 +47,7 @@ interface StatCardProps {
   icon: React.ReactNode;
   iconBg?: string;
   linkTo?: string;
-  onClick?: () => void;
+  onClick?: () => void;          // single, optional click handler
   onRemove?: () => void;
   tooltip?: string;
 }
@@ -77,14 +92,7 @@ const availableKPIs = [
 ];
 
 const SortableStatCard: React.FC<StatCardProps> = (props) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: props.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.id });
   const navigate = useNavigate();
 
   const style = {
@@ -103,12 +111,12 @@ const SortableStatCard: React.FC<StatCardProps> = (props) => {
   };
 
   return (
- 
     <div ref={setNodeRef} style={style} title={props.tooltip}>
       <Card
-        className={`h-full transition-all duration-150 group ${(props.onClick || props.linkTo) ? 'cursor-pointer hover:border-primary-300 hover:shadow-md dark:hover:border-primary-700' : ''}`}
+        className={`h-full transition-all duration-150 group ${
+          (props.onClick || props.linkTo) ? 'cursor-pointer hover:border-primary-300 hover:shadow-md dark:hover:border-primary-700' : ''
+        }`}
         onClick={handleClick}
- 
       >
         <div className="flex items-center">
           <div className="flex items-center">
@@ -139,18 +147,16 @@ const SortableStatCard: React.FC<StatCardProps> = (props) => {
               )}
             </div>
             <p className="text-2xl font-semibold mt-1 text-neutral-900 dark:text-white">{props.value}</p>
-            
-            {(props.change !== undefined) && (
+
+            {props.change !== undefined && (
               <div className="flex items-center mt-1">
                 {props.change > 0 ? (
                   <ArrowUp size={14} className="text-success-500" />
                 ) : (
                   <ArrowDown size={14} className="text-error-500" />
                 )}
-                <span 
-                  className={`text-xs font-medium ml-1 ${
-                    props.change > 0 ? 'text-success-500' : 'text-error-500'
-                  }`}
+                <span
+                  className={`text-xs font-medium ml-1 ${props.change > 0 ? 'text-success-500' : 'text-error-500'}`}
                 >
                   {Math.abs(props.change)}% {props.changeLabel || ''}
                 </span>
@@ -162,7 +168,6 @@ const SortableStatCard: React.FC<StatCardProps> = (props) => {
     </div>
   );
 };
- 
 
 interface DashboardStatsProps {
   stats: {
@@ -174,27 +179,30 @@ interface DashboardStatsProps {
 }
 
 const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
- 
   const [showKPISelector, setShowKPISelector] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
+
   const {
     selectedKPIs,
     setSelectedKPIs,
     addKPI,
     removeKPI,
-  } = useDashboardStore();
+    selectedRole,
+  } = useDashboardStore((s) => ({
+    selectedKPIs: s.selectedKPIs,
+    setSelectedKPIs: s.setSelectedKPIs,
+    addKPI: s.addKPI,
+    removeKPI: s.removeKPI,
+    selectedRole: s.selectedRole,
+  }));
 
   const sensors = useSensors(
     useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  // Default KPIs that are always shown
-  const { role } = useDashboardStore();
-
-  const baseKPIs = [
+  // Default KPIs that are always shown (role-aware)
+  const baseKPIs: StatCardProps[] = [
     {
       id: 'total_assets',
       title: 'Total Assets',
@@ -235,64 +243,61 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
     },
   ];
 
-  const defaultKPIs =
+  const role = selectedRole;
+  const defaultKPIs: StatCardProps[] =
     role === 'technician'
-      ? baseKPIs.filter((kpi) =>
-          ['work_orders', 'pm_tasks', 'inventory'].includes(kpi.id)
-        )
+      ? baseKPIs.filter((kpi) => ['work_orders', 'pm_tasks', 'inventory'].includes(kpi.id))
       : baseKPIs;
+
+  const navigate = useNavigate();
+
+  // Build extra KPIs from selection (null-safe)
+  const extraKPIs: StatCardProps[] = selectedKPIs
+    .map((kpiId) => {
+      const kpi = availableKPIs.find((k) => k.id === kpiId);
+      if (!kpi) return null as const;
+
+      const textColor = kpi.iconBg.replace('bg-', 'text-').replace('50', '600');
+      const textColorDark = kpi.iconBg.replace('bg-', 'text-').replace('50', '400');
+
+      return {
+        id: kpi.id,
+        title: kpi.title,
+        value: kpi.value,
+        change: kpi.change,
+        icon: <kpi.icon className={`h-6 w-6 ${textColor} dark:${textColorDark}`} />,
+        iconBg: kpi.iconBg,
+        linkTo: kpi.linkTo,
+        tooltip: kpi.tooltip,
+        onClick: kpi.linkTo ? () => navigate(kpi.linkTo!) : undefined,
+        onRemove: () => removeKPI(kpi.id),
+      } as StatCardProps;
+    })
+    .filter((k): k is NonNullable<typeof k> => k !== null);
+
+  const allKPIs: StatCardProps[] = [...defaultKPIs, ...extraKPIs];
+  const kpiIds = allKPIs.map((k) => k.id);
 
   const handleAddKPI = (kpiId: string) => {
     addKPI(kpiId);
     setShowKPISelector(false);
   };
 
-  const handleRemoveKPI = (kpiId: string) => {
-    removeKPI(kpiId);
-  };
 
-  const handleDragStart = (event: any) => {
-    setActiveId(event.active.id);
-  };
+  const handleDragStart = (event: any) => setActiveId(event.active.id);
 
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
-
     if (over && active.id !== over.id) {
       const oldIndex = selectedKPIs.indexOf(active.id);
       const newIndex = selectedKPIs.indexOf(over.id);
       const newOrder = arrayMove(selectedKPIs, oldIndex, newIndex);
       setSelectedKPIs(newOrder);
     }
-
     setActiveId(null);
   };
 
-  const navigate = useNavigate();
-
-  const allKPIs = [
-    ...defaultKPIs,
-    ...selectedKPIs.map(kpiId => {
-      const kpi = availableKPIs.find(k => k.id === kpiId);
-      if (!kpi) return null;
-      return {
-        id: kpi.id,
-        title: kpi.title,
-        value: kpi.value,
-        change: kpi.change,
-        icon: <kpi.icon className={`h-6 w-6 ${kpi.iconBg.replace('bg-', 'text-').replace('50', '600')} dark:${kpi.iconBg.replace('bg-', 'text-').replace('50', '400')}`} />,
-        iconBg: kpi.iconBg,
-        linkTo: kpi.linkTo,
-        tooltip: kpi.tooltip,
-        onClick: kpi.linkTo ? () => navigator(kpi.linkTo) : undefined,
-        onRemove: () => handleRemoveKPI(kpi.id),
-      };
-    }).filter(Boolean),
-  ];
-
- 
   return (
- 
     <div className="space-y-4">
       <DndContext
         sensors={sensors}
@@ -301,7 +306,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
         onDragEnd={handleDragEnd}
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          <SortableContext items={allKPIs.map(kpi => kpi.id)} strategy={rectSortingStrategy}>
+          <SortableContext items={kpiIds} strategy={rectSortingStrategy}>
             {allKPIs.map((kpi) => (
               <SortableStatCard key={kpi.id} {...kpi} />
             ))}
@@ -322,7 +327,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
         <DragOverlay>
           {activeId ? (
             <Card className="h-full opacity-50">
-              {allKPIs.find(kpi => kpi.id === activeId)?.title}
+              {allKPIs.find((k) => k.id === activeId)?.title}
             </Card>
           ) : null}
         </DragOverlay>
@@ -337,8 +342,8 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
           </div>
           <div className="p-2">
             {availableKPIs
-              .filter(kpi => !selectedKPIs.includes(kpi.id))
-              .map(kpi => (
+              .filter((kpi) => !selectedKPIs.includes(kpi.id))
+              .map((kpi) => (
                 <button
                   key={kpi.id}
                   className="w-full text-left px-4 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-md transition-colors"
@@ -353,7 +358,6 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
           </div>
         </div>
       )}
- 
     </div>
   );
 };

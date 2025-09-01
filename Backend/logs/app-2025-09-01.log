@@ -4,3 +4,6 @@
 {"email":"admin@example.com","level":"info","message":"Login attempt","timestamp":"2025-09-01T07:06:41.444Z"}
 {"found":true,"level":"info","message":"User lookup result","timestamp":"2025-09-01T07:06:41.447Z"}
 {"level":"info","message":"Password comparison result","timestamp":"2025-09-01T07:06:41.510Z","valid":true}
+{"email":"admin@example.com","level":"info","message":"Login attempt","timestamp":"2025-09-01T10:49:09.049Z"}
+{"found":true,"level":"info","message":"User lookup result","timestamp":"2025-09-01T10:49:09.053Z"}
+{"level":"info","message":"Password comparison result","timestamp":"2025-09-01T10:49:09.116Z","valid":true}

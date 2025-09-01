@@ -69,6 +69,10 @@ export const flushQueue = async (useBackoff = true) => {
     try {
       await api({ method: req.method, url: req.url, data: req.data });
     } catch (err: any) {
+      if (err?.response?.status === 409) {
+        console.warn('Dropping conflicted request', err);
+        continue;
+      }
       console.error('Failed to flush queued request', err);
       const retries = (req.retries ?? 0) + 1;
       const backoff = Math.min(1000 * 2 ** (retries - 1), 30000);

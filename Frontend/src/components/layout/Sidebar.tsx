@@ -37,6 +37,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useNavigationStore, NavItemId } from '../../store/navigationStore';
+import { useTranslation } from 'react-i18next';
  
 
 interface SidebarProps {
@@ -51,6 +52,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const navigate = useNavigate();
   const isAdmin = useAuthStore(selectIsAdmin);
   const isManager = useAuthStore(selectIsManager);
+  const { t } = useTranslation();
   const logout = useAuthStore((s) => s.logout);
   const { sidebarOrder, moveSidebarItem } = useNavigationStore();
 
@@ -100,21 +102,21 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
    
   const navItems: Record<NavItemId, { path: string; label: string; icon: JSX.Element; requireAdmin?: boolean }> = {
-    dashboard: { path: '/dashboard', label: 'Dashboard', icon: <Home size={20} /> },
-    assets: { path: '/assets', label: 'Assets', icon: <Tool size={20} />, requireAdmin: true },
-    'work-orders': { path: '/work-orders', label: 'Work Orders', icon: <Clipboard size={20} /> },
-    maintenance: { path: '/maintenance', label: 'Maintenance', icon: <Calendar size={20} /> },
-    'pm-tasks': { path: '/pm-tasks', label: 'PM Tasks', icon: <Calendar size={20} /> },
-    inventory: { path: '/inventory', label: 'Inventory', icon: <Package size={20} /> },
- 
-    timesheets: { path: '/timesheets', label: 'Timesheets', icon: <Clock size={20} /> },
- 
-    messages: { path: '/messages', label: 'Messages', icon: <MessageSquare size={20} /> },
-    departments: { path: '/departments', label: 'Departments', icon: <Building2 size={20} />, requireAdmin: true },
-    analytics: { path: '/analytics', label: 'Analytics', icon: <PieChart size={20} />, requireAdmin: true },
-    teams: { path: '/teams', label: 'Team', icon: <Users size={20} />, requireAdmin: true },
-    settings: { path: '/settings', label: 'Settings', icon: <Settings size={20} /> },
-    documentation: { path: '/documentation', label: 'Documentation', icon: <Book size={20} /> },
+    dashboard: { path: '/dashboard', label: t('nav.dashboard'), icon: <Home size={20} /> },
+    assets: { path: '/assets', label: t('nav.assets'), icon: <Tool size={20} />, requireAdmin: true },
+    'work-orders': { path: '/work-orders', label: t('nav.workOrders'), icon: <Clipboard size={20} /> },
+    maintenance: { path: '/maintenance', label: t('nav.maintenance'), icon: <Calendar size={20} /> },
+    'pm-tasks': { path: '/pm-tasks', label: t('nav.pmTasks'), icon: <Calendar size={20} /> },
+    inventory: { path: '/inventory', label: t('nav.inventory'), icon: <Package size={20} /> },
+
+    timesheets: { path: '/timesheets', label: t('nav.timesheets'), icon: <Clock size={20} /> },
+
+    messages: { path: '/messages', label: t('nav.messages'), icon: <MessageSquare size={20} /> },
+    departments: { path: '/departments', label: t('nav.departments'), icon: <Building2 size={20} />, requireAdmin: true },
+    analytics: { path: '/analytics', label: t('nav.analytics'), icon: <PieChart size={20} />, requireAdmin: true },
+    teams: { path: '/teams', label: t('nav.teams'), icon: <Users size={20} />, requireAdmin: true },
+    settings: { path: '/settings', label: t('nav.settings'), icon: <Settings size={20} /> },
+    documentation: { path: '/documentation', label: t('nav.documentation'), icon: <Book size={20} /> },
   };
 
   const handleLogout = () => {
@@ -198,7 +200,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-4 border-t border-primary-800 dark:border-neutral-800">
         <div className="mb-4">
           {!collapsed && (
-            <p className="text-sm text-neutral-300 mb-1">{completion}% complete</p>
+            <p className="text-sm text-neutral-300 mb-1">{t('sidebar.complete', { value: completion })}</p>
           )}
           <div className="w-full bg-neutral-100 dark:bg-neutral-800 rounded-full h-2">
             <div
@@ -216,7 +218,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           `}
         >
           <LogOut size={20} className={collapsed ? 'mx-auto' : 'mr-3'} />
-          {!collapsed && <span>Logout</span>}
+          {!collapsed && <span>{t('auth.logout')}</span>}
         </button>
       </div>
     </aside>

@@ -8,6 +8,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { useThemeStore } from './store/themeStore';
 import './index.css';
+import './i18n';
 
 // Initialize theme on app load
 const initializeTheme = () => {

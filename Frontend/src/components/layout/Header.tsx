@@ -11,9 +11,10 @@ import Button from '../common/Button';
 import { useAuthStore, isAdmin as selectIsAdmin, isManager as selectIsManager } from '../../store/authStore';
 import { useDataStore } from '../../store/dataStore';
 import { useNavigate } from 'react-router-dom';
- 
+
 import { markNotificationRead } from '../../utils/api';
 import { useSummary } from '../../hooks/useSummaryData';
+import { useTranslation } from 'react-i18next';
  
 
 import type { Notification } from '../../types';
@@ -34,7 +35,9 @@ interface HeaderProps {
 
 type HeaderNotification = Notification & { link?: string };
 
-const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title = 'Dashboard' }) => {
+const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
+  const { t, i18n } = useTranslation();
+  const headerTitle = title ?? t('nav.dashboard');
   const user = useAuthStore((s) => s.user);
   const isAdmin = useAuthStore(selectIsAdmin);
   const isManager = useAuthStore(selectIsManager);
@@ -96,29 +99,29 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title = 'Dashboard' })
 
   const helpResources = [
     {
-      title: 'Documentation',
-      description: 'Browse detailed guides and references',
+      title: t('header.documentation'),
+      description: t('header.documentationDesc'),
       icon: <Book size={20} />,
       link: '/documentation',
       color: 'text-primary-600'
     },
     {
-      title: 'Video Tutorials',
-      description: 'Watch step-by-step tutorials',
+      title: t('header.videoTutorials'),
+      description: t('header.videoTutorialsDesc'),
       icon: <Video size={20} />,
       link: '/documentation#videos',
       color: 'text-teal-600'
     },
     {
-      title: 'Live Chat Support',
-      description: 'Chat with our support team',
+      title: t('header.liveChat'),
+      description: t('header.liveChatDesc'),
       icon: <MessageCircle size={20} />,
       link: '/messages',
       color: 'text-success-600'
     },
     {
-      title: 'Knowledge Base',
-      description: 'Find answers to common questions',
+      title: t('header.knowledgeBase'),
+      description: t('header.knowledgeBaseDesc'),
       icon: <FileText size={20} />,
       link: '/documentation#kb',
       color: 'text-accent-600'
@@ -217,9 +220,9 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title = 'Dashboard' })
 
       <div className="hidden md:flex items-center bg-neutral-100 dark:bg-neutral-700 rounded-lg px-3 py-2 w-96">
         <Search size={18} className="text-neutral-700 dark:text-neutral-300" />
-        <input 
-          type="text" 
-          placeholder="Search assets, work orders, etc..." 
+        <input
+          type="text"
+          placeholder={t('header.searchPlaceholder')}
           className="bg-transparent border-none outline-none w-full text-sm text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 ml-2"
         />
       </div>
@@ -233,11 +236,19 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title = 'Dashboard' })
             onClick={handleToggleDataMode}
             className={useFakeData ? 'text-warning-600' : 'text-success-600'}
           >
-            {useFakeData ? 'Demo Mode' : 'Live Data'}
+            {useFakeData ? t('header.demoMode') : t('header.liveData')}
           </Button>
         )}
 
         <ThemeToggle />
+        <select
+          value={i18n.language}
+          onChange={(e) => i18n.changeLanguage(e.target.value)}
+          className="border rounded p-1 text-sm bg-white dark:bg-neutral-800 dark:text-white"
+        >
+          <option value="en">EN</option>
+          <option value="es">ES</option>
+        </select>
 
  
         <div className="relative">
@@ -257,7 +268,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title = 'Dashboard' })
           {showNotifications && (
             <div ref={notificationsMenuRef} tabIndex={-1} role="menu" aria-label="Notifications" className="absolute right-0 mt-2 w-80 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 z-50">
               <Card
-                title="Notifications"
+                title={t('header.notifications')}
                 subtitle={`${unreadCount} unread notifications`}
                 noPadding
               >
@@ -293,7 +304,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title = 'Dashboard' })
 
                   {!loadingNotifications && !notificationsError && notifications.length === 0 && (
                     <div className="py-8 text-center text-neutral-700 dark:text-neutral-300">
-                      No notifications
+                      {t('header.noNotifications')}
                     </div>
                   )}
                 </div>
@@ -305,7 +316,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title = 'Dashboard' })
                     }}
                     className="text-sm text-primary-600 hover:underline"
                   >
-                    View All Notifications
+                    {t('header.viewAll')}
                   </button>
                 </div>
               </Card>
@@ -326,8 +337,8 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title = 'Dashboard' })
           {showHelpMenu && (
             <div ref={helpMenuRef} tabIndex={-1} role="menu" aria-label="Help menu" className="absolute right-0 mt-2 w-80 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 z-50">
               <Card
-                title="Help & Resources"
-                subtitle="Get assistance and learn more"
+                title={t('header.helpResources')}
+                subtitle={t('header.helpSubtitle')}
                 noPadding
               >
                 <div className="p-2">
@@ -350,13 +361,13 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title = 'Dashboard' })
                 </div>
                 
                 <div className="p-4 bg-neutral-50 dark:bg-neutral-700 border-t border-neutral-200 dark:border-neutral-600">
-                  <p className="text-sm text-neutral-600 dark:text-neutral-300 mb-2">Need immediate assistance?</p>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-300 mb-2">{t('header.needHelp')}</p>
                   <Button
                     variant="primary"
                     fullWidth
                     onClick={handleContactSupport}
                   >
-                    Contact Support
+                    {t('header.contactSupport')}
                   </Button>
                 </div>
               </Card>
@@ -389,7 +400,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title = 'Dashboard' })
             <Search size={18} className="text-neutral-700 dark:text-neutral-300" />
             <input
               type="text"
-              placeholder="Search assets, work orders, etc..."
+              placeholder={t('header.searchPlaceholder')}
               className="bg-transparent border-none outline-none w-full text-sm text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 ml-2"
             />
           </div>

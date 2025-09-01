@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Layout from '../components/layout/Layout';
+import Button from '../components/common/Button';
+import { Download, Upload } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useDashboardStore } from '../store/dashboardStore';
 import { useSocketStore } from '../store/socketStore';
@@ -13,7 +15,6 @@ import {
   startNotificationsPoll,
   stopNotificationsPoll,
 } from '../utils/notificationsSocket';
-import { useNavigate } from 'react-router-dom';
 
 import { Responsive, WidthProvider, type Layouts } from 'react-grid-layout';
 import DashboardStats from '../components/dashboard/DashboardStats';
@@ -27,7 +28,7 @@ import type {
   LowStockPartResponse,
 } from '../types';
 
-// time-ago helper
+// (optional helper; safe to remove if unused elsewhere)
 const getTimeAgo = (timestamp: string): string => {
   const now = new Date();
   const date = new Date(timestamp);
@@ -81,7 +82,6 @@ const Dashboard: React.FC = () => {
     setLayouts: s.setLayouts,
   }));
   const connected = useSocketStore((s) => s.connected);
-  const navigate = useNavigate();
 
   const [liveData, setLiveData] = useState(true);
   const pollActive = useRef(false);
@@ -110,6 +110,7 @@ const Dashboard: React.FC = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [analytics, setAnalytics] = useState<any | null>(null);
   const [customize, setCustomize] = useState(false);
+  const dashboardRef = useRef<HTMLDivElement>(null);
 
   const buildQuery = () => {
     const params = new URLSearchParams();
@@ -283,12 +284,43 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handleExportCSV = async () => {
+    const { default: exportCsv } = await import('../utils/exportCsv');
+    exportCsv(
+      {
+        'Total Assets': stats.totalAssets,
+        'Active Work Orders': stats.activeWorkOrders,
+        'Maintenance Compliance': stats.maintenanceCompliance,
+        'Inventory Alerts': stats.inventoryAlerts,
+      },
+      'dashboard-kpis',
+    );
+    exportCsv(lowStockParts, 'dashboard-low-stock');
+  };
+
+  const handleExportPDF = async () => {
+    if (!dashboardRef.current) return;
+    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+      import('html2canvas'),
+      import('jspdf'),
+    ]);
+    const canvas = await html2canvas(dashboardRef.current, {
+      ignoreElements: (el) => el.classList.contains('no-export'),
+    });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const width = pdf.internal.pageSize.getWidth();
+    const height = (canvas.height * width) / canvas.width;
+    pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+    pdf.save('dashboard-summary.pdf');
+  };
+
   return (
     <Layout title="Dashboard">
-      <div className="px-4 py-6 space-y-6">
+      <div className="px-4 py-6 space-y-6" ref={dashboardRef}>
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">Welcome{user?.name ? `, ${user.name}` : ''}</h1>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 no-export">
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
@@ -304,6 +336,12 @@ const Dashboard: React.FC = () => {
             >
               {liveData ? 'Live On' : 'Live Off'}
             </button>
+            <Button variant="outline" icon={<Download size={16} />} onClick={handleExportCSV}>
+              Export CSV
+            </Button>
+            <Button variant="outline" icon={<Upload size={16} />} onClick={handleExportPDF}>
+              Export PDF
+            </Button>
           </div>
         </div>
 

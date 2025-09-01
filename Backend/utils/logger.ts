@@ -44,4 +44,6 @@ const logger = winston.createLogger({
   transports,
 });
 
+export const mqttLogger = logger.child({ module: 'mqtt' });
+
 export default logger;

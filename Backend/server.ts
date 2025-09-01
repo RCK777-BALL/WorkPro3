@@ -10,6 +10,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
 import { initKafka, sendKafkaEvent } from './utils/kafka';
+import { initMQTTFromConfig } from './iot/mqttClient';
 
 import authRoutes from './routes/auth';
 import workOrdersRoutes from './routes/WorkOrderRoutes';
@@ -168,6 +169,7 @@ if (process.env.NODE_ENV !== 'test') {
         console.log(`Server listening on http://localhost:${PORT}`),
       );
       initKafka(io).catch((err) => console.error('Kafka init error:', err));
+      initMQTTFromConfig();
       startPMScheduler('default', {
         cronExpr: process.env.PM_SCHEDULER_CRON,
         taskModulePath: process.env.PM_SCHEDULER_TASK,

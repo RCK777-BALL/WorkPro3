@@ -56,7 +56,7 @@ describe('Inventory Routes', () => {
     });
 
     const res = await request(app)
-      .get('/api/inventory')
+      .get('/api/inventory/summary')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 

@@ -1,13 +1,32 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import Layout from '../components/layout/Layout';
+import Button from '../components/common/Button';
+import { Download, Upload } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useDashboardStore } from '../store/dashboardStore';
 import { useSocketStore } from '../store/socketStore';
 import useDashboardData from '../hooks/useDashboardData';
 import { useSummary } from '../hooks/useSummaryData';
 import api from '../utils/api';
-import { getChatSocket } from '../utils/chatSocket';
+import FiltersBar from '../components/dashboard/FiltersBar';
+import {
+  getNotificationsSocket,
+  closeNotificationsSocket,
+  startNotificationsPoll,
+  stopNotificationsPoll,
+} from '../utils/notificationsSocket';
+
+import { Responsive, WidthProvider, type Layouts } from 'react-grid-layout';
+import DashboardStats from '../components/dashboard/DashboardStats';
+import WorkOrdersChart from '../components/dashboard/WorkOrdersChart';
+import UpcomingMaintenance from '../components/dashboard/UpcomingMaintenance';
+
+// Extra KPI widgets
+import AssetsStatusChart from '../components/dashboard/AssetsStatusChart';
+import CriticalAlerts from '../components/dashboard/CriticalAlerts';
+import LowStockParts from '../components/dashboard/LowStockParts';
+
 import { useToast } from '../context/ToastContext';
 
 import type {
@@ -17,25 +36,50 @@ import type {
   LowStockPartResponse,
 } from '../types';
 
-// time-ago helper
-const getTimeAgo = (timestamp: string): string => {
-  const now = new Date();
-  const date = new Date(timestamp);
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  if (seconds < 60) return 'just now';
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+const ResponsiveGridLayout = WidthProvider(Responsive);
+
+const defaultLayouts: Layouts = {
+  lg: [
+    { i: 'stats', x: 0, y: 0, w: 12, h: 4 },
+    { i: 'workOrders', x: 0, y: 4, w: 6, h: 8 },
+    { i: 'maintenance', x: 6, y: 4, w: 6, h: 8 },
+  ],
+  md: [
+    { i: 'stats', x: 0, y: 0, w: 10, h: 4 },
+    { i: 'workOrders', x: 0, y: 4, w: 10, h: 8 },
+    { i: 'maintenance', x: 0, y: 12, w: 10, h: 8 },
+  ],
+  sm: [
+    { i: 'stats', x: 0, y: 0, w: 6, h: 4 },
+    { i: 'workOrders', x: 0, y: 4, w: 6, h: 8 },
+    { i: 'maintenance', x: 0, y: 12, w: 6, h: 8 },
+  ],
 };
 
 const Dashboard: React.FC = () => {
   const user = useAuthStore((s) => s.user);
-  const selectedRole = useDashboardStore((s) => s.selectedRole);
+  const {
+    selectedRole,
+    selectedDepartment,
+    selectedTimeframe,
+    customRange,
+    setSelectedDepartment,
+    layouts,
+    setLayouts,
+  } = useDashboardStore((s) => ({
+    selectedRole: s.selectedRole,
+    selectedDepartment: s.selectedDepartment,
+    selectedTimeframe: s.selectedTimeframe,
+    customRange: s.customRange,
+    setSelectedDepartment: s.setSelectedDepartment,
+    layouts: s.layouts,
+    setLayouts: s.setLayouts,
+  }));
   const connected = useSocketStore((s) => s.connected);
   const { addToast } = useToast();
+
+  const [liveData, setLiveData] = useState(true);
+  const pollActive = useRef(false);
 
   const {
     workOrdersByStatus,
@@ -44,7 +88,12 @@ const Dashboard: React.FC = () => {
     criticalAlerts,
     refresh,
     loading,
-  } = useDashboardData(selectedRole);
+  } = useDashboardData(
+    selectedRole,
+    selectedDepartment,
+    selectedTimeframe,
+    customRange,
+  );
 
   const [stats, setStats] = useState({
     totalAssets: 0,
@@ -54,7 +103,26 @@ const Dashboard: React.FC = () => {
   });
   const [lowStockParts, setLowStockParts] = useState<LowStockPart[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [analytics, setAnalytics] = useState<any>(null);
+  const [analytics, setAnalytics] = useState<any | null>(null);
+  const [customize, setCustomize] = useState(false);
+  const dashboardRef = useRef<HTMLDivElement>(null);
+
+  const buildQuery = () => {
+    const params = new URLSearchParams();
+    if (selectedDepartment !== 'all') params.append('department', selectedDepartment);
+    if (selectedRole !== 'all') params.append('role', selectedRole);
+    if (selectedTimeframe) {
+      params.append('timeframe', selectedTimeframe);
+      if (selectedTimeframe === 'custom') {
+        params.append('start', customRange.start);
+        params.append('end', customRange.end);
+      }
+    }
+    const q = params.toString();
+    return q ? `?${q}` : '';
+  };
+
+  const query = buildQuery();
 
   const CardBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <ErrorBoundary
@@ -69,16 +137,34 @@ const Dashboard: React.FC = () => {
     </ErrorBoundary>
   );
 
-  // summaries (auto-refetch when selectedRole changes)
+  // summaries (auto-refetch when filters change)
   const [summary] = useSummary<DashboardSummary>(
-    `/summary${selectedRole ? `?role=${selectedRole}` : ''}`,
-    [selectedRole],
+    `/summary${query}`,
+    [selectedDepartment, selectedRole, selectedTimeframe, customRange.start, customRange.end],
   );
   const [lowStock] = useSummary<LowStockPartResponse[]>(
-    `/summary/low-stock${selectedRole ? `?role=${selectedRole}` : ''}`,
-    [selectedRole],
+    `/summary/low-stock${query}`,
+    [selectedDepartment, selectedRole, selectedTimeframe, customRange.start, customRange.end],
   );
-  const [departmentsData] = useSummary<Department[]>('/departments', [], { ttlMs: 60_000 });
+  const [departmentsData] = useSummary<Department[]>(
+    '/summary/departments',
+    [],
+    { ttlMs: 60_000 },
+  );
+
+  // restore saved layout (once)
+  useEffect(() => {
+    try {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('dashboardLayoutV1') : null;
+      if (stored) {
+        setLayouts(JSON.parse(stored));
+      } else {
+        setLayouts(defaultLayouts);
+      }
+    } catch {
+      setLayouts(defaultLayouts);
+    }
+  }, [setLayouts]);
 
   // map summaries to local state
   useEffect(() => {
@@ -112,21 +198,28 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const query = selectedRole ? `?role=${selectedRole}` : '';
-        const res = await api.get(`/reports/analytics${query}`);
+        const res = await api.get(`/reports/analytics${buildQuery()}`);
         setAnalytics(res.data);
       } catch (err) {
         console.error('Error fetching analytics', err);
       }
     };
     fetchAnalytics();
-  }, [selectedRole]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDepartment, selectedRole, selectedTimeframe, customRange]);
 
-  // socket-driven refresh
+  // socket-driven refresh with polling fallback
   useEffect(() => {
-    const s = getChatSocket?.();
-    if (!s) return;
+    if (!liveData) {
+      closeNotificationsSocket();
+      stopNotificationsPoll();
+      pollActive.current = false;
+      return;
+    }
 
+    const s = getNotificationsSocket();
+
+    // refresh() is debounced; no need to await
     const doRefresh = () => {
       refresh();
     };
@@ -156,106 +249,148 @@ const Dashboard: React.FC = () => {
           : 0;
       setStats((prev) => ({ ...prev, maintenanceCompliance: value }));
     });
+    s.on('notification', doRefresh);
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (s.disconnected) {
+      timer = setTimeout(() => {
+        if (s.disconnected && !pollActive.current) {
+          startNotificationsPoll(doRefresh);
+          pollActive.current = true;
+        }
+      }, 10_000);
+    }
+
+    s.on('connect', () => {
+      if (pollActive.current) {
+        stopNotificationsPoll();
+        pollActive.current = false;
+      }
+    });
 
     return () => {
       s.off('inventoryUpdated', doRefresh);
       s.off('workOrderUpdated', doRefresh);
       s.off('lowStockUpdated', handleLowStockUpdate);
       s.off('pmCompletionUpdated');
+      s.off('notification', doRefresh);
+      if (timer) clearTimeout(timer);
+      stopNotificationsPoll();
+      pollActive.current = false;
     };
-  }, [refresh, connected]);
+  }, [refresh, connected, liveData]);
+
+  const handleLayoutChange = (_: any, allLayouts: Layouts) => {
+    setLayouts(allLayouts);
+    try {
+      localStorage.setItem('dashboardLayoutV1', JSON.stringify(allLayouts));
+    } catch {
+      // ignore persistence errors
+    }
+  };
+
+  const handleExportCSV = async () => {
+    const { default: exportCsv } = await import('../utils/exportCsv');
+    exportCsv(
+      {
+        'Total Assets': stats.totalAssets,
+        'Active Work Orders': stats.activeWorkOrders,
+        'Maintenance Compliance': stats.maintenanceCompliance,
+        'Inventory Alerts': stats.inventoryAlerts,
+      },
+      'dashboard-kpis',
+    );
+    exportCsv(lowStockParts, 'dashboard-low-stock');
+  };
+
+  const handleExportPDF = async () => {
+    if (!dashboardRef.current) return;
+    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+      import('html2canvas'),
+      import('jspdf'),
+    ]);
+    const canvas = await html2canvas(dashboardRef.current, {
+      ignoreElements: (el) => el.classList.contains('no-export'),
+    });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const width = pdf.internal.pageSize.getWidth();
+    const height = (canvas.height * width) / canvas.width;
+    pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+    pdf.save('dashboard-summary.pdf');
+  };
 
   return (
     <Layout title="Dashboard">
-      <div className="px-4 py-6 space-y-6">
-        <div className="flex items-baseline justify-between">
+      <div className="px-4 py-6 space-y-6" ref={dashboardRef}>
+        <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">Welcome{user?.name ? `, ${user.name}` : ''}</h1>
-          {loading && <span className="text-sm opacity-70">Refreshing…</span>}
+          <div className="flex items-center gap-4 no-export">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={customize}
+                onChange={() => setCustomize((c) => !c)}
+              />
+              Customize layout
+            </label>
+            {loading && <span className="text-sm opacity-70">Refreshing…</span>}
+            <button
+              className="text-sm border px-2 py-1 rounded"
+              onClick={() => setLiveData((v) => !v)}
+            >
+              {liveData ? 'Live On' : 'Live Off'}
+            </button>
+            <Button variant="outline" icon={<Download size={16} />} onClick={handleExportCSV}>
+              Export CSV
+            </Button>
+            <Button variant="outline" icon={<Upload size={16} />} onClick={handleExportPDF}>
+              Export PDF
+            </Button>
+          </div>
         </div>
 
-        {/* Top stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <CardBoundary>
-            <div className="rounded-xl border p-4">
-              <div className="text-sm opacity-70">Total Assets</div>
-              <div className="text-2xl font-bold">{stats.totalAssets}</div>
-            </div>
-          </CardBoundary>
-          <CardBoundary>
-            <div className="rounded-xl border p-4">
-              <div className="text-sm opacity-70">Active Work Orders</div>
-              <div className="text-2xl font-bold">{stats.activeWorkOrders}</div>
-            </div>
-          </CardBoundary>
-          <CardBoundary>
-            <div className="rounded-xl border p-4">
-              <div className="text-sm opacity-70">Maintenance Compliance</div>
-              <div className="text-2xl font-bold">{stats.maintenanceCompliance}%</div>
-            </div>
-          </CardBoundary>
-          <CardBoundary>
-            <div className="rounded-xl border p-4">
-              <div className="text-sm opacity-70">Inventory Alerts</div>
-              <div className="text-2xl font-bold">{stats.inventoryAlerts}</div>
-            </div>
-          </CardBoundary>
-        </div>
+        <FiltersBar departments={departments} />
 
-        {/* Status summaries */}
+        {/* Core widgets in a customizable grid */}
+        <ResponsiveGridLayout
+          className="layout"
+          layouts={Object.keys(layouts).length ? layouts : defaultLayouts}
+          cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+          rowHeight={30}
+          isDraggable={customize}
+          isResizable={customize}
+          onLayoutChange={handleLayoutChange}
+        >
+          <div key="stats" className="h-full">
+            <CardBoundary>
+              <DashboardStats stats={stats} />
+            </CardBoundary>
+          </div>
+          <div key="workOrders" className="h-full">
+            <CardBoundary>
+              <WorkOrdersChart data={workOrdersByStatus} />
+            </CardBoundary>
+          </div>
+          <div key="maintenance" className="h-full">
+            <CardBoundary>
+              <UpcomingMaintenance maintenanceItems={upcomingMaintenance} />
+            </CardBoundary>
+          </div>
+        </ResponsiveGridLayout>
+
+        {/* Additional KPI widgets */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <CardBoundary>
-            <div className="rounded-xl border p-4">
-              <h2 className="font-semibold mb-2">Work Orders by Status</h2>
-              <ul className="space-y-1 text-sm">
-                <li>Open: <b>{workOrdersByStatus?.open ?? 0}</b></li>
-                <li>In Progress: <b>{workOrdersByStatus?.inProgress ?? 0}</b></li>
-                <li>On Hold: <b>{workOrdersByStatus?.onHold ?? 0}</b></li>
-                <li>Completed: <b>{workOrdersByStatus?.completed ?? 0}</b></li>
-              </ul>
-            </div>
+            <AssetsStatusChart data={assetsByStatus} />
           </CardBoundary>
           <CardBoundary>
-            <div className="rounded-xl border p-4">
-              <h2 className="font-semibold mb-2">Assets by Status</h2>
-              <ul className="space-y-1 text-sm">
-                <li>Active: <b>{assetsByStatus?.Active ?? 0}</b></li>
-                <li>Offline: <b>{assetsByStatus?.Offline ?? 0}</b></li>
-                <li>In Repair: <b>{assetsByStatus?.['In Repair'] ?? 0}</b></li>
-              </ul>
-            </div>
+            <CriticalAlerts alerts={criticalAlerts.slice(0, 8)} />
           </CardBoundary>
         </div>
-
-        {/* Upcoming maintenance & alerts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           <CardBoundary>
-            <div className="rounded-xl border p-4">
-              <h2 className="font-semibold mb-2">Upcoming Maintenance</h2>
-              <ul className="space-y-2 text-sm">
-                {upcomingMaintenance.slice(0, 8).map((u) => (
-                  <li key={u.id} className="flex justify-between">
-                    <span>{u.assetName} — {u.type}</span>
-                    <span className="opacity-70">{u.date}</span>
-                  </li>
-                ))}
-                {upcomingMaintenance.length === 0 && <li className="opacity-70">No upcoming tasks</li>}
-              </ul>
-            </div>
-          </CardBoundary>
-
-          <CardBoundary>
-            <div className="rounded-xl border p-4">
-              <h2 className="font-semibold mb-2">Critical Alerts</h2>
-              <ul className="space-y-2 text-sm">
-                {criticalAlerts.slice(0, 8).map((a) => (
-                  <li key={a.id} className="flex justify-between">
-                    <span>{a.assetName} — {a.issue}</span>
-                    <span className="opacity-70">{getTimeAgo(a.timestamp)}</span>
-                  </li>
-                ))}
-                {criticalAlerts.length === 0 && <li className="opacity-70">No critical alerts</li>}
-              </ul>
-            </div>
+            <LowStockParts parts={lowStockParts.slice(0, 12)} />
           </CardBoundary>
         </div>
       </div>

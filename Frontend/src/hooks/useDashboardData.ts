@@ -7,6 +7,7 @@ import type {
   UpcomingMaintenanceItem,
   CriticalAlertItem,
 } from '../types';
+import type { DateRange, Timeframe } from '../store/dashboardStore';
 
 // normalize backend work-order status keys to camelCase
 const normalizeWOKey = (key: string): keyof WorkOrderStatusMap => {
@@ -48,7 +49,7 @@ function debounce<F extends (...args: any[]) => void>(fn: F, delay: number) {
     if (timer) clearTimeout(timer);
     timer = window.setTimeout(() => fn(...args), delay);
   };
-  debounced.cancel = () => {
+  (debounced as any).cancel = () => {
     if (timer) {
       clearTimeout(timer);
       timer = null;
@@ -57,7 +58,12 @@ function debounce<F extends (...args: any[]) => void>(fn: F, delay: number) {
   return debounced as F & { cancel: () => void };
 }
 
-export default function useDashboardData(role?: string) {
+export default function useDashboardData(
+  role?: string,
+  department?: string,
+  timeframe?: Timeframe,
+  range?: DateRange,
+) {
   const [workOrdersByStatus, setWorkOrdersByStatus] = useState<WorkOrderStatusMap>(defaultWOStatus);
   const [assetsByStatus, setAssetsByStatus] = useState<AssetStatusMap>(defaultAssetStatus);
   const [upcomingMaintenance, setUpcomingMaintenance] = useState<UpcomingMaintenanceItem[]>([]);
@@ -67,7 +73,18 @@ export default function useDashboardData(role?: string) {
   const refreshData = useCallback(async () => {
     setLoading(true);
     try {
-      const query = role ? `?role=${role}` : '';
+      const params = new URLSearchParams();
+      if (role && role !== 'all') params.append('role', role);
+      if (department && department !== 'all') params.append('department', department);
+      if (timeframe) {
+        params.append('timeframe', timeframe);
+        if (timeframe === 'custom' && range) {
+          params.append('start', range.start);
+          params.append('end', range.end);
+        }
+      }
+      const query = params.toString() ? `?${params.toString()}` : '';
+
       const [woRes, assetRes, upcomingRes, alertRes] = await Promise.all([
         api.get<StatusCountResponse[]>(`/summary/workorders${query}`),
         api.get<StatusCountResponse[]>(`/summary/assets${query}`),
@@ -75,6 +92,7 @@ export default function useDashboardData(role?: string) {
         api.get<CriticalAlertResponse[]>(`/summary/critical-alerts${query}`),
       ]);
 
+      // Work orders
       const woCounts: WorkOrderStatusMap = { ...defaultWOStatus };
       if (Array.isArray(woRes.data)) {
         woRes.data.forEach(({ _id, count }) => {
@@ -84,6 +102,7 @@ export default function useDashboardData(role?: string) {
       }
       setWorkOrdersByStatus(woCounts);
 
+      // Assets
       const assetCounts: AssetStatusMap = { ...defaultAssetStatus };
       if (Array.isArray(assetRes.data)) {
         assetRes.data.forEach(({ _id, count }) => {
@@ -94,11 +113,12 @@ export default function useDashboardData(role?: string) {
       }
       setAssetsByStatus(assetCounts);
 
+      // Upcoming maintenance
       const upcoming: UpcomingMaintenanceItem[] = Array.isArray(upcomingRes.data)
         ? upcomingRes.data.map((u) => ({
             id: u._id ?? u.id ?? '',
             assetName: u.asset?.name ?? 'Unknown',
-            assetId: u.asset?._id ?? u.asset?.id ?? '',
+            assetId: u.asset?._id ?? (u as any).asset?.id ?? '',
             date: u.nextDue,
             type: u.type ?? '',
             assignedTo: u.assignedTo ?? '',
@@ -107,6 +127,7 @@ export default function useDashboardData(role?: string) {
         : [];
       setUpcomingMaintenance(upcoming);
 
+      // Critical alerts
       const alerts: CriticalAlertItem[] = Array.isArray(alertRes.data)
         ? alertRes.data.map((a) => ({
             id: a._id ?? a.id ?? '',
@@ -122,7 +143,7 @@ export default function useDashboardData(role?: string) {
     } finally {
       setLoading(false);
     }
-  }, [role]);
+  }, [role, department, timeframe, range?.start, range?.end]);
 
   const refresh = useMemo(() => debounce(refreshData, 300), [refreshData]);
 

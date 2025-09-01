@@ -7,7 +7,14 @@ expect.extend(toHaveNoViolations);
 // Mock environment variables
 vi.mock('../utils/env', () => ({
   config: {
-    apiUrl: 'http://localhost:3000',
+    apiUrl: 'http://localhost:3000/api',
+    wsUrl: null,
+    wsPath: '/socket.io',
+  },
+  endpoints: {
+    httpOrigin: 'http://localhost:3000',
+    socketOrigin: 'ws://localhost:3000',
+    socketPath: '/socket.io',
   },
 }));
 

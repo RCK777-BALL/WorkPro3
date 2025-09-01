@@ -33,6 +33,7 @@ import ThemeRoutes from './routes/ThemeRoutes';
  
 import chatRoutes from './routes/ChatRoutes';
 import requestPortalRoutes from './routes/requestPortal';
+import conditionRuleRoutes from './routes/ConditionRuleRoutes';
  
   
  
@@ -131,6 +132,7 @@ app.use('/api', generalLimiter);
 
 app.use('/api/workorders', workOrdersRoutes);
 app.use('/api/assets', assetsRoutes);
+app.use('/api/condition-rules', conditionRuleRoutes);
 app.use('/api/tenants', TenantRoutes);
 app.use('/api/pm-tasks', pmTasksRoutes);
 app.use('/api/reports', reportsRoutes);

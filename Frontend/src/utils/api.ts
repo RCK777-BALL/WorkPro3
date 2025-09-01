@@ -10,6 +10,10 @@ import type {
   Member,
   Message,
   Channel,
+  SummaryCountResponse,
+  UpcomingMaintenanceResponse,
+  CriticalAlertResponse,
+  LowStockPartResponse,
 } from "../types";
 
 const baseURL = import.meta.env.VITE_API_URL ?? 'http://localhost:5010/api';
@@ -66,15 +70,25 @@ api.interceptors.response.use(
 export const fetchSummary = (params?: Record<string, any>) =>
   api.get<DashboardSummary>("/summary", { params }).then((res) => res.data);
 export const fetchAssetSummary = (params?: Record<string, any>) =>
-  api.get("/summary/assets", { params }).then((res) => res.data);
+  api
+    .get<SummaryCountResponse[]>("/summary/assets", { params })
+    .then((res) => res.data);
 export const fetchWorkOrderSummary = (params?: Record<string, any>) =>
-  api.get("/summary/workorders", { params }).then((res) => res.data);
+  api
+    .get<SummaryCountResponse[]>("/summary/workorders", { params })
+    .then((res) => res.data);
 export const fetchUpcomingMaintenance = (params?: Record<string, any>) =>
-  api.get("/summary/upcoming-maintenance", { params }).then((res) => res.data);
+  api
+    .get<UpcomingMaintenanceResponse[]>("/summary/upcoming-maintenance", { params })
+    .then((res) => res.data);
 export const fetchCriticalAlerts = (params?: Record<string, any>) =>
-  api.get("/summary/critical-alerts", { params }).then((res) => res.data);
+  api
+    .get<CriticalAlertResponse[]>("/summary/critical-alerts", { params })
+    .then((res) => res.data);
 export const fetchLowStock = (params?: Record<string, any>) =>
-  api.get("/summary/low-stock", { params }).then((res) => res.data);
+  api
+    .get<LowStockPartResponse[]>("/summary/low-stock", { params })
+    .then((res) => res.data);
 
 export const fetchNotifications = (params?: Record<string, any>) =>
   api

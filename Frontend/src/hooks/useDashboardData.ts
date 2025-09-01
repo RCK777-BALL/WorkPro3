@@ -5,6 +5,10 @@ import {
   fetchUpcomingMaintenance,
   fetchCriticalAlerts,
 } from '../utils/api';
+import type {
+  UpcomingMaintenanceItem,
+  CriticalAlert,
+} from '../types';
 
 interface WorkOrderStatusCounts {
   open: number;
@@ -33,8 +37,8 @@ const useDashboardData = (role?: string) => {
     'In Repair': 0,
   });
 
-  const [upcomingMaintenance, setUpcomingMaintenance] = useState<any[]>([]);
-  const [criticalAlerts, setCriticalAlerts] = useState<any[]>([]);
+  const [upcomingMaintenance, setUpcomingMaintenance] = useState<UpcomingMaintenanceItem[]>([]);
+  const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlert[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
@@ -79,7 +83,7 @@ const useDashboardData = (role?: string) => {
               id: t._id ?? t.id,
               assetName: t.asset?.name || 'Unknown',
               assetId: t.asset?._id ?? '',
-              date: t.nextDue,
+              date: t.nextDue ?? '',
               type: t.type || 'preventive',
               assignedTo: t.assignedTo || '',
               estimatedDuration: t.estimatedDuration || 0,

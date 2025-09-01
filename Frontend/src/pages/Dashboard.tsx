@@ -22,7 +22,14 @@ import useDashboardData from '../hooks/useDashboardData';
 import { useSummary } from '../hooks/useSummaryData';
  import { getChatSocket } from '../utils/chatSocket';
  
-import type { Department } from '../types';
+import type {
+  Department,
+  DashboardSummary,
+  LowStockPart,
+  LowStockPartResponse,
+  AnalyticsData,
+  DashboardStats,
+} from '../types';
 import { useSocketStore } from '../store/socketStore';
 
 
@@ -68,19 +75,19 @@ const Dashboard: React.FC = () => {
     refresh,
     loading,
   } = useDashboardData(selectedRole);
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<DashboardStats>({
     totalAssets: 0,
     activeWorkOrders: 0,
     maintenanceCompliance: 0,
     inventoryAlerts: 0,
   });
-  const [lowStockParts, setLowStockParts] = useState<any[]>([]);
+  const [lowStockParts, setLowStockParts] = useState<LowStockPart[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [summary] = useSummary<any>(
+  const [summary] = useSummary<DashboardSummary>(
     `/summary${selectedRole ? `?role=${selectedRole}` : ''}`,
     [selectedRole],
   );
-  const [lowStock] = useSummary<any[]>(
+  const [lowStock] = useSummary<LowStockPartResponse[]>(
     `/summary/low-stock${selectedRole ? `?role=${selectedRole}` : ''}`,
     [selectedRole],
   );
@@ -90,7 +97,7 @@ const Dashboard: React.FC = () => {
     { ttlMs: 60_000 },
   );
 
-  const [analytics, setAnalytics] = useState<any | null>(null);
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
 
 
   useEffect(() => {
@@ -108,7 +115,7 @@ const Dashboard: React.FC = () => {
     const fetchAnalytics = async () => {
       try {
         const query = role ? `?role=${role}` : '';
-        const res = await api.get(`/reports/analytics${query}`);
+        const res = await api.get<AnalyticsData>(`/reports/analytics${query}`);
         setAnalytics(res.data);
       } catch (err) {
         console.error('Error fetching analytics', err);
@@ -120,7 +127,7 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const mapped = Array.isArray(lowStock)
       ? lowStock.map((p) => ({
-          id: p._id ?? p.id,
+          id: p._id ?? p.id!,
           name: p.name,
           quantity: p.quantity,
           reorderPoint: p.reorderThreshold ?? p.reorderPoint ?? 0,
@@ -151,10 +158,10 @@ const Dashboard: React.FC = () => {
       }
     };
 
-    const handleLowStockUpdate = (parts: any[]) => {
+    const handleLowStockUpdate = (parts: LowStockPartResponse[]) => {
       const mapped = Array.isArray(parts)
         ? parts.map((p) => ({
-            id: p._id ?? p.id,
+            id: p._id ?? p.id!,
             name: p.name,
             quantity: p.quantity,
             reorderPoint: p.reorderThreshold ?? p.reorderPoint ?? 0,

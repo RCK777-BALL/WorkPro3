@@ -14,3 +14,19 @@ export const getPredictions = async (
     next(err);
   }
 };
+
+export const getTrend = async (
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const trend = await predictiveService.getPredictionTrend(
+      req.params.assetId,
+      req.tenantId
+    );
+    res.json(trend);
+  } catch (err) {
+    next(err);
+  }
+};

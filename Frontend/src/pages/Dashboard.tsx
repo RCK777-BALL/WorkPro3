@@ -7,6 +7,10 @@ import useDashboardData from '../hooks/useDashboardData';
 import { useSummary } from '../hooks/useSummaryData';
 import api from '../utils/api';
 import { getChatSocket } from '../utils/chatSocket';
+import { Responsive, WidthProvider, type Layouts } from 'react-grid-layout';
+import DashboardStats from '../components/dashboard/DashboardStats';
+import WorkOrdersChart from '../components/dashboard/WorkOrdersChart';
+import UpcomingMaintenance from '../components/dashboard/UpcomingMaintenance';
 
 import type {
   Department,
@@ -29,9 +33,35 @@ const getTimeAgo = (timestamp: string): string => {
   return `${days}d ago`;
 };
 
+const ResponsiveGridLayout = WidthProvider(Responsive);
+
+const defaultLayouts: Layouts = {
+  lg: [
+    { i: 'stats', x: 0, y: 0, w: 12, h: 4 },
+    { i: 'workOrders', x: 0, y: 4, w: 6, h: 8 },
+    { i: 'maintenance', x: 6, y: 4, w: 6, h: 8 },
+  ],
+  md: [
+    { i: 'stats', x: 0, y: 0, w: 10, h: 4 },
+    { i: 'workOrders', x: 0, y: 4, w: 10, h: 8 },
+    { i: 'maintenance', x: 0, y: 12, w: 10, h: 8 },
+  ],
+  sm: [
+    { i: 'stats', x: 0, y: 0, w: 6, h: 4 },
+    { i: 'workOrders', x: 0, y: 4, w: 6, h: 8 },
+    { i: 'maintenance', x: 0, y: 12, w: 6, h: 8 },
+  ],
+};
+
 const Dashboard: React.FC = () => {
   const user = useAuthStore((s) => s.user);
-  const selectedRole = useDashboardStore((s) => s.selectedRole);
+  const {
+    selectedRole,
+    selectedDepartment,
+    setSelectedDepartment,
+    layouts,
+    setLayouts,
+  } = useDashboardStore();
   const connected = useSocketStore((s) => s.connected);
 
   const {
@@ -52,6 +82,8 @@ const Dashboard: React.FC = () => {
   const [lowStockParts, setLowStockParts] = useState<LowStockPart[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [analytics, setAnalytics] = useState<any>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [customize, setCustomize] = useState(false);
 
   // summaries (auto-refetch when selectedRole changes)
   const [summary] = useSummary<DashboardSummary>(
@@ -63,6 +95,20 @@ const Dashboard: React.FC = () => {
     [selectedRole],
   );
   const [departmentsData] = useSummary<Department[]>('/departments', [], { ttlMs: 60_000 });
+
+  // restore saved layout
+  useEffect(() => {
+    try {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('dashboardLayoutV1') : null;
+      if (stored) {
+        setLayouts(JSON.parse(stored));
+      } else {
+        setLayouts(defaultLayouts);
+      }
+    } catch {
+      setLayouts(defaultLayouts);
+    }
+  }, [setLayouts]);
 
   // map summaries to local state
   useEffect(() => {
@@ -149,83 +195,71 @@ const Dashboard: React.FC = () => {
     };
   }, [refresh, connected]);
 
+  const handleLayoutChange = (_: any, allLayouts: Layouts) => {
+    setLayouts(allLayouts);
+  };
+
   return (
     <Layout title="Dashboard">
       <div className="px-4 py-6 space-y-6">
-        <div className="flex items-baseline justify-between">
+        <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">Welcome{user?.name ? `, ${user.name}` : ''}</h1>
-          {loading && <span className="text-sm opacity-70">Refreshing…</span>}
-        </div>
-
-        {/* Top stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="rounded-xl border p-4">
-            <div className="text-sm opacity-70">Total Assets</div>
-            <div className="text-2xl font-bold">{stats.totalAssets}</div>
-          </div>
-          <div className="rounded-xl border p-4">
-            <div className="text-sm opacity-70">Active Work Orders</div>
-            <div className="text-2xl font-bold">{stats.activeWorkOrders}</div>
-          </div>
-          <div className="rounded-xl border p-4">
-            <div className="text-sm opacity-70">Maintenance Compliance</div>
-            <div className="text-2xl font-bold">{stats.maintenanceCompliance}%</div>
-          </div>
-          <div className="rounded-xl border p-4">
-            <div className="text-sm opacity-70">Inventory Alerts</div>
-            <div className="text-2xl font-bold">{stats.inventoryAlerts}</div>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => setShowFilters((s) => !s)}
+              className="px-3 py-1 text-sm border rounded-md"
+            >
+              Filters
+            </button>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={customize}
+                onChange={() => setCustomize((c) => !c)}
+              />
+              Customize layout
+            </label>
+            {loading && <span className="text-sm opacity-70">Refreshing…</span>}
           </div>
         </div>
 
-        {/* Status summaries */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="rounded-xl border p-4">
-            <h2 className="font-semibold mb-2">Work Orders by Status</h2>
-            <ul className="space-y-1 text-sm">
-              <li>Open: <b>{workOrdersByStatus?.open ?? 0}</b></li>
-              <li>In Progress: <b>{workOrdersByStatus?.inProgress ?? 0}</b></li>
-              <li>On Hold: <b>{workOrdersByStatus?.onHold ?? 0}</b></li>
-              <li>Completed: <b>{workOrdersByStatus?.completed ?? 0}</b></li>
-            </ul>
-          </div>
-          <div className="rounded-xl border p-4">
-            <h2 className="font-semibold mb-2">Assets by Status</h2>
-            <ul className="space-y-1 text-sm">
-              <li>Active: <b>{assetsByStatus?.Active ?? 0}</b></li>
-              <li>Offline: <b>{assetsByStatus?.Offline ?? 0}</b></li>
-              <li>In Repair: <b>{assetsByStatus?.['In Repair'] ?? 0}</b></li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Upcoming maintenance & alerts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="rounded-xl border p-4">
-            <h2 className="font-semibold mb-2">Upcoming Maintenance</h2>
-            <ul className="space-y-2 text-sm">
-              {upcomingMaintenance.slice(0, 8).map((u) => (
-                <li key={u.id} className="flex justify-between">
-                  <span>{u.assetName} — {u.type}</span>
-                  <span className="opacity-70">{u.date}</span>
-                </li>
+        {showFilters && (
+          <div>
+            <select
+              value={selectedDepartment}
+              onChange={(e) => setSelectedDepartment(e.target.value)}
+              className="mt-2 p-2 border rounded-md"
+            >
+              <option value="all">All Departments</option>
+              {departments.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
               ))}
-              {upcomingMaintenance.length === 0 && <li className="opacity-70">No upcoming tasks</li>}
-            </ul>
+            </select>
           </div>
+        )}
 
-          <div className="rounded-xl border p-4">
-            <h2 className="font-semibold mb-2">Critical Alerts</h2>
-            <ul className="space-y-2 text-sm">
-              {criticalAlerts.slice(0, 8).map((a) => (
-                <li key={a.id} className="flex justify-between">
-                  <span>{a.assetName} — {a.issue}</span>
-                  <span className="opacity-70">{getTimeAgo(a.timestamp)}</span>
-                </li>
-              ))}
-              {criticalAlerts.length === 0 && <li className="opacity-70">No critical alerts</li>}
-            </ul>
+        <ResponsiveGridLayout
+          className="layout"
+          layouts={Object.keys(layouts).length ? layouts : defaultLayouts}
+          cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+          rowHeight={30}
+          isDraggable={customize}
+          isResizable={customize}
+          onLayoutChange={handleLayoutChange}
+        >
+          <div key="stats" className="h-full">
+            <DashboardStats stats={stats} />
           </div>
-        </div>
+          <div key="workOrders" className="h-full">
+            <WorkOrdersChart data={workOrdersByStatus} />
+          </div>
+          <div key="maintenance" className="h-full">
+            <UpcomingMaintenance maintenanceItems={upcomingMaintenance} />
+          </div>
+        </ResponsiveGridLayout>
       </div>
     </Layout>
   );

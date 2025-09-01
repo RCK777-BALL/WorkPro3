@@ -47,7 +47,16 @@ export const useDashboardStore = create<DashboardState>()(
       setRole: (role) => set({ role }),
       setDateRange: (dateRange) => set({ dateRange }),
       setSelectedKPIs: (selectedKPIs) => set({ selectedKPIs }),
-      setLayouts: (layouts) => set({ layouts }),
+      setLayouts: (layouts) => {
+        set({ layouts });
+        try {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('dashboardLayoutV1', JSON.stringify(layouts));
+          }
+        } catch {
+          /* ignore */
+        }
+      },
       addKPI: (id) =>
         set((state) => ({
           selectedKPIs: state.selectedKPIs.includes(id)

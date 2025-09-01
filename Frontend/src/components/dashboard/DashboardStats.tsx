@@ -267,6 +267,8 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
     setActiveId(null);
   };
 
+  const navigate = useNavigate();
+
   const allKPIs = [
     ...defaultKPIs,
     ...selectedKPIs.map(kpiId => {

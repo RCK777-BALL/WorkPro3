@@ -8,6 +8,7 @@ import {
   deleteWorkOrder,
   approveWorkOrder,
   searchWorkOrders,
+  assistWorkOrder,
 } from '../controllers/WorkOrderController';
 import { requireAuth } from '../middleware/authMiddleware';
 import requireRole from '../middleware/requireRole';
@@ -20,6 +21,7 @@ const upload = multer();
 router.use(requireAuth);
 router.get('/', getAllWorkOrders);
 router.get('/search', searchWorkOrders);
+router.get('/:id/assist', requireRole('admin', 'manager', 'technician'), assistWorkOrder);
 router.get('/:id', getWorkOrderById);
 
 router.post(

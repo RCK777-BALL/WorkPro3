@@ -1,14 +1,23 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import type { Request, Response, NextFunction } from 'express';
+
 import Vendor from '../models/Vendor';
 import PurchaseOrder from '../models/PurchaseOrder';
 import { requireVendorAuth } from '../middleware/vendorAuth';
 
+import {
+  listVendorPurchaseOrders,
+  updateVendorPurchaseOrder,
+} from '../controllers/PurchaseOrderController';
+
 const router = express.Router();
 
-// Vendor login - issues a JWT for portal access
-router.post('/login', async (req, res) => {
-  const { vendorId, email } = req.body;
+/**
+ * Vendor login - issues a JWT for portal access
+ */
+router.post('/login', async (req: Request, res: Response) => {
+  const { vendorId, email } = req.body as { vendorId?: string; email?: string };
   if (!vendorId) {
     res.status(400).json({ message: 'vendorId required' });
     return;
@@ -26,46 +35,46 @@ router.post('/login', async (req, res) => {
     return;
   }
 
-  const token = jwt.sign({ id: vendor._id.toString() }, secret, {
-    expiresIn: '7d',
-  });
+  const token = jwt.sign({ id: vendor._id.toString() }, secret, { expiresIn: '7d' });
   res.json({ token });
 });
 
-// Retrieve a purchase order for the authenticated vendor
-router.get('/purchase-orders/:id', requireVendorAuth, async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const vendorId = (req as any).vendorId;
-    const po = await PurchaseOrder.findOne({ _id: id, vendor: vendorId }).lean();
-    if (!po) {
-      res.status(404).json({ message: 'Not found' });
-      return;
-    }
-    res.json(po);
-  } catch (err) {
-    next(err);
-  }
-});
+// All routes below require a valid vendor token
+router.use(requireVendorAuth);
 
-// Update a purchase order for the authenticated vendor
-router.put('/purchase-orders/:id', requireVendorAuth, async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const vendorId = (req as any).vendorId;
-    const po = await PurchaseOrder.findOneAndUpdate(
-      { _id: id, vendor: vendorId },
-      req.body,
-      { new: true, runValidators: true }
-    ).lean();
-    if (!po) {
-      res.status(404).json({ message: 'Not found' });
-      return;
+/**
+ * List purchase orders for the authenticated vendor
+ * (supports both /purchase-orders and /pos for backward compatibility)
+ */
+router.get('/purchase-orders', listVendorPurchaseOrders);
+router.get('/pos', listVendorPurchaseOrders);
+
+/**
+ * Retrieve a single purchase order for the authenticated vendor
+ */
+router.get(
+  '/purchase-orders/:id',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const vendorId = (req as any).vendorId;
+      const po = await PurchaseOrder.findOne({ _id: id, vendor: vendorId }).lean();
+      if (!po) {
+        res.status(404).json({ message: 'Not found' });
+        return;
+      }
+      res.json(po);
+    } catch (err) {
+      next(err);
     }
-    res.json(po);
-  } catch (err) {
-    next(err);
-  }
-});
+  },
+);
+
+/**
+ * Update a purchase order for the authenticated vendor
+ * (supports both /purchase-orders/:id and /pos/:id for backward compatibility)
+ */
+router.put('/purchase-orders/:id', updateVendorPurchaseOrder);
+router.put('/pos/:id', updateVendorPurchaseOrder);
 
 export default router;

@@ -7,10 +7,10 @@ interface VendorTokenPayload {
 }
 
 /**
- * Middleware to authenticate vendor requests using a JWT token.
- * The token should be provided in the `Authorization` header as
- * a Bearer token. On success, the vendor document and `vendorId`
- * are attached to the request object.
+ * Authenticate vendor requests using a Bearer JWT.
+ * - Verifies token with VENDOR_JWT_SECRET (fallback: JWT_SECRET)
+ * - Loads the vendor document
+ * - Attaches `req.vendor` and `req.vendorId`
  */
 export const requireVendorAuth: RequestHandler = async (
   req: Request,
@@ -24,7 +24,7 @@ export const requireVendorAuth: RequestHandler = async (
       return;
     }
 
-    const token = authHeader.substring(7);
+    const token = authHeader.slice(7).trim();
     const secret = process.env.VENDOR_JWT_SECRET || process.env.JWT_SECRET;
     if (!secret) {
       res.status(500).json({ message: 'Server configuration issue' });
@@ -32,6 +32,7 @@ export const requireVendorAuth: RequestHandler = async (
     }
 
     const { id } = jwt.verify(token, secret) as VendorTokenPayload;
+
     const vendor = await Vendor.findById(id).lean();
     if (!vendor) {
       res.status(401).json({ message: 'Unauthorized' });
@@ -39,11 +40,15 @@ export const requireVendorAuth: RequestHandler = async (
     }
 
     (req as any).vendor = vendor;
-    (req as any).vendorId = vendor._id.toString();
+    (req as any).vendorId = vendor._id?.toString?.() ?? id;
+
     next();
-  } catch (_err) {
+  } catch {
     res.status(401).json({ message: 'Invalid token' });
   }
 };
+
+// Backwards-compatible alias for older imports
+export const requireVendorToken = requireVendorAuth;
 
 export default { requireVendorAuth };

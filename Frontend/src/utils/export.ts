@@ -109,3 +109,14 @@ export const exportAssetsToPDF = (assets: Asset[], filename: string) => {
 
   doc.save(`${filename}.pdf`);
 };
+
+// Generic helpers for metric exports
+export const exportMetricsToCSV = (
+  data: Record<string, any>[],
+  filename: string,
+) => exportToCSV(data, filename, (d) => d);
+
+export const exportMetricsToPDF = (
+  data: Record<string, any>[],
+  filename: string,
+) => exportToPDF(data, filename, (d) => d);

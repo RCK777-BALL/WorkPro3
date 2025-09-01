@@ -27,9 +27,10 @@ import notificationsRoutes from './routes/notifications';
 import TenantRoutes from './routes/TenantRoutes';
 
 import ThemeRoutes from './routes/ThemeRoutes';
- 
+
 import chatRoutes from './routes/ChatRoutes';
 import requestPortalRoutes from './routes/requestPortal';
+import calendarRoutes from './routes/CalendarRoutes';
  
   
  
@@ -138,6 +139,7 @@ app.use('/api/team', teamRoutes);
 app.use('/api/theme', ThemeRoutes);
 app.use('/api/request-portal', requestPortalRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/calendar', calendarRoutes);
 
 app.use('/api/summary', summaryRoutes);
 

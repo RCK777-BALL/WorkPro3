@@ -24,3 +24,7 @@ export const endpoints = {
   httpOrigin: getEnvVar('VITE_HTTP_ORIGIN') ?? '',
   socketPath: getEnvVar('VITE_SOCKET_PATH') ?? '/ws/notifications',
 };
+
+function getEnvVar(_arg0: string) {
+  throw new Error("Function not implemented.");
+}

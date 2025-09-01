@@ -57,8 +57,10 @@ export function useSummary<T = unknown>(
     mountedRef.current = true;
     if (auto) fetcher().catch(() => {});
 
-    let timer: number | undefined;
-    if (poll) timer = window.setInterval(() => fetcher().catch(() => {}), 60_000);
+    let timer: ReturnType<typeof setInterval> | undefined;
+    if (poll && typeof window !== 'undefined') {
+      timer = setInterval(() => fetcher().catch(() => {}), 60_000);
+    }
 
     return () => {
       mountedRef.current = false;

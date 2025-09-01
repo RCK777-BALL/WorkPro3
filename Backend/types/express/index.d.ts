@@ -20,6 +20,11 @@ declare global {
        */
       tenantId?: string;
 
+      /**
+       * Optional site identifier supplied by siteScope middleware.
+       */
+      siteId?: string;
+
       thirdParty?: any;
     }
   }

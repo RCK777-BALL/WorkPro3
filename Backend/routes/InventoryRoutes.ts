@@ -11,10 +11,12 @@ import {
   useInventoryItem,
 } from '../controllers/InventoryController';
 import { requireAuth } from '../middleware/authMiddleware';
+import siteScope from '../middleware/siteScope';
 
 const router = express.Router();
 
 router.use(requireAuth);
+router.use(siteScope);
 
 // Summary route retained for dashboards
 router.get('/summary', getInventoryItems);

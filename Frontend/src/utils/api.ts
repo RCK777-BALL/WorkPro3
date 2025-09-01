@@ -41,6 +41,19 @@ api.interceptors.request.use((cfg) => {
       // ignore parse errors
     }
   }
+  const siteStr = localStorage.getItem('site-storage');
+  if (siteStr) {
+    try {
+      const { state } = JSON.parse(siteStr);
+      const siteId = state?.siteId;
+      if (siteId) {
+        cfg.headers = cfg.headers ?? {};
+        (cfg.headers as any)['x-site-id'] = siteId;
+      }
+    } catch {
+      // ignore
+    }
+  }
   return cfg;
 });
 

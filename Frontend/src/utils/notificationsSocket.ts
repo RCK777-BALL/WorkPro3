@@ -1,14 +1,13 @@
 import { io, type Socket } from 'socket.io-client';
 import { useSocketStore } from '../store/socketStore';
+import { endpoints } from './env';
 
 let socket: Socket | null = null;
 let poll: ReturnType<typeof setInterval> | null = null;
 
 function createSocket(): Socket {
-  const base = import.meta.env.VITE_WS_NOTIFICATIONS_URL ?? 'ws://localhost:5055';
-
-  const s = io(base, {
-    path: '/ws/notifications',
+  const s = io(endpoints.socketOrigin, {
+    path: endpoints.socketPath,
     transports: ['websocket', 'polling'],
     reconnectionAttempts: Infinity,
     reconnectionDelay: 500,

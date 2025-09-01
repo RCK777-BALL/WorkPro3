@@ -11,8 +11,13 @@ import type {
   Message,
   Channel,
 } from "../types";
+import { config } from "./env";
 
-const baseURL = import.meta.env.VITE_API_URL ?? 'http://localhost:5010/api';
+const baseURL = config.apiUrl;
+
+if (!baseURL) {
+  throw new Error("VITE_API_URL is not defined");
+}
 
 const api = axios.create({
   baseURL,

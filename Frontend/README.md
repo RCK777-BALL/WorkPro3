@@ -50,7 +50,8 @@ The optimized bundle is written to the `dist` folder.
 
 The following variables from `.env.example` configure the frontend:
 
-- `VITE_API_URL` – Base URL for API requests.
+- `VITE_API_URL` – Base URL for API requests. **This must be set**; the frontend
+  throws an error if it's missing.
  - `VITE_SOCKET_URL` – WebSocket endpoint used for real‑time features. **This must be set** to receive live updates; leaving it empty falls back to offline mode.
 - `CORS_ORIGIN` – Origin allowed when using the local API server.
 

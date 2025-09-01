@@ -89,12 +89,14 @@ This will deploy the backend, frontend and ingress resources.
 - **Frontend unit tests**: `cd Frontend && npm run test`
 - **Frontend e2e tests**: `cd Frontend && npm run test:e2e`
 
-Both test suites use Vitest. Backend tests spin up a temporary MongoDB using
-`mongodb-memory-server`, which downloads a MongoDB binary the first time it
-runs. Make sure network access is allowed when running the tests for the first
-time or the download will fail.
+Both test suites use Vitest and enforce a minimum of 80% code coverage. Backend
+tests spin up a temporary MongoDB using `mongodb-memory-server`, which
+downloads a MongoDB binary the first time it runs. Make sure network access is
+allowed when running the tests for the first time or the download will fail.
 See [Backend/tests/README.md](Backend/tests/README.md) for more details about
-the download requirement.
+the download requirement. All pull requests must have a green CI run before
+they can be merged. The testing matrix and workflow are described in
+[docs/testing.md](docs/testing.md).
 
 ## Offline queue
 

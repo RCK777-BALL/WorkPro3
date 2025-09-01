@@ -31,6 +31,7 @@ import webhooksRoutes from './routes/webhooks';
 import ThemeRoutes from './routes/ThemeRoutes';
 import chatRoutes from './routes/ChatRoutes';
 import requestPortalRoutes from './routes/requestPortal';
+import vendorPortalRoutes from './routes/vendorPortal';
 
 // Keep BOTH of these:
 import calendarRoutes from './routes/CalendarRoutes';
@@ -138,6 +139,7 @@ app.use('/api/v1/analytics', analyticsRoutes);
 app.use('/api/team', teamRoutes);
 app.use('/api/theme', ThemeRoutes);
 app.use('/api/request-portal', requestPortalRoutes);
+app.use('/api/vendor', vendorPortalRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/webhooks', webhooksRoutes);
 app.use('/api/calendar', calendarRoutes);

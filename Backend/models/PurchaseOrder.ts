@@ -12,7 +12,7 @@ export interface IPurchaseOrder extends Document {
   tenantId: Types.ObjectId;
   vendor: Types.ObjectId;
   items: IPurchaseOrderItem[];
-  status: 'open' | 'closed';
+  status: 'open' | 'acknowledged' | 'shipped' | 'closed';
 }
 
 const purchaseOrderSchema = new Schema<IPurchaseOrder>(
@@ -28,7 +28,11 @@ const purchaseOrderSchema = new Schema<IPurchaseOrder>(
         received: { type: Number, default: 0 },
       },
     ],
-    status: { type: String, enum: ['open', 'closed'], default: 'open' },
+    status: {
+      type: String,
+      enum: ['open', 'acknowledged', 'shipped', 'closed'],
+      default: 'open',
+    },
   },
   { timestamps: true }
 );

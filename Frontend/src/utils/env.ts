@@ -6,3 +6,8 @@ export const getEnvVar = (key: string): string | undefined => {
 export const config = {
   apiUrl: getEnvVar('VITE_API_URL'),
 };
+
+export const endpoints = {
+  httpOrigin: getEnvVar('VITE_HTTP_ORIGIN') ?? '',
+  socketPath: getEnvVar('VITE_SOCKET_PATH') ?? '/ws/notifications',
+};

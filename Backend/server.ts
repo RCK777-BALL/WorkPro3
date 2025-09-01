@@ -39,6 +39,7 @@ import calendarRoutes from './routes/CalendarRoutes';
 import conditionRuleRoutes from './routes/ConditionRuleRoutes';
 
 import { startPMScheduler } from './utils/pmScheduler';
+import { setupSwagger } from './utils/swagger';
 import mongoose from 'mongoose';
 import errorHandler from './middleware/errorHandler';
 import { validateEnv } from './config/validateEnv';
@@ -86,6 +87,7 @@ app.use(cors(corsOptions));
 app.use(morgan('dev'));
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
+setupSwagger(app);
 
 const dev = process.env.NODE_ENV !== 'production';
 

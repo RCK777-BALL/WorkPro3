@@ -6,6 +6,17 @@ import { validationResult } from 'express-validator';
 import notifyUser from '../utils/notify';
 import { getWorkOrderAssistance } from '../services/aiCopilot';
 
+/**
+ * @openapi
+ * /api/workorders:
+ *   get:
+ *     tags:
+ *       - WorkOrders
+ *     summary: Retrieve all work orders
+ *     responses:
+ *       200:
+ *         description: List of work orders
+ */
 export const getAllWorkOrders: AuthedRequestHandler = async (
   req,
   res,
@@ -19,6 +30,36 @@ export const getAllWorkOrders: AuthedRequestHandler = async (
   }
 };
 
+/**
+ * @openapi
+ * /api/workorders/search:
+ *   get:
+ *     tags:
+ *       - WorkOrders
+ *     summary: Search work orders
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: priority
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Filtered work orders
+ */
 export const searchWorkOrders: AuthedRequestHandler = async (
   req,
   res,
@@ -43,6 +84,25 @@ export const searchWorkOrders: AuthedRequestHandler = async (
   }
 };
 
+/**
+ * @openapi
+ * /api/workorders/{id}:
+ *   get:
+ *     tags:
+ *       - WorkOrders
+ *     summary: Get work order by ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Work order found
+ *       404:
+ *         description: Work order not found
+ */
 export const getWorkOrderById: AuthedRequestHandler = async (
   req,
   res,
@@ -57,6 +117,25 @@ export const getWorkOrderById: AuthedRequestHandler = async (
   }
 };
 
+/**
+ * @openapi
+ * /api/workorders:
+ *   post:
+ *     tags:
+ *       - WorkOrders
+ *     summary: Create a work order
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       201:
+ *         description: Work order created
+ *       400:
+ *         description: Validation error
+ */
 export const createWorkOrder: AuthedRequestHandler = async (
   req,
   res,
@@ -76,6 +155,31 @@ export const createWorkOrder: AuthedRequestHandler = async (
   }
 };
 
+/**
+ * @openapi
+ * /api/workorders/{id}:
+ *   put:
+ *     tags:
+ *       - WorkOrders
+ *     summary: Update a work order
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Work order updated
+ *       404:
+ *         description: Work order not found
+ */
 export const updateWorkOrder: AuthedRequestHandler = async (
   req,
   res,
@@ -102,6 +206,25 @@ export const updateWorkOrder: AuthedRequestHandler = async (
   }
 };
 
+/**
+ * @openapi
+ * /api/workorders/{id}:
+ *   delete:
+ *     tags:
+ *       - WorkOrders
+ *     summary: Delete a work order
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Deletion successful
+ *       404:
+ *         description: Work order not found
+ */
 export const deleteWorkOrder: AuthedRequestHandler = async (
   req,
   res,
@@ -117,6 +240,36 @@ export const deleteWorkOrder: AuthedRequestHandler = async (
   }
 };
 
+/**
+ * @openapi
+ * /api/workorders/{id}/approve:
+ *   post:
+ *     tags:
+ *       - WorkOrders
+ *     summary: Approve or reject a work order
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Approval status updated
+ *       400:
+ *         description: Invalid status
+ *       404:
+ *         description: Work order not found
+ */
 export const approveWorkOrder: AuthedRequestHandler = async (
   req,
   res,
@@ -162,6 +315,25 @@ export const approveWorkOrder: AuthedRequestHandler = async (
   }
 };
 
+/**
+ * @openapi
+ * /api/workorders/{id}/assist:
+ *   get:
+ *     tags:
+ *       - WorkOrders
+ *     summary: Get AI assistance for a work order
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Assistance data
+ *       404:
+ *         description: Work order not found
+ */
 export const assistWorkOrder: AuthedRequestHandler = async (
   req,
   res,

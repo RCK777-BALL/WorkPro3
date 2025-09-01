@@ -1,0 +1,15 @@
+{"email":"admin@example.com","level":"info","message":"Login attempt","timestamp":"2025-08-09T05:18:52.196Z"}
+{"found":true,"level":"info","message":"User lookup result","timestamp":"2025-08-09T05:18:52.200Z"}
+{"level":"info","message":"Password comparison result","timestamp":"2025-08-09T05:18:52.275Z","valid":true}
+{"email":"admin@example.com","level":"info","message":"Login attempt","timestamp":"2025-08-09T05:19:08.874Z"}
+{"found":true,"level":"info","message":"User lookup result","timestamp":"2025-08-09T05:19:08.876Z"}
+{"level":"info","message":"Password comparison result","timestamp":"2025-08-09T05:19:08.939Z","valid":true}
+{"email":"admin@example.com","level":"info","message":"Login attempt","timestamp":"2025-08-09T10:16:47.031Z"}
+{"found":true,"level":"info","message":"User lookup result","timestamp":"2025-08-09T10:16:47.036Z"}
+{"level":"info","message":"Password comparison result","timestamp":"2025-08-09T10:16:47.111Z","valid":true}
+{"email":"admin@example.com","level":"info","message":"Login attempt","timestamp":"2025-08-09T16:42:06.372Z"}
+{"found":true,"level":"info","message":"User lookup result","timestamp":"2025-08-09T16:42:06.377Z"}
+{"level":"info","message":"Password comparison result","timestamp":"2025-08-09T16:42:06.450Z","valid":true}
+{"email":"admin@example.com","level":"info","message":"Login attempt","timestamp":"2025-08-09T16:48:55.105Z"}
+{"found":true,"level":"info","message":"User lookup result","timestamp":"2025-08-09T16:48:55.107Z"}
+{"level":"info","message":"Password comparison result","timestamp":"2025-08-09T16:48:55.170Z","valid":true}

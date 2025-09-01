@@ -1,0 +1,24 @@
+import express from 'express';
+import {
+  getAllDepartments,
+  getDepartmentById,
+  createDepartment,
+  updateDepartment,
+  deleteDepartment,
+  getDepartmentHierarchy
+} from '../controllers/DepartmentController';
+import { requireAuth } from '../middleware/authMiddleware';
+import { validate } from '../middleware/validationMiddleware';
+import { departmentValidators } from '../validators/departmentValidators';
+
+const router = express.Router();
+
+router.use(requireAuth);
+router.get('/', getAllDepartments);
+router.get('/:id', getDepartmentById);
+router.get('/:id/hierarchy', getDepartmentHierarchy);
+router.post('/', departmentValidators, validate, createDepartment);
+router.put('/:id', departmentValidators, validate, updateDepartment);
+router.delete('/:id', deleteDepartment);
+
+export default router;

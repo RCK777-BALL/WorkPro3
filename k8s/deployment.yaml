@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workpro-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: workpro-backend
+  template:
+    metadata:
+      labels:
+        app: workpro-backend
+    spec:
+      containers:
+        - name: backend
+          image: workpro-backend:latest
+          ports:
+            - containerPort: 5010
+          env:
+            - name: MONGO_URI
+              value: mongodb://mongo:27017/platinum_cmms
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secret
+                  key: JWT_SECRET
+            - name: CORS_ORIGIN
+              value: http://workpro.local
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workpro-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: workpro-frontend
+  template:
+    metadata:
+      labels:
+        app: workpro-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: workpro-frontend:latest
+          ports:
+            - containerPort: 80

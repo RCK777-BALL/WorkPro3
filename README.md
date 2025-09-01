@@ -1,2 +1,108 @@
-# WorkPro3
-FINAL CMMS BUILD
+# WorkPro
+
+This repository contains a small full‑stack app split into two folders:
+
+- **Backend** – Express API server with a MongoDB database and Socket.IO.
+- **Frontend** – React client built with Vite.
+
+## Project structure
+
+```
+WorkPro/
+ Backend/   Express API and tests
+  Frontend/  React client and tests
+  playground-1.mongodb.js  Sample MongoDB script
+```
+
+Run `npm install` inside each folder before development. Node modules are
+not committed to the repository.
+
+## Backend setup
+
+1. `cd Backend`
+2. Copy `Backend/.env.example` to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+   Update the required environment variables such as `MONGO_URI` and
+   `TENANT_NAME` along with `JWT_SECRET` and `CORS_ORIGIN`. The example
+   connection string uses `mongodb://localhost:27017/platinum_cmms`.
+3. Seed the database with a tenant and admin account:
+   ```bash
+   npm run seed:admin
+   ```
+4. Install dependencies with `npm install`.
+5. Start the development server:
+   ```bash
+   npm run dev
+   ```
+   The server expects a running MongoDB instance defined by `MONGO_URI` in the environment.
+
+## Frontend setup
+
+1. `cd Frontend`
+2. Copy `Frontend/.env.example` to `.env` and update `VITE_API_URL`,
+   `VITE_SOCKET_URL` and the Supabase variables (`VITE_SUPABASE_URL`,
+   `VITE_SUPABASE_ANON_KEY`).
+3. Install dependencies with `npm install`.
+4. Run the development server:
+   ```bash
+   npm run dev
+   ```
+   The app will open at [http://localhost:5173](http://localhost:5173).
+
+### Offline mode
+
+If `VITE_SOCKET_URL` is empty or the browser is offline, work order updates are
+queued in `localStorage` under `offline-queue`. Once the WebSocket connection is
+restored the queue is flushed and the requests are sent to the API.
+
+## Docker development
+
+The project includes Dockerfiles for the backend and frontend. Before starting
+the stack, define `JWT_SECRET` in your environment or in a `.env` file so Docker
+Compose can pass it to the backend container:
+
+```bash
+echo "JWT_SECRET=change_me" > .env
+docker compose up --build
+```
+
+The API is available at `http://localhost:5010` and the web client at
+`http://localhost:5173`.
+
+### Kubernetes manifests
+
+Sample manifests live in the `k8s/` folder. Create a secret containing
+`JWT_SECRET` before applying the manifests:
+
+```bash
+kubectl create secret generic jwt-secret --from-literal=JWT_SECRET=change_me
+kubectl apply -f k8s/
+```
+
+This will deploy the backend, frontend and ingress resources.
+
+## Running tests
+
+- **Backend**: `cd Backend && npm test`
+- **Frontend unit tests**: `cd Frontend && npm run test`
+- **Frontend e2e tests**: `cd Frontend && npm run test:e2e`
+
+Both test suites use Vitest. Backend tests spin up a temporary MongoDB using
+`mongodb-memory-server`, which downloads a MongoDB binary the first time it
+runs. Make sure network access is allowed when running the tests for the first
+time or the download will fail.
+See [Backend/tests/README.md](Backend/tests/README.md) for more details about
+the download requirement.
+
+## Offline queue
+
+The frontend stores any API requests made while offline in local storage. When
+the browser regains connectivity, the queued requests are automatically sent
+using the browser's `online` event even if the WebSocket fails to reconnect.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+

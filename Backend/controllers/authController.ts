@@ -1,0 +1,139 @@
+import { Request, Response, NextFunction } from "express";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import crypto from "crypto";
+import logger from "../utils/logger";
+import User from "../models/User";
+
+export const login = async (req: Request, res: Response): Promise<void> => {
+  const { email, password } = req.body;
+  logger.info('Login attempt', { email });
+
+  if (!email || !password) {
+    res.status(400).json({ message: 'Email and password required' });
+    return;
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    logger.info('User lookup result', { found: !!user });
+    if (!user) {
+      res.status(401).json({ message: 'Invalid email or password' });
+      return;
+    }
+
+    const valid = await bcrypt.compare(req.body.password, user.password);
+    logger.info('Password comparison result', { valid });
+    if (!valid) {
+      res.status(401).json({ message: 'Invalid email or password' });
+      return;
+    }
+
+    const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
+    const payload = {
+      id: user._id.toString(),
+      email: user.email,
+      tenantId,
+    };
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      logger.error('JWT_SECRET is not configured');
+      res.status(500).json({ message: 'Server configuration issue' });
+      return;
+    }
+    const token = jwt.sign(payload, secret, { expiresIn: '7d' });
+
+    const { password: _pw, ...safeUser } = user.toObject();
+    res.status(200).json({ token, user: { ...safeUser, tenantId } });
+  } catch (err) {
+    logger.error('Login error', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const register = async (req: Request, res: Response): Promise<void> => {
+  const { name, email, password, tenantId, employeeId } = req.body;
+
+  if (!name || !email || !password || !tenantId || !employeeId) {
+    res.status(400).json({ message: "Missing required fields" });
+    return;
+  }
+
+  try {
+    const existing = await User.findOne({ email });
+    if (existing) {
+      res.status(400).json({ message: "Email already in use" });
+      return;
+    }
+
+    const user = new User({ name, email, password, tenantId, employeeId });
+    await user.save();
+
+    res.status(201).json({ message: "User registered successfully" });
+  } catch (err) {
+    logger.error("Register error", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const requestPasswordReset = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  const { email } = req.body;
+
+  if (!email) {
+    res.status(400).json({ message: "Email required" });
+    return;
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      // Respond with success even if user not found to avoid user enumeration
+      res.status(200).json({ message: "Password reset email sent" });
+      return;
+    }
+
+    const token = crypto.randomBytes(20).toString("hex");
+    user.passwordResetToken = token;
+    user.passwordResetExpires = new Date(Date.now() + 3600000); // 1 hour
+    await user.save();
+
+    // In a real application, you would send the reset token via email here
+    res.status(200).json({ message: "Password reset email sent" });
+  } catch (err) {
+    logger.error("Password reset request error", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getMe = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Example user retrieval from req.user
+    const user = (req as any).user;
+    if (!user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    res.json(user);
+  } catch (err) {
+    logger.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+export const logout = (
+  _req: Request,
+  res: Response,
+  _next: NextFunction
+) => {
+  res
+    .clearCookie('token', {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    })
+    .sendStatus(200);
+};

@@ -19,3 +19,8 @@ export const endpoints = {
   socketOrigin: (config.wsUrl ?? stripApiSuffix(config.apiUrl)).replace(/^http/, 'ws'),
   socketPath: config.wsPath,
 };
+
+export const endpoints = {
+  httpOrigin: getEnvVar('VITE_HTTP_ORIGIN') ?? '',
+  socketPath: getEnvVar('VITE_SOCKET_PATH') ?? '/ws/notifications',
+};

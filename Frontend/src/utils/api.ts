@@ -15,14 +15,10 @@ import type {
   CriticalAlertResponse,
   LowStockPartResponse,
 } from "../types";
-import { config } from "./env";
+import { endpoints } from "./env";
 
-// Resolve base URL from config first, then Vite env.
-// Fail fast if not provided.
-const baseURL = config.apiUrl ?? import.meta.env.VITE_API_URL;
-if (!baseURL) {
-  throw new Error("API base URL is not set. Define config.apiUrl or VITE_API_URL.");
-}
+// Base URL derived from configured HTTP origin.
+const baseURL = `${endpoints.httpOrigin}/api`;
 
 const api = axios.create({
   baseURL,

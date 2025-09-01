@@ -182,18 +182,18 @@ const Dashboard: React.FC = () => {
           <div className="rounded-xl border p-4">
             <h2 className="font-semibold mb-2">Work Orders by Status</h2>
             <ul className="space-y-1 text-sm">
-              <li>Open: <b>{workOrdersByStatus.open}</b></li>
-              <li>In Progress: <b>{workOrdersByStatus.inProgress}</b></li>
-              <li>On Hold: <b>{workOrdersByStatus.onHold}</b></li>
-              <li>Completed: <b>{workOrdersByStatus.completed}</b></li>
+              <li>Open: <b>{workOrdersByStatus?.open ?? 0}</b></li>
+              <li>In Progress: <b>{workOrdersByStatus?.inProgress ?? 0}</b></li>
+              <li>On Hold: <b>{workOrdersByStatus?.onHold ?? 0}</b></li>
+              <li>Completed: <b>{workOrdersByStatus?.completed ?? 0}</b></li>
             </ul>
           </div>
           <div className="rounded-xl border p-4">
             <h2 className="font-semibold mb-2">Assets by Status</h2>
             <ul className="space-y-1 text-sm">
-              <li>Active: <b>{assetsByStatus.Active}</b></li>
-              <li>Offline: <b>{assetsByStatus.Offline}</b></li>
-              <li>In Repair: <b>{assetsByStatus['In Repair']}</b></li>
+              <li>Active: <b>{assetsByStatus?.Active ?? 0}</b></li>
+              <li>Offline: <b>{assetsByStatus?.Offline ?? 0}</b></li>
+              <li>In Repair: <b>{assetsByStatus?.['In Repair'] ?? 0}</b></li>
             </ul>
           </div>
         </div>

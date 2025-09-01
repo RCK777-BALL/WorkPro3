@@ -23,6 +23,7 @@ import Card from '../common/Card';
 import { ArrowUp, ArrowDown, PenTool as Tool, Clipboard, CheckCircle, AlertTriangle, Plus, Settings, Users, Clock, Activity, DollarSign, Gauge, Wrench, Package, BarChart2, GripVertical } from 'lucide-react';
 
 interface StatCardProps {
+  onClick: any;
   id: string;
   title: string;
   value: string | number;
@@ -289,7 +290,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
         iconBg: kpi.iconBg,
         linkTo: kpi.linkTo,
         tooltip: kpi.tooltip,
-        onClick: kpi.linkTo ? () => navigate(kpi.linkTo) : undefined,
+        onClick: kpi.linkTo ? () => navigator(kpi.linkTo) : undefined,
         onRemove: () => handleRemoveKPI(kpi.id),
       };
     }).filter(Boolean),

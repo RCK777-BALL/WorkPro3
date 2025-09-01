@@ -43,11 +43,5 @@ export const endpoints: Endpoints = {
   socketPath: wsPath,
 };
 
-<<<<<<< HEAD
-function getEnvVar(_arg0: string) {
-  throw new Error("Function not implemented.");
-}
-=======
 export default endpoints;
 
->>>>>>> c46223d81922aa85cec610cad2764c1efa813d6c

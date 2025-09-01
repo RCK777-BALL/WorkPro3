@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 
@@ -9,6 +10,8 @@ type BeforeInstallPromptEvent = Event & {
 };
 
 const LoginPage: React.FC = () => {
+  const { t } = useTranslation();
+
   // Auth & MFA state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -52,7 +55,7 @@ const LoginPage: React.FC = () => {
       setUser({ ...data.user, token: data.token });
       navigate('/dashboard');
     } catch {
-      setError('Login failed');
+      setError(t('auth.loginFailed', 'Login failed'));
     }
   };
 
@@ -67,7 +70,7 @@ const LoginPage: React.FC = () => {
       setUser({ ...data.user, token: data.token });
       navigate('/dashboard');
     } catch {
-      setError('Invalid code');
+      setError(t('auth.invalidCode', 'Invalid code'));
     }
   };
 
@@ -80,17 +83,17 @@ const LoginPage: React.FC = () => {
               onClick={promptInstall}
               className="mb-4 px-4 py-2 rounded bg-blue-600 text-white"
             >
-              Install App
+              {t('app.install', 'Install App')}
             </button>
           </div>
         )}
 
         {!mfaUser ? (
           <form onSubmit={handleLogin} className="space-y-4 bg-white p-6 rounded shadow">
-            <h2 className="text-xl font-bold">Login</h2>
+            <h2 className="text-xl font-bold">{t('auth.login', 'Login')}</h2>
             <input
               type="email"
-              placeholder="Email"
+              placeholder={t('auth.email', 'Email')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full p-2 border rounded"
@@ -99,7 +102,7 @@ const LoginPage: React.FC = () => {
             />
             <input
               type="password"
-              placeholder="Password"
+              placeholder={t('auth.password', 'Password')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full p-2 border rounded"
@@ -108,25 +111,25 @@ const LoginPage: React.FC = () => {
             />
             {error && <div className="text-red-500">{error}</div>}
             <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded w-full">
-              Login
+              {t('auth.login', 'Login')}
             </button>
 
             {/* OAuth shortcuts */}
             <div className="flex flex-col space-y-2 pt-2">
               <a href="/api/auth/oauth/google" className="text-blue-600">
-                Login with Google
+                {t('auth.loginWithGoogle', 'Login with Google')}
               </a>
               <a href="/api/auth/oauth/github" className="text-blue-600">
-                Login with GitHub
+                {t('auth.loginWithGitHub', 'Login with GitHub')}
               </a>
             </div>
           </form>
         ) : (
           <form onSubmit={handleVerify} className="space-y-4 bg-white p-6 rounded shadow">
-            <h2 className="text-xl font-bold">MFA Verification</h2>
+            <h2 className="text-xl font-bold">{t('auth.mfaVerification', 'MFA Verification')}</h2>
             <input
               type="text"
-              placeholder="One-time code"
+              placeholder={t('auth.oneTimeCode', 'One-time code')}
               value={code}
               onChange={(e) => setCode(e.target.value)}
               className="w-full p-2 border rounded"
@@ -136,17 +139,17 @@ const LoginPage: React.FC = () => {
             />
             {error && <div className="text-red-500">{error}</div>}
             <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded w-full">
-              Verify
+              {t('auth.verify', 'Verify')}
             </button>
           </form>
         )}
 
         <div className="flex justify-between text-sm">
           <Link to="/register" className="text-blue-600">
-            Register
+            {t('auth.register', 'Register')}
           </Link>
           <Link to="/forgot-password" className="text-blue-600">
-            Forgot Password?
+            {t('auth.forgotPassword', 'Forgot Password?')}
           </Link>
         </div>
       </div>

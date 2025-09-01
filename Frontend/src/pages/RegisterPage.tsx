@@ -1,9 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
+
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+};
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -12,13 +20,13 @@ const RegisterPage: React.FC = () => {
     employeeId: '',
   });
   const [error, setError] = useState('');
-  const [installEvent, setInstallEvent] = useState<any>(null);
+  const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstall, setShowInstall] = useState(false);
 
   useEffect(() => {
     const handler = (e: Event) => {
       e.preventDefault();
-      setInstallEvent(e);
+      setInstallEvent(e as BeforeInstallPromptEvent);
       setShowInstall(true);
     };
     window.addEventListener('beforeinstallprompt', handler as EventListener);
@@ -27,7 +35,7 @@ const RegisterPage: React.FC = () => {
 
   const promptInstall = async () => {
     if (!installEvent) return;
-    installEvent.prompt();
+    await installEvent.prompt();
     await installEvent.userChoice;
     setInstallEvent(null);
     setShowInstall(false);
@@ -45,55 +53,61 @@ const RegisterPage: React.FC = () => {
       navigate('/login');
     } catch (err) {
       console.error(err);
-      setError('Registration failed');
+      setError(t('auth.registrationFailed', 'Registration failed'));
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <form onSubmit={handleSubmit} className="max-w-md w-full space-y-4">
+      <form onSubmit={handleSubmit} className="max-w-md w-full space-y-4 bg-white p-6 rounded shadow">
         {showInstall && (
           <div className="flex justify-center">
             <button
               onClick={promptInstall}
               type="button"
-              className="mb-4 px-4 py-2 rounded bg-blue-600 text-white"
+              className="mb-2 px-4 py-2 rounded bg-blue-600 text-white"
             >
-              Install App
+              {t('app.install', 'Install App')}
             </button>
           </div>
         )}
-        <h2 className="text-xl font-bold">Register</h2>
+
+        <h2 className="text-xl font-bold">{t('auth.register', 'Register')}</h2>
+
         <input
           type="text"
           name="name"
-          placeholder="Name"
+          placeholder={t('auth.name', 'Name')}
           value={form.name}
           onChange={handleChange}
           className="w-full p-2 border rounded"
+          autoComplete="name"
+          required
         />
         <input
           type="email"
           name="email"
-          placeholder="Email"
+          placeholder={t('auth.email', 'Email')}
           value={form.email}
           onChange={handleChange}
           className="w-full p-2 border rounded"
           autoComplete="email"
+          required
         />
         <input
           type="password"
           name="password"
-          placeholder="Password"
+          placeholder={t('auth.password', 'Password')}
           value={form.password}
           onChange={handleChange}
           className="w-full p-2 border rounded"
           autoComplete="new-password"
+          required
         />
         <input
           type="text"
           name="tenantId"
-          placeholder="Tenant ID"
+          placeholder={t('auth.tenantId', 'Tenant ID')}
           value={form.tenantId}
           onChange={handleChange}
           className="w-full p-2 border rounded"
@@ -101,17 +115,23 @@ const RegisterPage: React.FC = () => {
         <input
           type="text"
           name="employeeId"
-          placeholder="Employee ID"
+          placeholder={t('auth.employeeId', 'Employee ID')}
           value={form.employeeId}
           onChange={handleChange}
           className="w-full p-2 border rounded"
         />
+
         {error && <div className="text-red-500">{error}</div>}
+
         <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded w-full">
-          Register
+          {t('auth.register', 'Register')}
         </button>
+
         <p className="text-sm text-center">
-          Already have an account? <Link to="/login" className="text-blue-600">Login</Link>
+          {t('auth.alreadyHaveAccount', 'Already have an account?')}{' '}
+          <Link to="/login" className="text-blue-600">
+            {t('auth.login', 'Login')}
+          </Link>
         </p>
       </form>
     </div>

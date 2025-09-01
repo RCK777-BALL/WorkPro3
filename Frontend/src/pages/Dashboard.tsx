@@ -1,16 +1,28 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Layout from '../components/layout/Layout';
+import Button from '../components/common/Button';
+import { Download, Upload } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useDashboardStore } from '../store/dashboardStore';
 import { useSocketStore } from '../store/socketStore';
 import useDashboardData from '../hooks/useDashboardData';
 import { useSummary } from '../hooks/useSummaryData';
 import api from '../utils/api';
-import { getChatSocket } from '../utils/chatSocket';
+import FiltersBar from '../components/dashboard/FiltersBar';
+import {
+  getNotificationsSocket,
+  closeNotificationsSocket,
+  startNotificationsPoll,
+  stopNotificationsPoll,
+} from '../utils/notificationsSocket';
+
+import { Responsive, WidthProvider, type Layouts } from 'react-grid-layout';
 import DashboardStats from '../components/dashboard/DashboardStats';
 import WorkOrdersChart from '../components/dashboard/WorkOrdersChart';
-import AssetsStatusChart from '../components/dashboard/AssetsStatusChart';
 import UpcomingMaintenance from '../components/dashboard/UpcomingMaintenance';
+
+// Extra KPI widgets
+import AssetsStatusChart from '../components/dashboard/AssetsStatusChart';
 import CriticalAlerts from '../components/dashboard/CriticalAlerts';
 import LowStockParts from '../components/dashboard/LowStockParts';
 
@@ -21,11 +33,49 @@ import type {
   LowStockPartResponse,
 } from '../types';
 
+const ResponsiveGridLayout = WidthProvider(Responsive);
+
+const defaultLayouts: Layouts = {
+  lg: [
+    { i: 'stats', x: 0, y: 0, w: 12, h: 4 },
+    { i: 'workOrders', x: 0, y: 4, w: 6, h: 8 },
+    { i: 'maintenance', x: 6, y: 4, w: 6, h: 8 },
+  ],
+  md: [
+    { i: 'stats', x: 0, y: 0, w: 10, h: 4 },
+    { i: 'workOrders', x: 0, y: 4, w: 10, h: 8 },
+    { i: 'maintenance', x: 0, y: 12, w: 10, h: 8 },
+  ],
+  sm: [
+    { i: 'stats', x: 0, y: 0, w: 6, h: 4 },
+    { i: 'workOrders', x: 0, y: 4, w: 6, h: 8 },
+    { i: 'maintenance', x: 0, y: 12, w: 6, h: 8 },
+  ],
+};
 
 const Dashboard: React.FC = () => {
   const user = useAuthStore((s) => s.user);
-  const selectedRole = useDashboardStore((s) => s.selectedRole);
+  const {
+    selectedRole,
+    selectedDepartment,
+    selectedTimeframe,
+    customRange,
+    setSelectedDepartment,
+    layouts,
+    setLayouts,
+  } = useDashboardStore((s) => ({
+    selectedRole: s.selectedRole,
+    selectedDepartment: s.selectedDepartment,
+    selectedTimeframe: s.selectedTimeframe,
+    customRange: s.customRange,
+    setSelectedDepartment: s.setSelectedDepartment,
+    layouts: s.layouts,
+    setLayouts: s.setLayouts,
+  }));
   const connected = useSocketStore((s) => s.connected);
+
+  const [liveData, setLiveData] = useState(true);
+  const pollActive = useRef(false);
 
   const {
     workOrdersByStatus,
@@ -34,7 +84,12 @@ const Dashboard: React.FC = () => {
     criticalAlerts,
     refresh,
     loading,
-  } = useDashboardData(selectedRole);
+  } = useDashboardData(
+    selectedRole,
+    selectedDepartment,
+    selectedTimeframe,
+    customRange,
+  );
 
   const [stats, setStats] = useState({
     totalAssets: 0,
@@ -44,18 +99,55 @@ const Dashboard: React.FC = () => {
   });
   const [lowStockParts, setLowStockParts] = useState<LowStockPart[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [analytics, setAnalytics] = useState<any>(null);
+  const [analytics, setAnalytics] = useState<any | null>(null);
+  const [customize, setCustomize] = useState(false);
+  const dashboardRef = useRef<HTMLDivElement>(null);
 
-  // summaries (auto-refetch when selectedRole changes)
+  const buildQuery = () => {
+    const params = new URLSearchParams();
+    if (selectedDepartment !== 'all') params.append('department', selectedDepartment);
+    if (selectedRole !== 'all') params.append('role', selectedRole);
+    if (selectedTimeframe) {
+      params.append('timeframe', selectedTimeframe);
+      if (selectedTimeframe === 'custom') {
+        params.append('start', customRange.start);
+        params.append('end', customRange.end);
+      }
+    }
+    const q = params.toString();
+    return q ? `?${q}` : '';
+  };
+
+  const query = buildQuery();
+
+  // summaries (auto-refetch when filters change)
   const [summary] = useSummary<DashboardSummary>(
-    `/summary${selectedRole ? `?role=${selectedRole}` : ''}`,
-    [selectedRole],
+    `/summary${query}`,
+    [selectedDepartment, selectedRole, selectedTimeframe, customRange.start, customRange.end],
   );
   const [lowStock] = useSummary<LowStockPartResponse[]>(
-    `/summary/low-stock${selectedRole ? `?role=${selectedRole}` : ''}`,
-    [selectedRole],
+    `/summary/low-stock${query}`,
+    [selectedDepartment, selectedRole, selectedTimeframe, customRange.start, customRange.end],
   );
-  const [departmentsData] = useSummary<Department[]>('/departments', [], { ttlMs: 60_000 });
+  const [departmentsData] = useSummary<Department[]>(
+    '/summary/departments',
+    [],
+    { ttlMs: 60_000 },
+  );
+
+  // restore saved layout (once)
+  useEffect(() => {
+    try {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('dashboardLayoutV1') : null;
+      if (stored) {
+        setLayouts(JSON.parse(stored));
+      } else {
+        setLayouts(defaultLayouts);
+      }
+    } catch {
+      setLayouts(defaultLayouts);
+    }
+  }, [setLayouts]);
 
   // map summaries to local state
   useEffect(() => {
@@ -89,23 +181,33 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const query = selectedRole ? `?role=${selectedRole}` : '';
-        const res = await api.get(`/reports/analytics${query}`);
+        const res = await api.get(`/reports/analytics${buildQuery()}`);
         setAnalytics(res.data);
       } catch (err) {
         console.error('Error fetching analytics', err);
       }
     };
     fetchAnalytics();
-  }, [selectedRole]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDepartment, selectedRole, selectedTimeframe, customRange]);
 
-  // socket-driven refresh
+  // socket-driven refresh with polling fallback
   useEffect(() => {
-    const s = getChatSocket?.();
-    if (!s) return;
+    if (!liveData) {
+      closeNotificationsSocket();
+      stopNotificationsPoll();
+      pollActive.current = false;
+      return;
+    }
+
+    const s = getNotificationsSocket();
 
     const doRefresh = async () => {
-      try { await refresh(); } catch (e) { console.error('refresh failed', e); }
+      try {
+        await refresh();
+      } catch (e) {
+        console.error('refresh failed', e);
+      }
     };
 
     const handleLowStockUpdate = (parts: LowStockPartResponse[]) => {
@@ -133,43 +235,137 @@ const Dashboard: React.FC = () => {
           : 0;
       setStats((prev) => ({ ...prev, maintenanceCompliance: value }));
     });
+    s.on('notification', doRefresh);
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (s.disconnected) {
+      timer = setTimeout(() => {
+        if (s.disconnected && !pollActive.current) {
+          startNotificationsPoll(doRefresh);
+          pollActive.current = true;
+        }
+      }, 10_000);
+    }
+
+    s.on('connect', () => {
+      if (pollActive.current) {
+        stopNotificationsPoll();
+        pollActive.current = false;
+      }
+    });
 
     return () => {
       s.off('inventoryUpdated', doRefresh);
       s.off('workOrderUpdated', doRefresh);
       s.off('lowStockUpdated', handleLowStockUpdate);
       s.off('pmCompletionUpdated');
+      s.off('notification', doRefresh);
+      if (timer) clearTimeout(timer);
+      stopNotificationsPoll();
+      pollActive.current = false;
     };
-  }, [refresh, connected]);
+  }, [refresh, connected, liveData]);
+
+  const handleLayoutChange = (_: any, allLayouts: Layouts) => {
+    setLayouts(allLayouts);
+    try {
+      localStorage.setItem('dashboardLayoutV1', JSON.stringify(allLayouts));
+    } catch {
+      // ignore persistence errors
+    }
+  };
+
+  const handleExportCSV = async () => {
+    const { default: exportCsv } = await import('../utils/exportCsv');
+    exportCsv(
+      {
+        'Total Assets': stats.totalAssets,
+        'Active Work Orders': stats.activeWorkOrders,
+        'Maintenance Compliance': stats.maintenanceCompliance,
+        'Inventory Alerts': stats.inventoryAlerts,
+      },
+      'dashboard-kpis',
+    );
+    exportCsv(lowStockParts, 'dashboard-low-stock');
+  };
+
+  const handleExportPDF = async () => {
+    if (!dashboardRef.current) return;
+    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+      import('html2canvas'),
+      import('jspdf'),
+    ]);
+    const canvas = await html2canvas(dashboardRef.current, {
+      ignoreElements: (el) => el.classList.contains('no-export'),
+    });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const width = pdf.internal.pageSize.getWidth();
+    const height = (canvas.height * width) / canvas.width;
+    pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+    pdf.save('dashboard-summary.pdf');
+  };
 
   return (
     <Layout title="Dashboard">
-      <div className="px-4 py-6 space-y-6">
-        <div className="flex items-baseline justify-between">
+      <div className="px-4 py-6 space-y-6" ref={dashboardRef}>
+        <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">Welcome{user?.name ? `, ${user.name}` : ''}</h1>
-          {loading && <span className="text-sm opacity-70">Refreshing…</span>}
+          <div className="flex items-center gap-4 no-export">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={customize}
+                onChange={() => setCustomize((c) => !c)}
+              />
+              Customize layout
+            </label>
+            {loading && <span className="text-sm opacity-70">Refreshing…</span>}
+            <button
+              className="text-sm border px-2 py-1 rounded"
+              onClick={() => setLiveData((v) => !v)}
+            >
+              {liveData ? 'Live On' : 'Live Off'}
+            </button>
+            <Button variant="outline" icon={<Download size={16} />} onClick={handleExportCSV}>
+              Export CSV
+            </Button>
+            <Button variant="outline" icon={<Upload size={16} />} onClick={handleExportPDF}>
+              Export PDF
+            </Button>
+          </div>
         </div>
 
-        {/* Top stats */}
-        <DashboardStats stats={stats} />
+        <FiltersBar departments={departments} />
 
-        {/* Status summaries */}
+        {/* Core widgets in a customizable grid */}
+        <ResponsiveGridLayout
+          className="layout"
+          layouts={Object.keys(layouts).length ? layouts : defaultLayouts}
+          cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+          rowHeight={30}
+          isDraggable={customize}
+          isResizable={customize}
+          onLayoutChange={handleLayoutChange}
+        >
+          <div key="stats" className="h-full">
+            <DashboardStats stats={stats} />
+          </div>
+          <div key="workOrders" className="h-full">
+            <WorkOrdersChart data={workOrdersByStatus} />
+          </div>
+          <div key="maintenance" className="h-full">
+            <UpcomingMaintenance maintenanceItems={upcomingMaintenance} />
+          </div>
+        </ResponsiveGridLayout>
+
+        {/* Additional KPI widgets (outside the grid by default) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <WorkOrdersChart data={workOrdersByStatus} />
           <AssetsStatusChart data={assetsByStatus} />
-        </div>
-
-        {/* Upcoming maintenance, alerts, and low stock */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <UpcomingMaintenance
-            maintenanceItems={upcomingMaintenance.slice(0, 8)}
-            onComplete={(id) => {
-              /* Placeholder for completion action */
-              console.log('Complete maintenance', id);
-            }}
-          />
           <CriticalAlerts alerts={criticalAlerts.slice(0, 8)} />
-          <LowStockParts parts={lowStockParts.slice(0, 8)} />
+        </div>
+        <div className="grid grid-cols-1 gap-6">
+          <LowStockParts parts={lowStockParts.slice(0, 12)} />
         </div>
       </div>
     </Layout>

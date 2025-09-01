@@ -1,24 +1,8 @@
-import { Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import Notification from '../models/Notification';
 import User from '../models/User';
 import nodemailer from 'nodemailer';
 import { AuthedRequestHandler } from '../types/AuthedRequestHandler';
-
-export const getNotifications: AuthedRequestHandler = async (
-  req,
-  res,
-  next,
-) => {
-  try {
-    const items = await Notification.find({ tenantId: req.tenantId })
-      .select('message read type -_id')
-      .lean();
-    res.json(items);
-  } catch (err) {
-    next(err);
-  }
-};
 
 export const getAllNotifications: AuthedRequestHandler = async (req, res, next) => {
   try {

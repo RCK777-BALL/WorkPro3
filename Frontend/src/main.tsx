@@ -8,6 +8,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { useThemeStore } from './store/themeStore';
 import './index.css';
+import { registerSW } from 'virtual:pwa-register';
 
 // Initialize theme on app load
 const initializeTheme = () => {
@@ -31,6 +32,9 @@ mediaQuery.addEventListener('change', (e) => {
 
 // Initialize theme
 initializeTheme();
+
+// register service worker for PWA
+registerSW({ immediate: true });
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

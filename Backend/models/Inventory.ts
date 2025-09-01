@@ -13,7 +13,9 @@ const inventorySchema = new mongoose.Schema({
   vendor: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor' },
   lastRestockDate: Date,
   lastOrderDate: Date,
-  image: String
+  image: String,
+  siteId: { type: mongoose.Schema.Types.ObjectId, ref: 'Site', index: true },
+  sharedPartId: { type: mongoose.Schema.Types.ObjectId, ref: 'SharedPart' },
 }, { timestamps: true });
 
 export default mongoose.model('Inventory', inventorySchema);

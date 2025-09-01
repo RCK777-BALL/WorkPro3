@@ -3,6 +3,14 @@ import InventoryItem, { IInventoryItem } from '../models/InventoryItem';
 import logger from '../utils/logger';
 import mongoose from 'mongoose';
 
+function scopedQuery(req: Request, base: any = {}) {
+  const tenantId = (req as any).tenantId as string | undefined;
+  const siteId = (req as any).siteId as string | undefined;
+  if (tenantId) base.tenantId = tenantId;
+  if (siteId) base.siteId = siteId;
+  return base;
+}
+
 const ALLOWED_FIELDS = [
   'tenantId',
   'name',
@@ -22,6 +30,8 @@ const ALLOWED_FIELDS = [
   'vendor',
   'asset',
   'image',
+  'siteId',
+  'sharedPartId',
 ] as const;
 
 type AllowedField = (typeof ALLOWED_FIELDS)[number];
@@ -45,8 +55,7 @@ export const getInventoryItems = async (
   next: NextFunction,
 ) => {
   try {
-    const tenantId = (req as any).tenantId as string | undefined;
-    const query = tenantId ? { tenantId } : {};
+    const query = scopedQuery(req);
     const items: IInventoryItem[] = await InventoryItem.find(query)
       .select('name quantity reorderThreshold')
       .lean();
@@ -69,8 +78,7 @@ export const getAllInventoryItems = async (
   next: NextFunction,
 ) => {
   try {
-    const tenantId = (req as any).tenantId as string | undefined;
-    const query = tenantId ? { tenantId } : {};
+    const query = scopedQuery(req);
     const items = await InventoryItem.find(query).lean();
     res.json(items);
   } catch (err) {
@@ -84,11 +92,9 @@ export const getLowStockItems = async (
   next: NextFunction,
 ) => {
   try {
-    const tenantId = (req as any).tenantId as string | undefined;
-    const query: any = {
+    const query: any = scopedQuery(req, {
       $expr: { $lte: ['$quantity', '$reorderThreshold'] },
-    };
-    if (tenantId) query.tenantId = tenantId;
+    });
 
     const items = await InventoryItem.find(query).populate('vendor').lean();
     res.json(items);
@@ -104,12 +110,9 @@ export const getInventoryItemById = async (
 ) => {
   try {
     const { id } = req.params;
-    const tenantId = (req as any).tenantId as string | undefined;
-
-    const item: IInventoryItem | null = await InventoryItem.findOne({
-      _id: id,
-      ...(tenantId ? { tenantId } : {}),
-    }).exec();
+    const item: IInventoryItem | null = await InventoryItem.findOne(
+      scopedQuery(req, { _id: id })
+    ).exec();
 
     if (!item) return res.status(404).json({ message: 'Not found' });
 
@@ -126,8 +129,6 @@ export const createInventoryItem = async (
   next: NextFunction,
 ) => {
   try {
-    const tenantId = (req as any).tenantId as string | undefined;
-
     const { data, invalid } = buildInventoryPayload(req.body as Record<string, unknown>);
     if (invalid) {
       return res
@@ -135,10 +136,7 @@ export const createInventoryItem = async (
         .json({ message: `Invalid fields: ${invalid.join(', ')}` });
     }
 
-    const payload: Partial<IInventoryItem> = {
-      ...data,
-      ...(tenantId ? { tenantId } : {}),
-    };
+    const payload: Partial<IInventoryItem> = scopedQuery(req, data);
 
     const saved = await new InventoryItem(payload).save();
     res.status(201).json(saved);
@@ -154,22 +152,15 @@ export const updateInventoryItem = async (
   next: NextFunction,
 ) => {
   try {
-    const tenantId = (req as any).tenantId as string | undefined;
-
     const { data, invalid } = buildInventoryPayload(req.body as Record<string, unknown>);
     if (invalid) {
       return res
         .status(400)
         .json({ message: `Invalid fields: ${invalid.join(', ')}` });
     }
+    const payload: Partial<IInventoryItem> = scopedQuery(req, data);
 
-    const payload: Partial<IInventoryItem> = {
-      ...data,
-      ...(tenantId ? { tenantId } : {}),
-    };
-
-    const filter: any = { _id: req.params.id };
-    if (tenantId) filter.tenantId = tenantId;
+    const filter: any = scopedQuery(req, { _id: req.params.id });
 
     const updated = await InventoryItem.findOneAndUpdate(filter, payload, {
       new: true,
@@ -191,9 +182,7 @@ export const deleteInventoryItem = async (
   next: NextFunction,
 ) => {
   try {
-    const tenantId = (req as any).tenantId as string | undefined;
-    const filter: any = { _id: req.params.id };
-    if (tenantId) filter.tenantId = tenantId;
+    const filter: any = scopedQuery(req, { _id: req.params.id });
 
     const deleted = await InventoryItem.findOneAndDelete(filter);
     if (!deleted) return res.status(404).json({ message: 'Not found' });
@@ -210,7 +199,6 @@ export const useInventoryItem = async (
   next: NextFunction,
 ) => {
   try {
-    const tenantId = (req as any).tenantId as string | undefined;
     const { quantity, uom } = req.body as { quantity?: number; uom?: string };
 
     if (!quantity || quantity <= 0)
@@ -218,8 +206,7 @@ export const useInventoryItem = async (
     if (!uom)
       return res.status(400).json({ message: 'uom is required' });
 
-    const filter: any = { _id: req.params.id };
-    if (tenantId) filter.tenantId = tenantId;
+    const filter: any = scopedQuery(req, { _id: req.params.id });
 
     const item = await InventoryItem.findOne(filter);
     if (!item) return res.status(404).json({ message: 'Not found' });
@@ -243,13 +230,15 @@ export const searchInventoryItems = async (
 ) => {
   try {
     const q = ((req.query.q as string) || '').trim();
-    const tenantId = (req as any).tenantId as string | undefined;
 
     const regex = new RegExp(q, 'i');
-    const filter: any = {
-      $or: [{ name: { $regex: regex } }, { sku: { $regex: regex } }, { partNumber: { $regex: regex } }],
-    };
-    if (tenantId) filter.tenantId = tenantId;
+    const filter: any = scopedQuery(req, {
+      $or: [
+        { name: { $regex: regex } },
+        { sku: { $regex: regex } },
+        { partNumber: { $regex: regex } },
+      ],
+    });
 
     const items = await InventoryItem.find(filter).limit(10).lean();
     res.json(items);

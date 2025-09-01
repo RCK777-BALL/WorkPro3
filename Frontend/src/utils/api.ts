@@ -41,6 +41,19 @@ api.interceptors.request.use((cfg) => {
       // ignore parse errors
     }
   }
+  const siteStr = localStorage.getItem('site-storage');
+  if (siteStr) {
+    try {
+      const { state } = JSON.parse(siteStr);
+      const siteId = state?.siteId;
+      if (siteId) {
+        cfg.headers = cfg.headers ?? {};
+        (cfg.headers as any)['x-site-id'] = siteId;
+      }
+    } catch {
+      // ignore
+    }
+  }
   return cfg;
 });
 
@@ -169,5 +182,12 @@ export const searchMessages = (channelId: string, q: string) =>
   api
     .get<Message[]>(`/channels/${channelId}/messages/search`, { params: { q } })
     .then((res) => res.data);
+
+// ----- Purchasing -----
+export const createPurchaseOrder = (payload: any) =>
+  api.post('/purchase-orders', payload).then((res) => res.data);
+
+export const createGoodsReceipt = (payload: any) =>
+  api.post('/goods-receipts', payload).then((res) => res.data);
 
 export default api;

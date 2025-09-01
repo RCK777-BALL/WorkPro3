@@ -12,7 +12,9 @@ export const getAllAssets: AuthedRequestHandler = async (
   next
 ) => {
   try {
-    const assets = await Asset.find({ tenantId: req.tenantId });
+    const filter: any = { tenantId: req.tenantId };
+    if (req.siteId) filter.siteId = req.siteId;
+    const assets = await Asset.find(filter);
     res.json(assets);
   } catch (err) {
     next(err);
@@ -25,7 +27,9 @@ export const getAssetById: AuthedRequestHandler = async (
   next
 ) => {
   try {
-    const asset = await Asset.findOne({ _id: req.params.id, tenantId: req.tenantId });
+    const filter: any = { _id: req.params.id, tenantId: req.tenantId };
+    if (req.siteId) filter.siteId = req.siteId;
+    const asset = await Asset.findOne(filter);
     if (!asset) return res.status(404).json({ message: 'Not found' });
     res.json(asset);
   } catch (err) {
@@ -63,7 +67,9 @@ export const createAsset: AuthedRequestHandler = async (
 
     const tenantId = resolvedTenantId;
 
-    const newAsset = await Asset.create({ ...req.body, tenantId });
+    const payload: any = { ...req.body, tenantId };
+    if (req.siteId && !payload.siteId) payload.siteId = req.siteId;
+    const newAsset = await Asset.create(payload);
     const assetObj = newAsset.toObject();
     const response = { ...assetObj, tenantId: assetObj.tenantId.toString() };
 
@@ -96,8 +102,10 @@ export const updateAsset: AuthedRequestHandler = async (
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
+    const filter: any = { _id: req.params.id, tenantId };
+    if (req.siteId) filter.siteId = req.siteId;
     const asset = await Asset.findOneAndUpdate(
-      { _id: req.params.id, tenantId },
+      filter,
       req.body,
       {
         new: true,
@@ -117,7 +125,9 @@ export const deleteAsset: AuthedRequestHandler = async (
   next
 ) => {
   try {
-    const asset = await Asset.findOneAndDelete({ _id: req.params.id, tenantId: req.tenantId });
+    const filter: any = { _id: req.params.id, tenantId: req.tenantId };
+    if (req.siteId) filter.siteId = req.siteId;
+    const asset = await Asset.findOneAndDelete(filter);
     if (!asset) return res.status(404).json({ message: 'Not found' });
     res.json({ message: 'Deleted successfully' });
   } catch (err) {
@@ -133,10 +143,12 @@ export const searchAssets: AuthedRequestHandler = async (
   try {
     const q = (req.query.q as string) || '';
     const regex = new RegExp(q, 'i');
-    const assets = await Asset.find({
+    const filter: any = {
       name: { $regex: regex },
       tenantId: req.tenantId,
-    }).limit(10);
+    };
+    if (req.siteId) filter.siteId = req.siteId;
+    const assets = await Asset.find(filter).limit(10);
     res.json(assets);
   } catch (err) {
     next(err);

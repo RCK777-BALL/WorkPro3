@@ -29,6 +29,11 @@ const assetSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    siteId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Site',
+      index: true,
+    },
     criticality: {
       type: String,
       enum: ['high', 'medium', 'low'],

@@ -11,7 +11,7 @@ import './index.css';
 import './i18n';
 import { registerSW } from 'virtual:pwa-register';
 
-// Initialize theme on app load
+// theme init (leave as-is in repo)
 const initializeTheme = () => {
   const { theme } = useThemeStore.getState();
   if (theme === 'system') {
@@ -21,20 +21,14 @@ const initializeTheme = () => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
   }
 };
-
-// Listen for system theme changes
 const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 mediaQuery.addEventListener('change', (e) => {
   const { theme } = useThemeStore.getState();
-  if (theme === 'system') {
-    document.documentElement.classList.toggle('dark', e.matches);
-  }
+  if (theme === 'system') document.documentElement.classList.toggle('dark', e.matches);
 });
-
-// Initialize theme
 initializeTheme();
 
-// Register service worker for PWA
+// register SW
 registerSW({ immediate: true });
 
 createRoot(document.getElementById('root')!).render(
@@ -43,10 +37,7 @@ createRoot(document.getElementById('root')!).render(
       <ToastProvider>
         <AuthProvider>
           <BrowserRouter
-            future={{
-              v7_startTransition: true,
-              v7_relativeSplatPath: true,
-            }}
+            future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
           >
             <App />
           </BrowserRouter>

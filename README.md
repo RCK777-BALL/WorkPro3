@@ -108,3 +108,13 @@ using the browser's `online` event even if the WebSocket fails to reconnect.
 
 This project is licensed under the [MIT License](LICENSE).
 
+
+## Dashboard Acceptance Tests
+
+- Real numbers load with API running.
+- Live Data ON updates KPIs within 5 s on backend changes.
+- Socket outage triggers polling within 10 s.
+- Live Data OFF disables socket and polling.
+- CSV/PDF export produces correct files.
+- Layout customization persists after reload.
+- Drill-through links apply correct filters.

@@ -4,13 +4,13 @@ import express from 'express';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
-import InventoryItemRoutes from '../routes/InventoryItemRoutes';
+import inventoryRoutes from '../routes/InventoryRoutes';
 import InventoryItem from '../models/InventoryItem';
 import User from '../models/User';
 
 const app = express();
 app.use(express.json());
-app.use('/api/inventory', InventoryItemRoutes);
+app.use('/api/inventory', inventoryRoutes);
 
 let mongo: MongoMemoryServer;
 let token: string;

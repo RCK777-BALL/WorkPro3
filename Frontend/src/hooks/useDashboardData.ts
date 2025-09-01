@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../utils/api';
 import type {
   StatusCountResponse,
@@ -41,6 +41,22 @@ const defaultAssetStatus: AssetStatusMap = {
   'In Repair': 0,
 };
 
+// simple debounce helper
+function debounce<F extends (...args: any[]) => void>(fn: F, delay: number) {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const debounced = (...args: Parameters<F>) => {
+    if (timer) clearTimeout(timer);
+    timer = window.setTimeout(() => fn(...args), delay);
+  };
+  debounced.cancel = () => {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+  };
+  return debounced as F & { cancel: () => void };
+}
+
 export default function useDashboardData(role?: string) {
   const [workOrdersByStatus, setWorkOrdersByStatus] = useState<WorkOrderStatusMap>(defaultWOStatus);
   const [assetsByStatus, setAssetsByStatus] = useState<AssetStatusMap>(defaultAssetStatus);
@@ -48,7 +64,7 @@ export default function useDashboardData(role?: string) {
   const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlertItem[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const refresh = useCallback(async () => {
+  const refreshData = useCallback(async () => {
     setLoading(true);
     try {
       const query = role ? `?role=${role}` : '';
@@ -108,8 +124,11 @@ export default function useDashboardData(role?: string) {
     }
   }, [role]);
 
+  const refresh = useMemo(() => debounce(refreshData, 300), [refreshData]);
+
   useEffect(() => {
-    refresh().catch(() => {});
+    refresh();
+    return () => refresh.cancel();
   }, [refresh]);
 
   return {

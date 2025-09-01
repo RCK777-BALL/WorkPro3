@@ -9,7 +9,7 @@ export function useSummary<T = unknown>(
   deps: unknown[] = [],
   options: { auto?: boolean; poll?: boolean; ttlMs?: number } = {},
 ): [T | undefined, () => Promise<T | undefined>] {
-  const { auto = true, poll = true, ttlMs = 30_000 } = options;
+  const { auto = true, poll = true, ttlMs = 10_000 } = options;
   const [, setTick] = useState(0);
   const mountedRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);

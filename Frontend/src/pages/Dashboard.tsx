@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import Layout from '../components/layout/Layout';
 import { useAuthStore } from '../store/authStore';
 import { useDashboardStore } from '../store/dashboardStore';
@@ -7,6 +8,7 @@ import useDashboardData from '../hooks/useDashboardData';
 import { useSummary } from '../hooks/useSummaryData';
 import api from '../utils/api';
 import { getChatSocket } from '../utils/chatSocket';
+import { useToast } from '../context/ToastContext';
 
 import type {
   Department,
@@ -33,6 +35,7 @@ const Dashboard: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const selectedRole = useDashboardStore((s) => s.selectedRole);
   const connected = useSocketStore((s) => s.connected);
+  const { addToast } = useToast();
 
   const {
     workOrdersByStatus,
@@ -52,6 +55,19 @@ const Dashboard: React.FC = () => {
   const [lowStockParts, setLowStockParts] = useState<LowStockPart[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [analytics, setAnalytics] = useState<any>(null);
+
+  const CardBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <ErrorBoundary
+      fallbackRender={() => (
+        <div className="rounded-xl border p-4">
+          <span className="text-sm opacity-70">Error loading</span>
+        </div>
+      )}
+      onError={() => addToast('Error loading dashboard card', 'error')}
+    >
+      {children}
+    </ErrorBoundary>
+  );
 
   // summaries (auto-refetch when selectedRole changes)
   const [summary] = useSummary<DashboardSummary>(
@@ -111,8 +127,8 @@ const Dashboard: React.FC = () => {
     const s = getChatSocket?.();
     if (!s) return;
 
-    const doRefresh = async () => {
-      try { await refresh(); } catch (e) { console.error('refresh failed', e); }
+    const doRefresh = () => {
+      refresh();
     };
 
     const handleLowStockUpdate = (parts: LowStockPartResponse[]) => {
@@ -159,72 +175,88 @@ const Dashboard: React.FC = () => {
 
         {/* Top stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="rounded-xl border p-4">
-            <div className="text-sm opacity-70">Total Assets</div>
-            <div className="text-2xl font-bold">{stats.totalAssets}</div>
-          </div>
-          <div className="rounded-xl border p-4">
-            <div className="text-sm opacity-70">Active Work Orders</div>
-            <div className="text-2xl font-bold">{stats.activeWorkOrders}</div>
-          </div>
-          <div className="rounded-xl border p-4">
-            <div className="text-sm opacity-70">Maintenance Compliance</div>
-            <div className="text-2xl font-bold">{stats.maintenanceCompliance}%</div>
-          </div>
-          <div className="rounded-xl border p-4">
-            <div className="text-sm opacity-70">Inventory Alerts</div>
-            <div className="text-2xl font-bold">{stats.inventoryAlerts}</div>
-          </div>
+          <CardBoundary>
+            <div className="rounded-xl border p-4">
+              <div className="text-sm opacity-70">Total Assets</div>
+              <div className="text-2xl font-bold">{stats.totalAssets}</div>
+            </div>
+          </CardBoundary>
+          <CardBoundary>
+            <div className="rounded-xl border p-4">
+              <div className="text-sm opacity-70">Active Work Orders</div>
+              <div className="text-2xl font-bold">{stats.activeWorkOrders}</div>
+            </div>
+          </CardBoundary>
+          <CardBoundary>
+            <div className="rounded-xl border p-4">
+              <div className="text-sm opacity-70">Maintenance Compliance</div>
+              <div className="text-2xl font-bold">{stats.maintenanceCompliance}%</div>
+            </div>
+          </CardBoundary>
+          <CardBoundary>
+            <div className="rounded-xl border p-4">
+              <div className="text-sm opacity-70">Inventory Alerts</div>
+              <div className="text-2xl font-bold">{stats.inventoryAlerts}</div>
+            </div>
+          </CardBoundary>
         </div>
 
         {/* Status summaries */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="rounded-xl border p-4">
-            <h2 className="font-semibold mb-2">Work Orders by Status</h2>
-            <ul className="space-y-1 text-sm">
-              <li>Open: <b>{workOrdersByStatus?.open ?? 0}</b></li>
-              <li>In Progress: <b>{workOrdersByStatus?.inProgress ?? 0}</b></li>
-              <li>On Hold: <b>{workOrdersByStatus?.onHold ?? 0}</b></li>
-              <li>Completed: <b>{workOrdersByStatus?.completed ?? 0}</b></li>
-            </ul>
-          </div>
-          <div className="rounded-xl border p-4">
-            <h2 className="font-semibold mb-2">Assets by Status</h2>
-            <ul className="space-y-1 text-sm">
-              <li>Active: <b>{assetsByStatus?.Active ?? 0}</b></li>
-              <li>Offline: <b>{assetsByStatus?.Offline ?? 0}</b></li>
-              <li>In Repair: <b>{assetsByStatus?.['In Repair'] ?? 0}</b></li>
-            </ul>
-          </div>
+          <CardBoundary>
+            <div className="rounded-xl border p-4">
+              <h2 className="font-semibold mb-2">Work Orders by Status</h2>
+              <ul className="space-y-1 text-sm">
+                <li>Open: <b>{workOrdersByStatus?.open ?? 0}</b></li>
+                <li>In Progress: <b>{workOrdersByStatus?.inProgress ?? 0}</b></li>
+                <li>On Hold: <b>{workOrdersByStatus?.onHold ?? 0}</b></li>
+                <li>Completed: <b>{workOrdersByStatus?.completed ?? 0}</b></li>
+              </ul>
+            </div>
+          </CardBoundary>
+          <CardBoundary>
+            <div className="rounded-xl border p-4">
+              <h2 className="font-semibold mb-2">Assets by Status</h2>
+              <ul className="space-y-1 text-sm">
+                <li>Active: <b>{assetsByStatus?.Active ?? 0}</b></li>
+                <li>Offline: <b>{assetsByStatus?.Offline ?? 0}</b></li>
+                <li>In Repair: <b>{assetsByStatus?.['In Repair'] ?? 0}</b></li>
+              </ul>
+            </div>
+          </CardBoundary>
         </div>
 
         {/* Upcoming maintenance & alerts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="rounded-xl border p-4">
-            <h2 className="font-semibold mb-2">Upcoming Maintenance</h2>
-            <ul className="space-y-2 text-sm">
-              {upcomingMaintenance.slice(0, 8).map((u) => (
-                <li key={u.id} className="flex justify-between">
-                  <span>{u.assetName} — {u.type}</span>
-                  <span className="opacity-70">{u.date}</span>
-                </li>
-              ))}
-              {upcomingMaintenance.length === 0 && <li className="opacity-70">No upcoming tasks</li>}
-            </ul>
-          </div>
+          <CardBoundary>
+            <div className="rounded-xl border p-4">
+              <h2 className="font-semibold mb-2">Upcoming Maintenance</h2>
+              <ul className="space-y-2 text-sm">
+                {upcomingMaintenance.slice(0, 8).map((u) => (
+                  <li key={u.id} className="flex justify-between">
+                    <span>{u.assetName} — {u.type}</span>
+                    <span className="opacity-70">{u.date}</span>
+                  </li>
+                ))}
+                {upcomingMaintenance.length === 0 && <li className="opacity-70">No upcoming tasks</li>}
+              </ul>
+            </div>
+          </CardBoundary>
 
-          <div className="rounded-xl border p-4">
-            <h2 className="font-semibold mb-2">Critical Alerts</h2>
-            <ul className="space-y-2 text-sm">
-              {criticalAlerts.slice(0, 8).map((a) => (
-                <li key={a.id} className="flex justify-between">
-                  <span>{a.assetName} — {a.issue}</span>
-                  <span className="opacity-70">{getTimeAgo(a.timestamp)}</span>
-                </li>
-              ))}
-              {criticalAlerts.length === 0 && <li className="opacity-70">No critical alerts</li>}
-            </ul>
-          </div>
+          <CardBoundary>
+            <div className="rounded-xl border p-4">
+              <h2 className="font-semibold mb-2">Critical Alerts</h2>
+              <ul className="space-y-2 text-sm">
+                {criticalAlerts.slice(0, 8).map((a) => (
+                  <li key={a.id} className="flex justify-between">
+                    <span>{a.assetName} — {a.issue}</span>
+                    <span className="opacity-70">{getTimeAgo(a.timestamp)}</span>
+                  </li>
+                ))}
+                {criticalAlerts.length === 0 && <li className="opacity-70">No critical alerts</li>}
+              </ul>
+            </div>
+          </CardBoundary>
         </div>
       </div>
     </Layout>

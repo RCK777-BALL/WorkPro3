@@ -135,4 +135,58 @@ describe('offline queue helpers', () => {
     const saved = JSON.parse(localStorageMock.setItem.mock.calls[0][1]) as any[];
     expect(saved[0].nextAttempt).toBe(future);
   });
+
+  it('drops requests that conflict on the server', async () => {
+    const apiMock = api as unknown as ReturnType<typeof vi.fn>;
+    (apiMock as any).mockRejectedValue({ response: { status: 409 } });
+    const queue = [
+      { method: 'post' as const, url: '/conflict', data: { id: 1 } },
+    ];
+    localStorageMock.store['offline-queue'] = JSON.stringify(queue);
+
+    await flushQueue();
+
+    expect(apiMock).toHaveBeenCalledTimes(1);
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('offline-queue');
+  });
+
+  it('processes 1k queued records within 5s', async () => {
+    const apiMock = api as unknown as ReturnType<typeof vi.fn>;
+    (apiMock as any).mockResolvedValue({});
+    const queue = Array.from({ length: 1000 }, (_, i) => ({
+      method: 'post' as const,
+      url: `/bulk/${i}`,
+      data: { i },
+    }));
+    localStorageMock.store['offline-queue'] = JSON.stringify(queue);
+    const start = performance.now();
+    await flushQueue(false); // no backoff for speed
+    const duration = performance.now() - start;
+    expect(apiMock).toHaveBeenCalledTimes(1000);
+    expect(duration).toBeLessThan(5000);
+  });
+
+  it('handles queued screenshot uploads', async () => {
+    const apiMock = api as unknown as ReturnType<typeof vi.fn>;
+    (apiMock as any).mockResolvedValue({});
+    const req = { method: 'post' as const, url: '/uploads/screenshot', data: { img: 'dataurl' } };
+    localStorageMock.store['offline-queue'] = JSON.stringify([req]);
+
+    await flushQueue();
+
+    expect(apiMock).toHaveBeenCalledWith({ method: 'post', url: '/uploads/screenshot', data: { img: 'dataurl' } });
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('offline-queue');
+  });
+
+  it('handles queued signature uploads', async () => {
+    const apiMock = api as unknown as ReturnType<typeof vi.fn>;
+    (apiMock as any).mockResolvedValue({});
+    const req = { method: 'post' as const, url: '/uploads/signature', data: { sig: 'dataurl' } };
+    localStorageMock.store['offline-queue'] = JSON.stringify([req]);
+
+    await flushQueue();
+
+    expect(apiMock).toHaveBeenCalledWith({ method: 'post', url: '/uploads/signature', data: { sig: 'dataurl' } });
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('offline-queue');
+  });
 });

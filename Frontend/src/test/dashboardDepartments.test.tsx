@@ -14,28 +14,33 @@ vi.mock('../utils/notificationsSocket', () => ({
   getNotificationsSocket: () => mockSocket,
 }));
 
+const departments = [
+  { id: 'prod', name: 'Production' },
+  { id: 'pack', name: 'Packaging' },
+];
 
-vi.mock('../utils/api', () => {
-  const departments = [
-    { id: 'prod', name: 'Production' },
-    { id: 'pack', name: 'Packaging' },
-  ];
-  return {
-    fetchSummary: vi.fn().mockResolvedValue({}),
-    fetchAssetSummary: vi.fn().mockResolvedValue([]),
-    fetchWorkOrderSummary: vi.fn().mockResolvedValue([]),
-    fetchUpcomingMaintenance: vi.fn().mockResolvedValue([]),
-    fetchCriticalAlerts: vi.fn().mockResolvedValue([]),
-    fetchLowStock: vi.fn().mockResolvedValue([]),
-    fetchDepartments: vi.fn().mockResolvedValue(departments),
-    default: {
-      get: vi.fn((url: string) => {
-        if (url === '/departments') return Promise.resolve({ data: departments });
-        return Promise.resolve({ data: { laborUtilization: 0 } });
-      }),
-    },
-  };
+export const getMock = vi.fn((url: string) => {
+  if (url === '/summary/departments') {
+    return Promise.resolve({ data: departments });
+  }
+  if (url === '/summary/low-stock') {
+    return Promise.resolve({ data: [] });
+  }
+  if (url === '/summary') {
+    return Promise.resolve({ data: {} });
+  }
+  return Promise.resolve({ data: { laborUtilization: 0 } });
 });
+
+vi.mock('../utils/api', () => ({
+  fetchSummary: vi.fn().mockResolvedValue({}),
+  fetchAssetSummary: vi.fn().mockResolvedValue([]),
+  fetchWorkOrderSummary: vi.fn().mockResolvedValue([]),
+  fetchUpcomingMaintenance: vi.fn().mockResolvedValue([]),
+  fetchCriticalAlerts: vi.fn().mockResolvedValue([]),
+  fetchLowStock: vi.fn().mockResolvedValue([]),
+  default: { get: getMock },
+}));
 
 describe('Dashboard departments', () => {
   beforeEach(() => {
@@ -56,5 +61,6 @@ describe('Dashboard departments', () => {
 
     expect(await screen.findByRole('option', { name: 'Production' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Packaging' })).toBeInTheDocument();
+    expect(getMock).not.toHaveBeenCalledWith(expect.stringContaining('/reports/analytics'));
   });
 });

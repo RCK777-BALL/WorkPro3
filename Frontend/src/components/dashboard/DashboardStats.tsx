@@ -31,8 +31,8 @@ interface StatCardProps {
   icon: React.ReactNode;
   iconBg?: string;
   linkTo?: string;
+  onClick?: () => void;
   onRemove?: () => void;
-  linkTo?: string;
   tooltip?: string;
 }
 
@@ -85,14 +85,6 @@ const SortableStatCard: React.FC<StatCardProps> = (props) => {
     isDragging,
   } = useSortable({ id: props.id });
   const navigate = useNavigate();
-
-  const navigate = useNavigate();
-
-  const handleClick = () => {
-    if (props.linkTo) {
-      navigate(props.linkTo);
-    }
-  };
 
   const style = {
     transform: CSS.Transform.toString(transform),

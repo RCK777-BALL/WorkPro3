@@ -1,6 +1,7 @@
 
 import jwt from 'jsonwebtoken';
 import User, { UserDocument } from '../models/User';
+import Role from '../models/Role';
 import { RequestHandler } from 'express';
 import { AuthedRequest } from '../types/AuthedRequest';
 
@@ -49,8 +50,11 @@ export const requireAuth: RequestHandler = async (
       return;
     }
 
+    const role = await Role.findOne({ name: user.role }).lean();
+    const permissions = role?.permissions ?? [];
+
     const tenantId = user.tenantId.toString();
-    (req as AuthedRequest).user = { ...user, tenantId };
+    (req as AuthedRequest).user = { ...user, tenantId, permissions } as any;
     (req as AuthedRequest).tenantId = tenantId;
 
     next();

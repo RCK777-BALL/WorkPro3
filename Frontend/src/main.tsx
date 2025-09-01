@@ -8,7 +8,12 @@ import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { useThemeStore } from './store/themeStore';
 import './index.css';
+
+// i18n (side-effect init)
 import './i18n';
+
+// PWA service worker
+import { registerSW } from 'virtual:pwa-register';
 
 // Initialize theme on app load
 const initializeTheme = () => {
@@ -33,6 +38,9 @@ mediaQuery.addEventListener('change', (e) => {
 // Initialize theme
 initializeTheme();
 
+// Register service worker for PWA
+registerSW({ immediate: true });
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary FallbackComponent={ErrorFallback}>
@@ -41,7 +49,7 @@ createRoot(document.getElementById('root')!).render(
           <BrowserRouter
             future={{
               v7_startTransition: true,
-              v7_relativeSplatPath: true
+              v7_relativeSplatPath: true,
             }}
           >
             <App />

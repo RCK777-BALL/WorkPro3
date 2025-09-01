@@ -3,20 +3,20 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { EventEmitter } from 'events';
 
-import { startMQTTIngest } from '../services/mqttIngest';
-import SensorReading from '../models/SensorReading';
-import Notification from '../models/Notification';
+import { startMQTTClient } from '../../iot/mqttClient';
+import SensorReading from '../../models/SensorReading';
+import { mqttLogger } from '../../utils/logger';
 
 class MockClient extends EventEmitter {
-  subscribe(topic: string) {
-    // no-op for tests
+  subscribe(_topic: string, cb?: (err?: Error) => void) {
+    cb?.();
   }
   publish(topic: string, message: string) {
     this.emit('message', topic, Buffer.from(message));
   }
 }
 
-describe('MQTT ingestion', () => {
+describe('MQTT client', () => {
   let mongo: MongoMemoryServer;
   let tenantId: string;
   let client: MockClient;
@@ -35,43 +35,27 @@ describe('MQTT ingestion', () => {
   beforeEach(async () => {
     await mongoose.connection.db?.dropDatabase();
     client = new MockClient();
-    await startMQTTIngest({ url: 'mqtt://test' }, client as any);
+    startMQTTClient({ url: 'mqtt://test' }, client as any);
   });
 
-  it('stores meter readings from MQTT messages', async () => {
+  it('persists sensor readings from MQTT messages', async () => {
     const asset = new mongoose.Types.ObjectId().toString();
-    client.publish(`tenants/${tenantId}/meters`, JSON.stringify({
+    client.publish(`tenants/${tenantId}/readings`, JSON.stringify({
       asset,
-      metric: 'kWh',
-      value: 50,
+      metric: 'temp',
+      value: 42,
     }));
     await new Promise((r) => setTimeout(r, 10));
     const readings = await SensorReading.find();
     expect(readings.length).toBe(1);
     expect(readings[0].asset.toString()).toBe(asset);
     expect(readings[0].tenantId.toString()).toBe(tenantId);
-    const notes = await Notification.find();
-    expect(notes.length).toBe(0);
   });
 
-  it('triggers threshold rule and creates notification', async () => {
-    const asset = new mongoose.Types.ObjectId().toString();
-    client.publish(`tenants/${tenantId}/meters`, JSON.stringify({
-      asset,
-      metric: 'kWh',
-      value: 150,
-    }));
-    await new Promise((r) => setTimeout(r, 10));
-    const notes = await Notification.find();
-    expect(notes.length).toBe(1);
-    expect(notes[0].tenantId.toString()).toBe(tenantId);
-  });
-
-  it('handles authentication errors from MQTT broker', () => {
-    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    client.emit('error', new Error('Not authorized'));
+  it('logs errors from MQTT client', () => {
+    const spy = vi.spyOn(mqttLogger, 'error').mockImplementation(() => {} as any);
+    client.emit('error', new Error('fail'));
     expect(spy).toHaveBeenCalled();
     spy.mockRestore();
   });
 });
-

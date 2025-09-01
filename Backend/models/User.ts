@@ -17,7 +17,8 @@ export interface UserDocument extends Document {
   colorScheme?: string;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
-
+  mfaEnabled: boolean;
+  mfaSecret?: string;
 }
 
 // ✅ Schema definition
@@ -43,12 +44,14 @@ const userSchema = new Schema<UserDocument>(
       enum: ['light', 'dark', 'system'],
       default: 'system',
     },
- 
+
     colorScheme: {
       type: String,
       default: 'default',
     },
- 
+
+    mfaEnabled: { type: Boolean, default: false },
+    mfaSecret: { type: String },
   },
   { timestamps: true }
 );

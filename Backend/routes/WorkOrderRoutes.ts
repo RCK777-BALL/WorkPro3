@@ -12,6 +12,7 @@ import {
 } from '../controllers/WorkOrderController';
 import { requireAuth } from '../middleware/authMiddleware';
 import requireRole from '../middleware/requireRole';
+import authorize from '../middleware/authorize';
 import { validate } from '../middleware/validationMiddleware';
 import { workOrderValidators } from '../validators/workOrderValidators';
 
@@ -44,6 +45,7 @@ router.put(
 router.post(
   '/:id/approve',
   requireRole('admin', 'manager'),
+  authorize('workorders:approve'),
   approveWorkOrder
 );
 router.delete('/:id', requireRole('admin', 'manager'), deleteWorkOrder);

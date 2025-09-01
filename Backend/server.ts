@@ -10,6 +10,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
 import { initKafka, sendKafkaEvent } from './utils/kafka';
+import { initMQTTFromConfig } from './iot/mqttClient';
 
 import authRoutes from './routes/auth';
 import workOrdersRoutes from './routes/WorkOrderRoutes';
@@ -39,6 +40,7 @@ import calendarRoutes from './routes/CalendarRoutes';
 import conditionRuleRoutes from './routes/ConditionRuleRoutes';
 
 import { startPMScheduler } from './utils/pmScheduler';
+import { setupSwagger } from './utils/swagger';
 import mongoose from 'mongoose';
 import errorHandler from './middleware/errorHandler';
 import { validateEnv } from './config/validateEnv';
@@ -86,6 +88,7 @@ app.use(cors(corsOptions));
 app.use(morgan('dev'));
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
+setupSwagger(app);
 
 const dev = process.env.NODE_ENV !== 'production';
 
@@ -168,6 +171,7 @@ if (process.env.NODE_ENV !== 'test') {
         console.log(`Server listening on http://localhost:${PORT}`),
       );
       initKafka(io).catch((err) => console.error('Kafka init error:', err));
+      initMQTTFromConfig();
       startPMScheduler('default', {
         cronExpr: process.env.PM_SCHEDULER_CRON,
         taskModulePath: process.env.PM_SCHEDULER_TASK,

@@ -4,6 +4,8 @@ import {
   downloadReport,
   getTrendData,
   exportTrendData,
+  getCostMetrics,
+  getDowntimeMetrics,
 } from '../controllers/ReportsController';
 import { requireAuth } from '../middleware/authMiddleware';
 
@@ -16,5 +18,7 @@ router.get('/analytics', getAnalyticsReport);
 router.get('/download', downloadReport);
 router.get('/trends', getTrendData);
 router.get('/trends/export', exportTrendData);
+router.get('/costs', getCostMetrics);
+router.get('/downtime', getDowntimeMetrics);
 
 export default router;

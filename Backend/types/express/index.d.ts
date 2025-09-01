@@ -3,6 +3,7 @@ import { UserDocument } from '../../models/User';
 
 export type RequestUser = Omit<LeanDocument<UserDocument>, 'tenantId'> & {
   tenantId: string;
+  permissions: string[];
 };
 
 declare global {

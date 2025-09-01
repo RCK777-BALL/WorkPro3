@@ -8,7 +8,7 @@ export interface RoleDocument extends Document {
 const roleSchema = new Schema<RoleDocument>(
   {
     name: { type: String, required: true, unique: true },
-    permissions: [{ type: String }],
+    permissions: { type: [String], default: [] },
   },
   { timestamps: true }
 );

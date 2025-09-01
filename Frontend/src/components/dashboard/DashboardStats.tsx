@@ -132,7 +132,7 @@ const SortableStatCard: React.FC<StatCardProps> = (props) => {
           </div>
           <div className="ml-4 flex-1">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">{props.title}</h3>
+              <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{props.title}</h3>
               {props.onRemove && (
                 <button
                   onClick={(e) => {
@@ -338,7 +338,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
         <div className="absolute z-50 mt-2 w-64 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700">
           <div className="p-4 border-b border-neutral-200 dark:border-neutral-700">
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">Add KPI</h3>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">Select a KPI to add to your dashboard</p>
+            <p className="text-sm text-neutral-700 dark:text-neutral-300">Select a KPI to add to your dashboard</p>
           </div>
           <div className="p-2">
             {availableKPIs

@@ -1,6 +1,6 @@
  
  
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
  
 import { Search, Bell, HelpCircle, Menu, Book, Video, MessageCircle, FileText, ExternalLink, Sun, Moon, Monitor, Database } from 'lucide-react';
  
@@ -43,6 +43,11 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title = 'Dashboard' })
   const [showHelpMenu, setShowHelpMenu] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+
+  const notificationsButtonRef = useRef<HTMLButtonElement>(null);
+  const notificationsMenuRef = useRef<HTMLDivElement>(null);
+  const helpButtonRef = useRef<HTMLButtonElement>(null);
+  const helpMenuRef = useRef<HTMLDivElement>(null);
  
 
   const [notifications, setNotifications] = useState<HeaderNotification[]>([]);
@@ -69,6 +74,22 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title = 'Dashboard' })
         .finally(() => setLoadingNotifications(false));
     }
   }, [showNotifications, fetchNotifications]);
+  useEffect(() => {
+    if (showNotifications) {
+      notificationsMenuRef.current?.focus();
+    } else {
+      notificationsButtonRef.current?.focus();
+    }
+  }, [showNotifications]);
+
+  useEffect(() => {
+    if (showHelpMenu) {
+      helpMenuRef.current?.focus();
+    } else {
+      helpButtonRef.current?.focus();
+    }
+  }, [showHelpMenu]);
+
  
  
  
@@ -180,14 +201,14 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title = 'Dashboard' })
     <header className="relative h-16 bg-white dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between px-2 sm:px-4 lg:px-6">
       <div className="flex items-center">
         <button
-          onClick={onToggleSidebar}
+          onClick={onToggleSidebar} aria-label="Toggle sidebar"
           className="lg:hidden p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 focus:outline-none"
         >
           <Menu size={20} className="dark:text-white" />
         </button>
         <h1 className="text-xl font-semibold text-neutral-900 dark:text-white ml-2 lg:ml-0">{title}</h1>
         <button
-          onClick={() => setShowMobileSearch(!showMobileSearch)}
+          onClick={() => setShowMobileSearch(!showMobileSearch)} aria-label="Search"
           className="md:hidden ml-2 p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 focus:outline-none"
         >
           <Search size={20} className="dark:text-white" />
@@ -195,7 +216,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title = 'Dashboard' })
       </div>
 
       <div className="hidden md:flex items-center bg-neutral-100 dark:bg-neutral-700 rounded-lg px-3 py-2 w-96">
-        <Search size={18} className="text-neutral-500 dark:text-neutral-400" />
+        <Search size={18} className="text-neutral-700 dark:text-neutral-300" />
         <input 
           type="text" 
           placeholder="Search assets, work orders, etc..." 
@@ -221,7 +242,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title = 'Dashboard' })
  
         <div className="relative">
           <button
-            className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 focus:outline-none relative"
+            className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 focus:outline-none relative" aria-label="Notifications" aria-haspopup="true" aria-expanded={showNotifications} ref={notificationsButtonRef}
             onClick={toggleNotifications}
           >
             <Bell size={20} className="dark:text-white" />
@@ -234,7 +255,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title = 'Dashboard' })
 
  
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 z-50">
+            <div ref={notificationsMenuRef} tabIndex={-1} role="menu" aria-label="Notifications" className="absolute right-0 mt-2 w-80 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 z-50">
               <Card
                 title="Notifications"
                 subtitle={`${unreadCount} unread notifications`}
@@ -242,13 +263,13 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title = 'Dashboard' })
               >
                 <div className="max-h-96 overflow-y-auto">
                   {loadingNotifications && (
-                    <div className="py-8 text-center text-neutral-500 dark:text-neutral-400">
+                    <div className="py-8 text-center text-neutral-700 dark:text-neutral-300">
                       Loading...
                     </div>
                   )}
 
                   {!loadingNotifications && notificationsError && (
-                    <div className="py-8 text-center text-neutral-500 dark:text-neutral-400">
+                    <div className="py-8 text-center text-neutral-700 dark:text-neutral-300">
                       {notificationsError}
                     </div>
                   )}
@@ -271,7 +292,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title = 'Dashboard' })
                     ))}
 
                   {!loadingNotifications && !notificationsError && notifications.length === 0 && (
-                    <div className="py-8 text-center text-neutral-500 dark:text-neutral-400">
+                    <div className="py-8 text-center text-neutral-700 dark:text-neutral-300">
                       No notifications
                     </div>
                   )}
@@ -296,14 +317,14 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title = 'Dashboard' })
 
         <div className="relative">
           <button 
-            className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 focus:outline-none"
+            className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 focus:outline-none" aria-label="Help menu" aria-haspopup="true" aria-expanded={showHelpMenu} ref={helpButtonRef}
             onClick={() => setShowHelpMenu(!showHelpMenu)}
           >
             <HelpCircle size={20} className="dark:text-white" />
           </button>
 
           {showHelpMenu && (
-            <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 z-50">
+            <div ref={helpMenuRef} tabIndex={-1} role="menu" aria-label="Help menu" className="absolute right-0 mt-2 w-80 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 z-50">
               <Card
                 title="Help & Resources"
                 subtitle="Get assistance and learn more"
@@ -321,7 +342,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title = 'Dashboard' })
                       </div>
                       <div className="ml-3 text-left">
                         <h4 className="font-medium text-neutral-900 dark:text-white">{resource.title}</h4>
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400">{resource.description}</p>
+                        <p className="text-sm text-neutral-700 dark:text-neutral-300">{resource.description}</p>
                       </div>
                       <ExternalLink size={16} className="ml-auto text-neutral-400" />
                     </button>
@@ -350,7 +371,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title = 'Dashboard' })
           />
           <div className="ml-2 hidden md:block">
             <p className="text-sm font-medium text-neutral-900 dark:text-white">{user?.name}</p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs text-neutral-700 dark:text-neutral-300">
               {user?.role === 'admin'
                 ? 'Admin'
                 : user?.role === 'manager'
@@ -365,7 +386,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title = 'Dashboard' })
       {showMobileSearch && (
         <div className="absolute top-16 inset-x-0 px-4 py-2 bg-white dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 md:hidden">
           <div className="flex items-center bg-neutral-100 dark:bg-neutral-700 rounded-lg px-3 py-2">
-            <Search size={18} className="text-neutral-500 dark:text-neutral-400" />
+            <Search size={18} className="text-neutral-700 dark:text-neutral-300" />
             <input
               type="text"
               placeholder="Search assets, work orders, etc..."

@@ -12,7 +12,8 @@
     "reset-db": "ts-node scripts/resetAndSeed.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "vitest"
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@types/helmet": "^0.0.48",

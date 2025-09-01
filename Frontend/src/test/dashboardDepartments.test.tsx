@@ -9,10 +9,9 @@ vi.mock('../components/layout/Layout', () => ({
   default: ({ children }: any) => <div>{children}</div>,
 }));
 
- const mockSocket = { on: vi.fn(), off: vi.fn() };
-vi.mock('../utils/chatSocket', () => ({
-  getChatSocket: () => mockSocket,
- 
+const mockSocket = { on: vi.fn(), off: vi.fn() };
+vi.mock('../utils/notificationsSocket', () => ({
+  getNotificationsSocket: () => mockSocket,
 }));
 
 

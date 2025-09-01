@@ -15,6 +15,11 @@ import {
 } from '../utils/notificationsSocket';
 import { useNavigate } from 'react-router-dom';
 
+import { Responsive, WidthProvider, type Layouts } from 'react-grid-layout';
+import DashboardStats from '../components/dashboard/DashboardStats';
+import WorkOrdersChart from '../components/dashboard/WorkOrdersChart';
+import UpcomingMaintenance from '../components/dashboard/UpcomingMaintenance';
+
 import type {
   Department,
   DashboardSummary,
@@ -36,24 +41,47 @@ const getTimeAgo = (timestamp: string): string => {
   return `${days}d ago`;
 };
 
+const ResponsiveGridLayout = WidthProvider(Responsive);
+
+const defaultLayouts: Layouts = {
+  lg: [
+    { i: 'stats', x: 0, y: 0, w: 12, h: 4 },
+    { i: 'workOrders', x: 0, y: 4, w: 6, h: 8 },
+    { i: 'maintenance', x: 6, y: 4, w: 6, h: 8 },
+  ],
+  md: [
+    { i: 'stats', x: 0, y: 0, w: 10, h: 4 },
+    { i: 'workOrders', x: 0, y: 4, w: 10, h: 8 },
+    { i: 'maintenance', x: 0, y: 12, w: 10, h: 8 },
+  ],
+  sm: [
+    { i: 'stats', x: 0, y: 0, w: 6, h: 4 },
+    { i: 'workOrders', x: 0, y: 4, w: 6, h: 8 },
+    { i: 'maintenance', x: 0, y: 12, w: 6, h: 8 },
+  ],
+};
+
 const Dashboard: React.FC = () => {
   const user = useAuthStore((s) => s.user);
-  const { selectedRole, selectedDepartment, selectedTimeframe, customRange } =
-    useDashboardStore((s) => ({
-      selectedRole: s.selectedRole,
-      selectedDepartment: s.selectedDepartment,
-      selectedTimeframe: s.selectedTimeframe,
-      customRange: s.customRange,
-    }));
+  const {
+    selectedRole,
+    selectedDepartment,
+    selectedTimeframe,
+    customRange,
+    setSelectedDepartment,
+    layouts,
+    setLayouts,
+  } = useDashboardStore((s) => ({
+    selectedRole: s.selectedRole,
+    selectedDepartment: s.selectedDepartment,
+    selectedTimeframe: s.selectedTimeframe,
+    customRange: s.customRange,
+    setSelectedDepartment: s.setSelectedDepartment,
+    layouts: s.layouts,
+    setLayouts: s.setLayouts,
+  }));
   const connected = useSocketStore((s) => s.connected);
   const navigate = useNavigate();
-
-  const handleKeyDown = (path: string) => (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      navigate(path);
-    }
-  };
 
   const [liveData, setLiveData] = useState(true);
   const pollActive = useRef(false);
@@ -80,7 +108,8 @@ const Dashboard: React.FC = () => {
   });
   const [lowStockParts, setLowStockParts] = useState<LowStockPart[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [, setAnalytics] = useState<any | null>(null); // optional analytics state
+  const [analytics, setAnalytics] = useState<any | null>(null);
+  const [customize, setCustomize] = useState(false);
 
   const buildQuery = () => {
     const params = new URLSearchParams();
@@ -113,6 +142,20 @@ const Dashboard: React.FC = () => {
     [],
     { ttlMs: 60_000 },
   );
+
+  // restore saved layout (once)
+  useEffect(() => {
+    try {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('dashboardLayoutV1') : null;
+      if (stored) {
+        setLayouts(JSON.parse(stored));
+      } else {
+        setLayouts(defaultLayouts);
+      }
+    } catch {
+      setLayouts(defaultLayouts);
+    }
+  }, [setLayouts]);
 
   // map summaries to local state
   useEffect(() => {
@@ -156,7 +199,7 @@ const Dashboard: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDepartment, selectedRole, selectedTimeframe, customRange]);
 
-  // socket-driven refresh
+  // socket-driven refresh with polling fallback
   useEffect(() => {
     if (!liveData) {
       closeNotificationsSocket();
@@ -231,12 +274,29 @@ const Dashboard: React.FC = () => {
     };
   }, [refresh, connected, liveData]);
 
+  const handleLayoutChange = (_: any, allLayouts: Layouts) => {
+    setLayouts(allLayouts);
+    try {
+      localStorage.setItem('dashboardLayoutV1', JSON.stringify(allLayouts));
+    } catch {
+      // ignore persistence errors
+    }
+  };
+
   return (
     <Layout title="Dashboard">
       <div className="px-4 py-6 space-y-6">
-        <div className="flex items-baseline justify-between">
+        <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">Welcome{user?.name ? `, ${user.name}` : ''}</h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={customize}
+                onChange={() => setCustomize((c) => !c)}
+              />
+              Customize layout
+            </label>
             {loading && <span className="text-sm opacity-70">Refreshing…</span>}
             <button
               className="text-sm border px-2 py-1 rounded"
@@ -249,156 +309,25 @@ const Dashboard: React.FC = () => {
 
         <FiltersBar departments={departments} />
 
-        {/* Top stats with keyboard-accessible navigation */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => navigate('/assets')}
-            onKeyDown={handleKeyDown('/assets')}
-            className="rounded-xl border p-4 cursor-pointer hover:bg-neutral-50"
-          >
-            <div className="text-sm opacity-70">Total Assets</div>
-            <div className="text-2xl font-bold">{stats.totalAssets}</div>
+        <ResponsiveGridLayout
+          className="layout"
+          layouts={Object.keys(layouts).length ? layouts : defaultLayouts}
+          cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+          rowHeight={30}
+          isDraggable={customize}
+          isResizable={customize}
+          onLayoutChange={handleLayoutChange}
+        >
+          <div key="stats" className="h-full">
+            <DashboardStats stats={stats} />
           </div>
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => navigate('/workorders?status=open')}
-            onKeyDown={handleKeyDown('/workorders?status=open')}
-            className="rounded-xl border p-4 cursor-pointer hover:bg-neutral-50"
-          >
-            <div className="text-sm opacity-70">Active Work Orders</div>
-            <div className="text-2xl font-bold">{stats.activeWorkOrders}</div>
+          <div key="workOrders" className="h-full">
+            <WorkOrdersChart data={workOrdersByStatus} />
           </div>
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => navigate('/workorders?status=completed')}
-            onKeyDown={handleKeyDown('/workorders?status=completed')}
-            className="rounded-xl border p-4 cursor-pointer hover:bg-neutral-50"
-          >
-            <div className="text-sm opacity-70">Maintenance Compliance</div>
-            <div className="text-2xl font-bold">{stats.maintenanceCompliance}%</div>
+          <div key="maintenance" className="h-full">
+            <UpcomingMaintenance maintenanceItems={upcomingMaintenance} />
           </div>
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => navigate('/inventory?lowStock=true')}
-            onKeyDown={handleKeyDown('/inventory?lowStock=true')}
-            className="rounded-xl border p-4 cursor-pointer hover:bg-neutral-50"
-          >
-            <div className="text-sm opacity-70">Inventory Alerts</div>
-            <div className="text-2xl font-bold">{stats.inventoryAlerts}</div>
-          </div>
-        </div>
-
-        {/* Status summaries with keyboard-accessible list items */}
-        <div className="grid grid-cols-1 lg-grid-cols-2 lg:grid-cols-2 gap-6">
-          <div className="rounded-xl border p-4">
-            <h2 className="font-semibold mb-2">Work Orders by Status</h2>
-            <ul className="space-y-1 text-sm">
-              <li
-                role="button"
-                tabIndex={0}
-                onClick={() => navigate('/workorders?status=open')}
-                onKeyDown={handleKeyDown('/workorders?status=open')}
-                className="cursor-pointer flex justify-between rounded p-1 hover:bg-neutral-50"
-              >
-                <span>Open:</span> <b>{workOrdersByStatus?.open ?? 0}</b>
-              </li>
-              <li
-                role="button"
-                tabIndex={0}
-                onClick={() => navigate('/workorders?status=in-progress')}
-                onKeyDown={handleKeyDown('/workorders?status=in-progress')}
-                className="cursor-pointer flex justify-between rounded p-1 hover:bg-neutral-50"
-              >
-                <span>In Progress:</span> <b>{workOrdersByStatus?.inProgress ?? 0}</b>
-              </li>
-              <li
-                role="button"
-                tabIndex={0}
-                onClick={() => navigate('/workorders?status=on-hold')}
-                onKeyDown={handleKeyDown('/workorders?status=on-hold')}
-                className="cursor-pointer flex justify-between rounded p-1 hover:bg-neutral-50"
-              >
-                <span>On Hold:</span> <b>{workOrdersByStatus?.onHold ?? 0}</b>
-              </li>
-              <li
-                role="button"
-                tabIndex={0}
-                onClick={() => navigate('/workorders?status=completed')}
-                onKeyDown={handleKeyDown('/workorders?status=completed')}
-                className="cursor-pointer flex justify-between rounded p-1 hover:bg-neutral-50"
-              >
-                <span>Completed:</span> <b>{workOrdersByStatus?.completed ?? 0}</b>
-              </li>
-            </ul>
-          </div>
-
-          <div className="rounded-xl border p-4">
-            <h2 className="font-semibold mb-2">Assets by Status</h2>
-            <ul className="space-y-1 text-sm">
-              <li
-                role="button"
-                tabIndex={0}
-                onClick={() => navigate('/assets?status=Active')}
-                onKeyDown={handleKeyDown('/assets?status=Active')}
-                className="cursor-pointer flex justify-between rounded p-1 hover:bg-neutral-50"
-              >
-                <span>Active:</span> <b>{assetsByStatus?.Active ?? 0}</b>
-              </li>
-              <li
-                role="button"
-                tabIndex={0}
-                onClick={() => navigate('/assets?status=Offline')}
-                onKeyDown={handleKeyDown('/assets?status=Offline')}
-                className="cursor-pointer flex justify-between rounded p-1 hover:bg-neutral-50"
-              >
-                <span>Offline:</span> <b>{assetsByStatus?.Offline ?? 0}</b>
-              </li>
-              <li
-                role="button"
-                tabIndex={0}
-                onClick={() => navigate('/assets?status=In%20Repair')}
-                onKeyDown={handleKeyDown('/assets?status=In%20Repair')}
-                className="cursor-pointer flex justify-between rounded p-1 hover:bg-neutral-50"
-              >
-                <span>In Repair:</span> <b>{assetsByStatus?.['In Repair'] ?? 0}</b>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Upcoming maintenance & alerts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="rounded-xl border p-4">
-            <h2 className="font-semibold mb-2">Upcoming Maintenance</h2>
-            <ul className="space-y-2 text-sm">
-              {upcomingMaintenance.slice(0, 8).map((u) => (
-                <li key={u.id} className="flex justify-between">
-                  <span>{u.assetName} — {u.type}</span>
-                  <span className="opacity-70">{u.date}</span>
-                </li>
-              ))}
-              {upcomingMaintenance.length === 0 && <li className="opacity-70">No upcoming tasks</li>}
-            </ul>
-          </div>
-
-          <div className="rounded-xl border p-4">
-            <h2 className="font-semibold mb-2">Critical Alerts</h2>
-            <ul className="space-y-2 text-sm">
-              {criticalAlerts.slice(0, 8).map((a) => (
-                <li key={a.id} className="flex justify-between">
-                  <span>{a.assetName} — {a.issue}</span>
-                  <span className="opacity-70">{getTimeAgo(a.timestamp)}</span>
-                </li>
-              ))}
-              {criticalAlerts.length === 0 && <li className="opacity-70">No critical alerts</li>}
-            </ul>
-          </div>
-        </div>
+        </ResponsiveGridLayout>
       </div>
     </Layout>
   );

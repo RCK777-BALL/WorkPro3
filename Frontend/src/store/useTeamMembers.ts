@@ -43,7 +43,7 @@ export const useTeamMembers = create<TeamMemberState>((set) => ({
   },
 
   deleteMember: async (id) => {
-    await api.delete(`/team/${id}`);
+    await api.delete<void>(`/team/${id}`);
     set((state) => ({ members: state.members.filter((m) => m.id !== id) }));
   },
 }));

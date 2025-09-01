@@ -73,7 +73,7 @@ export interface WorkOrder {
   /** Priority of the work order */
   priority: 'low' | 'medium' | 'high' | 'critical';
 
-  /** Current status */
+  /** Current status (note: hyphenated strings) */
   status: 'open' | 'in-progress' | 'on-hold' | 'completed';
 
   /** Type of work such as corrective or preventive */
@@ -299,11 +299,11 @@ export interface DashboardSummary {
   overduePmTasks: number;
 }
 
-/** Generic status/count pair used in dashboard summaries */
-export interface StatusCountResponse {
-  _id: string;
+/** Generic status/count pair used in dashboard summaries (optionally typed by a known status union) */
+export type StatusCountResponse<T extends string = string> = {
+  _id: T;
   count: number;
-}
+};
 
 /** Response shape returned by the low stock endpoint */
 export interface LowStockPartResponse {
@@ -363,6 +363,17 @@ export interface CriticalAlertItem {
   severity: string;
   issue: string;
   timestamp: string;
+}
+
+export interface AnalyticsData {
+  laborUtilization: number;
+}
+
+export interface DashboardStats {
+  totalAssets: number;
+  activeWorkOrders: number;
+  maintenanceCompliance: number;
+  inventoryAlerts: number;
 }
 
 export interface Timesheet {

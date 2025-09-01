@@ -8,6 +8,7 @@ import {
   deleteInventoryItem,
   getLowStockItems,
   searchInventoryItems,
+  useInventoryItem,
 } from '../controllers/InventoryController';
 import { requireAuth } from '../middleware/authMiddleware';
 
@@ -25,6 +26,7 @@ router.get('/', getAllInventoryItems);
 router.get('/:id', getInventoryItemById);
 router.post('/', createInventoryItem);
 router.put('/:id', updateInventoryItem);
+router.post('/:id/use', useInventoryItem);
 router.delete('/:id', deleteInventoryItem);
 
 export default router;

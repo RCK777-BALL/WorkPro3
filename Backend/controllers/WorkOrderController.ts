@@ -4,6 +4,7 @@ import WorkOrder from '../models/WorkOrder';
 import { emitWorkOrderUpdate } from '../server';
 import { validationResult } from 'express-validator';
 import notifyUser from '../utils/notify';
+import { getWorkOrderAssistance } from '../services/aiCopilot';
 
 export const getAllWorkOrders: AuthedRequestHandler = async (
   req,
@@ -156,6 +157,27 @@ export const approveWorkOrder: AuthedRequestHandler = async (
     }
 
     res.json(saved);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const assistWorkOrder: AuthedRequestHandler = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const workOrder = await WorkOrder.findOne({
+      _id: req.params.id,
+      tenantId: req.tenantId,
+    });
+    if (!workOrder) return res.status(404).json({ message: 'Not found' });
+    const result = await getWorkOrderAssistance({
+      title: workOrder.title,
+      description: workOrder.description || '',
+    });
+    res.json(result);
   } catch (err) {
     next(err);
   }

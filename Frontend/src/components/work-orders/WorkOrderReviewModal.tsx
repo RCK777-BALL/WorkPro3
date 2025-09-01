@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import Button from '../common/Button';
 import type { WorkOrder } from '../../types';
 import { useAuthStore, isAdmin as selectIsAdmin, isManager as selectIsManager } from '../../store/authStore';
+import AICopilot from '../../workorders/AICopilot';
 
 interface Props {
   isOpen: boolean;
@@ -126,6 +127,7 @@ const WorkOrderReviewModal: React.FC<Props> = ({
               />
             </div>
           )}
+          <AICopilot workOrderId={workOrder.id} />
         </div>
         {(isAdmin || isManager) && (
           <div className="flex justify-end space-x-3 p-4 border-t border-neutral-200">

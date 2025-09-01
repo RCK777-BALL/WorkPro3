@@ -10,63 +10,53 @@ interface TeamMemberState {
   deleteMember: (id: string) => Promise<void>;
 }
 
-export const useTeamMembers = create<TeamMemberState>((set, get) => ({
+export const useTeamMembers = create<TeamMemberState>((set) => ({
   members: [],
+
   fetchMembers: async () => {
     const res = await api.get<TeamMemberResponse[]>('/team');
-    const members = res.data.map<TeamMember>((m) => ({
-      id: m._id ?? m.id ?? '',
-      name: m.name,
-      email: m.email,
-      role: m.role,
-      department: m.department,
-      employeeId: m.employeeId,
-      managerId: m.managerId ?? m.reportsTo ?? null,
-      avatar: m.avatar,
-    }));
+    const members = (res.data ?? []).map(mapMember);
     set({ members });
     return members;
   },
+
   addMember: async (data) => {
     const isForm = data instanceof FormData;
-    const res = await api.post<TeamMemberResponse>('/team', data, {
+    const res = await api.post<TeamMemberResponse>('/team', data as any, {
       headers: isForm ? { 'Content-Type': 'multipart/form-data' } : undefined,
     });
-    const member: TeamMember = {
-      id: res.data._id ?? res.data.id ?? '',
-      name: res.data.name,
-      email: res.data.email,
-      role: res.data.role,
-      department: res.data.department,
-      employeeId: res.data.employeeId,
-      managerId: res.data.managerId ?? res.data.reportsTo ?? null,
-      avatar: res.data.avatar,
-    };
+    const member = mapMember(res.data);
     set((state) => ({ members: [...state.members, member] }));
     return member;
   },
+
   updateMember: async (id, data) => {
     const isForm = data instanceof FormData;
-    const res = await api.put<TeamMemberResponse>(`/team/${id}`, data, {
+    const res = await api.put<TeamMemberResponse>(`/team/${id}`, data as any, {
       headers: isForm ? { 'Content-Type': 'multipart/form-data' } : undefined,
     });
-    const member: TeamMember = {
-      id: res.data._id ?? res.data.id ?? '',
-      name: res.data.name,
-      email: res.data.email,
-      role: res.data.role,
-      department: res.data.department,
-      employeeId: res.data.employeeId,
-      managerId: res.data.managerId ?? res.data.reportsTo ?? null,
-      avatar: res.data.avatar,
-    };
+    const member = mapMember(res.data);
     set((state) => ({
       members: state.members.map((m) => (m.id === id ? member : m)),
     }));
     return member;
   },
+
   deleteMember: async (id) => {
     await api.delete(`/team/${id}`);
     set((state) => ({ members: state.members.filter((m) => m.id !== id) }));
   },
 }));
+
+function mapMember(data: TeamMemberResponse): TeamMember {
+  return {
+    id: data._id ?? data.id ?? '',
+    name: data.name,
+    email: data.email,
+    role: data.role,
+    department: data.department,
+    employeeId: data.employeeId,
+    managerId: data.managerId ?? data.reportsTo ?? null,
+    avatar: data.avatar,
+  };
+}

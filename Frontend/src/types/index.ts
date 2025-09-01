@@ -54,7 +54,6 @@ export interface DepartmentHierarchy extends Department {
   lines: LineWithStations[];
 }
 
-
 export interface WorkOrder {
   /** Unique identifier */
   id: string;
@@ -158,13 +157,7 @@ export interface MaintenanceSchedule {
 export interface PMTask {
   id: string;
   title: string;
-  frequency:
-    | 'daily'
-    | 'weekly'
-    | 'monthly'
-    | 'quarterly'
-    | 'biannually'
-    | 'annually';
+  frequency: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'biannually' | 'annually';
   active: boolean;
   lastRun?: string;
   nextDue?: string;
@@ -229,7 +222,6 @@ export interface User {
   avatar?: string;
 }
 
-
 export interface TeamMember {
   id: string;
   name: string;
@@ -257,7 +249,6 @@ export interface TeamMemberResponse {
   reportsTo?: string | null;
   avatar?: string;
 }
-
 
 export interface AuthUser {
   id: string;
@@ -309,7 +300,7 @@ export interface DashboardSummary {
 }
 
 /** Generic status/count pair used in dashboard summaries */
-export interface StatusCount {
+export interface StatusCountResponse {
   _id: string;
   count: number;
 }
@@ -336,7 +327,7 @@ export interface LowStockPart {
 export interface UpcomingMaintenanceResponse {
   _id?: string;
   id?: string;
-  asset?: { name?: string; _id?: string };
+  asset?: { _id?: string; name?: string };
   nextDue: string;
   type?: string;
   assignedTo?: string;
@@ -373,7 +364,6 @@ export interface CriticalAlertItem {
   issue: string;
   timestamp: string;
 }
-
 
 export interface Timesheet {
   id: string;

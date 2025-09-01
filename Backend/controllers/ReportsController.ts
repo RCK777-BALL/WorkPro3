@@ -5,6 +5,8 @@ import WorkOrder from '../models/WorkOrder';
 import Asset from '../models/Asset';
 import WorkHistory from '../models/WorkHistory';
 import User from '../models/User';
+import TimeSheet from '../models/TimeSheet';
+import Inventory from '../models/Inventory';
 
 async function calculateStats(tenantId: string, role?: string) {
   const roleFilter = role || 'technician';
@@ -199,6 +201,113 @@ export const exportTrendData: AuthedRequestHandler = async (
       return res.send(csv);
     }
 
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+async function aggregateCosts(tenantId: string) {
+  const labor = await TimeSheet.aggregate([
+    { $match: { tenantId } },
+    {
+      $group: {
+        _id: { $dateToString: { format: '%Y-%m', date: '$date' } },
+        hours: { $sum: '$totalHours' },
+      },
+    },
+    {
+      $project: { _id: 0, period: '$_id', laborCost: { $multiply: ['$hours', 50] } },
+    },
+  ]);
+
+  const maintenance = await WorkHistory.aggregate([
+    { $match: { tenantId } },
+    {
+      $group: {
+        _id: { $dateToString: { format: '%Y-%m', date: '$completedAt' } },
+        maintenanceCost: { $sum: { $multiply: ['$timeSpentHours', 50] } },
+      },
+    },
+    { $project: { _id: 0, period: '$_id', maintenanceCost: 1 } },
+  ]);
+
+  const materials = await WorkHistory.aggregate([
+    { $match: { tenantId } },
+    { $unwind: '$materialsUsed' },
+    {
+      $lookup: {
+        from: 'inventories',
+        localField: 'materialsUsed',
+        foreignField: '_id',
+        as: 'inv',
+      },
+    },
+    { $unwind: '$inv' },
+    {
+      $group: {
+        _id: { $dateToString: { format: '%Y-%m', date: '$completedAt' } },
+        materialCost: { $sum: '$inv.unitCost' },
+      },
+    },
+    { $project: { _id: 0, period: '$_id', materialCost: 1 } },
+  ]);
+
+  const map = new Map<string, any>();
+  [labor, maintenance, materials].forEach((arr) => {
+    arr.forEach((r: any) => {
+      const entry = map.get(r.period) || {
+        period: r.period,
+        laborCost: 0,
+        maintenanceCost: 0,
+        materialCost: 0,
+      };
+      if (r.laborCost !== undefined) entry.laborCost = r.laborCost;
+      if (r.maintenanceCost !== undefined) entry.maintenanceCost = r.maintenanceCost;
+      if (r.materialCost !== undefined) entry.materialCost = r.materialCost;
+      map.set(r.period, entry);
+    });
+  });
+
+  return Array.from(map.values()).map((r) => ({
+    ...r,
+    totalCost: (r.laborCost || 0) + (r.maintenanceCost || 0) + (r.materialCost || 0),
+  }));
+}
+
+export const getCostMetrics: AuthedRequestHandler = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId!;
+    const data = await aggregateCosts(tenantId);
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+async function aggregateDowntime(tenantId: string) {
+  const results = await WorkHistory.aggregate([
+    { $match: { tenantId } },
+    {
+      $group: {
+        _id: { $dateToString: { format: '%Y-%m', date: '$completedAt' } },
+        downtime: { $sum: '$timeSpentHours' },
+      },
+    },
+    { $sort: { _id: 1 } },
+  ]);
+
+  return results.map((r) => ({ period: r._id, downtime: r.downtime }));
+}
+
+export const getDowntimeMetrics: AuthedRequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const tenantId = req.tenantId!;
+    const data = await aggregateDowntime(tenantId);
     res.json(data);
   } catch (err) {
     next(err);

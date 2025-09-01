@@ -17,6 +17,7 @@ jobs:
           cache: 'npm'
           cache-dependency-path: Backend/package-lock.json
       - run: npm ci
+      - run: npm run swagger:check
       - run: npm test -- --ci
 
   frontend:

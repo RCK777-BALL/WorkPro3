@@ -13,7 +13,8 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "swagger:check": "ts-node utils/swagger.ts"
   },
   "dependencies": {
     "@types/helmet": "^0.0.48",
@@ -41,7 +42,9 @@
     "passport-openidconnect": "^0.0.2",
     "passport-google-oauth20": "^2.0.0",
     "passport-github2": "^0.1.12",
-    "speakeasy": "^2.0.0"
+    "speakeasy": "^2.0.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^4.7.1"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

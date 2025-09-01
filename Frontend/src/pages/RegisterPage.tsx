@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 
@@ -12,6 +12,26 @@ const RegisterPage: React.FC = () => {
     employeeId: '',
   });
   const [error, setError] = useState('');
+  const [installEvent, setInstallEvent] = useState<any>(null);
+  const [showInstall, setShowInstall] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallEvent(e);
+      setShowInstall(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler as EventListener);
+    return () => window.removeEventListener('beforeinstallprompt', handler as EventListener);
+  }, []);
+
+  const promptInstall = async () => {
+    if (!installEvent) return;
+    installEvent.prompt();
+    await installEvent.userChoice;
+    setInstallEvent(null);
+    setShowInstall(false);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -30,8 +50,19 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
       <form onSubmit={handleSubmit} className="max-w-md w-full space-y-4">
+        {showInstall && (
+          <div className="flex justify-center">
+            <button
+              onClick={promptInstall}
+              type="button"
+              className="mb-4 px-4 py-2 rounded bg-blue-600 text-white"
+            >
+              Install App
+            </button>
+          </div>
+        )}
         <h2 className="text-xl font-bold">Register</h2>
         <input
           type="text"

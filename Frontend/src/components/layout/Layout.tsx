@@ -11,6 +11,8 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, title }) => {
   const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
+  const [installEvent, setInstallEvent] = useState<any>(null);
+  const [showInstall, setShowInstall] = useState(false);
   const { theme } = useThemeStore();
   const {
     theme: themeSettings,
@@ -35,6 +37,24 @@ const Layout: React.FC<LayoutProps> = ({ children, title }) => {
 
   const toggleMobileSidebar = () => {
     setSidebarMobileOpen(!sidebarMobileOpen);
+  };
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallEvent(e);
+      setShowInstall(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler as EventListener);
+    return () => window.removeEventListener('beforeinstallprompt', handler as EventListener);
+  }, []);
+
+  const promptInstall = async () => {
+    if (!installEvent) return;
+    installEvent.prompt();
+    await installEvent.userChoice;
+    setInstallEvent(null);
+    setShowInstall(false);
   };
 
   return (
@@ -70,8 +90,20 @@ const Layout: React.FC<LayoutProps> = ({ children, title }) => {
           title={title}
         />
         
-        <main className="flex-1 p-2 sm:p-4 md:p-6 overflow-y-auto dark:bg-neutral-900 dark:text-white">
-          {children}
+        <main className="flex-1 overflow-y-auto dark:bg-neutral-900 dark:text-white">
+          <div className="p-2 sm:p-4 md:p-6 max-w-screen-xl mx-auto w-full">
+            {showInstall && (
+              <div className="mb-4 flex justify-center">
+                <button
+                  onClick={promptInstall}
+                  className="px-4 py-2 rounded bg-blue-600 text-white"
+                >
+                  Install App
+                </button>
+              </div>
+            )}
+            {children}
+          </div>
         </main>
       </div>
     </div>

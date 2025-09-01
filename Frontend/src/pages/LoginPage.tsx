@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+};
+
 const LoginPage: React.FC = () => {
+  // Auth & MFA state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -11,6 +17,28 @@ const LoginPage: React.FC = () => {
   const [mfaUser, setMfaUser] = useState<string | null>(null);
   const navigate = useNavigate();
   const { setUser } = useAuth();
+
+  // PWA install prompt state
+  const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
+  const [showInstall, setShowInstall] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallEvent(e as BeforeInstallPromptEvent);
+      setShowInstall(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler as EventListener);
+    return () => window.removeEventListener('beforeinstallprompt', handler as EventListener);
+  }, []);
+
+  const promptInstall = async () => {
+    if (!installEvent) return;
+    await installEvent.prompt();
+    await installEvent.userChoice;
+    setInstallEvent(null);
+    setShowInstall(false);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,10 +72,21 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="space-y-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+      <div className="space-y-4 w-full max-w-md">
+        {showInstall && (
+          <div className="flex justify-center">
+            <button
+              onClick={promptInstall}
+              className="mb-4 px-4 py-2 rounded bg-blue-600 text-white"
+            >
+              Install App
+            </button>
+          </div>
+        )}
+
         {!mfaUser ? (
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4 bg-white p-6 rounded shadow">
             <h2 className="text-xl font-bold">Login</h2>
             <input
               type="email"
@@ -56,6 +95,7 @@ const LoginPage: React.FC = () => {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full p-2 border rounded"
               autoComplete="email"
+              required
             />
             <input
               type="password"
@@ -64,18 +104,25 @@ const LoginPage: React.FC = () => {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full p-2 border rounded"
               autoComplete="current-password"
+              required
             />
             {error && <div className="text-red-500">{error}</div>}
-            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
+            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded w-full">
               Login
             </button>
-            <div className="flex flex-col space-y-2">
-              <a href="/api/auth/oauth/google" className="text-blue-600">Login with Google</a>
-              <a href="/api/auth/oauth/github" className="text-blue-600">Login with GitHub</a>
+
+            {/* OAuth shortcuts */}
+            <div className="flex flex-col space-y-2 pt-2">
+              <a href="/api/auth/oauth/google" className="text-blue-600">
+                Login with Google
+              </a>
+              <a href="/api/auth/oauth/github" className="text-blue-600">
+                Login with GitHub
+              </a>
             </div>
           </form>
         ) : (
-          <form onSubmit={handleVerify} className="space-y-4">
+          <form onSubmit={handleVerify} className="space-y-4 bg-white p-6 rounded shadow">
             <h2 className="text-xl font-bold">MFA Verification</h2>
             <input
               type="text"
@@ -83,13 +130,17 @@ const LoginPage: React.FC = () => {
               value={code}
               onChange={(e) => setCode(e.target.value)}
               className="w-full p-2 border rounded"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              required
             />
             {error && <div className="text-red-500">{error}</div>}
-            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
+            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded w-full">
               Verify
             </button>
           </form>
         )}
+
         <div className="flex justify-between text-sm">
           <Link to="/register" className="text-blue-600">
             Register

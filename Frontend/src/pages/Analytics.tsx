@@ -9,6 +9,18 @@ import { useDashboardStore } from '../store/dashboardStore';
 import { useAuth } from '../context/AuthContext';
 import KpiWidget from '../components/kpi/KpiWidget';
 import KpiExportButtons from '../components/kpi/KpiExportButtons';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
 
 interface AnalyticsData {
   workOrderCompletionRate: number;
@@ -35,6 +47,8 @@ const Analytics: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   const { selectedRole: role, setSelectedRole } = useDashboardStore();
+  const [costs, setCosts] = useState<any[]>([]);
+  const [downtime, setDowntime] = useState<any[]>([]);
 
 
   const fetchData = async () => {
@@ -44,6 +58,10 @@ const Analytics: React.FC = () => {
       setData(res.data);
       const kpiRes = await api.get('/v1/analytics/kpis');
       setKpis(kpiRes.data);
+      const costRes = await api.get('/reports/costs');
+      setCosts(costRes.data);
+      const downtimeRes = await api.get('/reports/downtime');
+      setDowntime(downtimeRes.data);
       setError(null);
     } catch (err) {
       console.error('Error fetching analytics:', err);
@@ -277,6 +295,50 @@ const Analytics: React.FC = () => {
                 />
               </div>
             </div>
+          </Card>
+        </div>
+
+        {/* Cost and Downtime Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card title="Monthly Costs">
+            <Line
+              data={{
+                labels: costs.map((c) => c.period),
+                datasets: [
+                  {
+                    label: 'Labor',
+                    data: costs.map((c) => c.laborCost),
+                    borderColor: '#3b82f6',
+                  },
+                  {
+                    label: 'Materials',
+                    data: costs.map((c) => c.materialCost),
+                    borderColor: '#10b981',
+                  },
+                  {
+                    label: 'Maintenance',
+                    data: costs.map((c) => c.maintenanceCost),
+                    borderColor: '#f59e0b',
+                  },
+                ],
+              }}
+              data-testid="cost-chart"
+            />
+          </Card>
+          <Card title="Asset Downtime">
+            <Line
+              data={{
+                labels: downtime.map((d) => d.period),
+                datasets: [
+                  {
+                    label: 'Downtime (h)',
+                    data: downtime.map((d) => d.downtime),
+                    borderColor: '#ef4444',
+                  },
+                ],
+              }}
+              data-testid="downtime-chart"
+            />
           </Card>
         </div>
 

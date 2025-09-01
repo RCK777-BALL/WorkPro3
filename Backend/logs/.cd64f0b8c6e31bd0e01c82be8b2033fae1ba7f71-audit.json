@@ -6,51 +6,6 @@
     "auditLog": "logs\\.cd64f0b8c6e31bd0e01c82be8b2033fae1ba7f71-audit.json",
     "files": [
         {
-            "date": 1754709877507,
-            "name": "logs\\app-2025-08-08.log",
-            "hash": "ca5dc56d3f5f62715dacf0f998088566dab89c0ce6dcd22b76963ee688c5ab39"
-        },
-        {
-            "date": 1754713620855,
-            "name": "logs\\app-2025-08-09.log",
-            "hash": "4b30b9286c1dbb1e8c04f7700b5be816ea2c6e469aa17f8d598b1c8a71bf2e31"
-        },
-        {
-            "date": 1754831423605,
-            "name": "logs\\app-2025-08-10.log",
-            "hash": "c962f6ef434fed864754db5c373622a36894c8550bb81068a25dbc6ac7854cca"
-        },
-        {
-            "date": 1754922368642,
-            "name": "logs\\app-2025-08-11.log",
-            "hash": "49525a458542846772f8f254eb7d82a14ec58250916475e2c4a72e34d45ab5e1"
-        },
-        {
-            "date": 1755009920127,
-            "name": "logs\\app-2025-08-12.log",
-            "hash": "34bfa049eaaec2d1b89ab205417ef17d016c6db99e69f6d945b46c3174f21cf6"
-        },
-        {
-            "date": 1755094941754,
-            "name": "logs\\app-2025-08-13.log",
-            "hash": "f2bac13b7027ecabf1974f09e30de4cdfddc605086f8f22e0d4da01bec512b9b"
-        },
-        {
-            "date": 1755179838995,
-            "name": "logs\\app-2025-08-14.log",
-            "hash": "f430c70df0d34fe803e1c6b4c0b3120de2e2476eea1caa967216bf8ed0cc377b"
-        },
-        {
-            "date": 1755275631333,
-            "name": "logs\\app-2025-08-15.log",
-            "hash": "a7621de77291b8da053b661a0605b98d4bd8aff28baa1667729262146d8b0a06"
-        },
-        {
-            "date": 1755436488119,
-            "name": "logs\\app-2025-08-17.log",
-            "hash": "eb5a0bc95cb0f22dcde8cb872c656e88e7a2efbb714a9df761d9c1797a868fc3"
-        },
-        {
             "date": 1755523828150,
             "name": "logs\\app-2025-08-18.log",
             "hash": "86a52b0a0f1adc317b163dcb9e3fcbb04ab9b5c38891b64494b597547cd3ba85"
@@ -74,6 +29,11 @@
             "date": 1755874820938,
             "name": "logs\\app-2025-08-22.log",
             "hash": "9f4cf0ce9be61beb4b159e7a2c09641fdd0cdb95ef2c0b69644100bdcf7f99ab"
+        },
+        {
+            "date": 1756704311708,
+            "name": "logs\\app-2025-09-01.log",
+            "hash": "e46b76c2e68b37d5fa3c5fab2aba45e4157d06f6319431c9197bec7b4ab01fdf"
         }
     ],
     "hashType": "sha256"

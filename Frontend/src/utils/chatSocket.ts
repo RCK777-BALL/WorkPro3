@@ -1,16 +1,14 @@
 import { io, type Socket } from 'socket.io-client';
 import { useSocketStore } from '../store/socketStore';
+import { endpoints } from './env';
 
 let socket: Socket | null = null;
 
 export function getChatSocket(): Socket {
   if (socket) return socket;
 
-  const base =
-    import.meta.env.VITE_WS_NOTIFICATIONS_URL ?? 'ws://localhost:5055';
-
-  socket = io(base, {
-    path: '/ws/notifications',
+  socket = io(endpoints.socketOrigin, {
+    path: endpoints.socketPath,
     transports: ['websocket'],
     autoConnect: true,
   });

@@ -40,6 +40,9 @@
     "zod": "^3.25.76",
     "passport": "^0.7.0",
     "passport-openidconnect": "^0.0.2",
+    "passport-google-oauth20": "^2.0.0",
+    "passport-github2": "^0.1.12",
+    "speakeasy": "^2.0.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^4.7.1"
   },

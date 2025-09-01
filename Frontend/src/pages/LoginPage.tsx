@@ -1,15 +1,31 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import LoginForm from '../components/auth/LoginForm';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
+
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+};
 
 const LoginPage: React.FC = () => {
-  const [installEvent, setInstallEvent] = useState<any>(null);
+  // Auth & MFA state
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [code, setCode] = useState('');
+  const [mfaUser, setMfaUser] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { setUser } = useAuth();
+
+  // PWA install prompt state
+  const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstall, setShowInstall] = useState(false);
 
   useEffect(() => {
     const handler = (e: Event) => {
       e.preventDefault();
-      setInstallEvent(e);
+      setInstallEvent(e as BeforeInstallPromptEvent);
       setShowInstall(true);
     };
     window.addEventListener('beforeinstallprompt', handler as EventListener);
@@ -18,10 +34,41 @@ const LoginPage: React.FC = () => {
 
   const promptInstall = async () => {
     if (!installEvent) return;
-    installEvent.prompt();
+    await installEvent.prompt();
     await installEvent.userChoice;
     setInstallEvent(null);
     setShowInstall(false);
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    try {
+      const { data } = await api.post('/auth/login', { email, password });
+      if (data.mfaRequired) {
+        setMfaUser(data.userId);
+        return;
+      }
+      setUser({ ...data.user, token: data.token });
+      navigate('/dashboard');
+    } catch {
+      setError('Login failed');
+    }
+  };
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mfaUser) return;
+    try {
+      const { data } = await api.post('/auth/mfa/verify', {
+        userId: mfaUser,
+        token: code,
+      });
+      setUser({ ...data.user, token: data.token });
+      navigate('/dashboard');
+    } catch {
+      setError('Invalid code');
+    }
   };
 
   return (
@@ -37,10 +84,70 @@ const LoginPage: React.FC = () => {
             </button>
           </div>
         )}
-        <LoginForm />
+
+        {!mfaUser ? (
+          <form onSubmit={handleLogin} className="space-y-4 bg-white p-6 rounded shadow">
+            <h2 className="text-xl font-bold">Login</h2>
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-2 border rounded"
+              autoComplete="email"
+              required
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-2 border rounded"
+              autoComplete="current-password"
+              required
+            />
+            {error && <div className="text-red-500">{error}</div>}
+            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded w-full">
+              Login
+            </button>
+
+            {/* OAuth shortcuts */}
+            <div className="flex flex-col space-y-2 pt-2">
+              <a href="/api/auth/oauth/google" className="text-blue-600">
+                Login with Google
+              </a>
+              <a href="/api/auth/oauth/github" className="text-blue-600">
+                Login with GitHub
+              </a>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={handleVerify} className="space-y-4 bg-white p-6 rounded shadow">
+            <h2 className="text-xl font-bold">MFA Verification</h2>
+            <input
+              type="text"
+              placeholder="One-time code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              className="w-full p-2 border rounded"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              required
+            />
+            {error && <div className="text-red-500">{error}</div>}
+            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded w-full">
+              Verify
+            </button>
+          </form>
+        )}
+
         <div className="flex justify-between text-sm">
-          <Link to="/register" className="text-blue-600">Register</Link>
-          <Link to="/forgot-password" className="text-blue-600">Forgot Password?</Link>
+          <Link to="/register" className="text-blue-600">
+            Register
+          </Link>
+          <Link to="/forgot-password" className="text-blue-600">
+            Forgot Password?
+          </Link>
         </div>
       </div>
     </div>

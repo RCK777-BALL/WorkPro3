@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import speakeasy from "speakeasy";
 import logger from "../utils/logger";
 import User from "../models/User";
 
@@ -26,6 +27,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     logger.info('Password comparison result', { valid });
     if (!valid) {
       res.status(401).json({ message: 'Invalid email or password' });
+      return;
+    }
+
+    if (user.mfaEnabled) {
+      res.status(200).json({ mfaRequired: true, userId: user._id.toString() });
       return;
     }
 
@@ -105,6 +111,60 @@ export const requestPasswordReset = async (
   } catch (err) {
     logger.error("Password reset request error", err);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const generateMfa = async (req: Request, res: Response): Promise<void> => {
+  const { userId } = req.body;
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+    const secret = speakeasy.generateSecret();
+    user.mfaSecret = secret.base32;
+    await user.save();
+    const token = speakeasy.totp({ secret: user.mfaSecret, encoding: 'base32' });
+    res.json({ secret: user.mfaSecret, token });
+  } catch (err) {
+    logger.error('generateMfa error', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const verifyMfa = async (req: Request, res: Response): Promise<void> => {
+  const { userId, token } = req.body;
+  try {
+    const user = await User.findById(userId);
+    if (!user || !user.mfaSecret) {
+      res.status(400).json({ message: 'Invalid user' });
+      return;
+    }
+    const valid = speakeasy.totp.verify({
+      secret: user.mfaSecret,
+      encoding: 'base32',
+      token,
+    });
+    if (!valid) {
+      res.status(400).json({ message: 'Invalid token' });
+      return;
+    }
+    user.mfaEnabled = true;
+    await user.save();
+    const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
+    const payload = { id: user._id.toString(), email: user.email, tenantId };
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      res.status(500).json({ message: 'Server configuration issue' });
+      return;
+    }
+    const jwtToken = jwt.sign(payload, secret, { expiresIn: '7d' });
+    const { password: _pw, ...safeUser } = user.toObject();
+    res.json({ token: jwtToken, user: { ...safeUser, tenantId } });
+  } catch (err) {
+    logger.error('verifyMfa error', err);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 

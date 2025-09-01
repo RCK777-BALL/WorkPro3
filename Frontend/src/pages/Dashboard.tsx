@@ -7,6 +7,7 @@ import useDashboardData from '../hooks/useDashboardData';
 import { useSummary } from '../hooks/useSummaryData';
 import api from '../utils/api';
 import { getChatSocket } from '../utils/chatSocket';
+import { useNavigate } from 'react-router-dom';
 
 import type {
   Department,
@@ -33,6 +34,14 @@ const Dashboard: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const selectedRole = useDashboardStore((s) => s.selectedRole);
   const connected = useSocketStore((s) => s.connected);
+  const navigate = useNavigate();
+
+  const handleKeyDown = (path: string) => (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      navigate(path);
+    }
+  };
 
   const {
     workOrdersByStatus,
@@ -159,19 +168,43 @@ const Dashboard: React.FC = () => {
 
         {/* Top stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="rounded-xl border p-4">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => navigate('/assets')}
+            onKeyDown={handleKeyDown('/assets')}
+            className="rounded-xl border p-4 cursor-pointer hover:bg-neutral-50"
+          >
             <div className="text-sm opacity-70">Total Assets</div>
             <div className="text-2xl font-bold">{stats.totalAssets}</div>
           </div>
-          <div className="rounded-xl border p-4">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => navigate('/workorders?status=open')}
+            onKeyDown={handleKeyDown('/workorders?status=open')}
+            className="rounded-xl border p-4 cursor-pointer hover:bg-neutral-50"
+          >
             <div className="text-sm opacity-70">Active Work Orders</div>
             <div className="text-2xl font-bold">{stats.activeWorkOrders}</div>
           </div>
-          <div className="rounded-xl border p-4">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => navigate('/workorders?status=completed')}
+            onKeyDown={handleKeyDown('/workorders?status=completed')}
+            className="rounded-xl border p-4 cursor-pointer hover:bg-neutral-50"
+          >
             <div className="text-sm opacity-70">Maintenance Compliance</div>
             <div className="text-2xl font-bold">{stats.maintenanceCompliance}%</div>
           </div>
-          <div className="rounded-xl border p-4">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => navigate('/inventory?lowStock=true')}
+            onKeyDown={handleKeyDown('/inventory?lowStock=true')}
+            className="rounded-xl border p-4 cursor-pointer hover:bg-neutral-50"
+          >
             <div className="text-sm opacity-70">Inventory Alerts</div>
             <div className="text-2xl font-bold">{stats.inventoryAlerts}</div>
           </div>
@@ -182,18 +215,74 @@ const Dashboard: React.FC = () => {
           <div className="rounded-xl border p-4">
             <h2 className="font-semibold mb-2">Work Orders by Status</h2>
             <ul className="space-y-1 text-sm">
-              <li>Open: <b>{workOrdersByStatus?.open ?? 0}</b></li>
-              <li>In Progress: <b>{workOrdersByStatus?.inProgress ?? 0}</b></li>
-              <li>On Hold: <b>{workOrdersByStatus?.onHold ?? 0}</b></li>
-              <li>Completed: <b>{workOrdersByStatus?.completed ?? 0}</b></li>
+              <li
+                role="button"
+                tabIndex={0}
+                onClick={() => navigate('/workorders?status=open')}
+                onKeyDown={handleKeyDown('/workorders?status=open')}
+                className="cursor-pointer flex justify-between rounded p-1 hover:bg-neutral-50"
+              >
+                <span>Open:</span> <b>{workOrdersByStatus?.open ?? 0}</b>
+              </li>
+              <li
+                role="button"
+                tabIndex={0}
+                onClick={() => navigate('/workorders?status=in-progress')}
+                onKeyDown={handleKeyDown('/workorders?status=in-progress')}
+                className="cursor-pointer flex justify-between rounded p-1 hover:bg-neutral-50"
+              >
+                <span>In Progress:</span> <b>{workOrdersByStatus?.inProgress ?? 0}</b>
+              </li>
+              <li
+                role="button"
+                tabIndex={0}
+                onClick={() => navigate('/workorders?status=on-hold')}
+                onKeyDown={handleKeyDown('/workorders?status=on-hold')}
+                className="cursor-pointer flex justify-between rounded p-1 hover:bg-neutral-50"
+              >
+                <span>On Hold:</span> <b>{workOrdersByStatus?.onHold ?? 0}</b>
+              </li>
+              <li
+                role="button"
+                tabIndex={0}
+                onClick={() => navigate('/workorders?status=completed')}
+                onKeyDown={handleKeyDown('/workorders?status=completed')}
+                className="cursor-pointer flex justify-between rounded p-1 hover:bg-neutral-50"
+              >
+                <span>Completed:</span> <b>{workOrdersByStatus?.completed ?? 0}</b>
+              </li>
             </ul>
           </div>
           <div className="rounded-xl border p-4">
             <h2 className="font-semibold mb-2">Assets by Status</h2>
             <ul className="space-y-1 text-sm">
-              <li>Active: <b>{assetsByStatus?.Active ?? 0}</b></li>
-              <li>Offline: <b>{assetsByStatus?.Offline ?? 0}</b></li>
-              <li>In Repair: <b>{assetsByStatus?.['In Repair'] ?? 0}</b></li>
+              <li
+                role="button"
+                tabIndex={0}
+                onClick={() => navigate('/assets?status=Active')}
+                onKeyDown={handleKeyDown('/assets?status=Active')}
+                className="cursor-pointer flex justify-between rounded p-1 hover:bg-neutral-50"
+              >
+                <span>Active:</span> <b>{assetsByStatus?.Active ?? 0}</b>
+              </li>
+              <li
+                role="button"
+                tabIndex={0}
+                onClick={() => navigate('/assets?status=Offline')}
+                onKeyDown={handleKeyDown('/assets?status=Offline')}
+                className="cursor-pointer flex justify-between rounded p-1 hover:bg-neutral-50"
+              >
+                <span>Offline:</span> <b>{assetsByStatus?.Offline ?? 0}</b>
+              </li>
+              <li
+                role="button"
+                tabIndex={0}
+                onClick={() => navigate('/assets?status=In%20Repair')}
+                onKeyDown={handleKeyDown('/assets?status=In%20Repair')}
+                className="cursor-pointer flex justify-between rounded p-1 hover:bg-neutral-50"
+              >
+                <span>In Repair:</span> <b>{assetsByStatus?.['In Repair'] ?? 0}</b>
+              </li>
             </ul>
           </div>
         </div>

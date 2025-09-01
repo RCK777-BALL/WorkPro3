@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import Layout from '../components/layout/Layout';
 import Button from '../components/common/Button';
 import { Download, Upload } from 'lucide-react';
@@ -25,6 +26,8 @@ import UpcomingMaintenance from '../components/dashboard/UpcomingMaintenance';
 import AssetsStatusChart from '../components/dashboard/AssetsStatusChart';
 import CriticalAlerts from '../components/dashboard/CriticalAlerts';
 import LowStockParts from '../components/dashboard/LowStockParts';
+
+import { useToast } from '../context/ToastContext';
 
 import type {
   Department,
@@ -73,6 +76,7 @@ const Dashboard: React.FC = () => {
     setLayouts: s.setLayouts,
   }));
   const connected = useSocketStore((s) => s.connected);
+  const { addToast } = useToast();
 
   const [liveData, setLiveData] = useState(true);
   const pollActive = useRef(false);
@@ -119,6 +123,19 @@ const Dashboard: React.FC = () => {
   };
 
   const query = buildQuery();
+
+  const CardBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <ErrorBoundary
+      fallbackRender={() => (
+        <div className="rounded-xl border p-4">
+          <span className="text-sm opacity-70">Error loading</span>
+        </div>
+      )}
+      onError={() => addToast('Error loading dashboard card', 'error')}
+    >
+      {children}
+    </ErrorBoundary>
+  );
 
   // summaries (auto-refetch when filters change)
   const [summary] = useSummary<DashboardSummary>(
@@ -202,12 +219,9 @@ const Dashboard: React.FC = () => {
 
     const s = getNotificationsSocket();
 
-    const doRefresh = async () => {
-      try {
-        await refresh();
-      } catch (e) {
-        console.error('refresh failed', e);
-      }
+    // refresh() is debounced; no need to await
+    const doRefresh = () => {
+      refresh();
     };
 
     const handleLowStockUpdate = (parts: LowStockPartResponse[]) => {
@@ -349,23 +363,35 @@ const Dashboard: React.FC = () => {
           onLayoutChange={handleLayoutChange}
         >
           <div key="stats" className="h-full">
-            <DashboardStats stats={stats} />
+            <CardBoundary>
+              <DashboardStats stats={stats} />
+            </CardBoundary>
           </div>
           <div key="workOrders" className="h-full">
-            <WorkOrdersChart data={workOrdersByStatus} />
+            <CardBoundary>
+              <WorkOrdersChart data={workOrdersByStatus} />
+            </CardBoundary>
           </div>
           <div key="maintenance" className="h-full">
-            <UpcomingMaintenance maintenanceItems={upcomingMaintenance} />
+            <CardBoundary>
+              <UpcomingMaintenance maintenanceItems={upcomingMaintenance} />
+            </CardBoundary>
           </div>
         </ResponsiveGridLayout>
 
-        {/* Additional KPI widgets (outside the grid by default) */}
+        {/* Additional KPI widgets */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <AssetsStatusChart data={assetsByStatus} />
-          <CriticalAlerts alerts={criticalAlerts.slice(0, 8)} />
+          <CardBoundary>
+            <AssetsStatusChart data={assetsByStatus} />
+          </CardBoundary>
+          <CardBoundary>
+            <CriticalAlerts alerts={criticalAlerts.slice(0, 8)} />
+          </CardBoundary>
         </div>
         <div className="grid grid-cols-1 gap-6">
-          <LowStockParts parts={lowStockParts.slice(0, 12)} />
+          <CardBoundary>
+            <LowStockParts parts={lowStockParts.slice(0, 12)} />
+          </CardBoundary>
         </div>
       </div>
     </Layout>

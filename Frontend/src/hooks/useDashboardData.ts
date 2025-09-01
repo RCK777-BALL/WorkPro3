@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../utils/api';
 import type {
   StatusCountResponse,
@@ -42,6 +42,22 @@ const defaultAssetStatus: AssetStatusMap = {
   'In Repair': 0,
 };
 
+// simple debounce helper
+function debounce<F extends (...args: any[]) => void>(fn: F, delay: number) {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const debounced = (...args: Parameters<F>) => {
+    if (timer) clearTimeout(timer);
+    timer = window.setTimeout(() => fn(...args), delay);
+  };
+  (debounced as any).cancel = () => {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+  };
+  return debounced as F & { cancel: () => void };
+}
+
 export default function useDashboardData(
   role?: string,
   department?: string,
@@ -54,7 +70,7 @@ export default function useDashboardData(
   const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlertItem[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const refresh = useCallback(async () => {
+  const refreshData = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -68,6 +84,7 @@ export default function useDashboardData(
         }
       }
       const query = params.toString() ? `?${params.toString()}` : '';
+
       const [woRes, assetRes, upcomingRes, alertRes] = await Promise.all([
         api.get<StatusCountResponse[]>(`/summary/workorders${query}`),
         api.get<StatusCountResponse[]>(`/summary/assets${query}`),
@@ -75,6 +92,7 @@ export default function useDashboardData(
         api.get<CriticalAlertResponse[]>(`/summary/critical-alerts${query}`),
       ]);
 
+      // Work orders
       const woCounts: WorkOrderStatusMap = { ...defaultWOStatus };
       if (Array.isArray(woRes.data)) {
         woRes.data.forEach(({ _id, count }) => {
@@ -84,6 +102,7 @@ export default function useDashboardData(
       }
       setWorkOrdersByStatus(woCounts);
 
+      // Assets
       const assetCounts: AssetStatusMap = { ...defaultAssetStatus };
       if (Array.isArray(assetRes.data)) {
         assetRes.data.forEach(({ _id, count }) => {
@@ -94,11 +113,12 @@ export default function useDashboardData(
       }
       setAssetsByStatus(assetCounts);
 
+      // Upcoming maintenance
       const upcoming: UpcomingMaintenanceItem[] = Array.isArray(upcomingRes.data)
         ? upcomingRes.data.map((u) => ({
             id: u._id ?? u.id ?? '',
             assetName: u.asset?.name ?? 'Unknown',
-            assetId: u.asset?._id ?? u.asset?.id ?? '',
+            assetId: u.asset?._id ?? (u as any).asset?.id ?? '',
             date: u.nextDue,
             type: u.type ?? '',
             assignedTo: u.assignedTo ?? '',
@@ -107,6 +127,7 @@ export default function useDashboardData(
         : [];
       setUpcomingMaintenance(upcoming);
 
+      // Critical alerts
       const alerts: CriticalAlertItem[] = Array.isArray(alertRes.data)
         ? alertRes.data.map((a) => ({
             id: a._id ?? a.id ?? '',
@@ -124,8 +145,11 @@ export default function useDashboardData(
     }
   }, [role, department, timeframe, range?.start, range?.end]);
 
+  const refresh = useMemo(() => debounce(refreshData, 300), [refreshData]);
+
   useEffect(() => {
-    refresh().catch(() => {});
+    refresh();
+    return () => refresh.cancel();
   }, [refresh]);
 
   return {

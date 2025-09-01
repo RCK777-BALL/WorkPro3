@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Layout from '../components/layout/Layout';
 import { useAuthStore } from '../store/authStore';
 import { useDashboardStore } from '../store/dashboardStore';
@@ -6,7 +6,15 @@ import { useSocketStore } from '../store/socketStore';
 import useDashboardData from '../hooks/useDashboardData';
 import { useSummary } from '../hooks/useSummaryData';
 import api from '../utils/api';
-import { getChatSocket } from '../utils/chatSocket';
+import FiltersBar from '../components/dashboard/FiltersBar';
+import {
+  getNotificationsSocket,
+  closeNotificationsSocket,
+  startNotificationsPoll,
+  stopNotificationsPoll,
+} from '../utils/notificationsSocket';
+import { useNavigate } from 'react-router-dom';
+
 import { Responsive, WidthProvider, type Layouts } from 'react-grid-layout';
 import DashboardStats from '../components/dashboard/DashboardStats';
 import WorkOrdersChart from '../components/dashboard/WorkOrdersChart';
@@ -58,11 +66,25 @@ const Dashboard: React.FC = () => {
   const {
     selectedRole,
     selectedDepartment,
+    selectedTimeframe,
+    customRange,
     setSelectedDepartment,
     layouts,
     setLayouts,
-  } = useDashboardStore();
+  } = useDashboardStore((s) => ({
+    selectedRole: s.selectedRole,
+    selectedDepartment: s.selectedDepartment,
+    selectedTimeframe: s.selectedTimeframe,
+    customRange: s.customRange,
+    setSelectedDepartment: s.setSelectedDepartment,
+    layouts: s.layouts,
+    setLayouts: s.setLayouts,
+  }));
   const connected = useSocketStore((s) => s.connected);
+  const navigate = useNavigate();
+
+  const [liveData, setLiveData] = useState(true);
+  const pollActive = useRef(false);
 
   const {
     workOrdersByStatus,
@@ -71,7 +93,12 @@ const Dashboard: React.FC = () => {
     criticalAlerts,
     refresh,
     loading,
-  } = useDashboardData(selectedRole);
+  } = useDashboardData(
+    selectedRole,
+    selectedDepartment,
+    selectedTimeframe,
+    customRange,
+  );
 
   const [stats, setStats] = useState({
     totalAssets: 0,
@@ -81,22 +108,42 @@ const Dashboard: React.FC = () => {
   });
   const [lowStockParts, setLowStockParts] = useState<LowStockPart[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [analytics, setAnalytics] = useState<any>(null);
-  const [showFilters, setShowFilters] = useState(false);
+  const [analytics, setAnalytics] = useState<any | null>(null);
   const [customize, setCustomize] = useState(false);
 
-  // summaries (auto-refetch when selectedRole changes)
+  const buildQuery = () => {
+    const params = new URLSearchParams();
+    if (selectedDepartment !== 'all') params.append('department', selectedDepartment);
+    if (selectedRole !== 'all') params.append('role', selectedRole);
+    if (selectedTimeframe) {
+      params.append('timeframe', selectedTimeframe);
+      if (selectedTimeframe === 'custom') {
+        params.append('start', customRange.start);
+        params.append('end', customRange.end);
+      }
+    }
+    const q = params.toString();
+    return q ? `?${q}` : '';
+  };
+
+  const query = buildQuery();
+
+  // summaries (auto-refetch when filters change)
   const [summary] = useSummary<DashboardSummary>(
-    `/summary${selectedRole ? `?role=${selectedRole}` : ''}`,
-    [selectedRole],
+    `/summary${query}`,
+    [selectedDepartment, selectedRole, selectedTimeframe, customRange.start, customRange.end],
   );
   const [lowStock] = useSummary<LowStockPartResponse[]>(
-    `/summary/low-stock${selectedRole ? `?role=${selectedRole}` : ''}`,
-    [selectedRole],
+    `/summary/low-stock${query}`,
+    [selectedDepartment, selectedRole, selectedTimeframe, customRange.start, customRange.end],
   );
-  const [departmentsData] = useSummary<Department[]>('/departments', [], { ttlMs: 60_000 });
+  const [departmentsData] = useSummary<Department[]>(
+    '/summary/departments',
+    [],
+    { ttlMs: 60_000 },
+  );
 
-  // restore saved layout
+  // restore saved layout (once)
   useEffect(() => {
     try {
       const stored = typeof window !== 'undefined' ? localStorage.getItem('dashboardLayoutV1') : null;
@@ -142,23 +189,33 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const query = selectedRole ? `?role=${selectedRole}` : '';
-        const res = await api.get(`/reports/analytics${query}`);
+        const res = await api.get(`/reports/analytics${buildQuery()}`);
         setAnalytics(res.data);
       } catch (err) {
         console.error('Error fetching analytics', err);
       }
     };
     fetchAnalytics();
-  }, [selectedRole]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDepartment, selectedRole, selectedTimeframe, customRange]);
 
-  // socket-driven refresh
+  // socket-driven refresh with polling fallback
   useEffect(() => {
-    const s = getChatSocket?.();
-    if (!s) return;
+    if (!liveData) {
+      closeNotificationsSocket();
+      stopNotificationsPoll();
+      pollActive.current = false;
+      return;
+    }
+
+    const s = getNotificationsSocket();
 
     const doRefresh = async () => {
-      try { await refresh(); } catch (e) { console.error('refresh failed', e); }
+      try {
+        await refresh();
+      } catch (e) {
+        console.error('refresh failed', e);
+      }
     };
 
     const handleLowStockUpdate = (parts: LowStockPartResponse[]) => {
@@ -186,17 +243,44 @@ const Dashboard: React.FC = () => {
           : 0;
       setStats((prev) => ({ ...prev, maintenanceCompliance: value }));
     });
+    s.on('notification', doRefresh);
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (s.disconnected) {
+      timer = setTimeout(() => {
+        if (s.disconnected && !pollActive.current) {
+          startNotificationsPoll(doRefresh);
+          pollActive.current = true;
+        }
+      }, 10_000);
+    }
+
+    s.on('connect', () => {
+      if (pollActive.current) {
+        stopNotificationsPoll();
+        pollActive.current = false;
+      }
+    });
 
     return () => {
       s.off('inventoryUpdated', doRefresh);
       s.off('workOrderUpdated', doRefresh);
       s.off('lowStockUpdated', handleLowStockUpdate);
       s.off('pmCompletionUpdated');
+      s.off('notification', doRefresh);
+      if (timer) clearTimeout(timer);
+      stopNotificationsPoll();
+      pollActive.current = false;
     };
-  }, [refresh, connected]);
+  }, [refresh, connected, liveData]);
 
   const handleLayoutChange = (_: any, allLayouts: Layouts) => {
     setLayouts(allLayouts);
+    try {
+      localStorage.setItem('dashboardLayoutV1', JSON.stringify(allLayouts));
+    } catch {
+      // ignore persistence errors
+    }
   };
 
   return (
@@ -205,13 +289,6 @@ const Dashboard: React.FC = () => {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">Welcome{user?.name ? `, ${user.name}` : ''}</h1>
           <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={() => setShowFilters((s) => !s)}
-              className="px-3 py-1 text-sm border rounded-md"
-            >
-              Filters
-            </button>
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
@@ -221,25 +298,16 @@ const Dashboard: React.FC = () => {
               Customize layout
             </label>
             {loading && <span className="text-sm opacity-70">Refreshing…</span>}
+            <button
+              className="text-sm border px-2 py-1 rounded"
+              onClick={() => setLiveData((v) => !v)}
+            >
+              {liveData ? 'Live On' : 'Live Off'}
+            </button>
           </div>
         </div>
 
-        {showFilters && (
-          <div>
-            <select
-              value={selectedDepartment}
-              onChange={(e) => setSelectedDepartment(e.target.value)}
-              className="mt-2 p-2 border rounded-md"
-            >
-              <option value="all">All Departments</option>
-              {departments.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+        <FiltersBar departments={departments} />
 
         <ResponsiveGridLayout
           className="layout"

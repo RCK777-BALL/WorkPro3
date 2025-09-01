@@ -28,6 +28,7 @@ import teamRoutes from './routes/TeamRoutes';
 import notificationsRoutes from './routes/notifications';
 import TenantRoutes from './routes/TenantRoutes';
 import webhooksRoutes from './routes/webhooks';
+import webhookRoutes from './routes/WebhookRoutes';
 import ThemeRoutes from './routes/ThemeRoutes';
 import chatRoutes from './routes/ChatRoutes';
 import requestPortalRoutes from './routes/requestPortal';
@@ -145,6 +146,7 @@ app.use('/api/vendor-portal', vendorPortalRoutes);
 app.use('/api/vendor', vendorPortalRoutes);
 
 app.use('/api/chat', chatRoutes);
+app.use('/api/hooks', webhookRoutes);
 app.use('/api/webhooks', webhooksRoutes);
 app.use('/api/calendar', calendarRoutes);
 

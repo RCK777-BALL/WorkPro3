@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Layout from '../components/layout/Layout';
+import Button from '../components/common/Button';
+import { Download, Upload } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useDashboardStore } from '../store/dashboardStore';
 import { useSocketStore } from '../store/socketStore';
@@ -52,6 +54,35 @@ const Dashboard: React.FC = () => {
   const [lowStockParts, setLowStockParts] = useState<LowStockPart[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [analytics, setAnalytics] = useState<any>(null);
+  const dashboardRef = useRef<HTMLDivElement>(null);
+
+  const handleExportCSV = async () => {
+    const { default: exportCsv } = await import('../utils/exportCsv');
+    exportCsv({
+      'Total Assets': stats.totalAssets,
+      'Active Work Orders': stats.activeWorkOrders,
+      'Maintenance Compliance': stats.maintenanceCompliance,
+      'Inventory Alerts': stats.inventoryAlerts,
+    }, 'dashboard-kpis');
+    exportCsv(lowStockParts, 'dashboard-low-stock');
+  };
+
+  const handleExportPDF = async () => {
+    if (!dashboardRef.current) return;
+    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+      import('html2canvas'),
+      import('jspdf'),
+    ]);
+    const canvas = await html2canvas(dashboardRef.current, {
+      ignoreElements: (el) => el.classList.contains('no-export'),
+    });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const width = pdf.internal.pageSize.getWidth();
+    const height = (canvas.height * width) / canvas.width;
+    pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+    pdf.save('dashboard-summary.pdf');
+  };
 
   // summaries (auto-refetch when selectedRole changes)
   const [summary] = useSummary<DashboardSummary>(
@@ -151,10 +182,26 @@ const Dashboard: React.FC = () => {
 
   return (
     <Layout title="Dashboard">
-      <div className="px-4 py-6 space-y-6">
+      <div className="px-4 py-6 space-y-6" ref={dashboardRef}>
         <div className="flex items-baseline justify-between">
           <h1 className="text-2xl font-semibold">Welcome{user?.name ? `, ${user.name}` : ''}</h1>
-          {loading && <span className="text-sm opacity-70">Refreshing…</span>}
+          <div className="flex items-center gap-2 no-export">
+            {loading && <span className="text-sm opacity-70">Refreshing…</span>}
+            <Button
+              variant="outline"
+              icon={<Download size={16} />}
+              onClick={handleExportCSV}
+            >
+              Export CSV
+            </Button>
+            <Button
+              variant="outline"
+              icon={<Upload size={16} />}
+              onClick={handleExportPDF}
+            >
+              Export PDF
+            </Button>
+          </div>
         </div>
 
         {/* Top stats */}

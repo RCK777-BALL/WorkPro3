@@ -8,11 +8,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { useThemeStore } from './store/themeStore';
 import './index.css';
-
-// i18n (side-effect init)
 import './i18n';
-
-// PWA service worker
 import { registerSW } from 'virtual:pwa-register';
 
 // Initialize theme on app load

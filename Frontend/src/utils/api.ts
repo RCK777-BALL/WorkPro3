@@ -170,4 +170,11 @@ export const searchMessages = (channelId: string, q: string) =>
     .get<Message[]>(`/channels/${channelId}/messages/search`, { params: { q } })
     .then((res) => res.data);
 
+// ----- Purchasing -----
+export const createPurchaseOrder = (payload: any) =>
+  api.post('/purchase-orders', payload).then((res) => res.data);
+
+export const createGoodsReceipt = (payload: any) =>
+  api.post('/goods-receipts', payload).then((res) => res.data);
+
 export default api;

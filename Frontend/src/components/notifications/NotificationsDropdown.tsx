@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { markNotificationRead } from '../../utils/api';
@@ -36,6 +36,18 @@ const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
 
   const navigate = useNavigate();
   const [items, setNotifications] = useState<NotificationType[]>(notifications);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      previousFocusRef.current = document.activeElement as HTMLElement;
+      menuRef.current?.focus();
+    } else {
+      previousFocusRef.current?.focus();
+    }
+  }, [isOpen]);
+
 
   useEffect(() => {
     const s = getChatSocket();
@@ -68,47 +80,49 @@ const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
   };
 
   return (
-    <Card>
-      <button data-testid="close-button" onClick={onClose}>
-        Close
-      </button>
-      <span data-testid="unread-count">{unreadCount}</span>
-
-      <ul>
-        {items.map((n) => (
-          <li key={n.id} className={colorClasses(n.type)}>
+    <div ref={menuRef} tabIndex={-1} role="menu" aria-label="Notifications">
+        <Card>
+          <button data-testid="close-button" onClick={onClose}>
+            Close
+          </button>
+          <span data-testid="unread-count">{unreadCount}</span>
+    
+          <ul>
+            {items.map((n) => (
+              <li key={n.id} className={colorClasses(n.type)}>
+                <button
+                  data-testid="notification"
+                  data-read={n.read ? 'true' : 'false'}
+                  onClick={() => {
+                    onMarkRead(n.id);
+                    markRead(n.id);
+                  }}
+                >
+                  {n.message}
+                </button>
+              </li>
+            ))}
+    
+            {items.length === 0 && (
+              <li className="py-8 text-center text-neutral-500 dark:text-neutral-400">
+                No notifications
+              </li>
+            )}
+          </ul>
+    
+          <div className="p-2 border-t border-neutral-100 dark:border-neutral-700 text-center">
             <button
-              data-testid="notification"
-              data-read={n.read ? 'true' : 'false'}
               onClick={() => {
-                onMarkRead(n.id);
-                markRead(n.id);
+                onClose();
+                navigate('/notifications');
               }}
+              className="text-sm text-primary-600 hover:underline"
             >
-              {n.message}
+              View All Notifications
             </button>
-          </li>
-        ))}
-
-        {items.length === 0 && (
-          <li className="py-8 text-center text-neutral-500 dark:text-neutral-400">
-            No notifications
-          </li>
-        )}
-      </ul>
-
-      <div className="p-2 border-t border-neutral-100 dark:border-neutral-700 text-center">
-        <button
-          onClick={() => {
-            onClose();
-            navigate('/notifications');
-          }}
-          className="text-sm text-primary-600 hover:underline"
-        >
-          View All Notifications
-        </button>
-      </div>
-    </Card>
+          </div>
+        </Card>
+    </div>
   );
 };
 

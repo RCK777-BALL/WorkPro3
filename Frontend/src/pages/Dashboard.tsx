@@ -1,12 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Layout from '../components/layout/Layout';
 import { useAuthStore } from '../store/authStore';
 import { useDashboardStore } from '../store/dashboardStore';
 import { useSocketStore } from '../store/socketStore';
 import useDashboardData from '../hooks/useDashboardData';
 import { useSummary } from '../hooks/useSummaryData';
-import api from '../utils/api';
-import { getChatSocket } from '../utils/chatSocket';
+import {
+  getNotificationsSocket,
+  closeNotificationsSocket,
+  startNotificationsPoll,
+  stopNotificationsPoll,
+} from '../utils/notificationsSocket';
 
 import type {
   Department,
@@ -33,6 +37,8 @@ const Dashboard: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const selectedRole = useDashboardStore((s) => s.selectedRole);
   const connected = useSocketStore((s) => s.connected);
+  const [liveData, setLiveData] = useState(true);
+  const pollActive = useRef(false);
 
   const {
     workOrdersByStatus,
@@ -50,8 +56,7 @@ const Dashboard: React.FC = () => {
     inventoryAlerts: 0,
   });
   const [lowStockParts, setLowStockParts] = useState<LowStockPart[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [analytics, setAnalytics] = useState<any>(null);
+  const [, setDepartments] = useState<Department[]>([]);
 
   // summaries (auto-refetch when selectedRole changes)
   const [summary] = useSummary<DashboardSummary>(
@@ -62,7 +67,23 @@ const Dashboard: React.FC = () => {
     `/summary/low-stock${selectedRole ? `?role=${selectedRole}` : ''}`,
     [selectedRole],
   );
-  const [departmentsData] = useSummary<Department[]>('/departments', [], { ttlMs: 60_000 });
+  const [departmentsData] = useSummary<Department[]>(
+    '/summary/departments',
+    [],
+    { ttlMs: 60_000 },
+  );
+
+  const wo = workOrdersByStatus ?? {
+    open: 0,
+    inProgress: 0,
+    onHold: 0,
+    completed: 0,
+  };
+  const as = assetsByStatus ?? {
+    Active: 0,
+    Offline: 0,
+    'In Repair': 0,
+  };
 
   // map summaries to local state
   useEffect(() => {
@@ -92,27 +113,23 @@ const Dashboard: React.FC = () => {
     if (Array.isArray(departmentsData)) setDepartments(departmentsData);
   }, [departmentsData]);
 
-  // analytics (optional)
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      try {
-        const query = selectedRole ? `?role=${selectedRole}` : '';
-        const res = await api.get(`/reports/analytics${query}`);
-        setAnalytics(res.data);
-      } catch (err) {
-        console.error('Error fetching analytics', err);
-      }
-    };
-    fetchAnalytics();
-  }, [selectedRole]);
-
   // socket-driven refresh
   useEffect(() => {
-    const s = getChatSocket?.();
-    if (!s) return;
+    if (!liveData) {
+      closeNotificationsSocket();
+      stopNotificationsPoll();
+      pollActive.current = false;
+      return;
+    }
+
+    const s = getNotificationsSocket();
 
     const doRefresh = async () => {
-      try { await refresh(); } catch (e) { console.error('refresh failed', e); }
+      try {
+        await refresh();
+      } catch (e) {
+        console.error('refresh failed', e);
+      }
     };
 
     const handleLowStockUpdate = (parts: LowStockPartResponse[]) => {
@@ -140,21 +157,51 @@ const Dashboard: React.FC = () => {
           : 0;
       setStats((prev) => ({ ...prev, maintenanceCompliance: value }));
     });
+    s.on('notification', doRefresh);
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (s.disconnected) {
+      timer = setTimeout(() => {
+        if (s.disconnected && !pollActive.current) {
+          startNotificationsPoll(doRefresh);
+          pollActive.current = true;
+        }
+      }, 10_000);
+    }
+
+    s.on('connect', () => {
+      if (pollActive.current) {
+        stopNotificationsPoll();
+        pollActive.current = false;
+      }
+    });
 
     return () => {
       s.off('inventoryUpdated', doRefresh);
       s.off('workOrderUpdated', doRefresh);
       s.off('lowStockUpdated', handleLowStockUpdate);
       s.off('pmCompletionUpdated');
+      s.off('notification', doRefresh);
+      if (timer) clearTimeout(timer);
+      stopNotificationsPoll();
+      pollActive.current = false;
     };
-  }, [refresh, connected]);
+  }, [refresh, connected, liveData]);
 
   return (
     <Layout title="Dashboard">
       <div className="px-4 py-6 space-y-6">
         <div className="flex items-baseline justify-between">
           <h1 className="text-2xl font-semibold">Welcome{user?.name ? `, ${user.name}` : ''}</h1>
-          {loading && <span className="text-sm opacity-70">Refreshing…</span>}
+          <div className="flex items-center gap-2">
+            {loading && <span className="text-sm opacity-70">Refreshing…</span>}
+            <button
+              className="text-sm border px-2 py-1 rounded"
+              onClick={() => setLiveData((v) => !v)}
+            >
+              {liveData ? 'Live On' : 'Live Off'}
+            </button>
+          </div>
         </div>
 
         {/* Top stats */}
@@ -182,18 +229,18 @@ const Dashboard: React.FC = () => {
           <div className="rounded-xl border p-4">
             <h2 className="font-semibold mb-2">Work Orders by Status</h2>
             <ul className="space-y-1 text-sm">
-              <li>Open: <b>{workOrdersByStatus?.open ?? 0}</b></li>
-              <li>In Progress: <b>{workOrdersByStatus?.inProgress ?? 0}</b></li>
-              <li>On Hold: <b>{workOrdersByStatus?.onHold ?? 0}</b></li>
-              <li>Completed: <b>{workOrdersByStatus?.completed ?? 0}</b></li>
+              <li>Open: <b>{wo.open}</b></li>
+              <li>In Progress: <b>{wo.inProgress}</b></li>
+              <li>On Hold: <b>{wo.onHold}</b></li>
+              <li>Completed: <b>{wo.completed}</b></li>
             </ul>
           </div>
           <div className="rounded-xl border p-4">
             <h2 className="font-semibold mb-2">Assets by Status</h2>
             <ul className="space-y-1 text-sm">
-              <li>Active: <b>{assetsByStatus?.Active ?? 0}</b></li>
-              <li>Offline: <b>{assetsByStatus?.Offline ?? 0}</b></li>
-              <li>In Repair: <b>{assetsByStatus?.['In Repair'] ?? 0}</b></li>
+              <li>Active: <b>{as.Active}</b></li>
+              <li>Offline: <b>{as.Offline}</b></li>
+              <li>In Repair: <b>{as['In Repair']}</b></li>
             </ul>
           </div>
         </div>

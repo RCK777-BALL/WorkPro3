@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 
 import { markNotificationRead } from '../../utils/api';
 import type { NotificationType } from '../../types';
-import Card from '../common/Card';
+import Card from '../common/Card'; 
 import {
   getNotificationsSocket,
   closeNotificationsSocket,
 } from '../../utils/notificationsSocket';
+ 
  
 
 const colorClasses = (type: NotificationType['type']) => {
@@ -43,8 +44,10 @@ const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
   const [items, setNotifications] = useState<NotificationType[]>(notifications);
 
   useEffect(() => {
+ 
     if (!liveData) return;
 
+ 
     const s = getNotificationsSocket();
     const handleCreate = (n: NotificationType) => {
       setNotifications((prev) => [n, ...prev]);

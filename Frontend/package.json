@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "vitest run --config vitest.e2e.config.ts"
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "ci:install": "npm ci --legacy-peer-deps"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
@@ -34,14 +35,14 @@
     "mammoth": "^1.9.1",
     "pdfjs-dist": "^4.10.38",
     "qrcode.react": "^4.2.0",
-    "react": "^18.3.1",
+    "react": "18.2.0",
     "react-d3-tree": "^3.6.2",
-    "react-dom": "^18.3.1",
+    "react-dom": "18.2.0",
     "react-dropzone": "^14.2.3",
     "react-error-boundary": "^4.0.13",
     "react-grid-layout": "^1.5.2",
     "react-hook-form": "^7.51.0",
-    "react-qr-reader": "^3.0.0-beta-1",
+    "react-qr-reader": "^3.0.0",
     "react-router-dom": "^6.22.2",
     "react-signature-canvas": "^1.0.6",
     "socket.io-client": "^4.8.1",
@@ -90,5 +91,11 @@
     "typescript-eslint": "^8.3.0",
     "vite": "^6.3.5",
     "vitest": "^3.2.2"
+  },
+  "overrides": {
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-transition-group": "^4.4.5",
+    "@types/react-transition-group": "^4.4.10"
   }
 }

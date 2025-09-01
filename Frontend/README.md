@@ -111,6 +111,6 @@ curl -X POST "$VITE_API_URL/inventory" \
 
 The dashboard uses a small zustand store with the `persist` middleware. Your
 selected timeframe, department filter, date range and any custom KPIs are saved
-to `localStorage` under the key `dashboard-storage`. When you return to the
+to `localStorage` under the key `dashboard-layouts`. When you return to the
 dashboard, these preferences are automatically loaded so your layout and filters
 remain the same across sessions.

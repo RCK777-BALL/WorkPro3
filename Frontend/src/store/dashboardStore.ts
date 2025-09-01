@@ -49,13 +49,6 @@ export const useDashboardStore = create<DashboardState>()(
       setSelectedKPIs: (selectedKPIs) => set({ selectedKPIs }),
       setLayouts: (layouts) => {
         set({ layouts });
-        try {
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('dashboardLayoutV1', JSON.stringify(layouts));
-          }
-        } catch {
-          /* ignore */
-        }
       },
       addKPI: (id) =>
         set((state) => ({
@@ -69,7 +62,7 @@ export const useDashboardStore = create<DashboardState>()(
         })),
     }),
     {
-      name: 'dashboard-storage',
+      name: 'dashboard-layouts',
     }
   )
 );

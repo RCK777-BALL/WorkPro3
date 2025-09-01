@@ -152,19 +152,6 @@ const Dashboard: React.FC = () => {
     { ttlMs: 60_000 },
   );
 
-  // restore saved layout (once)
-  useEffect(() => {
-    try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem('dashboardLayoutV1') : null;
-      if (stored) {
-        setLayouts(JSON.parse(stored));
-      } else {
-        setLayouts(defaultLayouts);
-      }
-    } catch {
-      setLayouts(defaultLayouts);
-    }
-  }, [setLayouts]);
 
   // map summaries to local state
   useEffect(() => {
@@ -282,11 +269,6 @@ const Dashboard: React.FC = () => {
 
   const handleLayoutChange = (_: any, allLayouts: Layouts) => {
     setLayouts(allLayouts);
-    try {
-      localStorage.setItem('dashboardLayoutV1', JSON.stringify(allLayouts));
-    } catch {
-      // ignore persistence errors
-    }
   };
 
   const handleExportCSV = async () => {

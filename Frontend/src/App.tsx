@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Loader from './components/Loader';
@@ -30,6 +30,7 @@ const Portal = lazy(() => import('./portal'));
 const VendorLogin = lazy(() => import('./vendor/Login'));
 const VendorPOList = lazy(() => import('./vendor/POList'));
 const VendorPODetail = lazy(() => import('./vendor/PODetail'));
+const NotFound = lazy(() => import('./pages/NotFound'));
  
 
 function App() {
@@ -70,8 +71,8 @@ function App() {
             </ProtectedRoute>
           }
         />
- {/* catch-all -> login */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+ {/* catch-all -> 404 */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
   );

@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      devOptions: { enabled: true }, // allow SW in dev if desired
+      devOptions: { enabled: true }, // allow SW in dev
       manifest: {
         name: 'MaintainPro',
         short_name: 'MaintainPro',
@@ -16,11 +16,11 @@ export default defineConfig({
         background_color: '#ffffff',
         theme_color: '#0ea5e9',
         icons: [
-          // Add real icons if available:
+          // add real icons if available:
           // { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-          // { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
-        ],
-      },
-    }),
-  ],
+          // { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' }
+        ]
+      }
+    })
+  ]
 });

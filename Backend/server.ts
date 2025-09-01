@@ -139,7 +139,11 @@ app.use('/api/v1/analytics', analyticsRoutes);
 app.use('/api/team', teamRoutes);
 app.use('/api/theme', ThemeRoutes);
 app.use('/api/request-portal', requestPortalRoutes);
+
+// Support both paths for the vendor portal
+app.use('/api/vendor-portal', vendorPortalRoutes);
 app.use('/api/vendor', vendorPortalRoutes);
+
 app.use('/api/chat', chatRoutes);
 app.use('/api/webhooks', webhooksRoutes);
 app.use('/api/calendar', calendarRoutes);

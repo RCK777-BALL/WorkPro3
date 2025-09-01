@@ -190,4 +190,30 @@ export const createPurchaseOrder = (payload: any) =>
 export const createGoodsReceipt = (payload: any) =>
   api.post('/goods-receipts', payload).then((res) => res.data);
 
+// Vendor purchase order helpers
+export const listVendorPurchaseOrders = (token: string) =>
+  api
+    .get('/purchase-orders', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    .then((res) => res.data);
+
+export const getVendorPurchaseOrder = (id: string, token: string) =>
+  api
+    .get(`/purchase-orders/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    .then((res) => res.data);
+
+export const updateVendorPurchaseOrder = (
+  id: string,
+  payload: any,
+  token: string,
+) =>
+  api
+    .put(`/purchase-orders/${id}`, payload, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    .then((res) => res.data);
+
 export default api;

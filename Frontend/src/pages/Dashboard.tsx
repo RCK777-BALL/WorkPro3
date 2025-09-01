@@ -6,7 +6,7 @@ import { useSocketStore } from '../store/socketStore';
 import useDashboardData from '../hooks/useDashboardData';
 import { useSummary } from '../hooks/useSummaryData';
 import api from '../utils/api';
-import { getChatSocket } from '../utils/chatSocket';
+import { getNotificationsSocket } from '../utils/notificationsSocket';
 
 import type {
   Department,
@@ -108,8 +108,7 @@ const Dashboard: React.FC = () => {
 
   // socket-driven refresh
   useEffect(() => {
-    const s = getChatSocket?.();
-    if (!s) return;
+    const s = getNotificationsSocket();
 
     const doRefresh = async () => {
       try { await refresh(); } catch (e) { console.error('refresh failed', e); }

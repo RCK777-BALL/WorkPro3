@@ -10,7 +10,7 @@ import type { Member, Message, Channel, DirectMessage } from '../types';
 import MessageSearchModal from '../components/messaging/MessageSearchModal';
 import MembersSheet from '../components/messaging/MembersSheet';
 import SettingsModal from '../components/messaging/SettingsModal';
-import { getChatSocket } from '../utils/chatSocket';
+import { getNotificationsSocket } from '../utils/notificationsSocket';
 
 const FALLBACK_CHANNEL: Channel = {
   id: 'fallback',
@@ -73,7 +73,7 @@ const Messages: React.FC = () => {
   }, [activeChannel, activeDM]);
 
   useEffect(() => {
-    const s = getChatSocket();
+    const s = getNotificationsSocket();
 
     const handleIncomingMessage = (message: Message) => {
       setMessages((prev) => [...prev, message]);
@@ -137,7 +137,7 @@ const Messages: React.FC = () => {
     if (!chatId) return;
 
     try {
-      const s = getChatSocket();
+      const s = getNotificationsSocket();
       const type = activeDM ? 'dm' : 'channel';
       if (s.connected) {
         s.emit('chat:read', { chatId, type });
@@ -167,7 +167,7 @@ const Messages: React.FC = () => {
 
     setMessages((prev) => [...prev, newMessage]);
     try {
-      const s = getChatSocket();
+      const s = getNotificationsSocket();
       if (s.connected) s.emit('chat:message', newMessage);
     } catch (err) {
       console.error('Failed to emit chat:message', err);
@@ -188,7 +188,7 @@ const Messages: React.FC = () => {
 
   const handleTyping = (typing: boolean) => {
     try {
-      const s = getChatSocket();
+      const s = getNotificationsSocket();
       if (s.connected) {
         s.emit('chat:typing', { typing, userId: 'currentUser', userName: 'John Doe' });
       }
@@ -218,7 +218,7 @@ const Messages: React.FC = () => {
 
     setMessages((prev) => [...prev, newMessage]);
     try {
-      const s = getChatSocket();
+      const s = getNotificationsSocket();
       if (s.connected) s.emit('chat:message', newMessage);
     } catch (err) {
       console.error('Failed to emit chat:message', err);

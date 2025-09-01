@@ -10,9 +10,8 @@ import type { NotificationType } from '../../types';
 import { markNotificationRead } from '../../utils/api';
 
 let socketClient: any;
- vi.mock('../../utils/chatSocket', () => ({
- 
-  getChatSocket: () => socketClient,
+vi.mock('../../utils/notificationsSocket', () => ({
+  getNotificationsSocket: () => socketClient,
 }));
 
 vi.mock('../../utils/api', () => ({

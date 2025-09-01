@@ -4,35 +4,58 @@ import { useSocketStore } from '../store/socketStore';
 let socket: Socket | null = null;
 let poll: ReturnType<typeof setInterval> | null = null;
 
-export function getNotificationsSocket(): Socket {
-  if (socket) return socket;
-  const base =
-    import.meta.env.VITE_WS_NOTIFICATIONS_URL ?? 'ws://localhost:5055';
-  socket = io(base, {
+function createSocket(): Socket {
+  const base = import.meta.env.VITE_WS_NOTIFICATIONS_URL ?? 'ws://localhost:5055';
+
+  const s = io(base, {
     path: '/ws/notifications',
-    transports: ['websocket'],
+    transports: ['websocket', 'polling'],
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 500,
+    reconnectionDelayMax: 5000,
     autoConnect: true,
   });
+
   const { setConnected } = useSocketStore.getState();
-  socket.on('connect', () => setConnected(true));
-  socket.on('disconnect', () => setConnected(false));
-  socket.on('connect_error', () => setConnected(false));
+
+  s.on('connect', () => {
+    console.log('[notifications] socket connected');
+    setConnected(true);
+  });
+
+  s.on('disconnect', (reason) => {
+    console.log('[notifications] socket disconnected:', reason);
+    setConnected(false);
+  });
+
+  s.on('connect_error', (err) => {
+    console.error('[notifications] connect_error:', err?.message ?? err);
+    setConnected(false);
+  });
+
+  return s;
+}
+
+export function getNotificationsSocket(): Socket {
+  if (!socket) socket = createSocket();
   return socket;
 }
 
-export function closeNotificationsSocket() {
+export function closeNotificationsSocket(): void {
   if (socket) {
+    socket.removeAllListeners();
     socket.close();
     socket = null;
   }
 }
 
-export function startNotificationsPoll(fn: () => void, interval = 10_000) {
+/** Simple polling fallback used when the socket can't stay connected. */
+export function startNotificationsPoll(fn: () => void, interval = 10_000): void {
   if (poll) return;
   poll = setInterval(fn, interval);
 }
 
-export function stopNotificationsPoll() {
+export function stopNotificationsPoll(): void {
   if (poll) {
     clearInterval(poll);
     poll = null;

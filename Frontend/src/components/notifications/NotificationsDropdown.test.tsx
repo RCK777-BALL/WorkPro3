@@ -10,9 +10,10 @@ import type { NotificationType } from '../../types';
 import { markNotificationRead } from '../../utils/api';
 
 let socketClient: any;
- vi.mock('../../utils/chatSocket', () => ({
- 
-  getChatSocket: () => socketClient,
+const closeSocketMock = vi.fn();
+vi.mock('../../utils/notificationsSocket', () => ({
+  getNotificationsSocket: () => socketClient,
+  closeNotificationsSocket: () => closeSocketMock(),
 }));
 
 vi.mock('../../utils/api', () => ({
@@ -28,23 +29,27 @@ const sample: NotificationType = {
   createdAt: ''
 };
 
-const setup = (notifications: NotificationType[] = []) => {
+const setup = (
+  notifications: NotificationType[] = [],
+  props: Record<string, unknown> = {},
+) => {
   const socketServer = new SocketMock();
   socketClient = socketServer.socketClient as any;
   const onMarkRead = vi.fn();
 
-  render(
+  const utils = render(
     <MemoryRouter>
       <NotificationsDropdown
         isOpen
         notifications={notifications}
         onClose={vi.fn()}
         onMarkRead={onMarkRead}
+        {...props}
       />
     </MemoryRouter>,
   );
 
-  return { socketServer, onMarkRead };
+  return { socketServer, onMarkRead, ...utils };
 };
 
 describe('NotificationsDropdown', () => {
@@ -77,6 +82,25 @@ describe('NotificationsDropdown', () => {
       });
     });
     expect(screen.getByTestId('unread-count').textContent).toBe('1');
+  });
+
+  it('cleans up socket on unmount', () => {
+    const { unmount } = setup();
+    unmount();
+    expect(closeSocketMock).toHaveBeenCalled();
+  });
+
+  it('does not subscribe when liveData is false', () => {
+    const { socketServer } = setup([], { liveData: false });
+    act(() => {
+      socketServer.emit('notification', {
+        id: '3',
+        message: 'ignored',
+        type: 'info',
+        read: false,
+      });
+    });
+    expect(screen.getByTestId('unread-count').textContent).toBe('0');
   });
 });
 

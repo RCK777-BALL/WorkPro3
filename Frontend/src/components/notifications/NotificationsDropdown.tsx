@@ -4,7 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { markNotificationRead } from '../../utils/api';
 import type { NotificationType } from '../../types';
 import Card from '../common/Card';
- import { getChatSocket } from '../../utils/chatSocket';
+import {
+  getNotificationsSocket,
+  closeNotificationsSocket,
+} from '../../utils/notificationsSocket';
  
 
 const colorClasses = (type: NotificationType['type']) => {
@@ -24,6 +27,7 @@ interface NotificationsDropdownProps {
   notifications: NotificationType[];
   onClose: () => void;
   onMarkRead: (id: string) => void;
+  liveData?: boolean;
 }
 
 const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
@@ -31,6 +35,7 @@ const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
   notifications,
   onClose,
   onMarkRead,
+  liveData = true,
 }) => {
   if (!isOpen) return null;
 
@@ -38,15 +43,18 @@ const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
   const [items, setNotifications] = useState<NotificationType[]>(notifications);
 
   useEffect(() => {
-    const s = getChatSocket();
+    if (!liveData) return;
+
+    const s = getNotificationsSocket();
     const handleCreate = (n: NotificationType) => {
       setNotifications((prev) => [n, ...prev]);
     };
     s.on('notification', handleCreate);
     return () => {
       s.off('notification', handleCreate);
+      closeNotificationsSocket();
     };
-  }, []);
+  }, [liveData]);
 
   const unreadCount = items.filter((n) => !n.read).length;
 

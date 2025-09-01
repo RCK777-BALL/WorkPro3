@@ -27,7 +27,7 @@ const Card: React.FC<CardProps> = ({
             {icon && <span className="mr-2 mt-0.5">{icon}</span>}
             <div>
               {title && <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">{title}</h3>}
-              {subtitle && <p className="text-sm text-neutral-500 dark:text-neutral-400">{subtitle}</p>}
+              {subtitle && <p className="text-sm text-neutral-700 dark:text-neutral-300">{subtitle}</p>}
             </div>
           </div>
           {headerActions && <div>{headerActions}</div>}

@@ -50,9 +50,9 @@ The optimized bundle is written to the `dist` folder.
 
 The following variables from `.env.example` configure the frontend:
 
-- `VITE_API_URL` – Base URL for API requests. **This must be set**; the frontend
-  throws an error if it's missing.
- - `VITE_SOCKET_URL` – WebSocket endpoint used for real‑time features. **This must be set** to receive live updates; leaving it empty falls back to offline mode.
+- `VITE_API_URL` – Base URL for API requests. Defaults to `http://localhost:5010/api`.
+- `VITE_WS_URL` – WebSocket server URL for real‑time updates. Defaults to `ws://localhost:5010`.
+- `VITE_WS_PATH` – WebSocket endpoint path. Defaults to `/socket.io`.
 - `CORS_ORIGIN` – Origin allowed when using the local API server.
 
 Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to the credentials from
@@ -60,7 +60,7 @@ your Supabase project dashboard.
 
 ### Offline mode
 
-If `VITE_SOCKET_URL` is omitted or the browser goes offline, API requests made
+If `VITE_WS_URL` is omitted or the browser goes offline, API requests made
 from the Work Orders page are stored in `localStorage` and queued until the
 WebSocket reconnects. The queued requests are then flushed automatically.
 
@@ -72,7 +72,7 @@ WebSocket reconnects. The queued requests are then flushed automatically.
 node backend/server.js
 ```
 
-The server reads `MONGO_URI` and `CORS_ORIGIN` from your `.env`. Ensure `CORS_ORIGIN` matches the Vite dev server URL (e.g. `http://localhost:5173`) and update `VITE_API_URL` and `VITE_SOCKET_URL` if the API runs on a different host or port.
+The server reads `MONGO_URI` and `CORS_ORIGIN` from your `.env`. Ensure `CORS_ORIGIN` matches the Vite dev server URL (e.g. `http://localhost:5173`) and update `VITE_API_URL`, `VITE_WS_URL`, and `VITE_WS_PATH` if the API runs on a different host or port.
 
 ### Inventory route example
 

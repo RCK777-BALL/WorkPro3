@@ -16,9 +16,10 @@ interface MaintenanceItem {
 
 interface UpcomingMaintenanceProps {
   maintenanceItems: MaintenanceItem[];
+  onComplete?: (id: string) => void;
 }
 
-const UpcomingMaintenance: React.FC<UpcomingMaintenanceProps> = ({ maintenanceItems }) => {
+const UpcomingMaintenance: React.FC<UpcomingMaintenanceProps> = ({ maintenanceItems, onComplete }) => {
   // Function to format date in readable format
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -59,7 +60,7 @@ const UpcomingMaintenance: React.FC<UpcomingMaintenanceProps> = ({ maintenanceIt
     >
       <div className="space-y-4">
         {maintenanceItems.map((item) => (
-          <div 
+          <div
             key={item.id}
             className="p-4 bg-white border border-neutral-200 rounded-lg hover:shadow-sm transition-shadow"
           >
@@ -68,12 +69,12 @@ const UpcomingMaintenance: React.FC<UpcomingMaintenanceProps> = ({ maintenanceIt
                 <h4 className="font-medium">{item.assetName}</h4>
                 <p className="text-sm text-neutral-500">Asset ID: {item.assetId}</p>
               </div>
-              <Badge 
-                text={item.type} 
+              <Badge
+                text={item.type}
                 size="sm"
               />
             </div>
-            
+
             <div className="mt-3 grid grid-cols-2 gap-3">
               <div className="flex items-center text-sm">
                 <Calendar size={16} className="mr-2 text-neutral-500" />
@@ -81,12 +82,12 @@ const UpcomingMaintenance: React.FC<UpcomingMaintenanceProps> = ({ maintenanceIt
                   {isToday(item.date) ? 'Today' : isThisWeek(item.date) ? 'This Week' : formatDate(item.date)}
                 </span>
               </div>
-              
+
               <div className="flex items-center text-sm">
                 <Clock size={16} className="mr-2 text-neutral-500" />
                 <span>{item.estimatedDuration} {item.estimatedDuration === 1 ? 'hour' : 'hours'}</span>
               </div>
-              
+
               {item.assignedTo && (
                 <div className="flex items-center text-sm col-span-2">
                   <Tool size={16} className="mr-2 text-neutral-500" />
@@ -94,6 +95,18 @@ const UpcomingMaintenance: React.FC<UpcomingMaintenanceProps> = ({ maintenanceIt
                 </div>
               )}
             </div>
+
+            {onComplete && (
+              <div className="mt-3 text-right">
+                <button
+                  onClick={() => onComplete(item.id)}
+                  className="text-sm text-primary-700 hover:underline"
+                  aria-label={`Complete maintenance for ${item.assetName}`}
+                >
+                  Complete
+                </button>
+              </div>
+            )}
           </div>
         ))}
         

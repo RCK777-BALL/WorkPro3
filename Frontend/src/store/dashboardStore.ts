@@ -2,9 +2,9 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Layouts } from 'react-grid-layout';
 
-export type Timeframe = 'day' | 'week' | 'month';
+export type Timeframe = '7d' | '30d' | '90d' | 'ytd' | 'custom';
 
-interface DateRange {
+export interface DateRange {
   start: string;
   end: string;
 }
@@ -14,14 +14,14 @@ interface DashboardState {
   selectedDepartment: string;
   selectedRole: string;
   role: string;
-  dateRange: DateRange;
+  customRange: DateRange;
   selectedKPIs: string[];
   layouts: Layouts;
   setSelectedTimeframe: (t: Timeframe) => void;
   setSelectedDepartment: (d: string) => void;
   setSelectedRole: (r: string) => void;
   setRole: (r: string) => void;
-  setDateRange: (range: DateRange) => void;
+  setCustomRange: (range: DateRange) => void;
   setSelectedKPIs: (kpis: string[]) => void;
   setLayouts: (layouts: Layouts) => void;
   addKPI: (id: string) => void;
@@ -31,11 +31,11 @@ interface DashboardState {
 export const useDashboardStore = create<DashboardState>()(
   persist(
     (set) => ({
-      selectedTimeframe: 'day',
+      selectedTimeframe: '7d',
       selectedDepartment: 'all',
       selectedRole: 'all',
       role: '',
-      dateRange: {
+      customRange: {
         start: new Date().toISOString().split('T')[0],
         end: new Date().toISOString().split('T')[0],
       },
@@ -45,9 +45,18 @@ export const useDashboardStore = create<DashboardState>()(
       setSelectedDepartment: (selectedDepartment) => set({ selectedDepartment }),
       setSelectedRole: (selectedRole) => set({ selectedRole }),
       setRole: (role) => set({ role }),
-      setDateRange: (dateRange) => set({ dateRange }),
+      setCustomRange: (customRange) => set({ customRange }),
       setSelectedKPIs: (selectedKPIs) => set({ selectedKPIs }),
-      setLayouts: (layouts) => set({ layouts }),
+      setLayouts: (layouts) => {
+        set({ layouts });
+        try {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('dashboardLayoutV1', JSON.stringify(layouts));
+          }
+        } catch {
+          /* ignore */
+        }
+      },
       addKPI: (id) =>
         set((state) => ({
           selectedKPIs: state.selectedKPIs.includes(id)

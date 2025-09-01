@@ -1,10 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { markNotificationRead } from '../../utils/api';
 import type { NotificationType } from '../../types';
-import Card from '../common/Card';
- import { getChatSocket } from '../../utils/chatSocket';
+import Card from '../common/Card'; 
+import {
+  getNotificationsSocket,
+  closeNotificationsSocket,
+} from '../../utils/notificationsSocket';
+ 
  
 
 const colorClasses = (type: NotificationType['type']) => {
@@ -24,6 +28,7 @@ interface NotificationsDropdownProps {
   notifications: NotificationType[];
   onClose: () => void;
   onMarkRead: (id: string) => void;
+  liveData?: boolean;
 }
 
 const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
@@ -31,22 +36,40 @@ const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
   notifications,
   onClose,
   onMarkRead,
+  liveData = true,
 }) => {
   if (!isOpen) return null;
 
   const navigate = useNavigate();
   const [items, setNotifications] = useState<NotificationType[]>(notifications);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    const s = getChatSocket();
+    if (isOpen) {
+      previousFocusRef.current = document.activeElement as HTMLElement;
+      menuRef.current?.focus();
+    } else {
+      previousFocusRef.current?.focus();
+    }
+  }, [isOpen]);
+
+
+  useEffect(() => {
+ 
+    if (!liveData) return;
+
+ 
+    const s = getNotificationsSocket();
     const handleCreate = (n: NotificationType) => {
       setNotifications((prev) => [n, ...prev]);
     };
     s.on('notification', handleCreate);
     return () => {
       s.off('notification', handleCreate);
+      closeNotificationsSocket();
     };
-  }, []);
+  }, [liveData]);
 
   const unreadCount = items.filter((n) => !n.read).length;
 
@@ -68,47 +91,49 @@ const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
   };
 
   return (
-    <Card>
-      <button data-testid="close-button" onClick={onClose}>
-        Close
-      </button>
-      <span data-testid="unread-count">{unreadCount}</span>
-
-      <ul>
-        {items.map((n) => (
-          <li key={n.id} className={colorClasses(n.type)}>
+    <div ref={menuRef} tabIndex={-1} role="menu" aria-label="Notifications">
+        <Card>
+          <button data-testid="close-button" onClick={onClose}>
+            Close
+          </button>
+          <span data-testid="unread-count">{unreadCount}</span>
+    
+          <ul>
+            {items.map((n) => (
+              <li key={n.id} className={colorClasses(n.type)}>
+                <button
+                  data-testid="notification"
+                  data-read={n.read ? 'true' : 'false'}
+                  onClick={() => {
+                    onMarkRead(n.id);
+                    markRead(n.id);
+                  }}
+                >
+                  {n.message}
+                </button>
+              </li>
+            ))}
+    
+            {items.length === 0 && (
+              <li className="py-8 text-center text-neutral-500 dark:text-neutral-400">
+                No notifications
+              </li>
+            )}
+          </ul>
+    
+          <div className="p-2 border-t border-neutral-100 dark:border-neutral-700 text-center">
             <button
-              data-testid="notification"
-              data-read={n.read ? 'true' : 'false'}
               onClick={() => {
-                onMarkRead(n.id);
-                markRead(n.id);
+                onClose();
+                navigate('/notifications');
               }}
+              className="text-sm text-primary-600 hover:underline"
             >
-              {n.message}
+              View All Notifications
             </button>
-          </li>
-        ))}
-
-        {items.length === 0 && (
-          <li className="py-8 text-center text-neutral-500 dark:text-neutral-400">
-            No notifications
-          </li>
-        )}
-      </ul>
-
-      <div className="p-2 border-t border-neutral-100 dark:border-neutral-700 text-center">
-        <button
-          onClick={() => {
-            onClose();
-            navigate('/notifications');
-          }}
-          className="text-sm text-primary-600 hover:underline"
-        >
-          View All Notifications
-        </button>
-      </div>
-    </Card>
+          </div>
+        </Card>
+    </div>
   );
 };
 

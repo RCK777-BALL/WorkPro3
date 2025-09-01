@@ -12,6 +12,7 @@ export interface IInventoryItem extends Document {
   quantity: number;                     // kept required in the interface
   unitCost?: number;
   unit?: string;
+  uom?: Types.ObjectId;
   location?: string;
   minThreshold?: number;
   reorderThreshold?: number;
@@ -21,6 +22,7 @@ export interface IInventoryItem extends Document {
   vendor?: Types.ObjectId;
   asset?: Types.ObjectId;
   image?: string;
+  consume: (amount: number, fromUom: Types.ObjectId) => Promise<IInventoryItem>;
 }
 
 const inventoryItemSchema = new Schema<IInventoryItem>(
@@ -34,6 +36,7 @@ const inventoryItemSchema = new Schema<IInventoryItem>(
     quantity: { type: Number, required: true, default: 0 },   // <- default prevents “possibly undefined”
     unitCost: { type: Number, default: 0 },
     unit: String,
+    uom: { type: Schema.Types.ObjectId, ref: 'unitOfMeasure' },
     location: String,
     minThreshold: { type: Number, default: 0 },
     reorderThreshold: { type: Number, default: 0 },
@@ -46,5 +49,24 @@ const inventoryItemSchema = new Schema<IInventoryItem>(
   },
   { timestamps: true }
 );
+
+inventoryItemSchema.methods.consume = async function (
+  this: IInventoryItem,
+  amount: number,
+  fromUom: Types.ObjectId,
+) {
+  if (amount <= 0) throw new Error('Amount must be positive');
+  let baseAmount = amount;
+  if (this.uom && this.uom.toString() !== fromUom.toString()) {
+    const conv = await mongoose.connection
+      .db
+      .collection('conversions')
+      .findOne({ from: fromUom, to: this.uom });
+    if (!conv) throw new Error('Conversion not found');
+    baseAmount = amount * conv.factor;
+  }
+  this.quantity = Math.max(0, this.quantity - baseAmount);
+  return this.save();
+};
 
 export default mongoose.model<IInventoryItem>('InventoryItem', inventoryItemSchema);

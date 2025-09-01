@@ -15,6 +15,8 @@ app.use('/api/inventory', inventoryRoutes);
 let mongo: MongoMemoryServer;
 let token: string;
 let user: Awaited<ReturnType<typeof User.create>>;
+let eachId: mongoose.Types.ObjectId;
+let caseId: mongoose.Types.ObjectId;
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'testsecret';
@@ -37,6 +39,20 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await mongoose.connection.db?.dropDatabase();
+  eachId = new mongoose.Types.ObjectId();
+  caseId = new mongoose.Types.ObjectId();
+  await mongoose.connection.db
+    .collection('unitOfMeasure')
+    .insertMany([
+      { _id: eachId, name: 'Each' },
+      { _id: caseId, name: 'Case' },
+    ]);
+  await mongoose.connection.db
+    .collection('conversions')
+    .insertMany([
+      { from: caseId, to: eachId, factor: 12 },
+      { from: eachId, to: caseId, factor: 1 / 12 },
+    ]);
 });
 
 describe('Inventory Routes', () => {
@@ -64,5 +80,55 @@ describe('Inventory Routes', () => {
 
     expect(res.body.length).toBe(2);
     expect(res.body[0].name).toBeDefined();
+  });
+
+  it('converts case to each usage', async () => {
+    const item = await InventoryItem.create({
+      name: 'Widget',
+      quantity: 2,
+      tenantId: user.tenantId,
+      uom: caseId,
+    });
+
+    const res = await request(app)
+      .post(`/api/inventory/${item._id}/use`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ quantity: 6, uom: eachId.toString() })
+      .expect(200);
+
+    expect(res.body.quantity).toBeCloseTo(1.5);
+  });
+
+  it('converts each to case usage', async () => {
+    const item = await InventoryItem.create({
+      name: 'Widget',
+      quantity: 24,
+      tenantId: user.tenantId,
+      uom: eachId,
+    });
+
+    const res = await request(app)
+      .post(`/api/inventory/${item._id}/use`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ quantity: 1, uom: caseId.toString() })
+      .expect(200);
+
+    expect(res.body.quantity).toBe(12);
+  });
+
+  it('returns error when conversion missing', async () => {
+    const item = await InventoryItem.create({
+      name: 'Widget',
+      quantity: 1,
+      tenantId: user.tenantId,
+      uom: caseId,
+    });
+    const badUom = new mongoose.Types.ObjectId();
+
+    await request(app)
+      .post(`/api/inventory/${item._id}/use`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ quantity: 1, uom: badUom.toString() })
+      .expect(400);
   });
 });

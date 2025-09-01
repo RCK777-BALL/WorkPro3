@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import InventoryItem, { IInventoryItem } from '../models/InventoryItem';
 import logger from '../utils/logger';
+import mongoose from 'mongoose';
 
 const ALLOWED_FIELDS = [
   'tenantId',
@@ -198,6 +199,38 @@ export const deleteInventoryItem = async (
     if (!deleted) return res.status(404).json({ message: 'Not found' });
 
     res.json({ message: 'Deleted successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const useInventoryItem = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const tenantId = (req as any).tenantId as string | undefined;
+    const { quantity, uom } = req.body as { quantity?: number; uom?: string };
+
+    if (!quantity || quantity <= 0)
+      return res.status(400).json({ message: 'Quantity must be positive' });
+    if (!uom)
+      return res.status(400).json({ message: 'uom is required' });
+
+    const filter: any = { _id: req.params.id };
+    if (tenantId) filter.tenantId = tenantId;
+
+    const item = await InventoryItem.findOne(filter);
+    if (!item) return res.status(404).json({ message: 'Not found' });
+
+    try {
+      await item.consume(quantity, new mongoose.Types.ObjectId(uom));
+    } catch (err: any) {
+      return res.status(400).json({ message: err.message });
+    }
+
+    res.json(item);
   } catch (err) {
     next(err);
   }

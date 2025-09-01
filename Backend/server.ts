@@ -122,11 +122,10 @@ app.get('/', (_req: Request, res: Response) => {
 // --- Routes (order matters for the limiter) ---
 app.use('/api/auth', authRoutes);
 app.use('/api/notifications', burstFriendly, notificationsRoutes);
-app.use('/api/departments', departmentRoutes);
-
 // Apply limiter to the rest of /api
 app.use('/api', generalLimiter);
 
+app.use('/api/departments', departmentRoutes);
 app.use('/api/workorders', workOrdersRoutes);
 app.use('/api/assets', assetsRoutes);
 app.use('/api/condition-rules', conditionRuleRoutes);

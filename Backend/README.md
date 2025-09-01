@@ -12,6 +12,7 @@ npm run dev
 ```
 
 Incoming JSON request bodies are limited to **1 MB**. Adjust the limit by editing the `express.json` configuration in `server.ts` if your application requires larger payloads.
+Requests to `/api` are protected by a general rate limiter. The department endpoints now fall under this limiter.
 The server connects to MongoDB using the `MONGO_URI` environment variable. This variable is used consistently across the codebase and example configuration files. The server also starts a Socket.IO server on the same HTTP port. Clients can listen for real-time updates using the following events:
 
 - `workOrderUpdated`

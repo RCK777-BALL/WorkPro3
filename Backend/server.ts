@@ -26,6 +26,8 @@ import teamRoutes from './routes/TeamRoutes';
 import notificationsRoutes from './routes/notifications';
 import TenantRoutes from './routes/TenantRoutes';
 
+import webhooksRoutes from './routes/webhooks';
+
 import ThemeRoutes from './routes/ThemeRoutes';
  
 import chatRoutes from './routes/ChatRoutes';
@@ -138,6 +140,7 @@ app.use('/api/team', teamRoutes);
 app.use('/api/theme', ThemeRoutes);
 app.use('/api/request-portal', requestPortalRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/webhooks', webhooksRoutes);
 
 app.use('/api/summary', summaryRoutes);
 

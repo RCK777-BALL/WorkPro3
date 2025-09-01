@@ -42,7 +42,7 @@ not committed to the repository.
 
 1. `cd Frontend`
 2. Copy `Frontend/.env.example` to `.env` and update `VITE_API_URL`,
-   `VITE_SOCKET_URL` and the Supabase variables (`VITE_SUPABASE_URL`,
+   `VITE_WS_URL`, `VITE_WS_PATH` and the Supabase variables (`VITE_SUPABASE_URL`,
    `VITE_SUPABASE_ANON_KEY`).
 3. Install dependencies with `npm install`.
 4. Run the development server:
@@ -53,9 +53,8 @@ not committed to the repository.
 
 ### Offline mode
 
-If `VITE_SOCKET_URL` is empty or the browser is offline, work order updates are
-queued in `localStorage` under `offline-queue`. Once the WebSocket connection is
-restored the queue is flushed and the requests are sent to the API.
+If `VITE_WS_URL` or `VITE_WS_PATH` is empty, or the browser is offline, work order updates are
+queued in `localStorage` under `offline-queue`. Once the WebSocket defined by `VITE_WS_URL` and `VITE_WS_PATH` is restored, the queue is flushed and the requests are sent to the API.
 
 ## Docker development
 
@@ -102,7 +101,7 @@ they can be merged. The testing matrix and workflow are described in
 
 The frontend stores any API requests made while offline in local storage. When
 the browser regains connectivity, the queued requests are automatically sent
-using the browser's `online` event even if the WebSocket fails to reconnect.
+using the browser's `online` event even if the WebSocket defined by `VITE_WS_URL` and `VITE_WS_PATH` fails to reconnect.
 
 ## License
 

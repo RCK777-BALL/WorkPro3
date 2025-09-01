@@ -47,7 +47,9 @@ function debounce<F extends (...args: any[]) => void>(fn: F, delay: number) {
   let timer: ReturnType<typeof setTimeout> | null = null;
   const debounced = (...args: Parameters<F>) => {
     if (timer) clearTimeout(timer);
-    timer = window.setTimeout(() => fn(...args), delay);
+    if (typeof window !== 'undefined') {
+      timer = setTimeout(() => fn(...args), delay);
+    }
   };
   (debounced as any).cancel = () => {
     if (timer) {

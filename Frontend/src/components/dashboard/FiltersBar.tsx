@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useDashboardStore, Timeframe } from '../../store/dashboardStore';
 import type { Department } from '../../types';
 
@@ -18,8 +18,30 @@ const FiltersBar: React.FC<Props> = ({ departments }) => {
     setSelectedRole,
   } = useDashboardStore();
 
+  const [rangeError, setRangeError] = useState('');
+
   const handleTimeframeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedTimeframe(e.target.value as Timeframe);
+  };
+
+  const handleStartChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const start = e.target.value;
+    if (customRange.end && start > customRange.end) {
+      setRangeError('Start date must be before end date');
+      return;
+    }
+    setRangeError('');
+    setCustomRange({ ...customRange, start });
+  };
+
+  const handleEndChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const end = e.target.value;
+    if (customRange.start && end < customRange.start) {
+      setRangeError('End date must be after start date');
+      return;
+    }
+    setRangeError('');
+    setCustomRange({ ...customRange, end });
   };
 
   return (
@@ -40,15 +62,16 @@ const FiltersBar: React.FC<Props> = ({ departments }) => {
           <input
             type="date"
             value={customRange.start}
-            onChange={(e) => setCustomRange({ ...customRange, start: e.target.value })}
+            onChange={handleStartChange}
             className="border border-neutral-300 rounded-md px-2 py-1 text-sm"
           />
           <input
             type="date"
             value={customRange.end}
-            onChange={(e) => setCustomRange({ ...customRange, end: e.target.value })}
+            onChange={handleEndChange}
             className="border border-neutral-300 rounded-md px-2 py-1 text-sm"
           />
+          {rangeError && <p className="text-red-500 text-xs">{rangeError}</p>}
         </>
       )}
       <select

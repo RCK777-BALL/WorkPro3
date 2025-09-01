@@ -9,4 +9,5 @@ export interface AuthedRequest<P = any, ResBody = any, ReqBody = any, ReqQuery =
   extends Request<P, ResBody, ReqBody, ReqQuery> {
   user: RequestUser;
   tenantId: string;
+  siteId?: string;
 }

@@ -22,6 +22,8 @@ export interface IInventoryItem extends Document {
   vendor?: Types.ObjectId;
   asset?: Types.ObjectId;
   image?: string;
+  siteId?: Types.ObjectId;
+  sharedPartId?: Types.ObjectId;
   consume: (amount: number, fromUom: Types.ObjectId) => Promise<IInventoryItem>;
 }
 
@@ -46,6 +48,8 @@ const inventoryItemSchema = new Schema<IInventoryItem>(
     vendor: { type: Schema.Types.ObjectId, ref: 'Vendor' },
     asset: { type: Schema.Types.ObjectId, ref: 'Asset' },
     image: String,
+    siteId: { type: Schema.Types.ObjectId, ref: 'Site', index: true },
+    sharedPartId: { type: Schema.Types.ObjectId, ref: 'SharedPart' },
   },
   { timestamps: true }
 );

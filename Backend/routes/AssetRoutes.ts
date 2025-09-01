@@ -12,6 +12,7 @@ import { requireAuth } from '../middleware/authMiddleware';
 import requireRole from '../middleware/requireRole';
 import { validate } from '../middleware/validationMiddleware';
 import { assetValidators } from '../validators/assetValidators';
+import siteScope from '../middleware/siteScope';
 
 const router = express.Router();
 
@@ -39,6 +40,7 @@ const handleUpload: express.RequestHandler = (req, res, next) => {
 };
 
 router.use(requireAuth);
+router.use(siteScope);
 router.get('/', getAllAssets);
 router.get('/search', searchAssets);
 router.get('/:id', getAssetById);

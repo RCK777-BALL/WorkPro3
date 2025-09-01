@@ -20,6 +20,7 @@ import {
 import { useNavigate, NavLink } from 'react-router-dom';
 import { useAuthStore, isAdmin as selectIsAdmin, isManager as selectIsManager } from '../../store/authStore';
 import { useSummary } from '../../hooks/useSummaryData';
+import type { DashboardSummary } from '../../types';
 import {
   DndContext,
   closestCenter,
@@ -121,7 +122,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     navigate('/login');
   };
 
-  const [summary] = useSummary<any>('/summary', []);
+  const [summary] = useSummary<DashboardSummary>('/summary', []);
   const completion =
     summary && summary.totalWorkOrders > 0
       ? Math.round((summary.completedWorkOrders / summary.totalWorkOrders) * 100)

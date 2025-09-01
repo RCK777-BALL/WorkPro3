@@ -2,11 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import api from '../utils/api';
 
 type CacheEntry<T> = { promise?: Promise<T>; data?: T; ts?: number };
-const cache: Record<string, CacheEntry<any>> = {};
+const cache: Record<string, CacheEntry<unknown>> = {};
 
-export function useSummary<T = any>(
+export function useSummary<T = unknown>(
   path: string,
-  deps: any[] = [],
+  deps: unknown[] = [],
   options: { auto?: boolean; poll?: boolean; ttlMs?: number } = {},
 ): [T | undefined, () => Promise<T | undefined>] {
   const { auto = true, poll = true, ttlMs = 30_000 } = options;

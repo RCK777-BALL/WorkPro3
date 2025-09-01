@@ -22,7 +22,7 @@ import useDashboardData from '../hooks/useDashboardData';
 import { useSummary } from '../hooks/useSummaryData';
  import { getChatSocket } from '../utils/chatSocket';
  
-import type { Department } from '../types';
+import type { Department, DashboardSummary, Part } from '../types';
 import { useSocketStore } from '../store/socketStore';
 
 
@@ -74,13 +74,23 @@ const Dashboard: React.FC = () => {
     maintenanceCompliance: 0,
     inventoryAlerts: 0,
   });
-  const [lowStockParts, setLowStockParts] = useState<any[]>([]);
+  interface LowStockPart {
+    id: string;
+    name: string;
+    quantity: number;
+    reorderPoint: number;
+  }
+  const [lowStockParts, setLowStockParts] = useState<LowStockPart[]>([]);
+  interface AnalyticsData {
+    laborUtilization: number;
+  }
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [summary] = useSummary<any>(
+  const [summary] = useSummary<DashboardSummary>(
     `/summary${selectedRole ? `?role=${selectedRole}` : ''}`,
     [selectedRole],
   );
-  const [lowStock] = useSummary<any[]>(
+  const [lowStock] = useSummary<Part[]>(
     `/summary/low-stock${selectedRole ? `?role=${selectedRole}` : ''}`,
     [selectedRole],
   );
@@ -90,7 +100,6 @@ const Dashboard: React.FC = () => {
     { ttlMs: 60_000 },
   );
 
-  const [analytics, setAnalytics] = useState<any | null>(null);
 
 
   useEffect(() => {
@@ -108,7 +117,7 @@ const Dashboard: React.FC = () => {
     const fetchAnalytics = async () => {
       try {
         const query = role ? `?role=${role}` : '';
-        const res = await api.get(`/reports/analytics${query}`);
+        const res = await api.get<AnalyticsData>(`/reports/analytics${query}`);
         setAnalytics(res.data);
       } catch (err) {
         console.error('Error fetching analytics', err);

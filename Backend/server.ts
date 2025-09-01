@@ -29,6 +29,7 @@ import TenantRoutes from './routes/TenantRoutes';
 import ThemeRoutes from './routes/ThemeRoutes';
  
 import chatRoutes from './routes/ChatRoutes';
+import requestPortalRoutes from './routes/requestPortal';
  
   
  
@@ -135,6 +136,7 @@ app.use('/api/stations', StationRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/team', teamRoutes);
 app.use('/api/theme', ThemeRoutes);
+app.use('/api/request-portal', requestPortalRoutes);
 app.use('/api/chat', chatRoutes);
 
 app.use('/api/summary', summaryRoutes);

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Card from '../common/Card';
- import { getChatSocket } from '../../utils/chatSocket';
+import { getNotificationsSocket } from '../../utils/notificationsSocket';
  
 import Badge from '../common/Badge';
 import { useSocketStore } from '../../store/socketStore';
@@ -15,7 +15,7 @@ const NotificationFeed: React.FC = () => {
   const [items, setItems] = useState<NotificationType[]>([]);
 
   useEffect(() => {
-    const s = getChatSocket();
+    const s = getNotificationsSocket();
 
     const handleWorkOrder = (data: WorkOrderUpdatePayload) => {
       setItems(prev => [

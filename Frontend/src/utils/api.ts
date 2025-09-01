@@ -15,27 +15,33 @@ import type {
   CriticalAlertResponse,
   LowStockPartResponse,
 } from "../types";
+import { config } from "./env";
 
-const baseURL = import.meta.env.VITE_API_URL ?? "http://localhost:5010/api";
+// Resolve base URL from config first, then Vite env.
+// Fail fast if not provided.
+const baseURL = config.apiUrl ?? import.meta.env.VITE_API_URL;
+if (!baseURL) {
+  throw new Error("API base URL is not set. Define config.apiUrl or VITE_API_URL.");
+}
 
 const api = axios.create({
   baseURL,
   withCredentials: true,
 });
 
-api.interceptors.request.use((config) => {
+api.interceptors.request.use((cfg) => {
   const userStr = localStorage.getItem("user");
   if (userStr) {
     try {
       const { token, tenantId } = JSON.parse(userStr) as AuthUser;
-      config.headers = config.headers ?? {};
-      if (token) (config.headers as any).Authorization = `Bearer ${token}`;
-      if (tenantId) (config.headers as any)["x-tenant-id"] = tenantId;
+      cfg.headers = cfg.headers ?? {};
+      if (token) (cfg.headers as any).Authorization = `Bearer ${token}`;
+      if (tenantId) (cfg.headers as any)["x-tenant-id"] = tenantId;
     } catch {
       // ignore parse errors
     }
   }
-  return config;
+  return cfg;
 });
 
 api.interceptors.response.use(
@@ -67,14 +73,10 @@ export const fetchSummary = (params?: Record<string, unknown>) =>
   api.get<DashboardSummary>("/summary", { params }).then((res) => res.data);
 
 export const fetchAssetSummary = (params?: Record<string, unknown>) =>
-  api
-    .get<StatusCountResponse[]>("/summary/assets", { params })
-    .then((res) => res.data);
+  api.get<StatusCountResponse[]>("/summary/assets", { params }).then((res) => res.data);
 
 export const fetchWorkOrderSummary = (params?: Record<string, unknown>) =>
-  api
-    .get<StatusCountResponse[]>("/summary/workorders", { params })
-    .then((res) => res.data);
+  api.get<StatusCountResponse[]>("/summary/workorders", { params }).then((res) => res.data);
 
 export const fetchUpcomingMaintenance = (params?: Record<string, unknown>) =>
   api
@@ -87,9 +89,7 @@ export const fetchCriticalAlerts = (params?: Record<string, unknown>) =>
     .then((res) => res.data);
 
 export const fetchLowStock = (params?: Record<string, unknown>) =>
-  api
-    .get<LowStockPartResponse[]>("/summary/low-stock", { params })
-    .then((res) => res.data);
+  api.get<LowStockPartResponse[]>("/summary/low-stock", { params }).then((res) => res.data);
 
 // ----- Notifications -----
 export const fetchNotifications = (params?: Record<string, unknown>) =>

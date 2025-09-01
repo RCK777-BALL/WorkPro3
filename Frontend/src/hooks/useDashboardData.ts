@@ -5,6 +5,13 @@ import {
   fetchUpcomingMaintenance,
   fetchCriticalAlerts,
 } from '../utils/api';
+import type {
+  StatusCountResponse,
+  UpcomingMaintenanceItem,
+  UpcomingMaintenanceResponse,
+  CriticalAlertItem,
+  CriticalAlertResponse,
+} from '../types';
 
 interface WorkOrderStatusCounts {
   open: number;
@@ -33,15 +40,20 @@ const useDashboardData = (role?: string) => {
     'In Repair': 0,
   });
 
-  const [upcomingMaintenance, setUpcomingMaintenance] = useState<any[]>([]);
-  const [criticalAlerts, setCriticalAlerts] = useState<any[]>([]);
+  const [upcomingMaintenance, setUpcomingMaintenance] = useState<UpcomingMaintenanceItem[]>([]);
+  const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlertItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
       const params = role ? { role } : undefined;
-      const [assetSummaryData, workOrders, upcoming, alerts] = await Promise.all([
+      const [assetSummaryData, workOrders, upcoming, alerts] = await Promise.all<[
+        StatusCountResponse[],
+        StatusCountResponse[],
+        UpcomingMaintenanceResponse[],
+        CriticalAlertResponse[],
+      ]>([
         fetchAssetSummary(params),
         fetchWorkOrderSummary(params),
         fetchUpcomingMaintenance(params),

@@ -243,6 +243,19 @@ export interface TeamMember {
   avatar?: string;
 }
 
+export interface TeamMemberResponse {
+  _id?: string;
+  id?: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'manager' | 'technician' | 'viewer';
+  department?: string;
+  employeeId?: string;
+  managerId?: string | null;
+  reportsTo?: string | null;
+  avatar?: string;
+}
+
 
 export interface AuthUser {
   id: string;
@@ -291,6 +304,49 @@ export interface DashboardSummary {
   activeWorkOrders: number;
   completedWorkOrders: number;
   overduePmTasks: number;
+}
+
+export interface StatusCountResponse {
+  _id: string;
+  count: number;
+}
+
+export interface UpcomingMaintenanceResponse {
+  _id?: string;
+  id?: string;
+  asset?: { _id?: string; name?: string };
+  nextDue: string;
+  type?: string;
+  assignedTo?: string;
+  estimatedDuration?: number;
+}
+
+export interface UpcomingMaintenanceItem {
+  id: string;
+  assetName: string;
+  assetId: string;
+  date: string;
+  type: string;
+  assignedTo: string;
+  estimatedDuration: number;
+}
+
+export interface CriticalAlertResponse {
+  _id?: string;
+  id?: string;
+  asset?: { name?: string };
+  priority: string;
+  description?: string;
+  title?: string;
+  createdAt: string;
+}
+
+export interface CriticalAlertItem {
+  id: string;
+  assetName: string;
+  severity: string;
+  issue: string;
+  timestamp: string;
 }
 
 

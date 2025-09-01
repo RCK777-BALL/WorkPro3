@@ -21,15 +21,19 @@ import LineRoutes from './routes/LineRoutes';
 import StationRoutes from './routes/StationRoutes';
 import departmentRoutes from './routes/DepartmentRoutes';
 import inventoryRoutes from './routes/InventoryRoutes';
+import analyticsRoutes from './routes/AnalyticsRoutes';
  
 import teamRoutes from './routes/TeamRoutes';
 import notificationsRoutes from './routes/notifications';
 import TenantRoutes from './routes/TenantRoutes';
 
+import webhooksRoutes from './routes/webhooks';
+
 import ThemeRoutes from './routes/ThemeRoutes';
  
 import chatRoutes from './routes/ChatRoutes';
 import requestPortalRoutes from './routes/requestPortal';
+import conditionRuleRoutes from './routes/ConditionRuleRoutes';
  
   
  
@@ -128,16 +132,19 @@ app.use('/api', generalLimiter);
 
 app.use('/api/workorders', workOrdersRoutes);
 app.use('/api/assets', assetsRoutes);
+app.use('/api/condition-rules', conditionRuleRoutes);
 app.use('/api/tenants', TenantRoutes);
 app.use('/api/pm-tasks', pmTasksRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/lines', LineRoutes);
 app.use('/api/stations', StationRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/v1/analytics', analyticsRoutes);
 app.use('/api/team', teamRoutes);
 app.use('/api/theme', ThemeRoutes);
 app.use('/api/request-portal', requestPortalRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/webhooks', webhooksRoutes);
 
 app.use('/api/summary', summaryRoutes);
 

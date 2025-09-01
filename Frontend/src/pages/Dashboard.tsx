@@ -21,26 +21,17 @@ import DashboardStats from '../components/dashboard/DashboardStats';
 import WorkOrdersChart from '../components/dashboard/WorkOrdersChart';
 import UpcomingMaintenance from '../components/dashboard/UpcomingMaintenance';
 
+// Extra KPI widgets
+import AssetsStatusChart from '../components/dashboard/AssetsStatusChart';
+import CriticalAlerts from '../components/dashboard/CriticalAlerts';
+import LowStockParts from '../components/dashboard/LowStockParts';
+
 import type {
   Department,
   DashboardSummary,
   LowStockPart,
   LowStockPartResponse,
 } from '../types';
-
-// (optional helper; safe to remove if unused elsewhere)
-const getTimeAgo = (timestamp: string): string => {
-  const now = new Date();
-  const date = new Date(timestamp);
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  if (seconds < 60) return 'just now';
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-};
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -347,6 +338,7 @@ const Dashboard: React.FC = () => {
 
         <FiltersBar departments={departments} />
 
+        {/* Core widgets in a customizable grid */}
         <ResponsiveGridLayout
           className="layout"
           layouts={Object.keys(layouts).length ? layouts : defaultLayouts}
@@ -366,6 +358,15 @@ const Dashboard: React.FC = () => {
             <UpcomingMaintenance maintenanceItems={upcomingMaintenance} />
           </div>
         </ResponsiveGridLayout>
+
+        {/* Additional KPI widgets (outside the grid by default) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <AssetsStatusChart data={assetsByStatus} />
+          <CriticalAlerts alerts={criticalAlerts.slice(0, 8)} />
+        </div>
+        <div className="grid grid-cols-1 gap-6">
+          <LowStockParts parts={lowStockParts.slice(0, 12)} />
+        </div>
       </div>
     </Layout>
   );

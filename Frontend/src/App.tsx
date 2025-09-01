@@ -24,8 +24,9 @@ const WorkOrders = lazy(() => import('./pages/WorkOrders'));
 const DepartmentsPage = lazy(() => import('./pages/DepartmentsPage'));
 const NewDepartmentPage = lazy(() => import('./pages/NewDepartmentPage'));
 const Notifications = lazy(() => import('./pages/Notifications'));
- 
+
 const AdminTenants = lazy(() => import('./pages/AdminTenants'));
+const Portal = lazy(() => import('./portal'));
  
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/portal/:slug" element={<Portal />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
         <Route path="/assets" element={<ProtectedRoute><AssetsPage /></ProtectedRoute>} />

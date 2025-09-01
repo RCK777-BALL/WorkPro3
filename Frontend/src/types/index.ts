@@ -54,7 +54,6 @@ export interface DepartmentHierarchy extends Department {
   lines: LineWithStations[];
 }
 
-
 export interface WorkOrder {
   /** Unique identifier */
   id: string;
@@ -158,13 +157,7 @@ export interface MaintenanceSchedule {
 export interface PMTask {
   id: string;
   title: string;
-  frequency:
-    | 'daily'
-    | 'weekly'
-    | 'monthly'
-    | 'quarterly'
-    | 'biannually'
-    | 'annually';
+  frequency: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'biannually' | 'annually';
   active: boolean;
   lastRun?: string;
   nextDue?: string;
@@ -229,7 +222,6 @@ export interface User {
   avatar?: string;
 }
 
-
 export interface TeamMember {
   id: string;
   name: string;
@@ -243,6 +235,7 @@ export interface TeamMember {
   avatar?: string;
 }
 
+/** Raw response shape returned by the API for team members */
 export interface TeamMemberResponse {
   _id?: string;
   id?: string;
@@ -252,10 +245,10 @@ export interface TeamMemberResponse {
   department?: string;
   employeeId?: string;
   managerId?: string | null;
+  /** Some endpoints may return this field instead of managerId */
   reportsTo?: string | null;
   avatar?: string;
 }
-
 
 export interface AuthUser {
   id: string;
@@ -306,11 +299,31 @@ export interface DashboardSummary {
   overduePmTasks: number;
 }
 
+/** Generic status/count pair used in dashboard summaries */
 export interface StatusCountResponse {
   _id: string;
   count: number;
 }
 
+/** Response shape returned by the low stock endpoint */
+export interface LowStockPartResponse {
+  _id?: string;
+  id?: string;
+  name: string;
+  quantity: number;
+  reorderThreshold?: number;
+  reorderPoint?: number;
+}
+
+/** Simplified state used within the dashboard for low stock parts */
+export interface LowStockPart {
+  id: string;
+  name: string;
+  quantity: number;
+  reorderPoint: number;
+}
+
+/** Response shape for upcoming maintenance tasks */
 export interface UpcomingMaintenanceResponse {
   _id?: string;
   id?: string;
@@ -321,6 +334,7 @@ export interface UpcomingMaintenanceResponse {
   estimatedDuration?: number;
 }
 
+/** State shape for upcoming maintenance tasks used in the dashboard */
 export interface UpcomingMaintenanceItem {
   id: string;
   assetName: string;
@@ -331,6 +345,7 @@ export interface UpcomingMaintenanceItem {
   estimatedDuration: number;
 }
 
+/** Response shape for critical alert items */
 export interface CriticalAlertResponse {
   _id?: string;
   id?: string;
@@ -341,6 +356,7 @@ export interface CriticalAlertResponse {
   createdAt: string;
 }
 
+/** State shape for critical alerts displayed on the dashboard */
 export interface CriticalAlertItem {
   id: string;
   assetName: string;
@@ -348,7 +364,6 @@ export interface CriticalAlertItem {
   issue: string;
   timestamp: string;
 }
-
 
 export interface Timesheet {
   id: string;

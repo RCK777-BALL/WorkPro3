@@ -17,9 +17,9 @@ export function useSummary<T = unknown>(
 
   const fetcher = useCallback(async () => {
     const now = Date.now();
-    const c = cache[path] || (cache[path] = {});
+    const c = (cache[path] as CacheEntry<T>) || (cache[path] = {} as CacheEntry<T>);
     if (c.data && c.ts && now - c.ts < ttlMs) return c.data as T;
-    if (c.promise) return c.promise as Promise<T>;
+    if (c.promise) return c.promise;
 
     abortRef.current?.abort();
     const controller = new AbortController();

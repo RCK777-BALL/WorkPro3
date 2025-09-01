@@ -48,18 +48,22 @@ const useDashboardData = (role?: string) => {
     setLoading(true);
     try {
       const params = role ? { role } : undefined;
-      const [assetSummaryData, workOrders, upcoming, alerts] = await Promise.all<[
-        StatusCountResponse[],
-        StatusCountResponse[],
-        UpcomingMaintenanceResponse[],
-        CriticalAlertResponse[],
-      ]>([
+
+      const [assetSummaryData, workOrders, upcoming, alerts] = await Promise.all<
+        [
+          StatusCountResponse[],
+          StatusCountResponse[],
+          UpcomingMaintenanceResponse[],
+          CriticalAlertResponse[],
+        ]
+      >([
         fetchAssetSummary(params),
         fetchWorkOrderSummary(params),
         fetchUpcomingMaintenance(params),
         fetchCriticalAlerts(params),
       ]);
 
+      // Work order status counts
       const statusCounts: WorkOrderStatusCounts = {
         open: 0,
         inProgress: 0,
@@ -68,11 +72,13 @@ const useDashboardData = (role?: string) => {
       };
       if (Array.isArray(workOrders)) {
         workOrders.forEach((w) => {
-          statusCounts[w._id as keyof WorkOrderStatusCounts] = w.count;
+          const key = w._id as keyof WorkOrderStatusCounts;
+          if (key in statusCounts) statusCounts[key] = w.count ?? 0;
         });
       }
       setWorkOrdersByStatus(statusCounts);
 
+      // Asset status counts
       const assetCounts: AssetStatusCounts = {
         Active: 0,
         Offline: 0,
@@ -80,15 +86,17 @@ const useDashboardData = (role?: string) => {
       };
       if (Array.isArray(assetSummaryData)) {
         assetSummaryData.forEach((a) => {
-          assetCounts[a._id as keyof AssetStatusCounts] = a.count;
+          const key = a._id as keyof AssetStatusCounts;
+          if (key in assetCounts) assetCounts[key] = a.count ?? 0;
         });
       }
       setAssetsByStatus(assetCounts);
 
+      // Upcoming maintenance
       setUpcomingMaintenance(
         Array.isArray(upcoming)
-          ? upcoming.map((t) => ({
-              id: t._id ?? t.id,
+          ? upcoming.map<UpcomingMaintenanceItem>((t) => ({
+              id: t._id ?? t.id ?? '',
               assetName: t.asset?.name || 'Unknown',
               assetId: t.asset?._id ?? '',
               date: t.nextDue,
@@ -99,13 +107,14 @@ const useDashboardData = (role?: string) => {
           : [],
       );
 
+      // Critical alerts
       setCriticalAlerts(
         Array.isArray(alerts)
-          ? alerts.map((a) => ({
-              id: a._id ?? a.id,
+          ? alerts.map<CriticalAlertItem>((a) => ({
+              id: a._id ?? a.id ?? '',
               assetName: a.asset?.name || 'Unknown',
               severity: a.priority,
-              issue: a.description || a.title,
+              issue: a.description || a.title || '',
               timestamp: a.createdAt,
             }))
           : [],

@@ -10,26 +10,29 @@ interface TeamMemberState {
   deleteMember: (id: string) => Promise<void>;
 }
 
-export const useTeamMembers = create<TeamMemberState>((set, get) => ({
+export const useTeamMembers = create<TeamMemberState>((set) => ({
   members: [],
+
   fetchMembers: async () => {
     const res = await api.get<TeamMemberResponse[]>('/team');
-    const members = res.data.map(mapMember);
+    const members = (res.data ?? []).map(mapMember);
     set({ members });
     return members;
   },
+
   addMember: async (data) => {
     const isForm = data instanceof FormData;
-    const res = await api.post<TeamMemberResponse>('/team', data, {
+    const res = await api.post<TeamMemberResponse>('/team', data as any, {
       headers: isForm ? { 'Content-Type': 'multipart/form-data' } : undefined,
     });
     const member = mapMember(res.data);
     set((state) => ({ members: [...state.members, member] }));
     return member;
   },
+
   updateMember: async (id, data) => {
     const isForm = data instanceof FormData;
-    const res = await api.put<TeamMemberResponse>(`/team/${id}`, data, {
+    const res = await api.put<TeamMemberResponse>(`/team/${id}`, data as any, {
       headers: isForm ? { 'Content-Type': 'multipart/form-data' } : undefined,
     });
     const member = mapMember(res.data);
@@ -38,6 +41,7 @@ export const useTeamMembers = create<TeamMemberState>((set, get) => ({
     }));
     return member;
   },
+
   deleteMember: async (id) => {
     await api.delete(`/team/${id}`);
     set((state) => ({ members: state.members.filter((m) => m.id !== id) }));

@@ -8,35 +8,34 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+
 import { initKafka, sendKafkaEvent } from './utils/kafka';
+
 import authRoutes from './routes/auth';
-import workOrdersRoutes from './routes/WorkOrderRoutes'; // adjust path
-import assetsRoutes from './routes/AssetRoutes'; // adjust path
-import pmTasksRoutes from './routes/PMTaskRoutes'; // adjust path
- 
-import summaryRoutes from './routes/summary'; // optional
- 
+import workOrdersRoutes from './routes/WorkOrderRoutes';
+import assetsRoutes from './routes/AssetRoutes';
+import pmTasksRoutes from './routes/PMTaskRoutes';
+import summaryRoutes from './routes/summary';
+
 import reportsRoutes from './routes/ReportsRoutes';
 import LineRoutes from './routes/LineRoutes';
 import StationRoutes from './routes/StationRoutes';
 import departmentRoutes from './routes/DepartmentRoutes';
 import inventoryRoutes from './routes/InventoryRoutes';
 import analyticsRoutes from './routes/AnalyticsRoutes';
- 
+
 import teamRoutes from './routes/TeamRoutes';
 import notificationsRoutes from './routes/notifications';
 import TenantRoutes from './routes/TenantRoutes';
-
 import webhooksRoutes from './routes/webhooks';
-
 import ThemeRoutes from './routes/ThemeRoutes';
- 
 import chatRoutes from './routes/ChatRoutes';
 import requestPortalRoutes from './routes/requestPortal';
+
+// Keep BOTH of these:
+import calendarRoutes from './routes/CalendarRoutes';
 import conditionRuleRoutes from './routes/ConditionRuleRoutes';
- 
-  
- 
+
 import { startPMScheduler } from './utils/pmScheduler';
 import mongoose from 'mongoose';
 import errorHandler from './middleware/errorHandler';
@@ -47,7 +46,6 @@ import type {
   InventoryUpdatePayload,
   NotificationPayload,
 } from './types/Payloads';
-
 
 dotenv.config();
 
@@ -63,10 +61,7 @@ const httpServer = createServer(app);
 const PORT = process.env.PORT || 5010;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/platinum_cmms';
 
-const RATE_LIMIT_WINDOW_MS = parseInt(
-  process.env.RATE_LIMIT_WINDOW_MS || `${15 * 60 * 1000}`,
-  10,
-);
+const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS || `${15 * 60 * 1000}`, 10);
 const RATE_LIMIT_MAX = parseInt(process.env.RATE_LIMIT_MAX || '100', 10);
 
 const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
@@ -93,8 +88,8 @@ app.use(cookieParser());
 const dev = process.env.NODE_ENV !== 'production';
 
 const generalLimiter = rateLimit({
-  windowMs: 60_000,
-  max: dev ? 600 : 120,
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  max: dev ? 600 : RATE_LIMIT_MAX,
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => dev || req.ip === '::1' || req.ip === '127.0.0.1',
@@ -122,12 +117,12 @@ app.get('/', (_req: Request, res: Response) => {
   res.send('PLTCMMS backend is running');
 });
 
-// Routes
+// --- Routes (order matters for the limiter) ---
 app.use('/api/auth', authRoutes);
-
 app.use('/api/notifications', burstFriendly, notificationsRoutes);
 app.use('/api/departments', departmentRoutes);
 
+// Apply limiter to the rest of /api
 app.use('/api', generalLimiter);
 
 app.use('/api/workorders', workOrdersRoutes);
@@ -145,27 +140,27 @@ app.use('/api/theme', ThemeRoutes);
 app.use('/api/request-portal', requestPortalRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/webhooks', webhooksRoutes);
+app.use('/api/calendar', calendarRoutes);
 
 app.use('/api/summary', summaryRoutes);
 
+// 404 + error handler
 app.use((req, res) => {
   res.status(404).json({ message: 'Not Found' });
 });
 
 app.use(errorHandler);
 
-// MongoDB connection
+// --- Mongo + server start ---
 if (process.env.NODE_ENV !== 'test') {
   mongoose
     .connect(MONGO_URI)
     .then(() => {
       console.log('MongoDB connected');
       httpServer.listen(PORT, () =>
-        console.log(`Server listening on http://localhost:${PORT}`)
+        console.log(`Server listening on http://localhost:${PORT}`),
       );
-      initKafka(io).catch((err) =>
-        console.error('Kafka init error:', err)
-      );
+      initKafka(io).catch((err) => console.error('Kafka init error:', err));
       startPMScheduler('default', {
         cronExpr: process.env.PM_SCHEDULER_CRON,
         taskModulePath: process.env.PM_SCHEDULER_TASK,
@@ -176,6 +171,7 @@ if (process.env.NODE_ENV !== 'test') {
     });
 }
 
+// --- Emit helpers ---
 export const emitWorkOrderUpdate = (workOrder: WorkOrderUpdatePayload) => {
   void sendKafkaEvent('workOrderUpdates', workOrder);
 };
@@ -189,4 +185,3 @@ export const emitNotification = (notification: NotificationPayload) => {
 };
 
 export default app;
-

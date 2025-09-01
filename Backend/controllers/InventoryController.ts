@@ -1,6 +1,45 @@
 import { Request, Response, NextFunction } from 'express';
 import InventoryItem, { IInventoryItem } from '../models/InventoryItem';
 
+const ALLOWED_FIELDS = [
+  'tenantId',
+  'name',
+  'description',
+  'partNumber',
+  'sku',
+  'category',
+  'quantity',
+  'unitCost',
+  'unit',
+  'location',
+  'minThreshold',
+  'reorderThreshold',
+  'reorderPoint',
+  'lastRestockDate',
+  'lastOrderDate',
+  'vendor',
+  'asset',
+  'image',
+] as const;
+
+type AllowedField = (typeof ALLOWED_FIELDS)[number];
+
+function buildInventoryPayload(body: Record<string, unknown>) {
+  const invalid = Object.keys(body).filter(
+    (key) => !ALLOWED_FIELDS.includes(key as AllowedField),
+  );
+  if (invalid.length) {
+    return { invalid };
+  }
+  const data: Partial<IInventoryItem> = {};
+  ALLOWED_FIELDS.forEach((key) => {
+    if (body[key] !== undefined) {
+      (data as any)[key] = body[key];
+    }
+  });
+  return { data };
+}
+
 
 export const getInventoryItems = async (
   _req: Request,
@@ -66,9 +105,13 @@ export const getInventoryItemById = async (
 
 export const createInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const newItem = new InventoryItem(req.body);
+    const { data, invalid } = buildInventoryPayload(req.body as Record<string, unknown>);
+    if (invalid) {
+      return res.status(400).json({ message: `Invalid fields: ${invalid.join(', ')}` });
+    }
+    const newItem = new InventoryItem(data);
     const saved = await newItem.save();
- 
+
     res.status(201).json(saved);
   } catch (err) {
     next(err);
@@ -77,13 +120,17 @@ export const createInventoryItem = async (req: Request, res: Response, next: Nex
 
 export const updateInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const { data, invalid } = buildInventoryPayload(req.body as Record<string, unknown>);
+    if (invalid) {
+      return res.status(400).json({ message: `Invalid fields: ${invalid.join(', ')}` });
+    }
     const updated = await InventoryItem.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      data,
       { new: true, runValidators: true }
     );
     if (!updated) return res.status(404).json({ message: 'Not found' });
- 
+
     res.json(updated);
   } catch (err) {
     next(err);

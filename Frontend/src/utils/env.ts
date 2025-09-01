@@ -1,47 +1,39 @@
-type Endpoints = {
-  httpOrigin: string;
-  socketOrigin: string;
-  socketPath: string;
+type ViteEnv = Record<string, string | undefined>;
+
+const getEnvVar = (key: string): string | undefined =>
+  (import.meta.env as unknown as ViteEnv)?.[key];
+
+export const config = {
+  // Full API base including /api
+  apiUrl: getEnvVar('VITE_API_URL') ?? 'http://localhost:5010/api',
+  // Optional explicit origins/urls
+  httpOrigin: getEnvVar('VITE_HTTP_ORIGIN'),
+  wsUrl: getEnvVar('VITE_WS_URL'),
+  // Socket.IO path (backend default is '/socket.io')
+  wsPath: getEnvVar('VITE_SOCKET_PATH') ?? '/socket.io',
 };
 
-function getEnvVar(key: string): string | undefined {
-  // Vite build/runtime
-  // @ts-ignore
-  const vite = typeof import.meta !== 'undefined' ? (import.meta as any).env : undefined;
-  return vite?.[key] ?? (typeof process !== 'undefined' ? (process.env as any)?.[key] : undefined);
-}
-
-const apiUrl = getEnvVar('VITE_API_URL') ?? 'http://localhost:5010/api';
-const wsUrl = getEnvVar('VITE_WS_URL');
-const wsPath =
-  getEnvVar('VITE_WS_PATH') ??
-  getEnvVar('VITE_SOCKET_PATH') ??
-  '/ws/notifications';
-
-function stripApiSuffix(url: string): string {
+function stripApiSuffix(url: string) {
   try {
     const u = new URL(url);
-    if (u.pathname.endsWith('/api')) {
-      u.pathname = u.pathname.replace(/\/api$/, '');
-    }
+    if (u.pathname.endsWith('/api')) u.pathname = u.pathname.replace(/\/api$/, '');
     return u.toString().replace(/\/$/, '');
   } catch {
-    // Fallback for non-URL strings
     return url.replace(/\/api$/, '').replace(/\/$/, '');
   }
 }
 
-export const config = {
-  apiUrl,
-  wsUrl: wsUrl ?? null,
-  wsPath,
+// Normalize origins (no trailing slash)
+const httpOrigin = (config.httpOrigin ?? stripApiSuffix(config.apiUrl)).replace(/\/$/, '');
+const socketOrigin = (config.wsUrl ?? httpOrigin).replace(/^http/i, 'ws');
+
+export const endpoints = {
+  httpOrigin,           // e.g. http://localhost:5010
+  socketOrigin,         // e.g. ws://localhost:5010
+  socketPath: config.wsPath, // e.g. '/socket.io'
 };
 
-export const endpoints: Endpoints = {
-  httpOrigin: stripApiSuffix(apiUrl),
-  socketOrigin: (wsUrl ?? stripApiSuffix(apiUrl)).replace(/^http/i, 'ws'),
-  socketPath: wsPath,
-};
+export const apiBaseUrl = `${httpOrigin}/api`;
 
 export default endpoints;
 

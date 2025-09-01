@@ -15,14 +15,12 @@ import type {
   CriticalAlertResponse,
   LowStockPartResponse,
 } from "../types";
-import { endpoints } from "./env";
-
-// Base URL derived from configured HTTP origin.
-const baseURL = `${endpoints.httpOrigin}/api`;
+import { apiBaseUrl } from "./env";
 
 const api = axios.create({
-  baseURL,
+  baseURL: apiBaseUrl, // http://localhost:5010/api by default
   withCredentials: true,
+  timeout: 20000,
 });
 
 api.interceptors.request.use((cfg) => {

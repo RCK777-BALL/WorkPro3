@@ -5,6 +5,8 @@ import { useDashboardStore } from '../store/dashboardStore';
 import { useSocketStore } from '../store/socketStore';
 import useDashboardData from '../hooks/useDashboardData';
 import { useSummary } from '../hooks/useSummaryData';
+import api from '../utils/api';
+import FiltersBar from '../components/dashboard/FiltersBar';
 import {
   getNotificationsSocket,
   closeNotificationsSocket,
@@ -35,7 +37,13 @@ const getTimeAgo = (timestamp: string): string => {
 
 const Dashboard: React.FC = () => {
   const user = useAuthStore((s) => s.user);
-  const selectedRole = useDashboardStore((s) => s.selectedRole);
+  const { selectedRole, selectedDepartment, selectedTimeframe, customRange } =
+    useDashboardStore((s) => ({
+      selectedRole: s.selectedRole,
+      selectedDepartment: s.selectedDepartment,
+      selectedTimeframe: s.selectedTimeframe,
+      customRange: s.customRange,
+    }));
   const connected = useSocketStore((s) => s.connected);
   const [liveData, setLiveData] = useState(true);
   const pollActive = useRef(false);
@@ -47,7 +55,12 @@ const Dashboard: React.FC = () => {
     criticalAlerts,
     refresh,
     loading,
-  } = useDashboardData(selectedRole);
+  } = useDashboardData(
+    selectedRole,
+    selectedDepartment,
+    selectedTimeframe,
+    customRange,
+  );
 
   const [stats, setStats] = useState({
     totalAssets: 0,
@@ -56,16 +69,34 @@ const Dashboard: React.FC = () => {
     inventoryAlerts: 0,
   });
   const [lowStockParts, setLowStockParts] = useState<LowStockPart[]>([]);
-  const [, setDepartments] = useState<Department[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [, setAnalytics] = useState<any | null>(null); // optional analytics state
 
-  // summaries (auto-refetch when selectedRole changes)
+  const buildQuery = () => {
+    const params = new URLSearchParams();
+    if (selectedDepartment !== 'all') params.append('department', selectedDepartment);
+    if (selectedRole !== 'all') params.append('role', selectedRole);
+    if (selectedTimeframe) {
+      params.append('timeframe', selectedTimeframe);
+      if (selectedTimeframe === 'custom') {
+        params.append('start', customRange.start);
+        params.append('end', customRange.end);
+      }
+    }
+    const q = params.toString();
+    return q ? `?${q}` : '';
+  };
+
+  const query = buildQuery();
+
+  // summaries (auto-refetch when filters change)
   const [summary] = useSummary<DashboardSummary>(
-    `/summary${selectedRole ? `?role=${selectedRole}` : ''}`,
-    [selectedRole],
+    `/summary${query}`,
+    [selectedDepartment, selectedRole, selectedTimeframe, customRange.start, customRange.end],
   );
   const [lowStock] = useSummary<LowStockPartResponse[]>(
-    `/summary/low-stock${selectedRole ? `?role=${selectedRole}` : ''}`,
-    [selectedRole],
+    `/summary/low-stock${query}`,
+    [selectedDepartment, selectedRole, selectedTimeframe, customRange.start, customRange.end],
   );
   const [departmentsData] = useSummary<Department[]>(
     '/summary/departments',
@@ -112,6 +143,20 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     if (Array.isArray(departmentsData)) setDepartments(departmentsData);
   }, [departmentsData]);
+
+  // analytics (optional)
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const res = await api.get(`/reports/analytics${buildQuery()}`);
+        setAnalytics(res.data);
+      } catch (err) {
+        console.error('Error fetching analytics', err);
+      }
+    };
+    fetchAnalytics();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDepartment, selectedRole, selectedTimeframe, customRange]);
 
   // socket-driven refresh
   useEffect(() => {
@@ -203,6 +248,8 @@ const Dashboard: React.FC = () => {
             </button>
           </div>
         </div>
+
+        <FiltersBar departments={departments} />
 
         {/* Top stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

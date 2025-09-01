@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import InventoryItem, { IInventoryItem } from '../models/InventoryItem';
+import logger from '../utils/logger';
 
 
 export const getInventoryItems = async (
@@ -66,26 +67,30 @@ export const getInventoryItemById = async (
 
 export const createInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    logger.debug('createInventoryItem body:', req.body);
     const newItem = new InventoryItem(req.body);
     const saved = await newItem.save();
- 
+
     res.status(201).json(saved);
   } catch (err) {
+    logger.error('Error creating inventory item', err);
     next(err);
   }
 };
 
 export const updateInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    logger.debug('updateInventoryItem body:', req.body);
     const updated = await InventoryItem.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true, runValidators: true }
     );
     if (!updated) return res.status(404).json({ message: 'Not found' });
- 
+
     res.json(updated);
   } catch (err) {
+    logger.error('Error updating inventory item', err);
     next(err);
   }
 };

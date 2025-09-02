@@ -65,9 +65,14 @@ describe('authorize middleware', () => {
   });
 
   it('denies access when permission is missing', async () => {
-    await request(app)
+    const res = await request(app)
       .get('/protected')
       .set('Authorization', `Bearer ${tokenWithout}`)
       .expect(403);
+    expect(res.body.missing).toEqual(['perm:test']);
+  });
+
+  it('returns 401 when no authentication is provided', async () => {
+    await request(app).get('/protected').expect(401);
   });
 });

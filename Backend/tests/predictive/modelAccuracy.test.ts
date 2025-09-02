@@ -49,22 +49,22 @@ beforeEach(async () => {
 describe('Predictive models accuracy', () => {
   it('linear model predicts within threshold', async () => {
     process.env.PREDICTIVE_MODEL = 'linear';
-    const result = await predictiveService.predictForAsset(
+    const results = await predictiveService.predictForAsset(
       assetId.toString(),
       tenantId.toString()
     );
-    expect(result).toBeTruthy();
-    expect(Math.abs(result!.predictedValue - 50)).toBeLessThan(5);
+    expect(results.length).toBeGreaterThan(0);
+    expect(Math.abs(results[0].predictedValue - 50)).toBeLessThan(5);
   });
 
   it('arima model predicts within threshold', async () => {
     process.env.PREDICTIVE_MODEL = 'arima';
-    const result = await predictiveService.predictForAsset(
+    const results = await predictiveService.predictForAsset(
       assetId.toString(),
       tenantId.toString()
     );
-    expect(result).toBeTruthy();
-    expect(Math.abs(result!.predictedValue - 50)).toBeLessThan(5);
+    expect(results.length).toBeGreaterThan(0);
+    expect(Math.abs(results[0].predictedValue - 50)).toBeLessThan(5);
   });
 
   it('stores prediction with confidence interval', async () => {

@@ -2,6 +2,18 @@ import Asset from '../models/Asset';
 import SensorReading from '../models/SensorReading';
 import Notification from '../models/Notification';
 import Prediction from '../models/Prediction';
+import config from '../config/default';
+
+// Attempt to load external ARIMA library if installed. Fallback logic is used
+// when the dependency is not available in the environment.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+let ArimaLib: any = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  ArimaLib = require('arima');
+} catch {
+  ArimaLib = null;
+}
 
 export interface PredictionTrend {
   timestamp: Date;
@@ -10,6 +22,7 @@ export interface PredictionTrend {
 
 export interface PredictionResult {
   asset: string;
+  metric: string;
   predictedValue: number;
   probability: number;
   lowerBound: number;
@@ -19,7 +32,12 @@ export interface PredictionResult {
 
 const SENSOR_LIMIT = 100; // value where probability=1
 const FAILURE_THRESHOLD = 0.6; // notify if probability exceeds
-const MODEL = process.env.PREDICTIVE_MODEL || 'linear';
+
+function getModel(): string {
+  return (
+    process.env.PREDICTIVE_MODEL || config.predictive?.model || 'linear'
+  );
+}
 
 function linearForecast(values: number[]): number {
   const n = values.length;
@@ -35,9 +53,14 @@ function linearForecast(values: number[]): number {
 }
 
 function arimaForecast(values: number[]): number {
-  // Very small ARIMA(1,1,0) style forecast using average differencing
+  if (ArimaLib) {
+    const model = new ArimaLib({ p: 1, d: 1, q: 0 }).train(values);
+    const [pred] = model.predict(1);
+    return Array.isArray(pred) ? pred[0] : pred;
+  }
+  // Fallback: simple average differencing when library is unavailable
   if (values.length < 2) return values[values.length - 1] || 0;
-  const diffs = [] as number[];
+  const diffs: number[] = [];
   for (let i = 1; i < values.length; i++) {
     diffs.push(values[i] - values[i - 1]);
   }
@@ -57,28 +80,27 @@ interface MetricSeries {
   values: number[];
 }
 
-function engineerFeatures(series: MetricSeries[]): number[] {
-  const features: number[] = [];
+function engineerFeatures(series: MetricSeries[]): Record<string, number> {
+  const features: Record<string, number> = {};
   for (const s of series) {
     const mean = s.values.reduce((a, b) => a + b, 0) / s.values.length;
-    const last = s.values[s.values.length - 1];
-    features.push(mean, last);
+    features[s.metric] = mean;
   }
   return features;
 }
 
 function forecast(values: number[]): number {
-  return MODEL === 'arima' ? arimaForecast(values) : linearForecast(values);
+  return getModel() === 'arima' ? arimaForecast(values) : linearForecast(values);
 }
 
 export async function predictForAsset(
   assetId: string,
   tenantId: string
-): Promise<PredictionResult | null> {
+): Promise<PredictionResult[]> {
   const readings = await SensorReading.find({ asset: assetId, tenantId })
     .sort({ timestamp: 1 })
     .limit(50);
-  if (readings.length < 2) return null;
+  if (readings.length < 2) return [];
 
   const metricMap = new Map<string, number[]>();
   for (const r of readings) {
@@ -88,61 +110,74 @@ export async function predictForAsset(
   const series: MetricSeries[] = Array.from(metricMap.entries()).map(
     ([metric, values]) => ({ metric, values })
   );
-  engineerFeatures(series); // currently unused but placeholder for future models
-
-  const primary = series[0];
-  const predictedValue = forecast(primary.values);
-  const probability = Math.max(0, Math.min(1, predictedValue / SENSOR_LIMIT));
-  const stdDev = computeStdDev(primary.values);
-  const margin = 1.96 * stdDev;
-  const lowerBound = predictedValue - margin;
-  const upperBound = predictedValue + margin;
-
-  await Prediction.create({
-    asset: assetId,
-    metric: primary.metric,
-    predictedValue,
-    lowerBound,
-    upperBound,
-    tenantId,
-  });
+  engineerFeatures(series); // placeholder for richer models
 
   const asset = await Asset.findById(assetId).lean();
+  const results: PredictionResult[] = [];
 
-  if (probability > FAILURE_THRESHOLD && asset?.tenantId) {
-    await Notification.create({
-      tenantId: asset.tenantId,
-      message: `Asset ${assetId} predicted failure probability ${(probability * 100).toFixed(
-        1
-      )}%`,
+  for (const { metric, values } of series) {
+    const predictedValue = forecast(values);
+    const probability = Math.max(0, Math.min(1, predictedValue / SENSOR_LIMIT));
+    const stdDev = computeStdDev(values);
+    const margin = 1.96 * stdDev;
+    const lowerBound = predictedValue - margin;
+    const upperBound = predictedValue + margin;
+
+    await Prediction.create({
+      asset: assetId,
+      metric,
+      predictedValue,
+      lowerBound,
+      upperBound,
+      tenantId,
+    });
+
+    if (probability > FAILURE_THRESHOLD && asset?.tenantId) {
+      await Notification.create({
+        tenantId: asset.tenantId,
+        message: `Asset ${assetId} predicted failure probability ${(probability * 100).toFixed(
+          1
+        )}% for metric ${metric}`,
+      });
+    }
+
+    const trendDocs = await Prediction.find({ asset: assetId, metric, tenantId })
+      .sort({ timestamp: -1 })
+      .limit(10);
+    const trend = trendDocs
+      .reverse()
+      .map((p) => ({ timestamp: p.timestamp, predictedValue: p.predictedValue }));
+
+    results.push({
+      asset: assetId,
+      metric,
+      predictedValue,
+      probability,
+      lowerBound,
+      upperBound,
+      trend,
     });
   }
 
-  const trendDocs = await Prediction.find({ asset: assetId, tenantId })
-    .sort({ timestamp: -1 })
-    .limit(10);
-  const trend = trendDocs
-    .reverse()
-    .map((p) => ({ timestamp: p.timestamp, predictedValue: p.predictedValue }));
-
-  return { asset: assetId, predictedValue, probability, lowerBound, upperBound, trend };
+  return results;
 }
 
 export async function getPredictions(tenantId: string): Promise<PredictionResult[]> {
   const assets = await Asset.find({ tenantId });
   const results: PredictionResult[] = [];
   for (const asset of assets) {
-    const p = await predictForAsset(asset._id.toString(), tenantId);
-    if (p) results.push(p);
+    const preds = await predictForAsset(asset._id.toString(), tenantId);
+    results.push(...preds);
   }
   return results;
 }
 
 export async function getPredictionTrend(
   assetId: string,
+  metric: string,
   tenantId: string
 ): Promise<PredictionTrend[]> {
-  const trendDocs = await Prediction.find({ asset: assetId, tenantId })
+  const trendDocs = await Prediction.find({ asset: assetId, metric, tenantId })
     .sort({ timestamp: 1 })
     .limit(50);
   return trendDocs.map((p) => ({

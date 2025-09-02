@@ -23,6 +23,7 @@ export const getTrend = async (
   try {
     const trend = await predictiveService.getPredictionTrend(
       req.params.assetId,
+      req.params.metric,
       req.tenantId
     );
     res.json(trend);

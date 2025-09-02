@@ -24,6 +24,12 @@ try {
 
 export type OAuthProvider = 'google' | 'github';
 
+export const getOAuthScope = (provider: OAuthProvider): string[] => {
+  return provider === 'google'
+    ? ['profile', 'email']
+    : ['user:email'];
+};
+
 export const oauthVerify = (
   _accessToken: string,
   _refreshToken: string,

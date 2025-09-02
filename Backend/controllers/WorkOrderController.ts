@@ -5,6 +5,18 @@ import { emitWorkOrderUpdate } from '../server';
 import { validationResult } from 'express-validator';
 import notifyUser from '../utils/notify';
 import { getWorkOrderAssistance } from '../services/aiCopilot';
+import { Types } from 'mongoose';
+import { WorkOrderUpdatePayload } from '../types/Payloads';
+
+function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
+  const plain = typeof doc.toObject === "function"
+    ? doc.toObject({ getters: true, virtuals: false })
+    : doc;
+  return {
+    ...plain,
+    _id: (plain._id as Types.ObjectId | string)?.toString(),
+  } as WorkOrderUpdatePayload;
+}
 
 /**
  * @openapi
@@ -146,10 +158,10 @@ export const createWorkOrder: AuthedRequestHandler = async (
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    const newItem = new WorkOrder({ ...req.body, tenantId: req.tenantId });
-    const saved = await newItem.save();
-    emitWorkOrderUpdate(saved);
-    res.status(201).json(saved);
+      const newItem = new WorkOrder({ ...req.body, tenantId: req.tenantId });
+      const saved = await newItem.save();
+      emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
+      res.status(201).json(saved);
   } catch (err) {
     next(err);
   }
@@ -190,7 +202,7 @@ export const updateWorkOrder: AuthedRequestHandler = async (
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    const updated = await WorkOrder.findOneAndUpdate(
+      const updated = await WorkOrder.findOneAndUpdate(
       { _id: req.params.id, tenantId: req.tenantId },
       req.body,
       {
@@ -198,9 +210,9 @@ export const updateWorkOrder: AuthedRequestHandler = async (
         runValidators: true,
       }
     );
-    if (!updated) return res.status(404).json({ message: 'Not found' });
-    emitWorkOrderUpdate(updated);
-    res.json(updated);
+      if (!updated) return res.status(404).json({ message: 'Not found' });
+      emitWorkOrderUpdate(toWorkOrderUpdatePayload(updated));
+      res.json(updated);
   } catch (err) {
     next(err);
   }
@@ -231,10 +243,10 @@ export const deleteWorkOrder: AuthedRequestHandler = async (
   next
 ) => {
   try {
-    const deleted = await WorkOrder.findOneAndDelete({ _id: req.params.id, tenantId: req.tenantId });
-    if (!deleted) return res.status(404).json({ message: 'Not found' });
-    emitWorkOrderUpdate({ _id: req.params.id, deleted: true });
-    res.json({ message: 'Deleted successfully' });
+      const deleted = await WorkOrder.findOneAndDelete({ _id: req.params.id, tenantId: req.tenantId });
+      if (!deleted) return res.status(404).json({ message: 'Not found' });
+      emitWorkOrderUpdate(toWorkOrderUpdatePayload({ _id: req.params.id, deleted: true }));
+      res.json({ message: 'Deleted successfully' });
   } catch (err) {
     next(err);
   }
@@ -296,8 +308,8 @@ export const approveWorkOrder: AuthedRequestHandler = async (
       workOrder.approvedBy = req.user?._id;
     }
 
-    const saved = await workOrder.save();
-    emitWorkOrderUpdate(saved);
+      const saved = await workOrder.save();
+      emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
 
     const message =
       status === 'pending'

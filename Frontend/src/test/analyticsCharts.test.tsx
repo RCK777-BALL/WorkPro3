@@ -10,7 +10,8 @@ vi.mock('../components/kpi/KpiExportButtons', () => ({ default: () => <div /> })
 vi.mock('../components/common/Button', () => ({ default: ({ children }: any) => <button>{children}</button> }));
 vi.mock('../components/common/Card', () => ({ default: ({ children, title }: any) => <div>{title}{children}</div> }));
 vi.mock('../components/common/Badge', () => ({ default: () => <span /> }));
-vi.mock('react-chartjs-2', () => ({ Line: (props: any) => <canvas {...props} /> }));
+const lineMock = vi.fn((props: any) => <canvas {...props} />);
+vi.mock('react-chartjs-2', () => ({ Line: (props: any) => lineMock(props) }));
 vi.mock('chart.js', () => ({ CategoryScale: {}, LinearScale: {}, PointElement: {}, LineElement: {}, Tooltip: {}, Legend: {}, Chart: {}, register: () => {} }));
 
 import Analytics from '../pages/Analytics';
@@ -50,5 +51,8 @@ describe('Analytics charts', () => {
     const down = await screen.findByTestId('downtime-chart');
     expect(cost).toBeInTheDocument();
     expect(down).toBeInTheDocument();
+    expect(lineMock).toHaveBeenCalledTimes(2);
+    expect(lineMock.mock.calls[0][0].data.datasets[0].data).toEqual([100]);
+    expect(lineMock.mock.calls[1][0].data.datasets[0].data).toEqual([5]);
   });
 });

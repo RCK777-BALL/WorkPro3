@@ -268,11 +268,15 @@ async function aggregateCosts(tenantId: string) {
       map.set(r.period, entry);
     });
   });
-
-  return Array.from(map.values()).map((r) => ({
-    ...r,
-    totalCost: (r.laborCost || 0) + (r.maintenanceCost || 0) + (r.materialCost || 0),
-  }));
+  return Array.from(map.values())
+    .sort((a, b) => a.period.localeCompare(b.period))
+    .map((r) => ({
+      ...r,
+      totalCost:
+        (r.laborCost || 0) +
+        (r.maintenanceCost || 0) +
+        (r.materialCost || 0),
+    }));
 }
 
 export const getCostMetrics: AuthedRequestHandler = async (req, res, next) => {

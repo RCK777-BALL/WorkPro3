@@ -23,7 +23,7 @@ export function startMQTTClient(
 
   mqttClient.on('connect', () => {
     mqttLogger.info('MQTT connected');
-    mqttClient.subscribe('tenants/+/readings', (err: { message: any; }) => {
+    mqttClient.subscribe('tenants/+/readings', (err?: Error) => {
       if (err) {
         mqttLogger.error('MQTT subscribe error', { error: err.message });
       } else {
@@ -34,9 +34,11 @@ export function startMQTTClient(
 
   mqttClient.on('reconnect', () => mqttLogger.warn('MQTT reconnecting'));
   mqttClient.on('close', () => mqttLogger.warn('MQTT connection closed'));
-  mqttClient.on('error', (err: { message: any; }) => mqttLogger.error('MQTT error', { error: err.message }));
+  mqttClient.on('error', (err: Error) =>
+    mqttLogger.error('MQTT error', { error: err.message })
+  );
 
-  mqttClient.on('message', async (topic: string, payload: { toString: () => string; }) => {
+  mqttClient.on('message', async (topic: string, payload: Buffer) => {
     try {
       const match = topic.match(/^tenants\/(.+?)\/readings$/);
       if (!match) return;

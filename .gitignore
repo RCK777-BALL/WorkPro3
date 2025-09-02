@@ -2,6 +2,8 @@
 **/.env
 **/.env.*
 !Frontend/.env
+!Backend/.env.example
+!Frontend/.env.example
 
 # Dependencies
 **/node_modules/

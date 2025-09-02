@@ -1,0 +1,11 @@
+{
+  "name": "workpro",
+  "private": true,
+  "workspaces": [
+    "Backend",
+    "Frontend"
+  ],
+  "scripts": {
+    "build": "npm run build -w Backend && npm run build -w Frontend"
+  }
+}

@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 
 const ForgotPasswordPage: React.FC = () => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [installEvent, setInstallEvent] = useState<any>(null);
@@ -31,10 +33,10 @@ const ForgotPasswordPage: React.FC = () => {
     setMessage('');
     try {
       await api.post('/auth/password/reset', { email });
-      setMessage('If the email is registered, a reset link has been sent.');
+      setMessage(t('auth.resetLinkSent'));
     } catch (err) {
       console.error(err);
-      setMessage('Failed to send reset email');
+      setMessage(t('auth.resetFailed'));
     }
   };
 
@@ -48,14 +50,14 @@ const ForgotPasswordPage: React.FC = () => {
               type="button"
               className="mb-4 px-4 py-2 rounded bg-blue-600 text-white"
             >
-              Install App
+              {t('app.install')}
             </button>
           </div>
         )}
-        <h2 className="text-xl font-bold">Reset Password</h2>
+        <h2 className="text-xl font-bold">{t('auth.resetPassword')}</h2>
         <input
           type="email"
-          placeholder="Email"
+          placeholder={t('auth.email')}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="w-full p-2 border rounded"
@@ -63,10 +65,10 @@ const ForgotPasswordPage: React.FC = () => {
         />
         {message && <div className="text-green-600">{message}</div>}
         <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded w-full">
-          Send Reset Link
+          {t('auth.sendResetLink')}
         </button>
         <p className="text-sm text-center">
-          <Link to="/login" className="text-blue-600">Back to Login</Link>
+          <Link to="/login" className="text-blue-600">{t('auth.backToLogin')}</Link>
         </p>
       </form>
     </div>

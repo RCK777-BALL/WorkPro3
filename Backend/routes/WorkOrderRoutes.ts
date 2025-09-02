@@ -45,6 +45,9 @@ router.put(
 router.post(
   '/:id/approve',
   requireRole('admin', 'manager'),
+  // Fine-grained permission check for approving a work order. The user's
+  // role alone isn't enough; they must explicitly hold the
+  // `workorders:approve` permission.
   authorize('workorders:approve'),
   approveWorkOrder
 );

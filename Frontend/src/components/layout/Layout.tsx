@@ -11,7 +11,11 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, title }) => {
   const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
-  const [installEvent, setInstallEvent] = useState<any>(null);
+  type BeforeInstallPromptEvent = Event & {
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+  };
+  const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstall, setShowInstall] = useState(false);
   const { theme } = useThemeStore();
   const {
@@ -42,11 +46,16 @@ const Layout: React.FC<LayoutProps> = ({ children, title }) => {
   useEffect(() => {
     const handler = (e: Event) => {
       e.preventDefault();
-      setInstallEvent(e);
+      setInstallEvent(e as BeforeInstallPromptEvent);
       setShowInstall(true);
     };
+    const installed = () => setShowInstall(false);
     window.addEventListener('beforeinstallprompt', handler as EventListener);
-    return () => window.removeEventListener('beforeinstallprompt', handler as EventListener);
+    window.addEventListener('appinstalled', installed);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler as EventListener);
+      window.removeEventListener('appinstalled', installed);
+    };
   }, []);
 
   const promptInstall = async () => {

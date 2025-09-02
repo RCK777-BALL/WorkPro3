@@ -33,10 +33,12 @@ export function startMQTTClient(
   });
 
   mqttClient.on('reconnect', () => mqttLogger.warn('MQTT reconnecting'));
+ 
   mqttClient.on('close', () => mqttLogger.warn('MQTT connection closed'));
   mqttClient.on('error', (err: Error): void => {
     mqttLogger.error('MQTT error', { error: err.message });
   });
+ 
 
   mqttClient.on(
     'message',

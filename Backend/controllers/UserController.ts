@@ -2,6 +2,17 @@ import { AuthedRequest } from '../types/AuthedRequest';
 import { AuthedRequestHandler } from '../types/AuthedRequestHandler';
 import User from '../models/User';
 
+/**
+ * @openapi
+ * /api/users:
+ *   get:
+ *     tags:
+ *       - Users
+ *     summary: Retrieve all users
+ *     responses:
+ *       200:
+ *         description: List of users
+ */
 export const getAllUsers: AuthedRequestHandler = async (
   req,
   res,
@@ -15,6 +26,25 @@ export const getAllUsers: AuthedRequestHandler = async (
   }
 };
 
+/**
+ * @openapi
+ * /api/users/{id}:
+ *   get:
+ *     tags:
+ *       - Users
+ *     summary: Get user by ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User found
+ *       404:
+ *         description: User not found
+ */
 export const getUserById: AuthedRequestHandler = async (
   req,
   res,
@@ -29,6 +59,23 @@ export const getUserById: AuthedRequestHandler = async (
   }
 };
 
+/**
+ * @openapi
+ * /api/users:
+ *   post:
+ *     tags:
+ *       - Users
+ *     summary: Create a user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       201:
+ *         description: User created
+ */
 export const createUser: AuthedRequestHandler = async (
   req,
   res,
@@ -44,6 +91,31 @@ export const createUser: AuthedRequestHandler = async (
   }
 };
 
+/**
+ * @openapi
+ * /api/users/{id}:
+ *   put:
+ *     tags:
+ *       - Users
+ *     summary: Update a user
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: User updated
+ *       404:
+ *         description: User not found
+ */
 export const updateUser: AuthedRequestHandler = async (
   req,
   res,
@@ -65,6 +137,25 @@ export const updateUser: AuthedRequestHandler = async (
   }
 };
 
+/**
+ * @openapi
+ * /api/users/{id}:
+ *   delete:
+ *     tags:
+ *       - Users
+ *     summary: Delete a user
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Deletion successful
+ *       404:
+ *         description: User not found
+ */
 export const deleteUser: AuthedRequestHandler = async (
   req,
   res,
@@ -79,6 +170,27 @@ export const deleteUser: AuthedRequestHandler = async (
   }
 };
 
+/**
+ * @openapi
+ * /api/users/{id}/theme:
+ *   get:
+ *     tags:
+ *       - Users
+ *     summary: Get a user's theme preference
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Theme preference
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: User not found
+ */
 export const getUserTheme: AuthedRequestHandler = async (
   req,
   res,
@@ -97,6 +209,37 @@ export const getUserTheme: AuthedRequestHandler = async (
   }
 };
 
+/**
+ * @openapi
+ * /api/users/{id}/theme:
+ *   put:
+ *     tags:
+ *       - Users
+ *     summary: Update a user's theme preference
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               theme:
+ *                 type: string
+ *                 enum: [light, dark, system]
+ *     responses:
+ *       200:
+ *         description: Theme updated
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: User not found
+ */
 export const updateUserTheme: AuthedRequestHandler = async (
   req,
   res,

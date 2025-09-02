@@ -8,4 +8,7 @@ export default {
     username: process.env.MQTT_BROKER_USERNAME || '',
     password: process.env.MQTT_BROKER_PASSWORD || '',
   },
+  predictive: {
+    model: process.env.PREDICTIVE_MODEL || 'linear',
+  },
 };

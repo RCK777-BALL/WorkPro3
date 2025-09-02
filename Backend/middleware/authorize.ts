@@ -13,9 +13,12 @@ export const authorize = (...required: string[]): RequestHandler => {
     }
 
     const userPerms = req.user.permissions || [];
-    const hasPerm = required.every((p) => userPerms.includes(p));
-    if (!hasPerm) {
-      res.status(403).json({ message: 'Forbidden' });
+    // Determine which permissions from `required` are not present on the
+    // authenticated user. Using a list allows callers or tests to inspect
+    // which permissions were missing when access is denied.
+    const missing = required.filter((p) => !userPerms.includes(p));
+    if (missing.length > 0) {
+      res.status(403).json({ message: 'Forbidden', missing });
       return;
     }
 

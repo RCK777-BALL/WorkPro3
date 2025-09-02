@@ -12,7 +12,7 @@ import rateLimit from 'express-rate-limit';
 import { initKafka, sendKafkaEvent } from './utils/kafka';
 import { initMQTTFromConfig } from './iot/mqttClient';
 
-import authRoutes from './routes/auth';
+import authRoutes from './routes/authRoutes';
 import workOrdersRoutes from './routes/WorkOrderRoutes';
 import assetsRoutes from './routes/AssetRoutes';
 import pmTasksRoutes from './routes/PMTaskRoutes';

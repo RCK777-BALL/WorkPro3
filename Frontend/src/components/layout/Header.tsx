@@ -72,7 +72,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
       fetchNotifications()
         .catch((err) => {
           console.error('Failed to load notifications', err);
-          setNotificationsError('Failed to load notifications');
+          setNotificationsError(t('header.failedToLoadNotifications'));
         })
         .finally(() => setLoadingNotifications(false));
     }
@@ -137,13 +137,13 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
     const date = new Date(createdAt);
     const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-    if (seconds < 60) return 'just now';
+    if (seconds < 60) return t('time.justNow');
     const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
+    if (minutes < 60) return t('time.minutesAgo', { count: minutes });
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
+    if (hours < 24) return t('time.hoursAgo', { count: hours });
     const days = Math.floor(hours / 24);
-    return `${days}d ago`;
+    return t('time.daysAgo', { count: days });
   };
 
   const getNotificationColor = (type: string) => {
@@ -383,13 +383,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
           <div className="ml-2 hidden md:block">
             <p className="text-sm font-medium text-neutral-900 dark:text-white">{user?.name}</p>
             <p className="text-xs text-neutral-700 dark:text-neutral-300">
-              {user?.role === 'admin'
-                ? 'Admin'
-                : user?.role === 'manager'
-                ? 'Manager'
-                : user?.role === 'technician'
-                ? 'Technician'
-                : 'Viewer'}
+              {t(`roles.${user?.role ?? 'viewer'}`)}
             </p>
           </div>
         </div>

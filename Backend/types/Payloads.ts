@@ -3,6 +3,7 @@ export interface WorkOrderUpdatePayload {
   tenantId: string;
   title: string;
   status: 'open' | 'in-progress' | 'on-hold' | 'completed';
+  deleted?: boolean;
 }
 
 export interface InventoryUpdatePayload {

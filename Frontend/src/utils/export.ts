@@ -120,3 +120,12 @@ export const exportMetricsToPDF = (
   data: Record<string, any>[],
   filename: string,
 ) => exportToPDF(data, filename, (d) => d);
+
+export const exportMetrics = (
+  data: Record<string, any>[],
+  filename: string,
+  format: 'csv' | 'pdf',
+) =>
+  format === 'pdf'
+    ? exportMetricsToPDF(data, filename)
+    : exportMetricsToCSV(data, filename);

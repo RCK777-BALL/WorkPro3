@@ -68,6 +68,8 @@ describe('Reports metrics', () => {
       .get('/api/reports/costs')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].period).toBe('2023-01');
     expect(res.body[0].laborCost).toBeCloseTo(400);
     expect(res.body[0].maintenanceCost).toBeCloseTo(200);
     expect(res.body[0].materialCost).toBeCloseTo(5);
@@ -79,6 +81,8 @@ describe('Reports metrics', () => {
       .get('/api/reports/downtime')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].period).toBe('2023-01');
     expect(res.body[0].downtime).toBe(4);
   });
 });

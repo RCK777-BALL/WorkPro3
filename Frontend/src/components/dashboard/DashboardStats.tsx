@@ -255,7 +255,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
   const extraKPIs: StatCardProps[] = selectedKPIs
     .map((kpiId) => {
       const kpi = availableKPIs.find((k) => k.id === kpiId);
-      if (!kpi) return null as const;
+      if (!kpi) return null;
 
       const textColor = kpi.iconBg.replace('bg-', 'text-').replace('50', '600');
       const textColorDark = kpi.iconBg.replace('bg-', 'text-').replace('50', '400');

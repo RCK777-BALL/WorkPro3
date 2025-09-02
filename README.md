@@ -24,9 +24,10 @@ not committed to the repository.
    ```bash
    cp .env.example .env
    ```
-   Update the required environment variables such as `MONGO_URI`, `JWT_SECRET`,
+    Update the required environment variables such as `MONGO_URI`, `JWT_SECRET`,
    and `CORS_ORIGIN`. The example connection string uses
    `mongodb://localhost:27017/platinum_cmms`.
+ 
 3. Seed the database with a tenant and admin account:
    ```bash
    npm run seed:admin
@@ -36,13 +37,15 @@ not committed to the repository.
    ```bash
    npm run dev
    ```
-   The server expects a running MongoDB instance defined by `MONGO_URI` in the environment.
+   The server expects a running MongoDB instance. Override `MONGO_URI` if your
+   database is not at the default location.
 
 ## Frontend setup
 
 1. `cd Frontend`
 2. Copy `Frontend/.env.example` to `.env` and update `VITE_API_URL`,
-   `VITE_WS_URL`, and `VITE_WS_PATH`.
+    `VITE_WS_URL`, and `VITE_WS_PATH`.
+ 
 3. Install dependencies with `npm install`.
 4. Run the development server:
    ```bash
@@ -52,8 +55,8 @@ not committed to the repository.
 
 ### Offline mode
 
-If `VITE_WS_URL` or `VITE_WS_PATH` is empty, or the browser is offline, work order updates are
-queued in `localStorage` under `offline-queue`. Once the WebSocket defined by `VITE_WS_URL` and `VITE_WS_PATH` is restored, the queue is flushed and the requests are sent to the API.
+If `VITE_WS_URL` or `VITE_SOCKET_PATH` is empty, or the browser is offline, work order updates are
+queued in `localStorage` under `offline-queue`. Once the WebSocket defined by `VITE_WS_URL` and `VITE_SOCKET_PATH` is restored, the queue is flushed and the requests are sent to the API.
 
 ## Docker development
 
@@ -100,7 +103,7 @@ they can be merged. The testing matrix and workflow are described in
 
 The frontend stores any API requests made while offline in local storage. When
 the browser regains connectivity, the queued requests are automatically sent
-using the browser's `online` event even if the WebSocket defined by `VITE_WS_URL` and `VITE_WS_PATH` fails to reconnect.
+using the browser's `online` event even if the WebSocket defined by `VITE_WS_URL` and `VITE_SOCKET_PATH` fails to reconnect.
 
 ## License
 

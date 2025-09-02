@@ -43,7 +43,7 @@ import { startPMScheduler } from './utils/pmScheduler';
 import { setupSwagger } from './utils/swagger';
 import mongoose from 'mongoose';
 import errorHandler from './middleware/errorHandler';
-import { validateEnv } from './config/validateEnv';
+import { validateEnv, type EnvVars } from './config/validateEnv';
 import { initChatSocket } from './socket/chatSocket';
 import type {
   WorkOrderUpdatePayload,
@@ -53,8 +53,9 @@ import type {
 
 dotenv.config();
 
+let env: EnvVars;
 try {
-  validateEnv();
+  env = validateEnv();
 } catch (err) {
   console.error(err);
   process.exit(1);
@@ -62,15 +63,13 @@ try {
 
 const app = express();
 const httpServer = createServer(app);
-const PORT = process.env.PORT || 5010;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/platinum_cmms';
+const PORT = parseInt(env.PORT, 10);
+const MONGO_URI = env.MONGO_URI;
 
-const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS || `${15 * 60 * 1000}`, 10);
-const RATE_LIMIT_MAX = parseInt(process.env.RATE_LIMIT_MAX || '100', 10);
+const RATE_LIMIT_WINDOW_MS = parseInt(env.RATE_LIMIT_WINDOW_MS, 10);
+const RATE_LIMIT_MAX = parseInt(env.RATE_LIMIT_MAX, 10);
 
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
-  .split(',')
-  .map((origin) => origin.trim());
+const allowedOrigins = env.CORS_ORIGIN.split(',').map((origin) => origin.trim());
 
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
@@ -90,7 +89,7 @@ app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 setupSwagger(app);
 
-const dev = process.env.NODE_ENV !== 'production';
+const dev = env.NODE_ENV !== 'production';
 
 const generalLimiter = rateLimit({
   windowMs: RATE_LIMIT_WINDOW_MS,
@@ -162,7 +161,7 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 // --- Mongo + server start ---
-if (process.env.NODE_ENV !== 'test') {
+if (env.NODE_ENV !== 'test') {
   mongoose
     .connect(MONGO_URI)
     .then(() => {
@@ -173,8 +172,8 @@ if (process.env.NODE_ENV !== 'test') {
       initKafka(io).catch((err) => console.error('Kafka init error:', err));
       initMQTTFromConfig();
       startPMScheduler('default', {
-        cronExpr: process.env.PM_SCHEDULER_CRON,
-        taskModulePath: process.env.PM_SCHEDULER_TASK,
+        cronExpr: env.PM_SCHEDULER_CRON,
+        taskModulePath: env.PM_SCHEDULER_TASK,
       });
     })
     .catch((err) => {

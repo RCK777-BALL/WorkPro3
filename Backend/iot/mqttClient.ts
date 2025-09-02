@@ -33,7 +33,16 @@ export function startMQTTClient(
   });
 
   mqttClient.on('reconnect', () => mqttLogger.warn('MQTT reconnecting'));
-  mqttClient.on('close', () => mqttLogger.warn('MQTT connection closed'));
+  mqttClient.on('close', () => {
+    mqttLogger.warn('MQTT connection closed, attempting reconnect');
+    // Explicitly trigger reconnect to ensure the client resumes quickly
+    try {
+      mqttClient.reconnect();
+    } catch (err) {
+      mqttLogger.error('MQTT reconnect failed', { error: (err as Error).message });
+    }
+  });
+  mqttClient.on('offline', () => mqttLogger.warn('MQTT client offline'));
   mqttClient.on('error', (err: Error) =>
     mqttLogger.error('MQTT error', { error: err.message })
   );

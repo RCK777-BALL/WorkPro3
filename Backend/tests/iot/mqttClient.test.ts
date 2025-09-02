@@ -14,6 +14,9 @@ class MockClient extends EventEmitter {
   publish(topic: string, message: string) {
     this.emit('message', topic, Buffer.from(message));
   }
+  reconnect() {
+    this.emit('reconnect');
+  }
 }
 
 describe('MQTT client', () => {
@@ -57,5 +60,19 @@ describe('MQTT client', () => {
     client.emit('error', new Error('fail'));
     expect(spy).toHaveBeenCalled();
     spy.mockRestore();
+  });
+
+  it('attempts to reconnect when the connection closes', () => {
+    const warnSpy = vi
+      .spyOn(mqttLogger, 'warn')
+      .mockImplementation(() => {} as any);
+    const reconnectSpy = vi.spyOn(client, 'reconnect');
+    client.emit('close');
+    expect(warnSpy).toHaveBeenCalledWith(
+      'MQTT connection closed, attempting reconnect'
+    );
+    expect(reconnectSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
+    reconnectSpy.mockRestore();
   });
 });

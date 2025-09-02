@@ -26,6 +26,14 @@ const LoginPage: React.FC = () => {
   const [showInstall, setShowInstall] = useState(false);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const emailFromOauth = params.get('email');
+    if (token && emailFromOauth) {
+      setUser({ email: emailFromOauth, token });
+      navigate('/dashboard');
+    }
+
     const handler = (e: Event) => {
       e.preventDefault();
       setInstallEvent(e as BeforeInstallPromptEvent);
@@ -33,7 +41,7 @@ const LoginPage: React.FC = () => {
     };
     window.addEventListener('beforeinstallprompt', handler as EventListener);
     return () => window.removeEventListener('beforeinstallprompt', handler as EventListener);
-  }, []);
+  }, [navigate, setUser]);
 
   const promptInstall = async () => {
     if (!installEvent) return;

@@ -4,7 +4,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-import authRoutes from '../../../Backend/routes/auth';
+import authRoutes from '../../../Backend/routes/authRoutes';
 import User from '../../../Backend/models/User';
 
 const app = express();
@@ -29,8 +29,9 @@ afterAll(async () => {
 describe('OAuth and MFA flows', () => {
   it('handles OAuth callback', async () => {
     const res = await request(app).get('/api/auth/oauth/google/callback');
-    expect(res.status).toBe(200);
-    expect(res.body.user).toBeDefined();
+    expect(res.status).toBe(302);
+    const location = res.headers['location'];
+    expect(location).toMatch(/token=/);
   });
 
   it('verifies MFA token', async () => {

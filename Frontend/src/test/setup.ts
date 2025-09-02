@@ -9,7 +9,7 @@ vi.mock('../utils/env', () => ({
   config: {
     apiUrl: 'http://localhost:3000/api',
     wsUrl: null,
-    wsPath: '/socket.io',
+    socketPath: '/socket.io',
   },
   endpoints: {
     httpOrigin: 'http://localhost:3000',

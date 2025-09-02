@@ -14,6 +14,7 @@
     "start": "node dist/server.js",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
     "swagger:check": "ts-node utils/swagger.ts"
   },
   "dependencies": {

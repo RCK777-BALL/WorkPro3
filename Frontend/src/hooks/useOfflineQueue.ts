@@ -23,17 +23,34 @@ export function useOfflineQueue() {
       }
     }
     localStorage.setItem('offline-queue', JSON.stringify(queue.current));
+    if (navigator.serviceWorker.controller && queue.current.length === 0) {
+      navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_QUEUE' });
+    }
   };
 
-  const enqueue = (url: string, options?: RequestInit) => {
+  const enqueue = async (url: string, options?: RequestInit) => {
+    const item = { url, options };
     if (navigator.onLine) {
       fetch(url, options).catch(() => {
-        queue.current.push({ url, options });
+        queue.current.push(item);
         localStorage.setItem('offline-queue', JSON.stringify(queue.current));
       });
     } else {
-      queue.current.push({ url, options });
+      queue.current.push(item);
       localStorage.setItem('offline-queue', JSON.stringify(queue.current));
+
+      if ('serviceWorker' in navigator && 'SyncManager' in window) {
+        try {
+          const reg = await navigator.serviceWorker.ready;
+          reg.sync.register('offline-queue');
+          navigator.serviceWorker.controller?.postMessage({
+            type: 'QUEUE_REQUEST',
+            payload: item,
+          });
+        } catch {
+          // ignore
+        }
+      }
     }
   };
 

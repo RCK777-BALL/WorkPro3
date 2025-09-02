@@ -1,12 +1,12 @@
-import mqtt, { MqttClient, IClientOptions } from 'mqtt';
-import config from '../config/default';
+import mqtt, { MqttClient, IClientOptions } from "mqtt";
+import config from "../config/default";
 
 const options: IClientOptions = {};
 
 export function createMqttClient(brokerUrl: string): MqttClient {
   const client = mqtt.connect(brokerUrl, options);
-  client.on('connect', () => console.log('MQTT connected:', brokerUrl));
-  client.on('error', (err: any) => console.error('MQTT error:', err));
+  client.on("connect", () => console.log("MQTT connected:", brokerUrl));
+  client.on("error", (err: any) => console.error("MQTT error:", err));
   return client;
 }
 

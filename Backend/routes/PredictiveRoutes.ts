@@ -6,7 +6,7 @@ import { AuthedRequest } from '../types/AuthedRequest';
 const router = express.Router();
 router.use(requireAuth);
 router.get('/', (req: AuthedRequest, res, next) => getPredictions(req, res, next));
-router.get('/trend/:assetId', (req: AuthedRequest, res, next) =>
+router.get('/trend/:assetId/:metric', (req: AuthedRequest, res, next) =>
   getTrend(req, res, next)
 );
 

@@ -23,7 +23,7 @@ export function startMQTTClient(
 
   mqttClient.on('connect', () => {
     mqttLogger.info('MQTT connected');
-    mqttClient.subscribe('tenants/+/readings', (err?: Error) => {
+    mqttClient.subscribe('tenants/+/readings', (err?: Error): void => {
       if (err) {
         mqttLogger.error('MQTT subscribe error', { error: err.message });
       } else {
@@ -33,39 +33,37 @@ export function startMQTTClient(
   });
 
   mqttClient.on('reconnect', () => mqttLogger.warn('MQTT reconnecting'));
-  mqttClient.on('close', () => {
-    mqttLogger.warn('MQTT connection closed, attempting reconnect');
-    // Explicitly trigger reconnect to ensure the client resumes quickly
-    try {
-      mqttClient.reconnect();
-    } catch (err) {
-      mqttLogger.error('MQTT reconnect failed', { error: (err as Error).message });
-    }
+ 
+  mqttClient.on('close', () => mqttLogger.warn('MQTT connection closed'));
+  mqttClient.on('error', (err: Error): void => {
+    mqttLogger.error('MQTT error', { error: err.message });
   });
-  mqttClient.on('offline', () => mqttLogger.warn('MQTT client offline'));
-  mqttClient.on('error', (err: Error) =>
-    mqttLogger.error('MQTT error', { error: err.message })
+ 
+
+  mqttClient.on(
+    'message',
+    async (topic: string, payload: Buffer): Promise<void> => {
+      try {
+        const match = topic.match(/^tenants\/(.+?)\/readings$/);
+        if (!match) return;
+        const tenantId = match[1];
+        const data = JSON.parse(payload.toString());
+        if (!data.asset || !data.metric || typeof data.value !== 'number') return;
+
+        await SensorReading.create({
+          asset: data.asset,
+          metric: data.metric,
+          value: data.value,
+          timestamp: data.timestamp ? new Date(data.timestamp) : undefined,
+          tenantId,
+        });
+      } catch (err) {
+        mqttLogger.error('Failed to process MQTT message', {
+          error: (err as Error).message,
+        });
+      }
+    }
   );
-
-  mqttClient.on('message', async (topic: string, payload: Buffer) => {
-    try {
-      const match = topic.match(/^tenants\/(.+?)\/readings$/);
-      if (!match) return;
-      const tenantId = match[1];
-      const data = JSON.parse(payload.toString());
-      if (!data.asset || !data.metric || typeof data.value !== 'number') return;
-
-      await SensorReading.create({
-        asset: data.asset,
-        metric: data.metric,
-        value: data.value,
-        timestamp: data.timestamp ? new Date(data.timestamp) : undefined,
-        tenantId,
-      });
-    } catch (err) {
-      mqttLogger.error('Failed to process MQTT message', { error: (err as Error).message });
-    }
-  });
 
   return mqttClient;
 }

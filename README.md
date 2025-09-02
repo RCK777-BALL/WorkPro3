@@ -24,9 +24,9 @@ not committed to the repository.
    ```bash
    cp .env.example .env
    ```
-   Update the required environment variables such as `MONGO_URI` and
-   `TENANT_NAME` along with `JWT_SECRET` and `CORS_ORIGIN`. The example
-   connection string uses `mongodb://localhost:27017/platinum_cmms`.
+   Update the required environment variables such as `MONGO_URI`, `JWT_SECRET`,
+   and `CORS_ORIGIN`. The example connection string uses
+   `mongodb://localhost:27017/platinum_cmms`.
 3. Seed the database with a tenant and admin account:
    ```bash
    npm run seed:admin
@@ -42,8 +42,7 @@ not committed to the repository.
 
 1. `cd Frontend`
 2. Copy `Frontend/.env.example` to `.env` and update `VITE_API_URL`,
-   `VITE_WS_URL`, `VITE_WS_PATH` and the Supabase variables (`VITE_SUPABASE_URL`,
-   `VITE_SUPABASE_ANON_KEY`).
+   `VITE_WS_URL`, and `VITE_WS_PATH`.
 3. Install dependencies with `npm install`.
 4. Run the development server:
    ```bash

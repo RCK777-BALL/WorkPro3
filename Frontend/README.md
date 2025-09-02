@@ -55,9 +55,6 @@ The following variables from `.env.example` configure the frontend:
 - `VITE_WS_PATH` – WebSocket endpoint path. Defaults to `/socket.io`.
 - `CORS_ORIGIN` – Origin allowed when using the local API server.
 
-Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to the credentials from
-your Supabase project dashboard.
-
 ### Offline mode
 
 If `VITE_WS_URL` is omitted or the browser goes offline, API requests made

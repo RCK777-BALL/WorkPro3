@@ -24,9 +24,10 @@ not committed to the repository.
    ```bash
    cp .env.example .env
    ```
-   Update the required environment variables such as `MONGO_URI` and
-   `TENANT_NAME` along with `JWT_SECRET` and `CORS_ORIGIN`. The example
-   connection string uses `mongodb://localhost:27017/platinum_cmms`.
+   Define the required `JWT_SECRET` variable. Other options like `MONGO_URI`
+   or `CORS_ORIGIN` are optional and default to
+   `mongodb://localhost:27017/platinum_cmms` and `http://localhost:5173`
+   respectively.
 3. Seed the database with a tenant and admin account:
    ```bash
    npm run seed:admin
@@ -36,7 +37,8 @@ not committed to the repository.
    ```bash
    npm run dev
    ```
-   The server expects a running MongoDB instance defined by `MONGO_URI` in the environment.
+   The server expects a running MongoDB instance. Override `MONGO_URI` if your
+   database is not at the default location.
 
 ## Frontend setup
 

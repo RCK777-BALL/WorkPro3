@@ -2,14 +2,14 @@ import { z } from 'zod';
 
 const envSchema = z.object({
   JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
-  MONGO_URI: z.string().min(1, 'MONGO_URI is required'),
-  CORS_ORIGIN: z.string().min(1, 'CORS_ORIGIN is required'),
-  PORT: z.string().optional(),
-  RATE_LIMIT_WINDOW_MS: z.string().optional(),
-  RATE_LIMIT_MAX: z.string().optional(),
-  NODE_ENV: z.string().optional(),
-  PM_SCHEDULER_CRON: z.string().optional(),
-  PM_SCHEDULER_TASK: z.string().optional(),
+  MONGO_URI: z.string().default('mongodb://localhost:27017/platinum_cmms'),
+  CORS_ORIGIN: z.string().default('http://localhost:5173'),
+  PORT: z.string().default('5010'),
+  RATE_LIMIT_WINDOW_MS: z.string().default('900000'),
+  RATE_LIMIT_MAX: z.string().default('100'),
+  NODE_ENV: z.string().default('development'),
+  PM_SCHEDULER_CRON: z.string().default('*/5 * * * *'),
+  PM_SCHEDULER_TASK: z.string().default('./tasks/pmSchedulerTask'),
   DEFAULT_TENANT_ID: z.string().optional(),
 });
 

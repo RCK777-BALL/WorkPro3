@@ -10,7 +10,7 @@ export const config = {
   httpOrigin: getEnvVar('VITE_HTTP_ORIGIN'),
   wsUrl: getEnvVar('VITE_WS_URL'),
   // Socket.IO path (backend default is '/socket.io')
-  wsPath: getEnvVar('VITE_SOCKET_PATH') ?? '/socket.io',
+  socketPath: getEnvVar('VITE_SOCKET_PATH') ?? '/socket.io',
 };
 
 function stripApiSuffix(url: string) {
@@ -30,7 +30,7 @@ const socketOrigin = (config.wsUrl ?? httpOrigin).replace(/^http/i, 'ws');
 export const endpoints = {
   httpOrigin,           // e.g. http://localhost:5010
   socketOrigin,         // e.g. ws://localhost:5010
-  socketPath: config.wsPath, // e.g. '/socket.io'
+  socketPath: config.socketPath, // e.g. '/socket.io'
 };
 
 export const apiBaseUrl = `${httpOrigin}/api`;

@@ -4,7 +4,7 @@ import WorkOrder from '../models/WorkOrder';
 import { emitWorkOrderUpdate } from '../server';
 import { validationResult } from 'express-validator';
 import notifyUser from '../utils/notify';
-import { getWorkOrderAssistance } from '../services/aiCopilot';
+import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
 
@@ -30,9 +30,9 @@ function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
  *         description: List of work orders
  */
 export const getAllWorkOrders: AuthedRequestHandler = async (
-  req,
-  res,
-  next
+  req: { tenantId: any; },
+  res: { json: (arg0: any) => void; },
+  next: (arg0: unknown) => void
 ) => {
   try {
     const items = await WorkOrder.find({ tenantId: req.tenantId });
@@ -73,9 +73,9 @@ export const getAllWorkOrders: AuthedRequestHandler = async (
  *         description: Filtered work orders
  */
 export const searchWorkOrders: AuthedRequestHandler = async (
-  req,
-  res,
-  next
+  req: { query: { status: any; priority: any; startDate: any; endDate: any; }; tenantId: any; },
+  res: { json: (arg0: any) => void; },
+  next: (arg0: unknown) => void
 ) => {
   try {
     const { status, priority, startDate, endDate } = req.query;
@@ -116,9 +116,9 @@ export const searchWorkOrders: AuthedRequestHandler = async (
  *         description: Work order not found
  */
 export const getWorkOrderById: AuthedRequestHandler = async (
-  req,
-  res,
-  next
+  req: { params: { id: any; }; tenantId: any; },
+  res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): any; new(): any; }; }; json: (arg0: any) => void; },
+  next: (arg0: unknown) => void
 ) => {
   try {
     const item = await WorkOrder.findOne({ _id: req.params.id, tenantId: req.tenantId });
@@ -149,9 +149,9 @@ export const getWorkOrderById: AuthedRequestHandler = async (
  *         description: Validation error
  */
 export const createWorkOrder: AuthedRequestHandler = async (
-  req,
-  res,
-  next
+  req: { body: any; tenantId: any; },
+  res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { errors: any; }): void; new(): any; }; }; },
+  next: (arg0: unknown) => void
 ) => {
   try {
     const errors = validationResult(req);
@@ -193,9 +193,9 @@ export const createWorkOrder: AuthedRequestHandler = async (
  *         description: Work order not found
  */
 export const updateWorkOrder: AuthedRequestHandler = async (
-  req,
-  res,
-  next
+  req: { params: { id: any; }; tenantId: any; body: any; },
+  res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { errors?: any; message?: string; }): any; new(): any; }; }; json: (arg0: any) => void; },
+  next: (arg0: unknown) => void
 ) => {
   try {
     const errors = validationResult(req);
@@ -238,9 +238,9 @@ export const updateWorkOrder: AuthedRequestHandler = async (
  *         description: Work order not found
  */
 export const deleteWorkOrder: AuthedRequestHandler = async (
-  req,
-  res,
-  next
+  req: { params: { id: any; }; tenantId: any; },
+  res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): any; new(): any; }; }; json: (arg0: { message: string; }) => void; },
+  next: (arg0: unknown) => void
 ) => {
   try {
       const deleted = await WorkOrder.findOneAndDelete({ _id: req.params.id, tenantId: req.tenantId });
@@ -283,9 +283,9 @@ export const deleteWorkOrder: AuthedRequestHandler = async (
  *         description: Work order not found
  */
 export const approveWorkOrder: AuthedRequestHandler = async (
-  req,
-  res,
-  next
+  req: { body: { status: any; }; params: { id: any; }; user: { _id: any; }; },
+  res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): any; new(): any; }; }; json: (arg0: any) => void; },
+  next: (arg0: unknown) => void
 ) => {
   try {
     const { status } = req.body;
@@ -347,9 +347,9 @@ export const approveWorkOrder: AuthedRequestHandler = async (
  *         description: Work order not found
  */
 export const assistWorkOrder: AuthedRequestHandler = async (
-  req,
-  res,
-  next
+  req: { params: { id: any; }; tenantId: any; },
+  res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): any; new(): any; }; }; json: (arg0: AIAssistResult) => void; },
+  next: (arg0: unknown) => void
 ) => {
   try {
     const workOrder = await WorkOrder.findOne({

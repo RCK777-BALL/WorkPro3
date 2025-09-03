@@ -7,6 +7,7 @@ import notifyUser from '../utils/notify';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
+import { Response, NextFunction } from 'express';
 
 function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
   const plain = typeof doc.toObject === "function"
@@ -346,10 +347,13 @@ export const approveWorkOrder: AuthedRequestHandler = async (
  *       404:
  *         description: Work order not found
  */
-export const assistWorkOrder: AuthedRequestHandler = async (
-  req: { params: { id: any; }; tenantId: any; },
-  res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): any; new(): any; }; }; json: (arg0: AIAssistResult) => void; },
-  next: (arg0: unknown) => void
+
+type IdParams = { id: string };
+
+export const assistWorkOrder: AuthedRequestHandler<IdParams, AIAssistResult> = async (
+  req: AuthedRequest<IdParams>,
+  res: Response<AIAssistResult>,
+  next: NextFunction
 ) => {
   try {
     const workOrder = await WorkOrder.findOne({

@@ -2,9 +2,10 @@ import mongoose from 'mongoose';
 import Notification from '../models/Notification';
 import User from '../models/User';
 import nodemailer from 'nodemailer';
-import { Response, NextFunction } from 'express';
+ import { Response, NextFunction } from 'express';
 import { AuthedRequest } from '../types/AuthedRequest';
 import { AuthedRequestHandler } from '../types/AuthedRequestHandler';
+ 
 
 type IdParams = { id: string };
 

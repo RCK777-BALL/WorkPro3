@@ -282,10 +282,14 @@ export const deleteWorkOrder: AuthedRequestHandler = async (
  *       404:
  *         description: Work order not found
  */
-export const approveWorkOrder: AuthedRequestHandler = async (
-  req: { body: { status: any; }; params: { id: any; }; user: { _id: any; }; },
-  res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): any; new(): any; }; }; json: (arg0: any) => void; },
-  next: (arg0: unknown) => void
+
+type IdParams = { id: string };
+type ApproveBody = { status: 'pending' | 'approved' | 'rejected' };
+
+export const approveWorkOrder: AuthedRequestHandler<IdParams, any, ApproveBody> = async (
+  req,
+  res,
+  next
 ) => {
   try {
     const { status } = req.body;
@@ -298,14 +302,14 @@ export const approveWorkOrder: AuthedRequestHandler = async (
 
     workOrder.approvalStatus = status;
 
+    const userId = req.user?._id ?? req.user?.id;
+
     if (status === 'pending') {
       // user requesting approval
-      // @ts-ignore
-      workOrder.approvalRequestedBy = req.user?._id;
+      workOrder.approvalRequestedBy = userId as any;
     } else {
       // approved or rejected
-      // @ts-ignore
-      workOrder.approvedBy = req.user?._id;
+      workOrder.approvedBy = userId as any;
     }
 
       const saved = await workOrder.save();
@@ -317,7 +321,6 @@ export const approveWorkOrder: AuthedRequestHandler = async (
         : `Work order "${workOrder.title}" was ${status}`;
 
     if (workOrder.assignedTo) {
-      // @ts-ignore
       await notifyUser(workOrder.assignedTo, message);
     }
 

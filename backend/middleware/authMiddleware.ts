@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import User, { UserDocument } from '../models/User';
 import Role from '../models/Role';
 import { RequestHandler } from 'express';
-import { AuthedRequest } from '../types/AuthedRequest';
+import { AuthedRequest } from '../types/http';
 
 interface TokenPayload {
   id: string;

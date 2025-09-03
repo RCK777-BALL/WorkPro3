@@ -13,3 +13,10 @@
 
 # Logs
 npm-debug.log*
+
+# Compiled JavaScript from TypeScript
+backend/**/*.js
+!backend/scripts/migrations/*.js
+
+# MongoDB playground files
+playground-*.mongodb.js

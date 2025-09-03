@@ -16,7 +16,7 @@ Previous role names such as `department_leader`, `area_leader`, `team_leader`, a
    - `area_leader` → `manager`
    - `team_leader` → `technician`
    - `team_member` → `viewer`
-2. Ensure any seed scripts or fixtures are updated accordingly (see `Backend/scripts/seedTeam.ts`).
+2. Ensure any seed scripts or fixtures are updated accordingly (see `backend/scripts/seedTeam.ts`).
 3. Redeploy backend and frontend so both services operate with the new role strings.
 
 After migrating, users may need to log out and log back in to refresh cached role information.

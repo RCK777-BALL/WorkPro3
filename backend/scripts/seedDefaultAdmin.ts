@@ -18,7 +18,7 @@ const seed = async () => {
     const mongoUri = process.env.MONGO_URI || process.env.DATABASE_URL;
     if (!mongoUri) {
       console.error(
-        'Database connection string missing. Create Backend/.env or set MONGO_URI or DATABASE_URL.'
+        'Database connection string missing. Create backend/.env or set MONGO_URI or DATABASE_URL.'
       );
       return;
     }

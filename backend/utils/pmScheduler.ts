@@ -77,7 +77,7 @@ export const stopPMScheduler = (id?: string) => {
 };
 
 function resolveTaskPath(rel: string): string {
-  // __dirname = /Backend/utils at runtime
+  // __dirname = /backend/utils at runtime
   // Try first relative to process.cwd() (project root when running `npm run dev`)
   const fromCwd = path.resolve(process.cwd(), rel);
   try {

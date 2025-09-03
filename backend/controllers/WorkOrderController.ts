@@ -9,6 +9,7 @@ import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
 
+// Single, shared param type for routes with :id
 type IdParams = { id: string };
  
 
@@ -303,7 +304,8 @@ export const updateWorkOrder: AuthedRequestHandler<{ id: string }, any, any> = a
 ) => {
   try {
     const { status } = req.body;
-    const userId = (req.user?._id as string | undefined) ?? req.user?.id;
+      const userIdStr = (req.user?._id as string | undefined) ?? req.user?.id;
+      const userObjectId = userIdStr ? new Types.ObjectId(userIdStr) : undefined;
     if (!['pending', 'approved', 'rejected'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
     }
@@ -313,14 +315,13 @@ export const updateWorkOrder: AuthedRequestHandler<{ id: string }, any, any> = a
 
     workOrder.approvalStatus = status;
 
-    if (status === 'pending') {
-      // user requesting approval
-       workOrder.approvalRequestedBy = userId;
-    } else {
-      // approved or rejected
-      workOrder.approvedBy = userId;
- 
-    }
+      if (status === 'pending') {
+        // user requesting approval
+        if (userObjectId) workOrder.approvalRequestedBy = userObjectId;
+      } else {
+        // approved or rejected
+        if (userObjectId) workOrder.approvedBy = userObjectId;
+      }
 
       const saved = await workOrder.save();
       emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
@@ -376,8 +377,8 @@ export const assistWorkOrder: AuthedRequestHandler<IdParams, AIAssistResult | { 
       title: workOrder.title,
       description: workOrder.description || '',
     });
-    res.json(result);
+    return res.json(result);
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };

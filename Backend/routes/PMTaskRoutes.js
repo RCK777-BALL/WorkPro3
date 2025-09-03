@@ -1,0 +1,13 @@
+import express from 'express';
+import { getAllPMTasks, getPMTaskById, createPMTask, updatePMTask, deletePMTask } from '../controllers/PMTaskController';
+import { requireAuth } from '../middleware/authMiddleware';
+import { validate } from '../middleware/validationMiddleware';
+import { pmTaskValidators } from '../validators/pmTaskValidators';
+const router = express.Router();
+router.use(requireAuth);
+router.get('/', getAllPMTasks);
+router.get('/:id', getPMTaskById);
+router.post('/', pmTaskValidators, validate, createPMTask);
+router.put('/:id', pmTaskValidators, validate, updatePMTask);
+router.delete('/:id', deletePMTask);
+export default router;

@@ -1,0 +1,10 @@
+import express from 'express';
+import { requireAuth } from '../middleware/authMiddleware';
+import { kpiJson, kpiCsv, kpiXlsx, kpiPdf } from '../controllers/AnalyticsController';
+const router = express.Router();
+router.use(requireAuth);
+router.get('/kpis', kpiJson);
+router.get('/kpis.csv', kpiCsv);
+router.get('/kpis.xlsx', kpiXlsx);
+router.get('/kpis.pdf', kpiPdf);
+export default router;

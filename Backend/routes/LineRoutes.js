@@ -1,0 +1,13 @@
+import express from 'express';
+import { getAllLines, getLineById, createLine, updateLine, deleteLine, getLinesByDepartment, getLineHierarchy } from '../controllers/LineController';
+import { requireAuth } from '../middleware/authMiddleware';
+const router = express.Router();
+router.use(requireAuth);
+router.get('/', getAllLines);
+router.get('/:id', getLineById);
+router.get('/department/:departmentId', getLinesByDepartment);
+router.get('/:id/hierarchy', getLineHierarchy);
+router.post('/', createLine);
+router.put('/:id', updateLine);
+router.delete('/:id', deleteLine);
+export default router;

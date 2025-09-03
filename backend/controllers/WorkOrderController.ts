@@ -1,6 +1,6 @@
- import { Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { AuthedRequest, AuthedRequestHandler } from '../types/http';
- 
+
 import WorkOrder from '../models/WorkOrder';
 import { emitWorkOrderUpdate } from '../server';
 import { validationResult } from 'express-validator';
@@ -8,9 +8,8 @@ import notifyUser from '../utils/notify';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
-import { Response, NextFunction } from 'express';
 
- type IdParams = { id: string };
+type IdParams = { id: string };
  
 
 function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
@@ -29,8 +28,6 @@ type SearchQuery = {
   startDate?: string;
   endDate?: string;
 };
-
-type IdParams = { id: string };
 
 /**
  * @openapi
@@ -306,7 +303,7 @@ export const updateWorkOrder: AuthedRequestHandler<{ id: string }, any, any> = a
 ) => {
   try {
     const { status } = req.body;
-    const userId = req.user?._id ?? req.user?.id;
+    const userId = (req.user?._id as string | undefined) ?? req.user?.id;
     if (!['pending', 'approved', 'rejected'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
     }
@@ -315,8 +312,6 @@ export const updateWorkOrder: AuthedRequestHandler<{ id: string }, any, any> = a
     if (!workOrder) return res.status(404).json({ message: 'Not found' });
 
     workOrder.approvalStatus = status;
-
-    const userId = req.user?._id ?? req.user?.id;
 
     if (status === 'pending') {
       // user requesting approval
@@ -363,14 +358,12 @@ export const updateWorkOrder: AuthedRequestHandler<{ id: string }, any, any> = a
  *         description: Assistance data
  *       404:
  *         description: Work order not found
- */
- 
-type IdParams = { id: string };
+*/
 
-export const assistWorkOrder: AuthedRequestHandler<IdParams, AIAssistResult> = async (
+export const assistWorkOrder: AuthedRequestHandler<IdParams, AIAssistResult | { message: string }> = async (
   req: AuthedRequest<IdParams>,
- 
-  res: Response<AIAssistResult>,
+
+  res: Response<AIAssistResult | { message: string }>,
   next: NextFunction
 ) => {
   try {

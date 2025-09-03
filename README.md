@@ -2,14 +2,14 @@
 
 This repository contains a small full‑stack app split into two folders:
 
-- **Backend** – Express API server with a MongoDB database and Socket.IO.
+- **backend** – Express API server with a MongoDB database and Socket.IO.
 - **Frontend** – React client built with Vite.
 
 ## Project structure
 
 ```
 WorkPro/
- Backend/   Express API and tests
+ backend/   Express API and tests
   Frontend/  React client and tests
   playground-1.mongodb.js  Sample MongoDB script
 ```
@@ -17,10 +17,10 @@ WorkPro/
 Run `npm install` inside each folder before development. Node modules are
 not committed to the repository.
 
-## Backend setup
+## backend setup
 
-1. `cd Backend`
-2. Copy `Backend/.env.example` to `.env`:
+1. `cd backend`
+2. Copy `backend/.env.example` to `.env`:
    ```bash
    cp .env.example .env
    ```
@@ -86,15 +86,15 @@ This will deploy the backend, frontend and ingress resources.
 
 ## Running tests
 
-- **Backend**: `cd Backend && npm test`
+- **backend**: `cd backend && npm test`
 - **Frontend unit tests**: `cd Frontend && npm run test`
 - **Frontend e2e tests**: `cd Frontend && npm run test:e2e`
 
-Both test suites use Vitest and enforce a minimum of 80% code coverage. Backend
+Both test suites use Vitest and enforce a minimum of 80% code coverage. backend
 tests spin up a temporary MongoDB using `mongodb-memory-server`, which
 downloads a MongoDB binary the first time it runs. Make sure network access is
 allowed when running the tests for the first time or the download will fail.
-See [Backend/tests/README.md](Backend/tests/README.md) for more details about
+See [backend/tests/README.md](backend/tests/README.md) for more details about
 the download requirement. All pull requests must have a green CI run before
 they can be merged. The testing matrix and workflow are described in
 [docs/testing.md](docs/testing.md).

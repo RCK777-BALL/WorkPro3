@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
-import authRoutes from '../../../Backend/routes/authRoutes';
+import authRoutes from '../../../backend/routes/authRoutes';
 
 const app = express();
 app.use(express.json());

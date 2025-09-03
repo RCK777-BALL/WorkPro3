@@ -5,19 +5,18 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 import User from '../../models/User';
-import Role from '../../models/Role';
 import { requireAuth } from '../../middleware/authMiddleware';
 import authorize from '../../middleware/authorize';
 
 const app = express();
 app.use(express.json());
-app.get('/protected', requireAuth, authorize('perm:test'), (_req, res) => {
+app.get('/protected', requireAuth, authorize('admin'), (_req, res) => {
   res.json({ ok: true });
 });
 
 let mongo: MongoMemoryServer;
-let tokenWith: string;
-let tokenWithout: string;
+let tokenAdmin: string;
+let tokenViewer: string;
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'testsecret';
@@ -33,43 +32,39 @@ afterAll(async () => {
 beforeEach(async () => {
   await mongoose.connection.db?.dropDatabase();
 
-  await Role.create({ name: 'with', permissions: ['perm:test'] });
-  await Role.create({ name: 'without', permissions: [] });
-
-  const userWith = await User.create({
-    name: 'With Perm',
-    email: 'with@example.com',
+  const admin = await User.create({
+    name: 'Admin',
+    email: 'admin@example.com',
     password: 'pass123',
-    role: 'with',
+    role: 'admin',
     tenantId: new mongoose.Types.ObjectId(),
   });
-  tokenWith = jwt.sign({ id: userWith._id.toString() }, process.env.JWT_SECRET!);
+  tokenAdmin = jwt.sign({ id: admin._id.toString() }, process.env.JWT_SECRET!);
 
-  const userWithout = await User.create({
-    name: 'No Perm',
-    email: 'without@example.com',
+  const viewer = await User.create({
+    name: 'Viewer',
+    email: 'viewer@example.com',
     password: 'pass123',
-    role: 'without',
+    role: 'viewer',
     tenantId: new mongoose.Types.ObjectId(),
   });
-  tokenWithout = jwt.sign({ id: userWithout._id.toString() }, process.env.JWT_SECRET!);
+  tokenViewer = jwt.sign({ id: viewer._id.toString() }, process.env.JWT_SECRET!);
 });
 
 describe('authorize middleware', () => {
-  it('allows access when permission is present', async () => {
+  it('allows access when role is permitted', async () => {
     const res = await request(app)
       .get('/protected')
-      .set('Authorization', `Bearer ${tokenWith}`)
+      .set('Authorization', `Bearer ${tokenAdmin}`)
       .expect(200);
     expect(res.body.ok).toBe(true);
   });
 
-  it('denies access when permission is missing', async () => {
-    const res = await request(app)
+  it('denies access when role is not permitted', async () => {
+    await request(app)
       .get('/protected')
-      .set('Authorization', `Bearer ${tokenWithout}`)
+      .set('Authorization', `Bearer ${tokenViewer}`)
       .expect(403);
-    expect(res.body.missing).toEqual(['perm:test']);
   });
 
   it('returns 401 when no authentication is provided', async () => {

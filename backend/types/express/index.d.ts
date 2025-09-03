@@ -1,4 +1,10 @@
-import type { RequestUser } from '../http';
+ export type RequestUser = {
+  id: string;
+  _id?: string;
+  email?: string;
+  role?: string;
+};
+ 
 
 declare global {
   namespace Express {

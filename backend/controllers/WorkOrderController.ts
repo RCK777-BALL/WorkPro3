@@ -289,6 +289,7 @@ export const approveWorkOrder: AuthedRequestHandler = async (
 ) => {
   try {
     const { status } = req.body;
+    const userId = req.user?._id ?? req.user?.id;
     if (!['pending', 'approved', 'rejected'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
     }
@@ -300,12 +301,10 @@ export const approveWorkOrder: AuthedRequestHandler = async (
 
     if (status === 'pending') {
       // user requesting approval
-      // @ts-ignore
-      workOrder.approvalRequestedBy = req.user?._id;
+      workOrder.approvalRequestedBy = userId;
     } else {
       // approved or rejected
-      // @ts-ignore
-      workOrder.approvedBy = req.user?._id;
+      workOrder.approvedBy = userId;
     }
 
       const saved = await workOrder.save();
@@ -317,7 +316,6 @@ export const approveWorkOrder: AuthedRequestHandler = async (
         : `Work order "${workOrder.title}" was ${status}`;
 
     if (workOrder.assignedTo) {
-      // @ts-ignore
       await notifyUser(workOrder.assignedTo, message);
     }
 

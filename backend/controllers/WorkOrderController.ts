@@ -1,5 +1,6 @@
 import { AuthedRequest } from '../types/AuthedRequest';
 import { AuthedRequestHandler } from '../types/AuthedRequestHandler';
+import { Response, NextFunction } from 'express';
 import WorkOrder from '../models/WorkOrder';
 import { emitWorkOrderUpdate } from '../server';
 import { validationResult } from 'express-validator';
@@ -7,6 +8,13 @@ import notifyUser from '../utils/notify';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
+
+type ListQuery = {
+  status?: string;
+  priority?: string;
+  startDate?: string;
+  endDate?: string;
+};
 
 function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
   const plain = typeof doc.toObject === "function"
@@ -72,10 +80,15 @@ export const getAllWorkOrders: AuthedRequestHandler = async (
  *       200:
  *         description: Filtered work orders
  */
-export const searchWorkOrders: AuthedRequestHandler = async (
-  req: { query: { status: any; priority: any; startDate: any; endDate: any; }; tenantId: any; },
-  res: { json: (arg0: any) => void; },
-  next: (arg0: unknown) => void
+export const searchWorkOrders: AuthedRequestHandler<
+  unknown,
+  any,
+  unknown,
+  ListQuery
+> = async (
+  req: AuthedRequest<unknown, any, unknown, ListQuery>,
+  res: Response,
+  next: NextFunction
 ) => {
   try {
     const { status, priority, startDate, endDate } = req.query;
@@ -85,8 +98,8 @@ export const searchWorkOrders: AuthedRequestHandler = async (
     if (priority) query.priority = priority;
     if (startDate || endDate) {
       query.dateCreated = {};
-      if (startDate) query.dateCreated.$gte = new Date(startDate as string);
-      if (endDate) query.dateCreated.$lte = new Date(endDate as string);
+      if (startDate) query.dateCreated.$gte = new Date(startDate);
+      if (endDate) query.dateCreated.$lte = new Date(endDate);
     }
 
     const items = await WorkOrder.find(query);

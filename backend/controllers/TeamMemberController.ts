@@ -1,5 +1,13 @@
 import TeamMember, { ITeamMember } from '../models/TeamMember';
-import { AuthedRequestHandler } from '../types/AuthedRequestHandler';
+import { AuthedRequestHandler } from '../types/http';
+
+type IdParams = { id: string };
+
+interface UpdateTeamMemberBody {
+  role?: ITeamMember['role'];
+  managerId?: string | null;
+  [key: string]: any;
+}
 
 const roleHierarchy: Record<ITeamMember['role'], ITeamMember['role'][] | null> = {
   admin: null,
@@ -80,7 +88,11 @@ export const createTeamMember: AuthedRequestHandler = async (req, res, next) => 
   }
 };
 
-export const updateTeamMember: AuthedRequestHandler = async (req, res, next) => {
+export const updateTeamMember: AuthedRequestHandler<
+  IdParams,
+  any,
+  UpdateTeamMemberBody
+> = async (req, res, next) => {
   try {
     const role = req.body.role;
     if (['admin', 'manager', 'department_leader'].includes(role)) {
@@ -103,8 +115,8 @@ export const updateTeamMember: AuthedRequestHandler = async (req, res, next) => 
     );
     if (!updated) return res.status(404).json({ message: 'Not found' });
     res.json(updated);
-  } catch (err) {
-    next(err);
+  } catch (err: any) {
+    res.status(400).json({ errors: err.errors ?? err });
   }
 };
 

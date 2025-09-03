@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import PMTask from '../models/PMTask';
 import { validationResult } from 'express-validator';
-import { AuthedRequestHandler } from '../types/AuthedRequestHandler';
+import { AuthedRequestHandler } from '../types/http';
 
 export const getAllPMTasks = async (req: Request, res: Response, next: NextFunction) => {
   try {

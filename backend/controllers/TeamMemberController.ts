@@ -1,5 +1,5 @@
 import TeamMember, { ITeamMember } from '../models/TeamMember';
-import { AuthedRequestHandler } from '../types/AuthedRequestHandler';
+import { AuthedRequestHandler } from '../types/http';
 
 const roleHierarchy: Record<ITeamMember['role'], ITeamMember['role'][] | null> = {
   admin: null,

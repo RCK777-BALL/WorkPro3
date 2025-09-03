@@ -1,5 +1,4 @@
-import { AuthedRequest } from '../types/AuthedRequest';
-import { AuthedRequestHandler } from '../types/AuthedRequestHandler';
+import { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import User from '../models/User';
 
 export const getTheme: AuthedRequestHandler = async (

@@ -1,5 +1,4 @@
-import { AuthedRequest } from '../types/AuthedRequest';
-import { AuthedRequestHandler } from '../types/AuthedRequestHandler';
+import { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import WorkOrder from '../models/WorkOrder';
 import { emitWorkOrderUpdate } from '../server';
 import { validationResult } from 'express-validator';

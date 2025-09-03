@@ -1,3 +1,5 @@
+ import { Response, NextFunction } from 'express';
+ 
 import { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import WorkOrder from '../models/WorkOrder';
 import { emitWorkOrderUpdate } from '../server';
@@ -29,15 +31,15 @@ function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
  *         description: List of work orders
  */
 export const getAllWorkOrders: AuthedRequestHandler = async (
-  req: { tenantId: any; },
-  res: { json: (arg0: any) => void; },
-  next: (arg0: unknown) => void
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction
 ) => {
   try {
     const items = await WorkOrder.find({ tenantId: req.tenantId });
-    res.json(items);
+    return res.json(items);
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 

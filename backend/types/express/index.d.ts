@@ -1,10 +1,4 @@
-import { LeanDocument } from 'mongoose';
-import { UserDocument } from '../../models/User';
-
-export type RequestUser = Omit<LeanDocument<UserDocument>, 'tenantId'> & {
-  tenantId: string;
-  permissions: string[];
-};
+import type { RequestUser } from '../http';
 
 declare global {
   namespace Express {

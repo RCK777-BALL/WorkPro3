@@ -1,8 +1,5 @@
-  import { Response, NextFunction } from 'express';
-import { AuthedRequest } from '../types/AuthedRequest';
-  
-import { AuthedRequestHandler } from '../types/AuthedRequestHandler';
-import { Response, NextFunction } from 'express';
+ import { Response, NextFunction } from 'express';
+import { AuthedRequest, AuthedRequestHandler } from '../types/http';
  
 import WorkOrder from '../models/WorkOrder';
 import { emitWorkOrderUpdate } from '../server';
@@ -24,6 +21,15 @@ function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
     _id: (plain._id as Types.ObjectId | string)?.toString(),
   } as WorkOrderUpdatePayload;
 }
+
+type SearchQuery = {
+  status?: 'open' | 'in-progress' | 'on-hold' | 'completed';
+  priority?: 'low' | 'medium' | 'high' | 'critical';
+  startDate?: string;
+  endDate?: string;
+};
+
+type IdParams = { id: string };
 
 /**
  * @openapi
@@ -79,13 +85,9 @@ export const getAllWorkOrders: AuthedRequestHandler = async (
  *       200:
  *         description: Filtered work orders
  */
-export const searchWorkOrders: AuthedRequestHandler<
-  unknown,
-  any,
-  unknown,
-  ListQuery
-> = async (
-  req: AuthedRequest<unknown, any, unknown, ListQuery>,
+ export const searchWorkOrders: AuthedRequestHandler<unknown, any, unknown, SearchQuery> = async (
+  req: AuthedRequest<unknown, any, unknown, SearchQuery>,
+ 
   res: Response,
   next: NextFunction
 ) => {
@@ -127,10 +129,10 @@ export const searchWorkOrders: AuthedRequestHandler<
  *       404:
  *         description: Work order not found
  */
-export const getWorkOrderById: AuthedRequestHandler = async (
-  req: { params: { id: any; }; tenantId: any; },
-  res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): any; new(): any; }; }; json: (arg0: any) => void; },
-  next: (arg0: unknown) => void
+export const getWorkOrderById: AuthedRequestHandler<IdParams> = async (
+  req: AuthedRequest<IdParams>,
+  res: Response,
+  next: NextFunction
 ) => {
   try {
     const item = await WorkOrder.findOne({ _id: req.params.id, tenantId: req.tenantId });
@@ -160,10 +162,10 @@ export const getWorkOrderById: AuthedRequestHandler = async (
  *       400:
  *         description: Validation error
  */
-export const createWorkOrder: AuthedRequestHandler = async (
-  req: { body: any; tenantId: any; },
-  res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { errors: any; }): void; new(): any; }; }; },
-  next: (arg0: unknown) => void
+export const createWorkOrder: AuthedRequestHandler<unknown, any, any> = async (
+  req: AuthedRequest<unknown, any, any>,
+  res: Response,
+  next: NextFunction
 ) => {
   try {
     const errors = validationResult(req);
@@ -204,10 +206,10 @@ export const createWorkOrder: AuthedRequestHandler = async (
  *       404:
  *         description: Work order not found
  */
-export const updateWorkOrder: AuthedRequestHandler = async (
-  req: { params: { id: any; }; tenantId: any; body: any; },
-  res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { errors?: any; message?: string; }): any; new(): any; }; }; json: (arg0: any) => void; },
-  next: (arg0: unknown) => void
+export const updateWorkOrder: AuthedRequestHandler<{ id: string }, any, any> = async (
+  req: AuthedRequest<{ id: string }, any, any>,
+  res: Response,
+  next: NextFunction
 ) => {
   try {
     const errors = validationResult(req);
@@ -249,8 +251,9 @@ export const updateWorkOrder: AuthedRequestHandler = async (
  *       404:
  *         description: Work order not found
  */
-export const deleteWorkOrder: AuthedRequestHandler<IdParams> = async (
-  req: AuthedRequest<IdParams>,
+ export const deleteWorkOrder: AuthedRequestHandler<{ id: string }> = async (
+  req: AuthedRequest<{ id: string }>,
+ 
   res: Response,
   next: NextFunction
 ) => {
@@ -294,14 +297,11 @@ export const deleteWorkOrder: AuthedRequestHandler<IdParams> = async (
  *       404:
  *         description: Work order not found
  */
-
-type IdParams = { id: string };
-type ApproveBody = { status: 'pending' | 'approved' | 'rejected' };
-
-export const approveWorkOrder: AuthedRequestHandler<IdParams, any, ApproveBody> = async (
-  req,
-  res,
-  next
+ export const approveWorkOrder: AuthedRequestHandler<{ id: string }, any, { status: 'pending' | 'approved' | 'rejected' }> = async (
+  req: AuthedRequest<{ id: string }, any, { status: 'pending' | 'approved' | 'rejected' }>,
+  res: Response,
+  next: NextFunction
+ 
 ) => {
   try {
     const { status } = req.body;
@@ -361,10 +361,10 @@ export const approveWorkOrder: AuthedRequestHandler<IdParams, any, ApproveBody> 
  *       404:
  *         description: Work order not found
  */
-export const assistWorkOrder: AuthedRequestHandler = async (
-  req: { params: { id: any; }; tenantId: any; },
-  res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): any; new(): any; }; }; json: (arg0: AIAssistResult) => void; },
-  next: (arg0: unknown) => void
+export const assistWorkOrder: AuthedRequestHandler<{ id: string }, AIAssistResult> = async (
+  req: AuthedRequest<{ id: string }, AIAssistResult>,
+  res: Response<AIAssistResult>,
+  next: NextFunction
 ) => {
   try {
     const workOrder = await WorkOrder.findOne({

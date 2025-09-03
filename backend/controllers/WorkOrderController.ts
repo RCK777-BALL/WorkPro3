@@ -8,6 +8,7 @@ import notifyUser from '../utils/notify';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
+import { Response, NextFunction } from 'express';
 
  type IdParams = { id: string };
  
@@ -361,8 +362,12 @@ export const updateWorkOrder: AuthedRequestHandler<{ id: string }, any, any> = a
  *       404:
  *         description: Work order not found
  */
-export const assistWorkOrder: AuthedRequestHandler<{ id: string }, AIAssistResult> = async (
-  req: AuthedRequest<{ id: string }, AIAssistResult>,
+ 
+type IdParams = { id: string };
+
+export const assistWorkOrder: AuthedRequestHandler<IdParams, AIAssistResult> = async (
+  req: AuthedRequest<IdParams>,
+ 
   res: Response<AIAssistResult>,
   next: NextFunction
 ) => {

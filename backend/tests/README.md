@@ -1,4 +1,4 @@
-# Backend Tests
+# backend tests
 
 These unit tests use [`mongodb-memory-server`](https://github.com/nodkz/mongodb-memory-server) to spin up a temporary MongoDB instance. When the server is first created, the package downloads a MongoDB binary. This step **requires internet access**.
 

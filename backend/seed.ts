@@ -27,7 +27,7 @@ const tenantId = process.env.SEED_TENANT_ID
 const mongoUri = process.env.MONGO_URI || process.env.DATABASE_URL;
 if (!mongoUri) {
   console.error(
-    'Database connection string missing. Create Backend/.env or set MONGO_URI or DATABASE_URL.'
+    'Database connection string missing. Create backend/.env or set MONGO_URI or DATABASE_URL.'
   );
   process.exit(1);
 }

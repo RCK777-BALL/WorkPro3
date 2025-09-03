@@ -4,8 +4,8 @@ import express from 'express';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-import authRoutes from '../../../Backend/routes/authRoutes';
-import User from '../../../Backend/models/User';
+import authRoutes from '../../../backend/routes/authRoutes';
+import User from '../../../backend/models/User';
 
 const app = express();
 app.use(express.json());

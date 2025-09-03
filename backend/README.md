@@ -1,4 +1,4 @@
-# Backend
+# backend
 
 This folder contains the Express API server.
 

@@ -1,1 +1,2 @@
-export type { RequestUser, AuthedRequest, AuthedRequestHandler } from '../../types/http';
+ export type { RequestUser, AuthedRequest, AuthedRequestHandler } from '../../types/http';
+ 

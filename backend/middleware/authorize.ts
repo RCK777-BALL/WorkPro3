@@ -1,24 +1,19 @@
 import { RequestHandler } from 'express';
 
 /**
- * Factory for permission-based authorization middleware.
- * Ensures the authenticated user has all required permissions
+ * Factory for role-based authorization middleware.
+ * Ensures the authenticated user has one of the required roles
  * before allowing the request to proceed.
  */
-export const authorize = (...required: string[]): RequestHandler => {
+export const authorize = (...roles: string[]): RequestHandler => {
   return (req, res, next) => {
     if (!req.user) {
       res.status(401).json({ message: 'Unauthorized' });
       return;
     }
 
-    const userPerms = req.user.permissions || [];
-    // Determine which permissions from `required` are not present on the
-    // authenticated user. Using a list allows callers or tests to inspect
-    // which permissions were missing when access is denied.
-    const missing = required.filter((p) => !userPerms.includes(p));
-    if (missing.length > 0) {
-      res.status(403).json({ message: 'Forbidden', missing });
+    if (roles.length > 0 && !roles.includes(req.user.role || '')) {
+      res.status(403).json({ message: 'Forbidden' });
       return;
     }
 

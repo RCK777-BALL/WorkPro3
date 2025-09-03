@@ -2,7 +2,12 @@ import mongoose from 'mongoose';
 import Notification from '../models/Notification';
 import User from '../models/User';
 import nodemailer from 'nodemailer';
+ import { Response, NextFunction } from 'express';
+import { AuthedRequest } from '../types/AuthedRequest';
 import { AuthedRequestHandler } from '../types/AuthedRequestHandler';
+ 
+
+type IdParams = { id: string };
 
 export const getAllNotifications: AuthedRequestHandler = async (req, res, next) => {
   try {
@@ -13,7 +18,11 @@ export const getAllNotifications: AuthedRequestHandler = async (req, res, next) 
   }
 };
 
-export const getNotificationById: AuthedRequestHandler = async (req, res, next) => {
+export const getNotificationById: AuthedRequestHandler<IdParams> = async (
+  req: AuthedRequest<IdParams>,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const item = await Notification.findOne({ _id: req.params.id, tenantId: req.tenantId });
     if (!item) return res.status(404).json({ message: 'Not found' });

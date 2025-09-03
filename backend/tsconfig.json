@@ -6,10 +6,7 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "outDir": "dist",
-    "lib": ["ES2020"],
-    "types": ["node"],
-    "typeRoots": ["./node_modules/@types"]
+    "outDir": "dist"
   },
   "include": ["**/*.ts"],
   "exclude": ["dist", "node_modules"]

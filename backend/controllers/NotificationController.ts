@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import Notification from '../models/Notification';
 import User from '../models/User';
 import nodemailer from 'nodemailer';
-import { AuthedRequestHandler } from '../types/AuthedRequestHandler';
+import { AuthedRequestHandler } from '../types/http';
 
 export const getAllNotifications: AuthedRequestHandler = async (req, res, next) => {
   try {

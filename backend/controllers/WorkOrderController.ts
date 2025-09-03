@@ -306,6 +306,7 @@ export const updateWorkOrder: AuthedRequestHandler<{ id: string }, any, any> = a
 ) => {
   try {
     const { status } = req.body;
+    const userId = req.user?._id ?? req.user?.id;
     if (!['pending', 'approved', 'rejected'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
     }
@@ -319,10 +320,11 @@ export const updateWorkOrder: AuthedRequestHandler<{ id: string }, any, any> = a
 
     if (status === 'pending') {
       // user requesting approval
-      workOrder.approvalRequestedBy = userId as any;
+       workOrder.approvalRequestedBy = userId;
     } else {
       // approved or rejected
-      workOrder.approvedBy = userId as any;
+      workOrder.approvedBy = userId;
+ 
     }
 
       const saved = await workOrder.save();

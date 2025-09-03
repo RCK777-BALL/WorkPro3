@@ -47,9 +47,11 @@ export const getAllWorkOrders: AuthedRequestHandler = async (
 ) => {
   try {
     const items = await WorkOrder.find({ tenantId: req.tenantId });
-    return res.json(items);
+    res.json(items);
+    return;
   } catch (err) {
-    return next(err);
+    next(err);
+    return;
   }
 };
 
@@ -83,9 +85,9 @@ export const getAllWorkOrders: AuthedRequestHandler = async (
  *       200:
  *         description: Filtered work orders
  */
- export const searchWorkOrders: AuthedRequestHandler<unknown, any, unknown, SearchQuery> = async (
+export const searchWorkOrders: AuthedRequestHandler<unknown, any, unknown, SearchQuery> = async (
   req: AuthedRequest<unknown, any, unknown, SearchQuery>,
- 
+
   res: Response,
   next: NextFunction
 ) => {
@@ -103,8 +105,10 @@ export const getAllWorkOrders: AuthedRequestHandler = async (
 
     const items = await WorkOrder.find(query);
     res.json(items);
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };
 
@@ -134,10 +138,15 @@ export const getWorkOrderById: AuthedRequestHandler<IdParams> = async (
 ) => {
   try {
     const item = await WorkOrder.findOne({ _id: req.params.id, tenantId: req.tenantId });
-    if (!item) return res.status(404).json({ message: 'Not found' });
+    if (!item) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     res.json(item);
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };
 
@@ -168,14 +177,17 @@ export const createWorkOrder: AuthedRequestHandler<unknown, any, any> = async (
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      res.status(400).json({ errors: errors.array() });
+      return;
     }
-      const newItem = new WorkOrder({ ...req.body, tenantId: req.tenantId });
-      const saved = await newItem.save();
-      emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
-      res.status(201).json(saved);
+    const newItem = new WorkOrder({ ...req.body, tenantId: req.tenantId });
+    const saved = await newItem.save();
+    emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
+    res.status(201).json(saved);
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };
 
@@ -204,17 +216,18 @@ export const createWorkOrder: AuthedRequestHandler<unknown, any, any> = async (
  *       404:
  *         description: Work order not found
  */
-export const updateWorkOrder: AuthedRequestHandler<{ id: string }, any, any> = async (
-  req: AuthedRequest<{ id: string }, any, any>,
+export const updateWorkOrder: AuthedRequestHandler<IdParams, any, any> = async (
+  req: AuthedRequest<IdParams, any, any>,
   res: Response,
   next: NextFunction
 ) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      res.status(400).json({ errors: errors.array() });
+      return;
     }
-      const updated = await WorkOrder.findOneAndUpdate(
+    const updated = await WorkOrder.findOneAndUpdate(
       { _id: req.params.id, tenantId: req.tenantId },
       req.body,
       {
@@ -222,11 +235,16 @@ export const updateWorkOrder: AuthedRequestHandler<{ id: string }, any, any> = a
         runValidators: true,
       }
     );
-      if (!updated) return res.status(404).json({ message: 'Not found' });
-      emitWorkOrderUpdate(toWorkOrderUpdatePayload(updated));
-      res.json(updated);
+    if (!updated) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
+    emitWorkOrderUpdate(toWorkOrderUpdatePayload(updated));
+    res.json(updated);
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };
 
@@ -249,19 +267,24 @@ export const updateWorkOrder: AuthedRequestHandler<{ id: string }, any, any> = a
  *       404:
  *         description: Work order not found
  */
- export const deleteWorkOrder: AuthedRequestHandler<{ id: string }> = async (
-  req: AuthedRequest<{ id: string }>,
- 
+export const deleteWorkOrder: AuthedRequestHandler<IdParams> = async (
+  req: AuthedRequest<IdParams>,
+
   res: Response,
   next: NextFunction
 ) => {
   try {
     const deleted = await WorkOrder.findOneAndDelete({ _id: req.params.id, tenantId: req.tenantId });
-    if (!deleted) return res.status(404).json({ message: 'Not found' });
+    if (!deleted) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     emitWorkOrderUpdate(toWorkOrderUpdatePayload({ _id: req.params.id, deleted: true }));
     res.json({ message: 'Deleted successfully' });
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };
 
@@ -295,35 +318,39 @@ export const updateWorkOrder: AuthedRequestHandler<{ id: string }, any, any> = a
  *       404:
  *         description: Work order not found
  */
- export const approveWorkOrder: AuthedRequestHandler<{ id: string }, any, { status: 'pending' | 'approved' | 'rejected' }> = async (
-  req: AuthedRequest<{ id: string }, any, { status: 'pending' | 'approved' | 'rejected' }>,
-  res: Response,
-  next: NextFunction
  
+export const approveWorkOrder: AuthedRequestHandler<IdParams, any, { status: 'pending' | 'approved' | 'rejected' }> = async (
+  req: AuthedRequest<IdParams, any, { status: 'pending' | 'approved' | 'rejected' }>,
+  res: Response,
+  next: NextFunction,
 ) => {
   try {
     const { status } = req.body;
-    const userId = (req.user?._id as string | undefined) ?? req.user?.id;
+    const userIdStr = (req.user?._id as string | undefined) ?? req.user?.id;
+    const userObjectId = userIdStr ? new Types.ObjectId(userIdStr) : undefined;
     if (!['pending', 'approved', 'rejected'].includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
+      res.status(400).json({ message: 'Invalid status' });
+      return;
     }
 
     const workOrder = await WorkOrder.findById(req.params.id);
-    if (!workOrder) return res.status(404).json({ message: 'Not found' });
+    if (!workOrder) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
 
     workOrder.approvalStatus = status;
 
     if (status === 'pending') {
       // user requesting approval
-       workOrder.approvalRequestedBy = userId;
+      if (userObjectId) workOrder.approvalRequestedBy = userObjectId;
     } else {
       // approved or rejected
-      workOrder.approvedBy = userId;
- 
+      if (userObjectId) workOrder.approvedBy = userObjectId;
     }
 
-      const saved = await workOrder.save();
-      emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
+    const saved = await workOrder.save();
+    emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
 
     const message =
       status === 'pending'
@@ -335,10 +362,13 @@ export const updateWorkOrder: AuthedRequestHandler<{ id: string }, any, any> = a
     }
 
     res.json(saved);
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };
+
 
 /**
  * @openapi
@@ -371,13 +401,18 @@ export const assistWorkOrder: AuthedRequestHandler<IdParams, AIAssistResult | { 
       _id: req.params.id,
       tenantId: req.tenantId,
     });
-    if (!workOrder) return res.status(404).json({ message: 'Not found' });
+    if (!workOrder) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     const result = await getWorkOrderAssistance({
       title: workOrder.title,
       description: workOrder.description || '',
     });
     res.json(result);
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };

@@ -1,3 +1,4 @@
+import { Response, NextFunction } from 'express';
 import { AuthedRequest } from '../types/AuthedRequest';
 import { AuthedRequestHandler } from '../types/AuthedRequestHandler';
 import WorkOrder from '../models/WorkOrder';
@@ -7,6 +8,8 @@ import notifyUser from '../utils/notify';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
+
+type IdParams = { id: string };
 
 function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
   const plain = typeof doc.toObject === "function"
@@ -237,16 +240,16 @@ export const updateWorkOrder: AuthedRequestHandler = async (
  *       404:
  *         description: Work order not found
  */
-export const deleteWorkOrder: AuthedRequestHandler = async (
-  req: { params: { id: any; }; tenantId: any; },
-  res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): any; new(): any; }; }; json: (arg0: { message: string; }) => void; },
-  next: (arg0: unknown) => void
+export const deleteWorkOrder: AuthedRequestHandler<IdParams> = async (
+  req: AuthedRequest<IdParams>,
+  res: Response,
+  next: NextFunction
 ) => {
   try {
-      const deleted = await WorkOrder.findOneAndDelete({ _id: req.params.id, tenantId: req.tenantId });
-      if (!deleted) return res.status(404).json({ message: 'Not found' });
-      emitWorkOrderUpdate(toWorkOrderUpdatePayload({ _id: req.params.id, deleted: true }));
-      res.json({ message: 'Deleted successfully' });
+    const deleted = await WorkOrder.findOneAndDelete({ _id: req.params.id, tenantId: req.tenantId });
+    if (!deleted) return res.status(404).json({ message: 'Not found' });
+    emitWorkOrderUpdate(toWorkOrderUpdatePayload({ _id: req.params.id, deleted: true }));
+    res.json({ message: 'Deleted successfully' });
   } catch (err) {
     next(err);
   }

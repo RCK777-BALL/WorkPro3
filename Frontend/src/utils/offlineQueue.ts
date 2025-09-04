@@ -1,3 +1,5 @@
+import { emitToast } from '../context/ToastContext';
+
 export type QueuedRequest = {
   method: 'post' | 'put' | 'delete';
   url: string;
@@ -22,7 +24,12 @@ export const loadQueue = (): QueuedRequest[] => {
 };
 
 const saveQueue = (queue: QueuedRequest[]) => {
-  localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+  try {
+    localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+  } catch (err) {
+    console.error('Failed to persist offline queue', err);
+    emitToast('Failed to save offline changes; they may be lost', 'error');
+  }
 };
 
 export const addToQueue = (req: QueuedRequest) => {

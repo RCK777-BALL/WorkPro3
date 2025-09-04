@@ -48,6 +48,18 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   );
 
   useEffect(() => {
+    const handler = (e: Event) => {
+      const { message, type } = (e as CustomEvent<{
+        message: string;
+        type?: 'success' | 'error';
+      }>).detail;
+      addToast(message, type);
+    };
+    window.addEventListener('toast', handler);
+    return () => window.removeEventListener('toast', handler);
+  }, [addToast]);
+
+  useEffect(() => {
     return () => {
       Object.values(timers.current).forEach(clearTimeout);
     };
@@ -71,3 +83,12 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 };
 
 export const useToast = () => useContext(ToastContext);
+
+export const emitToast = (
+  message: string,
+  type: 'success' | 'error' = 'success',
+) => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('toast', { detail: { message, type } }));
+  }
+};

@@ -8,6 +8,7 @@ declare global {
       _id?: string;
       email?: string;
       role?: Role;
+      tenantId?: string; // <-- added
     }
   }
 }
@@ -16,6 +17,7 @@ declare module 'express-serve-static-core' {
   interface Request {
     user?: Express.User;
     tenantId?: string;
+    siteId?: string; // optional if used in controllers
   }
 }
 

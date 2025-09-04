@@ -7,12 +7,14 @@ export type RequestUser = {
   _id?: string;
   email?: string;
   role?: Role;
+  tenantId?: string; // <-- added so req.user.tenantId is typed
 };
 
 export type AuthedRequest<P = any, ResBody = any, ReqBody = any, ReqQuery = any> =
   Request<P, ResBody, ReqBody, ReqQuery> & {
     user?: RequestUser;
-    tenantId?: string;
+    tenantId?: string; // app-level augmentation on Request
+    siteId?: string;   // optional, if you reference req.siteId elsewhere
   };
 
 /** Allow common Express patterns like `return res.json(...)` */

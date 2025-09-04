@@ -5,12 +5,14 @@ import DataTable from '../components/common/DataTable';
 import VendorModal from '../components/vendors/VendorModal';
 import api from '../utils/api';
 import type { Vendor } from '../types';
+import { useToast } from '../context/ToastContext';
 
 const VendorsPage = () => {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Vendor | null>(null);
+  const { addToast } = useToast();
 
   const fetchVendors = async () => {
     setLoading(true);
@@ -19,6 +21,7 @@ const VendorsPage = () => {
       setVendors(res.data as Vendor[]);
     } catch (err) {
       console.error('Failed to load vendors', err);
+      addToast('Failed to load vendors', 'error');
     } finally {
       setLoading(false);
     }
@@ -40,6 +43,7 @@ const VendorsPage = () => {
       setModalOpen(false);
     } catch (err) {
       console.error('Failed to save vendor', err);
+      addToast('Failed to save vendor', 'error');
     }
   };
 
@@ -49,6 +53,7 @@ const VendorsPage = () => {
       setVendors((prev) => prev.filter((v) => v.id !== id));
     } catch (err) {
       console.error('Failed to delete vendor', err);
+      addToast('Failed to delete vendor', 'error');
     }
   };
 

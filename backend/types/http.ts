@@ -8,6 +8,9 @@ export type RequestUser = {
   email?: string;
   role?: Role;
   tenantId?: string; // <-- added so req.user.tenantId is typed
+  // UI preferences used by ThemeController
+  theme?: 'light' | 'dark' | 'system';
+  colorScheme?: string;
 };
 
 export type AuthedRequest<P = any, ResBody = any, ReqBody = any, ReqQuery = any> =

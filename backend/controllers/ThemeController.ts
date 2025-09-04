@@ -9,7 +9,10 @@ export const getTheme: AuthedRequestHandler = async (
   try {
 
     const { user } = req as AuthedRequest;
-    const { theme = 'system', colorScheme = 'default' } = user;
+    const { theme = 'system', colorScheme = 'default' } = (user ?? {}) as {
+      theme?: 'light' | 'dark' | 'system';
+      colorScheme?: string;
+    };
 
     res.json({ theme, colorScheme });
   } catch (err) {

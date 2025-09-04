@@ -3,11 +3,13 @@ import Layout from '../components/layout/Layout';
 import Button from '../components/common/Button';
 import api from '../utils/api';
 import type { Timesheet } from '../types';
+import { useToast } from '../context/ToastContext';
 
 const TimeSheets: React.FC = () => {
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [form, setForm] = useState({ date: '', hours: '', description: '' });
   const [editingId, setEditingId] = useState<string | null>(null);
+  const { addToast } = useToast();
 
   const loadTimesheets = async () => {
     try {
@@ -35,6 +37,10 @@ const TimeSheets: React.FC = () => {
       hours: Number(form.hours),
       description: form.description,
     };
+    if (!Number.isFinite(payload.hours) || payload.hours < 0) {
+      addToast('Hours must be a non-negative number', 'error');
+      return;
+    }
     try {
       if (editingId) {
         await api.put(`/timesheets/${editingId}`, payload);

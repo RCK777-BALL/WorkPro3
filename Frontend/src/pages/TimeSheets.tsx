@@ -37,6 +37,10 @@ const TimeSheets: React.FC = () => {
       hours: Number(form.hours),
       description: form.description,
     };
+    if (!Number.isFinite(payload.hours) || payload.hours < 0) {
+      addToast('Hours must be a non-negative number', 'error');
+      return;
+    }
     try {
       if (editingId) {
         await api.put(`/timesheets/${editingId}`, payload);

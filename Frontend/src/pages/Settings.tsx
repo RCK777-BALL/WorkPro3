@@ -37,8 +37,22 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleSaveSettings = () => {
-    addToast('Settings saved', 'success');
+  const handleSaveSettings = async () => {
+    try {
+      const settings = useSettingsStore.getState();
+      const response = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to save settings');
+      }
+      addToast('Settings saved', 'success');
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      addToast('Failed to save settings', 'error');
+    }
   };
 
   return (

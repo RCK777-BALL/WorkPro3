@@ -1,6 +1,35 @@
 import { Request, Response, NextFunction } from 'express';
 import Vendor from '../models/Vendor';
 
+const allowedFields = [
+  'name',
+  'contactName',
+  'phone',
+  'email',
+  'address',
+  'partsSupplied',
+];
+const requiredFields = ['name', 'contactName'];
+
+const validateVendorInput = (body: any) => {
+  const unknownKeys = Object.keys(body).filter((k) => !allowedFields.includes(k));
+  if (unknownKeys.length) {
+    return { error: `Unknown fields: ${unknownKeys.join(', ')}` };
+  }
+  const missing = requiredFields.filter(
+    (field) =>
+      body[field] === undefined || body[field] === null || body[field] === ''
+  );
+  if (missing.length) {
+    return { error: `Missing required fields: ${missing.join(', ')}` };
+  }
+  const data: any = {};
+  for (const key of allowedFields) {
+    if (body[key] !== undefined) data[key] = body[key];
+  }
+  return { data };
+};
+
 export const getAllVendors = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const items = await Vendor.find();
@@ -22,7 +51,9 @@ export const getVendorById = async (req: Request, res: Response, next: NextFunct
 
 export const createVendor = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const newItem = new Vendor(req.body);
+    const { data, error } = validateVendorInput(req.body);
+    if (error) return res.status(400).json({ message: error });
+    const newItem = new Vendor(data);
     const saved = await newItem.save();
     res.status(201).json(saved);
   } catch (err) {
@@ -32,7 +63,9 @@ export const createVendor = async (req: Request, res: Response, next: NextFuncti
 
 export const updateVendor = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const updated = await Vendor.findByIdAndUpdate(req.params.id, req.body, {
+    const { data, error } = validateVendorInput(req.body);
+    if (error) return res.status(400).json({ message: error });
+    const updated = await Vendor.findByIdAndUpdate(req.params.id, data, {
       new: true,
       runValidators: true,
     });

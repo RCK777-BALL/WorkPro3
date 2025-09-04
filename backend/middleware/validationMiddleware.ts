@@ -1,10 +1,8 @@
 import { Response, NextFunction } from 'express';
 import { validationResult } from 'express-validator';
+import { AuthedRequest, AuthedRequestHandler } from '../types/http';
 
-import { AuthedRequest } from '../types/AuthedRequest';
-import { AuthedRequestHandler } from '../types/AuthedRequestHandler';
-
-export const validate: AuthedRequestHandler<unknown, any, any> = (
+export const validate: AuthedRequestHandler = (
   req: AuthedRequest,
   res: Response,
   next: NextFunction

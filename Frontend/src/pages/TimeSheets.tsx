@@ -3,11 +3,13 @@ import Layout from '../components/layout/Layout';
 import Button from '../components/common/Button';
 import api from '../utils/api';
 import type { Timesheet } from '../types';
+import { useToast } from '../context/ToastContext';
 
 const TimeSheets: React.FC = () => {
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [form, setForm] = useState({ date: '', hours: '', description: '' });
   const [editingId, setEditingId] = useState<string | null>(null);
+  const { addToast } = useToast();
 
   const loadTimesheets = async () => {
     try {
@@ -19,8 +21,8 @@ const TimeSheets: React.FC = () => {
         description: t.description,
       })) as Timesheet[];
       setTimesheets(data);
-    } catch (err) {
-      console.error('Failed to load timesheets', err);
+    } catch {
+      addToast('Failed to load timesheets', 'error');
     }
   };
 
@@ -50,8 +52,8 @@ const TimeSheets: React.FC = () => {
       }
       setForm({ date: '', hours: '', description: '' });
       setEditingId(null);
-    } catch (err) {
-      console.error('Failed to save timesheet', err);
+    } catch {
+      addToast('Failed to save timesheet', 'error');
     }
   };
 
@@ -72,8 +74,8 @@ const TimeSheets: React.FC = () => {
         setEditingId(null);
         setForm({ date: '', hours: '', description: '' });
       }
-    } catch (err) {
-      console.error('Failed to delete timesheet', err);
+    } catch {
+      addToast('Failed to delete timesheet', 'error');
     }
   };
 

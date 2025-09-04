@@ -9,6 +9,8 @@ declare global {
       email?: string;
       role?: Role;
       tenantId?: string; // <-- added
+      theme?: 'light' | 'dark' | 'system';
+      colorScheme?: string;
     }
   }
 }

@@ -28,6 +28,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
   const { fetchDepartments } = useDepartmentStore();
   const { addToast } = useToast();
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const {
     register,
@@ -72,6 +73,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
   };
 
   const onSubmit = handleSubmit(async (data) => {
+    setLoading(true);
     try {
       const payload: any = { ...data };
       if (!payload.managerId) delete payload.managerId;
@@ -92,6 +94,8 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
     } catch (e: any) {
       const msg = e.response?.data?.message || 'Failed to save team member';
       addToast(msg, 'error');
+    } finally {
+      setLoading(false);
     }
   });
 
@@ -229,7 +233,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary">
+            <Button type="submit" variant="primary" loading={loading}>
               {member ? 'Update Member' : 'Add Member'}
             </Button>
           </div>

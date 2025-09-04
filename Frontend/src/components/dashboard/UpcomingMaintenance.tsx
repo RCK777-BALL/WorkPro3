@@ -3,13 +3,15 @@ import { Calendar, Clock, PenTool as Tool } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Card from '../common/Card';
 import Badge from '../common/Badge';
+import type { MaintenanceType } from '../../types';
+export type { MaintenanceType };
 
 interface MaintenanceItem {
   id: string;
   assetName: string;
   assetId: string;
   date: string;
-  type: 'preventive' | 'corrective' | 'inspection';
+  type: MaintenanceType;
   assignedTo?: string;
   estimatedDuration: number;
 }

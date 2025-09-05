@@ -62,7 +62,6 @@ const Dashboard: React.FC = () => {
     selectedDepartment,
     selectedTimeframe,
     customRange,
-    setSelectedDepartment,
     layouts,
     setLayouts,
   } = useDashboardStore((s) => ({
@@ -70,7 +69,6 @@ const Dashboard: React.FC = () => {
     selectedDepartment: s.selectedDepartment,
     selectedTimeframe: s.selectedTimeframe,
     customRange: s.customRange,
-    setSelectedDepartment: s.setSelectedDepartment,
     layouts: s.layouts,
     setLayouts: s.setLayouts,
   }));

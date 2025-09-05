@@ -1,8 +1,9 @@
 import React from 'react';
 import Card from '../common/Card';
+import type { AssetStatusMap } from '../../types';
 
 interface AssetsStatusChartProps {
-  data?: Record<string, number>;
+  data?: AssetStatusMap;
 }
 
 const AssetsStatusChart: React.FC<AssetsStatusChartProps> = ({ data }) => {

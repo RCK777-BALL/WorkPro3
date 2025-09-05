@@ -25,6 +25,8 @@ export interface Asset {
   updatedAt?: string;
 }
 
+export type AssetStatusMap = Record<string, number>;
+
 export interface Department {
   id: string;
   name: string;

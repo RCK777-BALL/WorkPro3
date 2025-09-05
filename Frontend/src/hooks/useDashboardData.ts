@@ -6,6 +6,7 @@ import type {
   CriticalAlertResponse,
   UpcomingMaintenanceItem,
   CriticalAlertItem,
+  MaintenanceType,
 } from '../types';
 import type { DateRange, Timeframe } from '../store/dashboardStore';
 
@@ -122,7 +123,7 @@ export default function useDashboardData(
             assetName: u.asset?.name ?? 'Unknown',
             assetId: u.asset?._id ?? (u as any).asset?.id ?? '',
             date: u.nextDue,
-            type: u.type ?? '',
+            type: (u.type ?? 'inspection') as MaintenanceType,
             assignedTo: u.assignedTo ?? '',
             estimatedDuration: u.estimatedDuration ?? 0,
           }))

@@ -9,6 +9,7 @@
     "seed:admin": "ts-node scripts/seedAdmin.ts",
     "seed:default-admin": "ts-node scripts/seedDefaultAdmin.ts",
     "seed:team": "ts-node scripts/seedTeam.ts",
+    "seed:departments": "ts-node --files scripts/seedDepartments.ts",
     "reset-db": "ts-node scripts/resetAndSeed.ts",
     "build": "tsc",
     "start": "node dist/server.js",

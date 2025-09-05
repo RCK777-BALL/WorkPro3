@@ -31,6 +31,14 @@ Run `npm run seed` to populate the database with sample records. Run `npm run se
 
 Ensure the tenant and admin are created before running the main seed script. After users and departments are seeded, the script also adds three notifications (critical, warning, and info) linked to the seeded tenant.
 
+To seed only departments for a specific tenant, use:
+
+```bash
+npx ts-node --files scripts/seedDepartments.ts
+```
+
+This script reads `SEED_TENANT_ID` (and optional `SEED_SITE_ID`) from the environment and inserts a few sample department documents.
+
 
 ### Seeded employees
 

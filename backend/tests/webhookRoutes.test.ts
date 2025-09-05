@@ -2,11 +2,11 @@ import { describe, it, beforeAll, expect } from "vitest";
 import request from 'supertest';
 import express from 'express';
 
-import webhookRoutes from '../routes/WebhookRoutes';
+import webhooksRoutes from '../routes/webhooksRoutes';
 
 const app = express();
 app.use(express.json());
-app.use('/api/hooks', webhookRoutes);
+app.use('/api/hooks', webhooksRoutes);
 
 beforeAll(() => {
   process.env.THIRD_PARTY_API_KEYS = 'testkey';

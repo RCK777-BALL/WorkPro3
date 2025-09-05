@@ -1,6 +1,7 @@
 import React from 'react';
 import Card from '../common/Card';
-import type { AssetStatusMap } from '../../types';
+ import type { AssetStatusMap } from '../../types';
+ 
 
 interface AssetsStatusChartProps {
   data?: AssetStatusMap;

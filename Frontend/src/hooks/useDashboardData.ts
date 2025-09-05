@@ -6,7 +6,8 @@ import type {
   CriticalAlertResponse,
   UpcomingMaintenanceItem,
   CriticalAlertItem,
-  AssetStatusMap,
+   AssetStatusMap,
+ 
 } from '../types';
 import type { DateRange, Timeframe } from '../store/dashboardStore';
 
@@ -31,7 +32,8 @@ const defaultWOStatus: WorkOrderStatusMap = {
   completed: 0,
 };
 
-const defaultAssetStatus: AssetStatusMap = {};
+ const defaultAssetStatus: AssetStatusMap = {};
+ 
 
 // simple debounce helper
 function debounce<F extends (...args: any[]) => void>(fn: F, delay: number) {
@@ -111,7 +113,8 @@ export default function useDashboardData(
             assetName: u.asset?.name ?? 'Unknown',
             assetId: u.asset?._id ?? (u as any).asset?.id ?? '',
             date: u.nextDue,
-            type: u.type ?? '',
+             type: (u.type ?? 'preventive') as MaintenanceType,
+ 
             assignedTo: u.assignedTo ?? '',
             estimatedDuration: u.estimatedDuration ?? 0,
           }))

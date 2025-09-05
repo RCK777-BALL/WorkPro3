@@ -30,11 +30,16 @@ const LoginPage: React.FC = () => {
     const token = params.get('token');
     const emailFromOauth = params.get('email');
     if (token && emailFromOauth) {
+       const id =
+        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : `${Date.now()}`;
       setUser({
-        id: crypto?.randomUUID?.() ?? String(Date.now()),
-        name: emailFromOauth,
-        email: emailFromOauth,
+        id,
+        name: emailFromOauth.split('@')[0],
         role: 'viewer',
+        email: emailFromOauth,
+ 
         token,
       });
       navigate('/dashboard');

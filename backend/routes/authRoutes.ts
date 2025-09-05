@@ -25,7 +25,7 @@ router.get('/oauth/:provider', (req, res, next) => {
 });
 
 router.get('/oauth/:provider/callback', (req, res, next) => {
-  const provider = req.params.provider;
+  const provider = req.params.provider as OAuthProvider;
   passport.authenticate(
     provider,
     { session: false },

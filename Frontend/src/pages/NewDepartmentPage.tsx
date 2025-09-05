@@ -9,7 +9,7 @@ const NewDepartmentPage: React.FC = () => {
   return (
     <Layout title="New Department">
       <div className="max-w-lg mx-auto p-6">
-        <DepartmentForm onSuccess={(dep: Department) => navigate('/departments')} />
+        <DepartmentForm onSuccess={(_dep: Department) => navigate('/departments')} />
       </div>
     </Layout>
   );

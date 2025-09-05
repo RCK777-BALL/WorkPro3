@@ -1,28 +1,54 @@
-import mongoose, { Types } from 'mongoose';
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+
 import Department from '../models/Department';
 
-async function main() {
-  const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/workpro3';
-  const tenantId = process.env.SEED_TENANT_ID ? new Types.ObjectId(process.env.SEED_TENANT_ID) : undefined;
-  const siteId = process.env.SEED_SITE_ID ? new Types.ObjectId(process.env.SEED_SITE_ID) : undefined;
-
-  if (!tenantId) {
-    console.error('SEED_TENANT_ID is required. Example: set SEED_TENANT_ID=64c2... (an ObjectId)');
-    process.exit(1);
-  }
-
-  await mongoose.connect(MONGO_URI);
-
-  await Department.deleteMany({ tenantId });
-
-  await Department.insertMany([
-    { name: 'Operations', description: 'Ops & facilities', tenantId, siteId },
-    { name: 'Maintenance', description: 'Repairs & PM', tenantId, siteId },
-    { name: 'IT', description: 'Systems & support', tenantId, siteId },
-  ]);
-
-  console.log('Seeded departments for tenant', tenantId.toString());
-  await mongoose.disconnect();
+// Load environment variables from backend/.env if present
+const envPath = path.resolve(__dirname, '..', '.env');
+if (fs.existsSync(envPath)) {
+  dotenv.config({ path: envPath });
+} else {
+  dotenv.config();
 }
 
-main().catch(err => { console.error(err); process.exit(1); });
+const { MONGO_URI, SEED_TENANT_ID, SEED_SITE_ID } = process.env;
+
+if (!MONGO_URI || !SEED_TENANT_ID) {
+  console.error('❌ MONGO_URI and SEED_TENANT_ID must be defined');
+  process.exit(1);
+}
+
+async function seedDepartments() {
+  try {
+    await mongoose.connect(MONGO_URI);
+    console.log('✅ Connected to MongoDB');
+
+    const tenantId = new mongoose.Types.ObjectId(SEED_TENANT_ID);
+    const siteId = SEED_SITE_ID ? new mongoose.Types.ObjectId(SEED_SITE_ID) : undefined;
+
+    const base = { tenantId } as any;
+    if (siteId) base.siteId = siteId;
+
+    const names = ['Production', 'Maintenance', 'Quality'];
+
+    for (const name of names) {
+      await Department.findOneAndUpdate(
+        { name, ...base },
+        { name, ...base },
+        { upsert: true, new: true }
+      );
+      console.log(`✅ Department seeded: ${name}`);
+    }
+
+    await mongoose.disconnect();
+    console.log('🌱 Department seeding complete');
+    process.exit(0);
+  } catch (err) {
+    console.error('❌ Error seeding departments:', err);
+    process.exit(1);
+  }
+}
+
+seedDepartments();

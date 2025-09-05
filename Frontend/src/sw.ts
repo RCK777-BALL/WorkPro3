@@ -9,7 +9,59 @@ interface QueueItem {
   options?: RequestInit;
 }
 
-const offlineQueue: QueueItem[] = [];
+const DB_NAME = 'offline-queue';
+const STORE_NAME = 'requests';
+let offlineQueue: QueueItem[] = [];
+
+async function openDB() {
+  return new Promise<IDBDatabase>((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      request.result.createObjectStore(STORE_NAME);
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function loadQueue() {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.get('queue');
+    const result: QueueItem[] = await new Promise((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+    offlineQueue = result;
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Failed to load queue from storage', err);
+    offlineQueue = [];
+  }
+}
+
+async function saveQueue() {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).put(offlineQueue, 'queue');
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = () => resolve(undefined);
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Failed to save queue to storage', err);
+  }
+}
+
+loadQueue().then(() => {
+  if (offlineQueue.length > 0) {
+    processQueue();
+  }
+});
 
 declare let self: ServiceWorkerGlobalScope & { __WB_MANIFEST: any };
 
@@ -39,9 +91,11 @@ self.addEventListener('message', (event) => {
   }
   if (event.data?.type === 'QUEUE_REQUEST') {
     offlineQueue.push(event.data.payload as QueueItem);
+    void saveQueue();
   }
   if (event.data?.type === 'CLEAR_QUEUE') {
     offlineQueue.length = 0;
+    void saveQueue();
   }
 });
 
@@ -57,6 +111,7 @@ async function processQueue() {
     try {
       await fetch(url, options);
       offlineQueue.shift();
+      await saveQueue();
     } catch {
       break; // stop if a request fails
     }

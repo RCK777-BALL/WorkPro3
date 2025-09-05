@@ -15,9 +15,13 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   if (!header?.startsWith('Bearer ')) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    return res.status(500).json({ message: 'JWT secret not configured' });
+  }
   try {
     const token = header.split(' ')[1];
-    const { id, role, tenantId } = jwt.verify(token, process.env.JWT_SECRET!) as {
+    const { id, role, tenantId } = jwt.verify(token, secret) as {
       id: string;
       role: string;
       tenantId: string;
@@ -163,5 +167,15 @@ describe('Department Routes', () => {
       .expect(200);
 
     expect(listAfter.body.length).toBe(0);
+  });
+
+  it('returns 500 when JWT secret is missing', async () => {
+    const original = process.env.JWT_SECRET;
+    delete process.env.JWT_SECRET;
+    await request(app)
+      .get('/api/departments')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(500);
+    process.env.JWT_SECRET = original;
   });
 });

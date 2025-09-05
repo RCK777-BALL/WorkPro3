@@ -9,7 +9,7 @@ import { ToastProvider } from './context/ToastContext';
 import { useThemeStore } from './store/themeStore';
 import './index.css';
 import './i18n';
-import { registerSW } from 'virtual:pwa-register';
+import { registerSWIfAvailable } from './pwa';
 
 // theme init (leave as-is in repo)
 const initializeTheme = () => {
@@ -28,8 +28,8 @@ mediaQuery.addEventListener('change', (e) => {
 });
 initializeTheme();
 
-// register SW
-registerSW({ immediate: true });
+// register SW (no-op if PWA plugin is absent)
+registerSWIfAvailable({ immediate: true });
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

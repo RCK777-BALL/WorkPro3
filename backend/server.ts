@@ -1,5 +1,5 @@
 import express from 'express';
-import type { Request, Response } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
@@ -50,6 +50,7 @@ import type {
   InventoryUpdatePayload,
   NotificationPayload,
 } from './types/Payloads';
+import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
@@ -127,7 +128,27 @@ app.use('/api/notifications', burstFriendly, notificationsRoutes);
 // Apply limiter to the rest of /api
 app.use('/api', generalLimiter);
 
-app.use('/api/departments', departmentRoutes);
+const departmentAuth = (req: Request, res: Response, next: NextFunction) => {
+  const header = req.headers.authorization;
+  if (!header?.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  try {
+    const token = header.split(' ')[1];
+    const { id, role, tenantId } = jwt.verify(token, process.env.JWT_SECRET!) as {
+      id: string;
+      role: string;
+      tenantId: string;
+    };
+    (req as any).user = { id, role, tenantId };
+    (req as any).tenantId = tenantId;
+    next();
+  } catch {
+    return res.status(401).json({ message: 'Invalid token' });
+  }
+};
+
+app.use('/api/departments', departmentAuth, departmentRoutes);
 app.use('/api/workorders', workOrdersRoutes);
 app.use('/api/assets', assetsRoutes);
 app.use('/api/condition-rules', conditionRuleRoutes);

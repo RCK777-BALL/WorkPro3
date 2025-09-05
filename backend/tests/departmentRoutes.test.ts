@@ -1,32 +1,56 @@
-import { describe, it, beforeAll, afterAll, beforeEach, expect } from "vitest";
+import { describe, it, beforeAll, afterAll, beforeEach, expect } from 'vitest';
 import request from 'supertest';
-import express from 'express';
+import express, { type Request, type Response, type NextFunction } from 'express';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 import DepartmentRoutes from '../routes/DepartmentRoutes';
-import User from '../models/User';
+import User, { type UserDocument } from '../models/User';
 
 const app = express();
 app.use(express.json());
-app.use('/api/departments', DepartmentRoutes);
+
+const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  const header = req.headers.authorization;
+  if (!header?.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  try {
+    const token = header.split(' ')[1];
+    const { id, role, tenantId } = jwt.verify(token, process.env.JWT_SECRET!) as {
+      id: string;
+      role: string;
+      tenantId: string;
+    };
+    (req as any).user = { id, role, tenantId };
+    (req as any).tenantId = tenantId;
+    next();
+  } catch {
+    return res.status(401).json({ message: 'Invalid token' });
+  }
+};
+
+app.use('/api/departments', authMiddleware, DepartmentRoutes);
 
 let mongo: MongoMemoryServer;
 let token: string;
-let user: Awaited<ReturnType<typeof User.create>>;
+let user: UserDocument;
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'testsecret';
   mongo = await MongoMemoryServer.create();
   await mongoose.connect(mongo.getUri());
-  user = await User.create({
+  user = (await User.create({
     name: 'Tester',
     email: 'tester@example.com',
     password: 'pass123',
     role: 'manager',
     tenantId: new mongoose.Types.ObjectId(),
-  });
-  token = jwt.sign({ id: user._id.toString(), role: user.role }, process.env.JWT_SECRET!);
+  })) as unknown as UserDocument;
+  token = jwt.sign(
+    { id: user._id.toString(), role: user.role, tenantId: user.tenantId.toString() },
+    process.env.JWT_SECRET!,
+  );
 });
 
 afterAll(async () => {
@@ -36,14 +60,17 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await mongoose.connection.db?.dropDatabase();
-  user = await User.create({
+  user = (await User.create({
     name: 'Tester',
     email: 'tester@example.com',
     password: 'pass123',
     role: 'manager',
     tenantId: new mongoose.Types.ObjectId(),
-  });
-  token = jwt.sign({ id: user._id.toString(), role: user.role }, process.env.JWT_SECRET!);
+  })) as unknown as UserDocument;
+  token = jwt.sign(
+    { id: user._id.toString(), role: user.role, tenantId: user.tenantId.toString() },
+    process.env.JWT_SECRET!,
+  );
 });
 
 describe('Department Routes', () => {

@@ -6,7 +6,8 @@ import type {
   CriticalAlertResponse,
   UpcomingMaintenanceItem,
   CriticalAlertItem,
-  MaintenanceType,
+   AssetStatusMap,
+ 
 } from '../types';
 import type { DateRange, Timeframe } from '../store/dashboardStore';
 
@@ -31,13 +32,8 @@ const defaultWOStatus: WorkOrderStatusMap = {
   completed: 0,
 };
 
-export type AssetStatusMap = Record<string, number>;
-
-const defaultAssetStatus: AssetStatusMap = {
-  Active: 0,
-  Offline: 0,
-  'In Repair': 0,
-};
+ const defaultAssetStatus: AssetStatusMap = {};
+ 
 
 // simple debounce helper
 function debounce<F extends (...args: any[]) => void>(fn: F, delay: number) {
@@ -102,12 +98,10 @@ export default function useDashboardData(
       setWorkOrdersByStatus(woCounts);
 
       // Assets
-      const assetCounts: AssetStatusMap = { ...defaultAssetStatus };
+      const assetCounts: AssetStatusMap = {};
       if (Array.isArray(assetRes.data)) {
         assetRes.data.forEach(({ _id, count }) => {
-          if (_id in assetCounts) {
-            assetCounts[_id as keyof AssetStatusMap] = count;
-          }
+          assetCounts[_id as string] = count;
         });
       }
       setAssetsByStatus(assetCounts);

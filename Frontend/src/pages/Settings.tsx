@@ -14,6 +14,7 @@ import DocumentViewer from '../components/documentation/DocumentViewer';
 import { parseDocument } from '../utils/documentation';
 import { useThemeStore } from '../store/themeStore';
 import { useSettingsStore } from '../store/settingsStore';
+import type { ThemeSettings } from '../store/settingsStore';
 import { useToast } from '../context/ToastContext';
 
 const Settings: React.FC = () => {
@@ -25,6 +26,32 @@ const Settings: React.FC = () => {
     setTheme: setThemeSettings,
   } = useSettingsStore();
   const { addToast } = useToast();
+
+  type ThemeOptionKey = {
+    [K in keyof ThemeSettings]: ThemeSettings[K] extends boolean ? K : never
+  }[keyof ThemeSettings];
+
+  const themeOptions: { label: string; description: string; key: ThemeOptionKey }[] = [
+    {
+      label: 'Collapsed Sidebar',
+      description: 'Use a compact sidebar layout',
+      key: 'sidebarCollapsed',
+    },
+    {
+      label: 'Dense Mode',
+      description: 'Compact spacing for all elements',
+      key: 'denseMode',
+    },
+    {
+      label: 'High Contrast',
+      description: 'Increase contrast for better visibility',
+      key: 'highContrast',
+    },
+  ];
+
+  type MissingThemeOption = Exclude<ThemeOptionKey, typeof themeOptions[number]['key']>;
+  const _themeOptionCheck: MissingThemeOption extends never ? true : never = true;
+  void _themeOptionCheck;
 
   const [documents, setDocuments] = useState<Array<{ content: string; metadata: any }>>([]);
 
@@ -174,26 +201,7 @@ const Settings: React.FC = () => {
                 </select>
               </div>
 
-              {[
-                {
-                  label: 'Collapsed Sidebar',
-                  description: 'Use a compact sidebar layout',
-                  value: themeSettings.sidebarCollapsed,
-                  key: 'sidebarCollapsed'
-                },
-                {
-                  label: 'Dense Mode',
-                  description: 'Compact spacing for all elements',
-                  value: themeSettings.denseMode,
-                  key: 'denseMode'
-                },
-                {
-                  label: 'High Contrast',
-                  description: 'Increase contrast for better visibility',
-                  value: themeSettings.highContrast,
-                  key: 'highContrast'
-                }
-              ].map(({ label, description, value, key }) => (
+              {themeOptions.map(({ label, description, key }) => (
                 <div className="flex items-center justify-between" key={key}>
                   <div>
                     <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">{label}</p>
@@ -203,9 +211,9 @@ const Settings: React.FC = () => {
                     <input
                       type="checkbox"
                       className="sr-only peer"
-                      checked={value}
+                      checked={themeSettings[key]}
                       onChange={(e) =>
-                        setThemeSettings({ [key]: e.target.checked } as any)
+                        setThemeSettings({ [key]: e.target.checked })
                       }
                     />
                     <div className="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>

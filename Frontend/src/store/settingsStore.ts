@@ -23,7 +23,7 @@ interface EmailSettings {
   criticalAlerts: boolean;
 }
 
-interface ThemeSettings {
+export interface ThemeSettings {
   sidebarCollapsed: boolean;
   denseMode: boolean;
   highContrast: boolean;

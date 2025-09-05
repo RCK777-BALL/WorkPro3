@@ -5,6 +5,53 @@ import Avatar from '../components/common/Avatar';
 import WorkHistoryCard from '../components/teams/WorkHistoryCard';
 import { teamMembers, TeamMember } from '../utils/data';
 
+type WorkType = 'maintenance' | 'work_order' | 'training' | 'safety' | 'improvement';
+
+interface RecentWork {
+  id: string;
+  date: string;
+  type: WorkType;
+  title: string;
+  status: 'completed' | 'delayed' | 'in_progress';
+  duration: number;
+  notes?: string;
+}
+
+interface WorkHistoryMetrics {
+  safety: {
+    incidentRate: number;
+    lastIncidentDate: string;
+    safetyCompliance: number;
+    nearMisses: number;
+    safetyMeetingsAttended: number;
+  };
+  people: {
+    attendanceRate: number;
+    teamCollaboration: number;
+    trainingHours: number;
+    certifications: string[];
+    mentorshipHours: number;
+  };
+  productivity: {
+    completedTasks: number;
+    onTimeCompletion: number;
+    averageResponseTime: string;
+    overtimeHours: number;
+    taskEfficiencyRate: number;
+  };
+  improvement: {
+    costSavings: number;
+    suggestionsSubmitted: number;
+    suggestionsImplemented: number;
+    processImprovements: number;
+  };
+}
+
+interface WorkHistory {
+  metrics: WorkHistoryMetrics;
+  recentWork: RecentWork[];
+}
+
 const TeamMemberProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const member = teamMembers.find(m => m.id === id);
@@ -20,7 +67,7 @@ const TeamMemberProfile: React.FC = () => {
   const manager = member.managerId ? teamMembers.find(m => m.id === member.managerId) : null;
   const subordinates = teamMembers.filter(m => m.managerId === member.id);
 
-  const sampleWorkHistory = {
+  const sampleWorkHistory: WorkHistory = {
     metrics: {
       safety: {
         incidentRate: 0.5,

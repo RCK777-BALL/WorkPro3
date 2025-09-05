@@ -29,7 +29,7 @@ router.get('/oauth/:provider/callback', (req, res, next) => {
   passport.authenticate(
     provider,
     { session: false },
-    (err, user) => {
+    (err: Error | null, user: Express.User | false | null) => {
       if (err || !user) {
         return res.status(400).json({ message: 'Authentication failed' });
       }

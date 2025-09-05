@@ -1,22 +1,41 @@
 import type { Strategy as PassportStrategy } from 'passport';
 import type { VerifyCallback } from 'passport-openidconnect';
 
-let passport: { use?: (...args: any[]) => void } = {};
-let OIDCStrategy: any;
+interface OIDCStrategyOptions {
+  name?: string;
+  issuer: string;
+  clientID: string;
+  clientSecret: string;
+  callbackURL: string;
+}
+
+interface OIDCProfile {
+  emails?: Array<{ value: string }>;
+  _json?: { groups?: string[] };
+}
+
+type PassportUse = (name: string, strategy: PassportStrategy) => void;
+type OIDCStrategyConstructor = new (
+  options: OIDCStrategyOptions,
+  verify: VerifyCallback,
+) => PassportStrategy;
+
+let passport: { use?: PassportUse } = {};
+let OIDCStrategy: OIDCStrategyConstructor;
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  passport = require('passport');
+  passport = require('passport') as { use: PassportUse };
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  OIDCStrategy = require('passport-openidconnect').Strategy;
+  OIDCStrategy = require('passport-openidconnect').Strategy as OIDCStrategyConstructor;
 } catch {
   // Fallback mocks if packages are unavailable in test environment
   class MockStrategy {
     name: string;
-    constructor(_options: any, _verify: VerifyCallback) {
-      this.name = _options?.name || 'oidc';
+    constructor(options: OIDCStrategyOptions, _verify: VerifyCallback) {
+      this.name = options.name ?? 'oidc';
     }
   }
-  OIDCStrategy = MockStrategy;
+  OIDCStrategy = MockStrategy as unknown as OIDCStrategyConstructor;
   passport.use = () => {};
 }
 
@@ -29,24 +48,29 @@ export const mapRoles = (groups: string[] = []): string => {
   return 'viewer';
 };
 
+interface UserInfo {
+  email?: string;
+  role: string;
+}
+
 export const oidcVerify: VerifyCallback = async (
   _issuer: string,
   _sub: string,
-  profile: any,
-  _jwtClaims: any,
+  profile: OIDCProfile,
+  _jwtClaims: Record<string, unknown>,
   _accessToken: string,
   _refreshToken: string,
-  _params: any,
-  done: (err: any, user?: any) => void,
+  _params: Record<string, unknown>,
+  done: (err: Error | null, user?: UserInfo) => void,
 ) => {
   try {
     const email = profile?.emails?.[0]?.value;
     const groups = profile?._json?.groups || [];
     const role = mapRoles(groups);
-    const user = { email, role };
+    const user: UserInfo = { email, role };
     done(null, user);
   } catch (err) {
-    done(err);
+    done(err as Error);
   }
 };
 
@@ -64,7 +88,7 @@ export const configureOIDC = () => {
           clientSecret: oktaClientSecret,
           callbackURL: '/api/auth/oidc/okta/callback',
         },
-        oidcVerify as any,
+        oidcVerify,
       ) as unknown as PassportStrategy,
     );
   }
@@ -82,7 +106,7 @@ export const configureOIDC = () => {
           clientSecret: azureClientSecret,
           callbackURL: '/api/auth/oidc/azure/callback',
         },
-        oidcVerify as any,
+        oidcVerify,
       ) as unknown as PassportStrategy,
     );
   }

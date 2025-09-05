@@ -3,7 +3,9 @@ import { useParams, Link } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import Avatar from '../components/common/Avatar';
 import WorkHistoryCard from '../components/teams/WorkHistoryCard';
-import { teamMembers, TeamMember } from '../utils/data';
+import { teamMembers } from '../utils/data';
+
+type WorkType = 'maintenance' | 'work_order' | 'training' | 'safety' | 'improvement';
 
 const TeamMemberProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -76,7 +78,7 @@ const TeamMemberProfile: React.FC = () => {
         status: 'completed',
         duration: 4,
       },
-    ],
+    ] as { id: string; date: string; type: WorkType; title: string; status: string; duration: number; notes?: string }[],
   };
 
   return (

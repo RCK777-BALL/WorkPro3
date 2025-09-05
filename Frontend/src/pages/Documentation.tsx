@@ -75,7 +75,7 @@ const Documentation: React.FC = () => {
     description: '',
   });
 
-  const handleDocumentUpload = (files: File[]) => {
+  const handleDocumentUpload = (_files: File[]) => {
     setShowUploader(false);
   };
 

@@ -325,6 +325,11 @@ export interface LowStockPart {
   reorderPoint: number;
 }
 
+/**
+ * Defines the allowed maintenance categories for upcoming maintenance tasks.
+ */
+export type MaintenanceType = 'preventive' | 'corrective' | 'inspection';
+
 /** Response shape for upcoming maintenance tasks */
 export interface UpcomingMaintenanceResponse {
   _id?: string;

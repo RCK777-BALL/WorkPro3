@@ -3,7 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import Avatar from '../components/common/Avatar';
 import WorkHistoryCard from '../components/teams/WorkHistoryCard';
-import { teamMembers, TeamMember } from '../utils/data';
+import { teamMembers } from '../utils/data';
+ 
 
 const TeamMemberProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,7 +21,7 @@ const TeamMemberProfile: React.FC = () => {
   const manager = member.managerId ? teamMembers.find(m => m.id === member.managerId) : null;
   const subordinates = teamMembers.filter(m => m.managerId === member.id);
 
-  const sampleWorkHistory = {
+  const sampleWorkHistory: WorkHistory = {
     metrics: {
       safety: {
         incidentRate: 0.5,
@@ -76,7 +77,7 @@ const TeamMemberProfile: React.FC = () => {
         status: 'completed',
         duration: 4,
       },
-    ],
+    ] as { id: string; date: string; type: WorkType; title: string; status: string; duration: number; notes?: string }[],
   };
 
   return (

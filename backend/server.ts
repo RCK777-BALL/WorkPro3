@@ -21,7 +21,7 @@ import summaryRoutes from './routes/summary';
 import reportsRoutes from './routes/ReportsRoutes';
 import LineRoutes from './routes/LineRoutes';
 import StationRoutes from './routes/StationRoutes';
-import departmentRoutes from './routes/departmentRoutes';
+import DepartmentRoutes from './routes/DepartmentRoutes';
 import inventoryRoutes from './routes/InventoryRoutes';
 import analyticsRoutes from './routes/AnalyticsRoutes';
 
@@ -154,7 +154,7 @@ const departmentAuth = (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-app.use('/api/departments', departmentAuth, departmentRoutes);
+app.use('/api/departments', departmentAuth, DepartmentRoutes);
 app.use('/api/workorders', workOrdersRoutes);
 app.use('/api/assets', assetsRoutes);
 app.use('/api/condition-rules', conditionRuleRoutes);

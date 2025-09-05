@@ -69,9 +69,11 @@ function arimaForecast(values: number[]): number {
 }
 
 function computeStdDev(values: number[]): number {
+  if (values.length <= 1) return 0;
   const mean = values.reduce((a, b) => a + b, 0) / values.length;
   const variance =
-    values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / values.length;
+    values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) /
+    (values.length - 1);
   return Math.sqrt(variance);
 }
 

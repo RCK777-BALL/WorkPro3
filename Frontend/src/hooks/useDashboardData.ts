@@ -119,7 +119,8 @@ export default function useDashboardData(
             assetName: u.asset?.name ?? 'Unknown',
             assetId: u.asset?._id ?? (u as any).asset?.id ?? '',
             date: u.nextDue,
-            type: (u.type ?? 'inspection') as MaintenanceType,
+             type: (u.type ?? 'preventive') as MaintenanceType,
+ 
             assignedTo: u.assignedTo ?? '',
             estimatedDuration: u.estimatedDuration ?? 0,
           }))

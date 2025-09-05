@@ -1,3 +1,5 @@
+export type MaintenanceType = 'preventive' | 'corrective' | 'inspection';
+
 export interface Asset {
   id: string;
   name: string;

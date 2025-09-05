@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import Card from '../common/Card';
 import Badge from '../common/Badge';
 import type { MaintenanceType } from '../../types';
-export type { MaintenanceType };
+ 
 
 interface MaintenanceItem {
   id: string;

@@ -128,14 +128,21 @@ app.use('/api/notifications', burstFriendly, notificationsRoutes);
 // Apply limiter to the rest of /api
 app.use('/api', generalLimiter);
 
+const JWT_SECRET = env.JWT_SECRET;
+
 const departmentAuth = (req: Request, res: Response, next: NextFunction) => {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
+  if (!JWT_SECRET) {
+    return res
+      .status(500)
+      .json({ message: 'JWT secret not configured' });
+  }
   try {
     const token = header.split(' ')[1];
-    const { id, role, tenantId } = jwt.verify(token, process.env.JWT_SECRET!) as {
+    const { id, role, tenantId } = jwt.verify(token, JWT_SECRET) as {
       id: string;
       role: string;
       tenantId: string;

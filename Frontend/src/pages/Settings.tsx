@@ -15,6 +15,7 @@ import { parseDocument } from '../utils/documentation';
 import { useThemeStore } from '../store/themeStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useToast } from '../context/ToastContext';
+import api from '../utils/api';
 
 const Settings: React.FC = () => {
   const { theme, setTheme, updateTheme } = useThemeStore();
@@ -40,18 +41,15 @@ const Settings: React.FC = () => {
   const handleSaveSettings = async () => {
     try {
       const settings = useSettingsStore.getState();
-      const response = await fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to save settings');
-      }
+      await api.post('/settings', settings);
       addToast('Settings saved', 'success');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving settings:', error);
-      addToast('Failed to save settings', 'error');
+      if (error.response?.status === 401) {
+        addToast('Unauthorized', 'error');
+      } else {
+        addToast('Failed to save settings', 'error');
+      }
     }
   };
 

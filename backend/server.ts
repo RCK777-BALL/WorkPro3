@@ -21,7 +21,7 @@ import summaryRoutes from './routes/summary';
 import reportsRoutes from './routes/ReportsRoutes';
 import LineRoutes from './routes/LineRoutes';
 import StationRoutes from './routes/StationRoutes';
-import departmentRoutes from './routes/DepartmentRoutes';
+import departmentRoutes from './routes/departmentRoutes';
 import inventoryRoutes from './routes/InventoryRoutes';
 import analyticsRoutes from './routes/AnalyticsRoutes';
 

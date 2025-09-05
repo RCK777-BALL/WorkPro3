@@ -4,7 +4,7 @@ import express, { type Request, type Response, type NextFunction } from 'express
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
-import DepartmentRoutes from '../routes/DepartmentRoutes';
+import DepartmentRoutes from '../routes/departmentRoutes';
 import User, { type UserDocument } from '../models/User';
 
 const app = express();

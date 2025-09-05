@@ -31,11 +31,7 @@ const defaultWOStatus: WorkOrderStatusMap = {
   completed: 0,
 };
 
-interface AssetStatusMap {
-  Active: number;
-  Offline: number;
-  'In Repair': number;
-}
+export type AssetStatusMap = Record<string, number>;
 
 const defaultAssetStatus: AssetStatusMap = {
   Active: 0,

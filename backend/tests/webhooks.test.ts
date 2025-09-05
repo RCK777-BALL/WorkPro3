@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import crypto from 'crypto';
 
-import webhooksRoutes from '../routes/webhooks';
+import webhooksRoutes from '../routes/webhooksRoutes';
 import Webhook from '../models/Webhook';
 import { dispatchEvent, RETRY_DELAY_MS } from '../utils/webhookDispatcher';
 

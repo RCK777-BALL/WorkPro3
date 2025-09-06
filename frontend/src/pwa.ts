@@ -6,8 +6,7 @@ export async function registerSWIfAvailable(opts?: { immediate?: boolean }) {
   try {
     // @ts-ignore - virtual module only exists when the plugin is installed
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @vite-ignore
-    const mod: any = await import(id as any);
+    const mod: any = await import(/* @vite-ignore */ id as any);
     if (mod?.registerSW) return mod.registerSW(opts);
   } catch {
     // Plugin not installed — fall back to a safe no-op.

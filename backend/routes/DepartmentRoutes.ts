@@ -161,37 +161,33 @@ const getLineById: AuthedRequestHandler<{ id: string }> = async (
 
 const createLine: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const { departmentId, name } = req.body;
     const department = await Department.findOne({
-      _id: departmentId,
+      _id: req.params.deptId,
       tenantId: req.tenantId,
     });
     if (!department)
       return res.status(404).json({ message: "Department not found" });
     department.lines.push({
-      name,
+      name: req.body.name,
       tenantId: req.tenantId,
       stations: [] as any,
     } as any);
     await department.save();
-    res.status(201).json(department.lines[department.lines.length - 1]);
+    const line = department.lines[department.lines.length - 1];
+    res.status(201).json(line);
   } catch (err) {
     next(err);
   }
 };
 
-const updateLine: AuthedRequestHandler<{ id: string }> = async (
-  req,
-  res,
-  next,
-) => {
+const updateLine: AuthedRequestHandler = async (req, res, next) => {
   try {
     const department = await Department.findOne({
-      "lines._id": req.params.id,
+      _id: req.params.deptId,
       tenantId: req.tenantId,
     });
     if (!department) return res.status(404).json({ message: "Not found" });
-    const line = department.lines.id(req.params.id);
+    const line = department.lines.id(req.params.lineId);
     if (!line) return res.status(404).json({ message: "Not found" });
     line.set(req.body);
     await department.save();
@@ -201,18 +197,14 @@ const updateLine: AuthedRequestHandler<{ id: string }> = async (
   }
 };
 
-const deleteLine: AuthedRequestHandler<{ id: string }> = async (
-  req,
-  res,
-  next,
-) => {
+const deleteLine: AuthedRequestHandler = async (req, res, next) => {
   try {
     const department = await Department.findOne({
-      "lines._id": req.params.id,
+      _id: req.params.deptId,
       tenantId: req.tenantId,
     });
     if (!department) return res.status(404).json({ message: "Not found" });
-    const line = department.lines.id(req.params.id);
+    const line = department.lines.id(req.params.lineId);
     if (!line) return res.status(404).json({ message: "Not found" });
     line.deleteOne();
     await department.save();
@@ -303,69 +295,57 @@ const getAllStations: AuthedRequestHandler = async (req, res, next) => {
 
  const createStation: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const { lineId, name } = req.body;
     const department = await Department.findOne({
-      "lines._id": lineId,
+      _id: req.params.deptId,
       tenantId: req.tenantId,
     });
     if (!department) return res.status(404).json({ message: "Line not found" });
-    const line = department.lines.id(lineId);
+    const line = department.lines.id(req.params.lineId);
     if (!line) return res.status(404).json({ message: "Line not found" });
-    line.stations.push({ name, tenantId: req.tenantId } as any);
+    line.stations.push({ name: req.body.name, tenantId: req.tenantId } as any);
     await department.save();
-    res.status(201).json(line.stations[line.stations.length - 1]);
- 
+    const station = line.stations[line.stations.length - 1];
+    res.status(201).json(station);
+
   } catch (err) {
     next(err);
   }
 };
 
- const updateStation: AuthedRequestHandler<{ id: string }> = async (
-  req,
-  res,
-  next,
-) => {
+ const updateStation: AuthedRequestHandler = async (req, res, next) => {
   try {
     const department = await Department.findOne({
-      "lines.stations._id": req.params.id,
+      _id: req.params.deptId,
       tenantId: req.tenantId,
     });
     if (!department) return res.status(404).json({ message: "Not found" });
-    for (const line of department.lines) {
-      const station = line.stations.id(req.params.id);
-      if (station) {
-        station.set(req.body);
-        await department.save();
-        return res.json(station);
-      }
-    }
-    res.status(404).json({ message: "Not found" });
- 
+    const line = department.lines.id(req.params.lineId);
+    if (!line) return res.status(404).json({ message: "Not found" });
+    const station = line.stations.id(req.params.stationId);
+    if (!station) return res.status(404).json({ message: "Not found" });
+    station.set(req.body);
+    await department.save();
+    res.json(station);
+
   } catch (err) {
     next(err);
   }
 };
 
- const deleteStation: AuthedRequestHandler<{ id: string }> = async (
-  req,
-  res,
-  next,
-) => {
+ const deleteStation: AuthedRequestHandler = async (req, res, next) => {
   try {
     const department = await Department.findOne({
-      "lines.stations._id": req.params.id,
+      _id: req.params.deptId,
       tenantId: req.tenantId,
     });
     if (!department) return res.status(404).json({ message: "Not found" });
-    for (const line of department.lines) {
-      const station = line.stations.id(req.params.id);
-      if (station) {
-        station.deleteOne();
-        await department.save();
-        return res.json({ message: "Deleted successfully" });
-      }
-    }
-    res.status(404).json({ message: "Not found" });
+    const line = department.lines.id(req.params.lineId);
+    if (!line) return res.status(404).json({ message: "Not found" });
+    const station = line.stations.id(req.params.stationId);
+    if (!station) return res.status(404).json({ message: "Not found" });
+    station.deleteOne();
+    await department.save();
+    res.json({ message: "Deleted successfully" });
   } catch (err) {
     next(err);
   }
@@ -398,10 +378,10 @@ router.get("/:id", getDepartment);
 router.post("/", departmentValidators, validate, createDepartment);
 router.put("/:id", departmentValidators, validate, updateDepartment);
 router.delete("/:id", deleteDepartment);
-router.post("/:deptId/lines", addLine);
+router.post("/:deptId/lines", createLine);
 router.put("/:deptId/lines/:lineId", updateLine);
 router.delete("/:deptId/lines/:lineId", deleteLine);
-router.post("/:deptId/lines/:lineId/stations", addStation);
+router.post("/:deptId/lines/:lineId/stations", createStation);
 router.put(
   "/:deptId/lines/:lineId/stations/:stationId",
   updateStation,

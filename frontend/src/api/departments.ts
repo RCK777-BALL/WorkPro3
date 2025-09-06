@@ -19,3 +19,15 @@ export async function createDepartment(payload: DepartmentPayload): Promise<Depa
   const { data } = await api.post<Department>('/departments', payload);
   return data;
 }
+
+export async function updateDepartment(
+  id: string,
+  payload: DepartmentPayload
+): Promise<Department> {
+  const { data } = await api.put<Department>(`/departments/${id}`, payload);
+  return data;
+}
+
+export async function deleteDepartment(id: string): Promise<void> {
+  await api.delete(`/departments/${id}`);
+}

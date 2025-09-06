@@ -22,8 +22,10 @@ export async function createDepartment(payload: DepartmentPayload): Promise<Depa
 
 export async function updateDepartment(
   id: string,
-  payload: DepartmentPayload,
+   payload: DepartmentPayload,
+ 
 ): Promise<Department> {
   const { data } = await api.put<Department>(`/departments/${id}`, payload);
   return data;
 }
+ 

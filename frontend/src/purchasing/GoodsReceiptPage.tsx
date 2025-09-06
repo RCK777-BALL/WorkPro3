@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { createGoodsReceipt } from '../utils/api';
+import { createGoodsReceipt } from '../api/purchasing';
 
 export default function GoodsReceiptPage() {
   const [po, setPo] = useState('');

@@ -1,8 +1,8 @@
 import { describe, it, beforeEach, expect, vi } from 'vitest';
 import { addToQueue, flushQueue } from '../utils/offlineQueue';
-import api from '../utils/api';
+import api from '../lib/api';
 
-vi.mock('../utils/api', () => ({
+vi.mock('../lib/api', () => ({
   default: vi.fn(),
 }));
 

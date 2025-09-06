@@ -16,7 +16,7 @@ import { useThemeStore } from '../store/themeStore';
 import { useSettingsStore } from '../store/settingsStore';
 import type { ThemeSettings } from '../store/settingsStore';
 import { useToast } from '../context/ToastContext';
-import api from '../utils/api';
+import api from '../lib/api';
 
 const Settings: React.FC = () => {
   const { theme, setTheme, updateTheme } = useThemeStore();

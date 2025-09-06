@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import api from '../utils/api';
+import api from '../lib/api';
 import type {
   StatusCountResponse,
   UpcomingMaintenanceResponse,

@@ -6,6 +6,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 import DepartmentRoutes from '../routes/DepartmentRoutes';
 import User, { type UserDocument } from '../models/User';
+import Asset from '../models/Asset';
 
 const app = express();
 app.use(express.json());
@@ -177,5 +178,93 @@ describe('Department Routes', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(500);
     process.env.JWT_SECRET = original;
+  });
+
+  it('manages lines and stations within a department', async () => {
+    const deptRes = await request(app)
+      .post('/api/departments')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Dept1' })
+      .expect(201);
+
+    const deptId = deptRes.body._id;
+
+    const lineRes = await request(app)
+      .post(`/api/departments/${deptId}/lines`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'LineA' })
+      .expect(200);
+
+    expect(lineRes.body.lines.length).toBe(1);
+    const lineId = lineRes.body.lines[0]._id;
+
+    const stationRes = await request(app)
+      .post(`/api/departments/${deptId}/lines/${lineId}/stations`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'StationA' })
+      .expect(200);
+
+    expect(stationRes.body.lines[0].stations.length).toBe(1);
+    const stationId = stationRes.body.lines[0].stations[0]._id;
+
+    const stationUpdate = await request(app)
+      .put(
+        `/api/departments/${deptId}/lines/${lineId}/stations/${stationId}`,
+      )
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'StationA2' })
+      .expect(200);
+    expect(stationUpdate.body.lines[0].stations[0].name).toBe('StationA2');
+
+    const lineUpdate = await request(app)
+      .put(`/api/departments/${deptId}/lines/${lineId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'LineB' })
+      .expect(200);
+    expect(lineUpdate.body.lines[0].name).toBe('LineB');
+
+    const stationDelete = await request(app)
+      .delete(
+        `/api/departments/${deptId}/lines/${lineId}/stations/${stationId}`,
+      )
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect(stationDelete.body.lines[0].stations.length).toBe(0);
+
+    const lineDelete = await request(app)
+      .delete(`/api/departments/${deptId}/lines/${lineId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect(lineDelete.body.lines.length).toBe(0);
+  });
+
+  it('lists departments with asset counts', async () => {
+    const dept = await request(app)
+      .post('/api/departments')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Dept1' })
+      .then((r) => r.body);
+
+    await Asset.create({
+      name: 'A1',
+      type: 'Electrical',
+      location: 'Loc',
+      departmentId: dept._id,
+      tenantId: user.tenantId,
+    });
+    await Asset.create({
+      name: 'A2',
+      type: 'Electrical',
+      location: 'Loc',
+      departmentId: dept._id,
+      tenantId: user.tenantId,
+    });
+
+    const res = await request(app)
+      .get('/api/departments?assetCount=true')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(res.body[0].assetCount).toBe(2);
   });
 });

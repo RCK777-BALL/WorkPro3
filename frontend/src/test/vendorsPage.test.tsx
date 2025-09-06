@@ -6,11 +6,11 @@ vi.mock('../components/layout/Layout', () => ({
   default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
-vi.mock('../utils/api', () => ({
+vi.mock('../lib/api', () => ({
   default: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() },
 }));
 
-import api from '../utils/api';
+import api from '../lib/api';
 import VendorsPage from '../pages/VendorsPage';
 
 describe('VendorsPage', () => {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import api from '../../utils/api';
+import api from '../../lib/api';
 import type { DepartmentHierarchy } from '../../types';
 import { useDepartmentStore } from '../../store/departmentStore';
 

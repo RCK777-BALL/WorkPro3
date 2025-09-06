@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 interface Props {
@@ -10,6 +10,20 @@ interface Props {
 }
 
 export default function Drawer({ open, onClose, title, children, widthClass = 'max-w-md w-full' }: Props) {
+  const portalRef = useRef<HTMLDivElement | null>(
+    typeof document !== 'undefined' ? document.createElement('div') : null
+  );
+
+  // append portal container to body
+  useEffect(() => {
+    const el = portalRef.current;
+    if (!el) return;
+    document.body.appendChild(el);
+    return () => {
+      document.body.removeChild(el);
+    };
+  }, []);
+
   // lock body scroll when open
   useEffect(() => {
     if (!open) return;
@@ -29,9 +43,9 @@ export default function Drawer({ open, onClose, title, children, widthClass = 'm
     return () => document.removeEventListener('keydown', handler);
   }, [open, onClose]);
 
-  if (typeof document === 'undefined') return null;
+  if (!portalRef.current) return null;
 
-  return createPortal(
+  const drawer = (
     <div className={`fixed inset-0 z-[1000] ${open ? '' : 'pointer-events-none'}`} aria-hidden={!open}>
       <div
         className={`absolute inset-0 bg-black/40 transition-opacity ${open ? 'opacity-100' : 'opacity-0'}`}
@@ -50,7 +64,8 @@ export default function Drawer({ open, onClose, title, children, widthClass = 'm
         </header>
         <div className="p-4 overflow-auto h-[calc(100%-3.5rem)]">{children}</div>
       </aside>
-    </div>,
-    document.body
+    </div>
   );
+
+  return createPortal(drawer, portalRef.current);
 }

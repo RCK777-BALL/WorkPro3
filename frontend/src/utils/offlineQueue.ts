@@ -59,7 +59,7 @@ export const enqueueDepartmentRequest = (
 
 export const clearQueue = () => localStorage.removeItem(QUEUE_KEY);
 
-import api from './api';
+import api from '../lib/api';
 
 export const flushQueue = async (useBackoff = true) => {
   const queue = loadQueue();

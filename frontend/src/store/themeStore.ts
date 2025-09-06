@@ -1,9 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import api from '../utils/api';
+import api from '../lib/api';
 import { useAuthStore } from './authStore';
-
-import api from '../utils/api';
 
 interface ThemeState {
   theme: 'light' | 'dark' | 'system';

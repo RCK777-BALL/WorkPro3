@@ -45,12 +45,13 @@ export async function createDepartment(
 
 export async function updateDepartment(
   id: string,
-  payload: DepartmentPayload,
+   payload: DepartmentPayload,
+ 
 ): Promise<Department> {
   const { data } = await api.put<Department>(`/departments/${id}`, payload);
   return data;
 }
-
+ 
 export async function deleteDepartment(id: string): Promise<{ message: string }> {
   const { data } = await api.delete<{ message: string }>(`/departments/${id}`);
   return data;
@@ -141,3 +142,4 @@ export async function deleteStation(
   );
   return data;
 }
+ 

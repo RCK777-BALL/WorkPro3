@@ -7,33 +7,48 @@ import { AuthedRequest, AuthedRequestHandler } from '../types/http';
 
 type IdParams = { id: string };
 
-export const getAllNotifications: AuthedRequestHandler = async (req: { tenantId: any; }, res: { json: (arg0: (mongoose.Document<unknown, {}, NotificationDocument, {}, {}> & NotificationDocument & Required<{ _id: mongoose.Types.ObjectId; }> & { __v: number; })[]) => void; }, next: (arg0: any) => void) => {
+export const getAllNotifications: AuthedRequestHandler<unknown, NotificationDocument[]> = async (
+  req: AuthedRequest<unknown, NotificationDocument[]>,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const items = await Notification.find({ tenantId: req.tenantId });
     res.json(items);
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };
 
-export const getNotificationById: AuthedRequestHandler<IdParams> = async (
-  req: AuthedRequest<IdParams>,
+export const getNotificationById: AuthedRequestHandler<IdParams, NotificationDocument> = async (
+  req: AuthedRequest<IdParams, NotificationDocument>,
   res: Response,
   next: NextFunction,
 ) => {
   try {
     const item = await Notification.findOne({ _id: req.params.id, tenantId: req.tenantId });
-    if (!item) return res.status(404).json({ message: 'Not found' });
+    if (!item) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     res.json(item);
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };
 
-export const createNotification: AuthedRequestHandler = async (req: { body: any; tenantId: any; app: { get: (arg0: string) => any; }; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: any): void; new(): any; }; }; }, next: (arg0: any) => void) => {
+export const createNotification: AuthedRequestHandler<unknown, NotificationDocument, any> = async (
+  req: AuthedRequest<unknown, NotificationDocument, any>,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const newItem = new Notification({ ...req.body, tenantId: req.tenantId });
-    const saved = (await newItem.save()) as any;
+    const saved = (await newItem.save()) as NotificationDocument;
 
     const io = req.app.get('io');
     io?.emit('notification', saved);
@@ -62,33 +77,53 @@ export const createNotification: AuthedRequestHandler = async (req: { body: any;
     }
 
     res.status(201).json(saved);
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };
 
-export const markNotificationRead: AuthedRequestHandler = async (req: { params: { id: string | number | mongoose.mongo.BSON.ObjectId | Uint8Array<ArrayBufferLike> | mongoose.mongo.BSON.ObjectIdLike; }; tenantId: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): any; new(): any; }; }; json: (arg0: mongoose.Document<unknown, {}, NotificationDocument, {}, {}> & NotificationDocument & Required<{ _id: mongoose.Types.ObjectId; }> & { __v: number; }) => void; }, next: (arg0: any) => void) => {
- 
+export const markNotificationRead: AuthedRequestHandler<IdParams, NotificationDocument> = async (
+  req: AuthedRequest<IdParams, NotificationDocument>,
+  res: Response,
+  next: NextFunction,
+) => {
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-    return res.status(400).json({ message: 'Invalid ID' });
+    res.status(400).json({ message: 'Invalid ID' });
+    return;
   }
- 
+
   try {
     const updated = await Notification.findOneAndUpdate(
       { _id: req.params.id, tenantId: req.tenantId },
       { read: true },
-      { new: true }
+      { new: true },
     );
-    if (!updated) return res.status(404).json({ message: 'Not found' });
+    if (!updated) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     res.json(updated);
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };
 
-export const updateNotification: AuthedRequestHandler = async (req: { params: { id: string | number | mongoose.mongo.BSON.ObjectId | Uint8Array<ArrayBufferLike> | mongoose.mongo.BSON.ObjectIdLike; }; tenantId: any; body: mongoose.UpdateQuery<NotificationDocument>; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): any; new(): any; }; }; json: (arg0: mongoose.Document<unknown, {}, NotificationDocument, {}, {}> & NotificationDocument & Required<{ _id: mongoose.Types.ObjectId; }> & { __v: number; }) => void; }, next: (arg0: any) => void) => {
+export const updateNotification: AuthedRequestHandler<
+  IdParams,
+  NotificationDocument,
+  mongoose.UpdateQuery<NotificationDocument>
+> = async (
+  req: AuthedRequest<IdParams, NotificationDocument, mongoose.UpdateQuery<NotificationDocument>>,
+  res: Response,
+  next: NextFunction,
+) => {
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-    return res.status(400).json({ message: 'Invalid ID' });
+    res.status(400).json({ message: 'Invalid ID' });
+    return;
   }
   try {
     const updated = await Notification.findOneAndUpdate(
@@ -97,24 +132,40 @@ export const updateNotification: AuthedRequestHandler = async (req: { params: { 
       {
         new: true,
         runValidators: true,
-      }
+      },
     );
-    if (!updated) return res.status(404).json({ message: 'Not found' });
+    if (!updated) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     res.json(updated);
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };
 
-export const deleteNotification: AuthedRequestHandler = async (req: { params: { id: string | number | mongoose.mongo.BSON.ObjectId | Uint8Array<ArrayBufferLike> | mongoose.mongo.BSON.ObjectIdLike; }; tenantId: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): any; new(): any; }; }; json: (arg0: { message: string; }) => void; }, next: (arg0: any) => void) => {
+export const deleteNotification: AuthedRequestHandler<IdParams, { message: string }> = async (
+  req: AuthedRequest<IdParams, { message: string }>,
+  res: Response,
+  next: NextFunction,
+) => {
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-    return res.status(400).json({ message: 'Invalid ID' });
+    res.status(400).json({ message: 'Invalid ID' });
+    return;
   }
   try {
     const deleted = await Notification.findOneAndDelete({ _id: req.params.id, tenantId: req.tenantId });
-    if (!deleted) return res.status(404).json({ message: 'Not found' });
+    if (!deleted) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     res.json({ message: 'Deleted successfully' });
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };
+

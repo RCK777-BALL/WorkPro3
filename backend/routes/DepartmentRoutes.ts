@@ -1,24 +1,52 @@
 import { Router } from "express";
 import type { FilterQuery } from "mongoose";
 import Department, { type DepartmentDoc } from "../models/Department";
+import Asset from "../models/Asset";
 import { AuthedRequestHandler } from "../types/http";
 import { requireAuth } from "../middleware/authMiddleware";
 import { departmentValidators } from "../validators/departmentValidators";
 import { validate } from "../middleware/validationMiddleware";
 
 // GET /api/departments → list by tenantId (+optional siteId)
-const listDepartments: AuthedRequestHandler = async (req, res, next) => {
+const listDepartments: AuthedRequestHandler<
+  unknown,
+  any,
+  unknown,
+  { assetCount?: string }
+> = async (req, res, next) => {
   try {
     const filter: FilterQuery<DepartmentDoc> & { siteId?: unknown } = {
       tenantId: req.tenantId,
     };
     if (req.siteId) filter.siteId = req.siteId;
-    const items = await Department.find(filter).select({
-      name: 1,
-      lines: 1,
-      createdAt: 1,
+    const includeAssetCount = req.query.assetCount === "true";
+    const items = await Department.find(filter)
+      .select({ name: 1, lines: 1, createdAt: 1 })
+      .lean();
+
+    if (!includeAssetCount) return res.json(items);
+
+    const assetMatch: FilterQuery<{ tenantId: unknown; siteId?: unknown }> = {
+      tenantId: req.tenantId,
+    };
+    if (req.siteId) assetMatch.siteId = req.siteId;
+
+    const counts = await Asset.aggregate<{
+      _id: any;
+      count: number;
+    }>([
+      { $match: { ...assetMatch } },
+      { $group: { _id: "$departmentId", count: { $sum: 1 } } },
+    ]);
+    const map = new Map<string, number>();
+    counts.forEach((c) => {
+      if (c._id) map.set(c._id.toString(), c.count);
     });
-    return res.json(items);
+    const withCounts = items.map((d) => ({
+      ...d,
+      assetCount: map.get(d._id.toString()) || 0,
+    }));
+    return res.json(withCounts);
   } catch (err) {
     next(err);
   }
@@ -92,7 +120,7 @@ const deleteDepartment: AuthedRequestHandler<{ id: string }> = async (
   }
 };
 
-// LINE HANDLERS
+ // LINE HANDLERS
 const getAllLines: AuthedRequestHandler = async (req, res, next) => {
   try {
     const lines = await Department.aggregate([
@@ -206,18 +234,20 @@ const getLinesByDepartment: AuthedRequestHandler<{ departmentId: string }> = asy
     });
     if (!department) return res.status(404).json({ message: "Not found" });
     res.json(department.lines);
+ 
   } catch (err) {
     next(err);
   }
 };
 
-const getLineHierarchy: AuthedRequestHandler<{ id: string }> = async (
+ const getLineHierarchy: AuthedRequestHandler<{ id: string }> = async (
+ 
   req,
   res,
   next,
 ) => {
   try {
-    const department = await Department.findOne({
+     const department = await Department.findOne({
       "lines._id": req.params.id,
       tenantId: req.tenantId,
     });
@@ -240,18 +270,20 @@ const getAllStations: AuthedRequestHandler = async (req, res, next) => {
       ),
     );
     res.json(stations);
+ 
   } catch (err) {
     next(err);
   }
 };
 
-const getStationById: AuthedRequestHandler<{ id: string }> = async (
+ const getStationById: AuthedRequestHandler<{ id: string }> = async (
+ 
   req,
   res,
   next,
 ) => {
   try {
-    const department = await Department.findOne({
+     const department = await Department.findOne({
       "lines.stations._id": req.params.id,
       tenantId: req.tenantId,
     });
@@ -263,12 +295,13 @@ const getStationById: AuthedRequestHandler<{ id: string }> = async (
     });
     if (!station) return res.status(404).json({ message: "Not found" });
     res.json(station);
+ 
   } catch (err) {
     next(err);
   }
 };
 
-const createStation: AuthedRequestHandler = async (req, res, next) => {
+ const createStation: AuthedRequestHandler = async (req, res, next) => {
   try {
     const { lineId, name } = req.body;
     const department = await Department.findOne({
@@ -281,12 +314,13 @@ const createStation: AuthedRequestHandler = async (req, res, next) => {
     line.stations.push({ name, tenantId: req.tenantId } as any);
     await department.save();
     res.status(201).json(line.stations[line.stations.length - 1]);
+ 
   } catch (err) {
     next(err);
   }
 };
 
-const updateStation: AuthedRequestHandler<{ id: string }> = async (
+ const updateStation: AuthedRequestHandler<{ id: string }> = async (
   req,
   res,
   next,
@@ -306,12 +340,13 @@ const updateStation: AuthedRequestHandler<{ id: string }> = async (
       }
     }
     res.status(404).json({ message: "Not found" });
+ 
   } catch (err) {
     next(err);
   }
 };
 
-const deleteStation: AuthedRequestHandler<{ id: string }> = async (
+ const deleteStation: AuthedRequestHandler<{ id: string }> = async (
   req,
   res,
   next,
@@ -350,6 +385,7 @@ const getStationsByLine: AuthedRequestHandler<{ lineId: string }> = async (
     const line = department.lines.id(req.params.lineId);
     if (!line) return res.status(404).json({ message: "Not found" });
     res.json(line.stations);
+ 
   } catch (err) {
     next(err);
   }
@@ -362,6 +398,18 @@ router.get("/:id", getDepartment);
 router.post("/", departmentValidators, validate, createDepartment);
 router.put("/:id", departmentValidators, validate, updateDepartment);
 router.delete("/:id", deleteDepartment);
+router.post("/:deptId/lines", addLine);
+router.put("/:deptId/lines/:lineId", updateLine);
+router.delete("/:deptId/lines/:lineId", deleteLine);
+router.post("/:deptId/lines/:lineId/stations", addStation);
+router.put(
+  "/:deptId/lines/:lineId/stations/:stationId",
+  updateStation,
+);
+router.delete(
+  "/:deptId/lines/:lineId/stations/:stationId",
+  deleteStation,
+);
 
 export {
   listDepartments,

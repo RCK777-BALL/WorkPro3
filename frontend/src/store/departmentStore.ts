@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import type { Department, Line, Station } from '../types';
-import api from '../utils/api';
+import {
+  listDepartments as apiListDepartments,
+  listLines as apiListLines,
+  listStations as apiListStations,
+} from '../api/departments';
 
 interface DepartmentState {
   departments: Department[];
@@ -14,7 +18,7 @@ interface DepartmentState {
   removeDepartment: (id: string) => void;
   fetchDepartments: () => Promise<Department[]>;
   fetchLines: (departmentId: string) => Promise<Line[]>;
-  fetchStations: (lineId: string) => Promise<Station[]>;
+  fetchStations: (departmentId: string, lineId: string) => Promise<Station[]>;
   refreshCache: () => Promise<void>;
 }
 
@@ -44,9 +48,9 @@ export const useDepartmentStore = create<DepartmentState>((set, get) => ({
   fetchDepartments: async () => {
     const { departments } = get();
     if (departments.length > 0) return departments;
-    const res = await api.get('/departments');
-    const data = (res.data as any[]).map((d) => ({
-      id: d._id ?? d.id,
+    const res = await apiListDepartments();
+    const data = res.map((d) => ({
+      id: d._id,
       name: d.name,
     })) as Department[];
     set({ departments: data });
@@ -55,9 +59,9 @@ export const useDepartmentStore = create<DepartmentState>((set, get) => ({
   fetchLines: async (departmentId) => {
     const { linesByDepartment } = get();
     if (linesByDepartment[departmentId]) return linesByDepartment[departmentId];
-    const res = await api.get(`/lines/department/${departmentId}`);
-    const lines = (res.data as any[]).map((l) => ({
-      id: l._id ?? l.id,
+    const res = await apiListLines(departmentId);
+    const lines = res.map((l) => ({
+      id: l._id,
       name: l.name,
       department: departmentId,
     })) as Line[];
@@ -66,12 +70,12 @@ export const useDepartmentStore = create<DepartmentState>((set, get) => ({
     }));
     return lines;
   },
-  fetchStations: async (lineId) => {
+  fetchStations: async (departmentId, lineId) => {
     const { stationsByLine } = get();
     if (stationsByLine[lineId]) return stationsByLine[lineId];
-    const res = await api.get(`/stations/line/${lineId}`);
-    const stations = (res.data as any[]).map((s) => ({
-      id: s._id ?? s.id,
+    const res = await apiListStations(departmentId, lineId);
+    const stations = res.map((s) => ({
+      id: s._id,
       name: s.name,
       line: lineId,
     })) as Station[];
@@ -81,9 +85,9 @@ export const useDepartmentStore = create<DepartmentState>((set, get) => ({
     return stations;
   },
   refreshCache: async () => {
-    const res = await api.get('/departments');
-    const data = (res.data as any[]).map((d) => ({
-      id: d._id ?? d.id,
+    const res = await apiListDepartments();
+    const data = res.map((d) => ({
+      id: d._id,
       name: d.name,
     })) as Department[];
     set({ departments: data, linesByDepartment: {}, stationsByLine: {} });

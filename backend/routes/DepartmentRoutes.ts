@@ -398,10 +398,10 @@ router.get("/:id", getDepartment);
 router.post("/", departmentValidators, validate, createDepartment);
 router.put("/:id", departmentValidators, validate, updateDepartment);
 router.delete("/:id", deleteDepartment);
-router.post("/:deptId/lines", addLine);
+router.post("/:deptId/lines", createLine);
 router.put("/:deptId/lines/:lineId", updateLine);
 router.delete("/:deptId/lines/:lineId", deleteLine);
-router.post("/:deptId/lines/:lineId/stations", addStation);
+router.post("/:deptId/lines/:lineId/stations", createStation);
 router.put(
   "/:deptId/lines/:lineId/stations/:stationId",
   updateStation,

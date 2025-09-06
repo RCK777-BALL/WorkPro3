@@ -1,23 +1,42 @@
-import { Fragment, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Layout from '../components/layout/Layout';
 import Button from '../components/common/Button';
 import Drawer from '../components/ui/Drawer';
 import NameDrawerForm from '../components/common/NameDrawerForm';
- import { DepartmentForm, type DepartmentPayload } from '../components/departments/forms';
+import { DepartmentForm, type DepartmentPayload } from '../components/departments/forms';
 import {
   listDepartments,
   createDepartment,
   updateDepartment,
-  type Department,
+  deleteDepartment as apiDeleteDepartment,
 } from '../api/departments';
- 
+
+type StationItem = { id: string; name: string; assets: number };
+type LineItem = { id: string; name: string; stations: StationItem[] };
+type DeptItem = { _id: string; name: string; description?: string; lines: LineItem[] };
+
+type DrawerState =
+  | { kind: 'none' }
+  | { kind: 'create-dept' }
+  | { kind: 'edit-dept'; dep: DeptItem }
+  | { kind: 'create-line'; depId: string }
+  | { kind: 'edit-line'; depId: string; line: LineItem }
+  | { kind: 'create-station'; depId: string; lineId: string }
+  | {
+      kind: 'edit-station';
+      depId: string;
+      lineId: string;
+      station: StationItem;
+    };
 
 export default function Departments() {
   const [items, setItems] = useState<DeptItem[]>([]);
   const [loading, setLoading] = useState(false);
-   const [openForm, setOpenForm] = useState(false);
-  const [editing, setEditing] = useState<Department | null>(null);
- 
+  const [drawer, setDrawer] = useState<DrawerState>({ kind: 'none' });
+  const [expandedDeps, setExpandedDeps] = useState<Record<string, boolean>>({});
+  const [expandedLines, setExpandedLines] = useState<
+    Record<string, Record<string, boolean>>
+  >({});
 
   useEffect(() => {
     setLoading(true);
@@ -43,17 +62,11 @@ export default function Departments() {
     );
 
   const handleFormSubmit = (values: { name: string; assets?: number }) => {
-    if (!form) return;
-    switch (form.type) {
-      case 'editDepartment':
-        setItems((prev) =>
-          prev.map((d) => (d._id === form.depId ? { ...d, name: values.name } : d))
-        );
-        break;
-      case 'createLine':
+    switch (drawer.kind) {
+      case 'create-line':
         setItems((prev) =>
           prev.map((d) =>
-            d._id === form.depId
+            d._id === drawer.depId
               ? {
                   ...d,
                   lines: [
@@ -65,28 +78,28 @@ export default function Departments() {
           )
         );
         break;
-      case 'editLine':
+      case 'edit-line':
         setItems((prev) =>
           prev.map((d) =>
-            d._id === form.depId
+            d._id === drawer.depId
               ? {
                   ...d,
                   lines: d.lines.map((l) =>
-                    l.id === form.line.id ? { ...l, name: values.name } : l
+                    l.id === drawer.line.id ? { ...l, name: values.name } : l
                   ),
                 }
               : d
           )
         );
         break;
-      case 'createStation':
+      case 'create-station':
         setItems((prev) =>
           prev.map((d) =>
-            d._id === form.depId
+            d._id === drawer.depId
               ? {
                   ...d,
                   lines: d.lines.map((l) =>
-                    l.id === form.lineId
+                    l.id === drawer.lineId
                       ? {
                           ...l,
                           stations: [
@@ -105,19 +118,23 @@ export default function Departments() {
           )
         );
         break;
-      case 'editStation':
+      case 'edit-station':
         setItems((prev) =>
           prev.map((d) =>
-            d._id === form.depId
+            d._id === drawer.depId
               ? {
                   ...d,
                   lines: d.lines.map((l) =>
-                    l.id === form.lineId
+                    l.id === drawer.lineId
                       ? {
                           ...l,
                           stations: l.stations.map((s) =>
-                            s.id === form.station.id
-                              ? { ...s, name: values.name, assets: values.assets ?? s.assets }
+                            s.id === drawer.station.id
+                              ? {
+                                  ...s,
+                                  name: values.name,
+                                  assets: values.assets ?? s.assets,
+                                }
                               : s
                           ),
                         }
@@ -128,8 +145,10 @@ export default function Departments() {
           )
         );
         break;
+      default:
+        break;
     }
-    setForm(null);
+    setDrawer({ kind: 'none' });
   };
 
   const confirmDelete = (msg: string) => window.confirm(msg);
@@ -179,12 +198,7 @@ export default function Departments() {
       <div className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-semibold">Departments</h1>
-          <Button
-            onClick={() => {
-              setEditing(null);
-              setOpenForm(true);
-            }}
-          >
+          <Button onClick={() => setDrawer({ kind: 'create-dept' })}>
             Add Department
           </Button>
         </div>
@@ -192,17 +206,14 @@ export default function Departments() {
         {loading ? (
           <div>Loading...</div>
         ) : (
-           <ul className="divide-y divide-neutral-200">
+          <ul className="divide-y divide-neutral-200">
             {items.map((d) => (
               <li key={d._id} className="py-2 flex items-center justify-between">
                 {d.name}
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
-                    setEditing(d);
-                    setOpenForm(true);
-                  }}
+                  onClick={() => setDrawer({ kind: 'edit-dept', dep: d })}
                 >
                   Edit
                 </Button>
@@ -212,19 +223,20 @@ export default function Departments() {
         )}
 
         <Drawer
-          open={openForm}
-          onClose={() => setOpenForm(false)}
-          title={editing ? 'Edit Department' : 'Add Department'}
+          open={drawer.kind === 'create-dept' || drawer.kind === 'edit-dept'}
+          onClose={() => setDrawer({ kind: 'none' })}
+          title={drawer.kind === 'edit-dept' ? 'Edit Department' : 'Add Department'}
         >
           <DepartmentForm
-            initial={editing ? { name: editing.name, description: editing.description } : undefined}
-            onCancel={() => {
-              setOpenForm(false);
-              setEditing(null);
-            }}
+            initial={
+              drawer.kind === 'edit-dept'
+                ? { name: drawer.dep.name, description: drawer.dep.description }
+                : undefined
+            }
+            onCancel={() => setDrawer({ kind: 'none' })}
             onSubmit={async (payload: DepartmentPayload) => {
-              if (editing) {
-                const updated = await updateDepartment(editing._id, payload);
+              if (drawer.kind === 'edit-dept') {
+                const updated = await updateDepartment(drawer.dep._id, payload);
                 setItems((prev) =>
                   prev.map((d) => (d._id === updated._id ? updated : d))
                 );
@@ -232,45 +244,43 @@ export default function Departments() {
                 const dep = await createDepartment(payload);
                 setItems((prev) => [dep, ...prev]);
               }
-              setOpenForm(false);
-              setEditing(null);
- 
+              setDrawer({ kind: 'none' });
             }}
           />
         </Drawer>
 
         <NameDrawerForm
-          open={form !== null}
+          open={
+            drawer.kind !== 'none' &&
+            drawer.kind !== 'create-dept' &&
+            drawer.kind !== 'edit-dept'
+          }
           title={
-            form?.type === 'editDepartment'
-              ? 'Edit Department'
-              : form?.type === 'createLine'
+            drawer.kind === 'create-line'
               ? 'Add Line'
-              : form?.type === 'editLine'
+              : drawer.kind === 'edit-line'
               ? 'Edit Line'
-              : form?.type === 'createStation'
+              : drawer.kind === 'create-station'
               ? 'Add Station'
-              : form?.type === 'editStation'
+              : drawer.kind === 'edit-station'
               ? 'Edit Station'
               : ''
           }
           initialName={
-            form?.type === 'editDepartment'
-              ? form.name
-              : form?.type === 'editLine'
-              ? form.line.name
-              : form?.type === 'editStation'
-              ? form.station.name
+            drawer.kind === 'edit-line'
+              ? drawer.line.name
+              : drawer.kind === 'edit-station'
+              ? drawer.station.name
               : ''
           }
           initialAssets={
-            form?.type === 'editStation' ? form.station.assets : 0
+            drawer.kind === 'edit-station' ? drawer.station.assets : 0
           }
           showAssetInput={
-            form?.type === 'createStation' || form?.type === 'editStation'
+            drawer.kind === 'create-station' || drawer.kind === 'edit-station'
           }
           onSubmit={handleFormSubmit}
-          onCancel={() => setForm(null)}
+          onCancel={() => setDrawer({ kind: 'none' })}
         />
       </div>
     </Layout>

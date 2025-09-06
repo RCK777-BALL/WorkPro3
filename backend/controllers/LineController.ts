@@ -58,7 +58,11 @@ export const createLine = async (
       tenantId: (req as any).tenantId,
     });
     if (!department) return res.status(404).json({ message: 'Department not found' });
-    department.lines.push({ name, tenantId: (req as any).tenantId, stations: [] });
+    department.lines.push({
+      name,
+      tenantId: (req as any).tenantId,
+      stations: [] as any,
+    } as any);
     await department.save();
     res.status(201).json(department.lines[department.lines.length - 1]);
   } catch (err) {

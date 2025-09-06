@@ -112,6 +112,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     timesheets: { path: '/timesheets', label: t('nav.timesheets'), icon: <Clock size={20} /> },
 
     messages: { path: '/messages', label: t('nav.messages'), icon: <MessageSquare size={20} /> },
+    // Departments
     departments: { path: '/departments', label: t('nav.departments'), icon: <Building2 size={20} />, requireAdmin: true },
     analytics: { path: '/analytics', label: t('nav.analytics'), icon: <PieChart size={20} />, requireAdmin: true },
     teams: { path: '/teams', label: t('nav.teams'), icon: <Users size={20} />, requireAdmin: true },

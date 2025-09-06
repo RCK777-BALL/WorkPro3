@@ -9,6 +9,7 @@ export const resources = {
       },
       nav: {
         dashboard: 'Dashboard',
+        departments: 'Departments',
       },
       auth: {
         register: 'Register',
@@ -80,6 +81,7 @@ export const resources = {
       },
       nav: {
         dashboard: 'Tablero',
+        departments: 'Departamentos',
       },
       auth: {
         register: 'Registrarse',

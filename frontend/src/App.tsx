@@ -21,7 +21,9 @@ const Settings = lazy(() => import('./pages/Settings'));
 const Teams = lazy(() => import('./pages/Teams'));
 const TeamMemberProfile = lazy(() => import('./pages/TeamMemberProfile'));
 const WorkOrders = lazy(() => import('./pages/WorkOrders'));
-const Departments = lazy(() => import('./pages/Departments'));
+ // Departments
+const DepartmentsPage = lazy(() => import('./pages/DepartmentsPage'));
+ 
 const NewDepartmentPage = lazy(() => import('./pages/NewDepartmentPage'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 
@@ -55,7 +57,9 @@ function App() {
         <Route path="/pm-tasks" element={<ProtectedRoute><PMTasksPage /></ProtectedRoute>} />
         <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
         <Route path="/vendors" element={<ProtectedRoute><VendorsPage /></ProtectedRoute>} />
-        <Route path="/departments" element={<ProtectedRoute><Departments /></ProtectedRoute>} />
+         {/* Departments routes */}
+        <Route path="/departments" element={<ProtectedRoute><DepartmentsPage /></ProtectedRoute>} />
+ 
         <Route path="/departments/new" element={<ProtectedRoute><NewDepartmentPage /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/teams" element={<ProtectedRoute><Teams /></ProtectedRoute>} />

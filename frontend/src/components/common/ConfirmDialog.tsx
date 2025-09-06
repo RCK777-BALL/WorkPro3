@@ -1,70 +1,48 @@
-import React, { useEffect, useRef } from "react";
+import React from 'react';
+import Modal from '../modals/Modal';
+import Button from './Button';
+
 
 interface ConfirmDialogProps {
   open: boolean;
   title?: string;
   message: string;
-  confirmText: string;
-  onClose: () => void;
+   confirmText?: string;
+  cancelText?: string;
+  loading?: boolean;
+  error?: string | null;
   onConfirm: () => void;
+  onCancel: () => void;
+ 
 }
 
 const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   open,
-  title,
+   title = 'Confirm',
   message,
-  confirmText,
-  onClose,
+  confirmText = 'Confirm',
+  cancelText = 'Cancel',
+  loading = false,
+  error,
   onConfirm,
+  onCancel,
 }) => {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (open && !dialog.open) {
-      dialog.showModal();
-    } else if (!open && dialog.open) {
-      dialog.close();
-    }
-  }, [open]);
-
-  const handleConfirm = () => {
-    onConfirm();
-    dialogRef.current?.close();
-  };
-
-  const handleCancel = () => {
-    dialogRef.current?.close();
-  };
-
   return (
-    <dialog
-      ref={dialogRef}
-      className="rounded-md p-6 bg-white text-slate-900 shadow-lg dark:bg-slate-800 dark:text-slate-100"
-      onClose={onClose}
-    >
-      {title && <h2 className="text-lg font-semibold mb-4">{title}</h2>}
-      <p className="mb-6 text-slate-700 dark:text-slate-300">{message}</p>
-      <div className="flex justify-end gap-3">
-        <button
-          type="button"
-          onClick={handleCancel}
-          className="px-4 py-2 rounded-md bg-slate-200 text-slate-800 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          onClick={handleConfirm}
-          className="px-4 py-2 rounded-md bg-rose-600 text-white hover:bg-rose-700"
-        >
+    <Modal isOpen={open} onClose={onCancel} title={title}>
+      {error && <p className="text-error-600 mb-2">{error}</p>}
+      <p>{message}</p>
+      <div className="flex justify-end space-x-2 mt-6">
+        <Button variant="outline" onClick={onCancel} disabled={loading}>
+          {cancelText}
+        </Button>
+        <Button variant="danger" onClick={onConfirm} loading={loading}>
           {confirmText}
-        </button>
+        </Button>
       </div>
-    </dialog>
+    </Modal>
+ 
   );
 };
 
 export default ConfirmDialog;
-
+ 

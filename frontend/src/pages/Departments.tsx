@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from 'react';
 import Layout from '../components/layout/Layout';
 import Button from '../components/common/Button';
 import Drawer from '../components/ui/Drawer';
+import NameDrawerForm from '../components/common/NameDrawerForm';
  import { DepartmentForm, type DepartmentPayload } from '../components/departments/forms';
 import {
   listDepartments,

@@ -7,7 +7,8 @@ import { X, Upload, Download, Camera } from "lucide-react";
 import Button from "../common/Button";
 import AutoCompleteInput from "../common/AutoCompleteInput";
 import type { WorkOrder, Department } from "../../types";
-import api, { searchAssets } from "../../utils/api";
+import api from "../../lib/api";
+import { searchAssets } from "../../api/search";
 import { useDepartmentStore } from "../../store/departmentStore";
    
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import api from '../utils/api';
+import api from '../lib/api';
 
 const ForgotPasswordPage: React.FC = () => {
   const { t } = useTranslation();

@@ -1,6 +1,6 @@
 import React from 'react';
 import Button from '../../components/common/Button';
-import api from '../../utils/api';
+import api from '../../lib/api';
 
 interface Props {
   orderId: string;

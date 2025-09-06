@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/layout/Layout';
 import Button from '../components/common/Button';
-import api from '../utils/api';
+import api from '../lib/api';
 import { useToast } from '../context/ToastContext';
 
 interface Tenant {

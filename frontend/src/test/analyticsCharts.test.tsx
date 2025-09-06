@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
-import api from '../utils/api';
+import api from '../lib/api';
 
-vi.mock('../utils/api');
+vi.mock('../lib/api');
 vi.mock('../components/layout/Layout', () => ({ default: ({ children }: any) => <div>{children}</div> }));
 vi.mock('../components/kpi/KpiWidget', () => ({ default: () => <div /> }));
 vi.mock('../components/kpi/KpiExportButtons', () => ({ default: () => <div /> }));

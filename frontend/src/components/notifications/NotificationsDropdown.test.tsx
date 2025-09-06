@@ -7,7 +7,7 @@ import { describe, it, expect, vi } from 'vitest';
 
 import NotificationsDropdown from './NotificationsDropdown';
 import type { NotificationType } from '../../types';
-import { markNotificationRead } from '../../utils/api';
+import { markNotificationRead } from '../../api/notifications';
 
 let socketClient: any;
  
@@ -18,7 +18,7 @@ vi.mock('../../utils/notificationsSocket', () => ({
  
 }));
 
-vi.mock('../../utils/api', () => ({
+vi.mock('../../api/notifications', () => ({
   markNotificationRead: vi.fn().mockResolvedValue(undefined),
 }));
 

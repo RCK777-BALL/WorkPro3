@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { createPurchaseOrder } from '../utils/api';
+import { createPurchaseOrder } from '../api/purchasing';
 
 export default function PurchaseOrderPage() {
   const [vendor, setVendor] = useState('');

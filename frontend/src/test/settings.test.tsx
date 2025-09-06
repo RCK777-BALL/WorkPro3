@@ -19,11 +19,11 @@ vi.mock('../context/ToastContext', () => ({
   useToast: () => ({ addToast: mockAddToast }),
 }));
 
-vi.mock('../utils/api', () => ({
+vi.mock('../lib/api', () => ({
   default: { post: vi.fn() },
 }));
 
-import api from '../utils/api';
+import api from '../lib/api';
 import Settings from '../pages/Settings';
 
 describe('Settings page', () => {

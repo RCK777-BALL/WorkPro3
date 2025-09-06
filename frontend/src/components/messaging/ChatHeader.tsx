@@ -5,7 +5,7 @@ import Card from '../common/Card';
 import Avatar from '../common/Avatar';
  
 import type { Channel } from '../../types';
-import { togglePin, toggleMute } from '../../utils/api';
+import { togglePin, toggleMute } from '../../api/channels';
 import { useToast } from '../../context/ToastContext';
  
 

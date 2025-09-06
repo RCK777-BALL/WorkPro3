@@ -7,7 +7,7 @@ import InventoryModal from '../components/inventory/InventoryModal';
 import InventoryMetrics from '../components/inventory/InventoryMetrics';
 import InventoryScanModal from '../components/inventory/InventoryScanModal';
 import { exportToExcel, exportToPDF } from '../utils/export';
-import api from '../utils/api';
+import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import type { Part } from '../types';
 

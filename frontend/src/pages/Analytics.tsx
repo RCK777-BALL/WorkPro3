@@ -4,7 +4,7 @@ import { Download, Calendar, Filter } from 'lucide-react';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
-import api from '../utils/api';
+import api from '../lib/api';
 import { useDashboardStore } from '../store/dashboardStore';
  // import { useAuth } from '../context/AuthContext';
  

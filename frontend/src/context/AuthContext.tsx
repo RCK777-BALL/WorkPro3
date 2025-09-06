@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { useAuthStore } from '../store/authStore';
 import type { AuthUser } from '../types';
-import api from '../utils/api';
+import api from '../lib/api';
 
 interface AuthContextType {
   user: AuthUser | null;

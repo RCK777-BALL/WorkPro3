@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import Notification from '../models/Notification';
+import Notification from '../models/Notifications';
 import User from '../models/User';
 import nodemailer from 'nodemailer';
 

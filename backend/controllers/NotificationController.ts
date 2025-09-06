@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import Notification, { NotificationDocument } from '../models/Notification';
+import Notification, { NotificationDocument } from '../models/Notifications';
 import User from '../models/User';
 import nodemailer from 'nodemailer';
 import { Response, NextFunction } from 'express';

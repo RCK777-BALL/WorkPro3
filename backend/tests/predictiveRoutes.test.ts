@@ -9,7 +9,7 @@ import predictiveRoutes from '../routes/PredictiveRoutes';
 import User from '../models/User';
 import Asset from '../models/Asset';
 import SensorReading from '../models/SensorReading';
-import Notification from '../models/Notification';
+import Notification from '../models/Notifications';
 
 const app = express();
 app.use(express.json());

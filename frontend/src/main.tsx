@@ -29,7 +29,9 @@ mediaQuery.addEventListener('change', (e) => {
 initializeTheme();
 
 // register SW (no-op if PWA plugin is absent)
-registerSWIfAvailable({ immediate: true });
+if (import.meta.env.PROD) {
+  registerSWIfAvailable({ immediate: true });
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

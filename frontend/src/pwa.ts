@@ -1,9 +1,19 @@
-// Safe registrar: no-ops if vite-plugin-pwa isn't installed.
+// Optional PWA helper: works when vite-plugin-pwa is present, no-ops otherwise.
+// IMPORTANT: never use a string literal 'virtual:pwa-register' in the import —
+// Vite's import-analysis will attempt to resolve it. Use a variable instead.
 export async function registerSWIfAvailable(opts?: { immediate?: boolean }) {
+  const id = 'virtual:pwa-register'; // variable to avoid static analysis
   try {
-    const mod = await import(/* @vite-ignore */ 'virtual:pwa-register');
-    return (mod as any).registerSW?.(opts);
+    // @ts-ignore - virtual module only exists when the plugin is installed
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @vite-ignore
+    const mod: any = await import(id as any);
+    if (mod?.registerSW) return mod.registerSW(opts);
   } catch {
-    // plugin not present => ignore
+    // Plugin not installed — fall back to a safe no-op.
+    if ('serviceWorker' in navigator) {
+      // If you ship a plain SW later at /sw.js, this will register it.
+      try { await navigator.serviceWorker.getRegistration(); } catch {}
+    }
   }
 }

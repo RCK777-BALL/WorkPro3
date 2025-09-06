@@ -3,7 +3,7 @@ import Layout from '../components/layout/Layout';
 import Button from '../components/common/Button';
 import DataTable from '../components/common/DataTable';
 import VendorModal from '../components/vendors/VendorModal';
-import api from '../utils/api';
+import api from '../lib/api';
 import type { Vendor } from '../types';
 import { useToast } from '../context/ToastContext';
 

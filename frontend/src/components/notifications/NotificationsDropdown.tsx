@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { markNotificationRead } from '../../utils/api';
+import { markNotificationRead } from '../../api/notifications';
 import type { NotificationType } from '../../types';
 import Card from '../common/Card'; 
 import {

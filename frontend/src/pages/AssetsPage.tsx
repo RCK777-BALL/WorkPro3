@@ -4,7 +4,7 @@ import AssetTable from '../components/assets/AssetTable';
 import AssetModal from '../components/assets/AssetModal';
 import WorkOrderModal from '../components/work-orders/WorkOrderModal';
 import Button from '../components/common/Button';
-import api from '../utils/api';
+import api from '../lib/api';
 import { enqueueAssetRequest } from '../utils/offlineQueue';
 import { useAssetStore } from '../store/assetStore';
 import type { Asset } from '../types';

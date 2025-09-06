@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import Button from '../components/common/Button';
-import api from '../utils/api';
+import api from '../lib/api';
 import type { NotificationType } from '../types';
 
 type Notification = NotificationType & { assetId?: string };

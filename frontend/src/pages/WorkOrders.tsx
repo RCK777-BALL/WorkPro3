@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/layout/Layout';
-import api from '../utils/api';
+import api from '../lib/api';
 import { addToQueue } from '../utils/offlineQueue';
 import DataTable from '../components/common/DataTable';
 import Badge from '../components/common/Badge';

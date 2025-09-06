@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
+import api from '../lib/api';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;

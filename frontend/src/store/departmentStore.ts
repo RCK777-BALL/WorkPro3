@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Department, Line, Station } from '../types';
-import api from '../utils/api';
+import api from '../lib/api';
 
 interface DepartmentState {
   departments: Department[];

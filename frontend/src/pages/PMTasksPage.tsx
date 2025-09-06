@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Layout from '../components/layout/Layout';
 import Button from '../components/common/Button';
 import PmTaskForm from '../components/maintenance/PmTaskForm';
-import api from '../utils/api';
+import api from '../lib/api';
 import type { PMTask } from '../types';
 
 const PMTasksPage: React.FC = () => {

@@ -6,9 +6,9 @@ import {
   enqueueAssetRequest,
   enqueueDepartmentRequest,
 } from '../utils/offlineQueue';
-import api from '../utils/api';
+import api from '../lib/api';
 
-vi.mock('../utils/api', () => ({
+vi.mock('../lib/api', () => ({
   default: vi.fn(),
 }));
 

@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { useDropzone } from "react-dropzone";
 import { X, Upload, Download } from "lucide-react";
 import Button from "../common/Button";
-import api from "../../utils/api";
+import api from "../../lib/api";
 import { useToast } from "../../context/ToastContext";
 import { useDepartmentStore } from "../../store/departmentStore";
 import { useAuthStore } from "../../store/authStore";

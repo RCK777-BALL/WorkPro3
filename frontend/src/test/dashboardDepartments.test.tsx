@@ -32,13 +32,16 @@ export const getMock = vi.fn((url: string) => {
   return Promise.resolve({ data: { laborUtilization: 0 } });
 });
 
-vi.mock('../utils/api', () => ({
+vi.mock('../api/summary', () => ({
   fetchSummary: vi.fn().mockResolvedValue({}),
   fetchAssetSummary: vi.fn().mockResolvedValue([]),
   fetchWorkOrderSummary: vi.fn().mockResolvedValue([]),
   fetchUpcomingMaintenance: vi.fn().mockResolvedValue([]),
   fetchCriticalAlerts: vi.fn().mockResolvedValue([]),
   fetchLowStock: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock('../lib/api', () => ({
   default: { get: getMock },
 }));
 

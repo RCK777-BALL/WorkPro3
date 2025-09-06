@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { scanQRCode } from '../utils/qr';
-import api from '../utils/api';
+import api from '../lib/api';
 
-vi.mock('../utils/api', () => ({
+vi.mock('../lib/api', () => ({
   default: vi.fn(),
 }));
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getVendorPurchaseOrder, updateVendorPurchaseOrder } from '../utils/api';
+import { getVendorPurchaseOrder, updateVendorPurchaseOrder } from '../api/vendorPurchaseOrders';
 
 interface PurchaseOrder {
   id: string;

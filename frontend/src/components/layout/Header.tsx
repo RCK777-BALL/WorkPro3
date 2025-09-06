@@ -12,7 +12,7 @@ import { useAuthStore, isAdmin as selectIsAdmin, isManager as selectIsManager } 
 import { useDataStore } from '../../store/dataStore';
 import { useNavigate } from 'react-router-dom';
 
-import { markNotificationRead } from '../../utils/api';
+import { markNotificationRead } from '../../api/notifications';
 import { useSummary } from '../../hooks/useSummaryData';
 import { useTranslation } from 'react-i18next';
  

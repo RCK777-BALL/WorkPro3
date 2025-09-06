@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import api from '../utils/api';
+import api from '../lib/api';
 
 type CacheEntry<T> = { promise?: Promise<T>; data?: T; ts?: number };
 const cache: Record<string, CacheEntry<unknown>> = {};

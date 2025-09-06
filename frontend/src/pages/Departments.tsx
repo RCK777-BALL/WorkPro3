@@ -280,7 +280,7 @@ export default function Departments() {
             drawer.kind === 'create-station' || drawer.kind === 'edit-station'
           }
           onSubmit={handleFormSubmit}
-          onCancel={() => setDrawer({ kind: 'none' })}
+          onClose={() => setDrawer({ kind: 'none' })}
         />
       </div>
     </Layout>

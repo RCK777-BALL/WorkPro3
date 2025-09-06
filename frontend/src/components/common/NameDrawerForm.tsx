@@ -7,9 +7,11 @@ interface Props {
   title: string;
   label?: string;
   initialName?: string;
+  initialAssets?: number;
+  showAssetInput?: boolean;
   confirmText?: string;
   onClose: () => void;
-  onSubmit: (name: string) => Promise<void> | void;
+  onSubmit: (values: { name: string; assets?: number }) => Promise<void> | void;
 }
 
 export default function NameDrawerForm({
@@ -17,33 +19,40 @@ export default function NameDrawerForm({
   title,
   label = 'Name',
   initialName = '',
+  initialAssets = 0,
+  showAssetInput = false,
   confirmText = 'Save',
   onClose,
   onSubmit,
 }: Props) {
   const [name, setName] = useState(initialName);
+  const [assets, setAssets] = useState(initialAssets);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
   useEffect(() => {
     if (open) {
       setName(initialName);
+      if (showAssetInput) setAssets(initialAssets);
       setErr('');
       setBusy(false);
     }
-  }, [open, initialName]);
+  }, [open, initialName, initialAssets, showAssetInput]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = name.trim();
-    if (!trimmed) {
+    const trimmedName = name.trim();
+    if (!trimmedName) {
       setErr('Name is required');
       return;
     }
     setBusy(true);
     setErr('');
     try {
-      await onSubmit(trimmed);
+      await onSubmit({
+        name: trimmedName,
+        assets: showAssetInput ? assets : undefined,
+      });
       onClose();
     } catch (error: any) {
       setErr(error?.message || 'Something went wrong');
@@ -66,6 +75,18 @@ export default function NameDrawerForm({
           />
           {err && <p className="text-error-600 text-sm mt-1">{err}</p>}
         </div>
+        {showAssetInput && (
+          <div>
+            <label className="block text-sm font-medium mb-1">Assets</label>
+            <input
+              type="number"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+              value={assets}
+              onChange={(e) => setAssets(Number(e.target.value))}
+              disabled={busy}
+            />
+          </div>
+        )}
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="outline" onClick={onClose} disabled={busy}>
             Cancel

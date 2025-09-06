@@ -23,8 +23,7 @@ export default function Departments() {
   const [editing, setEditing] = useState<Dept | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Dept | null>(null);
-  const [confirmError, setConfirmError] = useState<string | null>(null);
-  const [confirmLoading, setConfirmLoading] = useState(false);
+  // Confirm dialog no longer displays inline errors or loading state
 
   const load = async () => {
     setLoading(true);
@@ -65,25 +64,24 @@ export default function Departments() {
 
   const openDelete = (dep: Dept) => {
     setPendingDelete(dep);
-    setConfirmError(null);
     setConfirmOpen(true);
   };
 
   const handleDelete = async () => {
     if (!pendingDelete) return;
-    setConfirmLoading(true);
-    setConfirmError(null);
     try {
       await api.delete(`/departments/${pendingDelete.id}`);
       setItems((prev) => prev.filter((d) => d.id !== pendingDelete.id));
       addToast('Department deleted', 'success');
-      setConfirmOpen(false);
-      setPendingDelete(null);
     } catch (err: any) {
       console.error(err);
-      setConfirmError(err.response?.data?.message || 'Failed to delete department');
+      addToast(
+        err.response?.data?.message || 'Failed to delete department',
+        'error'
+      );
     } finally {
-      setConfirmLoading(false);
+      setConfirmOpen(false);
+      setPendingDelete(null);
     }
   };
 
@@ -149,9 +147,8 @@ export default function Departments() {
           title="Delete Department"
           message={`Are you sure you want to delete "${pendingDelete?.name}"?`}
           onConfirm={handleDelete}
-          onCancel={() => setConfirmOpen(false)}
-          loading={confirmLoading}
-          error={confirmError}
+          onClose={() => setConfirmOpen(false)}
+          confirmText="Delete"
         />
         <Modal
           isOpen={modalOpen}

@@ -1,55 +1,54 @@
-import express from 'express';
-import type { Request, Response, NextFunction } from 'express';
-import cors from 'cors';
-import morgan from 'morgan';
-import cookieParser from 'cookie-parser';
-import dotenv from 'dotenv';
-import { createServer } from 'http';
-import { Server } from 'socket.io';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
+import express from "express";
+import type { Request, Response } from "express";
+import cors from "cors";
+import morgan from "morgan";
+import cookieParser from "cookie-parser";
+import dotenv from "dotenv";
+import { createServer } from "http";
+import { Server } from "socket.io";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 
-import { initKafka, sendKafkaEvent } from './utils/kafka';
-import { initMQTTFromConfig } from './iot/mqttClient';
+import { initKafka, sendKafkaEvent } from "./utils/kafka";
+import { initMQTTFromConfig } from "./iot/mqttClient";
 
-import authRoutes from './routes/authRoutes';
-import workOrdersRoutes from './routes/WorkOrderRoutes';
-import assetsRoutes from './routes/AssetRoutes';
-import pmTasksRoutes from './routes/PMTaskRoutes';
-import summaryRoutes from './routes/summary';
+import authRoutes from "./routes/authRoutes";
+import workOrdersRoutes from "./routes/WorkOrderRoutes";
+import assetsRoutes from "./routes/AssetRoutes";
+import pmTasksRoutes from "./routes/PMTaskRoutes";
+import summaryRoutes from "./routes/summary";
 
-import reportsRoutes from './routes/ReportsRoutes';
-import LineRoutes from './routes/LineRoutes';
-import StationRoutes from './routes/StationRoutes';
-import DepartmentRoutes from './routes/DepartmentRoutes';
-import inventoryRoutes from './routes/InventoryRoutes';
-import analyticsRoutes from './routes/AnalyticsRoutes';
+import reportsRoutes from "./routes/ReportsRoutes";
+import LineRoutes from "./routes/LineRoutes";
+import StationRoutes from "./routes/StationRoutes";
+import departmentRoutes from "./routes/DepartmentRoutes";
+import inventoryRoutes from "./routes/InventoryRoutes";
+import analyticsRoutes from "./routes/AnalyticsRoutes";
 
-import teamRoutes from './routes/TeamRoutes';
-import notificationsRoutes from './routes/notifications';
-import TenantRoutes from './routes/TenantRoutes';
-import webhooksRoutes from './routes/webhooksRoutes';
-import ThemeRoutes from './routes/ThemeRoutes';
-import chatRoutes from './routes/ChatRoutes';
-import requestPortalRoutes from './routes/requestPortal';
-import vendorPortalRoutes from './routes/vendorPortal';
+import teamRoutes from "./routes/TeamRoutes";
+import notificationsRoutes from "./routes/notifications";
+import TenantRoutes from "./routes/TenantRoutes";
+import webhooksRoutes from "./routes/webhooksRoutes";
+import ThemeRoutes from "./routes/ThemeRoutes";
+import chatRoutes from "./routes/ChatRoutes";
+import requestPortalRoutes from "./routes/requestPortal";
+import vendorPortalRoutes from "./routes/vendorPortal";
 
 // Keep BOTH of these:
-import calendarRoutes from './routes/CalendarRoutes';
-import conditionRuleRoutes from './routes/ConditionRuleRoutes';
+import calendarRoutes from "./routes/CalendarRoutes";
+import conditionRuleRoutes from "./routes/ConditionRuleRoutes";
 
-import { startPMScheduler } from './utils/pmScheduler';
-import { setupSwagger } from './utils/swagger';
-import mongoose from 'mongoose';
-import errorHandler from './middleware/errorHandler';
-import { validateEnv, type EnvVars } from './config/validateEnv';
-import { initChatSocket } from './socket/chatSocket';
+import { startPMScheduler } from "./utils/pmScheduler";
+import { setupSwagger } from "./utils/swagger";
+import mongoose from "mongoose";
+import errorHandler from "./middleware/errorHandler";
+import { validateEnv, type EnvVars } from "./config/validateEnv";
+import { initChatSocket } from "./socket/chatSocket";
 import type {
   WorkOrderUpdatePayload,
   InventoryUpdatePayload,
   NotificationPayload,
-} from './types/Payloads';
-import jwt from 'jsonwebtoken';
+} from "./types/Payloads";
 
 dotenv.config();
 
@@ -69,14 +68,16 @@ const MONGO_URI = env.MONGO_URI;
 const RATE_LIMIT_WINDOW_MS = parseInt(env.RATE_LIMIT_WINDOW_MS, 10);
 const RATE_LIMIT_MAX = parseInt(env.RATE_LIMIT_MAX, 10);
 
-const allowedOrigins = env.CORS_ORIGIN.split(',').map((origin) => origin.trim());
+const allowedOrigins = env.CORS_ORIGIN.split(",").map((origin) =>
+  origin.trim(),
+);
 
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error("Not allowed by CORS"));
     }
   },
   credentials: true,
@@ -84,19 +85,19 @@ const corsOptions: cors.CorsOptions = {
 
 app.use(helmet());
 app.use(cors(corsOptions));
-app.use(morgan('dev'));
-app.use(express.json({ limit: '1mb' }));
+app.use(morgan("dev"));
+app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 setupSwagger(app);
 
-const dev = env.NODE_ENV !== 'production';
+const dev = env.NODE_ENV !== "production";
 
 const generalLimiter = rateLimit({
   windowMs: RATE_LIMIT_WINDOW_MS,
   max: dev ? 600 : RATE_LIMIT_MAX,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => dev || req.ip === '::1' || req.ip === '127.0.0.1',
+  skip: (req) => dev || req.ip === "::1" || req.ip === "127.0.0.1",
 });
 
 const burstFriendly = rateLimit({
@@ -112,113 +113,86 @@ export const io = new Server(httpServer, {
 
 initChatSocket(io);
 
-io.on('connection', (socket) => {
-  console.log('connected', socket.id);
-  socket.on('ping', () => socket.emit('pong'));
+io.on("connection", (socket) => {
+  console.log("connected", socket.id);
+  socket.on("ping", () => socket.emit("pong"));
 });
 
-app.get('/', (_req: Request, res: Response) => {
-  res.send('PLTCMMS backend is running');
+app.get("/", (_req: Request, res: Response) => {
+  res.send("PLTCMMS backend is running");
 });
 
 // --- Routes (order matters for the limiter) ---
-app.use('/api/auth', authRoutes);
-app.use('/api/notifications', burstFriendly, notificationsRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/notifications", burstFriendly, notificationsRoutes);
 // Apply limiter to the rest of /api
-app.use('/api', generalLimiter);
+app.use("/api", generalLimiter);
 
-const JWT_SECRET = env.JWT_SECRET;
-
-const departmentAuth = (req: Request, res: Response, next: NextFunction) => {
-  const header = req.headers.authorization;
-  if (!header?.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
-  if (!JWT_SECRET) {
-    return res
-      .status(500)
-      .json({ message: 'JWT secret not configured' });
-  }
-  try {
-    const token = header.split(' ')[1];
-    const { id, role, tenantId } = jwt.verify(token, JWT_SECRET) as {
-      id: string;
-      role: string;
-      tenantId: string;
-    };
-    (req as any).user = { id, role, tenantId };
-    (req as any).tenantId = tenantId;
-    next();
-  } catch {
-    return res.status(401).json({ message: 'Invalid token' });
-  }
-};
-
-app.use('/api/departments', departmentAuth, DepartmentRoutes);
-app.use('/api/workorders', workOrdersRoutes);
-app.use('/api/assets', assetsRoutes);
-app.use('/api/condition-rules', conditionRuleRoutes);
-app.use('/api/tenants', TenantRoutes);
-app.use('/api/pm-tasks', pmTasksRoutes);
-app.use('/api/reports', reportsRoutes);
-app.use('/api/lines', LineRoutes);
-app.use('/api/stations', StationRoutes);
-app.use('/api/inventory', inventoryRoutes);
-app.use('/api/v1/analytics', analyticsRoutes);
-app.use('/api/team', teamRoutes);
-app.use('/api/theme', ThemeRoutes);
-app.use('/api/request-portal', requestPortalRoutes);
+app.use("/api/departments", departmentRoutes);
+app.use("/api/workorders", workOrdersRoutes);
+app.use("/api/assets", assetsRoutes);
+app.use("/api/condition-rules", conditionRuleRoutes);
+app.use("/api/tenants", TenantRoutes);
+app.use("/api/pm-tasks", pmTasksRoutes);
+app.use("/api/reports", reportsRoutes);
+app.use("/api/lines", LineRoutes);
+app.use("/api/stations", StationRoutes);
+app.use("/api/inventory", inventoryRoutes);
+app.use("/api/v1/analytics", analyticsRoutes);
+app.use("/api/team", teamRoutes);
+app.use("/api/theme", ThemeRoutes);
+app.use("/api/request-portal", requestPortalRoutes);
 
 // Support both paths for the vendor portal
-app.use('/api/vendor-portal', vendorPortalRoutes);
-app.use('/api/vendor', vendorPortalRoutes);
+app.use("/api/vendor-portal", vendorPortalRoutes);
+app.use("/api/vendor", vendorPortalRoutes);
 
-app.use('/api/chat', chatRoutes);
-app.use('/api/hooks', webhooksRoutes);
-app.use('/api/webhooks', webhooksRoutes);
-app.use('/api/calendar', calendarRoutes);
+app.use("/api/chat", chatRoutes);
+app.use("/api/hooks", webhooksRoutes);
+app.use("/api/webhooks", webhooksRoutes);
+app.use("/api/calendar", calendarRoutes);
 
-app.use('/api/summary', summaryRoutes);
+app.use("/api/summary", summaryRoutes);
 
 // 404 + error handler
 app.use((req, res) => {
-  res.status(404).json({ message: 'Not Found' });
+  res.status(404).json({ message: "Not Found" });
 });
 
 app.use(errorHandler);
 
 // --- Mongo + server start ---
-if (env.NODE_ENV !== 'test') {
+if (env.NODE_ENV !== "test") {
   mongoose
     .connect(MONGO_URI)
     .then(() => {
-      console.log('MongoDB connected');
+      console.log("MongoDB connected");
       httpServer.listen(PORT, () =>
         console.log(`Server listening on http://localhost:${PORT}`),
       );
-      initKafka(io).catch((err) => console.error('Kafka init error:', err));
+      initKafka(io).catch((err) => console.error("Kafka init error:", err));
       initMQTTFromConfig();
-      startPMScheduler('default', {
+      startPMScheduler("default", {
         cronExpr: env.PM_SCHEDULER_CRON,
         taskModulePath: env.PM_SCHEDULER_TASK,
       });
     })
     .catch((err) => {
-      console.error('MongoDB connection error:', err);
+      console.error("MongoDB connection error:", err);
     });
 }
 
 // --- Emit helpers ---
 export const emitWorkOrderUpdate = (workOrder: WorkOrderUpdatePayload) => {
-  void sendKafkaEvent('workOrderUpdates', workOrder);
+  void sendKafkaEvent("workOrderUpdates", workOrder);
 };
 
 export const emitInventoryUpdate = (item: InventoryUpdatePayload) => {
-  void sendKafkaEvent('inventoryUpdates', item);
+  void sendKafkaEvent("inventoryUpdates", item);
 };
 
 export const emitNotification = (notification: NotificationPayload) => {
-  io.emit('notification', notification);
+  io.emit("notification", notification);
 };
 
 export default app;

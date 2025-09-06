@@ -6,7 +6,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 
 import notificationRoutes from '../routes/notifications';
-import Notification from '../models/Notification';
+import Notification from '../models/Notifications';
 import User from '../models/User';
 
 const app = express();

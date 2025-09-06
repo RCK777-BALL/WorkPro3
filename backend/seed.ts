@@ -16,7 +16,7 @@ import Department from './models/Department';
 import Asset from './models/Asset';
 import PMTask from './models/PMTask';
 import WorkOrder from './models/WorkOrder';
-import Notification from './models/Notification';
+import Notification from './models/Notifications';
 import Tenant from './models/Tenant';
 
 // Tenant id used for all seeded records

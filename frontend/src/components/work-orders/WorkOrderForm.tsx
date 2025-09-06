@@ -80,14 +80,14 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
   }, [departmentId, fetchLines]);
 
   useEffect(() => {
-    if (!lineId) {
+    if (!departmentId || !lineId) {
       setStationId('');
       return;
     }
-    fetchStations(lineId).catch((err) => {
+    fetchStations(departmentId, lineId).catch((err) => {
       console.error('Failed to load stations', err);
     });
-  }, [lineId, fetchStations]);
+  }, [departmentId, lineId, fetchStations]);
 
   const { addToast } = useToast();
 

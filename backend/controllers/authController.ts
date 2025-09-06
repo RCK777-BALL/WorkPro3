@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import speakeasy from "speakeasy";
+import * as speakeasy from "speakeasy";
 import logger from "../utils/logger";
 import User from "../models/User";
 

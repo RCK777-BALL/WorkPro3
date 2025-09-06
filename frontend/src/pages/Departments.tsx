@@ -13,7 +13,34 @@ import {
 
 type StationItem = { id: string; name: string; assets: number };
 type LineItem = { id: string; name: string; stations: StationItem[] };
-type DeptItem = { _id: string; name: string; description?: string; lines: LineItem[] };
+type DeptItem = { id: string; name: string; description?: string; lines: LineItem[] };
+
+const toStationItem = (s: { _id?: string; id?: string; name: string; assets?: number }): StationItem => ({
+  id: s._id ?? s.id ?? '',
+  name: s.name,
+  assets: s.assets ?? 0,
+});
+
+const toLineItem = (l: { _id?: string; id?: string; name: string; stations?: any[] }): LineItem => ({
+  id: l._id ?? l.id ?? '',
+  name: l.name,
+  stations: (l.stations ?? []).map(toStationItem),
+});
+
+const toDeptItem = (
+  d: {
+    _id?: string;
+    id?: string;
+    name: string;
+    description?: string;
+    lines?: any[];
+  },
+): DeptItem => ({
+  id: d._id ?? d.id ?? '',
+  name: d.name,
+  description: d.description,
+  lines: (d.lines ?? []).map(toLineItem),
+});
 
 type DrawerState =
   | { kind: 'none' }
@@ -41,7 +68,7 @@ export default function Departments() {
   useEffect(() => {
     setLoading(true);
     listDepartments()
-      .then((deps) => deps.map((d) => ({ ...d, lines: [] })))
+      .then((deps) => deps.map(toDeptItem))
       .then(setItems)
       .finally(() => setLoading(false));
   }, []);
@@ -66,7 +93,7 @@ export default function Departments() {
       case 'create-line':
         setItems((prev) =>
           prev.map((d) =>
-            d._id === drawer.depId
+            d.id === drawer.depId
               ? {
                   ...d,
                   lines: [
@@ -81,7 +108,7 @@ export default function Departments() {
       case 'edit-line':
         setItems((prev) =>
           prev.map((d) =>
-            d._id === drawer.depId
+            d.id === drawer.depId
               ? {
                   ...d,
                   lines: d.lines.map((l) =>
@@ -95,7 +122,7 @@ export default function Departments() {
       case 'create-station':
         setItems((prev) =>
           prev.map((d) =>
-            d._id === drawer.depId
+            d.id === drawer.depId
               ? {
                   ...d,
                   lines: d.lines.map((l) =>
@@ -121,7 +148,7 @@ export default function Departments() {
       case 'edit-station':
         setItems((prev) =>
           prev.map((d) =>
-            d._id === drawer.depId
+            d.id === drawer.depId
               ? {
                   ...d,
                   lines: d.lines.map((l) =>
@@ -155,7 +182,7 @@ export default function Departments() {
 
   const removeDepartment = (id: string) => {
     if (!confirmDelete('Delete department?')) return;
-    setItems((prev) => prev.filter((d) => d._id !== id));
+    setItems((prev) => prev.filter((d) => d.id !== id));
     apiDeleteDepartment(id).catch(() => {
       // rollback could be added here
     });
@@ -165,7 +192,7 @@ export default function Departments() {
     if (!confirmDelete('Delete line?')) return;
     setItems((prev) =>
       prev.map((d) =>
-        d._id === depId
+        d.id === depId
           ? { ...d, lines: d.lines.filter((l) => l.id !== lineId) }
           : d
       )
@@ -176,7 +203,7 @@ export default function Departments() {
     if (!confirmDelete('Delete station?')) return;
     setItems((prev) =>
       prev.map((d) =>
-        d._id === depId
+        d.id === depId
           ? {
               ...d,
               lines: d.lines.map((l) =>
@@ -208,7 +235,7 @@ export default function Departments() {
         ) : (
           <ul className="divide-y divide-neutral-200">
             {items.map((d) => (
-              <li key={d._id} className="py-2 flex items-center justify-between">
+              <li key={d.id} className="py-2 flex items-center justify-between">
                 {d.name}
                 <Button
                   variant="ghost"
@@ -236,12 +263,14 @@ export default function Departments() {
             onCancel={() => setDrawer({ kind: 'none' })}
             onSubmit={async (payload: DepartmentPayload) => {
               if (drawer.kind === 'edit-dept') {
-                const updated = await updateDepartment(drawer.dep._id, payload);
+                const updated = await updateDepartment(drawer.dep.id, payload).then(
+                  toDeptItem,
+                );
                 setItems((prev) =>
-                  prev.map((d) => (d._id === updated._id ? updated : d))
+                  prev.map((d) => (d.id === updated.id ? updated : d))
                 );
               } else {
-                const dep = await createDepartment(payload);
+                const dep = await createDepartment(payload).then(toDeptItem);
                 setItems((prev) => [dep, ...prev]);
               }
               setDrawer({ kind: 'none' });

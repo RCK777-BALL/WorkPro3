@@ -8,6 +8,8 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "dist",
+    "types": ["node"],
+    "typeRoots": ["./node_modules/@types", "./types"],
     "noImplicitAny": true
   },
   "include": [

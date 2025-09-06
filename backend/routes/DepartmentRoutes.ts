@@ -120,171 +120,272 @@ const deleteDepartment: AuthedRequestHandler<{ id: string }> = async (
   }
 };
 
-// POST /api/departments/:deptId/lines
-const addLine: AuthedRequestHandler<{ deptId: string }> = async (req, res, next) => {
+ // LINE HANDLERS
+const getAllLines: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const filter: FilterQuery<DepartmentDoc> & { siteId?: unknown } = {
-      _id: req.params.deptId,
-      tenantId: req.tenantId,
-    };
-    if (req.siteId) filter.siteId = req.siteId;
-    const doc = await Department.findOneAndUpdate(
-      filter,
+    const lines = await Department.aggregate([
+      { $match: { tenantId: req.tenantId } },
+      { $unwind: "$lines" },
       {
-        $push: {
-          lines: { ...req.body, tenantId: req.tenantId },
+        $replaceRoot: {
+          newRoot: {
+            $mergeObjects: ["$lines", { departmentId: "$_id" }],
+          },
         },
       },
-      { new: true, runValidators: true },
-    );
-    if (!doc) return res.status(404).json({ message: "Not found" });
-    return res.json(doc);
+    ]).exec();
+    res.json(lines);
   } catch (err) {
     next(err);
   }
 };
 
-// PUT /api/departments/:deptId/lines/:lineId
-const updateLine: AuthedRequestHandler<{ deptId: string; lineId: string }> = async (
+const getLineById: AuthedRequestHandler<{ id: string }> = async (
   req,
   res,
   next,
 ) => {
   try {
-    const filter: FilterQuery<DepartmentDoc> & { siteId?: unknown } = {
-      _id: req.params.deptId,
+    const department = await Department.findOne({
+      "lines._id": req.params.id,
       tenantId: req.tenantId,
-      "lines._id": req.params.lineId,
-    };
-    if (req.siteId) filter.siteId = req.siteId;
-    const set: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(req.body)) {
-      set[`lines.$.${key}`] = value;
-    }
-    const doc = await Department.findOneAndUpdate(
-      filter,
-      { $set: set },
-      { new: true, runValidators: true },
-    );
-    if (!doc) return res.status(404).json({ message: "Not found" });
-    return res.json(doc);
+    });
+    if (!department) return res.status(404).json({ message: "Not found" });
+    const line = department.lines.id(req.params.id);
+    if (!line) return res.status(404).json({ message: "Not found" });
+    res.json(line);
   } catch (err) {
     next(err);
   }
 };
 
-// DELETE /api/departments/:deptId/lines/:lineId
-const deleteLine: AuthedRequestHandler<{ deptId: string; lineId: string }> = async (
+const createLine: AuthedRequestHandler = async (req, res, next) => {
+  try {
+    const { departmentId, name } = req.body;
+    const department = await Department.findOne({
+      _id: departmentId,
+      tenantId: req.tenantId,
+    });
+    if (!department)
+      return res.status(404).json({ message: "Department not found" });
+    department.lines.push({
+      name,
+      tenantId: req.tenantId,
+      stations: [] as any,
+    } as any);
+    await department.save();
+    res.status(201).json(department.lines[department.lines.length - 1]);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updateLine: AuthedRequestHandler<{ id: string }> = async (
   req,
   res,
   next,
 ) => {
   try {
-    const filter: FilterQuery<DepartmentDoc> & { siteId?: unknown } = {
-      _id: req.params.deptId,
+    const department = await Department.findOne({
+      "lines._id": req.params.id,
       tenantId: req.tenantId,
-      "lines._id": req.params.lineId,
-    };
-    if (req.siteId) filter.siteId = req.siteId;
-    const doc = await Department.findOneAndUpdate(
-      filter,
-      { $pull: { lines: { _id: req.params.lineId } } },
-      { new: true },
-    );
-    if (!doc) return res.status(404).json({ message: "Not found" });
-    return res.json(doc);
+    });
+    if (!department) return res.status(404).json({ message: "Not found" });
+    const line = department.lines.id(req.params.id);
+    if (!line) return res.status(404).json({ message: "Not found" });
+    line.set(req.body);
+    await department.save();
+    res.json(line);
   } catch (err) {
     next(err);
   }
 };
 
-// POST /api/departments/:deptId/lines/:lineId/stations
-const addStation: AuthedRequestHandler<{
-  deptId: string;
-  lineId: string;
-}> = async (req, res, next) => {
+const deleteLine: AuthedRequestHandler<{ id: string }> = async (
+  req,
+  res,
+  next,
+) => {
   try {
-    const filter: FilterQuery<DepartmentDoc> & { siteId?: unknown } = {
-      _id: req.params.deptId,
+    const department = await Department.findOne({
+      "lines._id": req.params.id,
       tenantId: req.tenantId,
-      "lines._id": req.params.lineId,
-    };
-    if (req.siteId) filter.siteId = req.siteId;
-    const doc = await Department.findOneAndUpdate(
-      filter,
-      { $push: { "lines.$.stations": req.body } },
-      { new: true, runValidators: true },
-    );
-    if (!doc) return res.status(404).json({ message: "Not found" });
-    return res.json(doc);
+    });
+    if (!department) return res.status(404).json({ message: "Not found" });
+    const line = department.lines.id(req.params.id);
+    if (!line) return res.status(404).json({ message: "Not found" });
+    line.deleteOne();
+    await department.save();
+    res.json({ message: "Deleted successfully" });
   } catch (err) {
     next(err);
   }
 };
 
-// PUT /api/departments/:deptId/lines/:lineId/stations/:stationId
-const updateStation: AuthedRequestHandler<{
-  deptId: string;
-  lineId: string;
-  stationId: string;
-}> = async (req, res, next) => {
+const getLinesByDepartment: AuthedRequestHandler<{ departmentId: string }> = async (
+  req,
+  res,
+  next,
+) => {
   try {
-    const filter: FilterQuery<DepartmentDoc> & { siteId?: unknown } = {
-      _id: req.params.deptId,
+    const department = await Department.findOne({
+      _id: req.params.departmentId,
       tenantId: req.tenantId,
-      "lines._id": req.params.lineId,
-      "lines.stations._id": req.params.stationId,
-    };
-    if (req.siteId) filter.siteId = req.siteId;
-    const set: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(req.body)) {
-      set[`lines.$[line].stations.$[station].${key}`] = value;
+    });
+    if (!department) return res.status(404).json({ message: "Not found" });
+    res.json(department.lines);
+ 
+  } catch (err) {
+    next(err);
+  }
+};
+
+ const getLineHierarchy: AuthedRequestHandler<{ id: string }> = async (
+ 
+  req,
+  res,
+  next,
+) => {
+  try {
+     const department = await Department.findOne({
+      "lines._id": req.params.id,
+      tenantId: req.tenantId,
+    });
+    if (!department) return res.status(404).json({ message: "Not found" });
+    const line = department.lines.id(req.params.id);
+    if (!line) return res.status(404).json({ message: "Not found" });
+    res.json(line);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// STATION HANDLERS
+const getAllStations: AuthedRequestHandler = async (req, res, next) => {
+  try {
+    const departments = await Department.find({ tenantId: req.tenantId });
+    const stations = departments.flatMap((dep) =>
+      dep.lines.flatMap((line) =>
+        line.stations.map((s) => ({ ...s.toObject(), lineId: line._id, departmentId: dep._id })),
+      ),
+    );
+    res.json(stations);
+ 
+  } catch (err) {
+    next(err);
+  }
+};
+
+ const getStationById: AuthedRequestHandler<{ id: string }> = async (
+ 
+  req,
+  res,
+  next,
+) => {
+  try {
+     const department = await Department.findOne({
+      "lines.stations._id": req.params.id,
+      tenantId: req.tenantId,
+    });
+    if (!department) return res.status(404).json({ message: "Not found" });
+    let station;
+    department.lines.forEach((line) => {
+      const s = line.stations.id(req.params.id);
+      if (s) station = s;
+    });
+    if (!station) return res.status(404).json({ message: "Not found" });
+    res.json(station);
+ 
+  } catch (err) {
+    next(err);
+  }
+};
+
+ const createStation: AuthedRequestHandler = async (req, res, next) => {
+  try {
+    const { lineId, name } = req.body;
+    const department = await Department.findOne({
+      "lines._id": lineId,
+      tenantId: req.tenantId,
+    });
+    if (!department) return res.status(404).json({ message: "Line not found" });
+    const line = department.lines.id(lineId);
+    if (!line) return res.status(404).json({ message: "Line not found" });
+    line.stations.push({ name, tenantId: req.tenantId } as any);
+    await department.save();
+    res.status(201).json(line.stations[line.stations.length - 1]);
+ 
+  } catch (err) {
+    next(err);
+  }
+};
+
+ const updateStation: AuthedRequestHandler<{ id: string }> = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const department = await Department.findOne({
+      "lines.stations._id": req.params.id,
+      tenantId: req.tenantId,
+    });
+    if (!department) return res.status(404).json({ message: "Not found" });
+    for (const line of department.lines) {
+      const station = line.stations.id(req.params.id);
+      if (station) {
+        station.set(req.body);
+        await department.save();
+        return res.json(station);
+      }
     }
-    const doc = await Department.findOneAndUpdate(
-      filter,
-      { $set: set },
-      {
-        new: true,
-        runValidators: true,
-        arrayFilters: [
-          { "line._id": req.params.lineId },
-          { "station._id": req.params.stationId },
-        ],
-      },
-    );
-    if (!doc) return res.status(404).json({ message: "Not found" });
-    return res.json(doc);
+    res.status(404).json({ message: "Not found" });
+ 
   } catch (err) {
     next(err);
   }
 };
 
-// DELETE /api/departments/:deptId/lines/:lineId/stations/:stationId
-const deleteStation: AuthedRequestHandler<{
-  deptId: string;
-  lineId: string;
-  stationId: string;
-}> = async (req, res, next) => {
+ const deleteStation: AuthedRequestHandler<{ id: string }> = async (
+  req,
+  res,
+  next,
+) => {
   try {
-    const filter: FilterQuery<DepartmentDoc> & { siteId?: unknown } = {
-      _id: req.params.deptId,
+    const department = await Department.findOne({
+      "lines.stations._id": req.params.id,
       tenantId: req.tenantId,
+    });
+    if (!department) return res.status(404).json({ message: "Not found" });
+    for (const line of department.lines) {
+      const station = line.stations.id(req.params.id);
+      if (station) {
+        station.deleteOne();
+        await department.save();
+        return res.json({ message: "Deleted successfully" });
+      }
+    }
+    res.status(404).json({ message: "Not found" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getStationsByLine: AuthedRequestHandler<{ lineId: string }> = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const department = await Department.findOne({
       "lines._id": req.params.lineId,
-      "lines.stations._id": req.params.stationId,
-    };
-    if (req.siteId) filter.siteId = req.siteId;
-    const doc = await Department.findOneAndUpdate(
-      filter,
-      {
-        $pull: { "lines.$[line].stations": { _id: req.params.stationId } },
-      },
-      {
-        new: true,
-        arrayFilters: [{ "line._id": req.params.lineId }],
-      },
-    );
-    if (!doc) return res.status(404).json({ message: "Not found" });
-    return res.json(doc);
+      tenantId: req.tenantId,
+    });
+    if (!department) return res.status(404).json({ message: "Not found" });
+    const line = department.lines.id(req.params.lineId);
+    if (!line) return res.status(404).json({ message: "Not found" });
+    res.json(line.stations);
+ 
   } catch (err) {
     next(err);
   }
@@ -309,5 +410,26 @@ router.delete(
   "/:deptId/lines/:lineId/stations/:stationId",
   deleteStation,
 );
+
+export {
+  listDepartments,
+  getDepartment,
+  createDepartment,
+  updateDepartment,
+  deleteDepartment,
+  getAllLines,
+  getLineById,
+  createLine,
+  updateLine,
+  deleteLine,
+  getLinesByDepartment,
+  getLineHierarchy,
+  getAllStations,
+  getStationById,
+  createStation,
+  updateStation,
+  deleteStation,
+  getStationsByLine,
+};
 
 export default router;

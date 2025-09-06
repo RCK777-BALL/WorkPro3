@@ -5,8 +5,8 @@ import {
   createStation,
   updateStation,
   deleteStation,
-  getStationsByLine
-} from '../controllers/StationController';
+  getStationsByLine,
+} from './DepartmentRoutes';
 import { requireAuth } from '../middleware/authMiddleware';
 
 const router = express.Router();

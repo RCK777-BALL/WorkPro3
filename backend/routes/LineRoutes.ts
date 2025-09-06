@@ -6,8 +6,8 @@ import {
   updateLine,
   deleteLine,
   getLinesByDepartment,
-  getLineHierarchy
-} from '../controllers/LineController';
+  getLineHierarchy,
+} from './DepartmentRoutes';
 import { requireAuth } from '../middleware/authMiddleware';
 
 const router = express.Router();

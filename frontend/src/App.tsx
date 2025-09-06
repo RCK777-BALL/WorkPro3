@@ -22,7 +22,7 @@ const Teams = lazy(() => import('./pages/Teams'));
 const TeamMemberProfile = lazy(() => import('./pages/TeamMemberProfile'));
 const WorkOrders = lazy(() => import('./pages/WorkOrders'));
  // Departments
-const DepartmentsPage = lazy(() => import('./pages/DepartmentsPage'));
+const Departments = lazy(() => import('./pages/Departments'));
  
 const NewDepartmentPage = lazy(() => import('./pages/NewDepartmentPage'));
 const Notifications = lazy(() => import('./pages/Notifications'));
@@ -58,7 +58,7 @@ function App() {
         <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
         <Route path="/vendors" element={<ProtectedRoute><VendorsPage /></ProtectedRoute>} />
          {/* Departments routes */}
-        <Route path="/departments" element={<ProtectedRoute><DepartmentsPage /></ProtectedRoute>} />
+        <Route path="/departments" element={<ProtectedRoute><Departments /></ProtectedRoute>} />
  
         <Route path="/departments/new" element={<ProtectedRoute><NewDepartmentPage /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />

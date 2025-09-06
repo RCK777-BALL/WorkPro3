@@ -52,7 +52,8 @@ export default function Departments() {
 
   // delete confirmation
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const pendingDelete = useRef<string[]>([]);
+   const pendingDelete = useRef<string[]>([]);
+ 
 
   const searchInput = useRef<HTMLInputElement>(null);
 
@@ -149,13 +150,14 @@ export default function Departments() {
     }
   };
 
-  const requestDelete = (ids: string[]) => {
+   const requestDelete = (ids: string[]) => {
     pendingDelete.current = ids;
+ 
     setConfirmOpen(true);
   };
 
   const handleDelete = async () => {
-    const ids = pendingDelete.current;
+     const ids = pendingDelete.current;
     setConfirmOpen(false);
 
     // optimistic update
@@ -178,6 +180,7 @@ export default function Departments() {
       addToast("Delete failed", "error");
       setItems(prev); // revert
       load();
+ 
     }
   };
 
@@ -328,7 +331,8 @@ export default function Departments() {
           title="Delete Departments"
           message="Are you sure you want to delete the selected department(s)?"
           onConfirm={handleDelete}
-          onCancel={() => setConfirmOpen(false)}
+           onCancel={() => setConfirmOpen(false)}
+ 
         />
 
         {/* slide-over form */}

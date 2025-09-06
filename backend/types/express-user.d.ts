@@ -1,13 +1,14 @@
 import 'express';
-import type { Role } from './http';
+import type { UserRole } from './http';
+import { Types } from 'mongoose';
 
 declare global {
   namespace Express {
     interface User {
       id?: string;
-      _id?: string;
+      _id?: Types.ObjectId | string;
       email?: string;
-      role?: Role;
+      role?: UserRole;
       tenantId?: string; // <-- added
       theme?: 'light' | 'dark' | 'system';
       colorScheme?: string;

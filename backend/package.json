@@ -63,6 +63,7 @@
     "@types/node": "^22.18.0",
     "@types/passport": "^1.0.12",
     "@types/pdfkit": "^0.17.0",
+    "@types/speakeasy": "^2.0.10",
     "@types/supertest": "^2.0.16",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",

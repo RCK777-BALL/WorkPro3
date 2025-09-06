@@ -2,21 +2,23 @@ import React from 'react';
 import Modal from '../modals/Modal';
 import Button from './Button';
 
+
 interface ConfirmDialogProps {
   open: boolean;
   title?: string;
   message: string;
-  confirmText?: string;
+   confirmText?: string;
   cancelText?: string;
   loading?: boolean;
   error?: string | null;
   onConfirm: () => void;
   onCancel: () => void;
+ 
 }
 
 const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   open,
-  title = 'Confirm',
+   title = 'Confirm',
   message,
   confirmText = 'Confirm',
   cancelText = 'Cancel',
@@ -38,7 +40,9 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         </Button>
       </div>
     </Modal>
+ 
   );
 };
 
 export default ConfirmDialog;
+ 

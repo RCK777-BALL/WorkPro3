@@ -4,6 +4,8 @@ import mongoose, { Schema, Document, Model, Types } from 'mongoose';
 export type NotificationType = 'info' | 'warning' | 'critical';
 
 export interface NotificationDocument extends Document {
+  user(user: any): unknown;
+  user: any;
   _id: Types.ObjectId;
   title: string;
   message: string;

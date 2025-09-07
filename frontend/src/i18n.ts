@@ -148,12 +148,18 @@ export const resources = {
   },
 } as const;
 
-i18n.use(initReactI18next).init({
-  resources,
-  lng: 'en',
-  fallbackLng: 'en',
-  interpolation: { escapeValue: false },
-});
+if (!i18n.isInitialized) {
+  i18n
+    .use(initReactI18next)
+    .init({
+      resources,
+      lng: 'en',
+      fallbackLng: 'en',
+      interpolation: { escapeValue: false },
+      react: { useSuspense: false },
+    })
+    .catch(console.error);
+}
 
 export default i18n;
 

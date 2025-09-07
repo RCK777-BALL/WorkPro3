@@ -8,7 +8,6 @@ import {
   listDepartments,
   createDepartment,
   updateDepartment,
-  deleteDepartment as apiDeleteDepartment,
 } from '../api/departments';
 
 type StationItem = { id: string; name: string; assets: number };
@@ -60,8 +59,8 @@ export default function Departments() {
   const [items, setItems] = useState<DeptItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [drawer, setDrawer] = useState<DrawerState>({ kind: 'none' });
-  const [expandedDeps, setExpandedDeps] = useState<Record<string, boolean>>({});
-  const [expandedLines, setExpandedLines] = useState<
+  const [] = useState<Record<string, boolean>>({});
+  const [] = useState<
     Record<string, Record<string, boolean>>
   >({});
 
@@ -73,20 +72,8 @@ export default function Departments() {
       .finally(() => setLoading(false));
   }, []);
 
-  const toggleDep = (id: string) =>
-    setExpandedDeps((s) => ({ ...s, [id]: !s[id] }));
 
-  const toggleLine = (depId: string, lineId: string) =>
-    setExpandedLines((s) => ({
-      ...s,
-      [depId]: { ...s[depId], [lineId]: !s[depId]?.[lineId] },
-    }));
 
-  const assetCount = (dep: DeptItem) =>
-    dep.lines.reduce(
-      (sum, l) => sum + l.stations.reduce((s, st) => s + st.assets, 0),
-      0
-    );
 
   const handleFormSubmit = (values: { name: string; assets?: number }) => {
     switch (drawer.kind) {
@@ -178,47 +165,9 @@ export default function Departments() {
     setDrawer({ kind: 'none' });
   };
 
-  const confirmDelete = (msg: string) => window.confirm(msg);
 
-  const removeDepartment = (id: string) => {
-    if (!confirmDelete('Delete department?')) return;
-    setItems((prev) => prev.filter((d) => d.id !== id));
-    apiDeleteDepartment(id).catch(() => {
-      // rollback could be added here
-    });
-  };
 
-  const removeLine = (depId: string, lineId: string) => {
-    if (!confirmDelete('Delete line?')) return;
-    setItems((prev) =>
-      prev.map((d) =>
-        d.id === depId
-          ? { ...d, lines: d.lines.filter((l) => l.id !== lineId) }
-          : d
-      )
-    );
-  };
 
-  const removeStation = (depId: string, lineId: string, stationId: string) => {
-    if (!confirmDelete('Delete station?')) return;
-    setItems((prev) =>
-      prev.map((d) =>
-        d.id === depId
-          ? {
-              ...d,
-              lines: d.lines.map((l) =>
-                l.id === lineId
-                  ? {
-                      ...l,
-                      stations: l.stations.filter((s) => s.id !== stationId),
-                    }
-                  : l
-              ),
-            }
-          : d
-      )
-    );
-  };
 
   return (
     <Layout title="Departments">

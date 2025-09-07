@@ -1,10 +1,7 @@
 # Environment files
 **/.env
 **/.env.*
-!Frontend/.env
-!Frontend/.env.local
 !Backend/.env.example
-!Frontend/.env.example
 
 # Dependencies
 **/node_modules/

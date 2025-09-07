@@ -19,7 +19,7 @@ services:
       - mongo
 
   frontend:
-    build: ./Frontend
+    build: ./frontend
     ports:
       - "5173:80"
     depends_on:

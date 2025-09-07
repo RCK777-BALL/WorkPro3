@@ -1,3 +1,6 @@
+/**
+ * Defines the allowed maintenance categories for upcoming maintenance tasks.
+ */
 export type MaintenanceType = 'preventive' | 'corrective' | 'inspection';
 
 export interface Asset {
@@ -337,11 +340,6 @@ export interface LowStockPart {
   quantity: number;
   reorderPoint: number;
 }
-
-/**
- * Defines the allowed maintenance categories for upcoming maintenance tasks.
- */
-export type MaintenanceType = 'preventive' | 'corrective' | 'inspection';
 
 /** Response shape for upcoming maintenance tasks */
 export interface UpcomingMaintenanceResponse {

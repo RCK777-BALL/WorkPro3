@@ -1,15 +1,21 @@
 import React from 'react';
 import Layout from '../components/layout/Layout';
-import DepartmentForm from '../components/departments/DepartmentForm';
+import { DepartmentForm, type DepartmentPayload } from '../components/departments/forms';
 import { useNavigate } from 'react-router-dom';
-import type { Department } from '../types';
+import { createDepartment } from '../api/departments';
 
 const NewDepartmentPage: React.FC = () => {
   const navigate = useNavigate();
   return (
     <Layout title="New Department">
       <div className="max-w-lg mx-auto p-6">
-        <DepartmentForm onSuccess={(_dep: Department) => navigate('/departments')} />
+        <DepartmentForm
+          onSubmit={async (dep: DepartmentPayload) => {
+            await createDepartment(dep);
+            navigate('/departments');
+          }}
+          onCancel={() => navigate('/departments')}
+        />
       </div>
     </Layout>
   );

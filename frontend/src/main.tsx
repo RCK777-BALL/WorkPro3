@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "./index.css";
 import "./i18n";
+import { useThemeStore } from "./store/themeStore";
 
 // Initialize theme on app load
 const initializeTheme = () => {

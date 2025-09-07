@@ -1,13 +1,9 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
-import { ErrorBoundary } from 'react-error-boundary';
-import App from './App.tsx';
-import ErrorFallback from './components/common/ErrorFallback.tsx';
-import { AuthProvider } from './context/AuthContext';
-import { ToastProvider } from './context/ToastContext';
-import { useThemeStore } from './store/themeStore';
-import './index.css';
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import App from "./App";
+import "./index.css";
+import "./i18n";
 
 // Initialize theme on app load
 const initializeTheme = () => {
@@ -34,19 +30,9 @@ initializeTheme();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <ToastProvider>
-        <AuthProvider>
-          <BrowserRouter
-            future={{
-              v7_startTransition: true,
-              v7_relativeSplatPath: true
-            }}
-          >
-            <App />
-          </BrowserRouter>
-        </AuthProvider>
-      </ToastProvider>
-    </ErrorBoundary>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </StrictMode>
 );
+

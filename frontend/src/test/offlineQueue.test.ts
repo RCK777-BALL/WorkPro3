@@ -6,9 +6,9 @@ import {
   enqueueAssetRequest,
   enqueueDepartmentRequest,
 } from '../utils/offlineQueue';
-import api from '../lib/api';
+import http from '../lib/http';
 
-vi.mock('../lib/api', () => ({
+vi.mock('../lib/http', () => ({
   default: vi.fn(),
 }));
 
@@ -69,7 +69,7 @@ describe('offline queue helpers', () => {
   });
 
   it('flushes the queue and clears storage', async () => {
-    const apiMock = api as unknown as ReturnType<typeof vi.fn>;
+    const apiMock = http as unknown as ReturnType<typeof vi.fn>;
     (apiMock as any).mockResolvedValue({});
     const queue = [
       { method: 'post' as const, url: '/a', data: { a: 1 } },
@@ -101,7 +101,7 @@ describe('offline queue helpers', () => {
   });
 
   it('continues flushing when a request fails', async () => {
-    const apiMock = api as unknown as ReturnType<typeof vi.fn>;
+    const apiMock = http as unknown as ReturnType<typeof vi.fn>;
     (apiMock as any).mockResolvedValueOnce({}).mockRejectedValueOnce(new Error('fail'));
     const queue = [
       { method: 'post' as const, url: '/a', data: { a: 1 } },
@@ -121,7 +121,7 @@ describe('offline queue helpers', () => {
   });
 
   it('skips requests whose nextAttempt is in the future', async () => {
-    const apiMock = api as unknown as ReturnType<typeof vi.fn>;
+    const apiMock = http as unknown as ReturnType<typeof vi.fn>;
     (apiMock as any).mockResolvedValue({});
     const future = Date.now() + 100000;
     const queue = [
@@ -137,7 +137,7 @@ describe('offline queue helpers', () => {
   });
 
   it('drops requests that conflict on the server', async () => {
-    const apiMock = api as unknown as ReturnType<typeof vi.fn>;
+    const apiMock = http as unknown as ReturnType<typeof vi.fn>;
     (apiMock as any).mockRejectedValue({ response: { status: 409 } });
     const queue = [
       { method: 'post' as const, url: '/conflict', data: { id: 1 } },
@@ -151,7 +151,7 @@ describe('offline queue helpers', () => {
   });
 
   it('processes 1k queued records within 5s', async () => {
-    const apiMock = api as unknown as ReturnType<typeof vi.fn>;
+    const apiMock = http as unknown as ReturnType<typeof vi.fn>;
     (apiMock as any).mockResolvedValue({});
     const queue = Array.from({ length: 1000 }, (_, i) => ({
       method: 'post' as const,
@@ -167,7 +167,7 @@ describe('offline queue helpers', () => {
   });
 
   it('handles queued screenshot uploads', async () => {
-    const apiMock = api as unknown as ReturnType<typeof vi.fn>;
+    const apiMock = http as unknown as ReturnType<typeof vi.fn>;
     (apiMock as any).mockResolvedValue({});
     const req = { method: 'post' as const, url: '/uploads/screenshot', data: { img: 'dataurl' } };
     localStorageMock.store['offline-queue'] = JSON.stringify([req]);
@@ -179,7 +179,7 @@ describe('offline queue helpers', () => {
   });
 
   it('handles queued signature uploads', async () => {
-    const apiMock = api as unknown as ReturnType<typeof vi.fn>;
+    const apiMock = http as unknown as ReturnType<typeof vi.fn>;
     (apiMock as any).mockResolvedValue({});
     const req = { method: 'post' as const, url: '/uploads/signature', data: { sig: 'dataurl' } };
     localStorageMock.store['offline-queue'] = JSON.stringify([req]);

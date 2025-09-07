@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import api from '../lib/api';
+import http from '../lib/http';
 
 type CacheEntry<T> = { promise?: Promise<T>; data?: T; ts?: number };
 const cache: Record<string, CacheEntry<unknown>> = {};
@@ -25,7 +25,7 @@ export function useSummary<T = unknown>(
     const controller = new AbortController();
     abortRef.current = controller;
 
-    const p = api
+    const p = http
       .get<T>(path, { signal: controller.signal })
       .then((res) => {
         if (!mountedRef.current) return c.data as T | undefined;

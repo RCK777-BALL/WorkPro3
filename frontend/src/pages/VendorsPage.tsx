@@ -3,7 +3,7 @@ import Layout from '../components/layout/Layout';
 import Button from '../components/common/Button';
 import DataTable from '../components/common/DataTable';
 import VendorModal from '../components/vendors/VendorModal';
-import api from '../lib/api';
+import http from '../lib/http';
 import type { Vendor } from '../types';
 import { useToast } from '../context/ToastContext';
 
@@ -17,7 +17,7 @@ const VendorsPage = () => {
   const fetchVendors = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/vendors');
+      const res = await http.get('/vendors');
       setVendors(res.data as Vendor[]);
     } catch (err) {
       console.error('Failed to load vendors', err);
@@ -34,10 +34,10 @@ const VendorsPage = () => {
   const handleSave = async (data: { name: string; contact: string }) => {
     try {
       if (editing) {
-        const res = await api.put(`/vendors/${editing.id}`, data);
+        const res = await http.put(`/vendors/${editing.id}`, data);
         setVendors((prev) => prev.map((v) => (v.id === editing.id ? res.data : v)));
       } else {
-        const res = await api.post('/vendors', data);
+        const res = await http.post('/vendors', data);
         setVendors((prev) => [...prev, res.data]);
       }
       setModalOpen(false);
@@ -49,7 +49,7 @@ const VendorsPage = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      await api.delete(`/vendors/${id}`);
+      await http.delete(`/vendors/${id}`);
       setVendors((prev) => prev.filter((v) => v.id !== id));
     } catch (err) {
       console.error('Failed to delete vendor', err);

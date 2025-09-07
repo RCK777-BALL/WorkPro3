@@ -4,7 +4,7 @@ import { Download, Calendar, Filter } from 'lucide-react';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
-import api from '../lib/api';
+import http from '../lib/http';
 import { useDashboardStore } from '../store/dashboardStore';
  // import { useAuth } from '../context/AuthContext';
  
@@ -55,13 +55,13 @@ const Analytics: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/reports/analytics', { params: { role } });
+      const res = await http.get('/reports/analytics', { params: { role } });
       setData(res.data);
-      const kpiRes = await api.get('/v1/analytics/kpis');
+      const kpiRes = await http.get('/v1/analytics/kpis');
       setKpis(kpiRes.data);
-      const costRes = await api.get('/reports/costs');
+      const costRes = await http.get('/reports/costs');
       setCosts(costRes.data);
-      const downtimeRes = await api.get('/reports/downtime');
+      const downtimeRes = await http.get('/reports/downtime');
       setDowntime(downtimeRes.data);
       setError(null);
     } catch (err) {

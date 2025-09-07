@@ -19,29 +19,29 @@ vi.mock('../context/ToastContext', () => ({
   useToast: () => ({ addToast: mockAddToast }),
 }));
 
-vi.mock('../lib/api', () => ({
+vi.mock('../lib/http', () => ({
   default: { post: vi.fn() },
 }));
 
-import api from '../lib/api';
+import http from '../lib/http';
 import Settings from '../pages/Settings';
 
 describe('Settings page', () => {
   beforeEach(() => {
-    (api.post as any).mockReset();
+    (http.post as any).mockReset();
     mockAddToast.mockReset();
   });
 
   it('saves settings successfully', async () => {
-    (api.post as any).mockResolvedValueOnce({ data: {} });
+    (http.post as any).mockResolvedValueOnce({ data: {} });
     render(<Settings />);
     await userEvent.click(screen.getByRole('button', { name: /save changes/i }));
-    expect(api.post).toHaveBeenCalledWith('/settings', expect.any(Object));
+    expect(http.post).toHaveBeenCalledWith('/settings', expect.any(Object));
     expect(mockAddToast).toHaveBeenCalledWith('Settings saved', 'success');
   });
 
   it('handles unauthorized errors', async () => {
-    (api.post as any).mockRejectedValueOnce({ response: { status: 401 } });
+    (http.post as any).mockRejectedValueOnce({ response: { status: 401 } });
     render(<Settings />);
     await userEvent.click(screen.getByRole('button', { name: /save changes/i }));
     expect(mockAddToast).toHaveBeenCalledWith('Unauthorized', 'error');

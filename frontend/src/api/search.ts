@@ -1,5 +1,5 @@
-import api from '../lib/api';
+import http from '../lib/http';
 
 export const searchAssets = (q: string) =>
-  api.get('/assets/search', { params: { q } }).then((res) => res.data);
+  http.get('/assets/search', { params: { q } }).then((res) => res.data);
 

@@ -1,4 +1,4 @@
-// Frontend/postcss.config.js (ESM)
+// postcss.config.js (ESM for Tailwind v4)
 import tailwindcss from '@tailwindcss/postcss'
 import autoprefixer from 'autoprefixer'
 

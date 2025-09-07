@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Home,
   Clipboard,
@@ -108,6 +108,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     maintenance: { path: '/maintenance', label: t('nav.maintenance'), icon: <Calendar size={20} /> },
     'pm-tasks': { path: '/pm-tasks', label: t('nav.pmTasks'), icon: <Calendar size={20} /> },
     inventory: { path: '/inventory', label: t('nav.inventory'), icon: <Package size={20} /> },
+    vendors: { path: '/vendors', label: t('nav.vendors'), icon: <Package size={20} />, requireAdmin: true },
 
     timesheets: { path: '/timesheets', label: t('nav.timesheets'), icon: <Clock size={20} /> },
 

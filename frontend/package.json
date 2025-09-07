@@ -2,29 +2,11 @@
   "name": "vite-react-typescript-starter",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
+    "dev": "node dev-server.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest --run",
-    "test:ui": "vitest"
-  },
-  "dependencies": {
-    "lucide-react": "^0.378.0",
-    "react-router-dom": "^6.22.3",
-    "react-i18next": "^13.5.0",
-    "i18next": "^23.10.1",
-    "uuid": "^9.0.1"
-  },
-  "devDependencies": {
-    "@testing-library/jest-dom": "^6.1.4",
-    "@testing-library/react": "^14.2.1",
-    "@testing-library/user-event": "^14.4.3",
-    "jsdom": "^24.0.0",
-    "@types/node": "^20.11.7",
-    "@types/uuid": "^9.0.7",
-    "typescript": "^5.4.0",
-    "vitest": "^3.2.4"
+     "test": "node --test"
+ 
   }
 }

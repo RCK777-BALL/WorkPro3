@@ -16,7 +16,7 @@ export const duplicateAsset = (asset: Asset): Asset => {
 };
 
 export const duplicateWorkOrder = (workOrder: WorkOrder): WorkOrder => {
-  const newWorkOrder = {
+  const newWorkOrder: WorkOrder = {
     ...workOrder,
     id: `${workOrder.id}-copy`,
     title: `${workOrder.title} (Copy)`,

@@ -1,22 +1,12 @@
 import React, { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, File, X } from 'lucide-react';
-import Button from '../common/Button';
-import type { DocumentMetadata } from '../../utils/documentation';
+import { Upload } from 'lucide-react';
 
 interface DocumentUploaderProps {
   onUpload: (files: File[]) => void;
-  acceptedTypes?: string[];
 }
 
-const DocumentUploader: React.FC<DocumentUploaderProps> = ({
-  onUpload,
-  acceptedTypes = [
-    'application/pdf',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-  ]
-}) => {
+const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onUpload }) => {
   const onDrop = useCallback((acceptedFiles: File[]) => {
     onUpload(acceptedFiles);
   }, [onUpload]);

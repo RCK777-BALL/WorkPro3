@@ -149,7 +149,7 @@ export interface MaintenanceSchedule {
   instructions?: string;
   estimatedDuration: number;
   type?: string;
-  repeatConfig?: {
+  repeatConfig: {
     interval: number;
     unit: string;
     endDate: string;

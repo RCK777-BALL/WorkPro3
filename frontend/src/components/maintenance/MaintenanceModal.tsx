@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Clock, AlertTriangle } from 'lucide-react';
+import { X, AlertTriangle } from 'lucide-react';
 import Button from '../common/Button';
 import type { MaintenanceSchedule } from '../../types';
 import { v4 as uuidv4 } from 'uuid';
@@ -35,7 +35,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
   schedule,
   onUpdate,
 }) => {
-  const [formData, setFormData] = useState(
+  const [formData, setFormData] = useState<MaintenanceSchedule>(
     schedule ?? createDefaultSchedule()
   );
 
@@ -70,7 +70,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdate(formData as MaintenanceSchedule);
+    onUpdate(formData);
   };
 
   const calculateNextDueDate = (date: string, frequency: string) => {

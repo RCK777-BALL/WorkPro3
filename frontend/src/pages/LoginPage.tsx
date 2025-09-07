@@ -72,6 +72,9 @@ const LoginPage: React.FC = () => {
         return;
       }
       setUser({ ...data.user, token: data.token });
+      localStorage.setItem('auth:token', data.token);
+      if (data.user?.tenantId) localStorage.setItem('auth:tenantId', data.user.tenantId);
+      if (data.user?.siteId) localStorage.setItem('auth:siteId', data.user.siteId);
       navigate('/dashboard');
     } catch {
       setError(t('auth.loginFailed', 'Login failed'));
@@ -87,6 +90,9 @@ const LoginPage: React.FC = () => {
         token: code,
       });
       setUser({ ...data.user, token: data.token });
+      localStorage.setItem('auth:token', data.token);
+      if (data.user?.tenantId) localStorage.setItem('auth:tenantId', data.user.tenantId);
+      if (data.user?.siteId) localStorage.setItem('auth:siteId', data.user.siteId);
       navigate('/dashboard');
     } catch {
       setError(t('auth.invalidCode', 'Invalid code'));

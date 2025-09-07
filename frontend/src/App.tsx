@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
 import Departments from "./pages/Departments";
- import DashboardLayout from "./pages/dashboard/DashboardLayout";
+ import NotFound from "./pages/NotFound";
  
 
 export default function App() {
@@ -17,8 +17,8 @@ export default function App() {
             <Route path="analytics" element={<Analytics />} />
           </Route>
           <Route path="/departments" element={<Departments />} />
+           <Route path="*" element={<NotFound />} />
  
-          <Route path="*" element={<div className="p-6">Not Found</div>} />
         </Routes>
       </Layout>
     </div>

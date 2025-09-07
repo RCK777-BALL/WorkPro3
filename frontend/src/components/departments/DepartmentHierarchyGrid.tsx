@@ -53,8 +53,7 @@ const DepartmentHierarchyGrid: React.FC<Props> = ({
 
   const handleStationNameChange = (
     station: StationWithAssets,
-    name: string,
-    lineId: string
+    name: string
   ) => {
     onUpdateStation({ ...station, name });
   };
@@ -139,7 +138,7 @@ const DepartmentHierarchyGrid: React.FC<Props> = ({
                         className="flex-1 mr-2 px-2 py-1 border rounded-md text-sm"
                         value={station.name}
                         onChange={(e) =>
-                          handleStationNameChange(station, e.target.value, line.id)
+                          handleStationNameChange(station, e.target.value)
                         }
                       />
                       <div className="space-x-2">

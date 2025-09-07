@@ -256,7 +256,18 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
 
  
           {showNotifications && (
-            <div ref={notificationsMenuRef} tabIndex={-1} role="menu" aria-label="Notifications" className="absolute right-0 mt-2 w-80 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 z-50">
+            <div
+              ref={notificationsMenuRef}
+              tabIndex={-1}
+              role="menu"
+              aria-label="Notifications"
+              className="absolute right-0 mt-2 w-80 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 z-50"
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setShowNotifications(false);
+                }
+              }}
+            >
               <Card
                 title={t('header.notifications')}
                 subtitle={`${unreadCount} unread notifications`}
@@ -325,7 +336,18 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
           </button>
 
           {showHelpMenu && (
-            <div ref={helpMenuRef} tabIndex={-1} role="menu" aria-label="Help menu" className="absolute right-0 mt-2 w-80 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 z-50">
+            <div
+              ref={helpMenuRef}
+              tabIndex={-1}
+              role="menu"
+              aria-label="Help menu"
+              className="absolute right-0 mt-2 w-80 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 z-50"
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setShowHelpMenu(false);
+                }
+              }}
+            >
               <Card
                 title={t('header.helpResources')}
                 subtitle={t('header.helpSubtitle')}

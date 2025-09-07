@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/react';
 import CalendarView from './CalendarView';
-import React from 'react';
 
 describe('CalendarView', () => {
   const events = [

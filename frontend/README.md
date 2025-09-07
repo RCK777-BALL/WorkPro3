@@ -53,7 +53,6 @@ The following variables from `.env.example` configure the frontend:
 - `VITE_API_URL` – Base URL for API requests. Defaults to `http://localhost:5010/api`.
 - `VITE_WS_URL` – WebSocket server URL for real‑time updates. Defaults to `ws://localhost:5010`.
 - `VITE_SOCKET_PATH` – WebSocket endpoint path. Defaults to `/socket.io`.
-- `CORS_ORIGIN` – Origin allowed when using the local API server.
 
 After updating `.env.local`, restart the development server to apply the changes.
 
@@ -65,13 +64,13 @@ WebSocket reconnects. The queued requests are then flushed automatically.
 
 ## Local API server
 
-`backend/server.js` is a lightweight API server for development. It mirrors the main backend's CORS settings so the frontend behaves consistently. Start it with:
+`../dev-server/server.js` is a lightweight API server for development. It mirrors the main backend's CORS settings so the frontend behaves consistently. Start it from the repository root with:
 
 ```bash
-node backend/server.js
+node dev-server/server.js
 ```
 
-The server reads `MONGO_URI` and `CORS_ORIGIN` from your `.env`. Ensure `CORS_ORIGIN` matches the Vite dev server URL (e.g. `http://localhost:5173`) and update `VITE_API_URL`, `VITE_WS_URL`, and `VITE_SOCKET_PATH` if the API runs on a different host or port.
+The server reads `MONGO_URI` and `CORS_ORIGIN` from `dev-server/.env`. These variables match those used by the main backend—see `backend/.env.example` for reference. Ensure `CORS_ORIGIN` matches the Vite dev server URL (e.g. `http://localhost:5173`) and update `VITE_API_URL`, `VITE_WS_URL`, and `VITE_SOCKET_PATH` if the API runs on a different host or port.
 
 ### Inventory route example
 

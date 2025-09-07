@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
+     "target": "ESNext",
     "module": "ESNext",
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "jsx": "react-jsx",
@@ -13,4 +13,5 @@
   },
   "include": ["src/**/*.ts"],
   "exclude": ["src/**/*.test.*"]
+ 
 }

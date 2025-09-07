@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node dev-server.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --test"
+     "test": "node --test"
+ 
   }
 }

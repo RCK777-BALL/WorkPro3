@@ -55,6 +55,8 @@ The following variables from `.env.example` configure the frontend:
 - `VITE_SOCKET_PATH` – WebSocket endpoint path. Defaults to `/socket.io`.
 - `CORS_ORIGIN` – Origin allowed when using the local API server.
 
+After updating `.env.local`, restart the development server to apply the changes.
+
 ### Offline mode
 
 If `VITE_WS_URL` is omitted or the browser goes offline, API requests made

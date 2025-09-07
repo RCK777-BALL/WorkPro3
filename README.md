@@ -52,6 +52,7 @@ not committed to the repository.
    npm run dev
    ```
    The app will open at [http://localhost:5173](http://localhost:5173).
+   Restart the dev server after modifying environment variables so changes take effect.
 
 ### Offline mode
 

@@ -60,7 +60,7 @@ export function startNotificationsPoll(
 
   unsubscribe?.();
   unsubscribe = useSocketStore.subscribe(
-    (s) => s.connected,
+    (s: { connected: boolean }) => s.connected,
     handleConnectionChange,
   );
 

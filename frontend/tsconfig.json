@@ -1,4 +1,8 @@
 {
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "types": ["vite/client", "vitest/globals", "node"]
+  },
   "files": [],
   "references": [
     { "path": "./tsconfig.app.json" },

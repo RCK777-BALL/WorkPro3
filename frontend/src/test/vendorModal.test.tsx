@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, Mock, vi } from 'vitest';
+import { describe, it, expect, Mock, vi } from 'vitest';
 import VendorModal from '../components/vendors/VendorModal';
 
 describe('VendorModal', () => {
@@ -28,7 +28,4 @@ describe('VendorModal', () => {
     expect(screen.getByDisplayValue('c1')).toBeInTheDocument();
   });
 });
-function expect(handleSave: Mock<(...args: any[]) => any>) {
-  throw new Error('Function not implemented.');
-}
 

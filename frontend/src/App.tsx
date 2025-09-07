@@ -69,7 +69,7 @@ function App() {
           <Route path="/notifications" element={<Notifications />} />
         </Route>
 
-        <Route element={<ProtectedRoute role="admin" />}>
+        <Route element={<ProtectedRoute />}>
           <Route path="/tenants" element={<AdminTenants />} />
         </Route>
  

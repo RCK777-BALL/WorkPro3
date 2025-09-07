@@ -1,7 +1,9 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./components/layout/Layout";
 import Dashboard from "./pages/Dashboard";
+import Analytics from "./pages/Analytics";
 import Departments from "./pages/Departments";
+import DashboardLayout from "./pages/dashboard/DashboardLayout";
 
 export default function App() {
   return (
@@ -9,7 +11,10 @@ export default function App() {
       <Layout>
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard" element={<DashboardLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="analytics" element={<Analytics />} />
+          </Route>
           <Route path="/departments" element={<Departments />} />
           <Route path="*" element={<div className="p-6">Not Found</div>} />
         </Routes>

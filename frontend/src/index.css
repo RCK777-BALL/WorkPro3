@@ -1,6 +1,7 @@
 /* src/index.css */
-/* Tailwind v4: just import the framework */
-@import "tailwindcss";
+/* Tailwind v4: import preflight and utilities explicitly */
+@import "tailwindcss/preflight";
+@import "tailwindcss/utilities";
 
 /* Optional: your plain CSS (avoid using @apply here) */
 :root { color-scheme: light dark; }

@@ -25,10 +25,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onDeleteChat,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-<<<<<<< HEAD
-  const [, setShowNewChatModal] = useState(false);
-=======
->>>>>>> 4e24e6d3ed0ab96c1da1a050623f34910084cb55
 
   const filteredChannels = channels.filter(channel =>
     channel.name.toLowerCase().includes(searchTerm.toLowerCase())

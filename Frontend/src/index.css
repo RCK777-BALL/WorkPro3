@@ -1,4 +1,7 @@
-body {
-  margin: 0;
-  font-family: sans-serif;
-}
+/* Works for both Tailwind v3 and v4 builds */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* place your custom styles below if needed */
+

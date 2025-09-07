@@ -1,3 +1,6 @@
+/**
+ * Defines the allowed maintenance categories for upcoming maintenance tasks.
+ */
 export type MaintenanceType = 'preventive' | 'corrective' | 'inspection';
 
 export interface Asset {
@@ -6,6 +9,7 @@ export interface Asset {
   type?: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface';
   location?: string;
   department?: string;
+  category?: string;
   status?: 'Active' | 'Offline' | 'In Repair';
   description?: string;
   image?: string;
@@ -337,11 +341,6 @@ export interface LowStockPart {
   quantity: number;
   reorderPoint: number;
 }
-
-/**
- * Defines the allowed maintenance categories for upcoming maintenance tasks.
- */
-export type MaintenanceType = 'preventive' | 'corrective' | 'inspection';
 
 /** Response shape for upcoming maintenance tasks */
 export interface UpcomingMaintenanceResponse {

@@ -1,28 +1,7 @@
+import passport from 'passport';
 import type { Strategy as PassportStrategy } from 'passport';
-import type { Strategy as GoogleStrategyType } from 'passport-google-oauth20';
-import type { Strategy as GithubStrategyType } from 'passport-github2';
-
-let passport: { use?: (...args: any[]) => void } = {};
-let GoogleStrategy: new (...args: any[]) => GoogleStrategyType;
-let GithubStrategy: new (...args: any[]) => GithubStrategyType;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  passport = require('passport');
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  GoogleStrategy = require('passport-google-oauth20').Strategy;
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  GithubStrategy = require('passport-github2').Strategy;
-} catch {
-  class MockStrategy {
-    name: string;
-    constructor(options: any, verify: (...args: any[]) => void) {
-      this.name = options?.name || 'mock';
-    }
-  }
-  GoogleStrategy = MockStrategy;
-  GithubStrategy = MockStrategy;
-  passport.use = () => {};
-}
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { Strategy as GithubStrategy } from 'passport-github2';
 
 export type OAuthProvider = 'google' | 'github';
 
@@ -57,7 +36,7 @@ export const oauthVerify = (
 export const configureOAuth = () => {
   const googleId = process.env.GOOGLE_CLIENT_ID;
   const googleSecret = process.env.GOOGLE_CLIENT_SECRET;
-  if (googleId && googleSecret && passport.use) {
+  if (googleId && googleSecret) {
     passport.use(
       'google',
       new GoogleStrategy(
@@ -73,7 +52,7 @@ export const configureOAuth = () => {
 
   const githubId = process.env.GITHUB_CLIENT_ID;
   const githubSecret = process.env.GITHUB_CLIENT_SECRET;
-  if (githubId && githubSecret && passport.use) {
+  if (githubId && githubSecret) {
     passport.use(
       'github',
       new GithubStrategy(

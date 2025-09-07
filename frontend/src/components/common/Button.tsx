@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '../../utils/cn';
 
 interface ButtonProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   fullWidth?: boolean;

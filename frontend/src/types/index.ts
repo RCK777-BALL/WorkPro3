@@ -275,6 +275,15 @@ export interface Member {
   role?: string;
 }
 
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'critical' | 'warning' | 'info';
+  read: boolean;
+  createdAt: string;
+}
+
 export interface NotificationType {
   id: string;
   title: string;

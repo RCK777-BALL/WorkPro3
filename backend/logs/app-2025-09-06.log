@@ -1,0 +1,3 @@
+{"email":"admin@example.com","level":"info","message":"Login attempt","timestamp":"2025-09-06T18:15:09.573Z"}
+{"found":true,"level":"info","message":"User lookup result","timestamp":"2025-09-06T18:15:09.576Z"}
+{"level":"info","message":"Password comparison result","timestamp":"2025-09-06T18:15:09.650Z","valid":true}

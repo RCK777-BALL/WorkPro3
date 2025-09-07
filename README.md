@@ -10,8 +10,9 @@ This repository contains a small full‑stack app split into two folders:
 ```
 WorkPro/
  backend/   Express API and tests
-  frontend/  React client and tests
-  playground-1.mongodb.js  Sample MongoDB script
+ frontend/  React client and tests
+ dev-server/  Lightweight API for frontend development
+ playground-1.mongodb.js  Sample MongoDB script
 ```
 
 Run `npm install` inside each folder before development. Node modules are

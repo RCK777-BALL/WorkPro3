@@ -10,8 +10,9 @@ This repository contains a small full‑stack app split into two folders:
 ```
 WorkPro/
  backend/   Express API and tests
-  frontend/  React client and tests
-  playground-1.mongodb.js  Sample MongoDB script
+ frontend/  React client and tests
+ dev-server/  Lightweight API for frontend development
+ playground-1.mongodb.js  Sample MongoDB script
 ```
 
 Run `npm install` inside each folder before development. Node modules are
@@ -40,7 +41,7 @@ not committed to the repository.
    The server expects a running MongoDB instance. Override `MONGO_URI` if your
    database is not at the default location.
 
-## Frontend setup
+## frontend setup
 
 1. `cd frontend`
 2. Copy `frontend/.env.example` to `.env` and update `VITE_API_URL`,
@@ -88,8 +89,8 @@ This will deploy the backend, frontend and ingress resources.
 ## Running tests
 
 - **backend**: `cd backend && npm test`
-- **Frontend unit tests**: `cd frontend && npm run test`
-- **Frontend e2e tests**: `cd frontend && npm run test:e2e`
+- **frontend unit tests**: `cd frontend && npm run test`
+- **frontend e2e tests**: `cd frontend && npm run test:e2e`
 
 Both test suites use Vitest and enforce a minimum of 80% code coverage. backend
 tests spin up a temporary MongoDB using `mongodb-memory-server`, which

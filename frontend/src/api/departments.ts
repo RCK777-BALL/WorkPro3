@@ -73,3 +73,28 @@ export async function deleteDepartment(id: string): Promise<void> {
   await http.delete(`/departments/${id}`);
 }
 
+export type Line = { _id: string; name: string };
+
+export async function listLines({
+  departmentId,
+}: {
+  departmentId: string;
+}): Promise<Line[]> {
+  const { data } = await http.get<Line[]>(
+    `/departments/${departmentId}/lines`,
+  );
+  return data;
+}
+
+export type Station = { _id: string; name: string };
+
+export async function listStations(
+  departmentId: string,
+  lineId: string,
+): Promise<Station[]> {
+  const { data } = await http.get<Station[]>(
+    `/departments/${departmentId}/lines/${lineId}/stations`,
+  );
+  return data;
+}
+

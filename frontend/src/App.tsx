@@ -70,7 +70,7 @@ function App() {
         <Route
           path="/tenants"
           element={
-            <ProtectedRoute role="admin">
+            <ProtectedRoute>
               <AdminTenants />
             </ProtectedRoute>
           }

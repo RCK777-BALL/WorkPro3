@@ -3,7 +3,7 @@ import { cn } from '../../utils/cn';
 
 interface ButtonProps {
   children?: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'outline' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'outline' | 'ghost' | 'destructive';
   size?: 'sm' | 'md' | 'lg';
   fullWidth?: boolean;
   icon?: React.ReactNode;
@@ -35,6 +35,7 @@ const Button: React.FC<ButtonProps> = ({
     secondary: 'bg-teal-600 text-white hover:bg-teal-700 focus:ring-teal-500 dark:bg-teal-700 dark:hover:bg-teal-600',
     success: 'bg-success-600 text-white hover:bg-success-700 focus:ring-success-500 dark:bg-success-700 dark:hover:bg-success-600',
     danger: 'bg-error-600 text-white hover:bg-error-700 focus:ring-error-500 dark:bg-error-700 dark:hover:bg-error-600',
+    destructive: 'bg-error-600 text-white hover:bg-error-700 focus:ring-error-500 dark:bg-error-700 dark:hover:bg-error-600',
     warning: 'bg-warning-500 text-white hover:bg-warning-600 focus:ring-warning-400 dark:bg-warning-600 dark:hover:bg-warning-500',
     outline: 'bg-transparent border border-neutral-300 text-neutral-700 hover:bg-neutral-50 focus:ring-neutral-500 dark:border-neutral-600 dark:text-neutral-200 dark:hover:bg-neutral-700',
     ghost: 'bg-transparent text-neutral-700 hover:bg-neutral-100 focus:ring-neutral-500 dark:text-neutral-200 dark:hover:bg-neutral-800',

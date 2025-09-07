@@ -1,13 +1,10 @@
-import React from 'react';
+import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import App from './App';
+import './index.css';
 
-function App() {
-  return <h1>Hello WorkPro</h1>;
-}
-
-const rootElement = document.getElementById('root')!;
-createRoot(rootElement).render(
-  <React.StrictMode>
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
     <App />
-  </React.StrictMode>
+  </StrictMode>
 );

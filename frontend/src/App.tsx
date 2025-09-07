@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./components/layout/Layout";
 import Dashboard from "./pages/Dashboard";
 import Departments from "./pages/Departments";
+import NotFound from "./pages/NotFound";
 
 export default function App() {
   return (
@@ -11,7 +12,7 @@ export default function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/departments" element={<Departments />} />
-          <Route path="*" element={<div className="p-6">Not Found</div>} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Layout>
     </div>

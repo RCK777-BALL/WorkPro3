@@ -23,7 +23,7 @@ describe('createMqttClient', () => {
     mockClient.emit('connect');
     expect(logSpy).toHaveBeenCalledWith('MQTT connected:', 'mqtt://test');
 
-    const error = new Error('fail');
+    const error: Error = new Error('fail');
     mockClient.emit('error', error);
     expect(errSpy).toHaveBeenCalledWith('MQTT error:', error);
 

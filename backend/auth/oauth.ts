@@ -1,8 +1,10 @@
 import type { Strategy as PassportStrategy } from 'passport';
+import type { Strategy as GoogleStrategyType } from 'passport-google-oauth20';
+import type { Strategy as GithubStrategyType } from 'passport-github2';
 
 let passport: { use?: (...args: any[]) => void } = {};
-let GoogleStrategy: any;
-let GithubStrategy: any;
+let GoogleStrategy: new (...args: any[]) => GoogleStrategyType;
+let GithubStrategy: new (...args: any[]) => GithubStrategyType;
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   passport = require('passport');
@@ -30,12 +32,20 @@ export const getOAuthScope = (provider: OAuthProvider): string[] => {
     : ['user:email'];
 };
 
+interface OAuthProfile {
+  emails?: Array<{ value?: string }>;
+}
+
+interface DoneCallback {
+  (err: unknown, user?: { email?: string }, info?: unknown): void;
+}
+
 export const oauthVerify = (
   _accessToken: string,
   _refreshToken: string,
-  profile: any,
-  done: (err: any, user?: any) => void,
-) => {
+  profile: OAuthProfile,
+  done: DoneCallback,
+): void => {
   try {
     const email = profile?.emails?.[0]?.value;
     done(null, { email });
@@ -56,7 +66,7 @@ export const configureOAuth = () => {
           clientSecret: googleSecret,
           callbackURL: '/api/auth/oauth/google/callback',
         },
-        oauthVerify as any,
+        oauthVerify,
       ) as unknown as PassportStrategy,
     );
   }
@@ -72,7 +82,7 @@ export const configureOAuth = () => {
           clientSecret: githubSecret,
           callbackURL: '/api/auth/oauth/github/callback',
         },
-        oauthVerify as any,
+        oauthVerify,
       ) as unknown as PassportStrategy,
     );
   }

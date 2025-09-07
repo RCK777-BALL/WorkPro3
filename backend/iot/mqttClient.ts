@@ -6,7 +6,7 @@ const options: IClientOptions = {};
 export function createMqttClient(brokerUrl: string): MqttClient {
   const client = mqtt.connect(brokerUrl, options);
   client.on("connect", () => console.log("MQTT connected:", brokerUrl));
-  client.on("error", (err: any) => console.error("MQTT error:", err));
+  client.on("error", (err: Error) => console.error("MQTT error:", err));
   return client;
 }
 

@@ -46,35 +46,33 @@ function App() {
         <Route path="/vendor/login" element={<VendorLogin />} />
         <Route path="/vendor/pos" element={<VendorPOList />} />
         <Route path="/vendor/pos/:id" element={<VendorPODetail />} />
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-        <Route path="/assets" element={<ProtectedRoute><AssetsPage /></ProtectedRoute>} />
-        <Route path="/assets/:id" element={<ProtectedRoute><AssetDetails /></ProtectedRoute>} />
-        <Route path="/scan" element={<ProtectedRoute><AssetScan /></ProtectedRoute>} />
-        <Route path="/documentation" element={<ProtectedRoute><Documentation /></ProtectedRoute>} />
-        <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
-        <Route path="/maintenance" element={<ProtectedRoute><Maintenance /></ProtectedRoute>} />
-        <Route path="/pm-tasks" element={<ProtectedRoute><PMTasksPage /></ProtectedRoute>} />
-        <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
-        <Route path="/vendors" element={<ProtectedRoute><VendorsPage /></ProtectedRoute>} />
-         {/* Departments routes */}
-        <Route path="/departments" element={<ProtectedRoute><Departments /></ProtectedRoute>} />
  
-        <Route path="/departments/new" element={<ProtectedRoute><NewDepartmentPage /></ProtectedRoute>} />
-        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-        <Route path="/teams" element={<ProtectedRoute><Teams /></ProtectedRoute>} />
-        <Route path="/teams/:id" element={<ProtectedRoute><TeamMemberProfile /></ProtectedRoute>} />
-        <Route path="/work-orders" element={<ProtectedRoute><WorkOrders /></ProtectedRoute>} />
-        <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/assets" element={<AssetsPage />} />
+          <Route path="/assets/:id" element={<AssetDetails />} />
+          <Route path="/scan" element={<AssetScan />} />
+          <Route path="/documentation" element={<Documentation />} />
+          <Route path="/inventory" element={<Inventory />} />
+          <Route path="/maintenance" element={<Maintenance />} />
+          <Route path="/pm-tasks" element={<PMTasksPage />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/vendors" element={<VendorsPage />} />
+          {/* Departments routes */}
+          <Route path="/departments" element={<Departments />} />
+          <Route path="/departments/new" element={<NewDepartmentPage />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/teams" element={<Teams />} />
+          <Route path="/teams/:id" element={<TeamMemberProfile />} />
+          <Route path="/work-orders" element={<WorkOrders />} />
+          <Route path="/notifications" element={<Notifications />} />
+        </Route>
+
+        <Route element={<ProtectedRoute role="admin" />}>
+          <Route path="/tenants" element={<AdminTenants />} />
+        </Route>
  
-        <Route
-          path="/tenants"
-          element={
-            <ProtectedRoute>
-              <AdminTenants />
-            </ProtectedRoute>
-          }
-        />
  {/* catch-all -> 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>

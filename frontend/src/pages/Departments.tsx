@@ -2,181 +2,42 @@ import { useEffect, useState } from 'react';
 import Layout from '../components/layout/Layout';
 import Button from '../components/common/Button';
 import Drawer from '../components/ui/Drawer';
-import NameDrawerForm from '../components/common/NameDrawerForm';
 import { DepartmentForm, type DepartmentPayload } from '../components/departments/forms';
 import {
   listDepartments,
   createDepartment,
   updateDepartment,
+  deleteDepartment,
+  type Department,
 } from '../api/departments';
-
-type StationItem = { id: string; name: string; assets: number };
-type LineItem = { id: string; name: string; stations: StationItem[] };
-type DeptItem = { id: string; name: string; description?: string; lines: LineItem[] };
-
-const toStationItem = (s: { _id?: string; id?: string; name: string; assets?: number }): StationItem => ({
-  id: s._id ?? s.id ?? '',
-  name: s.name,
-  assets: s.assets ?? 0,
-});
-
-const toLineItem = (l: { _id?: string; id?: string; name: string; stations?: any[] }): LineItem => ({
-  id: l._id ?? l.id ?? '',
-  name: l.name,
-  stations: (l.stations ?? []).map(toStationItem),
-});
-
-const toDeptItem = (
-  d: {
-    _id?: string;
-    id?: string;
-    name: string;
-    description?: string;
-    lines?: any[];
-  },
-): DeptItem => ({
-  id: d._id ?? d.id ?? '',
-  name: d.name,
-  description: d.description,
-  lines: (d.lines ?? []).map(toLineItem),
-});
 
 type DrawerState =
   | { kind: 'none' }
-  | { kind: 'create-dept' }
-  | { kind: 'edit-dept'; dep: DeptItem }
-  | { kind: 'create-line'; depId: string }
-  | { kind: 'edit-line'; depId: string; line: LineItem }
-  | { kind: 'create-station'; depId: string; lineId: string }
-  | {
-      kind: 'edit-station';
-      depId: string;
-      lineId: string;
-      station: StationItem;
-    };
+  | { kind: 'create' }
+  | { kind: 'edit'; dep: Department };
 
 export default function Departments() {
-  const [items, setItems] = useState<DeptItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [items, setItems] = useState<Department[]>([]);
+  const [loading, setLoading] = useState(true);
   const [drawer, setDrawer] = useState<DrawerState>({ kind: 'none' });
-  const [] = useState<Record<string, boolean>>({});
-  const [] = useState<
-    Record<string, Record<string, boolean>>
-  >({});
 
   useEffect(() => {
-    setLoading(true);
     listDepartments()
-      .then((deps) => deps.map(toDeptItem))
       .then(setItems)
       .finally(() => setLoading(false));
   }, []);
 
-
-
-
-  const handleFormSubmit = (values: { name: string; assets?: number }) => {
-    switch (drawer.kind) {
-      case 'create-line':
-        setItems((prev) =>
-          prev.map((d) =>
-            d.id === drawer.depId
-              ? {
-                  ...d,
-                  lines: [
-                    { id: Date.now().toString(), name: values.name, stations: [] },
-                    ...d.lines,
-                  ],
-                }
-              : d
-          )
-        );
-        break;
-      case 'edit-line':
-        setItems((prev) =>
-          prev.map((d) =>
-            d.id === drawer.depId
-              ? {
-                  ...d,
-                  lines: d.lines.map((l) =>
-                    l.id === drawer.line.id ? { ...l, name: values.name } : l
-                  ),
-                }
-              : d
-          )
-        );
-        break;
-      case 'create-station':
-        setItems((prev) =>
-          prev.map((d) =>
-            d.id === drawer.depId
-              ? {
-                  ...d,
-                  lines: d.lines.map((l) =>
-                    l.id === drawer.lineId
-                      ? {
-                          ...l,
-                          stations: [
-                            {
-                              id: Date.now().toString(),
-                              name: values.name,
-                              assets: values.assets ?? 0,
-                            },
-                            ...l.stations,
-                          ],
-                        }
-                      : l
-                  ),
-                }
-              : d
-          )
-        );
-        break;
-      case 'edit-station':
-        setItems((prev) =>
-          prev.map((d) =>
-            d.id === drawer.depId
-              ? {
-                  ...d,
-                  lines: d.lines.map((l) =>
-                    l.id === drawer.lineId
-                      ? {
-                          ...l,
-                          stations: l.stations.map((s) =>
-                            s.id === drawer.station.id
-                              ? {
-                                  ...s,
-                                  name: values.name,
-                                  assets: values.assets ?? s.assets,
-                                }
-                              : s
-                          ),
-                        }
-                      : l
-                  ),
-                }
-              : d
-          )
-        );
-        break;
-      default:
-        break;
-    }
-    setDrawer({ kind: 'none' });
+  const handleDelete = async (id: string) => {
+    await deleteDepartment(id);
+    setItems((prev) => prev.filter((d) => d._id !== id));
   };
-
-
-
-
 
   return (
     <Layout title="Departments">
       <div className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-semibold">Departments</h1>
-          <Button onClick={() => setDrawer({ kind: 'create-dept' })}>
-            Add Department
-          </Button>
+          <Button onClick={() => setDrawer({ kind: 'create' })}>Add Department</Button>
         </div>
 
         {loading ? (
@@ -184,83 +45,57 @@ export default function Departments() {
         ) : (
           <ul className="divide-y divide-neutral-200">
             {items.map((d) => (
-              <li key={d.id} className="py-2 flex items-center justify-between">
-                {d.name}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setDrawer({ kind: 'edit-dept', dep: d })}
-                >
-                  Edit
-                </Button>
+              <li key={d._id} className="py-2 flex items-center justify-between">
+                <span>{d.name}</span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDrawer({ kind: 'edit', dep: d })}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDelete(d._id)}
+                  >
+                    Delete
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>
         )}
 
         <Drawer
-          open={drawer.kind === 'create-dept' || drawer.kind === 'edit-dept'}
+          open={drawer.kind !== 'none'}
           onClose={() => setDrawer({ kind: 'none' })}
-          title={drawer.kind === 'edit-dept' ? 'Edit Department' : 'Add Department'}
+          title={drawer.kind === 'edit' ? 'Edit Department' : 'Add Department'}
         >
           <DepartmentForm
             initial={
-              drawer.kind === 'edit-dept'
+              drawer.kind === 'edit'
                 ? { name: drawer.dep.name, description: drawer.dep.description }
                 : undefined
             }
             onCancel={() => setDrawer({ kind: 'none' })}
             onSubmit={async (payload: DepartmentPayload) => {
-              if (drawer.kind === 'edit-dept') {
-                const updated = await updateDepartment(drawer.dep.id, payload).then(
-                  toDeptItem,
-                );
+              if (drawer.kind === 'edit') {
+                const updated = await updateDepartment(drawer.dep._id, payload);
                 setItems((prev) =>
-                  prev.map((d) => (d.id === updated.id ? updated : d))
+                  prev.map((d) => (d._id === updated._id ? updated : d)),
                 );
               } else {
-                const dep = await createDepartment(payload).then(toDeptItem);
-                setItems((prev) => [dep, ...prev]);
+                const created = await createDepartment(payload);
+                setItems((prev) => [created, ...prev]);
               }
               setDrawer({ kind: 'none' });
             }}
           />
         </Drawer>
-
-        <NameDrawerForm
-          open={
-            drawer.kind !== 'none' &&
-            drawer.kind !== 'create-dept' &&
-            drawer.kind !== 'edit-dept'
-          }
-          title={
-            drawer.kind === 'create-line'
-              ? 'Add Line'
-              : drawer.kind === 'edit-line'
-              ? 'Edit Line'
-              : drawer.kind === 'create-station'
-              ? 'Add Station'
-              : drawer.kind === 'edit-station'
-              ? 'Edit Station'
-              : ''
-          }
-          initialName={
-            drawer.kind === 'edit-line'
-              ? drawer.line.name
-              : drawer.kind === 'edit-station'
-              ? drawer.station.name
-              : ''
-          }
-          initialAssets={
-            drawer.kind === 'edit-station' ? drawer.station.assets : 0
-          }
-          showAssetInput={
-            drawer.kind === 'create-station' || drawer.kind === 'edit-station'
-          }
-          onSubmit={handleFormSubmit}
-          onClose={() => setDrawer({ kind: 'none' })}
-        />
       </div>
     </Layout>
   );
 }
+

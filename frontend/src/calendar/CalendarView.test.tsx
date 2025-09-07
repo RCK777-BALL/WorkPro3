@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import CalendarView from './CalendarView';
 import React from 'react';
+import { describe, expect, it } from 'vitest';
 
 describe('CalendarView', () => {
   const events = [

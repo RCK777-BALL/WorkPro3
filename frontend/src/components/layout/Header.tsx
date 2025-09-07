@@ -17,7 +17,7 @@ import { useSummary } from '../../hooks/useSummaryData';
 import { useTranslation } from 'react-i18next';
  
 
-import type { Notification } from '../../types';
+import type { NotificationType } from '../../types';
   
 
 interface Member {

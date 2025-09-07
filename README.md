@@ -3,14 +3,14 @@
 This repository contains a small full‑stack app split into two folders:
 
 - **backend** – Express API server with a MongoDB database and Socket.IO.
-- **Frontend** – React client built with Vite.
+- **frontend** – React client built with Vite.
 
 ## Project structure
 
 ```
 WorkPro/
  backend/   Express API and tests
-  Frontend/  React client and tests
+  frontend/  React client and tests
   playground-1.mongodb.js  Sample MongoDB script
 ```
 
@@ -42,8 +42,8 @@ not committed to the repository.
 
 ## Frontend setup
 
-1. `cd Frontend`
-2. Copy `Frontend/.env.example` to `.env` and update `VITE_API_URL`,
+1. `cd frontend`
+2. Copy `frontend/.env.example` to `.env` and update `VITE_API_URL`,
     `VITE_WS_URL`, and `VITE_WS_PATH`.
  
 3. Install dependencies with `npm install`.
@@ -88,8 +88,8 @@ This will deploy the backend, frontend and ingress resources.
 ## Running tests
 
 - **backend**: `cd backend && npm test`
-- **Frontend unit tests**: `cd Frontend && npm run test`
-- **Frontend e2e tests**: `cd Frontend && npm run test:e2e`
+- **Frontend unit tests**: `cd frontend && npm run test`
+- **Frontend e2e tests**: `cd frontend && npm run test:e2e`
 
 Both test suites use Vitest and enforce a minimum of 80% code coverage. backend
 tests spin up a temporary MongoDB using `mongodb-memory-server`, which

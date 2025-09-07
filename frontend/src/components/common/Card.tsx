@@ -8,6 +8,7 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   icon?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  noPadding?: boolean;
 }
 
 const Card: React.FC<CardProps> = ({
@@ -17,10 +18,14 @@ const Card: React.FC<CardProps> = ({
   icon,
   children,
   className = '',
+  noPadding = false,
   ...rest
 }) => {
   return (
-    <div {...rest} className={`bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-sm p-6 ${className}`}>
+    <div
+      {...rest}
+      className={`bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-sm ${noPadding ? 'p-0' : 'p-6'} ${className}`}
+    >
       {(title || subtitle || headerActions || icon) && (
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-start">

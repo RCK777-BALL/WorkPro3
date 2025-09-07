@@ -2,7 +2,7 @@
  
 import React, { useEffect, useState, useRef } from 'react';
  
-import { Search, Bell, HelpCircle, Menu, Book, Video, MessageCircle, FileText, ExternalLink, Sun, Moon, Monitor, Database } from 'lucide-react';
+import { Search, Bell, HelpCircle, Menu, Book, Video, MessageCircle, FileText, ExternalLink, Database } from 'lucide-react';
  
 import ThemeToggle from '../common/ThemeToggle';
 import Avatar from '../common/Avatar';
@@ -17,6 +17,7 @@ import { useSummary } from '../../hooks/useSummaryData';
 import { useTranslation } from 'react-i18next';
  
 
+<<<<<<< HEAD
 import type { NotificationType } from '../../types';
   
 
@@ -27,6 +28,9 @@ interface Member {
   status: 'online' | 'away' | 'offline';
   role?: string;
 }
+=======
+import type { Notification } from '../../types';
+>>>>>>> 4e24e6d3ed0ab96c1da1a050623f34910084cb55
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -37,7 +41,6 @@ type HeaderNotification = Notification & { link?: string };
 
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
   const { t, i18n } = useTranslation();
-  const headerTitle = title ?? t('nav.dashboard');
   const user = useAuthStore((s) => s.user);
   const isAdmin = useAuthStore(selectIsAdmin);
   const isManager = useAuthStore(selectIsManager);
@@ -209,7 +212,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
         >
           <Menu size={20} className="dark:text-white" />
         </button>
-        <h1 className="text-xl font-semibold text-neutral-900 dark:text-white ml-2 lg:ml-0">{title}</h1>
+        <h1 className="text-xl font-semibold text-neutral-900 dark:text-white ml-2 lg:ml-0">{title ?? t('nav.dashboard')}</h1>
         <button
           onClick={() => setShowMobileSearch(!showMobileSearch)} aria-label="Search"
           className="md:hidden ml-2 p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 focus:outline-none"

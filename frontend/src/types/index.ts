@@ -149,7 +149,7 @@ export interface MaintenanceSchedule {
   instructions?: string;
   estimatedDuration: number;
   type?: string;
-  repeatConfig?: {
+  repeatConfig: {
     interval: number;
     unit: string;
     endDate: string;
@@ -273,6 +273,15 @@ export interface Member {
   avatar?: string;
   status: 'online' | 'away' | 'offline';
   role?: string;
+}
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'critical' | 'warning' | 'info';
+  read: boolean;
+  createdAt: string;
 }
 
 export interface NotificationType {

@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Search, Plus, Hash, Users, X } from 'lucide-react';
+import { Search, Plus, Hash, X } from 'lucide-react';
 import Avatar from '../common/Avatar';
-import Button from '../common/Button';
-import type { Channel, DirectMessage } from 'src/types';
+import type { Channel, DirectMessage } from '../../types';
 
 interface ChatSidebarProps {
   channels: Channel[];
@@ -26,7 +25,10 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onDeleteChat,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+<<<<<<< HEAD
   const [, setShowNewChatModal] = useState(false);
+=======
+>>>>>>> 4e24e6d3ed0ab96c1da1a050623f34910084cb55
 
   const filteredChannels = channels.filter(channel =>
     channel.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -36,7 +38,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     dm.userName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleDoubleClick = (userId: string, userName: string) => {
+  const handleDoubleClick = (userId: string) => {
     // Create or open direct message chat
     onDirectMessageSelect(userId);
   };
@@ -129,7 +131,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   ${activeChannelId === dm.id ? 'bg-primary-600 text-white' : 'text-neutral-300 hover:bg-neutral-700'}
                 `}
                 onClick={() => onDirectMessageSelect(dm.userId)}
-                onDoubleClick={() => handleDoubleClick(dm.userId, dm.userName)}
+                onDoubleClick={() => handleDoubleClick(dm.userId)}
               >
                 <div className="flex items-center flex-1 min-w-0">
                   <Avatar

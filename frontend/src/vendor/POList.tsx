@@ -8,7 +8,7 @@ interface PurchaseOrder {
 }
 
 export default function VendorPOList() {
-  const [pos, setPos] = useState<PurchaseOrder[]>([]);
+  const [pos, setPos] = useState([] as PurchaseOrder[]);
   const navigate = useNavigate();
 
   useEffect(() => {

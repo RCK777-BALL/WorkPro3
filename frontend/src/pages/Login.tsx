@@ -9,7 +9,7 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 };
 
-const LoginPage: React.FC = () => {
+const Login: React.FC = () => {
   const { t } = useTranslation();
 
   // Auth & MFA state
@@ -182,4 +182,4 @@ const LoginPage: React.FC = () => {
   );
 };
 
-export default LoginPage;
+export default Login;

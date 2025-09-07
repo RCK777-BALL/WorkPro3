@@ -1,7 +1,7 @@
 # Environment files
 **/.env
 **/.env.*
-!Backend/.env.example
+!backend/.env.example
 
 # Dependencies
 **/node_modules/
@@ -11,6 +11,7 @@
 
 # Logs
 npm-debug.log*
+backend/logs/
 
 # Compiled JavaScript from TypeScript
 backend/**/*.js

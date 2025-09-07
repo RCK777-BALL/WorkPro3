@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { useDropzone } from "react-dropzone";
 import { X, Upload, Download } from "lucide-react";
 import Button from "../common/Button";
-import api from "../../lib/api";
+import http from "../../lib/http";
 import { useToast } from "../../context/ToastContext";
 import { useDepartmentStore } from "../../store/departmentStore";
 import { useAuthStore } from "../../store/authStore";
@@ -128,11 +128,11 @@ const AssetModal: React.FC<AssetModalProps> = ({
           }
         });
         files.forEach((f) => fd.append("files", f));
-        res = await api.post("/assets", fd, {
+        res = await http.post("/assets", fd, {
           headers: { "Content-Type": "multipart/form-data" },
         });
       } else {
-        res = await api.post("/assets", payload);
+        res = await http.post("/assets", payload);
       }
 
       onUpdate({ ...(res.data as any), id: res.data._id } as Asset);

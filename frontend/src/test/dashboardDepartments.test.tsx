@@ -41,7 +41,7 @@ vi.mock('../api/summary', () => ({
   fetchLowStock: vi.fn().mockResolvedValue([]),
 }));
 
-vi.mock('../lib/api', () => ({
+vi.mock('../lib/http', () => ({
   default: { get: getMock },
 }));
 

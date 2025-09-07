@@ -1,8 +1,8 @@
-import api from '../lib/api';
+import http from '../lib/http';
 
 export const createPurchaseOrder = (payload: any) =>
-  api.post('/purchase-orders', payload).then((res) => res.data);
+  http.post('/purchase-orders', payload).then((res) => res.data);
 
 export const createGoodsReceipt = (payload: any) =>
-  api.post('/goods-receipts', payload).then((res) => res.data);
+  http.post('/goods-receipts', payload).then((res) => res.data);
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import api from '../lib/api';
+import http from '../lib/http';
 import type {
   StatusCountResponse,
   UpcomingMaintenanceResponse,
@@ -81,10 +81,10 @@ export default function useDashboardData(
       const query = params.toString() ? `?${params.toString()}` : '';
 
       const [woRes, assetRes, upcomingRes, alertRes] = await Promise.all([
-        api.get<StatusCountResponse[]>(`/summary/workorders${query}`),
-        api.get<StatusCountResponse[]>(`/summary/assets${query}`),
-        api.get<UpcomingMaintenanceResponse[]>(`/summary/upcoming-maintenance${query}`),
-        api.get<CriticalAlertResponse[]>(`/summary/critical-alerts${query}`),
+        http.get<StatusCountResponse[]>(`/summary/workorders${query}`),
+        http.get<StatusCountResponse[]>(`/summary/assets${query}`),
+        http.get<UpcomingMaintenanceResponse[]>(`/summary/upcoming-maintenance${query}`),
+        http.get<CriticalAlertResponse[]>(`/summary/critical-alerts${query}`),
       ]);
 
       // Work orders

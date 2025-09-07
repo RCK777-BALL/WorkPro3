@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import api from '../lib/api';
+import http from '../lib/http';
 import { useAuthStore } from './authStore';
 
 interface ThemeState {
@@ -24,7 +24,7 @@ export const useThemeStore = create<ThemeState>()(
       },
       fetchTheme: async () => {
         try {
-          const res = await api.get('/theme');
+          const res = await http.get('/theme');
           set({ theme: res.data.theme, colorScheme: res.data.colorScheme });
         } catch (err) {
           console.error(err);
@@ -33,7 +33,7 @@ export const useThemeStore = create<ThemeState>()(
       updateTheme: async (data) => {
         set(data as any);
         try {
-          await api.put('/theme', { ...get(), ...data });
+          await http.put('/theme', { ...get(), ...data });
         } catch (err) {
           console.error(err);
  

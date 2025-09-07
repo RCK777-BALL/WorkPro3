@@ -46,7 +46,7 @@ function App() {
         <Route path="/vendor/login" element={<VendorLogin />} />
         <Route path="/vendor/pos" element={<VendorPOList />} />
         <Route path="/vendor/pos/:id" element={<VendorPODetail />} />
-
+ 
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/analytics" element={<Analytics />} />
@@ -72,6 +72,7 @@ function App() {
         <Route element={<ProtectedRoute role="admin" />}>
           <Route path="/tenants" element={<AdminTenants />} />
         </Route>
+ 
  {/* catch-all -> 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>

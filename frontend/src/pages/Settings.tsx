@@ -16,7 +16,7 @@ import { useThemeStore } from '../store/themeStore';
 import { useSettingsStore } from '../store/settingsStore';
 import type { ThemeSettings } from '../store/settingsStore';
 import { useToast } from '../context/ToastContext';
-import api from '../lib/api';
+import http from '../lib/http';
 
 const Settings: React.FC = () => {
   const { theme, setTheme, updateTheme } = useThemeStore();
@@ -68,7 +68,7 @@ const Settings: React.FC = () => {
   const handleSaveSettings = async () => {
     try {
       const settings = useSettingsStore.getState();
-      await api.post('/settings', settings);
+      await http.post('/settings', settings);
       addToast('Settings saved', 'success');
     } catch (error: any) {
       console.error('Error saving settings:', error);

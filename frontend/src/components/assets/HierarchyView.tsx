@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import api from '../../lib/api';
+import http from '../../lib/http';
 import type { DepartmentHierarchy } from '../../types';
 import { useDepartmentStore } from '../../store/departmentStore';
 
@@ -12,7 +12,7 @@ const HierarchyView: React.FC = () => {
     const departments = useDepartmentStore.getState().departments;
     const detailed = await Promise.all(
       departments.map(async (dep) => {
-        const hRes = await api.get(`/departments/${dep.id}/hierarchy`);
+        const hRes = await http.get(`/departments/${dep.id}/hierarchy`);
         return hRes.data as DepartmentHierarchy;
       })
     );

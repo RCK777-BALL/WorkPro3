@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
-import api from '../lib/api';
+import http from '../lib/http';
 
-vi.mock('../lib/api');
+vi.mock('../lib/http');
 vi.mock('../components/layout/Layout', () => ({ default: ({ children }: any) => <div>{children}</div> }));
 vi.mock('../components/kpi/KpiWidget', () => ({ default: () => <div /> }));
 vi.mock('../components/kpi/KpiExportButtons', () => ({ default: () => <div /> }));
@@ -16,7 +16,7 @@ vi.mock('chart.js', () => ({ CategoryScale: {}, LinearScale: {}, PointElement: {
 
 import Analytics from '../pages/Analytics';
 
-const mockedGet = api.get as unknown as vi.Mock;
+const mockedGet = http.get as unknown as vi.Mock;
 
 mockedGet.mockImplementation((url: string) => {
   if (url === '/reports/analytics') {

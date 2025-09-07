@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import api from '../../lib/api';
+import http from '../../lib/http';
 import Button from '../common/Button';
 import { useToast } from '../../context/ToastContext';
 import type { PMTask } from '../../types';
@@ -43,9 +43,9 @@ const PmTaskForm: React.FC<Props> = ({ task, onSuccess }) => {
       };
       let res;
       if (task) {
-        res = await api.put(`/pm-tasks/${task.id}`, payload);
+        res = await http.put(`/pm-tasks/${task.id}`, payload);
       } else {
-        res = await api.post('/pm-tasks', payload);
+        res = await http.post('/pm-tasks', payload);
       }
       const saved = { ...(res.data as any), id: res.data._id ?? res.data.id } as PMTask;
       onSuccess?.(saved);

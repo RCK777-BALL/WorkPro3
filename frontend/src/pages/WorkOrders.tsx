@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/layout/Layout';
-import api from '../lib/api';
+import http from '../lib/http';
 import { addToQueue } from '../utils/offlineQueue';
 import DataTable from '../components/common/DataTable';
 import Badge from '../components/common/Badge';
@@ -48,7 +48,7 @@ export default function WorkOrders() {
       const url = params.toString()
         ? `/workorders/search?${params.toString()}`
         : '/workorders';
-      const res = await api.get(url);
+      const res = await http.get(url);
       const data = (res.data as any[]).map((w) => ({ ...w, id: w._id ?? w.id })) as WorkOrder[];
       setWorkOrders(data);
       localStorage.setItem(LOCAL_KEY, JSON.stringify(data));
@@ -79,7 +79,7 @@ export default function WorkOrders() {
       return;
     }
     try {
-      await api.put(`/workorders/${id}`, update);
+      await http.put(`/workorders/${id}`, update);
       fetchWorkOrders();
     } catch {
       addToQueue({ method: 'put', url: `/workorders/${id}`, data: update });
@@ -88,7 +88,7 @@ export default function WorkOrders() {
 
   const openReview = async (order: WorkOrder) => {
     try {
-      const res = await api.get(`/workorders/${order.id}`);
+      const res = await http.get(`/workorders/${order.id}`);
       const data = { ...res.data, id: res.data._id ?? res.data.id } as WorkOrder;
       setSelectedOrder(data);
       setShowReviewModal(true);
@@ -109,11 +109,11 @@ export default function WorkOrders() {
     }
     try {
       if (payload instanceof FormData) {
-        await api.post('/workorders', payload, {
+        await http.post('/workorders', payload, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
       } else {
-        await api.post('/workorders', payload);
+        await http.post('/workorders', payload);
       }
       fetchWorkOrders();
     } catch (err) {

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Department, Line, Station } from '../types';
- import {
+import {
   listDepartments as apiListDepartments,
   listLines as apiListLines,
   listStations as apiListStations,
@@ -60,7 +60,7 @@ export const useDepartmentStore = create<DepartmentState>((set, get) => ({
   fetchLines: async (departmentId) => {
     const { linesByDepartment } = get();
     if (linesByDepartment[departmentId]) return linesByDepartment[departmentId];
-    const res = await apiListLines(departmentId);
+    const res = await apiListLines({ departmentId });
     const lines = res.map((l) => ({
       id: l._id,
       name: l.name,

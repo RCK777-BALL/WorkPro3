@@ -1,11 +1,11 @@
-/* frontend/src/index.css */
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   color-scheme: light dark;
 }
 
 body {
-  /* Core utilities work in v4; use them directly (not CSS modules) */
-  @apply bg-white text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100;
+  @apply bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100;
 }

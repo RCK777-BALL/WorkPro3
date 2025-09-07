@@ -18,12 +18,10 @@ const exportCsv = (data: CSVInput, filename = 'data') => {
 
   if (!rows.length) return;
 
-  const headers = Array.from(
-    rows.reduce((set, row) => {
-      Object.keys(row).forEach((k) => set.add(k));
-      return set;
-    }, new Set<string>())
-  );
+  const headers = Array.from(rows.reduce<Set<string>>((set, row) => {
+    Object.keys(row).forEach((k) => set.add(k));
+    return set;
+  }, new Set<string>()));
 
   const csv = [
     headers.join(','),

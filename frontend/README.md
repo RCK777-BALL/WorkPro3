@@ -1,4 +1,4 @@
-# Frontend
+# frontend
 
 This directory contains the React client built with Vite.
 

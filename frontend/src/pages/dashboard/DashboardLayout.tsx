@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom';
+ import { NavLink, Outlet } from 'react-router-dom';
 
 export default function DashboardLayout() {
   return (
@@ -39,3 +39,4 @@ export default function DashboardLayout() {
   );
 }
 
+ 

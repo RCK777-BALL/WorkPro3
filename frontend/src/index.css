@@ -1,11 +1,5 @@
-/* src/index.css — Tailwind v4 style */
-@import "tailwindcss/preflight";
-@import "tailwindcss/utilities";
+/* src/index.css — Tailwind v4 */
+@import "tailwindcss";
 
-/* Your app styles */
+/* Optional: your plain CSS (no @apply for Tailwind utilities here) */
 :root { color-scheme: light dark; }
-
-body {
-  /* If your editor warns on @apply, it’s just an LSP warning; runtime is fine */
-  @apply bg-white text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100;
-}

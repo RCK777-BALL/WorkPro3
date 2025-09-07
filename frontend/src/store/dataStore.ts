@@ -22,7 +22,7 @@ export const useDataStore = create<DataState>()(
 // IndexedDB cache + offline queue
 // -----------------------------
 
-import api from '../lib/api';
+import http from '../lib/http';
 
 // Basic key/value store in IndexedDB. For test environments where
 // `indexedDB` isn't available (e.g. jsdom), we fall back to an in-memory
@@ -145,7 +145,7 @@ export const enqueueRequest = async (req: QueuedRequest) => {
 export const clearQueue = async () => deleteItem(KEYS.queue);
 
 export const flushQueue = async (
-  apiFn: typeof api = api,
+  apiFn: typeof http = http,
   useBackoff = true
 ) => {
   const queue = await loadQueue();

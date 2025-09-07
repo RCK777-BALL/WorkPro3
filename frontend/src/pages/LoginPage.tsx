@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import api from '../lib/api';
+import http from '../lib/http';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -66,7 +66,7 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     setError('');
     try {
-      const { data } = await api.post('/auth/login', { email, password });
+      const { data } = await http.post('/auth/login', { email, password });
       if (data.mfaRequired) {
         setMfaUser(data.userId);
         return;
@@ -82,7 +82,7 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     if (!mfaUser) return;
     try {
-      const { data } = await api.post('/auth/mfa/verify', {
+      const { data } = await http.post('/auth/mfa/verify', {
         userId: mfaUser,
         token: code,
       });

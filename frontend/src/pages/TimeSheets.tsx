@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/layout/Layout';
 import Button from '../components/common/Button';
-import api from '../lib/api';
+import http from '../lib/http';
 import type { Timesheet } from '../types';
 import { useToast } from '../context/ToastContext';
 
@@ -13,7 +13,7 @@ const TimeSheets: React.FC = () => {
 
   const loadTimesheets = async () => {
     try {
-      const res = await api.get('/timesheets');
+      const res = await http.get('/timesheets');
       const data = (res.data as any[]).map((t) => ({
         id: t._id ?? t.id,
         date: t.date,
@@ -43,12 +43,12 @@ const TimeSheets: React.FC = () => {
     }
     try {
       if (editingId) {
-        await api.put(`/timesheets/${editingId}`, payload);
+        await http.put(`/timesheets/${editingId}`, payload);
         setTimesheets((prev) =>
           prev.map((t) => (t.id === editingId ? { id: editingId, ...payload } : t)),
         );
       } else {
-        const res = await api.post('/timesheets', payload);
+        const res = await http.post('/timesheets', payload);
         setTimesheets((prev) => [
           ...prev,
           { id: res.data._id ?? res.data.id, ...payload },
@@ -72,7 +72,7 @@ const TimeSheets: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      await api.delete(`/timesheets/${id}`);
+      await http.delete(`/timesheets/${id}`);
       setTimesheets((prev) => prev.filter((t) => t.id !== id));
       if (editingId === id) {
         setEditingId(null);

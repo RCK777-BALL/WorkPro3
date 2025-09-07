@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import Button from '../components/common/Button';
-import api from '../lib/api';
+import http from '../lib/http';
 import type { NotificationType } from '../types';
 
 type Notification = NotificationType & { assetId?: string };
@@ -17,7 +17,7 @@ const Notifications = () => {
   const fetchNotifications = async (pageNum: number) => {
     try {
       setLoading(true);
-      const res = await api.get('/notifications', { params: { page: pageNum, limit } });
+      const res = await http.get('/notifications', { params: { page: pageNum, limit } });
       const data = Array.isArray(res.data) ? res.data : res.data.items || [];
       type ApiNotification = Partial<Notification> & {
         _id?: string;
@@ -47,7 +47,7 @@ const Notifications = () => {
 
   const markAsRead = async (id: string) => {
     try {
-      await api.put(`/notifications/${id}`, { read: true });
+      await http.put(`/notifications/${id}`, { read: true });
     } catch (err) {
       console.error('Failed to mark notification as read', err);
     }
@@ -56,7 +56,7 @@ const Notifications = () => {
 
   const dismiss = async (id: string) => {
     try {
-      await api.delete(`/notifications/${id}`);
+      await http.delete(`/notifications/${id}`);
     } catch (err) {
       console.error('Failed to delete notification', err);
     }

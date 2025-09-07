@@ -1,4 +1,4 @@
-import api from '../lib/api';
+import http from '../lib/http';
 
 export interface Station {
   _id: string;
@@ -32,14 +32,14 @@ export type DepartmentPayload = Pick<Department, 'name' | 'description'>;
 
 // ---- Department helpers ----
 export async function listDepartments(): Promise<Department[]> {
-  const { data } = await api.get<Department[]>('/departments');
+  const { data } = await http.get<Department[]>('/departments');
   return data;
 }
 
 export async function createDepartment(
   payload: DepartmentPayload,
 ): Promise<Department> {
-  const { data } = await api.post<Department>('/departments', payload);
+  const { data } = await http.post<Department>('/departments', payload);
   return data;
 }
 
@@ -48,18 +48,18 @@ export async function updateDepartment(
    payload: DepartmentPayload,
  
 ): Promise<Department> {
-  const { data } = await api.put<Department>(`/departments/${id}`, payload);
+  const { data } = await http.put<Department>(`/departments/${id}`, payload);
   return data;
 }
  
 export async function deleteDepartment(id: string): Promise<{ message: string }> {
-  const { data } = await api.delete<{ message: string }>(`/departments/${id}`);
+  const { data } = await http.delete<{ message: string }>(`/departments/${id}`);
   return data;
 }
 
 // ---- Line helpers ----
 export async function listLines(departmentId: string): Promise<Line[]> {
-  const { data } = await api.get<Line[]>(`/departments/${departmentId}/lines`);
+  const { data } = await http.get<Line[]>(`/departments/${departmentId}/lines`);
   return data;
 }
 
@@ -67,7 +67,7 @@ export async function createLine(
   departmentId: string,
   payload: LinePayload,
 ): Promise<Line> {
-  const { data } = await api.post<Line>(
+  const { data } = await http.post<Line>(
     `/departments/${departmentId}/lines`,
     payload,
   );
@@ -79,7 +79,7 @@ export async function updateLine(
   lineId: string,
   payload: LinePayload,
 ): Promise<Line> {
-  const { data } = await api.put<Line>(
+  const { data } = await http.put<Line>(
     `/departments/${departmentId}/lines/${lineId}`,
     payload,
   );
@@ -90,7 +90,7 @@ export async function deleteLine(
   departmentId: string,
   lineId: string,
 ): Promise<{ message: string }> {
-  const { data } = await api.delete<{ message: string }>(
+  const { data } = await http.delete<{ message: string }>(
     `/departments/${departmentId}/lines/${lineId}`,
   );
   return data;
@@ -101,7 +101,7 @@ export async function listStations(
   departmentId: string,
   lineId: string,
 ): Promise<Station[]> {
-  const { data } = await api.get<Station[]>(
+  const { data } = await http.get<Station[]>(
     `/departments/${departmentId}/lines/${lineId}/stations`,
   );
   return data;
@@ -112,7 +112,7 @@ export async function createStation(
   lineId: string,
   payload: StationPayload,
 ): Promise<Station> {
-  const { data } = await api.post<Station>(
+  const { data } = await http.post<Station>(
     `/departments/${departmentId}/lines/${lineId}/stations`,
     payload,
   );
@@ -125,7 +125,7 @@ export async function updateStation(
   stationId: string,
   payload: StationPayload,
 ): Promise<Station> {
-  const { data } = await api.put<Station>(
+  const { data } = await http.put<Station>(
     `/departments/${departmentId}/lines/${lineId}/stations/${stationId}`,
     payload,
   );
@@ -137,7 +137,7 @@ export async function deleteStation(
   lineId: string,
   stationId: string,
 ): Promise<{ message: string }> {
-  const { data } = await api.delete<{ message: string }>(
+  const { data } = await http.delete<{ message: string }>(
     `/departments/${departmentId}/lines/${lineId}/stations/${stationId}`,
   );
   return data;

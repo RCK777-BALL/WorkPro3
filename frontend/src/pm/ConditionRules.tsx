@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../components/layout/Layout';
 import Button from '../components/common/Button';
-import api from '../lib/api';
+import http from '../lib/http';
 
 interface ConditionRule {
   _id?: string;
@@ -31,7 +31,7 @@ const ConditionRules: React.FC = () => {
 
   const loadRules = async () => {
     try {
-      const res = await api.get('/condition-rules', { withCredentials: true });
+      const res = await http.get('/condition-rules', { withCredentials: true });
       setRules(res.data as ConditionRule[]);
     } catch (err) {
       console.error(err);
@@ -46,9 +46,9 @@ const ConditionRules: React.FC = () => {
     if (!form) return;
     try {
       if (form._id) {
-        await api.put(`/condition-rules/${form._id}`, form, { withCredentials: true });
+        await http.put(`/condition-rules/${form._id}`, form, { withCredentials: true });
       } else {
-        await api.post('/condition-rules', form, { withCredentials: true });
+        await http.post('/condition-rules', form, { withCredentials: true });
       }
       setForm(null);
       await loadRules();

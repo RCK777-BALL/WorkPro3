@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { scanQRCode } from '../utils/qr';
-import api from '../lib/api';
+import http from '../lib/http';
 
-vi.mock('../lib/api', () => ({
+vi.mock('../lib/http', () => ({
   default: vi.fn(),
 }));
 
@@ -18,10 +18,10 @@ vi.mock('@zxing/browser', () => {
 describe('mobile scanner', () => {
   it('looks up asset by scanned code', async () => {
     const video = document.createElement('video');
-    const apiMock = api as unknown as ReturnType<typeof vi.fn>;
+    const apiMock = http as unknown as ReturnType<typeof vi.fn>;
     (apiMock as any).mockResolvedValue({});
     const code = await scanQRCode(video);
-    await api({ method: 'get', url: `/assets/${code}` });
+    await http({ method: 'get', url: `/assets/${code}` });
     expect(apiMock).toHaveBeenCalledWith({ method: 'get', url: '/assets/asset-123' });
   });
 

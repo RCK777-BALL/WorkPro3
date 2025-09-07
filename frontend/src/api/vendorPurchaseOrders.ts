@@ -1,12 +1,12 @@
-import api from '../lib/api';
+import http from '../lib/http';
 
 export const listVendorPurchaseOrders = (token: string) =>
-  api
+  http
     .get('/purchase-orders', { headers: { Authorization: `Bearer ${token}` } })
     .then((res) => res.data);
 
 export const getVendorPurchaseOrder = (id: string, token: string) =>
-  api
+  http
     .get(`/purchase-orders/${id}`, { headers: { Authorization: `Bearer ${token}` } })
     .then((res) => res.data);
 
@@ -15,7 +15,7 @@ export const updateVendorPurchaseOrder = (
   payload: any,
   token: string,
 ) =>
-  api
+  http
     .put(`/purchase-orders/${id}`, payload, {
       headers: { Authorization: `Bearer ${token}` },
     })

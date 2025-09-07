@@ -1,5 +1,6 @@
 export default function Analytics() {
-  return (
+   return (
     <h1>Analytics</h1>
   );
+ 
 }

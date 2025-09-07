@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import Layout from "./components/layout/Layout";
+ import Layout from "./components/layout/Layout";
 import Dashboard from "./pages/Dashboard";
 import Departments from "./pages/Departments";
 import LoginPage from "./pages/LoginPage";
@@ -20,5 +20,6 @@ export default function App() {
         </Routes>
       </Layout>
     </div>
+ 
   );
 }

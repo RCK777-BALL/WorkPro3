@@ -17,20 +17,7 @@ import { useSummary } from '../../hooks/useSummaryData';
 import { useTranslation } from 'react-i18next';
  
 
-<<<<<<< HEAD
-import type { NotificationType } from '../../types';
-  
-
-interface Member {
-  id: string;
-  name: string;
-  avatar?: string;
-  status: 'online' | 'away' | 'offline';
-  role?: string;
-}
-=======
 import type { Notification } from '../../types';
->>>>>>> 4e24e6d3ed0ab96c1da1a050623f34910084cb55
 
 interface HeaderProps {
   onToggleSidebar: () => void;

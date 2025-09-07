@@ -11,11 +11,11 @@
     "seed:team": "ts-node scripts/seedTeam.ts",
     "seed:departments": "ts-node --files scripts/seedDepartments.ts",
     "reset-db": "ts-node scripts/resetAndSeed.ts",
-    "build": "tsc",
+    "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "test": "echo \"(no backend tests yet)\" && exit 0",
     "test:coverage": "vitest run --coverage",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
     "swagger:check": "ts-node utils/swagger.ts"
   },
   "dependencies": {

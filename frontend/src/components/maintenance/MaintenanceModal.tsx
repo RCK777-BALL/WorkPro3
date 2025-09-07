@@ -4,7 +4,7 @@ import Button from '../common/Button';
 import type { MaintenanceSchedule } from '../../types';
 import { v4 as uuidv4 } from 'uuid';
 
-const createDefaultSchedule = () => ({
+const createDefaultSchedule = (): MaintenanceSchedule => ({
   id: uuidv4(),
   title: '',
   description: '',
@@ -16,10 +16,9 @@ const createDefaultSchedule = () => ({
   type: 'preventive',
   repeatConfig: {
     interval: 1,
-    unit: 'months',
-    endDate: '',
-    occurrences: 0,
+    unit: 'month',
   },
+  parts: [],
 });
 
 interface MaintenanceModalProps {
@@ -58,10 +57,9 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
         type: 'preventive',
         repeatConfig: {
           interval: 1,
-          unit: 'months',
-          endDate: '',
-          occurrences: 0,
+          unit: 'month',
         },
+        parts: [],
       });
     }
     setShowAdvancedOptions(false);
@@ -270,10 +268,9 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                           }
                         })}
                       >
-                        <option value="days">Days</option>
-                        <option value="weeks">Weeks</option>
-                        <option value="months">Months</option>
-                        <option value="years">Years</option>
+                        <option value="day">Days</option>
+                        <option value="week">Weeks</option>
+                        <option value="month">Months</option>
                       </select>
                     </div>
                   </div>

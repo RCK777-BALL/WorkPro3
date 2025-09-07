@@ -136,26 +136,28 @@ export interface Vendor {
   contact?: string;
 }
 
+export type RepeatConfig = {
+  interval: number;
+  unit: 'day' | 'week' | 'month';
+  endDate?: string;
+  occurrences?: number;
+};
+
 export interface MaintenanceSchedule {
   id: string;
-  assetId: string;
   title: string;
   description: string;
+  assetId: string;
   frequency: string;
   nextDue: string;
+  estimatedDuration: number;
+  instructions: string;
+  type: string;
+  repeatConfig: RepeatConfig;
+  parts: string[];
   lastCompleted?: string;
   lastCompletedBy?: string;
   assignedTo?: string;
-  instructions?: string;
-  estimatedDuration: number;
-  type?: string;
-  repeatConfig: {
-    interval: number;
-    unit: string;
-    endDate: string;
-    occurrences: number;
-  };
-  parts: Part[];
 }
 
 export interface PMTask {

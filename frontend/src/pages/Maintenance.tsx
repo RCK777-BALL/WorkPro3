@@ -20,6 +20,7 @@ const sampleSchedules: MaintenanceSchedule[] = [
     assignedTo: 'Mike Johnson',
     instructions: '1. Check belt tension\n2. Inspect for wear\n3. Verify alignment\n4. Lubricate bearings',
     estimatedDuration: 2,
+    repeatConfig: { interval: 1, unit: 'month' },
     parts: []
   },
   {
@@ -33,6 +34,7 @@ const sampleSchedules: MaintenanceSchedule[] = [
     assignedTo: 'Sarah Wilson',
     instructions: '1. Replace filters\n2. Clean coils\n3. Check refrigerant levels\n4. Test operation',
     estimatedDuration: 4,
+    repeatConfig: { interval: 3, unit: 'month' },
     parts: []
   }
 ];

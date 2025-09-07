@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import api from '../../lib/api';
+import http from '../../lib/http';
 import { useDepartmentStore } from '../../store/departmentStore';
 import Button from '../common/Button';
 import { useToast } from '../../context/ToastContext';
@@ -46,13 +46,13 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const assetRes = await api.get('/assets');
+        const assetRes = await http.get('/assets');
         setAssets((assetRes.data as any[]).map(a => ({ ...a, id: a._id ?? a.id })) as Asset[]);
       } catch (err) {
         console.error('Failed to load assets', err);
       }
       try {
-        const userRes = await api.get('/users');
+        const userRes = await http.get('/users');
         setTechs((userRes.data as any[])
           .filter((u) => u.role === 'technician')
           .map(u => ({ ...u, id: u._id ?? u.id })) as User[]);
@@ -109,9 +109,9 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
     try {
       let res;
       if (workOrder) {
-        res = await api.put(`/workorders/${workOrder.id}`, payload);
+        res = await http.put(`/workorders/${workOrder.id}`, payload);
       } else {
-        res = await api.post('/workorders', payload);
+        res = await http.post('/workorders', payload);
       }
       const data = res.data as WorkOrderUpdatePayload;
       if (onSuccess) onSuccess({ ...(data as Partial<WorkOrder>), id: data._id } as WorkOrder);

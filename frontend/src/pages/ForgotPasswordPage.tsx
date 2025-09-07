@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import api from '../lib/api';
+import http from '../lib/http';
 
 const ForgotPasswordPage: React.FC = () => {
   const { t } = useTranslation();
@@ -32,7 +32,7 @@ const ForgotPasswordPage: React.FC = () => {
     e.preventDefault();
     setMessage('');
     try {
-      await api.post('/auth/password/reset', { email });
+      await http.post('/auth/password/reset', { email });
       setMessage(t('auth.resetLinkSent'));
     } catch (err) {
       console.error(err);

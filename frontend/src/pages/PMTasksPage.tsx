@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Layout from '../components/layout/Layout';
 import Button from '../components/common/Button';
 import PmTaskForm from '../components/maintenance/PmTaskForm';
-import api from '../lib/api';
+import http from '../lib/http';
 import type { PMTask } from '../types';
 
 const PMTasksPage: React.FC = () => {
@@ -13,7 +13,7 @@ const PMTasksPage: React.FC = () => {
 
   const loadTasks = async () => {
     try {
-      const res = await api.get('/pm-tasks', { withCredentials: true });
+      const res = await http.get('/pm-tasks', { withCredentials: true });
       setTasks((res.data as any[]).map(t => ({ ...t, id: t._id ?? t.id })) as PMTask[]);
     } catch (err: any) {
       console.error(err);

@@ -59,7 +59,7 @@ export const enqueueDepartmentRequest = (
 
 export const clearQueue = () => localStorage.removeItem(QUEUE_KEY);
 
-import api from '../lib/api';
+import http from '../lib/http';
 
 export const flushQueue = async (useBackoff = true) => {
   const queue = loadQueue();
@@ -74,7 +74,7 @@ export const flushQueue = async (useBackoff = true) => {
       continue;
     }
     try {
-      await api({ method: req.method, url: req.url, data: req.data });
+      await http({ method: req.method, url: req.url, data: req.data });
     } catch (err: any) {
       if (err?.response?.status === 409) {
         console.warn('Dropping conflicted request', err);

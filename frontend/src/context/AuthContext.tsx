@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { useAuthStore } from '../store/authStore';
 import type { AuthUser } from '../types';
-import api from '../lib/api';
+import http from '../lib/http';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = useCallback(
     async (email: string, password: string) => {
-      const { data } = await api.post('/auth/login', { email, password });
+      const { data } = await http.post('/auth/login', { email, password });
  
       handleSetUser({ ...data.user, token: data.token });
  

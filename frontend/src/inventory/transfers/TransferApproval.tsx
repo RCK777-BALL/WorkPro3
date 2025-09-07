@@ -1,6 +1,6 @@
 import React from 'react';
 import Button from '../../components/common/Button';
-import api from '../../lib/api';
+import http from '../../lib/http';
 
 interface Props {
   orderId: string;
@@ -9,7 +9,7 @@ interface Props {
 
 const TransferApproval: React.FC<Props> = ({ orderId, onApproved }) => {
   const approve = async () => {
-    await api.post(`/transfers/${orderId}/approve`);
+    await http.post(`/transfers/${orderId}/approve`);
     onApproved?.();
   };
   return (

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Button from '../components/common/Button';
-import api from '../lib/api';
+import http from '../lib/http';
 
 interface Props {
   workOrderId: string;
@@ -16,7 +16,7 @@ const AICopilot: React.FC<Props> = ({ workOrderId }) => {
     setLoading(true);
     setError('');
     try {
-      const res = await api.get(`/workorders/${workOrderId}/assist`);
+      const res = await http.get(`/workorders/${workOrderId}/assist`);
       setSummary(res.data.summary);
       setRisk(res.data.riskScore);
     } catch (_err) {

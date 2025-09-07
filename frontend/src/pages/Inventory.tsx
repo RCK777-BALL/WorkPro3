@@ -7,7 +7,7 @@ import InventoryModal from '../components/inventory/InventoryModal';
 import InventoryMetrics from '../components/inventory/InventoryMetrics';
 import InventoryScanModal from '../components/inventory/InventoryScanModal';
 import { exportToExcel, exportToPDF } from '../utils/export';
-import api from '../lib/api';
+import http from '../lib/http';
 import { useAuth } from '../context/AuthContext';
 import type { Part } from '../types';
 
@@ -24,7 +24,7 @@ const Inventory: React.FC = () => {
 
   const fetchParts = async () => {
     try {
-      const res = await api.get('/inventory');
+      const res = await http.get('/inventory');
       setParts(res.data as Part[]);
     } catch (err) {
       console.error('Error fetching inventory:', err);
@@ -153,11 +153,11 @@ const Inventory: React.FC = () => {
           onUpdate={async (data: FormData) => {
             try {
               if (selectedPart) {
-                await api.put(`/inventory/${selectedPart.id}`, data, {
+                await http.put(`/inventory/${selectedPart.id}`, data, {
                   headers: { 'Content-Type': 'multipart/form-data' },
                 });
               } else {
-                await api.post('/inventory', data, {
+                await http.post('/inventory', data, {
                   headers: { 'Content-Type': 'multipart/form-data' },
                 });
               }

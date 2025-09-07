@@ -4,7 +4,7 @@ import AssetTable from '../components/assets/AssetTable';
 import AssetModal from '../components/assets/AssetModal';
 import WorkOrderModal from '../components/work-orders/WorkOrderModal';
 import Button from '../components/common/Button';
-import api from '../lib/api';
+import http from '../lib/http';
 import { enqueueAssetRequest } from '../utils/offlineQueue';
 import { useAssetStore } from '../store/assetStore';
 import type { Asset } from '../types';
@@ -48,7 +48,7 @@ const AssetsPage = () => {
     }
 
     try {
-      const res = await api.get('/assets');
+      const res = await http.get('/assets');
       const data = (res.data as any[]).map((a) => ({
         ...a,
         id: a._id ?? a.id,
@@ -83,7 +83,7 @@ const AssetsPage = () => {
       addAsset({ ...clone, id: Date.now().toString() });
       return;
     }
-    const res = await api.post('/assets', clone);
+    const res = await http.post('/assets', clone);
     addAsset({ ...res.data, id: res.data._id });
   };
 
@@ -93,7 +93,7 @@ const AssetsPage = () => {
       removeAsset(id);
       return;
     }
-    await api.delete(`/assets/${id}`);
+    await http.delete(`/assets/${id}`);
     removeAsset(id);
   };
 
@@ -139,11 +139,11 @@ const AssetsPage = () => {
           onUpdate={async (payload) => {
             try {
               if (payload instanceof FormData) {
-                await api.post('/workorders', payload, {
+                await http.post('/workorders', payload, {
                   headers: { 'Content-Type': 'multipart/form-data' },
                 });
               } else {
-                await api.post('/workorders', payload);
+                await http.post('/workorders', payload);
               }
             } catch (err) {
               console.error(err);

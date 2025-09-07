@@ -153,8 +153,10 @@ const Sidebar: React.FC<SidebarProps> = ({
             MP
           </div>
         )}
-        <button 
+        <button
           onClick={onToggleCollapse}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           className="ml-auto p-1.5 rounded-lg hover:bg-primary-800 dark:hover:bg-neutral-800 focus:outline-none"
         >
           {collapsed ? (

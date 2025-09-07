@@ -6,6 +6,7 @@ export interface Asset {
   type?: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface';
   location?: string;
   department?: string;
+  category?: string;
   status?: 'Active' | 'Offline' | 'In Repair';
   description?: string;
   image?: string;

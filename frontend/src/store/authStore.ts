@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { AuthUser } from '../types';
 
 interface AuthState {
@@ -9,25 +8,22 @@ interface AuthState {
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
+export const useAuthStore = create<AuthState>((set) => ({
+  // Keep authentication details in memory to avoid storing sensitive data.
+  // Session management should rely on secure, server-managed cookies.
+  user: null,
+  isAuthenticated: false,
+  setUser: (user) =>
+    set({
+      user,
+      isAuthenticated: !!user,
+    }),
+  logout: () =>
+    set({
       user: null,
       isAuthenticated: false,
-      setUser: (user) => set({
-        user,
-        isAuthenticated: !!user,
-      }),
-      logout: () => set({
-        user: null,
-        isAuthenticated: false,
-      }),
     }),
-    {
-      name: 'auth-storage',
-    }
-  )
-);
+}));
 
 export const isAdmin = (state: AuthState) => state.user?.role === 'admin';
 export const isManager = (state: AuthState) => state.user?.role === 'manager';

@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import Tree, { RawNodeDatum, RenderCustomNodeElementFn } from 'react-d3-tree';
 import { useTeamMembers } from '../../store/useTeamMembers';
 import type { TeamMember } from '../../types';
+import useResizeObserver from '../../hooks/useResizeObserver';
 
 interface OrgChartProps {
   onSelect: (member: TeamMember) => void;
@@ -77,15 +78,24 @@ const OrgChart: React.FC<OrgChartProps> = ({ onSelect }) => {
     );
   };
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { width, height } = useResizeObserver(containerRef);
+  const translate = useMemo(
+    () => ({ x: width / 2, y: Math.max(50, height * 0.05) }),
+    [width, height],
+  );
+
   return (
-    <div style={{ width: '100%', height: '600px' }}>
-      <Tree
-        data={treeData as unknown as RawNodeDatum}
-        renderCustomNodeElement={renderNode}
-        orientation="vertical"
-        translate={{ x: 300, y: 50 }}
-        pathFunc="elbow"
-      />
+    <div ref={containerRef} className="w-full h-full overflow-y-auto">
+      {width > 0 && (
+        <Tree
+          data={treeData as unknown as RawNodeDatum}
+          renderCustomNodeElement={renderNode}
+          orientation="vertical"
+          translate={translate}
+          pathFunc="elbow"
+        />
+      )}
     </div>
   );
 };

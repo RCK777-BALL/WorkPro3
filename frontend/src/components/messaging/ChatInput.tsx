@@ -1,9 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { Smile, Paperclip, Send, Image, AtSign, Hash } from 'lucide-react';
 import data from '@emoji-mart/data';
- 
+
 import Picker from '@emoji-mart/react';
+ import type { Emoji } from '@emoji-mart/react';
 import { getNotificationsSocket } from '../../utils/notificationsSocket';
+import { useToast } from '../../context/ToastContext';
+ 
  
 
 interface ChatInputProps {
@@ -22,6 +25,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const [message, setMessage] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { addToast } = useToast();
+
+  const MAX_FILE_SIZE_MB = 10;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,12 +35,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
       onSendMessage(message);
  
       try {
-        const s = getNotificationsSocket();
+        const s = getChatSocket();
         if (s.connected) {
-          s.emit('message', message);
+          s.emit('chat:message', message);
         }
       } catch (err) {
-        console.error('Failed to emit message', err);
+        console.error('Failed to emit chat:message', err);
       }
  
       setMessage('');
@@ -44,12 +50,23 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      onUploadFiles(Array.from(e.target.files));
+      const files = Array.from(e.target.files);
+      const validFiles = files.filter((file) => {
+        const valid = file.size <= MAX_FILE_SIZE_MB * 1024 * 1024;
+        if (!valid) {
+          addToast(`"${file.name}" exceeds ${MAX_FILE_SIZE_MB}MB`, 'error');
+        }
+        return valid;
+      });
+      if (validFiles.length > 0) {
+        onUploadFiles(validFiles);
+      }
+      e.target.value = '';
     }
   };
 
-  const handleEmojiSelect = (emoji: any) => {
-    setMessage(prev => prev + emoji.native);
+  const handleEmojiSelect = (emoji: Emoji) => {
+    setMessage((prev) => prev + emoji.native);
     setShowEmojiPicker(false);
   };
 
@@ -122,6 +139,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           ref={fileInputRef}
           type="file"
           multiple
+          accept="image/*,application/pdf"
           className="hidden"
           onChange={handleFileSelect}
         />

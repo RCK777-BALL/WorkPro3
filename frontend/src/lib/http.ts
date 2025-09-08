@@ -15,15 +15,18 @@ function getCookie(name: string): string | undefined {
 }
 
 http.interceptors.request.use((config) => {
-  const token = getCookie(TOKEN_KEY);
+   const headers: Record<string, string> = (config.headers ?? {}) as Record<string, string>;
+  const token = localStorage.getItem(TOKEN_KEY);
+ 
   if (token) {
-    config.headers = config.headers ?? {};
-    (config.headers as any).Authorization = `Bearer ${token}`;
+    headers.Authorization = `Bearer ${token}`;
   }
-  const tenantId = getCookie(TENANT_KEY);
-  const siteId = getCookie(SITE_KEY);
-  if (tenantId) (config.headers as any)['x-tenant-id'] = tenantId;
-  if (siteId) (config.headers as any)['x-site-id'] = siteId;
+   const tenantId = localStorage.getItem(TENANT_KEY);
+  const siteId = localStorage.getItem(SITE_KEY);
+  if (tenantId) headers['x-tenant-id'] = tenantId;
+  if (siteId) headers['x-site-id'] = siteId;
+  config.headers = headers;
+ 
   return config;
 });
 

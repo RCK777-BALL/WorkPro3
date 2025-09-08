@@ -1,14 +1,8 @@
- import { Navigate, Outlet, useLocation } from 'react-router-dom';
-
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+// TODO: wire to real auth
 export default function RequireAuth() {
-  const token = localStorage.getItem('auth:token');
-  const user = localStorage.getItem('auth:user');
+  const user = true; // replace with real auth check
   const location = useLocation();
-
-  if (!token || !user) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
-  }
-
+  if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
   return <Outlet />;
 }
- 

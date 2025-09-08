@@ -44,6 +44,17 @@ const Layout: React.FC<LayoutProps> = ({ children, title }) => {
   };
 
   useEffect(() => {
+    if (sidebarMobileOpen) {
+      document.body.classList.add('overflow-hidden');
+    } else {
+      document.body.classList.remove('overflow-hidden');
+    }
+    return () => {
+      document.body.classList.remove('overflow-hidden');
+    };
+  }, [sidebarMobileOpen]);
+
+  useEffect(() => {
     const handler = (e: Event) => {
       e.preventDefault();
       setInstallEvent(e as BeforeInstallPromptEvent);

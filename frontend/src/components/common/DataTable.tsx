@@ -28,6 +28,13 @@ function DataTable<T>({
   const [sortColumn, setSortColumn] = useState<keyof T | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
+  React.useEffect(() => {
+    const headers = columns.map((col) => col.header);
+    if (new Set(headers).size !== headers.length) {
+      console.warn('DataTable: column headers must be unique to ensure stable keys.');
+    }
+  }, [columns]);
+
   const handleRowKeyDown = (e: React.KeyboardEvent<HTMLTableRowElement>, row: T) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -96,9 +103,9 @@ function DataTable<T>({
       <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
         <thead className="bg-neutral-50 dark:bg-neutral-800">
           <tr>
-            {columns.map((column, index) => (
+            {columns.map((column) => (
               <th
-                key={index}
+                key={column.header}
                 scope="col"
                 className={`px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider cursor-pointer focus-visible:ring-2 focus-visible:ring-primary-500 dark:focus-visible:ring-primary-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900 ${column.className || ''}`}
                 onClick={() => typeof column.accessor !== 'function' && handleSort(column.accessor)}
@@ -135,8 +142,8 @@ function DataTable<T>({
                 tabIndex={onRowClick ? 0 : undefined}
                 onKeyDown={(e) => handleRowKeyDown(e, row)}
               >
-                {columns.map((column, index) => (
-                  <td key={index} className={`px-6 py-4 whitespace-nowrap text-sm text-neutral-900 dark:text-neutral-200 ${column.className || ''}`}>
+                {columns.map((column) => (
+                  <td key={column.header} className={`px-6 py-4 whitespace-nowrap text-sm text-neutral-900 dark:text-neutral-200 ${column.className || ''}`}>
                     {getCellValue(row, column.accessor) as React.ReactNode}
                   </td>
                 ))}

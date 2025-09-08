@@ -39,18 +39,15 @@ interface KPIData {
   backlog: number;
 }
 
-const Analytics: React.FC = () => {
+export default function Analytics() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [kpis, setKpis] = useState<KPIData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const [showFilters, setShowFilters] = useState(false);
-
   const { selectedRole: role, setSelectedRole } = useDashboardStore();
   const [costs, setCosts] = useState<any[]>([]);
   const [downtime, setDowntime] = useState<any[]>([]);
-
 
   const fetchData = async () => {
     setLoading(true);
@@ -72,39 +69,29 @@ const Analytics: React.FC = () => {
     }
   };
 
-
   useEffect(() => {
     fetchData();
-
   }, [role]);
 
   const handleRoleChange = (role: string) => {
     setSelectedRole(role);
   };
- 
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'USD',
     }).format(amount);
   };
 
   if (loading) {
-    return (
-      <p>Loading...</p>
-    );
+    return <p>Loading...</p>;
   }
 
   if (error || !data) {
-    return (
-      <p className="text-red-600">{error || 'No data available'}</p>
-    );
+    return <p className="text-red-600">{error || 'No data available'}</p>;
   }
- 
 
-export default function Analytics() {
-  const [ready, setReady] = useState(false);
-  useEffect(() => setReady(true), []);
   return (
      <div className="space-y-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

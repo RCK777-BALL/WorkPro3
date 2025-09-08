@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import Layout from '../components/layout/Layout';
 import Button from '../components/common/Button';
 import http from '../lib/http';
 import type { NotificationType } from '../types';
@@ -69,8 +68,7 @@ const Notifications = () => {
   };
 
   return (
-    <Layout title="Notifications">
-      <div className="space-y-4">
+          <div className="space-y-4">
         {notifications.map(n => (
           <div
             key={n.id}
@@ -110,7 +108,6 @@ const Notifications = () => {
           </div>
         )}
       </div>
-    </Layout>
   );
 };
 

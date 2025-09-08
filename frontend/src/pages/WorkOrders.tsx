@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import Layout from '../components/layout/Layout';
 import http from '../lib/http';
 import { addToQueue } from '../utils/offlineQueue';
 import DataTable from '../components/common/DataTable';
@@ -162,8 +161,7 @@ export default function WorkOrders() {
   ];
 
   return (
-    <Layout title="Work Orders">
-      <div className="space-y-6 p-6">
+          <div className="space-y-6 p-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Work Orders</h1>
           <Button variant="primary" onClick={() => setShowCreateModal(true)}>
@@ -263,6 +261,5 @@ export default function WorkOrders() {
           }}
         />
       </div>
-    </Layout>
   );
 }

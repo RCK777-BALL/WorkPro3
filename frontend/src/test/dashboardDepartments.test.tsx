@@ -5,9 +5,6 @@ import { useAuthStore } from '../store/authStore';
 import Dashboard from '../pages/Dashboard';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../components/layout/Layout', () => ({
-  default: ({ children }: any) => <div>{children}</div>,
-}));
 
 const mockSocket = { on: vi.fn(), off: vi.fn() };
 vi.mock('../utils/notificationsSocket', () => ({

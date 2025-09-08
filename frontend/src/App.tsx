@@ -1,6 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
- import Layout from "./components/layout/Layout";
-import Dashboard from "./pages/Dashboard";
+ import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
 import Departments from "./pages/Departments";
  import NotFound from "./pages/NotFound";
@@ -9,8 +8,7 @@ import Departments from "./pages/Departments";
 export default function App() {
   return (
     <div className="min-h-screen bg-white text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100">
-      <Layout>
-        <Routes>
+              <Routes>
            <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Dashboard />} />
@@ -20,7 +18,6 @@ export default function App() {
            <Route path="*" element={<NotFound />} />
  
         </Routes>
-      </Layout>
     </div>
  
   );

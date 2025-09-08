@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import Layout from '../components/layout/Layout';
 import { Download, Calendar, Filter } from 'lucide-react';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
@@ -92,23 +91,18 @@ const Analytics: React.FC = () => {
 
   if (loading) {
     return (
-      <Layout title="Analytics">
-        <p>Loading...</p>
-      </Layout>
+      <p>Loading...</p>
     );
   }
 
   if (error || !data) {
     return (
-      <Layout title="Analytics">
-        <p className="text-red-600">{error || 'No data available'}</p>
-      </Layout>
+      <p className="text-red-600">{error || 'No data available'}</p>
     );
   }
 
   return (
-    <Layout title="Analytics">
-      <div className="space-y-6">
+    <div className="space-y-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="space-y-1">
               <h2 className="text-2xl font-bold text-neutral-900">Analytics</h2>
@@ -524,7 +518,7 @@ const Analytics: React.FC = () => {
           </div>
         </Card>
       </div>
-    </Layout>
+    </div>
   );
 };
 

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import Layout from '../components/layout/Layout';
 import {
  
   Palette,
@@ -81,8 +80,7 @@ const Settings: React.FC = () => {
   };
 
   return (
-    <Layout title="Settings">
-      <div className="space-y-6">
+          <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="space-y-1">
             <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Settings</h2>
@@ -283,7 +281,6 @@ const Settings: React.FC = () => {
           </Card>
         </div>
       </div>
-    </Layout>
   );
 };
 

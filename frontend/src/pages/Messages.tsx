@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import Layout from '../components/layout/Layout';
 import ChatSidebar from '../components/messaging/ChatSidebar';
 import ChatHeader from '../components/messaging/ChatHeader';
 import MessageList from '../components/messaging/MessageList';
@@ -249,7 +248,7 @@ const Messages: React.FC = () => {
   };
 
   return (
-    <Layout>
+    <>
       <div className="flex h-[calc(100vh-4rem)]">
         <ChatSidebar
           channels={channels}
@@ -310,7 +309,7 @@ const Messages: React.FC = () => {
           <SettingsModal isOpen={settingsOpen} channelId={activeChannel.id} onClose={() => setSettingsOpen(false)} />
         </>
       )}
-    </Layout>
+    </>
   );
 };
 

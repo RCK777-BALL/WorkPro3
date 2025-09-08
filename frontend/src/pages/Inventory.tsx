@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Layout from '../components/layout/Layout';
 import { Plus, Search, Download, Upload, AlertTriangle, QrCode } from 'lucide-react';
 import Button from '../components/common/Button';
 import InventoryTable from '../components/inventory/InventoryTable';
@@ -71,8 +70,7 @@ const Inventory: React.FC = () => {
   );
 
   return (
-    <Layout title="Inventory">
-      <div className="space-y-6">
+          <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="space-y-1">
             <h2 className="text-2xl font-bold text-neutral-900">Inventory</h2>
@@ -181,7 +179,6 @@ const Inventory: React.FC = () => {
           onScanComplete={(data) => handleOpenModal(null, data)}
         />
       </div>
-    </Layout>
   );
 };
 

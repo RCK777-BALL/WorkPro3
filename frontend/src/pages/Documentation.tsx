@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import Layout from '../components/layout/Layout';
 import { Search, Book, Video, FileText, MessageCircle, ChevronRight, Plus, Trash2, FolderPlus, Edit2 } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
@@ -105,8 +104,7 @@ const Documentation: React.FC = () => {
   };
 
   return (
-    <Layout title="Documentation">
-      <div className="space-y-6">
+          <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="space-y-1">
             <h2 className="text-2xl font-bold text-neutral-900">Documentation</h2>
@@ -263,7 +261,6 @@ const Documentation: React.FC = () => {
           </div>
         </Card>
       </div>
-    </Layout>
   );
 };
 

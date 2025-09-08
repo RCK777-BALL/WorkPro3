@@ -4,7 +4,6 @@ import React from 'react';
 import http from '../lib/http';
 
 vi.mock('../lib/http');
-vi.mock('../components/layout/Layout', () => ({ default: ({ children }: any) => <div>{children}</div> }));
 vi.mock('../components/kpi/KpiWidget', () => ({ default: () => <div /> }));
 vi.mock('../components/kpi/KpiExportButtons', () => ({ default: () => <div /> }));
 vi.mock('../components/common/Button', () => ({ default: ({ children }: any) => <button>{children}</button> }));

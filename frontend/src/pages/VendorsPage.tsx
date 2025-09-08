@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import Layout from '../components/layout/Layout';
 import Button from '../components/common/Button';
 import DataTable from '../components/common/DataTable';
 import VendorModal from '../components/vendors/VendorModal';
@@ -76,8 +75,7 @@ const VendorsPage = () => {
   ];
 
   return (
-    <Layout title="Vendors">
-      <div className="space-y-6">
+          <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">Vendors</h2>
           <Button
@@ -98,7 +96,6 @@ const VendorsPage = () => {
           onSave={handleSave}
         />
       </div>
-    </Layout>
   );
 };
 

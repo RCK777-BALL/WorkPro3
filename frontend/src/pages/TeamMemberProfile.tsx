@@ -1,6 +1,5 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import Layout from '../components/layout/Layout';
 import Avatar from '../components/common/Avatar';
 import WorkHistoryCard from '../components/teams/WorkHistoryCard';
 import { teamMembers } from '../utils/data';
@@ -12,9 +11,7 @@ const TeamMemberProfile: React.FC = () => {
 
   if (!member) {
     return (
-      <Layout title="Member Not Found">
-        <p className="text-neutral-500">Member not found.</p>
-      </Layout>
+      <p className="text-neutral-500">Member not found.</p>
     );
   }
 
@@ -81,8 +78,7 @@ const TeamMemberProfile: React.FC = () => {
   };
 
   return (
-    <Layout title={member.name}>
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6 flex items-center space-x-4">
           <Avatar name={member.name} src={member.avatar} size="lg" />
           <div>
@@ -124,7 +120,7 @@ const TeamMemberProfile: React.FC = () => {
 
         <WorkHistoryCard metrics={sampleWorkHistory.metrics} recentWork={sampleWorkHistory.recentWork} />
       </div>
-    </Layout>
+    </div>
   );
 };
 

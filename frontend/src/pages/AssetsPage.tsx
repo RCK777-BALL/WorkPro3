@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import Layout from '../components/layout/Layout';
 import AssetTable from '../components/assets/AssetTable';
 import AssetModal from '../components/assets/AssetModal';
 import WorkOrderModal from '../components/work-orders/WorkOrderModal';
@@ -98,8 +97,7 @@ const AssetsPage = () => {
   };
 
   return (
-    <Layout title="Assets">
-      <div className="space-y-6">
+          <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">Assets</h2>
           <Button variant="primary" onClick={() => { setSelected(null); setModalOpen(true); }}>
@@ -152,7 +150,6 @@ const AssetsPage = () => {
           }}
         />
       </div>
-    </Layout>
   );
 };
 

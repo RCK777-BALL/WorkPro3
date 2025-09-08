@@ -65,7 +65,7 @@ const RegisterPage: React.FC = () => {
             <button
               onClick={promptInstall}
               type="button"
-              className="mb-2 px-4 py-2 rounded bg-blue-600 text-white"
+              className="mb-2 px-4 py-2 rounded bg-primary-600 text-white"
             >
               {t('app.install', 'Install App')}
             </button>
@@ -123,13 +123,13 @@ const RegisterPage: React.FC = () => {
 
         {error && <div className="text-red-500">{error}</div>}
 
-        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded w-full">
+        <button type="submit" className="bg-primary-600 text-white px-4 py-2 rounded w-full">
           {t('auth.register', 'Register')}
         </button>
 
         <p className="text-sm text-center">
           {t('auth.alreadyHaveAccount', 'Already have an account?')}{' '}
-          <Link to="/login" className="text-blue-600">
+          <Link to="/login" className="text-primary-600">
             {t('auth.login', 'Login')}
           </Link>
         </p>

@@ -62,7 +62,7 @@ const Portal: React.FC = () => {
           className="border p-2 w-full"
         />
       </div>
-      <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
+      <button type="submit" className="bg-primary-500 text-white px-4 py-2 rounded">
         Submit
       </button>
     </form>

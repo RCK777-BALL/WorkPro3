@@ -107,7 +107,7 @@ const Login: React.FC = () => {
           <div className="flex justify-center">
             <button
               onClick={promptInstall}
-              className="mb-4 px-4 py-2 rounded bg-blue-600 text-white"
+              className="mb-4 px-4 py-2 rounded bg-primary-600 text-white"
             >
               {t('app.install', 'Install App')}
             </button>
@@ -136,16 +136,16 @@ const Login: React.FC = () => {
               required
             />
             {error && <div className="text-red-500">{error}</div>}
-            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded w-full">
+            <button type="submit" className="bg-primary-600 text-white px-4 py-2 rounded w-full">
               {t('auth.login', 'Login')}
             </button>
 
             {/* OAuth shortcuts */}
             <div className="flex flex-col space-y-2 pt-2">
-              <a href="/api/auth/oauth/google" className="text-blue-600">
+              <a href="/api/auth/oauth/google" className="text-primary-600">
                 {t('auth.loginWithGoogle', 'Login with Google')}
               </a>
-              <a href="/api/auth/oauth/github" className="text-blue-600">
+              <a href="/api/auth/oauth/github" className="text-primary-600">
                 {t('auth.loginWithGitHub', 'Login with GitHub')}
               </a>
             </div>
@@ -164,17 +164,17 @@ const Login: React.FC = () => {
               required
             />
             {error && <div className="text-red-500">{error}</div>}
-            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded w-full">
+            <button type="submit" className="bg-primary-600 text-white px-4 py-2 rounded w-full">
               {t('auth.verify', 'Verify')}
             </button>
           </form>
         )}
 
         <div className="flex justify-between text-sm">
-          <Link to="/register" className="text-blue-600">
+          <Link to="/register" className="text-primary-600">
             {t('auth.register', 'Register')}
           </Link>
-          <Link to="/forgot-password" className="text-blue-600">
+          <Link to="/forgot-password" className="text-primary-600">
             {t('auth.forgotPassword', 'Forgot Password?')}
           </Link>
         </div>

@@ -26,9 +26,40 @@ export const loadQueue = (): QueuedRequest[] => {
 const saveQueue = (queue: QueuedRequest[]) => {
   try {
     localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
-  } catch (err) {
-    console.error('Failed to persist offline queue', err);
-    emitToast('Failed to save offline changes; they may be lost', 'error');
+  } catch (err: any) {
+    if (
+      err instanceof DOMException &&
+      (err.name === 'QuotaExceededError' || err.name === 'NS_ERROR_DOM_QUOTA_REACHED')
+    ) {
+      emitToast(
+        'Offline storage full; oldest offline changes were discarded',
+        'error'
+      );
+      const trimmed = [...queue];
+      while (trimmed.length > 0) {
+        trimmed.shift();
+        try {
+          localStorage.setItem(QUEUE_KEY, JSON.stringify(trimmed));
+          return;
+        } catch (e: any) {
+          if (
+            !(
+              e instanceof DOMException &&
+              (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED')
+            )
+          ) {
+            console.error('Failed to persist offline queue', e);
+            emitToast('Failed to save offline changes; they may be lost', 'error');
+            return;
+          }
+        }
+      }
+      console.error('Failed to persist offline queue; storage still full');
+      emitToast('Failed to save offline changes; they may be lost', 'error');
+    } else {
+      console.error('Failed to persist offline queue', err);
+      emitToast('Failed to save offline changes; they may be lost', 'error');
+    }
   }
 };
 

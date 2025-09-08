@@ -2,7 +2,9 @@
  import Dashboard from "./pages/Dashboard";
  
 import Analytics from "./pages/Analytics";
-import RequireAuth from "./components/auth/RequireAuth";
+import DashboardLayout from "./pages/dashboard/DashboardLayout";
+import Departments from "./pages/Departments";
+import NotFound from "./pages/NotFound";
 
 export default function App() {
   return (

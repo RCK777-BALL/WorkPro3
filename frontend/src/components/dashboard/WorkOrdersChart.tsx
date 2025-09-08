@@ -1,5 +1,6 @@
 import React from 'react';
 import Card from '../common/Card';
+import ProgressBar from '../common/ProgressBar';
 
 interface WorkOrdersChartProps {
   data?: {
@@ -28,12 +29,13 @@ const WorkOrdersChart: React.FC<WorkOrdersChartProps> = ({ data }) => {
     <Card title="Work Orders by Status" subtitle="Last 30 days performance">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <div className="w-full max-w-xs bg-neutral-100 rounded-full h-2.5">
-            <div
-              className="bg-primary-600 h-2.5 rounded-full"
-              style={{ width: `${calculatePercentage(data?.open ?? 0)}%` }}
-            ></div>
-          </div>
+          <ProgressBar
+            value={data?.open ?? 0}
+            max={total}
+            className="max-w-xs bg-neutral-100 h-2.5"
+            barClassName="bg-primary-600"
+            label="Open work orders"
+          />
           <div className="ml-4 min-w-[80px]">
             <div className="flex items-center">
               <div className="w-3 h-3 bg-primary-600 rounded-full mr-2"></div>
@@ -44,12 +46,13 @@ const WorkOrdersChart: React.FC<WorkOrdersChartProps> = ({ data }) => {
         </div>
 
         <div className="flex items-center justify-between">
-          <div className="w-full max-w-xs bg-neutral-100 rounded-full h-2.5">
-            <div
-              className="bg-accent-500 h-2.5 rounded-full"
-              style={{ width: `${calculatePercentage(data?.inProgress ?? 0)}%` }}
-            ></div>
-          </div>
+          <ProgressBar
+            value={data?.inProgress ?? 0}
+            max={total}
+            className="max-w-xs bg-neutral-100 h-2.5"
+            barClassName="bg-accent-500"
+            label="In progress work orders"
+          />
           <div className="ml-4 min-w-[80px]">
             <div className="flex items-center">
               <div className="w-3 h-3 bg-accent-500 rounded-full mr-2"></div>
@@ -60,12 +63,13 @@ const WorkOrdersChart: React.FC<WorkOrdersChartProps> = ({ data }) => {
         </div>
 
         <div className="flex items-center justify-between">
-          <div className="w-full max-w-xs bg-neutral-100 rounded-full h-2.5">
-            <div
-              className="bg-warning-500 h-2.5 rounded-full"
-              style={{ width: `${calculatePercentage(data?.onHold ?? 0)}%` }}
-            ></div>
-          </div>
+          <ProgressBar
+            value={data?.onHold ?? 0}
+            max={total}
+            className="max-w-xs bg-neutral-100 h-2.5"
+            barClassName="bg-warning-500"
+            label="On hold work orders"
+          />
           <div className="ml-4 min-w-[80px]">
             <div className="flex items-center">
               <div className="w-3 h-3 bg-warning-500 rounded-full mr-2"></div>
@@ -76,12 +80,13 @@ const WorkOrdersChart: React.FC<WorkOrdersChartProps> = ({ data }) => {
         </div>
 
         <div className="flex items-center justify-between">
-          <div className="w-full max-w-xs bg-neutral-100 rounded-full h-2.5">
-            <div
-              className="bg-success-500 h-2.5 rounded-full"
-              style={{ width: `${calculatePercentage(data?.completed ?? 0)}%` }}
-            ></div>
-          </div>
+          <ProgressBar
+            value={data?.completed ?? 0}
+            max={total}
+            className="max-w-xs bg-neutral-100 h-2.5"
+            barClassName="bg-success-500"
+            label="Completed work orders"
+          />
           <div className="ml-4 min-w-[80px]">
             <div className="flex items-center">
               <div className="w-3 h-3 bg-success-500 rounded-full mr-2"></div>

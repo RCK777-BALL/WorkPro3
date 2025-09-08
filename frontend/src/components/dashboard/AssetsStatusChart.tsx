@@ -1,6 +1,7 @@
 import React from 'react';
 import Card from '../common/Card';
- import type { AssetStatusMap } from '../../types';
+import ProgressBar from '../common/ProgressBar';
+import type { AssetStatusMap } from '../../types';
  
 
 interface AssetsStatusChartProps {
@@ -9,22 +10,19 @@ interface AssetsStatusChartProps {
 
 const AssetsStatusChart: React.FC<AssetsStatusChartProps> = ({ data }) => {
   const total = Object.values(data || {}).reduce((sum, v) => sum + (v || 0), 0);
-  const calculatePercentage = (value: number) => {
-    if (!total) return 0;
-    return Math.round((value / total) * 100);
-  };
 
   return (
     <Card title="Assets by Status" subtitle="Current asset distribution">
       <div className="space-y-4">
         {Object.entries(data || {}).map(([status, value]) => (
           <div key={status} className="flex items-center justify-between">
-            <div className="w-full max-w-xs bg-neutral-100 rounded-full h-2.5" aria-hidden="true">
-              <div
-                className="bg-primary-600 h-2.5 rounded-full"
-                style={{ width: `${calculatePercentage(value)}%` }}
-              />
-            </div>
+            <ProgressBar
+              value={value || 0}
+              max={total || 0}
+              className="max-w-xs bg-neutral-100 h-2.5"
+              barClassName="bg-primary-600"
+              label={status}
+            />
             <div className="ml-4 min-w-[80px]">
               <div className="flex items-center">
                 <span className="text-sm font-medium capitalize">{status}</span>

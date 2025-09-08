@@ -4,6 +4,7 @@ import { Download, Calendar, Filter } from 'lucide-react';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
+import ProgressBar from '../components/common/ProgressBar';
 import http from '../lib/http';
 import { useDashboardStore } from '../store/dashboardStore';
  // import { useAuth } from '../context/AuthContext';
@@ -194,12 +195,13 @@ const Analytics: React.FC = () => {
                 />
               </div>
               <p className="text-2xl font-semibold">{data.workOrderCompletionRate.toFixed(1)}%</p>
-              <div className="w-full bg-neutral-200 rounded-full h-1.5">
-                <div
-                  className="bg-success-500 h-1.5 rounded-full"
-                  style={{ width: `${data.workOrderCompletionRate}%` }}
-                />
-              </div>
+              <ProgressBar
+                value={data.workOrderCompletionRate}
+                max={100}
+                className="h-1.5"
+                barClassName="bg-success-500"
+                label="work order completion rate"
+              />
             </div>
           </Card>
 
@@ -213,12 +215,13 @@ const Analytics: React.FC = () => {
                 />
               </div>
               <p className="text-2xl font-semibold">{data.averageResponseTime.toFixed(1)}h</p>
-              <div className="w-full bg-neutral-200 rounded-full h-1.5">
-                <div 
-                  className="bg-primary-500 h-1.5 rounded-full" 
-                  style={{ width: '80%' }}
-                />
-              </div>
+              <ProgressBar
+                value={80}
+                max={100}
+                className="h-1.5"
+                barClassName="bg-primary-500"
+                label="average response time"
+              />
             </div>
           </Card>
 
@@ -232,12 +235,13 @@ const Analytics: React.FC = () => {
                 />
               </div>
               <p className="text-2xl font-semibold">{data.maintenanceCompliance.toFixed(1)}%</p>
-              <div className="w-full bg-neutral-200 rounded-full h-1.5">
-                <div 
-                  className="bg-success-500 h-1.5 rounded-full" 
-                  style={{ width: `${data.maintenanceCompliance}%` }}
-                />
-              </div>
+              <ProgressBar
+                value={data.maintenanceCompliance}
+                max={100}
+                className="h-1.5"
+                barClassName="bg-success-500"
+                label="maintenance compliance"
+              />
             </div>
           </Card>
 
@@ -251,12 +255,13 @@ const Analytics: React.FC = () => {
                 />
               </div>
               <p className="text-2xl font-semibold">{data.assetUptime.toFixed(1)}%</p>
-              <div className="w-full bg-neutral-200 rounded-full h-1.5">
-                <div 
-                  className="bg-success-500 h-1.5 rounded-full" 
-                  style={{ width: `${data.assetUptime}%` }}
-                />
-              </div>
+              <ProgressBar
+                value={data.assetUptime}
+                max={100}
+                className="h-1.5"
+                barClassName="bg-success-500"
+                label="asset uptime"
+              />
             </div>
           </Card>
 
@@ -270,12 +275,13 @@ const Analytics: React.FC = () => {
                 />
               </div>
               <p className="text-2xl font-semibold">{formatCurrency(data.costPerWorkOrder)}</p>
-              <div className="w-full bg-neutral-200 rounded-full h-1.5">
-                <div 
-                  className="bg-primary-500 h-1.5 rounded-full" 
-                  style={{ width: '75%' }}
-                />
-              </div>
+              <ProgressBar
+                value={75}
+                max={100}
+                className="h-1.5"
+                barClassName="bg-primary-500"
+                label="cost per work order"
+              />
             </div>
           </Card>
 
@@ -289,12 +295,13 @@ const Analytics: React.FC = () => {
                 />
               </div>
               <p className="text-2xl font-semibold">{data.laborUtilization.toFixed(1)}%</p>
-              <div className="w-full bg-neutral-200 rounded-full h-1.5">
-                <div 
-                  className="bg-success-500 h-1.5 rounded-full" 
-                  style={{ width: `${data.laborUtilization}%` }}
-                />
-              </div>
+              <ProgressBar
+                value={data.laborUtilization}
+                max={100}
+                className="h-1.5"
+                barClassName="bg-success-500"
+                label="labor utilization"
+              />
             </div>
           </Card>
         </div>
@@ -355,9 +362,13 @@ const Analytics: React.FC = () => {
                   <span className="text-sm font-medium">Critical</span>
                   <span className="text-sm font-medium">15%</span>
                 </div>
-                <div className="w-full bg-neutral-200 rounded-full h-2">
-                  <div className="bg-error-500 h-2 rounded-full" style={{ width: '15%' }}></div>
-                </div>
+                <ProgressBar
+                  value={15}
+                  max={100}
+                  className="h-2"
+                  barClassName="bg-error-500"
+                  label="critical work orders"
+                />
               </div>
               
               <div>
@@ -365,9 +376,13 @@ const Analytics: React.FC = () => {
                   <span className="text-sm font-medium">High</span>
                   <span className="text-sm font-medium">25%</span>
                 </div>
-                <div className="w-full bg-neutral-200 rounded-full h-2">
-                  <div className="bg-warning-500 h-2 rounded-full" style={{ width: '25%' }}></div>
-                </div>
+                <ProgressBar
+                  value={25}
+                  max={100}
+                  className="h-2"
+                  barClassName="bg-warning-500"
+                  label="high priority work orders"
+                />
               </div>
               
               <div>
@@ -375,9 +390,13 @@ const Analytics: React.FC = () => {
                   <span className="text-sm font-medium">Medium</span>
                   <span className="text-sm font-medium">40%</span>
                 </div>
-                <div className="w-full bg-neutral-200 rounded-full h-2">
-                  <div className="bg-primary-500 h-2 rounded-full" style={{ width: '40%' }}></div>
-                </div>
+                <ProgressBar
+                  value={40}
+                  max={100}
+                  className="h-2"
+                  barClassName="bg-primary-500"
+                  label="medium priority work orders"
+                />
               </div>
               
               <div>
@@ -385,9 +404,13 @@ const Analytics: React.FC = () => {
                   <span className="text-sm font-medium">Low</span>
                   <span className="text-sm font-medium">20%</span>
                 </div>
-                <div className="w-full bg-neutral-200 rounded-full h-2">
-                  <div className="bg-success-500 h-2 rounded-full" style={{ width: '20%' }}></div>
-                </div>
+                <ProgressBar
+                  value={20}
+                  max={100}
+                  className="h-2"
+                  barClassName="bg-success-500"
+                  label="low priority work orders"
+                />
               </div>
             </div>
           </Card>
@@ -402,9 +425,13 @@ const Analytics: React.FC = () => {
                   <span className="text-sm font-medium">Preventive</span>
                   <span className="text-sm font-medium">45%</span>
                 </div>
-                <div className="w-full bg-neutral-200 rounded-full h-2">
-                  <div className="bg-success-500 h-2 rounded-full" style={{ width: '45%' }}></div>
-                </div>
+                <ProgressBar
+                  value={45}
+                  max={100}
+                  className="h-2"
+                  barClassName="bg-success-500"
+                  label="preventive maintenance"
+                />
               </div>
               
               <div>
@@ -412,9 +439,13 @@ const Analytics: React.FC = () => {
                   <span className="text-sm font-medium">Corrective</span>
                   <span className="text-sm font-medium">30%</span>
                 </div>
-                <div className="w-full bg-neutral-200 rounded-full h-2">
-                  <div className="bg-warning-500 h-2 rounded-full" style={{ width: '30%' }}></div>
-                </div>
+                <ProgressBar
+                  value={30}
+                  max={100}
+                  className="h-2"
+                  barClassName="bg-warning-500"
+                  label="corrective maintenance"
+                />
               </div>
               
               <div>
@@ -422,9 +453,13 @@ const Analytics: React.FC = () => {
                   <span className="text-sm font-medium">Predictive</span>
                   <span className="text-sm font-medium">15%</span>
                 </div>
-                <div className="w-full bg-neutral-200 rounded-full h-2">
-                  <div className="bg-primary-500 h-2 rounded-full" style={{ width: '15%' }}></div>
-                </div>
+                <ProgressBar
+                  value={15}
+                  max={100}
+                  className="h-2"
+                  barClassName="bg-primary-500"
+                  label="predictive maintenance"
+                />
               </div>
               
               <div>
@@ -432,9 +467,13 @@ const Analytics: React.FC = () => {
                   <span className="text-sm font-medium">Condition-based</span>
                   <span className="text-sm font-medium">10%</span>
                 </div>
-                <div className="w-full bg-neutral-200 rounded-full h-2">
-                  <div className="bg-teal-500 h-2 rounded-full" style={{ width: '10%' }}></div>
-                </div>
+                <ProgressBar
+                  value={10}
+                  max={100}
+                  className="h-2"
+                  barClassName="bg-teal-500"
+                  label="condition-based maintenance"
+                />
               </div>
             </div>
           </Card>
@@ -472,14 +511,13 @@ const Analytics: React.FC = () => {
                   />
                 </div>
                 <div className="mt-4">
-                  <div className="w-full bg-neutral-200 rounded-full h-1.5">
-                    <div 
-                      className={`h-1.5 rounded-full ${
-                        index === 0 ? 'bg-error-500' : 'bg-warning-500'
-                      }`}
-                      style={{ width: `${85 - index * 15}%` }}
-                    />
-                  </div>
+                  <ProgressBar
+                    value={85 - index * 15}
+                    max={100}
+                    className="h-1.5"
+                    barClassName={index === 0 ? 'bg-error-500' : 'bg-warning-500'}
+                    label={`${asset.name} risk`}
+                  />
                 </div>
               </div>
             ))}

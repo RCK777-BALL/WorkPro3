@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import Layout from '../components/layout/Layout';
 import Button from '../components/common/Button';
 import http from '../lib/http';
 import type { Timesheet } from '../types';
@@ -84,8 +83,7 @@ const TimeSheets: React.FC = () => {
   };
 
   return (
-    <Layout title="Timesheets">
-      <div className="max-w-2xl mx-auto space-y-6">
+          <div className="max-w-2xl mx-auto space-y-6">
         <form
           onSubmit={handleSubmit}
           className="bg-white dark:bg-neutral-800 p-4 rounded-lg shadow space-y-4"
@@ -163,7 +161,6 @@ const TimeSheets: React.FC = () => {
           ))}
         </div>
       </div>
-    </Layout>
   );
 };
 

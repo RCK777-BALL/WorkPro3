@@ -1,29 +1,24 @@
-import { Navigate, Routes, Route } from "react-router-dom";
-import Login from "./pages/Login";
-import DashboardLayout from "./pages/dashboard/DashboardLayout";
-import DashboardHome from "./pages/dashboard/DashboardHome";
+ import { Routes, Route, Navigate } from "react-router-dom";
+ import Dashboard from "./pages/Dashboard";
+ 
 import Analytics from "./pages/Analytics";
 import RequireAuth from "./components/auth/RequireAuth";
 
 export default function App() {
   return (
-    <Routes>
-      {/* Public */}
-      <Route path="/login" element={<Login />} />
-
-      {/* Private area */}
-      <Route element={<RequireAuth />}>
-        <Route path="/dashboard/*" element={<DashboardLayout />}>
-          <Route index element={<DashboardHome />} />
-          <Route path="analytics" element={<Analytics />} />
-        </Route>
-      </Route>
-
-      {/* Default redirect */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
-
-      {/* 404 */}
-      <Route path="*" element={<div className="p-8">Not Found</div>} />
-    </Routes>
+     <div className="min-h-screen bg-white text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100">
+              <Routes>
+           <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<DashboardLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="analytics" element={<Analytics />} />
+          </Route>
+          <Route path="/departments" element={<Departments />} />
+           <Route path="*" element={<NotFound />} />
+ 
+        </Routes>
+    </div>
+ 
+ 
   );
 }

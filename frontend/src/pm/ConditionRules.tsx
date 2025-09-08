@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import Layout from '../components/layout/Layout';
 import Button from '../components/common/Button';
 import http from '../lib/http';
 
@@ -58,8 +57,7 @@ const ConditionRules: React.FC = () => {
   };
 
   return (
-    <Layout title="Condition Rules">
-      <div className="p-6 space-y-6">
+          <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Condition Rules</h1>
           <Button variant="primary" onClick={() => setForm({ ...emptyRule })}>
@@ -142,7 +140,6 @@ const ConditionRules: React.FC = () => {
           </div>
         )}
       </div>
-    </Layout>
   );
 };
 

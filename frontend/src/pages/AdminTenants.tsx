@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import Layout from '../components/layout/Layout';
 import Button from '../components/common/Button';
 import http from '../lib/http';
 import { useToast } from '../context/ToastContext';
@@ -66,8 +65,7 @@ const AdminTenants = () => {
   };
 
   return (
-    <Layout>
-      <div className="max-w-xl mx-auto p-4">
+          <div className="max-w-xl mx-auto p-4">
         <h1 className="text-2xl font-bold mb-4">Tenants</h1>
         <form onSubmit={handleSubmit} className="flex gap-2 mb-4">
           <input
@@ -106,7 +104,6 @@ const AdminTenants = () => {
           ))}
         </ul>
       </div>
-    </Layout>
   );
 };
 

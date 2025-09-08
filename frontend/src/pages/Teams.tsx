@@ -1,7 +1,6 @@
  
 import { useEffect, useState } from 'react';
  
-import Layout from '../components/layout/Layout';
 import Button from '../components/common/Button';
 import TeamTable from '../components/teams/TeamTable';
 import TeamModal from '../components/teams/TeamModal';
@@ -28,8 +27,7 @@ const Teams = () => {
   };
 
   return (
-    <Layout title="Team">
-      <div className="space-y-6">
+          <div className="space-y-6">
          <div className="flex justify-end">
           <Button
             onClick={() => {
@@ -52,7 +50,6 @@ const Teams = () => {
  
         />
       </div>
-    </Layout>
   );
 };
 

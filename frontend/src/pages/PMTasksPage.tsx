@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import Layout from '../components/layout/Layout';
 import Button from '../components/common/Button';
 import PmTaskForm from '../components/maintenance/PmTaskForm';
 import http from '../lib/http';
@@ -34,8 +33,7 @@ const PMTasksPage: React.FC = () => {
   };
 
   return (
-    <Layout title="PM Tasks">
-      <div className="space-y-6 p-6">
+          <div className="space-y-6 p-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">PM Tasks</h1>
           <Button variant="primary" onClick={() => { setSelected(null); setShowForm(true); }}>
@@ -63,7 +61,6 @@ const PMTasksPage: React.FC = () => {
           </div>
         )}
       </div>
-    </Layout>
   );
 };
 

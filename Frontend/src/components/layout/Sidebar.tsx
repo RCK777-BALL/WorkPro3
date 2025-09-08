@@ -38,6 +38,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { useNavigationStore, NavItemId } from '../../store/navigationStore';
 import { useTranslation } from 'react-i18next';
+import ProgressBar from '../common/ProgressBar';
  
 
 interface SidebarProps {
@@ -206,12 +207,13 @@ const Sidebar: React.FC<SidebarProps> = ({
           {!collapsed && (
             <p className="text-sm text-neutral-300 mb-1">{t('sidebar.complete', { value: completion })}</p>
           )}
-          <div className="w-full bg-neutral-100 dark:bg-neutral-800 rounded-full h-2">
-            <div
-              className="bg-success-500 h-2 rounded-full"
-              style={{ width: `${completion}%` }}
-            />
-          </div>
+          <ProgressBar
+            value={completion}
+            max={100}
+            className="bg-neutral-100 dark:bg-neutral-800 h-2"
+            barClassName="bg-success-500"
+            label="profile completion"
+          />
         </div>
 
         <button

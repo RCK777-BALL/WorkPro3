@@ -3,7 +3,7 @@ import { Smile, Paperclip, Send, Image, AtSign, Hash } from 'lucide-react';
 import data from '@emoji-mart/data';
  
 import Picker from '@emoji-mart/react';
-import { getNotificationsSocket } from '../../utils/notificationsSocket';
+import { getChatSocket } from '../../utils/chatSocket';
  
 
 interface ChatInputProps {
@@ -29,12 +29,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
       onSendMessage(message);
  
       try {
-        const s = getNotificationsSocket();
+        const s = getChatSocket();
         if (s.connected) {
-          s.emit('message', message);
+          s.emit('chat:message', message);
         }
       } catch (err) {
-        console.error('Failed to emit message', err);
+        console.error('Failed to emit chat:message', err);
       }
  
       setMessage('');

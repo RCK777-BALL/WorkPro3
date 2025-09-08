@@ -105,7 +105,7 @@ const Layout: React.FC<LayoutProps> = ({ children, title }) => {
               <div className="mb-4 flex justify-center">
                 <button
                   onClick={promptInstall}
-                  className="px-4 py-2 rounded bg-blue-600 text-white"
+                  className="px-4 py-2 rounded bg-primary-600 text-white"
                 >
                   Install App
                 </button>

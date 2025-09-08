@@ -48,7 +48,7 @@ const ForgotPasswordPage: React.FC = () => {
             <button
               onClick={promptInstall}
               type="button"
-              className="mb-4 px-4 py-2 rounded bg-blue-600 text-white"
+              className="mb-4 px-4 py-2 rounded bg-primary-600 text-white"
             >
               {t('app.install')}
             </button>
@@ -64,11 +64,11 @@ const ForgotPasswordPage: React.FC = () => {
           autoComplete="email"
         />
         {message && <div className="text-green-600">{message}</div>}
-        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded w-full">
+        <button type="submit" className="bg-primary-600 text-white px-4 py-2 rounded w-full">
           {t('auth.sendResetLink')}
         </button>
         <p className="text-sm text-center">
-          <Link to="/login" className="text-blue-600">{t('auth.backToLogin')}</Link>
+          <Link to="/login" className="text-primary-600">{t('auth.backToLogin')}</Link>
         </p>
       </form>
     </div>

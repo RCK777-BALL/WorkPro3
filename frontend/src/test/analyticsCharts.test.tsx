@@ -11,8 +11,13 @@ vi.mock('../components/common/Button', () => ({ default: ({ children }: any) => 
 vi.mock('../components/common/Card', () => ({ default: ({ children, title }: any) => <div>{title}{children}</div> }));
 vi.mock('../components/common/Badge', () => ({ default: () => <span /> }));
 const lineMock = vi.fn((props: any) => <canvas {...props} />);
-vi.mock('react-chartjs-2', () => ({ Line: (props: any) => lineMock(props) }));
-vi.mock('chart.js', () => ({ CategoryScale: {}, LinearScale: {}, PointElement: {}, LineElement: {}, Tooltip: {}, Legend: {}, Chart: {}, register: () => {} }));
+// TODO: Remove `{ virtual: true }` once chart libraries are installed and imported correctly.
+vi.mock('react-chartjs-2', () => ({ Line: (props: any) => lineMock(props) }), { virtual: true });
+vi.mock(
+  'chart.js',
+  () => ({ CategoryScale: {}, LinearScale: {}, PointElement: {}, LineElement: {}, Tooltip: {}, Legend: {}, Chart: {}, register: () => {} }),
+  { virtual: true },
+);
 
 import Analytics from '../pages/Analytics';
 

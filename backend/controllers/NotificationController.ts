@@ -3,7 +3,6 @@ import Notification, { NotificationDocument } from '../models/Notifications';
 import User from '../models/User';
 import nodemailer from 'nodemailer';
 import { Response, NextFunction } from 'express';
-import { AuthedRequest, AuthedRequestHandler } from '../types/http';
 
 type IdParams = { id: string };
 

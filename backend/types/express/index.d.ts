@@ -1,32 +1,33 @@
- export type RequestUser = {
-  id: string;
-  _id?: string;
-  email?: string;
-  role?: string;
-};
- 
+import { Request, RequestHandler } from 'express';
+import { Types } from 'mongoose';
+import type { UserRole } from '../../models/User';
 
 declare global {
+  interface RequestUser {
+    id?: string;
+    _id?: Types.ObjectId | string;
+    email?: string;
+    role?: UserRole;
+    tenantId?: string;
+    theme?: 'light' | 'dark' | 'system';
+    colorScheme?: string;
+  }
+
+  type AuthedRequest<P = any, ResBody = any, ReqBody = any, ReqQuery = any> =
+    Request<P, ResBody, ReqBody, ReqQuery>;
+  type AuthedRequestHandler<P = any, ResBody = any, ReqBody = any, ReqQuery = any> =
+    RequestHandler<P, ResBody, ReqBody, ReqQuery>;
+
   namespace Express {
+    interface User extends RequestUser {}
+
     interface Request {
-      /**
-       * Authenticated user details. Optional on the base Request and
-       * populated by the authentication middleware.
-       */
       user?: RequestUser;
-
-      /**
-       * Tenant identifier for the request. Optional globally and becomes
-       * required when using {@link AuthedRequest}.
-       */
       tenantId?: string;
-
-      /**
-       * Optional site identifier supplied by siteScope middleware.
-       */
       siteId?: string;
-
       thirdParty?: any;
     }
   }
 }
+
+export {};

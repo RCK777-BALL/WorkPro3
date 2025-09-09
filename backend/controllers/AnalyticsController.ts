@@ -1,4 +1,3 @@
-import { AuthedRequestHandler } from '../types/http';
 import { getKPIs } from '../services/analytics';
 import { Parser as Json2csvParser } from 'json2csv';
 import PDFDocument from 'pdfkit';

@@ -13,9 +13,7 @@ npm run dev
 
 ### Type definitions
 
-The project augments Express types to include a `tenantId` field and optional
-`siteId` on `Request` and `User`. The definitions live in `types/http.ts` and
-`types/express-user.d.ts`. If you modify the TypeScript configuration, ensure
+The project augments Express types to include a `tenantId` field and optional `siteId` on `Request`. The definitions live in `types/express/index.d.ts`. If you modify the TypeScript configuration, ensure
 `"**/*.d.ts"` files remain included so these augmentations are recognized. After
 editing the type files, restart the TypeScript server (VS Code: Command Palette
 → "TypeScript: Restart TS Server"), rebuild, and run the development server:

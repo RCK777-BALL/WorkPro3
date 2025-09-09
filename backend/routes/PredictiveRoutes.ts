@@ -1,7 +1,6 @@
 import express from 'express';
 import { getPredictions, getTrend } from '../controllers/PredictiveController';
 import { requireAuth } from '../middleware/authMiddleware';
-import { AuthedRequest } from '../types/http';
 
 const router = express.Router();
 router.use(requireAuth);

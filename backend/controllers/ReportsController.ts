@@ -1,4 +1,3 @@
-import { AuthedRequestHandler } from '../types/http';
 import PDFDocument from 'pdfkit';
 import { Parser as Json2csvParser } from 'json2csv';
 import WorkOrder from '../models/WorkOrder';

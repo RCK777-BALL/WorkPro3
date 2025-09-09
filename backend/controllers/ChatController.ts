@@ -1,4 +1,3 @@
-import { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import Channel from '../models/Channel';
 import ChatMessage from '../models/ChatMessage';
 

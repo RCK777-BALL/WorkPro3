@@ -1,4 +1,3 @@
-import { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import Department from '../models/Department';
 
 export const listDepartments: AuthedRequestHandler<unknown, any, unknown, { q?: string }> = async (

@@ -136,7 +136,8 @@ export default function useDashboardData(
       setCriticalAlerts(alerts);
     } catch (err) {
       console.error('dashboard refresh failed', err);
-      setError('Failed to refresh dashboard data');
+       setError('Failed to refresh dashboard data');
+ 
     } finally {
       setLoading(false);
     }

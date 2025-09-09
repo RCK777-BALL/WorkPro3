@@ -59,6 +59,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
   const lines = departmentId ? linesMap[departmentId] || [] : [];
   const stations = lineId ? stationsMap[lineId] || [] : [];
   const [error, setError] = useState<string | null>(null);
+  const { addToast } = useToast();
 
   useEffect(() => {
     reset(asset || defaultAssetState);
@@ -71,8 +72,9 @@ const AssetModal: React.FC<AssetModalProps> = ({
   useEffect(() => {
     fetchDepartments().catch((err) => {
       console.error("Failed to load departments", err);
+      addToast("Failed to load departments", "error");
     });
-  }, [fetchDepartments]);
+  }, [fetchDepartments, addToast]);
 
   useEffect(() => {
     if (!departmentId) {
@@ -82,8 +84,9 @@ const AssetModal: React.FC<AssetModalProps> = ({
     }
     fetchLines(departmentId).catch((err) => {
       console.error("Failed to load lines", err);
+      addToast("Failed to load lines", "error");
     });
-  }, [departmentId, fetchLines]);
+  }, [departmentId, fetchLines, addToast]);
 
   useEffect(() => {
     if (!departmentId || !lineId) {
@@ -92,8 +95,9 @@ const AssetModal: React.FC<AssetModalProps> = ({
     }
     fetchStations(departmentId, lineId).catch((err) => {
       console.error("Failed to load stations", err);
+      addToast("Failed to load stations", "error");
     });
-  }, [departmentId, lineId, fetchStations]);
+  }, [departmentId, lineId, fetchStations, addToast]);
 
   const { getRootProps, getInputProps } = useDropzone({
     accept: {
@@ -104,8 +108,6 @@ const AssetModal: React.FC<AssetModalProps> = ({
       setFiles([...files, ...acceptedFiles]);
     },
   });
-
-  const { addToast } = useToast();
 
   const onSubmit = async (data: any) => {
     setError(null);

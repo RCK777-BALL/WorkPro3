@@ -471,7 +471,7 @@ export default function Analytics() {
         >
           <div className="space-y-6">
             {data.topAssets.map((asset, index) => (
-              <div key={index} className="p-4 bg-neutral-50 rounded-lg">
+              <div key={asset.name} className="p-4 bg-neutral-50 rounded-lg">
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="font-medium text-neutral-900">{asset.name}</h4>

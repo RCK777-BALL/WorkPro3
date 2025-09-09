@@ -1,4 +1,3 @@
-import { API_URL } from '@/config/env';
 
 type ViteEnv = Record<string, string | undefined>;
 const getEnvVar = (key: string): string | undefined =>

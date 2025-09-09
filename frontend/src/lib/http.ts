@@ -1,6 +1,5 @@
 import axios from 'axios';
 import type { AxiosRequestHeaders } from 'axios';
-import { API_URL } from '@/config/env';
 
 const baseUrl = (import.meta.env.VITE_API_URL ?? 'http://localhost:5010').replace(/\/+$/, '');
 const http = axios.create({
@@ -12,10 +11,6 @@ const TOKEN_KEY = 'auth:token';
 const TENANT_KEY = 'auth:tenantId';
 const SITE_KEY = 'auth:siteId';
 
-function getCookie(name: string): string | undefined {
-  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-  return match ? decodeURIComponent(match[2]) : undefined;
-}
 
 http.interceptors.request.use((config) => {
   const headers: AxiosRequestHeaders = config.headers ?? {};

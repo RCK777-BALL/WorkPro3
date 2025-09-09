@@ -1,4 +1,3 @@
-import { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import Asset from '../models/Asset';
 import mongoose from 'mongoose';
 import { validationResult } from 'express-validator';

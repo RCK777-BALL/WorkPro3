@@ -1,5 +1,4 @@
 import TeamMember, { ITeamMember } from '../models/TeamMember';
-import { AuthedRequestHandler } from '../types/http';
 
 type IdParams = { id: string };
 

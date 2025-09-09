@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import http from '../lib/http';
-import { addToQueue } from '../utils/offlineQueue';
+import { addToQueue, onSyncConflict, type SyncConflict } from '../utils/offlineQueue';
+import ConflictResolver from '../components/offline/ConflictResolver';
 import DataTable from '../components/common/DataTable';
 import Badge from '../components/common/Badge';
 import Button from '../components/common/Button';
@@ -22,6 +23,24 @@ export default function WorkOrders() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<WorkOrder | null>(null);
+  const [conflict, setConflict] = useState<SyncConflict | null>(null);
+
+  useEffect(() => {
+    const unsub = onSyncConflict(setConflict);
+    return () => unsub();
+  }, []);
+
+  const resolveConflict = async (choice: 'local' | 'server') => {
+    if (!conflict) return;
+    if (choice === 'local') {
+      await http({
+        method: conflict.method,
+        url: conflict.url,
+        data: conflict.local,
+      });
+    }
+    setConflict(null);
+  };
 
   const fetchWorkOrders = async (
     filters?: { status?: string; priority?: string; startDate?: string; endDate?: string }
@@ -161,7 +180,8 @@ export default function WorkOrders() {
   ];
 
   return (
-          <div className="space-y-6 p-6">
+    <>
+      <div className="space-y-6 p-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Work Orders</h1>
           <Button variant="primary" onClick={() => setShowCreateModal(true)}>
@@ -261,5 +281,11 @@ export default function WorkOrders() {
           }}
         />
       </div>
+      <ConflictResolver
+        conflict={conflict}
+        onResolve={resolveConflict}
+        onClose={() => setConflict(null)}
+      />
+    </>
   );
 }

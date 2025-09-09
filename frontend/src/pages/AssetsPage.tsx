@@ -4,11 +4,12 @@ import AssetModal from '../components/assets/AssetModal';
 import WorkOrderModal from '../components/work-orders/WorkOrderModal';
 import Button from '../components/common/Button';
 import http from '../lib/http';
-import { enqueueAssetRequest } from '../utils/offlineQueue';
+import { enqueueAssetRequest, onSyncConflict, type SyncConflict } from '../utils/offlineQueue';
 import { useAssetStore } from '../store/assetStore';
 import type { Asset } from '../types';
 import { duplicateAsset } from '../utils/duplicate';
 import { useToast } from '../context/ToastContext';
+import ConflictResolver from '../components/offline/ConflictResolver';
 
 const ASSET_CACHE_KEY = 'offline-assets';
 
@@ -27,6 +28,20 @@ const AssetsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [showWO, setShowWO] = useState(false);
   const [woAsset, setWoAsset] = useState<Asset | null>(null);
+  const [conflict, setConflict] = useState<SyncConflict | null>(null);
+
+  useEffect(() => {
+    const unsub = onSyncConflict(setConflict);
+    return () => unsub();
+  }, []);
+
+  const resolveConflict = async (choice: 'local' | 'server') => {
+    if (!conflict) return;
+    if (choice === 'local') {
+      await http({ method: conflict.method, url: conflict.url, data: conflict.local });
+    }
+    setConflict(null);
+  };
 
   const fetchAssets = async () => {
     const loadCached = () => {
@@ -97,7 +112,8 @@ const AssetsPage = () => {
   };
 
   return (
-          <div className="space-y-6">
+    <>
+      <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">Assets</h2>
           <Button variant="primary" onClick={() => { setSelected(null); setModalOpen(true); }}>
@@ -150,6 +166,12 @@ const AssetsPage = () => {
           }}
         />
       </div>
+      <ConflictResolver
+        conflict={conflict}
+        onResolve={resolveConflict}
+        onClose={() => setConflict(null)}
+      />
+    </>
   );
 };
 

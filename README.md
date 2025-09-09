@@ -71,7 +71,7 @@ echo "JWT_SECRET=change_me" > .env
 docker compose up --build
 ```
 
-The API is available at `http://localhost:5010` and the web client at
+The API URL is configured via the `VITE_API_URL` environment variable, and the web client runs at
 `http://localhost:5173`.
 
 ### Kubernetes manifests

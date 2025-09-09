@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeAll } from 'vitest';
 import React from 'react';
+import { Chart as ChartJS } from 'chart.js';
 import http from '../lib/http';
 
 vi.mock('../lib/http');
@@ -9,14 +10,46 @@ vi.mock('../components/kpi/KpiExportButtons', () => ({ default: () => <div /> })
 vi.mock('../components/common/Button', () => ({ default: ({ children }: any) => <button>{children}</button> }));
 vi.mock('../components/common/Card', () => ({ default: ({ children, title }: any) => <div>{title}{children}</div> }));
 vi.mock('../components/common/Badge', () => ({ default: () => <span /> }));
-const lineMock = vi.fn((props: any) => <canvas {...props} />);
-// TODO: Remove `{ virtual: true }` once chart libraries are installed and imported correctly.
-vi.mock('react-chartjs-2', () => ({ Line: (props: any) => lineMock(props) }), { virtual: true });
-vi.mock(
-  'chart.js',
-  () => ({ CategoryScale: {}, LinearScale: {}, PointElement: {}, LineElement: {}, Tooltip: {}, Legend: {}, Chart: {}, register: () => {} }),
-  { virtual: true },
-);
+
+beforeAll(() => {
+  // Stub required browser APIs for Chart.js
+  Object.defineProperty(global, 'ResizeObserver', {
+    writable: true,
+    value: class ResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  });
+
+  HTMLCanvasElement.prototype.getContext = () => ({
+    canvas: document.createElement('canvas'),
+    fillRect: () => {},
+    clearRect: () => {},
+    getImageData: () => ({ data: [] }),
+    putImageData: () => {},
+    createImageData: () => [],
+    setTransform: () => {},
+    drawImage: () => {},
+    save: () => {},
+    fillText: () => {},
+    restore: () => {},
+    beginPath: () => {},
+    moveTo: () => {},
+    lineTo: () => {},
+    closePath: () => {},
+    stroke: () => {},
+    translate: () => {},
+    scale: () => {},
+    rotate: () => {},
+    arc: () => {},
+    fill: () => {},
+    measureText: () => ({ width: 0 }),
+    transform: () => {},
+    rect: () => {},
+    clip: () => {},
+  });
+});
 
 import Analytics from '../pages/Analytics';
 
@@ -55,8 +88,9 @@ describe('Analytics charts', () => {
     const down = await screen.findByTestId('downtime-chart');
     expect(cost).toBeInTheDocument();
     expect(down).toBeInTheDocument();
-    expect(lineMock).toHaveBeenCalledTimes(2);
-    expect(lineMock.mock.calls[0][0].data.datasets[0].data).toEqual([100]);
-    expect(lineMock.mock.calls[1][0].data.datasets[0].data).toEqual([5]);
+    const costChart = ChartJS.getChart(cost as HTMLCanvasElement);
+    const downChart = ChartJS.getChart(down as HTMLCanvasElement);
+    expect(costChart?.data.datasets[0].data).toEqual([100]);
+    expect(downChart?.data.datasets[0].data).toEqual([5]);
   });
 });

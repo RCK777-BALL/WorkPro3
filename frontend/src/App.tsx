@@ -1,7 +1,8 @@
  import { Routes, Route, Navigate } from "react-router-dom";
- import Dashboard from "./pages/Dashboard";
- 
+import Dashboard from "./pages/Dashboard";
+
 import Analytics from "./pages/Analytics";
+import Reports from "./pages/Reports";
 import DashboardLayout from "./pages/dashboard/DashboardLayout";
 import Departments from "./pages/Departments";
 import NotFound from "./pages/NotFound";
@@ -14,6 +15,7 @@ export default function App() {
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="analytics" element={<Analytics />} />
+            <Route path="reports" element={<Reports />} />
           </Route>
           <Route path="/departments" element={<Departments />} />
            <Route path="*" element={<NotFound />} />

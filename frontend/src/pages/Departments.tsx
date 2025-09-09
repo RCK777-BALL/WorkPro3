@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
- import { listDepartments } from "../api/departments";
+ import { deleteDepartment, listDepartments } from "../api/departments";
  
 
 type Department = { _id: string; name: string; description?: string };
@@ -12,7 +12,7 @@ export default function Departments() {
   const navigate = useNavigate();
  
 
-  useEffect(() => {
+  const load = () => {
     setLoading(true);
     listDepartments()
       .then(setItems)
@@ -22,7 +22,17 @@ export default function Departments() {
         ),
       )
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    load();
   }, []);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this department?")) return;
+    await deleteDepartment(id);
+    load();
+  };
 
   return (
     <div>
@@ -49,14 +59,16 @@ export default function Departments() {
               </div>
               <div className="space-x-2">
                 <button
+                   onClick={() => navigate(`/departments/${d._id}/edit`)}
                   className="rounded border px-2 py-1 text-sm"
-                  onClick={() => navigate(`/departments/${d._id}/edit`)}
+ 
                 >
                   Edit
                 </button>
                 <button
+                   onClick={() => handleDelete(d._id)}
                   className="rounded border px-2 py-1 text-sm"
-                  onClick={() => handleDelete(d._id)}
+   
                 >
                   Delete
                 </button>

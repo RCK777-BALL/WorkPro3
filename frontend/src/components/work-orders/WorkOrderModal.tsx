@@ -1,5 +1,5 @@
    
-import React, { useState, useRef, useEffect } from "react";   
+import React, { useState, useRef, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import SignaturePad from "react-signature-canvas";
 import { useDropzone } from "react-dropzone";

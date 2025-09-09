@@ -1,5 +1,6 @@
-import { MantineProvider, ColorSchemeProvider, ColorScheme } from '@mantine/core';
+import { MantineProvider, ColorSchemeProvider } from '@mantine/core';
 import { useState } from 'react';
+import type { ColorScheme } from '../modules/schema';
 import { colors } from './tokens/colors';
 import { spacing } from './tokens/spacing';
 import { typography } from './tokens/typography';

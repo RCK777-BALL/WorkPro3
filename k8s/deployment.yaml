@@ -31,10 +31,14 @@ spec:
             httpGet:
               path: /api/health
               port: 5010
+            initialDelaySeconds: 5
+            periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /api/health
               port: 5010
+            initialDelaySeconds: 5
+            periodSeconds: 10
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -59,7 +63,11 @@ spec:
             httpGet:
               path: /
               port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /
               port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10

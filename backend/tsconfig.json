@@ -10,7 +10,12 @@
     "outDir": "dist",
     "types": ["node"],
     "typeRoots": ["./node_modules/@types", "./types"],
-    "noImplicitAny": true
+    "noImplicitAny": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true
   },
   "include": [
     "**/*.ts",

@@ -63,6 +63,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
         await fetchDepartments();
       } catch (err) {
         console.error('Failed to load departments', err);
+        addToast('Failed to load departments', 'error');
       }
     };
     fetchData();

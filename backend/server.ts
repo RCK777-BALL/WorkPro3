@@ -17,6 +17,7 @@ import workOrdersRoutes from "./routes/WorkOrderRoutes";
 import assetsRoutes from "./routes/AssetRoutes";
 import pmTasksRoutes from "./routes/PMTaskRoutes";
 import summaryRoutes from "./routes/summary";
+import meterRoutes from "./routes/MeterRoutes";
 
 import reportsRoutes from "./routes/ReportsRoutes";
 import LineRoutes from "./routes/LineRoutes";
@@ -131,6 +132,7 @@ app.use("/api", generalLimiter);
 app.use("/api/departments", departmentRoutes);
 app.use("/api/workorders", workOrdersRoutes);
 app.use("/api/assets", assetsRoutes);
+app.use("/api/meters", meterRoutes);
 app.use("/api/condition-rules", conditionRuleRoutes);
 app.use("/api/tenants", TenantRoutes);
 app.use("/api/pm-tasks", pmTasksRoutes);

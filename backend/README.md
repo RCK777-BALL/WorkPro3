@@ -11,6 +11,20 @@ npm install
 npm run dev
 ```
 
+### Type definitions
+
+The project augments Express types to include a `tenantId` field and optional
+`siteId` on `Request` and `User`. The definitions live in `types/http.ts` and
+`types/express-user.d.ts`. If you modify the TypeScript configuration, ensure
+`"**/*.d.ts"` files remain included so these augmentations are recognized. After
+editing the type files, restart the TypeScript server (VS Code: Command Palette
+→ "TypeScript: Restart TS Server"), rebuild, and run the development server:
+
+```bash
+npx tsc -p .
+npm run dev
+```
+
 Incoming JSON request bodies are limited to **1 MB**. Adjust the limit by editing the `express.json` configuration in `server.ts` if your application requires larger payloads.
 Requests to `/api` are protected by a general rate limiter. The department endpoints now fall under this limiter.
 The server connects to MongoDB using the `MONGO_URI` environment variable. This variable is used consistently across the codebase and example configuration files. The server also starts a Socket.IO server on the same HTTP port. Clients can listen for real-time updates using the following events:

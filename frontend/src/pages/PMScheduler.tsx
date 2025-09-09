@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
+import { format, parse, startOfWeek, getDay } from 'date-fns';
+import { enUS } from 'date-fns/locale';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
 import Button from '../components/common/Button';
 import AssetSelector from '../pm/AssetSelector';
 import RecurrenceRuleForm from '../pm/RecurrenceRuleForm';
@@ -8,11 +12,30 @@ interface Plan {
   nextDue: string;
 }
 
+interface CalendarEvent {
+  title: string;
+  start: Date;
+  end: Date;
+}
+
+const locales = {
+  'en-US': enUS,
+};
+
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek,
+  getDay,
+  locales,
+});
+
 const PMScheduler: React.FC = () => {
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
   const [assets, setAssets] = useState<string[]>([]);
   const [rule, setRule] = useState('');
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [selected, setSelected] = useState<CalendarEvent | null>(null);
 
   const generate = () => {
     const next = new Date().toISOString().slice(0, 10);
@@ -55,8 +78,32 @@ const PMScheduler: React.FC = () => {
       </div>
 
       {view === 'calendar' ? (
-        <div className="border p-4 min-h-[200px]">
-          Calendar view placeholder ({plans.length} plans)
+        <div className="border p-4">
+          <Calendar
+            localizer={localizer}
+            events={plans.map(p => ({
+              title: p.asset,
+              start: new Date(p.nextDue),
+              end: new Date(p.nextDue),
+            }))}
+            startAccessor="start"
+            endAccessor="end"
+            style={{ height: 500 }}
+            selectable
+            onSelectEvent={e =>
+              setSelected({
+                title: e.title as string,
+                start: e.start as Date,
+                end: e.end as Date,
+              })
+            }
+          />
+          {selected && (
+            <div className="mt-4 p-2 border rounded">
+              <p className="font-semibold">{selected.title}</p>
+              <p>{selected.start.toDateString()}</p>
+            </div>
+          )}
         </div>
       ) : (
         <ul className="divide-y divide-neutral-200">

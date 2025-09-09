@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { AxiosRequestHeaders } from 'axios';
 import { API_URL } from '@/config/env';
 
 const baseUrl = (import.meta.env.VITE_API_URL ?? 'http://localhost:5010').replace(/\/+$/, '');
@@ -17,13 +18,13 @@ function getCookie(name: string): string | undefined {
 }
 
 http.interceptors.request.use((config) => {
-   const headers: Record<string, string> = (config.headers ?? {}) as Record<string, string>;
+  const headers: AxiosRequestHeaders = config.headers ?? {};
   const token = localStorage.getItem(TOKEN_KEY);
  
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
-   const tenantId = localStorage.getItem(TENANT_KEY);
+  const tenantId = localStorage.getItem(TENANT_KEY);
   const siteId = localStorage.getItem(SITE_KEY);
   if (tenantId) headers['x-tenant-id'] = tenantId;
   if (siteId) headers['x-site-id'] = siteId;

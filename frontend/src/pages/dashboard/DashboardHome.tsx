@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import http from "../../lib/http";
+import { useToast } from "../../context/ToastContext";
 import {
   ClipboardList,
   Timer,
@@ -30,27 +32,32 @@ export default function DashboardHome() {
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [recent, setRecent] = useState<RecentWorkOrder[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const { addToast } = useToast();
 
   useEffect(() => {
     let cancelled = false;
     const fetchData = async () => {
       try {
+        setError(null);
         const [sumRes, woRes] = await Promise.all([
-          fetch("/api/summary"),
-          fetch("/api/workorders?limit=5&sort=-updatedAt"),
+          http.get<Summary>("/summary"),
+          http.get<RecentWorkOrder[]>("/workorders", {
+            params: { limit: 5, sort: "-updatedAt" },
+          }),
         ]);
-        const sumJson: Summary = await sumRes.json();
-        const woJson: RecentWorkOrder[] = await woRes.json();
 
         if (!cancelled) {
-          setSummary(sumJson);
-          setRecent(woJson);
+          setSummary(sumRes.data);
+          setRecent(woRes.data);
           setLoading(false);
         }
       } catch (e) {
-        if (!cancelled) setLoading(false);
-        // Optionally show a toast or error UI
-        // console.error(e);
+        if (!cancelled) {
+          setError("Failed to load dashboard data");
+          setLoading(false);
+          addToast("Failed to load dashboard data", "error");
+        }
       }
     };
 
@@ -58,10 +65,15 @@ export default function DashboardHome() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [addToast]);
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="rounded-2xl border border-error-200 bg-error-100 p-3 text-sm text-error-700">
+          {error}
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>

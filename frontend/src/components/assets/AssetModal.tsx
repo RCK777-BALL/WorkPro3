@@ -71,8 +71,9 @@ const AssetModal: React.FC<AssetModalProps> = ({
   useEffect(() => {
     fetchDepartments().catch((err) => {
       console.error("Failed to load departments", err);
+      addToast("Failed to load departments", "error");
     });
-  }, [fetchDepartments]);
+  }, [fetchDepartments, addToast]);
 
   useEffect(() => {
     if (!departmentId) {

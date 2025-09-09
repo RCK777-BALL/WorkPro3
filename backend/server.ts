@@ -29,6 +29,7 @@ import teamRoutes from "./routes/TeamRoutes";
 import notificationsRoutes from "./routes/notifications";
 import TenantRoutes from "./routes/TenantRoutes";
 import webhooksRoutes from "./routes/webhooksRoutes";
+import IntegrationRoutes from "./routes/IntegrationRoutes";
 import ThemeRoutes from "./routes/ThemeRoutes";
 import chatRoutes from "./routes/ChatRoutes";
 import requestPortalRoutes from "./routes/requestPortal";
@@ -151,6 +152,7 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/hooks", webhooksRoutes);
 app.use("/api/webhooks", webhooksRoutes);
 app.use("/api/calendar", calendarRoutes);
+app.use("/api/integrations", IntegrationRoutes);
 
 app.use("/api/summary", summaryRoutes);
 

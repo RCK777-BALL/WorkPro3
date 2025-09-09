@@ -33,67 +33,14 @@ export default function DashboardHome() {
 
   useEffect(() => {
     let cancelled = false;
-
-    // TODO: replace mock with real endpoint (e.g., /api/summary and /api/workorders?limit=5)
     const fetchData = async () => {
       try {
-        // Example (uncomment and adjust to your API):
-        // const [sumRes, woRes] = await Promise.all([
-        //   fetch("/api/summary"),
-        //   fetch("/api/workorders?limit=5&sort=-updatedAt"),
-        // ]);
-        // const sumJson: Summary = await sumRes.json();
-        // const woJson: RecentWorkOrder[] = await woRes.json();
-
-        // Mock data for now:
-        const sumJson: Summary = {
-          openWorkOrders: 18,
-          pmDueThisWeek: 7,
-          assets: 256,
-          uptime: 98.6,
-        };
-        const woJson: RecentWorkOrder[] = [
-          {
-            id: "WO-1045",
-            title: "Conveyor #3 belt tracking",
-            line: "Line A",
-            priority: "High",
-            status: "In Progress",
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: "WO-1044",
-            title: "Robot cell light curtain fault",
-            line: "Line B",
-            priority: "Critical",
-            status: "Open",
-            updatedAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-          },
-          {
-            id: "WO-1043",
-            title: "Press #2 lube check",
-            line: "Stamping",
-            priority: "Medium",
-            status: "On Hold",
-            updatedAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-          },
-          {
-            id: "WO-1042",
-            title: "Replace proximity sensor at Station 5",
-            line: "Assembly",
-            priority: "Low",
-            status: "Completed",
-            updatedAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-          },
-          {
-            id: "WO-1041",
-            title: "Calibrate torque tools",
-            line: "Final",
-            priority: "Medium",
-            status: "Open",
-            updatedAt: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
-          },
-        ];
+        const [sumRes, woRes] = await Promise.all([
+          fetch("/api/summary"),
+          fetch("/api/workorders?limit=5&sort=-updatedAt"),
+        ]);
+        const sumJson: Summary = await sumRes.json();
+        const woJson: RecentWorkOrder[] = await woRes.json();
 
         if (!cancelled) {
           setSummary(sumJson);

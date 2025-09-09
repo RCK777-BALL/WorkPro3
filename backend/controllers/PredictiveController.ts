@@ -1,6 +1,5 @@
 import { Response, NextFunction } from 'express';
 import predictiveService from '../utils/predictiveService';
-import { AuthedRequest } from '../types/http';
 
 export const getPredictions = async (
   req: AuthedRequest,

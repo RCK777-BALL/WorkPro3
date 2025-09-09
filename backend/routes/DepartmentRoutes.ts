@@ -2,7 +2,6 @@ import { Router } from "express";
 import type { FilterQuery } from "mongoose";
 import Department, { type DepartmentDoc } from "../models/Department";
 import Asset from "../models/Asset";
-import { AuthedRequestHandler } from "../types/http";
 import { requireAuth } from "../middleware/authMiddleware";
 import { departmentValidators } from "../validators/departmentValidators";
 import { validate } from "../middleware/validationMiddleware";

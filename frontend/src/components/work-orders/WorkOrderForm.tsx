@@ -32,6 +32,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
   const [stationId, setStationId] = useState('');
   const lines = departmentId ? linesMap[departmentId] || [] : [];
   const stations = lineId ? stationsMap[lineId] || [] : [];
+  const { addToast } = useToast();
   const [formData, setFormData] = useState<Partial<WorkOrder>>({
     title: workOrder?.title || '',
     description: workOrder?.description || '',
@@ -63,6 +64,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
         await fetchDepartments();
       } catch (err) {
         console.error('Failed to load departments', err);
+        addToast('Failed to load departments', 'error');
       }
     };
     fetchData();
@@ -76,6 +78,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
     }
     fetchLines(departmentId).catch((err) => {
       console.error('Failed to load lines', err);
+      addToast('Failed to load lines', 'error');
     });
   }, [departmentId, fetchLines]);
 
@@ -86,10 +89,9 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
     }
     fetchStations(departmentId, lineId).catch((err) => {
       console.error('Failed to load stations', err);
+      addToast('Failed to load stations', 'error');
     });
   }, [departmentId, lineId, fetchStations]);
-
-  const { addToast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

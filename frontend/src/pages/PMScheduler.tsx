@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { enUS } from 'date-fns/locale';
@@ -35,15 +35,28 @@ const PMScheduler: React.FC = () => {
   const [assets, setAssets] = useState<string[]>([]);
   const [rule, setRule] = useState('');
   const [plans, setPlans] = useState<Plan[]>([]);
-  const [selected, setSelected] = useState<CalendarEvent | null>(null);
+   const [selected, setSelected] = useState<CalendarEvent | null>(null);
+  const [notice, setNotice] = useState('');
+ 
 
   const generate = () => {
     const next = new Date().toISOString().slice(0, 10);
     const newPlans = assets.map(a => ({ asset: a, nextDue: next }));
-    setPlans([...plans, ...newPlans]);
+    setPlans(prev => [...prev, ...newPlans]);
+    setNotice(`Generated ${newPlans.length} plan${newPlans.length !== 1 ? 's' : ''}`);
     setAssets([]);
     setRule('');
   };
+
+  const events = useMemo(
+    () =>
+      plans.map(p => ({
+        title: p.asset,
+        start: new Date(p.nextDue),
+        end: new Date(p.nextDue),
+      })),
+    [plans]
+  );
 
   return (
     <div className="p-6 space-y-4">
@@ -75,33 +88,41 @@ const PMScheduler: React.FC = () => {
         >
           Generate Plans
         </Button>
+        {notice && <p className="text-sm text-success-700">{notice}</p>}
       </div>
 
       {view === 'calendar' ? (
         <div className="border p-4">
           <Calendar
             localizer={localizer}
-            events={plans.map(p => ({
-              title: p.asset,
-              start: new Date(p.nextDue),
-              end: new Date(p.nextDue),
-            }))}
+            events={events}
             startAccessor="start"
             endAccessor="end"
             style={{ height: 500 }}
             selectable
-            onSelectEvent={e =>
-              setSelected({
+            onSelectEvent={e => {
+              setSelectedEvent({
                 title: e.title as string,
                 start: e.start as Date,
                 end: e.end as Date,
-              })
-            }
+              });
+              setSelectedDate(null);
+            }}
+            onSelectSlot={slot => {
+              setSelectedDate(slot.start as Date);
+              setSelectedEvent(null);
+            }}
           />
-          {selected && (
+          {selectedEvent && (
             <div className="mt-4 p-2 border rounded">
-              <p className="font-semibold">{selected.title}</p>
-              <p>{selected.start.toDateString()}</p>
+              <p className="font-semibold">{selectedEvent.title}</p>
+              <p>{selectedEvent.start.toDateString()}</p>
+            </div>
+          )}
+          {selectedDate && (
+            <div className="mt-4 p-2 border rounded">
+              <p className="font-semibold">Selected Date</p>
+              <p>{selectedDate.toDateString()}</p>
             </div>
           )}
         </div>

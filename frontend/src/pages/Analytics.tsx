@@ -39,6 +39,18 @@ interface KPIData {
   backlog: number;
 }
 
+interface CostRecord {
+  period: string;
+  laborCost: number;
+  materialCost: number;
+  maintenanceCost: number;
+}
+
+interface DowntimeRecord {
+  period: string;
+  downtime: number;
+}
+
 export default function Analytics() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [kpis, setKpis] = useState<KPIData | null>(null);
@@ -46,8 +58,8 @@ export default function Analytics() {
   const [error, setError] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const { selectedRole: role, setSelectedRole } = useDashboardStore();
-  const [costs, setCosts] = useState<any[]>([]);
-  const [downtime, setDowntime] = useState<any[]>([]);
+  const [costs, setCosts] = useState<CostRecord[]>([]);
+  const [downtime, setDowntime] = useState<DowntimeRecord[]>([]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -56,9 +68,9 @@ export default function Analytics() {
       setData(res.data);
       const kpiRes = await http.get('/v1/analytics/kpis');
       setKpis(kpiRes.data);
-      const costRes = await http.get('/reports/costs');
+      const costRes = await http.get<CostRecord[]>('/reports/costs');
       setCosts(costRes.data);
-      const downtimeRes = await http.get('/reports/downtime');
+      const downtimeRes = await http.get<DowntimeRecord[]>('/reports/downtime');
       setDowntime(downtimeRes.data);
       setError(null);
     } catch (err) {
@@ -471,7 +483,7 @@ export default function Analytics() {
         >
           <div className="space-y-6">
             {data.topAssets.map((asset, index) => (
-              <div key={index} className="p-4 bg-neutral-50 rounded-lg">
+              <div key={asset.name} className="p-4 bg-neutral-50 rounded-lg">
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="font-medium text-neutral-900">{asset.name}</h4>
@@ -509,7 +521,6 @@ export default function Analytics() {
           </div>
         </Card>
       </div>
- 
-    </div>
+
   );
 }

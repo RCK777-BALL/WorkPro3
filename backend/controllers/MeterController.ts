@@ -1,4 +1,3 @@
-import { AuthedRequestHandler } from '../types/http';
 import Meter from '../models/Meter';
 import MeterReading from '../models/MeterReading';
 
@@ -28,7 +27,11 @@ export const getMeterById: AuthedRequestHandler = async (req, res, next) => {
 
 export const createMeter: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const meter = await Meter.create({ ...req.body, tenantId: req.tenantId });
+    const meter = await Meter.create({
+      ...req.body,
+      tenantId: req.tenantId,
+      siteId: req.siteId,
+    });
     res.status(201).json(meter);
   } catch (err) {
     next(err);
@@ -61,13 +64,16 @@ export const deleteMeter: AuthedRequestHandler = async (req, res, next) => {
 
 export const addMeterReading: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const meter = await Meter.findOne({ _id: req.params.id, tenantId: req.tenantId });
+    const filter: any = { _id: req.params.id, tenantId: req.tenantId };
+    if (req.siteId) filter.siteId = req.siteId;
+    const meter = await Meter.findOne(filter);
     if (!meter) return res.status(404).json({ message: 'Not found' });
 
     const reading = await MeterReading.create({
       meter: meter._id,
       value: req.body.value,
       tenantId: req.tenantId,
+      siteId: req.siteId,
     });
     meter.currentValue = req.body.value;
     await meter.save();
@@ -79,9 +85,13 @@ export const addMeterReading: AuthedRequestHandler = async (req, res, next) => {
 
 export const getMeterReadings: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const meter = await Meter.findOne({ _id: req.params.id, tenantId: req.tenantId });
+    const filter: any = { _id: req.params.id, tenantId: req.tenantId };
+    if (req.siteId) filter.siteId = req.siteId;
+    const meter = await Meter.findOne(filter);
     if (!meter) return res.status(404).json({ message: 'Not found' });
-    const readings = await MeterReading.find({ meter: meter._id, tenantId: req.tenantId })
+    const readingFilter: any = { meter: meter._id, tenantId: req.tenantId };
+    if (req.siteId) readingFilter.siteId = req.siteId;
+    const readings = await MeterReading.find(readingFilter)
       .sort({ timestamp: -1 })
       .limit(100);
     res.json(readings);

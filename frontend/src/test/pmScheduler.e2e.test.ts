@@ -11,13 +11,17 @@ describe('PM Scheduler E2E', () => {
         <input id="rule" />
         <button id="createBtn">create</button>
         <div id="log"></div>
+        <div id="notice"></div>
       </form>
       <script>
+        const plans = [];
         document.getElementById('createBtn').addEventListener('click', e => {
           e.preventDefault();
           const asset = (document.getElementById('asset')).value;
           const rule = (document.getElementById('rule')).value;
+          plans.push({ asset, rule });
           document.getElementById('log').textContent = asset + '|' + rule;
+          document.getElementById('notice').textContent = 'Generated ' + plans.length + ' plan(s)';
         });
       </script>
     `);
@@ -26,6 +30,8 @@ describe('PM Scheduler E2E', () => {
     await page.click('#createBtn');
     const text = await page.textContent('#log');
     expect(text).toContain('A1|every 1 day');
+    const notice = await page.textContent('#notice');
+    expect(notice).toBe('Generated 1 plan(s)');
     await browser.close();
   });
 

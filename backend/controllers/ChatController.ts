@@ -1,4 +1,3 @@
-import { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import Channel from '../models/Channel';
 import ChatMessage from '../models/ChatMessage';
 
@@ -39,6 +38,36 @@ export const createChannel: AuthedRequestHandler<unknown, any, { name: string; d
       isDirect: false,
     });
     return res.status(201).json(channel);
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const updateChannel: AuthedRequestHandler<{ channelId: string }, any, { name?: string; description?: string; members?: string[] }> = async (
+  req: AuthedRequest<{ channelId: string }, any, { name?: string; description?: string; members?: string[] }>,
+  res,
+  next
+) => {
+  try {
+    const userId = req.user?._id || req.user?.id;
+    if (!userId) return res.status(400).json({ message: 'User required' });
+    const { name, description, members } = req.body;
+    const update: Partial<{ name: string; description?: string; members?: string[] }> = {};
+    if (name !== undefined) update.name = name;
+    if (description !== undefined) update.description = description;
+    if (members !== undefined) update.members = members;
+    const channel = await Channel.findOneAndUpdate(
+      {
+        _id: req.params.channelId,
+        tenantId: req.tenantId,
+        isDirect: false,
+        members: userId,
+      },
+      update,
+      { new: true }
+    );
+    if (!channel) return res.status(404).end();
+    return res.json(channel);
   } catch (err) {
     return next(err);
   }

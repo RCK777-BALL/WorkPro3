@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { useNavigationStore } from '../store/navigationStore';
 
 beforeEach(() => {
@@ -6,9 +6,7 @@ beforeEach(() => {
   vi.useFakeTimers();
 });
 
-afterEach(() => {
-  vi.useRealTimers();
-});
+afterEach(() => vi.useRealTimers());
 
 describe('navigation store', () => {
   it('persists sidebar order', async () => {
@@ -26,7 +24,3 @@ describe('navigation store', () => {
     expect(useNavigationStore.getState().sidebarOrder).toEqual(['c', 'a', 'b']);
   });
 });
-
-function afterEach(_arg0: () => void) {
-  throw new Error('Function not implemented.');
-}

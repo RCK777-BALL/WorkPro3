@@ -1,4 +1,3 @@
-import { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import User from '../models/User';
 
 /**

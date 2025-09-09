@@ -77,8 +77,13 @@ const Login: React.FC = () => {
       if (data.user?.tenantId) localStorage.setItem('auth:tenantId', data.user.tenantId);
       if (data.user?.siteId) localStorage.setItem('auth:siteId', data.user.siteId);
       navigate('/dashboard');
-    } catch {
-      setError(t('auth.loginFailed', 'Login failed'));
+    } catch (err: any) {
+      console.error('Login error:', err);
+      if (err?.code === 'ERR_NETWORK' || err?.message?.toLowerCase().includes('network')) {
+        setError(t('auth.cannotConnect', 'Cannot connect to server'));
+      } else {
+        setError(t('auth.loginFailed', 'Login failed'));
+      }
     }
   };
 

@@ -5,11 +5,6 @@ import { Chart as ChartJS } from 'chart.js';
 import http from '../lib/http';
 
 vi.mock('../lib/http');
-vi.mock('../components/kpi/KpiWidget', () => ({ default: () => <div /> }));
-vi.mock('../components/kpi/KpiExportButtons', () => ({ default: () => <div /> }));
-vi.mock('../components/common/Button', () => ({ default: ({ children }: any) => <button>{children}</button> }));
-vi.mock('../components/common/Card', () => ({ default: ({ children, title }: any) => <div>{title}{children}</div> }));
-vi.mock('../components/common/Badge', () => ({ default: () => <span /> }));
 
 beforeAll(() => {
   // Stub required browser APIs for Chart.js

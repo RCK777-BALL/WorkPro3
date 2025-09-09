@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { listDepartments } from "../api/departments";
+import { deleteDepartment, listDepartments } from "../api/departments";
 
 type Department = { _id: string; name: string; description?: string };
 
@@ -10,13 +10,23 @@ export default function Departments() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
+  const load = () => {
     setLoading(true);
     listDepartments()
       .then(setItems)
       .catch((e) => setError(e?.message ?? "Failed to load"))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    load();
   }, []);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this department?")) return;
+    await deleteDepartment(id);
+    load();
+  };
 
   return (
     <div>
@@ -42,8 +52,18 @@ export default function Departments() {
                 {d.description && <div className="text-xs text-neutral-500">{d.description}</div>}
               </div>
               <div className="space-x-2">
-                <button className="rounded border px-2 py-1 text-sm">Edit</button>
-                <button className="rounded border px-2 py-1 text-sm">Delete</button>
+                <button
+                  onClick={() => navigate(`/departments/${d._id}/edit`)}
+                  className="rounded border px-2 py-1 text-sm"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(d._id)}
+                  className="rounded border px-2 py-1 text-sm"
+                >
+                  Delete
+                </button>
               </div>
             </li>
           ))}

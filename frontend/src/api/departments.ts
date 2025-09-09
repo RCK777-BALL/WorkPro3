@@ -15,3 +15,6 @@ export async function listDepartments(): Promise<Department[]> {
     return [];
   }
 }
+
+export const deleteDepartment = (id: string) =>
+  http.delete(`/departments/${id}`);

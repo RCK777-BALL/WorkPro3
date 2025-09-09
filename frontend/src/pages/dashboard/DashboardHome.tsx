@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import http from "../../lib/http";
+import { useToast } from "../../context/ToastContext";
 import {
   ClipboardList,
   Timer,
@@ -39,23 +41,27 @@ export default function DashboardHome() {
     let cancelled = false;
     const fetchData = async () => {
       try {
+        setError(null);
         const [sumRes, woRes] = await Promise.all([
           http.get<Summary>("/summary"),
-          http.get<RecentWorkOrder[]>("/workorders?limit=5&sort=-updatedAt"),
+           http.get<RecentWorkOrder[]>("/workorders", {
+            params: { limit: 5, sort: "-updatedAt" },
+          }),
         ]);
+
         if (!cancelled) {
           setSummary(sumRes.data);
           setRecent(woRes.data);
+          setLoading(false);
+ 
         }
       } catch (e) {
         if (!cancelled) {
           setError("Failed to load dashboard data");
+           setLoading(false);
           addToast("Failed to load dashboard data", "error");
         }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+ 
       }
     };
 
@@ -63,11 +69,16 @@ export default function DashboardHome() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [addToast]);
 
   return (
     <div className="space-y-6">
-      {error && <div className="text-red-600 text-sm">{error}</div>}
+       {error && (
+        <div className="rounded-2xl border border-error-200 bg-error-100 p-3 text-sm text-error-700">
+          {error}
+        </div>
+      )}
+ 
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>

@@ -5,6 +5,9 @@ import Analytics from "./pages/Analytics";
 import Reports from "./pages/Reports";
 import DashboardLayout from "./pages/dashboard/DashboardLayout";
 import Departments from "./pages/Departments";
+import Login from "./pages/Login";
+import RegisterPage from "./pages/RegisterPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -18,7 +21,10 @@ export default function App() {
             <Route path="reports" element={<Reports />} />
           </Route>
           <Route path="/departments" element={<Departments />} />
-           <Route path="*" element={<NotFound />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="*" element={<NotFound />} />
  
         </Routes>
     </div>

@@ -1,8 +1,11 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-// TODO: wire to real auth
+import { useAuth } from "../../context/AuthContext";
+
 export default function RequireAuth() {
-  const user = true; // replace with real auth check
+  const { user, loading } = useAuth();
   const location = useLocation();
+
+  if (loading) return null;
   if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
   return <Outlet />;
 }

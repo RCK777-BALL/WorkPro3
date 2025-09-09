@@ -115,7 +115,7 @@ are optional unless otherwise noted:
 Example request using a bearer token for authentication:
 
 ```bash
-curl -X POST http://localhost:5010/api/inventory \
+curl -X POST "$VITE_API_URL/api/inventory" \
   -H "Authorization: Bearer <JWT>" \
   -H "Content-Type: application/json" \
   -d '{

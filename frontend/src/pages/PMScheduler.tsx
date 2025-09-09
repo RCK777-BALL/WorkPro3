@@ -35,8 +35,19 @@ const PMScheduler: React.FC = () => {
   const [assets, setAssets] = useState<string[]>([]);
   const [rule, setRule] = useState('');
   const [plans, setPlans] = useState<Plan[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+   const [selected, setSelected] = useState<CalendarEvent | null>(null);
+  const [notice, setNotice] = useState('');
+ 
+
+  const generate = () => {
+    const next = new Date().toISOString().slice(0, 10);
+    const newPlans = assets.map(a => ({ asset: a, nextDue: next }));
+    setPlans(prev => [...prev, ...newPlans]);
+    setNotice(`Generated ${newPlans.length} plan${newPlans.length !== 1 ? 's' : ''}`);
+    setAssets([]);
+    setRule('');
+  };
+
   const events = useMemo(
     () =>
       plans.map(p => ({
@@ -44,16 +55,8 @@ const PMScheduler: React.FC = () => {
         start: new Date(p.nextDue),
         end: new Date(p.nextDue),
       })),
-    [plans],
+    [plans]
   );
-
-  const generate = () => {
-    const next = new Date().toISOString().slice(0, 10);
-    const newPlans = assets.map(a => ({ asset: a, nextDue: next }));
-    setPlans([...plans, ...newPlans]);
-    setAssets([]);
-    setRule('');
-  };
 
   return (
     <div className="p-6 space-y-4">
@@ -85,6 +88,7 @@ const PMScheduler: React.FC = () => {
         >
           Generate Plans
         </Button>
+        {notice && <p className="text-sm text-success-700">{notice}</p>}
       </div>
 
       {view === 'calendar' ? (

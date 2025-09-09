@@ -1,9 +1,10 @@
-import { BrowserQRCodeReader } from '@zxing/browser';
+import { BrowserQRCodeReader, BrowserQRCodeSvgWriter } from '@zxing/browser';
 
 export const generateQRCode = async (data: string): Promise<string> => {
-  // This would typically integrate with a QR code generation library
-  // For now, we'll return a placeholder
-  return `data:image/png;base64,${btoa('QR Code for: ' + data)}`;
+  const writer = new BrowserQRCodeSvgWriter();
+  const svg = writer.write(data, 300, 300);
+  const svgString = new XMLSerializer().serializeToString(svg);
+  return `data:image/svg+xml;base64,${btoa(svgString)}`;
 };
 
 export const scanQRCode = async (

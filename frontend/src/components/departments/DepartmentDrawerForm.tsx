@@ -12,13 +12,14 @@ export default function DepartmentDrawerForm({ initial, onSubmit, onCancel }: Pr
   const [name, setName] = useState(initial?.name ?? '');
   const [lines, setLines] = useState<Line[]>(initial?.lines ?? []);
   const [nameError, setNameError] = useState('');
-  const [lineErrors, setLineErrors] = useState<string[]>(initial?.lines?.map(() => '') ?? []);
+   const [lineErrors, setLineErrors] = useState<string[]>(initial?.lines?.map(() => '') ?? []);
 
   const handleLineChange = (index: number, value: string) => {
     setLines((prev) => prev.map((l, i) => (i === index ? { ...l, name: value } : l)));
     setLineErrors((prev) =>
       prev.map((err, i) => (i === index ? (value.trim() ? '' : err) : err))
     );
+ 
   };
 
   const handleAddLine = () => {
@@ -37,7 +38,7 @@ export default function DepartmentDrawerForm({ initial, onSubmit, onCancel }: Pr
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedName = name.trim();
-    const newNameError = trimmedName ? '' : 'Name is required';
+     const newNameError = trimmedName ? '' : 'Name is required';
     const newLineErrors = lines.map((l) =>
       l.name.trim() ? '' : 'Line name is required'
     );
@@ -50,6 +51,7 @@ export default function DepartmentDrawerForm({ initial, onSubmit, onCancel }: Pr
       { name: trimmedName },
       lines.map((l) => ({ ...l, name: l.name.trim() }))
     );
+ 
   };
 
   return (
@@ -68,13 +70,14 @@ export default function DepartmentDrawerForm({ initial, onSubmit, onCancel }: Pr
           }}
         />
         {nameError && (
-          <p className="text-red-500 text-sm mt-1">{nameError}</p>
+           <p className="text-red-500 text-sm mt-1">{nameError}</p>
+ 
         )}
       </div>
 
       <div className="space-y-2">
         {lines.map((line, index) => (
-          <div key={line._id} className="flex gap-2 items-start">
+           <div key={line._id} className="flex gap-2 items-start">
             <div className="flex-1">
               <input
                 type="text"
@@ -96,6 +99,7 @@ export default function DepartmentDrawerForm({ initial, onSubmit, onCancel }: Pr
             >
               Remove
             </Button>
+ 
           </div>
         ))}
         <Button type="button" variant="ghost" onClick={handleAddLine}>

@@ -13,7 +13,7 @@
     "reset-db": "ts-node scripts/resetAndSeed.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
-    "test": "echo \"(no backend tests yet)\" && exit 0",
+    "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
     "swagger:check": "ts-node utils/swagger.ts"

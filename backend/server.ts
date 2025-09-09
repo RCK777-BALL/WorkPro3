@@ -11,6 +11,7 @@ import rateLimit from "express-rate-limit";
 
 import { initKafka, sendKafkaEvent } from "./utils/kafka";
 import { initMQTTFromConfig } from "./iot/mqttClient";
+import logger from "./utils/logger";
 
 import authRoutes from "./routes/authRoutes";
 import workOrdersRoutes from "./routes/WorkOrderRoutes";
@@ -58,7 +59,7 @@ let env: EnvVars;
 try {
   env = validateEnv();
 } catch (err) {
-  console.error(err);
+  logger.error(err);
   process.exit(1);
 }
 
@@ -116,7 +117,7 @@ export const io = new Server(httpServer, {
 initChatSocket(io);
 
 io.on("connection", (socket) => {
-  console.log("connected", socket.id);
+  logger.info("connected", socket.id);
   socket.on("ping", () => socket.emit("pong"));
 });
 
@@ -170,11 +171,11 @@ if (env.NODE_ENV !== "test") {
   mongoose
     .connect(MONGO_URI)
     .then(() => {
-      console.log("MongoDB connected");
+      logger.info("MongoDB connected");
       httpServer.listen(PORT, () =>
-        console.log(`Server listening on http://localhost:${PORT}`),
+        logger.info(`Server listening on http://localhost:${PORT}`),
       );
-      initKafka(io).catch((err) => console.error("Kafka init error:", err));
+      initKafka(io).catch((err) => logger.error("Kafka init error:", err));
       initMQTTFromConfig();
       startPMScheduler("default", {
         cronExpr: env.PM_SCHEDULER_CRON,
@@ -182,7 +183,7 @@ if (env.NODE_ENV !== "test") {
       });
     })
     .catch((err) => {
-      console.error("MongoDB connection error:", err);
+      logger.error("MongoDB connection error:", err);
     });
 }
 

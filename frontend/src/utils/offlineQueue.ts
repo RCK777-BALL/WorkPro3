@@ -92,6 +92,44 @@ export const clearQueue = () => localStorage.removeItem(QUEUE_KEY);
 
 import http from '../lib/http';
 
+// allow tests to inject a mock http client
+type HttpClient = (args: { method: string; url: string; data?: any }) => Promise<any>;
+let httpClient: HttpClient = http as unknown as HttpClient;
+export const setHttpClient = (client: HttpClient) => {
+  httpClient = client;
+};
+
+export type DiffEntry = { field: string; local: any; server: any };
+export type SyncConflict = {
+  method: 'post' | 'put' | 'delete';
+  url: string;
+  local: any;
+  server: any;
+  diffs: DiffEntry[];
+};
+
+const conflictListeners = new Set<(c: SyncConflict) => void>();
+export const onSyncConflict = (cb: (c: SyncConflict) => void) => {
+  conflictListeners.add(cb);
+  return () => conflictListeners.delete(cb);
+};
+
+const diffObjects = (local: any, server: any): DiffEntry[] => {
+  const keys = new Set([
+    ...Object.keys(local ?? {}),
+    ...Object.keys(server ?? {}),
+  ]);
+  const diffs: DiffEntry[] = [];
+  keys.forEach((k) => {
+    const l = local?.[k];
+    const s = server?.[k];
+    if (JSON.stringify(l) !== JSON.stringify(s)) {
+      diffs.push({ field: k, local: l, server: s });
+    }
+  });
+  return diffs;
+};
+
 export const flushQueue = async (useBackoff = true) => {
   const queue = loadQueue();
   if (queue.length === 0) return;
@@ -105,10 +143,19 @@ export const flushQueue = async (useBackoff = true) => {
       continue;
     }
     try {
-      await http({ method: req.method, url: req.url, data: req.data });
+      await httpClient({ method: req.method, url: req.url, data: req.data });
     } catch (err: any) {
       if (err?.response?.status === 409) {
-        console.warn('Dropping conflicted request', err);
+        try {
+          const serverRes = await httpClient({ method: 'get', url: req.url });
+          const serverData = serverRes.data;
+          const diffs = diffObjects(req.data, serverData);
+          conflictListeners.forEach((cb) =>
+            cb({ method: req.method, url: req.url, local: req.data, server: serverData, diffs })
+          );
+        } catch (fetchErr) {
+          console.error('Failed to fetch server data for conflict', fetchErr);
+        }
         continue;
       }
       console.error('Failed to flush queued request', err);

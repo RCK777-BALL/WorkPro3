@@ -6,9 +6,7 @@ beforeEach(() => {
   vi.useFakeTimers();
 });
 
-afterEach(() => {
-  vi.useRealTimers();
-});
+afterEach(() => vi.useRealTimers());
 
 describe('navigation store', () => {
   it('persists sidebar order', async () => {

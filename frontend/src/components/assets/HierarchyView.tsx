@@ -2,21 +2,28 @@ import React, { useEffect, useState } from 'react';
 import http from '../../lib/http';
 import type { DepartmentHierarchy } from '../../types';
 import { useDepartmentStore } from '../../store/departmentStore';
+import { useToast } from '../../context/ToastContext';
 
 const HierarchyView: React.FC = () => {
   const [data, setData] = useState<DepartmentHierarchy[]>([]);
   const refreshCache = useDepartmentStore((s) => s.refreshCache);
+  const { addToast } = useToast();
 
   const fetchHierarchy = async () => {
-    await refreshCache();
-    const departments = useDepartmentStore.getState().departments;
-    const detailed = await Promise.all(
-      departments.map(async (dep) => {
-        const hRes = await http.get(`/departments/${dep.id}/hierarchy`);
-        return hRes.data as DepartmentHierarchy;
-      })
-    );
-    setData(detailed);
+    try {
+      await refreshCache();
+      const departments = useDepartmentStore.getState().departments;
+      const detailed = await Promise.all(
+        departments.map(async (dep) => {
+          const hRes = await http.get(`/departments/${dep.id}/hierarchy`);
+          return hRes.data as DepartmentHierarchy;
+        })
+      );
+      setData(detailed);
+    } catch (err) {
+      console.error('Failed to load hierarchy', err);
+      addToast('Failed to load departments', 'error');
+    }
   };
 
   useEffect(() => {

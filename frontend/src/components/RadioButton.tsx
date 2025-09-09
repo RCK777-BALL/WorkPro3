@@ -1,51 +1,42 @@
-import React from 'react';
-import { useThemeStore } from '../store/themeStore';
+ import * as React from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { cn } from '../utils/cn';
 
-// Supported application themes
-export type Themes = 'light' | 'dark' | 'system';
+const radioButtonVariants = cva(
+  'h-4 w-4 rounded-full border border-neutral-300 focus:ring-2 focus:ring-offset-2 focus:ring-primary-600 text-primary-600',
+  {
+    variants: {
+      color: {
+        brand: 'text-primary-600 focus:ring-primary-600',
+        brandInverted: 'text-white bg-primary-600 focus:ring-white',
+      },
+    },
+    defaultVariants: {
+      color: 'brand',
+    },
+  }
+);
 
-const RadioButton: React.FC = () => {
-  const { theme, setTheme } = useThemeStore();
+export interface RadioButtonProps
+  extends React.InputHTMLAttributes<HTMLInputElement>,
+    VariantProps<typeof radioButtonVariants> {}
 
-  // Update the global theme when a radio input is selected
-  const handleThemeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTheme(e.target.value as Themes);
-  };
+const RadioButton = React.forwardRef<HTMLInputElement, RadioButtonProps>(
+  ({ className, color, ...props }, ref) => {
+    return (
+      <input
+        type="radio"
+        ref={ref}
+        className={cn(radioButtonVariants({ color }), className)}
+        {...props}
+      />
+    );
+  }
+);
 
-  return (
-    <div className="flex gap-2">
-      <label className="flex items-center gap-1">
-        <input
-          type="radio"
-          name="theme"
-          value="light"
-          checked={theme === 'light'}
-          onChange={handleThemeChange}
-        />
-        Light
-      </label>
-      <label className="flex items-center gap-1">
-        <input
-          type="radio"
-          name="theme"
-          value="dark"
-          checked={theme === 'dark'}
-          onChange={handleThemeChange}
-        />
-        Dark
-      </label>
-      <label className="flex items-center gap-1">
-        <input
-          type="radio"
-          name="theme"
-          value="system"
-          checked={theme === 'system'}
-          onChange={handleThemeChange}
-        />
-        System
-      </label>
-    </div>
-  );
-};
+RadioButton.displayName = 'RadioButton';
 
+export { RadioButton, radioButtonVariants };
 export default RadioButton;
+
+ 

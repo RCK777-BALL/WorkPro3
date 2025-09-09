@@ -14,6 +14,7 @@ app.use('/api/reports', ReportsRoutes);
 let mongo: MongoMemoryServer;
 let token: string;
 let tenantId: mongoose.Types.ObjectId;
+let base: Date;
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'testsecret';
@@ -38,7 +39,7 @@ beforeEach(async () => {
   tenantId = user.tenantId;
   token = jwt.sign({ id: user._id.toString(), role: user.role }, process.env.JWT_SECRET!);
 
-  const base = new Date('2023-01-15T00:00:00Z');
+  base = new Date('2023-01-15T00:00:00Z');
   const invId = new mongoose.Types.ObjectId();
   await mongoose.connection.collection('inventories').insertOne({
     _id: invId,
@@ -69,7 +70,8 @@ describe('Reports metrics', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
     expect(res.body).toHaveLength(1);
-    expect(res.body[0].period).toBe('2023-01');
+    const expectedPeriod = base.toISOString().slice(0, 7);
+    expect(res.body[0].period).toBe(expectedPeriod);
     expect(res.body[0].laborCost).toBeCloseTo(400);
     expect(res.body[0].maintenanceCost).toBeCloseTo(200);
     expect(res.body[0].materialCost).toBeCloseTo(5);
@@ -82,7 +84,8 @@ describe('Reports metrics', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
     expect(res.body).toHaveLength(1);
-    expect(res.body[0].period).toBe('2023-01');
+    const expectedPeriod = base.toISOString().slice(0, 7);
+    expect(res.body[0].period).toBe(expectedPeriod);
     expect(res.body[0].downtime).toBe(4);
   });
 });

@@ -15,6 +15,7 @@ app.use('/api/v1/analytics', AnalyticsRoutes);
 let mongo: MongoMemoryServer;
 let token: string;
 let tenantId: mongoose.Types.ObjectId;
+let base: Date;
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'testsecret';
@@ -39,7 +40,7 @@ beforeEach(async () => {
   tenantId = user.tenantId;
   token = jwt.sign({ id: user._id.toString(), role: user.role }, process.env.JWT_SECRET!);
 
-  const base = new Date('2023-01-01T00:00:00Z');
+  base = new Date('2023-01-01T00:00:00Z');
   await WorkOrder.create({
     title: 'WO1',
     status: 'completed',
@@ -78,8 +79,17 @@ describe('Analytics KPIs', () => {
       .get('/api/v1/analytics/kpis')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
-    expect(res.body.mttr).toBeCloseTo(10, 1);
-    expect(res.body.mtbf).toBeCloseTo(20, 1);
+    const expectedMttr =
+      ((new Date(base.getTime() + 10 * 36e5).getTime() - base.getTime()) +
+        (new Date(base.getTime() + 30 * 36e5).getTime() -
+          new Date(base.getTime() + 20 * 36e5).getTime())) /
+      2 /
+      36e5;
+    const expectedMtbf =
+      (new Date(base.getTime() + 20 * 36e5).getTime() - base.getTime()) /
+      36e5;
+    expect(res.body.mttr).toBeCloseTo(expectedMttr, 1);
+    expect(res.body.mtbf).toBeCloseTo(expectedMtbf, 1);
     expect(res.body.backlog).toBe(1);
   });
 

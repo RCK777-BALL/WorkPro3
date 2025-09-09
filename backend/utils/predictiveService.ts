@@ -91,6 +91,10 @@ interface MetricFeatures {
   rollingMean: number;
   rollingStdDev: number;
   slope: number;
+  ema: number;
+  lastDiff: number;
+  limitRatio: number;
+  range: number;
 }
 
 function engineerFeatures(
@@ -105,10 +109,18 @@ function engineerFeatures(
     const min = Math.min(...values);
     const max = Math.max(...values);
     const last = values[values.length - 1];
+    const prev = values[values.length - 2] ?? last;
     const window = values.slice(-windowSize);
     const rollingMean =
       window.reduce((a, b) => a + b, 0) / (window.length || 1);
     const rollingStdDev = computeStdDev(window);
+
+    // Exponential moving average as a smoother trend indicator
+    let ema = values[0];
+    const alpha = 2 / (windowSize + 1);
+    for (let i = 1; i < values.length; i++) {
+      ema = alpha * values[i] + (1 - alpha) * ema;
+    }
 
     // Linear regression slope as trend indicator
     const n = values.length;
@@ -129,6 +141,10 @@ function engineerFeatures(
       rollingMean,
       rollingStdDev,
       slope,
+      ema,
+      lastDiff: last - prev,
+      limitRatio: last / SENSOR_LIMIT,
+      range: max - min,
     };
   }
   return features;
@@ -139,8 +155,11 @@ function forecast(values: number[], feat?: MetricFeatures): number {
     getModel() === 'arima' ? arimaForecast(values) : linearForecast(values);
   if (feat) {
     // Adjust prediction using engineered features
-    prediction += feat.slope;
-    prediction += feat.last - feat.rollingMean;
+    prediction += feat.slope * 0.05;
+    prediction += (feat.last - feat.rollingMean) * 0.1;
+    prediction += feat.lastDiff * 0.05;
+    prediction += (feat.ema - feat.mean) * 0.3;
+    prediction += (feat.limitRatio - 0.5) * SENSOR_LIMIT * 0.02;
   }
   return prediction;
 }

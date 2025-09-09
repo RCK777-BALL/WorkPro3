@@ -10,6 +10,7 @@ import type { WorkOrder, Department } from "../../types";
 import http from "../../lib/http";
 import { searchAssets } from "../../api/search";
 import { useDepartmentStore } from "../../store/departmentStore";
+import { useToast } from "../../context/ToastContext";
    
 
 interface WorkOrderModalProps {
@@ -33,6 +34,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
   const departments = useDepartmentStore((s) => s.departments);
   const fetchDepartments = useDepartmentStore((s) => s.fetchDepartments);
   const [loadingDeps, setLoadingDeps] = useState(true);
+  const { addToast } = useToast();
   
   const {
     register,
@@ -69,9 +71,10 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
     fetchDepartments()
       .catch((err) => {
         console.error("Failed to load departments", err);
+        addToast("Failed to load departments", "error");
       })
       .finally(() => setLoadingDeps(false));
-  }, [fetchDepartments]);
+  }, [fetchDepartments, addToast]);
 
   if (!isOpen) return null;
 

@@ -12,7 +12,12 @@ export default function Departments() {
     setLoading(true);
     listDepartments()
       .then(setItems)
-      .catch((e) => setError(e?.message ?? "Failed to load"))
+      .catch((e) => {
+        console.error("Failed to load departments", e);
+        setError(
+          e instanceof Error ? e.message : "Failed to load departments"
+        );
+      })
       .finally(() => setLoading(false));
   }, []);
 

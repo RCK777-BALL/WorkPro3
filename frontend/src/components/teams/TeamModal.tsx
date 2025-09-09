@@ -68,8 +68,15 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
   }, [role, setValue]);
 
   const fetchDepartmentOptions = async (q: string) => {
-    const list = await fetchDepartments();
-    return list.filter((d) => d.name.toLowerCase().includes(q.toLowerCase()));
+    try {
+      const list = await fetchDepartments();
+      return list.filter((d) =>
+        d.name.toLowerCase().includes(q.toLowerCase())
+      );
+    } catch (e) {
+      addToast('Failed to load departments', 'error');
+      return [];
+    }
   };
 
   const onSubmit = handleSubmit(async (data) => {

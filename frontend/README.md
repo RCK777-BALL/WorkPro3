@@ -50,8 +50,8 @@ The optimized bundle is written to the `dist` folder.
 
 The following variables from `.env.example` configure the frontend:
 
-- `VITE_API_URL` – Base URL for API requests. Defaults to `http://localhost:5010/api`.
-- `VITE_WS_URL` – WebSocket server URL for real‑time updates. Defaults to `ws://localhost:5010`.
+- `VITE_API_URL` – Base URL for API requests (without the `/api` suffix).
+- `VITE_WS_URL` – WebSocket server URL for real‑time updates. Defaults to the same host as `VITE_API_URL` with the `ws` scheme.
 - `VITE_SOCKET_PATH` – WebSocket endpoint path. Defaults to `/socket.io`.
 
 After updating `.env.local`, restart the development server to apply the changes.

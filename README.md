@@ -44,7 +44,7 @@ not committed to the repository.
 ## frontend setup
 
 1. `cd frontend`
-2. Copy `frontend/.env.example` to `.env` and update `VITE_API_URL`,
+2. Copy `frontend/.env.example` to `.env.local` and update `VITE_API_URL`,
     `VITE_WS_URL`, and `VITE_WS_PATH`.
  
 3. Install dependencies with `npm install`.

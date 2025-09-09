@@ -4,8 +4,8 @@ const getEnvVar = (key: string): string | undefined =>
   (import.meta.env as unknown as ViteEnv)?.[key];
 
 export const config = {
-  // Full API base including /api
-  apiUrl: getEnvVar('VITE_API_URL') ?? 'http://localhost:5010/api',
+  // Base server URL (without trailing /api)
+  apiUrl: getEnvVar('VITE_API_URL') ?? 'http://localhost:5010',
   // Optional explicit origins/urls
   httpOrigin: getEnvVar('VITE_HTTP_ORIGIN'),
   wsUrl: getEnvVar('VITE_WS_URL'),

@@ -7,13 +7,8 @@ export type Department = {
 };
 
 export async function listDepartments(): Promise<Department[]> {
-  try {
-    const { data } = await http.get<Department[]>('/departments');
-    return data;
-  } catch (e) {
-    // Return empty list if API not ready yet (so UI still renders)
-    return [];
-  }
+  const { data } = await http.get<Department[]>('/departments');
+  return data;
 }
 
 export const deleteDepartment = (id: string) =>

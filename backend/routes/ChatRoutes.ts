@@ -2,6 +2,7 @@ import express from 'express';
 import {
   getChannels,
   createChannel,
+  updateChannel,
   deleteChannel,
   getChannelMessages,
   sendChannelMessage,
@@ -23,6 +24,7 @@ router.use(requireAuth);
 // Channel management
 router.get('/channels', getChannels);
 router.post('/channels', createChannel);
+router.put('/channels/:channelId', updateChannel);
 router.delete('/channels/:channelId', deleteChannel);
 
 // Channel messages

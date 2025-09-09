@@ -10,11 +10,13 @@ import { runPmScheduler } from '../services/pmScheduler';
 
 let mongo: MongoMemoryServer;
 let tenantId: mongoose.Types.ObjectId;
+let siteId: mongoose.Types.ObjectId;
 
 beforeAll(async () => {
   mongo = await MongoMemoryServer.create();
   await mongoose.connect(mongo.getUri());
   tenantId = new mongoose.Types.ObjectId();
+  siteId = new mongoose.Types.ObjectId();
 });
 
 afterAll(async () => {
@@ -33,6 +35,7 @@ describe('meter based PM generation', () => {
       type: 'Mechanical',
       location: 'L1',
       tenantId,
+      siteId,
     });
     const meter = await Meter.create({
       asset: asset._id,
@@ -42,8 +45,9 @@ describe('meter based PM generation', () => {
       currentValue: 0,
       lastWOValue: 0,
       tenantId,
+      siteId,
     });
-    await MeterReading.create({ meter: meter._id, value: 120, tenantId });
+    await MeterReading.create({ meter: meter._id, value: 120, tenantId, siteId });
     meter.currentValue = 120;
     await meter.save();
 

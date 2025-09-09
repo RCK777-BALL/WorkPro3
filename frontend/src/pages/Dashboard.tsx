@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import FiltersBar from '../components/dashboard/FiltersBar';
 import DashboardStats from '../components/dashboard/DashboardStats';
 import WorkOrdersChart from '../components/dashboard/WorkOrdersChart';
@@ -8,12 +8,13 @@ import CriticalAlerts from '../components/dashboard/CriticalAlerts';
 import LowStockParts from '../components/dashboard/LowStockParts';
 import { useDashboardStore } from '../store/dashboardStore';
 import useDashboardData from '../hooks/useDashboardData';
-import { fetchSummary, fetchLowStock } from '../api/summary';
+import { useSummary } from '../hooks/useSummaryData';
 import http from '../lib/http';
 import type {
   Department,
   DashboardSummary,
   LowStockPart,
+  LowStockPartResponse,
 } from '../types';
 
 export default function Dashboard() {
@@ -36,10 +37,41 @@ export default function Dashboard() {
     customRange,
   );
 
-  const [summary, setSummary] = useState<DashboardSummary | null>(null);
-  const [lowStock, setLowStock] = useState<LowStockPart[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+
+  const query = useMemo(() => {
+    const params = new URLSearchParams();
+    if (selectedRole && selectedRole !== 'all') params.append('role', selectedRole);
+    if (selectedDepartment && selectedDepartment !== 'all')
+      params.append('department', selectedDepartment);
+    if (selectedTimeframe) {
+      params.append('timeframe', selectedTimeframe);
+      if (selectedTimeframe === 'custom') {
+        params.append('start', customRange.start);
+        params.append('end', customRange.end);
+      }
+    }
+    const qs = params.toString();
+    return qs ? `?${qs}` : '';
+  }, [selectedRole, selectedDepartment, selectedTimeframe, customRange]);
+
+  const [summary] = useSummary<DashboardSummary>(`/summary${query}`, [query]);
+  const [lowStockRaw] = useSummary<LowStockPartResponse[]>(
+    `/summary/low-stock${query}`,
+    [query],
+  );
+
+  const lowStock: LowStockPart[] = useMemo(
+    () =>
+      (lowStockRaw || []).map((p) => ({
+        id: p._id ?? p.id ?? '',
+        name: p.name,
+        quantity: p.quantity,
+        reorderPoint: p.reorderPoint ?? p.reorderThreshold ?? 0,
+      })),
+    [lowStockRaw],
+  );
 
   useEffect(() => {
     http
@@ -47,37 +79,6 @@ export default function Dashboard() {
       .then((res) => setDepartments(res.data))
       .catch(() => setDepartments([]));
   }, []);
-
-  useEffect(() => {
-    const params: Record<string, string> = {};
-    if (selectedRole && selectedRole !== 'all') params.role = selectedRole;
-    if (selectedDepartment && selectedDepartment !== 'all')
-      params.department = selectedDepartment;
-    if (selectedTimeframe) {
-      params.timeframe = selectedTimeframe;
-      if (selectedTimeframe === 'custom') {
-        params.start = customRange.start;
-        params.end = customRange.end;
-      }
-    }
-
-    fetchSummary(params)
-      .then(setSummary)
-      .catch(() => setSummary(null));
-
-    fetchLowStock(params)
-      .then((data) =>
-        setLowStock(
-          data.map((p) => ({
-            id: p._id ?? p.id ?? '',
-            name: p.name,
-            quantity: p.quantity,
-            reorderPoint: p.reorderPoint ?? p.reorderThreshold ?? 0,
-          }))
-        )
-      )
-      .catch(() => setLowStock([]));
-  }, [selectedRole, selectedDepartment, selectedTimeframe, customRange]);
 
   const stats = {
     totalAssets: summary?.totalAssets ?? 0,
@@ -94,7 +95,7 @@ export default function Dashboard() {
         <div>
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="text-sm text-neutral-600 dark:text-neutral-300">
-            Overview of key performance indicators
+            Live operational key performance indicators
           </p>
         </div>
         <button

@@ -10,8 +10,6 @@ import {
   ChevronRight,
   Plus,
 } from "lucide-react";
-import http from "../../lib/http";
-import { useToast } from "../../context/ToastContext";
 
 /** ---- Types ---- */
 type Summary = {
@@ -39,12 +37,13 @@ export default function DashboardHome() {
 
   useEffect(() => {
     let cancelled = false;
+
     const fetchData = async () => {
       try {
         setError(null);
         const [sumRes, woRes] = await Promise.all([
-          http.get<Summary>("/summary"),
-           http.get<RecentWorkOrder[]>("/workorders", {
+          http.get<Summary>("/api/summary"),
+          http.get<RecentWorkOrder[]>("/api/workorders", {
             params: { limit: 5, sort: "-updatedAt" },
           }),
         ]);
@@ -52,16 +51,16 @@ export default function DashboardHome() {
         if (!cancelled) {
           setSummary(sumRes.data);
           setRecent(woRes.data);
-          setLoading(false);
- 
         }
       } catch (e) {
         if (!cancelled) {
           setError("Failed to load dashboard data");
-           setLoading(false);
           addToast("Failed to load dashboard data", "error");
         }
- 
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
@@ -73,7 +72,7 @@ export default function DashboardHome() {
 
   return (
     <div className="space-y-6">
-       {error && (
+      {error && (
         <div className="rounded-2xl border border-error-200 bg-error-100 p-3 text-sm text-error-700">
           {error}
         </div>

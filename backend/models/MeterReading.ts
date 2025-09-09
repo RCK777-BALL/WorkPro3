@@ -11,6 +11,11 @@ const meterReadingSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    siteId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Site',
+      index: true,
+    },
   },
   { timestamps: true }
 );

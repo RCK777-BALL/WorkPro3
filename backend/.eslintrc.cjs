@@ -7,13 +7,16 @@ module.exports = {
   },
   env: {
     node: true,
-    es2020: true,
+    es2021: true,
   },
-  plugins: ['@typescript-eslint', 'prettier'],
+  plugins: ['@typescript-eslint'],
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
     'plugin:prettier/recommended',
   ],
-  ignorePatterns: ['dist/', 'node_modules/'],
+  ignorePatterns: ['dist', 'node_modules'],
+  rules: {
+    'prettier/prettier': 'error',
+  },
 };

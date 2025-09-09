@@ -5,6 +5,7 @@ import type { Request, Response, NextFunction } from 'express';
 import Vendor from '../models/Vendor';
 import PurchaseOrder from '../models/PurchaseOrder';
 import { requireVendorAuth } from '../middleware/vendorAuth';
+import { getJwtSecret } from '../utils/getJwtSecret';
 
 import {
   listVendorPurchaseOrders,
@@ -29,13 +30,14 @@ router.post('/login', async (req: Request, res: Response) => {
     return;
   }
 
-  const secret = process.env.VENDOR_JWT_SECRET || process.env.JWT_SECRET;
+  const secret = getJwtSecret(res, true);
   if (!secret) {
-    res.status(500).json({ message: 'Server configuration issue' });
     return;
   }
 
-  const token = jwt.sign({ id: vendor._id.toString() }, secret, { expiresIn: '7d' });
+  const token = jwt.sign({ id: vendor._id.toString() }, secret as string, {
+    expiresIn: '7d',
+  });
   res.json({ token });
 });
 

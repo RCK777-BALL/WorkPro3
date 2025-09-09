@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { login, generateMfa, verifyMfa } from '../controllers/authController';
 import { configureOIDC } from '../auth/oidc';
 import { configureOAuth, getOAuthScope, OAuthProvider } from '../auth/oauth';
+import { getJwtSecret } from '../utils/getJwtSecret';
 
 configureOIDC();
 configureOAuth();
@@ -33,11 +34,11 @@ router.get('/oauth/:provider/callback', (req, res, next) => {
       if (err || !user) {
         return res.status(400).json({ message: 'Authentication failed' });
       }
-      const secret = process.env.JWT_SECRET;
+      const secret = getJwtSecret(res);
       if (!secret) {
-        return res.status(500).json({ message: 'Server configuration issue' });
+        return;
       }
-      const token = jwt.sign({ email: user.email }, secret, {
+      const token = jwt.sign({ email: user.email }, secret as string, {
         expiresIn: '7d',
       });
       const frontend = process.env.FRONTEND_URL || 'http://localhost:5173/login';

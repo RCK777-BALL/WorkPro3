@@ -20,10 +20,10 @@ mockedGet.mockImplementation((url: string) => {
   if (url === '/v1/analytics/kpis') {
     return Promise.resolve({ data: { mttr: 5, mtbf: 10, backlog: 0 } });
   }
-  if (url === '/reports/analytics') {
+  if (url === '/v1/analytics/analytics') {
     return Promise.resolve({ data: { maintenanceCompliance: 92 } });
   }
-  if (url === '/reports/trends') {
+  if (url === '/v1/analytics/trends') {
     return Promise.resolve({ data: [] });
   }
   return Promise.resolve({ data: {} });

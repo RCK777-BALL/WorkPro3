@@ -43,8 +43,8 @@ export default function Reports() {
       try {
         const [kpiRes, analyticsRes, trendRes] = await Promise.all([
           http.get<KPIData>('/v1/analytics/kpis'),
-          http.get<AnalyticsData>('/reports/analytics'),
-          http.get<TrendData[]>('/reports/trends'),
+          http.get<AnalyticsData>('/v1/analytics/analytics'),
+          http.get<TrendData[]>('/v1/analytics/trends'),
         ]);
         setKpis({
           mtbf: kpiRes.data.mtbf,

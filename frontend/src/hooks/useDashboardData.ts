@@ -64,9 +64,11 @@ export default function useDashboardData(
   const [upcomingMaintenance, setUpcomingMaintenance] = useState<UpcomingMaintenanceItem[]>([]);
   const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlertItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const refreshData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const params = new URLSearchParams();
       if (role && role !== 'all') params.append('role', role);
@@ -134,6 +136,7 @@ export default function useDashboardData(
       setCriticalAlerts(alerts);
     } catch (err) {
       console.error('dashboard refresh failed', err);
+      setError('Failed to fetch dashboard data');
     } finally {
       setLoading(false);
     }
@@ -153,5 +156,6 @@ export default function useDashboardData(
     criticalAlerts,
     refresh,
     loading,
+    error,
   };
 }

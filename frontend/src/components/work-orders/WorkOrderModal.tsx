@@ -74,7 +74,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
         addToast("Failed to load departments", "error");
       })
       .finally(() => setLoadingDeps(false));
-  }, [fetchDepartments]);
+  }, [fetchDepartments, addToast]);
 
   if (!isOpen) return null;
 

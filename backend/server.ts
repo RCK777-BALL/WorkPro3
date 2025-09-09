@@ -160,7 +160,7 @@ app.use("/api/integrations", IntegrationRoutes);
 app.use("/api/summary", summaryRoutes);
 
 // 404 + error handler
-app.use((req, res) => {
+app.use((_req, res) => {
   res.status(404).json({ message: "Not Found" });
 });
 

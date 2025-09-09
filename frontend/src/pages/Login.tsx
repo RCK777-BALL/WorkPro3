@@ -78,7 +78,7 @@ const Login: React.FC = () => {
       if (data.user?.siteId) localStorage.setItem('auth:siteId', data.user.siteId);
       navigate('/dashboard');
     } catch (err: any) {
-      console.error(err);
+       console.error(err);
       const isNetworkError =
         err?.code === 'ERR_NETWORK' ||
         err?.message?.toLowerCase().includes('network');
@@ -87,6 +87,7 @@ const Login: React.FC = () => {
           ? t('auth.networkError', 'Cannot connect to server')
           : t('auth.loginFailed', 'Login failed')
       );
+ 
     }
   };
 

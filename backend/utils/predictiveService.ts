@@ -82,17 +82,67 @@ interface MetricSeries {
   values: number[];
 }
 
-function engineerFeatures(series: MetricSeries[]): Record<string, number> {
-  const features: Record<string, number> = {};
+interface MetricFeatures {
+  mean: number;
+  stdDev: number;
+  min: number;
+  max: number;
+  last: number;
+  rollingMean: number;
+  rollingStdDev: number;
+  slope: number;
+}
+
+function engineerFeatures(
+  series: MetricSeries[],
+  windowSize = 5
+): Record<string, MetricFeatures> {
+  const features: Record<string, MetricFeatures> = {};
   for (const s of series) {
-    const mean = s.values.reduce((a, b) => a + b, 0) / s.values.length;
-    features[s.metric] = mean;
+    const values = s.values;
+    const mean = values.reduce((a, b) => a + b, 0) / values.length;
+    const stdDev = computeStdDev(values);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const last = values[values.length - 1];
+    const window = values.slice(-windowSize);
+    const rollingMean =
+      window.reduce((a, b) => a + b, 0) / (window.length || 1);
+    const rollingStdDev = computeStdDev(window);
+
+    // Linear regression slope as trend indicator
+    const n = values.length;
+    const x = values.map((_, i) => i + 1);
+    const sumX = x.reduce((a, b) => a + b, 0);
+    const sumY = values.reduce((a, b) => a + b, 0);
+    const sumXY = x.reduce((a, xi, idx) => a + xi * values[idx], 0);
+    const sumXX = x.reduce((a, xi) => a + xi * xi, 0);
+    const slope =
+      (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+
+    features[s.metric] = {
+      mean,
+      stdDev,
+      min,
+      max,
+      last,
+      rollingMean,
+      rollingStdDev,
+      slope,
+    };
   }
   return features;
 }
 
-function forecast(values: number[]): number {
-  return getModel() === 'arima' ? arimaForecast(values) : linearForecast(values);
+function forecast(values: number[], feat?: MetricFeatures): number {
+  let prediction =
+    getModel() === 'arima' ? arimaForecast(values) : linearForecast(values);
+  if (feat) {
+    // Adjust prediction using engineered features
+    prediction += feat.slope;
+    prediction += feat.last - feat.rollingMean;
+  }
+  return prediction;
 }
 
 export async function predictForAsset(
@@ -112,13 +162,13 @@ export async function predictForAsset(
   const series: MetricSeries[] = Array.from(metricMap.entries()).map(
     ([metric, values]) => ({ metric, values })
   );
-  engineerFeatures(series); // placeholder for richer models
+  const featureMap = engineerFeatures(series);
 
   const asset = await Asset.findById(assetId).lean();
   const results: PredictionResult[] = [];
 
   for (const { metric, values } of series) {
-    const predictedValue = forecast(values);
+    const predictedValue = forecast(values, featureMap[metric]);
     const probability = Math.max(0, Math.min(1, predictedValue / SENSOR_LIMIT));
     const stdDev = computeStdDev(values);
     const margin = 1.96 * stdDev;

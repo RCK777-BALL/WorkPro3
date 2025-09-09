@@ -509,7 +509,6 @@ export default function Analytics() {
           </div>
         </Card>
       </div>
- 
-    </div>
+
   );
 }

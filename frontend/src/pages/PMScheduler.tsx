@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { enUS } from 'date-fns/locale';
@@ -36,14 +36,26 @@ const PMScheduler: React.FC = () => {
   const [rule, setRule] = useState('');
   const [plans, setPlans] = useState<Plan[]>([]);
   const [selected, setSelected] = useState<CalendarEvent | null>(null);
+  const [notice, setNotice] = useState('');
 
   const generate = () => {
     const next = new Date().toISOString().slice(0, 10);
     const newPlans = assets.map(a => ({ asset: a, nextDue: next }));
-    setPlans([...plans, ...newPlans]);
+    setPlans(prev => [...prev, ...newPlans]);
+    setNotice(`Generated ${newPlans.length} plan${newPlans.length !== 1 ? 's' : ''}`);
     setAssets([]);
     setRule('');
   };
+
+  const events = useMemo(
+    () =>
+      plans.map(p => ({
+        title: p.asset,
+        start: new Date(p.nextDue),
+        end: new Date(p.nextDue),
+      })),
+    [plans]
+  );
 
   return (
     <div className="p-6 space-y-4">
@@ -75,17 +87,14 @@ const PMScheduler: React.FC = () => {
         >
           Generate Plans
         </Button>
+        {notice && <p className="text-sm text-success-700">{notice}</p>}
       </div>
 
       {view === 'calendar' ? (
         <div className="border p-4">
           <Calendar
             localizer={localizer}
-            events={plans.map(p => ({
-              title: p.asset,
-              start: new Date(p.nextDue),
-              end: new Date(p.nextDue),
-            }))}
+            events={events}
             startAccessor="start"
             endAccessor="end"
             style={{ height: 500 }}

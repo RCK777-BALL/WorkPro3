@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { listDepartments } from "../api/departments";
 
 type Department = { _id: string; name: string; description?: string };
@@ -7,6 +8,7 @@ export default function Departments() {
   const [items, setItems] = useState<Department[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     setLoading(true);
@@ -20,7 +22,11 @@ export default function Departments() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-semibold">Departments</h1>
-        <button className="rounded bg-neutral-900 text-white px-3 py-1 text-sm dark:bg-white dark:text-neutral-900">
+        <button
+          type="button"
+          onClick={() => navigate("/departments/new")}
+          className="rounded bg-neutral-900 text-white px-3 py-1 text-sm dark:bg-white dark:text-neutral-900"
+        >
           Add Department
         </button>
       </div>

@@ -48,9 +48,11 @@ router.post('/login', async (req, res) => {
     }
 
     const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
-    const secret = getJwtSecret(res);
-    if (!secret) {
-      return;
+    let secret: string;
+    try {
+      secret = getJwtSecret();
+    } catch {
+      return res.status(500).json({ message: 'Server configuration issue' });
     }
     const token = jwt.sign({
       id: user._id.toString(),
@@ -111,12 +113,16 @@ router.get('/oauth/:provider/callback', (req, res, next) => {
       if (err || !user) {
         return res.status(400).json({ message: 'Authentication failed' });
       }
-      const secret = getJwtSecret(res);
-      if (!secret) {
-        return;
+      let secret: string;
+      try {
+        secret = getJwtSecret();
+      } catch {
+        return res
+          .status(500)
+          .json({ message: 'Server configuration issue' });
       }
       assertEmail(user.email);
-      const token = jwt.sign({ email: user.email }, secret as string, {
+      const token = jwt.sign({ email: user.email }, secret, {
         expiresIn: '7d',
       });
       const frontend = process.env.FRONTEND_URL || 'http://localhost:5173/login';

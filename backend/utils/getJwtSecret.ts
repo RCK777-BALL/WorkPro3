@@ -1,16 +1,13 @@
-import type { Response } from 'express';
-
 export const getJwtSecret = (
-  res: Response,
+  env: NodeJS.ProcessEnv = process.env,
   includeVendor = false,
-): string | undefined => {
+): string => {
   const secret = includeVendor
-    ? process.env.VENDOR_JWT_SECRET || process.env.JWT_SECRET
-    : process.env.JWT_SECRET;
+    ? env.VENDOR_JWT_SECRET || env.JWT_SECRET
+    : env.JWT_SECRET;
 
   if (!secret) {
-    res.status(500).json({ message: 'Server configuration issue' });
-    return undefined;
+    throw new Error('Server configuration issue');
   }
 
   return secret;

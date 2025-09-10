@@ -34,12 +34,15 @@ router.post('/login', async (req: Request, res: Response) => {
     return;
   }
 
-  const secret = getJwtSecret(res, true);
-  if (!secret) {
+  let secret: string;
+  try {
+    secret = getJwtSecret(process.env, true);
+  } catch {
+    res.status(500).json({ message: 'Server configuration issue' });
     return;
   }
 
-  const token = jwt.sign({ id: vendor._id.toString() }, secret as string, {
+  const token = jwt.sign({ id: vendor._id.toString() }, secret, {
     expiresIn: '7d',
   });
   res.json({ token });

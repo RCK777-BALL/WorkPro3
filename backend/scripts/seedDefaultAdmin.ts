@@ -32,7 +32,7 @@ const seed = async () => {
       await User.create({
         name: 'Admin',
         email: 'admin@example.com',
-        password: hashedPassword,
+        passwordHash: hashedPassword,
         role: 'admin',
         tenantId: tenant._id,
       });

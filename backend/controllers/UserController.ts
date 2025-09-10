@@ -17,7 +17,7 @@ export const getAllUsers: AuthedRequestHandler = async (
   next
 ) => {
   try {
-    const items = await User.find({ tenantId: req.tenantId }).select('-password');
+    const items = await User.find({ tenantId: req.tenantId }).select('-passwordHash');
     res.json(items);
   } catch (err) {
     next(err);
@@ -49,7 +49,7 @@ export const getUserById: AuthedRequestHandler = async (
   next
 ) => {
   try {
-    const item = await User.findOne({ _id: req.params.id, tenantId: req.tenantId }).select('-password');
+    const item = await User.findOne({ _id: req.params.id, tenantId: req.tenantId }).select('-passwordHash');
     if (!item) return res.status(404).json({ message: 'Not found' });
     res.json(item);
   } catch (err) {
@@ -82,7 +82,7 @@ export const createUser: AuthedRequestHandler = async (
   try {
     const newItem = new User({ ...req.body, tenantId: req.tenantId });
     const saved = await newItem.save();
-    const { password: _pw, ...safeUser } = saved.toObject();
+    const { passwordHash: _pw, ...safeUser } = saved.toObject();
     res.status(201).json(safeUser);
   } catch (err) {
     next(err);
@@ -127,7 +127,7 @@ export const updateUser: AuthedRequestHandler = async (
         new: true,
         runValidators: true,
       }
-    ).select('-password');
+    ).select('-passwordHash');
     if (!updated) return res.status(404).json({ message: 'Not found' });
     res.json(updated);
   } catch (err) {

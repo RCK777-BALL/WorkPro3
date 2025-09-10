@@ -35,7 +35,7 @@ const seedAdmin = async () => {
       {
         name: 'Admin User',
         email: 'admin@example.com',
-        password: hashedPassword,
+        passwordHash: hashedPassword,
         role: 'admin',
         tenantId: tenant._id,
       },

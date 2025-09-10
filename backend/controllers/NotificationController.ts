@@ -13,7 +13,9 @@ export const getAllNotifications: AuthedRequestHandler<unknown, NotificationDocu
   next: NextFunction,
 ) => {
   try {
-    const items = await Notification.find({ tenantId: req.tenantId });
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    const items = await Notification.find({ tenantId });
     res.json(items);
     return;
   } catch (err) {
@@ -28,7 +30,9 @@ export const getNotificationById: AuthedRequestHandler<IdParams, NotificationDoc
   next: NextFunction,
 ) => {
   try {
-    const item = await Notification.findOne({ _id: req.params.id, tenantId: req.tenantId });
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    const item = await Notification.findOne({ _id: req.params.id, tenantId });
     if (!item) {
       res.status(404).json({ message: 'Not found' });
       return;
@@ -47,7 +51,9 @@ export const createNotification: AuthedRequestHandler<unknown, NotificationDocum
   next: NextFunction,
 ) => {
   try {
-    const newItem = new Notification({ ...req.body, tenantId: req.tenantId });
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    const newItem = new Notification({ ...req.body, tenantId });
     const saved = (await newItem.save()) as NotificationDocument;
 
     const io = req.app.get('io');
@@ -96,8 +102,10 @@ export const markNotificationRead: AuthedRequestHandler<IdParams, NotificationDo
   }
 
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     const updated = await Notification.findOneAndUpdate(
-      { _id: req.params.id, tenantId: req.tenantId },
+      { _id: req.params.id, tenantId },
       { read: true },
       { new: true },
     );
@@ -127,8 +135,10 @@ export const updateNotification: AuthedRequestHandler<
     return;
   }
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     const updated = await Notification.findOneAndUpdate(
-      { _id: req.params.id, tenantId: req.tenantId },
+      { _id: req.params.id, tenantId },
       req.body,
       {
         new: true,
@@ -157,7 +167,9 @@ export const deleteNotification: AuthedRequestHandler<IdParams, { message: strin
     return;
   }
   try {
-    const deleted = await Notification.findOneAndDelete({ _id: req.params.id, tenantId: req.tenantId });
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    const deleted = await Notification.findOneAndDelete({ _id: req.params.id, tenantId });
     if (!deleted) {
       res.status(404).json({ message: 'Not found' });
       return;

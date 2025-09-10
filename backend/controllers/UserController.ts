@@ -33,7 +33,9 @@ export const getAllUsers: AuthedRequestHandler = async (
   next
 ) => {
   try {
-    const items = await User.find({ tenantId: req.tenantId }).select('-passwordHash');
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    const items = await User.find({ tenantId }).select('-passwordHash');
     res.json(items);
   } catch (err) {
     next(err);
@@ -65,7 +67,9 @@ export const getUserById: AuthedRequestHandler = async (
   next
 ) => {
   try {
-    const item = await User.findOne({ _id: req.params.id, tenantId: req.tenantId }).select('-passwordHash');
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    const item = await User.findOne({ _id: req.params.id, tenantId }).select('-passwordHash');
     if (!item) return res.status(404).json({ message: 'Not found' });
     res.json(item);
   } catch (err) {
@@ -96,8 +100,10 @@ export const createUser: AuthedRequestHandler = async (
   next
 ) => {
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     const payload = filterFields(req.body, userCreateFields);
-    const newItem = new User({ ...payload, tenantId: req.tenantId });
+    const newItem = new User({ ...payload, tenantId });
     const saved = await newItem.save();
     const { passwordHash: _pw, ...safeUser } = saved.toObject();
     res.status(201).json(safeUser);
@@ -137,9 +143,11 @@ export const updateUser: AuthedRequestHandler = async (
   next
 ) => {
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     const update = filterFields(req.body, userUpdateFields);
     const updated = await User.findOneAndUpdate(
-      { _id: req.params.id, tenantId: req.tenantId },
+      { _id: req.params.id, tenantId },
       update,
       {
         new: true,
@@ -178,7 +186,9 @@ export const deleteUser: AuthedRequestHandler = async (
   next
 ) => {
   try {
-    const deleted = await User.findOneAndDelete({ _id: req.params.id, tenantId: req.tenantId });
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    const deleted = await User.findOneAndDelete({ _id: req.params.id, tenantId });
     if (!deleted) return res.status(404).json({ message: 'Not found' });
     res.json({ message: 'Deleted successfully' });
   } catch (err) {
@@ -213,7 +223,9 @@ export const getUserTheme: AuthedRequestHandler = async (
   next
 ) => {
   try {
-    if (req.params.id !== req.user?.id && req.user?.role !== 'admin') {
+    const userId = (req.user as any)?._id ?? req.user?.id;
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+    if (req.params.id !== userId && req.user?.role !== 'admin') {
       return res.status(403).json({ message: 'Forbidden' });
     }
 
@@ -262,7 +274,9 @@ export const updateUserTheme: AuthedRequestHandler = async (
   next
 ) => {
   try {
-    if (req.params.id !== req.user?.id && req.user?.role !== 'admin') {
+    const userId = (req.user as any)?._id ?? req.user?.id;
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+    if (req.params.id !== userId && req.user?.role !== 'admin') {
       return res.status(403).json({ message: 'Forbidden' });
     }
 

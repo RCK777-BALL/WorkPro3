@@ -66,7 +66,8 @@ router.post('/login', async (req, res) => {
       })
       .status(200)
       .json({ token, user: { ...safeUser, tenantId } });
-  } catch {
+  } catch (err) {
+    console.error('Login error:', err);
     return res.status(500).json({ message: 'Server error' });
   }
 });
@@ -87,7 +88,8 @@ router.post('/register', async (req, res) => {
     const user = new User({ name, email, password, tenantId, employeeId });
     await user.save();
     return res.status(201).json({ message: 'User registered successfully' });
-  } catch {
+  } catch (err) {
+    console.error('Register error:', err);
     return res.status(500).json({ message: 'Server error' });
   }
 });

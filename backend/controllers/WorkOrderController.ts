@@ -1,5 +1,4 @@
-import { Response, NextFunction } from 'express';
-
+import { Request, Response, NextFunction } from 'express';
 import WorkOrder from '../models/WorkOrder';
 import { emitWorkOrderUpdate } from '../server';
 import { validationResult } from 'express-validator';
@@ -175,7 +174,7 @@ export const createWorkOrder: AuthedRequestHandler<unknown, any, any> = async (
   next: NextFunction
 ) => {
   try {
-    const errors = validationResult(req);
+    const errors = validationResult(req as Request);
     if (!errors.isEmpty()) {
       res.status(400).json({ errors: errors.array() });
       return;
@@ -222,7 +221,7 @@ export const updateWorkOrder: AuthedRequestHandler<IdParams, any, any> = async (
   next: NextFunction
 ) => {
   try {
-    const errors = validationResult(req);
+    const errors = validationResult(req as Request);
     if (!errors.isEmpty()) {
       res.status(400).json({ errors: errors.array() });
       return;

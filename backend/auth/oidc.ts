@@ -49,7 +49,7 @@ export const mapRoles = (groups: string[] = []): string => {
 };
 
 interface UserInfo {
-  email?: string;
+  email?: string | undefined;
   role: string;
 }
 

@@ -21,7 +21,14 @@ export const oauthVerify = (
 ): void => {
   try {
     const email = profile?.emails?.[0]?.value;
-    done(null, { email });
+
+    // Only include the property when it's defined
+    if (email) {
+      done(null, { email });
+    } else {
+      // no email in profile -> no user object (or you could pass false)
+      done(null, undefined);
+    }
   } catch (err) {
     done(err);
   }

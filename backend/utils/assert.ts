@@ -1,4 +1,4 @@
-export function invariant(condition: unknown, message: string): asserts condition {
+ export function invariant(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 
@@ -7,3 +7,4 @@ export function assertEmail(v: unknown): asserts v is string {
     throw new Error('Email is required and must be a non-empty string');
   }
 }
+ 

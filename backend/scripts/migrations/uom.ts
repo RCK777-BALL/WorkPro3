@@ -1,4 +1,4 @@
-const { MongoClient, ObjectId } = require('mongodb');
+import { MongoClient, ObjectId } from 'mongodb';
 
 async function run() {
   const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/workpro';

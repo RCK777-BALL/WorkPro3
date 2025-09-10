@@ -3,17 +3,10 @@ import SensorReading from '../models/SensorReading';
 import Notification from '../models/Notifications';
 import Prediction from '../models/Prediction';
 import config from '../config/default';
+import ArimaLib from 'arima';
 
-// Attempt to load external ARIMA library if installed. Fallback logic is used
-// when the dependency is not available in the environment.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-let ArimaLib: any = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  ArimaLib = require('arima');
-} catch {
-  ArimaLib = null;
-}
+// The ARIMA library is a regular dependency. If it's unavailable, the
+// fallback logic in `arimaForecast` will handle forecasting without it.
 
 export interface PredictionTrend {
   timestamp: Date;

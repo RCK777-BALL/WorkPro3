@@ -73,7 +73,7 @@ router.post('/login', async (req, res) => {
 
 // Local register (optional)
 router.post('/register', async (req, res) => {
-  const parsed = registerSchema.safeParse(req.body);
+  const parsed = await registerSchema.safeParseAsync(req.body);
   if (!parsed.success) {
     return res.status(400).json({ message: 'Invalid request' });
   }

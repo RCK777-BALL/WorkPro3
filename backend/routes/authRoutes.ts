@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import passport from 'passport';
-import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 import { generateMfa, verifyMfa } from '../controllers/authController';
@@ -14,6 +13,7 @@ import {
   loginSchema,
   registerSchema,
 } from '../validators/authValidators';
+import createJwt from '../utils/createJwt';
  
 interface OAuthUser extends Express.User {
   email: string;
@@ -76,17 +76,9 @@ router.post('/login', loginLimiter, async (req, res) => {
     const secret = getJwtSecret(res);
     if (secret === undefined) {
       return;
-    }
-     const token = jwt.sign(
-      {
-        id: user._id.toString(),
-        email: user.email,
-        tenantId,
-      },
-      secret,
-      { expiresIn: '7d' },
-    );
-
+ }
+     const token = createJwt(user, secret);
+ 
     const { password: _pw, ...safeUser } = user.toObject();
 
     const responseBody: Record<string, unknown> = {
@@ -162,10 +154,8 @@ router.get('/oauth/:provider/callback', (req, res, next) => {
         return;
       }
        assertEmail(user.email);
-      const token = jwt.sign({ email: user.email }, secret, {
+      const token = createJwt({ email: user.email }, secret);
  
-        expiresIn: '7d',
-      });
       const frontend = process.env.FRONTEND_URL || 'http://localhost:5173/login';
       const redirectUrl = `${frontend}?token=${token}&email=${encodeURIComponent(
         email,

@@ -3,7 +3,6 @@ import { getKPIs } from '../services/analytics';
 import { Parser as Json2csvParser } from 'json2csv';
 import PDFDocument from 'pdfkit';
 import { escapeXml } from '../utils/escapeXml';
-import { Request, Response, NextFunction } from 'express';
 
  export const kpiJson = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
  

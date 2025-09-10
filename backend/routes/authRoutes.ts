@@ -11,7 +11,11 @@ import {
   loginSchema,
   registerSchema,
 } from '../validators/authValidators';
-import { assertEmail } from '../utils/assert';
+ 
+interface OAuthUser extends Express.User {
+  email: string;
+}
+ 
  
 
 configureOIDC();
@@ -111,17 +115,17 @@ router.get('/oauth/:provider/callback', (req, res, next) => {
       if (err || !user) {
         return res.status(400).json({ message: 'Authentication failed' });
       }
+      const { email } = user as OAuthUser;
       const secret = getJwtSecret(res);
       if (!secret) {
         return;
       }
-      assertEmail(user.email);
-      const token = jwt.sign({ email: user.email }, secret as string, {
+      const token = jwt.sign({ email }, secret as string, {
         expiresIn: '7d',
       });
       const frontend = process.env.FRONTEND_URL || 'http://localhost:5173/login';
       const redirectUrl = `${frontend}?token=${token}&email=${encodeURIComponent(
-        user.email,
+        email,
       )}`;
       return res.redirect(redirectUrl);
     },

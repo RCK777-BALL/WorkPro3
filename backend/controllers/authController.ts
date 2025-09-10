@@ -12,8 +12,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   logger.info('Login attempt', { email });
 
   if (!email || !password) {
-    res.status(400).json({ message: 'Email and password required' });
-    return;
+    return res.status(400).json({ message: 'Email and password required' });
   }
   assertEmail(email);
 
@@ -21,20 +20,19 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const user = await User.findOne({ email });
     logger.info('User lookup result', { found: !!user });
     if (!user) {
-      res.status(401).json({ message: 'Invalid email or password' });
-      return;
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     const valid = await bcrypt.compare(req.body.password, user.passwordHash);
     logger.info('Password comparison result', { valid });
     if (!valid) {
-      res.status(401).json({ message: 'Invalid email or password' });
-      return;
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     if (user.mfaEnabled) {
-      res.status(200).json({ mfaRequired: true, userId: user._id.toString() });
-      return;
+      return res
+        .status(200)
+        .json({ mfaRequired: true, userId: user._id.toString() });
     }
 
     const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
@@ -46,16 +44,17 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const secret = process.env.JWT_SECRET;
     if (!secret) {
       logger.error('JWT_SECRET is not configured');
-      res.status(500).json({ message: 'Server configuration issue' });
-      return;
+      return res
+        .status(500)
+        .json({ message: 'Server configuration issue' });
     }
     const token = jwt.sign(payload, secret, { expiresIn: '7d' });
 
     const { passwordHash: _pw, ...safeUser } = user.toObject();
-    res.status(200).json({ token, user: { ...safeUser, tenantId } });
+    return res.status(200).json({ token, user: { ...safeUser, tenantId } });
   } catch (err) {
     logger.error('Login error', err);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -63,25 +62,29 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   const { name, email, password, tenantId, employeeId } = req.body;
 
   if (!name || !email || !password || !tenantId || !employeeId) {
-    res.status(400).json({ message: "Missing required fields" });
-    return;
+    return res.status(400).json({ message: "Missing required fields" });
   }
   assertEmail(email);
 
   try {
     const existing = await User.findOne({ email });
     if (existing) {
-      res.status(400).json({ message: "Email already in use" });
-      return;
+      return res.status(400).json({ message: "Email already in use" });
     }
 
-    const user = new User({ name, email, passwordHash: password, tenantId, employeeId });
+    const user = new User({
+      name,
+      email,
+      passwordHash: password,
+      tenantId,
+      employeeId,
+    });
     await user.save();
 
-    res.status(201).json({ message: "User registered successfully" });
+    return res.status(201).json({ message: "User registered successfully" });
   } catch (err) {
     logger.error("Register error", err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -92,8 +95,7 @@ export const requestPasswordReset = async (
   const { email } = req.body;
 
   if (!email) {
-    res.status(400).json({ message: "Email required" });
-    return;
+    return res.status(400).json({ message: "Email required" });
   }
   assertEmail(email);
 
@@ -101,8 +103,7 @@ export const requestPasswordReset = async (
     const user = await User.findOne({ email });
     if (!user) {
       // Respond with success even if user not found to avoid user enumeration
-      res.status(200).json({ message: "Password reset email sent" });
-      return;
+      return res.status(200).json({ message: "Password reset email sent" });
     }
 
     const token = crypto.randomBytes(20).toString("hex");
@@ -111,10 +112,10 @@ export const requestPasswordReset = async (
     await user.save();
 
     // In a real application, you would send the reset token via email here
-    res.status(200).json({ message: "Password reset email sent" });
+    return res.status(200).json({ message: "Password reset email sent" });
   } catch (err) {
     logger.error("Password reset request error", err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -123,17 +124,18 @@ export const generateMfa = async (req: Request, res: Response): Promise<void> =>
   try {
     const user = await User.findById(userId);
     if (!user) {
-      res.status(404).json({ message: 'User not found' });
-      return;
+      return res.status(404).json({ message: 'User not found' });
     }
     const secret = speakeasy.generateSecret();
     user.mfaSecret = secret.base32;
     await user.save();
     const token = speakeasy.totp({ secret: user.mfaSecret, encoding: 'base32' });
-    res.json({ secret: user.mfaSecret, token });
+    return res
+      .status(200)
+      .json({ secret: user.mfaSecret, token });
   } catch (err) {
     logger.error('generateMfa error', err);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -142,8 +144,7 @@ export const verifyMfa = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = await User.findById(userId);
     if (!user || !user.mfaSecret) {
-      res.status(400).json({ message: 'Invalid user' });
-      return;
+      return res.status(400).json({ message: 'Invalid user' });
     }
     const valid = speakeasy.totp.verify({
       secret: user.mfaSecret,
@@ -151,8 +152,7 @@ export const verifyMfa = async (req: Request, res: Response): Promise<void> => {
       token,
     });
     if (!valid) {
-      res.status(400).json({ message: 'Invalid token' });
-      return;
+      return res.status(400).json({ message: 'Invalid token' });
     }
     user.mfaEnabled = true;
     await user.save();
@@ -160,15 +160,18 @@ export const verifyMfa = async (req: Request, res: Response): Promise<void> => {
     const payload = { id: user._id.toString(), email: user.email, tenantId };
     const secret = process.env.JWT_SECRET;
     if (!secret) {
-      res.status(500).json({ message: 'Server configuration issue' });
-      return;
+      return res
+        .status(500)
+        .json({ message: 'Server configuration issue' });
     }
     const jwtToken = jwt.sign(payload, secret, { expiresIn: '7d' });
     const { passwordHash: _pw, ...safeUser } = user.toObject();
-    res.json({ token: jwtToken, user: { ...safeUser, tenantId } });
+    return res
+      .status(200)
+      .json({ token: jwtToken, user: { ...safeUser, tenantId } });
   } catch (err) {
     logger.error('verifyMfa error', err);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -180,10 +183,10 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
       return res.status(401).json({ message: "Not authenticated" });
     }
 
-    res.json(user);
+    return res.status(200).json(user);
   } catch (err) {
     logger.error(err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -193,11 +196,12 @@ export const logout = (
   res: Response,
   _next: NextFunction
 ) => {
-  res
+  return res
     .clearCookie('token', {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
     })
-    .sendStatus(200);
+    .status(200)
+    .json({ message: 'Logged out' });
 };

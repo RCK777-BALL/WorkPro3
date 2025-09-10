@@ -1,4 +1,5 @@
 import { validationResult } from 'express-validator';
+import mongoose from 'mongoose';
 import PMTask from '../models/PMTask';
 import type { AuthedRequestHandler } from '../types/http';
 
@@ -9,8 +10,8 @@ export const getAllPMTasks: AuthedRequestHandler = async (req, res, next) => {
   try {
     const filter: any = { tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
-    const assets = await Asset.find(filter);
-    return res.json(assets);
+    const tasks = await PMTask.find(filter);
+    return res.json(tasks);
   } catch (err) {
     return next(err);
   }
@@ -24,9 +25,9 @@ export const getPMTaskById: AuthedRequestHandler = async (req, res, next) => {
     const filter: any = { _id: req.params.id, tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
 
-    const asset = await Asset.findOne(filter);
-    if (!asset) return res.status(404).json({ message: 'Not found' });
-    return res.json(asset);
+    const task = await PMTask.findOne(filter);
+    if (!task) return res.status(404).json({ message: 'Not found' });
+    return res.json(task);
   } catch (err) {
     return next(err);
   }
@@ -34,6 +35,8 @@ export const getPMTaskById: AuthedRequestHandler = async (req, res, next) => {
 
 export const createPMTask: AuthedRequestHandler = async (req, res, next) => {
   try {
+    const errors = validationResult(req as any);
+    if (!errors.isEmpty()) {
       res.status(400).json({ errors: errors.array() });
       return;
     }
@@ -42,8 +45,7 @@ export const createPMTask: AuthedRequestHandler = async (req, res, next) => {
     res.status(201).json(task);
     return;
   } catch (err) {
-    next(err);
-    return;
+    return next(err);
   }
 };
 
@@ -66,8 +68,7 @@ export const updatePMTask: AuthedRequestHandler = async (req, res, next) => {
     res.json(task);
     return;
   } catch (err) {
-    next(err);
-    return;
+    return next(err);
   }
 };
 
@@ -81,8 +82,7 @@ export const deletePMTask: AuthedRequestHandler = async (req, res, next) => {
     res.json({ message: 'Deleted successfully' });
     return;
   } catch (err) {
-    next(err);
-    return;
+    return next(err);
   }
 };
 

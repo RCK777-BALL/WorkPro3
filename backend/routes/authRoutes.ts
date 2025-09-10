@@ -107,8 +107,8 @@ router.use(passport.initialize());
     return res
       .cookie('token', token, {
          httpOnly: true,
-        sameSite: 'lax',
-        secure: isCookieSecure(),
+        sameSite: 'strict',
+        secure: process.env.NODE_ENV === 'production',
  
       })
       .status(200)

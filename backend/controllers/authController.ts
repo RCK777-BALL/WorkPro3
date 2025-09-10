@@ -269,8 +269,9 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
  
     .clearCookie('token', {
       httpOnly: true,
-      sameSite: 'lax',
-      secure: isCookieSecure(),
+       sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+ 
     })
     .status(200)
     .json({ message: 'Logged out' });

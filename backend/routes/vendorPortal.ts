@@ -6,6 +6,7 @@ import Vendor from '../models/Vendor';
 import PurchaseOrder from '../models/PurchaseOrder';
 import { requireVendorAuth } from '../middleware/vendorAuth';
 import { getJwtSecret } from '../utils/getJwtSecret';
+import { assertEmail } from '../utils/assert';
 
 import {
   listVendorPurchaseOrders,
@@ -22,6 +23,9 @@ router.post('/login', async (req: Request, res: Response) => {
   if (!vendorId) {
     res.status(400).json({ message: 'vendorId required' });
     return;
+  }
+  if (email !== undefined) {
+    assertEmail(email);
   }
 
   const vendor = await Vendor.findById(vendorId).lean();

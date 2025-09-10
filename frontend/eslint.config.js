@@ -23,6 +23,10 @@ export default tseslint.config(
         'warn',
         { allowConstantExport: true },
       ],
+      'sort-imports': ['error', { ignoreDeclarationSort: true }],
+      indent: ['error', 2],
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': ['error'],
     },
   }
 );

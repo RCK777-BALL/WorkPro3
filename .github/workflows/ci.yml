@@ -30,6 +30,9 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Lint
+        run: npm run lint --if-present
+
       - name: Typecheck (if present)
         run: npm run typecheck --if-present
 
@@ -55,6 +58,9 @@ jobs:
 
       - name: Install
         run: npm ci
+
+      - name: Lint
+        run: npm run lint --if-present
 
       - name: Typecheck
         run: npm run typecheck --if-present

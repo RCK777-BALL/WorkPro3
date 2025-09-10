@@ -1,6 +1,5 @@
 import express, { type Request, type Response, type NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import type { AuthedRequest } from '../types/express';
 
 import Vendor from '../models/Vendor';
 import PurchaseOrder from '../models/PurchaseOrder';
@@ -72,7 +71,7 @@ router.get('/pos', listVendorPurchaseOrders);
 router.get(
   '/purchase-orders/:id',
   async (
-    req: AuthedRequest,
+    req: Request,
     res: Response,
     next: NextFunction,
   ): Promise<void> => {

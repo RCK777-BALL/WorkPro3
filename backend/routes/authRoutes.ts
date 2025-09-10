@@ -152,7 +152,7 @@ router.post('/login', loginLimiter, async (req, res) => {
 // OAuth routes
 router.get('/oauth/:provider', (req, res, next) => {
   const provider = req.params.provider as OAuthProvider;
-  passport.authenticate(provider, { scope: getOAuthScope(provider) })(
+  return passport.authenticate(provider, { scope: getOAuthScope(provider) })(
     req,
     res,
     next,
@@ -161,7 +161,7 @@ router.get('/oauth/:provider', (req, res, next) => {
 
 router.get('/oauth/:provider/callback', (req, res, next) => {
   const provider = req.params.provider as OAuthProvider;
-  passport.authenticate(
+  return passport.authenticate(
     provider,
     { session: false },
     (err: Error | null, user: Express.User | false | null) => {

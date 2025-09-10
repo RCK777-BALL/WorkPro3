@@ -15,12 +15,12 @@ import { assertEmail } from '../utils/assert';
  
 
 export const login = async (req: Request, res: Response): Promise<void> => {
-  let data: LoginInput;
-  try {
-    data = loginSchema.parse(req.body);
-  } catch {
-    res.status(400).json({ message: 'Email and password required' });
-    return;
+    const { email, password } = req.body;
+  logger.info('Login attempt', { email });
+
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Email and password required' });
+  
   }
   const { email, password } = data;
   logger.info('Login attempt', { email });
@@ -29,20 +29,19 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const user = await User.findOne({ email });
     logger.info('User lookup result', { found: !!user });
     if (!user) {
-      res.status(401).json({ message: 'Invalid email or password' });
-      return;
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
     logger.info('Password comparison result', { valid });
     if (!valid) {
-      res.status(401).json({ message: 'Invalid email or password' });
-      return;
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     if (user.mfaEnabled) {
-      res.status(200).json({ mfaRequired: true, userId: user._id.toString() });
-      return;
+      return res
+        .status(200)
+        .json({ mfaRequired: true, userId: user._id.toString() });
     }
 
     if (!user.mfaEnabled) {
@@ -53,55 +52,50 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const secret = process.env.JWT_SECRET;
     if (!secret) {
       logger.error('JWT_SECRET is not configured');
-      res.status(500).json({ message: 'Server configuration issue' });
-      return;
+      return res
+        .status(500)
+        .json({ message: 'Server configuration issue' });
     }
     const token = createJwt(user, secret);
 
     const { passwordHash: _pw, ...safeUser } = user.toObject();
-    res.status(200).json({ token, user: { ...safeUser, tenantId } });
+    return res.status(200).json({ token, user: { ...safeUser, tenantId } });
   } catch (err) {
     logger.error('Login error', err);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 
 export const register = async (req: Request, res: Response): Promise<void> => {
-  let data: RegisterInput;
-  try {
-    data = registerSchema.parse(req.body);
-  } catch {
-    res.status(400).json({ message: "Missing required fields" });
-    return;
+    const { name, email, password, tenantId, employeeId } = req.body;
+
+  if (!name || !email || !password || !tenantId || !employeeId) {
+    return res.status(400).json({ message: "Missing required fields" });
+  
   }
   const { name, email, password, tenantId, employeeId } = data;
 
   try {
     const existing = await User.findOne({ email });
     if (existing) {
-      res.status(400).json({ message: "Email already in use" });
-      return;
+      return res.status(400).json({ message: "Email already in use" });
     }
 
-    const user = new User({ name, email, passwordHash: password, tenantId, employeeId });
-    await user.save().catch((err: any) => {
-      if (err.code === 11000) {
-        res.status(400).json({ message: "Email or employee ID already in use" });
-        return;
-      }
-      throw err;
+     const user = new User({
+      name,
+      email,
+      passwordHash: password,
+      tenantId,
+      employeeId,
     });
+    await user.save();
+ 
 
-    if (res.headersSent) {
-      return;
-    }
-
-    res.status(201).json({ message: "User registered successfully" });
+    return res.status(201).json({ message: "User registered successfully" });
   } catch (err) {
-    if (!res.headersSent) {
-      logger.error("Register error", err);
-      res.status(500).json({ message: "Server error" });
-    }
+     logger.error("Register error", err);
+    return res.status(500).json({ message: "Server error" });
+ 
   }
 };
 
@@ -112,8 +106,7 @@ export const requestPasswordReset = async (
   const { email } = req.body;
 
   if (!email) {
-    res.status(400).json({ message: "Email required" });
-    return;
+    return res.status(400).json({ message: "Email required" });
   }
   assertEmail(email);
 
@@ -121,8 +114,7 @@ export const requestPasswordReset = async (
     const user = await User.findOne({ email });
     if (!user) {
       // Respond with success even if user not found to avoid user enumeration
-      res.status(200).json({ message: "Password reset email sent" });
-      return;
+      return res.status(200).json({ message: "Password reset email sent" });
     }
 
     const token = crypto.randomBytes(20).toString("hex");
@@ -131,10 +123,10 @@ export const requestPasswordReset = async (
     await user.save();
 
     // In a real application, you would send the reset token via email here
-    res.status(200).json({ message: "Password reset email sent" });
+    return res.status(200).json({ message: "Password reset email sent" });
   } catch (err) {
     logger.error("Password reset request error", err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -151,17 +143,18 @@ export const generateMfa: AuthedRequestHandler = async (req, res) => {
   try {
     const user = await User.findOne({ _id: userId, tenantId });
     if (!user) {
-      res.status(404).json({ message: 'User not found' });
-      return;
+      return res.status(404).json({ message: 'User not found' });
     }
     const secret = speakeasy.generateSecret();
     user.mfaSecret = secret.base32;
     await user.save();
     const token = speakeasy.totp({ secret: user.mfaSecret, encoding: 'base32' });
-    res.json({ secret: user.mfaSecret, token });
+    return res
+      .status(200)
+      .json({ secret: user.mfaSecret, token });
   } catch (err) {
     logger.error('generateMfa error', err);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -179,8 +172,7 @@ export const generateMfa: AuthedRequestHandler = async (req, res) => {
     const user = await User.findOne({ _id: userId, tenantId });
  
     if (!user || !user.mfaSecret) {
-      res.status(400).json({ message: 'Invalid user' });
-      return;
+      return res.status(400).json({ message: 'Invalid user' });
     }
     const valid = speakeasy.totp.verify({
       secret: user.mfaSecret,
@@ -188,8 +180,7 @@ export const generateMfa: AuthedRequestHandler = async (req, res) => {
       token,
     });
     if (!valid) {
-      res.status(400).json({ message: 'Invalid token' });
-      return;
+      return res.status(400).json({ message: 'Invalid token' });
     }
      user.mfaEnabled = true;
     await user.save();
@@ -198,15 +189,20 @@ export const generateMfa: AuthedRequestHandler = async (req, res) => {
     const secret = process.env.JWT_SECRET;
  
     if (!secret) {
-      return;
+       return res
+        .status(500)
+        .json({ message: 'Server configuration issue' });
+ 
     }
     const jwtToken = createJwt(user, secret);
     const { passwordHash: _pw, ...safeUser } = user.toObject();
-     res.json({ token: jwtToken, user: { ...safeUser, tenantId: tenantIdStr } });
+     return res
+      .status(200)
+      .json({ token: jwtToken, user: { ...safeUser, tenantId } });
  
   } catch (err) {
     logger.error('verifyMfa error', err);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -218,10 +214,10 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
       return res.status(401).json({ message: "Not authenticated" });
     }
 
-    res.json(user);
+    return res.status(200).json(user);
   } catch (err) {
     logger.error(err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -231,11 +227,12 @@ export const logout = (
   res: Response,
   _next: NextFunction
 ) => {
-  res
+  return res
     .clearCookie('token', {
       httpOnly: true,
       sameSite: 'lax',
       secure: isCookieSecure(),
     })
-    .sendStatus(200);
+    .status(200)
+    .json({ message: 'Logged out' });
 };

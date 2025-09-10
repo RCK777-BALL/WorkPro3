@@ -79,10 +79,13 @@ router.use(passport.initialize());
       return res.status(200).json({ mfaRequired: true });
     }
 
-    const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
-    const secret = getJwtSecret(res);
-     if (!secret) {
-      return res;
+ const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
+     let secret: string;
+    try {
+      secret = getJwtSecret();
+    } catch {
+      return res.status(500).json({ message: 'Server configuration issue' });
+ 
     }
      const token = jwt.sign(
       {
@@ -177,36 +180,32 @@ router.get('/oauth/:provider', async (req, res, next) => {
 
 router.get('/oauth/:provider/callback', async (req, res, next) => {
   const provider = req.params.provider as OAuthProvider;
-   try {
-    const user = await new Promise<Express.User>((resolve, reject) => {
-      passport.authenticate(
-        provider,
-        { session: false },
-        (err: Error | null, user: Express.User | false | null) => {
-          if (err || !user) {
-            return reject(err || new Error('Authentication failed'));
-          }
-          resolve(user);
-        },
-      )(req, res, (err) => (err ? reject(err) : undefined));
-    });
-
-    const secret = getJwtSecret(res);
-    if (!secret) {
-      return;
-    }
-    assertEmail(user.email);
-    const token = jwt.sign({ email: user.email }, secret as string, {
-      expiresIn: '7d',
-    });
-    const frontend = process.env.FRONTEND_URL || 'http://localhost:5173/login';
-    const redirectUrl = `${frontend}?token=${token}&email=${encodeURIComponent(
-      user.email,
-    )}`;
-    return res.redirect(redirectUrl);
-  } catch {
-    return res.status(400).json({ message: 'Authentication failed' });
-  }
+   passport.authenticate(
+    provider,
+    { session: false },
+    (err: Error | null, user: Express.User | false | null) => {
+      if (err || !user) {
+        return res.status(400).json({ message: 'Authentication failed' });
+      }
+      let secret: string;
+      try {
+        secret = getJwtSecret();
+      } catch {
+        return res
+          .status(500)
+          .json({ message: 'Server configuration issue' });
+      }
+      assertEmail(user.email);
+      const token = jwt.sign({ email: user.email }, secret, {
+        expiresIn: '7d',
+      });
+      const frontend = process.env.FRONTEND_URL || 'http://localhost:5173/login';
+      const redirectUrl = `${frontend}?token=${token}&email=${encodeURIComponent(
+        user.email,
+      )}`;
+      return res.redirect(redirectUrl);
+    },
+  )(req, res, next);
  
 });
 

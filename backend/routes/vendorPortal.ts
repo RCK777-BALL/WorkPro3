@@ -35,12 +35,16 @@ const router = express.Router();
     return res.status(401).json({ message: 'Invalid credentials' });
   }
 
-  const secret = getJwtSecret(res, true);
-  if (!secret) {
-    return res;
+   let secret: string;
+  try {
+    secret = getJwtSecret(process.env, true);
+  } catch {
+    res.status(500).json({ message: 'Server configuration issue' });
+    return;
+ 
   }
 
-  const token = jwt.sign({ id: vendor._id.toString() }, secret as string, {
+  const token = jwt.sign({ id: vendor._id.toString() }, secret, {
     expiresIn: '7d',
   });
   return res.json({ token });

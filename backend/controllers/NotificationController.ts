@@ -3,6 +3,7 @@ import Notification, { NotificationDocument } from '../models/Notifications';
 import User from '../models/User';
 import nodemailer from 'nodemailer';
 import { Response, NextFunction } from 'express';
+import { assertEmail } from '../utils/assert';
 
 type IdParams = { id: string };
 
@@ -65,6 +66,7 @@ export const createNotification: AuthedRequestHandler<unknown, NotificationDocum
       if (saved.user) {
         const user = await User.findById(saved.user);
         if (user?.email) {
+          assertEmail(user.email);
           await transporter.sendMail({
             from: process.env.SMTP_FROM || process.env.SMTP_USER,
             to: user.email,

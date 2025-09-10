@@ -66,7 +66,9 @@ type SearchQuery = {
  export const getAllWorkOrders = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
  
   try {
-    const items = await WorkOrder.find({ tenantId: req.tenantId });
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    const items = await WorkOrder.find({ tenantId });
     res.json(items);
     return;
   } catch (err) {
@@ -108,8 +110,10 @@ type SearchQuery = {
  export const searchWorkOrders = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
  
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     const { status, priority, startDate, endDate } = req.query;
-    const query: any = { tenantId: req.tenantId };
+    const query: any = { tenantId };
 
     if (status) query.status = status;
     if (priority) query.priority = priority;
@@ -150,7 +154,9 @@ type SearchQuery = {
  export const getWorkOrderById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
  
   try {
-    const item = await WorkOrder.findOne({ _id: req.params.id, tenantId: req.tenantId });
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    const item = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!item) {
       res.status(404).json({ message: 'Not found' });
       return;
@@ -190,8 +196,10 @@ type SearchQuery = {
       res.status(400).json({ errors: errors.array() });
       return;
     }
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     const payload = filterFields(req.body, workOrderCreateFields);
-    const newItem = new WorkOrder({ ...payload, tenantId: req.tenantId });
+    const newItem = new WorkOrder({ ...payload, tenantId });
     const saved = await newItem.save();
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     res.status(201).json(saved);
@@ -235,9 +243,11 @@ type SearchQuery = {
       res.status(400).json({ errors: errors.array() });
       return;
     }
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     const update = filterFields(req.body, workOrderUpdateFields);
     const updated = await WorkOrder.findOneAndUpdate(
-      { _id: req.params.id, tenantId: req.tenantId },
+      { _id: req.params.id, tenantId },
       update,
       {
         new: true,
@@ -279,7 +289,9 @@ type SearchQuery = {
  export const deleteWorkOrder = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
  
   try {
-    const deleted = await WorkOrder.findOneAndDelete({ _id: req.params.id, tenantId: req.tenantId });
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    const deleted = await WorkOrder.findOneAndDelete({ _id: req.params.id, tenantId });
     if (!deleted) {
       res.status(404).json({ message: 'Not found' });
       return;
@@ -327,17 +339,19 @@ type SearchQuery = {
  export const approveWorkOrder = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
  
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    const userIdStr = (req.user as any)?._id ?? req.user?.id;
+    if (!userIdStr) return res.status(401).json({ message: 'Not authenticated' });
+    const userObjectId = new Types.ObjectId(userIdStr);
     const { status } = req.body;
- 
-      const userIdStr = (req.user?._id as string | undefined) ?? req.user?.id;
-      const userObjectId = userIdStr ? new Types.ObjectId(userIdStr) : undefined;
  
     if (!['pending', 'approved', 'rejected'].includes(status)) {
       res.status(400).json({ message: 'Invalid status' });
       return;
     }
 
-    const workOrder = await WorkOrder.findById(req.params.id);
+    const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!workOrder) {
       res.status(404).json({ message: 'Not found' });
       return;
@@ -399,9 +413,11 @@ type SearchQuery = {
 export const assistWorkOrder = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
  
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     const workOrder = await WorkOrder.findOne({
       _id: req.params.id,
-      tenantId: req.tenantId,
+      tenantId,
     });
     if (!workOrder) {
       res.status(404).json({ message: 'Not found' });

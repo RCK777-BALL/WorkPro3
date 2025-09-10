@@ -5,11 +5,14 @@ import { Request, Response, NextFunction } from 'express';
 // Channel controllers
 export const getChannels = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const userId = req.user?._id || req.user?.id;
+    const userId = (req.user as any)?._id ?? req.user?.id;
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     const channels = await Channel.find({
-      tenantId: req.tenantId,
+      tenantId,
       isDirect: false,
-      ...(userId ? { members: userId } : {}),
+      members: userId,
     }).sort({ name: 1 });
     return res.json(channels);
   } catch (err) {
@@ -19,15 +22,17 @@ export const getChannels = async (req: Request, res: Response, next: NextFunctio
 
 export const createChannel = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const userId = req.user?._id || req.user?.id;
+    const userId = (req.user as any)?._id ?? req.user?.id;
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     const { name, description, members = [] } = req.body;
-    if (!userId) return res.status(400).json({ message: 'User required' });
     const channel = await Channel.create({
       name,
       description,
       members: Array.from(new Set([userId, ...members])),
       createdBy: userId,
-      tenantId: req.tenantId,
+      tenantId,
       isDirect: false,
     });
     return res.status(201).json(channel);
@@ -38,8 +43,10 @@ export const createChannel = async (req: Request, res: Response, next: NextFunct
 
 export const updateChannel = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const userId = req.user?._id || req.user?.id;
-    if (!userId) return res.status(400).json({ message: 'User required' });
+    const userId = (req.user as any)?._id ?? req.user?.id;
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     const { name, description, members } = req.body;
     const update: Partial<{ name: string; description?: string; members?: string[] }> = {};
     if (name !== undefined) update.name = name;
@@ -48,7 +55,7 @@ export const updateChannel = async (req: Request, res: Response, next: NextFunct
     const channel = await Channel.findOneAndUpdate(
       {
         _id: req.params.channelId,
-        tenantId: req.tenantId,
+        tenantId,
         isDirect: false,
         members: userId,
       },
@@ -64,9 +71,11 @@ export const updateChannel = async (req: Request, res: Response, next: NextFunct
 
 export const deleteChannel = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     await Channel.findOneAndDelete({
       _id: req.params.channelId,
-      tenantId: req.tenantId,
+      tenantId,
       isDirect: false,
     });
     await ChatMessage.deleteMany({ channelId: req.params.channelId });
@@ -87,7 +96,8 @@ export const getChannelMessages = async (req: Request, res: Response, next: Next
 
 export const sendChannelMessage = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const userId = req.user?._id || req.user?.id;
+    const userId = (req.user as any)?._id ?? req.user?.id;
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
     const { content } = req.body;
     const message = await ChatMessage.create({
       channelId: req.params.channelId,
@@ -103,7 +113,8 @@ export const sendChannelMessage = async (req: Request, res: Response, next: Next
 // Message controllers shared between channel and direct messages
 export const updateMessage = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const userId = req.user?._id || req.user?.id;
+    const userId = (req.user as any)?._id ?? req.user?.id;
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
     const message = await ChatMessage.findOneAndUpdate(
       { _id: req.params.messageId, sender: userId },
       { content: req.body.content, updatedAt: new Date() },
@@ -118,7 +129,8 @@ export const updateMessage = async (req: Request, res: Response, next: NextFunct
 
 export const deleteMessage = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const userId = req.user?._id || req.user?.id;
+    const userId = (req.user as any)?._id ?? req.user?.id;
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
     await ChatMessage.findOneAndDelete({ _id: req.params.messageId, sender: userId });
     return res.status(204).end();
   } catch (err) {
@@ -129,9 +141,12 @@ export const deleteMessage = async (req: Request, res: Response, next: NextFunct
 // Direct message controllers
 export const getDirectMessages = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const userId = req.user?._id || req.user?.id;
+    const userId = (req.user as any)?._id ?? req.user?.id;
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     const channels = await Channel.find({
-      tenantId: req.tenantId,
+      tenantId,
       isDirect: true,
       members: userId,
     });
@@ -143,11 +158,14 @@ export const getDirectMessages = async (req: Request, res: Response, next: NextF
 
 export const createDirectMessage = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const userId = req.user?._id || req.user?.id;
+    const userId = (req.user as any)?._id ?? req.user?.id;
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     const otherId = req.body.userId;
     const members = [userId, otherId];
     const existing = await Channel.findOne({
-      tenantId: req.tenantId,
+      tenantId,
       isDirect: true,
       members: { $all: members },
     });
@@ -157,7 +175,7 @@ export const createDirectMessage = async (req: Request, res: Response, next: Nex
       isDirect: true,
       members,
       createdBy: userId!,
-      tenantId: req.tenantId,
+      tenantId,
     });
     return res.status(201).json(channel);
   } catch (err) {
@@ -167,10 +185,13 @@ export const createDirectMessage = async (req: Request, res: Response, next: Nex
 
 export const deleteDirectMessage = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const userId = req.user?._id || req.user?.id;
+    const userId = (req.user as any)?._id ?? req.user?.id;
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     await Channel.findOneAndDelete({
       _id: req.params.conversationId,
-      tenantId: req.tenantId,
+      tenantId,
       isDirect: true,
       members: userId,
     });
@@ -183,10 +204,13 @@ export const deleteDirectMessage = async (req: Request, res: Response, next: Nex
 
 export const getDirectMessagesForUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const userId = req.user?._id || req.user?.id;
+    const userId = (req.user as any)?._id ?? req.user?.id;
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     const channel = await Channel.findOne({
       _id: req.params.conversationId,
-      tenantId: req.tenantId,
+      tenantId,
       isDirect: true,
       members: userId,
     });
@@ -200,10 +224,13 @@ export const getDirectMessagesForUser = async (req: Request, res: Response, next
 
 export const sendDirectMessage = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const userId = req.user?._id || req.user?.id;
+    const userId = (req.user as any)?._id ?? req.user?.id;
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     const channel = await Channel.findOne({
       _id: req.params.conversationId,
-      tenantId: req.tenantId,
+      tenantId,
       isDirect: true,
       members: userId,
     });

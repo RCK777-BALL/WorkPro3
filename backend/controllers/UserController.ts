@@ -30,7 +30,9 @@ const userUpdateFields = [...userCreateFields];
  */
 export const getAllUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const items = await User.find({ tenantId: req.tenantId }).select('-passwordHash');
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    const items = await User.find({ tenantId }).select('-passwordHash');
     res.json(items);
   } catch (err) {
     next(err);
@@ -58,7 +60,9 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
  */
 export const getUserById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const item = await User.findOne({ _id: req.params.id, tenantId: req.tenantId }).select('-passwordHash');
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    const item = await User.findOne({ _id: req.params.id, tenantId }).select('-passwordHash');
     if (!item) return res.status(404).json({ message: 'Not found' });
     res.json(item);
   } catch (err) {
@@ -85,8 +89,10 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
  */
 export const createUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     const payload = filterFields(req.body, userCreateFields);
-    const newItem = new User({ ...payload, tenantId: req.tenantId });
+    const newItem = new User({ ...payload, tenantId });
     const saved = await newItem.save();
     const { passwordHash: _pw, ...safeUser } = saved.toObject();
     res.status(201).json(safeUser);
@@ -122,9 +128,11 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
  */
 export const updateUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     const update = filterFields(req.body, userUpdateFields);
     const updated = await User.findOneAndUpdate(
-      { _id: req.params.id, tenantId: req.tenantId },
+      { _id: req.params.id, tenantId },
       update,
       {
         new: true,
@@ -159,7 +167,9 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
  */
 export const deleteUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const deleted = await User.findOneAndDelete({ _id: req.params.id, tenantId: req.tenantId });
+    const tenantId = req.tenantId;
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    const deleted = await User.findOneAndDelete({ _id: req.params.id, tenantId });
     if (!deleted) return res.status(404).json({ message: 'Not found' });
     res.json({ message: 'Deleted successfully' });
   } catch (err) {
@@ -190,7 +200,9 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
  */
 export const getUserTheme = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    if (req.params.id !== req.user?.id && req.user?.role !== 'admin') {
+    const userId = (req.user as any)?._id ?? req.user?.id;
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+    if (req.params.id !== userId && req.user?.role !== 'admin') {
       return res.status(403).json({ message: 'Forbidden' });
     }
 
@@ -235,7 +247,9 @@ export const getUserTheme = async (req: Request, res: Response, next: NextFuncti
  */
 export const updateUserTheme = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    if (req.params.id !== req.user?.id && req.user?.role !== 'admin') {
+    const userId = (req.user as any)?._id ?? req.user?.id;
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+    if (req.params.id !== userId && req.user?.role !== 'admin') {
       return res.status(403).json({ message: 'Forbidden' });
     }
 

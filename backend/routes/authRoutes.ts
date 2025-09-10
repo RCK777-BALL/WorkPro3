@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import passport from 'passport';
 import bcrypt from 'bcryptjs';
  import { setupMfa, validateMfaToken } from '../controllers/authController';
@@ -43,7 +43,11 @@ const router = Router();
 router.use(passport.initialize());
 
 // Local login
-router.post('/login', loginLimiter, async (req, res) => {
+ router.post('/login', async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
+ 
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ message: 'Invalid request' });
@@ -83,18 +87,14 @@ router.post('/login', loginLimiter, async (req, res) => {
 
     const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
     const secret = getJwtSecret(res);
-    if (secret === undefined) {
-      return;
-     }
-    const token = jwt.sign(
-      {
-        id: user._id.toString(),
-        email: user.email,
-        tenantId,
-      },
-      secret, // sign token so it cannot be forged
-      { expiresIn: '7d' }, // short expiry limits exposure if leaked
-    );
+     if (!secret) {
+      return res;
+    }
+    const token = jwt.sign({
+      id: user._id.toString(),
+      email: user.email,
+      tenantId,
+    }, secret, { expiresIn: '7d' });
  
     const { password: _pw, ...safeUser } = user.toObject();
 

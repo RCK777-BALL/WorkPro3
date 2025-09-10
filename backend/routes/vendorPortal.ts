@@ -18,35 +18,32 @@ const router = express.Router();
 /**
  * Vendor login - issues a JWT for portal access
  */
-router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { vendorId, email } = req.body as { vendorId?: string; email?: string };
-    if (!vendorId) {
-      res.status(400).json({ message: 'vendorId required' });
-      return;
-    }
-    if (email !== undefined) {
-      assertEmail(email);
-    }
-
-    const vendor = await Vendor.findById(vendorId).lean();
-    if (!vendor || (email && vendor.email !== email)) {
-      res.status(401).json({ message: 'Invalid credentials' });
-      return;
-    }
-
-    const secret = getJwtSecret(res, true);
-    if (!secret) {
-      return;
-    }
-
-     const token = jwt.sign({ id: vendor._id.toString() }, secret as string, {
-      expiresIn: '7d',
-    });
-    res.json({ token });
-  } catch (err) {
-    next(err);
+ router.post('/login', async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
+  const { vendorId, email } = req.body as { vendorId?: string; email?: string };
+  if (!vendorId) {
+    return res.status(400).json({ message: 'vendorId required' });
   }
+  if (email !== undefined) {
+    assertEmail(email);
+  }
+
+  const vendor = await Vendor.findById(vendorId).lean();
+  if (!vendor || (email && vendor.email !== email)) {
+    return res.status(401).json({ message: 'Invalid credentials' });
+  }
+
+  const secret = getJwtSecret(res, true);
+  if (!secret) {
+    return res;
+  }
+
+  const token = jwt.sign({ id: vendor._id.toString() }, secret as string, {
+    expiresIn: '7d',
+  });
+  return res.json({ token });
  
 });
 

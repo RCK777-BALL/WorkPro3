@@ -49,7 +49,8 @@ router.post('/login', loginLimiter, async (
 ): Promise<void> => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({ message: 'Invalid request' });
+    res.status(400).json({ message: 'Invalid request' });
+    return;
   }
   const { email, password } = parsed.data;
 
@@ -58,23 +59,27 @@ router.post('/login', loginLimiter, async (
     const user = await User.findOne({ email }).select('+password +mfaEnabled +tenantId +tokenVersion +email +name');
     if (!user) {
       await bcrypt.compare(password, FAKE_PASSWORD_HASH); // mitigate timing
-      return res.status(400).json({ message: 'Invalid email or password' });
+      res.status(400).json({ message: 'Invalid email or password' });
+      return;
     }
 
     const hashed = (user as any).password as string | undefined;
     if (!hashed) {
       // If password is still missing due to schema, treat as invalid
       await bcrypt.compare(password, FAKE_PASSWORD_HASH);
-      return res.status(400).json({ message: 'Invalid email or password' });
+      res.status(400).json({ message: 'Invalid email or password' });
+      return;
     }
 
     const valid = await bcrypt.compare(password, hashed);
     if (!valid) {
-      return res.status(400).json({ message: 'Invalid email or password' });
+      res.status(400).json({ message: 'Invalid email or password' });
+      return;
     }
 
     if ((user as any).mfaEnabled) {
-      return res.status(200).json({ mfaRequired: true });
+      res.status(200).json({ mfaRequired: true });
+      return;
     }
 
     const tenantId = (user as any).tenantId ? (user as any).tenantId.toString() : undefined;
@@ -83,7 +88,8 @@ router.post('/login', loginLimiter, async (
     try {
       secret = getJwtSecret();
     } catch {
-      return res.status(500).json({ message: 'Server configuration issue' });
+      res.status(500).json({ message: 'Server configuration issue' });
+      return;
     }
 
     const token = jwt.sign(
@@ -107,7 +113,7 @@ router.post('/login', loginLimiter, async (
       responseBody.token = token;
     }
 
-    return res
+    res
       .cookie('token', token, {
         httpOnly: true,
         sameSite: 'strict',
@@ -115,9 +121,11 @@ router.post('/login', loginLimiter, async (
       })
       .status(200)
       .json({ token, user: { ...userObj, tenantId } });
+    return;
   } catch (err) {
     console.error('Login error:', err);
-    return next(err);
+    next(err);
+    return;
   }
 });
 
@@ -128,7 +136,8 @@ router.post(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const parsed = await registerSchema.safeParseAsync(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ message: 'Invalid request' });
+      res.status(400).json({ message: 'Invalid request' });
+      return;
     }
 
     const { name, email, password, tenantId, employeeId } = parsed.data;
@@ -136,7 +145,8 @@ router.post(
     try {
       const existing = await User.findOne({ email });
       if (existing) {
-        return res.status(400).json({ message: 'Email already in use' });
+        res.status(400).json({ message: 'Email already in use' });
+        return;
       }
 
       const user = new User({ name, email, password, tenantId, employeeId });
@@ -144,15 +154,17 @@ router.post(
         await user.save();
       } catch (err: any) {
         if (err && err.code === 11000) {
-          return res.status(400).json({ message: 'Email or employee ID already in use' });
+          res.status(400).json({ message: 'Email or employee ID already in use' });
+          return;
         }
         throw err;
       }
-
-      return res.status(201).json({ message: 'User registered successfully' });
+      res.status(201).json({ message: 'User registered successfully' });
+      return;
     } catch (err) {
       console.error('Register error:', err);
-      return next(err);
+      next(err);
+      return;
     }
   },
 );
@@ -169,8 +181,10 @@ router.get(
         });
         auth(req, res, (err: unknown) => (err ? reject(err) : resolve()));
       });
+      return;
     } catch (err) {
-      return next(err);
+      next(err);
+      return;
     }
   },
 );
@@ -180,7 +194,7 @@ router.get(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const provider = req.params.provider as OAuthProvider;
-      return passport.authenticate(
+      passport.authenticate(
         provider,
         { session: false },
         (err: Error | null, user: Express.User | false | null) => {
@@ -188,13 +202,15 @@ router.get(
             if (err) {
               console.error(`OAuth ${provider} callback error:`, err);
             }
-            return res.status(400).json({ message: 'Authentication failed' });
+            res.status(400).json({ message: 'Authentication failed' });
+            return;
           }
           let secret: string;
           try {
             secret = getJwtSecret();
           } catch {
-            return res.status(500).json({ message: 'Server configuration issue' });
+            res.status(500).json({ message: 'Server configuration issue' });
+            return;
           }
           assertEmail((user as any).email);
           const token = jwt.sign({ email: (user as any).email }, secret, {
@@ -204,11 +220,14 @@ router.get(
           const redirectUrl = `${frontend}?token=${token}&email=${encodeURIComponent(
             (user as any).email,
           )}`;
-          return res.redirect(redirectUrl);
+          res.redirect(redirectUrl);
+          return;
         },
       )(req, res, next);
+      return;
     } catch (err) {
-      return next(err);
+      next(err);
+      return;
     }
   },
 );

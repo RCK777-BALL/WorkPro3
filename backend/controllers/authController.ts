@@ -1,33 +1,49 @@
+import type { Response, NextFunction } from 'express';
 import type { AuthedRequestHandler } from '../types/http';
-import Asset from '../models/Asset';
-import mongoose from 'mongoose';
 
-// GET /assets
-export const getAllAssets: AuthedRequestHandler = async (req, res, next) => {
-  try {
-    const filter: any = { tenantId: req.tenantId };
-    if (req.siteId) filter.siteId = req.siteId;
-    const assets = await Asset.find(filter);
-    return res.json(assets);
-  } catch (err) {
-    return next(err);
-  }
-};
 
-// GET /assets/:id
-export const getAssetById: AuthedRequestHandler = async (req, res, next) => {
+/**
+ * Return the authenticated user's payload from the request.
+ */
+export const getMe: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'Invalid ID' });
+    const user = (req as any).user;
+    if (!user) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
     }
-    const filter: any = { _id: id, tenantId: req.tenantId };
-    if (req.siteId) filter.siteId = req.siteId;
-
-    const asset = await Asset.findOne(filter);
-    if (!asset) return res.status(404).json({ message: 'Not found' });
-    return res.json(asset);
+    res.status(200).json({ user });
+    return;
   } catch (err) {
-    return next(err);
+    next(err);
+    return;
   }
 };
+ 
+ /**
+ * Clear the authentication token cookie and end the session.
+ */
+export const logout: AuthedRequestHandler = (req, res) => {
+  res.clearCookie('token');
+  res.status(200).json({ message: 'Logged out successfully' });
+  return;
+};
+ 
+
+/**
+ * Placeholder MFA setup handler. In a real implementation this would
+ * generate and return a secret for the user to configure their MFA device.
+ */
+export const setupMfa: AuthedRequestHandler = (req, res) => {
+  res.status(501).json({ message: 'MFA setup not implemented' });
+  return;
+};
+
+/**
+ * Placeholder MFA token validation handler.
+ */
+export const validateMfaToken: AuthedRequestHandler = (req, res) => {
+  res.status(501).json({ message: 'MFA token validation not implemented' });
+  return;
+};
+

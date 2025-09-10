@@ -13,6 +13,7 @@ import requireRole from '../middleware/requireRole';
 import { validate } from '../middleware/validationMiddleware';
 import { assetValidators } from '../validators/assetValidators';
 import siteScope from '../middleware/siteScope';
+import validateObjectId from '../middleware/validateObjectId';
 
 const router = express.Router();
 
@@ -54,8 +55,8 @@ router.use(siteScope);
 
 router.get('/', getAllAssets);
 router.get('/search', searchAssets);
-router.get('/:id', getAssetById);
-
+ router.get('/:id', validateObjectId('id'), getAssetById);
+ 
 router.post(
   '/',
   requireRole('admin', 'manager'),
@@ -67,13 +68,14 @@ router.post(
 
 router.put(
   '/:id',
+  validateObjectId('id'),
   requireRole('admin', 'manager'),
   handleUpload,
   assetValidators,
   validate,
   updateAsset
 );
-
-router.delete('/:id', requireRole('admin', 'manager'), deleteAsset);
+ router.delete('/:id', validateObjectId('id'), requireRole('admin', 'manager'), deleteAsset);
+ 
 
 export default router;

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+export { assertEmail } from '../utils/assert';
 
 const email = z.string().email();
 
@@ -14,10 +15,6 @@ export const registerSchema = z.object({
   tenantId: z.string().min(1),
   employeeId: z.string().min(1),
 });
-
-export const assertEmail = (value: unknown): asserts value is string => {
-  email.parse(value);
-};
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;

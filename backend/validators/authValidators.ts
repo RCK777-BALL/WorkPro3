@@ -15,9 +15,9 @@ export const registerSchema = z.object({
   employeeId: z.string().min(1),
 });
 
-export const assertEmail = (value: unknown): asserts value is string => {
+export function assertEmail(value: unknown): asserts value is string {
   email.parse(value);
-};
+}
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;

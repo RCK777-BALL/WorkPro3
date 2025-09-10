@@ -1,13 +1,13 @@
+import { Request, Response, NextFunction } from 'express';
 import User from '../models/User';
 
-export const getTheme: AuthedRequestHandler = async (
-  req,
-  res,
-  next
+export const getTheme = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
 ) => {
   try {
-
-    const { user } = req as AuthedRequest;
+    const { user } = req;
     const { theme = 'system', colorScheme = 'default' } = (user ?? {}) as {
       theme?: 'light' | 'dark' | 'system';
       colorScheme?: string;
@@ -19,18 +19,16 @@ export const getTheme: AuthedRequestHandler = async (
   }
 };
 
-export const updateTheme: AuthedRequestHandler = async (
-  req,
-  res,
-  next
+export const updateTheme = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
 ) => {
   try {
     const { theme, colorScheme } = req.body;
-
-    const { user } = req as AuthedRequest;
+    const { user } = req;
     const updated = await User.findByIdAndUpdate(
-      user._id,
-
+      user!._id,
       { theme, colorScheme },
       { new: true, runValidators: true }
     );

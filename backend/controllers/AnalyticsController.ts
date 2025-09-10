@@ -1,9 +1,14 @@
+import { Request, Response, NextFunction } from 'express';
 import { getKPIs } from '../services/analytics';
 import { Parser as Json2csvParser } from 'json2csv';
 import PDFDocument from 'pdfkit';
 import { escapeXml } from '../utils/escapeXml';
 
-export const kpiJson: AuthedRequestHandler = async (req, res, next) => {
+export const kpiJson = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const data = await getKPIs(req.tenantId!);
     res.json(data);
@@ -12,7 +17,11 @@ export const kpiJson: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const kpiCsv: AuthedRequestHandler = async (req, res, next) => {
+export const kpiCsv = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const data = await getKPIs(req.tenantId!);
     const parser = new Json2csvParser();
@@ -25,7 +34,11 @@ export const kpiCsv: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const kpiXlsx: AuthedRequestHandler = async (req, res, next) => {
+export const kpiXlsx = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const data = await getKPIs(req.tenantId!);
     const rows = Object.entries(data)
@@ -43,7 +56,11 @@ export const kpiXlsx: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const kpiPdf: AuthedRequestHandler = async (req, res, next) => {
+export const kpiPdf = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const data = await getKPIs(req.tenantId!);
     const doc = new PDFDocument();

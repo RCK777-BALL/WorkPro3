@@ -1,7 +1,12 @@
+import { Request, Response, NextFunction } from 'express';
 import Meter from '../models/Meter';
 import MeterReading from '../models/MeterReading';
 
-export const getMeters: AuthedRequestHandler = async (req, res, next) => {
+export const getMeters = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const filter: any = { tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
@@ -13,7 +18,11 @@ export const getMeters: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const getMeterById: AuthedRequestHandler = async (req, res, next) => {
+export const getMeterById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const filter: any = { _id: req.params.id, tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
@@ -25,7 +34,11 @@ export const getMeterById: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const createMeter: AuthedRequestHandler = async (req, res, next) => {
+export const createMeter = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const meter = await Meter.create({
       ...req.body,
@@ -38,7 +51,11 @@ export const createMeter: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const updateMeter: AuthedRequestHandler = async (req, res, next) => {
+export const updateMeter = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const filter: any = { _id: req.params.id, tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
@@ -50,7 +67,11 @@ export const updateMeter: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const deleteMeter: AuthedRequestHandler = async (req, res, next) => {
+export const deleteMeter = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const filter: any = { _id: req.params.id, tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
@@ -62,7 +83,11 @@ export const deleteMeter: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const addMeterReading: AuthedRequestHandler = async (req, res, next) => {
+export const addMeterReading = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const filter: any = { _id: req.params.id, tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
@@ -83,7 +108,11 @@ export const addMeterReading: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const getMeterReadings: AuthedRequestHandler = async (req, res, next) => {
+export const getMeterReadings = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const filter: any = { _id: req.params.id, tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;

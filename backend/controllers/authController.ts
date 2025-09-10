@@ -13,7 +13,6 @@ import {
 } from '../validators/authValidators';
 import { assertEmail } from '../utils/assert';
 // import { isCookieSecure } from '../utils/isCookieSecure'; // <- not used; remove or use if needed
-import type { AuthedRequest } from '../types/express';
 
 // ------------------------------------------------------------------
 // Helpers
@@ -175,7 +174,7 @@ export const requestPasswordReset = async (
 };
 
 export const setupMfa = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
 ): Promise<Response> => {
   const { userId } = req.body as { userId?: string };
@@ -205,7 +204,7 @@ export const setupMfa = async (
 };
 
 export const validateMfaToken = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
 ): Promise<Response> => {
   const { userId, token } = req.body as { userId?: string; token?: string };
@@ -260,7 +259,7 @@ export const validateMfaToken = async (
 };
 
 export const getMe = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   _next: NextFunction,
 ): Promise<Response> => {
@@ -277,7 +276,7 @@ export const getMe = async (
 };
 
 export const logout = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
 ): Promise<Response> => {
   const userId = req.user?.id as string | undefined;

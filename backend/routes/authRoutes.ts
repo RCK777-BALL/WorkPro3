@@ -7,11 +7,8 @@ import { configureOIDC } from '../auth/oidc';
 import { configureOAuth, getOAuthScope, OAuthProvider } from '../auth/oauth';
 import { getJwtSecret } from '../utils/getJwtSecret';
  import User from '../models/User';
-import {
-  loginSchema,
-  registerSchema,
-  assertEmail,
-} from '../validators/authValidators';
+import { loginSchema, registerSchema } from '../validators/authValidators';
+import { assertEmail } from '../utils/assert';
  
 
 configureOIDC();
@@ -33,8 +30,6 @@ router.post('/login', async (req, res) => {
     if (!user) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
-
-    assertEmail(user.email);
 
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {

@@ -30,10 +30,6 @@ const workOrderCreateFields = [
 
 const workOrderUpdateFields = [...workOrderCreateFields];
 
-// Single, shared param type for routes with :id
-type IdParams = { id: string };
- 
-
 function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
   const plain = typeof doc.toObject === "function"
     ? doc.toObject({ getters: true, virtuals: false })
@@ -43,13 +39,6 @@ function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
     _id: (plain._id as Types.ObjectId | string)?.toString(),
   } as WorkOrderUpdatePayload;
 }
-
-type SearchQuery = {
-  status?: 'open' | 'in-progress' | 'on-hold' | 'completed';
-  priority?: 'low' | 'medium' | 'high' | 'critical';
-  startDate?: string;
-  endDate?: string;
-};
 
 /**
  * @openapi

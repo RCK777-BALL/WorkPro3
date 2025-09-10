@@ -1,6 +1,7 @@
 import type { Response, NextFunction } from 'express';
 import type { AuthedRequestHandler } from '../types/http';
 
+
 /**
  * Return the authenticated user's payload from the request.
  */
@@ -18,8 +19,8 @@ export const getMe: AuthedRequestHandler = async (req, res, next) => {
     return;
   }
 };
-
-/**
+ 
+ /**
  * Clear the authentication token cookie and end the session.
  */
 export const logout: AuthedRequestHandler = (req, res) => {
@@ -27,6 +28,7 @@ export const logout: AuthedRequestHandler = (req, res) => {
   res.status(200).json({ message: 'Logged out successfully' });
   return;
 };
+ 
 
 /**
  * Placeholder MFA setup handler. In a real implementation this would

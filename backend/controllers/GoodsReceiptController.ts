@@ -17,24 +17,27 @@ export const createGoodsReceipt = async (
     const { purchaseOrder: poId, items } = req.body as any;
 
     const po = await PurchaseOrder.findById(poId);
-    if (!po) return res.status(404).json({ message: 'PO not found' });
+    if (!po) {
+      res.status(404).json({ message: 'PO not found' });
+      return;
+    }
 
     for (const grItem of items) {
       await addStock(grItem.item, grItem.quantity, grItem.uom);
-      const poItem = po.items.find((i) => i.item.toString() === grItem.item);
+      const poItem = po.items?.find((i) => i.item.toString() === grItem.item);
+      let qty = grItem.quantity;
+      if (grItem.uom && poItem?.uom && grItem.uom.toString() !== poItem.uom.toString()) {
+        const conv = await (await import('mongoose')).default.connection.db
+          .collection('conversions')
+          .findOne({ from: grItem.uom, to: poItem.uom });
+        if (conv) qty = qty * conv.factor;
+      }
       if (poItem) {
-        let qty = grItem.quantity;
-        if (grItem.uom && poItem.uom && grItem.uom.toString() !== poItem.uom.toString()) {
-          const conv = await (await import('mongoose')).default.connection.db
-            .collection('conversions')
-            .findOne({ from: grItem.uom, to: poItem.uom });
-          if (conv) qty = qty * conv.factor;
-        }
         poItem.received += qty;
       }
     }
 
-    if (po.items.every((i) => i.received >= i.quantity)) {
+    if (po.items?.every((i) => i.received >= i.quantity)) {
       po.status = 'closed';
     }
 
@@ -58,7 +61,9 @@ export const createGoodsReceipt = async (
     }
 
     res.status(201).json(gr);
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };

@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import passport from 'passport';
-import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { generateMfa, verifyMfa } from '../controllers/authController';
 import { configureOIDC } from '../auth/oidc';
@@ -12,6 +11,7 @@ import {
   registerSchema,
   assertEmail,
 } from '../validators/authValidators';
+import createJwt from '../utils/createJwt';
  
 
 configureOIDC();
@@ -52,11 +52,7 @@ router.post('/login', async (req, res) => {
     if (!secret) {
       return;
     }
-    const token = jwt.sign({
-      id: user._id.toString(),
-      email: user.email,
-      tenantId,
-    }, secret, { expiresIn: '7d' });
+    const token = createJwt(user, secret);
     const { password: _pw, ...safeUser } = user.toObject();
     return res
       .cookie('token', token, {
@@ -116,9 +112,7 @@ router.get('/oauth/:provider/callback', (req, res, next) => {
         return;
       }
       assertEmail(user.email);
-      const token = jwt.sign({ email: user.email }, secret as string, {
-        expiresIn: '7d',
-      });
+      const token = createJwt({ email: user.email }, secret);
       const frontend = process.env.FRONTEND_URL || 'http://localhost:5173/login';
       const redirectUrl = `${frontend}?token=${token}&email=${encodeURIComponent(
         user.email,

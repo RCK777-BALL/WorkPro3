@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import * as speakeasy from "speakeasy";
 import logger from "../utils/logger";
 import User from "../models/User";
 import { assertEmail } from '../utils/assert';
+import createJwt from '../utils/createJwt';
 
 export const login = async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
@@ -38,18 +38,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
-    const payload = {
-      id: user._id.toString(),
-      email: user.email,
-      tenantId,
-    };
     const secret = process.env.JWT_SECRET;
     if (!secret) {
       logger.error('JWT_SECRET is not configured');
       res.status(500).json({ message: 'Server configuration issue' });
       return;
     }
-    const token = jwt.sign(payload, secret, { expiresIn: '7d' });
+    const token = createJwt(user, secret);
 
     const { passwordHash: _pw, ...safeUser } = user.toObject();
     res.status(200).json({ token, user: { ...safeUser, tenantId } });
@@ -157,13 +152,12 @@ export const verifyMfa = async (req: Request, res: Response): Promise<void> => {
     user.mfaEnabled = true;
     await user.save();
     const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
-    const payload = { id: user._id.toString(), email: user.email, tenantId };
     const secret = process.env.JWT_SECRET;
     if (!secret) {
       res.status(500).json({ message: 'Server configuration issue' });
       return;
     }
-    const jwtToken = jwt.sign(payload, secret, { expiresIn: '7d' });
+    const jwtToken = createJwt(user, secret);
     const { passwordHash: _pw, ...safeUser } = user.toObject();
     res.json({ token: jwtToken, user: { ...safeUser, tenantId } });
   } catch (err) {

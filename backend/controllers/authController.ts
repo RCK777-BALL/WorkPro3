@@ -1,20 +1,29 @@
 import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import * as speakeasy from "speakeasy";
 import logger from "../utils/logger";
 import User from "../models/User";
+import {
+  loginSchema,
+  registerSchema,
+  type LoginInput,
+  type RegisterInput,
+} from '../validators/authValidators';
 import { assertEmail } from '../utils/assert';
+ import { isCookieSecure } from '../utils/isCookieSecure';
+ 
 
 export const login = async (req: Request, res: Response): Promise<void> => {
-  const { email, password } = req.body;
+    const { email, password } = req.body;
   logger.info('Login attempt', { email });
 
   if (!email || !password) {
     return res.status(400).json({ message: 'Email and password required' });
+  
   }
-  assertEmail(email);
+  const { email, password } = data;
+  logger.info('Login attempt', { email });
 
   try {
     const user = await User.findOne({ email });
@@ -23,7 +32,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    const valid = await bcrypt.compare(req.body.password, user.passwordHash);
+    const valid = await bcrypt.compare(password, user.passwordHash);
     logger.info('Password comparison result', { valid });
     if (!valid) {
       return res.status(401).json({ message: 'Invalid email or password' });
@@ -35,12 +44,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         .json({ mfaRequired: true, userId: user._id.toString() });
     }
 
+    if (!user.mfaEnabled) {
+      user.mfaEnabled = true;
+      await user.save();
+    }
     const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
-    const payload = {
-      id: user._id.toString(),
-      email: user.email,
-      tenantId,
-    };
     const secret = process.env.JWT_SECRET;
     if (!secret) {
       logger.error('JWT_SECRET is not configured');
@@ -48,7 +56,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         .status(500)
         .json({ message: 'Server configuration issue' });
     }
-    const token = jwt.sign(payload, secret, { expiresIn: '7d' });
+    const token = createJwt(user, secret);
 
     const { passwordHash: _pw, ...safeUser } = user.toObject();
     return res.status(200).json({ token, user: { ...safeUser, tenantId } });
@@ -59,12 +67,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const register = async (req: Request, res: Response): Promise<void> => {
-  const { name, email, password, tenantId, employeeId } = req.body;
+    const { name, email, password, tenantId, employeeId } = req.body;
 
   if (!name || !email || !password || !tenantId || !employeeId) {
     return res.status(400).json({ message: "Missing required fields" });
+  
   }
-  assertEmail(email);
+  const { name, email, password, tenantId, employeeId } = data;
 
   try {
     const existing = await User.findOne({ email });
@@ -72,7 +81,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return res.status(400).json({ message: "Email already in use" });
     }
 
-    const user = new User({
+     const user = new User({
       name,
       email,
       passwordHash: password,
@@ -80,11 +89,13 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       employeeId,
     });
     await user.save();
+ 
 
     return res.status(201).json({ message: "User registered successfully" });
   } catch (err) {
-    logger.error("Register error", err);
+     logger.error("Register error", err);
     return res.status(500).json({ message: "Server error" });
+ 
   }
 };
 
@@ -119,10 +130,18 @@ export const requestPasswordReset = async (
   }
 };
 
-export const generateMfa = async (req: Request, res: Response): Promise<void> => {
+export const generateMfa: AuthedRequestHandler = async (req, res) => {
   const { userId } = req.body;
+  const authUserId = req.user?.id;
+  const tenantId = req.tenantId;
+
+  if (!authUserId || !tenantId || userId !== authUserId) {
+    res.status(403).json({ message: 'Forbidden' });
+    return;
+  }
+
   try {
-    const user = await User.findById(userId);
+    const user = await User.findOne({ _id: userId, tenantId });
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -139,10 +158,19 @@ export const generateMfa = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
-export const verifyMfa = async (req: Request, res: Response): Promise<void> => {
+ export const verifyMfa: AuthedRequestHandler = async (req, res) => {
   const { userId, token } = req.body;
+  const authUserId = req.user?.id;
+  const tenantId = req.tenantId;
+
+  if (!authUserId || !tenantId || userId !== authUserId) {
+    res.status(403).json({ message: 'Forbidden' });
+    return;
+  }
+
   try {
-    const user = await User.findById(userId);
+    const user = await User.findOne({ _id: userId, tenantId });
+ 
     if (!user || !user.mfaSecret) {
       return res.status(400).json({ message: 'Invalid user' });
     }
@@ -154,21 +182,24 @@ export const verifyMfa = async (req: Request, res: Response): Promise<void> => {
     if (!valid) {
       return res.status(400).json({ message: 'Invalid token' });
     }
-    user.mfaEnabled = true;
+     user.mfaEnabled = true;
     await user.save();
-    const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
-    const payload = { id: user._id.toString(), email: user.email, tenantId };
+     const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
+ 
     const secret = process.env.JWT_SECRET;
+ 
     if (!secret) {
-      return res
+       return res
         .status(500)
         .json({ message: 'Server configuration issue' });
+ 
     }
-    const jwtToken = jwt.sign(payload, secret, { expiresIn: '7d' });
+    const jwtToken = createJwt(user, secret);
     const { passwordHash: _pw, ...safeUser } = user.toObject();
-    return res
+     return res
       .status(200)
       .json({ token: jwtToken, user: { ...safeUser, tenantId } });
+ 
   } catch (err) {
     logger.error('verifyMfa error', err);
     return res.status(500).json({ message: 'Server error' });
@@ -200,7 +231,7 @@ export const logout = (
     .clearCookie('token', {
       httpOnly: true,
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      secure: isCookieSecure(),
     })
     .status(200)
     .json({ message: 'Logged out' });

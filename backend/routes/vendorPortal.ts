@@ -1,5 +1,5 @@
-import express from 'express';
-import type { Request, Response, NextFunction } from 'express';
+import express, { type Request, type Response, type NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 import type { AuthedRequest } from '../types/express';
 
 import Vendor from '../models/Vendor';
@@ -7,7 +7,6 @@ import PurchaseOrder from '../models/PurchaseOrder';
 import { requireVendorAuth } from '../middleware/vendorAuth';
 import { getJwtSecret } from '../utils/getJwtSecret';
 import { assertEmail } from '../utils/assert';
-import createJwt from '../utils/createJwt';
 
 import {
   listVendorPurchaseOrders,
@@ -19,38 +18,43 @@ const router = express.Router();
 /**
  * Vendor login - issues a JWT for portal access
  */
- router.post('/login', async (
-  req: Request,
-  res: Response,
-): Promise<Response> => {
-  const { vendorId, email } = req.body as { vendorId?: string; email?: string };
-  if (!vendorId) {
-    return res.status(400).json({ message: 'vendorId required' });
-  }
-  if (email !== undefined) {
-    assertEmail(email);
-  }
+router.post(
+  '/login',
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const { vendorId, email } = req.body as { vendorId?: string; email?: string };
+      if (!vendorId) {
+        return res.status(400).json({ message: 'vendorId required' });
+      }
+      if (email !== undefined) {
+        assertEmail(email);
+      }
 
-  const vendor = await Vendor.findById(vendorId).lean();
-  if (!vendor || (email && vendor.email !== email)) {
-    return res.status(401).json({ message: 'Invalid credentials' });
-  }
+      const vendor = await Vendor.findById(vendorId).lean();
+      if (!vendor || (email && vendor.email !== email)) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
 
-   let secret: string;
-  try {
-    secret = getJwtSecret(process.env, true);
-  } catch {
-    res.status(500).json({ message: 'Server configuration issue' });
-    return;
- 
-  }
+      let secret: string;
+      try {
+        secret = getJwtSecret(process.env, true);
+      } catch {
+        return res.status(500).json({ message: 'Server configuration issue' });
+      }
 
-  const token = jwt.sign({ id: vendor._id.toString() }, secret, {
-    expiresIn: '7d',
-  });
-  return res.json({ token });
- 
-});
+      const token = jwt.sign({ id: vendor._id.toString() }, secret, {
+        expiresIn: '7d',
+      });
+      return res.json({ token });
+    } catch (err) {
+      return next(err);
+    }
+  },
+);
 
 // All routes below require a valid vendor token
 router.use(requireVendorAuth);
@@ -77,12 +81,11 @@ router.get(
       const vendorId = req.vendorId;
       const po = await PurchaseOrder.findOne({ _id: id, vendor: vendorId }).lean();
       if (!po) {
-        res.status(404).json({ message: 'Not found' });
-        return;
+        return res.status(404).json({ message: 'Not found' });
       }
-      res.json(po);
+      return res.json(po);
     } catch (err) {
-      next(err);
+      return next(err);
     }
   },
 );

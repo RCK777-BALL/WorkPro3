@@ -23,7 +23,7 @@
   },
   "include": [
     "**/*.ts",
-    "**/*.d.ts"
+    "types/**/*.d.ts"
   ],
   "exclude": [
     "dist",

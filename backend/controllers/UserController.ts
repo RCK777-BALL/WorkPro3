@@ -1,5 +1,6 @@
 import User from '../models/User';
 import { filterFields } from '../utils/filterFields';
+import { Request, Response, NextFunction } from 'express';
 
 const userCreateFields = [
   'name',
@@ -27,11 +28,7 @@ const userUpdateFields = [...userCreateFields];
  *       200:
  *         description: List of users
  */
-export const getAllUsers: AuthedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const getAllUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const items = await User.find({ tenantId: req.tenantId }).select('-passwordHash');
     res.json(items);
@@ -59,11 +56,7 @@ export const getAllUsers: AuthedRequestHandler = async (
  *       404:
  *         description: User not found
  */
-export const getUserById: AuthedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const getUserById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const item = await User.findOne({ _id: req.params.id, tenantId: req.tenantId }).select('-passwordHash');
     if (!item) return res.status(404).json({ message: 'Not found' });
@@ -90,11 +83,7 @@ export const getUserById: AuthedRequestHandler = async (
  *       201:
  *         description: User created
  */
-export const createUser: AuthedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const createUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const payload = filterFields(req.body, userCreateFields);
     const newItem = new User({ ...payload, tenantId: req.tenantId });
@@ -131,11 +120,7 @@ export const createUser: AuthedRequestHandler = async (
  *       404:
  *         description: User not found
  */
-export const updateUser: AuthedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const updateUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const update = filterFields(req.body, userUpdateFields);
     const updated = await User.findOneAndUpdate(
@@ -172,11 +157,7 @@ export const updateUser: AuthedRequestHandler = async (
  *       404:
  *         description: User not found
  */
-export const deleteUser: AuthedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const deleteUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const deleted = await User.findOneAndDelete({ _id: req.params.id, tenantId: req.tenantId });
     if (!deleted) return res.status(404).json({ message: 'Not found' });
@@ -207,11 +188,7 @@ export const deleteUser: AuthedRequestHandler = async (
  *       404:
  *         description: User not found
  */
-export const getUserTheme: AuthedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const getUserTheme = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     if (req.params.id !== req.user?.id && req.user?.role !== 'admin') {
       return res.status(403).json({ message: 'Forbidden' });
@@ -256,11 +233,7 @@ export const getUserTheme: AuthedRequestHandler = async (
  *       404:
  *         description: User not found
  */
-export const updateUserTheme: AuthedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const updateUserTheme = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     if (req.params.id !== req.user?.id && req.user?.role !== 'admin') {
       return res.status(403).json({ message: 'Forbidden' });

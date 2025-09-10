@@ -1,8 +1,9 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
+
 import predictiveService from '../utils/predictiveService';
 
 export const getPredictions = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
@@ -15,7 +16,7 @@ export const getPredictions = async (
 };
 
 export const getTrend = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {

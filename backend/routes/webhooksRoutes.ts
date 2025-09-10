@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { type Request, type Response, type NextFunction } from 'express';
 import crypto from 'crypto';
 import { handleWorkOrderHook } from '../controllers/WebhookController';
 import { requireThirdPartyAuth } from '../middleware/thirdPartyAuth';
@@ -8,7 +8,11 @@ import idempotency from '../middleware/idempotency';
 const router = express.Router();
 
 // Subscribe to events
-router.post('/subscribe', idempotency, async (req, res, next) => {
+router.post('/subscribe', idempotency, async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const { url, event } = req.body;
     if (!url || !event) {
@@ -16,11 +20,11 @@ router.post('/subscribe', idempotency, async (req, res, next) => {
     }
     const secret = crypto.randomBytes(32).toString('hex');
     const hook = await Webhook.create({ url, event, secret });
-    res
+    return res
       .status(201)
       .json({ id: hook._id, url: hook.url, event: hook.event, secret });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 

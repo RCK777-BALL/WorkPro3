@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { type Request, type Response, type NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
 import RequestForm from '../models/RequestForm';
 
@@ -16,25 +16,31 @@ async function verifyCaptcha(token: string): Promise<boolean> {
   return token === 'valid-captcha';
 }
 
-router.get('/:slug', async (req, res, next) => {
+router.get('/:slug', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const form = await RequestForm.findOne({ slug: req.params.slug }).lean();
-    if (!form) return res.status(404).json({ message: 'Form not found' });
-    res.json(form.schema);
+    if (!form) {
+      return res.status(404).json({ message: 'Form not found' });
+    }
+    return res.json(form.schema);
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
-router.post('/:slug', submissionLimiter, async (req, res, next) => {
+router.post('/:slug', submissionLimiter, async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const { captcha } = req.body;
     if (!(await verifyCaptcha(captcha))) {
       return res.status(400).json({ message: 'Invalid CAPTCHA' });
     }
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 

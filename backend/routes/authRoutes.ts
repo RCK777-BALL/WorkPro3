@@ -114,8 +114,9 @@ router.post('/login', loginLimiter, async (req, res) => {
 });
 
 // Local register (optional)
-router.post('/register', registerLimiter, async (req, res) => {
-  const parsed = registerSchema.safeParse(req.body);
+ router.post('/register', async (req, res) => {
+  const parsed = await registerSchema.safeParseAsync(req.body);
+ 
   if (!parsed.success) {
     return res.status(400).json({ message: 'Invalid request' });
   }

@@ -2,26 +2,49 @@ import { Router } from 'express';
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import rateLimit from 'express-rate-limit';
 import { generateMfa, verifyMfa } from '../controllers/authController';
 import { configureOIDC } from '../auth/oidc';
 import { configureOAuth, getOAuthScope, OAuthProvider } from '../auth/oauth';
 import { getJwtSecret } from '../utils/getJwtSecret';
- import User from '../models/User';
+import User from '../models/User';
+ import { requireAuth } from '../middleware/authMiddleware';
+ 
 import {
   loginSchema,
   registerSchema,
-  assertEmail,
 } from '../validators/authValidators';
+ 
+interface OAuthUser extends Express.User {
+  email: string;
+}
+ 
  
 
 configureOIDC();
 configureOAuth();
 
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many login attempts. Please try again later.' },
+});
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60_000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many registration attempts. Please try again later.' },
+});
+
 const router = Router();
 router.use(passport.initialize());
 
 // Local login
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ message: 'Invalid request' });
@@ -34,30 +57,47 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    assertEmail(user.email);
-
-    const valid = await bcrypt.compare(password, user.password);
+     const valid = await bcrypt.compare(password, user.password);
+ 
+ 
     if (!valid) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
     if (user.mfaEnabled) {
-      return res
-        .status(200)
-        .json({ mfaRequired: true, userId: user._id.toString() });
+      // When MFA is enabled, avoid exposing internal identifiers. Inform the
+      // client that an MFA code is required. The client should subsequently
+      // call POST /auth/mfa/verify with the original email and the MFA token
+      // to receive the JWT.
+      return res.status(200).json({ mfaRequired: true });
     }
 
     const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
     const secret = getJwtSecret(res);
-    if (!secret) {
+    if (secret === undefined) {
       return;
     }
-    const token = jwt.sign({
-      id: user._id.toString(),
-      email: user.email,
-      tenantId,
-    }, secret, { expiresIn: '7d' });
+     const token = jwt.sign(
+      {
+        id: user._id.toString(),
+        email: user.email,
+        tenantId,
+      },
+      secret,
+      { expiresIn: '7d' },
+    );
+
     const { password: _pw, ...safeUser } = user.toObject();
+
+    const responseBody: Record<string, unknown> = {
+      user: { ...safeUser, tenantId },
+    };
+
+    if (process.env.INCLUDE_AUTH_TOKEN === 'true') {
+      responseBody.token = token;
+    }
+
+ 
     return res
       .cookie('token', token, {
         httpOnly: true,
@@ -65,15 +105,18 @@ router.post('/login', async (req, res) => {
         secure: process.env.NODE_ENV === 'production',
       })
       .status(200)
-      .json({ token, user: { ...safeUser, tenantId } });
-  } catch {
+       .json({ token, user: { ...safeUser, tenantId } });
+  } catch (err) {
+    console.error('Login error:', err);
+ 
     return res.status(500).json({ message: 'Server error' });
   }
 });
 
 // Local register (optional)
-router.post('/register', async (req, res) => {
+ router.post('/register', async (req, res) => {
   const parsed = await registerSchema.safeParseAsync(req.body);
+ 
   if (!parsed.success) {
     return res.status(400).json({ message: 'Invalid request' });
   }
@@ -84,10 +127,12 @@ router.post('/register', async (req, res) => {
     if (existing) {
       return res.status(400).json({ message: 'Email already in use' });
     }
-    const user = new User({ name, email, password, tenantId, employeeId });
+    const user = new User({ name, email, passwordHash: password, tenantId, employeeId });
     await user.save();
     return res.status(201).json({ message: 'User registered successfully' });
-  } catch {
+  } catch (err) {
+     console.error('Register error:', err);
+ 
     return res.status(500).json({ message: 'Server error' });
   }
 });
@@ -111,17 +156,19 @@ router.get('/oauth/:provider/callback', (req, res, next) => {
       if (err || !user) {
         return res.status(400).json({ message: 'Authentication failed' });
       }
+      const { email } = user as OAuthUser;
       const secret = getJwtSecret(res);
-      if (!secret) {
+      if (secret === undefined) {
         return;
       }
-      assertEmail(user.email);
-      const token = jwt.sign({ email: user.email }, secret as string, {
+       assertEmail(user.email);
+      const token = jwt.sign({ email: user.email }, secret, {
+ 
         expiresIn: '7d',
       });
       const frontend = process.env.FRONTEND_URL || 'http://localhost:5173/login';
       const redirectUrl = `${frontend}?token=${token}&email=${encodeURIComponent(
-        user.email,
+        email,
       )}`;
       return res.redirect(redirectUrl);
     },
@@ -129,7 +176,8 @@ router.get('/oauth/:provider/callback', (req, res, next) => {
 });
 
 // MFA endpoints
-router.post('/mfa/setup', generateMfa);
-router.post('/mfa/verify', verifyMfa);
+ router.post('/mfa/setup', requireAuth, generateMfa);
+router.post('/mfa/verify', requireAuth, verifyMfa);
+ 
 
 export default router;

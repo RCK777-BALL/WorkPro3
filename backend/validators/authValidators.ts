@@ -1,6 +1,7 @@
 import { z } from 'zod';
-import Tenant from '../models/Tenant';
+ import Tenant from '../models/Tenant';
 import TeamMember from '../models/TeamMember';
+ 
 
 const email = z.string().email();
 
@@ -27,9 +28,6 @@ export const registerSchema = z.object({
     }),
 });
 
-export const assertEmail = (value: unknown): asserts value is string => {
-  email.parse(value);
-};
-
+ 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;

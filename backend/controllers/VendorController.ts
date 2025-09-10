@@ -31,7 +31,7 @@ const validateVendorInput = (body: any) => {
   return { data };
 };
 
-export const getAllVendors = async (req: Request, res: Response, next: NextFunction) => {
+export const getAllVendors = async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const items = await Vendor.find();
     res.json(items);

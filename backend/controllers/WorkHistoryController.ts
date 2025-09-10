@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 
 import WorkHistory from '../models/WorkHistory';
 
-export const getAllWorkHistories = async (req: Request, res: Response, next: NextFunction) => {
+export const getAllWorkHistories = async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const items = await WorkHistory.find();
     res.json(items);

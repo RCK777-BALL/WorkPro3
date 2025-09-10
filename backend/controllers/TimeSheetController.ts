@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 
 import TimeSheet from '../models/TimeSheet';
 
-export const getAllTimeSheets = async (req: Request, res: Response, next: NextFunction) => {
+export const getAllTimeSheets = async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const items = await TimeSheet.find();
     res.json(items);

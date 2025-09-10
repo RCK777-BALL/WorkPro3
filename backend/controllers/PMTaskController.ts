@@ -1,16 +1,14 @@
+import mongoose from 'mongoose';
 import { validationResult } from 'express-validator';
 import PMTask from '../models/PMTask';
 import type { AuthedRequestHandler } from '../types/http';
 
-// Shared param type for routes with :id
-interface IdParams { id: string }
-
 export const getAllPMTasks: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const filter: any = { tenantId: req.tenantId };
-    if (req.siteId) filter.siteId = req.siteId;
-    const assets = await Asset.find(filter);
-    return res.json(assets);
+    const filter: Record<string, unknown> = { tenantId: req.tenantId };
+    const tasks = await PMTask.find(filter);
+    res.json(tasks);
+    return;
   } catch (err) {
     return next(err);
   }
@@ -19,14 +17,20 @@ export const getAllPMTasks: AuthedRequestHandler = async (req, res, next) => {
 export const getPMTaskById: AuthedRequestHandler = async (req, res, next) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ message: 'Invalid ID' });
+      res.status(400).json({ message: 'Invalid ID' });
+      return;
     }
-    const filter: any = { _id: req.params.id, tenantId: req.tenantId };
-    if (req.siteId) filter.siteId = req.siteId;
 
-    const asset = await Asset.findOne(filter);
-    if (!asset) return res.status(404).json({ message: 'Not found' });
-    return res.json(asset);
+    const task = await PMTask.findOne({
+      _id: req.params.id,
+      tenantId: req.tenantId,
+    });
+    if (!task) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
+    res.json(task);
+    return;
   } catch (err) {
     return next(err);
   }
@@ -34,9 +38,12 @@ export const getPMTaskById: AuthedRequestHandler = async (req, res, next) => {
 
 export const createPMTask: AuthedRequestHandler = async (req, res, next) => {
   try {
+    const errors = validationResult(req as any);
+    if (!errors.isEmpty()) {
       res.status(400).json({ errors: errors.array() });
       return;
     }
+
     const payload = { ...req.body, tenantId: req.tenantId };
     const task = await PMTask.create(payload);
     res.status(201).json(task);
@@ -49,11 +56,16 @@ export const createPMTask: AuthedRequestHandler = async (req, res, next) => {
 
 export const updatePMTask: AuthedRequestHandler = async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      res.status(400).json({ message: 'Invalid ID' });
+      return;
+    }
     const errors = validationResult(req as any);
     if (!errors.isEmpty()) {
       res.status(400).json({ errors: errors.array() });
       return;
     }
+
     const task = await PMTask.findOneAndUpdate(
       { _id: req.params.id, tenantId: req.tenantId },
       req.body,
@@ -73,7 +85,14 @@ export const updatePMTask: AuthedRequestHandler = async (req, res, next) => {
 
 export const deletePMTask: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const task = await PMTask.findOneAndDelete({ _id: req.params.id, tenantId: req.tenantId });
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      res.status(400).json({ message: 'Invalid ID' });
+      return;
+    }
+    const task = await PMTask.findOneAndDelete({
+      _id: req.params.id,
+      tenantId: req.tenantId,
+    });
     if (!task) {
       res.status(404).json({ message: 'Not found' });
       return;
@@ -84,5 +103,13 @@ export const deletePMTask: AuthedRequestHandler = async (req, res, next) => {
     next(err);
     return;
   }
+};
+
+export {
+  getAllPMTasks,
+  getPMTaskById,
+  createPMTask,
+  updatePMTask,
+  deletePMTask,
 };
 

@@ -1,24 +1,25 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import Asset from '../models/Asset';
 import WorkOrder from '../models/WorkOrder';
 import InventoryItem from '../models/InventoryItem';
+import type { AuthedRequest } from '../types/express';
 
 /**
  * Helper to resolve the tenant id from the request. It checks the `tenantId`
  * injected by auth middleware, falls back to the authenticated user and then
  * to the `x-tenant-id` header.
  */
-const getTenantId = (req: Request): string | undefined => {
+const getTenantId = (req: AuthedRequest): string | undefined => {
   return (
-    (req as any).tenantId ||
-    (req as any).user?.tenantId ||
+    req.tenantId ||
+    req.user?.tenantId ||
     (typeof req.headers['x-tenant-id'] === 'string'
       ? req.headers['x-tenant-id']
       : undefined)
   );
 };
 
-export const getSummary = async (req: Request, res: Response) => {
+export const getSummary = async (req: AuthedRequest, res: Response) => {
   try {
     const tenantId = getTenantId(req);
     const match = tenantId ? { tenantId } : {};
@@ -44,7 +45,7 @@ export const getSummary = async (req: Request, res: Response) => {
   }
 };
 
-export const getAssetSummary = async (req: Request, res: Response) => {
+export const getAssetSummary = async (req: AuthedRequest, res: Response) => {
   try {
     const tenantId = getTenantId(req);
     const match = tenantId ? { tenantId } : {};
@@ -58,7 +59,10 @@ export const getAssetSummary = async (req: Request, res: Response) => {
   }
 };
 
-export const getWorkOrderSummary = async (req: Request, res: Response) => {
+export const getWorkOrderSummary = async (
+  req: AuthedRequest,
+  res: Response,
+) => {
   try {
     const tenantId = getTenantId(req);
     const match = tenantId ? { tenantId } : {};
@@ -72,7 +76,10 @@ export const getWorkOrderSummary = async (req: Request, res: Response) => {
   }
 };
 
-export const getUpcomingMaintenance = async (req: Request, res: Response) => {
+export const getUpcomingMaintenance = async (
+  req: AuthedRequest,
+  res: Response,
+) => {
   try {
     const tenantId = getTenantId(req);
     const match: any = tenantId ? { tenantId } : {};
@@ -89,7 +96,10 @@ export const getUpcomingMaintenance = async (req: Request, res: Response) => {
   }
 };
 
-export const getCriticalAlerts = async (req: Request, res: Response) => {
+export const getCriticalAlerts = async (
+  req: AuthedRequest,
+  res: Response,
+) => {
   try {
     const tenantId = getTenantId(req);
     const match: any = tenantId ? { tenantId } : {};

@@ -1,6 +1,7 @@
 import { getKPIs } from '../services/analytics';
 import { Parser as Json2csvParser } from 'json2csv';
 import PDFDocument from 'pdfkit';
+import { escapeXml } from '../utils/escapeXml';
 
 export const kpiJson: AuthedRequestHandler = async (req, res, next) => {
   try {
@@ -27,11 +28,13 @@ export const kpiCsv: AuthedRequestHandler = async (req, res, next) => {
 export const kpiXlsx: AuthedRequestHandler = async (req, res, next) => {
   try {
     const data = await getKPIs(req.tenantId!);
-    const xml = `<?xml version="1.0"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="KPIs"><Table><Row><Cell><Data ss:Type="String">Metric</Data></Cell><Cell><Data ss:Type="String">Value</Data></Cell></Row>${Object.entries(data)
+    const rows = Object.entries(data)
       .map(
-        ([k, v]) => `<Row><Cell><Data ss:Type="String">${k}</Data></Cell><Cell><Data ss:Type="Number">${v}</Data></Cell></Row>`
+        ([k, v]) =>
+          `<Row><Cell><Data ss:Type="String">${escapeXml(k)}</Data></Cell><Cell><Data ss:Type="Number">${escapeXml(String(v))}</Data></Cell></Row>`
       )
-      .join('')}</Table></Worksheet></Workbook>`;
+      .join('');
+    const xml = `<?xml version="1.0"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="KPIs"><Table><Row><Cell><Data ss:Type="String">Metric</Data></Cell><Cell><Data ss:Type="String">Value</Data></Cell></Row>${rows}</Table></Worksheet></Workbook>`;
     res.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.attachment('kpis.xlsx');
     res.send(xml);

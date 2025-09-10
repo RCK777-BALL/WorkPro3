@@ -1,8 +1,10 @@
+import { Request, Response, NextFunction } from 'express';
 import Meter from '../models/Meter';
 import MeterReading from '../models/MeterReading';
 import { Request, Response, NextFunction } from 'express';
 
-export const getMeters = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ export const getMeters = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const filter: any = { tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
@@ -14,7 +16,8 @@ export const getMeters = async (req: Request, res: Response, next: NextFunction)
   }
 };
 
-export const getMeterById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ export const getMeterById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const filter: any = { _id: req.params.id, tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
@@ -26,8 +29,8 @@ export const getMeterById = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
-export const createMeter = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
+ export const createMeter = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+   try {
     const meter = await Meter.create({
       ...req.body,
       tenantId: req.tenantId,
@@ -39,7 +42,8 @@ export const createMeter = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const updateMeter = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ export const updateMeter = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const filter: any = { _id: req.params.id, tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
@@ -50,8 +54,9 @@ export const updateMeter = async (req: Request, res: Response, next: NextFunctio
     next(err);
   }
 };
-
-export const deleteMeter = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
+ export const deleteMeter = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const filter: any = { _id: req.params.id, tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
@@ -63,7 +68,8 @@ export const deleteMeter = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const addMeterReading = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ export const addMeterReading = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const filter: any = { _id: req.params.id, tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
@@ -84,7 +90,8 @@ export const addMeterReading = async (req: Request, res: Response, next: NextFun
   }
 };
 
-export const getMeterReadings = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ export const getMeterReadings = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const filter: any = { _id: req.params.id, tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;

@@ -1,3 +1,5 @@
+ 
+import mongoose from 'mongoose';
 import Asset from '../models/Asset';
 import { validationResult } from 'express-validator';
 import logger from '../utils/logger';
@@ -25,7 +27,8 @@ const assetCreateFields = [
 
 const assetUpdateFields = [...assetCreateFields];
 
-export const getAllAssets = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ export const getAllAssets = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const filter: any = { tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
@@ -38,7 +41,8 @@ export const getAllAssets = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
-export const getAssetById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ export const getAssetById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ message: 'Invalid ID' });
@@ -57,7 +61,8 @@ export const getAssetById = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
-export const createAsset = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ export const createAsset = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   logger.debug('createAsset body:', req.body);
   logger.debug('createAsset files:', (req as any).files);
 
@@ -68,7 +73,8 @@ export const createAsset = async (req: Request, res: Response, next: NextFunctio
     logger.debug('No files uploaded for asset');
   }
 
-  const { user, tenantId: reqTenantId } = req as Request;
+   const { user, tenantId: reqTenantId } = req as Request;
+ 
   const resolvedTenantId = reqTenantId || user?.tenantId;
   if (!resolvedTenantId) {
     return res.status(400).json({ message: 'Tenant ID is required' });
@@ -101,7 +107,8 @@ export const createAsset = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const updateAsset = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ export const updateAsset = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   logger.debug('updateAsset body:', req.body);
   logger.debug('updateAsset files:', (req as any).files);
 
@@ -112,7 +119,8 @@ export const updateAsset = async (req: Request, res: Response, next: NextFunctio
     logger.debug('No files uploaded for asset update');
   }
 
-  const { user, tenantId: reqTenantId } = req as Request;
+   const { user, tenantId: reqTenantId } = req as Request;
+ 
   const tenantId = reqTenantId || user?.tenantId;
   if (!tenantId) {
     return res.status(400).json({ message: 'Tenant ID is required' });
@@ -144,7 +152,8 @@ export const updateAsset = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const deleteAsset = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ export const deleteAsset = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ message: 'Invalid ID' });
@@ -163,7 +172,8 @@ export const deleteAsset = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const searchAssets = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ export const searchAssets = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const q = (req.query.q as string) || '';
     const regex = new RegExp(q, 'i');

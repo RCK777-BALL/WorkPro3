@@ -85,10 +85,21 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'Email already in use' });
     }
     const user = new User({ name, email, password, tenantId, employeeId });
-    await user.save();
+    await user.save().catch((err: any) => {
+      if (err.code === 11000) {
+        res.status(400).json({ message: 'Email or employee ID already in use' });
+        return;
+      }
+      throw err;
+    });
+    if (res.headersSent) {
+      return;
+    }
     return res.status(201).json({ message: 'User registered successfully' });
-  } catch {
-    return res.status(500).json({ message: 'Server error' });
+  } catch (err) {
+    if (!res.headersSent) {
+      return res.status(500).json({ message: 'Server error' });
+    }
   }
 });
 

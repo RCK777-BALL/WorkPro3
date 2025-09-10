@@ -1,11 +1,9 @@
-import type { NextFunction, Response } from 'express';
-import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
+import type { AuthedRequestHandler } from '../types/http';
 import mongoose from 'mongoose';
 import Asset from '../models/Asset';
 import { validationResult } from 'express-validator';
 import logger from '../utils/logger';
 import { filterFields } from '../utils/filterFields';
-import type { AuthedRequestHandler } from '../types/http';
 
 const assetCreateFields = [
   'name', 'type', 'location', 'departmentId', 'status', 'serialNumber',
@@ -29,11 +27,16 @@ export const getAllAssets: AuthedRequestHandler = async (req, res, next) => {
 
 export const getAssetById: AuthedRequestHandler = async (req, res, next) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    const id = req.params.id;
+    if (!id) {
+      res.status(400).json({ message: 'ID is required' });
+      return;
+    }
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       res.status(400).json({ message: 'Invalid ID' });
       return;
     }
-    const filter: any = { _id: req.params.id, tenantId: req.tenantId };
+    const filter: any = { _id: id, tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
 
     const asset = await Asset.findOne(filter);
@@ -78,8 +81,6 @@ export const createAsset: AuthedRequestHandler = async (req, res, next) => {
       return;
     }
 
-    const tenantId = resolvedTenantId;
-
     const payload: any = filterFields(req.body, assetCreateFields);
     payload.tenantId = resolvedTenantId;
     if (req.siteId && !payload.siteId) payload.siteId = req.siteId;
@@ -115,7 +116,11 @@ export const updateAsset: AuthedRequestHandler = async (req, res, next) => {
   }
 
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    const id = req.params.id;
+    if (!id) {
+      return res.status(400).json({ message: 'ID is required' });
+    }
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: 'Invalid ID' });
     }
     const errors = validationResult(req as any);
@@ -125,7 +130,7 @@ export const updateAsset: AuthedRequestHandler = async (req, res, next) => {
       return;
     }
 
-    const filter: any = { _id: req.params.id, tenantId };
+    const filter: any = { _id: id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
     const update = filterFields(req.body, assetUpdateFields);
     const asset = await Asset.findOneAndUpdate(filter, update, {
@@ -145,12 +150,16 @@ export const updateAsset: AuthedRequestHandler = async (req, res, next) => {
 };
 
 export const deleteAsset: AuthedRequestHandler = async (req, res, next) => {
- 
+
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    const id = req.params.id;
+    if (!id) {
+      return res.status(400).json({ message: 'ID is required' });
+    }
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: 'Invalid ID' });
     }
-    const filter: any = { _id: req.params.id, tenantId: req.tenantId };
+    const filter: any = { _id: id, tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
 
     const asset = await Asset.findOneAndDelete(filter);

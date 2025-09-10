@@ -12,6 +12,9 @@ import {
   registerSchema,
   assertEmail,
 } from '../validators/authValidators';
+
+const FAKE_PASSWORD_HASH =
+  '$2b$10$lbmUy86xKlj1/lR8TPPby.1/KfNmrRrgOgGs3u21jcd2SzCBRqDB.';
  
 
 configureOIDC();
@@ -31,6 +34,8 @@ router.post('/login', async (req, res) => {
   try {
     const user = await User.findOne({ email });
     if (!user) {
+      // Perform fake compare to mitigate timing attacks
+      await bcrypt.compare(password, FAKE_PASSWORD_HASH);
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 

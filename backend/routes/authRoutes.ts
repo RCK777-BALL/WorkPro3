@@ -4,7 +4,8 @@ import bcrypt from 'bcryptjs';
  import { setupMfa, validateMfaToken } from '../controllers/authController';
  
 import { configureOIDC } from '../auth/oidc';
-import { configureOAuth, getOAuthScope, OAuthProvider } from '../auth/oauth';
+import { configureOAuth } from '../auth/oauth';
+import { OAuthProvider, getOAuthScope } from '../config/oauthScopes';
 import { getJwtSecret } from '../utils/getJwtSecret';
 import User from '../models/User';
  import { isCookieSecure } from '../utils/isCookieSecure';

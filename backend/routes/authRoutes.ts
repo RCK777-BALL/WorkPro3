@@ -58,8 +58,15 @@ router.post('/login', loginLimiter, async (req, res) => {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-     const valid = await bcrypt.compare(password, user.password);
- 
+     assertEmail(user.email);
+
+    let valid: boolean;
+    try {
+      valid = await bcrypt.compare(password, user.password);
+    } catch (err) {
+      console.error('Password comparison error', err);
+      return res.status(500).json({ message: 'Server error' });
+    }
  
     if (!valid) {
       return res.status(400).json({ message: 'Invalid email or password' });

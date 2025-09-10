@@ -39,7 +39,15 @@ export const login = async (req: Request, res: Response): Promise<void> => {
  
     }
 
-    const valid = await bcrypt.compare(password, user.passwordHash);
+     let valid: boolean;
+    try {
+      valid = await bcrypt.compare(req.body.password, user.passwordHash);
+    } catch (err) {
+      logger.error('Password comparison error', err);
+      res.status(500).json({ message: 'Server error' });
+      return;
+    }
+ 
     logger.info('Password comparison result', { valid });
     if (!valid) {
       return res.status(401).json({ message: 'Invalid email or password' });

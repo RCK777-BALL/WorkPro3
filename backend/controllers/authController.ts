@@ -1,7 +1,5 @@
-import type { NextFunction, Response } from 'express';
-import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
+import type { AuthedRequestHandler } from '../types/http';
 import Asset from '../models/Asset';
-import { validationResult } from 'express-validator';
 import mongoose from 'mongoose';
 
 // GET /assets
@@ -19,10 +17,11 @@ export const getAllAssets: AuthedRequestHandler = async (req, res, next) => {
 // GET /assets/:id
 export const getAssetById: AuthedRequestHandler = async (req, res, next) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    const { id } = req.params;
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: 'Invalid ID' });
     }
-    const filter: any = { _id: req.params.id, tenantId: req.tenantId };
+    const filter: any = { _id: id, tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
 
     const asset = await Asset.findOne(filter);

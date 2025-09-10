@@ -16,15 +16,16 @@ async function verifyCaptcha(token: string): Promise<boolean> {
   return token === 'valid-captcha';
 }
 
-router.get('/:slug', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+router.get('/:slug', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const form = await RequestForm.findOne({ slug: req.params.slug }).lean();
     if (!form) {
-      return res.status(404).json({ message: 'Form not found' });
+      res.status(404).json({ message: 'Form not found' });
+      return;
     }
-    return res.json(form.schema);
+    res.json(form.schema);
   } catch (err) {
-    return next(err);
+    next(err);
   }
 });
 
@@ -32,15 +33,16 @@ router.post('/:slug', submissionLimiter, async (
   req: Request,
   res: Response,
   next: NextFunction,
-): Promise<void> => {
+) => {
   try {
     const { captcha } = req.body;
     if (!(await verifyCaptcha(captcha))) {
-      return res.status(400).json({ message: 'Invalid CAPTCHA' });
+      res.status(400).json({ message: 'Invalid CAPTCHA' });
+      return;
     }
-    return res.json({ success: true });
+    res.json({ success: true });
   } catch (err) {
-    return next(err);
+    next(err);
   }
 });
 

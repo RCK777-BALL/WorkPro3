@@ -118,7 +118,7 @@ export const requestPasswordReset = async (
   }
 };
 
-export const generateMfa = async (req: Request, res: Response): Promise<void> => {
+export const setupMfa = async (req: Request, res: Response): Promise<void> => {
   const { userId } = req.body;
   try {
     const user = await User.findById(userId);
@@ -132,12 +132,12 @@ export const generateMfa = async (req: Request, res: Response): Promise<void> =>
     const token = speakeasy.totp({ secret: user.mfaSecret, encoding: 'base32' });
     res.json({ secret: user.mfaSecret, token });
   } catch (err) {
-    logger.error('generateMfa error', err);
+    logger.error('setupMfa error', err);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
-export const verifyMfa = async (req: Request, res: Response): Promise<void> => {
+export const validateMfaToken = async (req: Request, res: Response): Promise<void> => {
   const { userId, token } = req.body;
   try {
     const user = await User.findById(userId);
@@ -167,7 +167,7 @@ export const verifyMfa = async (req: Request, res: Response): Promise<void> => {
     const { passwordHash: _pw, ...safeUser } = user.toObject();
     res.json({ token: jwtToken, user: { ...safeUser, tenantId } });
   } catch (err) {
-    logger.error('verifyMfa error', err);
+    logger.error('validateMfaToken error', err);
     res.status(500).json({ message: 'Server error' });
   }
 };

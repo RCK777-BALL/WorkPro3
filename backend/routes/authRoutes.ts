@@ -2,7 +2,7 @@ import { Router } from 'express';
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { generateMfa, verifyMfa } from '../controllers/authController';
+import { setupMfa, validateMfaToken } from '../controllers/authController';
 import { configureOIDC } from '../auth/oidc';
 import { configureOAuth, getOAuthScope, OAuthProvider } from '../auth/oauth';
 import { getJwtSecret } from '../utils/getJwtSecret';
@@ -129,7 +129,7 @@ router.get('/oauth/:provider/callback', (req, res, next) => {
 });
 
 // MFA endpoints
-router.post('/mfa/setup', generateMfa);
-router.post('/mfa/verify', verifyMfa);
+router.post('/mfa/setup', setupMfa);
+router.post('/mfa/verify', validateMfaToken);
 
 export default router;

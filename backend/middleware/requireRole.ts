@@ -1,19 +1,23 @@
 import type { Request, Response, NextFunction } from 'express';
+import type { UserRole } from '../models/User';
 
 // Middleware to ensure the authenticated user has one of the required roles
 const requireRole =
-  (...roles: Array<'admin' | 'manager' | 'technician' | 'viewer'>) =>
+  (...roles: Array<UserRole>) =>
   (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      return res.status(401).json({ message: 'Unauthorized' });
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
     }
 
-    const userRole = req.user.role;
+    const userRole: UserRole | undefined = req.user?.role;
     if (roles.length > 0 && (!userRole || !roles.includes(userRole))) {
-      return res.status(403).json({ message: 'Forbidden' });
+      res.status(403).json({ message: 'Forbidden' });
+      return;
     }
 
-    return next();
+    next();
+    return;
   };
 
 export default requireRole;

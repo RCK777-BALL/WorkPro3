@@ -7,7 +7,7 @@ import { configureOIDC } from '../auth/oidc';
 import { configureOAuth, getOAuthScope, OAuthProvider } from '../auth/oauth';
 import { getJwtSecret } from '../utils/getJwtSecret';
 import User from '../models/User';
- import { requireAuth } from '../middleware/authMiddleware';
+ import { isCookieSecure } from '../utils/isCookieSecure';
  
 import {
   loginSchema,
@@ -101,9 +101,10 @@ router.post('/login', loginLimiter, async (req, res) => {
  
     return res
       .cookie('token', token, {
-        httpOnly: true, // mitigate XSS by restricting access to cookies
-        sameSite: 'lax', // reduce CSRF risk while allowing same-site requests
-        secure: process.env.NODE_ENV === 'production', // send only over HTTPS in production
+         httpOnly: true,
+        sameSite: 'lax',
+        secure: isCookieSecure(),
+ 
       })
       .status(200)
        .json({ token, user: { ...safeUser, tenantId } });
@@ -128,20 +129,30 @@ router.post('/login', loginLimiter, async (req, res) => {
     if (existing) {
       return res.status(400).json({ message: 'Email already in use' });
     }
-    const user = new User({ name, email, passwordHash: password, tenantId, employeeId });
-    await user.save();
+     const user = new User({ name, email, password, tenantId, employeeId });
+    await user.save().catch((err: any) => {
+      if (err.code === 11000) {
+        res.status(400).json({ message: 'Email or employee ID already in use' });
+        return;
+      }
+      throw err;
+    });
+    if (res.headersSent) {
+      return;
+    }
     return res.status(201).json({ message: 'User registered successfully' });
   } catch (err) {
-     console.error('Register error:', err);
+    if (!res.headersSent) {
+      return res.status(500).json({ message: 'Server error' });
+    }
  
-    return res.status(500).json({ message: 'Server error' });
   }
 });
 
 // OAuth routes
 router.get('/oauth/:provider', (req, res, next) => {
   const provider = req.params.provider as OAuthProvider;
-  passport.authenticate(provider, { scope: getOAuthScope(provider) })(
+  return passport.authenticate(provider, { scope: getOAuthScope(provider) })(
     req,
     res,
     next,
@@ -150,7 +161,7 @@ router.get('/oauth/:provider', (req, res, next) => {
 
 router.get('/oauth/:provider/callback', (req, res, next) => {
   const provider = req.params.provider as OAuthProvider;
-  passport.authenticate(
+  return passport.authenticate(
     provider,
     { session: false },
     (err: Error | null, user: Express.User | false | null) => {

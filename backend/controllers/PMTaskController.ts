@@ -2,6 +2,7 @@ import { Request, Response, NextFunction, Express } from 'express';
 import Asset from '../models/Asset';
 import { validationResult } from 'express-validator';
 import logger from '../utils/logger';
+import { Request, Response, NextFunction } from 'express';
 
 const tenantSiteFilter = (req: Request, base: any = {}) => {
   const filter: any = { ...base, tenantId: req.tenantId };
@@ -9,11 +10,8 @@ const tenantSiteFilter = (req: Request, base: any = {}) => {
   return filter;
 };
 
-export const getAllAssets = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+  export const getAllAssets = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  
   try {
     const assets = await Asset.find(tenantSiteFilter(req));
     return res.json(assets);
@@ -23,11 +21,8 @@ export const getAllAssets = async (
   }
 };
 
-export const getAssetById = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+  export const getAssetById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  
   try {
     const asset = await Asset.findOne(tenantSiteFilter(req, { _id: req.params.id }));
     if (!asset) {
@@ -40,11 +35,8 @@ export const getAssetById = async (
   }
 };
 
-export const createAsset = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+  export const createAsset = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  
   logger.debug('createAsset body:', req.body);
   logger.debug('createAsset files:', (req as any).files);
 
@@ -53,7 +45,8 @@ export const createAsset = async (
     logger.debug('No files uploaded for asset');
   }
 
-  const { user, tenantId: reqTenantId } = req;
+    const { user, tenantId: reqTenantId } = req as Request;
+  
   const resolvedTenantId = reqTenantId || user?.tenantId;
   if (!resolvedTenantId) {
     return res.status(400).json({ message: 'Tenant ID is required' });
@@ -83,11 +76,8 @@ export const createAsset = async (
   }
 };
 
-export const updateAsset = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const updateAsset = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   logger.debug('updateAsset body:', req.body);
   logger.debug('updateAsset files:', (req as any).files);
 
@@ -96,7 +86,8 @@ export const updateAsset = async (
     logger.debug('No files uploaded for asset update');
   }
 
-  const { user, tenantId: reqTenantId } = req;
+   const { user, tenantId: reqTenantId } = req as Request;
+ 
   const tenantId = reqTenantId || user?.tenantId;
   if (!tenantId) {
     return res.status(400).json({ message: 'Tenant ID is required' });
@@ -124,11 +115,8 @@ export const updateAsset = async (
   }
 };
 
-export const deleteAsset = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const deleteAsset = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const asset = await Asset.findOneAndDelete(tenantSiteFilter(req, { _id: req.params.id }));
     if (!asset) {
@@ -141,11 +129,8 @@ export const deleteAsset = async (
   }
 };
 
-export const searchAssets = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const searchAssets = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const q = (req.query.q as string) || '';
     const regex = new RegExp(q, 'i');

@@ -3,12 +3,10 @@ import { getKPIs } from '../services/analytics';
 import { Parser as Json2csvParser } from 'json2csv';
 import PDFDocument from 'pdfkit';
 import { escapeXml } from '../utils/escapeXml';
+import { Request, Response, NextFunction } from 'express';
 
-export const kpiJson = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const kpiJson = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const data = await getKPIs(req.tenantId!);
     res.json(data);
@@ -17,11 +15,8 @@ export const kpiJson = async (
   }
 };
 
-export const kpiCsv = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const kpiCsv = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const data = await getKPIs(req.tenantId!);
     const parser = new Json2csvParser();
@@ -34,11 +29,8 @@ export const kpiCsv = async (
   }
 };
 
-export const kpiXlsx = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const kpiXlsx = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const data = await getKPIs(req.tenantId!);
     const rows = Object.entries(data)
@@ -56,11 +48,8 @@ export const kpiXlsx = async (
   }
 };
 
-export const kpiPdf = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const kpiPdf = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const data = await getKPIs(req.tenantId!);
     const doc = new PDFDocument();

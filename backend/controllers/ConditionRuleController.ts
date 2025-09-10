@@ -1,4 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
+ 
+ 
 import ConditionRule from '../models/ConditionRule';
 
 export const getAllConditionRules = async (

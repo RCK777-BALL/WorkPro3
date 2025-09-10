@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+
 import WorkOrder from '../models/WorkOrder';
 import { emitWorkOrderUpdate } from '../server';
 import { validationResult } from 'express-validator';
@@ -62,11 +63,8 @@ type SearchQuery = {
  *       200:
  *         description: List of work orders
  */
-export const getAllWorkOrders = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const getAllWorkOrders = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const items = await WorkOrder.find({ tenantId: req.tenantId });
     res.json(items);
@@ -107,11 +105,8 @@ export const getAllWorkOrders = async (
  *       200:
  *         description: Filtered work orders
  */
-export const searchWorkOrders = async (
-  req: Request<unknown, any, unknown, SearchQuery>,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const searchWorkOrders = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const { status, priority, startDate, endDate } = req.query;
     const query: any = { tenantId: req.tenantId };
@@ -152,11 +147,8 @@ export const searchWorkOrders = async (
  *       404:
  *         description: Work order not found
  */
-export const getWorkOrderById = async (
-  req: Request<IdParams>,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const getWorkOrderById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const item = await WorkOrder.findOne({ _id: req.params.id, tenantId: req.tenantId });
     if (!item) {
@@ -190,11 +182,8 @@ export const getWorkOrderById = async (
  *       400:
  *         description: Validation error
  */
-export const createWorkOrder = async (
-  req: Request<unknown, any, any>,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const createWorkOrder = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const errors = validationResult(req as Request);
     if (!errors.isEmpty()) {
@@ -238,11 +227,8 @@ export const createWorkOrder = async (
  *       404:
  *         description: Work order not found
  */
-export const updateWorkOrder = async (
-  req: Request<IdParams, any, any>,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const updateWorkOrder = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const errors = validationResult(req as Request);
     if (!errors.isEmpty()) {
@@ -290,11 +276,8 @@ export const updateWorkOrder = async (
  *       404:
  *         description: Work order not found
  */
-export const deleteWorkOrder = async (
-  req: Request<IdParams>,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const deleteWorkOrder = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const deleted = await WorkOrder.findOneAndDelete({ _id: req.params.id, tenantId: req.tenantId });
     if (!deleted) {
@@ -341,11 +324,8 @@ export const deleteWorkOrder = async (
  *         description: Work order not found
  */
  
-export const approveWorkOrder = async (
-  req: Request<IdParams, any, { status: 'pending' | 'approved' | 'rejected' }>,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const approveWorkOrder = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const { status } = req.body;
  
@@ -415,11 +395,9 @@ export const approveWorkOrder = async (
  *         description: Work order not found
 */
 
-export const assistWorkOrder = async (
-  req: Request<IdParams>,
-  res: Response<AIAssistResult | { message: string }>,
-  next: NextFunction,
-) => {
+  codex/refactor-controllers-for-export-style
+export const assistWorkOrder = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const workOrder = await WorkOrder.findOne({
       _id: req.params.id,

@@ -2,17 +2,14 @@ import mongoose from 'mongoose';
 import Notification, { NotificationDocument } from '../models/Notifications';
 import User from '../models/User';
 import nodemailer from 'nodemailer';
-import { Request, Response, NextFunction } from 'express';
+ 
 import { assertEmail } from '../utils/assert';
+import { Request, Response, NextFunction } from 'express';
 
 type IdParams = { id: string };
 
-export const getAllNotifications = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
+ export const getAllNotifications = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+   try {
     const items = await Notification.find({ tenantId: req.tenantId });
     res.json(items);
     return;
@@ -22,11 +19,8 @@ export const getAllNotifications = async (
   }
 };
 
-export const getNotificationById = async (
-  req: Request<IdParams>,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const getNotificationById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const item = await Notification.findOne({ _id: req.params.id, tenantId: req.tenantId });
     if (!item) {
@@ -41,11 +35,8 @@ export const getNotificationById = async (
   }
 };
 
-export const createNotification = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const createNotification = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const newItem = new Notification({ ...req.body, tenantId: req.tenantId });
     const saved = (await newItem.save()) as NotificationDocument;
@@ -85,11 +76,8 @@ export const createNotification = async (
   }
 };
 
-export const markNotificationRead = async (
-  req: Request<IdParams>,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const markNotificationRead = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
     res.status(400).json({ message: 'Invalid ID' });
     return;
@@ -113,11 +101,8 @@ export const markNotificationRead = async (
   }
 };
 
-export const updateNotification = async (
-  req: Request<IdParams, NotificationDocument, mongoose.UpdateQuery<NotificationDocument>>,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const updateNotification = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
     res.status(400).json({ message: 'Invalid ID' });
     return;
@@ -143,11 +128,8 @@ export const updateNotification = async (
   }
 };
 
-export const deleteNotification = async (
-  req: Request<IdParams, { message: string }>,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const deleteNotification = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
     res.status(400).json({ message: 'Invalid ID' });
     return;

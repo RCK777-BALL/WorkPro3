@@ -1,11 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import Department from '../models/Department';
+import { Request, Response, NextFunction } from 'express';
 
-export const listDepartments = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const listDepartments = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const filter: any = { tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;

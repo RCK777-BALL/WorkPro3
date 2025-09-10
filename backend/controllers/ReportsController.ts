@@ -7,6 +7,7 @@ import WorkHistory from '../models/WorkHistory';
 import User from '../models/User';
 import TimeSheet from '../models/TimeSheet';
 import Inventory from '../models/Inventory';
+import { Request, Response, NextFunction } from 'express';
 
 async function calculateStats(tenantId: string, role?: string) {
   const roleFilter = role || 'technician';
@@ -100,11 +101,8 @@ async function calculateStats(tenantId: string, role?: string) {
   };
 }
 
-export const getAnalyticsReport = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const getAnalyticsReport = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const role = typeof req.query.role === 'string' ? req.query.role : undefined;
     const tenantId = req.tenantId!;
@@ -115,11 +113,8 @@ export const getAnalyticsReport = async (
   }
 };
 
-export const downloadReport = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const downloadReport = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const format = String(req.query.format || 'pdf').toLowerCase();
     const role = typeof req.query.role === 'string' ? req.query.role : undefined;
@@ -169,11 +164,8 @@ async function aggregateTrends(tenantId: string) {
   }));
 }
 
-export const getTrendData = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const getTrendData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const tenantId = req.tenantId!;
     const data = await aggregateTrends(tenantId);
@@ -183,11 +175,8 @@ export const getTrendData = async (
   }
 };
 
-export const exportTrendData = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const exportTrendData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const format = String(req.query.format || 'json').toLowerCase();
     const tenantId = req.tenantId!;
@@ -279,11 +268,8 @@ async function aggregateCosts(tenantId: string) {
     }));
 }
 
-export const getCostMetrics = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const getCostMetrics = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const tenantId = req.tenantId!;
     const data = await aggregateCosts(tenantId);
@@ -308,11 +294,8 @@ async function aggregateDowntime(tenantId: string) {
   return results.map((r) => ({ period: r._id, downtime: r.downtime }));
 }
 
-export const getDowntimeMetrics = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const getDowntimeMetrics = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const tenantId = req.tenantId!;
     const data = await aggregateDowntime(tenantId);

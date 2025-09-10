@@ -1,15 +1,15 @@
-import { Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
+
 import Asset from '../models/Asset';
 import WorkOrder from '../models/WorkOrder';
 import InventoryItem from '../models/InventoryItem';
-import type { AuthedRequest } from '../types/express';
 
 /**
  * Helper to resolve the tenant id from the request. It checks the `tenantId`
  * injected by auth middleware, falls back to the authenticated user and then
  * to the `x-tenant-id` header.
  */
-const getTenantId = (req: AuthedRequest): string | undefined => {
+const getTenantId = (req: Request): string | undefined => {
   return (
     req.tenantId ||
     req.user?.tenantId ||
@@ -19,7 +19,11 @@ const getTenantId = (req: AuthedRequest): string | undefined => {
   );
 };
 
-export const getSummary = async (req: AuthedRequest, res: Response) => {
+export const getSummary = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const tenantId = getTenantId(req);
     const match = tenantId ? { tenantId } : {};
@@ -29,7 +33,7 @@ export const getSummary = async (req: AuthedRequest, res: Response) => {
       InventoryItem.countDocuments(match),
     ]);
 
-    res.json({
+    return res.json({
       totals: {
         assets: assetCount,
         workOrders: workOrderCount,
@@ -38,14 +42,15 @@ export const getSummary = async (req: AuthedRequest, res: Response) => {
       metrics: { inventoryItems: inventoryCount },
     });
   } catch (err) {
-    res.json({
-      totals: { assets: 0, workOrders: 0, pmCompliance: 0 },
-      metrics: { inventoryItems: 0 },
-    });
+    return next(err);
   }
 };
 
-export const getAssetSummary = async (req: AuthedRequest, res: Response) => {
+export const getAssetSummary = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const tenantId = getTenantId(req);
     const match = tenantId ? { tenantId } : {};
@@ -53,16 +58,17 @@ export const getAssetSummary = async (req: AuthedRequest, res: Response) => {
       { $match: match },
       { $group: { _id: '$status', count: { $sum: 1 } } },
     ]);
-    res.json(summary);
+    return res.json(summary);
   } catch (err) {
-    res.json([]);
+    return next(err);
   }
 };
 
 export const getWorkOrderSummary = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
-) => {
+  next: NextFunction,
+): Promise<void> => {
   try {
     const tenantId = getTenantId(req);
     const match = tenantId ? { tenantId } : {};
@@ -70,16 +76,17 @@ export const getWorkOrderSummary = async (
       { $match: match },
       { $group: { _id: '$status', count: { $sum: 1 } } },
     ]);
-    res.json(summary);
+    return res.json(summary);
   } catch (err) {
-    res.json([]);
+    return next(err);
   }
 };
 
 export const getUpcomingMaintenance = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
-) => {
+  next: NextFunction,
+): Promise<void> => {
   try {
     const tenantId = getTenantId(req);
     const match: any = tenantId ? { tenantId } : {};
@@ -90,16 +97,17 @@ export const getUpcomingMaintenance = async (
       .sort({ dueDate: 1 })
       .limit(10)
       .populate('asset');
-    res.json(tasks);
+    return res.json(tasks);
   } catch (err) {
-    res.json([]);
+    return next(err);
   }
 };
 
 export const getCriticalAlerts = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
-) => {
+  next: NextFunction,
+): Promise<void> => {
   try {
     const tenantId = getTenantId(req);
     const match: any = tenantId ? { tenantId } : {};
@@ -109,9 +117,9 @@ export const getCriticalAlerts = async (
       .sort({ createdAt: -1 })
       .limit(10)
       .populate('asset');
-    res.json(alerts);
+    return res.json(alerts);
   } catch (err) {
-    res.json([]);
+    return next(err);
   }
 };
 

@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+
 import Video from '../models/Video';
 
 export const getAllVideos = async (req: Request, res: Response, next: NextFunction) => {

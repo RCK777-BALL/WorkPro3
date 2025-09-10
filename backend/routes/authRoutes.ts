@@ -41,6 +41,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
+    // If MFA is enabled, require a second factor before issuing a JWT
     if (user.mfaEnabled) {
       return res
         .status(200)
@@ -52,17 +53,21 @@ router.post('/login', async (req, res) => {
     if (!secret) {
       return;
     }
-    const token = jwt.sign({
-      id: user._id.toString(),
-      email: user.email,
-      tenantId,
-    }, secret, { expiresIn: '7d' });
+    const token = jwt.sign(
+      {
+        id: user._id.toString(),
+        email: user.email,
+        tenantId,
+      },
+      secret, // sign token so it cannot be forged
+      { expiresIn: '7d' }, // short expiry limits exposure if leaked
+    );
     const { password: _pw, ...safeUser } = user.toObject();
     return res
       .cookie('token', token, {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true, // mitigate XSS by restricting access to cookies
+        sameSite: 'lax', // reduce CSRF risk while allowing same-site requests
+        secure: process.env.NODE_ENV === 'production', // send only over HTTPS in production
       })
       .status(200)
       .json({ token, user: { ...safeUser, tenantId } });
@@ -116,9 +121,11 @@ router.get('/oauth/:provider/callback', (req, res, next) => {
         return;
       }
       assertEmail(user.email);
-      const token = jwt.sign({ email: user.email }, secret as string, {
-        expiresIn: '7d',
-      });
+      const token = jwt.sign(
+        { email: user.email },
+        secret as string, // sign with server secret to protect integrity
+        { expiresIn: '7d' }, // expire quickly to limit window for replay
+      );
       const frontend = process.env.FRONTEND_URL || 'http://localhost:5173/login';
       const redirectUrl = `${frontend}?token=${token}&email=${encodeURIComponent(
         user.email,

@@ -99,7 +99,7 @@ self.addEventListener('message', (event) => {
   }
 });
 
-self.addEventListener('sync', (event) => {
+self.addEventListener('sync', (event: SyncEvent) => {
   if (event.tag === 'offline-queue') {
     event.waitUntil(processQueue());
   }

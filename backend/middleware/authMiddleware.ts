@@ -53,13 +53,13 @@ export const requireAuth: RequestHandler = async (
     }
 
     const tenantId = user.tenantId.toString();
-    (req as AuthedRequest).user = {
+    req.user = {
       id: user._id.toString(),
       _id: user._id.toString(),
       email: user.email,
       role: user.role,
     };
-    (req as AuthedRequest).tenantId = tenantId;
+    req.tenantId = tenantId;
 
     next();
   } catch (_err) {

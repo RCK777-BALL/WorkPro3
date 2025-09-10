@@ -2,13 +2,13 @@ import mongoose from 'mongoose';
 import Notification, { NotificationDocument } from '../models/Notifications';
 import User from '../models/User';
 import nodemailer from 'nodemailer';
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { assertEmail } from '../utils/assert';
 
 type IdParams = { id: string };
 
-export const getAllNotifications: AuthedRequestHandler<unknown, NotificationDocument[]> = async (
-  req: AuthedRequest<unknown, NotificationDocument[]>,
+export const getAllNotifications = async (
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -22,8 +22,8 @@ export const getAllNotifications: AuthedRequestHandler<unknown, NotificationDocu
   }
 };
 
-export const getNotificationById: AuthedRequestHandler<IdParams, NotificationDocument> = async (
-  req: AuthedRequest<IdParams, NotificationDocument>,
+export const getNotificationById = async (
+  req: Request<IdParams>,
   res: Response,
   next: NextFunction,
 ) => {
@@ -41,8 +41,8 @@ export const getNotificationById: AuthedRequestHandler<IdParams, NotificationDoc
   }
 };
 
-export const createNotification: AuthedRequestHandler<unknown, NotificationDocument, any> = async (
-  req: AuthedRequest<unknown, NotificationDocument, any>,
+export const createNotification = async (
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -85,8 +85,8 @@ export const createNotification: AuthedRequestHandler<unknown, NotificationDocum
   }
 };
 
-export const markNotificationRead: AuthedRequestHandler<IdParams, NotificationDocument> = async (
-  req: AuthedRequest<IdParams, NotificationDocument>,
+export const markNotificationRead = async (
+  req: Request<IdParams>,
   res: Response,
   next: NextFunction,
 ) => {
@@ -113,12 +113,8 @@ export const markNotificationRead: AuthedRequestHandler<IdParams, NotificationDo
   }
 };
 
-export const updateNotification: AuthedRequestHandler<
-  IdParams,
-  NotificationDocument,
-  mongoose.UpdateQuery<NotificationDocument>
-> = async (
-  req: AuthedRequest<IdParams, NotificationDocument, mongoose.UpdateQuery<NotificationDocument>>,
+export const updateNotification = async (
+  req: Request<IdParams, NotificationDocument, mongoose.UpdateQuery<NotificationDocument>>,
   res: Response,
   next: NextFunction,
 ) => {
@@ -147,8 +143,8 @@ export const updateNotification: AuthedRequestHandler<
   }
 };
 
-export const deleteNotification: AuthedRequestHandler<IdParams, { message: string }> = async (
-  req: AuthedRequest<IdParams, { message: string }>,
+export const deleteNotification = async (
+  req: Request<IdParams, { message: string }>,
   res: Response,
   next: NextFunction,
 ) => {

@@ -1,3 +1,4 @@
+import { Request, Response, NextFunction } from 'express';
 import PDFDocument from 'pdfkit';
 import { Parser as Json2csvParser } from 'json2csv';
 import WorkOrder from '../models/WorkOrder';
@@ -99,10 +100,10 @@ async function calculateStats(tenantId: string, role?: string) {
   };
 }
 
-export const getAnalyticsReport: AuthedRequestHandler = async (
-  req,
-  res,
-  next,
+export const getAnalyticsReport = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
 ) => {
   try {
     const role = typeof req.query.role === 'string' ? req.query.role : undefined;
@@ -114,10 +115,10 @@ export const getAnalyticsReport: AuthedRequestHandler = async (
   }
 };
 
-export const downloadReport: AuthedRequestHandler = async (
-  req,
-  res,
-  next,
+export const downloadReport = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
 ) => {
   try {
     const format = String(req.query.format || 'pdf').toLowerCase();
@@ -168,10 +169,10 @@ async function aggregateTrends(tenantId: string) {
   }));
 }
 
-export const getTrendData: AuthedRequestHandler = async (
-  req,
-  res,
-  next,
+export const getTrendData = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
 ) => {
   try {
     const tenantId = req.tenantId!;
@@ -182,10 +183,10 @@ export const getTrendData: AuthedRequestHandler = async (
   }
 };
 
-export const exportTrendData: AuthedRequestHandler = async (
-  req,
-  res,
-  next,
+export const exportTrendData = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
 ) => {
   try {
     const format = String(req.query.format || 'json').toLowerCase();
@@ -278,7 +279,11 @@ async function aggregateCosts(tenantId: string) {
     }));
 }
 
-export const getCostMetrics: AuthedRequestHandler = async (req, res, next) => {
+export const getCostMetrics = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const tenantId = req.tenantId!;
     const data = await aggregateCosts(tenantId);
@@ -303,10 +308,10 @@ async function aggregateDowntime(tenantId: string) {
   return results.map((r) => ({ period: r._id, downtime: r.downtime }));
 }
 
-export const getDowntimeMetrics: AuthedRequestHandler = async (
-  req,
-  res,
-  next,
+export const getDowntimeMetrics = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
 ) => {
   try {
     const tenantId = req.tenantId!;

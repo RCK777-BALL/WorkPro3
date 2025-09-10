@@ -93,39 +93,55 @@ router.post('/register', async (req, res) => {
 });
 
 // OAuth routes
-router.get('/oauth/:provider', (req, res, next) => {
+router.get('/oauth/:provider', async (req, res, next) => {
   const provider = req.params.provider as OAuthProvider;
-  passport.authenticate(provider, { scope: getOAuthScope(provider) })(
-    req,
-    res,
-    next,
-  );
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const auth = passport.authenticate(provider, {
+        scope: getOAuthScope(provider),
+      });
+      auth(req, res, (err: unknown) => (err ? reject(err) : resolve()));
+      if (res.headersSent) {
+        resolve();
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
-router.get('/oauth/:provider/callback', (req, res, next) => {
+router.get('/oauth/:provider/callback', async (req, res, next) => {
   const provider = req.params.provider as OAuthProvider;
-  passport.authenticate(
-    provider,
-    { session: false },
-    (err: Error | null, user: Express.User | false | null) => {
-      if (err || !user) {
-        return res.status(400).json({ message: 'Authentication failed' });
-      }
-      const secret = getJwtSecret(res);
-      if (!secret) {
-        return;
-      }
-      assertEmail(user.email);
-      const token = jwt.sign({ email: user.email }, secret as string, {
-        expiresIn: '7d',
-      });
-      const frontend = process.env.FRONTEND_URL || 'http://localhost:5173/login';
-      const redirectUrl = `${frontend}?token=${token}&email=${encodeURIComponent(
-        user.email,
-      )}`;
-      return res.redirect(redirectUrl);
-    },
-  )(req, res, next);
+  try {
+    const user = await new Promise<Express.User>((resolve, reject) => {
+      passport.authenticate(
+        provider,
+        { session: false },
+        (err: Error | null, user: Express.User | false | null) => {
+          if (err || !user) {
+            return reject(err || new Error('Authentication failed'));
+          }
+          resolve(user);
+        },
+      )(req, res, (err) => (err ? reject(err) : undefined));
+    });
+
+    const secret = getJwtSecret(res);
+    if (!secret) {
+      return;
+    }
+    assertEmail(user.email);
+    const token = jwt.sign({ email: user.email }, secret as string, {
+      expiresIn: '7d',
+    });
+    const frontend = process.env.FRONTEND_URL || 'http://localhost:5173/login';
+    const redirectUrl = `${frontend}?token=${token}&email=${encodeURIComponent(
+      user.email,
+    )}`;
+    return res.redirect(redirectUrl);
+  } catch {
+    return res.status(400).json({ message: 'Authentication failed' });
+  }
 });
 
 // MFA endpoints

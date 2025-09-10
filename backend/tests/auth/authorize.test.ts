@@ -35,7 +35,7 @@ beforeEach(async () => {
   const admin = await User.create({
     name: 'Admin',
     email: 'admin@example.com',
-    password: 'pass123',
+    passwordHash: 'pass123',
     role: 'admin',
     tenantId: new mongoose.Types.ObjectId(),
   });
@@ -44,7 +44,7 @@ beforeEach(async () => {
   const viewer = await User.create({
     name: 'Viewer',
     email: 'viewer@example.com',
-    password: 'pass123',
+    passwordHash: 'pass123',
     role: 'viewer',
     tenantId: new mongoose.Types.ObjectId(),
   });

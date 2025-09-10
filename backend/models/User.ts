@@ -8,7 +8,7 @@ export interface UserDocument extends Document {
   _id: Types.ObjectId;
   name: string;
   email: string;
-  password: string;
+  passwordHash: string;
   role: UserRole;
   tenantId: mongoose.Schema.Types.ObjectId;
   employeeId: string;
@@ -25,8 +25,15 @@ export interface UserDocument extends Document {
 const userSchema = new Schema<UserDocument>(
   {
     name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      index: true,
+      lowercase: true,
+    },
+    passwordHash: { type: String, required: true },
     role: {
       type: String,
       enum: ['admin', 'manager', 'technician', 'viewer'],
@@ -58,10 +65,10 @@ const userSchema = new Schema<UserDocument>(
 
 // ✅ Password hashing
 userSchema.pre<UserDocument>('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('passwordHash')) return next();
 
   try {
-    this.password = await bcrypt.hash(this.password, 10);
+    this.passwordHash = await bcrypt.hash(this.passwordHash, 10);
     next();
   } catch (err) {
     next(err as Error);

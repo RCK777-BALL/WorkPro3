@@ -14,7 +14,7 @@ beforeAll(async () => {
   const user = await User.create({
     name: 'Test User',
     email: 'test@example.com',
-    password: 'pass',
+    passwordHash: 'pass',
     role: 'admin',
     tenantId: new mongoose.Types.ObjectId(),
   });

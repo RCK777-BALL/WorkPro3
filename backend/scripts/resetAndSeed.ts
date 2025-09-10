@@ -52,9 +52,8 @@ async function resetAndSeed() {
 
         const adminPassword = await bcrypt.hash('admin123', 10);
         await User.create({
- 
             email: 'admin@example.com',
-            password: hashedPassword,
+            passwordHash: adminPassword,
             role: 'admin'
         });
         console.log(`👤 Created admin user: ${adminUser.email}`);

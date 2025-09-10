@@ -31,7 +31,7 @@ beforeEach(async () => {
   admin = await User.create({
     name: 'Admin',
     email: 'admin@example.com',
-    password: 'pass123',
+    passwordHash: 'pass123',
     role: 'admin',
     tenantId: new mongoose.Types.ObjectId(),
     employeeId: 'ADMIN1',

@@ -51,7 +51,7 @@ mongoose.connect(mongoUri).then(async () => {
   const admin = await User.create({
     name: 'Admin',
     email: 'admin@example.com',
-    password: 'admin123',
+    passwordHash: 'admin123',
     role: 'admin',
     tenantId,
     employeeId: 'ADM001',
@@ -59,7 +59,7 @@ mongoose.connect(mongoUri).then(async () => {
   const tech = await User.create({
     name: 'Tech',
     email: 'tech@example.com',
-    password: 'tech123',
+    passwordHash: 'tech123',
     role: 'technician',
     tenantId,
     employeeId: 'TECH001',
@@ -69,7 +69,7 @@ mongoose.connect(mongoUri).then(async () => {
   const departmentLeader = await User.create({
     name: 'Department Leader',
     email: 'department.leader@example.com',
-    password: 'leader123',
+    passwordHash: 'leader123',
     role: 'manager',
     employeeId: 'DL001',
     tenantId,
@@ -79,7 +79,7 @@ mongoose.connect(mongoUri).then(async () => {
   const areaLeader = await User.create({
     name: 'Area Leader',
     email: 'area.leader@example.com',
-    password: 'area123',
+    passwordHash: 'area123',
     role: 'manager',
     employeeId: 'AL001',
     tenantId,
@@ -89,7 +89,7 @@ mongoose.connect(mongoUri).then(async () => {
   const teamLeader = await User.create({
     name: 'Team Leader',
     email: 'team.leader@example.com',
-    password: 'team123',
+    passwordHash: 'team123',
     role: 'manager',
     employeeId: 'TL001',
     tenantId,
@@ -100,7 +100,7 @@ mongoose.connect(mongoUri).then(async () => {
     {
       name: 'Team Member One',
       email: 'member.one@example.com',
-      password: 'member123',
+      passwordHash: 'member123',
       role: 'technician',
       employeeId: 'TM001',
       tenantId,
@@ -109,7 +109,7 @@ mongoose.connect(mongoUri).then(async () => {
     {
       name: 'Team Member Two',
       email: 'member.two@example.com',
-      password: 'member123',
+      passwordHash: 'member123',
       role: 'technician',
       employeeId: 'TM002',
       tenantId,
@@ -118,7 +118,7 @@ mongoose.connect(mongoUri).then(async () => {
     {
       name: 'Team Member Three',
       email: 'member.three@example.com',
-      password: 'member123',
+      passwordHash: 'member123',
       role: 'technician',
       employeeId: 'TM003',
       tenantId,

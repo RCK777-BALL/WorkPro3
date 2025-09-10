@@ -35,7 +35,7 @@ describe('Auth Routes', () => {
     await User.create({
       name: 'Test',
       email: 'test@example.com',
-      password: 'pass123',
+      passwordHash: 'pass123',
       role: 'admin',
       tenantId: new mongoose.Types.ObjectId(),
     });
@@ -60,7 +60,7 @@ describe('Auth Routes', () => {
     await User.create({
       name: 'Me',
       email: 'me@example.com',
-      password: 'pass123',
+      passwordHash: 'pass123',
       role: 'viewer',
       tenantId: new mongoose.Types.ObjectId(),
     });

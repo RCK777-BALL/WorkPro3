@@ -25,7 +25,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const valid = await bcrypt.compare(req.body.password, user.password);
+    const valid = await bcrypt.compare(req.body.password, user.passwordHash);
     logger.info('Password comparison result', { valid });
     if (!valid) {
       res.status(401).json({ message: 'Invalid email or password' });
@@ -51,7 +51,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
     const token = jwt.sign(payload, secret, { expiresIn: '7d' });
 
-    const { password: _pw, ...safeUser } = user.toObject();
+    const { passwordHash: _pw, ...safeUser } = user.toObject();
     res.status(200).json({ token, user: { ...safeUser, tenantId } });
   } catch (err) {
     logger.error('Login error', err);
@@ -75,7 +75,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const user = new User({ name, email, password, tenantId, employeeId });
+    const user = new User({ name, email, passwordHash: password, tenantId, employeeId });
     await user.save();
 
     res.status(201).json({ message: "User registered successfully" });
@@ -164,7 +164,7 @@ export const verifyMfa = async (req: Request, res: Response): Promise<void> => {
       return;
     }
     const jwtToken = jwt.sign(payload, secret, { expiresIn: '7d' });
-    const { password: _pw, ...safeUser } = user.toObject();
+    const { passwordHash: _pw, ...safeUser } = user.toObject();
     res.json({ token: jwtToken, user: { ...safeUser, tenantId } });
   } catch (err) {
     logger.error('verifyMfa error', err);

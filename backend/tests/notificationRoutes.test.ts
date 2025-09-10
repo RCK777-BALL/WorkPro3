@@ -33,14 +33,14 @@ beforeAll(async () => {
   userA = await User.create({
     name: 'A',
     email: 'a@example.com',
-    password: 'pass',
+    passwordHash: 'pass',
     role: 'admin',
     tenantId: tenantA,
   });
   userB = await User.create({
     name: 'B',
     email: 'b@example.com',
-    password: 'pass',
+    passwordHash: 'pass',
     role: 'admin',
     tenantId: tenantB,
   });
@@ -55,8 +55,8 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await mongoose.connection.db?.dropDatabase();
-  await User.create({ _id: userA._id, name: userA.name, email: userA.email, password: userA.password, role: userA.role, tenantId: tenantA });
-  await User.create({ _id: userB._id, name: userB.name, email: userB.email, password: userB.password, role: userB.role, tenantId: tenantB });
+  await User.create({ _id: userA._id, name: userA.name, email: userA.email, passwordHash: userA.passwordHash, role: userA.role, tenantId: tenantA });
+  await User.create({ _id: userB._id, name: userB.name, email: userB.email, passwordHash: userB.passwordHash, role: userB.role, tenantId: tenantB });
   io.emit.mockReset();
 });
 

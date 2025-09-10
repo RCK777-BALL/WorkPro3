@@ -31,7 +31,7 @@ beforeEach(async () => {
   user = await User.create({
     name: 'Tester',
     email: 'tester@example.com',
-    password: 'pass123',
+    passwordHash: 'pass123',
     role: 'viewer',
   });
   token = jwt.sign({ id: user._id.toString(), role: user.role }, process.env.JWT_SECRET!);

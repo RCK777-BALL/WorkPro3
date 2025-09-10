@@ -64,6 +64,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       await user.save();
     }
     const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
+     const payload = {
+      id: user._id.toString(),
+      email: user.email,
+      tenantId,
+      tokenVersion: user.tokenVersion,
+    };
+ 
     const secret = process.env.JWT_SECRET;
     if (!secret) {
       logger.error('JWT_SECRET is not configured');
@@ -202,6 +209,12 @@ export const validateMfaToken = async (req: Request, res: Response): Promise<voi
      user.mfaEnabled = true;
     await user.save();
      const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
+    const payload = {
+      id: user._id.toString(),
+      email: user.email,
+      tenantId,
+      tokenVersion: user.tokenVersion,
+    };
  
     const secret = process.env.JWT_SECRET;
  
@@ -240,12 +253,18 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
 };
 
 
-export const logout = (
-  _req: Request,
-  res: Response,
-  _next: NextFunction
-) => {
-  return res
+ export const logout = async (req: Request, res: Response): Promise<void> => {
+  const userId = (req as any).user?.id;
+  if (userId) {
+    try {
+      await User.findByIdAndUpdate(userId, { $inc: { tokenVersion: 1 } });
+    } catch (err) {
+      logger.error('logout tokenVersion increment error', err);
+    }
+  }
+
+  res
+ 
     .clearCookie('token', {
       httpOnly: true,
       sameSite: 'lax',

@@ -24,6 +24,7 @@ export interface UserDocument extends Document {
   passwordResetExpires?: Date;
   mfaEnabled: boolean;
   mfaSecret?: string;
+  tokenVersion: number;
 }
 
 // ✅ Schema definition
@@ -64,6 +65,7 @@ const userSchema = new Schema<UserDocument>(
 
     mfaEnabled: { type: Boolean, default: false },
     mfaSecret: { type: String },
+    tokenVersion: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

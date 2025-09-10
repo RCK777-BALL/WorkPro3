@@ -1,14 +1,14 @@
 import { Router, Request, Response } from 'express';
 import passport from 'passport';
 import bcrypt from 'bcryptjs';
- import { setupMfa, validateMfaToken } from '../controllers/authController';
+ import { generateMfa, verifyMfa, getMe, logout } from '../controllers/authController';
  
 import { configureOIDC } from '../auth/oidc';
 import { configureOAuth } from '../auth/oauth';
 import { OAuthProvider, getOAuthScope } from '../config/oauthScopes';
 import { getJwtSecret } from '../utils/getJwtSecret';
 import User from '../models/User';
- import { isCookieSecure } from '../utils/isCookieSecure';
+ import { requireAuth } from '../middleware/authMiddleware';
  
 import {
   loginSchema,
@@ -64,13 +64,7 @@ router.use(passport.initialize());
 
      assertEmail(user.email);
 
-    let valid: boolean;
-    try {
-      valid = await bcrypt.compare(password, user.password);
-    } catch (err) {
-      console.error('Password comparison error', err);
-      return res.status(500).json({ message: 'Server error' });
-    }
+     const valid = await bcrypt.compare(password, user.passwordHash);
  
     if (!valid) {
       return res.status(400).json({ message: 'Invalid email or password' });
@@ -90,11 +84,16 @@ router.use(passport.initialize());
      if (!secret) {
       return res;
     }
-    const token = jwt.sign({
-      id: user._id.toString(),
-      email: user.email,
-      tenantId,
-    }, secret, { expiresIn: '7d' });
+     const token = jwt.sign(
+      {
+        id: user._id.toString(),
+        email: user.email,
+        tenantId,
+        tokenVersion: user.tokenVersion,
+      },
+      secret,
+      { expiresIn: '7d' },
+    );
  
     const { password: _pw, ...safeUser } = user.toObject();
 
@@ -215,5 +214,9 @@ router.get('/oauth/:provider/callback', async (req, res, next) => {
  router.post('/mfa/setup', setupMfa);
 router.post('/mfa/verify', validateMfaToken);
  
+
+// Authenticated routes
+router.get('/me', requireAuth, getMe);
+router.post('/logout', requireAuth, logout);
 
 export default router;

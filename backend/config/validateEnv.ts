@@ -19,8 +19,11 @@ export type EnvVars = z.infer<typeof envSchema>;
 export function validateEnv(): EnvVars {
   const parsed = envSchema.safeParse(process.env);
   if (!parsed.success) {
-    const missing = parsed.error.flatten().fieldErrors;
-    console.error('❌ Invalid environment variables:', missing);
+    const errors = parsed.error.flatten().fieldErrors;
+    if (errors.JWT_SECRET) {
+      throw new Error('JWT_SECRET environment variable is required');
+    }
+    console.error('❌ Invalid environment variables:', errors);
     throw new Error('Missing or invalid environment variables');
   }
   return parsed.data;

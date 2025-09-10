@@ -1,22 +1,29 @@
 import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import * as speakeasy from "speakeasy";
 import logger from "../utils/logger";
 import User from "../models/User";
+import {
+  loginSchema,
+  registerSchema,
+  type LoginInput,
+  type RegisterInput,
+} from '../validators/authValidators';
 import { assertEmail } from '../utils/assert';
-import { isCookieSecure } from '../utils/isCookieSecure';
+ import { isCookieSecure } from '../utils/isCookieSecure';
+ 
 
 export const login = async (req: Request, res: Response): Promise<void> => {
-  const { email, password } = req.body;
-  logger.info('Login attempt', { email });
-
-  if (!email || !password) {
+  let data: LoginInput;
+  try {
+    data = loginSchema.parse(req.body);
+  } catch {
     res.status(400).json({ message: 'Email and password required' });
     return;
   }
-  assertEmail(email);
+  const { email, password } = data;
+  logger.info('Login attempt', { email });
 
   try {
     const user = await User.findOne({ email });
@@ -26,7 +33,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const valid = await bcrypt.compare(req.body.password, user.passwordHash);
+    const valid = await bcrypt.compare(password, user.passwordHash);
     logger.info('Password comparison result', { valid });
     if (!valid) {
       res.status(401).json({ message: 'Invalid email or password' });
@@ -38,19 +45,18 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    if (!user.mfaEnabled) {
+      user.mfaEnabled = true;
+      await user.save();
+    }
     const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
-    const payload = {
-      id: user._id.toString(),
-      email: user.email,
-      tenantId,
-    };
     const secret = process.env.JWT_SECRET;
     if (!secret) {
       logger.error('JWT_SECRET is not configured');
       res.status(500).json({ message: 'Server configuration issue' });
       return;
     }
-    const token = jwt.sign(payload, secret, { expiresIn: '7d' });
+    const token = createJwt(user, secret);
 
     const { passwordHash: _pw, ...safeUser } = user.toObject();
     res.status(200).json({ token, user: { ...safeUser, tenantId } });
@@ -61,13 +67,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const register = async (req: Request, res: Response): Promise<void> => {
-  const { name, email, password, tenantId, employeeId } = req.body;
-
-  if (!name || !email || !password || !tenantId || !employeeId) {
+  let data: RegisterInput;
+  try {
+    data = registerSchema.parse(req.body);
+  } catch {
     res.status(400).json({ message: "Missing required fields" });
     return;
   }
-  assertEmail(email);
+  const { name, email, password, tenantId, employeeId } = data;
 
   try {
     const existing = await User.findOne({ email });
@@ -77,12 +84,24 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     }
 
     const user = new User({ name, email, passwordHash: password, tenantId, employeeId });
-    await user.save();
+    await user.save().catch((err: any) => {
+      if (err.code === 11000) {
+        res.status(400).json({ message: "Email or employee ID already in use" });
+        return;
+      }
+      throw err;
+    });
+
+    if (res.headersSent) {
+      return;
+    }
 
     res.status(201).json({ message: "User registered successfully" });
   } catch (err) {
-    logger.error("Register error", err);
-    res.status(500).json({ message: "Server error" });
+    if (!res.headersSent) {
+      logger.error("Register error", err);
+      res.status(500).json({ message: "Server error" });
+    }
   }
 };
 
@@ -119,10 +138,18 @@ export const requestPasswordReset = async (
   }
 };
 
-export const generateMfa = async (req: Request, res: Response): Promise<void> => {
+export const generateMfa: AuthedRequestHandler = async (req, res) => {
   const { userId } = req.body;
+  const authUserId = req.user?.id;
+  const tenantId = req.tenantId;
+
+  if (!authUserId || !tenantId || userId !== authUserId) {
+    res.status(403).json({ message: 'Forbidden' });
+    return;
+  }
+
   try {
-    const user = await User.findById(userId);
+    const user = await User.findOne({ _id: userId, tenantId });
     if (!user) {
       res.status(404).json({ message: 'User not found' });
       return;
@@ -138,10 +165,19 @@ export const generateMfa = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
-export const verifyMfa = async (req: Request, res: Response): Promise<void> => {
+ export const verifyMfa: AuthedRequestHandler = async (req, res) => {
   const { userId, token } = req.body;
+  const authUserId = req.user?.id;
+  const tenantId = req.tenantId;
+
+  if (!authUserId || !tenantId || userId !== authUserId) {
+    res.status(403).json({ message: 'Forbidden' });
+    return;
+  }
+
   try {
-    const user = await User.findById(userId);
+    const user = await User.findOne({ _id: userId, tenantId });
+ 
     if (!user || !user.mfaSecret) {
       res.status(400).json({ message: 'Invalid user' });
       return;
@@ -155,18 +191,19 @@ export const verifyMfa = async (req: Request, res: Response): Promise<void> => {
       res.status(400).json({ message: 'Invalid token' });
       return;
     }
-    user.mfaEnabled = true;
+     user.mfaEnabled = true;
     await user.save();
-    const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
-    const payload = { id: user._id.toString(), email: user.email, tenantId };
+     const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
+ 
     const secret = process.env.JWT_SECRET;
+ 
     if (!secret) {
-      res.status(500).json({ message: 'Server configuration issue' });
       return;
     }
-    const jwtToken = jwt.sign(payload, secret, { expiresIn: '7d' });
+    const jwtToken = createJwt(user, secret);
     const { passwordHash: _pw, ...safeUser } = user.toObject();
-    res.json({ token: jwtToken, user: { ...safeUser, tenantId } });
+     res.json({ token: jwtToken, user: { ...safeUser, tenantId: tenantIdStr } });
+ 
   } catch (err) {
     logger.error('verifyMfa error', err);
     res.status(500).json({ message: 'Server error' });

@@ -50,10 +50,31 @@ describe('Auth Routes', () => {
     expect(cookies[0]).toMatch(/token=/);
 
     expect(res.body.user.email).toBe('test@example.com');
+    expect(res.body.token).toBeUndefined();
 
     const token = cookies[0].split(';')[0].split('=')[1];
     const payload = jwt.verify(token, process.env.JWT_SECRET!) as jwt.JwtPayload;
     expect(payload.tenantId).toBe(res.body.user.tenantId);
+  });
+
+  it('optionally returns token in response when enabled', async () => {
+    process.env.INCLUDE_AUTH_TOKEN = 'true';
+    await User.create({
+      name: 'Config',
+      email: 'config@example.com',
+      passwordHash: 'pass123',
+      role: 'admin',
+      tenantId: new mongoose.Types.ObjectId(),
+    });
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'config@example.com', password: 'pass123' })
+      .expect(200);
+
+    expect(res.body.token).toBeDefined();
+
+    delete process.env.INCLUDE_AUTH_TOKEN;
   });
 
   it('gets current user with cookie and logs out', async () => {

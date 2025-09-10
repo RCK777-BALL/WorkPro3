@@ -109,6 +109,9 @@ router.get('/oauth/:provider/callback', (req, res, next) => {
     { session: false },
     (err: Error | null, user: Express.User | false | null) => {
       if (err || !user) {
+        if (err) {
+          console.error(`OAuth ${provider} callback error:`, err);
+        }
         return res.status(400).json({ message: 'Authentication failed' });
       }
       const secret = getJwtSecret(res);

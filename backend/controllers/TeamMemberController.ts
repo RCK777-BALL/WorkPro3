@@ -1,14 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
 import TeamMember, { ITeamMember } from '../models/TeamMember';
-import { Request, Response, NextFunction } from 'express';
-
-type IdParams = { id: string };
-
-interface UpdateTeamMemberBody {
-  role?: ITeamMember['role'];
-  managerId?: string | null;
-  [key: string]: any;
-}
+import type { AuthedRequestHandler } from '../types/http';
 
 const roleHierarchy: Record<ITeamMember['role'], ITeamMember['role'][] | null> = {
   admin: null,
@@ -48,8 +39,8 @@ async function validateHierarchy(
   }
 }
 
- export const getTeamMembers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
- 
+export const getTeamMembers: AuthedRequestHandler = async (req, res, next) => {
+
   try {
     // Only return basic information for each team member
     const members = await TeamMember.find({ tenantId: req.tenantId })
@@ -64,44 +55,48 @@ async function validateHierarchy(
     }));
 
     res.json(formatted);
+    return;
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 
- export const createTeamMember = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
- 
+export const createTeamMember: AuthedRequestHandler = async (req, res, next) => {
+
   try {
     const role = req.body.role;
     if (['admin', 'manager', 'department_leader'].includes(role)) {
       req.body.managerId = null;
     } else {
       if (!req.body.managerId) {
-        return res
+        res
           .status(400)
           .json({ message: `managerId is required for role ${role}` });
+        return;
       }
       await validateHierarchy(role, req.body.managerId, req.tenantId as string);
     }
     const member = new TeamMember({ ...req.body, tenantId: req.tenantId });
     const saved = await member.save();
     res.status(201).json(saved);
+    return;
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 
- export const updateTeamMember = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
- 
+export const updateTeamMember: AuthedRequestHandler = async (req, res) => {
+
   try {
     const role = req.body.role;
     if (['admin', 'manager', 'department_leader'].includes(role)) {
       req.body.managerId = null;
     } else {
       if (!req.body.managerId) {
-        return res
+        res
           .status(400)
           .json({ message: `managerId is required for role ${role}` });
+        return;
       }
       await validateHierarchy(role, req.body.managerId, req.tenantId as string);
     }
@@ -113,32 +108,42 @@ async function validateHierarchy(
         runValidators: true,
       }
     );
-    if (!updated) return res.status(404).json({ message: 'Not found' });
+    if (!updated) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     res.json(updated);
+    return;
   } catch (err: any) {
     res.status(400).json({ errors: err.errors ?? err });
+    return;
   }
 };
 
- export const deleteTeamMember = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
- 
+export const deleteTeamMember: AuthedRequestHandler = async (req, res, next) => {
+
   try {
     const hasDependents = await TeamMember.findOne({
       managerId: req.params.id,
       tenantId: req.tenantId,
     });
     if (hasDependents) {
-      return res
+      res
         .status(400)
         .json({ message: 'Cannot delete: member manages others' });
+      return;
     }
     const deleted = await TeamMember.findByIdAndDelete({
       _id: req.params.id,
       tenantId: req.tenantId,
     });
-    if (!deleted) return res.status(404).json({ message: 'Not found' });
+    if (!deleted) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     res.json({ message: 'Deleted successfully' });
+    return;
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };

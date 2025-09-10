@@ -9,7 +9,7 @@ import type { AuthedRequestHandler } from "../types/http";
 
 // GET /api/departments → list by tenantId (+optional siteId)
 const listDepartments: AuthedRequestHandler<
-  unknown,
+  Record<string, string>,
   any,
   unknown,
   { assetCount?: string }

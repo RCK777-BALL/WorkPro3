@@ -1,15 +1,18 @@
-import TransferOrder from '../models/TransferOrder';
+// Backend/types/http.ts
+import type { RequestHandler, Request } from 'express';
+import type { ParamsDictionary } from 'express-serve-static-core';
+import type { ParsedQs } from 'qs';
 
-/**
- * Close transfer orders that are fully received.
- */
-export default async function closeOutTransfers() {
-  const orders = await TransferOrder.find({ status: 'in-transit' });
-  for (const order of orders) {
-    const allReceived = order.items.every(i => i.status === 'received');
-    if (allReceived) {
-      order.status = 'closed';
-      await order.save();
-    }
-  }
-}
+export type AuthedRequestHandler<
+  P extends ParamsDictionary = ParamsDictionary,
+  ResBody = any,
+  ReqBody = any,
+  ReqQuery = ParsedQs,
+> = RequestHandler<P, ResBody, ReqBody, ReqQuery>;
+
+export type AuthedRequest<
+  P extends ParamsDictionary = ParamsDictionary,
+  ResBody = any,
+  ReqBody = any,
+  ReqQuery = ParsedQs,
+> = Request<P, ResBody, ReqBody, ReqQuery>;

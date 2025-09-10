@@ -1,20 +1,28 @@
-import type { RequestUser } from './express';
+// Backend/types/express-augments.d.ts
+
+export type RequestUser = {
+  id: string;
+  email?: string;
+  tenantId?: string;
+  siteId?: string;
+  roles?: string[];
+};
 
 declare global {
   namespace Express {
-    interface User extends RequestUser {
-      email: string;
-    }
+    // Make passport’s Express.User carry your fields
+    interface User extends RequestUser {}
 
     interface Request {
-      user?: RequestUser;
+      // IMPORTANT: must be 'User' (from the line above), not 'RequestUser'
+      user?: User;
       tenantId?: string;
       siteId?: string;
       vendorId?: string;
+      // Must be 'any' to match an existing declaration elsewhere
       thirdParty?: any;
     }
   }
 }
 
 export {};
-

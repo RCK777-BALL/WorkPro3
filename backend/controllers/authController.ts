@@ -14,6 +14,9 @@ import { assertEmail } from '../utils/assert';
  import { isCookieSecure } from '../utils/isCookieSecure';
  
 
+const FAKE_PASSWORD_HASH =
+  '$2b$10$lbmUy86xKlj1/lR8TPPby.1/KfNmrRrgOgGs3u21jcd2SzCBRqDB.';
+
 export const login = async (req: Request, res: Response): Promise<void> => {
     const { email, password } = req.body;
   logger.info('Login attempt', { email });
@@ -29,7 +32,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const user = await User.findOne({ email });
     logger.info('User lookup result', { found: !!user });
     if (!user) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+       // Perform fake compare to mitigate timing attacks
+      await bcrypt.compare(req.body.password, FAKE_PASSWORD_HASH);
+      res.status(401).json({ message: 'Invalid email or password' });
+      return;
+ 
     }
 
     const valid = await bcrypt.compare(password, user.passwordHash);

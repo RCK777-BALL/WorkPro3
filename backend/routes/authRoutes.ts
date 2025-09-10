@@ -13,11 +13,9 @@ import {
   loginSchema,
   registerSchema,
 } from '../validators/authValidators';
-import createJwt from '../utils/createJwt';
  
-interface OAuthUser extends Express.User {
-  email: string;
-}
+const FAKE_PASSWORD_HASH =
+  '$2b$10$lbmUy86xKlj1/lR8TPPby.1/KfNmrRrgOgGs3u21jcd2SzCBRqDB.';
  
  
 
@@ -54,6 +52,8 @@ router.post('/login', loginLimiter, async (req, res) => {
   try {
     const user = await User.findOne({ email });
     if (!user) {
+      // Perform fake compare to mitigate timing attacks
+      await bcrypt.compare(password, FAKE_PASSWORD_HASH);
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 

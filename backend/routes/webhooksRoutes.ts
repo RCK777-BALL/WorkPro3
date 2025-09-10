@@ -12,7 +12,7 @@ router.post('/subscribe', idempotency, async (
   req: Request,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> => {
   try {
     const { url, event } = req.body;
     if (!url || !event) {
@@ -24,6 +24,7 @@ router.post('/subscribe', idempotency, async (
     res
       .status(201)
       .json({ id: hook._id, url: hook.url, event: hook.event, secret });
+    return;
   } catch (err) {
     next(err);
   }

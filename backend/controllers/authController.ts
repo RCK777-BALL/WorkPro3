@@ -18,7 +18,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   assertEmail(email);
 
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select(
+      '+passwordHash name email role tenantId mfaEnabled'
+    );
     logger.info('User lookup result', { found: !!user });
     if (!user) {
       res.status(401).json({ message: 'Invalid email or password' });

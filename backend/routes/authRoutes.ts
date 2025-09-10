@@ -84,7 +84,7 @@ router.post('/register', async (req, res) => {
     if (existing) {
       return res.status(400).json({ message: 'Email already in use' });
     }
-    const user = new User({ name, email, password, tenantId, employeeId });
+    const user = new User({ name, email, passwordHash: password, tenantId, employeeId });
     await user.save();
     return res.status(201).json({ message: 'User registered successfully' });
   } catch {

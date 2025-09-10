@@ -1,5 +1,6 @@
 import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
+import type { AuthedRequest } from '../types/express';
 
 import Vendor from '../models/Vendor';
 import PurchaseOrder from '../models/PurchaseOrder';
@@ -66,10 +67,14 @@ router.get('/pos', listVendorPurchaseOrders);
  */
 router.get(
   '/purchase-orders/:id',
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  async (
+    req: AuthedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const { id } = req.params;
-      const vendorId = (req as any).vendorId;
+      const vendorId = req.vendorId;
       const po = await PurchaseOrder.findOne({ _id: id, vendor: vendorId }).lean();
       if (!po) {
         res.status(404).json({ message: 'Not found' });

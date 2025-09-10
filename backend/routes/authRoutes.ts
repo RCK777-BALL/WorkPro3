@@ -8,6 +8,8 @@ import { configureOIDC } from '../auth/oidc';
 import { configureOAuth, getOAuthScope, OAuthProvider } from '../auth/oauth';
 import { getJwtSecret } from '../utils/getJwtSecret';
 import User from '../models/User';
+ import { requireAuth } from '../middleware/authMiddleware';
+ 
 import {
   loginSchema,
   registerSchema,
@@ -173,9 +175,8 @@ router.get('/oauth/:provider/callback', (req, res, next) => {
 });
 
 // MFA endpoints
-router.post('/mfa/setup', generateMfa);
-// After a login request that returns { mfaRequired: true }, the client should
-// submit the email and MFA code to this endpoint to obtain the JWT.
-router.post('/mfa/verify', verifyMfa);
+ router.post('/mfa/setup', requireAuth, generateMfa);
+router.post('/mfa/verify', requireAuth, verifyMfa);
+ 
 
 export default router;

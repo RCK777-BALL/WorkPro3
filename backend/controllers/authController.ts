@@ -131,10 +131,18 @@ export const requestPasswordReset = async (
   }
 };
 
-export const generateMfa = async (req: Request, res: Response): Promise<void> => {
+export const generateMfa: AuthedRequestHandler = async (req, res) => {
   const { userId } = req.body;
+  const authUserId = req.user?.id;
+  const tenantId = req.tenantId;
+
+  if (!authUserId || !tenantId || userId !== authUserId) {
+    res.status(403).json({ message: 'Forbidden' });
+    return;
+  }
+
   try {
-    const user = await User.findById(userId);
+    const user = await User.findOne({ _id: userId, tenantId });
     if (!user) {
       res.status(404).json({ message: 'User not found' });
       return;
@@ -150,11 +158,19 @@ export const generateMfa = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
-export const verifyMfa = async (req: Request, res: Response): Promise<void> => {
-  const { email, token } = req.body;
+ export const verifyMfa: AuthedRequestHandler = async (req, res) => {
+  const { userId, token } = req.body;
+  const authUserId = req.user?.id;
+  const tenantId = req.tenantId;
+
+  if (!authUserId || !tenantId || userId !== authUserId) {
+    res.status(403).json({ message: 'Forbidden' });
+    return;
+  }
+
   try {
-    assertEmail(email);
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ _id: userId, tenantId });
+ 
     if (!user || !user.mfaSecret) {
       res.status(400).json({ message: 'Invalid user' });
       return;
@@ -168,25 +184,19 @@ export const verifyMfa = async (req: Request, res: Response): Promise<void> => {
       res.status(400).json({ message: 'Invalid token' });
       return;
     }
-    if (!user.mfaEnabled) {
-      user.mfaEnabled = true;
-      await user.save();
-    }
-    const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
-    const payload = { id: user._id.toString(), email: user.email, tenantId };
-    const secret = getJwtSecret(res);
+     user.mfaEnabled = true;
+    await user.save();
+    const tenantIdStr = user.tenantId ? user.tenantId.toString() : undefined;
+    const payload = { id: user._id.toString(), email: user.email, tenantId: tenantIdStr };
+    const secret = process.env.JWT_SECRET;
+ 
     if (!secret) {
       return;
     }
     const jwtToken = jwt.sign(payload, secret, { expiresIn: '7d' });
     const { passwordHash: _pw, ...safeUser } = user.toObject();
-    res
-      .cookie('token', jwtToken, {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-      })
-      .json({ token: jwtToken, user: { ...safeUser, tenantId } });
+     res.json({ token: jwtToken, user: { ...safeUser, tenantId: tenantIdStr } });
+ 
   } catch (err) {
     logger.error('verifyMfa error', err);
     res.status(500).json({ message: 'Server error' });

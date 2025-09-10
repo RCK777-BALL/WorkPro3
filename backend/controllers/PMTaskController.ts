@@ -1,16 +1,11 @@
- import { Request, Response, NextFunction } from 'express';
 import { validationResult } from 'express-validator';
 import PMTask from '../models/PMTask';
+import type { AuthedRequestHandler } from '../types/http';
 
 // Shared param type for routes with :id
 interface IdParams { id: string }
 
-export const getAllPMTasks: AuthedRequestHandler = async (
-  req: AuthedRequest,
-  res: Response,
-  next: NextFunction,
-) => {
- 
+export const getAllPMTasks: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tasks = await PMTask.find({ tenantId: req.tenantId });
     res.json(tasks);
@@ -21,12 +16,7 @@ export const getAllPMTasks: AuthedRequestHandler = async (
   }
 };
 
- export const getPMTaskById: AuthedRequestHandler<IdParams> = async (
-  req: AuthedRequest<IdParams>,
-  res: Response,
-  next: NextFunction,
-) => {
- 
+export const getPMTaskById: AuthedRequestHandler = async (req, res, next) => {
   try {
     const task = await PMTask.findOne({ _id: req.params.id, tenantId: req.tenantId });
     if (!task) {
@@ -41,14 +31,9 @@ export const getAllPMTasks: AuthedRequestHandler = async (
   }
 };
 
- export const createPMTask: AuthedRequestHandler<unknown, any, any> = async (
-  req: AuthedRequest<unknown, any, any>,
-  res: Response,
-  next: NextFunction,
-) => {
- 
+export const createPMTask: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const errors = validationResult(req as Request);
+    const errors = validationResult(req as any);
     if (!errors.isEmpty()) {
       res.status(400).json({ errors: errors.array() });
       return;
@@ -63,14 +48,9 @@ export const getAllPMTasks: AuthedRequestHandler = async (
   }
 };
 
- export const updatePMTask: AuthedRequestHandler<IdParams, any, any> = async (
-  req: AuthedRequest<IdParams, any, any>,
-  res: Response,
-  next: NextFunction,
-) => {
- 
+export const updatePMTask: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const errors = validationResult(req as Request);
+    const errors = validationResult(req as any);
     if (!errors.isEmpty()) {
       res.status(400).json({ errors: errors.array() });
       return;
@@ -92,12 +72,7 @@ export const getAllPMTasks: AuthedRequestHandler = async (
   }
 };
 
- export const deletePMTask: AuthedRequestHandler<IdParams> = async (
-  req: AuthedRequest<IdParams>,
-  res: Response,
-  next: NextFunction,
-) => {
- 
+export const deletePMTask: AuthedRequestHandler = async (req, res, next) => {
   try {
     const task = await PMTask.findOneAndDelete({ _id: req.params.id, tenantId: req.tenantId });
     if (!task) {
@@ -106,7 +81,6 @@ export const getAllPMTasks: AuthedRequestHandler = async (
     }
     res.json({ message: 'Deleted successfully' });
     return;
- 
   } catch (err) {
     next(err);
     return;

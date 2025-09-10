@@ -4,7 +4,7 @@ import Asset from '../models/Asset';
 import { validationResult } from 'express-validator';
 import logger from '../utils/logger';
 import { filterFields } from '../utils/filterFields';
-import { Request, Response, NextFunction } from 'express';
+import type { AuthedRequestHandler } from '../types/http';
 
 const assetCreateFields = [
   'name',
@@ -27,41 +27,43 @@ const assetCreateFields = [
 
 const assetUpdateFields = [...assetCreateFields];
 
- export const getAllAssets = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
- 
+export const getAllAssets: AuthedRequestHandler = async (req, res, next) => {
   try {
     const filter: any = { tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
 
     const assets = await Asset.find(filter);
-    return res.json(assets);
+    res.json(assets);
+    return;
   } catch (err) {
     next(err);
     return;
   }
 };
 
- export const getAssetById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
- 
+export const getAssetById: AuthedRequestHandler = async (req, res, next) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ message: 'Invalid ID' });
+      res.status(400).json({ message: 'Invalid ID' });
+      return;
     }
     const filter: any = { _id: req.params.id, tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
 
     const asset = await Asset.findOne(filter);
     if (!asset) {
-      return res.status(404).json({ message: 'Not found' });
+      res.status(404).json({ message: 'Not found' });
+      return;
     }
-    return res.json(asset);
+    res.json(asset);
+    return;
   } catch (err) {
     next(err);
     return;
   }
 };
 
- export const createAsset = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const createAsset: AuthedRequestHandler = async (req, res, next) => {
  
   logger.debug('createAsset body:', req.body);
   logger.debug('createAsset files:', (req as any).files);
@@ -73,7 +75,7 @@ const assetUpdateFields = [...assetCreateFields];
     logger.debug('No files uploaded for asset');
   }
 
-   const { user, tenantId: reqTenantId } = req as Request;
+  const { user, tenantId: reqTenantId } = req as any;
  
   const resolvedTenantId = reqTenantId || user?.tenantId;
   if (!resolvedTenantId) {
@@ -87,7 +89,8 @@ const assetUpdateFields = [...assetCreateFields];
   try {
     const errors = validationResult(req as any);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      res.status(400).json({ errors: errors.array() });
+      return;
     }
 
     const tenantId = resolvedTenantId;
@@ -100,14 +103,15 @@ const assetUpdateFields = [...assetCreateFields];
     const assetObj = newAsset.toObject();
     const response = { ...assetObj, tenantId: assetObj.tenantId.toString() };
 
-    return res.status(201).json(response);
+    res.status(201).json(response);
+    return;
   } catch (err) {
     next(err);
     return;
   }
 };
 
- export const updateAsset = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const updateAsset: AuthedRequestHandler = async (req, res, next) => {
  
   logger.debug('updateAsset body:', req.body);
   logger.debug('updateAsset files:', (req as any).files);
@@ -119,7 +123,7 @@ const assetUpdateFields = [...assetCreateFields];
     logger.debug('No files uploaded for asset update');
   }
 
-   const { user, tenantId: reqTenantId } = req as Request;
+  const { user, tenantId: reqTenantId } = req as any;
  
   const tenantId = reqTenantId || user?.tenantId;
   if (!tenantId) {
@@ -130,29 +134,34 @@ const assetUpdateFields = [...assetCreateFields];
      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ message: 'Invalid ID' });
     }
-    const errors = validationResult(req);
- 
+    const errors = validationResult(req as any);
+
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      res.status(400).json({ errors: errors.array() });
+      return;
     }
 
     const filter: any = { _id: req.params.id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
-     const update = filterFields(req.body, assetUpdateFields);
+    const update = filterFields(req.body, assetUpdateFields);
     const asset = await Asset.findOneAndUpdate(filter, update, {
       new: true,
       runValidators: true,
     });
-    if (!asset) return res.status(404).json({ message: 'Not found' });
+    if (!asset) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     res.json(asset);
- 
+    return;
+
   } catch (err) {
     next(err);
     return;
   }
 };
 
- export const deleteAsset = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const deleteAsset: AuthedRequestHandler = async (req, res, next) => {
  
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
@@ -163,17 +172,18 @@ const assetUpdateFields = [...assetCreateFields];
 
     const asset = await Asset.findOneAndDelete(filter);
     if (!asset) {
-      return res.status(404).json({ message: 'Not found' });
+      res.status(404).json({ message: 'Not found' });
+      return;
     }
-    return res.json({ message: 'Deleted successfully' });
+    res.json({ message: 'Deleted successfully' });
+    return;
   } catch (err) {
     next(err);
     return;
   }
 };
 
- export const searchAssets = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
- 
+export const searchAssets: AuthedRequestHandler = async (req, res, next) => {
   try {
     const q = (req.query.q as string) || '';
     const regex = new RegExp(q, 'i');
@@ -182,7 +192,8 @@ const assetUpdateFields = [...assetCreateFields];
     if (req.siteId) filter.siteId = req.siteId;
 
     const assets = await Asset.find(filter).limit(10);
-    return res.json(assets);
+    res.json(assets);
+    return;
   } catch (err) {
     next(err);
     return;

@@ -1,9 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
 import Department from '../models/Department';
-import { Request, Response, NextFunction } from 'express';
+import type { AuthedRequestHandler } from '../types/http';
 
- export const listDepartments = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
- 
+export const listDepartments: AuthedRequestHandler = async (req, res, next) => {
   try {
     const filter: any = { tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
@@ -12,8 +10,10 @@ import { Request, Response, NextFunction } from 'express';
     if (q) filter.name = { $regex: new RegExp(q, 'i') };
 
     const items = await Department.find(filter).sort({ name: 1 });
-    return res.json(items);
+    res.json(items);
+    return;
   } catch (err) {
-    return next(err);
+    next(err);
+    return;
   }
 };

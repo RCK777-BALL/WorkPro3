@@ -1,7 +1,7 @@
 import Document from '../models/Document';
 import type { AuthedRequestHandler } from '../types/http';
 
-export const getAllDocuments: AuthedRequestHandler = async (req, res, next) => {
+export const getAllDocuments: AuthedRequestHandler = async (_req, res, next) => {
   try {
     const items = await Document.find();
     res.json(items);

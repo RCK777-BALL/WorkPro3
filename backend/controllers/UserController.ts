@@ -31,11 +31,16 @@ const userUpdateFields = [...userCreateFields];
 export const getAllUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const items = await User.find({ tenantId }).select('-passwordHash');
     res.json(items);
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };
 
@@ -61,12 +66,20 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
 export const getUserById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const item = await User.findOne({ _id: req.params.id, tenantId }).select('-passwordHash');
-    if (!item) return res.status(404).json({ message: 'Not found' });
+    if (!item) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     res.json(item);
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };
 
@@ -90,14 +103,19 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
 export const createUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const payload = filterFields(req.body, userCreateFields);
     const newItem = new User({ ...payload, tenantId });
     const saved = await newItem.save();
     const { passwordHash: _pw, ...safeUser } = saved.toObject();
     res.status(201).json(safeUser);
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };
 
@@ -129,7 +147,10 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
 export const updateUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const update = filterFields(req.body, userUpdateFields);
     const updated = await User.findOneAndUpdate(
       { _id: req.params.id, tenantId },
@@ -139,10 +160,15 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         runValidators: true,
       }
     ).select('-passwordHash');
-    if (!updated) return res.status(404).json({ message: 'Not found' });
+    if (!updated) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     res.json(updated);
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };
 
@@ -168,12 +194,20 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
 export const deleteUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const deleted = await User.findOneAndDelete({ _id: req.params.id, tenantId });
-    if (!deleted) return res.status(404).json({ message: 'Not found' });
+    if (!deleted) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     res.json({ message: 'Deleted successfully' });
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };
 
@@ -201,16 +235,25 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
 export const getUserTheme = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = (req.user as any)?._id ?? req.user?.id;
-    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+    if (!userId) {
+      res.status(401).json({ message: 'Not authenticated' });
+      return;
+    }
     if (req.params.id !== userId && req.user?.role !== 'admin') {
-      return res.status(403).json({ message: 'Forbidden' });
+      res.status(403).json({ message: 'Forbidden' });
+      return;
     }
 
     const user = await User.findById(req.params.id).select('theme');
-    if (!user) return res.status(404).json({ message: 'Not found' });
+    if (!user) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     res.json({ theme: user.theme ?? 'system' });
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };
 
@@ -248,14 +291,19 @@ export const getUserTheme = async (req: Request, res: Response, next: NextFuncti
 export const updateUserTheme = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = (req.user as any)?._id ?? req.user?.id;
-    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+    if (!userId) {
+      res.status(401).json({ message: 'Not authenticated' });
+      return;
+    }
     if (req.params.id !== userId && req.user?.role !== 'admin') {
-      return res.status(403).json({ message: 'Forbidden' });
+      res.status(403).json({ message: 'Forbidden' });
+      return;
     }
 
     const { theme } = req.body;
     if (!['light', 'dark', 'system'].includes(theme)) {
-      return res.status(400).json({ message: 'Invalid theme' });
+      res.status(400).json({ message: 'Invalid theme' });
+      return;
     }
 
     const user = await User.findByIdAndUpdate(
@@ -263,9 +311,14 @@ export const updateUserTheme = async (req: Request, res: Response, next: NextFun
       { theme },
       { new: true }
     ).select('theme');
-    if (!user) return res.status(404).json({ message: 'Not found' });
+    if (!user) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     res.json({ theme: user.theme });
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };

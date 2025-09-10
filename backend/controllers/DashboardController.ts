@@ -5,7 +5,7 @@ import WorkOrder from '../models/WorkOrder';
 import PMTask from '../models/PMTask';
 import InventoryItem from '../models/InventoryItem';
 
-export const getAssetSummaries = async (req: Request, res: Response, next: NextFunction) => {
+export const getAssetSummaries = async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const summary = await Asset.aggregate([
       { $group: { _id: '$status', count: { $sum: 1 } } },
@@ -27,7 +27,7 @@ export const getWorkOrderStatus = async (_req: Request, res: Response, next: Nex
   }
 };
 
-export const getUpcomingMaintenance = async (req: Request, res: Response, next: NextFunction) => {
+export const getUpcomingMaintenance = async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const now = new Date();
     const nextWeek = new Date(now);
@@ -44,7 +44,7 @@ export const getUpcomingMaintenance = async (req: Request, res: Response, next: 
   }
 };
 
-export const getCriticalAlerts = async (req: Request, res: Response, next: NextFunction) => {
+export const getCriticalAlerts = async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const alerts = await WorkOrder.find({
       priority: 'critical',
@@ -56,7 +56,7 @@ export const getCriticalAlerts = async (req: Request, res: Response, next: NextF
   }
 };
 
-export const getLowStockInventory = async (req: Request, res: Response, next: NextFunction) => {
+export const getLowStockInventory = async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const items = await InventoryItem.find({
       $expr: { $lte: ['$quantity', '$reorderThreshold'] },

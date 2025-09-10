@@ -2,11 +2,12 @@ import { Request, Response, NextFunction } from 'express';
 
 import TimeSheet from '../models/TimeSheet';
 
-export const getAllTimeSheets = async (
+ export const getAllTimeSheets = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<Response | void> => {
+ 
   try {
     const items = await TimeSheet.find();
     res.json(items);

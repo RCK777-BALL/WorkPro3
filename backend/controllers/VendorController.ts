@@ -31,11 +31,12 @@ const validateVendorInput = (body: any) => {
   return { data };
 };
 
-export const getAllVendors = async (
+ export const getAllVendors = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<Response | void> => {
+ 
   try {
     const items = await Vendor.find();
     res.json(items);

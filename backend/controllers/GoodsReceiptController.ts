@@ -4,6 +4,7 @@ import PurchaseOrder from '../models/PurchaseOrder';
 import Vendor from '../models/Vendor';
 import { addStock } from '../services/inventory';
 import nodemailer from 'nodemailer';
+import { assertEmail } from '../utils/assert';
 
 export const createGoodsReceipt = async (
   req: Request,
@@ -46,6 +47,7 @@ export const createGoodsReceipt = async (
 
     const vendor = await Vendor.findById(po.vendor).lean();
     if (vendor?.email) {
+      assertEmail(vendor.email);
       const transporter = nodemailer.createTransport({ jsonTransport: true });
       await transporter.sendMail({
         to: vendor.email,

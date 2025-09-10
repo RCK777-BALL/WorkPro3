@@ -5,6 +5,7 @@ import crypto from "crypto";
 import * as speakeasy from "speakeasy";
 import logger from "../utils/logger";
 import User from "../models/User";
+import { assertEmail } from '../utils/assert';
 
 export const login = async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
@@ -14,6 +15,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     res.status(400).json({ message: 'Email and password required' });
     return;
   }
+  assertEmail(email);
 
   try {
     const user = await User.findOne({ email });
@@ -64,6 +66,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     res.status(400).json({ message: "Missing required fields" });
     return;
   }
+  assertEmail(email);
 
   try {
     const existing = await User.findOne({ email });
@@ -92,6 +95,7 @@ export const requestPasswordReset = async (
     res.status(400).json({ message: "Email required" });
     return;
   }
+  assertEmail(email);
 
   try {
     const user = await User.findOne({ email });

@@ -1,9 +1,10 @@
-export const assertEmail = (
-  email: unknown,
-): asserts email is string => {
-  if (typeof email !== 'string' || email.trim() === '') {
-    throw new Error('Email is required');
-  }
-};
+ export function invariant(condition: unknown, message: string): asserts condition {
+  if (!condition) throw new Error(message);
+}
 
-export default assertEmail;
+export function assertEmail(v: unknown): asserts v is string {
+  if (typeof v !== 'string' || v.trim() === '') {
+    throw new Error('Email is required and must be a non-empty string');
+  }
+}
+ 

@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import Notification from '../models/Notifications';
 import User from '../models/User';
 import nodemailer from 'nodemailer';
+import { assertEmail } from './assert';
 
 export const notifyUser = async (userId: mongoose.Types.ObjectId, message: string) => {
   if (!userId) return;
@@ -13,6 +14,7 @@ export const notifyUser = async (userId: mongoose.Types.ObjectId, message: strin
 
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
     if (user.email) {
+      assertEmail(user.email);
       const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: parseInt(process.env.SMTP_PORT || '587', 10),

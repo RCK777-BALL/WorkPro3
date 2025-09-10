@@ -1,36 +1,41 @@
-import { Request, Response, NextFunction } from 'express';
+import type { AuthedRequestHandler } from '../types/http';
 import User from '../models/User';
-import { Request, Response, NextFunction } from 'express';
 
- export const getTheme = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getTheme: AuthedRequestHandler = async (req, res, next) => {
   try {
+    const { user } = req;
 
-    const { user } = req as Request;
- 
     const { theme = 'system', colorScheme = 'default' } = (user ?? {}) as {
       theme?: 'light' | 'dark' | 'system';
       colorScheme?: string;
     };
 
     res.json({ theme, colorScheme });
+    return;
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 
- export const updateTheme = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const updateTheme: AuthedRequestHandler = async (req, res, next) => {
   try {
     const { theme, colorScheme } = req.body;
+    const { user } = req;
 
-    const { user } = req as Request;
-     const updated = await User.findByIdAndUpdate(
+    const updated = await User.findByIdAndUpdate(
       user!._id,
       { theme, colorScheme },
       { new: true, runValidators: true }
     );
-    if (!updated) return res.status(404).json({ message: 'Not found' });
+
+    if (!updated) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
+
     res.json({ theme: updated.theme, colorScheme: updated.colorScheme });
+    return;
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };

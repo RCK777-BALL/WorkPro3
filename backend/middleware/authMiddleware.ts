@@ -1,7 +1,7 @@
 
 import jwt from 'jsonwebtoken';
+import type { Request, Response, NextFunction } from 'express';
 import User, { UserDocument } from '../models/User';
-import { RequestHandler } from 'express';
 
 interface TokenPayload {
   id: string;
@@ -15,10 +15,10 @@ interface TokenPayload {
  * loaded and attached to `req.user`.
  */
  
-export const requireAuth: RequestHandler = async (
-  req,
-  res,
-  next
+export const requireAuth = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
 ): Promise<void> => {
  
   try {

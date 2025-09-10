@@ -105,7 +105,7 @@ router.post('/login', loginLimiter, async (req, res) => {
       .status(200)
        .json({ token, user: { ...safeUser, tenantId } });
   } catch (err) {
-    console.error(err);
+    console.error('Login error:', err);
  
     return res.status(500).json({ message: 'Server error' });
   }
@@ -128,11 +128,8 @@ router.post('/register', registerLimiter, async (req, res) => {
     await user.save();
     return res.status(201).json({ message: 'User registered successfully' });
   } catch (err) {
-    console.error(err);
-    // Handle known Mongo duplicate key error
-    if (err && typeof err === 'object' && 'code' in err && (err as any).code === 11000) {
-      return res.status(400).json({ message: 'Email already in use' });
-    }
+     console.error('Register error:', err);
+ 
     return res.status(500).json({ message: 'Server error' });
   }
 });

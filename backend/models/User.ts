@@ -1,6 +1,11 @@
 import mongoose, { Schema, Document, Model, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+// Number of bcrypt salt rounds. Increasing this value strengthens password hashes
+// but slows down hashing, impacting performance. Adjust here to change the
+// hashing cost globally.
+export const SALT_ROUNDS = 10;
+
 export type UserRole = 'admin' | 'manager' | 'technician' | 'viewer';
 
 // ✅ Interface for a user document
@@ -19,6 +24,7 @@ export interface UserDocument extends Document {
   passwordResetExpires?: Date;
   mfaEnabled: boolean;
   mfaSecret?: string;
+  tokenVersion: number;
 }
 
 // ✅ Schema definition
@@ -59,6 +65,7 @@ const userSchema = new Schema<UserDocument>(
 
     mfaEnabled: { type: Boolean, default: false },
     mfaSecret: { type: String },
+    tokenVersion: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
@@ -68,7 +75,7 @@ userSchema.pre<UserDocument>('save', async function (next) {
   if (!this.isModified('passwordHash')) return next();
 
   try {
-    this.passwordHash = await bcrypt.hash(this.passwordHash, 10);
+    this.passwordHash = await bcrypt.hash(this.passwordHash, SALT_ROUNDS);
     next();
   } catch (err) {
     next(err as Error);

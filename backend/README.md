@@ -156,7 +156,7 @@ below along with its default value if one exists.
 | --- | --- | --- |
 | `MONGO_URI` | MongoDB connection string. | `mongodb://localhost:27017/platinum_cmms` |
 | `PORT` | HTTP port the server listens on. | `5010` |
-| `NODE_ENV` | Environment name controlling secure cookies. | `development` |
+| `NODE_ENV` | Environment name controlling secure cookies when `COOKIE_SECURE` is unset. | `development` |
 | `JWT_SECRET` | Secret key used to sign JWT tokens. Required for authentication. | *(none)* |
 | `CORS_ORIGIN` | Allowed origins for CORS, comma separated. | `http://localhost:5173` |
 | `PM_SCHEDULER_CRON` | Cron expression controlling the PM scheduler. | `*/5 * * * *` |
@@ -166,6 +166,7 @@ below along with its default value if one exists.
 | `SMTP_USER` | Username for SMTP authentication. | *(none)* |
 | `SMTP_PASS` | Password for SMTP authentication. | *(none)* |
 | `SMTP_FROM` | Default from address for outgoing mail. | value of `SMTP_USER` |
+| `COOKIE_SECURE` | Set to `'true'` to always send cookies with the `Secure` flag, or `'false'` to disable it. Defaults to `NODE_ENV === 'production'`. | *(unset)* |
  
 | `KAFKA_BROKERS` | Comma-separated Kafka brokers used for the event queue. | *(none)* |
 | `KAFKA_CLIENT_ID` | Client id for the Kafka connection. | `cmms-backend` |

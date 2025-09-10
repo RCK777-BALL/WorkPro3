@@ -47,6 +47,7 @@ import mongoose from "mongoose";
 import errorHandler from "./middleware/errorHandler";
 import { validateEnv, type EnvVars } from "./config/validateEnv";
 import { initChatSocket } from "./socket/chatSocket";
+import User from "./models/User";
 import type {
   WorkOrderUpdatePayload,
   InventoryUpdatePayload,
@@ -170,8 +171,14 @@ app.use(errorHandler);
 if (env.NODE_ENV !== "test") {
   mongoose
     .connect(MONGO_URI)
-    .then(() => {
+    .then(async () => {
       logger.info("MongoDB connected");
+      try {
+        await User.syncIndexes();
+        logger.info("User indexes synchronized");
+      } catch (indexErr) {
+        logger.error("User index sync error", indexErr);
+      }
       httpServer.listen(PORT, () =>
         logger.info(`Server listening on http://localhost:${PORT}`),
       );

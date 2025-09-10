@@ -1,13 +1,18 @@
 import { z } from 'zod';
+ import Tenant from '../models/Tenant';
+import TeamMember from '../models/TeamMember';
+ 
 
 const email = z.string().email();
 
-export const loginSchema = z.object({
-  email,
-  password: z.string().min(1),
-});
+export const loginSchema = z
+  .object({
+    email,
+    password: z.string().min(1),
+  })
+  .strict();
 
-export const registerSchema = z.object({
+ export const registerSchema = z.object({
   name: z.string().min(1),
   email,
   password: z.string().min(1),
@@ -15,9 +20,6 @@ export const registerSchema = z.object({
   employeeId: z.string().min(1),
 });
 
-export const assertEmail = (value: unknown): asserts value is string => {
-  email.parse(value);
-};
-
+ 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;

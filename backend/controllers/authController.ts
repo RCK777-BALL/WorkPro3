@@ -118,10 +118,18 @@ export const requestPasswordReset = async (
   }
 };
 
-export const generateMfa = async (req: Request, res: Response): Promise<void> => {
+export const generateMfa: AuthedRequestHandler = async (req, res) => {
   const { userId } = req.body;
+  const authUserId = req.user?.id;
+  const tenantId = req.tenantId;
+
+  if (!authUserId || !tenantId || userId !== authUserId) {
+    res.status(403).json({ message: 'Forbidden' });
+    return;
+  }
+
   try {
-    const user = await User.findById(userId);
+    const user = await User.findOne({ _id: userId, tenantId });
     if (!user) {
       res.status(404).json({ message: 'User not found' });
       return;
@@ -137,10 +145,18 @@ export const generateMfa = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
-export const verifyMfa = async (req: Request, res: Response): Promise<void> => {
+export const verifyMfa: AuthedRequestHandler = async (req, res) => {
   const { userId, token } = req.body;
+  const authUserId = req.user?.id;
+  const tenantId = req.tenantId;
+
+  if (!authUserId || !tenantId || userId !== authUserId) {
+    res.status(403).json({ message: 'Forbidden' });
+    return;
+  }
+
   try {
-    const user = await User.findById(userId);
+    const user = await User.findOne({ _id: userId, tenantId });
     if (!user || !user.mfaSecret) {
       res.status(400).json({ message: 'Invalid user' });
       return;
@@ -156,8 +172,8 @@ export const verifyMfa = async (req: Request, res: Response): Promise<void> => {
     }
     user.mfaEnabled = true;
     await user.save();
-    const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
-    const payload = { id: user._id.toString(), email: user.email, tenantId };
+    const tenantIdStr = user.tenantId ? user.tenantId.toString() : undefined;
+    const payload = { id: user._id.toString(), email: user.email, tenantId: tenantIdStr };
     const secret = process.env.JWT_SECRET;
     if (!secret) {
       res.status(500).json({ message: 'Server configuration issue' });
@@ -165,7 +181,7 @@ export const verifyMfa = async (req: Request, res: Response): Promise<void> => {
     }
     const jwtToken = jwt.sign(payload, secret, { expiresIn: '7d' });
     const { passwordHash: _pw, ...safeUser } = user.toObject();
-    res.json({ token: jwtToken, user: { ...safeUser, tenantId } });
+    res.json({ token: jwtToken, user: { ...safeUser, tenantId: tenantIdStr } });
   } catch (err) {
     logger.error('verifyMfa error', err);
     res.status(500).json({ message: 'Server error' });

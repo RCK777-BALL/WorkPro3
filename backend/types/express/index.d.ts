@@ -2,6 +2,26 @@ import { Request, RequestHandler } from 'express';
 import { Types } from 'mongoose';
 import type { UserRole } from '../../models/User';
 
+export interface AuthedRequest<
+  P = any,
+  ResBody = any,
+  ReqBody = any,
+  ReqQuery = any,
+> extends Request<P, ResBody, ReqBody, ReqQuery> {
+  user?: RequestUser;
+  tenantId?: string;
+  siteId?: string;
+  vendorId?: string;
+  thirdParty?: any;
+}
+
+export type AuthedRequestHandler<
+  P = any,
+  ResBody = any,
+  ReqBody = any,
+  ReqQuery = any,
+> = RequestHandler<P, ResBody, ReqBody, ReqQuery>;
+
 declare global {
   interface RequestUser {
     id?: string;
@@ -13,11 +33,6 @@ declare global {
     colorScheme?: string;
   }
 
-  type AuthedRequest<P = any, ResBody = any, ReqBody = any, ReqQuery = any> =
-    Request<P, ResBody, ReqBody, ReqQuery>;
-  type AuthedRequestHandler<P = any, ResBody = any, ReqBody = any, ReqQuery = any> =
-    RequestHandler<P, ResBody, ReqBody, ReqQuery>;
-
   namespace Express {
     interface User extends RequestUser {
       email: string;
@@ -27,6 +42,7 @@ declare global {
       user?: RequestUser;
       tenantId?: string;
       siteId?: string;
+      vendorId?: string;
       thirdParty?: any;
     }
   }

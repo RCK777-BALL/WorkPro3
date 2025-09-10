@@ -1,13 +1,14 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import PurchaseOrder from '../models/PurchaseOrder';
+import type { AuthedRequest } from '../types/express';
 
 export const createPurchaseOrder = async (
-  req: Request,
+  req: AuthedRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const tenantId = (req as any).tenantId as string | undefined;
+    const tenantId = req.tenantId;
     const po = await PurchaseOrder.create({
       ...req.body,
       ...(tenantId ? { tenantId } : {}),
@@ -19,7 +20,7 @@ export const createPurchaseOrder = async (
 };
 
 export const getPurchaseOrder = async (
-  req: Request,
+  req: AuthedRequest,
   res: Response,
   next: NextFunction,
 ) => {
@@ -34,12 +35,12 @@ export const getPurchaseOrder = async (
 };
 
 export const listVendorPurchaseOrders = async (
-  req: Request,
+  req: AuthedRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const vendorId = (req as any).vendorId;
+    const vendorId = req.vendorId;
     const pos = await PurchaseOrder.find({ vendor: vendorId }).lean();
     res.json(pos);
   } catch (err) {
@@ -48,12 +49,12 @@ export const listVendorPurchaseOrders = async (
 };
 
 export const updateVendorPurchaseOrder = async (
-  req: Request,
+  req: AuthedRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const vendorId = (req as any).vendorId as string;
+    const vendorId = req.vendorId as string;
     const { id } = req.params;
     const { status } = req.body as { status: string };
     const allowed = ['acknowledged', 'shipped'];

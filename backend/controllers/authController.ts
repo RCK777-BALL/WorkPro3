@@ -13,6 +13,7 @@ import {
 } from '../validators/authValidators';
 import { assertEmail } from '../utils/assert';
 // import { isCookieSecure } from '../utils/isCookieSecure'; // <- not used; remove or use if needed
+import type { AuthedRequest } from '../types/express';
 
 // ------------------------------------------------------------------
 // Helpers
@@ -173,10 +174,13 @@ export const requestPasswordReset = async (
   }
 };
 
-export const setupMfa = async (req: Request, res: Response): Promise<Response> => {
+export const setupMfa = async (
+  req: AuthedRequest,
+  res: Response,
+): Promise<Response> => {
   const { userId } = req.body as { userId?: string };
-  const authUserId = (req as any).user?.id as string | undefined;
-  const tenantId = (req as any).tenantId as string | undefined;
+  const authUserId = req.user?.id as string | undefined;
+  const tenantId = req.tenantId as string | undefined;
 
   if (!authUserId || !tenantId || userId !== authUserId) {
     return res.status(403).json({ message: 'Forbidden' });
@@ -200,10 +204,13 @@ export const setupMfa = async (req: Request, res: Response): Promise<Response> =
   }
 };
 
-export const validateMfaToken = async (req: Request, res: Response): Promise<Response> => {
+export const validateMfaToken = async (
+  req: AuthedRequest,
+  res: Response,
+): Promise<Response> => {
   const { userId, token } = req.body as { userId?: string; token?: string };
-  const authUserId = (req as any).user?.id as string | undefined;
-  const tenantId = (req as any).tenantId as string | undefined;
+  const authUserId = req.user?.id as string | undefined;
+  const tenantId = req.tenantId as string | undefined;
 
   if (!authUserId || !tenantId || userId !== authUserId) {
     return res.status(403).json({ message: 'Forbidden' });
@@ -252,9 +259,13 @@ export const validateMfaToken = async (req: Request, res: Response): Promise<Res
   }
 };
 
-export const getMe = async (req: Request, res: Response, _next: NextFunction): Promise<Response> => {
+export const getMe = async (
+  req: AuthedRequest,
+  res: Response,
+  _next: NextFunction,
+): Promise<Response> => {
   try {
-    const user = (req as any).user;
+    const user = req.user;
     if (!user) {
       return res.status(401).json({ message: 'Not authenticated' });
     }
@@ -265,8 +276,11 @@ export const getMe = async (req: Request, res: Response, _next: NextFunction): P
   }
 };
 
-export const logout = async (req: Request, res: Response): Promise<Response> => {
-  const userId = (req as any).user?.id as string | undefined;
+export const logout = async (
+  req: AuthedRequest,
+  res: Response,
+): Promise<Response> => {
+  const userId = req.user?.id as string | undefined;
   if (userId) {
     try {
       await User.findByIdAndUpdate(userId, { $inc: { tokenVersion: 1 } });

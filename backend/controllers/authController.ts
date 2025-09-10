@@ -12,6 +12,7 @@ import {
   type RegisterInput,
 } from '../validators/authValidators';
 import { assertEmail } from '../utils/assert';
+import { getJwtSecret } from '../utils/getJwtSecret';
 
 export const login = async (req: Request, res: Response): Promise<void> => {
   let data: LoginInput;
@@ -44,6 +45,10 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    if (!user.mfaEnabled) {
+      user.mfaEnabled = true;
+      await user.save();
+    }
     const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
     const payload = {
       id: user._id.toString(),
@@ -146,9 +151,10 @@ export const generateMfa = async (req: Request, res: Response): Promise<void> =>
 };
 
 export const verifyMfa = async (req: Request, res: Response): Promise<void> => {
-  const { userId, token } = req.body;
+  const { email, token } = req.body;
   try {
-    const user = await User.findById(userId);
+    assertEmail(email);
+    const user = await User.findOne({ email });
     if (!user || !user.mfaSecret) {
       res.status(400).json({ message: 'Invalid user' });
       return;
@@ -162,18 +168,25 @@ export const verifyMfa = async (req: Request, res: Response): Promise<void> => {
       res.status(400).json({ message: 'Invalid token' });
       return;
     }
-    user.mfaEnabled = true;
-    await user.save();
+    if (!user.mfaEnabled) {
+      user.mfaEnabled = true;
+      await user.save();
+    }
     const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
     const payload = { id: user._id.toString(), email: user.email, tenantId };
-    const secret = process.env.JWT_SECRET;
+    const secret = getJwtSecret(res);
     if (!secret) {
-      res.status(500).json({ message: 'Server configuration issue' });
       return;
     }
     const jwtToken = jwt.sign(payload, secret, { expiresIn: '7d' });
     const { passwordHash: _pw, ...safeUser } = user.toObject();
-    res.json({ token: jwtToken, user: { ...safeUser, tenantId } });
+    res
+      .cookie('token', jwtToken, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+      })
+      .json({ token: jwtToken, user: { ...safeUser, tenantId } });
   } catch (err) {
     logger.error('verifyMfa error', err);
     res.status(500).json({ message: 'Server error' });

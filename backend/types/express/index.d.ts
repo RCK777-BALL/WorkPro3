@@ -6,7 +6,7 @@ declare global {
   interface RequestUser {
     id?: string;
     _id?: Types.ObjectId | string;
-    email?: string;
+    email: string;
     role?: UserRole;
     tenantId?: string;
     theme?: 'light' | 'dark' | 'system';
@@ -19,7 +19,9 @@ declare global {
     RequestHandler<P, ResBody, ReqBody, ReqQuery>;
 
   namespace Express {
-    interface User extends RequestUser {}
+    interface User extends RequestUser {
+      email: string;
+    }
 
     interface Request {
       user?: RequestUser;

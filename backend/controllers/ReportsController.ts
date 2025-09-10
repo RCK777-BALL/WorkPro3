@@ -1,4 +1,3 @@
-import { Request, Response, NextFunction } from 'express';
 import PDFDocument from 'pdfkit';
 import { Parser as Json2csvParser } from 'json2csv';
 import WorkOrder from '../models/WorkOrder';
@@ -6,8 +5,7 @@ import Asset from '../models/Asset';
 import WorkHistory from '../models/WorkHistory';
 import User from '../models/User';
 import TimeSheet from '../models/TimeSheet';
-import Inventory from '../models/Inventory';
-import { Request, Response, NextFunction } from 'express';
+import type { AuthedRequestHandler } from '../types/http';
 
 async function calculateStats(tenantId: string, role?: string) {
   const roleFilter = role || 'technician';
@@ -101,19 +99,20 @@ async function calculateStats(tenantId: string, role?: string) {
   };
 }
 
- export const getAnalyticsReport = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getAnalyticsReport: AuthedRequestHandler = async (req, res, next) => {
  
   try {
     const role = typeof req.query.role === 'string' ? req.query.role : undefined;
     const tenantId = req.tenantId!;
     const stats = await calculateStats(tenantId, role);
     res.json(stats);
+    return;
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 
- export const downloadReport = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const downloadReport: AuthedRequestHandler = async (req, res, next) => {
  
   try {
     const format = String(req.query.format || 'pdf').toLowerCase();
@@ -126,7 +125,8 @@ async function calculateStats(tenantId: string, role?: string) {
       const csv = parser.parse([stats]);
       res.header('Content-Type', 'text/csv');
       res.attachment('report.csv');
-      return res.send(csv);
+      res.send(csv);
+      return;
     }
 
     const doc = new PDFDocument();
@@ -140,7 +140,7 @@ async function calculateStats(tenantId: string, role?: string) {
     });
     doc.end();
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 
@@ -164,18 +164,19 @@ async function aggregateTrends(tenantId: string) {
   }));
 }
 
- export const getTrendData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getTrendData: AuthedRequestHandler = async (req, res, next) => {
  
   try {
     const tenantId = req.tenantId!;
     const data = await aggregateTrends(tenantId);
     res.json(data);
+    return;
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 
- export const exportTrendData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const exportTrendData: AuthedRequestHandler = async (req, res, next) => {
  
   try {
     const format = String(req.query.format || 'json').toLowerCase();
@@ -187,12 +188,14 @@ async function aggregateTrends(tenantId: string) {
       const csv = parser.parse(data);
       res.header('Content-Type', 'text/csv');
       res.attachment('trends.csv');
-      return res.send(csv);
+      res.send(csv);
+      return;
     }
 
     res.json(data);
+    return;
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 
@@ -268,14 +271,15 @@ async function aggregateCosts(tenantId: string) {
     }));
 }
 
- export const getCostMetrics = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getCostMetrics: AuthedRequestHandler = async (req, res, next) => {
  
   try {
     const tenantId = req.tenantId!;
     const data = await aggregateCosts(tenantId);
     res.json(data);
+    return;
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 
@@ -294,13 +298,14 @@ async function aggregateDowntime(tenantId: string) {
   return results.map((r) => ({ period: r._id, downtime: r.downtime }));
 }
 
- export const getDowntimeMetrics = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getDowntimeMetrics: AuthedRequestHandler = async (req, res, next) => {
  
   try {
     const tenantId = req.tenantId!;
     const data = await aggregateDowntime(tenantId);
     res.json(data);
+    return;
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };

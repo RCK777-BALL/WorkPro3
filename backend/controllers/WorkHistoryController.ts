@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+
 import WorkHistory from '../models/WorkHistory';
 
 export const getAllWorkHistories = async (req: Request, res: Response, next: NextFunction) => {

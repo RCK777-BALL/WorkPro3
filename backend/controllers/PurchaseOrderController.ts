@@ -1,9 +1,9 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
+ 
 import PurchaseOrder from '../models/PurchaseOrder';
-import type { AuthedRequest } from '../types/express';
 
 export const createPurchaseOrder = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -20,7 +20,7 @@ export const createPurchaseOrder = async (
 };
 
 export const getPurchaseOrder = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -35,7 +35,7 @@ export const getPurchaseOrder = async (
 };
 
 export const listVendorPurchaseOrders = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -49,7 +49,7 @@ export const listVendorPurchaseOrders = async (
 };
 
 export const updateVendorPurchaseOrder = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {

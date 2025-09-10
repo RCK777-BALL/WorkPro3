@@ -1,14 +1,14 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
+ 
 import GoodsReceipt from '../models/GoodsReceipt';
 import PurchaseOrder from '../models/PurchaseOrder';
 import Vendor from '../models/Vendor';
 import { addStock } from '../services/inventory';
 import nodemailer from 'nodemailer';
 import { assertEmail } from '../utils/assert';
-import type { AuthedRequest } from '../types/express';
 
 export const createGoodsReceipt = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {

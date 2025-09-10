@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+ import { Request, Response, NextFunction } from 'express';
 import { validationResult } from 'express-validator';
 import PMTask from '../models/PMTask';
 
@@ -10,6 +10,7 @@ export const getAllPMTasks: AuthedRequestHandler = async (
   res: Response,
   next: NextFunction,
 ) => {
+ 
   try {
     const tasks = await PMTask.find({ tenantId: req.tenantId });
     res.json(tasks);
@@ -20,11 +21,12 @@ export const getAllPMTasks: AuthedRequestHandler = async (
   }
 };
 
-export const getPMTaskById: AuthedRequestHandler<IdParams> = async (
+ export const getPMTaskById: AuthedRequestHandler<IdParams> = async (
   req: AuthedRequest<IdParams>,
   res: Response,
   next: NextFunction,
 ) => {
+ 
   try {
     const task = await PMTask.findOne({ _id: req.params.id, tenantId: req.tenantId });
     if (!task) {
@@ -39,11 +41,12 @@ export const getPMTaskById: AuthedRequestHandler<IdParams> = async (
   }
 };
 
-export const createPMTask: AuthedRequestHandler<unknown, any, any> = async (
+ export const createPMTask: AuthedRequestHandler<unknown, any, any> = async (
   req: AuthedRequest<unknown, any, any>,
   res: Response,
   next: NextFunction,
 ) => {
+ 
   try {
     const errors = validationResult(req as Request);
     if (!errors.isEmpty()) {
@@ -60,11 +63,12 @@ export const createPMTask: AuthedRequestHandler<unknown, any, any> = async (
   }
 };
 
-export const updatePMTask: AuthedRequestHandler<IdParams, any, any> = async (
+ export const updatePMTask: AuthedRequestHandler<IdParams, any, any> = async (
   req: AuthedRequest<IdParams, any, any>,
   res: Response,
   next: NextFunction,
 ) => {
+ 
   try {
     const errors = validationResult(req as Request);
     if (!errors.isEmpty()) {
@@ -88,11 +92,12 @@ export const updatePMTask: AuthedRequestHandler<IdParams, any, any> = async (
   }
 };
 
-export const deletePMTask: AuthedRequestHandler<IdParams> = async (
+ export const deletePMTask: AuthedRequestHandler<IdParams> = async (
   req: AuthedRequest<IdParams>,
   res: Response,
   next: NextFunction,
 ) => {
+ 
   try {
     const task = await PMTask.findOneAndDelete({ _id: req.params.id, tenantId: req.tenantId });
     if (!task) {
@@ -101,6 +106,7 @@ export const deletePMTask: AuthedRequestHandler<IdParams> = async (
     }
     res.json({ message: 'Deleted successfully' });
     return;
+ 
   } catch (err) {
     next(err);
     return;

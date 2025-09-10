@@ -5,17 +5,24 @@ import crypto from "crypto";
 import * as speakeasy from "speakeasy";
 import logger from "../utils/logger";
 import User from "../models/User";
+import {
+  loginSchema,
+  registerSchema,
+  type LoginInput,
+  type RegisterInput,
+} from '../validators/authValidators';
 import { assertEmail } from '../utils/assert';
 
 export const login = async (req: Request, res: Response): Promise<void> => {
-  const { email, password } = req.body;
-  logger.info('Login attempt', { email });
-
-  if (!email || !password) {
+  let data: LoginInput;
+  try {
+    data = loginSchema.parse(req.body);
+  } catch {
     res.status(400).json({ message: 'Email and password required' });
     return;
   }
-  assertEmail(email);
+  const { email, password } = data;
+  logger.info('Login attempt', { email });
 
   try {
     const user = await User.findOne({ email });
@@ -25,7 +32,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const valid = await bcrypt.compare(req.body.password, user.passwordHash);
+    const valid = await bcrypt.compare(password, user.passwordHash);
     logger.info('Password comparison result', { valid });
     if (!valid) {
       res.status(401).json({ message: 'Invalid email or password' });
@@ -60,13 +67,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const register = async (req: Request, res: Response): Promise<void> => {
-  const { name, email, password, tenantId, employeeId } = req.body;
-
-  if (!name || !email || !password || !tenantId || !employeeId) {
+  let data: RegisterInput;
+  try {
+    data = registerSchema.parse(req.body);
+  } catch {
     res.status(400).json({ message: "Missing required fields" });
     return;
   }
-  assertEmail(email);
+  const { name, email, password, tenantId, employeeId } = data;
 
   try {
     const existing = await User.findOne({ email });

@@ -137,7 +137,8 @@ export const requestPasswordReset = async (
   }
 };
 
-export const generateMfa: AuthedRequestHandler = async (req, res) => {
+ export const setupMfa = async (req: Request, res: Response): Promise<void> => {
+ 
   const { userId } = req.body;
   const authUserId = req.user?.id;
   const tenantId = req.tenantId;
@@ -160,12 +161,13 @@ export const generateMfa: AuthedRequestHandler = async (req, res) => {
       .status(200)
       .json({ secret: user.mfaSecret, token });
   } catch (err) {
-    logger.error('generateMfa error', err);
-    return res.status(500).json({ message: 'Server error' });
+     logger.error('setupMfa error', err);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
- export const verifyMfa: AuthedRequestHandler = async (req, res) => {
+export const validateMfaToken = async (req: Request, res: Response): Promise<void> => {
+ 
   const { userId, token } = req.body;
   const authUserId = req.user?.id;
   const tenantId = req.tenantId;
@@ -208,8 +210,9 @@ export const generateMfa: AuthedRequestHandler = async (req, res) => {
       .json({ token: jwtToken, user: { ...safeUser, tenantId } });
  
   } catch (err) {
-    logger.error('verifyMfa error', err);
-    return res.status(500).json({ message: 'Server error' });
+     logger.error('validateMfaToken error', err);
+    res.status(500).json({ message: 'Server error' });
+ 
   }
 };
 

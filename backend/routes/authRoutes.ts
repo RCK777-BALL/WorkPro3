@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import passport from 'passport';
 import bcrypt from 'bcryptjs';
-import rateLimit from 'express-rate-limit';
-import { generateMfa, verifyMfa } from '../controllers/authController';
+ import { setupMfa, validateMfaToken } from '../controllers/authController';
+ 
 import { configureOIDC } from '../auth/oidc';
 import { configureOAuth, getOAuthScope, OAuthProvider } from '../auth/oauth';
 import { getJwtSecret } from '../utils/getJwtSecret';
@@ -190,8 +190,8 @@ router.get('/oauth/:provider/callback', (req, res, next) => {
 });
 
 // MFA endpoints
- router.post('/mfa/setup', requireAuth, generateMfa);
-router.post('/mfa/verify', requireAuth, verifyMfa);
+ router.post('/mfa/setup', setupMfa);
+router.post('/mfa/verify', validateMfaToken);
  
 
 export default router;

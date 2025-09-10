@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { type RequestHandler } from 'express';
 import multer from 'multer';
 import {
   getAllAssets,
@@ -8,7 +8,7 @@ import {
   deleteAsset,
   searchAssets,
 } from '../controllers/AssetController';
-import { requireAuth } from '../middleware/authMiddleware';
+import { requireAuth } from '../middleware/requireAuth'; // <— align with your actual file
 import requireRole from '../middleware/requireRole';
 import { validate } from '../middleware/validationMiddleware';
 import { assetValidators } from '../validators/assetValidators';
@@ -18,10 +18,11 @@ const router = express.Router();
 
 const storage = multer.memoryStorage();
 const allowedMimeTypes = ['image/png', 'image/jpeg', 'application/pdf'];
+
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (_req, file, cb: multer.FileFilterCallback) => {
     if (allowedMimeTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
@@ -30,20 +31,31 @@ const upload = multer({
   },
 });
 
-const handleUpload: express.RequestHandler = (req, res, next) => {
-  upload.any()(req, res, (err) => {
-    if (err) {
+// If you know your fields, prefer:
+// const uploadFields = upload.fields([{ name: 'files', maxCount: 5 }]);
+// and use `uploadFields` instead of `upload.any()`
+const handleUpload: RequestHandler = (req, res, next) => {
+  upload.any()(req, res, (err: unknown) => {
+    if (!err) return next();
+
+    if (err instanceof multer.MulterError) {
+      // Multer-specific errors (e.g., LIMIT_FILE_SIZE)
+      return res.status(400).json({ message: err.message, code: err.code });
+    }
+    if (err instanceof Error) {
       return res.status(400).json({ message: err.message });
     }
-    next();
+    return res.status(400).json({ message: 'Upload error' });
   });
 };
 
 router.use(requireAuth);
 router.use(siteScope);
+
 router.get('/', getAllAssets);
 router.get('/search', searchAssets);
 router.get('/:id', getAssetById);
+
 router.post(
   '/',
   requireRole('admin', 'manager'),
@@ -52,6 +64,7 @@ router.post(
   validate,
   createAsset
 );
+
 router.put(
   '/:id',
   requireRole('admin', 'manager'),
@@ -60,6 +73,7 @@ router.put(
   validate,
   updateAsset
 );
+
 router.delete('/:id', requireRole('admin', 'manager'), deleteAsset);
 
 export default router;

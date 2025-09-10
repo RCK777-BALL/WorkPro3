@@ -1,82 +1,138 @@
-import { Request, Response, NextFunction } from 'express';
-import PMTask from '../models/PMTask';
+import Asset from '../models/Asset';
 import { validationResult } from 'express-validator';
+import type { Request, Express } from 'express';
+import logger from '../utils/logger';
 
-export const getAllPMTasks = async (req: Request, res: Response, next: NextFunction) => {
+const tenantSiteFilter = (req: AuthedRequest, base: any = {}) => {
+  const filter: any = { ...base, tenantId: req.tenantId };
+  if (req.siteId) filter.siteId = req.siteId;
+  return filter;
+};
+
+export const getAllAssets: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const items = await PMTask.find();
-    res.json(items);
+    const assets = await Asset.find(tenantSiteFilter(req));
+    return res.json(assets);
   } catch (err) {
     next(err);
+    return;
   }
 };
 
-export const getPMTaskById = async (req: Request, res: Response, next: NextFunction) => {
+export const getAssetById: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const item = await PMTask.findById(req.params.id);
-    if (!item) return res.status(404).json({ message: 'Not found' });
-    res.json(item);
+    const asset = await Asset.findOne(tenantSiteFilter(req, { _id: req.params.id }));
+    if (!asset) {
+      return res.status(404).json({ message: 'Not found' });
+    }
+    return res.json(asset);
   } catch (err) {
     next(err);
+    return;
   }
 };
 
-export const createPMTask: AuthedRequestHandler = async (req, res, next) => {
+export const createAsset: AuthedRequestHandler = async (req, res, next) => {
+  logger.debug('createAsset body:', req.body);
+  logger.debug('createAsset files:', (req as any).files);
+
+  const files = (req as any).files as Express.Multer.File[] | undefined;
+  if (!files || files.length === 0) {
+    logger.debug('No files uploaded for asset');
+  }
+
+  const { user, tenantId: reqTenantId } = req as AuthedRequest;
+  const resolvedTenantId = reqTenantId || user?.tenantId;
+  if (!resolvedTenantId) {
+    return res.status(400).json({ message: 'Tenant ID is required' });
+  }
+
+  if (!req.body.name) {
+    return res.status(400).json({ message: 'name is required' });
+  }
+
   try {
-    const errors = validationResult(req);
+    const errors = validationResult(req as Request);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { active, ...rest } = req.body;
-    const pmTaskData = {
-      ...rest,
-      isActive: active,
-      tenantId: req.tenantId,
-    };
+    const payload: any = { ...req.body, tenantId: resolvedTenantId };
+    if (req.siteId && !payload.siteId) payload.siteId = req.siteId;
 
-    const newItem = new PMTask(pmTaskData);
-    const saved = await newItem.save();
-    res.status(201).json(saved);
+    const newAsset = await Asset.create(payload);
+    const assetObj = newAsset.toObject();
+    const response = { ...assetObj, tenantId: assetObj.tenantId.toString() };
+
+    return res.status(201).json(response);
   } catch (err) {
     next(err);
+    return;
   }
 };
 
-export const updatePMTask = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const updateAsset: AuthedRequestHandler = async (req, res, next) => {
+  logger.debug('updateAsset body:', req.body);
+  logger.debug('updateAsset files:', (req as any).files);
+
+  const files = (req as any).files as Express.Multer.File[] | undefined;
+  if (!files || files.length === 0) {
+    logger.debug('No files uploaded for asset update');
+  }
+
+  const { user, tenantId: reqTenantId } = req as AuthedRequest;
+  const tenantId = reqTenantId || user?.tenantId;
+  if (!tenantId) {
+    return res.status(400).json({ message: 'Tenant ID is required' });
+  }
+
   try {
-    const errors = validationResult(req);
+    const errors = validationResult(req as Request);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { active, ...rest } = req.body;
-    const pmTaskData = {
-      ...rest,
-      isActive: active,
-    };
+    const asset = await Asset.findOneAndUpdate(
+      tenantSiteFilter(req, { _id: req.params.id, tenantId }),
+      req.body,
+      { new: true, runValidators: true }
+    );
 
-    const updated = await PMTask.findByIdAndUpdate(req.params.id, pmTaskData, {
-      new: true,
-      runValidators: true,
-    });
-    if (!updated) return res.status(404).json({ message: 'Not found' });
-    res.json(updated);
+    if (!asset) {
+      return res.status(404).json({ message: 'Not found' });
+    }
+    return res.json(asset);
   } catch (err) {
     next(err);
+    return;
   }
 };
 
-export const deletePMTask = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteAsset: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const deleted = await PMTask.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: 'Not found' });
-    res.json({ message: 'Deleted successfully' });
+    const asset = await Asset.findOneAndDelete(tenantSiteFilter(req, { _id: req.params.id }));
+    if (!asset) {
+      return res.status(404).json({ message: 'Not found' });
+    }
+    return res.json({ message: 'Deleted successfully' });
   } catch (err) {
     next(err);
+    return;
+  }
+};
+
+export const searchAssets: AuthedRequestHandler = async (req, res, next) => {
+  try {
+    const q = (req.query.q as string) || '';
+    const regex = new RegExp(q, 'i');
+
+    const assets = await Asset.find(
+      tenantSiteFilter(req, { name: { $regex: regex } })
+    ).limit(10);
+
+    return res.json(assets);
+  } catch (err) {
+    next(err);
+    return;
   }
 };

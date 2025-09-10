@@ -196,7 +196,7 @@ export const logout = (
   res
     .clearCookie('token', {
       httpOnly: true,
-      sameSite: 'lax',
+      sameSite: 'strict',
       secure: process.env.NODE_ENV === 'production',
     })
     .sendStatus(200);

@@ -70,8 +70,12 @@ Running the seed script adds a small reporting hierarchy of example users:
 
 ## Authentication
 
-User sessions rely on a JWT stored in the `token` cookie. Clients must include this cookie on each request so the `requireAuth` middleware can verify the session. Ensure cookies are enabled in your HTTP client or browser.
-When `NODE_ENV` is set to `production` the cookie is created with the `Secure` flag enabled and is also cleared using the same option so it is only sent over HTTPS connections.
+User sessions rely on a JWT stored in the `token` cookie. Clients must include
+this cookie on each request so the `requireAuth` middleware can verify the
+session. The cookie is issued with `HttpOnly` and `SameSite=Strict` flags to
+mitigate cross-site request forgery, and when `NODE_ENV` is set to `production`
+the `Secure` flag is also enabled so it is only sent over HTTPS connections.
+Ensure cookies are enabled in your HTTP client or browser.
 
 ## Summary Endpoints
 

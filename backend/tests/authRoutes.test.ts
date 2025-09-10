@@ -48,6 +48,7 @@ describe('Auth Routes', () => {
     const cookies = res.headers['set-cookie'];
     expect(cookies).toBeDefined();
     expect(cookies[0]).toMatch(/token=/);
+    expect(cookies[0]).toMatch(/SameSite=Strict/);
 
     expect(res.body.user.email).toBe('test@example.com');
 

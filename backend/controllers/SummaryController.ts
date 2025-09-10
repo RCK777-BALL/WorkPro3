@@ -1,4 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Request } from 'express';
+import type { AuthedRequestHandler } from '../types/http';
 
 import Asset from '../models/Asset';
 import WorkOrder from '../models/WorkOrder';
@@ -19,11 +20,7 @@ const getTenantId = (req: Request): string | undefined => {
   );
 };
 
-export const getSummary = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> => {
+export const getSummary: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = getTenantId(req);
     const match = tenantId ? { tenantId } : {};
@@ -33,7 +30,7 @@ export const getSummary = async (
       InventoryItem.countDocuments(match),
     ]);
 
-    return res.json({
+    res.json({
       totals: {
         assets: assetCount,
         workOrders: workOrderCount,
@@ -41,16 +38,13 @@ export const getSummary = async (
       },
       metrics: { inventoryItems: inventoryCount },
     });
+    return;
   } catch (err) {
     return next(err);
   }
 };
 
-export const getAssetSummary = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> => {
+export const getAssetSummary: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = getTenantId(req);
     const match = tenantId ? { tenantId } : {};
@@ -58,17 +52,18 @@ export const getAssetSummary = async (
       { $match: match },
       { $group: { _id: '$status', count: { $sum: 1 } } },
     ]);
-    return res.json(summary);
+    res.json(summary);
+    return;
   } catch (err) {
     return next(err);
   }
 };
 
-export const getWorkOrderSummary = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> => {
+export const getWorkOrderSummary: AuthedRequestHandler = async (
+  req,
+  res,
+  next,
+) => {
   try {
     const tenantId = getTenantId(req);
     const match = tenantId ? { tenantId } : {};
@@ -76,17 +71,18 @@ export const getWorkOrderSummary = async (
       { $match: match },
       { $group: { _id: '$status', count: { $sum: 1 } } },
     ]);
-    return res.json(summary);
+    res.json(summary);
+    return;
   } catch (err) {
     return next(err);
   }
 };
 
-export const getUpcomingMaintenance = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> => {
+export const getUpcomingMaintenance: AuthedRequestHandler = async (
+  req,
+  res,
+  next,
+) => {
   try {
     const tenantId = getTenantId(req);
     const match: any = tenantId ? { tenantId } : {};
@@ -97,17 +93,14 @@ export const getUpcomingMaintenance = async (
       .sort({ dueDate: 1 })
       .limit(10)
       .populate('asset');
-    return res.json(tasks);
+    res.json(tasks);
+    return;
   } catch (err) {
     return next(err);
   }
 };
 
-export const getCriticalAlerts = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> => {
+export const getCriticalAlerts: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = getTenantId(req);
     const match: any = tenantId ? { tenantId } : {};
@@ -117,7 +110,8 @@ export const getCriticalAlerts = async (
       .sort({ createdAt: -1 })
       .limit(10)
       .populate('asset');
-    return res.json(alerts);
+    res.json(alerts);
+    return;
   } catch (err) {
     return next(err);
   }

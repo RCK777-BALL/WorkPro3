@@ -1,14 +1,16 @@
 import mongoose from 'mongoose';
 import { validationResult } from 'express-validator';
+import mongoose from 'mongoose';
 import PMTask from '../models/PMTask';
 import type { AuthedRequestHandler } from '../types/http';
 
 export const getAllPMTasks: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const filter: Record<string, unknown> = { tenantId: req.tenantId };
+     const filter: Record<string, unknown> = { tenantId: req.tenantId };
     const tasks = await PMTask.find(filter);
     res.json(tasks);
     return;
+ 
   } catch (err) {
     return next(err);
   }
@@ -21,7 +23,7 @@ export const getPMTaskById: AuthedRequestHandler = async (req, res, next) => {
       return;
     }
 
-    const task = await PMTask.findOne({
+     const task = await PMTask.findOne({
       _id: req.params.id,
       tenantId: req.tenantId,
     });
@@ -31,6 +33,7 @@ export const getPMTaskById: AuthedRequestHandler = async (req, res, next) => {
     }
     res.json(task);
     return;
+ 
   } catch (err) {
     return next(err);
   }
@@ -49,8 +52,7 @@ export const createPMTask: AuthedRequestHandler = async (req, res, next) => {
     res.status(201).json(task);
     return;
   } catch (err) {
-    next(err);
-    return;
+    return next(err);
   }
 };
 
@@ -78,8 +80,7 @@ export const updatePMTask: AuthedRequestHandler = async (req, res, next) => {
     res.json(task);
     return;
   } catch (err) {
-    next(err);
-    return;
+    return next(err);
   }
 };
 
@@ -100,8 +101,7 @@ export const deletePMTask: AuthedRequestHandler = async (req, res, next) => {
     res.json({ message: 'Deleted successfully' });
     return;
   } catch (err) {
-    next(err);
-    return;
+    return next(err);
   }
 };
 

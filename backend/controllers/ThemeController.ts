@@ -1,13 +1,10 @@
 import User from '../models/User';
+import { Request, Response, NextFunction } from 'express';
 
-export const getTheme: AuthedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const getTheme = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
 
-    const { user } = req as AuthedRequest;
+    const { user } = req as Request;
     const { theme = 'system', colorScheme = 'default' } = (user ?? {}) as {
       theme?: 'light' | 'dark' | 'system';
       colorScheme?: string;
@@ -19,15 +16,11 @@ export const getTheme: AuthedRequestHandler = async (
   }
 };
 
-export const updateTheme: AuthedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const updateTheme = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { theme, colorScheme } = req.body;
 
-    const { user } = req as AuthedRequest;
+    const { user } = req as Request;
     const updated = await User.findByIdAndUpdate(
       user._id,
 

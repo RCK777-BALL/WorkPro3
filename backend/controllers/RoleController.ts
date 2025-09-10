@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+
 import Role from '../models/Role';
 
 export const getAllRoles = async (_req: Request, res: Response, next: NextFunction) => {

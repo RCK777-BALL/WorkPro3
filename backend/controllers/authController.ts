@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import * as speakeasy from 'speakeasy';
@@ -13,7 +14,6 @@ import {
 } from '../validators/authValidators';
 import { assertEmail } from '../utils/assert';
 // import { isCookieSecure } from '../utils/isCookieSecure'; // <- not used; remove or use if needed
-import type { AuthedRequest } from '../types/express';
 
 // ------------------------------------------------------------------
 // Helpers
@@ -41,7 +41,11 @@ function createJwt(
 // Controllers
 // ------------------------------------------------------------------
 
-export const login = async (req: Request, res: Response): Promise<Response> => {
+export const login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   // Validate input with Zod; removes the need for manual "if (!email || !password)"
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -106,11 +110,15 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
     return res.status(200).json({ token, user: { ...safeUser, tenantId } });
   } catch (err) {
     logger.error('Login error', err);
-    return res.status(500).json({ message: 'Server error' });
+    return next(err);
   }
 };
 
-export const register = async (req: Request, res: Response): Promise<Response> => {
+export const register = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   // Validate input
   const parsed = await registerSchema.safeParseAsync(req.body);
   if (!parsed.success) {
@@ -140,14 +148,15 @@ export const register = async (req: Request, res: Response): Promise<Response> =
     return res.status(201).json({ message: 'User registered successfully' });
   } catch (err) {
     logger.error('Register error', err);
-    return res.status(500).json({ message: 'Server error' });
+    return next(err);
   }
 };
 
 export const requestPasswordReset = async (
   req: Request,
   res: Response,
-): Promise<Response> => {
+  next: NextFunction,
+): Promise<void> => {
   const { email } = req.body;
   if (!email) {
     return res.status(400).json({ message: 'Email required' });
@@ -170,14 +179,15 @@ export const requestPasswordReset = async (
     return res.status(200).json({ message: 'Password reset email sent' });
   } catch (err) {
     logger.error('Password reset request error', err);
-    return res.status(500).json({ message: 'Server error' });
+    return next(err);
   }
 };
 
 export const setupMfa = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
-): Promise<Response> => {
+  next: NextFunction,
+): Promise<void> => {
   const { userId } = req.body as { userId?: string };
   const authUserId = req.user?.id as string | undefined;
   const tenantId = req.tenantId as string | undefined;
@@ -200,14 +210,15 @@ export const setupMfa = async (
     return res.status(200).json({ secret: user.mfaSecret, token });
   } catch (err) {
     logger.error('setupMfa error', err);
-    return res.status(500).json({ message: 'Server error' });
+    return next(err);
   }
 };
 
 export const validateMfaToken = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
-): Promise<Response> => {
+  next: NextFunction,
+): Promise<void> => {
   const { userId, token } = req.body as { userId?: string; token?: string };
   const authUserId = req.user?.id as string | undefined;
   const tenantId = req.tenantId as string | undefined;
@@ -255,15 +266,15 @@ export const validateMfaToken = async (
     return res.status(200).json({ token: jwtToken, user: { ...safeUser, tenantId: tenantStr } });
   } catch (err) {
     logger.error('validateMfaToken error', err);
-    return res.status(500).json({ message: 'Server error' });
+    return next(err);
   }
 };
 
 export const getMe = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
-  _next: NextFunction,
-): Promise<Response> => {
+  next: NextFunction,
+): Promise<void> => {
   try {
     const user = req.user;
     if (!user) {
@@ -272,14 +283,15 @@ export const getMe = async (
     return res.status(200).json(user);
   } catch (err) {
     logger.error(err);
-    return res.status(500).json({ message: 'Server error' });
+    return next(err);
   }
 };
 
 export const logout = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
-): Promise<Response> => {
+  next: NextFunction,
+): Promise<void> => {
   const userId = req.user?.id as string | undefined;
   if (userId) {
     try {

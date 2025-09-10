@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+
 import WorkOrder from '../models/WorkOrder';
 import { emitWorkOrderUpdate } from '../server';
 import { validationResult } from 'express-validator';
@@ -62,11 +63,7 @@ type SearchQuery = {
  *       200:
  *         description: List of work orders
  */
-export const getAllWorkOrders: AuthedRequestHandler = async (
-  req: AuthedRequest,
-  res: Response,
-  next: NextFunction
-) => {
+export const getAllWorkOrders = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const items = await WorkOrder.find({ tenantId: req.tenantId });
     res.json(items);
@@ -107,12 +104,7 @@ export const getAllWorkOrders: AuthedRequestHandler = async (
  *       200:
  *         description: Filtered work orders
  */
-export const searchWorkOrders: AuthedRequestHandler<unknown, any, unknown, SearchQuery> = async (
-  req: AuthedRequest<unknown, any, unknown, SearchQuery>,
-
-  res: Response,
-  next: NextFunction
-) => {
+export const searchWorkOrders = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { status, priority, startDate, endDate } = req.query;
     const query: any = { tenantId: req.tenantId };
@@ -153,11 +145,7 @@ export const searchWorkOrders: AuthedRequestHandler<unknown, any, unknown, Searc
  *       404:
  *         description: Work order not found
  */
-export const getWorkOrderById: AuthedRequestHandler<IdParams> = async (
-  req: AuthedRequest<IdParams>,
-  res: Response,
-  next: NextFunction
-) => {
+export const getWorkOrderById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const item = await WorkOrder.findOne({ _id: req.params.id, tenantId: req.tenantId });
     if (!item) {
@@ -191,11 +179,7 @@ export const getWorkOrderById: AuthedRequestHandler<IdParams> = async (
  *       400:
  *         description: Validation error
  */
-export const createWorkOrder: AuthedRequestHandler<unknown, any, any> = async (
-  req: AuthedRequest<unknown, any, any>,
-  res: Response,
-  next: NextFunction
-) => {
+export const createWorkOrder = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const errors = validationResult(req as Request);
     if (!errors.isEmpty()) {
@@ -239,11 +223,7 @@ export const createWorkOrder: AuthedRequestHandler<unknown, any, any> = async (
  *       404:
  *         description: Work order not found
  */
-export const updateWorkOrder: AuthedRequestHandler<IdParams, any, any> = async (
-  req: AuthedRequest<IdParams, any, any>,
-  res: Response,
-  next: NextFunction
-) => {
+export const updateWorkOrder = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const errors = validationResult(req as Request);
     if (!errors.isEmpty()) {
@@ -291,12 +271,7 @@ export const updateWorkOrder: AuthedRequestHandler<IdParams, any, any> = async (
  *       404:
  *         description: Work order not found
  */
-export const deleteWorkOrder: AuthedRequestHandler<IdParams> = async (
-  req: AuthedRequest<IdParams>,
-
-  res: Response,
-  next: NextFunction
-) => {
+export const deleteWorkOrder = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const deleted = await WorkOrder.findOneAndDelete({ _id: req.params.id, tenantId: req.tenantId });
     if (!deleted) {
@@ -343,11 +318,7 @@ export const deleteWorkOrder: AuthedRequestHandler<IdParams> = async (
  *         description: Work order not found
  */
  
-export const approveWorkOrder: AuthedRequestHandler<IdParams, any, { status: 'pending' | 'approved' | 'rejected' }> = async (
-  req: AuthedRequest<IdParams, any, { status: 'pending' | 'approved' | 'rejected' }>,
-  res: Response,
-  next: NextFunction,
-) => {
+export const approveWorkOrder = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { status } = req.body;
  
@@ -417,12 +388,7 @@ export const approveWorkOrder: AuthedRequestHandler<IdParams, any, { status: 'pe
  *         description: Work order not found
 */
 
-export const assistWorkOrder: AuthedRequestHandler<IdParams, AIAssistResult | { message: string }> = async (
-  req: AuthedRequest<IdParams>,
-
-  res: Response<AIAssistResult | { message: string }>,
-  next: NextFunction
-) => {
+export const assistWorkOrder = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const workOrder = await WorkOrder.findOne({
       _id: req.params.id,

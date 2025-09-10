@@ -1,12 +1,9 @@
 import Channel from '../models/Channel';
 import ChatMessage from '../models/ChatMessage';
+import { Request, Response, NextFunction } from 'express';
 
 // Channel controllers
-export const getChannels: AuthedRequestHandler = async (
-  req: AuthedRequest,
-  res,
-  next
-) => {
+export const getChannels = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user?._id || req.user?.id;
     const channels = await Channel.find({
@@ -20,11 +17,7 @@ export const getChannels: AuthedRequestHandler = async (
   }
 };
 
-export const createChannel: AuthedRequestHandler<unknown, any, { name: string; description?: string; members?: string[] }> = async (
-  req: AuthedRequest<unknown, any, { name: string; description?: string; members?: string[] }>,
-  res,
-  next
-) => {
+export const createChannel = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user?._id || req.user?.id;
     const { name, description, members = [] } = req.body;
@@ -43,11 +36,7 @@ export const createChannel: AuthedRequestHandler<unknown, any, { name: string; d
   }
 };
 
-export const updateChannel: AuthedRequestHandler<{ channelId: string }, any, { name?: string; description?: string; members?: string[] }> = async (
-  req: AuthedRequest<{ channelId: string }, any, { name?: string; description?: string; members?: string[] }>,
-  res,
-  next
-) => {
+export const updateChannel = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user?._id || req.user?.id;
     if (!userId) return res.status(400).json({ message: 'User required' });
@@ -73,11 +62,7 @@ export const updateChannel: AuthedRequestHandler<{ channelId: string }, any, { n
   }
 };
 
-export const deleteChannel: AuthedRequestHandler<{ channelId: string }> = async (
-  req: AuthedRequest<{ channelId: string }>,
-  res,
-  next
-) => {
+export const deleteChannel = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     await Channel.findOneAndDelete({
       _id: req.params.channelId,
@@ -91,11 +76,7 @@ export const deleteChannel: AuthedRequestHandler<{ channelId: string }> = async 
   }
 };
 
-export const getChannelMessages: AuthedRequestHandler<{ channelId: string }> = async (
-  req: AuthedRequest<{ channelId: string }>,
-  res,
-  next
-) => {
+export const getChannelMessages = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const messages = await ChatMessage.find({ channelId: req.params.channelId }).sort({ createdAt: 1 });
     return res.json(messages);
@@ -104,11 +85,7 @@ export const getChannelMessages: AuthedRequestHandler<{ channelId: string }> = a
   }
 };
 
-export const sendChannelMessage: AuthedRequestHandler<{ channelId: string }, any, { content: string }> = async (
-  req: AuthedRequest<{ channelId: string }, any, { content: string }>,
-  res,
-  next
-) => {
+export const sendChannelMessage = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user?._id || req.user?.id;
     const { content } = req.body;
@@ -124,11 +101,7 @@ export const sendChannelMessage: AuthedRequestHandler<{ channelId: string }, any
 };
 
 // Message controllers shared between channel and direct messages
-export const updateMessage: AuthedRequestHandler<{ channelId: string; messageId: string }, any, { content: string }> = async (
-  req: AuthedRequest<{ channelId: string; messageId: string }, any, { content: string }>,
-  res,
-  next
-) => {
+export const updateMessage = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user?._id || req.user?.id;
     const message = await ChatMessage.findOneAndUpdate(
@@ -143,11 +116,7 @@ export const updateMessage: AuthedRequestHandler<{ channelId: string; messageId:
   }
 };
 
-export const deleteMessage: AuthedRequestHandler<{ channelId: string; messageId: string }> = async (
-  req: AuthedRequest<{ channelId: string; messageId: string }>,
-  res,
-  next
-) => {
+export const deleteMessage = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user?._id || req.user?.id;
     await ChatMessage.findOneAndDelete({ _id: req.params.messageId, sender: userId });
@@ -158,11 +127,7 @@ export const deleteMessage: AuthedRequestHandler<{ channelId: string; messageId:
 };
 
 // Direct message controllers
-export const getDirectMessages: AuthedRequestHandler = async (
-  req: AuthedRequest,
-  res,
-  next
-) => {
+export const getDirectMessages = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user?._id || req.user?.id;
     const channels = await Channel.find({
@@ -176,11 +141,7 @@ export const getDirectMessages: AuthedRequestHandler = async (
   }
 };
 
-export const createDirectMessage: AuthedRequestHandler<unknown, any, { userId: string }> = async (
-  req: AuthedRequest<unknown, any, { userId: string }>,
-  res,
-  next
-) => {
+export const createDirectMessage = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user?._id || req.user?.id;
     const otherId = req.body.userId;
@@ -204,11 +165,7 @@ export const createDirectMessage: AuthedRequestHandler<unknown, any, { userId: s
   }
 };
 
-export const deleteDirectMessage: AuthedRequestHandler<{ conversationId: string }> = async (
-  req: AuthedRequest<{ conversationId: string }>,
-  res,
-  next
-) => {
+export const deleteDirectMessage = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user?._id || req.user?.id;
     await Channel.findOneAndDelete({
@@ -224,11 +181,7 @@ export const deleteDirectMessage: AuthedRequestHandler<{ conversationId: string 
   }
 };
 
-export const getDirectMessagesForUser: AuthedRequestHandler<{ conversationId: string }> = async (
-  req: AuthedRequest<{ conversationId: string }>,
-  res,
-  next
-) => {
+export const getDirectMessagesForUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user?._id || req.user?.id;
     const channel = await Channel.findOne({
@@ -245,11 +198,7 @@ export const getDirectMessagesForUser: AuthedRequestHandler<{ conversationId: st
   }
 };
 
-export const sendDirectMessage: AuthedRequestHandler<{ conversationId: string }, any, { content: string }> = async (
-  req: AuthedRequest<{ conversationId: string }, any, { content: string }>,
-  res,
-  next
-) => {
+export const sendDirectMessage = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user?._id || req.user?.id;
     const channel = await Channel.findOne({

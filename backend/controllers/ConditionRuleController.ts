@@ -1,9 +1,9 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
+
 import ConditionRule from '../models/ConditionRule';
-import type { AuthedRequest } from '../types/express';
 
 export const getAllConditionRules = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
@@ -16,7 +16,7 @@ export const getAllConditionRules = async (
 };
 
 export const getConditionRuleById = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
@@ -33,7 +33,7 @@ export const getConditionRuleById = async (
 };
 
 export const createConditionRule = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
@@ -48,7 +48,7 @@ export const createConditionRule = async (
 };
 
 export const updateConditionRule = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
@@ -67,7 +67,7 @@ export const updateConditionRule = async (
 };
 
 export const deleteConditionRule = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {

@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+
 import Document from '../models/Document';
 
 export const getAllDocuments = async (req: Request, res: Response, next: NextFunction) => {

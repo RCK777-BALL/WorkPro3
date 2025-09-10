@@ -3,13 +3,7 @@ import type { Strategy as PassportStrategy } from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as GithubStrategy } from 'passport-github2';
 
-export type OAuthProvider = 'google' | 'github';
-
-export const getOAuthScope = (provider: OAuthProvider): string[] => {
-  return provider === 'google'
-    ? ['profile', 'email']
-    : ['user:email'];
-};
+export { type OAuthProvider } from '../config/oauthScopes';
 
 interface OAuthProfile {
   emails?: Array<{ value?: string }>;

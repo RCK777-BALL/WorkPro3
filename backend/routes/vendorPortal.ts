@@ -1,5 +1,4 @@
 import express from 'express';
-import jwt from 'jsonwebtoken';
 import type { Request, Response, NextFunction } from 'express';
 
 import Vendor from '../models/Vendor';
@@ -7,6 +6,7 @@ import PurchaseOrder from '../models/PurchaseOrder';
 import { requireVendorAuth } from '../middleware/vendorAuth';
 import { getJwtSecret } from '../utils/getJwtSecret';
 import { assertEmail } from '../utils/assert';
+import createJwt from '../utils/createJwt';
 
 import {
   listVendorPurchaseOrders,
@@ -18,7 +18,7 @@ const router = express.Router();
 /**
  * Vendor login - issues a JWT for portal access
  */
-router.post('/login', async (
+ router.post('/login', async (
   req: Request,
   res: Response,
 ): Promise<Response> => {
@@ -44,6 +44,7 @@ router.post('/login', async (
     expiresIn: '7d',
   });
   return res.json({ token });
+ 
 });
 
 // All routes below require a valid vendor token

@@ -104,4 +104,26 @@ describe('Auth Routes', () => {
       .set('Cookie', cookies)
       .expect(200);
   });
+
+  it('uses secure cookies when configured', async () => {
+    process.env.COOKIE_SECURE = 'true';
+    await User.create({
+      name: 'Secure',
+      email: 'secure@example.com',
+      passwordHash: 'pass123',
+      role: 'viewer',
+      tenantId: new mongoose.Types.ObjectId(),
+    });
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'secure@example.com', password: 'pass123' })
+      .expect(200);
+
+    const cookies = res.headers['set-cookie'];
+    expect(cookies).toBeDefined();
+    expect(cookies[0]).toMatch(/Secure/);
+
+    delete process.env.COOKIE_SECURE;
+  });
 });

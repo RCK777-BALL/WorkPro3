@@ -7,7 +7,7 @@ import { configureOIDC } from '../auth/oidc';
 import { configureOAuth, getOAuthScope, OAuthProvider } from '../auth/oauth';
 import { getJwtSecret } from '../utils/getJwtSecret';
 import User from '../models/User';
- import { requireAuth } from '../middleware/authMiddleware';
+ import { isCookieSecure } from '../utils/isCookieSecure';
  
 import {
   loginSchema,
@@ -101,9 +101,10 @@ router.post('/login', loginLimiter, async (req, res) => {
  
     return res
       .cookie('token', token, {
-        httpOnly: true, // mitigate XSS by restricting access to cookies
-        sameSite: 'lax', // reduce CSRF risk while allowing same-site requests
-        secure: process.env.NODE_ENV === 'production', // send only over HTTPS in production
+         httpOnly: true,
+        sameSite: 'lax',
+        secure: isCookieSecure(),
+ 
       })
       .status(200)
        .json({ token, user: { ...safeUser, tenantId } });

@@ -11,7 +11,7 @@ import {
   type RegisterInput,
 } from '../validators/authValidators';
 import { assertEmail } from '../utils/assert';
- import createJwt from '../utils/createJwt';
+ import { isCookieSecure } from '../utils/isCookieSecure';
  
 
 export const login = async (req: Request, res: Response): Promise<void> => {
@@ -235,7 +235,7 @@ export const logout = (
     .clearCookie('token', {
       httpOnly: true,
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      secure: isCookieSecure(),
     })
     .sendStatus(200);
 };

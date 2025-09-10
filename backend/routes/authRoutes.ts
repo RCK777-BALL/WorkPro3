@@ -84,8 +84,10 @@ router.post('/login', async (req, res) => {
         secure: process.env.NODE_ENV === 'production',
       })
       .status(200)
-      .json(responseBody);
-  } catch {
+       .json({ token, user: { ...safeUser, tenantId } });
+  } catch (err) {
+    console.error(err);
+ 
     return res.status(500).json({ message: 'Server error' });
   }
 });
@@ -106,7 +108,12 @@ router.post('/register', async (req, res) => {
     const user = new User({ name, email, passwordHash: password, tenantId, employeeId });
     await user.save();
     return res.status(201).json({ message: 'User registered successfully' });
-  } catch {
+  } catch (err) {
+    console.error(err);
+    // Handle known Mongo duplicate key error
+    if (err && typeof err === 'object' && 'code' in err && (err as any).code === 11000) {
+      return res.status(400).json({ message: 'Email already in use' });
+    }
     return res.status(500).json({ message: 'Server error' });
   }
 });

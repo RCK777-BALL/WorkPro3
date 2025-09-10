@@ -1,4 +1,5 @@
 import 'express';
+import type { UserRole } from '../models/User';
 
 declare global {
   namespace Express {
@@ -6,7 +7,7 @@ declare global {
       id?: string;
       _id?: string;
       tenantId?: string;
-      role?: string;
+      role?: UserRole;
     }
 
     interface Request {

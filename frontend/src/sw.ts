@@ -9,6 +9,10 @@ interface QueueItem {
   options?: RequestInit;
 }
 
+interface SyncEvent extends ExtendableEvent {
+  readonly tag: string;
+}
+
 const DB_NAME = 'offline-queue';
 const STORE_NAME = 'requests';
 let offlineQueue: QueueItem[] = [];

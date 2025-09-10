@@ -12,19 +12,20 @@ router.post('/subscribe', idempotency, async (
   req: Request,
   res: Response,
   next: NextFunction,
-): Promise<void> => {
+) => {
   try {
     const { url, event } = req.body;
     if (!url || !event) {
-      return res.status(400).json({ message: 'url and event required' });
+      res.status(400).json({ message: 'url and event required' });
+      return;
     }
     const secret = crypto.randomBytes(32).toString('hex');
     const hook = await Webhook.create({ url, event, secret });
-    return res
+    res
       .status(201)
       .json({ id: hook._id, url: hook.url, event: hook.event, secret });
   } catch (err) {
-    return next(err);
+    next(err);
   }
 });
 

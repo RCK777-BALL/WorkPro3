@@ -24,11 +24,12 @@ router.post(
     req: Request,
     res: Response,
     next: NextFunction,
-  ): Promise<void> => {
+  ) => {
     try {
       const { vendorId, email } = req.body as { vendorId?: string; email?: string };
       if (!vendorId) {
-        return res.status(400).json({ message: 'vendorId required' });
+        res.status(400).json({ message: 'vendorId required' });
+        return;
       }
       if (email !== undefined) {
         assertEmail(email);
@@ -36,22 +37,24 @@ router.post(
 
       const vendor = await Vendor.findById(vendorId).lean();
       if (!vendor || (email && vendor.email !== email)) {
-        return res.status(401).json({ message: 'Invalid credentials' });
+        res.status(401).json({ message: 'Invalid credentials' });
+        return;
       }
 
       let secret: string;
       try {
         secret = getJwtSecret(process.env, true);
       } catch {
-        return res.status(500).json({ message: 'Server configuration issue' });
+        res.status(500).json({ message: 'Server configuration issue' });
+        return;
       }
 
       const token = jwt.sign({ id: vendor._id.toString() }, secret, {
         expiresIn: '7d',
       });
-      return res.json({ token });
+      res.json({ token });
     } catch (err) {
-      return next(err);
+      next(err);
     }
   },
 );
@@ -75,17 +78,18 @@ router.get(
     req: AuthedRequest,
     res: Response,
     next: NextFunction,
-  ): Promise<void> => {
+  ) => {
     try {
       const { id } = req.params;
       const vendorId = req.vendorId;
       const po = await PurchaseOrder.findOne({ _id: id, vendor: vendorId }).lean();
       if (!po) {
-        return res.status(404).json({ message: 'Not found' });
+        res.status(404).json({ message: 'Not found' });
+        return;
       }
-      return res.json(po);
+      res.json(po);
     } catch (err) {
-      return next(err);
+      next(err);
     }
   },
 );

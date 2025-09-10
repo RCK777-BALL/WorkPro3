@@ -82,5 +82,10 @@ describe('Auth Routes', () => {
       .post('/api/auth/logout')
       .set('Cookie', cookies)
       .expect(200);
+
+    await request(app)
+      .get('/api/auth/me')
+      .set('Cookie', cookies)
+      .expect(401);
   });
 });

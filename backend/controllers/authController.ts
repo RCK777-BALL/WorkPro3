@@ -42,6 +42,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       id: user._id.toString(),
       email: user.email,
       tenantId,
+      tokenVersion: user.tokenVersion,
     };
     const secret = process.env.JWT_SECRET;
     if (!secret) {
@@ -157,7 +158,12 @@ export const verifyMfa = async (req: Request, res: Response): Promise<void> => {
     user.mfaEnabled = true;
     await user.save();
     const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
-    const payload = { id: user._id.toString(), email: user.email, tenantId };
+    const payload = {
+      id: user._id.toString(),
+      email: user.email,
+      tenantId,
+      tokenVersion: user.tokenVersion,
+    };
     const secret = process.env.JWT_SECRET;
     if (!secret) {
       res.status(500).json({ message: 'Server configuration issue' });
@@ -188,11 +194,16 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
 };
 
 
-export const logout = (
-  _req: Request,
-  res: Response,
-  _next: NextFunction
-) => {
+export const logout = async (req: Request, res: Response): Promise<void> => {
+  const userId = (req as any).user?.id;
+  if (userId) {
+    try {
+      await User.findByIdAndUpdate(userId, { $inc: { tokenVersion: 1 } });
+    } catch (err) {
+      logger.error('logout tokenVersion increment error', err);
+    }
+  }
+
   res
     .clearCookie('token', {
       httpOnly: true,

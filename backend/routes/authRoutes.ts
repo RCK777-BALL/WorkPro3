@@ -2,11 +2,12 @@ import { Router } from 'express';
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { generateMfa, verifyMfa } from '../controllers/authController';
+import { generateMfa, verifyMfa, getMe, logout } from '../controllers/authController';
 import { configureOIDC } from '../auth/oidc';
 import { configureOAuth, getOAuthScope, OAuthProvider } from '../auth/oauth';
 import { getJwtSecret } from '../utils/getJwtSecret';
- import User from '../models/User';
+import User from '../models/User';
+import { requireAuth } from '../middleware/authMiddleware';
 import {
   loginSchema,
   registerSchema,
@@ -36,7 +37,7 @@ router.post('/login', async (req, res) => {
 
     assertEmail(user.email);
 
-    const valid = await bcrypt.compare(password, user.password);
+    const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
@@ -52,11 +53,16 @@ router.post('/login', async (req, res) => {
     if (!secret) {
       return;
     }
-    const token = jwt.sign({
-      id: user._id.toString(),
-      email: user.email,
-      tenantId,
-    }, secret, { expiresIn: '7d' });
+    const token = jwt.sign(
+      {
+        id: user._id.toString(),
+        email: user.email,
+        tenantId,
+        tokenVersion: user.tokenVersion,
+      },
+      secret,
+      { expiresIn: '7d' },
+    );
     const { password: _pw, ...safeUser } = user.toObject();
     return res
       .cookie('token', token, {
@@ -131,5 +137,9 @@ router.get('/oauth/:provider/callback', (req, res, next) => {
 // MFA endpoints
 router.post('/mfa/setup', generateMfa);
 router.post('/mfa/verify', verifyMfa);
+
+// Authenticated routes
+router.get('/me', requireAuth, getMe);
+router.post('/logout', requireAuth, logout);
 
 export default router;

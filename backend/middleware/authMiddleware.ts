@@ -5,6 +5,7 @@ import { RequestHandler } from 'express';
 
 interface TokenPayload {
   id: string;
+  tokenVersion?: number;
 }
 
 /**
@@ -33,7 +34,10 @@ export const requireAuth: RequestHandler = async (
       return;
     }
 
-    const { id } = jwt.verify(token, process.env.JWT_SECRET!) as TokenPayload;
+    const { id, tokenVersion } = jwt.verify(
+      token,
+      process.env.JWT_SECRET!,
+    ) as TokenPayload;
 
     if (!id) {
       res.status(401).json({ message: 'Unauthorized' });
@@ -43,7 +47,7 @@ export const requireAuth: RequestHandler = async (
  
     const user = await User.findById(id).lean<UserDocument>().exec();
 
-    if (!user) {
+    if (!user || (tokenVersion ?? 0) !== user.tokenVersion) {
       res.status(401).json({ message: 'Unauthorized' });
       return;
     }

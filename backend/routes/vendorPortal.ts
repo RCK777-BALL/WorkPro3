@@ -1,5 +1,4 @@
 import express from 'express';
-import jwt from 'jsonwebtoken';
 import type { Request, Response, NextFunction } from 'express';
 
 import Vendor from '../models/Vendor';
@@ -7,6 +6,7 @@ import PurchaseOrder from '../models/PurchaseOrder';
 import { requireVendorAuth } from '../middleware/vendorAuth';
 import { getJwtSecret } from '../utils/getJwtSecret';
 import { assertEmail } from '../utils/assert';
+import createJwt from '../utils/createJwt';
 
 import {
   listVendorPurchaseOrders,
@@ -40,13 +40,14 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
       return;
     }
 
-    const token = jwt.sign({ id: vendor._id.toString() }, secret as string, {
+     const token = jwt.sign({ id: vendor._id.toString() }, secret as string, {
       expiresIn: '7d',
     });
     res.json({ token });
   } catch (err) {
     next(err);
   }
+ 
 });
 
 // All routes below require a valid vendor token

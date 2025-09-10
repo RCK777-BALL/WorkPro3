@@ -56,12 +56,27 @@ router.post('/login', async (req, res) => {
     if (!secret) {
       return;
     }
-    const token = jwt.sign({
-      id: user._id.toString(),
-      email: user.email,
-      tenantId,
-    }, secret, { expiresIn: '7d' });
-    const { passwordHash: _pw, ...safeUser } = user.toObject();
+     const token = jwt.sign(
+      {
+        id: user._id.toString(),
+        email: user.email,
+        tenantId,
+      },
+      secret,
+      { expiresIn: '7d' },
+    );
+
+    const { password: _pw, ...safeUser } = user.toObject();
+
+    const responseBody: Record<string, unknown> = {
+      user: { ...safeUser, tenantId },
+    };
+
+    if (process.env.INCLUDE_AUTH_TOKEN === 'true') {
+      responseBody.token = token;
+    }
+
+ 
     return res
       .cookie('token', token, {
         httpOnly: true,
@@ -69,7 +84,7 @@ router.post('/login', async (req, res) => {
         secure: process.env.NODE_ENV === 'production',
       })
       .status(200)
-      .json({ token, user: { ...safeUser, tenantId } });
+      .json(responseBody);
   } catch {
     return res.status(500).json({ message: 'Server error' });
   }

@@ -128,13 +128,23 @@ router.post('/login', loginLimiter, async (req, res) => {
     if (existing) {
       return res.status(400).json({ message: 'Email already in use' });
     }
-    const user = new User({ name, email, passwordHash: password, tenantId, employeeId });
-    await user.save();
+     const user = new User({ name, email, password, tenantId, employeeId });
+    await user.save().catch((err: any) => {
+      if (err.code === 11000) {
+        res.status(400).json({ message: 'Email or employee ID already in use' });
+        return;
+      }
+      throw err;
+    });
+    if (res.headersSent) {
+      return;
+    }
     return res.status(201).json({ message: 'User registered successfully' });
   } catch (err) {
-     console.error('Register error:', err);
+    if (!res.headersSent) {
+      return res.status(500).json({ message: 'Server error' });
+    }
  
-    return res.status(500).json({ message: 'Server error' });
   }
 });
 

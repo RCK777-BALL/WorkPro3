@@ -7,7 +7,6 @@ import WorkHistory from '../models/WorkHistory';
 import User from '../models/User';
 import TimeSheet from '../models/TimeSheet';
 import Inventory from '../models/Inventory';
-import { Request, Response, NextFunction } from 'express';
 
 async function calculateStats(tenantId: string, role?: string) {
   const roleFilter = role || 'technician';

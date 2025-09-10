@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import User from '../models/User';
-import { Request, Response, NextFunction } from 'express';
 
  export const getTheme = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {

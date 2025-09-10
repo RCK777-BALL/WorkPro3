@@ -36,7 +36,7 @@ router.post('/login', async (req, res) => {
 
     assertEmail(user.email);
 
-    const valid = await bcrypt.compare(password, user.password);
+    const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
@@ -57,7 +57,7 @@ router.post('/login', async (req, res) => {
       email: user.email,
       tenantId,
     }, secret, { expiresIn: '7d' });
-    const { password: _pw, ...safeUser } = user.toObject();
+    const { passwordHash: _pw, ...safeUser } = user.toObject();
     return res
       .cookie('token', token, {
         httpOnly: true,

@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Asset from '../models/Asset';
 import { validationResult } from 'express-validator';
 import logger from '../utils/logger';

@@ -1,5 +1,4 @@
 import express from 'express';
-import jwt from 'jsonwebtoken';
 import type { Request, Response, NextFunction } from 'express';
 
 import Vendor from '../models/Vendor';
@@ -7,6 +6,7 @@ import PurchaseOrder from '../models/PurchaseOrder';
 import { requireVendorAuth } from '../middleware/vendorAuth';
 import { getJwtSecret } from '../utils/getJwtSecret';
 import { assertEmail } from '../utils/assert';
+import createJwt from '../utils/createJwt';
 
 import {
   listVendorPurchaseOrders,
@@ -18,11 +18,13 @@ const router = express.Router();
 /**
  * Vendor login - issues a JWT for portal access
  */
-router.post('/login', async (req: Request, res: Response) => {
+ router.post('/login', async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
   const { vendorId, email } = req.body as { vendorId?: string; email?: string };
   if (!vendorId) {
-    res.status(400).json({ message: 'vendorId required' });
-    return;
+    return res.status(400).json({ message: 'vendorId required' });
   }
   if (email !== undefined) {
     assertEmail(email);
@@ -30,19 +32,19 @@ router.post('/login', async (req: Request, res: Response) => {
 
   const vendor = await Vendor.findById(vendorId).lean();
   if (!vendor || (email && vendor.email !== email)) {
-    res.status(401).json({ message: 'Invalid credentials' });
-    return;
+    return res.status(401).json({ message: 'Invalid credentials' });
   }
 
   const secret = getJwtSecret(res, true);
   if (!secret) {
-    return;
+    return res;
   }
 
   const token = jwt.sign({ id: vendor._id.toString() }, secret as string, {
     expiresIn: '7d',
   });
-  res.json({ token });
+  return res.json({ token });
+ 
 });
 
 // All routes below require a valid vendor token

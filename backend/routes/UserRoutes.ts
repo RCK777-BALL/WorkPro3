@@ -6,23 +6,24 @@ import {
   updateUser,
   deleteUser,
   getUserTheme,
-  updateUserTheme
+  updateUserTheme,
 } from '../controllers/UserController';
 import { requireAuth } from '../middleware/authMiddleware';
 import requireRole from '../middleware/requireRole';
+import validateObjectId from '../middleware/validateObjectId';
 
 const router = express.Router();
 
 router.use(requireAuth);
  
-router.get('/:id/theme', getUserTheme);
-router.put('/:id/theme', updateUserTheme);
+router.get('/:id/theme', validateObjectId('id'), getUserTheme);
+router.put('/:id/theme', validateObjectId('id'), updateUserTheme);
 router.use(requireRole('admin'));
  
 router.get('/', getAllUsers);
-router.get('/:id', getUserById);
+router.get('/:id', validateObjectId('id'), getUserById);
 router.post('/', createUser);
-router.put('/:id', updateUser);
-router.delete('/:id', deleteUser);
+router.put('/:id', validateObjectId('id'), updateUser);
+router.delete('/:id', validateObjectId('id'), deleteUser);
 
 export default router;

@@ -14,6 +14,7 @@ import { requireAuth } from '../middleware/authMiddleware';
 import requireRole from '../middleware/requireRole';
 import { validate } from '../middleware/validationMiddleware';
 import { workOrderValidators } from '../validators/workOrderValidators';
+import validateObjectId from '../middleware/validateObjectId';
 
 const router = express.Router();
 const upload = multer();
@@ -21,8 +22,13 @@ const upload = multer();
 router.use(requireAuth);
 router.get('/', getAllWorkOrders);
 router.get('/search', searchWorkOrders);
-router.get('/:id/assist', requireRole('admin', 'manager', 'technician'), assistWorkOrder);
-router.get('/:id', getWorkOrderById);
+router.get(
+  '/:id/assist',
+  validateObjectId('id'),
+  requireRole('admin', 'manager', 'technician'),
+  assistWorkOrder
+);
+router.get('/:id', validateObjectId('id'), getWorkOrderById);
 
 router.post(
   '/',
@@ -35,6 +41,7 @@ router.post(
  
 router.put(
   '/:id',
+  validateObjectId('id'),
   requireRole('admin', 'manager', 'technician'),
   workOrderValidators,
   validate,
@@ -43,9 +50,10 @@ router.put(
  
 router.post(
   '/:id/approve',
+  validateObjectId('id'),
   requireRole('admin', 'manager'),
   approveWorkOrder
 );
-router.delete('/:id', requireRole('admin', 'manager'), deleteWorkOrder);
+router.delete('/:id', validateObjectId('id'), requireRole('admin', 'manager'), deleteWorkOrder);
  
 export default router;

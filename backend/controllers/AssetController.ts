@@ -1,6 +1,28 @@
 import Asset from '../models/Asset';
 import { validationResult } from 'express-validator';
 import logger from '../utils/logger';
+import { filterFields } from '../utils/filterFields';
+
+const assetCreateFields = [
+  'name',
+  'type',
+  'location',
+  'departmentId',
+  'status',
+  'serialNumber',
+  'description',
+  'modelName',
+  'manufacturer',
+  'purchaseDate',
+  'installationDate',
+  'lineId',
+  'stationId',
+  'siteId',
+  'criticality',
+  'documents',
+];
+
+const assetUpdateFields = [...assetCreateFields];
 
 export const getAllAssets: AuthedRequestHandler = async (req, res, next) => {
   try {
@@ -63,7 +85,8 @@ export const createAsset: AuthedRequestHandler = async (req, res, next) => {
 
     const tenantId = resolvedTenantId;
 
-    const payload: any = { ...req.body, tenantId };
+    const payload: any = filterFields(req.body, assetCreateFields);
+    payload.tenantId = tenantId;
     if (req.siteId && !payload.siteId) payload.siteId = req.siteId;
 
     const newAsset = await Asset.create(payload);
@@ -106,16 +129,14 @@ export const updateAsset: AuthedRequestHandler = async (req, res, next) => {
 
     const filter: any = { _id: req.params.id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
-
-    const asset = await Asset.findOneAndUpdate(filter, req.body, {
+     const update = filterFields(req.body, assetUpdateFields);
+    const asset = await Asset.findOneAndUpdate(filter, update, {
       new: true,
       runValidators: true,
     });
-
-    if (!asset) {
-      return res.status(404).json({ message: 'Not found' });
-    }
-    return res.json(asset);
+    if (!asset) return res.status(404).json({ message: 'Not found' });
+    res.json(asset);
+ 
   } catch (err) {
     next(err);
     return;

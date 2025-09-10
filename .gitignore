@@ -17,7 +17,6 @@ backend/logs/
 
 # Compiled JavaScript from TypeScript
 backend/**/*.js
-!backend/scripts/migrations/*.js
 
 # MongoDB playground files
 playground-*.mongodb.js

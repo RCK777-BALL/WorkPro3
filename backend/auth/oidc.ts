@@ -1,4 +1,5 @@
-import type { Strategy as PassportStrategy } from 'passport';
+import passport, { Strategy as PassportStrategy } from 'passport';
+import { Strategy as OIDCStrategy } from 'passport-openidconnect';
 import type { VerifyCallback } from 'passport-openidconnect';
 
 interface OIDCStrategyOptions {
@@ -14,30 +15,8 @@ interface OIDCProfile {
   _json?: { groups?: string[] };
 }
 
-type PassportUse = (name: string, strategy: PassportStrategy) => void;
-type OIDCStrategyConstructor = new (
-  options: OIDCStrategyOptions,
-  verify: VerifyCallback,
-) => PassportStrategy;
-
-let passport: { use?: PassportUse } = {};
-let OIDCStrategy: OIDCStrategyConstructor;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  passport = require('passport') as { use: PassportUse };
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  OIDCStrategy = require('passport-openidconnect').Strategy as OIDCStrategyConstructor;
-} catch {
-  // Fallback mocks if packages are unavailable in test environment
-  class MockStrategy {
-    name: string;
-    constructor(options: OIDCStrategyOptions, _verify: VerifyCallback) {
-      this.name = options.name ?? 'oidc';
-    }
-  }
-  OIDCStrategy = MockStrategy as unknown as OIDCStrategyConstructor;
-  passport.use = () => {};
-}
+// OIDC authentication relies on Passport and the passport-openidconnect strategy.
+// These modules are regular dependencies and are imported directly.
 
 export type Provider = 'okta' | 'azure';
 

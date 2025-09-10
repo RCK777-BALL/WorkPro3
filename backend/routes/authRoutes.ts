@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import passport from 'passport';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -42,7 +42,11 @@ const router = Router();
 router.use(passport.initialize());
 
 // Local login
-router.post('/login', loginLimiter, async (req: Request, res: Response): Promise<Response> => {
+router.post('/login', loginLimiter, async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ message: 'Invalid request' });
@@ -113,87 +117,101 @@ router.post('/login', loginLimiter, async (req: Request, res: Response): Promise
       .json({ token, user: { ...userObj, tenantId } });
   } catch (err) {
     console.error('Login error:', err);
-    return res.status(500).json({ message: 'Server error' });
+    return next(err);
   }
 });
 
 // Local register (optional)
-router.post('/register', registerLimiter, async (req: Request, res: Response): Promise<Response> => {
-  const parsed = await registerSchema.safeParseAsync(req.body);
-  if (!parsed.success) {
-    return res.status(400).json({ message: 'Invalid request' });
-  }
-
-  const { name, email, password, tenantId, employeeId } = parsed.data;
-
-  try {
-    const existing = await User.findOne({ email });
-    if (existing) {
-      return res.status(400).json({ message: 'Email already in use' });
+router.post(
+  '/register',
+  registerLimiter,
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const parsed = await registerSchema.safeParseAsync(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: 'Invalid request' });
     }
 
-    const user = new User({ name, email, password, tenantId, employeeId });
+    const { name, email, password, tenantId, employeeId } = parsed.data;
+
     try {
-      await user.save();
-    } catch (err: any) {
-      if (err && err.code === 11000) {
-        return res.status(400).json({ message: 'Email or employee ID already in use' });
+      const existing = await User.findOne({ email });
+      if (existing) {
+        return res.status(400).json({ message: 'Email already in use' });
       }
-      throw err;
-    }
 
-    return res.status(201).json({ message: 'User registered successfully' });
-  } catch (err) {
-    console.error('Register error:', err);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
+      const user = new User({ name, email, password, tenantId, employeeId });
+      try {
+        await user.save();
+      } catch (err: any) {
+        if (err && err.code === 11000) {
+          return res.status(400).json({ message: 'Email or employee ID already in use' });
+        }
+        throw err;
+      }
+
+      return res.status(201).json({ message: 'User registered successfully' });
+    } catch (err) {
+      console.error('Register error:', err);
+      return next(err);
+    }
+  },
+);
 
 // OAuth routes
-router.get('/oauth/:provider', async (req, res, next) => {
-  const provider = req.params.provider as OAuthProvider;
-  try {
-    await new Promise<void>((resolve, reject) => {
-      const auth = passport.authenticate(provider, {
-        scope: getOAuthScope(provider),
+router.get(
+  '/oauth/:provider',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const provider = req.params.provider as OAuthProvider;
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const auth = passport.authenticate(provider, {
+          scope: getOAuthScope(provider),
+        });
+        auth(req, res, (err: unknown) => (err ? reject(err) : resolve()));
       });
-      auth(req, res, (err: unknown) => (err ? reject(err) : resolve()));
-    });
-  } catch (err) {
-    next(err);
-  }
-});
+    } catch (err) {
+      return next(err);
+    }
+  },
+);
 
-router.get('/oauth/:provider/callback', async (req, res, next) => {
-  const provider = req.params.provider as OAuthProvider;
-  passport.authenticate(
-    provider,
-    { session: false },
-    (err: Error | null, user: Express.User | false | null) => {
-      if (err || !user) {
-        if (err) {
-          console.error(`OAuth ${provider} callback error:`, err);
-        }
-        return res.status(400).json({ message: 'Authentication failed' });
-      }
-      let secret: string;
-      try {
-        secret = getJwtSecret();
-      } catch {
-        return res.status(500).json({ message: 'Server configuration issue' });
-      }
-      assertEmail((user as any).email);
-      const token = jwt.sign({ email: (user as any).email }, secret, {
-        expiresIn: '7d',
-      });
-      const frontend = process.env.FRONTEND_URL || 'http://localhost:5173/login';
-      const redirectUrl = `${frontend}?token=${token}&email=${encodeURIComponent(
-        (user as any).email,
-      )}`;
-      return res.redirect(redirectUrl);
-    },
-  )(req, res, next);
-});
+router.get(
+  '/oauth/:provider/callback',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const provider = req.params.provider as OAuthProvider;
+      return passport.authenticate(
+        provider,
+        { session: false },
+        (err: Error | null, user: Express.User | false | null) => {
+          if (err || !user) {
+            if (err) {
+              console.error(`OAuth ${provider} callback error:`, err);
+            }
+            return res.status(400).json({ message: 'Authentication failed' });
+          }
+          let secret: string;
+          try {
+            secret = getJwtSecret();
+          } catch {
+            return res.status(500).json({ message: 'Server configuration issue' });
+          }
+          assertEmail((user as any).email);
+          const token = jwt.sign({ email: (user as any).email }, secret, {
+            expiresIn: '7d',
+          });
+          const frontend = process.env.FRONTEND_URL || 'http://localhost:5173/login';
+          const redirectUrl = `${frontend}?token=${token}&email=${encodeURIComponent(
+            (user as any).email,
+          )}`;
+          return res.redirect(redirectUrl);
+        },
+      )(req, res, next);
+    } catch (err) {
+      return next(err);
+    }
+  },
+);
 
 // MFA endpoints
 router.post('/mfa/setup', setupMfa);

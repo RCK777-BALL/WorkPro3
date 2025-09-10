@@ -16,18 +16,26 @@ async function verifyCaptcha(token: string): Promise<boolean> {
   return token === 'valid-captcha';
 }
 
-router.get('/:slug', async (req, res) => {
-  const form = await RequestForm.findOne({ slug: req.params.slug }).lean();
-  if (!form) return res.status(404).json({ message: 'Form not found' });
-  res.json(form.schema);
+router.get('/:slug', async (req, res, next) => {
+  try {
+    const form = await RequestForm.findOne({ slug: req.params.slug }).lean();
+    if (!form) return res.status(404).json({ message: 'Form not found' });
+    res.json(form.schema);
+  } catch (err) {
+    next(err);
+  }
 });
 
-router.post('/:slug', submissionLimiter, async (req, res) => {
-  const { captcha, ...data } = req.body;
-  if (!(await verifyCaptcha(captcha))) {
-    return res.status(400).json({ message: 'Invalid CAPTCHA' });
+router.post('/:slug', submissionLimiter, async (req, res, next) => {
+  try {
+    const { captcha } = req.body;
+    if (!(await verifyCaptcha(captcha))) {
+      return res.status(400).json({ message: 'Invalid CAPTCHA' });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
   }
-  res.json({ success: true });
 });
 
 export default router;

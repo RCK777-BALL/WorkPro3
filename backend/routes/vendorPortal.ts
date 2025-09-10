@@ -1,5 +1,4 @@
 import express from 'express';
-import jwt from 'jsonwebtoken';
 import type { Request, Response, NextFunction } from 'express';
 
 import Vendor from '../models/Vendor';
@@ -7,6 +6,7 @@ import PurchaseOrder from '../models/PurchaseOrder';
 import { requireVendorAuth } from '../middleware/vendorAuth';
 import { getJwtSecret } from '../utils/getJwtSecret';
 import { assertEmail } from '../utils/assert';
+import createJwt from '../utils/createJwt';
 
 import {
   listVendorPurchaseOrders,
@@ -18,31 +18,36 @@ const router = express.Router();
 /**
  * Vendor login - issues a JWT for portal access
  */
-router.post('/login', async (req: Request, res: Response) => {
-  const { vendorId, email } = req.body as { vendorId?: string; email?: string };
-  if (!vendorId) {
-    res.status(400).json({ message: 'vendorId required' });
-    return;
-  }
-  if (email !== undefined) {
-    assertEmail(email);
-  }
+router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { vendorId, email } = req.body as { vendorId?: string; email?: string };
+    if (!vendorId) {
+      res.status(400).json({ message: 'vendorId required' });
+      return;
+    }
+    if (email !== undefined) {
+      assertEmail(email);
+    }
 
-  const vendor = await Vendor.findById(vendorId).lean();
-  if (!vendor || (email && vendor.email !== email)) {
-    res.status(401).json({ message: 'Invalid credentials' });
-    return;
-  }
+    const vendor = await Vendor.findById(vendorId).lean();
+    if (!vendor || (email && vendor.email !== email)) {
+      res.status(401).json({ message: 'Invalid credentials' });
+      return;
+    }
 
-  const secret = getJwtSecret(res, true);
-  if (!secret) {
-    return;
-  }
+    const secret = getJwtSecret(res, true);
+    if (!secret) {
+      return;
+    }
 
-  const token = jwt.sign({ id: vendor._id.toString() }, secret as string, {
-    expiresIn: '7d',
-  });
-  res.json({ token });
+     const token = jwt.sign({ id: vendor._id.toString() }, secret as string, {
+      expiresIn: '7d',
+    });
+    res.json({ token });
+  } catch (err) {
+    next(err);
+  }
+ 
 });
 
 // All routes below require a valid vendor token

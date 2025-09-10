@@ -1,7 +1,7 @@
 
 import jwt from 'jsonwebtoken';
+import type { Request, Response, NextFunction } from 'express';
 import User, { UserDocument } from '../models/User';
-import { RequestHandler } from 'express';
 
 interface TokenPayload {
   id: string;
@@ -15,10 +15,10 @@ interface TokenPayload {
  * loaded and attached to `req.user`.
  */
  
-export const requireAuth: RequestHandler = async (
-  req,
-  res,
-  next
+export const requireAuth = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
 ): Promise<void> => {
  
   try {
@@ -53,13 +53,13 @@ export const requireAuth: RequestHandler = async (
     }
 
     const tenantId = user.tenantId.toString();
-    (req as AuthedRequest).user = {
+    req.user = {
       id: user._id.toString(),
       _id: user._id.toString(),
       email: user.email,
       role: user.role,
     };
-    (req as AuthedRequest).tenantId = tenantId;
+    req.tenantId = tenantId;
 
     next();
   } catch (_err) {

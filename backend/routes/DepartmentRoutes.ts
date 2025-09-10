@@ -5,6 +5,7 @@ import Asset from "../models/Asset";
 import { requireAuth } from "../middleware/authMiddleware";
 import { departmentValidators } from "../validators/departmentValidators";
 import { validate } from "../middleware/validationMiddleware";
+import type { AuthedRequestHandler } from "../types/http";
 
 // GET /api/departments → list by tenantId (+optional siteId)
 const listDepartments: AuthedRequestHandler<

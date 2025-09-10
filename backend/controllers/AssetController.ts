@@ -17,6 +17,9 @@ export const getAllAssets: AuthedRequestHandler = async (req, res, next) => {
 
 export const getAssetById: AuthedRequestHandler = async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid ID' });
+    }
     const filter: any = { _id: req.params.id, tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
 
@@ -92,7 +95,11 @@ export const updateAsset: AuthedRequestHandler = async (req, res, next) => {
   }
 
   try {
-    const errors = validationResult(req as any);
+     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid ID' });
+    }
+    const errors = validationResult(req);
+ 
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
@@ -117,6 +124,9 @@ export const updateAsset: AuthedRequestHandler = async (req, res, next) => {
 
 export const deleteAsset: AuthedRequestHandler = async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid ID' });
+    }
     const filter: any = { _id: req.params.id, tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
 

@@ -7,13 +7,10 @@ import { configureOIDC } from '../auth/oidc';
 import { configureOAuth } from '../auth/oauth';
 import { OAuthProvider, getOAuthScope } from '../config/oauthScopes';
 import { getJwtSecret } from '../utils/getJwtSecret';
-import User from '../models/User';
- import { requireAuth } from '../middleware/authMiddleware';
+  import User from '../models/User';
+import { loginSchema, registerSchema } from '../validators/authValidators';
+import { assertEmail } from '../utils/assert';
  
-import {
-  loginSchema,
-  registerSchema,
-} from '../validators/authValidators';
  
 const FAKE_PASSWORD_HASH =
   '$2b$10$lbmUy86xKlj1/lR8TPPby.1/KfNmrRrgOgGs3u21jcd2SzCBRqDB.';
@@ -62,9 +59,7 @@ router.use(passport.initialize());
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-     assertEmail(user.email);
-
-     const valid = await bcrypt.compare(password, user.passwordHash);
+     const valid = await bcrypt.compare(password, user.password);
  
     if (!valid) {
       return res.status(400).json({ message: 'Invalid email or password' });

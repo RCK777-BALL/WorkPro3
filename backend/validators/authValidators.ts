@@ -12,16 +12,13 @@ export const loginSchema = z
   })
   .strict();
 
- export const registerSchema = z
-  .object({
-    name: z.string().min(1),
-    email,
-    password: z.string().min(1),
-    tenantId: z.string().min(1),
-    employeeId: z.string().min(1),
-  })
-  .strict();
- 
+ export const registerSchema = z.object({
+  name: z.string().min(1),
+  email,
+  password: z.string().min(1),
+  tenantId: z.string().min(1),
+  employeeId: z.string().min(1),
+});
 
  
 export type LoginInput = z.infer<typeof loginSchema>;

@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
@@ -21,7 +21,10 @@ const router = Router();
 router.use(passport.initialize());
 
 // Local login
-router.post('/login', async (req, res) => {
+router.post('/login', async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ message: 'Invalid request' });
@@ -50,7 +53,7 @@ router.post('/login', async (req, res) => {
     const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
     const secret = getJwtSecret(res);
     if (!secret) {
-      return;
+      return res;
     }
     const token = jwt.sign({
       id: user._id.toString(),

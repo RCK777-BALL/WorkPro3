@@ -16,5 +16,6 @@ export const registerSchema = z.object({
   employeeId: z.string().min(1),
 });
 
+ 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;

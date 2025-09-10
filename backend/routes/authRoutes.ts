@@ -6,7 +6,7 @@ import { generateMfa, verifyMfa } from '../controllers/authController';
 import { configureOIDC } from '../auth/oidc';
 import { configureOAuth, getOAuthScope, OAuthProvider } from '../auth/oauth';
 import { getJwtSecret } from '../utils/getJwtSecret';
- import User from '../models/User';
+import User from '../models/User';
 import {
   loginSchema,
   registerSchema,

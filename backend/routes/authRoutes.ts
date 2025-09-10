@@ -1,11 +1,18 @@
 import { Router } from 'express';
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
-import { login, generateMfa, verifyMfa } from '../controllers/authController';
+import bcrypt from 'bcryptjs';
+import { generateMfa, verifyMfa } from '../controllers/authController';
 import { configureOIDC } from '../auth/oidc';
 import { configureOAuth, getOAuthScope, OAuthProvider } from '../auth/oauth';
 import { getJwtSecret } from '../utils/getJwtSecret';
-import { assertEmail } from '../utils/assert';
+ import User from '../models/User';
+import {
+  loginSchema,
+  registerSchema,
+  assertEmail,
+} from '../validators/authValidators';
+ 
 
 configureOIDC();
 configureOAuth();
@@ -14,7 +21,76 @@ const router = Router();
 router.use(passport.initialize());
 
 // Local login
-router.post('/login', login);
+router.post('/login', async (req, res) => {
+  const parsed = loginSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ message: 'Invalid request' });
+  }
+  const { email, password } = parsed.data;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid email or password' });
+    }
+
+    assertEmail(user.email);
+
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) {
+      return res.status(400).json({ message: 'Invalid email or password' });
+    }
+
+    if (user.mfaEnabled) {
+      return res
+        .status(200)
+        .json({ mfaRequired: true, userId: user._id.toString() });
+    }
+
+    const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
+    const secret = getJwtSecret(res);
+    if (!secret) {
+      return;
+    }
+    const token = jwt.sign({
+      id: user._id.toString(),
+      email: user.email,
+      tenantId,
+    }, secret, { expiresIn: '7d' });
+    const { password: _pw, ...safeUser } = user.toObject();
+    return res
+      .cookie('token', token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+      })
+      .status(200)
+      .json({ token, user: { ...safeUser, tenantId } });
+  } catch {
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Local register (optional)
+router.post('/register', async (req, res) => {
+  const parsed = registerSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ message: 'Invalid request' });
+  }
+  const { name, email, password, tenantId, employeeId } = parsed.data;
+
+  try {
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(400).json({ message: 'Email already in use' });
+    }
+    const user = new User({ name, email, password, tenantId, employeeId });
+    await user.save();
+    return res.status(201).json({ message: 'User registered successfully' });
+  } catch {
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
 
 // OAuth routes
 router.get('/oauth/:provider', (req, res, next) => {

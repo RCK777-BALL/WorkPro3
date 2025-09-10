@@ -6,7 +6,7 @@ import { generateMfa, verifyMfa } from '../controllers/authController';
 import { configureOIDC } from '../auth/oidc';
 import { configureOAuth, getOAuthScope, OAuthProvider } from '../auth/oauth';
 import { getJwtSecret } from '../utils/getJwtSecret';
- import User from '../models/User';
+import User from '../models/User';
 import {
   loginSchema,
   registerSchema,
@@ -42,9 +42,11 @@ router.post('/login', async (req, res) => {
     }
 
     if (user.mfaEnabled) {
-      return res
-        .status(200)
-        .json({ mfaRequired: true, userId: user._id.toString() });
+      // When MFA is enabled, avoid exposing internal identifiers. Inform the
+      // client that an MFA code is required. The client should subsequently
+      // call POST /auth/mfa/verify with the original email and the MFA token
+      // to receive the JWT.
+      return res.status(200).json({ mfaRequired: true });
     }
 
     const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
@@ -130,6 +132,8 @@ router.get('/oauth/:provider/callback', (req, res, next) => {
 
 // MFA endpoints
 router.post('/mfa/setup', generateMfa);
+// After a login request that returns { mfaRequired: true }, the client should
+// submit the email and MFA code to this endpoint to obtain the JWT.
 router.post('/mfa/verify', verifyMfa);
 
 export default router;

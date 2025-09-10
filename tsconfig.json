@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "exactOptionalPropertyTypes": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "moduleResolution": "node",
+    "target": "ES2020",
+    "module": "commonjs"
+  },
+  "include": ["backend/**/*.ts", "backend/types/**/*.d.ts"]
+}

@@ -6,12 +6,12 @@ import { generateMfa, verifyMfa } from '../controllers/authController';
 import { configureOIDC } from '../auth/oidc';
 import { configureOAuth, getOAuthScope, OAuthProvider } from '../auth/oauth';
 import { getJwtSecret } from '../utils/getJwtSecret';
- import User from '../models/User';
+import User from '../models/User';
 import {
   loginSchema,
   registerSchema,
-  assertEmail,
 } from '../validators/authValidators';
+import { assertEmail } from '../utils/assert';
  
 
 configureOIDC();
@@ -34,7 +34,9 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    const valid = await bcrypt.compare(password, user.password);
+     const valid = await bcrypt.compare(password, user.password);
+ 
+ 
     if (!valid) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
@@ -55,7 +57,7 @@ router.post('/login', async (req, res) => {
       email: user.email,
       tenantId,
     }, secret, { expiresIn: '7d' });
-    const { password: _pw, ...safeUser } = user.toObject();
+    const { passwordHash: _pw, ...safeUser } = user.toObject();
     return res
       .cookie('token', token, {
         httpOnly: true,
@@ -82,7 +84,7 @@ router.post('/register', async (req, res) => {
     if (existing) {
       return res.status(400).json({ message: 'Email already in use' });
     }
-    const user = new User({ name, email, password, tenantId, employeeId });
+    const user = new User({ name, email, passwordHash: password, tenantId, employeeId });
     await user.save();
     return res.status(201).json({ message: 'User registered successfully' });
   } catch {

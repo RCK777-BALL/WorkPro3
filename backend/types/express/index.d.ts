@@ -1,17 +1,17 @@
-import { Request, RequestHandler } from 'express';
+import type { Request, RequestHandler } from 'express';
+
 import { Types } from 'mongoose';
 import type { UserRole } from '../../models/User';
 
-export interface AuthedRequest<
-  P = any,
-  ResBody = any,
-  ReqBody = any,
-  ReqQuery = any,
-> extends Request<P, ResBody, ReqBody, ReqQuery> {
-  user?: RequestUser;
+export interface RequestUser {
+  id?: string;
+  _id?: Types.ObjectId | string;
+  email: string;
+  role?: UserRole;
   tenantId?: string;
-  siteId?: string;
+   siteId?: string;
   vendorId?: string;
+  vendor?: any;
   thirdParty?: any;
 }
 
@@ -43,9 +43,11 @@ declare global {
       tenantId?: string;
       siteId?: string;
       vendorId?: string;
+      vendor?: any;
       thirdParty?: any;
     }
   }
+ 
 }
 
 export {};

@@ -1,11 +1,12 @@
-import { Response, NextFunction } from 'express';
+ import type { Request, Response, NextFunction } from 'express';
+ 
 import { validationResult } from 'express-validator';
 
-export const validate: AuthedRequestHandler = (
-  req: AuthedRequest,
+export const validate = (
+  req: Request,
   res: Response,
-  next: NextFunction
-) => {
+  next: NextFunction,
+): void => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });

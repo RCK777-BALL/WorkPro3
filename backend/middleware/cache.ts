@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import redis from '../utils/redisClient';
 
 /**
@@ -7,7 +7,11 @@ import redis from '../utils/redisClient';
  * expiration time in seconds.
  */
 export const cache = (keyPrefix: string, ttl = 60) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     const key = `${keyPrefix}:${req.originalUrl}`;
     try {
       const cached = await redis.get(key);

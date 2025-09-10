@@ -1,138 +1,115 @@
-import Asset from '../models/Asset';
+ import { Request, Response, NextFunction } from 'express';
 import { validationResult } from 'express-validator';
-import type { Request, Express } from 'express';
-import logger from '../utils/logger';
+import PMTask from '../models/PMTask';
 
-const tenantSiteFilter = (req: AuthedRequest, base: any = {}) => {
-  const filter: any = { ...base, tenantId: req.tenantId };
-  if (req.siteId) filter.siteId = req.siteId;
-  return filter;
-};
+// Shared param type for routes with :id
+interface IdParams { id: string }
 
-export const getAllAssets: AuthedRequestHandler = async (req, res, next) => {
+export const getAllPMTasks: AuthedRequestHandler = async (
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+ 
   try {
-    const assets = await Asset.find(tenantSiteFilter(req));
-    return res.json(assets);
+    const tasks = await PMTask.find({ tenantId: req.tenantId });
+    res.json(tasks);
+    return;
   } catch (err) {
     next(err);
     return;
   }
 };
 
-export const getAssetById: AuthedRequestHandler = async (req, res, next) => {
+ export const getPMTaskById: AuthedRequestHandler<IdParams> = async (
+  req: AuthedRequest<IdParams>,
+  res: Response,
+  next: NextFunction,
+) => {
+ 
   try {
-    const asset = await Asset.findOne(tenantSiteFilter(req, { _id: req.params.id }));
-    if (!asset) {
-      return res.status(404).json({ message: 'Not found' });
+    const task = await PMTask.findOne({ _id: req.params.id, tenantId: req.tenantId });
+    if (!task) {
+      res.status(404).json({ message: 'Not found' });
+      return;
     }
-    return res.json(asset);
+    res.json(task);
+    return;
   } catch (err) {
     next(err);
     return;
   }
 };
 
-export const createAsset: AuthedRequestHandler = async (req, res, next) => {
-  logger.debug('createAsset body:', req.body);
-  logger.debug('createAsset files:', (req as any).files);
-
-  const files = (req as any).files as Express.Multer.File[] | undefined;
-  if (!files || files.length === 0) {
-    logger.debug('No files uploaded for asset');
-  }
-
-  const { user, tenantId: reqTenantId } = req as AuthedRequest;
-  const resolvedTenantId = reqTenantId || user?.tenantId;
-  if (!resolvedTenantId) {
-    return res.status(400).json({ message: 'Tenant ID is required' });
-  }
-
-  if (!req.body.name) {
-    return res.status(400).json({ message: 'name is required' });
-  }
-
+ export const createPMTask: AuthedRequestHandler<unknown, any, any> = async (
+  req: AuthedRequest<unknown, any, any>,
+  res: Response,
+  next: NextFunction,
+) => {
+ 
   try {
     const errors = validationResult(req as Request);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      res.status(400).json({ errors: errors.array() });
+      return;
     }
-
-    const payload: any = { ...req.body, tenantId: resolvedTenantId };
-    if (req.siteId && !payload.siteId) payload.siteId = req.siteId;
-
-    const newAsset = await Asset.create(payload);
-    const assetObj = newAsset.toObject();
-    const response = { ...assetObj, tenantId: assetObj.tenantId.toString() };
-
-    return res.status(201).json(response);
+    const payload = { ...req.body, tenantId: req.tenantId };
+    const task = await PMTask.create(payload);
+    res.status(201).json(task);
+    return;
   } catch (err) {
     next(err);
     return;
   }
 };
 
-export const updateAsset: AuthedRequestHandler = async (req, res, next) => {
-  logger.debug('updateAsset body:', req.body);
-  logger.debug('updateAsset files:', (req as any).files);
-
-  const files = (req as any).files as Express.Multer.File[] | undefined;
-  if (!files || files.length === 0) {
-    logger.debug('No files uploaded for asset update');
-  }
-
-  const { user, tenantId: reqTenantId } = req as AuthedRequest;
-  const tenantId = reqTenantId || user?.tenantId;
-  if (!tenantId) {
-    return res.status(400).json({ message: 'Tenant ID is required' });
-  }
-
+ export const updatePMTask: AuthedRequestHandler<IdParams, any, any> = async (
+  req: AuthedRequest<IdParams, any, any>,
+  res: Response,
+  next: NextFunction,
+) => {
+ 
   try {
     const errors = validationResult(req as Request);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      res.status(400).json({ errors: errors.array() });
+      return;
     }
-
-    const asset = await Asset.findOneAndUpdate(
-      tenantSiteFilter(req, { _id: req.params.id, tenantId }),
+    const task = await PMTask.findOneAndUpdate(
+      { _id: req.params.id, tenantId: req.tenantId },
       req.body,
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
-
-    if (!asset) {
-      return res.status(404).json({ message: 'Not found' });
+    if (!task) {
+      res.status(404).json({ message: 'Not found' });
+      return;
     }
-    return res.json(asset);
+    res.json(task);
+    return;
   } catch (err) {
     next(err);
     return;
   }
 };
 
-export const deleteAsset: AuthedRequestHandler = async (req, res, next) => {
+ export const deletePMTask: AuthedRequestHandler<IdParams> = async (
+  req: AuthedRequest<IdParams>,
+  res: Response,
+  next: NextFunction,
+) => {
+ 
   try {
-    const asset = await Asset.findOneAndDelete(tenantSiteFilter(req, { _id: req.params.id }));
-    if (!asset) {
-      return res.status(404).json({ message: 'Not found' });
+    const task = await PMTask.findOneAndDelete({ _id: req.params.id, tenantId: req.tenantId });
+    if (!task) {
+      res.status(404).json({ message: 'Not found' });
+      return;
     }
-    return res.json({ message: 'Deleted successfully' });
+    res.json({ message: 'Deleted successfully' });
+    return;
+ 
   } catch (err) {
     next(err);
     return;
   }
 };
 
-export const searchAssets: AuthedRequestHandler = async (req, res, next) => {
-  try {
-    const q = (req.query.q as string) || '';
-    const regex = new RegExp(q, 'i');
-
-    const assets = await Asset.find(
-      tenantSiteFilter(req, { name: { $regex: regex } })
-    ).limit(10);
-
-    return res.json(assets);
-  } catch (err) {
-    next(err);
-    return;
-  }
-};

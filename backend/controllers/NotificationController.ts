@@ -2,12 +2,13 @@ import mongoose from 'mongoose';
 import Notification, { NotificationDocument } from '../models/Notifications';
 import User from '../models/User';
 import nodemailer from 'nodemailer';
-import { Response, NextFunction } from 'express';
+ 
 import { assertEmail } from '../utils/assert';
+import { Request, Response, NextFunction } from 'express';
 
 type IdParams = { id: string };
 
-export const getAllNotifications: AuthedRequestHandler<unknown, NotificationDocument[]> = async (
+ export const getAllNotifications: AuthedRequestHandler<unknown, NotificationDocument[]> = async (
   req: AuthedRequest<unknown, NotificationDocument[]>,
   res: Response,
   next: NextFunction,
@@ -16,6 +17,7 @@ export const getAllNotifications: AuthedRequestHandler<unknown, NotificationDocu
     const tenantId = req.tenantId;
     if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     const items = await Notification.find({ tenantId });
+ 
     res.json(items);
     return;
   } catch (err) {
@@ -24,11 +26,8 @@ export const getAllNotifications: AuthedRequestHandler<unknown, NotificationDocu
   }
 };
 
-export const getNotificationById: AuthedRequestHandler<IdParams, NotificationDocument> = async (
-  req: AuthedRequest<IdParams, NotificationDocument>,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const getNotificationById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const tenantId = req.tenantId;
     if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
@@ -45,11 +44,8 @@ export const getNotificationById: AuthedRequestHandler<IdParams, NotificationDoc
   }
 };
 
-export const createNotification: AuthedRequestHandler<unknown, NotificationDocument, any> = async (
-  req: AuthedRequest<unknown, NotificationDocument, any>,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const createNotification = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const tenantId = req.tenantId;
     if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
@@ -91,11 +87,8 @@ export const createNotification: AuthedRequestHandler<unknown, NotificationDocum
   }
 };
 
-export const markNotificationRead: AuthedRequestHandler<IdParams, NotificationDocument> = async (
-  req: AuthedRequest<IdParams, NotificationDocument>,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const markNotificationRead = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
     res.status(400).json({ message: 'Invalid ID' });
     return;
@@ -121,15 +114,8 @@ export const markNotificationRead: AuthedRequestHandler<IdParams, NotificationDo
   }
 };
 
-export const updateNotification: AuthedRequestHandler<
-  IdParams,
-  NotificationDocument,
-  mongoose.UpdateQuery<NotificationDocument>
-> = async (
-  req: AuthedRequest<IdParams, NotificationDocument, mongoose.UpdateQuery<NotificationDocument>>,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const updateNotification = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
     res.status(400).json({ message: 'Invalid ID' });
     return;
@@ -157,11 +143,8 @@ export const updateNotification: AuthedRequestHandler<
   }
 };
 
-export const deleteNotification: AuthedRequestHandler<IdParams, { message: string }> = async (
-  req: AuthedRequest<IdParams, { message: string }>,
-  res: Response,
-  next: NextFunction,
-) => {
+ export const deleteNotification = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
     res.status(400).json({ message: 'Invalid ID' });
     return;

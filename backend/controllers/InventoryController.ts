@@ -1,10 +1,11 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
+ 
+ 
 import InventoryItem, { IInventoryItem } from '../models/InventoryItem';
 import logger from '../utils/logger';
 import mongoose from 'mongoose';
-import type { AuthedRequest } from '../types/express';
 
-function scopedQuery(req: AuthedRequest, base: any = {}) {
+function scopedQuery(req: Request, base: any = {}) {
   const { tenantId, siteId } = req;
   if (tenantId) base.tenantId = tenantId;
   if (siteId) base.siteId = siteId;
@@ -50,7 +51,7 @@ function buildInventoryPayload(body: Record<string, unknown>) {
 }
 
 export const getInventoryItems = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -73,7 +74,7 @@ export const getInventoryItems = async (
 };
 
 export const getAllInventoryItems = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -87,7 +88,7 @@ export const getAllInventoryItems = async (
 };
 
 export const getLowStockItems = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -104,7 +105,7 @@ export const getLowStockItems = async (
 };
 
 export const getInventoryItemById = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -124,7 +125,7 @@ export const getInventoryItemById = async (
 };
 
 export const createInventoryItem = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -147,7 +148,7 @@ export const createInventoryItem = async (
 };
 
 export const updateInventoryItem = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -177,7 +178,7 @@ export const updateInventoryItem = async (
 };
 
 export const deleteInventoryItem = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -194,7 +195,7 @@ export const deleteInventoryItem = async (
 };
 
 export const useInventoryItem = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -224,7 +225,7 @@ export const useInventoryItem = async (
 };
 
 export const searchInventoryItems = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {

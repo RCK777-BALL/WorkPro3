@@ -1,5 +1,6 @@
 import User from '../models/User';
 import { filterFields } from '../utils/filterFields';
+import { Request, Response, NextFunction } from 'express';
 
 const userCreateFields = [
   'name',
@@ -27,11 +28,7 @@ const userUpdateFields = [...userCreateFields];
  *       200:
  *         description: List of users
  */
-export const getAllUsers: AuthedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const getAllUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
@@ -61,11 +58,7 @@ export const getAllUsers: AuthedRequestHandler = async (
  *       404:
  *         description: User not found
  */
-export const getUserById: AuthedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const getUserById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
@@ -94,11 +87,7 @@ export const getUserById: AuthedRequestHandler = async (
  *       201:
  *         description: User created
  */
-export const createUser: AuthedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const createUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
@@ -137,11 +126,7 @@ export const createUser: AuthedRequestHandler = async (
  *       404:
  *         description: User not found
  */
-export const updateUser: AuthedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const updateUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
@@ -180,11 +165,7 @@ export const updateUser: AuthedRequestHandler = async (
  *       404:
  *         description: User not found
  */
-export const deleteUser: AuthedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const deleteUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
@@ -217,11 +198,7 @@ export const deleteUser: AuthedRequestHandler = async (
  *       404:
  *         description: User not found
  */
-export const getUserTheme: AuthedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const getUserTheme = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = (req.user as any)?._id ?? req.user?.id;
     if (!userId) return res.status(401).json({ message: 'Not authenticated' });
@@ -268,11 +245,7 @@ export const getUserTheme: AuthedRequestHandler = async (
  *       404:
  *         description: User not found
  */
-export const updateUserTheme: AuthedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const updateUserTheme = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = (req.user as any)?._id ?? req.user?.id;
     if (!userId) return res.status(401).json({ message: 'Not authenticated' });

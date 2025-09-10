@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+
 import Tenant from '../models/Tenant';
 
 export const getAllTenants = async (_req: Request, res: Response, next: NextFunction) => {

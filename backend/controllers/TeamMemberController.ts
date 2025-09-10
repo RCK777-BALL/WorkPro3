@@ -1,4 +1,6 @@
+import { Request, Response, NextFunction } from 'express';
 import TeamMember, { ITeamMember } from '../models/TeamMember';
+import { Request, Response, NextFunction } from 'express';
 
 type IdParams = { id: string };
 
@@ -46,7 +48,8 @@ async function validateHierarchy(
   }
 }
 
-export const getTeamMembers: AuthedRequestHandler = async (req, res, next) => {
+ export const getTeamMembers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     // Only return basic information for each team member
     const members = await TeamMember.find({ tenantId: req.tenantId })
@@ -66,7 +69,8 @@ export const getTeamMembers: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const createTeamMember: AuthedRequestHandler = async (req, res, next) => {
+ export const createTeamMember = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const role = req.body.role;
     if (['admin', 'manager', 'department_leader'].includes(role)) {
@@ -87,11 +91,8 @@ export const createTeamMember: AuthedRequestHandler = async (req, res, next) => 
   }
 };
 
-export const updateTeamMember: AuthedRequestHandler<
-  IdParams,
-  any,
-  UpdateTeamMemberBody
-> = async (req, res, next) => {
+ export const updateTeamMember = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const role = req.body.role;
     if (['admin', 'manager', 'department_leader'].includes(role)) {
@@ -119,7 +120,8 @@ export const updateTeamMember: AuthedRequestHandler<
   }
 };
 
-export const deleteTeamMember: AuthedRequestHandler = async (req, res, next) => {
+ export const deleteTeamMember = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+ 
   try {
     const hasDependents = await TeamMember.findOne({
       managerId: req.params.id,

@@ -1,9 +1,9 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 
 // Middleware to ensure the authenticated user has one of the required roles
 const requireRole =
   (...roles: Array<'admin' | 'manager' | 'technician' | 'viewer'>) =>
-  (req: Request, res: Response, next: NextFunction) => {
+  (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
       return res.status(401).json({ message: 'Unauthorized' });
     }

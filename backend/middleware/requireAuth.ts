@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { getJwtSecret } from '../utils/getJwtSecret';
 
@@ -15,7 +15,11 @@ export interface AuthPayload {
  *  - Authorization: Bearer <token>
  *  - cookies.token (requires cookie-parser)
  */
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
+export function requireAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
   const bearer = req.headers.authorization?.startsWith('Bearer ')
     ? req.headers.authorization.slice(7)
     : undefined;

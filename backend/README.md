@@ -73,6 +73,127 @@ Running the seed script adds a small reporting hierarchy of example users:
 User sessions rely on a JWT stored in the `token` cookie. Clients must include this cookie on each request so the `requireAuth` middleware can verify the session. Ensure cookies are enabled in your HTTP client or browser.
 When `NODE_ENV` is set to `production` the cookie is created with the `Secure` flag enabled and is also cleared using the same option so it is only sent over HTTPS connections.
 
+### Local login
+
+`POST /api/auth/login`
+
+Authenticate with an email and password.
+
+**Payload**
+
+```json
+{
+  "email": "user@example.com",
+  "password": "secret"
+}
+```
+
+**Response**
+
+Successful login returns a JWT and user object and also sets the `token` cookie:
+
+```json
+{
+  "token": "<JWT>",
+  "user": { "_id": "<userId>", "email": "user@example.com" }
+}
+```
+
+If multi‑factor authentication is enabled for the account the server instead responds with:
+
+```json
+{
+  "mfaRequired": true,
+  "userId": "<userId>"
+}
+```
+
+### Registration
+
+`POST /api/auth/register`
+
+Create a new account.
+
+**Payload**
+
+```json
+{
+  "name": "User Name",
+  "email": "user@example.com",
+  "password": "secret",
+  "tenantId": "<tenantId>",
+  "employeeId": "EMP001"
+}
+```
+
+**Response**
+
+```json
+{ "message": "User registered successfully" }
+```
+
+### OAuth login
+
+`GET /api/auth/oauth/:provider`
+
+Initiate OAuth authentication with a third‑party provider (`google` or `github`).
+The user is redirected to the provider’s login page. After approval the provider calls:
+
+`GET /api/auth/oauth/:provider/callback`
+
+The callback issues a JWT and redirects the user back to the frontend with the token and email in the query string:
+
+```
+http://localhost:5173/login?token=<JWT>&email=user%40example.com
+```
+
+### OIDC login
+
+`GET /api/auth/oidc/:provider`
+
+Initiate OpenID Connect authentication (`okta` or `azure`). An optional `tenant` query parameter can be supplied.
+
+`GET /api/auth/oidc/:provider/callback`
+
+The callback behaves like the OAuth flow and redirects back to the frontend with a signed token.
+
+### Multi‑factor authentication
+
+`POST /api/auth/mfa/setup`
+
+Generate a secret for time‑based one‑time password (TOTP) MFA.
+
+**Payload**
+
+```json
+{ "userId": "<userId>" }
+```
+
+**Response**
+
+```json
+{ "secret": "<base32>", "token": "123456" }
+```
+
+`POST /api/auth/mfa/verify`
+
+Verify the MFA token and complete authentication.
+
+**Payload**
+
+```json
+{ "userId": "<userId>", "token": "123456" }
+```
+
+**Response**
+
+```json
+{
+  "token": "<JWT>",
+  "user": { "_id": "<userId>", "email": "user@example.com" }
+}
+```
+
 ## Summary Endpoints
 
 The `/api/summary` routes provide dashboard data:

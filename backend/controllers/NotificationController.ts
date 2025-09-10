@@ -5,17 +5,21 @@ import nodemailer from 'nodemailer';
  
 import { assertEmail } from '../utils/assert';
 import { Request, Response, NextFunction } from 'express';
+import type { AuthedRequestHandler } from '../types/http';
 
 type IdParams = { id: string };
 
  export const getAllNotifications: AuthedRequestHandler<unknown, NotificationDocument[]> = async (
-  req: AuthedRequest<unknown, NotificationDocument[]>,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const items = await Notification.find({ tenantId });
  
     res.json(items);
@@ -26,11 +30,18 @@ type IdParams = { id: string };
   }
 };
 
- export const getNotificationById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
- 
+ export const getNotificationById: AuthedRequestHandler<IdParams> = async (
+  req,
+  res,
+  next,
+) => {
+
   try {
     const tenantId = req.tenantId;
-    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const item = await Notification.findOne({ _id: req.params.id, tenantId });
     if (!item) {
       res.status(404).json({ message: 'Not found' });
@@ -44,11 +55,18 @@ type IdParams = { id: string };
   }
 };
 
- export const createNotification = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
- 
+ export const createNotification: AuthedRequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+
   try {
     const tenantId = req.tenantId;
-    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const newItem = new Notification({ ...req.body, tenantId });
     const saved = (await newItem.save()) as NotificationDocument;
 
@@ -87,8 +105,12 @@ type IdParams = { id: string };
   }
 };
 
- export const markNotificationRead = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
- 
+ export const markNotificationRead: AuthedRequestHandler<IdParams> = async (
+  req,
+  res,
+  next,
+) => {
+
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
     res.status(400).json({ message: 'Invalid ID' });
     return;
@@ -96,7 +118,10 @@ type IdParams = { id: string };
 
   try {
     const tenantId = req.tenantId;
-    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const updated = await Notification.findOneAndUpdate(
       { _id: req.params.id, tenantId },
       { read: true },
@@ -114,15 +139,22 @@ type IdParams = { id: string };
   }
 };
 
- export const updateNotification = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
- 
+ export const updateNotification: AuthedRequestHandler<IdParams> = async (
+  req,
+  res,
+  next,
+) => {
+
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
     res.status(400).json({ message: 'Invalid ID' });
     return;
   }
   try {
     const tenantId = req.tenantId;
-    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const updated = await Notification.findOneAndUpdate(
       { _id: req.params.id, tenantId },
       req.body,
@@ -143,15 +175,22 @@ type IdParams = { id: string };
   }
 };
 
- export const deleteNotification = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
- 
+ export const deleteNotification: AuthedRequestHandler<IdParams> = async (
+  req,
+  res,
+  next,
+) => {
+
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
     res.status(400).json({ message: 'Invalid ID' });
     return;
   }
   try {
     const tenantId = req.tenantId;
-    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const deleted = await Notification.findOneAndDelete({ _id: req.params.id, tenantId });
     if (!deleted) {
       res.status(404).json({ message: 'Not found' });

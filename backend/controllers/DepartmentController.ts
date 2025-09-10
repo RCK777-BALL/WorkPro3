@@ -1,6 +1,7 @@
 import Department from '../models/Department';
 import type { AuthedRequestHandler } from '../types/http';
 
+
 export const listDepartments: AuthedRequestHandler = async (req, res, next) => {
   try {
     const filter: any = { tenantId: req.tenantId };

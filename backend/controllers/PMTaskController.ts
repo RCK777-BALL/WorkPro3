@@ -1,115 +1,34 @@
- import { Request, Response, NextFunction } from 'express';
+import type { NextFunction, Response } from 'express';
+import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
+import Asset from '../models/Asset';
 import { validationResult } from 'express-validator';
-import PMTask from '../models/PMTask';
+import mongoose from 'mongoose';
 
-// Shared param type for routes with :id
-interface IdParams { id: string }
-
-export const getAllPMTasks: AuthedRequestHandler = async (
-  req: AuthedRequest,
-  res: Response,
-  next: NextFunction,
-) => {
- 
+// GET /assets
+export const getAllAssets: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const tasks = await PMTask.find({ tenantId: req.tenantId });
-    res.json(tasks);
-    return;
+    const filter: any = { tenantId: req.tenantId };
+    if (req.siteId) filter.siteId = req.siteId;
+    const assets = await Asset.find(filter);
+    return res.json(assets);
   } catch (err) {
-    next(err);
-    return;
+    return next(err);
   }
 };
 
- export const getPMTaskById: AuthedRequestHandler<IdParams> = async (
-  req: AuthedRequest<IdParams>,
-  res: Response,
-  next: NextFunction,
-) => {
- 
+// GET /assets/:id
+export const getAssetById: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const task = await PMTask.findOne({ _id: req.params.id, tenantId: req.tenantId });
-    if (!task) {
-      res.status(404).json({ message: 'Not found' });
-      return;
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid ID' });
     }
-    res.json(task);
-    return;
+    const filter: any = { _id: req.params.id, tenantId: req.tenantId };
+    if (req.siteId) filter.siteId = req.siteId;
+
+    const asset = await Asset.findOne(filter);
+    if (!asset) return res.status(404).json({ message: 'Not found' });
+    return res.json(asset);
   } catch (err) {
-    next(err);
-    return;
+    return next(err);
   }
 };
-
- export const createPMTask: AuthedRequestHandler<unknown, any, any> = async (
-  req: AuthedRequest<unknown, any, any>,
-  res: Response,
-  next: NextFunction,
-) => {
- 
-  try {
-    const errors = validationResult(req as Request);
-    if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() });
-      return;
-    }
-    const payload = { ...req.body, tenantId: req.tenantId };
-    const task = await PMTask.create(payload);
-    res.status(201).json(task);
-    return;
-  } catch (err) {
-    next(err);
-    return;
-  }
-};
-
- export const updatePMTask: AuthedRequestHandler<IdParams, any, any> = async (
-  req: AuthedRequest<IdParams, any, any>,
-  res: Response,
-  next: NextFunction,
-) => {
- 
-  try {
-    const errors = validationResult(req as Request);
-    if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() });
-      return;
-    }
-    const task = await PMTask.findOneAndUpdate(
-      { _id: req.params.id, tenantId: req.tenantId },
-      req.body,
-      { new: true, runValidators: true },
-    );
-    if (!task) {
-      res.status(404).json({ message: 'Not found' });
-      return;
-    }
-    res.json(task);
-    return;
-  } catch (err) {
-    next(err);
-    return;
-  }
-};
-
- export const deletePMTask: AuthedRequestHandler<IdParams> = async (
-  req: AuthedRequest<IdParams>,
-  res: Response,
-  next: NextFunction,
-) => {
- 
-  try {
-    const task = await PMTask.findOneAndDelete({ _id: req.params.id, tenantId: req.tenantId });
-    if (!task) {
-      res.status(404).json({ message: 'Not found' });
-      return;
-    }
-    res.json({ message: 'Deleted successfully' });
-    return;
- 
-  } catch (err) {
-    next(err);
-    return;
-  }
-};
-

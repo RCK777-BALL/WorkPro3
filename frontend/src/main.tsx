@@ -1,15 +1,15 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import App from "./App";
-import DSThemeProvider from "./design-system/theme/ThemeProvider";
-import { ThemeProvider } from "./context/ThemeContext";
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import { MantineProvider } from '@mantine/core';
+import App from './App';
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
+ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ThemeProvider>
-      <DSThemeProvider>
+    <BrowserRouter>
+      <MantineProvider>
         <App />
-      </DSThemeProvider>
-    </ThemeProvider>
+      </MantineProvider>
+    </BrowserRouter>
   </React.StrictMode>
 );

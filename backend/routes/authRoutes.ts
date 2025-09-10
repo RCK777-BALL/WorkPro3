@@ -6,7 +6,8 @@ import { generateMfa, verifyMfa } from '../controllers/authController';
 import { configureOIDC } from '../auth/oidc';
 import { configureOAuth, getOAuthScope, OAuthProvider } from '../auth/oauth';
 import { getJwtSecret } from '../utils/getJwtSecret';
- import User from '../models/User';
+import User from '../models/User';
+import { isCookieSecure } from '../utils/isCookieSecure';
 import {
   loginSchema,
   registerSchema,
@@ -62,7 +63,7 @@ router.post('/login', async (req, res) => {
       .cookie('token', token, {
         httpOnly: true,
         sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
+        secure: isCookieSecure(),
       })
       .status(200)
       .json({ token, user: { ...safeUser, tenantId } });

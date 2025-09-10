@@ -8,6 +8,7 @@ const envSchema = z.object({
   RATE_LIMIT_WINDOW_MS: z.string().default('900000'),
   RATE_LIMIT_MAX: z.string().default('100'),
   NODE_ENV: z.string().default('development'),
+  COOKIE_SECURE: z.string().optional(),
   PM_SCHEDULER_CRON: z.string().default('*/5 * * * *'),
   PM_SCHEDULER_TASK: z.string().default('./tasks/pmSchedulerTask'),
   DEFAULT_TENANT_ID: z.string().optional(),

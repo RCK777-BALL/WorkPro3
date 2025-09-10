@@ -6,6 +6,7 @@ import * as speakeasy from "speakeasy";
 import logger from "../utils/logger";
 import User from "../models/User";
 import { assertEmail } from '../utils/assert';
+import { isCookieSecure } from '../utils/isCookieSecure';
 
 export const login = async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
@@ -197,7 +198,7 @@ export const logout = (
     .clearCookie('token', {
       httpOnly: true,
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      secure: isCookieSecure(),
     })
     .sendStatus(200);
 };

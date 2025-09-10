@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import Department from '../models/Department';
-import { Request, Response, NextFunction } from 'express';
 
  export const listDepartments = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
  

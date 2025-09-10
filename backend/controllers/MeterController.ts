@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import Meter from '../models/Meter';
 import MeterReading from '../models/MeterReading';
-import { Request, Response, NextFunction } from 'express';
 
  export const getMeters = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
  

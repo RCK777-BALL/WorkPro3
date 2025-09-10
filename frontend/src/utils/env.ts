@@ -1,4 +1,3 @@
-
 type ViteEnv = Record<string, string | undefined>;
 const getEnvVar = (key: string): string | undefined =>
   (import.meta.env as unknown as ViteEnv)?.[key];
@@ -11,7 +10,7 @@ export const config = {
   wsUrl: getEnvVar('VITE_WS_URL'),
   // Socket.IO path (backend default is '/socket.io')
   socketPath: getEnvVar('VITE_SOCKET_PATH') ?? '/socket.io',
-};
+} as const;
 
 function stripApiSuffix(url: string) {
   try {
@@ -30,8 +29,8 @@ const socketOrigin = (config.wsUrl ?? httpOrigin).replace(/^http/i, 'ws');
 export const endpoints = {
   httpOrigin,
   socketOrigin,
-  socketPath,
-};
+  socketPath: config.socketPath, // <-- fix: reference from config
+} as const;
 
 export const apiBaseUrl = `${httpOrigin}/api`;
 

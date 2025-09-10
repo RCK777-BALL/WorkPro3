@@ -1,4 +1,4 @@
-import React, { ReactNode } from "react";
+import type { ReactNode } from "react";
 import {
   MantineProvider,
   ColorSchemeScript,
@@ -17,7 +17,8 @@ const brand: MantineColorsTuple = [
 const theme = createTheme({
   primaryColor: "brand",
   colors: { brand },
-  fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji",
+  fontFamily:
+    "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji",
   fontSizes: { xs: "12px", sm: "14px", md: "16px", lg: "18px", xl: "20px" },
   radius: { md: "12px", xl: "16px" },
   defaultRadius: "md",
@@ -26,7 +27,6 @@ const theme = createTheme({
 type Props = { children: ReactNode };
 
 export default function ThemeProvider({ children }: Props) {
-  // v7 uses data attributes + hook, not <ColorSchemeProvider/>
   const [colorScheme] = useLocalStorage<MantineColorScheme>({
     key: "color-scheme",
     defaultValue: "light",
@@ -34,7 +34,6 @@ export default function ThemeProvider({ children }: Props) {
 
   return (
     <>
-      {/* put this once in your root layout (or index.html) */}
       <ColorSchemeScript defaultColorScheme={colorScheme} />
       <MantineProvider theme={theme} defaultColorScheme={colorScheme}>
         {children}

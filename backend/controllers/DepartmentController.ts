@@ -1,9 +1,10 @@
+import { Request, Response, NextFunction } from 'express';
 import Department from '../models/Department';
 
-export const listDepartments: AuthedRequestHandler<unknown, any, unknown, { q?: string }> = async (
-  req: AuthedRequest<unknown, any, unknown, { q?: string }>,
-  res,
-  next
+export const listDepartments = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
 ) => {
   try {
     const filter: any = { tenantId: req.tenantId };

@@ -15,7 +15,7 @@ export const getAssetSummaries = async (req: Request, res: Response, next: NextF
   }
 };
 
-export const getWorkOrderStatus = async (req: Request, res: Response, next: NextFunction) => {
+export const getWorkOrderStatus = async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const summary = await WorkOrder.aggregate([
       { $group: { _id: '$status', count: { $sum: 1 } } },

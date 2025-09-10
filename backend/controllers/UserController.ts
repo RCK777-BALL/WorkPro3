@@ -1,4 +1,20 @@
 import User from '../models/User';
+import { filterFields } from '../utils/filterFields';
+
+const userCreateFields = [
+  'name',
+  'email',
+  'passwordHash',
+  'role',
+  'employeeId',
+  'managerId',
+  'theme',
+  'colorScheme',
+  'mfaEnabled',
+  'mfaSecret',
+];
+
+const userUpdateFields = [...userCreateFields];
 
 /**
  * @openapi
@@ -80,7 +96,8 @@ export const createUser: AuthedRequestHandler = async (
   next
 ) => {
   try {
-    const newItem = new User({ ...req.body, tenantId: req.tenantId });
+    const payload = filterFields(req.body, userCreateFields);
+    const newItem = new User({ ...payload, tenantId: req.tenantId });
     const saved = await newItem.save();
     const { passwordHash: _pw, ...safeUser } = saved.toObject();
     res.status(201).json(safeUser);
@@ -120,9 +137,10 @@ export const updateUser: AuthedRequestHandler = async (
   next
 ) => {
   try {
+    const update = filterFields(req.body, userUpdateFields);
     const updated = await User.findOneAndUpdate(
       { _id: req.params.id, tenantId: req.tenantId },
-      req.body,
+      update,
       {
         new: true,
         runValidators: true,

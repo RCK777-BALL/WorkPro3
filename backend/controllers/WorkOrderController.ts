@@ -6,6 +6,29 @@ import notifyUser from '../utils/notify';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
+import { filterFields } from '../utils/filterFields';
+
+const workOrderCreateFields = [
+  'title',
+  'asset',
+  'description',
+  'priority',
+  'status',
+  'approvalStatus',
+  'approvalRequestedBy',
+  'approvedBy',
+  'assignedTo',
+  'pmTask',
+  'department',
+  'line',
+  'station',
+  'teamMemberName',
+  'importance',
+  'dueDate',
+  'completedAt',
+];
+
+const workOrderUpdateFields = [...workOrderCreateFields];
 
 // Single, shared param type for routes with :id
 type IdParams = { id: string };
@@ -179,7 +202,8 @@ export const createWorkOrder: AuthedRequestHandler<unknown, any, any> = async (
       res.status(400).json({ errors: errors.array() });
       return;
     }
-    const newItem = new WorkOrder({ ...req.body, tenantId: req.tenantId });
+    const payload = filterFields(req.body, workOrderCreateFields);
+    const newItem = new WorkOrder({ ...payload, tenantId: req.tenantId });
     const saved = await newItem.save();
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     res.status(201).json(saved);
@@ -226,9 +250,10 @@ export const updateWorkOrder: AuthedRequestHandler<IdParams, any, any> = async (
       res.status(400).json({ errors: errors.array() });
       return;
     }
+    const update = filterFields(req.body, workOrderUpdateFields);
     const updated = await WorkOrder.findOneAndUpdate(
       { _id: req.params.id, tenantId: req.tenantId },
-      req.body,
+      update,
       {
         new: true,
         runValidators: true,

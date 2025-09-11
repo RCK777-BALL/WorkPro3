@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { Router } from 'express';
 import { createGoodsReceipt } from '../controllers/GoodsReceiptController';
 

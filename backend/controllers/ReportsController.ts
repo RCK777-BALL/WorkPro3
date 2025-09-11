@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import PDFDocument from 'pdfkit';
 import { Parser as Json2csvParser } from 'json2csv';
 import WorkOrder from '../models/WorkOrder';

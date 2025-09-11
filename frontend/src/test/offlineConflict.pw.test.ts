@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { test, expect } from '@playwright/test';
 import {
   addToQueue,
@@ -5,7 +9,7 @@ import {
   onSyncConflict,
   setHttpClient,
   loadQueue,
-} from '../utils/offlineQueue';
+} from '@/utils/offlineQueue';
 
 // Simulate a conflict response followed by server data
 const mockClient = async (args: { method: string; url: string; data?: any }) => {

@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import express from 'express';
 import { getTeamMembers } from '../controllers/TeamMemberController';
 import { requireAuth } from '../middleware/authMiddleware';

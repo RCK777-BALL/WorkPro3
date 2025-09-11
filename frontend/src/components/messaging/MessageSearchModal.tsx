@@ -1,8 +1,12 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState } from 'react';
-import Modal from '../modals/Modal';
-import { searchMessages } from '../../api/channels';
-import type { Message } from '../../types';
-import { useToast } from '../../context/ToastContext';
+import Modal from '@/modals/Modal';
+import { searchMessages } from '@/api/channels';
+import type { Message } from '@/types';
+import { useToast } from '@/context/ToastContext';
 
 interface MessageSearchModalProps {
   isOpen: boolean;

@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { describe, it, expect, vi } from 'vitest';
 import { getWorkOrderAssistance } from '../services/aiCopilot';
 import { createWorkOrderFixture, type WorkOrderFixture } from './testUtils';

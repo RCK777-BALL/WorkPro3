@@ -1,13 +1,17 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { markNotificationRead } from '../../api/notifications';
-import type { NotificationType } from '../../types';
-import Card from '../common/Card'; 
+import { markNotificationRead } from '@/api/notifications';
+import type { NotificationType } from '@/types';
+import Card from '@/common/Card'; 
 import {
   getNotificationsSocket,
   closeNotificationsSocket,
-} from '../../utils/notificationsSocket';
+} from '@/utils/notificationsSocket';
  
  
 

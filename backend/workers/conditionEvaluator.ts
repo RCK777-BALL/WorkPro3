@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import ConditionRule from '../models/ConditionRule';
 import WorkOrder from '../models/WorkOrder';
 

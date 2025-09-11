@@ -3,6 +3,8 @@
  */
 
 import { describe, it, beforeAll, afterAll, beforeEach, expect, vi } from 'vitest';
+import type { Mock } from 'vitest';
+
 import request from 'supertest';
 import express from 'express';
 import mongoose from 'mongoose';
@@ -53,7 +55,7 @@ beforeEach(async () => {
 
 describe('GET /api/workorders/:id/assist', () => {
   it('returns AI summary and risk score', async () => {
-    (getWorkOrderAssistance as unknown as vi.Mock).mockResolvedValue({
+    (getWorkOrderAssistance as unknown as Mock).mockResolvedValue({
       summary: 'ok',
       riskScore: 0.2,
     });

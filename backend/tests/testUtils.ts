@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Mock } from 'vitest';
+import { vi } from 'vitest';
 
 // Generic helper to cast fixtures to a desired type
 export function castFixture<T>(data: unknown): T {
@@ -20,5 +20,5 @@ export function createWorkOrderFixture(data: unknown): WorkOrderFixture {
 
 // Interface for mocking socket.io instance
 export interface MockIO {
-  emit: Mock;
+  emit: ReturnType<typeof vi.fn>;
 }

@@ -94,14 +94,13 @@ async function saveQueue() {
     emitToast('Failed to save queue to storage', 'error');
 
   }
-}
+})();
 
 loadQueue().then(() => {
   if (offlineQueue.length > 0) {
     processQueue();
- 
   }
-})();
+});
 
 declare let self: ServiceWorkerGlobalScope & { __WB_MANIFEST: any };
 

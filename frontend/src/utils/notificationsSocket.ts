@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { io, type Socket } from 'socket.io-client';
 import { useSocketStore } from '../store/socketStore';
 import { endpoints } from './env';

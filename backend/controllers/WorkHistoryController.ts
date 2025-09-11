@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { Request, Response, NextFunction } from 'express';
 
 import WorkHistory from '../models/WorkHistory';

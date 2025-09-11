@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { emitToast } from '../context/ToastContext';
 
 export type QueuedRequest = {

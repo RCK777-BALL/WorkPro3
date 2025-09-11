@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React from 'react';
 import Button from '../../components/common/Button';
 import http from '../../lib/http';

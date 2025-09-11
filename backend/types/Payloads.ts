@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 export interface WorkOrderUpdatePayload {
   _id: string;
   tenantId: string;

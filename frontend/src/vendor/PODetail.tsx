@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getVendorPurchaseOrder, updateVendorPurchaseOrder } from '../api/vendorPurchaseOrders';

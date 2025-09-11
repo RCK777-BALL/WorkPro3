@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { Router } from 'express';
 import { getTheme, updateTheme } from '../controllers/ThemeController';
 import { requireAuth } from '../middleware/authMiddleware';

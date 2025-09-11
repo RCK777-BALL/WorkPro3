@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import jwt from 'jsonwebtoken';
 import { getJwtSecret } from '../utils/getJwtSecret';
 import type { AuthedRequestHandler } from '../types/http';

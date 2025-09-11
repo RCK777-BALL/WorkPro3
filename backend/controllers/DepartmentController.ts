@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import Department from '../models/Department';
 import type { AuthedRequestHandler } from '../types/http';
 

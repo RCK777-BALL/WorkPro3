@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import type { Response, NextFunction } from 'express';
 import type { AuthedRequestHandler } from '../types/http';
 

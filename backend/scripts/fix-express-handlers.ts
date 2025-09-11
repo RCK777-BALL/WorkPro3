@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 /* eslint-disable no-console */
 import { Project, Node, ArrowFunction, FunctionExpression } from 'ts-morph';
 import glob from 'glob';

@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 /**
  * Defines the allowed maintenance categories for upcoming maintenance tasks.
  */

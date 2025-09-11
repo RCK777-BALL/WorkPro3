@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import express from "express";
 import type { Request, Response, RequestHandler, Router } from "express";
 import cors from "cors";

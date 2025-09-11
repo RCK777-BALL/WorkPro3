@@ -1,7 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import { getWorkOrderAssistance } from '../services/aiCopilot';
+import { createWorkOrderFixture, type WorkOrderFixture } from './testUtils';
 
-const sampleWorkOrder = { title: 'Pump failure', description: 'Motor overheating' } as any;
+const sampleWorkOrder: WorkOrderFixture = createWorkOrderFixture({
+  title: 'Pump failure',
+  description: 'Motor overheating',
+});
 
 describe('aiCopilot service', () => {
   it('composes prompt with work order details', async () => {

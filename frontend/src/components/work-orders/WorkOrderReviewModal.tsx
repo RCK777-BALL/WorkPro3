@@ -46,7 +46,7 @@ const WorkOrderReviewModal: React.FC<Props> = ({
     >
       <div
         className="bg-white rounded-lg shadow-xl w-full max-w-lg overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-neutral-200">
           <h2 className="text-lg font-semibold text-neutral-900">
@@ -86,7 +86,7 @@ const WorkOrderReviewModal: React.FC<Props> = ({
               <select
                 className="ml-2 border border-neutral-300 rounded-md px-2 py-1"
                 value={status}
-                onChange={(e) => setStatus(e.target.value as WorkOrder['status'])}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatus(e.target.value as WorkOrder['status'])}
               >
                 {statusOptions.map((s: WorkOrder['status']) => (
                   <option key={s} value={s}>

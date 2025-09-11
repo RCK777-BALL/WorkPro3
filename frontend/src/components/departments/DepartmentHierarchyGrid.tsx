@@ -78,12 +78,12 @@ const DepartmentHierarchyGrid: React.FC<Props> = ({
           type="text"
           placeholder="Search assets..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
           className="flex-1 px-2 py-1 border rounded-md"
         />
         <select
           value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTypeFilter(e.target.value)}
           className="px-2 py-1 border rounded-md"
         >
           <option value="">All Types</option>
@@ -105,13 +105,13 @@ const DepartmentHierarchyGrid: React.FC<Props> = ({
               <input
                 className="flex-1 mr-2 px-2 py-1 border rounded-md text-sm"
                 value={line.name}
-                onChange={(e) => onUpdateLine({ ...line, name: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => onUpdateLine({ ...line, name: e.target.value })}
               />
               <div className="space-x-2">
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={(e) => {
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                     e.stopPropagation();
                     onCreateStation(line.id);
                   }}
@@ -121,7 +121,7 @@ const DepartmentHierarchyGrid: React.FC<Props> = ({
                 <Button
                   variant="danger"
                   size="sm"
-                  onClick={(e) => {
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                     e.stopPropagation();
                     onDeleteLine(line.id);
                   }}
@@ -141,7 +141,7 @@ const DepartmentHierarchyGrid: React.FC<Props> = ({
                       <input
                         className="flex-1 mr-2 px-2 py-1 border rounded-md text-sm"
                         value={station.name}
-                        onChange={(e) =>
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                           handleStationNameChange(station, e.target.value)
                         }
                       />
@@ -149,7 +149,7 @@ const DepartmentHierarchyGrid: React.FC<Props> = ({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={(e) => {
+                          onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                             e.stopPropagation();
                             onCreateAsset(department.id, line.id, station.id);
                           }}
@@ -159,7 +159,7 @@ const DepartmentHierarchyGrid: React.FC<Props> = ({
                         <Button
                           variant="danger"
                           size="sm"
-                          onClick={(e) => {
+                          onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                             e.stopPropagation();
                             onDeleteStation(station.id);
                           }}
@@ -185,7 +185,7 @@ const DepartmentHierarchyGrid: React.FC<Props> = ({
                                 >
                                   <input
                                     value={asset.name}
-                                    onChange={(e) =>
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                       handleAssetChange(
                                         asset,
                                         { name: e.target.value },
@@ -197,7 +197,7 @@ const DepartmentHierarchyGrid: React.FC<Props> = ({
                                   />
                                   <select
                                     value={asset.type}
-                                    onChange={(e) =>
+                                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                                       handleAssetChange(
                                         asset,
                                         {

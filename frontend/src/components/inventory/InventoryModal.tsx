@@ -99,7 +99,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
                 type="text"
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, name: e.target.value })}
                 required
               />
             </div>
@@ -112,7 +112,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
                 type="text"
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                 value={formData.sku}
-                onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, sku: e.target.value })}
                 required
               />
             </div>
@@ -126,7 +126,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
               className="w-full px-3 py-2 border border-neutral-300 rounded-md"
               rows={3}
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, description: e.target.value })}
             />
           </div>
 
@@ -139,7 +139,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
                 type="text"
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                 value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, category: e.target.value })}
               />
             </div>
 
@@ -151,7 +151,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
                 type="text"
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                 value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, location: e.target.value })}
               />
             </div>
           </div>
@@ -165,7 +165,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
                 type="number"
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                 value={formData.quantity}
-                onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, quantity: parseInt(e.target.value) })}
                 min="0"
               />
             </div>
@@ -178,7 +178,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
                 type="number"
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                 value={formData.unitCost}
-                onChange={(e) => setFormData({ ...formData, unitCost: parseFloat(e.target.value) })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, unitCost: parseFloat(e.target.value) })}
                 min="0"
                 step="0.01"
               />
@@ -192,7 +192,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
                 type="number"
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                 value={formData.reorderPoint}
-                onChange={(e) => setFormData({ ...formData, reorderPoint: parseInt(e.target.value) })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, reorderPoint: parseInt(e.target.value) })}
                 min="0"
               />
             </div>
@@ -204,7 +204,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
                 type="number"
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                 value={formData.reorderThreshold}
-                onChange={(e) => setFormData({ ...formData, reorderThreshold: parseInt(e.target.value) })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, reorderThreshold: parseInt(e.target.value) })}
                 min="0"
               />
             </div>
@@ -216,7 +216,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
                 type="date"
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                 value={formData.lastRestockDate}
-                onChange={(e) => setFormData({ ...formData, lastRestockDate: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, lastRestockDate: e.target.value })}
               />
             </div>
           </div>
@@ -230,7 +230,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
                 type="text"
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                 value={formData.vendor}
-                onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, vendor: e.target.value })}
               />
             </div>
 
@@ -242,7 +242,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
                 type="date"
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                 value={formData.lastOrderDate}
-                onChange={(e) => setFormData({ ...formData, lastOrderDate: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, lastOrderDate: e.target.value })}
               />
             </div>
           </div>
@@ -265,7 +265,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
                       name="file-upload"
                       type="file"
                       className="sr-only"
-                      onChange={(e) => setPartImage(e.target.files?.[0] || null)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPartImage(e.target.files?.[0] || null)}
                     />
                   </label>
                   <p className="pl-1">or drag and drop</p>

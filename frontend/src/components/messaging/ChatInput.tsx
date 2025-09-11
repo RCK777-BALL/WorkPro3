@@ -122,7 +122,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           <input
             type="text"
             value={message}
-            onChange={(e) => {
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
               setMessage(e.target.value);
               onTyping?.(e.target.value.length > 0);
             }}

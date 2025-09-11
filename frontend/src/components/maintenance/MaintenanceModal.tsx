@@ -127,7 +127,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                 type="text"
                 className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, title: e.target.value })}
                 required
               />
             </div>
@@ -140,7 +140,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                 type="text"
                 className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
                 value={formData.assetId}
-                onChange={(e) => setFormData({ ...formData, assetId: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, assetId: e.target.value })}
               />
             </div>
           </div>
@@ -153,7 +153,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
               className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
               rows={4}
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, description: e.target.value })}
             />
           </div>
 
@@ -165,7 +165,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
               <select
                 className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
                 value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData({ ...formData, type: e.target.value })}
               >
                 <option value="preventive">Preventive Maintenance</option>
                 <option value="corrective">Corrective Maintenance</option>
@@ -182,7 +182,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
               <select
                 className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
                 value={formData.frequency}
-                onChange={(e) => {
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                   const newFrequency = e.target.value;
                   setFormData({
                     ...formData,
@@ -211,7 +211,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                 type="date"
                 className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
                 value={formData.nextDue}
-                onChange={(e) => setFormData({ ...formData, nextDue: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, nextDue: e.target.value })}
               />
             </div>
 
@@ -223,7 +223,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                 type="number"
                 className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
                 value={formData.estimatedDuration}
-                onChange={(e) => setFormData({ ...formData, estimatedDuration: parseInt(e.target.value) })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, estimatedDuration: parseInt(e.target.value) })}
                 min="0"
                 step="0.5"
               />
@@ -252,7 +252,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                         type="number"
                         className="w-20 px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
                         value={formData.repeatConfig.interval}
-                        onChange={(e) => setFormData({
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({
                           ...formData,
                           repeatConfig: {
                             ...formData.repeatConfig,
@@ -264,7 +264,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                       <select
                         className="flex-1 px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
                         value={formData.repeatConfig.unit}
-                        onChange={(e) =>
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                           setFormData({
                             ...formData,
                             repeatConfig: {
@@ -322,7 +322,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                           type="date"
                           className="flex-1 px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
                           value={formData.repeatConfig.endDate}
-                          onChange={(e) => setFormData({
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({
                             ...formData,
                             repeatConfig: {
                               ...formData.repeatConfig,
@@ -353,7 +353,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                           type="number"
                           className="w-20 px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
                           value={formData.repeatConfig.occurrences || ''}
-                          onChange={(e) => setFormData({
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({
                             ...formData,
                             repeatConfig: {
                               ...formData.repeatConfig,
@@ -390,7 +390,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
               className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
               rows={6}
               value={formData.instructions}
-              onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, instructions: e.target.value })}
               placeholder="Enter step-by-step maintenance instructions..."
             />
           </div>

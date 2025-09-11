@@ -163,7 +163,7 @@ const DepartmentModal: React.FC<Props> = ({
               type="text"
               className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, name: e.target.value })}
               required
             />
           </div>
@@ -183,7 +183,7 @@ const DepartmentModal: React.FC<Props> = ({
                     type="text"
                     className="flex-1 px-3 py-1.5 border border-neutral-300 rounded-md"
                     value={line.name}
-                    onChange={(e) => updateLine(li, e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateLine(li, e.target.value)}
                     placeholder="Line name"
                   />
                   <button
@@ -215,7 +215,7 @@ const DepartmentModal: React.FC<Props> = ({
                           type="text"
                           className="flex-1 px-3 py-1.5 border border-neutral-300 rounded-md"
                           value={st.name}
-                          onChange={(e) => updateStation(li, si, e.target.value)}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateStation(li, si, e.target.value)}
                           placeholder="Station name"
                         />
                         <button
@@ -246,7 +246,7 @@ const DepartmentModal: React.FC<Props> = ({
                                 type="text"
                                 className="flex-1 px-3 py-1.5 border border-neutral-300 rounded-md"
                                 value={a.name}
-                                onChange={(e) =>
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                   updateAsset(li, si, ai, { name: e.target.value })
                                 }
                                 placeholder="Asset name"
@@ -263,7 +263,7 @@ const DepartmentModal: React.FC<Props> = ({
                               <select
                                 className="px-3 py-1.5 border border-neutral-300 rounded-md"
                                 value={a.type}
-                                onChange={(e) =>
+                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                                   updateAsset(li, si, ai, {
                                     type: e.target.value as Asset['type'],
                                   })
@@ -278,7 +278,7 @@ const DepartmentModal: React.FC<Props> = ({
                                 type="text"
                                 className="px-3 py-1.5 border border-neutral-300 rounded-md"
                                 value={a.location}
-                                onChange={(e) =>
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                   updateAsset(li, si, ai, { location: e.target.value })
                                 }
                                 placeholder="Location"
@@ -286,7 +286,7 @@ const DepartmentModal: React.FC<Props> = ({
                               <select
                                 className="px-3 py-1.5 border border-neutral-300 rounded-md"
                                 value={a.status}
-                                onChange={(e) =>
+                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                                   updateAsset(li, si, ai, {
                                     status: e.target.value as Asset['status'],
                                   })

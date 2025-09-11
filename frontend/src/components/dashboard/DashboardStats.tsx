@@ -140,7 +140,7 @@ const SortableStatCard: React.FC<StatCardProps> = (props) => {
               <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{props.title}</h3>
               {props.onRemove && (
                 <button
-                  onClick={(e) => {
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                     e.stopPropagation();
                     props.onRemove?.();
                   }}

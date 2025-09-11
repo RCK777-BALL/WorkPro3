@@ -204,7 +204,7 @@ export default function WorkOrders() {
             placeholder="Search work orders..."
             className="flex-1 bg-transparent border-none outline-none text-neutral-900 placeholder-neutral-400"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
           />
         </div>
 
@@ -212,7 +212,7 @@ export default function WorkOrders() {
           <select
             className="border rounded p-2 flex-1"
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value)}
           >
             <option value="">All Statuses</option>
             <option value="open">Open</option>
@@ -223,7 +223,7 @@ export default function WorkOrders() {
           <select
             className="border rounded p-2 flex-1"
             value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setPriorityFilter(e.target.value)}
           >
             <option value="">All Priorities</option>
             <option value="low">Low</option>
@@ -235,13 +235,13 @@ export default function WorkOrders() {
             type="date"
             className="border rounded p-2"
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStartDate(e.target.value)}
           />
           <input
             type="date"
             className="border rounded p-2"
             value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEndDate(e.target.value)}
           />
           <Button
             variant="secondary"

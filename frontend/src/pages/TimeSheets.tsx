@@ -98,14 +98,14 @@ const TimeSheets: React.FC = () => {
           <input
             type="date"
             value={form.date}
-            onChange={(e) => setForm({ ...form, date: e.target.value })}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, date: e.target.value })}
             className="w-full p-2 border rounded"
             required
           />
           <input
             type="number"
             value={form.hours}
-            onChange={(e) => setForm({ ...form, hours: e.target.value })}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, hours: e.target.value })}
             className="w-full p-2 border rounded"
             placeholder="Hours"
             required
@@ -113,7 +113,7 @@ const TimeSheets: React.FC = () => {
           <input
             type="text"
             value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, description: e.target.value })}
             className="w-full p-2 border rounded"
             placeholder="Description"
           />

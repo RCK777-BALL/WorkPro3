@@ -45,7 +45,7 @@ const StationModal: React.FC<Props> = ({ isOpen, onClose, station, lines, onUpda
               type="text"
               className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, name: e.target.value })}
               required
             />
           </div>
@@ -54,7 +54,7 @@ const StationModal: React.FC<Props> = ({ isOpen, onClose, station, lines, onUpda
             <select
               className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
               value={formData.line}
-              onChange={(e) => setFormData({ ...formData, line: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData({ ...formData, line: e.target.value })}
             >
               {lines.map((l) => (
                 <option key={l.id} value={l.id}>

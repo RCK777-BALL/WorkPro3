@@ -115,7 +115,7 @@ const AssetTable: React.FC<AssetTableProps> = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={(e) => {
+                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                           e.stopPropagation();
                           onCreateWorkOrder(asset);
                         }}
@@ -124,7 +124,7 @@ const AssetTable: React.FC<AssetTableProps> = ({
                       </Button>
                     )}
                     <DuplicateButton
-                      onClick={(e) => {
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation();
                         onDuplicate(asset);
                       }}
@@ -132,7 +132,7 @@ const AssetTable: React.FC<AssetTableProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={(e) => {
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation();
                         onDelete(asset);
                       }}

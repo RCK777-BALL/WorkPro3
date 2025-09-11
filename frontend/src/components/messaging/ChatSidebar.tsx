@@ -60,7 +60,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             placeholder="Search messages..."
             className="bg-transparent border-none outline-none text-sm text-white placeholder-neutral-400 ml-2 w-full"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
           />
         </div>
       </div>
@@ -99,7 +99,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   )}
                   {onDeleteChat && (
                     <button
-                      onClick={(e) => handleDeleteChat('channel', channel.id, e)}
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleDeleteChat('channel', channel.id, e)}
                       className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-error-500"
                     >
                       <X size={14} />
@@ -155,7 +155,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   }`} />
                   {onDeleteChat && (
                     <button
-                      onClick={(e) => handleDeleteChat('dm', dm.id, e)}
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleDeleteChat('dm', dm.id, e)}
                       className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-error-500"
                     >
                       <X size={14} />

@@ -39,7 +39,7 @@ const LoginForm = () => {
         type="email"
         placeholder="Email"
         value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
         className="w-full p-2 border rounded"
         autoComplete="email"
       />
@@ -47,7 +47,7 @@ const LoginForm = () => {
         type="password"
         placeholder="Password"
         value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
         className="w-full p-2 border rounded"
         autoComplete="current-password"
       />

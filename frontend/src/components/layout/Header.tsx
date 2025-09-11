@@ -243,7 +243,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
         <ThemeToggle />
         <select
           value={i18n.language}
-          onChange={(e) => i18n.changeLanguage(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => i18n.changeLanguage(e.target.value)}
           className="border rounded p-1 text-sm bg-white dark:bg-neutral-800 dark:text-white"
         >
           <option value="en">EN</option>

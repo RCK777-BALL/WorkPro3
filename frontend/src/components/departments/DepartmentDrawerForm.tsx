@@ -66,7 +66,7 @@ export default function DepartmentDrawerForm({ initial, onSubmit, onCancel }: Pr
           type="text"
           className="w-full px-3 py-2 border border-neutral-300 rounded-md"
           value={name}
-          onChange={(e) => {
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
             setName(e.target.value);
             if (nameError && e.target.value.trim()) {
               setNameError('');
@@ -87,7 +87,7 @@ export default function DepartmentDrawerForm({ initial, onSubmit, onCancel }: Pr
                 type="text"
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                 value={line.name}
-                onChange={(e) => handleLineChange(index, e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleLineChange(index, e.target.value)}
               />
               {lineErrors[index] && (
                 <p className="text-red-500 text-sm mt-1">

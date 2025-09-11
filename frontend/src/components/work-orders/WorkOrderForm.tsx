@@ -132,7 +132,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
         <select
           className="w-full px-3 py-2 border border-neutral-300 rounded-md"
           value={departmentId}
-          onChange={(e) => setDepartmentId(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setDepartmentId(e.target.value)}
         >
           <option value="">Select Department</option>
           {departments.map((d) => (
@@ -147,7 +147,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
         <select
           className="w-full px-3 py-2 border border-neutral-300 rounded-md"
           value={lineId}
-          onChange={(e) => setLineId(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setLineId(e.target.value)}
           disabled={!departmentId}
         >
           <option value="">Select Line</option>
@@ -163,7 +163,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
         <select
           className="w-full px-3 py-2 border border-neutral-300 rounded-md"
           value={stationId}
-          onChange={(e) => setStationId(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStationId(e.target.value)}
           disabled={!lineId}
         >
           <option value="">Select Station</option>
@@ -180,7 +180,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
           type="text"
           className="w-full px-3 py-2 border border-neutral-300 rounded-md"
           value={formData.title}
-          onChange={(e) => updateField('title', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('title', e.target.value)}
           required
         />
       </div>
@@ -189,7 +189,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
         <select
           className="w-full px-3 py-2 border border-neutral-300 rounded-md"
           value={formData.assetId}
-          onChange={(e) => updateField('assetId', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateField('assetId', e.target.value)}
         >
           <option value="">Select Asset</option>
           {assets.map((asset) => (
@@ -202,7 +202,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
         <select
           className="w-full px-3 py-2 border border-neutral-300 rounded-md"
           value={formData.assignedTo}
-          onChange={(e) => updateField('assignedTo', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateField('assignedTo', e.target.value)}
         >
           <option value="">Unassigned</option>
           {techs.map((t) => (
@@ -216,7 +216,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
           <select
             className="w-full px-3 py-2 border border-neutral-300 rounded-md"
             value={formData.priority}
-            onChange={(e) => updateField('priority', e.target.value as WorkOrder['priority'])}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateField('priority', e.target.value as WorkOrder['priority'])}
           >
             <option value="low">Low</option>
             <option value="medium">Medium</option>
@@ -229,7 +229,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
           <select
             className="w-full px-3 py-2 border border-neutral-300 rounded-md"
             value={formData.status}
-            onChange={(e) => updateField('status', e.target.value as WorkOrder['status'])}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateField('status', e.target.value as WorkOrder['status'])}
           >
             <option value="open">Open</option>
             <option value="in-progress">In Progress</option>
@@ -244,7 +244,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
           <select
             className="w-full px-3 py-2 border border-neutral-300 rounded-md"
             value={formData.type}
-            onChange={(e) => updateField('type', e.target.value as WorkOrder['type'])}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateField('type', e.target.value as WorkOrder['type'])}
           >
             <option value="corrective">Corrective</option>
             <option value="preventive">Preventive</option>
@@ -259,7 +259,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
             type="date"
             className="w-full px-3 py-2 border border-neutral-300 rounded-md"
             value={formData.dueDate}
-            onChange={(e) => updateField('dueDate', e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('dueDate', e.target.value)}
           />
         </div>
       </div>
@@ -269,7 +269,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
           className="w-full px-3 py-2 border border-neutral-300 rounded-md"
           rows={4}
           value={formData.description}
-          onChange={(e) => updateField('description', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateField('description', e.target.value)}
         />
       </div>
       <div className="pt-4">

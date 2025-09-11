@@ -12,5 +12,8 @@ export async function listDepartments(): Promise<Department[]> {
 }
 
 export const deleteDepartment = (id: string) =>
-   http.delete(`/departments/${id}`);
+  http.delete(`/departments/${id}`);
+
+export const createDepartment = (payload: Omit<Department, '_id'>) =>
+  http.post<Department>('/departments', payload).then((res) => res.data);
  

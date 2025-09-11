@@ -9,8 +9,8 @@
     "baseUrl": ".",
     "paths": {
       "@/common/*": ["./src/components/common/*"],
-      "@/*": ["./src/*"],
-    },
+      "@/modals/*": ["./src/components/modals/*"],
+     },
 
     /* Bundler mode */
     "moduleResolution": "Bundler",

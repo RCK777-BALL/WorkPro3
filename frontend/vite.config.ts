@@ -10,18 +10,12 @@ export default defineConfig({
   plugins: [react()],
   server: { port: 5173 },
   resolve: {
-    alias: [
-      {
-        find: '@/common',
-        replacement: fileURLToPath(
-          new URL('./src/components/common', import.meta.url),
-        ),
-      },
-      {
-        find: '@',
-        replacement: fileURLToPath(new URL('./src', import.meta.url)),
-      },
-    ],
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@/common': fileURLToPath(new URL('./src/components/common', import.meta.url)),
+      '@/modals': fileURLToPath(new URL('./src/components/modals', import.meta.url)),
+    },
+
   },
 })
 

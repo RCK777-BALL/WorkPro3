@@ -31,9 +31,12 @@ export function DepartmentForm({ initial, onSubmit, onCancel }: DepartmentFormPr
     reset(initial ?? { name: '', description: '' });
   }, [initial, reset]);
 
-  const submit: SubmitHandler<DepartmentPayload> = async (data) => {
+  const onValid: SubmitHandler<DepartmentPayload> = async (data) => {
     await onSubmit({ name: data.name.trim(), description: data.description?.trim() || undefined });
   };
+
+  const submit = handleSubmit(onValid);
+
 
   return (
     <form onSubmit={handleSubmit(submit)} className="space-y-4">
@@ -90,9 +93,12 @@ export function LineForm({ initial, onSubmit, onCancel }: LineFormProps) {
     reset(initial ?? { name: '' });
   }, [initial, reset]);
 
-  const submit: SubmitHandler<LinePayload> = async (data) => {
+  const onValid: SubmitHandler<LinePayload> = async (data) => {
     await onSubmit({ name: data.name.trim() });
   };
+
+  const submit = handleSubmit(onValid);
+
 
   return (
     <form onSubmit={handleSubmit(submit)} className="space-y-4">
@@ -142,9 +148,12 @@ export function StationForm({ initial, onSubmit, onCancel }: StationFormProps) {
     reset(initial ?? { name: '' });
   }, [initial, reset]);
 
-  const submit: SubmitHandler<StationPayload> = async (data) => {
+  const onValid: SubmitHandler<StationPayload> = async (data) => {
     await onSubmit({ name: data.name.trim() });
   };
+
+  const submit = handleSubmit(onValid);
+
 
   return (
     <form onSubmit={handleSubmit(submit)} className="space-y-4">

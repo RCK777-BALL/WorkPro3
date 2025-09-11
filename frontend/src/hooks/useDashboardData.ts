@@ -10,8 +10,8 @@ import type {
   CriticalAlertResponse,
   UpcomingMaintenanceItem,
   CriticalAlertItem,
-   AssetStatusMap,
- 
+  AssetStatusMap,
+  MaintenanceType,
 } from '@/types';
 import type { DateRange, Timeframe } from '@/store/dashboardStore';
 

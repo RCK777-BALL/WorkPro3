@@ -7,7 +7,7 @@ import { useParams, Link } from 'react-router-dom';
  import Avatar from '@/components/common/Avatar';
 import WorkHistoryCard from '@/components/teams/WorkHistoryCard';
 import { teamMembers } from '@/utils/data';
-import type { WorkHistory, WorkType } from '@/types';
+import type { WorkHistory, WorkHistoryEntry, WorkType } from '@/types';
  
  
 

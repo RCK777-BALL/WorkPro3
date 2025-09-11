@@ -32,7 +32,7 @@ export function useSummary<T = unknown>(
       const p = http
         .get<T>(path, { signal: controller.signal })
         .then((res) => {
-          if (!mountedRef.current) return c.data as T;
+          if (!mountedRef.current) return res.data;
           c.data = res.data;
           c.ts = Date.now();
           c.promise = undefined;

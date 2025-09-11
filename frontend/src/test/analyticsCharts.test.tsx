@@ -3,7 +3,7 @@
  */
 
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi, beforeAll } from 'vitest';
+import { describe, it, expect, vi, beforeAll, type Mock } from 'vitest';
 import React from 'react';
 import { Chart as ChartJS } from 'chart.js';
 import http from '@/lib/http';
@@ -52,7 +52,7 @@ beforeAll(() => {
 
 import Analytics from '@/pages/Analytics';
 
-const mockedGet = http.get as unknown as vi.Mock;
+const mockedGet = http.get as unknown as Mock;
 
 mockedGet.mockImplementation((url: string) => {
   if (url === '/reports/analytics') {

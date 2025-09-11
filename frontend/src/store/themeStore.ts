@@ -5,8 +5,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import http from '@/lib/http';
-import { useAuthStore } from './authStore';
-
 interface ThemeState {
   theme: 'light' | 'dark' | 'system';
   

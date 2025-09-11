@@ -4,7 +4,7 @@
 
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import React from 'react';
+import type { Mock } from 'vitest';
 import Reports from '@/pages/Reports';
 import http from '@/lib/http';
 
@@ -18,7 +18,7 @@ vi.mock(
   { virtual: true },
 );
 
-const mockedGet = http.get as unknown as vi.Mock;
+const mockedGet = http.get as unknown as Mock;
 
 mockedGet.mockImplementation((url: string) => {
   if (url === '/v1/analytics/kpis') {

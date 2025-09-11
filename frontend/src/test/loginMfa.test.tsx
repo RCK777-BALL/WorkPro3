@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { Mock } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -14,7 +15,7 @@ import { AuthProvider } from '../context/AuthContext';
 import http from '../lib/http';
 import { MemoryRouter } from 'react-router-dom';
 
-const mockedPost = http.post as unknown as vi.Mock;
+const mockedPost = http.post as unknown as Mock;
 
 const renderLogin = () =>
   render(

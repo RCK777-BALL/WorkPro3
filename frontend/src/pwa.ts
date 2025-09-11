@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 // Optional PWA helper: works when vite-plugin-pwa is present, no-ops otherwise.
 // IMPORTANT: never use a string literal 'virtual:pwa-register' in the import —
 // Vite's import-analysis will attempt to resolve it. Use a variable instead.

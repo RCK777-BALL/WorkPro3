@@ -1,5 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React from 'react';
-import { cn } from '../../utils/cn';
+import { cn } from '@/utils/cn';
 
 interface ButtonProps {
   children?: React.ReactNode;

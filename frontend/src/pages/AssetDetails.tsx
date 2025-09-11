@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useParams } from 'react-router-dom';
 
 const AssetDetails = () => {

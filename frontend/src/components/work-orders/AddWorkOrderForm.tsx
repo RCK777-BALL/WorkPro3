@@ -1,6 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React from 'react';
 import WorkOrderForm from './WorkOrderForm';
-import type { WorkOrder } from '../../types';
+import type { WorkOrder } from '@/types';
 
 interface Props {
   onSuccess?: (wo: WorkOrder) => void;

@@ -92,8 +92,9 @@ This will deploy the backend, frontend and ingress resources.
 - **frontend unit tests**: `cd frontend && npm run test`
 - **frontend e2e tests**: `cd frontend && npm run test:e2e`
 
-Both test suites use Vitest and enforce a minimum of 80% code coverage. backend
-tests spin up a temporary MongoDB using `mongodb-memory-server`, which
+Both test suites use Vitest and enforce a minimum of 80% code coverage. The backend
+installs Vite only so Vitest can bundle modules during testing; the runtime and production
+build do not depend on Vite. backend tests spin up a temporary MongoDB using `mongodb-memory-server`, which
 downloads a MongoDB binary the first time it runs. Make sure network access is
 allowed when running the tests for the first time or the download will fail.
 See [backend/tests/README.md](backend/tests/README.md) for more details about

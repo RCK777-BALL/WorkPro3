@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface PmTaskDocument extends Document {

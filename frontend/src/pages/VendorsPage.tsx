@@ -1,10 +1,14 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useEffect, useState } from 'react';
-import Button from '../components/common/Button';
-import DataTable from '../components/common/DataTable';
-import VendorModal from '../components/vendors/VendorModal';
-import http from '../lib/http';
-import type { Vendor } from '../types';
-import { useToast } from '../context/ToastContext';
+import Button from '@/components/common/Button';
+import DataTable from '@/components/common/DataTable';
+import VendorModal from '@/components/vendors/VendorModal';
+import http from '@/lib/http';
+import type { Vendor } from '@/types';
+import { useToast } from '@/context/ToastContext';
 
 const VendorsPage = () => {
   const [vendors, setVendors] = useState<Vendor[]>([]);

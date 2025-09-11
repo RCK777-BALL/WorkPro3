@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import jwt from 'jsonwebtoken';
 
 export interface JwtData {

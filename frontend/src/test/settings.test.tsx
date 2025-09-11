@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -20,8 +24,8 @@ vi.mock('../lib/http', () => ({
   default: { post: vi.fn() },
 }));
 
-import http from '../lib/http';
-import Settings from '../pages/Settings';
+import http from '@/lib/http';
+import Settings from '@/pages/Settings';
 
 describe('Settings page', () => {
   beforeEach(() => {

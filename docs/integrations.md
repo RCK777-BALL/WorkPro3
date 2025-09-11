@@ -9,7 +9,7 @@ Generate an API key or OAuth2 token in WorkPro and store it securely in your ERP
 ## 2. Configure SAP Outbound Call
 
 1. In SAP, create an HTTP destination pointing to your WorkPro server.
-2. Set the URL to `https://<workpro-host>/api/hooks/workorder`.
+2. Set the URL to `https://<workpro-host>/api/webhooks/workorder`.
 3. Choose `POST` as the method and send JSON payloads with event data.
 4. Include the API key or OAuth2 token in the request headers.
 
@@ -28,7 +28,7 @@ Example payload:
 Use a tool like cURL to send a test request:
 
 ```bash
-curl -X POST https://<workpro-host>/api/hooks/workorder \
+curl -X POST https://<workpro-host>/api/webhooks/workorder \
   -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"event":"create","title":"Example"}'

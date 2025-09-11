@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { BrowserQRCodeReader } from '@zxing/browser';
 import QRCode from 'qrcode';
 

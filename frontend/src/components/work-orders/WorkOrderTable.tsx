@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React from 'react';
 import {
   DndContext,
@@ -13,8 +17,8 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { WorkOrderRow } from './WorkOrderRow';
-import Badge from '../common/Badge';
-import type { WorkOrder } from '../../types';
+import Badge from '@/common/Badge';
+import type { WorkOrder } from '@/types';
 
 interface WorkOrderTableProps {
   workOrders: WorkOrder[];

@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { calcNextDue } from '../tasks/pmSchedulerTask';
+import { calcNextDue } from '../tasks/PMSchedulerTask';
 
 describe('calcNextDue', () => {
   it('advances annually', () => {

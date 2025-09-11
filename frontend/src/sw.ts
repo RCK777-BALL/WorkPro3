@@ -38,48 +38,61 @@ async function openDB() {
   });
 }
 
-async function loadQueue() {
-  try {
-    const db = await openDB();
-    const tx = db.transaction(STORE_NAME, 'readonly');
-    const store = tx.objectStore(STORE_NAME);
-    const request = store.get('queue');
-    const result: QueueItem[] = await new Promise((resolve, reject) => {
-      request.onsuccess = () => resolve(request.result || []);
-      request.onerror = () => reject(request.error);
-    });
-    offlineQueue = result;
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error('Failed to load queue from storage', err);
-    offlineQueue = [];
+async function notifyClients(type: string, error: unknown) {
+  const clients = await self.clients.matchAll();
+  const message = {
+    type,
+    error: error instanceof Error ? error.message : String(error),
+  };
+  for (const client of clients) {
+    client.postMessage(message);
   }
+}
+
+async function loadQueue() {
+  const db = await openDB();
+  const tx = db.transaction(STORE_NAME, 'readonly');
+  const store = tx.objectStore(STORE_NAME);
+  const request = store.get('queue');
+  const result: QueueItem[] = await new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result || []);
+    request.onerror = () => reject(request.error);
+  });
+  offlineQueue = result;
 }
 
 async function saveQueue() {
-  try {
-    const db = await openDB();
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    tx.objectStore(STORE_NAME).put(offlineQueue, 'queue');
-    await new Promise((resolve, reject) => {
-      tx.oncomplete = () => resolve(undefined);
-      tx.onerror = () => reject(tx.error);
-    });
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error('Failed to save queue to storage', err);
-  }
+  const db = await openDB();
+  const tx = db.transaction(STORE_NAME, 'readwrite');
+  tx.objectStore(STORE_NAME).put(offlineQueue, 'queue');
+  await new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve(undefined);
+    tx.onerror = () => reject(tx.error);
+  });
 }
 
-loadQueue().then(() => {
-  if (offlineQueue.length > 0) {
-    processQueue();
+(async () => {
+  try {
+    await loadQueue();
+    if (offlineQueue.length > 0) {
+      await processQueue();
+    }
+  } catch (err) {
+    offlineQueue = [];
+    // eslint-disable-next-line no-console
+    console.error('Failed to load queue from storage', err);
+    await notifyClients('LOAD_QUEUE_ERROR', err);
   }
-});
+})();
 
 declare let self: ServiceWorkerGlobalScope & { __WB_MANIFEST: any };
 
-precacheAndRoute(self.__WB_MANIFEST);
+if (self.__WB_MANIFEST) {
+  precacheAndRoute(self.__WB_MANIFEST);
+} else {
+  // eslint-disable-next-line no-console
+  console.warn('No precache manifest found. Skipping precache.');
+}
 
 // Cache page navigations (html) with a Network First strategy
 registerRoute(
@@ -105,11 +118,19 @@ self.addEventListener('message', (event) => {
   }
   if (event.data?.type === 'QUEUE_REQUEST') {
     offlineQueue.push(event.data.payload as QueueItem);
-    void saveQueue();
+    saveQueue().catch((err) => {
+      // eslint-disable-next-line no-console
+      console.error('Failed to save queue to storage', err);
+      void notifyClients('SAVE_QUEUE_ERROR', err);
+    });
   }
   if (event.data?.type === 'CLEAR_QUEUE') {
     offlineQueue.length = 0;
-    void saveQueue();
+    saveQueue().catch((err) => {
+      // eslint-disable-next-line no-console
+      console.error('Failed to save queue to storage', err);
+      void notifyClients('SAVE_QUEUE_ERROR', err);
+    });
   }
 });
 
@@ -124,10 +145,17 @@ async function processQueue() {
     const { url, options } = offlineQueue[0];
     try {
       await fetch(url, options);
-      offlineQueue.shift();
-      await saveQueue();
     } catch {
       break; // stop if a request fails
+    }
+    offlineQueue.shift();
+    try {
+      await saveQueue();
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to save queue to storage', err);
+      await notifyClients('SAVE_QUEUE_ERROR', err);
+      break;
     }
   }
 }

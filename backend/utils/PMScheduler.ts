@@ -1,8 +1,4 @@
-/*
- * SPDX-License-Identifier: MIT
- */
-
-// utils/pmScheduler.ts
+// utils/PMScheduler.ts
 import * as cron from 'node-cron';
 import path from 'path';
 
@@ -21,7 +17,7 @@ export const startPMScheduler = (id: string, opts: StartOpts = {}) => {
       : process.env.PM_SCHEDULER_CRON || '*/5 * * * *';
 
   // Resolve task module; allow relative path from project root OR from this file
-  const rel = opts.taskModulePath || process.env.PM_SCHEDULER_TASK || './tasks/pmSchedulerTask';
+  const rel = opts.taskModulePath || process.env.PM_SCHEDULER_TASK || './tasks/PMSchedulerTask';
   const resolved = resolveTaskPath(rel);
 
   console.log(`[PM Scheduler] Using cron "${cronExpr}" and task module "${resolved}"`);

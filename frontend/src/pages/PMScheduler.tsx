@@ -35,7 +35,8 @@ const PMScheduler: React.FC = () => {
   const [assets, setAssets] = useState<string[]>([]);
   const [rule, setRule] = useState('');
   const [plans, setPlans] = useState<Plan[]>([]);
-   const [selected, setSelected] = useState<CalendarEvent | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [notice, setNotice] = useState('');
  
 

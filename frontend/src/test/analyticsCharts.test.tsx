@@ -3,8 +3,9 @@
  */
 
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi, beforeAll, type Mock } from 'vitest';
-import React from 'react';
+import { describe, it, expect, vi, beforeAll } from 'vitest';
+import type { Mock } from 'vitest';
+
 import { Chart as ChartJS } from 'chart.js';
 import http from '@/lib/http';
 

@@ -2,7 +2,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { describe, it, beforeAll, afterAll, beforeEach, expect, vi, type Mock } from 'vitest';
+import { describe, it, beforeAll, afterAll, beforeEach, expect, vi } from 'vitest';
+import type { Mock } from 'vitest';
+
 import request from 'supertest';
 import express from 'express';
 import mongoose from 'mongoose';

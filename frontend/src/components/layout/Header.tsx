@@ -66,13 +66,17 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
     if (showNotifications) {
       setLoadingNotifications(true);
       fetchNotifications()
-        .catch(() => {
-          addToast(t('header.failedToLoadNotifications'), 'error');
-          setNotificationsError(t('header.failedToLoadNotifications'));
+        .then((data) => {
+          if (!data) {
+            addToast(t('header.failedToLoadNotifications'), 'error');
+            setNotificationsError(t('header.failedToLoadNotifications'));
+          } else {
+            setNotificationsError(null);
+          }
         })
         .finally(() => setLoadingNotifications(false));
     }
-  }, [showNotifications, fetchNotifications]);
+  }, [showNotifications, fetchNotifications, addToast, t]);
   useEffect(() => {
     if (showNotifications) {
       notificationsMenuRef.current?.focus();

@@ -37,8 +37,9 @@ export function DepartmentForm({ initial, onSubmit, onCancel }: DepartmentFormPr
 
   const submit = handleSubmit(onValid);
 
+
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={handleSubmit(submit)} className="space-y-4">
       <div>
         <label className="block text-sm font-medium mb-1">Name<span className="text-red-500">*</span></label>
         <input
@@ -98,8 +99,9 @@ export function LineForm({ initial, onSubmit, onCancel }: LineFormProps) {
 
   const submit = handleSubmit(onValid);
 
+
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={handleSubmit(submit)} className="space-y-4">
       <div>
         <label className="block text-sm font-medium mb-1">Name<span className="text-red-500">*</span></label>
         <input
@@ -152,8 +154,9 @@ export function StationForm({ initial, onSubmit, onCancel }: StationFormProps) {
 
   const submit = handleSubmit(onValid);
 
+
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={handleSubmit(submit)} className="space-y-4">
       <div>
         <label className="block text-sm font-medium mb-1">Name<span className="text-red-500">*</span></label>
         <input

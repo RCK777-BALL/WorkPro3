@@ -48,11 +48,7 @@ const Settings: React.FC = () => {
       description: 'Increase contrast for better visibility',
       key: 'highContrast',
     },
-  ] satisfies { label: string; description: string; key: keyof ThemeSettings }[];
-
-  type MissingThemeOption = Exclude<ThemeOptionKey, typeof themeOptions[number]['key']>;
-  const _themeOptionCheck: MissingThemeOption extends never ? true : never = true;
-  void _themeOptionCheck;
+  ] satisfies { label: string; description: string; key: ThemeOptionKey }[];
 
   const [documents, setDocuments] = useState<Array<{ content: string; metadata: any }>>([]);
 

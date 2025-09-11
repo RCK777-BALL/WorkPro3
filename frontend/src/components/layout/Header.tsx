@@ -5,8 +5,9 @@
  
  
 import React, { useEffect, useState, useRef } from 'react';
- 
+
 import { Search, Bell, HelpCircle, Menu, Book, Video, MessageCircle, FileText, ExternalLink, Database } from 'lucide-react';
+import { useToast } from '../../context/ToastContext';
  
 import ThemeToggle from '@/common/ThemeToggle';
 import Avatar from '@/common/Avatar';
@@ -32,6 +33,7 @@ type HeaderNotification = Notification & { link?: string };
 
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
   const { t, i18n } = useTranslation();
+  const { addToast } = useToast();
   const user = useAuthStore((s) => s.user);
   const isAdmin = useAuthStore(selectIsAdmin);
   const isManager = useAuthStore(selectIsManager);
@@ -64,8 +66,8 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
     if (showNotifications) {
       setLoadingNotifications(true);
       fetchNotifications()
-        .catch((err) => {
-          console.error('Failed to load notifications', err);
+        .catch(() => {
+          addToast(t('header.failedToLoadNotifications'), 'error');
           setNotificationsError(t('header.failedToLoadNotifications'));
         })
         .finally(() => setLoadingNotifications(false));
@@ -166,8 +168,8 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
         navigate(notification.link);
       }
       setShowNotifications(false);
-    } catch (err) {
-      console.error('Failed to mark notification as read', err);
+    } catch {
+      addToast('Failed to mark notification as read', 'error');
       // Revert on failure
       setNotifications(prevNotifications =>
         prevNotifications.map(n =>

@@ -43,8 +43,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
         if (s.connected) {
           s.emit('chat:message', message);
         }
-      } catch (err) {
-        console.error('Failed to emit chat:message', err);
+      } catch {
+        addToast('Failed to send message', 'error');
       }
  
       setMessage('');

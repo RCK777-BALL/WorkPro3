@@ -74,8 +74,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
   }, [asset, reset]);
 
   useEffect(() => {
-    fetchDepartments().catch((err) => {
-      console.error("Failed to load departments", err);
+    fetchDepartments().catch(() => {
       addToast("Failed to load departments", "error");
     });
   }, [fetchDepartments, addToast]);
@@ -86,8 +85,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
       setStationId("");
       return;
     }
-    fetchLines(departmentId).catch((err) => {
-      console.error("Failed to load lines", err);
+    fetchLines(departmentId).catch(() => {
       addToast("Failed to load lines", "error");
     });
   }, [departmentId, fetchLines, addToast]);
@@ -97,8 +95,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
       setStationId("");
       return;
     }
-    fetchStations(departmentId, lineId).catch((err) => {
-      console.error("Failed to load stations", err);
+    fetchStations(departmentId, lineId).catch(() => {
       addToast("Failed to load stations", "error");
     });
   }, [departmentId, lineId, fetchStations, addToast]);
@@ -144,7 +141,6 @@ const AssetModal: React.FC<AssetModalProps> = ({
       onUpdate({ ...(res.data as any), id: res.data._id } as Asset);
       onClose();
     } catch (err: any) {
-      console.error("Failed to create asset", err);
       const message =
         err.response?.data?.message ||
         (Array.isArray(err.response?.data?.errors)

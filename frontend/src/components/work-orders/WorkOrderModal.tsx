@@ -73,8 +73,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
 
   useEffect(() => {
     fetchDepartments()
-      .catch((err) => {
-        console.error("Failed to load departments", err);
+      .catch(() => {
         addToast("Failed to load departments", "error");
       })
       .finally(() => setLoadingDeps(false));
@@ -122,8 +121,8 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
       // Implementation for capturing image from camera
       // This would typically involve creating a video element and canvas
       // to capture the image
-    } catch (err) {
-      console.error("Error accessing camera:", err);
+    } catch {
+      addToast('Error accessing camera', 'error');
     }
   };
 

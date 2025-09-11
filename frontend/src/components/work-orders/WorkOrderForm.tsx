@@ -53,21 +53,20 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
       try {
         const assetRes = await http.get('/assets');
         setAssets((assetRes.data as any[]).map(a => ({ ...a, id: a._id ?? a.id })) as Asset[]);
-      } catch (err) {
-        console.error('Failed to load assets', err);
+      } catch {
+        addToast('Failed to load assets', 'error');
       }
       try {
         const userRes = await http.get('/users');
         setTechs((userRes.data as any[])
           .filter((u) => u.role === 'technician')
           .map(u => ({ ...u, id: u._id ?? u.id })) as User[]);
-      } catch (err) {
-        console.error('Failed to load users', err);
+      } catch {
+        addToast('Failed to load users', 'error');
       }
       try {
         await fetchDepartments();
-      } catch (err) {
-        console.error('Failed to load departments', err);
+      } catch {
         addToast('Failed to load departments', 'error');
       }
     };
@@ -80,8 +79,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
       setStationId('');
       return;
     }
-    fetchLines(departmentId).catch((err) => {
-      console.error('Failed to load lines', err);
+    fetchLines(departmentId).catch(() => {
       addToast('Failed to load lines', 'error');
     });
   }, [departmentId, fetchLines]);
@@ -91,8 +89,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
       setStationId('');
       return;
     }
-    fetchStations(departmentId, lineId).catch((err) => {
-      console.error('Failed to load stations', err);
+    fetchStations(departmentId, lineId).catch(() => {
       addToast('Failed to load stations', 'error');
     });
   }, [departmentId, lineId, fetchStations]);
@@ -122,8 +119,8 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
       const data = res.data as WorkOrderUpdatePayload;
       if (onSuccess) onSuccess({ ...(data as Partial<WorkOrder>), id: data._id } as WorkOrder);
       addToast(workOrder ? 'Work Order updated' : 'Work Order created', 'success');
-    } catch (err) {
-      console.error('Failed to submit work order', err);
+    } catch {
+      addToast('Failed to submit work order', 'error');
     }
   };
 

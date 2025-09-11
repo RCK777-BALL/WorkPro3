@@ -51,16 +51,15 @@ const saveQueue = <T = unknown>(queue: QueuedRequest<T>[]) => {
               (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED')
             )
           ) {
-            logError('Failed to persist offline queue', e);
+
             emitToast('Failed to save offline changes; they may be lost', 'error');
             return;
           }
         }
       }
-      logError('Failed to persist offline queue; storage still full');
       emitToast('Failed to save offline changes; they may be lost', 'error');
     } else {
-      logError('Failed to persist offline queue', err);
+
       emitToast('Failed to save offline changes; they may be lost', 'error');
     }
   }
@@ -172,12 +171,13 @@ export const flushQueue = async (useBackoff = true) => {
           conflictListeners.forEach((cb) =>
             cb({ method: req.method, url: req.url, local: req.data, server: serverData, diffs })
           );
-        } catch (fetchErr: unknown) {
-          logError('Failed to fetch server data for conflict', fetchErr);
- 
+        } catch {
+          emitToast('Failed to fetch server data for conflict', 'error');
+
         }
       }
-       logError('Failed to flush queued request', err);
+      emitToast('Failed to flush queued request', 'error');
+
       const retries = (req.retries ?? 0) + 1;
       const backoff = Math.min(1000 * 2 ** (retries - 1), 30000);
       remaining.push({
@@ -202,8 +202,9 @@ export const flushQueue = async (useBackoff = true) => {
 
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
-    flushQueue().catch((err: unknown) => {
-      logError('Failed to flush queue on online event', err);
+    flushQueue().catch(() => {
+      emitToast('Failed to flush queued request', 'error');
+
     });
   });
 }

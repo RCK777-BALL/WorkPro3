@@ -7,7 +7,8 @@
 import { precacheAndRoute } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
 import { CacheFirst, NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies';
-import { logError } from './utils/logger';
+import { emitToast } from './context/ToastContext';
+
 
 interface QueueItem {
   url: string;
@@ -50,8 +51,9 @@ async function openDB() {
       request.onerror = () => reject(request.error);
     });
     offlineQueue = result;
-  } catch (err) {
-    logError('Failed to load queue from storage', err);
+  } catch {
+    emitToast('Failed to load queue from storage', 'error');
+
     offlineQueue = [];
  
   }
@@ -81,12 +83,16 @@ async function saveQueue() {
 
 (async () => {
   try {
-    await loadQueue();
-    if (offlineQueue.length > 0) {
-      await processQueue();
-    }
-  } catch (err) {
-     logError('Failed to save queue to storage', err);
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).put(offlineQueue, 'queue');
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = () => resolve(undefined);
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch {
+    emitToast('Failed to save queue to storage', 'error');
+
   }
 }
 

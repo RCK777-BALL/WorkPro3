@@ -4,7 +4,9 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
+
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
@@ -12,6 +14,7 @@ const LoginForm = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const { login: authLogin } = useAuth();
+  const { addToast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,8 +26,8 @@ const LoginForm = () => {
       if (err instanceof Error && err.message === 'Invalid credentials') {
         setError(err.message);
       } else {
-        console.error(err);
         setError('Server error. Please try again.');
+        addToast('Server error. Please try again.', 'error');
       }
     }
   };

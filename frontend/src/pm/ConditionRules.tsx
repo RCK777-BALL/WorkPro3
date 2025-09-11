@@ -3,8 +3,10 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import Button from '@/components/common/Button';
-import http from '@/lib/http';
+import Button from '../components/common/Button';
+import http from '../lib/http';
+import { useToast } from '../context/ToastContext';
+
 
 interface ConditionRule {
   _id?: string;
@@ -31,14 +33,15 @@ const ConditionRules: React.FC = () => {
   const [rules, setRules] = useState<ConditionRule[]>([]);
   const [form, setForm] = useState<ConditionRule | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { addToast } = useToast();
 
   const loadRules = async () => {
     try {
       const res = await http.get('/condition-rules', { withCredentials: true });
       setRules(res.data as ConditionRule[]);
-    } catch (err) {
-      console.error(err);
+    } catch {
       setError('Failed to load rules');
+      addToast('Failed to load rules', 'error');
     }
   };
 
@@ -55,8 +58,8 @@ const ConditionRules: React.FC = () => {
       }
       setForm(null);
       await loadRules();
-    } catch (err) {
-      console.error(err);
+    } catch {
+      addToast('Failed to save rule', 'error');
     }
   };
 

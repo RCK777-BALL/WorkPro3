@@ -9,11 +9,16 @@ import {
   clearQueue,
   enqueueAssetRequest,
   enqueueDepartmentRequest,
+  MAX_QUEUE_RETRIES,
 } from '../utils/offlineQueue';
 import http from '../lib/http';
+import { emitToast } from '../context/ToastContext';
 
 vi.mock('../lib/http', () => ({
   default: vi.fn(),
+}));
+vi.mock('../context/ToastContext', () => ({
+  emitToast: vi.fn(),
 }));
 
 type LocalStorageMock = {
@@ -117,7 +122,8 @@ describe('offline queue helpers', () => {
 
     expect(apiMock).toHaveBeenCalledTimes(2);
     expect(localStorageMock.setItem).toHaveBeenCalled();
-    const saved = JSON.parse(localStorageMock.setItem.mock.calls[0][1]) as any[];
+    const calls = localStorageMock.setItem.mock.calls;
+    const saved = JSON.parse(calls[calls.length - 1][1]) as any[];
     expect(saved).toHaveLength(1);
     expect(saved[0].url).toBe('/b');
     expect(saved[0].retries).toBe(1);
@@ -152,6 +158,20 @@ describe('offline queue helpers', () => {
 
     expect(apiMock).toHaveBeenCalledTimes(1);
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('offline-queue');
+  });
+
+  it('drops requests after exceeding max retries and notifies user', async () => {
+    const apiMock = http as unknown as ReturnType<typeof vi.fn>;
+    (apiMock as any).mockRejectedValue(new Error('fail'));
+    const queue = [
+      { method: 'post' as const, url: '/a', data: { a: 1 }, retries: MAX_QUEUE_RETRIES },
+    ];
+    localStorageMock.store['offline-queue'] = JSON.stringify(queue);
+
+    await flushQueue(false);
+
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('offline-queue');
+    expect(emitToast).toHaveBeenCalled();
   });
 
   it('processes 1k queued records within 5s', async () => {

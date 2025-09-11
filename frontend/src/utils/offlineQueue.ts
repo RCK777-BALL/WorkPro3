@@ -17,6 +17,7 @@ export type QueuedRequest = {
 };
 
 const QUEUE_KEY = 'offline-queue';
+export const MAX_QUEUE_RETRIES = 5;
 
 export const loadQueue = (): QueuedRequest[] => {
   try {
@@ -146,15 +147,13 @@ export const flushQueue = async (useBackoff = true) => {
     const queue = loadQueue();
     if (queue.length === 0) return;
 
-    const originalLength = queue.length;
-    const now = Date.now();
-    const remaining: QueuedRequest[] = [];
+   const remaining: QueuedRequest[] = [];
 
-    for (const req of queue) {
-      if (useBackoff && req.nextAttempt && req.nextAttempt > now) {
-        remaining.push(req);
-        continue;
-      }
+  for (let i = 0; i < queue.length; i++) {
+    const req = queue[i];
+    const now = Date.now();
+
+    if (!(useBackoff && req.nextAttempt && req.nextAttempt > now)) {
       try {
         await httpClient({ method: req.method, url: req.url, data: req.data });
       } catch (err: any) {
@@ -169,31 +168,33 @@ export const flushQueue = async (useBackoff = true) => {
           } catch (fetchErr) {
             console.error('Failed to fetch server data for conflict', fetchErr);
           }
-          continue;
+        } else {
+          console.error('Failed to flush queued request', err);
+          const retries = (req.retries ?? 0) + 1;
+          if (retries > MAX_QUEUE_RETRIES) {
+            emitToast('Offline change failed too many times and was dropped', 'error');
+          } else {
+            const backoff = Math.min(1000 * 2 ** (retries - 1), 30000);
+            remaining.push({
+              ...req,
+              retries,
+              error: String(err),
+              nextAttempt: useBackoff ? now + backoff : undefined,
+            });
+          }
         }
-        console.error('Failed to flush queued request', err);
-        const retries = (req.retries ?? 0) + 1;
-        const backoff = Math.min(1000 * 2 ** (retries - 1), 30000);
-        remaining.push({
-          ...req,
-          retries,
-          error: String(err),
-          nextAttempt: useBackoff ? now + backoff : undefined,
-        });
-        continue; // continue processing remaining requests
       }
+    } else {
+      remaining.push(req);
     }
 
-    const current = loadQueue();
-    const newItems = current.slice(originalLength);
-    const finalQueue = [...remaining, ...newItems];
-    if (finalQueue.length > 0) {
-      saveQueue(finalQueue);
+    const toPersist = [...remaining, ...queue.slice(i + 1)];
+    if (toPersist.length > 0) {
+      saveQueue(toPersist);
     } else {
       clearQueue();
     }
-  } finally {
-    isFlushing = false;
+ 
   }
 };
 

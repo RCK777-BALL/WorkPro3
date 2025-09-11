@@ -9,7 +9,7 @@ import Avatar from '@/common/Avatar';
 import Button from '@/common/Button';
 import WorkHistoryCard from './WorkHistoryCard';
 import { Users } from 'lucide-react';
-import type { TeamMember } from '@/types';
+import type { TeamMember, WorkHistory, WorkHistoryEntry } from '@/types';
 
 interface TeamTableProps {
   teamMembers: TeamMember[];
@@ -44,7 +44,7 @@ const TeamTable: React.FC<TeamTableProps> = ({
   };
 
   // Updated work history data to match the WorkHistoryCard interface
-  const sampleWorkHistory = {
+  const sampleWorkHistory: WorkHistory = {
     metrics: {
       safety: {
         incidentRate: 0.5,
@@ -100,7 +100,7 @@ const TeamTable: React.FC<TeamTableProps> = ({
         status: 'completed',
         duration: 4
       }
-    ]
+    ] as WorkHistoryEntry[]
   };
 
   return (

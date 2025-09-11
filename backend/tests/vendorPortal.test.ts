@@ -11,7 +11,7 @@ import Vendor from '../models/Vendor';
 
 const app = express();
 app.use(express.json());
-app.use('/api/vendor', vendorPortalRoutes);
+app.use('/api/vendor-portal', vendorPortalRoutes);
 
 let mongo: MongoMemoryServer;
 let vendor1: any;
@@ -47,13 +47,13 @@ beforeEach(async () => {
 describe('Vendor portal purchase orders', () => {
   it('lists and updates purchase orders for a vendor', async () => {
     const listRes = await request(app)
-      .get('/api/vendor/pos')
+      .get('/api/vendor-portal/pos')
       .set('Authorization', `Bearer ${token1}`)
       .expect(200);
     expect(listRes.body.length).toBe(1);
 
     await request(app)
-      .put(`/api/vendor/pos/${po._id}`)
+      .put(`/api/vendor-portal/pos/${po._id}`)
       .set('Authorization', `Bearer ${token1}`)
       .send({ status: 'acknowledged' })
       .expect(200);
@@ -64,7 +64,7 @@ describe('Vendor portal purchase orders', () => {
 
   it('prevents accessing purchase orders of other vendors', async () => {
     await request(app)
-      .put(`/api/vendor/pos/${po._id}`)
+      .put(`/api/vendor-portal/pos/${po._id}`)
       .set('Authorization', `Bearer ${token2}`)
       .send({ status: 'acknowledged' })
       .expect(403);

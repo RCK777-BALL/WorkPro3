@@ -148,9 +148,8 @@ app.use("/api/team", teamRoutes);
 app.use("/api/theme", ThemeRoutes);
 app.use("/api/request-portal", requestPortalRoutes);
 
-// Support both paths for the vendor portal
+// Vendor portal routes
 app.use("/api/vendor-portal", vendorPortalRoutes);
-app.use("/api/vendor", vendorPortalRoutes);
 
 app.use("/api/chat", chatRoutes);
 app.use("/api/hooks", webhooksRoutes);

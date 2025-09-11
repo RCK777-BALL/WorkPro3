@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useEffect, useState } from 'react';
 import HookForm from './HookForm';
 

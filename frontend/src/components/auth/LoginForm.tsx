@@ -1,7 +1,12 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');

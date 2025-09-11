@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -9,6 +13,7 @@ import {
   closeNotificationsSocket,
 } from '../../utils/notificationsSocket';
 import { useToast } from '../../context/ToastContext';
+
  
  
 

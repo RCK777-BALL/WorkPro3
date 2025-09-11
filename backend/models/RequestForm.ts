@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import mongoose from 'mongoose';
 
 const requestFormSchema = new mongoose.Schema(

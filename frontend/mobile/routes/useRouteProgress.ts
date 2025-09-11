@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useState } from 'react';
 
 export interface RouteTask {

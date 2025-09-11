@@ -1,6 +1,11 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useEffect, useState } from 'react';
 import http from '../lib/http';
 import { useToast } from '../context/ToastContext';
+
 
 interface Asset {
   _id: string;

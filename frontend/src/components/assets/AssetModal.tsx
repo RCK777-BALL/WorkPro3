@@ -1,14 +1,18 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useDropzone } from "react-dropzone";
 import { X, Upload, Download } from "lucide-react";
-import Button from "../common/Button";
-import http from "../../lib/http";
-import { useToast } from "../../context/ToastContext";
-import { useDepartmentStore } from "../../store/departmentStore";
-import { useAuthStore } from "../../store/authStore";
-import type { Asset, Department, Line, Station } from "../../types";
-import AssetQRCode from "../qr/AssetQRCode";
+import Button from "@/common/Button";
+import http from "@/lib/http";
+import { useToast } from "@/context/ToastContext";
+import { useDepartmentStore } from "@/store/departmentStore";
+import { useAuthStore } from "@/store/authStore";
+import type { Asset, Department, Line, Station } from "@/types";
+import AssetQRCode from "@/qr/AssetQRCode";
 
 const defaultAssetState = {
   name: "",

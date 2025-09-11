@@ -1,11 +1,15 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState, useRef } from 'react';
 import { Smile, Paperclip, Send, Image, AtSign, Hash } from 'lucide-react';
 import data from '@emoji-mart/data';
 
 import Picker from '@emoji-mart/react';
  import type { Emoji } from '@emoji-mart/react';
-import { getNotificationsSocket } from '../../utils/notificationsSocket';
-import { useToast } from '../../context/ToastContext';
+import { getNotificationsSocket } from '@/utils/notificationsSocket';
+import { useToast } from '@/context/ToastContext';
  
  
 

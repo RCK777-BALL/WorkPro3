@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import Asset from '../models/Asset';
 import SensorReading from '../models/SensorReading';
 import Notification from '../models/Notifications';

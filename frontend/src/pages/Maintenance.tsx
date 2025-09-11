@@ -18,6 +18,7 @@ const sampleSchedules: MaintenanceSchedule[] = [
     nextDue: '2024-03-15',
     assignedTo: 'Mike Johnson',
     instructions: '1. Check belt tension\n2. Inspect for wear\n3. Verify alignment\n4. Lubricate bearings',
+    type: 'preventive',
     estimatedDuration: 2,
     repeatConfig: { interval: 1, unit: 'month' },
     parts: []
@@ -32,6 +33,7 @@ const sampleSchedules: MaintenanceSchedule[] = [
     nextDue: '2024-04-01',
     assignedTo: 'Sarah Wilson',
     instructions: '1. Replace filters\n2. Clean coils\n3. Check refrigerant levels\n4. Test operation',
+    type: 'preventive',
     estimatedDuration: 4,
     repeatConfig: { interval: 3, unit: 'month' },
     parts: []

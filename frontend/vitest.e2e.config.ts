@@ -11,7 +11,7 @@ const tsconfig = JSON.parse(fs.readFileSync(new URL('./tsconfig.json', import.me
 const baseConfig = tsconfig.extends
   ? JSON.parse(fs.readFileSync(new URL(tsconfig.extends, import.meta.url), 'utf-8'))
   : tsconfig;
-const paths = baseConfig.compilerOptions?.paths ?? {};
+const paths = baseConfig.compilerOptions?.paths as Record<string, string[]> ?? {};
 const alias = Object.fromEntries(
   Object.entries(paths).map(([key, [value]]) => [
     key.replace('/*', '/'),

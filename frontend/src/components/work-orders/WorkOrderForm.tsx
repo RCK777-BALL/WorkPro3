@@ -12,9 +12,6 @@ import type {
   Asset,
   User,
   WorkOrderUpdatePayload,
-  Department,
-  Line,
-  Station,
 } from '@/types';
 
 interface WorkOrderFormProps {

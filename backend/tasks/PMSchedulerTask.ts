@@ -2,12 +2,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { runPmScheduler, calcNextDue } from '../services/pmScheduler';
+import { runPMScheduler, calcNextDue } from '../services/PMScheduler';
 import logger from '../utils/logger';
 
-export default async function runPmSchedulerTask() {
+export default async function runPMSchedulerTask() {
   logger.info('[PM Scheduler Task] Running PM evaluations...');
-  await runPmScheduler();
+  await runPMScheduler();
 }
 
-export { calcNextDue };
+export { runPMScheduler, calcNextDue };

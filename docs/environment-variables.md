@@ -15,7 +15,7 @@ The application uses the following environment variables. All names use `UPPER_S
 | `NODE_ENV` | Node environment | `development` |
 | `COOKIE_SECURE` | Enable secure cookies | optional |
 | `PM_SCHEDULER_CRON` | CRON schedule for PM tasks | `*/5 * * * *` |
-| `PM_SCHEDULER_TASK` | Path to PM scheduler task | `./tasks/pmSchedulerTask` |
+| `PM_SCHEDULER_TASK` | Path to PM scheduler task | `./tasks/PMSchedulerTask` |
 | `DEFAULT_TENANT_ID` | Default tenant identifier | optional |
 
 ## Frontend

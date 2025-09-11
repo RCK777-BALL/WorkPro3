@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState } from 'react';
 import {
  
@@ -6,16 +10,16 @@ import {
   Save,
   Book
 } from 'lucide-react';
-import Button from '../components/common/Button';
-import Card from '../components/common/Card';
-import DocumentUploader from '../components/documentation/DocumentUploader';
-import DocumentViewer from '../components/documentation/DocumentViewer';
-import { parseDocument } from '../utils/documentation';
-import { useThemeStore } from '../store/themeStore';
-import { useSettingsStore } from '../store/settingsStore';
-import type { ThemeSettings } from '../store/settingsStore';
-import { useToast } from '../context/ToastContext';
-import http from '../lib/http';
+import Button from '@/components/common/Button';
+import Card from '@/components/common/Card';
+import DocumentUploader from '@/components/documentation/DocumentUploader';
+import DocumentViewer from '@/components/documentation/DocumentViewer';
+import { parseDocument } from '@/utils/documentation';
+import { useThemeStore } from '@/store/themeStore';
+import { useSettingsStore } from '@/store/settingsStore';
+import type { ThemeSettings } from '@/store/settingsStore';
+import { useToast } from '@/context/ToastContext';
+import http from '@/lib/http';
 
 const Settings: React.FC = () => {
   const { theme, setTheme, updateTheme } = useThemeStore();

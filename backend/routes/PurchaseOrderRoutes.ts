@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { Router } from 'express';
 import { createPurchaseOrder, getPurchaseOrder } from '../controllers/PurchaseOrderController';
 

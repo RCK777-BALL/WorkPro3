@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import User from '../models/User';
 import { filterFields } from '../utils/filterFields';
 import { Request, Response, NextFunction } from 'express';

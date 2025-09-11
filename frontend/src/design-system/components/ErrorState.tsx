@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { Button, Center, Stack, Text } from '@mantine/core';
 
 interface ErrorStateProps {

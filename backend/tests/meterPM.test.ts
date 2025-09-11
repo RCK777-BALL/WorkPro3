@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { describe, it, beforeAll, afterAll, beforeEach, expect } from 'vitest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -6,7 +10,7 @@ import Asset from '../models/Asset';
 import Meter from '../models/Meter';
 import MeterReading from '../models/MeterReading';
 import WorkOrder from '../models/WorkOrder';
-import { runPmScheduler } from '../services/pmScheduler';
+import { runPMScheduler } from '../services/PMScheduler';
 
 let mongo: MongoMemoryServer;
 let tenantId: mongoose.Types.ObjectId;
@@ -51,7 +55,7 @@ describe('meter based PM generation', () => {
     meter.currentValue = 120;
     await meter.save();
 
-    await runPmScheduler();
+    await runPMScheduler();
     expect(await WorkOrder.countDocuments()).toBe(1);
 
     const updated = await Meter.findById(meter._id);

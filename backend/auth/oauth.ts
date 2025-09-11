@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import passport from 'passport';
 import type { Strategy as PassportStrategy } from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';

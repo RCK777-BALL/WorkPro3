@@ -1,14 +1,18 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Download, Upload, AlertTriangle, QrCode } from 'lucide-react';
-import Button from '../components/common/Button';
-import InventoryTable from '../components/inventory/InventoryTable';
-import InventoryModal from '../components/inventory/InventoryModal';
-import InventoryMetrics from '../components/inventory/InventoryMetrics';
-import InventoryScanModal from '../components/inventory/InventoryScanModal';
-import { exportToExcel, exportToPDF } from '../utils/export';
-import http from '../lib/http';
-import { useAuth } from '../context/AuthContext';
-import type { Part } from '../types';
+import Button from '@/components/common/Button';
+import InventoryTable from '@/components/inventory/InventoryTable';
+import InventoryModal from '@/components/inventory/InventoryModal';
+import InventoryMetrics from '@/components/inventory/InventoryMetrics';
+import InventoryScanModal from '@/components/inventory/InventoryScanModal';
+import { exportToExcel, exportToPDF } from '@/utils/export';
+import http from '@/lib/http';
+import { useAuth } from '@/context/AuthContext';
+import type { Part } from '@/types';
 
 const Inventory: React.FC = () => {
   const [search, setSearch] = useState('');

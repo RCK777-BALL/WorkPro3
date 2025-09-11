@@ -1,5 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useCallback, useEffect, useRef, useState } from 'react';
-import http from '../lib/http';
+import http from '@/lib/http';
 
 type CacheEntry<T> = { promise?: Promise<T>; data?: T; ts?: number };
 const cache: Record<string, CacheEntry<unknown>> = {};

@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { API_URL } from '@/config/env';
 import axios from 'axios';
 

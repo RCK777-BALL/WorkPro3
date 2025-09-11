@@ -25,13 +25,14 @@ export const cache = (keyPrefix: string, ttl = 60) => {
         return;
       }
 
-      const originalJson = res.json.bind(res);
-      res.json = (body: any) => {
+      const originalSend = res.send.bind(res);
+      const sendResponse: typeof res.send = (body) => {
         redis
           .set(key, JSON.stringify(body), 'EX', ttl)
           .catch((err: unknown) => console.error('Redis set error:', err));
-        return originalJson(body);
+        return originalSend(body);
       };
+      res.send = sendResponse;
     } catch (err) {
       console.error('Redis error:', err);
     }

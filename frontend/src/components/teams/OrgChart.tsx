@@ -12,10 +12,10 @@ interface OrgChartProps {
   onSelect: (member: TeamMember) => void;
 }
 
-interface TreeNode extends RawNodeDatum {
+type TreeNode = RawNodeDatum & {
   member: TeamMember;
   children?: TreeNode[];
-}
+};
 
 const buildTree = (members: TeamMember[]): TreeNode => {
   const nodeMap = new Map<string, TreeNode>();
@@ -63,20 +63,19 @@ const OrgChart: React.FC<OrgChartProps> = ({ onSelect }) => {
     onSelect(node.member);
   };
 
-  const renderNode: RenderCustomNodeElementFn = ({ nodeDatum }) => {
-    const node = nodeDatum as TreeNode;
-    const isSelected = node.member.id === selectedId;
+  const renderNode: RenderCustomNodeElementFn<TreeNode> = ({ nodeDatum }) => {
+    const isSelected = nodeDatum.member.id === selectedId;
     const fill = isSelected ? '#3b82f6' : '#fff';
     const textColor = isSelected ? '#1e40af' : '#000';
 
     return (
-      <g onClick={() => handleClick(node)}>
+      <g onClick={() => handleClick(nodeDatum)}>
         <circle r={15} fill={fill} stroke="#3b82f6" strokeWidth={2} />
         <text x={20} dy={-5} fill={textColor} fontSize={12}>
-          {node.member.name}
+          {nodeDatum.member.name}
         </text>
         <text x={20} dy={15} fill={textColor} fontSize={10}>
-          {node.member.role}
+          {nodeDatum.member.role}
         </text>
       </g>
     );

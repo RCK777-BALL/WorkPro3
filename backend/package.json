@@ -43,6 +43,7 @@
     "passport-openidconnect": "^0.1.2",
     "pdfkit": "^0.17.1",
     "react-d3-tree": "^3.6.6",
+    "react-dom": "^19.1.1",
     "react-dropzone": "^14.3.8",
     "react-hook-form": "^7.62.0",
     "react-signature-canvas": "^1.1.0-alpha.2",

@@ -8,8 +8,8 @@ import { useForm } from "react-hook-form";
 import SignaturePad from "react-signature-canvas";
 import { useDropzone } from "react-dropzone";
 import { X, Upload, Download, Camera } from "lucide-react";
-import Button from "@/common/Button";
-import AutoCompleteInput from "@/common/AutoCompleteInput";
+import Button from "@/components/common/Button";
+import AutoCompleteInput from "@/components/common/AutoCompleteInput";
 import type { WorkOrder } from "@/types";
 import { searchAssets } from "@/api/search";
 import { useDepartmentStore } from "@/store/departmentStore";
@@ -20,6 +20,7 @@ interface WorkOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
   workOrder: WorkOrder | null;
+  initialData?: Partial<WorkOrder>;
   onUpdate: (payload: FormData | Record<string, any>) => void;
 }
 
@@ -27,6 +28,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
   isOpen,
   onClose,
   workOrder,
+  initialData,
   onUpdate,
 }) => {
   const [files, setFiles] = useState<File[]>([]);
@@ -54,7 +56,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
       type: workOrder?.type || "corrective",
       scheduledDate:
         workOrder?.scheduledDate || new Date().toISOString().split("T")[0],
-      assetId: workOrder?.assetId || "",
+      assetId: workOrder?.assetId || initialData?.assetId || "",
     },
   });
   

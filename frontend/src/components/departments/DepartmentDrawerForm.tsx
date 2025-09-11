@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import type { Department, DepartmentPayload, Line } from '@/api/departments';
-import Button from '@/common/Button';
+import Button from '@/components/common/Button';
 
 interface Props {
   initial: Department | null;

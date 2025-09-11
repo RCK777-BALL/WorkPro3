@@ -3,7 +3,7 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import Modal from '@/modals/Modal';
+import Modal from '@/components/modals/Modal';
 import { scanQRCode } from '@/utils/qr';
 import type { Part } from '@/types';
 

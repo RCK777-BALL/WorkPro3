@@ -6,9 +6,9 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { format } from 'date-fns';
-import Badge from '@/common/Badge';
-import Avatar from '@/common/Avatar';
-import Button from '@/common/Button';
+import Badge from '@/components/common/Badge';
+import Avatar from '@/components/common/Avatar';
+import Button from '@/components/common/Button';
 import { MoreVertical, GripVertical, Box } from 'lucide-react';
 import type { WorkOrder } from '@/types';
 

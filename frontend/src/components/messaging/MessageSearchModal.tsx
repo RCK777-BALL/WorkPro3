@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState } from 'react';
 import Modal from '@/modals/Modal';
 import { searchMessages } from '@/api/channels';

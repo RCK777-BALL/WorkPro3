@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useEffect, useState } from 'react';
 import Button from '@/components/common/Button';
 import DataTable from '@/components/common/DataTable';

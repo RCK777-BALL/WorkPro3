@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import TeamMember, { ITeamMember } from '../models/TeamMember';
 import type { AuthedRequestHandler } from '../types/http';
 

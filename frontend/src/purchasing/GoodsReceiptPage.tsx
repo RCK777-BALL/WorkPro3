@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useState } from 'react';
 import { createGoodsReceipt } from '@/api/purchasing';
 

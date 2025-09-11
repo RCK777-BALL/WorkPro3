@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Layouts } from 'react-grid-layout';

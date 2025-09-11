@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
 import request from 'supertest';
 import express from 'express';

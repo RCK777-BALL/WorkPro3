@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
  import React, { useEffect, useState } from 'react';
 import { Download, Calendar, Filter } from 'lucide-react';
 import Button from '@/components/common/Button';

@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useEffect, useState } from 'react';
 import AssetTable from '@/components/assets/AssetTable';
 import AssetModal from '@/components/assets/AssetModal';

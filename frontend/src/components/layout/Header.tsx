@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
  
  
 import React, { useEffect, useState, useRef } from 'react';

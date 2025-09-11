@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 // utils/export.ts
 import { saveAs } from 'file-saver';
 import ExcelJS from 'exceljs';

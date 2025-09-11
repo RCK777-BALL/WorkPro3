@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import express from 'express';
 import { requireAuth } from '../middleware/authMiddleware';
 import { kpiJson, kpiCsv, kpiXlsx, kpiPdf } from '../controllers/AnalyticsController';

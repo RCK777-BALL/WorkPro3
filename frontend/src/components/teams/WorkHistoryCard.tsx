@@ -1,5 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React from 'react';
-import { Calendar, Clock, CheckCircle, AlertTriangle, BarChart2, Shield, Users, Zap, TrendingUp, DollarSign } from 'lucide-react';
+ import { Calendar, Clock, CheckCircle, AlertTriangle, BarChart2, Shield, Users, Zap, TrendingUp, DollarSign } from 'lucide-react';
 import Card from '@/common/Card';
 import Badge from '@/common/Badge';
 
@@ -43,6 +47,7 @@ interface WorkHistoryEntry {
   notes?: string;
   category?: 'safety' | 'people' | 'productivity' | 'improvement';
 }
+ 
 
 interface WorkHistoryCardProps {
   metrics: WorkHistoryMetrics;

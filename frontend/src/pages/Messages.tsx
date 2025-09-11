@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import ChatSidebar from '@/components/messaging/ChatSidebar';
 import ChatHeader from '@/components/messaging/ChatHeader';

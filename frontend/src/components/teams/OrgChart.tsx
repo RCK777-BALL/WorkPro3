@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useMemo, useRef, useState } from 'react';
 import Tree, { RawNodeDatum, RenderCustomNodeElementFn } from 'react-d3-tree';
 import { useTeamMembers } from '@/store/useTeamMembers';

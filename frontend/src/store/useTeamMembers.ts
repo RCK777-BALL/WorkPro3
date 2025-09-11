@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { create } from 'zustand';
 import http from '@/lib/http';
 import type { TeamMember, TeamMemberResponse } from '@/types';

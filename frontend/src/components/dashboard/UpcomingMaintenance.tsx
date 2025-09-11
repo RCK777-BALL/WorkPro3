@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React from 'react';
 import { Calendar, Clock, PenTool as Tool } from 'lucide-react';
 import { Link } from 'react-router-dom';

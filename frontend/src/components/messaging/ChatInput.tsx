@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState, useRef } from 'react';
 import { Smile, Paperclip, Send, Image, AtSign, Hash } from 'lucide-react';
 import data from '@emoji-mart/data';

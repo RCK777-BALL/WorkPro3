@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useEffect, useState } from 'react';
 import Button from './Button';
 import Drawer from '@/ui/Drawer';

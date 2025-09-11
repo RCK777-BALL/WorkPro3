@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { create } from 'zustand';
 import type { Asset } from '@/types';
 

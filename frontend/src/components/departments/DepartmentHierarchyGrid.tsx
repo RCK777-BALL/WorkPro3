@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState } from 'react';
 import Button from '@/common/Button';
 import type { DepartmentHierarchy, LineWithStations, StationWithAssets, Asset } from '@/types';

@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { Router } from "express";
 import type { FilterQuery } from "mongoose";
 import Department, { type DepartmentDoc } from "../models/Department";

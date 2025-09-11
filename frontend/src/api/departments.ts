@@ -1,6 +1,5 @@
-import http from '@/lib/http';
-
-export type Department = {
+ import http from '@/lib/http';
+ export type Department = {
   _id: string;
   name: string;
   description?: string;

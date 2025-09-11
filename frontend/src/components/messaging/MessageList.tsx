@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useRef, useEffect } from 'react';
 import { format } from 'date-fns';
 import Avatar from '@/common/Avatar';

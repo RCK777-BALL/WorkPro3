@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import http from '@/lib/http';
 import type {

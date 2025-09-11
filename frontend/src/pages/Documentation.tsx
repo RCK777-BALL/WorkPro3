@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState } from 'react';
 import { Search, Book, Video, FileText, MessageCircle, ChevronRight, Plus, Trash2, FolderPlus, Edit2 } from 'lucide-react';
 import Card from '@/components/common/Card';

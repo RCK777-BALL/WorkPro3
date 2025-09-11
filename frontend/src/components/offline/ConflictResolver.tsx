@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useEffect, useRef } from 'react';
 import type { SyncConflict } from '@/utils/offlineQueue';
 

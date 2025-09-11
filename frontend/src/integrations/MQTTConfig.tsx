@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React from 'react';
 import { useMQTTStore } from '@/store/mqttStore';
 

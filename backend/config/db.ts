@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import mongoose from 'mongoose';
 
 export const connectDB = async (): Promise<void> => {

@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import http from '../lib/http';
 
 export const createPurchaseOrder = (payload: any) =>

@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useEffect, useState } from 'react';
 import { getChannelMembers, addMembers, removeMember } from '../../api/channels';
 import type { Member } from '../../types';

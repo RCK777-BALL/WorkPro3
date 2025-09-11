@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import Redis from 'ioredis';
 
 const redis = new Redis({

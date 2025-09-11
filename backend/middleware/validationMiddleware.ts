@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
  import type { Request, Response, NextFunction } from 'express';
  
 import { validationResult } from 'express-validator';

@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React from 'react';
 import Card from '../common/Card';
 import ProgressBar from '../common/ProgressBar';

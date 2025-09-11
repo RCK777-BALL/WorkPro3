@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import type { Request, Response, NextFunction } from 'express';
 import type { UserRole } from '../models/User';
 

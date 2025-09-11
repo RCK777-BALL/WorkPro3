@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useEffect, useState } from 'react';
 import Modal from '../modals/Modal';
 import { getChannelMembers, addMembers, removeMember } from '../../api/channels';

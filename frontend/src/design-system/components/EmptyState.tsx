@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { Center, Stack, Text } from '@mantine/core';
 
 interface EmptyStateProps {

@@ -1,6 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useEffect, useState } from 'react';
-import Button from '../components/common/Button';
-import http from '../lib/http';
+import Button from '@/components/common/Button';
+import http from '@/lib/http';
 
 interface ConditionRule {
   _id?: string;

@@ -1,11 +1,15 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { I18nextProvider } from 'react-i18next';
-import Login from '../pages/Login';
-import ForgotPasswordPage from '../pages/ForgotPasswordPage';
-import ErrorFallback from '../components/common/ErrorFallback';
-import i18n from '../i18n';
+import Login from '@/pages/Login';
+import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
+import ErrorFallback from '@/components/common/ErrorFallback';
+import i18n from '@/i18n';
 
 describe('i18n integration', () => {
   it('switches languages for Login links', async () => {

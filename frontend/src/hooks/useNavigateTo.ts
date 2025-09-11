@@ -1,6 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
  
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '../context/ToastContext';
+import { useToast } from '@/context/ToastContext';
 
 const formatPath = (path: string) => {
   const clean = path.replace(/^\/+/, '').split(/[?#]/)[0];

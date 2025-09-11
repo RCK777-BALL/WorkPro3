@@ -1,6 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import Button from '../common/Button';
+import Button from '@/common/Button';
 
 export interface DepartmentPayload {
   name: string;

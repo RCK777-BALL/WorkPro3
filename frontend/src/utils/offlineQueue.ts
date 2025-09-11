@@ -1,5 +1,6 @@
-import { emitToast } from '../context/ToastContext';
+ import { emitToast } from '../context/ToastContext';
 import { logError } from './logger';
+ 
 
 export interface QueuedRequest<T = unknown> {
   method: 'post' | 'put' | 'delete';
@@ -14,6 +15,7 @@ export interface QueuedRequest<T = unknown> {
 }
 
 const QUEUE_KEY = 'offline-queue';
+export const MAX_QUEUE_RETRIES = 5;
 
 export const loadQueue = <T = unknown>(): QueuedRequest<T>[] => {
   try {
@@ -71,7 +73,7 @@ export const addToQueue = <T = unknown>(req: QueuedRequest<T>) => {
 };
 
 // Convenience helpers for common resources
-import type { Asset, Department, DepartmentHierarchy } from '../types';
+import type { Asset, Department, DepartmentHierarchy } from '@/types';
 
 export const enqueueAssetRequest = (
   method: 'post' | 'put' | 'delete',
@@ -91,7 +93,7 @@ export const enqueueDepartmentRequest = (
 
 export const clearQueue = () => localStorage.removeItem(QUEUE_KEY);
 
-import http from '../lib/http';
+import http from '@/lib/http';
 
 // allow tests to inject a mock http client
 type HttpClient = (args: { method: string; url: string; data?: unknown }) => Promise<unknown>;
@@ -123,10 +125,11 @@ export const onSyncConflict = (
   };
 };
 
-const diffObjects = (
+ const diffObjects = (
   local: Record<string, unknown>,
   server: Record<string, unknown>
 ): DiffEntry[] => {
+ 
   const keys = new Set([
     ...Object.keys(local ?? {}),
     ...Object.keys(server ?? {}),
@@ -135,15 +138,16 @@ const diffObjects = (
   keys.forEach((k) => {
     const l = local?.[k];
     const s = server?.[k];
-    if (JSON.stringify(l) !== JSON.stringify(s)) {
+    if (!deepEqual(l, s)) {
       diffs.push({ field: k, local: l, server: s });
     }
   });
   return diffs;
 };
+let isFlushing = false;
 
 export const flushQueue = async (useBackoff = true) => {
-  const queue = loadQueue();
+   const queue = loadQueue();
   if (queue.length === 0) return;
 
   const now = Date.now();
@@ -170,10 +174,10 @@ export const flushQueue = async (useBackoff = true) => {
           );
         } catch (fetchErr: unknown) {
           logError('Failed to fetch server data for conflict', fetchErr);
+ 
         }
-        continue;
       }
-      logError('Failed to flush queued request', err);
+       logError('Failed to flush queued request', err);
       const retries = (req.retries ?? 0) + 1;
       const backoff = Math.min(1000 * 2 ** (retries - 1), 30000);
       remaining.push({
@@ -183,13 +187,16 @@ export const flushQueue = async (useBackoff = true) => {
         nextAttempt: useBackoff ? now + backoff : undefined,
       });
       continue; // continue processing remaining requests
+ 
     }
-  }
 
-  if (remaining.length > 0) {
-    saveQueue(remaining);
-  } else {
-    clearQueue();
+    const toPersist = [...remaining, ...queue.slice(i + 1)];
+    if (toPersist.length > 0) {
+      saveQueue(toPersist);
+    } else {
+      clearQueue();
+    }
+ 
   }
 };
 

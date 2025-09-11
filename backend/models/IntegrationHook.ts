@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IntegrationHookDocument extends Document {

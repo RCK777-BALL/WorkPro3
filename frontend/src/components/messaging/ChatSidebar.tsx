@@ -1,7 +1,11 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState } from 'react';
 import { Search, Plus, Hash, X } from 'lucide-react';
-import Avatar from '../common/Avatar';
-import type { Channel, DirectMessage } from '../../types';
+import Avatar from '@/common/Avatar';
+import type { Channel, DirectMessage } from '@/types';
 
 interface ChatSidebarProps {
   channels: Channel[];

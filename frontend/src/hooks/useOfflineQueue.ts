@@ -9,6 +9,10 @@ interface QueueItem {
   options?: RequestInit;
 }
 
+interface SyncCapableSW extends ServiceWorkerRegistration {
+  sync: SyncManager;
+}
+
 /**
  * useOfflineQueue queues network requests made while offline and
  * retries them when connectivity is restored.
@@ -45,7 +49,7 @@ export function useOfflineQueue() {
 
       if ('serviceWorker' in navigator && 'SyncManager' in window) {
         try {
-          const reg = await navigator.serviceWorker.ready;
+          const reg = (await navigator.serviceWorker.ready) as SyncCapableSW;
           reg.sync.register('offline-queue');
           navigator.serviceWorker.controller?.postMessage({
             type: 'QUEUE_REQUEST',

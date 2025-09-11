@@ -3,6 +3,7 @@
 import { precacheAndRoute } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
 import { CacheFirst, NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies';
+import { logError } from './utils/logger';
 
 interface QueueItem {
   url: string;
@@ -46,8 +47,7 @@ async function loadQueue() {
     });
     offlineQueue = result;
   } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error('Failed to load queue from storage', err);
+    logError('Failed to load queue from storage', err);
     offlineQueue = [];
   }
 }
@@ -62,8 +62,7 @@ async function saveQueue() {
       tx.onerror = () => reject(tx.error);
     });
   } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error('Failed to save queue to storage', err);
+    logError('Failed to save queue to storage', err);
   }
 }
 

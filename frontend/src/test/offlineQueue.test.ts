@@ -5,6 +5,7 @@ import {
   clearQueue,
   enqueueAssetRequest,
   enqueueDepartmentRequest,
+  type QueuedRequest,
 } from '../utils/offlineQueue';
 import http from '../lib/http';
 
@@ -58,7 +59,9 @@ describe('offline queue helpers', () => {
     const req = { method: 'post' as const, url: '/task', data: { foo: 'bar' } };
     addToQueue(req);
     expect(localStorageMock.setItem).toHaveBeenCalledTimes(1);
-    const saved = JSON.parse(localStorageMock.setItem.mock.calls[0][1]) as any[];
+    const saved = JSON.parse(
+      localStorageMock.setItem.mock.calls[0][1]
+    ) as QueuedRequest[];
     expect(saved[0]).toEqual({ ...req, retries: 0 });
   });
 
@@ -88,7 +91,9 @@ describe('offline queue helpers', () => {
   it('enqueues asset requests', () => {
     const asset = { id: '1', name: 'A' } as any;
     enqueueAssetRequest('put', asset);
-    const saved = JSON.parse(localStorageMock.setItem.mock.calls[0][1]) as any[];
+    const saved = JSON.parse(
+      localStorageMock.setItem.mock.calls[0][1]
+    ) as QueuedRequest[];
     expect(saved[0]).toEqual({ method: 'put', url: '/assets/1', data: asset, retries: 0 });
   });
 
@@ -96,7 +101,9 @@ describe('offline queue helpers', () => {
     localStorageMock.setItem.mockClear();
     const dep = { id: '1', name: 'Dept' } as any;
     enqueueDepartmentRequest('delete', dep);
-    const saved = JSON.parse(localStorageMock.setItem.mock.calls[0][1]) as any[];
+    const saved = JSON.parse(
+      localStorageMock.setItem.mock.calls[0][1]
+    ) as QueuedRequest[];
     expect(saved[0]).toEqual({ method: 'delete', url: '/departments/1', data: dep, retries: 0 });
   });
 
@@ -113,7 +120,9 @@ describe('offline queue helpers', () => {
 
     expect(apiMock).toHaveBeenCalledTimes(2);
     expect(localStorageMock.setItem).toHaveBeenCalled();
-    const saved = JSON.parse(localStorageMock.setItem.mock.calls[0][1]) as any[];
+    const saved = JSON.parse(
+      localStorageMock.setItem.mock.calls[0][1]
+    ) as QueuedRequest[];
     expect(saved).toHaveLength(1);
     expect(saved[0].url).toBe('/b');
     expect(saved[0].retries).toBe(1);

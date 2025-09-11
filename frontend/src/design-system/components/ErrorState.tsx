@@ -12,7 +12,7 @@ interface ErrorStateProps {
 export function ErrorState({ message = 'Something went wrong', onRetry }: ErrorStateProps) {
   return (
     <Center py="xl">
-      <Stack spacing="sm" align="center">
+      <Stack gap="sm" align="center">
         <Text c="red">{message}</Text>
         {onRetry && (
           <Button variant="light" onClick={onRetry}>

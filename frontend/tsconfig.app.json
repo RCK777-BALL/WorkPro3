@@ -8,10 +8,9 @@
     "types": ["vite/client", "node", "react"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
       "@/common/*": ["./src/components/common/*"],
       "@/modals/*": ["./src/components/modals/*"],
-    },
+     },
 
     /* Bundler mode */
     "moduleResolution": "Bundler",

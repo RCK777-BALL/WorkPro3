@@ -41,7 +41,7 @@ import vendorPortalRoutes from "./routes/vendorPortal";
 import calendarRoutes from "./routes/CalendarRoutes";
 import conditionRuleRoutes from "./routes/ConditionRuleRoutes";
 
-import { startPMScheduler } from "./utils/pmScheduler";
+import { startPMScheduler } from "./utils/PMScheduler";
 import { setupSwagger } from "./utils/swagger";
 import mongoose from "mongoose";
 import errorHandler from "./middleware/errorHandler";

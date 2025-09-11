@@ -10,7 +10,7 @@ const envSchema = z.object({
   NODE_ENV: z.string().default('development'),
   COOKIE_SECURE: z.string().optional(),
   PM_SCHEDULER_CRON: z.string().default('*/5 * * * *'),
-  PM_SCHEDULER_TASK: z.string().default('./tasks/pmSchedulerTask'),
+  PM_SCHEDULER_TASK: z.string().default('./tasks/PMSchedulerTask'),
   DEFAULT_TENANT_ID: z.string().optional(),
 });
 

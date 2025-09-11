@@ -8,15 +8,15 @@ import User from '../models/User';
 import nodemailer from 'nodemailer';
  
 import { assertEmail } from '../utils/assert';
-import { Request, Response, NextFunction } from 'express';
+import type { ParamsDictionary } from 'express-serve-static-core';
 import type { AuthedRequestHandler } from '../types/http';
 
 type IdParams = { id: string };
 
- export const getAllNotifications: AuthedRequestHandler<unknown, NotificationDocument[]> = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
+ export const getAllNotifications: AuthedRequestHandler<ParamsDictionary, NotificationDocument[]> = async (
+  req,
+  res,
+  next,
 ) => {
   try {
     const tenantId = req.tenantId;

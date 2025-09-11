@@ -10,7 +10,6 @@ import Vendor from '../models/Vendor';
 import { addStock } from '../services/inventory';
 import nodemailer from 'nodemailer';
 import { assertEmail } from '../utils/assert';
-import mongoose from 'mongoose';
 
 export const createGoodsReceipt = async (
   req: Request,
@@ -27,19 +26,19 @@ export const createGoodsReceipt = async (
       return;
     }
 
+    const mongoose = (await import('mongoose')).default;
     const db = mongoose.connection.db;
+    if (!db) throw new Error('Database connection not ready');
 
     for (const grItem of items) {
       await addStock(grItem.item, grItem.quantity, grItem.uom);
       const poItem = po.items?.find((i) => i.item.toString() === grItem.item);
       let qty = grItem.quantity;
       if (grItem.uom && poItem?.uom && grItem.uom.toString() !== poItem.uom.toString()) {
-        if (db) {
-          const conv = await db
-            .collection('conversions')
-            .findOne({ from: grItem.uom, to: poItem.uom });
-          if (conv) qty = qty * conv.factor;
-        }
+        const conv = await db
+          .collection('conversions')
+          .findOne({ from: grItem.uom, to: poItem.uom });
+        if (conv) qty = qty * conv.factor;
       }
       if (poItem) {
         poItem.received += qty;

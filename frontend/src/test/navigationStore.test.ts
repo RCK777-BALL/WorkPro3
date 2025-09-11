@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { useNavigationStore } from '../store/navigationStore';
 

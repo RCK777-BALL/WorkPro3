@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useEffect, useState } from 'react';
 import Card from '../components/common/Card';
 import KpiWidget from '../components/kpi/KpiWidget';

@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React from 'react';
 import { DepartmentForm, type DepartmentPayload } from '../components/departments/forms';
 import { useNavigate } from 'react-router-dom';

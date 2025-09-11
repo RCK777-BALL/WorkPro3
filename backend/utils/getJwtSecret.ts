@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 export const getJwtSecret = (
   env: NodeJS.ProcessEnv = process.env,
   includeVendor = false,

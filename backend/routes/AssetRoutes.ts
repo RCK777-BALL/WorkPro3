@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import express, { type RequestHandler } from 'express';
 import multer from 'multer';
 import {

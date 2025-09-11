@@ -281,7 +281,7 @@ below along with its default value if one exists.
 | `JWT_SECRET` | Secret key used to sign JWT tokens. Required for authentication. | *(none)* |
 | `CORS_ORIGIN` | Allowed origins for CORS, comma separated. | `http://localhost:5173` |
 | `PM_SCHEDULER_CRON` | Cron expression controlling the PM scheduler. | `*/5 * * * *` |
-| `PM_SCHEDULER_TASK` | Path to the task module run on each scheduler tick. | `./tasks/pmSchedulerTask` |
+| `PM_SCHEDULER_TASK` | Path to the task module run on each scheduler tick. | `./tasks/PMSchedulerTask` |
 | `SMTP_HOST` | SMTP server hostname for email notifications. | *(none)* |
 | `SMTP_PORT` | SMTP server port. | `587` |
 | `SMTP_USER` | Username for SMTP authentication. | *(none)* |

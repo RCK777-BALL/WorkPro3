@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import type { Asset, WorkOrder, MaintenanceSchedule } from '../types';
 
 export const duplicateAsset = (asset: Asset): Asset => {

@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import http from '../lib/http';
 import type { Channel, Member, Message } from '../types';
 

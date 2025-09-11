@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({

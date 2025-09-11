@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
  
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';

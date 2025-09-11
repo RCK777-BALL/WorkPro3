@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 export const typography = {
   fontFamily: 'Inter, sans-serif',
   fontSizes: {

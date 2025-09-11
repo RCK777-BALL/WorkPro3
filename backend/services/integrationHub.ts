@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import IntegrationHook from '../models/IntegrationHook';
 
 export async function registerHook(data: {

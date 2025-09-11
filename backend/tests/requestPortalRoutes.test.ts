@@ -3,7 +3,7 @@ import express from 'express';
 import request from 'supertest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import requestPortalRoutes from '../routes/requestPortal';
+import requestPortalRoutes from '../routes/RequestPortalRoutes';
 import RequestForm from '../models/RequestForm';
 
 const app = express();

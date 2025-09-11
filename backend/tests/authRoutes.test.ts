@@ -6,7 +6,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import User from '../models/User';
 import jwt from 'jsonwebtoken';
-import authRoutes from '../routes/authRoutes';
+import authRoutes from '../routes/AuthRoutes';
 
 const app = express();
 app.use(express.json());

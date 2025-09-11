@@ -13,11 +13,11 @@ import { initKafka, sendKafkaEvent } from "./utils/kafka";
 import { initMQTTFromConfig } from "./iot/mqttClient";
 import logger from "./utils/logger";
 
-import authRoutes from "./routes/authRoutes";
+import authRoutes from "./routes/AuthRoutes";
 import workOrdersRoutes from "./routes/WorkOrderRoutes";
 import assetsRoutes from "./routes/AssetRoutes";
 import pmTasksRoutes from "./routes/PMTaskRoutes";
-import summaryRoutes from "./routes/summary";
+import summaryRoutes from "./routes/SummaryRoutes";
 import meterRoutes from "./routes/MeterRoutes";
 
 import reportsRoutes from "./routes/ReportsRoutes";
@@ -28,14 +28,14 @@ import inventoryRoutes from "./routes/InventoryRoutes";
 import analyticsRoutes from "./routes/AnalyticsRoutes";
 
 import teamRoutes from "./routes/TeamRoutes";
-import notificationsRoutes from "./routes/notifications";
+import notificationsRoutes from "./routes/NotificationsRoutes";
 import TenantRoutes from "./routes/TenantRoutes";
-import webhooksRoutes from "./routes/webhooksRoutes";
+import webhooksRoutes from "./routes/WebhooksRoutes";
 import IntegrationRoutes from "./routes/IntegrationRoutes";
 import ThemeRoutes from "./routes/ThemeRoutes";
 import chatRoutes from "./routes/ChatRoutes";
-import requestPortalRoutes from "./routes/requestPortal";
-import vendorPortalRoutes from "./routes/vendorPortal";
+import requestPortalRoutes from "./routes/RequestPortalRoutes";
+import vendorPortalRoutes from "./routes/VendorPortalRoutes";
 
 // Keep BOTH of these:
 import calendarRoutes from "./routes/CalendarRoutes";

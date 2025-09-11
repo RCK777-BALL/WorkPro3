@@ -4,7 +4,7 @@ import request from 'supertest';
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
 
-import authRoutes from '../routes/authRoutes';
+import authRoutes from '../routes/AuthRoutes';
 
 const app = express();
 app.use(express.json());

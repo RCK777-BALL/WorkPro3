@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 
-import vendorPortalRoutes from '../routes/vendorPortal';
+import vendorPortalRoutes from '../routes/VendorPortalRoutes';
 import PurchaseOrder from '../models/PurchaseOrder';
 import Vendor from '../models/Vendor';
 

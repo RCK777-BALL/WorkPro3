@@ -29,8 +29,8 @@ const Settings: React.FC = () => {
   const { addToast } = useToast();
 
   type ThemeOptionKey = {
-    [K in keyof ThemeSettings]-?: ThemeSettings[K] extends boolean ? K : never
-  }[keyof ThemeSettings];
+    [K in keyof ThemeSettings]: ThemeSettings[K] extends boolean ? K : never
+  }[keyof ThemeSettings & string];
 
   const themeOptions = [
     {

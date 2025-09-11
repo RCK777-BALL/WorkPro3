@@ -16,7 +16,7 @@ export interface DocumentMetadata {
   category?: string;
 }
 
-export const parseDocument = async (file: File): Promise<{ content: string; metadata: DocumentMetadata }> => {
+export const parseDocument = async (file: File): Promise<{ content: string; metadata: any }> => {
   const metadata: DocumentMetadata = {
     title: file.name,
     type: file.name.split('.').pop()?.toLowerCase() as 'pdf' | 'excel' | 'word',

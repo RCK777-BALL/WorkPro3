@@ -9,6 +9,7 @@ import {
   onSyncConflict,
   setHttpClient,
   loadQueue,
+  type SyncConflict,
 } from '@/utils/offlineQueue';
 
 // Simulate a conflict response followed by server data
@@ -26,7 +27,7 @@ const mockClient = async (args: { method: string; url: string; data?: unknown })
 test('emits conflict with diff info', async () => {
   setHttpClient(mockClient);
   addToQueue({ method: 'put', url: '/assets/1', data: { id: '1', name: 'Local' } });
-  const conflicts: unknown[] = [];
+  const conflicts: SyncConflict[] = [];
   onSyncConflict((c) => conflicts.push(c));
   await flushQueue(false);
   expect(conflicts).toHaveLength(1);
@@ -39,7 +40,6 @@ test('allows resolving with local version', async () => {
   let attempt = 0;
   const resolvingClient = async ({
     method,
-    url,
     data,
   }: {
     method: string;
@@ -63,7 +63,7 @@ test('allows resolving with local version', async () => {
 
   setHttpClient(resolvingClient);
   addToQueue({ method: 'put', url: '/assets/1', data: { id: '1', name: 'Local' } });
-  let conflict: unknown = null;
+  let conflict: SyncConflict | null = null;
   onSyncConflict((c) => (conflict = c));
   await flushQueue(false);
   expect(conflict).toBeTruthy();
@@ -72,9 +72,9 @@ test('allows resolving with local version', async () => {
   ]);
   expect(loadQueue()).toHaveLength(0);
   await resolvingClient({
-    method: conflict.method,
-    url: conflict.url,
-    data: conflict.local,
+    method: conflict!.method,
+    url: conflict!.url,
+    data: conflict!.local,
   });
   expect(attempt).toBe(2);
 });

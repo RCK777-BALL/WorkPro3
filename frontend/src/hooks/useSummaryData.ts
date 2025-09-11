@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import http from '@/lib/http';
 
-type CacheEntry<T> = { promise?: Promise<T>; data?: T; ts?: number };
+type CacheEntry<T> = { promise?: Promise<T | undefined>; data?: T; ts?: number };
 const cache: Record<string, CacheEntry<unknown>> = {};
 
 export function useSummary<T = unknown>(
@@ -19,10 +19,10 @@ export function useSummary<T = unknown>(
   const abortRef = useRef<AbortController | null>(null);
   const backoffRef = useRef(1000); // start 1s
 
-  const fetcher = useCallback(async () => {
+  const fetcher = useCallback(async (): Promise<T | undefined> => {
     const now = Date.now();
     const c = (cache[path] as CacheEntry<T>) || (cache[path] = {} as CacheEntry<T>);
-    if (c.data && c.ts && now - c.ts < ttlMs) return c.data as T;
+    if (c.data && c.ts && now - c.ts < ttlMs) return c.data as T | undefined;
     if (c.promise) return c.promise;
 
     abortRef.current?.abort();

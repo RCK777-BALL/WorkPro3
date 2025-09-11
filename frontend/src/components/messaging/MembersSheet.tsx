@@ -1,7 +1,11 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useEffect, useState } from 'react';
-import { getChannelMembers, addMembers, removeMember } from '../../api/channels';
-import type { Member } from '../../types';
-import { useToast } from '../../context/ToastContext';
+import { getChannelMembers, addMembers, removeMember } from '@/api/channels';
+import type { Member } from '@/types';
+import { useToast } from '@/context/ToastContext';
 
 interface MembersSheetProps {
   isOpen: boolean;

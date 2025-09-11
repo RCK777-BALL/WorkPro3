@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 // Backend/types/http.ts
 import type { RequestHandler, Request } from 'express';
 import type { ParamsDictionary } from 'express-serve-static-core';

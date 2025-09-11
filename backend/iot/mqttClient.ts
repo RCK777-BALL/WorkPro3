@@ -1,12 +1,17 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import mqtt, { MqttClient, IClientOptions } from "mqtt";
 import config from "../config/default";
+import { mqttLogger } from "../utils/logger";
 
 const options: IClientOptions = {};
 
 export function createMqttClient(brokerUrl: string): MqttClient {
   const client = mqtt.connect(brokerUrl, options);
-  client.on("connect", () => console.log("MQTT connected:", brokerUrl));
-  client.on("error", (err: Error) => console.error("MQTT error:", err));
+  client.on("connect", () => mqttLogger.info("MQTT connected:", brokerUrl));
+  client.on("error", (err: Error) => mqttLogger.error("MQTT error:", err));
   return client;
 }
 

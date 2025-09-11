@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import mongoose from 'mongoose';
 
 const vendorSchema = new mongoose.Schema({

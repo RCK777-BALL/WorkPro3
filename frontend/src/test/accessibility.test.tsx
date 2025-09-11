@@ -1,6 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { render } from '@testing-library/react';
 import { axe } from 'jest-axe';
-import DataTable from '../components/common/DataTable';
+import DataTable from '@/components/common/DataTable';
 import { describe, it, expect } from 'vitest';
 
 type Row = { id: number; name: string; };

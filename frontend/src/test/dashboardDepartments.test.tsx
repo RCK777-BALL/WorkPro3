@@ -1,8 +1,12 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { useAuthStore } from '../store/authStore';
-import Dashboard from '../pages/Dashboard';
+import { useAuthStore } from '@/store/authStore';
+import Dashboard from '@/pages/Dashboard';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 

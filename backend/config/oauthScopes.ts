@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 export type OAuthProvider = 'google' | 'github';
 
 export const oauthScopes: Record<OAuthProvider, string[]> = {

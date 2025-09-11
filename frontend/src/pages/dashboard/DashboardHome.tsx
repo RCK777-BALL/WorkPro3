@@ -1,7 +1,11 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import http from "../../lib/http";
-import { useToast } from "../../context/ToastContext";
+import http from "@/lib/http";
+import { useToast } from "@/context/ToastContext";
 import {
   ClipboardList,
   Timer,

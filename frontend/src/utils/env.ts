@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 type ViteEnv = Record<string, string | undefined>;
 const getEnvVar = (key: string): string | undefined =>
   (import.meta.env as unknown as ViteEnv)?.[key];

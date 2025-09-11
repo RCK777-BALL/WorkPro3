@@ -10,7 +10,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 import * as speakeasy from 'speakeasy';
 
-import authRoutes from '../routes/authRoutes';
+import authRoutes from '../routes/AuthRoutes';
 import User from '../models/User';
 
 const app = express();

@@ -6,7 +6,7 @@ import { describe, it, beforeAll, expect } from "vitest";
 import request from 'supertest';
 import express from 'express';
 
-import webhooksRoutes from '../routes/webhooksRoutes';
+import webhooksRoutes from '../routes/WebhooksRoutes';
 
 const app = express();
 app.use(express.json());

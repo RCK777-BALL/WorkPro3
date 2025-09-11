@@ -8,7 +8,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-import authRoutes from '../../../backend/routes/authRoutes';
+import authRoutes from '../../../backend/routes/AuthRoutes';
 import User from '../../../backend/models/User';
 
 const app = express();

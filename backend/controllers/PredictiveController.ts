@@ -12,7 +12,12 @@ export const getPredictions = async (
   next: NextFunction
 ) => {
   try {
-    const results = await predictiveService.getPredictions(req.tenantId);
+    const { tenantId } = req;
+    if (!tenantId) {
+      res.status(400).json({ message: 'Missing tenantId' });
+      return;
+    }
+    const results = await predictiveService.getPredictions(tenantId);
     res.json(results);
   } catch (err) {
     next(err);
@@ -25,11 +30,13 @@ export const getTrend = async (
   next: NextFunction
 ) => {
   try {
-    const trend = await predictiveService.getPredictionTrend(
-      req.params.assetId,
-      req.params.metric,
-      req.tenantId
-    );
+    const { assetId, metric } = req.params;
+    const { tenantId } = req;
+    if (!assetId || !metric || !tenantId) {
+      res.status(400).json({ message: 'Missing required parameters' });
+      return;
+    }
+    const trend = await predictiveService.getPredictionTrend(assetId, metric, tenantId);
     res.json(trend);
   } catch (err) {
     next(err);

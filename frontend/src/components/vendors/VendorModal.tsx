@@ -3,8 +3,8 @@
  */
 
 import { useEffect, useState } from 'react';
-import Button from '@/common/Button';
-import Modal from '@/modals/Modal';
+import Button from '@/components/common/Button';
+import Modal from '@/components/modals/Modal';
 import type { Vendor } from '@/types';
 
 interface VendorModalProps {

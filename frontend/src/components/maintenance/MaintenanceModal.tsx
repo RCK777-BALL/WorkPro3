@@ -264,13 +264,15 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                       <select
                         className="flex-1 px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
                         value={formData.repeatConfig.unit}
-                        onChange={(e) => setFormData({
-                          ...formData,
-                          repeatConfig: {
-                            ...formData.repeatConfig,
-                            unit: e.target.value
-                          }
-                        })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            repeatConfig: {
+                              ...formData.repeatConfig,
+                              unit: e.target.value as 'day' | 'week' | 'month',
+                            },
+                          })
+                        }
                       >
                         <option value="day">Days</option>
                         <option value="week">Weeks</option>

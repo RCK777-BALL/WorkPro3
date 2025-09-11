@@ -1,12 +1,19 @@
 import http from '@/lib/http';
-export type Department = {
+
+export type Line = {
   _id: string;
   name: string;
   description?: string;
 };
 
-export type Line = {
+export type Department = {
   _id: string;
+  name: string;
+  description?: string;
+  lines?: Line[];
+};
+
+export type DepartmentPayload = {
   name: string;
   description?: string;
 };
@@ -25,7 +32,7 @@ export async function listDepartments(): Promise<Department[]> {
 export const deleteDepartment = (id: string) =>
   http.delete(`/departments/${id}`);
 
-export const createDepartment = (payload: Omit<Department, '_id'>) =>
+export const createDepartment = (payload: DepartmentPayload) =>
   http.post<Department>('/departments', payload).then((res) => res.data);
 
 export const listLines = (deptId: string) =>

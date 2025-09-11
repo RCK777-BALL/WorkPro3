@@ -26,7 +26,7 @@ export const useDataStore = create<DataState>()(
 // IndexedDB cache + offline queue
 // -----------------------------
 
-import http from '../lib/http';
+import http from '@/lib/http';
 
 // Basic key/value store in IndexedDB. For test environments where
 // `indexedDB` isn't available (e.g. jsdom), we fall back to an in-memory

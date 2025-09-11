@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
- import { deleteDepartment, listDepartments } from "../api/departments";
+ import { deleteDepartment, listDepartments } from "@/api/departments";
  
 
 type Department = { _id: string; name: string; description?: string };

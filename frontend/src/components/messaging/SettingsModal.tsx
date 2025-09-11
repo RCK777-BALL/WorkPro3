@@ -3,10 +3,10 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import Modal from '../modals/Modal';
-import { getChannelMembers, addMembers, removeMember } from '../../api/channels';
-import type { Member } from '../../types';
-import { useToast } from '../../context/ToastContext';
+import Modal from '@/modals/Modal';
+import { getChannelMembers, addMembers, removeMember } from '@/api/channels';
+import type { Member } from '@/types';
+import { useToast } from '@/context/ToastContext';
 
 interface SettingsModalProps {
   isOpen: boolean;

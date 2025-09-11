@@ -3,7 +3,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import http from '../lib/http';
+import http from '@/lib/http';
 import type {
   StatusCountResponse,
   UpcomingMaintenanceResponse,
@@ -12,8 +12,8 @@ import type {
   CriticalAlertItem,
    AssetStatusMap,
  
-} from '../types';
-import type { DateRange, Timeframe } from '../store/dashboardStore';
+} from '@/types';
+import type { DateRange, Timeframe } from '@/store/dashboardStore';
 
 // normalize backend work-order status keys to camelCase
 const normalizeWOKey = (key: string): keyof WorkOrderStatusMap => {

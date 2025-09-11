@@ -3,16 +3,16 @@
  */
 
 import { useEffect, useState } from 'react';
-import http from '../lib/http';
-import { addToQueue, onSyncConflict, type SyncConflict } from '../utils/offlineQueue';
-import ConflictResolver from '../components/offline/ConflictResolver';
-import DataTable from '../components/common/DataTable';
-import Badge from '../components/common/Badge';
-import Button from '../components/common/Button';
+import http from '@/lib/http';
+import { addToQueue, onSyncConflict, type SyncConflict } from '@/utils/offlineQueue';
+import ConflictResolver from '@/components/offline/ConflictResolver';
+import DataTable from '@/components/common/DataTable';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
 import { Search } from 'lucide-react';
-import NewWorkOrderModal from '../components/work-orders/NewWorkOrderModal';
-import WorkOrderReviewModal from '../components/work-orders/WorkOrderReviewModal';
-import type { WorkOrder } from '../types';
+import NewWorkOrderModal from '@/components/work-orders/NewWorkOrderModal';
+import WorkOrderReviewModal from '@/components/work-orders/WorkOrderReviewModal';
+import type { WorkOrder } from '@/types';
 
 const LOCAL_KEY = 'offline-workorders';
 

@@ -4,12 +4,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { Plus, Search, Calendar, Download, Upload } from 'lucide-react';
-import Button from '../components/common/Button';
-import MaintenanceScheduleTable from '../components/maintenance/MaintenanceSchedule';
-import MaintenanceModal from '../components/maintenance/MaintenanceModal';
-import MaintenanceMetrics from '../components/maintenance/MaintenanceMetrics';
-import { exportToExcel, exportToPDF } from '../utils/export';
-import type { MaintenanceSchedule } from '../types';
+import Button from '@/components/common/Button';
+import MaintenanceScheduleTable from '@/components/maintenance/MaintenanceSchedule';
+import MaintenanceModal from '@/components/maintenance/MaintenanceModal';
+import MaintenanceMetrics from '@/components/maintenance/MaintenanceMetrics';
+import { exportToExcel, exportToPDF } from '@/utils/export';
+import type { MaintenanceSchedule } from '@/types';
 
 const sampleSchedules: MaintenanceSchedule[] = [
   {

@@ -4,9 +4,9 @@
 
 import React, { useState } from 'react';
 import { Search, Book, Video, FileText, MessageCircle, ChevronRight, Plus, Trash2, FolderPlus, Edit2 } from 'lucide-react';
-import Card from '../components/common/Card';
-import Button from '../components/common/Button';
-import DocumentUploader from '../components/documentation/DocumentUploader';
+import Card from '@/components/common/Card';
+import Button from '@/components/common/Button';
+import DocumentUploader from '@/components/documentation/DocumentUploader';
 
 interface Category {
   id: string;

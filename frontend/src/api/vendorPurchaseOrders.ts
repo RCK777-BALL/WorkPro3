@@ -1,8 +1,5 @@
-/*
- * SPDX-License-Identifier: MIT
- */
-
-import http from '../lib/http';
+ import http from '@/lib/http';
+ 
 
 export const listVendorPurchaseOrders = (token: string) =>
   http

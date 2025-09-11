@@ -5,8 +5,8 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
-import Reports from '../pages/Reports';
-import http from '../lib/http';
+import Reports from '@/pages/Reports';
+import http from '@/lib/http';
 
 vi.mock('../lib/http');
 vi.mock('../components/kpi/KpiExportButtons', () => ({ default: () => <div data-testid="export-btns" /> }));

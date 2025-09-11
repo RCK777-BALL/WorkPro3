@@ -3,7 +3,7 @@
  */
 
 import { create } from 'zustand';
-import type { Asset } from '../types';
+import type { Asset } from '@/types';
 
 interface AssetState {
   assets: Asset[];

@@ -3,7 +3,7 @@
  */
 
 import { useState } from 'react';
-import { createPurchaseOrder } from '../api/purchasing';
+import { createPurchaseOrder } from '@/api/purchasing';
 
 export default function PurchaseOrderPage() {
   const [vendor, setVendor] = useState('');

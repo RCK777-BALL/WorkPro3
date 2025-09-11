@@ -3,7 +3,7 @@
  */
 
 import { io, type Socket } from 'socket.io-client';
-import { useSocketStore } from '../store/socketStore';
+import { useSocketStore } from '@/store/socketStore';
 import { endpoints } from './env';
 
 let socket: Socket | null = null;

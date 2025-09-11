@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import Button from '../common/Button';
+import Button from '@/common/Button';
 import { Download } from 'lucide-react';
 
 const formats = ['csv', 'xlsx', 'pdf'] as const;

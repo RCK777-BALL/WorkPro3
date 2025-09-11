@@ -8,13 +8,13 @@ import { useForm, Controller } from "react-hook-form";
 import SignaturePad from "react-signature-canvas";
 import { useDropzone } from "react-dropzone";
 import { X, Upload, Download, Camera } from "lucide-react";
-import Button from "../common/Button";
-import AutoCompleteInput from "../common/AutoCompleteInput";
-import type { WorkOrder, Department } from "../../types";
-import http from "../../lib/http";
-import { searchAssets } from "../../api/search";
-import { useDepartmentStore } from "../../store/departmentStore";
-import { useToast } from "../../context/ToastContext";
+import Button from "@/common/Button";
+import AutoCompleteInput from "@/common/AutoCompleteInput";
+import type { WorkOrder, Department } from "@/types";
+import http from "@/lib/http";
+import { searchAssets } from "@/api/search";
+import { useDepartmentStore } from "@/store/departmentStore";
+import { useToast } from "@/context/ToastContext";
    
 
 interface WorkOrderModalProps {

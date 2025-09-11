@@ -7,7 +7,7 @@ import {
   getNotificationsSocket as baseGetSocket,
   closeNotificationsSocket as baseCloseSocket,
 } from './notificationsSocket';
-import { useSocketStore } from '../store/socketStore';
+import { useSocketStore } from '@/store/socketStore';
 
 let wiredListeners = false;
 

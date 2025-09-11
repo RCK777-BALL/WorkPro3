@@ -3,10 +3,10 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import http from '../../lib/http';
-import type { DepartmentHierarchy } from '../../types';
-import { useDepartmentStore } from '../../store/departmentStore';
-import { useToast } from '../../context/ToastContext';
+import http from '@/lib/http';
+import type { DepartmentHierarchy } from '@/types';
+import { useDepartmentStore } from '@/store/departmentStore';
+import { useToast } from '@/context/ToastContext';
 
 const HierarchyView: React.FC = () => {
   const [data, setData] = useState<DepartmentHierarchy[]>([]);

@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDashboardStore } from '../../store/dashboardStore';
+import { useDashboardStore } from '@/store/dashboardStore';
 import {
   DndContext,
   closestCenter,
@@ -22,7 +22,7 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import Card from '../common/Card';
+import Card from '@/common/Card';
 import {
   ArrowUp,
   ArrowDown,

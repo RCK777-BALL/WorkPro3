@@ -3,23 +3,23 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import FiltersBar from '../components/dashboard/FiltersBar';
-import DashboardStats from '../components/dashboard/DashboardStats';
-import WorkOrdersChart from '../components/dashboard/WorkOrdersChart';
-import AssetsStatusChart from '../components/dashboard/AssetsStatusChart';
-import UpcomingMaintenance from '../components/dashboard/UpcomingMaintenance';
-import CriticalAlerts from '../components/dashboard/CriticalAlerts';
-import LowStockParts from '../components/dashboard/LowStockParts';
-import { useDashboardStore } from '../store/dashboardStore';
-import useDashboardData from '../hooks/useDashboardData';
-import { useSummary } from '../hooks/useSummaryData';
-import http from '../lib/http';
+import FiltersBar from '@/components/dashboard/FiltersBar';
+import DashboardStats from '@/components/dashboard/DashboardStats';
+import WorkOrdersChart from '@/components/dashboard/WorkOrdersChart';
+import AssetsStatusChart from '@/components/dashboard/AssetsStatusChart';
+import UpcomingMaintenance from '@/components/dashboard/UpcomingMaintenance';
+import CriticalAlerts from '@/components/dashboard/CriticalAlerts';
+import LowStockParts from '@/components/dashboard/LowStockParts';
+import { useDashboardStore } from '@/store/dashboardStore';
+import useDashboardData from '@/hooks/useDashboardData';
+import { useSummary } from '@/hooks/useSummaryData';
+import http from '@/lib/http';
 import type {
   Department,
   DashboardSummary,
   LowStockPart,
   LowStockPartResponse,
-} from '../types';
+} from '@/types';
 
 export default function Dashboard() {
   const {

@@ -3,8 +3,8 @@
  */
 
 import { create } from 'zustand';
-import http from '../lib/http';
-import type { TeamMember, TeamMemberResponse } from '../types';
+import http from '@/lib/http';
+import type { TeamMember, TeamMemberResponse } from '@/types';
 
 interface TeamMemberState {
   members: TeamMember[];

@@ -3,9 +3,9 @@
  */
 
 import React from 'react';
-import Badge from '../common/Badge';
+import Badge from '@/common/Badge';
 import { Package } from 'lucide-react';
-import type { Part } from '../../types';
+import type { Part } from '@/types';
 
 interface InventoryTableProps {
   parts: Part[];

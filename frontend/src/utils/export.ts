@@ -7,7 +7,7 @@ import { saveAs } from 'file-saver';
 import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
-import type { Asset } from '../types';
+import type { Asset } from '@/types';
 
 export const exportToExcel = async <T>(
   data: T[],

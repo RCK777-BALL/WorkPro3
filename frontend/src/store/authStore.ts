@@ -3,7 +3,7 @@
  */
 
 import { create } from 'zustand';
-import type { AuthUser } from '../types';
+import type { AuthUser } from '@/types';
 
 interface AuthState {
   user: AuthUser | null;

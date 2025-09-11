@@ -3,9 +3,9 @@
  */
 
 import React from 'react';
-import Card from '../common/Card';
-import ProgressBar from '../common/ProgressBar';
-import type { AssetStatusMap } from '../../types';
+import Card from '@/common/Card';
+import ProgressBar from '@/common/ProgressBar';
+import type { AssetStatusMap } from '@/types';
  
 
 interface AssetsStatusChartProps {

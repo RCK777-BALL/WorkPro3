@@ -4,12 +4,12 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import Badge from '../common/Badge';
-import Avatar from '../common/Avatar';
-import Button from '../common/Button';
+import Badge from '@/common/Badge';
+import Avatar from '@/common/Avatar';
+import Button from '@/common/Button';
 import WorkHistoryCard from './WorkHistoryCard';
 import { Users } from 'lucide-react';
-import type { TeamMember } from '../../types';
+import type { TeamMember } from '@/types';
 
 interface TeamTableProps {
   teamMembers: TeamMember[];

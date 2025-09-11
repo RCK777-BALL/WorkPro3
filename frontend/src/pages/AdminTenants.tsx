@@ -3,9 +3,9 @@
  */
 
 import { useEffect, useState } from 'react';
-import Button from '../components/common/Button';
-import http from '../lib/http';
-import { useToast } from '../context/ToastContext';
+import Button from '@/components/common/Button';
+import http from '@/lib/http';
+import { useToast } from '@/context/ToastContext';
 
 interface Tenant {
   id: string;

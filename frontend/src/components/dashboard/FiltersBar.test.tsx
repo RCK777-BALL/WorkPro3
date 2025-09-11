@@ -5,8 +5,8 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import FiltersBar from './FiltersBar';
-import { useDashboardStore } from '../../store/dashboardStore';
-import type { Department } from '../../types';
+import { useDashboardStore } from '@/store/dashboardStore';
+import type { Department } from '@/types';
 
 const departments: Department[] = [];
 

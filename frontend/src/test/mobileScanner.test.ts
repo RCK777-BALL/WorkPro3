@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { scanQRCode } from '../utils/qr';
-import http from '../lib/http';
+import { scanQRCode } from '@/utils/qr';
+import http from '@/lib/http';
 
 vi.mock('../lib/http', () => ({
   default: vi.fn(),

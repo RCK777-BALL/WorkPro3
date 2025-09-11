@@ -8,20 +8,20 @@ import React, { useEffect, useState, useRef } from 'react';
  
 import { Search, Bell, HelpCircle, Menu, Book, Video, MessageCircle, FileText, ExternalLink, Database } from 'lucide-react';
  
-import ThemeToggle from '../common/ThemeToggle';
-import Avatar from '../common/Avatar';
-import Card from '../common/Card';
-import Button from '../common/Button';
-import { useAuthStore, isAdmin as selectIsAdmin, isManager as selectIsManager } from '../../store/authStore';
-import { useDataStore } from '../../store/dataStore';
+import ThemeToggle from '@/common/ThemeToggle';
+import Avatar from '@/common/Avatar';
+import Card from '@/common/Card';
+import Button from '@/common/Button';
+import { useAuthStore, isAdmin as selectIsAdmin, isManager as selectIsManager } from '@/store/authStore';
+import { useDataStore } from '@/store/dataStore';
 import { useNavigate } from 'react-router-dom';
 
-import { markNotificationRead } from '../../api/notifications';
-import { useSummary } from '../../hooks/useSummaryData';
+import { markNotificationRead } from '@/api/notifications';
+import { useSummary } from '@/hooks/useSummaryData';
 import { useTranslation } from 'react-i18next';
  
 
-import type { Notification } from '../../types';
+import type { Notification } from '@/types';
 
 interface HeaderProps {
   onToggleSidebar: () => void;

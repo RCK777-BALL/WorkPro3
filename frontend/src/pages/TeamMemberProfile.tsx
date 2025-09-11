@@ -4,10 +4,11 @@
 
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import Avatar from '../components/common/Avatar';
-import WorkHistoryCard from '../components/teams/WorkHistoryCard';
-import { teamMembers } from '../utils/data';
-import type { WorkHistory, WorkHistoryEntry, WorkType } from '../types';
+ import Avatar from '@/components/common/Avatar';
+import WorkHistoryCard from '@/components/teams/WorkHistoryCard';
+import { teamMembers } from '@/utils/data';
+import type { WorkHistory, WorkType } from '@/types';
+ 
  
 
 const TeamMemberProfile: React.FC = () => {

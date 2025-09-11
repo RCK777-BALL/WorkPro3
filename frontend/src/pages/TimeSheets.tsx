@@ -3,10 +3,10 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import Button from '../components/common/Button';
-import http from '../lib/http';
-import type { Timesheet } from '../types';
-import { useToast } from '../context/ToastContext';
+import Button from '@/components/common/Button';
+import http from '@/lib/http';
+import type { Timesheet } from '@/types';
+import { useToast } from '@/context/ToastContext';
 
 const TimeSheets: React.FC = () => {
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);

@@ -3,10 +3,10 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import http from '../../lib/http';
-import { useDepartmentStore } from '../../store/departmentStore';
-import Button from '../common/Button';
-import { useToast } from '../../context/ToastContext';
+import http from '@/lib/http';
+import { useDepartmentStore } from '@/store/departmentStore';
+import Button from '@/common/Button';
+import { useToast } from '@/context/ToastContext';
 import type {
   WorkOrder,
   Asset,
@@ -15,7 +15,7 @@ import type {
   Department,
   Line,
   Station,
-} from '../../types';
+} from '@/types';
 
 interface WorkOrderFormProps {
   workOrder?: WorkOrder;

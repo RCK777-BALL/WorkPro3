@@ -3,8 +3,8 @@
  */
 
 import React from 'react';
-import Button from '../../components/common/Button';
-import http from '../../lib/http';
+import Button from '@/components/common/Button';
+import http from '@/lib/http';
 
 interface Props {
   orderId: string;

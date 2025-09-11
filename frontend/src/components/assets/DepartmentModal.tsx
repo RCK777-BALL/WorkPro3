@@ -4,11 +4,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, PlusCircle, Trash } from 'lucide-react';
-import Button from '../common/Button';
-import type { DepartmentHierarchy, Asset } from '../../types';
-import { useToast } from '../../context/ToastContext';
+import Button from '@/common/Button';
+import type { DepartmentHierarchy, Asset } from '@/types';
+import { useToast } from '@/context/ToastContext';
 
-export type { DepartmentHierarchy } from '../../types';
+export type { DepartmentHierarchy } from '@/types';
 
 interface Props {
   isOpen: boolean;

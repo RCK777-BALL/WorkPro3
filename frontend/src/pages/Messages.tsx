@@ -3,17 +3,17 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import ChatSidebar from '../components/messaging/ChatSidebar';
-import ChatHeader from '../components/messaging/ChatHeader';
-import MessageList from '../components/messaging/MessageList';
-import ChatInput from '../components/messaging/ChatInput';
+import ChatSidebar from '@/components/messaging/ChatSidebar';
+import ChatHeader from '@/components/messaging/ChatHeader';
+import MessageList from '@/components/messaging/MessageList';
+import ChatInput from '@/components/messaging/ChatInput';
 import { v4 as uuidv4 } from 'uuid';
 
-import type { Member, Message, Channel, DirectMessage } from '../types';
-import MessageSearchModal from '../components/messaging/MessageSearchModal';
-import MembersSheet from '../components/messaging/MembersSheet';
-import SettingsModal from '../components/messaging/SettingsModal';
-import { getNotificationsSocket } from '../utils/notificationsSocket';
+import type { Member, Message, Channel, DirectMessage } from '@/types';
+import MessageSearchModal from '@/components/messaging/MessageSearchModal';
+import MembersSheet from '@/components/messaging/MembersSheet';
+import SettingsModal from '@/components/messaging/SettingsModal';
+import { getNotificationsSocket } from '@/utils/notificationsSocket';
 
 const FALLBACK_CHANNEL: Channel = {
   id: 'fallback',

@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { AxiosInstance } from 'axios';
 import {
   cacheWorkOrders,
   getCachedWorkOrders,
@@ -33,14 +34,14 @@ describe('dataStore offline cache and queue', () => {
       .mockResolvedValueOnce({});
     await enqueueRequest({ method: 'post', url: '/a', data: { a: 1 } });
 
-    await flushQueue(apiMock);
+    await flushQueue(apiMock as unknown as AxiosInstance);
     expect(apiMock).toHaveBeenCalledTimes(1);
     let q = await loadQueue();
     expect(q[0].retries).toBe(1);
     const nextAttempt = q[0].nextAttempt!;
 
     vi.setSystemTime(nextAttempt);
-    await flushQueue(apiMock);
+    await flushQueue(apiMock as unknown as AxiosInstance);
     expect(apiMock).toHaveBeenCalledTimes(2);
     q = await loadQueue();
     expect(q).toHaveLength(0);
@@ -50,7 +51,7 @@ describe('dataStore offline cache and queue', () => {
   it('drops requests that conflict on the server', async () => {
     const apiMock = vi.fn().mockRejectedValue({ response: { status: 409 } });
     await enqueueRequest({ method: 'post', url: '/conflict', data: {} });
-    await flushQueue(apiMock);
+    await flushQueue(apiMock as unknown as AxiosInstance);
     expect(apiMock).toHaveBeenCalledTimes(1);
     const q = await loadQueue();
     expect(q).toHaveLength(0);

@@ -1,48 +1,19 @@
 import React from 'react';
-import { Calendar, Clock, CheckCircle, AlertTriangle, BarChart2, Shield, Users, Zap, TrendingUp, DollarSign } from 'lucide-react';
+import {
+  Calendar,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  BarChart2,
+  Shield,
+  Users,
+  Zap,
+  TrendingUp,
+  DollarSign
+} from 'lucide-react';
 import Card from '../common/Card';
 import Badge from '../common/Badge';
-
-interface WorkHistoryMetrics {
-  safety: {
-    incidentRate: number;
-    safetyCompliance: number;
-    nearMisses: number;
-    lastIncidentDate: string;
-    safetyMeetingsAttended: number;
-  };
-  people: {
-    trainingHours: number;
-    certifications: string[];
-    teamCollaboration: number;
-    attendanceRate: number;
-    mentorshipHours: number;
-  };
-  productivity: {
-    completedTasks: number;
-    onTimeCompletion: number;
-    averageResponseTime: string;
-    overtimeHours: number;
-    taskEfficiencyRate: number;
-  };
-  improvement: {
-    suggestionsSubmitted: number;
-    suggestionsImplemented: number;
-    processImprovements: number;
-    costSavings: number;
-  };
-}
-
-interface WorkHistoryEntry {
-  id: string;
-  date: string;
-  type: 'work_order' | 'maintenance' | 'training' | 'safety' | 'improvement';
-  title: string;
-  status: 'completed' | 'delayed' | 'in_progress';
-  duration: number;
-  notes?: string;
-  category?: 'safety' | 'people' | 'productivity' | 'improvement';
-}
+import type { WorkHistoryEntry, WorkHistoryMetrics } from '../../types';
 
 interface WorkHistoryCardProps {
   metrics: WorkHistoryMetrics;

@@ -401,3 +401,56 @@ export interface Timesheet {
   hours: number;
   description?: string;
 }
+
+export type WorkType =
+  | 'work_order'
+  | 'maintenance'
+  | 'training'
+  | 'safety'
+  | 'improvement';
+
+export interface WorkHistoryMetrics {
+  safety: {
+    incidentRate: number;
+    safetyCompliance: number;
+    nearMisses: number;
+    lastIncidentDate: string;
+    safetyMeetingsAttended: number;
+  };
+  people: {
+    trainingHours: number;
+    certifications: string[];
+    teamCollaboration: number;
+    attendanceRate: number;
+    mentorshipHours: number;
+  };
+  productivity: {
+    completedTasks: number;
+    onTimeCompletion: number;
+    averageResponseTime: string;
+    overtimeHours: number;
+    taskEfficiencyRate: number;
+  };
+  improvement: {
+    suggestionsSubmitted: number;
+    suggestionsImplemented: number;
+    processImprovements: number;
+    costSavings: number;
+  };
+}
+
+export interface WorkHistoryEntry {
+  id: string;
+  date: string;
+  type: WorkType;
+  title: string;
+  status: 'completed' | 'delayed' | 'in_progress';
+  duration: number;
+  notes?: string;
+  category?: 'safety' | 'people' | 'productivity' | 'improvement';
+}
+
+export interface WorkHistory {
+  metrics: WorkHistoryMetrics;
+  recentWork: WorkHistoryEntry[];
+}

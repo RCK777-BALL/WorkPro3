@@ -116,58 +116,38 @@ if (env.NODE_ENV === "test") {
 }
 
 // --- Routes (order matters for the limiter) ---
-type RouteConfig = {
-  path: string;
-  router: Router;
-  middlewares?: RequestHandler | RequestHandler[];
-  skipLimiter?: boolean;
-};
+ app.use("/api/auth", authRoutes);
+app.use("/api/notifications", burstFriendly, notificationsRoutes);
+// Apply limiter to the rest of /api
+app.use("/api", generalLimiter);
 
-const routeRegistry: RouteConfig[] = [
-  { path: "/api/auth", router: routes.authRoutes, skipLimiter: true },
-  {
-    path: "/api/notifications",
-    router: routes.notificationsRoutes,
-    middlewares: burstFriendly,
-    skipLimiter: true,
-  },
-  { path: "/api/departments", router: routes.departmentRoutes },
-  { path: "/api/workorders", router: routes.workOrdersRoutes },
-  { path: "/api/assets", router: routes.assetsRoutes },
-  { path: "/api/meters", router: routes.meterRoutes },
-  { path: "/api/condition-rules", router: routes.conditionRuleRoutes },
-  { path: "/api/tenants", router: routes.TenantRoutes },
-  { path: "/api/pm-tasks", router: routes.pmTasksRoutes },
-  { path: "/api/reports", router: routes.reportsRoutes },
-  { path: "/api/lines", router: routes.LineRoutes },
-  { path: "/api/stations", router: routes.StationRoutes },
-  { path: "/api/inventory", router: routes.inventoryRoutes },
-  { path: "/api/v1/analytics", router: routes.analyticsRoutes },
-  { path: "/api/team", router: routes.teamRoutes },
-  { path: "/api/theme", router: routes.ThemeRoutes },
-  { path: "/api/request-portal", router: routes.requestPortalRoutes },
-  { path: "/api/vendor-portal", router: routes.vendorPortalRoutes },
-  { path: "/api/vendor", router: routes.vendorPortalRoutes },
-  { path: "/api/chat", router: routes.chatRoutes },
-  { path: "/api/hooks", router: routes.webhooksRoutes },
-  { path: "/api/webhooks", router: routes.webhooksRoutes },
-  { path: "/api/calendar", router: routes.calendarRoutes },
-  { path: "/api/integrations", router: routes.IntegrationRoutes },
-  { path: "/api/summary", router: routes.summaryRoutes },
-];
+app.use("/api/departments", departmentRoutes);
+app.use("/api/workorders", workOrdersRoutes);
+app.use("/api/assets", assetsRoutes);
+app.use("/api/meters", meterRoutes);
+app.use("/api/condition-rules", conditionRuleRoutes);
+app.use("/api/tenants", TenantRoutes);
+app.use("/api/pm-tasks", pmTasksRoutes);
+app.use("/api/reports", reportsRoutes);
+app.use("/api/lines", LineRoutes);
+app.use("/api/stations", StationRoutes);
+app.use("/api/inventory", inventoryRoutes);
+app.use("/api/v1/analytics", analyticsRoutes);
+app.use("/api/team", teamRoutes);
+app.use("/api/theme", ThemeRoutes);
+app.use("/api/request-portal", requestPortalRoutes);
 
-routeRegistry.forEach(({ path, router, middlewares, skipLimiter }) => {
-  const mws: RequestHandler[] = [];
-  if (!skipLimiter) mws.push(generalLimiter);
-  if (middlewares) {
-    if (Array.isArray(middlewares)) {
-      mws.push(...middlewares);
-    } else {
-      mws.push(middlewares);
-    }
-  }
-  app.use(path, ...mws, router);
-});
+// Vendor portal routes
+app.use("/api/vendor-portal", vendorPortalRoutes);
+
+app.use("/api/chat", chatRoutes);
+app.use("/api/hooks", webhooksRoutes);
+app.use("/api/webhooks", webhooksRoutes);
+app.use("/api/calendar", calendarRoutes);
+app.use("/api/integrations", IntegrationRoutes);
+
+app.use("/api/summary", summaryRoutes);
+ 
 
 // 404 + error handler
 app.use((_req, res) => {

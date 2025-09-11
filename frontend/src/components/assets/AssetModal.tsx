@@ -294,7 +294,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
               <select
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
                 value={departmentId}
-                onChange={(e) => setDepartmentId(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setDepartmentId(e.target.value)}
               >
                 <option value="">Select Department</option>
                 {departments.map((d) => (
@@ -311,7 +311,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
               <select
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
                 value={lineId}
-                onChange={(e) => setLineId(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setLineId(e.target.value)}
                 disabled={!departmentId}
               >
                 <option value="">Select Line</option>
@@ -329,7 +329,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
               <select
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
                 value={stationId}
-                onChange={(e) => setStationId(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStationId(e.target.value)}
                 disabled={!lineId}
               >
                 <option value="">Select Station</option>

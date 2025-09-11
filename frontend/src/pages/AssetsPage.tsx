@@ -133,7 +133,7 @@ const AssetsPage = () => {
             placeholder="Search assets..."
             className="flex-1 bg-transparent border-none outline-none"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
           />
         </div>
         <AssetTable

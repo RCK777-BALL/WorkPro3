@@ -144,7 +144,7 @@ const Documentation: React.FC = () => {
                   type="text"
                   className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                   value={newCategory.title}
-                  onChange={(e) => setNewCategory({ ...newCategory, title: e.target.value })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewCategory({ ...newCategory, title: e.target.value })}
                   placeholder="Enter category title"
                 />
               </div>
@@ -155,7 +155,7 @@ const Documentation: React.FC = () => {
                 <textarea
                   className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                   value={newCategory.description}
-                  onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewCategory({ ...newCategory, description: e.target.value })}
                   placeholder="Enter category description"
                   rows={3}
                 />

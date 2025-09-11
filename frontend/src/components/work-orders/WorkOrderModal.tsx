@@ -177,7 +177,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 <select
                   className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                   value={watch("departmentId")}
-                  onChange={(e) => setValue("departmentId", e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setValue("departmentId", e.target.value)}
                   {...register("departmentId", {
                     required: "Department is required",
                   })}

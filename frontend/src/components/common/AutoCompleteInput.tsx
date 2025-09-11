@@ -56,7 +56,7 @@ const AutoCompleteInput: React.FC<Props> = ({
             className="w-full px-3 py-2 border border-neutral-300 rounded-md"
             value={query}
             placeholder={placeholder}
-            onChange={(e) => {
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
               setQuery(e.target.value);
               setShow(true);
             }}

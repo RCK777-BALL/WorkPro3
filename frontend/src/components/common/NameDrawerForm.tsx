@@ -74,7 +74,7 @@ export default function NameDrawerForm({
             type="text"
             className="w-full px-3 py-2 border border-neutral-300 rounded-md"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
             disabled={busy}
           />
           {err && <p className="text-error-600 text-sm mt-1">{err}</p>}
@@ -86,7 +86,7 @@ export default function NameDrawerForm({
               type="number"
               className="w-full px-3 py-2 border border-neutral-300 rounded-md"
               value={assets}
-              onChange={(e) => setAssets(Number(e.target.value))}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAssets(Number(e.target.value))}
               disabled={busy}
             />
           </div>

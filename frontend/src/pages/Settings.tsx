@@ -100,7 +100,7 @@ const Settings: React.FC = () => {
                   type="text"
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
                   value={general.companyName}
-                  onChange={(e) => setGeneral({ companyName: e.target.value })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGeneral({ companyName: e.target.value })}
                 />
               </div>
 
@@ -111,7 +111,7 @@ const Settings: React.FC = () => {
                 <select
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
                   value={general.timezone}
-                  onChange={(e) => setGeneral({ timezone: e.target.value })}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGeneral({ timezone: e.target.value })}
                 >
                   <option value="America/New_York">Eastern Time (ET)</option>
                   <option value="America/Chicago">Central Time (CT)</option>
@@ -127,7 +127,7 @@ const Settings: React.FC = () => {
                 <select
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
                   value={general.dateFormat}
-                  onChange={(e) => setGeneral({ dateFormat: e.target.value })}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGeneral({ dateFormat: e.target.value })}
                 >
                   <option value="MM/DD/YYYY">MM/DD/YYYY</option>
                   <option value="DD/MM/YYYY">DD/MM/YYYY</option>
@@ -142,7 +142,7 @@ const Settings: React.FC = () => {
                 <select
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
                   value={general.language}
-                  onChange={(e) => setGeneral({ language: e.target.value })}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGeneral({ language: e.target.value })}
                 >
                   <option value="en-US">English (US)</option>
                   <option value="es-ES">Español</option>
@@ -163,7 +163,7 @@ const Settings: React.FC = () => {
                 <select
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
                   value={theme}
-                  onChange={(e) => {
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                     const value = e.target.value as 'light' | 'dark' | 'system';
                     setTheme(value);
                     updateTheme({ theme: value });
@@ -182,7 +182,7 @@ const Settings: React.FC = () => {
                 <select
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
                   value={themeSettings.colorScheme ?? 'default'}
-                  onChange={(e) => {
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                     const value = e.target.value;
                     setThemeSettings((prev) => ({ ...prev, colorScheme: value }));
                     updateTheme({ colorScheme: value });
@@ -205,7 +205,7 @@ const Settings: React.FC = () => {
                       type="checkbox"
                       className="sr-only peer"
                       checked={themeSettings[key]}
-                      onChange={(e) =>
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         setThemeSettings((prev) => ({
                           ...prev,
                           [key]: e.target.checked,

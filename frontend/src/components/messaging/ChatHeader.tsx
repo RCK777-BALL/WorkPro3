@@ -139,7 +139,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
                   placeholder="Search members..."
                   className="w-full px-3 py-1.5 text-sm border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
                   value={searchMembers}
-                  onChange={(e) => setSearchMembers(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchMembers(e.target.value)}
                 />
               </div>
             </div>

@@ -51,7 +51,7 @@ export default function VendorPODetail() {
           <input
             className="input input-bordered"
             value={status}
-            onChange={(e) => setStatus(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStatus(e.target.value)}
           />
         </label>
         <button type="submit" className="btn-primary">

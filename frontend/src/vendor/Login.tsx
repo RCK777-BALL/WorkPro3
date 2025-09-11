@@ -26,7 +26,7 @@ export default function VendorLogin() {
           className="input input-bordered"
           placeholder="Access token"
           value={token}
-          onChange={(e) => setToken(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setToken(e.target.value)}
         />
         <button type="submit" className="btn-primary">
           Login

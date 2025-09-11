@@ -133,7 +133,7 @@ const Inventory: React.FC = () => {
             placeholder="Search parts by name, SKU, category..."
             className="flex-1 bg-transparent border-none outline-none text-neutral-900 placeholder-neutral-400"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
           />
         </div>
 

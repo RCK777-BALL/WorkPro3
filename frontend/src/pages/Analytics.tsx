@@ -119,7 +119,7 @@ export default function Analytics() {
             <select
               value={role ?? ''}
  
-              onChange={(e) => handleRoleChange(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleRoleChange(e.target.value)}
  
               className="border border-neutral-300 rounded-md px-2 py-1 text-sm"
             >
@@ -162,7 +162,7 @@ export default function Analytics() {
                 <select
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
                   value={role}
-                  onChange={(e) => handleRoleChange(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleRoleChange(e.target.value)}
                 >
                   <option value="all">All Roles</option>
                   <option value="admin">Admin</option>

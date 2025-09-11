@@ -94,7 +94,7 @@ const AdminTenants = () => {
           <input
             className="flex-1 border rounded px-2 py-1"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
             placeholder="Tenant name"
           />
           <Button type="submit">{editing ? 'Update' : 'Add'}</Button>

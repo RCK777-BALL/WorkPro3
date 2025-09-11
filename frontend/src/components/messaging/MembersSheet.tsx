@@ -78,7 +78,7 @@ const MembersSheet: React.FC<MembersSheetProps> = ({ isOpen, channelId, onClose 
         <input
           type="text"
           value={newMember}
-          onChange={(e) => setNewMember(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewMember(e.target.value)}
           placeholder="Member ID"
           className="w-full px-2 py-1 border border-neutral-300 rounded"
         />

@@ -80,7 +80,7 @@ const FiltersBar: React.FC<Props> = ({ departments }) => {
       )}
       <select
         value={selectedDepartment}
-        onChange={(e) => setSelectedDepartment(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedDepartment(e.target.value)}
         className="border border-neutral-300 rounded-md px-2 py-1 text-sm"
       >
         <option value="all">All Departments</option>
@@ -92,7 +92,7 @@ const FiltersBar: React.FC<Props> = ({ departments }) => {
       </select>
       <select
         value={selectedRole}
-        onChange={(e) => setSelectedRole(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedRole(e.target.value)}
         className="border border-neutral-300 rounded-md px-2 py-1 text-sm"
       >
         <option value="all">All Roles</option>

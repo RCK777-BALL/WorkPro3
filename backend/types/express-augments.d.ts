@@ -1,4 +1,4 @@
-// Backend/types/express-augments.d.ts
+// backend/types/express-augments.d.ts
 
 export type RequestUser = {
   id: string;

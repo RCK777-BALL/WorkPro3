@@ -124,7 +124,7 @@ export const onSyncConflict = (
   };
 };
 
- const diffObjects = (
+export const diffObjects = (
   local: Record<string, unknown>,
   server: Record<string, unknown>
 ): DiffEntry[] => {

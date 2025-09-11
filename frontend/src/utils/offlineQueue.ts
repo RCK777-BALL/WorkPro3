@@ -120,7 +120,29 @@ export const onSyncConflict = (
   };
 };
 
-const diffObjects = (local: any, server: any): DiffEntry[] => {
+const isObject = (val: any): val is Record<string, any> =>
+  val !== null && typeof val === 'object';
+
+const deepEqual = (
+  a: any,
+  b: any,
+  visited = new WeakMap<any, any>()
+): boolean => {
+  if (Object.is(a, b)) return true;
+  if (!isObject(a) || !isObject(b)) return false;
+  if (visited.get(a) === b) return true;
+  visited.set(a, b);
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+  if (keysA.length !== keysB.length) return false;
+  for (const key of keysA) {
+    if (!Object.prototype.hasOwnProperty.call(b, key)) return false;
+    if (!deepEqual(a[key], b[key], visited)) return false;
+  }
+  return true;
+};
+
+export const diffObjects = (local: any, server: any): DiffEntry[] => {
   const keys = new Set([
     ...Object.keys(local ?? {}),
     ...Object.keys(server ?? {}),
@@ -129,7 +151,7 @@ const diffObjects = (local: any, server: any): DiffEntry[] => {
   keys.forEach((k) => {
     const l = local?.[k];
     const s = server?.[k];
-    if (JSON.stringify(l) !== JSON.stringify(s)) {
+    if (!deepEqual(l, s)) {
       diffs.push({ field: k, local: l, server: s });
     }
   });

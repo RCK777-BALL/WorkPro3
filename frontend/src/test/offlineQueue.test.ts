@@ -9,8 +9,9 @@ import {
   clearQueue,
   enqueueAssetRequest,
   enqueueDepartmentRequest,
- } from '@/utils/offlineQueue';
-import http from '@/lib/http';
+   diffObjects,
+} from '../utils/offlineQueue';
+import http from '../lib/http';
  
 
 vi.mock('../lib/http', () => ({
@@ -263,5 +264,30 @@ describe('offline queue helpers', () => {
 
     expect(apiMock).toHaveBeenCalledTimes(2);
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('offline-queue');
+  });
+});
+
+describe('diffObjects', () => {
+  it('detects changes in nested structures', () => {
+    const local = { id: 1, meta: { tags: ['a'], info: { active: true } } };
+    const server = { id: 1, meta: { tags: ['a', 'b'], info: { active: true } } };
+    const diffs = diffObjects(local, server);
+    expect(diffs).toEqual([
+      { field: 'meta', local: local.meta, server: server.meta },
+    ]);
+  });
+
+  it('safely compares circular references', () => {
+    const local: any = { id: 1 };
+    local.self = local;
+    const server: any = { id: 1 };
+    server.self = server;
+    expect(diffObjects(local, server)).toEqual([]);
+
+    const serverChanged: any = { id: 1, name: 'srv' };
+    serverChanged.self = serverChanged;
+    expect(diffObjects(local, serverChanged)).toEqual([
+      { field: 'name', local: undefined, server: 'srv' },
+    ]);
   });
 });

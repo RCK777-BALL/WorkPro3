@@ -66,10 +66,9 @@ inventoryItemSchema.methods.consume = async function (
   if (amount <= 0) throw new Error('Amount must be positive');
   let baseAmount = amount;
   if (this.uom && this.uom.toString() !== fromUom.toString()) {
-    const conv = await mongoose.connection
-      .db
-      .collection('conversions')
-      .findOne({ from: fromUom, to: this.uom });
+    const db = mongoose.connection.db;
+    if (!db) throw new Error('Database not initialized');
+    const conv = await db.collection('conversions').findOne({ from: fromUom, to: this.uom });
     if (!conv) throw new Error('Conversion not found');
     baseAmount = amount * conv.factor;
   }

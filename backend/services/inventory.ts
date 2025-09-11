@@ -18,8 +18,12 @@ export const addStock = async (
 
   let baseQty = quantity;
   if (fromUom && item.uom && item.uom.toString() !== fromUom.toString()) {
-    const conv = await mongoose.connection
-      .db.collection('conversions')
+    const db = mongoose.connection.db;
+    if (!db) {
+      throw new Error('Database connection not initialized');
+    }
+    const conv = await db
+      .collection('conversions')
       .findOne({ from: fromUom, to: item.uom });
     if (!conv) throw new Error('Conversion not found');
     baseQty = quantity * conv.factor;

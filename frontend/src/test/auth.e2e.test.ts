@@ -6,7 +6,7 @@ import { beforeAll, afterAll, beforeEach, describe, it, expect } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import mongoose from 'mongoose';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 import authRoutes from '../../../backend/routes/AuthRoutes';

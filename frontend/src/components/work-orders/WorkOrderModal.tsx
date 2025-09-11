@@ -66,7 +66,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
       "image/*": [".png", ".jpg", ".jpeg"],
       "application/pdf": [".pdf"],
     },
-    onDrop: (acceptedFiles) => {
+    onDrop: (acceptedFiles: File[]) => {
       setFiles([...files, ...acceptedFiles]);
     },
   });

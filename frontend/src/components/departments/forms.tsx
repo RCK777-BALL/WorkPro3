@@ -31,7 +31,7 @@ export function DepartmentForm({ initial, onSubmit, onCancel }: DepartmentFormPr
     reset(initial ?? { name: '', description: '' });
   }, [initial, reset]);
 
-  const submit = handleSubmit(async (data) => {
+  const submit = handleSubmit(async (data: DepartmentPayload) => {
     await onSubmit({ name: data.name.trim(), description: data.description?.trim() || undefined });
   });
 
@@ -90,7 +90,7 @@ export function LineForm({ initial, onSubmit, onCancel }: LineFormProps) {
     reset(initial ?? { name: '' });
   }, [initial, reset]);
 
-  const submit = handleSubmit(async (data) => {
+  const submit = handleSubmit(async (data: LinePayload) => {
     await onSubmit({ name: data.name.trim() });
   });
 
@@ -142,7 +142,7 @@ export function StationForm({ initial, onSubmit, onCancel }: StationFormProps) {
     reset(initial ?? { name: '' });
   }, [initial, reset]);
 
-  const submit = handleSubmit(async (data) => {
+  const submit = handleSubmit(async (data: StationPayload) => {
     await onSubmit({ name: data.name.trim() });
   });
 

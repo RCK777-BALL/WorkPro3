@@ -18,7 +18,24 @@ interface TeamModalProps {
   member: TeamMember | null;
 }
 
-const defaultValues = {
+type Role =
+  | 'admin'
+  | 'manager'
+  | 'department_leader'
+  | 'area_leader'
+  | 'team_leader'
+  | 'team_member';
+
+interface TeamFormData {
+  name: string;
+  email: string;
+  role: Role;
+  department: string;
+  employeeId: string;
+  managerId: string;
+}
+
+const defaultValues: TeamFormData = {
   name: '',
   email: '',
   role: 'team_member',
@@ -41,7 +58,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
     watch,
     setValue,
     formState: { errors },
-  } = useForm({ defaultValues });
+  } = useForm<TeamFormData>({ defaultValues });
 
   useEffect(() => {
     setValue('name', member?.name ?? '');
@@ -84,7 +101,11 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
     }
   };
 
-  const onSubmit = handleSubmit(async (data) => {
+  const handleRoleChange = (value: Role) => {
+    setValue('role', value);
+  };
+
+  const onSubmit = handleSubmit(async (data: TeamFormData) => {
     setLoading(true);
     try {
       const payload: any = { ...data };
@@ -165,11 +186,14 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
 
           <div className="grid grid-cols-2 gap-6">
             <div>
-            <label className="block text-sm font-medium mb-1">Role</label>
-            <select
-              className="w-full px-3 py-2 border border-neutral-300 rounded-md"
-              {...register('role')}
-            >
+              <label className="block text-sm font-medium mb-1">Role</label>
+              <select
+                className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+                {...register('role', {
+                  onChange: (e) =>
+                    handleRoleChange(e.target.value as Role),
+                })}
+              >
                 <option value="admin">Admin</option>
                 <option value="manager">Manager</option>
                 <option value="department_leader">Department Leader</option>

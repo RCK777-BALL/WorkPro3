@@ -1,7 +1,8 @@
 import express from 'express';
 import cors, { type CorsOptions } from 'cors';
 import dotenv from 'dotenv';
-import { connectDB } from '../backend/config/db.ts';
+import logger from './logger';
+import { connectDB } from '../backend/config/db';
 
 // Load environment variables
 dotenv.config();

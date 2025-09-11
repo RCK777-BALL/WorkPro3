@@ -1,5 +1,5 @@
 import express from "express";
-import type { Request, Response } from "express";
+import type { Request, Response, RequestHandler, Router } from "express";
 import cors from "cors";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
@@ -14,33 +14,7 @@ import { initKafka, sendKafkaEvent } from "./utils/kafka";
 import { initMQTTFromConfig } from "./iot/mqttClient";
 import logger from "./utils/logger";
 
-import authRoutes from "./routes/authRoutes";
-import workOrdersRoutes from "./routes/WorkOrderRoutes";
-import assetsRoutes from "./routes/AssetRoutes";
-import pmTasksRoutes from "./routes/PMTaskRoutes";
-import summaryRoutes from "./routes/summary";
-import meterRoutes from "./routes/MeterRoutes";
-
-import reportsRoutes from "./routes/ReportsRoutes";
-import LineRoutes from "./routes/LineRoutes";
-import StationRoutes from "./routes/StationRoutes";
-import departmentRoutes from "./routes/DepartmentRoutes";
-import inventoryRoutes from "./routes/InventoryRoutes";
-import analyticsRoutes from "./routes/AnalyticsRoutes";
-
-import teamRoutes from "./routes/TeamRoutes";
-import notificationsRoutes from "./routes/notifications";
-import TenantRoutes from "./routes/TenantRoutes";
-import webhooksRoutes from "./routes/webhooksRoutes";
-import IntegrationRoutes from "./routes/IntegrationRoutes";
-import ThemeRoutes from "./routes/ThemeRoutes";
-import chatRoutes from "./routes/ChatRoutes";
-import requestPortalRoutes from "./routes/requestPortal";
-import vendorPortalRoutes from "./routes/vendorPortal";
-
-// Keep BOTH of these:
-import calendarRoutes from "./routes/CalendarRoutes";
-import conditionRuleRoutes from "./routes/ConditionRuleRoutes";
+import * as routes from "./routes";
 
 import { startPMScheduler } from "./utils/PMScheduler";
 import { setupSwagger } from "./utils/swagger";
@@ -138,38 +112,58 @@ if (env.NODE_ENV === "test") {
 }
 
 // --- Routes (order matters for the limiter) ---
-app.use("/api/auth", authRoutes);
-app.use("/api/notifications", burstFriendly, notificationsRoutes);
-// Apply limiter to the rest of /api
-app.use("/api", generalLimiter);
+type RouteConfig = {
+  path: string;
+  router: Router;
+  middlewares?: RequestHandler | RequestHandler[];
+  skipLimiter?: boolean;
+};
 
-app.use("/api/departments", departmentRoutes);
-app.use("/api/workorders", workOrdersRoutes);
-app.use("/api/assets", assetsRoutes);
-app.use("/api/meters", meterRoutes);
-app.use("/api/condition-rules", conditionRuleRoutes);
-app.use("/api/tenants", TenantRoutes);
-app.use("/api/pm-tasks", pmTasksRoutes);
-app.use("/api/reports", reportsRoutes);
-app.use("/api/lines", LineRoutes);
-app.use("/api/stations", StationRoutes);
-app.use("/api/inventory", inventoryRoutes);
-app.use("/api/v1/analytics", analyticsRoutes);
-app.use("/api/team", teamRoutes);
-app.use("/api/theme", ThemeRoutes);
-app.use("/api/request-portal", requestPortalRoutes);
+const routeRegistry: RouteConfig[] = [
+  { path: "/api/auth", router: routes.authRoutes, skipLimiter: true },
+  {
+    path: "/api/notifications",
+    router: routes.notificationsRoutes,
+    middlewares: burstFriendly,
+    skipLimiter: true,
+  },
+  { path: "/api/departments", router: routes.departmentRoutes },
+  { path: "/api/workorders", router: routes.workOrdersRoutes },
+  { path: "/api/assets", router: routes.assetsRoutes },
+  { path: "/api/meters", router: routes.meterRoutes },
+  { path: "/api/condition-rules", router: routes.conditionRuleRoutes },
+  { path: "/api/tenants", router: routes.TenantRoutes },
+  { path: "/api/pm-tasks", router: routes.pmTasksRoutes },
+  { path: "/api/reports", router: routes.reportsRoutes },
+  { path: "/api/lines", router: routes.LineRoutes },
+  { path: "/api/stations", router: routes.StationRoutes },
+  { path: "/api/inventory", router: routes.inventoryRoutes },
+  { path: "/api/v1/analytics", router: routes.analyticsRoutes },
+  { path: "/api/team", router: routes.teamRoutes },
+  { path: "/api/theme", router: routes.ThemeRoutes },
+  { path: "/api/request-portal", router: routes.requestPortalRoutes },
+  { path: "/api/vendor-portal", router: routes.vendorPortalRoutes },
+  { path: "/api/vendor", router: routes.vendorPortalRoutes },
+  { path: "/api/chat", router: routes.chatRoutes },
+  { path: "/api/hooks", router: routes.webhooksRoutes },
+  { path: "/api/webhooks", router: routes.webhooksRoutes },
+  { path: "/api/calendar", router: routes.calendarRoutes },
+  { path: "/api/integrations", router: routes.IntegrationRoutes },
+  { path: "/api/summary", router: routes.summaryRoutes },
+];
 
-// Support both paths for the vendor portal
-app.use("/api/vendor-portal", vendorPortalRoutes);
-app.use("/api/vendor", vendorPortalRoutes);
-
-app.use("/api/chat", chatRoutes);
-app.use("/api/hooks", webhooksRoutes);
-app.use("/api/webhooks", webhooksRoutes);
-app.use("/api/calendar", calendarRoutes);
-app.use("/api/integrations", IntegrationRoutes);
-
-app.use("/api/summary", summaryRoutes);
+routeRegistry.forEach(({ path, router, middlewares, skipLimiter }) => {
+  const mws: RequestHandler[] = [];
+  if (!skipLimiter) mws.push(generalLimiter);
+  if (middlewares) {
+    if (Array.isArray(middlewares)) {
+      mws.push(...middlewares);
+    } else {
+      mws.push(middlewares);
+    }
+  }
+  app.use(path, ...mws, router);
+});
 
 // 404 + error handler
 app.use((_req, res) => {

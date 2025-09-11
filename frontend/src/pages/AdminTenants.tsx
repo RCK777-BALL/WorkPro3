@@ -3,14 +3,30 @@
  */
 
 import { useEffect, useState } from 'react';
-import Button from '@/components/common/Button';
-import http from '@/lib/http';
-import { useToast } from '@/context/ToastContext';
+ import { z } from 'zod';
+import Button from '../components/common/Button';
+import http from '../lib/http';
+import { useToast } from '../context/ToastContext';
+ 
 
 interface Tenant {
   id: string;
   name: string;
 }
+
+interface TenantResponse {
+  _id?: string;
+  id?: string;
+  name: string;
+}
+
+const tenantResponseSchema: z.ZodType<TenantResponse> = z
+  .object({
+    _id: z.string().optional(),
+    id: z.string().optional(),
+    name: z.string(),
+  })
+  .refine((t) => t._id || t.id, { message: 'Missing tenant id' });
 
 const AdminTenants = () => {
   const { addToast } = useToast();
@@ -21,7 +37,8 @@ const AdminTenants = () => {
   const load = async () => {
     try {
       const res = await http.get('/tenants');
-      setTenants(res.data.map((t: any) => ({ id: t._id ?? t.id, name: t.name })));
+      const data = z.array(tenantResponseSchema).parse(res.data);
+      setTenants(data.map((t: TenantResponse) => ({ id: t._id ?? t.id!, name: t.name })));
     } catch (err) {
       console.error(err);
       addToast('Failed to load tenants', 'error');
@@ -37,11 +54,13 @@ const AdminTenants = () => {
     try {
       if (editing) {
         const res = await http.put(`/tenants/${editing}`, { name });
-        setTenants((ts) => ts.map((t) => (t.id === editing ? { id: res.data._id, name: res.data.name } : t)));
+        const tenant = tenantResponseSchema.parse(res.data);
+        setTenants((ts) => ts.map((t) => (t.id === editing ? { id: tenant._id ?? tenant.id!, name: tenant.name } : t)));
         addToast('Tenant updated', 'success');
       } else {
         const res = await http.post('/tenants', { name });
-        setTenants((ts) => [...ts, { id: res.data._id, name: res.data.name }]);
+        const tenant = tenantResponseSchema.parse(res.data);
+        setTenants((ts) => [...ts, { id: tenant._id ?? tenant.id!, name: tenant.name }]);
         addToast('Tenant created', 'success');
       }
       setName('');

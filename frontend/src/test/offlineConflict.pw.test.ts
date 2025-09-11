@@ -12,8 +12,15 @@ import {
 } from '@/utils/offlineQueue';
 
 // Simulate a conflict response followed by server data
-const mockClient = async (args: { method: string; url: string; data?: unknown }) => {
-  if (args.method !== 'get') {
+const mockClient = async ({
+  method,
+  url: _url,
+}: {
+  method: string;
+  url: string;
+  data?: unknown;
+}) => {
+  if (method !== 'get') {
     const err = new Error('conflict') as unknown as {
       response?: { status?: number };
     };

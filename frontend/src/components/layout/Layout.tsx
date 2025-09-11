@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useState } from 'react';
 import {
   AppShell,
@@ -17,8 +21,8 @@ import { useDisclosure } from '@mantine/hooks';
 import { Command, User } from 'lucide-react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 
-import ThemeToggle from '../common/ThemeToggle';
-import { useAuthStore } from '../../store/authStore';
+import ThemeToggle from '@/common/ThemeToggle';
+import { useAuthStore } from '@/store/authStore';
 
 interface NavItem {
   label: string;

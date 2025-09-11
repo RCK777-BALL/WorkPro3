@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import Channel from '../models/Channel';
 import ChatMessage from '../models/ChatMessage';
 import type { AuthedRequestHandler } from '../types/http';

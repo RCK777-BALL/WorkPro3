@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 export interface AIAssistResult {
   summary: string;
   riskScore: number;

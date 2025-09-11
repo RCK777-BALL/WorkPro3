@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import bcrypt from "bcryptjs";
 import logger from "../utils/logger";
 

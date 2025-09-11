@@ -1,5 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { describe, it, beforeEach, afterEach, expect } from 'vitest';
-import { startPMScheduler, stopPMScheduler } from '../utils/pmScheduler';
+import { startPMScheduler, stopPMScheduler } from '../utils/PMScheduler';
 import * as taskA from './helpers/dummyTaskA';
 import * as taskB from './helpers/dummyTaskB';
 
@@ -8,7 +12,7 @@ function resetCounters() {
   taskB.counter.runs = 0;
 }
 
-describe('pmScheduler utils', () => {
+describe('PMScheduler utils', () => {
   beforeEach(() => {
     resetCounters();
   });

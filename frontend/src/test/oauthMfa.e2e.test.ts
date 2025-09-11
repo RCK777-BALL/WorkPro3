@@ -1,10 +1,14 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-import authRoutes from '../../../backend/routes/authRoutes';
+import authRoutes from '../../../backend/routes/AuthRoutes';
 import User from '../../../backend/models/User';
 
 const app = express();

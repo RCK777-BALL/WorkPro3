@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { createContext, useContext, useState, type ReactNode } from 'react';
 
 export interface ThemeContextValue {

@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import path from 'path';
 import { Express } from 'express';
 import swaggerJsdoc from 'swagger-jsdoc';

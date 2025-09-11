@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { runPmScheduler, calcNextDue } from '../services/pmScheduler';
 import logger from '../utils/logger';
 

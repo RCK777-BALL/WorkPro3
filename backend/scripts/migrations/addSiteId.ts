@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { MongoClient } from 'mongodb';
 import logger from '../../utils/logger';
 

@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import mqtt, { MqttClient, IClientOptions } from "mqtt";
 import config from "../config/default";
 import { mqttLogger } from "../utils/logger";

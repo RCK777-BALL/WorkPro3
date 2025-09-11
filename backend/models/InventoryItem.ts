@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import mongoose, { Schema, Types, Model, Document } from 'mongoose';
 
 // Interface representing an inventory item document

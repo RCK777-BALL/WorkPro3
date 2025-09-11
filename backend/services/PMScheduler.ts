@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import PMTask from '../models/PMTask';
 import WorkOrder from '../models/WorkOrder';
 import Meter from '../models/Meter';
@@ -22,7 +26,7 @@ function compare(value: number, operator: string, threshold: number): boolean {
   }
 }
 
-export async function runPmScheduler(): Promise<void> {
+export async function runPMScheduler(): Promise<void> {
   const now = new Date();
 
   // Time-based PM tasks

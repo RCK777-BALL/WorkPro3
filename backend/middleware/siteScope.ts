@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import type { Request, Response, NextFunction } from 'express';
 
 // Middleware to capture x-site-id header and attach to request

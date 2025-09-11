@@ -8,12 +8,11 @@ import User from '../models/User';
 import nodemailer from 'nodemailer';
  
 import { assertEmail } from '../utils/assert';
-import type { ParamsDictionary } from 'express-serve-static-core';
 import type { AuthedRequestHandler } from '../types/http';
 
 type IdParams = { id: string };
 
- export const getAllNotifications: AuthedRequestHandler<ParamsDictionary, NotificationDocument[]> = async (
+ export const getAllNotifications: AuthedRequestHandler = async (
   req,
   res,
   next,

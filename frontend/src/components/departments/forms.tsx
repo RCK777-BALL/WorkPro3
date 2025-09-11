@@ -3,7 +3,7 @@
  */
 
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import Button from '@/components/common/Button';
 
 export interface DepartmentPayload {
@@ -31,12 +31,15 @@ export function DepartmentForm({ initial, onSubmit, onCancel }: DepartmentFormPr
     reset(initial ?? { name: '', description: '' });
   }, [initial, reset]);
 
-  const submit = handleSubmit(async (data: DepartmentPayload) => {
+  const onValid: SubmitHandler<DepartmentPayload> = async (data) => {
     await onSubmit({ name: data.name.trim(), description: data.description?.trim() || undefined });
-  });
+  };
+
+  const submit = handleSubmit(onValid);
+
 
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={handleSubmit(submit)} className="space-y-4">
       <div>
         <label className="block text-sm font-medium mb-1">Name<span className="text-red-500">*</span></label>
         <input
@@ -90,12 +93,15 @@ export function LineForm({ initial, onSubmit, onCancel }: LineFormProps) {
     reset(initial ?? { name: '' });
   }, [initial, reset]);
 
-  const submit = handleSubmit(async (data: LinePayload) => {
+  const onValid: SubmitHandler<LinePayload> = async (data) => {
     await onSubmit({ name: data.name.trim() });
-  });
+  };
+
+  const submit = handleSubmit(onValid);
+
 
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={handleSubmit(submit)} className="space-y-4">
       <div>
         <label className="block text-sm font-medium mb-1">Name<span className="text-red-500">*</span></label>
         <input
@@ -142,12 +148,15 @@ export function StationForm({ initial, onSubmit, onCancel }: StationFormProps) {
     reset(initial ?? { name: '' });
   }, [initial, reset]);
 
-  const submit = handleSubmit(async (data: StationPayload) => {
+  const onValid: SubmitHandler<StationPayload> = async (data) => {
     await onSubmit({ name: data.name.trim() });
-  });
+  };
+
+  const submit = handleSubmit(onValid);
+
 
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={handleSubmit(submit)} className="space-y-4">
       <div>
         <label className="block text-sm font-medium mb-1">Name<span className="text-red-500">*</span></label>
         <input

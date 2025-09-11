@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import logger from "../utils/logger";
 
 /**
  * Verifies that the hardcoded password matches the stored hash.
@@ -12,8 +13,8 @@ const password = "admin123";
 (async () => {
   try {
     const match = await bcrypt.compare(password, storedHash);
-    console.log(match);
+    logger.info(String(match));
   } catch (err) {
-    console.error('Error verifying password hash', err);
+    logger.error('Error verifying password hash', err);
   }
 })();

@@ -1,4 +1,5 @@
 import { MongoClient, ObjectId } from 'mongodb';
+import logger from '../../utils/logger';
 
 async function run() {
   const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/workpro';
@@ -21,13 +22,13 @@ async function run() {
       { from: eachId, to: caseId, factor: 1 / 12 },
     ]);
 
-    console.log('UoM migration complete');
+    logger.info('UoM migration complete');
   } finally {
     await client.close();
   }
 }
 
 run().catch((err) => {
-  console.error(err);
+  logger.error(err);
   process.exit(1);
 });

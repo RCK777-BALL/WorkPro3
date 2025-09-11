@@ -1,6 +1,7 @@
 // utils/pmScheduler.ts
 import * as cron from 'node-cron';
 import path from 'path';
+import logger from './logger';
 
 interface StartOpts {
   cronExpr?: string; // cron string
@@ -20,11 +21,11 @@ export const startPMScheduler = (id: string, opts: StartOpts = {}) => {
   const rel = opts.taskModulePath || process.env.PM_SCHEDULER_TASK || './tasks/pmSchedulerTask';
   const resolved = resolveTaskPath(rel);
 
-  console.log(`[PM Scheduler] Using cron "${cronExpr}" and task module "${resolved}"`);
+  logger.info(`[PM Scheduler] Using cron "${cronExpr}" and task module "${resolved}"`);
 
   // Validate cron
   if (!cron.validate(cronExpr)) {
-    console.error(`[PM Scheduler] Invalid CRON expression "${cronExpr}". Scheduler disabled.`);
+    logger.error(`[PM Scheduler] Invalid CRON expression "${cronExpr}". Scheduler disabled.`);
     return;
   }
 
@@ -50,7 +51,7 @@ export const startPMScheduler = (id: string, opts: StartOpts = {}) => {
 
       await fn();
     } catch (err) {
-      console.error('Error running PM Scheduler task:', err);
+      logger.error('Error running PM Scheduler task:', err);
     }
   });
 
@@ -64,14 +65,14 @@ export const stopPMScheduler = (id?: string) => {
     if (task) {
       task.stop();
       scheduled.delete(id);
-      console.log(`[PM Scheduler] Stopped schedule "${id}".`);
+      logger.info(`[PM Scheduler] Stopped schedule "${id}".`);
     }
     return;
   }
 
   for (const [key, task] of scheduled) {
     task.stop();
-    console.log(`[PM Scheduler] Stopped schedule "${key}".`);
+    logger.info(`[PM Scheduler] Stopped schedule "${key}".`);
   }
   scheduled.clear();
 };

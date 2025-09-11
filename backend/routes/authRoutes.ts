@@ -14,6 +14,7 @@ import { loginSchema, registerSchema } from '../validators/authValidators';
 import { assertEmail } from '../utils/assert';
 // Adjust this import path if your middleware lives elsewhere:
 import { requireAuth } from '../middleware/requireAuth';
+import logger from '../utils/logger';
 
 
 const FAKE_PASSWORD_HASH =
@@ -123,7 +124,7 @@ router.post('/login', loginLimiter, async (
       .json({ token, user: { ...userObj, tenantId } });
     return;
   } catch (err) {
-    console.error('Login error:', err);
+    logger.error('Login error:', err);
     next(err);
     return;
   }
@@ -162,7 +163,7 @@ router.post(
       res.status(201).json({ message: 'User registered successfully' });
       return;
     } catch (err) {
-      console.error('Register error:', err);
+      logger.error('Register error:', err);
       next(err);
       return;
     }
@@ -200,7 +201,7 @@ router.get(
         (err: Error | null, user: Express.User | false | null) => {
           if (err || !user) {
             if (err) {
-              console.error(`OAuth ${provider} callback error:`, err);
+              logger.error(`OAuth ${provider} callback error:`, err);
             }
             res.status(400).json({ message: 'Authentication failed' });
             return;

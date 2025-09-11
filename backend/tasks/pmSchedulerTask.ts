@@ -1,7 +1,8 @@
 import { runPmScheduler, calcNextDue } from '../services/pmScheduler';
+import logger from '../utils/logger';
 
 export default async function runPmSchedulerTask() {
-  console.log('[PM Scheduler Task] Running PM evaluations...');
+  logger.info('[PM Scheduler Task] Running PM evaluations...');
   await runPmScheduler();
 }
 

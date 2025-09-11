@@ -3,6 +3,7 @@ import WorkOrder from '../models/WorkOrder';
 import Meter from '../models/Meter';
 import ConditionRule from '../models/ConditionRule';
 import SensorReading from '../models/SensorReading';
+import logger from '../utils/logger';
 
 function compare(value: number, operator: string, threshold: number): boolean {
   switch (operator) {
@@ -50,7 +51,7 @@ export async function runPmScheduler(): Promise<void> {
       task.nextDue = next;
       await task.save();
     } catch (err) {
-      console.error('[PM Scheduler] Failed time task', err);
+      logger.error('[PM Scheduler] Failed time task', err);
     }
   }
 
@@ -74,7 +75,7 @@ export async function runPmScheduler(): Promise<void> {
         await meter.save();
       }
     } catch (err) {
-      console.error('[PM Scheduler] Failed meter', err);
+      logger.error('[PM Scheduler] Failed meter', err);
     }
   }
 
@@ -98,9 +99,9 @@ export async function runPmScheduler(): Promise<void> {
         });
       }
     } catch (err) {
-      console.error('[PM Scheduler] Failed condition rule', err);
-    }
+      logger.error('[PM Scheduler] Failed condition rule', err);
   }
+}
 }
 
 export function calcNextDue(from: Date, freq?: string): Date {

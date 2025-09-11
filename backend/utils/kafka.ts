@@ -1,5 +1,6 @@
 import { Kafka, logLevel, EachMessagePayload } from 'kafkajs';
 import type { Server as SocketIOServer } from 'socket.io';
+import logger from './logger';
 
 const brokersEnv = process.env.KAFKA_BROKERS || '';
 const brokers = brokersEnv.split(',').map((b) => b.trim()).filter(Boolean);
@@ -44,6 +45,6 @@ export const sendKafkaEvent = async (topic: string, payload: unknown) => {
       messages: [{ value: JSON.stringify(payload) }],
     });
   } catch (err) {
-    console.error('Kafka send error:', err);
+    logger.error('Kafka send error:', err);
   }
 };

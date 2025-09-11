@@ -5,6 +5,7 @@ import path from 'path';
 import bcrypt from 'bcryptjs';
 import User from '../models/User';
 import Tenant from '../models/Tenant';
+import logger from '../utils/logger';
 
 const envPath = path.resolve(__dirname, '..', '.env');
 if (fs.existsSync(envPath)) {
@@ -17,7 +18,7 @@ const seed = async () => {
   try {
     const mongoUri = process.env.MONGO_URI || process.env.DATABASE_URL;
     if (!mongoUri) {
-      console.error(
+      logger.error(
         'Database connection string missing. Create backend/.env or set MONGO_URI or DATABASE_URL.'
       );
       return;
@@ -36,15 +37,15 @@ const seed = async () => {
         role: 'admin',
         tenantId: tenant._id,
       });
-      console.log('✅ Default admin user seeded', {
+      logger.info('✅ Default admin user seeded', {
         email: 'admin@example.com',
         tenant: tenant.name,
       });
     } else {
-      console.log('ℹ️ Users already exist. Skipping.');
+      logger.info('ℹ️ Users already exist. Skipping.');
     }
   } catch (err) {
-    console.error('❌ Error seeding default admin:', err);
+    logger.error('❌ Error seeding default admin:', err);
   } finally {
     mongoose.connection.close();
   }

@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import redis from '../utils/redisClient';
+import logger from '../utils/logger';
 
 /**
  * Cache middleware using Redis. Cached responses are stored using the
@@ -25,11 +26,11 @@ export const cache = (keyPrefix: string, ttl = 60) => {
       res.json = (body: any) => {
         redis
           .set(key, JSON.stringify(body), 'EX', ttl)
-          .catch((err: unknown) => console.error('Redis set error:', err));
+          .catch((err: unknown) => logger.error('Redis set error:', err));
         return originalJson(body);
       };
     } catch (err) {
-      console.error('Redis error:', err);
+      logger.error('Redis error:', err);
     }
     next();
   };

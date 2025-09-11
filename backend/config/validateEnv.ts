@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import logger from '../utils/logger';
 
 const envSchema = z.object({
   JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
@@ -23,7 +24,7 @@ export function validateEnv(): EnvVars {
     if (errors.JWT_SECRET) {
       throw new Error('JWT_SECRET environment variable is required');
     }
-    console.error('❌ Invalid environment variables:', errors);
+    logger.error('❌ Invalid environment variables:', errors);
     throw new Error('Missing or invalid environment variables');
   }
   return parsed.data;

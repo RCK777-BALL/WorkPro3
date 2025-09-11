@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import TransferOrder from '../models/TransferOrder';
 import InventoryItem from '../models/InventoryItem';
 

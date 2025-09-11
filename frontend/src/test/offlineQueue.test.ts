@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   addToQueue,
@@ -207,6 +211,58 @@ describe('offline queue helpers', () => {
     await flushQueue();
 
     expect(apiMock).toHaveBeenCalledWith({ method: 'post', url: '/uploads/signature', data: { sig: 'dataurl' } });
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('offline-queue');
+  });
+
+  it('prevents overlapping flushes', async () => {
+    const apiMock = http as unknown as ReturnType<typeof vi.fn>;
+    let resolveFirst: (value?: any) => void = () => {};
+    (apiMock as any).mockReturnValue(
+      new Promise((res) => {
+        resolveFirst = res;
+      })
+    );
+    const queue = [{ method: 'post' as const, url: '/a', data: { a: 1 } }];
+    localStorageMock.store['offline-queue'] = JSON.stringify(queue);
+
+    const first = flushQueue();
+    const second = flushQueue();
+    expect(second).toBeUndefined();
+
+    resolveFirst({});
+    await first;
+
+    expect(apiMock).toHaveBeenCalledTimes(1);
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('offline-queue');
+  });
+
+  it('preserves new requests added during a flush', async () => {
+    const apiMock = http as unknown as ReturnType<typeof vi.fn>;
+    let resolveFirst: (value?: any) => void = () => {};
+    (apiMock as any)
+      .mockReturnValueOnce(
+        new Promise((res) => {
+          resolveFirst = res;
+        })
+      )
+      .mockResolvedValue({});
+
+    const initial = [{ method: 'post' as const, url: '/a', data: { a: 1 } }];
+    localStorageMock.store['offline-queue'] = JSON.stringify(initial);
+
+    const running = flushQueue();
+    addToQueue({ method: 'post', url: '/b', data: { b: 2 } });
+
+    resolveFirst({});
+    await running;
+
+    const stored = JSON.parse(localStorageMock.store['offline-queue']);
+    expect(stored).toHaveLength(1);
+    expect(stored[0].url).toBe('/b');
+
+    await flushQueue();
+
+    expect(apiMock).toHaveBeenCalledTimes(2);
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('offline-queue');
   });
 });

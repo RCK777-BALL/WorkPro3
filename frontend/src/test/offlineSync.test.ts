@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { describe, it, beforeEach, expect, vi } from 'vitest';
 import { addToQueue, flushQueue } from '../utils/offlineQueue';
 import http from '../lib/http';

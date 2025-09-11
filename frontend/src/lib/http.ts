@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import axios from 'axios';
 import type { AxiosRequestHeaders } from 'axios';
 

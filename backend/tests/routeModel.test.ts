@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { describe, it, expect } from 'vitest';
 import mongoose from 'mongoose';
 import Route from '../models/Route';

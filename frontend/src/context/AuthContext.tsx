@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 // src/context/AuthContext.tsx
 import {
   createContext,

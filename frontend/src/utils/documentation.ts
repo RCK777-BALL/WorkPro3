@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { saveAs } from 'file-saver';
 import ExcelJS from 'exceljs';
 import * as mammoth from 'mammoth';

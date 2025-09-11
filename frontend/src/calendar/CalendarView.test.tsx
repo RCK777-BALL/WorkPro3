@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { render, screen } from '@testing-library/react';
 import CalendarView from './CalendarView';
 import { describe, expect, it } from 'vitest';

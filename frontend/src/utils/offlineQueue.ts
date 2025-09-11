@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { emitToast } from '../context/ToastContext';
 
 export type QueuedRequest = {
@@ -134,12 +138,16 @@ const diffObjects = (local: any, server: any): DiffEntry[] => {
   });
   return diffs;
 };
+let isFlushing = false;
 
 export const flushQueue = async (useBackoff = true) => {
-  const queue = loadQueue();
-  if (queue.length === 0) return;
+  if (isFlushing) return;
+  isFlushing = true;
+  try {
+    const queue = loadQueue();
+    if (queue.length === 0) return;
 
-  const remaining: QueuedRequest[] = [];
+   const remaining: QueuedRequest[] = [];
 
   for (let i = 0; i < queue.length; i++) {
     const req = queue[i];
@@ -186,6 +194,7 @@ export const flushQueue = async (useBackoff = true) => {
     } else {
       clearQueue();
     }
+ 
   }
 };
 

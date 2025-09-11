@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useEffect, useState } from 'react';
 import http from '../lib/http';
 import { addToQueue, onSyncConflict, type SyncConflict } from '../utils/offlineQueue';

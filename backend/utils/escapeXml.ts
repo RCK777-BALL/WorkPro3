@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 export const escapeXml = (unsafe: string): string =>
   unsafe
     .replace(/&/g, '&amp;')

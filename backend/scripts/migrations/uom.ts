@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { MongoClient, ObjectId } from 'mongodb';
 
 async function run() {

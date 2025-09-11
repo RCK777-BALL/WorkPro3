@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React from 'react';
 import Card from '../common/Card';
 import { Users, UserCheck, Clock, Award } from 'lucide-react';

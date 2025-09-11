@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState } from 'react';
 import { Search, Plus, Hash, X } from 'lucide-react';
 import Avatar from '../common/Avatar';

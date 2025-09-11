@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useEffect, useMemo, useState } from 'react';
 import FiltersBar from '../components/dashboard/FiltersBar';
 import DashboardStats from '../components/dashboard/DashboardStats';

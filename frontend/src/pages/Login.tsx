@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
+import { emitToast } from '../context/ToastContext';
 import http from '../lib/http';
 
 type BeforeInstallPromptEvent = Event & {
@@ -77,17 +78,18 @@ const Login: React.FC = () => {
       if (data.user?.tenantId) localStorage.setItem('auth:tenantId', data.user.tenantId);
       if (data.user?.siteId) localStorage.setItem('auth:siteId', data.user.siteId);
       navigate('/dashboard');
-    } catch (err: any) {
-       console.error(err);
-      const isNetworkError =
-        err?.code === 'ERR_NETWORK' ||
-        err?.message?.toLowerCase().includes('network');
-      setError(
-        isNetworkError
-          ? t('auth.networkError', 'Cannot connect to server')
-          : t('auth.loginFailed', 'Login failed')
-      );
- 
+    } catch (err: unknown) {
+      let isNetworkError = false;
+      if (err instanceof Error) {
+        const code = (err as { code?: string }).code;
+        const message = err.message.toLowerCase();
+        isNetworkError = code === 'ERR_NETWORK' || message.includes('network');
+      }
+      const errorMessage = isNetworkError
+        ? t('auth.networkError', 'Cannot connect to server')
+        : t('auth.loginFailed', 'Login failed');
+      emitToast(errorMessage, 'error');
+      setError(errorMessage);
     }
   };
 

@@ -32,6 +32,8 @@ jobs:
 
       - name: Lint
         run: npm run lint --if-present
+      - name: Check license headers
+        run: node ../scripts/checkLicenseHeaders.mjs
 
       - name: Typecheck (if present)
         run: npm run typecheck --if-present
@@ -61,6 +63,9 @@ jobs:
 
       - name: Lint
         run: npm run lint --if-present
+
+      - name: Check license headers
+        run: node ../scripts/checkLicenseHeaders.mjs
 
       - name: Typecheck
         run: npm run typecheck --if-present

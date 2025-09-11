@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import type { ReactNode } from "react";
 import {
   MantineProvider,

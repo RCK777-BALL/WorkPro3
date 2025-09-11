@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import WorkOrder from '../models/WorkOrder';
 
 export interface KPIResult {

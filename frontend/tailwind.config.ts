@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import type { Config } from 'tailwindcss'
 import colors from 'tailwindcss/colors'
 

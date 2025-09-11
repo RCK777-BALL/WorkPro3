@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import mongoose, { Schema, Types, Document } from 'mongoose';
 
 interface TransferItem {

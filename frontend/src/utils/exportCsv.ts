@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { saveAs } from 'file-saver';
 
 export type CSVInput = Record<string, any>[] | Record<string, any>;

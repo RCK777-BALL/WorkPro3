@@ -1,8 +1,13 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import express from "express";
-import type { Request, Response } from "express";
+import type { Request, Response, RequestHandler, Router } from "express";
 import cors from "cors";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
+import mongoSanitize from "./middleware/mongoSanitize";
 import dotenv from "dotenv";
 import { createServer } from "http";
 import { Server } from "socket.io";
@@ -13,35 +18,9 @@ import { initKafka, sendKafkaEvent } from "./utils/kafka";
 import { initMQTTFromConfig } from "./iot/mqttClient";
 import logger from "./utils/logger";
 
-import authRoutes from "./routes/AuthRoutes";
-import workOrdersRoutes from "./routes/WorkOrderRoutes";
-import assetsRoutes from "./routes/AssetRoutes";
-import pmTasksRoutes from "./routes/PMTaskRoutes";
-import summaryRoutes from "./routes/SummaryRoutes";
-import meterRoutes from "./routes/MeterRoutes";
+import * as routes from "./routes";
 
-import reportsRoutes from "./routes/ReportsRoutes";
-import LineRoutes from "./routes/LineRoutes";
-import StationRoutes from "./routes/StationRoutes";
-import departmentRoutes from "./routes/DepartmentRoutes";
-import inventoryRoutes from "./routes/InventoryRoutes";
-import analyticsRoutes from "./routes/AnalyticsRoutes";
-
-import teamRoutes from "./routes/TeamRoutes";
-import notificationsRoutes from "./routes/NotificationsRoutes";
-import TenantRoutes from "./routes/TenantRoutes";
-import webhooksRoutes from "./routes/WebhooksRoutes";
-import IntegrationRoutes from "./routes/IntegrationRoutes";
-import ThemeRoutes from "./routes/ThemeRoutes";
-import chatRoutes from "./routes/ChatRoutes";
-import requestPortalRoutes from "./routes/RequestPortalRoutes";
-import vendorPortalRoutes from "./routes/VendorPortalRoutes";
-
-// Keep BOTH of these:
-import calendarRoutes from "./routes/CalendarRoutes";
-import conditionRuleRoutes from "./routes/ConditionRuleRoutes";
-
-import { startPMScheduler } from "./utils/pmScheduler";
+import { startPMScheduler } from "./utils/PMScheduler";
 import { setupSwagger } from "./utils/swagger";
 import mongoose from "mongoose";
 import errorHandler from "./middleware/errorHandler";
@@ -91,6 +70,7 @@ app.use(helmet());
 app.use(cors(corsOptions));
 app.use(morgan("dev"));
 app.use(express.json({ limit: "1mb" }));
+app.use(mongoSanitize());
 app.use(cookieParser());
 setupSwagger(app);
 
@@ -126,8 +106,17 @@ app.get("/", (_req: Request, res: Response) => {
   res.send("PLTCMMS backend is running");
 });
 
+if (env.NODE_ENV === "test") {
+  app.post("/test/sanitize", (req, res) => {
+    res.json(req.body);
+  });
+  app.get("/test/sanitize", (req, res) => {
+    res.json(req.query);
+  });
+}
+
 // --- Routes (order matters for the limiter) ---
-app.use("/api/auth", authRoutes);
+ app.use("/api/auth", authRoutes);
 app.use("/api/notifications", burstFriendly, notificationsRoutes);
 // Apply limiter to the rest of /api
 app.use("/api", generalLimiter);
@@ -148,17 +137,16 @@ app.use("/api/team", teamRoutes);
 app.use("/api/theme", ThemeRoutes);
 app.use("/api/request-portal", requestPortalRoutes);
 
-// Support both paths for the vendor portal
+// Vendor portal routes
 app.use("/api/vendor-portal", vendorPortalRoutes);
-app.use("/api/vendor", vendorPortalRoutes);
 
 app.use("/api/chat", chatRoutes);
-app.use("/api/hooks", webhooksRoutes);
 app.use("/api/webhooks", webhooksRoutes);
 app.use("/api/calendar", calendarRoutes);
 app.use("/api/integrations", IntegrationRoutes);
 
 app.use("/api/summary", summaryRoutes);
+ 
 
 // 404 + error handler
 app.use((_req, res) => {

@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import type { Server, Socket } from 'socket.io';
 
 export function initChatSocket(io: Server): void {

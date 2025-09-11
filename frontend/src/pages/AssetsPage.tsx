@@ -1,15 +1,19 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useEffect, useState } from 'react';
-import AssetTable from '../components/assets/AssetTable';
-import AssetModal from '../components/assets/AssetModal';
-import WorkOrderModal from '../components/work-orders/WorkOrderModal';
-import Button from '../components/common/Button';
-import http from '../lib/http';
-import { enqueueAssetRequest, onSyncConflict, type SyncConflict } from '../utils/offlineQueue';
-import { useAssetStore } from '../store/assetStore';
-import type { Asset } from '../types';
-import { duplicateAsset } from '../utils/duplicate';
-import { useToast } from '../context/ToastContext';
-import ConflictResolver from '../components/offline/ConflictResolver';
+import AssetTable from '@/components/assets/AssetTable';
+import AssetModal from '@/components/assets/AssetModal';
+import WorkOrderModal from '@/components/work-orders/WorkOrderModal';
+import Button from '@/components/common/Button';
+import http from '@/lib/http';
+import { enqueueAssetRequest, onSyncConflict, type SyncConflict } from '@/utils/offlineQueue';
+import { useAssetStore } from '@/store/assetStore';
+import type { Asset } from '@/types';
+import { duplicateAsset } from '@/utils/duplicate';
+import { useToast } from '@/context/ToastContext';
+import ConflictResolver from '@/components/offline/ConflictResolver';
 
 const ASSET_CACHE_KEY = 'offline-assets';
 

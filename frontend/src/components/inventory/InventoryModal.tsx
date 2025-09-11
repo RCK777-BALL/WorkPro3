@@ -1,8 +1,12 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Upload } from 'lucide-react';
-import Button from '../common/Button';
-import Modal from '../modals/Modal';
-import type { Part } from '../../types';
+import Button from '@/common/Button';
+import Modal from '@/modals/Modal';
+import type { Part } from '@/types';
 
 interface InventoryModalProps {
   isOpen: boolean;

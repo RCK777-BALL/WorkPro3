@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import mongoose, { Schema, Document, Model, Types } from 'mongoose';
 
 export interface AuditEventDocument extends Document {

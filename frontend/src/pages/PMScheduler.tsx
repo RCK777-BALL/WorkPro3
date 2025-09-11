@@ -4,6 +4,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
+import type { Event as RBCEvent, SlotInfo } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -105,7 +106,7 @@ const PMScheduler: React.FC = () => {
             endAccessor="end"
             style={{ height: 500 }}
             selectable
-            onSelectEvent={e => {
+            onSelectEvent={(e: RBCEvent) => {
               setSelectedEvent({
                 title: e.title as string,
                 start: e.start as Date,
@@ -113,7 +114,7 @@ const PMScheduler: React.FC = () => {
               });
               setSelectedDate(null);
             }}
-            onSelectSlot={slot => {
+            onSelectSlot={(slot: SlotInfo) => {
               setSelectedDate(slot.start as Date);
               setSelectedEvent(null);
             }}

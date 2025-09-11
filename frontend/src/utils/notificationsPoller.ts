@@ -1,6 +1,6 @@
- import { fetchNotifications } from '@/api/notifications';
+import { fetchNotifications } from '@/api/notifications';
 import type { NotificationType } from '@/types';
-import { useSocketStore } from '@/store/socketStore';
+import { useSocketStore, type SocketState } from '@/store/socketStore';
  
 
 let pollTimer: ReturnType<typeof setTimeout> | null = null;
@@ -78,7 +78,7 @@ export function startNotificationsPoll(
 
   unsubscribe?.();
   unsubscribe = useSocketStore.subscribe(
-    (s: { connected: boolean }) => s.connected,
+    (s: SocketState) => s.connected,
     handleConnectionChange,
   );
 

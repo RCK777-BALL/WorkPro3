@@ -13,7 +13,10 @@ interface AssetsStatusChartProps {
 }
 
 const AssetsStatusChart: React.FC<AssetsStatusChartProps> = ({ data }) => {
-  const total = Object.values(data || {}).reduce((sum, v) => sum + (v || 0), 0);
+  const total = Object.values(data || {}).reduce(
+    (sum: number, v: number) => sum + (v || 0),
+    0,
+  );
 
   return (
     <Card title="Assets by Status" subtitle="Current asset distribution">
@@ -21,8 +24,8 @@ const AssetsStatusChart: React.FC<AssetsStatusChartProps> = ({ data }) => {
         {Object.entries(data || {}).map(([status, value]) => (
           <div key={status} className="flex items-center justify-between">
             <ProgressBar
-              value={value || 0}
-              max={total || 0}
+              value={value ?? 0}
+              max={total}
               className="max-w-xs bg-neutral-100 h-2.5"
               barClassName="bg-primary-600"
               label={status}

@@ -257,7 +257,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
 
   // Build extra KPIs from selection (null-safe)
   const extraKPIs: StatCardProps[] = selectedKPIs
-    .map((kpiId) => {
+    .map((kpiId: string) => {
       const kpi = availableKPIs.find((k) => k.id === kpiId);
       if (!kpi) return null;
 

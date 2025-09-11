@@ -13,7 +13,7 @@ import ThemeToggle from '@/common/ThemeToggle';
 import Avatar from '@/common/Avatar';
 import Card from '@/common/Card';
 import Button from '@/common/Button';
-import { useAuthStore, isAdmin as selectIsAdmin, isManager as selectIsManager } from '@/store/authStore';
+import { useAuthStore, type AuthState, isAdmin as selectIsAdmin, isManager as selectIsManager } from '@/store/authStore';
 import { useDataStore } from '@/store/dataStore';
 import { useNavigate } from 'react-router-dom';
 
@@ -34,7 +34,7 @@ type HeaderNotification = Notification & { link?: string };
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
   const { t, i18n } = useTranslation();
   const { addToast } = useToast();
-  const user = useAuthStore((s) => s.user);
+  const user = useAuthStore((s: AuthState) => s.user);
   const isAdmin = useAuthStore(selectIsAdmin);
   const isManager = useAuthStore(selectIsManager);
   const { useFakeData, setUseFakeData } = useDataStore();

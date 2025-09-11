@@ -4,13 +4,13 @@
 
 import { create } from 'zustand';
 
-interface SocketState {
+export interface SocketState {
   connected: boolean;
   setConnected: (connected: boolean) => void;
 }
 
 export const useSocketStore = create<SocketState>((set) => ({
   connected: false,
-  setConnected: (connected) => set({ connected }),
+  setConnected: (connected: boolean) => set({ connected }),
 }));
 

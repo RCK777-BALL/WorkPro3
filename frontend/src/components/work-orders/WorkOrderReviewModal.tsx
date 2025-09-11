@@ -88,7 +88,7 @@ const WorkOrderReviewModal: React.FC<Props> = ({
                 value={status}
                 onChange={(e) => setStatus(e.target.value as WorkOrder['status'])}
               >
-                {statusOptions.map((s) => (
+                {statusOptions.map((s: WorkOrder['status']) => (
                   <option key={s} value={s}>
                     {s}
                   </option>

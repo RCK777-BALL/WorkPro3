@@ -22,7 +22,7 @@ import { Command, User } from 'lucide-react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 
 import ThemeToggle from '@/common/ThemeToggle';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore, type AuthState } from '@/store/authStore';
 
 interface NavItem {
   label: string;
@@ -40,8 +40,8 @@ const navItems: NavItem[] = [
 export default function Layout() {
   const [opened, { toggle }] = useDisclosure();
   const [commandOpen, setCommandOpen] = useState(false);
-  const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
+  const user = useAuthStore((s: AuthState) => s.user);
+  const logout = useAuthStore((s: AuthState) => s.logout);
   const location = useLocation();
 
   const items = navItems.filter((n) => n.roles.includes(user?.role ?? 'viewer'));

@@ -85,7 +85,10 @@ export const createAsset: AuthedRequestHandler = async (req, res, next) => {
       return;
     }
 
-    const payload: any = filterFields(req.body, assetCreateFields);
+    const payload: Record<string, unknown> = filterFields(
+      req.body,
+      assetCreateFields,
+    );
     payload.tenantId = resolvedTenantId;
     if (req.siteId && !payload.siteId) payload.siteId = req.siteId;
 

@@ -12,7 +12,7 @@ import {
   useRef,
   useCallback,
 } from 'react';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore, type AuthState } from '@/store/authStore';
 import type { AuthUser } from '@/types';
 import http from '@/lib/http';
 
@@ -30,8 +30,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const setStoreUser = useAuthStore((state) => state.setUser);
-  const storeLogout = useAuthStore((state) => state.logout);
+  const setStoreUser = useAuthStore((state: AuthState) => state.setUser);
+  const storeLogout = useAuthStore((state: AuthState) => state.logout);
 
   const mirrored = useRef(false);
 

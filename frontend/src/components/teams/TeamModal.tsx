@@ -69,7 +69,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
     setValue('managerId', member?.managerId ?? '');
   }, [member, setValue]);
 
-  const role = watch('role');
+  const role = watch('role') as TeamMember['role'];
 
   const reportOptions = useMemo(() => {
     if (role === 'team_member')

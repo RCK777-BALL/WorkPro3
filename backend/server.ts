@@ -141,7 +141,6 @@ app.use("/api/request-portal", requestPortalRoutes);
 app.use("/api/vendor-portal", vendorPortalRoutes);
 
 app.use("/api/chat", chatRoutes);
-app.use("/api/hooks", webhooksRoutes);
 app.use("/api/webhooks", webhooksRoutes);
 app.use("/api/calendar", calendarRoutes);
 app.use("/api/integrations", IntegrationRoutes);

@@ -1,3 +1,5 @@
+// Vite is used here solely so Vitest can bundle test files. The backend
+// does not rely on Vite in production builds or at runtime.
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({

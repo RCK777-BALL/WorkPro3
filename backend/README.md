@@ -1,6 +1,7 @@
 # backend
 
-This folder contains the Express API server.
+This folder contains the Express API server. Vite is installed only for
+bundling tests with Vitest and is not required to run the server in production.
 
 ## Development
 

@@ -17,7 +17,6 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { WorkOrderRow } from './WorkOrderRow';
-import Badge from '@/common/Badge';
 import type { WorkOrder } from '@/types';
 
 interface WorkOrderTableProps {

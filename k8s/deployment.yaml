@@ -27,6 +27,18 @@ spec:
                   key: JWT_SECRET
             - name: CORS_ORIGIN
               value: http://workpro.local
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 5010
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 5010
+            initialDelaySeconds: 5
+            periodSeconds: 10
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -47,3 +59,15 @@ spec:
           image: workpro-frontend:latest
           ports:
             - containerPort: 80
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10

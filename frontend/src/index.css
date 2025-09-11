@@ -1,0 +1,23 @@
+/* src/index.css */
+/* Tailwind v4: import preflight and utilities explicitly */
+@import "tailwindcss/preflight";
+@import "tailwindcss/utilities";
+
+/* Optional: your plain CSS (avoid using @apply here) */
+:root { color-scheme: light dark; }
+
+/* Minimal sensible defaults */
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Keep native form controls aligned with your app’s font */
+button, input, textarea, select {
+  font: inherit;
+}

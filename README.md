@@ -2,25 +2,26 @@
 
 This repository contains a small full‑stack app split into two folders:
 
-- **Backend** – Express API server with a MongoDB database and Socket.IO.
-- **Frontend** – React client built with Vite.
+- **backend** – Express API server with a MongoDB database and Socket.IO.
+- **frontend** – React client built with Vite.
 
 ## Project structure
 
 ```
 WorkPro/
- Backend/   Express API and tests
-  Frontend/  React client and tests
-  playground-1.mongodb.js  Sample MongoDB script
+ backend/   Express API and tests
+ frontend/  React client and tests
+ dev-server/  Lightweight API for frontend development
+ playground-1.mongodb.js  Sample MongoDB script
 ```
 
 Run `npm install` inside each folder before development. Node modules are
 not committed to the repository.
 
-## Backend setup
+## backend setup
 
-1. `cd Backend`
-2. Copy `Backend/.env.example` to `.env`:
+1. `cd backend`
+2. Copy `backend/.env.example` to `.env`:
    ```bash
    cp .env.example .env
    ```
@@ -40,10 +41,10 @@ not committed to the repository.
    The server expects a running MongoDB instance. Override `MONGO_URI` if your
    database is not at the default location.
 
-## Frontend setup
+## frontend setup
 
-1. `cd Frontend`
-2. Copy `Frontend/.env.example` to `.env` and update `VITE_API_URL`,
+1. `cd frontend`
+2. Copy `frontend/.env.example` to `.env.local` and update `VITE_API_URL`,
     `VITE_WS_URL`, and `VITE_WS_PATH`.
  
 3. Install dependencies with `npm install`.
@@ -52,6 +53,7 @@ not committed to the repository.
    npm run dev
    ```
    The app will open at [http://localhost:5173](http://localhost:5173).
+   Restart the dev server after modifying environment variables so changes take effect.
 
 ### Offline mode
 
@@ -69,7 +71,7 @@ echo "JWT_SECRET=change_me" > .env
 docker compose up --build
 ```
 
-The API is available at `http://localhost:5010` and the web client at
+The API URL is configured via the `VITE_API_URL` environment variable, and the web client runs at
 `http://localhost:5173`.
 
 ### Kubernetes manifests
@@ -86,15 +88,16 @@ This will deploy the backend, frontend and ingress resources.
 
 ## Running tests
 
-- **Backend**: `cd Backend && npm test`
-- **Frontend unit tests**: `cd Frontend && npm run test`
-- **Frontend e2e tests**: `cd Frontend && npm run test:e2e`
+- **backend**: `cd backend && npm test`
+- **frontend unit tests**: `cd frontend && npm run test`
+- **frontend e2e tests**: `cd frontend && npm run test:e2e`
 
-Both test suites use Vitest and enforce a minimum of 80% code coverage. Backend
-tests spin up a temporary MongoDB using `mongodb-memory-server`, which
+Both test suites use Vitest and enforce a minimum of 80% code coverage. The backend
+installs Vite only so Vitest can bundle modules during testing; the runtime and production
+build do not depend on Vite. backend tests spin up a temporary MongoDB using `mongodb-memory-server`, which
 downloads a MongoDB binary the first time it runs. Make sure network access is
 allowed when running the tests for the first time or the download will fail.
-See [Backend/tests/README.md](Backend/tests/README.md) for more details about
+See [backend/tests/README.md](backend/tests/README.md) for more details about
 the download requirement. All pull requests must have a green CI run before
 they can be merged. The testing matrix and workflow are described in
 [docs/testing.md](docs/testing.md).

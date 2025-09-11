@@ -4,7 +4,7 @@ This project uses [Vitest](https://vitest.dev) for both backend and frontend tes
 
 ## Test Matrix
 
-| Layer | Backend | Frontend |
+| Layer | backend | frontend |
 | --- | --- | --- |
 | Unit | Model and utility tests | Component and store tests |
 | Integration | API routes with MongoDB memory server | DOM interactions through jsdom |

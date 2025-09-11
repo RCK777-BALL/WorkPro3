@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import WorkOrder from '../models/WorkOrder';
 import type { AuthedRequestHandler } from '../types/http';
 import { emitWorkOrderUpdate } from '../server';

@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { describe, it, beforeEach, afterEach, expect } from 'vitest';
 import { startPMScheduler, stopPMScheduler } from '../utils/pmScheduler';
 import * as taskA from './helpers/dummyTaskA';

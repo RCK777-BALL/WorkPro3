@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Avatar from '../components/common/Avatar';

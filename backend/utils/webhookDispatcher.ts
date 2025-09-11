@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import crypto from 'crypto';
 import Webhook from '../models/Webhook';
 

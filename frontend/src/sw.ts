@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 /// <reference lib="webworker" />
 
 import { precacheAndRoute } from 'workbox-precaching';

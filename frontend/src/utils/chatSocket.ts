@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import type { Socket } from 'socket.io-client';
 import {
   getNotificationsSocket as baseGetSocket,

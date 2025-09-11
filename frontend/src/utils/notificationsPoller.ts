@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { fetchNotifications } from '../api/notifications';
 import type { NotificationType } from '../types';
 import { useSocketStore } from '../store/socketStore';

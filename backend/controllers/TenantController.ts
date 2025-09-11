@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { Request, Response, NextFunction } from 'express';
 
 import Tenant from '../models/Tenant';

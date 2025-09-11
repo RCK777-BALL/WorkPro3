@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 // utils/pmScheduler.ts
 import * as cron from 'node-cron';
 import path from 'path';

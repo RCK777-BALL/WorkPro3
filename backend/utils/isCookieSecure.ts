@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 export const isCookieSecure = (): boolean => {
   if (process.env.COOKIE_SECURE !== undefined) {
     return process.env.COOKIE_SECURE === 'true';

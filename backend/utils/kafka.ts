@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { Kafka, logLevel, EachMessagePayload } from 'kafkajs';
 import type { Server as SocketIOServer } from 'socket.io';
 

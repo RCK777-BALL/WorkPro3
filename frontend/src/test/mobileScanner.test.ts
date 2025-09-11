@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { describe, it, expect, vi } from 'vitest';
 import { scanQRCode } from '../utils/qr';
 import http from '../lib/http';

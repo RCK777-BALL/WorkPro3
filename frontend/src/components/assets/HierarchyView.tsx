@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useEffect, useState } from 'react';
 import http from '../../lib/http';
 import type { DepartmentHierarchy } from '../../types';

@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import type { User } from '../types';
 
 export interface TeamMember extends User {

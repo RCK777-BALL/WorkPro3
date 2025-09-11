@@ -20,8 +20,7 @@ const HierarchyView: React.FC = () => {
         })
       );
       setData(detailed);
-    } catch (err) {
-      console.error('Failed to load hierarchy', err);
+    } catch {
       addToast('Failed to load departments', 'error');
     }
   };

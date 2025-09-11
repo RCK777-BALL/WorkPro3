@@ -51,7 +51,7 @@ const PmTaskForm: React.FC<Props> = ({ task, onSuccess }) => {
       onSuccess?.(saved);
       addToast(task ? 'PM Task updated' : 'PM Task created', 'success');
     } catch (err: any) {
-      console.error(err);
+      addToast('Failed to submit task', 'error');
       if (err.response?.status === 401) {
         setError('Unauthorized. Please log in.');
       } else if (Array.isArray(err.response?.data?.errors)) {

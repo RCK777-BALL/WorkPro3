@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 
 import { markNotificationRead } from '../../api/notifications';
 import type { NotificationType } from '../../types';
-import Card from '../common/Card'; 
+import Card from '../common/Card';
 import {
   getNotificationsSocket,
   closeNotificationsSocket,
 } from '../../utils/notificationsSocket';
+import { useToast } from '../../context/ToastContext';
  
  
 
@@ -41,6 +42,7 @@ const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
   if (!isOpen) return null;
 
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [items, setNotifications] = useState<NotificationType[]>(notifications);
   const menuRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -81,8 +83,8 @@ const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
 
     try {
       await markNotificationRead(id);
-    } catch (err) {
-      console.error('Failed to mark notification as read', err);
+    } catch {
+      addToast('Failed to mark notification as read', 'error');
       // Revert on failure
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, read: false } : n))

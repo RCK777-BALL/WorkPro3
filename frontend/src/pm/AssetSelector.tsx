@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import http from '../lib/http';
+import { useToast } from '../context/ToastContext';
 
 interface Asset {
   _id: string;
@@ -13,14 +14,15 @@ interface Props {
 
 const AssetSelector: React.FC<Props> = ({ value, onChange }) => {
   const [assets, setAssets] = useState<Asset[]>([]);
+  const { addToast } = useToast();
 
   useEffect(() => {
     const load = async () => {
       try {
         const res = await http.get('/assets', { withCredentials: true });
         setAssets(res.data as Asset[]);
-      } catch (err) {
-        console.error(err);
+      } catch {
+        addToast('Failed to load assets', 'error');
       }
     };
     load();

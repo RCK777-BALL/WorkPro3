@@ -3,6 +3,7 @@
 import { precacheAndRoute } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
 import { CacheFirst, NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies';
+import { emitToast } from './context/ToastContext';
 
 interface QueueItem {
   url: string;
@@ -45,9 +46,8 @@ async function loadQueue() {
       request.onerror = () => reject(request.error);
     });
     offlineQueue = result;
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error('Failed to load queue from storage', err);
+  } catch {
+    emitToast('Failed to load queue from storage', 'error');
     offlineQueue = [];
   }
 }
@@ -61,9 +61,8 @@ async function saveQueue() {
       tx.oncomplete = () => resolve(undefined);
       tx.onerror = () => reject(tx.error);
     });
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error('Failed to save queue to storage', err);
+  } catch {
+    emitToast('Failed to save queue to storage', 'error');
   }
 }
 

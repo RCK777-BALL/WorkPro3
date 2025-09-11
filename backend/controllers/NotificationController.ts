@@ -6,13 +6,17 @@ import mongoose from 'mongoose';
 import Notification, { NotificationDocument } from '../models/Notifications';
 import User from '../models/User';
 import nodemailer from 'nodemailer';
- 
+
 import { assertEmail } from '../utils/assert';
 import type { AuthedRequestHandler } from '../types/http';
+import type { ParamsDictionary } from 'express-serve-static-core';
 
 type IdParams = { id: string };
 
- export const getAllNotifications: AuthedRequestHandler = async (
+export const getAllNotifications: AuthedRequestHandler<
+  ParamsDictionary,
+  NotificationDocument[] | { message: string }
+> = async (
   req,
   res,
   next,
@@ -33,7 +37,10 @@ type IdParams = { id: string };
   }
 };
 
- export const getNotificationById: AuthedRequestHandler<IdParams> = async (
+export const getNotificationById: AuthedRequestHandler<
+  IdParams,
+  NotificationDocument | { message: string }
+> = async (
   req,
   res,
   next,
@@ -58,7 +65,10 @@ type IdParams = { id: string };
   }
 };
 
- export const createNotification: AuthedRequestHandler = async (
+export const createNotification: AuthedRequestHandler<
+  ParamsDictionary,
+  NotificationDocument | { message: string }
+> = async (
   req,
   res,
   next,
@@ -108,7 +118,10 @@ type IdParams = { id: string };
   }
 };
 
- export const markNotificationRead: AuthedRequestHandler<IdParams> = async (
+export const markNotificationRead: AuthedRequestHandler<
+  IdParams,
+  NotificationDocument | { message: string }
+> = async (
   req,
   res,
   next,
@@ -142,7 +155,10 @@ type IdParams = { id: string };
   }
 };
 
- export const updateNotification: AuthedRequestHandler<IdParams> = async (
+export const updateNotification: AuthedRequestHandler<
+  IdParams,
+  NotificationDocument | { message: string }
+> = async (
   req,
   res,
   next,
@@ -178,7 +194,10 @@ type IdParams = { id: string };
   }
 };
 
- export const deleteNotification: AuthedRequestHandler<IdParams> = async (
+export const deleteNotification: AuthedRequestHandler<
+  IdParams,
+  { message: string }
+> = async (
   req,
   res,
   next,

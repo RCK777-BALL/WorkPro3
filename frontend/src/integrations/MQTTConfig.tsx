@@ -1,5 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React from 'react';
-import { useMQTTStore } from '../store/mqttStore';
+import { useMQTTStore } from '@/store/mqttStore';
 
 const MQTTConfig: React.FC = () => {
   const { url, username, password, setConfig } = useMQTTStore();

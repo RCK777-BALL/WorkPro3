@@ -1,16 +1,20 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
    
 import React, { useState, useRef, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import SignaturePad from "react-signature-canvas";
 import { useDropzone } from "react-dropzone";
 import { X, Upload, Download, Camera } from "lucide-react";
-import Button from "../common/Button";
-import AutoCompleteInput from "../common/AutoCompleteInput";
-import type { WorkOrder, Department } from "../../types";
-import http from "../../lib/http";
-import { searchAssets } from "../../api/search";
-import { useDepartmentStore } from "../../store/departmentStore";
-import { useToast } from "../../context/ToastContext";
+import Button from "@/common/Button";
+import AutoCompleteInput from "@/common/AutoCompleteInput";
+import type { WorkOrder, Department } from "@/types";
+import http from "@/lib/http";
+import { searchAssets } from "@/api/search";
+import { useDepartmentStore } from "@/store/departmentStore";
+import { useToast } from "@/context/ToastContext";
    
 
 interface WorkOrderModalProps {
@@ -69,8 +73,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
 
   useEffect(() => {
     fetchDepartments()
-      .catch((err) => {
-        console.error("Failed to load departments", err);
+      .catch(() => {
         addToast("Failed to load departments", "error");
       })
       .finally(() => setLoadingDeps(false));
@@ -118,8 +121,8 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
       // Implementation for capturing image from camera
       // This would typically involve creating a video element and canvas
       // to capture the image
-    } catch (err) {
-      console.error("Error accessing camera:", err);
+    } catch {
+      addToast('Error accessing camera', 'error');
     }
   };
 

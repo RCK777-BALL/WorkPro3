@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import type { Request, Response, NextFunction } from 'express';
 import redis from '../utils/redisClient';
 import logger from '../utils/logger';
@@ -22,13 +26,15 @@ export const cache = (keyPrefix: string, ttl = 60) => {
         return;
       }
 
-      const originalJson: Response['json'] = res.json.bind(res);
+       const originalJson: Response['json'] = res.json.bind(res);
       res.json = <T>(body: T): Response<T> => {
         redis
           .set(key, JSON.stringify(body), 'EX', ttl)
           .catch((err: unknown) => logger.error('Redis set error:', err));
         return originalJson(body);
+ 
       };
+      res.send = sendResponse;
     } catch (err) {
       logger.error('Redis error:', err);
     }

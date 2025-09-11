@@ -1,6 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { describe, it, beforeEach, expect, vi } from 'vitest';
-import { addToQueue, flushQueue } from '../utils/offlineQueue';
-import http from '../lib/http';
+import { addToQueue, flushQueue } from '@/utils/offlineQueue';
+import http from '@/lib/http';
 
 vi.mock('../lib/http', () => ({
   default: vi.fn(),

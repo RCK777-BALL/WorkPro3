@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React from 'react';
 import { Copy } from 'lucide-react';
 import Button from './Button';

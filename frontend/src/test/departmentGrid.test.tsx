@@ -1,7 +1,11 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import DepartmentHierarchyGrid from '../components/departments/DepartmentHierarchyGrid';
-import type { DepartmentHierarchy } from '../types';
+import DepartmentHierarchyGrid from '@/components/departments/DepartmentHierarchyGrid';
+import type { DepartmentHierarchy } from '@/types';
 import { describe, expect, it } from 'vitest';
 
 describe('DepartmentHierarchyGrid', () => {

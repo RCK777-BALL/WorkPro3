@@ -1,5 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { describe, it, expect } from 'vitest';
-import type { WorkOrder } from '../types';
+import type { WorkOrder } from '@/types';
 
 describe('MongoDB E2E Tests', () => {
   it('should create and retrieve a work order', async () => {

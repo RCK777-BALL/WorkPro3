@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import passport, { Strategy as PassportStrategy } from 'passport';
 import { Strategy as OIDCStrategy } from 'passport-openidconnect';
 import type { VerifyCallback } from 'passport-openidconnect';

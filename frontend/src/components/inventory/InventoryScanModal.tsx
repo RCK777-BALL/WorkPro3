@@ -1,7 +1,11 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useEffect, useRef } from 'react';
-import Modal from '../modals/Modal';
-import { scanQRCode } from '../../utils/qr';
-import type { Part } from '../../types';
+import Modal from '@/modals/Modal';
+import { scanQRCode } from '@/utils/qr';
+import type { Part } from '@/types';
 
 interface InventoryScanModalProps {
   isOpen: boolean;

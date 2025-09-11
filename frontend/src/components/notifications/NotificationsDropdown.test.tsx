@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
  
 import { render, screen, fireEvent } from '@testing-library/react';
 import { act } from 'react-dom/test-utils';
@@ -6,8 +10,8 @@ import SocketMock from 'socket.io-mock';
 import { describe, it, expect, vi } from 'vitest';
 
 import NotificationsDropdown from './NotificationsDropdown';
-import type { NotificationType } from '../../types';
-import { markNotificationRead } from '../../api/notifications';
+import type { NotificationType } from '@/types';
+import { markNotificationRead } from '@/api/notifications';
 
 let socketClient: any;
  

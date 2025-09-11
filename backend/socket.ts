@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import type { Server as HttpServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 

@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import mongoose from 'mongoose';
 import { validationResult } from 'express-validator';
 import PMTask from '../models/PMTask';

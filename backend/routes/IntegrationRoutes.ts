@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { Router, type Request, type Response, type NextFunction } from 'express';
 import IntegrationHook from '../models/IntegrationHook';
 import { dispatchEvent, registerHook } from '../services/integrationHub';

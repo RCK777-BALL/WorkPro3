@@ -108,9 +108,9 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
   const onSubmit = handleSubmit(async (data: TeamFormData) => {
     setLoading(true);
     try {
-      const payload: any = { ...data };
+      const payload: Partial<TeamMember> = { ...data };
       if (!payload.managerId) delete payload.managerId;
-      let body: any = payload;
+      let body: Partial<TeamMember> | FormData = payload;
       if (avatarFile) {
         const fd = new FormData();
         Object.entries(payload).forEach(([k, v]) => {

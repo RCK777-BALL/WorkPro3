@@ -7,7 +7,7 @@ import Card from '@/common/Card';
 import { getNotificationsSocket } from '@/utils/notificationsSocket';
  
 import Badge from '@/common/Badge';
-import { useSocketStore } from '@/store/socketStore';
+import { useSocketStore, type SocketState } from '@/store/socketStore';
 import type {
   NotificationType,
   WorkOrderUpdatePayload,
@@ -15,7 +15,7 @@ import type {
 } from '@/types';
 
 const NotificationFeed: React.FC = () => {
-  const connected = useSocketStore((s) => s.connected);
+  const connected = useSocketStore((s: SocketState) => s.connected);
   const [items, setItems] = useState<NotificationType[]>([]);
 
   useEffect(() => {

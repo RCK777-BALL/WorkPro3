@@ -5,7 +5,7 @@
 import { create } from 'zustand';
 import type { AuthUser } from '@/types';
 
-interface AuthState {
+export interface AuthState {
   user: AuthUser | null;
   setUser: (user: AuthUser | null) => void;
   isAuthenticated: boolean;
@@ -17,7 +17,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   // Session management should rely on secure, server-managed cookies.
   user: null,
   isAuthenticated: false,
-  setUser: (user) =>
+  setUser: (user: AuthUser | null) =>
     set({
       user,
       isAuthenticated: !!user,

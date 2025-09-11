@@ -10,7 +10,7 @@ import Button from "@/common/Button";
 import http from "@/lib/http";
 import { useToast } from "@/context/ToastContext";
 import { useDepartmentStore } from "@/store/departmentStore";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore, type AuthState } from "@/store/authStore";
 import type { Asset, Department, Line, Station } from "@/types";
 import AssetQRCode from "@/qr/AssetQRCode";
 
@@ -56,7 +56,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
   const fetchDepartments = useDepartmentStore((s) => s.fetchDepartments);
   const fetchLines = useDepartmentStore((s) => s.fetchLines);
   const fetchStations = useDepartmentStore((s) => s.fetchStations);
-  const tenantId = useAuthStore((s) => s.user?.tenantId);
+  const tenantId = useAuthStore((s: AuthState) => s.user?.tenantId);
   const [departmentId, setDepartmentId] = useState("");
   const [lineId, setLineId] = useState("");
   const [stationId, setStationId] = useState("");

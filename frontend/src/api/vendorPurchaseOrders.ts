@@ -13,7 +13,7 @@ export const getVendorPurchaseOrder = (id: string, token: string) =>
 
 export const updateVendorPurchaseOrder = (
   id: string,
-  payload: any,
+  payload: Record<string, unknown>,
   token: string,
 ) =>
   http

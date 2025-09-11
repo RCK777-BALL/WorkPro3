@@ -18,7 +18,31 @@ import { initKafka, sendKafkaEvent } from "./utils/kafka";
 import { initMQTTFromConfig } from "./iot/mqttClient";
 import logger from "./utils/logger";
 
-import * as routes from "./routes";
+import {
+  authRoutes,
+  notificationsRoutes,
+  departmentRoutes,
+  workOrdersRoutes,
+  assetsRoutes,
+  meterRoutes,
+  conditionRuleRoutes,
+  TenantRoutes,
+  pmTasksRoutes,
+  reportsRoutes,
+  LineRoutes,
+  StationRoutes,
+  inventoryRoutes,
+  analyticsRoutes,
+  teamRoutes,
+  ThemeRoutes,
+  requestPortalRoutes,
+  vendorPortalRoutes,
+  chatRoutes,
+  webhooksRoutes,
+  calendarRoutes,
+  IntegrationRoutes,
+  summaryRoutes,
+} from "./routes";
 
 import { startPMScheduler } from "./utils/PMScheduler";
 import { setupSwagger } from "./utils/swagger";
@@ -32,7 +56,6 @@ import type {
   InventoryUpdatePayload,
   NotificationPayload,
 } from "./types/Payloads";
-import { TenantRoutes } from "./routes";
 
 dotenv.config();
 
@@ -117,36 +140,36 @@ if (env.NODE_ENV === "test") {
 }
 
 // --- Routes (order matters for the limiter) ---
- app.use("/api/auth", routes.authRoutes);
-app.use("/api/notifications", burstFriendly, routes.notificationsRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/notifications", burstFriendly, notificationsRoutes);
 // Apply limiter to the rest of /api
 app.use("/api", generalLimiter);
 
-app.use("/api/departments", routes.departmentRoutes);
-app.use("/api/workorders", routes.workOrdersRoutes);
-app.use("/api/assets", routes.assetsRoutes);
-app.use("/api/meters", routes.meterRoutes);
-app.use("/api/condition-rules", routes.conditionRuleRoutes);
+app.use("/api/departments", departmentRoutes);
+app.use("/api/workorders", workOrdersRoutes);
+app.use("/api/assets", assetsRoutes);
+app.use("/api/meters", meterRoutes);
+app.use("/api/condition-rules", conditionRuleRoutes);
 app.use("/api/tenants", TenantRoutes);
-app.use("/api/pm-tasks", routes.pmTasksRoutes);
-app.use("/api/reports", routes.reportsRoutes);
-app.use("/api/lines", routes.LineRoutes);
-app.use("/api/stations", routes.StationRoutes);
-app.use("/api/inventory", routes.inventoryRoutes);
-app.use("/api/v1/analytics", routes.analyticsRoutes);
-app.use("/api/team", routes.teamRoutes);
-app.use("/api/theme", routes.ThemeRoutes);
-app.use("/api/request-portal", routes.requestPortalRoutes);
+app.use("/api/pm-tasks", pmTasksRoutes);
+app.use("/api/reports", reportsRoutes);
+app.use("/api/lines", LineRoutes);
+app.use("/api/stations", StationRoutes);
+app.use("/api/inventory", inventoryRoutes);
+app.use("/api/v1/analytics", analyticsRoutes);
+app.use("/api/team", teamRoutes);
+app.use("/api/theme", ThemeRoutes);
+app.use("/api/request-portal", requestPortalRoutes);
 
 // Vendor portal routes
-app.use("/api/vendor-portal", routes.vendorPortalRoutes);
+app.use("/api/vendor-portal", vendorPortalRoutes);
 
-app.use("/api/chat", routes.chatRoutes);
-app.use("/api/webhooks", routes.webhooksRoutes);
-app.use("/api/calendar", routes.calendarRoutes);
-app.use("/api/integrations", routes.IntegrationRoutes);
+app.use("/api/chat", chatRoutes);
+app.use("/api/webhooks", webhooksRoutes);
+app.use("/api/calendar", calendarRoutes);
+app.use("/api/integrations", IntegrationRoutes);
 
-app.use("/api/summary", routes.summaryRoutes);
+app.use("/api/summary", summaryRoutes);
  
 
 // 404 + error handler

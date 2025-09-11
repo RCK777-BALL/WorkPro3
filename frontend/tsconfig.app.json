@@ -7,7 +7,10 @@
     "skipLibCheck": true,
     "types": ["vite/client", "node", "react"],
     "baseUrl": ".",
-    "paths": { "@/*": ["./src/*"] },
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/common/*": ["./src/components/common/*"],
+    },
 
     /* Bundler mode */
     "moduleResolution": "Bundler",

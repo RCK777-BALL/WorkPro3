@@ -12,9 +12,11 @@ import {
 } from '@/utils/offlineQueue';
 
 // Simulate a conflict response followed by server data
-const mockClient = async (args: { method: string; url: string; data?: any }) => {
+const mockClient = async (args: { method: string; url: string; data?: unknown }) => {
   if (args.method !== 'get') {
-    const err: any = new Error('conflict');
+    const err = new Error('conflict') as unknown as {
+      response?: { status?: number };
+    };
     err.response = { status: 409 };
     throw err;
   }
@@ -24,7 +26,7 @@ const mockClient = async (args: { method: string; url: string; data?: any }) => 
 test('emits conflict with diff info', async () => {
   setHttpClient(mockClient);
   addToQueue({ method: 'put', url: '/assets/1', data: { id: '1', name: 'Local' } });
-  const conflicts: any[] = [];
+  const conflicts: unknown[] = [];
   onSyncConflict((c) => conflicts.push(c));
   await flushQueue(false);
   expect(conflicts).toHaveLength(1);
@@ -42,14 +44,16 @@ test('allows resolving with local version', async () => {
   }: {
     method: string;
     url: string;
-    data?: any;
+    data?: unknown;
   }) => {
     if (method === 'get') {
       return { data: { id: '1', name: 'Server' } };
     }
     attempt++;
     if (attempt === 1) {
-      const err: any = new Error('conflict');
+      const err = new Error('conflict') as unknown as {
+        response?: { status?: number };
+      };
       err.response = { status: 409 };
       throw err;
     }
@@ -59,7 +63,7 @@ test('allows resolving with local version', async () => {
 
   setHttpClient(resolvingClient);
   addToQueue({ method: 'put', url: '/assets/1', data: { id: '1', name: 'Local' } });
-  let conflict: any = null;
+  let conflict: unknown = null;
   onSyncConflict((c) => (conflict = c));
   await flushQueue(false);
   expect(conflict).toBeTruthy();

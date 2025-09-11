@@ -7,6 +7,7 @@
 import { precacheAndRoute } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
 import { CacheFirst, NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies';
+import { logError } from './utils/logger';
 
 interface QueueItem {
   url: string;
@@ -37,15 +38,22 @@ async function openDB() {
     request.onerror = () => reject(request.error);
   });
 }
-
-async function notifyClients(type: string, error: unknown) {
-  const clients = await self.clients.matchAll();
-  const message = {
-    type,
-    error: error instanceof Error ? error.message : String(error),
-  };
-  for (const client of clients) {
-    client.postMessage(message);
+ 
+ async function loadQueue() {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.get('queue');
+    const result: QueueItem[] = await new Promise((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+    offlineQueue = result;
+  } catch (err) {
+    logError('Failed to load queue from storage', err);
+    offlineQueue = [];
+ 
   }
 }
 
@@ -78,10 +86,14 @@ async function saveQueue() {
       await processQueue();
     }
   } catch (err) {
-    offlineQueue = [];
-    // eslint-disable-next-line no-console
-    console.error('Failed to load queue from storage', err);
-    await notifyClients('LOAD_QUEUE_ERROR', err);
+     logError('Failed to save queue to storage', err);
+  }
+}
+
+loadQueue().then(() => {
+  if (offlineQueue.length > 0) {
+    processQueue();
+ 
   }
 })();
 

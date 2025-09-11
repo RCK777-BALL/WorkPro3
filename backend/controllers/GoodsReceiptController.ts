@@ -3,13 +3,14 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
- 
+
 import GoodsReceipt from '../models/GoodsReceipt';
 import PurchaseOrder from '../models/PurchaseOrder';
 import Vendor from '../models/Vendor';
 import { addStock } from '../services/inventory';
 import nodemailer from 'nodemailer';
 import { assertEmail } from '../utils/assert';
+import mongoose from 'mongoose';
 
 export const createGoodsReceipt = async (
   req: Request,
@@ -26,15 +27,19 @@ export const createGoodsReceipt = async (
       return;
     }
 
+    const db = mongoose.connection.db;
+
     for (const grItem of items) {
       await addStock(grItem.item, grItem.quantity, grItem.uom);
       const poItem = po.items?.find((i) => i.item.toString() === grItem.item);
       let qty = grItem.quantity;
       if (grItem.uom && poItem?.uom && grItem.uom.toString() !== poItem.uom.toString()) {
-        const conv = await (await import('mongoose')).default.connection.db
-          .collection('conversions')
-          .findOne({ from: grItem.uom, to: poItem.uom });
-        if (conv) qty = qty * conv.factor;
+        if (db) {
+          const conv = await db
+            .collection('conversions')
+            .findOne({ from: grItem.uom, to: poItem.uom });
+          if (conv) qty = qty * conv.factor;
+        }
       }
       if (poItem) {
         poItem.received += qty;

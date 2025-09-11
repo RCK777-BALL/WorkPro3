@@ -17,7 +17,7 @@
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
     "swagger:check": "ts-node utils/swagger.ts",
-    "lint": "eslint . --ext .ts",
+    "lint": "eslint . --ext .ts && tsc -p tsconfig.json --noEmit",
     "prepare": "husky install"
   },
   "dependencies": {
@@ -46,7 +46,6 @@
     "speakeasy": "^2.0.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.0",
-    "vite": "^7.1.4",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",
     "zod": "^3.25.76"
@@ -89,6 +88,7 @@
     "ts-morph": "^27.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.0",
+    "vite": "^7.1.4",
     "vitest": "^3.2.4"
   },
   "overrides": {

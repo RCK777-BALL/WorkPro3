@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 
 import React, { useEffect, useRef, useId } from 'react';
 import { X } from 'lucide-react';

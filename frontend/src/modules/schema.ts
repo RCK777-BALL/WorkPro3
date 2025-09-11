@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { z } from 'zod';
 
 export const colorScheme = z.enum(['light', 'dark']);

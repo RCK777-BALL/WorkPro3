@@ -1,9 +1,13 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import type { Socket } from 'socket.io-client';
 import {
   getNotificationsSocket as baseGetSocket,
   closeNotificationsSocket as baseCloseSocket,
 } from './notificationsSocket';
-import { useSocketStore } from '../store/socketStore';
+import { useSocketStore } from '@/store/socketStore';
 
 let wiredListeners = false;
 

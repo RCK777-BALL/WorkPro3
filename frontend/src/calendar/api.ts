@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 export interface CalendarEvent {
   id: string;
   title: string;

@@ -1,4 +1,5 @@
-import { emitToast } from '../context/ToastContext';
+ import { emitToast } from '@/context/ToastContext';
+ 
 
 export type QueuedRequest = {
   method: 'post' | 'put' | 'delete';
@@ -13,6 +14,7 @@ export type QueuedRequest = {
 };
 
 const QUEUE_KEY = 'offline-queue';
+export const MAX_QUEUE_RETRIES = 5;
 
 export const loadQueue = (): QueuedRequest[] => {
   try {
@@ -70,7 +72,7 @@ export const addToQueue = (req: QueuedRequest) => {
 };
 
 // Convenience helpers for common resources
-import type { Asset, Department, DepartmentHierarchy } from '../types';
+import type { Asset, Department, DepartmentHierarchy } from '@/types';
 
 export const enqueueAssetRequest = (
   method: 'post' | 'put' | 'delete',
@@ -90,7 +92,7 @@ export const enqueueDepartmentRequest = (
 
 export const clearQueue = () => localStorage.removeItem(QUEUE_KEY);
 
-import http from '../lib/http';
+import http from '@/lib/http';
 
 // allow tests to inject a mock http client
 type HttpClient = (args: { method: string; url: string; data?: any }) => Promise<any>;
@@ -133,52 +135,63 @@ const diffObjects = (local: any, server: any): DiffEntry[] => {
   });
   return diffs;
 };
+let isFlushing = false;
 
 export const flushQueue = async (useBackoff = true) => {
-  const queue = loadQueue();
-  if (queue.length === 0) return;
+  if (isFlushing) return;
+  isFlushing = true;
+  try {
+    const queue = loadQueue();
+    if (queue.length === 0) return;
 
-  const now = Date.now();
-  const remaining: QueuedRequest[] = [];
+   const remaining: QueuedRequest[] = [];
 
-  for (const req of queue) {
-    if (useBackoff && req.nextAttempt && req.nextAttempt > now) {
-      remaining.push(req);
-      continue;
-    }
-    try {
-      await httpClient({ method: req.method, url: req.url, data: req.data });
-    } catch (err: any) {
-      if (err?.response?.status === 409) {
-        try {
-          const serverRes = await httpClient({ method: 'get', url: req.url });
-          const serverData = serverRes.data;
-          const diffs = diffObjects(req.data, serverData);
-          conflictListeners.forEach((cb) =>
-            cb({ method: req.method, url: req.url, local: req.data, server: serverData, diffs })
-          );
-        } catch (fetchErr) {
-          console.error('Failed to fetch server data for conflict', fetchErr);
+  for (let i = 0; i < queue.length; i++) {
+    const req = queue[i];
+    const now = Date.now();
+
+    if (!(useBackoff && req.nextAttempt && req.nextAttempt > now)) {
+      try {
+        await httpClient({ method: req.method, url: req.url, data: req.data });
+      } catch (err: any) {
+        if (err?.response?.status === 409) {
+          try {
+            const serverRes = await httpClient({ method: 'get', url: req.url });
+            const serverData = serverRes.data;
+            const diffs = diffObjects(req.data, serverData);
+            conflictListeners.forEach((cb) =>
+              cb({ method: req.method, url: req.url, local: req.data, server: serverData, diffs })
+            );
+          } catch (fetchErr) {
+            console.error('Failed to fetch server data for conflict', fetchErr);
+          }
+        } else {
+          console.error('Failed to flush queued request', err);
+          const retries = (req.retries ?? 0) + 1;
+          if (retries > MAX_QUEUE_RETRIES) {
+            emitToast('Offline change failed too many times and was dropped', 'error');
+          } else {
+            const backoff = Math.min(1000 * 2 ** (retries - 1), 30000);
+            remaining.push({
+              ...req,
+              retries,
+              error: String(err),
+              nextAttempt: useBackoff ? now + backoff : undefined,
+            });
+          }
         }
-        continue;
       }
-      console.error('Failed to flush queued request', err);
-      const retries = (req.retries ?? 0) + 1;
-      const backoff = Math.min(1000 * 2 ** (retries - 1), 30000);
-      remaining.push({
-        ...req,
-        retries,
-        error: String(err),
-        nextAttempt: useBackoff ? now + backoff : undefined,
-      });
-      continue; // continue processing remaining requests
+    } else {
+      remaining.push(req);
     }
-  }
 
-  if (remaining.length > 0) {
-    saveQueue(remaining);
-  } else {
-    clearQueue();
+    const toPersist = [...remaining, ...queue.slice(i + 1)];
+    if (toPersist.length > 0) {
+      saveQueue(toPersist);
+    } else {
+      clearQueue();
+    }
+ 
   }
 };
 

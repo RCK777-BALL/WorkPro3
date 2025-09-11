@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import cors from "cors";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
+import mongoSanitize from "./middleware/mongoSanitize";
 import dotenv from "dotenv";
 import { createServer } from "http";
 import { Server } from "socket.io";
@@ -91,6 +92,7 @@ app.use(helmet());
 app.use(cors(corsOptions));
 app.use(morgan("dev"));
 app.use(express.json({ limit: "1mb" }));
+app.use(mongoSanitize());
 app.use(cookieParser());
 setupSwagger(app);
 
@@ -125,6 +127,15 @@ io.on("connection", (socket) => {
 app.get("/", (_req: Request, res: Response) => {
   res.send("PLTCMMS backend is running");
 });
+
+if (env.NODE_ENV === "test") {
+  app.post("/test/sanitize", (req, res) => {
+    res.json(req.body);
+  });
+  app.get("/test/sanitize", (req, res) => {
+    res.json(req.query);
+  });
+}
 
 // --- Routes (order matters for the limiter) ---
 app.use("/api/auth", authRoutes);

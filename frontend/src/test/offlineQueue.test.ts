@@ -10,8 +10,9 @@ import {
   enqueueAssetRequest,
   enqueueDepartmentRequest,
   type QueuedRequest,
-} from '../utils/offlineQueue';
-import { MAX_QUEUE_RETRIES } from '../utils/offlineQueue';
+  diffObjects,
+  MAX_QUEUE_RETRIES,
+} from '@/utils/offlineQueue';
 import http from '../lib/http';
 import { emitToast } from '../context/ToastContext';
  
@@ -301,7 +302,4 @@ describe('diffObjects', () => {
     ]);
   });
 });
-function diffObjects(local: { id: number; meta: { tags: string[]; info: { active: boolean; }; }; }, server: { id: number; meta: { tags: string[]; info: { active: boolean; }; }; }) {
-  throw new Error('Function not implemented.');
-}
 

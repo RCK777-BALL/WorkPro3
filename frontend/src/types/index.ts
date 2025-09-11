@@ -240,7 +240,15 @@ export interface TeamMember {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'manager' | 'technician' | 'viewer';
+  role:
+    | 'admin'
+    | 'manager'
+    | 'technician'
+    | 'viewer'
+    | 'team_member'
+    | 'team_leader'
+    | 'area_leader'
+    | 'department_leader';
   department?: string;
   /** Unique employee identifier */
   employeeId?: string;
@@ -255,7 +263,15 @@ export interface TeamMemberResponse {
   id?: string;
   name: string;
   email: string;
-  role: 'admin' | 'manager' | 'technician' | 'viewer';
+  role:
+    | 'admin'
+    | 'manager'
+    | 'technician'
+    | 'viewer'
+    | 'team_member'
+    | 'team_leader'
+    | 'area_leader'
+    | 'department_leader';
   department?: string;
   employeeId?: string;
   managerId?: string | null;
@@ -268,7 +284,15 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'manager' | 'technician' | 'viewer';
+  role:
+    | 'admin'
+    | 'manager'
+    | 'technician'
+    | 'viewer'
+    | 'team_member'
+    | 'team_leader'
+    | 'area_leader'
+    | 'department_leader';
   /** Identifier for the user's tenant */
   tenantId?: string;
   /** Optional JWT token used for authenticated requests */

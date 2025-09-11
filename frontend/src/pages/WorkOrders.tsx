@@ -27,7 +27,9 @@ export default function WorkOrders() {
 
   useEffect(() => {
     const unsub = onSyncConflict(setConflict);
-    return () => unsub();
+    return () => {
+      unsub();
+    };
   }, []);
 
   const resolveConflict = async (choice: 'local' | 'server') => {

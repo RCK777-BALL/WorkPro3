@@ -109,9 +109,13 @@ export type SyncConflict = {
 };
 
 const conflictListeners = new Set<(c: SyncConflict) => void>();
-export const onSyncConflict = (cb: (c: SyncConflict) => void) => {
+export const onSyncConflict = (
+  cb: (c: SyncConflict) => void
+): (() => void) => {
   conflictListeners.add(cb);
-  return () => conflictListeners.delete(cb);
+  return () => {
+    conflictListeners.delete(cb);
+  };
 };
 
 const diffObjects = (local: any, server: any): DiffEntry[] => {

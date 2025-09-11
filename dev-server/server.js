@@ -1,5 +1,5 @@
 import express from 'express';
-import cors from 'cors';
+import cors, { type CorsOptions } from 'cors';
 import dotenv from 'dotenv';
 import { connectDB } from '../backend/config/db.ts';
 
@@ -17,7 +17,7 @@ const allowedOrigin = (process.env.CORS_ORIGIN || 'http://localhost:5173')
   .split(',')
   .map((o) => o.trim());
 
-const corsOptions = {
+const corsOptions: CorsOptions = {
   origin: (origin, cb) => {
     if (!origin || allowedOrigin.includes(origin)) return cb(null, true);
     return cb(new Error('Not allowed by CORS'));

@@ -1,7 +1,12 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 /* eslint-disable no-console */
 import { Project, Node, ArrowFunction, FunctionExpression } from 'ts-morph';
 import glob from 'glob';
 import path from 'path';
+import logger from '../utils/logger';
 
 /**
  * Heuristics:
@@ -104,5 +109,5 @@ for (const sf of project.getSourceFiles()) {
 }
 
 project.save().then(() => {
-  console.log('✅ Codemod complete. Re-run TypeScript to verify.');
+  logger.info('✅ Codemod complete. Re-run TypeScript to verify.');
 });

@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import mongoose, { Types } from 'mongoose';
 import InventoryItem from '../models/InventoryItem';
 

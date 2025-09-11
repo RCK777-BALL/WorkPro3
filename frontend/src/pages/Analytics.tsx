@@ -1,15 +1,19 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
  import React, { useEffect, useState } from 'react';
 import { Download, Calendar, Filter } from 'lucide-react';
-import Button from '../components/common/Button';
-import Card from '../components/common/Card';
-import Badge from '../components/common/Badge';
-import ProgressBar from '../components/common/ProgressBar';
-import http from '../lib/http';
-import { useDashboardStore } from '../store/dashboardStore';
- // import { useAuth } from '../context/AuthContext';
+import Button from '@/components/common/Button';
+import Card from '@/components/common/Card';
+import Badge from '@/components/common/Badge';
+import ProgressBar from '@/components/common/ProgressBar';
+import http from '@/lib/http';
+import { useDashboardStore } from '@/store/dashboardStore';
+ // import { useAuth } from '@/context/AuthContext';
  
-import KpiWidget from '../components/kpi/KpiWidget';
-import KpiExportButtons from '../components/kpi/KpiExportButtons';
+import KpiWidget from '@/components/kpi/KpiWidget';
+import KpiExportButtons from '@/components/kpi/KpiExportButtons';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,

@@ -1,6 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { Moon, Sun } from 'lucide-react';
 import React from 'react';
-import { useThemeStore } from '../../store/themeStore';
+import { useThemeStore } from '@/store/themeStore';
 
 const ThemeToggle: React.FC = () => {
   const { theme, setTheme } = useThemeStore();

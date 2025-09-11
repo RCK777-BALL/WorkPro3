@@ -1,8 +1,12 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState } from 'react';
-import http from '../../lib/http';
-import Button from '../common/Button';
-import { useToast } from '../../context/ToastContext';
-import type { PMTask } from '../../types';
+import http from '@/lib/http';
+import Button from '@/common/Button';
+import { useToast } from '@/context/ToastContext';
+import type { PMTask } from '@/types';
 
 interface Props {
   task?: PMTask;
@@ -51,7 +55,7 @@ const PmTaskForm: React.FC<Props> = ({ task, onSuccess }) => {
       onSuccess?.(saved);
       addToast(task ? 'PM Task updated' : 'PM Task created', 'success');
     } catch (err: any) {
-      console.error(err);
+      addToast('Failed to submit task', 'error');
       if (err.response?.status === 401) {
         setError('Unauthorized. Please log in.');
       } else if (Array.isArray(err.response?.data?.errors)) {

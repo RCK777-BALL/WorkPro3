@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import express, { type Request } from 'express';
 import { getPredictions, getTrend } from '../controllers/PredictiveController';
 import { requireAuth } from '../middleware/authMiddleware';

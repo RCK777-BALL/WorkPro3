@@ -1,5 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import type { Request, Response, NextFunction } from 'express';
 import redis from '../utils/redisClient';
+import logger from '../utils/logger';
 
 /**
  * Cache middleware using Redis. Cached responses are stored using the
@@ -17,19 +22,21 @@ export const cache = (keyPrefix: string, ttl = 60) => {
       const cached = await redis.get(key);
       if (cached) {
         res.setHeader('X-Cache', 'HIT');
-        res.json(JSON.parse(cached));
+        res.json(JSON.parse(cached) as unknown);
         return;
       }
 
-      const originalJson = res.json.bind(res);
-      res.json = (body: any) => {
+       const originalJson: Response['json'] = res.json.bind(res);
+      res.json = <T>(body: T): Response<T> => {
         redis
           .set(key, JSON.stringify(body), 'EX', ttl)
-          .catch((err: unknown) => console.error('Redis set error:', err));
+          .catch((err: unknown) => logger.error('Redis set error:', err));
         return originalJson(body);
+ 
       };
+      res.send = sendResponse;
     } catch (err) {
-      console.error('Redis error:', err);
+      logger.error('Redis error:', err);
     }
     next();
   };

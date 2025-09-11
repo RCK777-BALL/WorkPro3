@@ -1,7 +1,12 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+import logger from './utils/logger';
 
 const envPath = path.resolve(__dirname, '.env');
 if (fs.existsSync(envPath)) {
@@ -26,14 +31,14 @@ const tenantId = process.env.SEED_TENANT_ID
 
 const mongoUri = process.env.MONGO_URI || process.env.DATABASE_URL;
 if (!mongoUri) {
-  console.error(
+  logger.error(
     'Database connection string missing. Create backend/.env or set MONGO_URI or DATABASE_URL.'
   );
   process.exit(1);
 }
 
 mongoose.connect(mongoUri).then(async () => {
-  console.log('Connected to MongoDB');
+  logger.info('Connected to MongoDB');
 
   // Clear existing data
   await User.deleteMany({});
@@ -203,9 +208,9 @@ mongoose.connect(mongoUri).then(async () => {
     },
   ]);
 
-  console.log('✅ Seed data inserted successfully');
+  logger.info('✅ Seed data inserted successfully');
   process.exit();
 }).catch((err: unknown) => {
-  console.error('❌ Seed error:', err);
+  logger.error('❌ Seed error:', err);
   process.exit(1);
 });

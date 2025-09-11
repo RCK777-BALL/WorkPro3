@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeAll } from 'vitest';
 import React from 'react';
 import { Chart as ChartJS } from 'chart.js';
-import http from '../lib/http';
+import http from '@/lib/http';
 
 vi.mock('../lib/http');
 
@@ -46,7 +46,7 @@ beforeAll(() => {
   });
 });
 
-import Analytics from '../pages/Analytics';
+import Analytics from '@/pages/Analytics';
 
 const mockedGet = http.get as unknown as vi.Mock;
 

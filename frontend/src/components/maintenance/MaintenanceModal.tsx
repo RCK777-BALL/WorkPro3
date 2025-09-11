@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
-import Button from '../common/Button';
-import type { MaintenanceSchedule } from '../../types';
+import Button from '@/common/Button';
+import type { MaintenanceSchedule } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
 const createDefaultSchedule = (): MaintenanceSchedule => ({

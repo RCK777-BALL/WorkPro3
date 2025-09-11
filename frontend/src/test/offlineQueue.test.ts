@@ -5,8 +5,8 @@ import {
   clearQueue,
   enqueueAssetRequest,
   enqueueDepartmentRequest,
-} from '../utils/offlineQueue';
-import http from '../lib/http';
+} from '@/utils/offlineQueue';
+import http from '@/lib/http';
 
 vi.mock('../lib/http', () => ({
   default: vi.fn(),

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import http from '../../lib/http';
-import Button from '../common/Button';
-import { useToast } from '../../context/ToastContext';
-import type { PMTask } from '../../types';
+import http from '@/lib/http';
+import Button from '@/common/Button';
+import { useToast } from '@/context/ToastContext';
+import type { PMTask } from '@/types';
 
 interface Props {
   task?: PMTask;

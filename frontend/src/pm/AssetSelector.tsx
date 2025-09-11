@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import http from '../lib/http';
+import http from '@/lib/http';
 
 interface Asset {
   _id: string;

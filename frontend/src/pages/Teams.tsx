@@ -1,12 +1,12 @@
  
 import { useEffect, useState } from 'react';
  
-import Button from '../components/common/Button';
-import TeamTable from '../components/teams/TeamTable';
-import TeamModal from '../components/teams/TeamModal';
+import Button from '@/components/common/Button';
+import TeamTable from '@/components/teams/TeamTable';
+import TeamModal from '@/components/teams/TeamModal';
  
-import { useTeamMembers } from '../store/useTeamMembers';
-import type { TeamMember } from '../types';
+import { useTeamMembers } from '@/store/useTeamMembers';
+import type { TeamMember } from '@/types';
 
 const Teams = () => {
   const { members, fetchMembers } = useTeamMembers();

@@ -6,7 +6,7 @@ import {
   flushQueue,
   loadQueue,
   __resetForTests,
-} from '../store/dataStore';
+} from '@/store/dataStore';
 
 beforeEach(async () => {
   await __resetForTests();

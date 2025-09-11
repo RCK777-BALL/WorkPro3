@@ -1,7 +1,7 @@
 import React from 'react';
-import Card from '../common/Card';
+import Card from '@/common/Card';
 import { Package, DollarSign, AlertTriangle, TrendingUp } from 'lucide-react';
-import type { Part } from '../../types';
+import type { Part } from '@/types';
 
 interface InventoryMetricsProps {
   parts: Part[];

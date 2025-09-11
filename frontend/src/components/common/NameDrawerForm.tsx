@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Button from './Button';
-import Drawer from '../ui/Drawer';
+import Drawer from '@/ui/Drawer';
 
 interface Props {
   open: boolean;

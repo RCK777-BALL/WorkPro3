@@ -1,7 +1,7 @@
 import React from 'react';
-import Badge from '../common/Badge';
+import Badge from '@/common/Badge';
 import { Calendar } from 'lucide-react';
-import type { MaintenanceSchedule } from '../../types';
+import type { MaintenanceSchedule } from '@/types';
 
 interface MaintenanceScheduleProps {
   schedules: MaintenanceSchedule[];

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import Button from '../common/Button';
-import type { DepartmentHierarchy, LineWithStations, StationWithAssets, Asset } from '../../types';
+import Button from '@/common/Button';
+import type { DepartmentHierarchy, LineWithStations, StationWithAssets, Asset } from '@/types';
 
 interface Props {
   department: DepartmentHierarchy;

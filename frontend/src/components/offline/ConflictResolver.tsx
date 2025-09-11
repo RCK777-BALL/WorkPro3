@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { SyncConflict } from '../../utils/offlineQueue';
+import type { SyncConflict } from '@/utils/offlineQueue';
 
 type Props = {
   conflict: SyncConflict | null;

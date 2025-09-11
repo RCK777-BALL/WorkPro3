@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import Card from '../common/Card';
+import Card from '@/common/Card';
 
 interface LowStockPart {
   id: string;

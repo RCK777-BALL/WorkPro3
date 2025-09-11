@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import Button from '../common/Button';
-import Modal from '../modals/Modal';
-import type { Vendor } from '../../types';
+import Button from '@/common/Button';
+import Modal from '@/modals/Modal';
+import type { Vendor } from '@/types';
 
 interface VendorModalProps {
   isOpen: boolean;

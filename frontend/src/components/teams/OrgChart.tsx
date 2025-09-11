@@ -1,8 +1,8 @@
 import React, { useMemo, useRef, useState } from 'react';
 import Tree, { RawNodeDatum, RenderCustomNodeElementFn } from 'react-d3-tree';
-import { useTeamMembers } from '../../store/useTeamMembers';
-import type { TeamMember } from '../../types';
-import useResizeObserver from '../../hooks/useResizeObserver';
+import { useTeamMembers } from '@/store/useTeamMembers';
+import type { TeamMember } from '@/types';
+import useResizeObserver from '@/hooks/useResizeObserver';
 
 interface OrgChartProps {
   onSelect: (member: TeamMember) => void;

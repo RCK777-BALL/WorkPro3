@@ -1,6 +1,6 @@
-import { fetchNotifications } from '../api/notifications';
-import type { NotificationType } from '../types';
-import { useSocketStore } from '../store/socketStore';
+import { fetchNotifications } from '@/api/notifications';
+import type { NotificationType } from '@/types';
+import { useSocketStore } from '@/store/socketStore';
 
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 let startTimeout: ReturnType<typeof setTimeout> | null = null;

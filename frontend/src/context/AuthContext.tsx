@@ -8,9 +8,9 @@ import {
   useRef,
   useCallback,
 } from 'react';
-import { useAuthStore } from '../store/authStore';
-import type { AuthUser } from '../types';
-import http from '../lib/http';
+import { useAuthStore } from '@/store/authStore';
+import type { AuthUser } from '@/types';
+import http from '@/lib/http';
 
 interface AuthContextType {
   user: AuthUser | null;

@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import Integrations from '../integrations/Integrations';
+import Integrations from '@/integrations/Integrations';
 
 describe('Integrations page', () => {
   it('registers a hook', async () => {

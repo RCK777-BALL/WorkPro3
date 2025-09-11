@@ -20,8 +20,8 @@ vi.mock('../lib/http', () => ({
   default: { post: vi.fn() },
 }));
 
-import http from '../lib/http';
-import Settings from '../pages/Settings';
+import http from '@/lib/http';
+import Settings from '@/pages/Settings';
 
 describe('Settings page', () => {
   beforeEach(() => {

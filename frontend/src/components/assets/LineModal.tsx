@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import Button from '../common/Button';
-import type { Line, Department } from '../../types';
+import Button from '@/common/Button';
+import type { Line, Department } from '@/types';
 
 interface Props {
   isOpen: boolean;

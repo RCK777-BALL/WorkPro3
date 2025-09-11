@@ -1,5 +1,5 @@
-import http from '../lib/http';
-import type { Channel, Member, Message } from '../types';
+import http from '@/lib/http';
+import type { Channel, Member, Message } from '@/types';
 
 export const getChannelMembers = (channelId: string) =>
   http.get<Member[]>(`/channels/${channelId}/members`).then((res) => res.data);

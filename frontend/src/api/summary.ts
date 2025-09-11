@@ -1,11 +1,11 @@
-import http from '../lib/http';
+import http from '@/lib/http';
 import type {
   DashboardSummary,
   StatusCountResponse,
   UpcomingMaintenanceResponse,
   CriticalAlertResponse,
   LowStockPartResponse,
-} from '../types';
+} from '@/types';
 
 export const fetchSummary = (params?: Record<string, unknown>) =>
   http.get<DashboardSummary>('/summary', { params }).then((res) => res.data);

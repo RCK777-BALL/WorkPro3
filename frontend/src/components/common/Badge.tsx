@@ -1,5 +1,5 @@
 import React from "react";
-import { getStatusColor, getPriorityColor } from "../../utils/colors";
+import { getStatusColor, getPriorityColor } from "@/utils/colors";
 
 // Convert a hex color code to an rgba string with the provided alpha value
 const hexToRgba = (hex: string, alpha: number): string => {

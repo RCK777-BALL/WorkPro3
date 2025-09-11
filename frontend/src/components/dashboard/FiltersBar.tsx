@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useDashboardStore, Timeframe } from '../../store/dashboardStore';
-import type { Department } from '../../types';
+import { useDashboardStore, Timeframe } from '@/store/dashboardStore';
+import type { Department } from '@/types';
 
 interface Props {
   departments: Department[];

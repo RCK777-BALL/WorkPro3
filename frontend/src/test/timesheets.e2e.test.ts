@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { Timesheet } from '../types';
+import type { Timesheet } from '@/types';
 
 describe('Timesheets E2E Tests', () => {
   it('should create and retrieve a timesheet', async () => {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import type { Department, DepartmentPayload, Line } from '../../api/departments';
-import Button from '../common/Button';
+import type { Department, DepartmentPayload, Line } from '@/api/departments';
+import Button from '@/common/Button';
 
 interface Props {
   initial: Department | null;

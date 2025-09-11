@@ -1,7 +1,7 @@
 import React from 'react';
-import { DepartmentForm, type DepartmentPayload } from '../components/departments/forms';
+import { DepartmentForm, type DepartmentPayload } from '@/components/departments/forms';
 import { useNavigate } from 'react-router-dom';
-import { createDepartment } from '../api/departments';
+import { createDepartment } from '@/api/departments';
 
 const NewDepartmentPage: React.FC = () => {
   const navigate = useNavigate();

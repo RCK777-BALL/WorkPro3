@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { useNavigationStore } from '../store/navigationStore';
+import { useNavigationStore } from '@/store/navigationStore';
 
 beforeEach(() => {
   localStorage.clear();

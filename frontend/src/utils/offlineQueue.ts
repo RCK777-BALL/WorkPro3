@@ -1,4 +1,4 @@
-import { emitToast } from '../context/ToastContext';
+import { emitToast } from '@/context/ToastContext';
 
 export type QueuedRequest = {
   method: 'post' | 'put' | 'delete';
@@ -70,7 +70,7 @@ export const addToQueue = (req: QueuedRequest) => {
 };
 
 // Convenience helpers for common resources
-import type { Asset, Department, DepartmentHierarchy } from '../types';
+import type { Asset, Department, DepartmentHierarchy } from '@/types';
 
 export const enqueueAssetRequest = (
   method: 'post' | 'put' | 'delete',
@@ -90,7 +90,7 @@ export const enqueueDepartmentRequest = (
 
 export const clearQueue = () => localStorage.removeItem(QUEUE_KEY);
 
-import http from '../lib/http';
+import http from '@/lib/http';
 
 // allow tests to inject a mock http client
 type HttpClient = (args: { method: string; url: string; data?: any }) => Promise<any>;

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Hash, Users, Bell, Pin, Search, Settings } from 'lucide-react';
-import Button from '../common/Button';
-import Card from '../common/Card';
-import Avatar from '../common/Avatar';
+import Button from '@/common/Button';
+import Card from '@/common/Card';
+import Avatar from '@/common/Avatar';
  
-import type { Channel } from '../../types';
-import { togglePin, toggleMute } from '../../api/channels';
-import { useToast } from '../../context/ToastContext';
+import type { Channel } from '@/types';
+import { togglePin, toggleMute } from '@/api/channels';
+import { useToast } from '@/context/ToastContext';
  
 
 interface Member {

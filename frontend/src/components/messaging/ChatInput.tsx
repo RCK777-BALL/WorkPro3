@@ -4,8 +4,8 @@ import data from '@emoji-mart/data';
 
 import Picker from '@emoji-mart/react';
  import type { Emoji } from '@emoji-mart/react';
-import { getNotificationsSocket } from '../../utils/notificationsSocket';
-import { useToast } from '../../context/ToastContext';
+import { getNotificationsSocket } from '@/utils/notificationsSocket';
+import { useToast } from '@/context/ToastContext';
  
  
 

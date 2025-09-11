@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import Button from '../components/common/Button';
-import PmTaskForm from '../components/maintenance/PmTaskForm';
-import http from '../lib/http';
-import type { PMTask } from '../types';
+import Button from '@/components/common/Button';
+import PmTaskForm from '@/components/maintenance/PmTaskForm';
+import http from '@/lib/http';
+import type { PMTask } from '@/types';
 
 const PMTasksPage: React.FC = () => {
   const [tasks, setTasks] = useState<PMTask[]>([]);

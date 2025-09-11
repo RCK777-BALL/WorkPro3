@@ -7,8 +7,8 @@ vi.mock('../lib/http', () => ({
   default: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() },
 }));
 
-import http from '../lib/http';
-import VendorsPage from '../pages/VendorsPage';
+import http from '@/lib/http';
+import VendorsPage from '@/pages/VendorsPage';
 
 describe('VendorsPage', () => {
   beforeEach(() => {

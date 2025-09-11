@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowUp, ArrowDown } from 'lucide-react';
-import Card from '../common/Card';
+import Card from '@/common/Card';
 
 interface DashboardCardProps {
   title: string;

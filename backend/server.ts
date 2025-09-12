@@ -88,6 +88,7 @@ const corsOptions: cors.CorsOptions = {
     }
   },
   credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization", "usertokenaccess"],
 };
 
 app.use(helmet());

@@ -16,8 +16,8 @@ const LoginForm = () => {
   const { login: authLogin } = useAuth();
   const { addToast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     setError('');
     try {
       await authLogin(email, password);

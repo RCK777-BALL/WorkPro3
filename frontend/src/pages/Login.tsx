@@ -69,8 +69,8 @@ const Login: React.FC = () => {
     setShowInstall(false);
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     setError('');
     try {
       const { data } = await http.post('/auth/login', { email, password });

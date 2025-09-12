@@ -5,7 +5,7 @@
    
 import React, { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import SignaturePad from "react-signature-canvas";
+import SignatureCanvas from "react-signature-canvas";
 import { useDropzone } from "react-dropzone";
 import { X, Upload, Download, Camera } from "lucide-react";
 import Button from "@/components/common/Button";
@@ -32,7 +32,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
   onUpdate,
 }) => {
   const [files, setFiles] = useState<File[]>([]);
-  const signaturePadRef = useRef<SignaturePad>(null);
+  const signatureCanvasRef = useRef<SignatureCanvas>(null);
   const [showSignaturePad, setShowSignaturePad] = useState(false);
   const departments = useDepartmentStore((s) => s.departments);
   const fetchDepartments = useDepartmentStore((s) => s.fetchDepartments);
@@ -84,8 +84,8 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
   const onSubmit = async (data: any) => {
  
     let signature = null;
-    if (signaturePadRef.current && !signaturePadRef.current.isEmpty()) {
-      signature = signaturePadRef.current.toDataURL();
+    if (signatureCanvasRef.current && !signatureCanvasRef.current.isEmpty()) {
+      signature = signatureCanvasRef.current.toDataURL();
     }
 
     const payload: Record<string, any> = {
@@ -358,8 +358,8 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
             </label>
             {showSignaturePad ? (
               <div className="border border-neutral-300 rounded-md p-2">
-                <SignaturePad
-                  ref={signaturePadRef}
+                <SignatureCanvas
+                  ref={signatureCanvasRef}
                   canvasProps={{
                     className: "w-full h-40 border rounded-md",
                   }}
@@ -369,7 +369,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => signaturePadRef.current?.clear()}
+                    onClick={() => signatureCanvasRef.current?.clear()}
                   >
                     Clear
                   </Button>

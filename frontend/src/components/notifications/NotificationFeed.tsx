@@ -3,10 +3,10 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import Card from '@/common/Card';
+import Card from '@common/Card';
 import { getNotificationsSocket } from '@/utils/notificationsSocket';
  
-import Badge from '@/common/Badge';
+import Badge from '@common/Badge';
 import { useSocketStore, type SocketState } from '@/store/socketStore';
 import type {
   NotificationType,

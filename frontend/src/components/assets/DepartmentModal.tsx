@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, PlusCircle, Trash } from 'lucide-react';
-import Button from '@/common/Button';
+import Button from '@common/Button';
 import type { DepartmentHierarchy, Asset } from '@/types';
 import { useToast } from '@/context/ToastContext';
 

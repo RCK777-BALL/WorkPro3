@@ -4,7 +4,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-import Button from '@/common/Button';
+import Button from '@common/Button';
 import type { WorkOrder } from '@/types';
 import { useAuthStore, isAdmin as selectIsAdmin, isManager as selectIsManager } from '@/store/authStore';
 import AICopilot from '@/workorders/AICopilot';

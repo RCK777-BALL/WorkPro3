@@ -73,15 +73,16 @@ test('allows resolving with local version', async () => {
   let conflict: SyncConflict | null = null;
   onSyncConflict((c) => (conflict = c));
   await flushQueue(false);
+  if (!conflict) throw new Error('Expected conflict');
   expect(conflict).toBeTruthy();
   expect(conflict.diffs).toEqual([
     { field: 'name', local: 'Local', server: 'Server' },
   ]);
   expect(loadQueue()).toHaveLength(0);
   await resolvingClient({
-    method: conflict!.method,
-    url: conflict!.url,
-    data: conflict!.local,
+    method: conflict.method,
+    url: conflict.url,
+    data: conflict.local,
   });
   expect(attempt).toBe(2);
 });

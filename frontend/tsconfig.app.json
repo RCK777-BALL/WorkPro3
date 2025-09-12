@@ -1,15 +1,14 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
+    "target": "ES2022",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker"],
     "module": "ESNext",
     "skipLibCheck": true,
-    "types": ["vite/client", "node", "react", "react-dom"],
+    "types": ["react", "react-dom", "vite/client"],
     "baseUrl": ".",
     "paths": {
-      "@common/*": ["./src/components/common/*"],
-      "@/*": ["./src/*"]
+      "@/*": ["src/*"]
     },
 
     /* Bundler mode */
@@ -26,5 +25,5 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "src/test"]
+  "include": ["src", "src/types/globals.d.ts"]
 }

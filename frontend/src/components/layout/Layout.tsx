@@ -21,7 +21,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { Command, User } from 'lucide-react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 
-import ThemeToggle from '@/common/ThemeToggle';
+import ThemeToggle from '@common/ThemeToggle';
 import { useAuthStore, type AuthState } from '@/store/authStore';
 
 interface NavItem {

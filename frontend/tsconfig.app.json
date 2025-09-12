@@ -8,8 +8,8 @@
     "types": ["vite/client", "node", "react"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@/common/*": ["./src/components/common/*"]
+      "@common/*": ["./src/components/common/*"],
+      "@/*": ["./src/*"]
     },
 
     /* Bundler mode */

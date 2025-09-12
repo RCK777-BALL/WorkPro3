@@ -9,10 +9,10 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Search, Bell, HelpCircle, Menu, Book, Video, MessageCircle, FileText, ExternalLink, Database } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
  
-import ThemeToggle from '@/common/ThemeToggle';
-import Avatar from '@/common/Avatar';
-import Card from '@/common/Card';
-import Button from '@/common/Button';
+import ThemeToggle from '@common/ThemeToggle';
+import Avatar from '@common/Avatar';
+import Card from '@common/Card';
+import Button from '@common/Button';
 import { useAuthStore, type AuthState, isAdmin as selectIsAdmin, isManager as selectIsManager } from '@/store/authStore';
 import { useDataStore } from '@/store/dataStore';
 import { useNavigate } from 'react-router-dom';

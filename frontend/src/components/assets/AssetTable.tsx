@@ -3,9 +3,9 @@
  */
 
 import React from 'react';
-import Badge from '@/common/Badge';
-import Button from '@/common/Button';
-import DuplicateButton from '@/common/DuplicateButton';
+import Badge from '@common/Badge';
+import Button from '@common/Button';
+import DuplicateButton from '@common/DuplicateButton';
 import type { Asset } from '@/types';
 
 interface AssetTableProps {

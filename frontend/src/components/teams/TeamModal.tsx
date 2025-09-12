@@ -5,8 +5,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { X } from 'lucide-react';
-import Button from '@/common/Button';
-import AutoCompleteInput from '@/common/AutoCompleteInput';
+import Button from '@common/Button';
+import AutoCompleteInput from '@common/AutoCompleteInput';
 import { useDepartmentStore } from '@/store/departmentStore';
 import { useTeamMembers } from '@/store/useTeamMembers';
 import type { TeamMember } from '@/types';

@@ -5,7 +5,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { MantineProvider } from '@mantine/core';
+import { ThemeProvider } from './context/ThemeContext';
 import App from './App';
 import AppErrorBoundary from './components/common/AppErrorBoundary';
 import { AuthProvider } from './context/AuthContext';
@@ -13,13 +13,13 @@ import { AuthProvider } from './context/AuthContext';
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <AuthProvider>
-      <BrowserRouter>
-        <MantineProvider>
+      <ThemeProvider>
+        <BrowserRouter>
           <AppErrorBoundary>
             <App />
           </AppErrorBoundary>
-        </MantineProvider>
-      </BrowserRouter>
+        </BrowserRouter>
+      </ThemeProvider>
     </AuthProvider>
   </React.StrictMode>
 );

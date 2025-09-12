@@ -6,7 +6,7 @@ import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useDropzone } from "react-dropzone";
 import { X, Upload, Download } from "lucide-react";
-import Button from "@/common/Button";
+import Button from "@common/Button";
 import http from "@/lib/http";
 import { useToast } from "@/context/ToastContext";
 import { useDepartmentStore } from "@/store/departmentStore";

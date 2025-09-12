@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Center, Stack, Text } from '@mantine/core';
+// Replaced Mantine components with standard HTML elements styled via Tailwind
 
 interface EmptyStateProps {
   message?: string;
@@ -10,10 +10,10 @@ interface EmptyStateProps {
 
 export function EmptyState({ message = 'No data available' }: EmptyStateProps) {
   return (
-    <Center py="xl">
-      <Stack gap="sm" align="center">
-        <Text c="dimmed">{message}</Text>
-      </Stack>
-    </Center>
+    <div className="flex justify-center py-8">
+      <div className="flex flex-col items-center gap-2">
+        <p className="text-gray-500">{message}</p>
+      </div>
+    </div>
   );
 }

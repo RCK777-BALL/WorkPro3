@@ -58,13 +58,14 @@ export const createGoodsReceipt = async (
       ...(tenantId ? { tenantId } : {}),
     });
     const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const grAny = gr as any;
     await writeAuditLog({
-      tenantId,
+      ...(tenantId ? { tenantId } : {}),
       userId,
       action: 'create',
       entityType: 'GoodsReceipt',
-      entityId: gr._id,
-      after: gr.toObject(),
+      entityId: grAny._1 as any,
+      after: typeof grAny.toObject === 'function' ? grAny.toObject() : grAny,
     });
 
     const vendor = await Vendor.findById(po.vendor).lean();

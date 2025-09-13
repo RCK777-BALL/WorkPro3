@@ -71,3 +71,4 @@ export type WorkOrderCreate = z.infer<typeof workOrderCreateSchema>;
 export type WorkOrderUpdate = z.infer<typeof workOrderUpdateSchema>;
 export type WorkOrderAssign = z.infer<typeof assignWorkOrderSchema>;
 export type WorkOrderComplete = z.infer<typeof completeWorkOrderSchema>;
+

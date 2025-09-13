@@ -22,9 +22,11 @@ import {
 
 
 
-function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
-  const plain = typeof doc.toObject === "function"
-    ? doc.toObject({ getters: true, virtuals: false })
+
+
+function toWorkOrderUpdatePayload(doc: Partial<WorkOrderType> & { _id: Types.ObjectId | string; deleted?: boolean }): WorkOrderUpdatePayload {
+  const plain = typeof (doc as any).toObject === 'function'
+    ? (doc as any).toObject({ getters: true, virtuals: false })
     : doc;
   return {
     ...plain,
@@ -183,8 +185,10 @@ export const getWorkOrderById: AuthedRequestHandler = async (req, res, next) => 
  *       400:
  *         description: Validation error
  */
-export const createWorkOrder: AuthedRequestHandler = async (req, res, next) => {
+
+export const createWorkOrder: AuthedRequestHandler<ParamsDictionary, WorkOrderType, WorkOrderInput> = async (req, res, next) => {
   try {
+
     const tenantId = req.tenantId;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
@@ -195,6 +199,7 @@ export const createWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       sendResponse(res, null, parsed.error.flatten(), 400);
       return;
     }
+
     const newItem = new WorkOrder({ ...parsed.data, tenantId });
     const saved = await newItem.save();
     await logAudit(req, 'create', 'WorkOrder', saved._id, null, saved.toObject());

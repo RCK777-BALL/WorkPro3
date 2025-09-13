@@ -5,7 +5,7 @@
 import AuditLog from '../models/AuditLog';
 import type { AuthedRequestHandler } from '../types/http';
 
-export const getRecentLogs: AuthedRequestHandler = async (req, res, next) => {
+export const getAuditLogs: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -13,7 +13,12 @@ export const getRecentLogs: AuthedRequestHandler = async (req, res, next) => {
       return;
     }
     const limit = Math.min(parseInt(String(req.query.limit || '10'), 10), 100);
-    const logs = await AuditLog.find({ tenantId })
+    const filter: any = { tenantId };
+    if (req.query.entityType) filter.entityType = req.query.entityType;
+    if (req.query.entityId) filter.entityId = req.query.entityId;
+    if (req.query.userId) filter.userId = req.query.userId;
+
+    const logs = await AuditLog.find(filter)
       .sort({ ts: -1 })
       .limit(limit)
       .lean();

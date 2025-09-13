@@ -32,6 +32,7 @@ export { default as workHistoryRoutes } from './WorkHistoryRoutes';
 export { default as vendorPortalRoutes } from './VendorPortalRoutes';
 export { default as documentRoutes } from './DocumentRoutes';
 export { default as predictiveRoutes } from './PredictiveRoutes';
+export { default as attachmentRoutes } from './AttachmentRoutes';
 export { default as TenantRoutes } from './TenantRoutes';
 export { default as workOrdersRoutes } from './WorkOrderRoutes';
 export { default as webhooksRoutes } from './WebhooksRoutes';

@@ -4,7 +4,7 @@
 
 import React from 'react';
 import Card from '@common/Card';
-import Button from '@common/Button';
+import { Button } from '@/components/ui/button';
 
 export interface AuditLog {
   id: string;
@@ -29,6 +29,8 @@ const RecentActivity: React.FC<Props> = ({ logs, loading, error, onRefresh }) =>
       </div>
     ) : error ? (
       <div className="text-sm text-error-700 bg-error-50 p-2 rounded">{error}</div>
+    ) : logs.length === 0 ? (
+      <div className="text-sm text-neutral-500">No recent activity.</div>
     ) : (
       <ul className="space-y-2 text-sm">
         {logs.map((log) => (

@@ -2,8 +2,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { Config } from 'tailwindcss'
-import colors from 'tailwindcss/colors'
+import type { Config } from 'tailwindcss';
+import colors from 'tailwindcss/colors';
 
 export default {
   darkMode: 'class',
@@ -11,7 +11,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: colors.blue,
+        border: 'hsl(var(--border))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        primary: {
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
+          light: 'hsl(var(--primary-light))',
+          dark: 'hsl(var(--primary-dark))',
+        },
         success: colors.green,
         error: colors.red,
         warning: colors.amber,
@@ -19,4 +27,4 @@ export default {
     },
   },
   plugins: [],
-} satisfies Config
+} satisfies Config;

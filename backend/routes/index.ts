@@ -6,6 +6,7 @@ export { default as authRoutes } from './AuthRoutes';
 export { default as assetsRoutes } from './AssetRoutes';
 export { default as IntegrationRoutes } from './IntegrationRoutes';
 export { default as reportsRoutes } from './ReportsRoutes';
+export { default as importRoutes } from './ImportRoutes';
 export { default as timeSheetRoutes } from './TimeSheetRoutes';
 export { default as calendarRoutes } from './CalendarRoutes';
 export { default as inventoryRoutes } from './InventoryRoutes';

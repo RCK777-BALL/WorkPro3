@@ -7,6 +7,7 @@ import path from 'path';
 import Document from '../models/Document';
 import type { AuthedRequestHandler } from '../types/http';
 import { sendResponse } from '../utils/sendResponse';
+import { writeAuditLog } from '../utils/audit';
 
 
 export const getAllDocuments: AuthedRequestHandler = async (_req, res, next) => {
@@ -43,17 +44,15 @@ export const createDocument: AuthedRequestHandler = async (req, res, next) => {
       name?: string;
     };
 
+    const finalName = name ?? `document_${Date.now()}`;
     let finalUrl = url;
-    let finalName = name;
 
     if (base64) {
       const buffer = Buffer.from(base64, 'base64');
-      const filename = name || `document_${Date.now()}`;
       const uploadDir = path.join(process.cwd(), 'uploads');
       await fs.mkdir(uploadDir, { recursive: true });
-      await fs.writeFile(path.join(uploadDir, filename), buffer);
-      finalUrl = `/uploads/${filename}`;
-      finalName = filename;
+      await fs.writeFile(path.join(uploadDir, finalName), buffer);
+      finalUrl = `/uploads/${finalName}`;
     }
 
     if (!finalUrl) {
@@ -63,6 +62,18 @@ export const createDocument: AuthedRequestHandler = async (req, res, next) => {
 
     const newItem = new Document({ name: finalName, url: finalUrl });
     const saved = await newItem.save();
+
+    const tenantId = req.tenantId;
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'create',
+      entityType: 'Document',
+      entityId: saved._id,
+      after: saved.toObject(),
+    });
+
     sendResponse(res, saved, null, 201);
 
     return;
@@ -80,19 +91,21 @@ export const updateDocument: AuthedRequestHandler = async (req, res, next) => {
       name?: string;
     };
 
+    const finalName = name ?? `document_${Date.now()}`;
     const updateData: { name?: string; url?: string } = {};
 
     if (base64) {
       const buffer = Buffer.from(base64, 'base64');
-      const filename = name || `document_${Date.now()}`;
       const uploadDir = path.join(process.cwd(), 'uploads');
       await fs.mkdir(uploadDir, { recursive: true });
-      await fs.writeFile(path.join(uploadDir, filename), buffer);
-      updateData.url = `/uploads/${filename}`;
-      updateData.name = filename;
+      await fs.writeFile(path.join(uploadDir, finalName), buffer);
+      updateData.url = `/uploads/${finalName}`;
+      updateData.name = finalName;
     } else if (url) {
       updateData.url = url;
-      updateData.name = name || url.split('/').pop();
+      updateData.name = finalName;
+    } else if (name) {
+      updateData.name = finalName;
     }
 
     const updated = await Document.findByIdAndUpdate(req.params.id, updateData, {
@@ -103,6 +116,17 @@ export const updateDocument: AuthedRequestHandler = async (req, res, next) => {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
+    const tenantId = req.tenantId;
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'update',
+      entityType: 'Document',
+      entityId: updated._id,
+      after: updated.toObject(),
+    });
+
     sendResponse(res, updated);
 
     return;

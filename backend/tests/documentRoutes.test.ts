@@ -49,7 +49,7 @@ describe('Document Routes', () => {
     await request(app)
       .post('/api/documents')
       .set('Authorization', `Bearer ${token}`)
-      .send({ title: 'Doc1', type: 'manual' })
+      .send({ url: 'http://example.com/doc.pdf', name: 'Doc1' })
       .expect(201);
 
     const logs = await AuditLog.find({ entityType: 'Document', action: 'create' });
@@ -57,11 +57,11 @@ describe('Document Routes', () => {
     expect(logs[0].entityType).toBe('Document');
   });
 
-  it('fails validation when updating with invalid enum', async () => {
+  it('fails validation when updating without file or url', async () => {
     const createRes = await request(app)
       .post('/api/documents')
       .set('Authorization', `Bearer ${token}`)
-      .send({ title: 'Doc1', type: 'manual' })
+      .send({ url: 'http://example.com/doc.pdf', name: 'Doc1' })
       .expect(201);
 
     const id = createRes.body._id;
@@ -69,7 +69,7 @@ describe('Document Routes', () => {
     await request(app)
       .put(`/api/documents/${id}`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ type: 'invalid' })
-      .expect(500);
+      .send({})
+      .expect(400);
   });
 });

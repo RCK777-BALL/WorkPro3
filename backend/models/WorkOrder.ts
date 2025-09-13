@@ -7,7 +7,7 @@ import mongoose from 'mongoose';
 const workOrderSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
-    asset: { type: mongoose.Schema.Types.ObjectId, ref: 'Asset' },
+    assetId: { type: mongoose.Schema.Types.ObjectId, ref: 'Asset', index: true },
     description: String,
     priority: {
       type: String,
@@ -18,6 +18,7 @@ const workOrderSchema = new mongoose.Schema(
       type: String,
       enum: ['requested', 'assigned', 'in_progress', 'completed', 'cancelled'],
       default: 'requested',
+      index: true,
     },
     approvalStatus: {
       type: String,
@@ -34,12 +35,14 @@ const workOrderSchema = new mongoose.Schema(
         partId: { type: mongoose.Schema.Types.ObjectId, ref: 'InventoryItem' },
         qty: { type: Number, default: 1 },
         cost: { type: Number, default: 0 },
+
       },
     ],
     signatures: [
       {
         by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         ts: { type: Date, default: Date.now },
+
       },
     ],
     timeSpentMin: Number,
@@ -60,7 +63,6 @@ const workOrderSchema = new mongoose.Schema(
 
     tenantId: { type: mongoose.Schema.Types.ObjectId, required: true, index: true },
 
-    dateCreated: { type: Date, default: Date.now },
     dueDate: { type: Date },
     completedAt: Date,
   },
@@ -68,3 +70,4 @@ const workOrderSchema = new mongoose.Schema(
 );
 
 export default mongoose.model('WorkOrder', workOrderSchema);
+

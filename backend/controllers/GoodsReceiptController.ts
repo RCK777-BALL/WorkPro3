@@ -10,6 +10,7 @@ import Vendor from '../models/Vendor';
 import { addStock } from '../services/inventory';
 import nodemailer from 'nodemailer';
 import { assertEmail } from '../utils/assert';
+import { writeAuditLog } from '../utils/audit';
 
 export const createGoodsReceipt = async (
   req: Request,
@@ -55,6 +56,15 @@ export const createGoodsReceipt = async (
       purchaseOrder: po._id,
       items,
       ...(tenantId ? { tenantId } : {}),
+    });
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'create',
+      entityType: 'GoodsReceipt',
+      entityId: gr._id,
+      after: gr.toObject(),
     });
 
     const vendor = await Vendor.findById(po.vendor).lean();

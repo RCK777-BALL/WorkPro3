@@ -5,7 +5,7 @@
 import React, { useState } from 'react';
 import Button from '@/components/common/Button';
 import { useToast } from '@/context/ToastContext';
-import api from '@/lib/api';
+import { fetchJson } from '@/lib/api';
 
 const PMScheduler: React.FC = () => {
   const { addToast } = useToast();
@@ -14,9 +14,9 @@ const PMScheduler: React.FC = () => {
   const generate = async () => {
     try {
       setLoading(true);
-      const res = await api.post('/pm/generate');
-      addToast({ type: 'success', message: `Generated ${res.data.generated} work orders` });
-    } catch (err) {
+      const res = await fetchJson<{ generated: number }>('/pm/generate', { method: 'POST' });
+      addToast({ type: 'success', message: `Generated ${res.data?.generated ?? 0} work orders` });
+    } catch {
       addToast({ type: 'error', message: 'Failed to generate work orders' });
     } finally {
       setLoading(false);

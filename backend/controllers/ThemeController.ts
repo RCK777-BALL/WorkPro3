@@ -4,6 +4,7 @@
 
 import type { AuthedRequestHandler } from '../types/http';
 import User from '../models/User';
+import { writeAuditLog } from '../utils/audit';
 
 export const getTheme: AuthedRequestHandler = async (req, res, next) => {
   try {
@@ -37,6 +38,16 @@ export const updateTheme: AuthedRequestHandler = async (req, res, next) => {
       return;
     }
 
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId: req.tenantId,
+      userId,
+      action: 'update',
+      entityType: 'UserTheme',
+      entityId: user!._id,
+      before: null,
+      after: { theme: updated.theme, colorScheme: updated.colorScheme },
+    });
     res.json({ theme: updated.theme, colorScheme: updated.colorScheme });
     return;
   } catch (err) {

@@ -11,6 +11,7 @@ import jwt from 'jsonwebtoken';
 
 import DocumentRoutes from '../routes/DocumentRoutes';
 import User from '../models/User';
+import AuditLog from '../models/AuditLog';
 
 const app = express();
 app.use(express.json());
@@ -44,6 +45,18 @@ beforeEach(async () => {
 });
 
 describe('Document Routes', () => {
+  it('creates an audit log on document creation', async () => {
+    await request(app)
+      .post('/api/documents')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: 'Doc1', type: 'manual' })
+      .expect(201);
+
+    const logs = await AuditLog.find({ entityType: 'Document', action: 'create' });
+    expect(logs.length).toBe(1);
+    expect(logs[0].entityType).toBe('Document');
+  });
+
   it('fails validation when updating with invalid enum', async () => {
     const createRes = await request(app)
       .post('/api/documents')

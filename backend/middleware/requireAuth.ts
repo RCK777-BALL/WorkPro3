@@ -5,7 +5,7 @@
 import jwt from 'jsonwebtoken';
 import { getJwtSecret } from '../utils/getJwtSecret';
 import type { AuthedRequestHandler } from '../types/http';
-import { sendResponse } from '../utils/sendResponse';
+import { fail } from '../src/lib/http';
 
 export interface AuthPayload {
   id: string;
@@ -30,7 +30,7 @@ export const requireAuth: AuthedRequestHandler = (req, res, next) => {
 
   const token = bearer ?? cookieToken;
   if (!token) {
-    sendResponse(res, null, 'Unauthorized', 401);
+    fail(res, 'Unauthorized', 401);
     return;
   }
 
@@ -38,7 +38,7 @@ export const requireAuth: AuthedRequestHandler = (req, res, next) => {
   try {
     secret = getJwtSecret();
   } catch {
-    sendResponse(res, null, 'Server configuration issue', 500);
+    fail(res, 'Server configuration issue', 500);
     return;
   }
 
@@ -59,7 +59,7 @@ export const requireAuth: AuthedRequestHandler = (req, res, next) => {
     next();
     return;
   } catch {
-    sendResponse(res, null, 'Invalid or expired token', 401);
+    fail(res, 'Invalid or expired token', 401);
     return;
   }
 };

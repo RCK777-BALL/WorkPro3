@@ -4,7 +4,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Search, Package, ClipboardList } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { useNavigate } from 'react-router-dom';
 
 interface Props {
@@ -23,6 +23,8 @@ export default function GlobalSearch({ open, onOpenChange }: Props) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Result[]>([]);
   const [selected, setSelected] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -31,19 +33,25 @@ export default function GlobalSearch({ open, onOpenChange }: Props) {
       return;
     }
     let active = true;
+    setLoading(true);
+    setError(null);
     async function load() {
       try {
         const [assetsRes, workRes] = await Promise.all([
-          fetch(`/api/assets?search=${encodeURIComponent(query)}`).then(r => r.json()),
-          fetch(`/api/workorders?search=${encodeURIComponent(query)}`).then(r => r.json()),
+          fetch(`/api/assets?search=${encodeURIComponent(query)}`).then((r) => r.json()),
+          fetch(`/api/work-orders?search=${encodeURIComponent(query)}`).then((r) => r.json()),
         ]);
         if (!active) return;
-        const assets = (assetsRes as Asset[]).map(a => ({ type: 'asset', id: a.id, name: a.name }));
-        const works = (workRes as WorkOrder[]).map(w => ({ type: 'workorder', id: w.id, title: w.title }));
+        const assets = (assetsRes as Asset[]).map((a) => ({ type: 'asset', id: a.id, name: a.name }));
+        const works = (workRes as WorkOrder[]).map((w) => ({ type: 'workorder', id: w.id, title: w.title }));
         setResults([...assets, ...works]);
         setSelected(0);
       } catch {
-        // ignore
+        if (!active) return;
+        setError('Failed to search');
+      } finally {
+        if (!active) return;
+        setLoading(false);
       }
     }
     load();
@@ -94,16 +102,28 @@ export default function GlobalSearch({ open, onOpenChange }: Props) {
           />
         </div>
         <ul className="max-h-60 overflow-y-auto">
+          {loading && (
+            <li className="px-2 py-1 text-sm text-neutral-500">Loading...</li>
+          )}
+          {error && (
+            <li className="px-2 py-1 text-sm text-error-500">{error}</li>
+          )}
           {results.map((r, idx) => (
             <li
               key={`${r.type}-${r.id}`}
-              className={`flex items-center px-2 py-1 cursor-pointer ${idx === selected ? 'bg-neutral-100 dark:bg-neutral-700' : ''}`}
+              className={`flex items-center px-2 py-1 cursor-pointer ${
+                idx === selected ? 'bg-neutral-100 dark:bg-neutral-700' : ''
+              }`}
             >
-              {r.type === 'asset' ? <Package size={16} className="mr-2" /> : <ClipboardList size={16} className="mr-2" />}
+              {r.type === 'asset' ? (
+                <Package size={16} className="mr-2" />
+              ) : (
+                <ClipboardList size={16} className="mr-2" />
+              )}
               <span>{r.type === 'asset' ? r.name : r.title}</span>
             </li>
           ))}
-          {query && results.length === 0 && (
+          {query && !loading && results.length === 0 && !error && (
             <li className="px-2 py-1 text-sm text-neutral-500">No results</li>
           )}
         </ul>

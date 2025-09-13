@@ -5,14 +5,24 @@
 import WorkOrder from '../models/WorkOrder';
 import type { AuthedRequestHandler } from '../types/http';
 import { emitWorkOrderUpdate } from '../server';
-import { validationResult } from 'express-validator';
 import notifyUser from '../utils/notify';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
 import { filterFields } from '../utils/filterFields';
-import { logAudit } from '../utils/audit';
+import { writeAuditLog } from '../utils/audit';
+
 import { sendResponse } from '../utils/sendResponse';
+import {
+  workOrderCreateSchema,
+  workOrderUpdateSchema,
+  assignWorkOrderSchema,
+  startWorkOrderSchema,
+  completeWorkOrderSchema,
+  cancelWorkOrderSchema,
+} from '../src/schemas/workOrder';
+
+
 
 const workOrderCreateFields = [
   'title',
@@ -47,6 +57,7 @@ const workOrderUpdateFields = [...workOrderCreateFields];
 function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
   const plain = typeof doc.toObject === "function"
     ? doc.toObject({ getters: true, virtuals: false })
+
     : doc;
   return {
     ...plain,
@@ -133,9 +144,9 @@ export const searchWorkOrders: AuthedRequestHandler = async (req, res, next) => 
     if (status) query.status = status;
     if (priority) query.priority = priority;
     if (start || end) {
-      query.dateCreated = {};
-      if (start) query.dateCreated.$gte = start;
-      if (end) query.dateCreated.$lte = end;
+      query.createdAt = {};
+      if (start) query.createdAt.$gte = start;
+      if (end) query.createdAt.$lte = end;
     }
 
     const items = await WorkOrder.find(query);
@@ -205,22 +216,32 @@ export const getWorkOrderById: AuthedRequestHandler = async (req, res, next) => 
  *       400:
  *         description: Validation error
  */
-export const createWorkOrder: AuthedRequestHandler = async (req, res, next) => {
+
+export const createWorkOrder: AuthedRequestHandler<ParamsDictionary, WorkOrderType, WorkOrderInput> = async (req, res, next) => {
   try {
-    const errors = validationResult(req as any);
-    if (!errors.isEmpty()) {
-      sendResponse(res, null, errors.array(), 400);
-      return;
-    }
+
     const tenantId = req.tenantId;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const payload = filterFields(req.body, workOrderCreateFields);
-    const newItem = new WorkOrder({ ...payload, tenantId });
+    const parsed = workOrderCreateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      sendResponse(res, null, parsed.error.flatten(), 400);
+      return;
+    }
+
+    const newItem = new WorkOrder({ ...parsed.data, tenantId });
     const saved = await newItem.save();
-    await logAudit(req, 'create', 'WorkOrder', saved._id, null, saved.toObject());
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'create',
+      entityType: 'WorkOrder',
+      entityId: saved._id,
+      after: saved.toObject(),
+    });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved, null, 201);
     return;
@@ -257,17 +278,17 @@ export const createWorkOrder: AuthedRequestHandler = async (req, res, next) => {
  */
 export const updateWorkOrder: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const errors = validationResult(req as any);
-    if (!errors.isEmpty()) {
-      sendResponse(res, null, errors.array(), 400);
-      return;
-    }
     const tenantId = req.tenantId;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const update = filterFields(req.body, workOrderUpdateFields);
+    const parsed = workOrderUpdateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      sendResponse(res, null, parsed.error.flatten(), 400);
+      return;
+    }
+    const update = parsed.data;
     const existing = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!existing) {
       sendResponse(res, null, 'Not found', 404);
@@ -282,14 +303,16 @@ export const updateWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    await logAudit(
-      req,
-      'update',
-      'WorkOrder',
-      req.params.id,
-      existing.toObject(),
-      updated.toObject()
-    );
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'update',
+      entityType: 'WorkOrder',
+      entityId: req.params.id,
+      before: existing.toObject(),
+      after: updated.toObject(),
+    });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(updated));
     sendResponse(res, updated);
     return;
@@ -330,7 +353,15 @@ export const deleteWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    await logAudit(req, 'delete', 'WorkOrder', req.params.id, deleted.toObject(), null);
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'delete',
+      entityType: 'WorkOrder',
+      entityId: req.params.id,
+      before: deleted.toObject(),
+    });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload({ _id: req.params.id, deleted: true }));
     sendResponse(res, { message: 'Deleted successfully' });
     return;
@@ -407,7 +438,16 @@ export const approveWorkOrder: AuthedRequestHandler = async (req, res, next) => 
     }
 
     const saved = await workOrder.save();
-    await logAudit(req, 'approve', 'WorkOrder', req.params.id, before, saved.toObject());
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'approve',
+      entityType: 'WorkOrder',
+      entityId: req.params.id,
+      before,
+      after: saved.toObject(),
+    });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
 
     const message =
@@ -439,13 +479,27 @@ export const assignWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       res.status(404).json({ message: 'Not found' });
       return;
     }
+    const parsed = assignWorkOrderSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json(parsed.error.flatten());
+      return;
+    }
     const before = workOrder.toObject();
     workOrder.status = 'assigned';
-    if (Array.isArray(req.body.assignees)) {
-      workOrder.assignees = req.body.assignees;
+    if (parsed.data.assignees) {
+      workOrder.assignees = parsed.data.assignees;
     }
     const saved = await workOrder.save();
-    await logAudit(req, 'assign', 'WorkOrder', req.params.id, before, saved.toObject());
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'assign',
+      entityType: 'WorkOrder',
+      entityId: req.params.id,
+      before,
+      after: saved.toObject(),
+    });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     res.json(saved);
     return;
@@ -462,6 +516,11 @@ export const startWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       res.status(400).json({ message: 'Tenant ID required' });
       return;
     }
+    const parsed = startWorkOrderSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json(parsed.error.flatten());
+      return;
+    }
     const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!workOrder) {
       res.status(404).json({ message: 'Not found' });
@@ -470,7 +529,16 @@ export const startWorkOrder: AuthedRequestHandler = async (req, res, next) => {
     const before = workOrder.toObject();
     workOrder.status = 'in_progress';
     const saved = await workOrder.save();
-    await logAudit(req, 'start', 'WorkOrder', req.params.id, before, saved.toObject());
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'start',
+      entityType: 'WorkOrder',
+      entityId: req.params.id,
+      before,
+      after: saved.toObject(),
+    });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     res.json(saved);
     return;
@@ -487,6 +555,11 @@ export const completeWorkOrder: AuthedRequestHandler = async (req, res, next) =>
       res.status(400).json({ message: 'Tenant ID required' });
       return;
     }
+    const parsed = completeWorkOrderSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json(parsed.error.flatten());
+      return;
+    }
     const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!workOrder) {
       res.status(404).json({ message: 'Not found' });
@@ -500,8 +573,18 @@ export const completeWorkOrder: AuthedRequestHandler = async (req, res, next) =>
     if (Array.isArray(req.body.signatures)) workOrder.signatures = req.body.signatures;
     if (Array.isArray(req.body.photos)) workOrder.photos = req.body.photos;
     if (req.body.failureCode !== undefined) workOrder.failureCode = req.body.failureCode;
+
     const saved = await workOrder.save();
-    await logAudit(req, 'complete', 'WorkOrder', req.params.id, before, saved.toObject());
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'complete',
+      entityType: 'WorkOrder',
+      entityId: req.params.id,
+      before,
+      after: saved.toObject(),
+    });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     res.json(saved);
     return;
@@ -518,6 +601,11 @@ export const cancelWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       res.status(400).json({ message: 'Tenant ID required' });
       return;
     }
+    const parsed = cancelWorkOrderSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json(parsed.error.flatten());
+      return;
+    }
     const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!workOrder) {
       res.status(404).json({ message: 'Not found' });
@@ -526,7 +614,16 @@ export const cancelWorkOrder: AuthedRequestHandler = async (req, res, next) => {
     const before = workOrder.toObject();
     workOrder.status = 'cancelled';
     const saved = await workOrder.save();
-    await logAudit(req, 'cancel', 'WorkOrder', req.params.id, before, saved.toObject());
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'cancel',
+      entityType: 'WorkOrder',
+      entityId: req.params.id,
+      before,
+      after: saved.toObject(),
+    });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     res.json(saved);
     return;

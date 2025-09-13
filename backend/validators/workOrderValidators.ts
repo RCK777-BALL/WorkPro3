@@ -37,7 +37,9 @@ export const workOrderValidators = [
   body('signatures.*.ts').optional().isISO8601().toDate(),
   body('timeSpentMin').optional().isNumeric(),
   body('photos').optional().isArray(),
-  body('photos.*').isString(),
+  body('photos.*')
+    .isString()
+    .custom((val) => /^https?:\/\//.test(val) || val.startsWith('/static/')),
   body('failureCode').optional().isString(),
   body('scheduledDate').optional().isISO8601().toDate(),
   body('asset').optional().isMongoId(),

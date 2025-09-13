@@ -36,6 +36,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
     workOrder?.signatures || initialData?.signatures || []
   );
   const [newSignature, setNewSignature] = useState<{ by: string; ts: string }>({ by: '', ts: '' });
+
   const departments = useDepartmentStore((s) => s.departments);
   const fetchDepartments = useDepartmentStore((s) => s.fetchDepartments);
   const [loadingDeps, setLoadingDeps] = useState(true);
@@ -138,6 +139,35 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
       // to capture the image
     } catch {
       addToast('Error accessing camera', 'error');
+    }
+  };
+
+  const fileToBase64 = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        resolve(result.split(',')[1]);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const uploadDocument = async () => {
+    try {
+      if (docFile) {
+        const base64 = await fileToBase64(docFile);
+        await http.post('/documents', { name: docFile.name, base64 });
+        addToast('Document uploaded', 'success');
+        setDocFile(null);
+      } else if (docUrl) {
+        const name = docUrl.split('/').pop() || 'document';
+        await http.post('/documents', { name, url: docUrl });
+        addToast('Document uploaded', 'success');
+        setDocUrl('');
+      }
+    } catch {
+      addToast('Failed to upload document', 'error');
     }
   };
 
@@ -436,11 +466,11 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 Supports: Images, PDFs, and documents
               </p>
             </div>
-            {files.length > 0 && (
-              <div className="mt-4 space-y-2">
-                {files.map((file, index) => (
-                  <div
-                    key={index}
+          {files.length > 0 && (
+            <div className="mt-4 space-y-2">
+              {files.map((file, index) => (
+                <div
+                  key={index}
                     className="flex items-center justify-between p-2 bg-neutral-50 rounded-md"
                   >
                     <div className="flex items-center">
@@ -462,6 +492,27 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 ))}
               </div>
             )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
+              Document
+            </label>
+            <input
+              type="file"
+              onChange={(e) => setDocFile(e.target.files?.[0] || null)}
+              className="mb-2"
+            />
+            <input
+              type="text"
+              value={docUrl}
+              onChange={(e) => setDocUrl(e.target.value)}
+              placeholder="Or paste URL"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-md mb-2"
+            />
+            <Button type="button" variant="outline" className="w-full" onClick={uploadDocument}>
+              Upload Document
+            </Button>
           </div>
 
           <div>

@@ -5,6 +5,7 @@
 import { Request, Response, NextFunction } from 'express';
 
 import WorkHistory from '../models/WorkHistory';
+import { writeAuditLog } from '../utils/audit';
  
  export const getAllWorkHistories = async (
   req: Request,
@@ -47,8 +48,18 @@ export const createWorkHistory = async (
   next: NextFunction,
 ): Promise<Response | void> => {
   try {
-    const newItem = new WorkHistory(req.body);
+    const tenantId = (req as any).tenantId;
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const newItem = new WorkHistory({ ...req.body, tenantId });
     const saved = await newItem.save();
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'create',
+      entityType: 'WorkHistory',
+      entityId: saved._id,
+      after: saved.toObject(),
+    });
     res.status(201).json(saved);
     return;
   } catch (err) {
@@ -63,14 +74,26 @@ export const updateWorkHistory = async (
   next: NextFunction,
 ): Promise<Response | void> => {
   try {
+    const tenantId = (req as any).tenantId;
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const existing = await WorkHistory.findById(req.params.id);
+    if (!existing) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     const updated = await WorkHistory.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
     });
-    if (!updated) {
-      res.status(404).json({ message: 'Not found' });
-      return;
-    }
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'update',
+      entityType: 'WorkHistory',
+      entityId: req.params.id,
+      before: existing.toObject(),
+      after: updated?.toObject(),
+    });
     res.json(updated);
     return;
   } catch (err) {
@@ -85,11 +108,21 @@ export const deleteWorkHistory = async (
   next: NextFunction,
 ): Promise<Response | void> => {
   try {
+    const tenantId = (req as any).tenantId;
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
     const deleted = await WorkHistory.findByIdAndDelete(req.params.id);
     if (!deleted) {
       res.status(404).json({ message: 'Not found' });
       return;
     }
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'delete',
+      entityType: 'WorkHistory',
+      entityId: req.params.id,
+      before: deleted.toObject(),
+    });
     res.json({ message: 'Deleted successfully' });
     return;
   } catch (err) {

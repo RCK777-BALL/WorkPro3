@@ -1,6 +1,8 @@
-/*
- * SPDX-License-Identifier: MIT
- */
+export type { Asset } from '@shared/asset';
+export type { WorkOrder, NewWorkOrder } from '@shared/workOrder';
+export type { InventoryItem, InventoryUpdatePayload } from '@shared/inventory';
+export type { UploadedFile, UploadResponse } from '@shared/uploads';
+export type { ApiResult } from '@shared/http';
 
 /**
  * Defines the allowed maintenance categories for upcoming maintenance tasks.
@@ -491,3 +493,4 @@ export interface WorkHistory {
   metrics: WorkHistoryMetrics;
   recentWork: WorkHistoryEntry[];
 }
+

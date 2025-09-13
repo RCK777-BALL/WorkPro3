@@ -17,10 +17,12 @@ import {
 
 /** ---- Types ---- */
 type Summary = {
-  openWorkOrders: number;
-  pmDueThisWeek: number;
-  assets: number;
-  uptime: number; // 0-100
+  pmCompliance: number;
+  woBacklog: number;
+  downtimeThisMonth: number;
+  costMTD: number;
+  cmVsPmRatio: number;
+  wrenchTimePct: number;
 };
 
 type RecentWorkOrder = {
@@ -46,14 +48,14 @@ export default function DashboardHome() {
       try {
         setError(null);
         const [sumRes, woRes] = await Promise.all([
-          http.get<Summary>("/api/summary"),
+          http.get<{ data: Summary }>("/api/summary"),
           http.get<RecentWorkOrder[]>("/api/workorders", {
             params: { limit: 5, sort: "-updatedAt" },
           }),
         ]);
 
         if (!cancelled) {
-          setSummary(sumRes.data);
+          setSummary(sumRes.data.data);
           setRecent(woRes.data);
         }
       } catch (e) {
@@ -114,31 +116,27 @@ export default function DashboardHome() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           loading={loading}
-          title="Open Work Orders"
-          value={summary?.openWorkOrders}
-          icon={<ClipboardList className="h-5 w-5" />}
-          footer={<Link className="inline-flex items-center gap-1 text-sm" to="/dashboard/work-orders">View all <ChevronRight className="h-4 w-4" /></Link>}
-        />
-        <StatCard
-          loading={loading}
-          title="PM Due (7d)"
-          value={summary?.pmDueThisWeek}
+          title="PM Compliance"
+          value={summary?.pmCompliance.toFixed(2)}
           icon={<Timer className="h-5 w-5" />}
-          footer={<Link className="inline-flex items-center gap-1 text-sm" to="/dashboard/pm">Open PM schedule <ChevronRight className="h-4 w-4" /></Link>}
         />
         <StatCard
           loading={loading}
-          title="Total Assets"
-          value={summary?.assets}
+          title="WO Backlog"
+          value={summary?.woBacklog}
+          icon={<ClipboardList className="h-5 w-5" />}
+        />
+        <StatCard
+          loading={loading}
+          title="Cost MTD"
+          value={summary?.costMTD}
           icon={<Boxes className="h-5 w-5" />}
-          footer={<Link className="inline-flex items-center gap-1 text-sm" to="/dashboard/assets">Manage assets <ChevronRight className="h-4 w-4" /></Link>}
         />
         <StatCard
           loading={loading}
-          title="Uptime"
-          value={summary ? `${summary.uptime.toFixed(1)}%` : undefined}
+          title="Wrench Time"
+          value={summary ? `${summary.wrenchTimePct.toFixed(1)}%` : undefined}
           icon={<Activity className="h-5 w-5" />}
-          footer={<Link className="inline-flex items-center gap-1 text-sm" to="/dashboard/analytics">See analytics <ChevronRight className="h-4 w-4" /></Link>}
         />
       </div>
 

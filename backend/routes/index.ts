@@ -9,6 +9,7 @@ export { default as reportsRoutes } from './ReportsRoutes';
 export { default as timeSheetRoutes } from './TimeSheetRoutes';
 export { default as calendarRoutes } from './CalendarRoutes';
 export { default as inventoryRoutes } from './InventoryRoutes';
+export { default as partsRoutes } from './PartsRoutes';
 export { default as auditRoutes } from './AuditRoutes';
 export { default as roleRoutes } from './RoleRoutes';
 export { default as userRoutes } from './UserRoutes';

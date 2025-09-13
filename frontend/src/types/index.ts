@@ -115,6 +115,7 @@ export interface WorkOrder {
   completedBy?: string;
   attachments?: any[];
   signature?: string;
+  parts?: string[];
 }
 
 export interface NewWorkOrder {

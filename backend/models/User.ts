@@ -18,7 +18,7 @@ export interface UserDocument extends Document {
   name: string;
   email: string;
   passwordHash: string;
-  role: UserRole;
+  roles: UserRole[];
   tenantId: mongoose.Schema.Types.ObjectId;
   employeeId: string;
   managerId?: Types.ObjectId;
@@ -44,10 +44,10 @@ const userSchema = new Schema<UserDocument>(
       lowercase: true,
     },
     passwordHash: { type: String, required: true },
-    role: {
-      type: String,
+    roles: {
+      type: [String],
       enum: ['admin', 'manager', 'technician', 'viewer'],
-      default: 'viewer',
+      default: ['viewer'],
     },
     tenantId: { type: mongoose.Schema.Types.ObjectId, required: true, index: true },
     employeeId: { type: String, required: true, unique: true },

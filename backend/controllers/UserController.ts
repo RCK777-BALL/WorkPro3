@@ -243,7 +243,7 @@ export const getUserTheme = async (req: Request, res: Response, next: NextFuncti
       res.status(401).json({ message: 'Not authenticated' });
       return;
     }
-    if (req.params.id !== userId && req.user?.role !== 'admin') {
+    if (req.params.id !== userId && !req.user?.roles?.includes('admin')) {
       res.status(403).json({ message: 'Forbidden' });
       return;
     }
@@ -299,7 +299,7 @@ export const updateUserTheme = async (req: Request, res: Response, next: NextFun
       res.status(401).json({ message: 'Not authenticated' });
       return;
     }
-    if (req.params.id !== userId && req.user?.role !== 'admin') {
+    if (req.params.id !== userId && !req.user?.roles?.includes('admin')) {
       res.status(403).json({ message: 'Forbidden' });
       return;
     }

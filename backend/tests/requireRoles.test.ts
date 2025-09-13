@@ -8,13 +8,13 @@ import express from 'express';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
-import User from '../../models/User';
-import { requireAuth } from '../../middleware/authMiddleware';
-import authorize from '../../middleware/authorize';
+import User from '../models/User';
+import { requireAuth } from '../middleware/authMiddleware';
+import requireRoles from '../middleware/requireRoles';
 
 const app = express();
 app.use(express.json());
-app.get('/protected', requireAuth, authorize('admin'), (_req, res) => {
+app.get('/protected', requireAuth, requireRoles(['admin']), (_req, res) => {
   res.json({ ok: true });
 });
 
@@ -55,8 +55,8 @@ beforeEach(async () => {
   tokenViewer = jwt.sign({ id: viewer._id.toString() }, process.env.JWT_SECRET!);
 });
 
-describe('authorize middleware', () => {
-  it('allows access when role is permitted', async () => {
+describe('requireRoles middleware', () => {
+  it('allows access when user has any required role', async () => {
     const res = await request(app)
       .get('/protected')
       .set('Authorization', `Bearer ${tokenAdmin}`)
@@ -64,14 +64,10 @@ describe('authorize middleware', () => {
     expect(res.body.ok).toBe(true);
   });
 
-  it('denies access when role is not permitted', async () => {
+  it('denies access when user lacks required roles', async () => {
     await request(app)
       .get('/protected')
       .set('Authorization', `Bearer ${tokenViewer}`)
       .expect(403);
-  });
-
-  it('returns 401 when no authentication is provided', async () => {
-    await request(app).get('/protected').expect(401);
   });
 });

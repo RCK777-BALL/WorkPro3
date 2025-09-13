@@ -37,7 +37,7 @@ beforeAll(async () => {
     name: 'A',
     email: 'a@example.com',
     passwordHash: 'pass',
-    role: 'admin',
+    roles: ['admin'],
     tenantId: tenantA,
     employeeId: 'A1',
   }));
@@ -45,12 +45,12 @@ beforeAll(async () => {
     name: 'B',
     email: 'b@example.com',
     passwordHash: 'pass',
-    role: 'admin',
+    roles: ['admin'],
     tenantId: tenantB,
     employeeId: 'B1',
   }));
-  tokenA = jwt.sign({ id: userA._id.toString(), role: userA.role }, process.env.JWT_SECRET!);
-  tokenB = jwt.sign({ id: userB._id.toString(), role: userB.role }, process.env.JWT_SECRET!);
+  tokenA = jwt.sign({ id: userA._id.toString(), roles: userA.roles }, process.env.JWT_SECRET!);
+  tokenB = jwt.sign({ id: userB._id.toString(), roles: userB.roles }, process.env.JWT_SECRET!);
 });
 
 afterAll(async () => {
@@ -65,7 +65,7 @@ beforeEach(async () => {
     name: userA.name,
     email: userA.email,
     passwordHash: userA.passwordHash,
-    role: userA.role,
+    roles: userA.roles,
     tenantId: tenantA,
     employeeId: userA.employeeId,
   });
@@ -74,7 +74,7 @@ beforeEach(async () => {
     name: userB.name,
     email: userB.email,
     passwordHash: userB.passwordHash,
-    role: userB.role,
+    roles: userB.roles,
     tenantId: tenantB,
     employeeId: userB.employeeId,
   });

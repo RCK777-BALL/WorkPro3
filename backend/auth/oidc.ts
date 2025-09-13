@@ -33,7 +33,7 @@ export const mapRoles = (groups: string[] = []): string => {
 
 interface UserInfo {
   email?: string | undefined;
-  role: string;
+  roles: string[];
 }
 
 export const oidcVerify: VerifyCallback = async (
@@ -50,7 +50,7 @@ export const oidcVerify: VerifyCallback = async (
     const email = profile?.emails?.[0]?.value;
     const groups = profile?._json?.groups || [];
     const role = mapRoles(groups);
-    const user: UserInfo = { email, role };
+    const user: UserInfo = { email, roles: [role] };
     done(null, user);
   } catch (err) {
     done(err as Error);

@@ -19,7 +19,7 @@ beforeAll(async () => {
     name: 'Test User',
     email: 'test@example.com',
     passwordHash: 'pass',
-    role: 'admin',
+    roles: ['admin'],
     tenantId: new mongoose.Types.ObjectId(),
   });
   userId = user._id;

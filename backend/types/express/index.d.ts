@@ -7,7 +7,7 @@ export interface RequestUser {
   id?: string;
   _id?: Types.ObjectId | string;
   email: string;
-  role?: UserRole;
+  roles?: UserRole[];
   tenantId?: string;
    siteId?: string;
   vendorId?: string;
@@ -27,7 +27,7 @@ declare global {
     id?: string;
     _id?: Types.ObjectId | string;
     email: string;
-    role?: UserRole;
+    roles?: UserRole[];
     tenantId?: string;
     theme?: 'light' | 'dark' | 'system';
     colorScheme?: string;

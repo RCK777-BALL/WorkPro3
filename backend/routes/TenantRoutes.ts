@@ -11,7 +11,7 @@ import {
   deleteTenant,
 } from '../controllers/TenantController';
 import { requireAuth } from '../middleware/authMiddleware';
-import requireRole from '../middleware/requireRole';
+import requireRoles from '../middleware/requireRoles';
 import { validate } from '../middleware/validationMiddleware';
 import validateObjectId from '../middleware/validateObjectId';
 import { tenantValidators } from '../validators/tenantValidators';
@@ -19,7 +19,7 @@ import { tenantValidators } from '../validators/tenantValidators';
 const router = express.Router();
 
 router.use(requireAuth);
-router.use(requireRole('admin'));
+router.use(requireRoles(['admin']));
 
 router.get('/', getAllTenants);
 router.get('/:id', validateObjectId('id'), getTenantById);

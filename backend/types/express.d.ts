@@ -7,7 +7,7 @@ declare global {
       id?: string;
       _id?: string;
       tenantId?: string;
-      role?: UserRole;
+      roles?: UserRole[];
     }
 
     interface Request {

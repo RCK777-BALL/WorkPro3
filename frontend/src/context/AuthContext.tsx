@@ -53,7 +53,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
     fetchUser();
-  }, [handleSetUser]);
+    // handleSetUser is intentionally omitted from the dependency array to
+    // avoid re-fetching on every render when it updates state
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const login = useCallback(
     async (email: string, password: string) => {

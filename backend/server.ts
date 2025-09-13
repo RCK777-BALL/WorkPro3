@@ -36,6 +36,7 @@ import {
   teamRoutes,
   ThemeRoutes,
   requestPortalRoutes,
+  publicRequestRoutes,
   vendorPortalRoutes,
   chatRoutes,
   webhooksRoutes,
@@ -140,6 +141,8 @@ if (env.NODE_ENV === "test") {
     res.json(req.query);
   });
 }
+
+app.use("/api/public", publicRequestRoutes);
 
 // --- Routes (order matters for the limiter) ---
 app.use("/api/auth", authRoutes);

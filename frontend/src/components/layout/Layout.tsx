@@ -6,9 +6,8 @@ import { useState } from 'react';
 import clsx from 'clsx';
 import { Command, Menu as MenuIcon, User } from 'lucide-react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { twMerge } from 'tailwind-merge';
 
-import ThemeToggle from '@common/ThemeToggle';
+import ThemeToggle from '../common/ThemeToggle';
 import { useAuthStore, type AuthState } from '@/store/authStore';
 
 interface NavItem {
@@ -51,26 +50,21 @@ export default function Layout() {
   return (
     <div className="flex h-screen">
       <aside
-        className={twMerge(
-          clsx(
-            'fixed inset-y-0 z-20 w-64 transform border-r bg-gray-50 p-4 transition-transform sm:relative sm:translate-x-0',
-            sidebarOpen ? 'translate-x-0' : '-translate-x-full sm:translate-x-0'
-          )
+        className={clsx(
+          'fixed inset-y-0 z-20 w-64 transform border-r bg-gray-50 p-4 transition-transform sm:relative sm:translate-x-0',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full sm:translate-x-0'
         )}
       >
-        <nav className="space-y-2">
-          {items.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              className="block rounded px-2 py-1 text-sm hover:bg-gray-200"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        {items.map((item) => (
+          <Link
+            key={item.to}
+            to={item.to}
+            className="block rounded px-2 py-1 text-sm hover:bg-gray-200"
+          >
+            {item.label}
+          </Link>
+        ))}
       </aside>
-
       <div className="flex flex-1 flex-col">
         <header className="flex h-16 items-center justify-between border-b px-4">
           <div className="flex items-center gap-2">

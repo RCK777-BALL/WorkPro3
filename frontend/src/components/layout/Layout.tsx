@@ -9,10 +9,12 @@ import Header from './Header';
 import Sidebar from './Sidebar';
 import RightPanel from './RightPanel';
 
+
 export default function Layout() {
   return (
     <div className="flex h-screen">
       <Sidebar />
+
       <div className="flex flex-1 flex-col">
         <Header onToggleSidebar={() => {}} />
         <main className="flex-1 overflow-auto p-4">

@@ -25,6 +25,7 @@
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
   }
+
   .dark {
     --background: 222.2 47.4% 11.2%;
     --foreground: 210 40% 98%;
@@ -47,3 +48,49 @@
     --ring: 224.3 76.3% 48%;
   }
 }
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply min-h-screen bg-gradient-to-br from-background via-background to-muted text-foreground;
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border bg-card text-card-foreground shadow;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  }
+
+  .table {
+    @apply w-full caption-bottom text-sm;
+  }
+
+  .table thead {
+    @apply bg-muted;
+  }
+
+  .table th,
+  .table td {
+    @apply h-10 px-2 text-left align-middle;
+  }
+
+  .table tbody tr {
+    @apply border-b transition-colors hover:bg-muted/50;
+  }
+
+  .table tbody tr:last-child {
+    @apply border-0;
+  }
+
+  .table caption {
+    @apply mt-4 text-sm text-muted-foreground;
+  }
+}
+

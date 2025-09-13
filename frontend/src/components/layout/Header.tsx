@@ -2,124 +2,41 @@
  * SPDX-License-Identifier: MIT
  */
 
- 
- 
-import React, { useEffect, useState } from 'react';
-
-import { Search, Menu, Database } from 'lucide-react';
-import GlobalSearch from '@/components/GlobalSearch';
-
-import ThemeToggle from '@common/ThemeToggle';
-import Avatar from '@common/Avatar';
-import { Button } from '@/components/ui/button';
-import { useAuthStore, type AuthState, isAdmin as selectIsAdmin, isSupervisor as selectIsSupervisor } from '@/store/authStore';
-
-import { useDataStore } from '@/store/dataStore';
+import React, { useState } from 'react';
+import { Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import Avatar from '@common/Avatar';
 import NotificationMenu from './NotificationMenu';
-import HelpMenu from './HelpMenu';
-import SearchBar from './SearchBar';
+import { useAuthStore, type AuthState } from '@/store/authStore';
 
-interface HeaderProps {
-  onToggleSidebar: () => void;
-  title?: string;
-}
-
-const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
-  const { t, i18n } = useTranslation();
+const Header: React.FC = () => {
+  const { t } = useTranslation();
   const user = useAuthStore((s: AuthState) => s.user);
-  const isAdmin = useAuthStore(selectIsAdmin);
-  const isSupervisor = useAuthStore(selectIsSupervisor);
-  const { useFakeData, setUseFakeData } = useDataStore();
-  const [showHelpMenu, setShowHelpMenu] = useState(false);
-  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showGlobalSearch, setShowGlobalSearch] = useState(false);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        setShowGlobalSearch(true);
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, []);
-
- 
- 
- 
-
-  const handleToggleDataMode = () => {
-    setUseFakeData(!useFakeData);
-  };
 
   return (
-    <>
-      <header className="relative h-16 bg-gradient-to-r from-primary-light to-primary-dark text-primary-foreground border-b border-border flex items-center justify-between px-2 sm:px-4 lg:px-6">
-        <div className="flex items-center">
-          <button
-            onClick={onToggleSidebar}
-            aria-label="Toggle sidebar"
-            className="lg:hidden p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 focus:outline-none"
-          >
-            <Menu size={20} className="dark:text-white" />
-          </button>
-          <h1 className="text-xl font-semibold text-white ml-2 lg:ml-0">{title ?? t('nav.dashboard')}</h1>
-          <button
-            onClick={() => setShowMobileSearch(!showMobileSearch)}
-            aria-label="Search"
-            className="md:hidden ml-2 p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 focus:outline-none"
-          >
-            <Search size={20} className="dark:text-white" />
-          </button>
+    <header className="flex h-16 items-center justify-between border-b bg-white px-4 dark:bg-neutral-900">
+      <div className="flex-1 max-w-md">
+        <div className="relative">
+          <Search
+            size={18}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 dark:text-neutral-400"
+          />
+          <input
+            type="text"
+            placeholder={t('header.searchPlaceholder')}
+            className="w-full rounded-md border border-neutral-300 bg-transparent py-2 pl-9 pr-3 text-sm text-neutral-900 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+          />
         </div>
-
-        <SearchBar showMobileSearch={showMobileSearch} />
-
-        <div className="flex items-center space-x-4">
-          {(isAdmin || isSupervisor) && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleToggleDataMode}
-              className={`flex items-center gap-1 ${useFakeData ? 'text-warning-600' : 'text-success-600'}`}
-            >
-              <Database size={16} />
-              {useFakeData ? t('header.demoMode') : t('header.liveData')}
-            </Button>
-          )}
-
-          <ThemeToggle />
-          <select
-            value={i18n.language}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => i18n.changeLanguage(e.target.value)}
-            className="border rounded p-1 text-sm bg-white dark:bg-neutral-800 dark:text-white"
-          >
-            <option value="en">EN</option>
-            <option value="es">ES</option>
-          </select>
-
-          <NotificationMenu open={showNotifications} onOpenChange={setShowNotifications} />
-
-          <HelpMenu open={showHelpMenu} onOpenChange={setShowHelpMenu} />
-
-          <div className="flex items-center ml-2">
-            <Avatar name={user?.name || ''} size="sm" />
-            <div className="ml-2 hidden md:block">
-              <p className="text-sm font-medium text-neutral-900 dark:text-white">{user?.name}</p>
-              <p className="text-xs text-neutral-700 dark:text-neutral-300">
-                {t(`roles.${user?.role ?? 'tech'}`)}
-              </p>
-            </div>
-          </div>
-        </div>
-      </header>
-      <GlobalSearch open={showGlobalSearch} onOpenChange={setShowGlobalSearch} />
-    </>
+      </div>
+      <div className="ml-4 flex items-center gap-4">
+        <NotificationMenu open={showNotifications} onOpenChange={setShowNotifications} />
+        <Avatar name={user?.name || ''} size="sm" />
+      </div>
+    </header>
   );
 };
 
 export default Header;
+

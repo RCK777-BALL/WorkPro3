@@ -26,6 +26,9 @@ export const updateTheme: AuthedRequestHandler = async (req, res, next) => {
   try {
     const { theme, colorScheme } = req.body;
     const { user } = req;
+    const tenantId = req.tenantId;
+    if (!tenantId)
+      return res.status(400).json({ message: 'Tenant ID required' });
 
     const updated = await User.findByIdAndUpdate(
       user!._id,
@@ -40,7 +43,7 @@ export const updateTheme: AuthedRequestHandler = async (req, res, next) => {
 
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     await writeAuditLog({
-      tenantId: req.tenantId,
+      tenantId,
       userId,
       action: 'update',
       entityType: 'UserTheme',

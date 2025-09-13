@@ -45,6 +45,8 @@ export const createConditionRule = async (
 ) => {
   try {
     const tenantId = req.tenantId;
+    if (!tenantId)
+      return res.status(400).json({ message: 'Tenant ID required' });
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const newItem = new ConditionRule({ ...req.body, tenantId });
     const saved = await newItem.save();
@@ -69,6 +71,8 @@ export const updateConditionRule = async (
 ) => {
   try {
     const tenantId = req.tenantId;
+    if (!tenantId)
+      return res.status(400).json({ message: 'Tenant ID required' });
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const existing = await ConditionRule.findOne({ _id: req.params.id, tenantId });
     if (!existing) return res.status(404).json({ message: 'Not found' });
@@ -99,6 +103,8 @@ export const deleteConditionRule = async (
 ) => {
   try {
     const tenantId = req.tenantId;
+    if (!tenantId)
+      return res.status(400).json({ message: 'Tenant ID required' });
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const deleted = await ConditionRule.findOneAndDelete({
       _id: req.params.id,

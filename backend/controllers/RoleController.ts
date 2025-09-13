@@ -28,7 +28,11 @@ export const getRoleById = async (req: Request, res: Response, next: NextFunctio
 
 export const createRole = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = (req as any).tenantId;
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const role = await Role.create({ ...req.body, tenantId });
     await writeAuditLog({
@@ -47,7 +51,11 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
 
 export const updateRole = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = (req as any).tenantId;
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const existing = await Role.findById(req.params.id);
     if (!existing) return res.status(404).json({ message: 'Not found' });
@@ -72,7 +80,11 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
 
 export const deleteRole = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = (req as any).tenantId;
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const role = await Role.findByIdAndDelete(req.params.id);
     if (!role) return res.status(404).json({ message: 'Not found' });

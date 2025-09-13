@@ -48,7 +48,11 @@ export const createTimeSheet = async (
   next: NextFunction,
 ): Promise<Response | void> => {
   try {
-    const tenantId = (req as any).tenantId;
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const newItem = new TimeSheet({ ...req.body, tenantId });
     const saved = await newItem.save();
@@ -74,7 +78,11 @@ export const updateTimeSheet = async (
   next: NextFunction,
 ): Promise<Response | void> => {
   try {
-    const tenantId = (req as any).tenantId;
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const existing = await TimeSheet.findById(req.params.id);
     if (!existing) {
@@ -108,7 +116,11 @@ export const deleteTimeSheet = async (
   next: NextFunction,
 ): Promise<Response | void> => {
   try {
-    const tenantId = (req as any).tenantId;
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const deleted = await TimeSheet.findByIdAndDelete(req.params.id);
     if (!deleted) {

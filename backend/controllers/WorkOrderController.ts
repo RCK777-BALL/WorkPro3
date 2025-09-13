@@ -32,6 +32,7 @@ const workOrderCreateFields = [
   'failureCode',
   'pmTask',
   'department',
+  
   'line',
   'station',
   'teamMemberName',

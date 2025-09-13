@@ -11,6 +11,8 @@ import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
 import { filterFields } from '../utils/filterFields';
 import { writeAuditLog } from '../utils/audit';
+import type { ParamsDictionary } from 'express-serve-static-core';
+import type { WorkOrderType, WorkOrderInput } from '../types/workOrder';
 
 import { sendResponse } from '../utils/sendResponse';
 import {
@@ -231,7 +233,14 @@ export const createWorkOrder: AuthedRequestHandler<ParamsDictionary, WorkOrderTy
       return;
     }
 
-    const newItem = new WorkOrder({ ...parsed.data, tenantId });
+    const assignees = parsed.data.assignees?.map(
+      (id) => new Types.ObjectId(id)
+    );
+    const newItem = new WorkOrder({
+      ...parsed.data,
+      ...(assignees && { assignees }),
+      tenantId,
+    });
     const saved = await newItem.save();
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     await writeAuditLog({
@@ -288,7 +297,12 @@ export const updateWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       sendResponse(res, null, parsed.error.flatten(), 400);
       return;
     }
-    const update = parsed.data;
+    const update: any = parsed.data;
+    if (update.assignees) {
+      update.assignees = update.assignees.map(
+        (id: string) => new Types.ObjectId(id)
+      );
+    }
     const existing = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!existing) {
       sendResponse(res, null, 'Not found', 404);
@@ -487,7 +501,9 @@ export const assignWorkOrder: AuthedRequestHandler = async (req, res, next) => {
     const before = workOrder.toObject();
     workOrder.status = 'assigned';
     if (parsed.data.assignees) {
-      workOrder.assignees = parsed.data.assignees;
+      workOrder.assignees = parsed.data.assignees.map(
+        (id) => new Types.ObjectId(id)
+      );
     }
     const saved = await workOrder.save();
     const userId = (req.user as any)?._id || (req.user as any)?.id;

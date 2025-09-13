@@ -1,12 +1,22 @@
 {
   "compilerOptions": {
     "strict": true,
+    "noImplicitAny": true,
     "exactOptionalPropertyTypes": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "moduleResolution": "node",
     "target": "ES2020",
-    "module": "commonjs"
+    "module": "commonjs",
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["shared/types/*"]
+    }
   },
-  "include": ["backend/**/*.ts", "backend/types/**/*.d.ts", "dev-server/**/*.ts"]
+  "include": [
+    "backend/**/*.ts",
+    "backend/types/**/*.d.ts",
+    "dev-server/**/*.ts",
+    "shared/types/**/*.ts"
+  ]
 }

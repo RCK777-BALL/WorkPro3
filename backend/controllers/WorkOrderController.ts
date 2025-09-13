@@ -13,6 +13,9 @@ import { WorkOrderUpdatePayload } from '../types/Payloads';
 import { filterFields } from '../utils/filterFields';
 import { logAudit } from '../utils/audit';
 import { sendResponse } from '../utils/sendResponse';
+import type { ParamsDictionary } from 'express-serve-static-core';
+import type { WorkOrder as WorkOrderType } from '@shared/workOrder';
+import { workOrderSchema, type WorkOrderInput } from '../src/schemas/workOrder';
 
 const workOrderCreateFields = [
   'title',
@@ -43,9 +46,9 @@ const workOrderCreateFields = [
 
 const workOrderUpdateFields = [...workOrderCreateFields];
 
-function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
-  const plain = typeof doc.toObject === "function"
-    ? doc.toObject({ getters: true, virtuals: false })
+function toWorkOrderUpdatePayload(doc: Partial<WorkOrderType> & { _id: Types.ObjectId | string; deleted?: boolean }): WorkOrderUpdatePayload {
+  const plain = typeof (doc as any).toObject === 'function'
+    ? (doc as any).toObject({ getters: true, virtuals: false })
     : doc;
   return {
     ...plain,
@@ -204,11 +207,12 @@ export const getWorkOrderById: AuthedRequestHandler = async (req, res, next) => 
  *       400:
  *         description: Validation error
  */
-export const createWorkOrder: AuthedRequestHandler = async (req, res, next) => {
+
+export const createWorkOrder: AuthedRequestHandler<ParamsDictionary, WorkOrderType, WorkOrderInput> = async (req, res, next) => {
   try {
-    const errors = validationResult(req as any);
-    if (!errors.isEmpty()) {
-      sendResponse(res, null, errors.array(), 400);
+    const parsed = workOrderSchema.safeParse(req.body);
+    if (!parsed.success) {
+      sendResponse(res, null, parsed.error.flatten(), 400);
       return;
     }
     const tenantId = req.tenantId;
@@ -216,8 +220,7 @@ export const createWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const payload = filterFields(req.body, workOrderCreateFields);
-    const newItem = new WorkOrder({ ...payload, tenantId });
+    const newItem = new WorkOrder({ ...parsed.data, tenantId });
     const saved = await newItem.save();
     await logAudit(req, 'create', 'WorkOrder', saved._id, null, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));

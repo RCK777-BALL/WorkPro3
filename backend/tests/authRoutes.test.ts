@@ -107,7 +107,8 @@ describe('Auth Routes', () => {
     delete process.env.INCLUDE_AUTH_TOKEN;
   });
 
-  it('excludes token when INCLUDE_AUTH_TOKEN is unset', async () => {
+  it('omits token from response when INCLUDE_AUTH_TOKEN is unset', async () => {
+
     delete process.env.INCLUDE_AUTH_TOKEN;
     await User.create({
       name: 'NoToken',

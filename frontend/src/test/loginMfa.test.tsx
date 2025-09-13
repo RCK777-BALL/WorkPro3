@@ -54,7 +54,7 @@ describe('Login MFA flow', () => {
       }
       if (url === '/auth/mfa/verify') {
         return Promise.resolve({
-          data: { user: { id: 'u1', email: 'user@example.com', role: 'viewer' }, token: 't' },
+          data: { user: { id: 'u1', email: 'user@example.com', role: 'tech' }, token: 't' },
         });
       }
       return Promise.reject(new Error('unknown'));

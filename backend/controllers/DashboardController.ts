@@ -8,6 +8,7 @@ import Asset from '../models/Asset';
 import WorkOrder from '../models/WorkOrder';
 import PMTask from '../models/PMTask';
 import InventoryItem from '../models/InventoryItem';
+import { nextCronOccurrenceWithin } from '../services/PMScheduler';
 
 export const getAssetSummaries = async (_req: Request, res: Response, next: NextFunction) => {
   try {
@@ -37,12 +38,13 @@ export const getUpcomingMaintenance = async (_req: Request, res: Response, next:
     const nextWeek = new Date(now);
     nextWeek.setDate(now.getDate() + 7);
 
-    const tasks = await PMTask.find({
-      nextDue: { $lte: nextWeek },
-      isActive: true,
-    }).populate('asset');
+    const tasks = await PMTask.find({ active: true }).populate('asset');
+    const upcoming = tasks.filter((t) => {
+      if (t.rule?.type !== 'calendar' || !t.rule.cron) return false;
+      return !!nextCronOccurrenceWithin(t.rule.cron, now, 7);
+    });
 
-    res.json(tasks);
+    res.json(upcoming);
   } catch (err) {
     next(err);
   }

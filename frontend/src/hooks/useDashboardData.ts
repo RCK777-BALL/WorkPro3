@@ -17,23 +17,24 @@ import type { DateRange, Timeframe } from '@/store/dashboardStore';
 
 // normalize backend work-order status keys to camelCase
 const normalizeWOKey = (key: string): keyof WorkOrderStatusMap => {
-  if (key === 'in-progress') return 'inProgress';
-  if (key === 'on-hold') return 'onHold';
+  if (key === 'in_progress') return 'inProgress';
   return key as keyof WorkOrderStatusMap;
 };
 
 interface WorkOrderStatusMap {
-  open: number;
+  requested: number;
+  assigned: number;
   inProgress: number;
-  onHold: number;
   completed: number;
+  cancelled: number;
 }
 
 const defaultWOStatus: WorkOrderStatusMap = {
-  open: 0,
+  requested: 0,
+  assigned: 0,
   inProgress: 0,
-  onHold: 0,
   completed: 0,
+  cancelled: 0,
 };
 
  const defaultAssetStatus: AssetStatusMap = {};

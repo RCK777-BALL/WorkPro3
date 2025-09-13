@@ -249,7 +249,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
 
   const role = selectedRole;
   const defaultKPIs: StatCardProps[] =
-    role === 'technician'
+    role === 'tech'
       ? baseKPIs.filter((kpi) => ['work_orders', 'pm_tasks', 'inventory'].includes(kpi.id))
       : baseKPIs;
 

@@ -73,6 +73,7 @@
     "@types/passport-github2": "^1.2.9",
     "@types/passport-google-oauth20": "^2.0.16",
     "@types/pdfkit": "^0.17.0",
+    "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
     "@types/speakeasy": "^2.0.10",
     "@types/supertest": "^2.0.16",

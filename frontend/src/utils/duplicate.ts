@@ -21,7 +21,7 @@ export const duplicateWorkOrder = (workOrder: WorkOrder): WorkOrder => {
     ...workOrder,
     id: `${workOrder.id}-copy`,
     title: `${workOrder.title} (Copy)`,
-    status: 'open',
+    status: 'requested',
     createdAt: new Date().toISOString(),
     scheduledDate: new Date().toISOString().split('T')[0],
   };

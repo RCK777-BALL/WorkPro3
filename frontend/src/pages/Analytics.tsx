@@ -115,6 +115,7 @@ export default function Analytics() {
         <Button
           variant={tab === 'downtime' ? 'primary' : 'secondary'}
           onClick={() => setTab('downtime')}
+
         >
           Downtime
         </Button>

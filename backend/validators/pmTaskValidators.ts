@@ -6,13 +6,24 @@ import { body } from 'express-validator';
 
 export const pmTaskValidators = [
   body('title').notEmpty().withMessage('title is required'),
-  body('frequency')
+  body('rule.type')
     .notEmpty()
-    .withMessage('frequency is required')
-    .isIn(['daily', 'weekly', 'monthly', 'quarterly', 'biannually', 'annually']),
+    .withMessage('rule.type is required')
+    .isIn(['calendar', 'meter']),
+  body('rule.cron')
+    .if(body('rule.type').equals('calendar'))
+    .notEmpty()
+    .withMessage('cron is required for calendar tasks'),
+  body('rule.meterName')
+    .if(body('rule.type').equals('meter'))
+    .notEmpty()
+    .withMessage('meterName is required for meter tasks'),
+  body('rule.threshold')
+    .if(body('rule.type').equals('meter'))
+    .isNumeric()
+    .withMessage('threshold must be a number'),
   body('active').optional().isBoolean(),
-  body('lastRun').optional().isISO8601().toDate(),
-  body('nextDue').optional().isISO8601().toDate(),
+  body('lastGeneratedAt').optional().isISO8601().toDate(),
   body('asset').optional().isMongoId(),
   body('notes').optional().isString(),
   body('department').optional().isString(),

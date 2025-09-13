@@ -23,7 +23,7 @@ router.get('/:id', getConditionRuleById);
 
 router.post(
   '/',
-  requireRoles(['admin', 'manager']),
+  requireRoles(['admin', 'supervisor']),
   conditionRuleValidators,
   validate,
   createConditionRule
@@ -31,12 +31,12 @@ router.post(
 
 router.put(
   '/:id',
-  requireRoles(['admin', 'manager']),
+  requireRoles(['admin', 'supervisor']),
   conditionRuleValidators,
   validate,
   updateConditionRule
 );
 
-router.delete('/:id', requireRoles(['admin', 'manager']), deleteConditionRule);
+router.delete('/:id', requireRoles(['admin', 'supervisor']), deleteConditionRule);
 
 export default router;

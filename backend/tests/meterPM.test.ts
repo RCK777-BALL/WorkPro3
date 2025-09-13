@@ -10,6 +10,7 @@ import Asset from '../models/Asset';
 import Meter from '../models/Meter';
 import MeterReading from '../models/MeterReading';
 import WorkOrder from '../models/WorkOrder';
+import PMTask from '../models/PMTask';
 import { runPMScheduler } from '../services/PMScheduler';
 
 let mongo: MongoMemoryServer;
@@ -50,6 +51,12 @@ describe('meter based PM generation', () => {
       lastWOValue: 0,
       tenantId,
       siteId,
+    });
+    await PMTask.create({
+      title: 'Meter Task',
+      tenantId,
+      rule: { type: 'meter', meterName: 'Run Hours', threshold: 100 },
+      asset: asset._id,
     });
     await MeterReading.create({ meter: meter._id, value: 120, tenantId, siteId });
     meter.currentValue = 120;

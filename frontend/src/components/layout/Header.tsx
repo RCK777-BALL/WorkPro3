@@ -14,7 +14,7 @@ import ThemeToggle from '@common/ThemeToggle';
 import Avatar from '@common/Avatar';
 import Card from '@common/Card';
 import Button from '@common/Button';
-import { useAuthStore, type AuthState, isAdmin as selectIsAdmin, isManager as selectIsManager } from '@/store/authStore';
+import { useAuthStore, type AuthState, isAdmin as selectIsAdmin, isSupervisor as selectIsSupervisor } from '@/store/authStore';
 import { useDataStore } from '@/store/dataStore';
 import { useNavigate } from 'react-router-dom';
 
@@ -37,7 +37,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
   const { addToast } = useToast();
   const user = useAuthStore((s: AuthState) => s.user);
   const isAdmin = useAuthStore(selectIsAdmin);
-  const isManager = useAuthStore(selectIsManager);
+  const isSupervisor = useAuthStore(selectIsSupervisor);
   const { useFakeData, setUseFakeData } = useDataStore();
   const navigate = useNavigate();
   const [showHelpMenu, setShowHelpMenu] = useState(false);
@@ -242,7 +242,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
       </div>
 
       <div className="flex items-center space-x-4">
-        {(isAdmin || isManager) && (
+        {(isAdmin || isSupervisor) && (
           <Button
             variant="outline"
             size="sm"
@@ -419,7 +419,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
           <div className="ml-2 hidden md:block">
             <p className="text-sm font-medium text-neutral-900 dark:text-white">{user?.name}</p>
             <p className="text-xs text-neutral-700 dark:text-neutral-300">
-              {t(`roles.${user?.role ?? 'viewer'}`)}
+              {t(`roles.${user?.role ?? 'tech'}`)}
             </p>
           </div>
         </div>

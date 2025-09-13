@@ -16,8 +16,8 @@ const workOrderSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['open', 'in-progress', 'on-hold', 'completed'],
-      default: 'open',
+      enum: ['requested', 'assigned', 'in_progress', 'completed', 'cancelled'],
+      default: 'requested',
     },
     approvalStatus: {
       type: String,
@@ -27,6 +27,12 @@ const workOrderSchema = new mongoose.Schema(
     approvalRequestedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    assignees: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    checklists: [String],
+    partsUsed: [{ type: mongoose.Schema.Types.ObjectId, ref: 'InventoryItem' }],
+    timeSpentMin: Number,
+    photos: [String],
+    failureCode: String,
 
     /** Optional relationships */
     pmTask: { type: mongoose.Schema.Types.ObjectId, ref: 'PMTask' },

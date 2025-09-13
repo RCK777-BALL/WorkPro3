@@ -5,11 +5,13 @@
 import jwt from 'jsonwebtoken';
 import { getJwtSecret } from '../utils/getJwtSecret';
 import type { AuthedRequestHandler } from '../types/http';
+import { sendResponse } from '../utils/sendResponse';
 
 export interface AuthPayload {
   id: string;
   email: string;
   tenantId?: string;
+  siteId?: string;
   tokenVersion?: number;
 }
 
@@ -28,7 +30,7 @@ export const requireAuth: AuthedRequestHandler = (req, res, next) => {
 
   const token = bearer ?? cookieToken;
   if (!token) {
-    res.status(401).json({ message: 'Unauthorized' });
+    sendResponse(res, null, 'Unauthorized', 401);
     return;
   }
 
@@ -36,17 +38,28 @@ export const requireAuth: AuthedRequestHandler = (req, res, next) => {
   try {
     secret = getJwtSecret();
   } catch {
-    res.status(500).json({ message: 'Server configuration issue' });
+    sendResponse(res, null, 'Server configuration issue', 500);
     return;
   }
 
   try {
     const payload = jwt.verify(token, secret) as AuthPayload;
     (req as any).user = payload;
+
+    if (payload.tenantId) {
+      (req as any).tenantId = payload.tenantId;
+    }
+
+    const headerSiteId = req.header('x-site-id');
+    const resolvedSiteId = payload.siteId ?? headerSiteId;
+    if (resolvedSiteId) {
+      (req as any).siteId = resolvedSiteId;
+    }
+
     next();
     return;
   } catch {
-    res.status(401).json({ message: 'Invalid or expired token' });
+    sendResponse(res, null, 'Invalid or expired token', 401);
     return;
   }
 };

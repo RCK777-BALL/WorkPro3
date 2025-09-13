@@ -3,8 +3,10 @@
  */
 
 import { useState } from 'react';
+import clsx from 'clsx';
 import { Command, Menu as MenuIcon, User } from 'lucide-react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
+import { twMerge } from 'tailwind-merge';
 
 import ThemeToggle from '@common/ThemeToggle';
 import { useAuthStore, type AuthState } from '@/store/authStore';
@@ -49,9 +51,12 @@ export default function Layout() {
   return (
     <div className="flex h-screen">
       <aside
-        className={`fixed inset-y-0 z-20 w-64 transform border-r bg-gray-50 p-4 transition-transform sm:relative sm:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full sm:translate-x-0'
-        }`}
+        className={twMerge(
+          clsx(
+            'fixed inset-y-0 z-20 w-64 transform border-r bg-gray-50 p-4 transition-transform sm:relative sm:translate-x-0',
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full sm:translate-x-0'
+          )
+        )}
       >
         <nav className="space-y-2">
           {items.map((item) => (

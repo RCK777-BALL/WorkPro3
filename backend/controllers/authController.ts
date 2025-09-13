@@ -2,15 +2,18 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { Response, NextFunction } from 'express';
-import type { AuthedRequestHandler } from '../types/http';
+import type { Request, Response, NextFunction } from 'express';
 import { sendResponse } from '../utils/sendResponse';
 
 
 /**
  * Return the authenticated user's payload from the request.
  */
-export const getMe: AuthedRequestHandler = async (req, res, next) => {
+export const getMe = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const user = (req as any).user;
     if (!user) {
@@ -28,7 +31,11 @@ export const getMe: AuthedRequestHandler = async (req, res, next) => {
  /**
  * Clear the authentication token cookie and end the session.
  */
-export const logout: AuthedRequestHandler = (req, res) => {
+export const logout = (
+  req: Request,
+  res: Response,
+  _next: NextFunction,
+) => {
   res.clearCookie('token');
   sendResponse(res, { message: 'Logged out successfully' });
   return;
@@ -39,7 +46,11 @@ export const logout: AuthedRequestHandler = (req, res) => {
  * Placeholder MFA setup handler. In a real implementation this would
  * generate and return a secret for the user to configure their MFA device.
  */
-export const setupMfa: AuthedRequestHandler = (req, res) => {
+export const setupMfa = (
+  req: Request,
+  res: Response,
+  _next: NextFunction,
+) => {
   sendResponse(res, null, 'MFA setup not implemented', 501);
   return;
 };
@@ -47,7 +58,11 @@ export const setupMfa: AuthedRequestHandler = (req, res) => {
 /**
  * Placeholder MFA token validation handler.
  */
-export const validateMfaToken: AuthedRequestHandler = (req, res) => {
+export const validateMfaToken = (
+  req: Request,
+  res: Response,
+  _next: NextFunction,
+) => {
   sendResponse(res, null, 'MFA token validation not implemented', 501);
   return;
 };

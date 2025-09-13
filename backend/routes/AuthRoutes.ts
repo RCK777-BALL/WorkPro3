@@ -125,7 +125,7 @@ router.post('/login', loginLimiter, async (
         secure: process.env.NODE_ENV === 'production',
       })
       .status(200)
-      .json({ token, user: { ...userObj, tenantId } });
+      .json(responseBody);
     return;
   } catch (err) {
     logger.error('Login error:', err);

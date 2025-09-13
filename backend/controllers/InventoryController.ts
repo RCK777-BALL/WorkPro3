@@ -8,6 +8,7 @@ import { Request, Response, NextFunction } from 'express';
 import InventoryItem, { IInventoryItem } from '../models/InventoryItem';
 import logger from '../utils/logger';
 import mongoose from 'mongoose';
+import { logAudit } from '../utils/audit';
 
 function scopedQuery(req: Request, base: any = {}) {
   const { tenantId, siteId } = req;
@@ -154,8 +155,8 @@ export const createInventoryItem = async (
     }
 
     const payload: Partial<IInventoryItem> = scopedQuery(req, data);
-
     const saved = await new InventoryItem(payload).save();
+    await logAudit(req, 'create', 'InventoryItem', saved._id, null, saved.toObject());
     res.status(201).json(saved);
     return;
   } catch (err) {
@@ -182,6 +183,12 @@ export const updateInventoryItem = async (
 
     const filter: any = scopedQuery(req, { _id: req.params.id });
 
+    const existing = await InventoryItem.findOne(filter);
+    if (!existing) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
+
     const updated = await InventoryItem.findOneAndUpdate(filter, payload, {
       new: true,
       runValidators: true,
@@ -191,6 +198,15 @@ export const updateInventoryItem = async (
       res.status(404).json({ message: 'Not found' });
       return;
     }
+
+    await logAudit(
+      req,
+      'update',
+      'InventoryItem',
+      req.params.id,
+      existing.toObject(),
+      updated.toObject()
+    );
 
     res.json(updated);
     return;
@@ -214,6 +230,14 @@ export const deleteInventoryItem = async (
       res.status(404).json({ message: 'Not found' });
       return;
     }
+    await logAudit(
+      req,
+      'delete',
+      'InventoryItem',
+      req.params.id,
+      deleted.toObject(),
+      null
+    );
 
     res.json({ message: 'Deleted successfully' });
     return;
@@ -248,12 +272,15 @@ export const useInventoryItem = async (
       return;
     }
 
+    const before = item.toObject();
     try {
       await item.consume(quantity, new mongoose.Types.ObjectId(uom));
     } catch (err: any) {
       res.status(400).json({ message: err.message });
       return;
     }
+
+    await logAudit(req, 'use', 'InventoryItem', req.params.id, before, item.toObject());
 
     res.json(item);
     return;

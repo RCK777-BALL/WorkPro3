@@ -16,10 +16,10 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: 'Dashboard', to: '/dashboard', roles: ['admin', 'manager', 'technician', 'viewer'] },
-  { label: 'Analytics', to: '/dashboard/analytics', roles: ['admin', 'manager'] },
-  { label: 'Reports', to: '/dashboard/reports', roles: ['admin', 'manager'] },
-  { label: 'Departments', to: '/departments', roles: ['admin', 'manager'] },
+  { label: 'Dashboard', to: '/dashboard', roles: ['admin', 'supervisor', 'planner', 'tech'] },
+  { label: 'Analytics', to: '/dashboard/analytics', roles: ['admin', 'supervisor'] },
+  { label: 'Reports', to: '/dashboard/reports', roles: ['admin', 'supervisor'] },
+  { label: 'Departments', to: '/departments', roles: ['admin', 'supervisor'] },
 ];
 
 export default function Layout() {
@@ -30,7 +30,7 @@ export default function Layout() {
   const logout = useAuthStore((s: AuthState) => s.logout);
   const location = useLocation();
 
-  const items = navItems.filter((n) => n.roles.includes(user?.role ?? 'viewer'));
+  const items = navItems.filter((n) => n.roles.includes(user?.role ?? 'tech'));
   const segments = location.pathname.split('/').filter(Boolean);
   const breadcrumbs = segments.map((seg, idx) => {
     const to = '/' + segments.slice(0, idx + 1).join('/');

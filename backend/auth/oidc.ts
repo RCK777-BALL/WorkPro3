@@ -26,9 +26,9 @@ export type Provider = 'okta' | 'azure';
 
 export const mapRoles = (groups: string[] = []): string => {
   if (groups.includes('Admin')) return 'admin';
-  if (groups.includes('Manager')) return 'manager';
-  if (groups.includes('Technician')) return 'technician';
-  return 'viewer';
+  if (groups.includes('Manager')) return 'supervisor';
+  if (groups.includes('Technician')) return 'tech';
+  return 'planner';
 };
 
 interface UserInfo {

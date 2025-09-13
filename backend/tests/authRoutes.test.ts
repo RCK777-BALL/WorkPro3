@@ -131,7 +131,7 @@ describe('Auth Routes', () => {
       name: 'Me',
       email: 'me@example.com',
       passwordHash: 'pass123',
-      roles: ['viewer'],
+      roles: ['planner'],
       tenantId: new mongoose.Types.ObjectId(),
     });
     // login
@@ -165,7 +165,7 @@ describe('Auth Routes', () => {
       name: 'Secure',
       email: 'secure@example.com',
       passwordHash: 'pass123',
-      roles: ['viewer'],
+      roles: ['planner'],
       tenantId: new mongoose.Types.ObjectId(),
     });
 

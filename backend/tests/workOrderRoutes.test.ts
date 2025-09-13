@@ -49,7 +49,7 @@ beforeEach(async () => {
     name: 'Tester',
     email: 'tester@example.com',
     passwordHash: 'pass123',
-    roles: ['manager'],
+    roles: ['supervisor'],
     tenantId: new mongoose.Types.ObjectId(),
   });
   token = jwt.sign({ id: user._id.toString(), roles: user.roles }, process.env.JWT_SECRET!);
@@ -69,8 +69,8 @@ beforeEach(async () => {
   stationId = department.lines[0].stations[0]._id;
   pmTask = await PMTask.create({
     title: 'PM1',
-    frequency: 'monthly',
     tenantId: user.tenantId,
+    rule: { type: 'calendar', cron: '0 0 * * *' },
   });
 });
 

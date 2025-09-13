@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { useForm, type Resolver } from 'react-hook-form';
 import { z } from 'zod';
+import http from '@/lib/http';
 
 const requestWorkSchema = z.object({
   assetId: z.string().optional(),
@@ -48,11 +49,9 @@ const RequestWork = () => {
     if (!code) return;
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/public/request-work/${code}`);
-        if (!res.ok) throw new Error('Failed to fetch status');
-        const data = await res.json();
-        setStatus(data.status);
-        if (data.status && data.status !== 'pending') {
+        const res = await http.get(`/public/request-work/${code}`);
+        setStatus(res.data.data.status);
+        if (res.data.data.status && res.data.data.status !== 'pending') {
           clearInterval(interval);
         }
       } catch (err) {
@@ -67,14 +66,8 @@ const RequestWork = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/public/request-work', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
-      });
-      if (!res.ok) throw new Error('Failed to submit');
-      const data = await res.json();
-      setCode(data.code);
+      const res = await http.post('/public/request-work', values);
+      setCode(res.data.data.code);
       setStatus('pending');
     } catch (err) {
       setError('Failed to submit request');

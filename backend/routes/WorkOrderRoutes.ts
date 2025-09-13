@@ -33,14 +33,14 @@ router.get('/search', searchWorkOrders);
 router.get(
   '/:id/assist',
   validateObjectId('id'),
-  requireRoles(['admin', 'manager', 'technician']),
+  requireRoles(['admin', 'supervisor', 'tech']),
   assistWorkOrder
 );
 router.get('/:id', validateObjectId('id'), getWorkOrderById);
 
 router.post(
   '/',
-  requireRoles(['admin', 'manager', 'technician']),
+  requireRoles(['admin', 'supervisor', 'tech']),
   upload.any(),
   workOrderValidators,
   validate,
@@ -50,7 +50,7 @@ router.post(
 router.put(
   '/:id',
   validateObjectId('id'),
-  requireRoles(['admin', 'manager', 'technician']),
+  requireRoles(['admin', 'supervisor', 'tech']),
   workOrderValidators,
   validate,
   updateWorkOrder
@@ -59,7 +59,7 @@ router.put(
 router.post(
   '/:id/approve',
   validateObjectId('id'),
-  requireRoles(['admin', 'manager']),
+  requireRoles(['admin', 'supervisor']),
   approveWorkOrder
 );
 router.post(
@@ -87,5 +87,6 @@ router.post(
   cancelWorkOrder
 );
 router.delete('/:id', validateObjectId('id'), requireRoles(['admin', 'manager']), deleteWorkOrder);
+
  
 export default router;

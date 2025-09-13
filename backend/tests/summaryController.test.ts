@@ -40,7 +40,7 @@ beforeEach(async () => {
     name: 'Tester',
     email: 'tester@example.com',
     passwordHash: 'pass123',
-    role: 'manager',
+    role: 'supervisor',
     tenantId: new mongoose.Types.ObjectId(),
   });
   tenantId = user.tenantId;

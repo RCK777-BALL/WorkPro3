@@ -10,6 +10,7 @@ export interface AuthPayload {
   id: string;
   email: string;
   tenantId?: string;
+  siteId?: string;
   tokenVersion?: number;
 }
 
@@ -43,6 +44,17 @@ export const requireAuth: AuthedRequestHandler = (req, res, next) => {
   try {
     const payload = jwt.verify(token, secret) as AuthPayload;
     (req as any).user = payload;
+
+    if (payload.tenantId) {
+      (req as any).tenantId = payload.tenantId;
+    }
+
+    const headerSiteId = req.header('x-site-id');
+    const resolvedSiteId = payload.siteId ?? headerSiteId;
+    if (resolvedSiteId) {
+      (req as any).siteId = resolvedSiteId;
+    }
+
     next();
     return;
   } catch {

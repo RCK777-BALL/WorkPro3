@@ -51,6 +51,8 @@ import errorHandler from "./middleware/errorHandler";
 import { validateEnv, type EnvVars } from "./config/validateEnv";
 import { initChatSocket } from "./socket/chatSocket";
 import User from "./models/User";
+import { requireAuth } from "./middleware/requireAuth";
+import tenantScope from "./middleware/tenantScope";
 import type {
   WorkOrderUpdatePayload,
   InventoryUpdatePayload,
@@ -142,9 +144,13 @@ if (env.NODE_ENV === "test") {
 
 // --- Routes (order matters for the limiter) ---
 app.use("/api/auth", authRoutes);
+
+// Protect all remaining /api routes except /api/auth and /api/public
+app.use(/^\/api(?!\/(auth|public))/, requireAuth, tenantScope);
+
 app.use("/api/notifications", burstFriendly, notificationsRoutes);
-// Apply limiter to the rest of /api
-app.use("/api", generalLimiter);
+// Apply limiter to the rest of protected /api routes
+app.use(/^\/api(?!\/(auth|public))/, generalLimiter);
 
 app.use("/api/departments", departmentRoutes);
 app.use("/api/workorders", workOrdersRoutes);

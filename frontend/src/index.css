@@ -3,8 +3,28 @@
 @import "tailwindcss/preflight";
 @import "tailwindcss/utilities";
 
-/* Optional: your plain CSS (avoid using @apply here) */
-:root { color-scheme: light dark; }
+/* Theme tokens */
+@layer base {
+  :root {
+    color-scheme: light dark;
+    --background: 0 0% 100%;
+    --foreground: 222.2 47.4% 11.2%;
+    --border: 214.3 31.8% 91.4%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 217 91% 75%;
+    --primary-dark: 217 91% 45%;
+  }
+  .dark {
+    --background: 222.2 47.4% 11.2%;
+    --foreground: 210 40% 98%;
+    --border: 214.3 31.8% 21.4%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 217 91% 65%;
+    --primary-dark: 217 91% 40%;
+  }
+}
 
 /* Minimal sensible defaults */
 html, body, #root {

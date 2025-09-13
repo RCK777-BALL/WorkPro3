@@ -4,7 +4,7 @@
 
 import React from 'react';
 import Card from '@common/Card';
-import Button from '@common/Button';
+import { Button } from '@/components/ui/button';
 
 export interface AuditLog {
   id: string;

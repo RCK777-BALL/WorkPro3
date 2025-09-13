@@ -7,6 +7,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 
 import { Search, Bell, HelpCircle, Menu, Book, Video, MessageCircle, FileText, ExternalLink, Database } from 'lucide-react';
+import GlobalSearch from '@/components/GlobalSearch';
 import { useToast } from '../../context/ToastContext';
  
 import ThemeToggle from '@common/ThemeToggle';
@@ -42,6 +43,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
   const [showHelpMenu, setShowHelpMenu] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showGlobalSearch, setShowGlobalSearch] = useState(false);
 
   const notificationsButtonRef = useRef<HTMLButtonElement>(null);
   const notificationsMenuRef = useRef<HTMLDivElement>(null);
@@ -92,6 +94,17 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
       helpButtonRef.current?.focus();
     }
   }, [showHelpMenu]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setShowGlobalSearch(true);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
  
  
@@ -201,6 +214,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
   const toggleNotifications = () => setShowNotifications(prev => !prev);
 
   return (
+    <>
     <header className="relative h-16 bg-white dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between px-2 sm:px-4 lg:px-6">
       <div className="flex items-center">
         <button
@@ -423,6 +437,8 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
         </div>
       )}
     </header>
+    <GlobalSearch open={showGlobalSearch} onOpenChange={setShowGlobalSearch} />
+  </>
   );
 };
 

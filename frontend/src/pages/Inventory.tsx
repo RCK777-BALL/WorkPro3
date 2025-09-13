@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Search, Download, Upload, AlertTriangle, QrCode } from 'lucide-react';
 import Button from '@/components/common/Button';
 import InventoryTable from '@/components/inventory/InventoryTable';
@@ -39,12 +39,15 @@ const Inventory: React.FC = () => {
     fetchParts();
   }, []);
 
-  const handleOpenModal = (part: Part | null, init?: Partial<Part>) => {
-    setSelectedPart(part);
-    setInitialData(init);
-    setModalError(null);
-    setModalOpen(true);
-  };
+  const handleOpenModal = useCallback(
+    (part: Part | null, init?: Partial<Part>) => {
+      setSelectedPart(part);
+      setInitialData(init);
+      setModalError(null);
+      setModalOpen(true);
+    },
+    []
+  );
 
   const partMapper = (part: Part) => ({
     ID: part.id,
@@ -180,7 +183,7 @@ const Inventory: React.FC = () => {
         <InventoryScanModal
           isOpen={isScanOpen}
           onClose={() => setScanOpen(false)}
-          onScanComplete={(data) => handleOpenModal(null, data)}
+          onScanComplete={handleOpenModal}
         />
       </div>
   );

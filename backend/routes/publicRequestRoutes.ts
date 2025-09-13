@@ -3,27 +3,35 @@
  */
 
 import { Router } from 'express';
+import crypto from 'crypto';
 import WorkRequest from '../models/WorkRequest';
+import logger from '../utils/logger';
 
 const router = Router();
 
 router.post('/request-work', async (req, res) => {
   const { tenantId, assetId, locationText, description, contact } = req.body;
-  const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const code = parseInt(crypto.randomBytes(4).toString('hex'), 16)
+    .toString(36)
+    .toUpperCase();
 
-  await WorkRequest.create({
-    tenantId,
-    assetId,
-    locationText,
-    description,
-    contact,
-    code,
-    status: 'new',
-  });
+  try {
+    await WorkRequest.create({
+      tenantId,
+      assetId,
+      locationText,
+      description,
+      contact,
+      code,
+      status: 'new',
+    });
 
-  console.log(`Work request submitted: ${code}`);
-
-  res.status(201).json({ code });
+    logger.info('Work request submitted', { code });
+    res.status(201).json({ code });
+  } catch (err) {
+    logger.error('Work request submission failed', err);
+    res.status(500).json({ message: 'Failed to submit work request' });
+  }
 });
 
 router.get('/request-work/:code', async (req, res) => {

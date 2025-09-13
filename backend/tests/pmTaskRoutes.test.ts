@@ -14,6 +14,7 @@ import User from '../models/User';
 const app = express();
 app.use(express.json());
 app.use('/api/pm-tasks', PMTaskRoutes);
+app.use('/api/pm', PMTaskRoutes);
 
 let mongo: MongoMemoryServer;
 let token: string;
@@ -53,7 +54,7 @@ describe('PM Task Routes', () => {
     const createRes = await request(app)
       .post('/api/pm-tasks')
       .set('Authorization', `Bearer ${token}`)
-      .send({ title: 'PM1', frequency: 'monthly' })
+      .send({ title: 'PM1', rule: { type: 'calendar', cron: '0 0 * * *' } })
       .expect(201);
 
     const id = createRes.body._id;
@@ -69,7 +70,7 @@ describe('PM Task Routes', () => {
     const updateRes = await request(app)
       .put(`/api/pm-tasks/${id}`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ title: 'Updated PM', frequency: 'monthly' })
+      .send({ title: 'Updated PM', rule: { type: 'calendar', cron: '0 0 * * *' } })
       .expect(200);
 
     expect(updateRes.body.title).toBe('Updated PM');

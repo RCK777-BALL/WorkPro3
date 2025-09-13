@@ -10,8 +10,9 @@ import { useDropzone } from "react-dropzone";
 import { X, Upload, Download, Camera } from "lucide-react";
 import Button from "@/components/common/Button";
 import AutoCompleteInput from "@/components/common/AutoCompleteInput";
-import type { WorkOrder } from "@/types";
+import type { WorkOrder, Part } from "@/types";
 import { searchAssets } from "@/api/search";
+import http from "@/lib/http";
 import { useDepartmentStore } from "@/store/departmentStore";
 import { useToast } from "@/context/ToastContext";
    
@@ -38,6 +39,10 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
   const fetchDepartments = useDepartmentStore((s) => s.fetchDepartments);
   const [loadingDeps, setLoadingDeps] = useState(true);
   const { addToast } = useToast();
+  const [availableParts, setAvailableParts] = useState<Part[]>([]);
+  const [parts, setParts] = useState<string[]>(
+    workOrder?.parts || initialData?.parts || []
+  );
   
   const {
     register,
@@ -78,6 +83,13 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
       .finally(() => setLoadingDeps(false));
   }, [fetchDepartments, addToast]);
 
+  useEffect(() => {
+    http
+      .get('/parts')
+      .then((res) => setAvailableParts(res.data as Part[]))
+      .catch(() => {});
+  }, []);
+
   if (!isOpen) return null;
 
  
@@ -96,6 +108,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
       status: data.status,
       scheduledDate: data.scheduledDate,
       assetId: data.assetId,
+      parts,
     };
 
     if (signature) payload.signature = signature;
@@ -104,7 +117,11 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
       const fd = new FormData();
       Object.entries(payload).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
-          fd.append(key, value as any);
+          if (Array.isArray(value)) {
+            value.forEach((v) => fd.append(`${key}[]`, v as any));
+          } else {
+            fd.append(key, value as any);
+          }
         }
       });
       files.forEach((f) => fd.append("files", f));
@@ -242,6 +259,46 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
             fetchOptions={searchAssets}
             placeholder="Search assets..."
           />
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
+              Parts
+            </label>
+            <select
+              className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+              onChange={(e) => {
+                const id = e.target.value;
+                if (id && !parts.includes(id)) {
+                  setParts([...parts, id]);
+                }
+                e.target.value = '';
+              }}
+            >
+              <option value="">Select Part</option>
+              {availableParts.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <ul className="mt-2 space-y-1">
+              {parts.map((id) => {
+                const p = availableParts.find((ap) => ap.id === id);
+                return (
+                  <li key={id} className="flex items-center justify-between text-sm">
+                    <span>{p?.name || id}</span>
+                    <button
+                      type="button"
+                      className="text-error-500"
+                      onClick={() => setParts(parts.filter((pid) => pid !== id))}
+                    >
+                      Remove
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1">

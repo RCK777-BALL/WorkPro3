@@ -32,6 +32,7 @@ import {
   LineRoutes,
   StationRoutes,
   inventoryRoutes,
+  partsRoutes,
   analyticsRoutes,
   teamRoutes,
   ThemeRoutes,
@@ -161,6 +162,7 @@ app.use("/api/reports", reportsRoutes);
 app.use("/api/lines", LineRoutes);
 app.use("/api/stations", StationRoutes);
 app.use("/api/inventory", inventoryRoutes);
+app.use("/api/parts", partsRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
 app.use("/api/team", teamRoutes);
 app.use("/api/theme", ThemeRoutes);

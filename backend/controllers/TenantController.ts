@@ -6,49 +6,88 @@ import { Request, Response } from 'express';
 import { ok, fail, asyncHandler } from '../src/lib/http';
 
 import Tenant from '../models/Tenant';
+import { writeAuditLog } from '../utils/audit';
 
-export const getAllTenants = asyncHandler(async (_req: Request, res: Response) => {
-  const tenants = await Tenant.find();
-  ok(res, tenants);
-});
+export const getAllTenants = async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenants = await Tenant.find();
+    res.json(tenants);
+  } catch (err) {
+    next(err);
+  }
+};
 
-export const getTenantById = asyncHandler(async (
-  req: Request,
-  res: Response,
-) => {
-  const tenant = await Tenant.findById(req.params.id);
-  if (!tenant) return fail(res, 'Not found', 404);
-  ok(res, tenant);
-});
+export const getTenantById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenant = await Tenant.findById(req.params.id);
+    if (!tenant) return res.status(404).json({ message: 'Not found' });
+    res.json(tenant);
+  } catch (err) {
+    next(err);
+  }
+};
 
-export const createTenant = asyncHandler(async (
-  req: Request,
-  res: Response,
-) => {
-  const tenant = await Tenant.create(req.body);
-  ok(res, tenant, 201);
-});
+export const createTenant = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const tenant = await Tenant.create(req.body);
+    await writeAuditLog({
+      tenantId: tenant._id,
+      userId,
+      action: 'create',
+      entityType: 'Tenant',
+      entityId: tenant._id,
+      after: tenant.toObject(),
+    });
+    res.status(201).json(tenant);
+  } catch (err) {
+    next(err);
+  }
+};
 
-export const updateTenant = asyncHandler(async (
-  req: Request,
-  res: Response,
-) => {
-  const tenant = await Tenant.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true,
-  });
-  if (!tenant) return fail(res, 'Not found', 404);
-  ok(res, tenant);
-});
+export const updateTenant = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const existing = await Tenant.findById(req.params.id);
+    if (!existing) return res.status(404).json({ message: 'Not found' });
+    const tenant = await Tenant.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    await writeAuditLog({
+      tenantId: existing._id,
+      userId,
+      action: 'update',
+      entityType: 'Tenant',
+      entityId: req.params.id,
+      before: existing.toObject(),
+      after: tenant?.toObject(),
+    });
+    res.json(tenant);
+  } catch (err) {
+    next(err);
+  }
+};
 
-export const deleteTenant = asyncHandler(async (
-  req: Request,
-  res: Response,
-) => {
-  const tenant = await Tenant.findByIdAndDelete(req.params.id);
-  if (!tenant) return fail(res, 'Not found', 404);
-  ok(res, { message: 'Deleted successfully' });
-});
+export const deleteTenant = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const tenant = await Tenant.findByIdAndDelete(req.params.id);
+    if (!tenant) return res.status(404).json({ message: 'Not found' });
+    await writeAuditLog({
+      tenantId: tenant._id,
+      userId,
+      action: 'delete',
+      entityType: 'Tenant',
+      entityId: req.params.id,
+      before: tenant.toObject(),
+    });
+    res.json({ message: 'Deleted successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 
 export default {
   getAllTenants,

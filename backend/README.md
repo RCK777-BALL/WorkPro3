@@ -12,6 +12,14 @@ npm install
 npm run dev
 ```
 
+### Audit logging
+
+All controllers that modify data must record an entry using `writeAuditLog`.
+Provide `tenantId`, `userId`, `action`, `entityType`, and `entityId` along
+with optional `before` and `after` snapshots of the entity. These logs are
+stored in the `audit_logs` collection and enable traceability for create,
+update, and delete operations.
+
 ### Type definitions
 
 The project augments Express types to include a `tenantId` field and optional `siteId` on `Request`. The definitions live in `types/express/index.d.ts`. If you modify the TypeScript configuration, ensure

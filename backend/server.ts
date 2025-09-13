@@ -163,6 +163,7 @@ app.use("/api/meters", meterRoutes);
 app.use("/api/condition-rules", conditionRuleRoutes);
 app.use("/api/tenants", TenantRoutes);
 app.use("/api/pm-tasks", pmTasksRoutes);
+app.use("/api/pm", pmTasksRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/lines", LineRoutes);
 app.use("/api/stations", StationRoutes);

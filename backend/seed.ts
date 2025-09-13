@@ -167,9 +167,8 @@ mongoose.connect(mongoUri).then(async () => {
   const pmTask = await PMTask.create({
     title: 'Monthly Lubrication',
     asset: asset._id,
-    frequency: 'monthly',
-    lastRun: new Date(),
-    nextDue: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    rule: { type: 'calendar', cron: '0 0 1 * *' },
+    lastGeneratedAt: new Date(),
     notes: 'Check oil level and apply grease.',
     tenantId,
   });

@@ -69,8 +69,8 @@ beforeEach(async () => {
   stationId = department.lines[0].stations[0]._id;
   pmTask = await PMTask.create({
     title: 'PM1',
-    frequency: 'monthly',
     tenantId: user.tenantId,
+    rule: { type: 'calendar', cron: '0 0 * * *' },
   });
 });
 

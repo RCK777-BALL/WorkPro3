@@ -46,8 +46,6 @@ const Login: React.FC = () => {
         name: emailFromOauth.split('@')[0],
         role: 'viewer',
         email: emailFromOauth,
- 
-        token,
       });
       navigate('/dashboard');
     }
@@ -78,8 +76,7 @@ const Login: React.FC = () => {
         setMfaUser(data.userId);
         return;
       }
-      setUser({ ...data.user, token: data.token });
-      localStorage.setItem('auth:token', data.token);
+      setUser({ ...data.user });
       if (data.user?.tenantId) localStorage.setItem('auth:tenantId', data.user.tenantId);
       if (data.user?.siteId) localStorage.setItem('auth:siteId', data.user.siteId);
       navigate('/dashboard');
@@ -106,8 +103,7 @@ const Login: React.FC = () => {
         userId: mfaUser,
         token: code,
       });
-      setUser({ ...data.user, token: data.token });
-      localStorage.setItem('auth:token', data.token);
+      setUser({ ...data.user });
       if (data.user?.tenantId) localStorage.setItem('auth:tenantId', data.user.tenantId);
       if (data.user?.siteId) localStorage.setItem('auth:siteId', data.user.siteId);
       navigate('/dashboard');

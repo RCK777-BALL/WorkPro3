@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Request, Response } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { ok, fail, asyncHandler } from '../src/lib/http';
 
 import Tenant from '../models/Tenant';

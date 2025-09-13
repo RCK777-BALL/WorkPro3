@@ -3,9 +3,12 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 
 import Role from '../models/Role';
 import { writeAuditLog } from '../utils/audit';
+
+const { Types, isValidObjectId } = mongoose;
 
 export const getAllRoles = async (_req: Request, res: Response, next: NextFunction) => {
   try {
@@ -31,12 +34,13 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
     const tenantId = (req as any).tenantId;
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const role = await Role.create({ ...req.body, tenantId });
+    const entityId = new Types.ObjectId(role._id);
     await writeAuditLog({
       tenantId,
       userId,
       action: 'create',
       entityType: 'Role',
-      entityId: role._id,
+      entityId,
       after: role.toObject(),
     });
     res.status(201).json(role);
@@ -47,6 +51,10 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
 
 export const updateRole = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      res.status(400).json({ message: 'Invalid id' });
+      return;
+    }
     const tenantId = (req as any).tenantId;
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const existing = await Role.findById(req.params.id);
@@ -55,12 +63,13 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
       new: true,
       runValidators: true,
     });
+    const entityId = new Types.ObjectId(req.params.id);
     await writeAuditLog({
       tenantId,
       userId,
       action: 'update',
       entityType: 'Role',
-      entityId: req.params.id,
+      entityId,
       before: existing.toObject(),
       after: role?.toObject(),
     });
@@ -72,16 +81,21 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
 
 export const deleteRole = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      res.status(400).json({ message: 'Invalid id' });
+      return;
+    }
     const tenantId = (req as any).tenantId;
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const role = await Role.findByIdAndDelete(req.params.id);
     if (!role) return res.status(404).json({ message: 'Not found' });
+    const entityId = new Types.ObjectId(req.params.id);
     await writeAuditLog({
       tenantId,
       userId,
       action: 'delete',
       entityType: 'Role',
-      entityId: req.params.id,
+      entityId,
       before: role.toObject(),
     });
     res.json({ message: 'Deleted successfully' });

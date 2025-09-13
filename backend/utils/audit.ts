@@ -11,6 +11,7 @@ type AuditVal = unknown;
 
 const normalize = (v: AuditVal): AuditVal => JSON.parse(JSON.stringify(v));
 
+
 export async function logAudit(
   req: Request,
   action: string,
@@ -18,6 +19,7 @@ export async function logAudit(
   targetId: string | Types.ObjectId,
   before?: AuditVal,
   after?: AuditVal,
+
 ): Promise<void> {
   try {
     const tenantId = req.tenantId;
@@ -33,6 +35,7 @@ export async function logAudit(
       entityId: String(targetId),
       before: before === undefined ? undefined : normalize(before),
       after: after === undefined ? undefined : normalize(after),
+
       ts: new Date(),
     };
     await AuditLog.create(payload);

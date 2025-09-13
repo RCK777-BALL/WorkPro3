@@ -303,11 +303,95 @@ async function aggregateDowntime(tenantId: string) {
   return results.map((r) => ({ period: r._id, downtime: r.downtime }));
 }
 
-export const getDowntimeMetrics: AuthedRequestHandler = async (req, res, next) => {
+export const getDowntimeReport: AuthedRequestHandler = async (req, res, next) => {
  
   try {
     const tenantId = req.tenantId!;
     const data = await aggregateDowntime(tenantId);
+    res.json(data);
+    return;
+  } catch (err) {
+    return next(err);
+  }
+};
+
+async function aggregatePmCompliance(tenantId: string) {
+  const results = await WorkOrder.aggregate([
+    { $match: { tenantId, type: 'preventive' } },
+    {
+      $group: {
+        _id: { $dateToString: { format: '%Y-%m', date: '$scheduledDate' } },
+        total: { $sum: 1 },
+        completed: {
+          $sum: {
+            $cond: [{ $eq: ['$status', 'completed'] }, 1, 0],
+          },
+        },
+      },
+    },
+    { $sort: { _id: 1 } },
+    {
+      $project: {
+        _id: 0,
+        period: '$_id',
+        compliance: {
+          $cond: [
+            { $eq: ['$total', 0] },
+            0,
+            { $multiply: [{ $divide: ['$completed', '$total'] }, 100] },
+          ],
+        },
+      },
+    },
+  ]);
+  return results;
+}
+
+export const getPmCompliance: AuthedRequestHandler = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId!;
+    const data = await aggregatePmCompliance(tenantId);
+    res.json(data);
+    return;
+  } catch (err) {
+    return next(err);
+  }
+};
+
+async function aggregateCostByAsset(tenantId: string) {
+  const results = await WorkHistory.aggregate([
+    { $match: { tenantId } },
+    {
+      $group: {
+        _id: '$asset',
+        hours: { $sum: '$timeSpentHours' },
+      },
+    },
+    {
+      $lookup: {
+        from: 'assets',
+        localField: '_id',
+        foreignField: '_id',
+        as: 'asset',
+      },
+    },
+    { $unwind: '$asset' },
+    {
+      $project: {
+        _id: 0,
+        asset: '$asset.name',
+        cost: { $multiply: ['$hours', 50] },
+      },
+    },
+    { $sort: { cost: -1 } },
+  ]);
+  return results;
+}
+
+export const getCostByAsset: AuthedRequestHandler = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId!;
+    const data = await aggregateCostByAsset(tenantId);
     res.json(data);
     return;
   } catch (err) {

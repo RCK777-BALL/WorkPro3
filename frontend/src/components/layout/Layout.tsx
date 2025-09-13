@@ -17,8 +17,9 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', to: '/dashboard', roles: ['admin', 'manager', 'technician', 'viewer'] },
-  { label: 'Analytics', to: '/dashboard/analytics', roles: ['admin', 'manager'] },
-  { label: 'Reports', to: '/dashboard/reports', roles: ['admin', 'manager'] },
+  { label: 'Analytics', to: '/analytics', roles: ['admin', 'manager'] },
+  { label: 'Reports', to: '/reports', roles: ['admin', 'manager'] },
+  { label: 'Imports', to: '/imports', roles: ['admin', 'manager'] },
   { label: 'Departments', to: '/departments', roles: ['admin', 'manager'] },
 ];
 

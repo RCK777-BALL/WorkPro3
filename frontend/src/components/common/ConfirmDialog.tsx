@@ -2,7 +2,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useRef } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
+import { Button } from '../ui/button';
 
 type Props = {
   open: boolean;
@@ -21,36 +22,28 @@ export default function ConfirmDialog({
   onClose,
   onConfirm,
 }: Props) {
-  const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    open ? ref.current?.showModal() : ref.current?.close();
-  }, [open]);
   return (
-    <dialog
-      ref={ref}
-      className="rounded-xl w-[480px] max-w-[95vw] p-0 backdrop:bg-black/30"
-    >
-      <div className="p-5 space-y-3">
-        <h3 className="text-lg font-semibold">{title}</h3>
-        <p className="text-sm text-slate-600">{message}</p>
-        <div className="flex justify-end gap-2 pt-2">
-          <button
-            onClick={onClose}
-            className="rounded px-3 py-2 border hover:bg-slate-100"
-          >
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          {message && <DialogDescription>{message}</DialogDescription>}
+        </DialogHeader>
+        <DialogFooter className="flex justify-end gap-2 pt-2">
+          <Button variant="outline" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="destructive"
             onClick={async () => {
               await onConfirm();
               onClose();
             }}
-            className="rounded px-3 py-2 bg-rose-600 text-white hover:bg-rose-700"
           >
             {confirmText}
-          </button>
-        </div>
-      </div>
-    </dialog>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

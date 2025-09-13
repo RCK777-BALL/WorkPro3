@@ -13,8 +13,9 @@ import { useToast } from '../../context/ToastContext';
 import ThemeToggle from '@common/ThemeToggle';
 import Avatar from '@common/Avatar';
 import Card from '@common/Card';
-import Button from '@common/Button';
-import { useAuthStore, type AuthState, isAdmin as selectIsAdmin, isSupervisor as selectIsSupervisor } from '@/store/authStore';
+import { Button } from '@/components/ui/button';
+import { useAuthStore, type AuthState, isAdmin as selectIsAdmin, isManager as selectIsManager } from '@/store/authStore';
+
 import { useDataStore } from '@/store/dataStore';
 import { useNavigate } from 'react-router-dom';
 
@@ -215,7 +216,8 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
 
   return (
     <>
-    <header className="relative h-16 bg-gradient-to-r from-primary-600 to-accent-600 text-white flex items-center justify-between px-2 sm:px-4 lg:px-6">
+    <header className="relative h-16 bg-gradient-to-r from-primary-light to-primary-dark text-primary-foreground border-b border-border flex items-center justify-between px-2 sm:px-4 lg:px-6">
+
       <div className="flex items-center">
         <button
           onClick={onToggleSidebar} aria-label="Toggle sidebar"
@@ -246,10 +248,10 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
           <Button
             variant="outline"
             size="sm"
-            icon={<Database size={16} />}
             onClick={handleToggleDataMode}
-            className={useFakeData ? 'text-warning-600' : 'text-success-600'}
+            className={`flex items-center gap-1 ${useFakeData ? 'text-warning-600' : 'text-success-600'}`}
           >
+            <Database size={16} />
             {useFakeData ? t('header.demoMode') : t('header.liveData')}
           </Button>
         )}
@@ -399,8 +401,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
                 <div className="p-4 bg-neutral-50 dark:bg-neutral-700 border-t border-neutral-200 dark:border-neutral-600">
                   <p className="text-sm text-neutral-600 dark:text-neutral-300 mb-2">{t('header.needHelp')}</p>
                   <Button
-                    variant="primary"
-                    fullWidth
+                    className="w-full"
                     onClick={handleContactSupport}
                   >
                     {t('header.contactSupport')}

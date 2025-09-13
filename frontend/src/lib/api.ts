@@ -2,8 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { API_URL } from '@/config/env';
-import axios from 'axios';
+import type { ApiResult } from '@shared/http';
 
 export const api = axios.create({
   baseURL: `${API_URL}/api`,
@@ -26,3 +25,4 @@ api.interceptors.response.use(
 );
 
 export default api;
+

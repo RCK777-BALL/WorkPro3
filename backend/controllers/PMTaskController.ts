@@ -9,6 +9,7 @@ import WorkOrder from '../models/WorkOrder';
 import Meter from '../models/Meter';
 import { nextCronOccurrenceWithin } from '../services/PMScheduler';
 import type { AuthedRequestHandler } from '../types/http';
+import { writeAuditLog } from '../utils/audit';
 
 export const getAllPMTasks: AuthedRequestHandler = async (req, res, next) => {
   try {
@@ -55,6 +56,15 @@ export const createPMTask: AuthedRequestHandler = async (req, res, next) => {
 
     const payload = { ...req.body, tenantId: req.tenantId, siteId: req.siteId };
     const task = await PMTask.create(payload);
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId: req.tenantId,
+      userId,
+      action: 'create',
+      entityType: 'PMTask',
+      entityId: task._id,
+      after: task.toObject(),
+    });
     res.status(201).json(task);
   } catch (err) {
     next(err);
@@ -74,17 +84,26 @@ export const updatePMTask: AuthedRequestHandler = async (req, res, next) => {
       return;
     }
 
+    const existing = await PMTask.findOne({ _id: req.params.id, tenantId: req.tenantId });
+    if (!existing) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     const task = await PMTask.findOneAndUpdate(
       { _id: req.params.id, tenantId: req.tenantId },
       req.body,
       { new: true, runValidators: true },
     );
-
-    if (!task) {
-      res.status(404).json({ message: 'Not found' });
-      return;
-    }
-
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId: req.tenantId,
+      userId,
+      action: 'update',
+      entityType: 'PMTask',
+      entityId: req.params.id,
+      before: existing.toObject(),
+      after: task?.toObject(),
+    });
     res.json(task);
   } catch (err) {
     next(err);
@@ -107,7 +126,15 @@ export const deletePMTask: AuthedRequestHandler = async (req, res, next) => {
       res.status(404).json({ message: 'Not found' });
       return;
     }
-
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId: req.tenantId,
+      userId,
+      action: 'delete',
+      entityType: 'PMTask',
+      entityId: req.params.id,
+      before: task.toObject(),
+    });
     res.json({ message: 'Deleted successfully' });
   } catch (err) {
     next(err);

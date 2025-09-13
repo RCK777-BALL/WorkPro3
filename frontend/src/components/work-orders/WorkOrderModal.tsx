@@ -3,9 +3,8 @@
  */
 
    
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import SignatureCanvas from "react-signature-canvas";
 import { useDropzone } from "react-dropzone";
 import { X, Upload, Download, Camera } from "lucide-react";
 import Button from "@/components/common/Button";
@@ -33,16 +32,23 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
   onUpdate,
 }) => {
   const [files, setFiles] = useState<File[]>([]);
-  const signatureCanvasRef = useRef<SignatureCanvas>(null);
-  const [showSignaturePad, setShowSignaturePad] = useState(false);
+  const [signatures, setSignatures] = useState<{ by: string; ts: string }[]>(
+    workOrder?.signatures || initialData?.signatures || []
+  );
+  const [newSignature, setNewSignature] = useState<{ by: string; ts: string }>({ by: '', ts: '' });
+
   const departments = useDepartmentStore((s) => s.departments);
   const fetchDepartments = useDepartmentStore((s) => s.fetchDepartments);
   const [loadingDeps, setLoadingDeps] = useState(true);
   const { addToast } = useToast();
   const [availableParts, setAvailableParts] = useState<Part[]>([]);
-  const [parts, setParts] = useState<string[]>(
-    workOrder?.parts || initialData?.parts || []
+  const [parts, setParts] = useState<{ partId: string; qty: number; cost: number }[]>(
+    workOrder?.partsUsed || initialData?.partsUsed || []
   );
+  const [checklists, setChecklists] = useState<{ text: string; done: boolean }[]>(
+    workOrder?.checklists || initialData?.checklists || []
+  );
+  const [newChecklist, setNewChecklist] = useState('');
   
   const {
     register,
@@ -94,12 +100,6 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
 
  
   const onSubmit = async (data: any) => {
- 
-    let signature = null;
-    if (signatureCanvasRef.current && !signatureCanvasRef.current.isEmpty()) {
-      signature = signatureCanvasRef.current.toDataURL();
-    }
-
     const payload: Record<string, any> = {
       departmentId: data.departmentId,
       title: data.title,
@@ -108,10 +108,10 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
       status: data.status,
       scheduledDate: data.scheduledDate,
       assetId: data.assetId,
-      parts,
+      partsUsed: parts,
+      signatures,
+      checklists,
     };
-
-    if (signature) payload.signature = signature;
 
     if (files.length > 0) {
       const fd = new FormData();
@@ -139,6 +139,35 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
       // to capture the image
     } catch {
       addToast('Error accessing camera', 'error');
+    }
+  };
+
+  const fileToBase64 = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        resolve(result.split(',')[1]);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const uploadDocument = async () => {
+    try {
+      if (docFile) {
+        const base64 = await fileToBase64(docFile);
+        await http.post('/documents', { name: docFile.name, base64 });
+        addToast('Document uploaded', 'success');
+        setDocFile(null);
+      } else if (docUrl) {
+        const name = docUrl.split('/').pop() || 'document';
+        await http.post('/documents', { name, url: docUrl });
+        addToast('Document uploaded', 'success');
+        setDocUrl('');
+      }
+    } catch {
+      addToast('Failed to upload document', 'error');
     }
   };
 
@@ -262,14 +291,64 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1">
+              Checklists
+            </label>
+            {checklists.map((c, idx) => (
+              <div key={idx} className="flex items-center space-x-2 mb-1">
+                <input
+                  type="text"
+                  className="flex-1 px-2 py-1 border border-neutral-300 rounded-md"
+                  value={c.text}
+                  onChange={(e) => {
+                    const updated = [...checklists];
+                    updated[idx].text = e.target.value;
+                    setChecklists(updated);
+                  }}
+                />
+                <input
+                  type="checkbox"
+                  checked={c.done}
+                  onChange={(e) => {
+                    const updated = [...checklists];
+                    updated[idx].done = e.target.checked;
+                    setChecklists(updated);
+                  }}
+                />
+                <button type="button" onClick={() => setChecklists(checklists.filter((_, i) => i !== idx))}>
+                  Remove
+                </button>
+              </div>
+            ))}
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                className="flex-1 px-2 py-1 border border-neutral-300 rounded-md"
+                value={newChecklist}
+                onChange={(e) => setNewChecklist(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (newChecklist) {
+                    setChecklists([...checklists, { text: newChecklist, done: false }]);
+                    setNewChecklist('');
+                  }
+                }}
+              >
+                Add
+              </button>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
               Parts
             </label>
             <select
               className="w-full px-3 py-2 border border-neutral-300 rounded-md"
               onChange={(e) => {
                 const id = e.target.value;
-                if (id && !parts.includes(id)) {
-                  setParts([...parts, id]);
+                if (id && !parts.find((p) => p.partId === id)) {
+                  setParts([...parts, { partId: id, qty: 1, cost: 0 }]);
                 }
                 e.target.value = '';
               }}
@@ -282,15 +361,35 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
               ))}
             </select>
             <ul className="mt-2 space-y-1">
-              {parts.map((id) => {
-                const p = availableParts.find((ap) => ap.id === id);
+              {parts.map((pt, idx) => {
+                const p = availableParts.find((ap) => ap.id === pt.partId);
                 return (
-                  <li key={id} className="flex items-center justify-between text-sm">
-                    <span>{p?.name || id}</span>
+                  <li key={pt.partId} className="flex items-center space-x-2 text-sm">
+                    <span className="flex-1">{p?.name || pt.partId}</span>
+                    <input
+                      type="number"
+                      className="w-16 px-1 py-0.5 border border-neutral-300 rounded"
+                      value={pt.qty}
+                      onChange={(e) => {
+                        const updated = [...parts];
+                        updated[idx].qty = Number(e.target.value);
+                        setParts(updated);
+                      }}
+                    />
+                    <input
+                      type="number"
+                      className="w-20 px-1 py-0.5 border border-neutral-300 rounded"
+                      value={pt.cost}
+                      onChange={(e) => {
+                        const updated = [...parts];
+                        updated[idx].cost = Number(e.target.value);
+                        setParts(updated);
+                      }}
+                    />
                     <button
                       type="button"
                       className="text-error-500"
-                      onClick={() => setParts(parts.filter((pid) => pid !== id))}
+                      onClick={() => setParts(parts.filter((_, i) => i !== idx))}
                     >
                       Remove
                     </button>
@@ -367,11 +466,11 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 Supports: Images, PDFs, and documents
               </p>
             </div>
-            {files.length > 0 && (
-              <div className="mt-4 space-y-2">
-                {files.map((file, index) => (
-                  <div
-                    key={index}
+          {files.length > 0 && (
+            <div className="mt-4 space-y-2">
+              {files.map((file, index) => (
+                <div
+                  key={index}
                     className="flex items-center justify-between p-2 bg-neutral-50 rounded-md"
                   >
                     <div className="flex items-center">
@@ -397,6 +496,27 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1">
+              Document
+            </label>
+            <input
+              type="file"
+              onChange={(e) => setDocFile(e.target.files?.[0] || null)}
+              className="mb-2"
+            />
+            <input
+              type="text"
+              value={docUrl}
+              onChange={(e) => setDocUrl(e.target.value)}
+              placeholder="Or paste URL"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-md mb-2"
+            />
+            <Button type="button" variant="outline" className="w-full" onClick={uploadDocument}>
+              Upload Document
+            </Button>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
               Capture Image
             </label>
             <Button
@@ -412,45 +532,65 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1">
-              Signature
+              Signatures
             </label>
-            {showSignaturePad ? (
-              <div className="border border-neutral-300 rounded-md p-2">
-                <SignatureCanvas
-                  ref={signatureCanvasRef}
-                  canvasProps={{
-                    className: "w-full h-40 border rounded-md",
+            {signatures.map((s, idx) => (
+              <div key={idx} className="flex items-center space-x-2 mb-1">
+                <input
+                  type="text"
+                  className="px-2 py-1 border border-neutral-300 rounded-md"
+                  value={s.by}
+                  placeholder="User ID"
+                  onChange={(e) => {
+                    const updated = [...signatures];
+                    updated[idx].by = e.target.value;
+                    setSignatures(updated);
                   }}
                 />
-                <div className="mt-2 flex justify-end space-x-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => signatureCanvasRef.current?.clear()}
-                  >
-                    Clear
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="sm"
-                    onClick={() => setShowSignaturePad(false)}
-                  >
-                    Done
-                  </Button>
-                </div>
+                <input
+                  type="datetime-local"
+                  className="px-2 py-1 border border-neutral-300 rounded-md"
+                  value={s.ts}
+                  onChange={(e) => {
+                    const updated = [...signatures];
+                    updated[idx].ts = e.target.value;
+                    setSignatures(updated);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setSignatures(signatures.filter((_, i) => i !== idx))}
+                >
+                  Remove
+                </button>
               </div>
-            ) : (
-              <Button
+            ))}
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                className="px-2 py-1 border border-neutral-300 rounded-md"
+                value={newSignature.by}
+                placeholder="User ID"
+                onChange={(e) => setNewSignature((prev) => ({ ...prev, by: e.target.value }))}
+              />
+              <input
+                type="datetime-local"
+                className="px-2 py-1 border border-neutral-300 rounded-md"
+                value={newSignature.ts}
+                onChange={(e) => setNewSignature((prev) => ({ ...prev, ts: e.target.value }))}
+              />
+              <button
                 type="button"
-                variant="outline"
-                onClick={() => setShowSignaturePad(true)}
-                className="w-full"
+                onClick={() => {
+                  if (newSignature.by && newSignature.ts) {
+                    setSignatures([...signatures, newSignature]);
+                    setNewSignature({ by: '', ts: '' });
+                  }
+                }}
               >
-                Add Signature
-              </Button>
-            )}
+                Add
+              </button>
+            </div>
           </div>
 
           <div className="flex justify-end space-x-3 pt-6 border-t border-neutral-200">

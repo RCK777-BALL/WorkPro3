@@ -2,9 +2,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
+import { ok, fail, asyncHandler } from '../src/lib/http';
 
 import Tenant from '../models/Tenant';
+import { writeAuditLog } from '../utils/audit';
 
 export const getAllTenants = async (_req: Request, res: Response, next: NextFunction) => {
   try {
@@ -27,7 +29,16 @@ export const getTenantById = async (req: Request, res: Response, next: NextFunct
 
 export const createTenant = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
     const tenant = await Tenant.create(req.body);
+    await writeAuditLog({
+      tenantId: tenant._id,
+      userId,
+      action: 'create',
+      entityType: 'Tenant',
+      entityId: tenant._id,
+      after: tenant.toObject(),
+    });
     res.status(201).json(tenant);
   } catch (err) {
     next(err);
@@ -36,11 +47,22 @@ export const createTenant = async (req: Request, res: Response, next: NextFuncti
 
 export const updateTenant = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const existing = await Tenant.findById(req.params.id);
+    if (!existing) return res.status(404).json({ message: 'Not found' });
     const tenant = await Tenant.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
     });
-    if (!tenant) return res.status(404).json({ message: 'Not found' });
+    await writeAuditLog({
+      tenantId: existing._id,
+      userId,
+      action: 'update',
+      entityType: 'Tenant',
+      entityId: req.params.id,
+      before: existing.toObject(),
+      after: tenant?.toObject(),
+    });
     res.json(tenant);
   } catch (err) {
     next(err);
@@ -49,13 +71,23 @@ export const updateTenant = async (req: Request, res: Response, next: NextFuncti
 
 export const deleteTenant = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
     const tenant = await Tenant.findByIdAndDelete(req.params.id);
     if (!tenant) return res.status(404).json({ message: 'Not found' });
+    await writeAuditLog({
+      tenantId: tenant._id,
+      userId,
+      action: 'delete',
+      entityType: 'Tenant',
+      entityId: req.params.id,
+      before: tenant.toObject(),
+    });
     res.json({ message: 'Deleted successfully' });
   } catch (err) {
     next(err);
   }
 };
+
 
 export default {
   getAllTenants,

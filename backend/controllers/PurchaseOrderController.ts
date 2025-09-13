@@ -3,8 +3,9 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
- 
+
 import PurchaseOrder from '../models/PurchaseOrder';
+import { writeAuditLog } from '../utils/audit';
 
 export const createPurchaseOrder = async (
   req: Request,
@@ -16,6 +17,15 @@ export const createPurchaseOrder = async (
     const po = await PurchaseOrder.create({
       ...req.body,
       ...(tenantId ? { tenantId } : {}),
+    });
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'create',
+      entityType: 'PurchaseOrder',
+      entityId: po._id,
+      after: po.toObject(),
     });
     res.status(201).json(po);
     return;
@@ -84,8 +94,19 @@ export const updateVendorPurchaseOrder = async (
       res.status(403).json({ message: 'Forbidden' });
       return;
     }
+    const before = po.toObject();
     po.status = status as any;
     await po.save();
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId: po.tenantId,
+      userId,
+      action: 'update',
+      entityType: 'PurchaseOrder',
+      entityId: id,
+      before,
+      after: po.toObject(),
+    });
     res.json(po);
     return;
   } catch (err) {

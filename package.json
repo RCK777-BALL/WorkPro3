@@ -1,0 +1,11 @@
+{
+  "name": "workpro3",
+  "private": true,
+  "scripts": {
+    "backend:test": "npm --prefix backend test",
+    "frontend:test": "npm --prefix frontend test",
+    "seed": "npm --prefix backend run seed",
+    "migrate:wo_v2": "npm --prefix backend run migrate:wo_v2",
+    "dev:all": "npm --prefix backend run dev & npm --prefix frontend run dev"
+  }
+}

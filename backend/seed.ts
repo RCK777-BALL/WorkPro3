@@ -23,6 +23,7 @@ import PMTask from './models/PMTask';
 import WorkOrder from './models/WorkOrder';
 import Notification from './models/Notifications';
 import Tenant from './models/Tenant';
+import AuditLog from './models/AuditLog';
 
 // Tenant id used for all seeded records
 const tenantId = process.env.SEED_TENANT_ID
@@ -48,6 +49,7 @@ mongoose.connect(mongoUri).then(async () => {
   await WorkOrder.deleteMany({});
   await Notification.deleteMany({});
   await Tenant.deleteMany({});
+  await AuditLog.deleteMany({});
 
   // Seed Tenant
   await Tenant.create({ _id: tenantId, name: 'Default Tenant' });
@@ -57,7 +59,7 @@ mongoose.connect(mongoUri).then(async () => {
     name: 'Admin',
     email: 'admin@example.com',
     passwordHash: 'admin123',
-    role: 'admin',
+    roles: ['admin'],
     tenantId,
     employeeId: 'ADM001',
   });
@@ -65,7 +67,7 @@ mongoose.connect(mongoUri).then(async () => {
     name: 'Tech',
     email: 'tech@example.com',
     passwordHash: 'tech123',
-    role: 'technician',
+    roles: ['tech'],
     tenantId,
     employeeId: 'TECH001',
   });
@@ -75,7 +77,7 @@ mongoose.connect(mongoUri).then(async () => {
     name: 'Department Leader',
     email: 'department.leader@example.com',
     passwordHash: 'leader123',
-    role: 'manager',
+    roles: ['supervisor'],
     employeeId: 'DL001',
     tenantId,
     managerId: admin._id,
@@ -85,7 +87,7 @@ mongoose.connect(mongoUri).then(async () => {
     name: 'Area Leader',
     email: 'area.leader@example.com',
     passwordHash: 'area123',
-    role: 'manager',
+    roles: ['supervisor'],
     employeeId: 'AL001',
     tenantId,
     managerId: departmentLeader._id,
@@ -95,7 +97,7 @@ mongoose.connect(mongoUri).then(async () => {
     name: 'Team Leader',
     email: 'team.leader@example.com',
     passwordHash: 'team123',
-    role: 'manager',
+    roles: ['supervisor'],
     employeeId: 'TL001',
     tenantId,
     managerId: areaLeader._id,
@@ -106,7 +108,7 @@ mongoose.connect(mongoUri).then(async () => {
       name: 'Team Member One',
       email: 'member.one@example.com',
       passwordHash: 'member123',
-      role: 'technician',
+      roles: ['tech'],
       employeeId: 'TM001',
       tenantId,
       managerId: teamLeader._id,
@@ -115,7 +117,7 @@ mongoose.connect(mongoUri).then(async () => {
       name: 'Team Member Two',
       email: 'member.two@example.com',
       passwordHash: 'member123',
-      role: 'technician',
+      roles: ['tech'],
       employeeId: 'TM002',
       tenantId,
       managerId: teamLeader._id,
@@ -124,7 +126,7 @@ mongoose.connect(mongoUri).then(async () => {
       name: 'Team Member Three',
       email: 'member.three@example.com',
       passwordHash: 'member123',
-      role: 'technician',
+      roles: ['tech'],
       employeeId: 'TM003',
       tenantId,
       managerId: teamLeader._id,
@@ -173,7 +175,7 @@ mongoose.connect(mongoUri).then(async () => {
   });
 
   // Seed Work Order
-  await WorkOrder.create({
+  const workOrder = await WorkOrder.create({
     title: 'Initial Maintenance',
     asset: asset._id,
     description: 'Setup inspection',
@@ -188,6 +190,29 @@ mongoose.connect(mongoUri).then(async () => {
     dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
     tenantId,
   });
+
+  // Seed sample Audit Logs
+  await AuditLog.insertMany([
+    {
+      tenantId,
+      userId: admin._id,
+      action: 'create',
+      entityType: 'WorkOrder',
+      entityId: workOrder._id,
+      after: workOrder.toObject(),
+      ts: new Date(),
+    },
+    {
+      tenantId,
+      userId: admin._id,
+      action: 'update',
+      entityType: 'WorkOrder',
+      entityId: workOrder._id,
+      before: { status: 'open' },
+      after: { status: 'in-progress' },
+      ts: new Date(),
+    },
+  ]);
 
   // Seed Notifications
   await Notification.insertMany([

@@ -5,9 +5,11 @@
 import type { Request } from 'express';
 import type { AuthedRequestHandler } from '../types/http';
 
-import Asset from '../models/Asset';
 import WorkOrder from '../models/WorkOrder';
-import InventoryItem from '../models/InventoryItem';
+import WorkHistory from '../models/WorkHistory';
+import TimeSheet from '../models/TimeSheet';
+import Asset from '../models/Asset';
+import { sendResponse } from '../utils/sendResponse';
 
 /**
  * Helper to resolve the tenant id from the request. It checks the `tenantId`
@@ -26,21 +28,68 @@ const getTenantId = (req: Request): string | undefined => {
 
 export const getSummary: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const tenantId = getTenantId(req);
-    const match = tenantId ? { tenantId } : {};
-    const [assetCount, workOrderCount, inventoryCount] = await Promise.all([
-      Asset.countDocuments(match),
-      WorkOrder.countDocuments(match),
-      InventoryItem.countDocuments(match),
+    const tenantId =
+      typeof req.query.tenantId === 'string'
+        ? req.query.tenantId
+        : getTenantId(req);
+    const siteId =
+      typeof req.query.siteId === 'string' ? req.query.siteId : undefined;
+    const match: any = tenantId ? { tenantId } : {};
+    if (siteId) match.siteId = siteId;
+
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+    const pmMatch = { ...match, pmTask: { $exists: true } };
+
+    const [
+      pmTotal,
+      pmCompleted,
+      woBacklog,
+      cmCount,
+      downtimeAgg,
+      timesheetAgg,
+    ] = await Promise.all([
+      WorkOrder.countDocuments(pmMatch),
+      WorkOrder.countDocuments({ ...pmMatch, status: 'completed' }),
+      WorkOrder.countDocuments({ ...match, status: { $ne: 'completed' } }),
+      WorkOrder.countDocuments({ ...match, pmTask: { $exists: false } }),
+      WorkHistory.aggregate([
+        {
+          $match: {
+            ...match,
+            completedAt: { $gte: startOfMonth, $lt: endOfMonth },
+          },
+        },
+        { $group: { _id: null, hours: { $sum: '$timeSpentHours' } } },
+      ]),
+      TimeSheet.aggregate([
+        {
+          $match: { ...match, date: { $gte: startOfMonth, $lt: endOfMonth } },
+        },
+        { $group: { _id: null, hours: { $sum: '$totalHours' } } },
+      ]),
     ]);
 
-    res.json({
-      totals: {
-        assets: assetCount,
-        workOrders: workOrderCount,
-        pmCompliance: 0,
-      },
-      metrics: { inventoryItems: inventoryCount },
+    const maintenanceHours = downtimeAgg[0]?.hours ?? 0;
+    const totalHours = timesheetAgg[0]?.hours ?? 0;
+
+    const pmCompliance = pmTotal ? pmCompleted / pmTotal : 0;
+    const downtimeThisMonth = maintenanceHours;
+    const costMTD = maintenanceHours * 50;
+    const cmVsPmRatio = pmTotal ? cmCount / pmTotal : 0;
+    const wrenchTimePct = totalHours
+      ? (maintenanceHours / totalHours) * 100
+      : 0;
+
+    sendResponse(res, {
+      pmCompliance,
+      woBacklog,
+      downtimeThisMonth,
+      costMTD,
+      cmVsPmRatio,
+      wrenchTimePct,
     });
     return;
   } catch (err) {
@@ -56,7 +105,7 @@ export const getAssetSummary: AuthedRequestHandler = async (req, res, next) => {
       { $match: match },
       { $group: { _id: '$status', count: { $sum: 1 } } },
     ]);
-    res.json(summary);
+    sendResponse(res, summary);
     return;
   } catch (err) {
     return next(err);
@@ -75,7 +124,7 @@ export const getWorkOrderSummary: AuthedRequestHandler = async (
       { $match: match },
       { $group: { _id: '$status', count: { $sum: 1 } } },
     ]);
-    res.json(summary);
+    sendResponse(res, summary);
     return;
   } catch (err) {
     return next(err);
@@ -97,7 +146,7 @@ export const getUpcomingMaintenance: AuthedRequestHandler = async (
       .sort({ dueDate: 1 })
       .limit(10)
       .populate('asset');
-    res.json(tasks);
+    sendResponse(res, tasks);
     return;
   } catch (err) {
     return next(err);
@@ -114,7 +163,7 @@ export const getCriticalAlerts: AuthedRequestHandler = async (req, res, next) =>
       .sort({ createdAt: -1 })
       .limit(10)
       .populate('asset');
-    res.json(alerts);
+    sendResponse(res, alerts);
     return;
   } catch (err) {
     return next(err);

@@ -15,7 +15,7 @@ import {
   assistWorkOrder,
 } from '../controllers/WorkOrderController';
 import { requireAuth } from '../middleware/authMiddleware';
-import requireRole from '../middleware/requireRole';
+import requireRoles from '../middleware/requireRoles';
 import { validate } from '../middleware/validationMiddleware';
 import { workOrderValidators } from '../validators/workOrderValidators';
 import validateObjectId from '../middleware/validateObjectId';
@@ -29,14 +29,14 @@ router.get('/search', searchWorkOrders);
 router.get(
   '/:id/assist',
   validateObjectId('id'),
-  requireRole('admin', 'manager', 'technician'),
+  requireRoles(['admin', 'supervisor', 'tech']),
   assistWorkOrder
 );
 router.get('/:id', validateObjectId('id'), getWorkOrderById);
 
 router.post(
   '/',
-  requireRole('admin', 'manager', 'technician'),
+  requireRoles(['admin', 'supervisor', 'tech']),
   upload.any(),
   workOrderValidators,
   validate,
@@ -46,7 +46,7 @@ router.post(
 router.put(
   '/:id',
   validateObjectId('id'),
-  requireRole('admin', 'manager', 'technician'),
+  requireRoles(['admin', 'supervisor', 'tech']),
   workOrderValidators,
   validate,
   updateWorkOrder
@@ -55,9 +55,9 @@ router.put(
 router.post(
   '/:id/approve',
   validateObjectId('id'),
-  requireRole('admin', 'manager'),
+  requireRoles(['admin', 'supervisor']),
   approveWorkOrder
 );
-router.delete('/:id', validateObjectId('id'), requireRole('admin', 'manager'), deleteWorkOrder);
+router.delete('/:id', validateObjectId('id'), requireRoles(['admin', 'supervisor']), deleteWorkOrder);
  
 export default router;

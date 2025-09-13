@@ -4,6 +4,7 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import logger from '../utils/logger';
+import { sendResponse } from '../utils/sendResponse';
 
 const errorHandler = (
   err: unknown,
@@ -17,11 +18,11 @@ const errorHandler = (
     const status =
       (err as { status?: number }).status ||
       (err.name === 'ValidationError' || err.name === 'CastError' ? 400 : 500);
-    res.status(status).json({ message: err.message || 'Internal Server Error' });
+    sendResponse(res, null, err.message || 'Internal Server Error', status);
     return;
   }
 
-  res.status(500).json({ message: 'Internal Server Error' });
+  sendResponse(res, null, 'Internal Server Error', 500);
 };
 
 export default errorHandler;

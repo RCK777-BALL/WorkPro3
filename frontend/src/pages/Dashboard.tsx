@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import FiltersBar from '@/components/dashboard/FiltersBar';
 import DashboardStats from '@/components/dashboard/DashboardStats';
 import WorkOrdersChart from '@/components/dashboard/WorkOrdersChart';
@@ -10,6 +10,8 @@ import AssetsStatusChart from '@/components/dashboard/AssetsStatusChart';
 import UpcomingMaintenance from '@/components/dashboard/UpcomingMaintenance';
 import CriticalAlerts from '@/components/dashboard/CriticalAlerts';
 import LowStockParts from '@/components/dashboard/LowStockParts';
+import KpiTile from '@/components/kpi/KpiTile';
+import RecentActivity, { AuditLog } from '@/components/dashboard/RecentActivity';
 import { useDashboardStore } from '@/store/dashboardStore';
 import useDashboardData from '@/hooks/useDashboardData';
 import { useSummary } from '@/hooks/useSummaryData';
@@ -43,6 +45,48 @@ export default function Dashboard() {
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+
+  interface SummaryResponse {
+    openWorkOrders: number;
+    pmDueThisWeek: number;
+    assets: number;
+    uptime: number;
+    inventoryItems: number;
+    activeUsers: number;
+  }
+
+  const [kpis, setKpis] = useState<SummaryResponse | null>(null);
+  const [kpiLoading, setKpiLoading] = useState(true);
+  const [kpiError, setKpiError] = useState<string | null>(null);
+
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [logsLoading, setLogsLoading] = useState(true);
+  const [logsError, setLogsError] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    setKpiLoading(true);
+    setLogsLoading(true);
+    try {
+      const [summaryRes, logsRes] = await Promise.all([
+        http.get<SummaryResponse>('/api/summary'),
+        http.get<AuditLog[]>('/api/audit/logs', { params: { limit: 10 } }),
+      ]);
+      setKpis(summaryRes.data);
+      setLogs(logsRes.data);
+      setKpiError(null);
+      setLogsError(null);
+    } catch (err) {
+      setKpiError('Failed to load KPIs');
+      setLogsError('Failed to load activity');
+    } finally {
+      setKpiLoading(false);
+      setLogsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const query = useMemo(() => {
     const params = new URLSearchParams();
@@ -102,24 +146,67 @@ export default function Dashboard() {
             Live operational key performance indicators
           </p>
         </div>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="px-3 py-2 text-sm border rounded-md"
-        >
-          Filters
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={fetchData}
+            className="px-3 py-2 text-sm border rounded-md"
+          >
+            Refresh
+          </button>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="px-3 py-2 text-sm border rounded-md"
+          >
+            Filters
+          </button>
+        </div>
       </div>
 
       {showFilters && <FiltersBar departments={departments} />}
 
+      {kpiError && (
+        <div className="rounded-md bg-error-100 text-error-700 p-2 text-sm">
+          {kpiError}
+        </div>
+      )}
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {[
+          { key: 'openWorkOrders', label: 'Open Work Orders' },
+          { key: 'pmDueThisWeek', label: 'PM Due (7d)' },
+          { key: 'assets', label: 'Total Assets' },
+          { key: 'uptime', label: 'Uptime', suffix: '%' },
+          { key: 'inventoryItems', label: 'Inventory Items' },
+          { key: 'activeUsers', label: 'Active Users' },
+        ].map(({ key, label, suffix }) => (
+          <KpiTile
+            key={key}
+            label={label}
+            value={(kpis as any)?.[key]}
+            suffix={suffix}
+            loading={kpiLoading}
+            error={kpiError}
+            onRetry={fetchData}
+          />
+        ))}
+      </div>
+
       <DashboardStats stats={stats} />
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <WorkOrdersChart data={workOrdersByStatus} />
-        <AssetsStatusChart data={assetsByStatus} />
-        <LowStockParts parts={lowStock} />
-        <UpcomingMaintenance maintenanceItems={upcomingMaintenance} />
-        <CriticalAlerts alerts={criticalAlerts} />
+      <div className="grid gap-6 lg:grid-cols-4">
+        <div className="lg:col-span-3 grid gap-6 md:grid-cols-2">
+          <WorkOrdersChart data={workOrdersByStatus} />
+          <AssetsStatusChart data={assetsByStatus} />
+          <LowStockParts parts={lowStock} />
+          <UpcomingMaintenance maintenanceItems={upcomingMaintenance} />
+          <CriticalAlerts alerts={criticalAlerts} />
+        </div>
+        <RecentActivity
+          logs={logs}
+          loading={logsLoading}
+          error={logsError}
+          onRefresh={fetchData}
+        />
       </div>
     </div>
   );

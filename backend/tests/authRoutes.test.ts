@@ -8,6 +8,7 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import bcrypt from 'bcryptjs';
 import User from '../models/User';
 import jwt from 'jsonwebtoken';
 import authRoutes from '../routes/AuthRoutes';
@@ -35,12 +36,36 @@ beforeEach(async () => {
 });
 
 describe('Auth Routes', () => {
+  it('registers a new user with hashed password', async () => {
+    const password = 'pass123';
+
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({
+        name: 'New User',
+        email: 'new@example.com',
+        password,
+        tenantId: new mongoose.Types.ObjectId().toString(),
+        employeeId: 'EMP1',
+      })
+      .expect(201);
+
+    expect(res.body.message).toBe('User registered successfully');
+
+    const user = await User.findOne({ email: 'new@example.com' }).lean();
+    expect(user).toBeTruthy();
+    expect(user?.passwordHash).toBeDefined();
+    expect(user?.passwordHash).not.toBe(password);
+    const match = await bcrypt.compare(password, user!.passwordHash);
+    expect(match).toBe(true);
+  });
+
   it('logs in and sets cookie', async () => {
     await User.create({
       name: 'Test',
       email: 'test@example.com',
       passwordHash: 'pass123',
-      role: 'admin',
+      roles: ['admin'],
       tenantId: new mongoose.Types.ObjectId(),
     });
 
@@ -68,7 +93,7 @@ describe('Auth Routes', () => {
       name: 'Config',
       email: 'config@example.com',
       passwordHash: 'pass123',
-      role: 'admin',
+      roles: ['admin'],
       tenantId: new mongoose.Types.ObjectId(),
     });
 
@@ -82,12 +107,31 @@ describe('Auth Routes', () => {
     delete process.env.INCLUDE_AUTH_TOKEN;
   });
 
+  it('omits token from response when INCLUDE_AUTH_TOKEN is unset', async () => {
+
+    delete process.env.INCLUDE_AUTH_TOKEN;
+    await User.create({
+      name: 'NoToken',
+      email: 'notoken@example.com',
+      passwordHash: 'pass123',
+      roles: ['admin'],
+      tenantId: new mongoose.Types.ObjectId(),
+    });
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'notoken@example.com', password: 'pass123' })
+      .expect(200);
+
+    expect(res.body.token).toBeUndefined();
+  });
+
   it('gets current user with cookie and logs out', async () => {
     await User.create({
       name: 'Me',
       email: 'me@example.com',
       passwordHash: 'pass123',
-      role: 'viewer',
+      roles: ['planner'],
       tenantId: new mongoose.Types.ObjectId(),
     });
     // login
@@ -121,7 +165,7 @@ describe('Auth Routes', () => {
       name: 'Secure',
       email: 'secure@example.com',
       passwordHash: 'pass123',
-      role: 'viewer',
+      roles: ['planner'],
       tenantId: new mongoose.Types.ObjectId(),
     });
 

@@ -10,7 +10,7 @@ import bcrypt from 'bcryptjs';
 // hashing cost globally.
 export const SALT_ROUNDS = 10;
 
-export type UserRole = 'admin' | 'manager' | 'technician' | 'viewer';
+export type UserRole = 'admin' | 'supervisor' | 'planner' | 'tech';
 
 // ✅ Interface for a user document
 export interface UserDocument extends Document {
@@ -18,7 +18,7 @@ export interface UserDocument extends Document {
   name: string;
   email: string;
   passwordHash: string;
-  role: UserRole;
+  roles: UserRole[];
   tenantId: mongoose.Schema.Types.ObjectId;
   employeeId: string;
   managerId?: Types.ObjectId;
@@ -44,10 +44,10 @@ const userSchema = new Schema<UserDocument>(
       lowercase: true,
     },
     passwordHash: { type: String, required: true },
-    role: {
-      type: String,
-      enum: ['admin', 'manager', 'technician', 'viewer'],
-      default: 'viewer',
+    roles: {
+      type: [String],
+      enum: ['admin', 'supervisor', 'planner', 'tech'],
+      default: ['tech'],
     },
     tenantId: { type: mongoose.Schema.Types.ObjectId, required: true, index: true },
     employeeId: { type: String, required: true, unique: true },

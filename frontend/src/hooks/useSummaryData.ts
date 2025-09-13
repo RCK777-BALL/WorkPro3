@@ -30,10 +30,11 @@ export function useSummary<T = unknown>(
     abortRef.current = controller;
 
       const p = http
-        .get<T>(path, { signal: controller.signal })
+        .get<{ data?: T }>(path, { signal: controller.signal })
         .then((res) => {
-          if (!mountedRef.current) return res.data;
-          c.data = res.data;
+          const payload = (res.data as any)?.data ?? res.data;
+          if (!mountedRef.current) return payload;
+          c.data = payload as T;
           c.ts = Date.now();
           c.promise = undefined;
           backoffRef.current = 1000;

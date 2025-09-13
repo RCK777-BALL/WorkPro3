@@ -15,6 +15,7 @@ import {
 
 const router = express.Router();
 
+// GET /api/summary
 router.get('/', requireAuth, getSummary);
 router.get('/assets', requireAuth, getAssetSummary);
 router.get('/workorders', requireAuth, getWorkOrderSummary);

@@ -13,7 +13,7 @@ import {
   searchAssets,
 } from '../controllers/AssetController';
 import { requireAuth } from '../middleware/requireAuth'; // <— align with your actual file
-import requireRole from '../middleware/requireRole';
+import requireRoles from '../middleware/requireRoles';
 import { validate } from '../middleware/validationMiddleware';
 import { assetValidators } from '../validators/assetValidators';
 import siteScope from '../middleware/siteScope';
@@ -63,7 +63,7 @@ router.get('/search', searchAssets);
  
 router.post(
   '/',
-  requireRole('admin', 'manager'),
+  requireRoles(['admin', 'supervisor']),
   handleUpload,
   assetValidators,
   validate,
@@ -73,13 +73,13 @@ router.post(
 router.put(
   '/:id',
   validateObjectId('id'),
-  requireRole('admin', 'manager'),
+  requireRoles(['admin', 'supervisor']),
   handleUpload,
   assetValidators,
   validate,
   updateAsset
 );
- router.delete('/:id', validateObjectId('id'), requireRole('admin', 'manager'), deleteAsset);
+router.delete('/:id', validateObjectId('id'), requireRoles(['admin', 'supervisor']), deleteAsset);
  
 
 export default router;

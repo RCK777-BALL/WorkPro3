@@ -55,9 +55,11 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
       }
       try {
         const userRes = await http.get('/users');
-        setTechs((userRes.data as any[])
-          .filter((u) => u.role === 'technician')
-          .map(u => ({ ...u, id: u._id ?? u.id })) as User[]);
+        setTechs(
+          (userRes.data as any[])
+            .filter((u) => u.role === 'tech')
+            .map((u) => ({ ...u, id: u._id ?? u.id })) as User[],
+        );
       } catch {
         addToast('Failed to load users', 'error');
       }

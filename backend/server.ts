@@ -36,12 +36,14 @@ import {
   teamRoutes,
   ThemeRoutes,
   requestPortalRoutes,
+  publicRequestRoutes,
   vendorPortalRoutes,
   chatRoutes,
   webhooksRoutes,
   calendarRoutes,
   IntegrationRoutes,
   summaryRoutes,
+  auditRoutes,
 } from "./routes";
 
 import { startPMScheduler } from "./utils/PMScheduler";
@@ -142,6 +144,8 @@ if (env.NODE_ENV === "test") {
   });
 }
 
+app.use("/api/public", publicRequestRoutes);
+
 // --- Routes (order matters for the limiter) ---
 app.use("/api/auth", authRoutes);
 
@@ -177,7 +181,8 @@ app.use("/api/calendar", calendarRoutes);
 app.use("/api/integrations", IntegrationRoutes);
 
 app.use("/api/summary", summaryRoutes);
- 
+app.use("/api/audit", auditRoutes);
+
 
 // 404 + error handler
 app.use((_req, res) => {

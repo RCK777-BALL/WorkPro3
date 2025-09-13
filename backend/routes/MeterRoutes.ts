@@ -13,7 +13,7 @@ import {
   getMeterReadings,
 } from '../controllers/MeterController';
 import { requireAuth } from '../middleware/authMiddleware';
-import requireRole from '../middleware/requireRole';
+import requireRoles from '../middleware/requireRoles';
 import siteScope from '../middleware/siteScope';
 
 const router = express.Router();
@@ -23,10 +23,10 @@ router.use(siteScope);
 
 router.get('/', getMeters);
 router.get('/:id', getMeterById);
-router.post('/', requireRole('admin', 'manager'), createMeter);
-router.put('/:id', requireRole('admin', 'manager'), updateMeter);
-router.delete('/:id', requireRole('admin', 'manager'), deleteMeter);
+router.post('/', requireRoles(['admin', 'supervisor']), createMeter);
+router.put('/:id', requireRoles(['admin', 'supervisor']), updateMeter);
+router.delete('/:id', requireRoles(['admin', 'supervisor']), deleteMeter);
 router.get('/:id/readings', getMeterReadings);
-router.post('/:id/readings', requireRole('admin', 'manager'), addMeterReading);
+router.post('/:id/readings', requireRoles(['admin', 'supervisor']), addMeterReading);
 
 export default router;

@@ -7,9 +7,9 @@ import type { AuthedRequestHandler } from '../types/http';
 
 const roleHierarchy: Record<ITeamMember['role'], ITeamMember['role'][] | null> = {
   admin: null,
-  manager: null,
+  supervisor: null,
   department_leader: null,
-  area_leader: ['manager', 'department_leader'],
+  area_leader: ['supervisor', 'department_leader'],
   team_leader: ['area_leader'],
   team_member: ['team_leader'],
 };
@@ -69,7 +69,7 @@ export const createTeamMember: AuthedRequestHandler = async (req, res, next) => 
 
   try {
     const role = req.body.role;
-    if (['admin', 'manager', 'department_leader'].includes(role)) {
+    if (['admin', 'supervisor', 'department_leader'].includes(role)) {
       req.body.managerId = null;
     } else {
       if (!req.body.managerId) {
@@ -93,7 +93,7 @@ export const updateTeamMember: AuthedRequestHandler = async (req, res) => {
 
   try {
     const role = req.body.role;
-    if (['admin', 'manager', 'department_leader'].includes(role)) {
+    if (['admin', 'supervisor', 'department_leader'].includes(role)) {
       req.body.managerId = null;
     } else {
       if (!req.body.managerId) {

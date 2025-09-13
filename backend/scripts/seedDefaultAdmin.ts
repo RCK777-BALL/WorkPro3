@@ -38,7 +38,7 @@ const seed = async () => {
         name: 'Admin',
         email: 'admin@example.com',
         passwordHash: hashedPassword,
-        role: 'admin',
+        roles: ['admin'],
         tenantId: tenant._id,
       });
       logger.info('✅ Default admin user seeded', {

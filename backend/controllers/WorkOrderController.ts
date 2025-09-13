@@ -11,6 +11,8 @@ import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
 import { filterFields } from '../utils/filterFields';
+import { logAudit } from '../utils/audit';
+import { sendResponse } from '../utils/sendResponse';
 
 const workOrderCreateFields = [
   'title',
@@ -59,11 +61,11 @@ export const getAllWorkOrders: AuthedRequestHandler = async (req, res, next) => 
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const items = await WorkOrder.find({ tenantId });
-    res.json(items);
+    sendResponse(res, items);
     return;
   } catch (err) {
     next(err);
@@ -105,18 +107,18 @@ export const searchWorkOrders: AuthedRequestHandler = async (req, res, next) => 
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const { status, priority } = req.query;
     const start = req.query.startDate ? new Date(String(req.query.startDate)) : undefined;
     const end = req.query.endDate ? new Date(String(req.query.endDate)) : undefined;
     if (start && isNaN(start.getTime())) {
-      res.status(400).json({ message: 'Invalid startDate' });
+      sendResponse(res, null, 'Invalid startDate', 400);
       return;
     }
     if (end && isNaN(end.getTime())) {
-      res.status(400).json({ message: 'Invalid endDate' });
+      sendResponse(res, null, 'Invalid endDate', 400);
       return;
     }
     const query: any = { tenantId };
@@ -129,7 +131,7 @@ export const searchWorkOrders: AuthedRequestHandler = async (req, res, next) => 
     }
 
     const items = await WorkOrder.find(query);
-    res.json(items);
+    sendResponse(res, items);
     return;
   } catch (err) {
     next(err);
@@ -160,15 +162,15 @@ export const getWorkOrderById: AuthedRequestHandler = async (req, res, next) => 
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const item = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!item) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
-    res.json(item);
+    sendResponse(res, item);
     return;
   } catch (err) {
     next(err);
@@ -199,19 +201,20 @@ export const createWorkOrder: AuthedRequestHandler = async (req, res, next) => {
   try {
     const errors = validationResult(req as any);
     if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() });
+      sendResponse(res, null, errors.array(), 400);
       return;
     }
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const payload = filterFields(req.body, workOrderCreateFields);
     const newItem = new WorkOrder({ ...payload, tenantId });
     const saved = await newItem.save();
+    await logAudit(req, 'create', 'WorkOrder', saved._id, null, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
-    res.status(201).json(saved);
+    sendResponse(res, saved, null, 201);
     return;
   } catch (err) {
     next(err);
@@ -248,26 +251,39 @@ export const updateWorkOrder: AuthedRequestHandler = async (req, res, next) => {
   try {
     const errors = validationResult(req as any);
     if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() });
+      sendResponse(res, null, errors.array(), 400);
       return;
     }
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const update = filterFields(req.body, workOrderUpdateFields);
+    const existing = await WorkOrder.findOne({ _id: req.params.id, tenantId });
+    if (!existing) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
     const updated = await WorkOrder.findOneAndUpdate(
       { _id: req.params.id, tenantId },
       update,
       { new: true, runValidators: true }
     );
     if (!updated) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
+    await logAudit(
+      req,
+      'update',
+      'WorkOrder',
+      req.params.id,
+      existing.toObject(),
+      updated.toObject()
+    );
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(updated));
-    res.json(updated);
+    sendResponse(res, updated);
     return;
   } catch (err) {
     next(err);
@@ -298,16 +314,17 @@ export const deleteWorkOrder: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const deleted = await WorkOrder.findOneAndDelete({ _id: req.params.id, tenantId });
     if (!deleted) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
+    await logAudit(req, 'delete', 'WorkOrder', req.params.id, deleted.toObject(), null);
     emitWorkOrderUpdate(toWorkOrderUpdatePayload({ _id: req.params.id, deleted: true }));
-    res.json({ message: 'Deleted successfully' });
+    sendResponse(res, { message: 'Deleted successfully' });
     return;
   } catch (err) {
     next(err);
@@ -350,28 +367,29 @@ export const approveWorkOrder: AuthedRequestHandler = async (req, res, next) => 
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const userIdStr = req.user?._id ?? req.user?.id;
     if (!userIdStr) {
-      res.status(401).json({ message: 'Not authenticated' });
+      sendResponse(res, null, 'Not authenticated', 401);
       return;
     }
     const userObjectId = new Types.ObjectId(userIdStr);
     const { status } = req.body;
 
     if (!['pending', 'approved', 'rejected'].includes(status)) {
-      res.status(400).json({ message: 'Invalid status' });
+      sendResponse(res, null, 'Invalid status', 400);
       return;
     }
 
     const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!workOrder) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
 
+    const before = workOrder.toObject();
     workOrder.approvalStatus = status;
 
     if (status === 'pending') {
@@ -381,6 +399,7 @@ export const approveWorkOrder: AuthedRequestHandler = async (req, res, next) => 
     }
 
     const saved = await workOrder.save();
+    await logAudit(req, 'approve', 'WorkOrder', req.params.id, before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
 
     const message =
@@ -392,7 +411,7 @@ export const approveWorkOrder: AuthedRequestHandler = async (req, res, next) => 
       await notifyUser(workOrder.assignedTo, message);
     }
 
-    res.json(saved);
+    sendResponse(res, saved);
     return;
   } catch (err) {
     next(err);
@@ -425,7 +444,7 @@ export const assistWorkOrder: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const workOrder = await WorkOrder.findOne({
@@ -433,14 +452,14 @@ export const assistWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       tenantId,
     });
     if (!workOrder) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const result: AIAssistResult = await getWorkOrderAssistance({
       title: workOrder.title,
       description: workOrder.description || '',
     });
-    res.json(result);
+    sendResponse(res, result);
     return;
   } catch (err) {
     next(err);

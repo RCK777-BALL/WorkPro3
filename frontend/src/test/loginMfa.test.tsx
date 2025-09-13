@@ -9,7 +9,9 @@ vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
   return { ...actual, useNavigate: () => mockNavigate };
 });
-vi.mock('../lib/http', () => ({ default: { post: vi.fn() } }));
+vi.mock('../lib/http', () => ({
+  default: { post: vi.fn(), get: vi.fn().mockResolvedValue({ data: null }) },
+}));
 
 import Login from '../pages/Login';
 import { AuthProvider } from '../context/AuthContext';

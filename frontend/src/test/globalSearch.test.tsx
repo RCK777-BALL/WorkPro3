@@ -7,7 +7,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import GlobalSearch from '@/components/GlobalSearch';
+import GlobalSearch from '@/components/layout/GlobalSearch';
 
 function Wrapper() {
   const [open, setOpen] = React.useState(false);
@@ -43,7 +43,7 @@ describe('GlobalSearch', () => {
     await user.type(input, 'pump');
 
     expect(fetch).toHaveBeenCalledWith('/api/assets?search=pump');
-    expect(fetch).toHaveBeenCalledWith('/api/workorders?search=pump');
+    expect(fetch).toHaveBeenCalledWith('/api/work-orders?search=pump');
 
     expect(await screen.findByText('Pump')).toBeInTheDocument();
     expect(await screen.findByText('Fix Pump')).toBeInTheDocument();

@@ -154,7 +154,13 @@ router.post(
         return;
       }
 
-      const user = new User({ name, email, password, tenantId, employeeId });
+      const user = new User({
+        name,
+        email,
+        passwordHash: password,
+        tenantId,
+        employeeId,
+      });
       try {
         await user.save();
       } catch (err: any) {

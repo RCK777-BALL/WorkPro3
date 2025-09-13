@@ -14,7 +14,7 @@ import ThemeToggle from '@common/ThemeToggle';
 import Avatar from '@common/Avatar';
 import Card from '@common/Card';
 import { Button } from '@/components/ui/button';
-import { useAuthStore, type AuthState, isAdmin as selectIsAdmin, isManager as selectIsManager } from '@/store/authStore';
+import { useAuthStore, type AuthState, isAdmin as selectIsAdmin, isSupervisor as selectIsSupervisor } from '@/store/authStore';
 
 import { useDataStore } from '@/store/dataStore';
 import { useNavigate } from 'react-router-dom';

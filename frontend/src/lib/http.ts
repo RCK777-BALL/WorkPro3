@@ -15,6 +15,7 @@ const TENANT_KEY = 'auth:tenantId';
 const SITE_KEY = 'auth:siteId';
 
 
+
 http.interceptors.request.use((config) => {
   const headers: AxiosRequestHeaders = config.headers ?? {};
   const tenantId = localStorage.getItem(TENANT_KEY);
@@ -30,7 +31,7 @@ http.interceptors.response.use(
   (r) => r,
   (err) => {
     if (err?.response?.status === 401) {
-      window.location.href = '/login';
+      unauthorizedCallback?.();
     }
     return Promise.reject(err);
   }

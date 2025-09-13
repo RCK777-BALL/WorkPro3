@@ -19,6 +19,7 @@ import { assertEmail } from '../utils/assert';
 // Adjust this import path if your middleware lives elsewhere:
 import { requireAuth } from '../middleware/requireAuth';
 import logger from '../utils/logger';
+import { isCookieSecure } from '../utils/isCookieSecure';
 
 
 const FAKE_PASSWORD_HASH =
@@ -122,10 +123,10 @@ router.post('/login', loginLimiter, async (
       .cookie('token', token, {
         httpOnly: true,
         sameSite: 'strict',
-        secure: process.env.NODE_ENV === 'production',
+        secure: isCookieSecure(),
       })
       .status(200)
-      .json({ token, user: { ...userObj, tenantId } });
+      .json(responseBody);
     return;
   } catch (err) {
     logger.error('Login error:', err);
@@ -154,7 +155,13 @@ router.post(
         return;
       }
 
-      const user = new User({ name, email, password, tenantId, employeeId });
+      const user = new User({
+        name,
+        email,
+        passwordHash: password,
+        tenantId,
+        employeeId,
+      });
       try {
         await user.save();
       } catch (err: any) {

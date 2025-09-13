@@ -9,9 +9,9 @@ import { oidcVerify, mapRoles } from '../auth/oidc';
 describe('OIDC role mapping', () => {
   it('maps provider groups to internal roles', () => {
     expect(mapRoles(['Admin'])).toBe('admin');
-    expect(mapRoles(['Manager'])).toBe('manager');
-    expect(mapRoles(['Technician'])).toBe('technician');
-    expect(mapRoles([])).toBe('viewer');
+    expect(mapRoles(['Manager'])).toBe('supervisor');
+    expect(mapRoles(['Technician'])).toBe('tech');
+    expect(mapRoles([])).toBe('planner');
   });
 });
 

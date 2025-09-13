@@ -5,6 +5,10 @@
 import type { AuthedRequestHandler } from '../types/http';
 import mongoose from 'mongoose';
 import Asset from '../models/Asset';
+import Site from '../models/Site';
+import Department from '../models/Department';
+import Line from '../models/Line';
+import Station from '../models/Station';
 import { validationResult } from 'express-validator';
 import logger from '../utils/logger';
 import { filterFields } from '../utils/filterFields';
@@ -194,5 +198,115 @@ export const searchAssets: AuthedRequestHandler = async (req, res, next) => {
     return;
   } catch (err) {
     return next(err);
+  }
+};
+
+export const getAssetTree: AuthedRequestHandler = async (req, res, next) => {
+  try {
+    const match: any = { tenantId: req.tenantId };
+    if (req.siteId) match.siteId = req.siteId;
+
+    const assets = await Asset.find(match).lean();
+
+    const siteIds = new Set<string>();
+    const deptIds = new Set<string>();
+    const lineIds = new Set<string>();
+    const stationIds = new Set<string>();
+
+    assets.forEach((a: any) => {
+      if (a.siteId) siteIds.add(a.siteId.toString());
+      if (a.departmentId) deptIds.add(a.departmentId.toString());
+      if (a.lineId) lineIds.add(a.lineId.toString());
+      if (a.stationId) stationIds.add(a.stationId.toString());
+    });
+
+    const [sites, departments, lines, stations] = await Promise.all([
+      Site.find({ _id: { $in: Array.from(siteIds) } }).lean(),
+      Department.find({ _id: { $in: Array.from(deptIds) } }).lean(),
+      Line.find({ _id: { $in: Array.from(lineIds) } }).lean(),
+      Station.find({ _id: { $in: Array.from(stationIds) } }).lean(),
+    ]);
+
+    const siteMap = new Map<string, any>();
+    const deptName = new Map(departments.map((d: any) => [d._id.toString(), d.name]));
+    const lineName = new Map(lines.map((l: any) => [l._id.toString(), l.name]));
+    const stationName = new Map(stations.map((s: any) => [s._id.toString(), s.name]));
+
+    sites.forEach((s: any) => {
+      siteMap.set(s._id.toString(), {
+        id: s._id.toString(),
+        name: s.name,
+        areas: new Map<string, any>(),
+      });
+    });
+
+    assets.forEach((a: any) => {
+      const sid = a.siteId ? a.siteId.toString() : 'unknown';
+      const did = a.departmentId ? a.departmentId.toString() : 'unknown';
+      const lid = a.lineId ? a.lineId.toString() : 'unknown';
+      const stid = a.stationId ? a.stationId.toString() : 'unknown';
+
+      let site = siteMap.get(sid);
+      if (!site) {
+        site = { id: sid, name: 'Unknown Site', areas: new Map<string, any>() };
+        siteMap.set(sid, site);
+      }
+
+      let area = site.areas.get(did);
+      if (!area) {
+        area = {
+          id: did,
+          name: deptName.get(did) || 'Unknown Area',
+          lines: new Map<string, any>(),
+        };
+        site.areas.set(did, area);
+      }
+
+      let line = area.lines.get(lid);
+      if (!line) {
+        line = {
+          id: lid,
+          name: lineName.get(lid) || 'Unknown Line',
+          stations: new Map<string, any>(),
+        };
+        area.lines.set(lid, line);
+      }
+
+      let station = line.stations.get(stid);
+      if (!station) {
+        station = {
+          id: stid,
+          name: stationName.get(stid) || 'Unknown Station',
+          assets: [] as any[],
+        };
+        line.stations.set(stid, station);
+      }
+
+      station.assets.push({
+        id: a._id.toString(),
+        name: a.name,
+        qr: JSON.stringify({ type: 'asset', id: a._id.toString() }),
+      });
+    });
+
+    const tree = Array.from(siteMap.values()).map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      areas: Array.from(s.areas.values()).map((a: any) => ({
+        id: a.id,
+        name: a.name,
+        lines: Array.from(a.lines.values()).map((l: any) => ({
+          id: l.id,
+          name: l.name,
+          stations: Array.from(l.stations.values()),
+        })),
+      })),
+    }));
+
+    res.json(tree);
+    return;
+  } catch (err) {
+    next(err);
+    return;
   }
 };

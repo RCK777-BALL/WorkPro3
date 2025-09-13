@@ -1,8 +1,7 @@
 # Environment files
 **/.env
 **/.env.*
-!backend/.env.example
- !dev-server/.env.example
+!.env.sample
  
 
 # Dependencies

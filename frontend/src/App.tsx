@@ -6,8 +6,11 @@ import { useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Analytics from './pages/Analytics';
+import Imports from './pages/Imports';
 import Layout from './components/layout/Layout';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import Reports from './pages/Reports';
 import { useAuth } from '@/context/AuthContext';
 import {
   setUnauthorizedCallback,
@@ -37,7 +40,9 @@ export default function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
-          {/* more routes... */}
+          <Route path="analytics" element={<Analytics />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="imports" element={<Imports />} />
         </Route>
       </Routes>
     </ErrorBoundary>

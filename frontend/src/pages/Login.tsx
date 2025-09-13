@@ -44,7 +44,7 @@ const Login: React.FC = () => {
       setUser({
         id,
         name: emailFromOauth.split('@')[0],
-        role: 'viewer',
+        role: 'tech',
         email: emailFromOauth,
       });
       navigate('/dashboard');

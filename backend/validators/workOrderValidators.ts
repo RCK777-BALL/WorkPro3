@@ -22,7 +22,17 @@ export const workOrderValidators = [
     .notEmpty()
     .withMessage('status is required')
     .bail()
-    .isIn(['open', 'in-progress', 'on-hold', 'completed']),
+    .isIn(['requested', 'assigned', 'in_progress', 'completed', 'cancelled']),
+  body('assignees').optional().isArray(),
+  body('assignees.*').isMongoId(),
+  body('checklists').optional().isArray(),
+  body('checklists.*').isString(),
+  body('partsUsed').optional().isArray(),
+  body('partsUsed.*').isMongoId(),
+  body('timeSpentMin').optional().isNumeric(),
+  body('photos').optional().isArray(),
+  body('photos.*').isString(),
+  body('failureCode').optional().isString(),
   body('scheduledDate').optional().isISO8601().toDate(),
   body('asset').optional().isMongoId(),
   body('dueDate').optional().isISO8601().toDate(),

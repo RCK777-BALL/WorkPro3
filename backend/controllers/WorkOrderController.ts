@@ -12,6 +12,7 @@ import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
 import { filterFields } from '../utils/filterFields';
 import { logAudit } from '../utils/audit';
+import { sendResponse } from '../utils/sendResponse';
 
 const workOrderCreateFields = [
   'title',
@@ -23,6 +24,12 @@ const workOrderCreateFields = [
   'approvalRequestedBy',
   'approvedBy',
   'assignedTo',
+  'assignees',
+  'checklists',
+  'partsUsed',
+  'timeSpentMin',
+  'photos',
+  'failureCode',
   'pmTask',
   'department',
   'line',
@@ -60,11 +67,11 @@ export const getAllWorkOrders: AuthedRequestHandler = async (req, res, next) => 
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const items = await WorkOrder.find({ tenantId });
-    res.json(items);
+    sendResponse(res, items);
     return;
   } catch (err) {
     next(err);
@@ -106,18 +113,18 @@ export const searchWorkOrders: AuthedRequestHandler = async (req, res, next) => 
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const { status, priority } = req.query;
     const start = req.query.startDate ? new Date(String(req.query.startDate)) : undefined;
     const end = req.query.endDate ? new Date(String(req.query.endDate)) : undefined;
     if (start && isNaN(start.getTime())) {
-      res.status(400).json({ message: 'Invalid startDate' });
+      sendResponse(res, null, 'Invalid startDate', 400);
       return;
     }
     if (end && isNaN(end.getTime())) {
-      res.status(400).json({ message: 'Invalid endDate' });
+      sendResponse(res, null, 'Invalid endDate', 400);
       return;
     }
     const query: any = { tenantId };
@@ -130,7 +137,7 @@ export const searchWorkOrders: AuthedRequestHandler = async (req, res, next) => 
     }
 
     const items = await WorkOrder.find(query);
-    res.json(items);
+    sendResponse(res, items);
     return;
   } catch (err) {
     next(err);
@@ -161,15 +168,15 @@ export const getWorkOrderById: AuthedRequestHandler = async (req, res, next) => 
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const item = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!item) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
-    res.json(item);
+    sendResponse(res, item);
     return;
   } catch (err) {
     next(err);
@@ -200,12 +207,12 @@ export const createWorkOrder: AuthedRequestHandler = async (req, res, next) => {
   try {
     const errors = validationResult(req as any);
     if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() });
+      sendResponse(res, null, errors.array(), 400);
       return;
     }
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const payload = filterFields(req.body, workOrderCreateFields);
@@ -213,7 +220,7 @@ export const createWorkOrder: AuthedRequestHandler = async (req, res, next) => {
     const saved = await newItem.save();
     await logAudit(req, 'create', 'WorkOrder', saved._id, null, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
-    res.status(201).json(saved);
+    sendResponse(res, saved, null, 201);
     return;
   } catch (err) {
     next(err);
@@ -250,18 +257,18 @@ export const updateWorkOrder: AuthedRequestHandler = async (req, res, next) => {
   try {
     const errors = validationResult(req as any);
     if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() });
+      sendResponse(res, null, errors.array(), 400);
       return;
     }
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const update = filterFields(req.body, workOrderUpdateFields);
     const existing = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!existing) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const updated = await WorkOrder.findOneAndUpdate(
@@ -270,7 +277,7 @@ export const updateWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       { new: true, runValidators: true }
     );
     if (!updated) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     await logAudit(
@@ -282,7 +289,7 @@ export const updateWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       updated.toObject()
     );
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(updated));
-    res.json(updated);
+    sendResponse(res, updated);
     return;
   } catch (err) {
     next(err);
@@ -313,17 +320,17 @@ export const deleteWorkOrder: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const deleted = await WorkOrder.findOneAndDelete({ _id: req.params.id, tenantId });
     if (!deleted) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     await logAudit(req, 'delete', 'WorkOrder', req.params.id, deleted.toObject(), null);
     emitWorkOrderUpdate(toWorkOrderUpdatePayload({ _id: req.params.id, deleted: true }));
-    res.json({ message: 'Deleted successfully' });
+    sendResponse(res, { message: 'Deleted successfully' });
     return;
   } catch (err) {
     next(err);
@@ -366,25 +373,25 @@ export const approveWorkOrder: AuthedRequestHandler = async (req, res, next) => 
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const userIdStr = req.user?._id ?? req.user?.id;
     if (!userIdStr) {
-      res.status(401).json({ message: 'Not authenticated' });
+      sendResponse(res, null, 'Not authenticated', 401);
       return;
     }
     const userObjectId = new Types.ObjectId(userIdStr);
     const { status } = req.body;
 
     if (!['pending', 'approved', 'rejected'].includes(status)) {
-      res.status(400).json({ message: 'Invalid status' });
+      sendResponse(res, null, 'Invalid status', 400);
       return;
     }
 
     const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!workOrder) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
 
@@ -410,6 +417,114 @@ export const approveWorkOrder: AuthedRequestHandler = async (req, res, next) => 
       await notifyUser(workOrder.assignedTo, message);
     }
 
+    sendResponse(res, saved);
+    return;
+  } catch (err) {
+    next(err);
+    return;
+  }
+};
+ 
+export const assignWorkOrder: AuthedRequestHandler = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
+    const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
+    if (!workOrder) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
+    const before = workOrder.toObject();
+    workOrder.status = 'assigned';
+    if (Array.isArray(req.body.assignees)) {
+      workOrder.assignees = req.body.assignees;
+    }
+    const saved = await workOrder.save();
+    await logAudit(req, 'assign', 'WorkOrder', req.params.id, before, saved.toObject());
+    emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
+    res.json(saved);
+    return;
+  } catch (err) {
+    next(err);
+    return;
+  }
+};
+
+export const startWorkOrder: AuthedRequestHandler = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
+    const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
+    if (!workOrder) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
+    const before = workOrder.toObject();
+    workOrder.status = 'in_progress';
+    const saved = await workOrder.save();
+    await logAudit(req, 'start', 'WorkOrder', req.params.id, before, saved.toObject());
+    emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
+    res.json(saved);
+    return;
+  } catch (err) {
+    next(err);
+    return;
+  }
+};
+
+export const completeWorkOrder: AuthedRequestHandler = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
+    const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
+    if (!workOrder) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
+    const before = workOrder.toObject();
+    workOrder.status = 'completed';
+    if (req.body.timeSpentMin !== undefined) workOrder.timeSpentMin = req.body.timeSpentMin;
+    if (Array.isArray(req.body.partsUsed)) workOrder.partsUsed = req.body.partsUsed;
+    if (Array.isArray(req.body.checklists)) workOrder.checklists = req.body.checklists;
+    if (Array.isArray(req.body.photos)) workOrder.photos = req.body.photos;
+    if (req.body.failureCode !== undefined) workOrder.failureCode = req.body.failureCode;
+    const saved = await workOrder.save();
+    await logAudit(req, 'complete', 'WorkOrder', req.params.id, before, saved.toObject());
+    emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
+    res.json(saved);
+    return;
+  } catch (err) {
+    next(err);
+    return;
+  }
+};
+
+export const cancelWorkOrder: AuthedRequestHandler = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
+    const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
+    if (!workOrder) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
+    const before = workOrder.toObject();
+    workOrder.status = 'cancelled';
+    const saved = await workOrder.save();
+    await logAudit(req, 'cancel', 'WorkOrder', req.params.id, before, saved.toObject());
+    emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     res.json(saved);
     return;
   } catch (err) {
@@ -443,7 +558,7 @@ export const assistWorkOrder: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const workOrder = await WorkOrder.findOne({
@@ -451,14 +566,14 @@ export const assistWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       tenantId,
     });
     if (!workOrder) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const result: AIAssistResult = await getWorkOrderAssistance({
       title: workOrder.title,
       description: workOrder.description || '',
     });
-    res.json(result);
+    sendResponse(res, result);
     return;
   } catch (err) {
     next(err);

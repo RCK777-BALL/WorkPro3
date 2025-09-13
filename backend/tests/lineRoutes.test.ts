@@ -29,7 +29,7 @@ beforeAll(async () => {
     name: 'Tester',
     email: 'tester@example.com',
     passwordHash: 'pass123',
-    roles: ['manager'],
+    roles: ['supervisor'],
     tenantId: new mongoose.Types.ObjectId(),
   });
   token = jwt.sign({ id: user._id.toString(), roles: user.roles }, process.env.JWT_SECRET!);
@@ -46,7 +46,7 @@ beforeEach(async () => {
     name: 'Tester',
     email: 'tester@example.com',
     passwordHash: 'pass123',
-    roles: ['manager'],
+    roles: ['supervisor'],
     tenantId: new mongoose.Types.ObjectId(),
   });
   token = jwt.sign({ id: user._id.toString(), roles: user.roles }, process.env.JWT_SECRET!);

@@ -9,6 +9,7 @@ import WorkOrder from '../models/WorkOrder';
 import WorkHistory from '../models/WorkHistory';
 import TimeSheet from '../models/TimeSheet';
 import Asset from '../models/Asset';
+import { sendResponse } from '../utils/sendResponse';
 
 /**
  * Helper to resolve the tenant id from the request. It checks the `tenantId`
@@ -82,16 +83,13 @@ export const getSummary: AuthedRequestHandler = async (req, res, next) => {
       ? (maintenanceHours / totalHours) * 100
       : 0;
 
-    res.json({
-      data: {
-        pmCompliance,
-        woBacklog,
-        downtimeThisMonth,
-        costMTD,
-        cmVsPmRatio,
-        wrenchTimePct,
-      },
-      error: null,
+    sendResponse(res, {
+      pmCompliance,
+      woBacklog,
+      downtimeThisMonth,
+      costMTD,
+      cmVsPmRatio,
+      wrenchTimePct,
     });
     return;
   } catch (err) {
@@ -107,7 +105,7 @@ export const getAssetSummary: AuthedRequestHandler = async (req, res, next) => {
       { $match: match },
       { $group: { _id: '$status', count: { $sum: 1 } } },
     ]);
-    res.json(summary);
+    sendResponse(res, summary);
     return;
   } catch (err) {
     return next(err);
@@ -126,7 +124,7 @@ export const getWorkOrderSummary: AuthedRequestHandler = async (
       { $match: match },
       { $group: { _id: '$status', count: { $sum: 1 } } },
     ]);
-    res.json(summary);
+    sendResponse(res, summary);
     return;
   } catch (err) {
     return next(err);
@@ -148,7 +146,7 @@ export const getUpcomingMaintenance: AuthedRequestHandler = async (
       .sort({ dueDate: 1 })
       .limit(10)
       .populate('asset');
-    res.json(tasks);
+    sendResponse(res, tasks);
     return;
   } catch (err) {
     return next(err);
@@ -165,7 +163,7 @@ export const getCriticalAlerts: AuthedRequestHandler = async (req, res, next) =>
       .sort({ createdAt: -1 })
       .limit(10)
       .populate('asset');
-    res.json(alerts);
+    sendResponse(res, alerts);
     return;
   } catch (err) {
     return next(err);

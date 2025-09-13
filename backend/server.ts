@@ -32,6 +32,8 @@ import {
   LineRoutes,
   StationRoutes,
   inventoryRoutes,
+  importRoutes,
+
   analyticsRoutes,
   teamRoutes,
   ThemeRoutes,
@@ -53,6 +55,8 @@ import errorHandler from "./middleware/errorHandler";
 import { validateEnv, type EnvVars } from "./config/validateEnv";
 import { initChatSocket } from "./socket/chatSocket";
 import User from "./models/User";
+import { requireAuth } from "./middleware/requireAuth";
+import tenantScope from "./middleware/tenantScope";
 import type {
   WorkOrderUpdatePayload,
   InventoryUpdatePayload,
@@ -146,9 +150,13 @@ app.use("/api/public", publicRequestRoutes);
 
 // --- Routes (order matters for the limiter) ---
 app.use("/api/auth", authRoutes);
+
+// Protect all remaining /api routes except /api/auth and /api/public
+app.use(/^\/api(?!\/(auth|public))/, requireAuth, tenantScope);
+
 app.use("/api/notifications", burstFriendly, notificationsRoutes);
-// Apply limiter to the rest of /api
-app.use("/api", generalLimiter);
+// Apply limiter to the rest of protected /api routes
+app.use(/^\/api(?!\/(auth|public))/, generalLimiter);
 
 app.use("/api/departments", departmentRoutes);
 app.use("/api/workorders", workOrdersRoutes);
@@ -157,10 +165,13 @@ app.use("/api/meters", meterRoutes);
 app.use("/api/condition-rules", conditionRuleRoutes);
 app.use("/api/tenants", TenantRoutes);
 app.use("/api/pm-tasks", pmTasksRoutes);
+app.use("/api/pm", pmTasksRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/lines", LineRoutes);
 app.use("/api/stations", StationRoutes);
 app.use("/api/inventory", inventoryRoutes);
+app.use("/api/import", importRoutes);
+
 app.use("/api/v1/analytics", analyticsRoutes);
 app.use("/api/team", teamRoutes);
 app.use("/api/theme", ThemeRoutes);

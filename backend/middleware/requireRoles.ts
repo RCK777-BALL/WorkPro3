@@ -20,6 +20,17 @@ const requireRoles =
       return;
     }
 
+    const tenantParam =
+      req.params.tenantId || req.header('x-tenant-id') || req.tenantId;
+    if (
+      tenantParam &&
+      req.user.tenantId &&
+      tenantParam !== req.user.tenantId
+    ) {
+      res.status(403).json({ message: 'Forbidden' });
+      return;
+    }
+
     next();
   };
 

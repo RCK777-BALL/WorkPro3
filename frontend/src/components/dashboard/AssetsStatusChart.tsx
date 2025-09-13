@@ -4,6 +4,7 @@
 
 import React from 'react';
 import Card from '@common/Card';
+
 import type { AssetStatusMap } from '@/types';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
  
@@ -21,6 +22,7 @@ const AssetsStatusChart: React.FC<AssetsStatusChartProps> = ({ data }) => {
 
   const COLORS = ['hsl(var(--primary))', '#10b981', '#f59e0b', '#ef4444', '#06b6d4'];
 
+
   return (
     <Card title="Assets by Status" subtitle="Current asset distribution">
       <div className="h-64">
@@ -29,6 +31,7 @@ const AssetsStatusChart: React.FC<AssetsStatusChartProps> = ({ data }) => {
             <Pie data={chartData} dataKey="value" nameKey="name" label>
               {chartData.map((_, i) => (
                 <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />
+
               ))}
             </Pie>
             <Tooltip />
@@ -44,6 +47,7 @@ const AssetsStatusChart: React.FC<AssetsStatusChartProps> = ({ data }) => {
             <p className="text-xl font-semibold">{total}</p>
           </div>
         </div>
+
       </div>
     </Card>
   );

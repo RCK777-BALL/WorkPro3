@@ -270,8 +270,8 @@ and stations. Only the following fields are validated:
 
 ## Environment variables
 
-Configuration is loaded from a `.env` file in this folder. The
-`.env.example` file shows all available variables. Each option is described
+Configuration is loaded from a `.env` file in this folder. The root
+`.env.sample` file shows all available variables. Each option is described
 below along with its default value if one exists.
 
 | Variable | Purpose | Default |

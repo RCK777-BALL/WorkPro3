@@ -34,10 +34,10 @@ const TeamTable: React.FC<TeamTableProps> = ({
     switch (role) {
       case 'admin':
         return 'bg-primary-100 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300';
-      case 'manager':
+      case 'supervisor':
       case 'department_leader':
         return 'bg-success-100 text-success-700 dark:bg-success-900/20 dark:text-success-300';
-      case 'technician':
+      case 'tech':
       case 'area_leader':
       case 'team_leader':
         return 'bg-accent-100 text-accent-700 dark:bg-accent-900/20 dark:text-accent-300';

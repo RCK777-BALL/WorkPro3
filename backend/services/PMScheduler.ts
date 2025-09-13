@@ -26,60 +26,85 @@ function compare(value: number, operator: string, threshold: number): boolean {
   }
 }
 
+export function nextCronOccurrenceWithin(
+  cronExpr: string,
+  from: Date,
+  days: number,
+): Date | null {
+  const parts = cronExpr.trim().split(/\s+/);
+  if (parts.length < 5) return null;
+  const [minStr, hourStr, domStr, monthStr, dowStr] = parts;
+  const min = minStr === '*' ? null : parseInt(minStr, 10);
+  const hour = hourStr === '*' ? null : parseInt(hourStr, 10);
+  const dom = domStr === '*' ? null : parseInt(domStr, 10);
+  const month = monthStr === '*' ? null : parseInt(monthStr, 10);
+  const dow = dowStr === '*' ? null : parseInt(dowStr, 10);
+  for (let i = 0; i <= days; i++) {
+    const d = new Date(from.getTime());
+    d.setSeconds(0, 0);
+    d.setDate(d.getDate() + i);
+    if (
+      (dom === null || dom === d.getDate()) &&
+      (month === null || month === d.getMonth() + 1) &&
+      (dow === null || dow === d.getDay())
+    ) {
+      d.setHours(hour ?? 0, min ?? 0, 0, 0);
+      if (d > from) return d;
+    }
+  }
+  return null;
+}
+
 export async function runPMScheduler(): Promise<void> {
   const now = new Date();
 
-  // Time-based PM tasks
-  const dueTasks = await PMTask.find({
-    isActive: true,
-    nextDue: { $lte: now },
-  }).select('tenantId title notes asset department nextDue frequency lastRun');
-
-  for (const task of dueTasks) {
+  const tasks = await PMTask.find({ active: true });
+  for (const task of tasks) {
     try {
-      if (!task.tenantId) continue;
-      await WorkOrder.create({
-        title: `PM: ${task.title}`,
-        description: task.notes || '',
-        status: 'open',
-        asset: task.asset,
-        pmTask: task._id,
-        department: task.department,
-        dueDate: task.nextDue,
-        priority: 'medium',
-        tenantId: task.tenantId,
-      });
-
-      const next = calcNextDue(task.nextDue || now, task.frequency);
-      task.lastRun = now;
-      task.nextDue = next;
-      await task.save();
-    } catch (err) {
-      logger.error('[PM Scheduler] Failed time task', err);
-    }
-  }
-
-  // Meter-based triggers
-  const meters = await Meter.find({}).select('asset currentValue pmInterval lastWOValue tenantId name');
-  for (const meter of meters) {
-    try {
-      if (!meter.tenantId) continue;
-      const sinceLast = meter.currentValue - (meter.lastWOValue || 0);
-      if (sinceLast >= meter.pmInterval) {
-        await WorkOrder.create({
-          title: `Meter PM: ${meter.name}`,
-          description: `Generated from meter ${meter.name}`,
-          status: 'open',
-          asset: meter.asset,
-          dueDate: now,
-          priority: 'medium',
-          tenantId: meter.tenantId,
+      if (task.rule?.type === 'calendar' && task.rule.cron) {
+        const next = nextCronOccurrenceWithin(task.rule.cron, now, 7);
+        if (next) {
+          await WorkOrder.create({
+            title: `PM: ${task.title}`,
+            description: task.notes || '',
+            status: 'open',
+            asset: task.asset,
+            pmTask: task._id,
+            department: task.department,
+            dueDate: next,
+            priority: 'medium',
+            tenantId: task.tenantId,
+          });
+          task.lastGeneratedAt = now;
+          await task.save();
+        }
+      } else if (task.rule?.type === 'meter' && task.rule.meterName) {
+        const meter = await Meter.findOne({
+          name: task.rule.meterName,
+          tenantId: task.tenantId,
         });
-        meter.lastWOValue = meter.currentValue;
-        await meter.save();
+        if (!meter) continue;
+        const sinceLast = meter.currentValue - (meter.lastWOValue || 0);
+        if (sinceLast >= (task.rule.threshold || 0)) {
+          await WorkOrder.create({
+            title: `Meter PM: ${task.title}`,
+            description: task.notes || '',
+            status: 'open',
+            asset: meter.asset,
+            pmTask: task._id,
+            department: task.department,
+            dueDate: now,
+            priority: 'medium',
+            tenantId: task.tenantId,
+          });
+          meter.lastWOValue = meter.currentValue;
+          await meter.save();
+          task.lastGeneratedAt = now;
+          await task.save();
+        }
       }
     } catch (err) {
-      logger.error('[PM Scheduler] Failed meter', err);
+      logger.error('[PM Scheduler] Failed task', err);
     }
   }
 

@@ -6,6 +6,7 @@ import React from 'react';
 import Card from '@common/Card';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell } from 'recharts';
 
+
 interface WorkOrdersChartProps {
   data?: {
     open: number;
@@ -31,6 +32,7 @@ const WorkOrdersChart: React.FC<WorkOrdersChartProps> = ({ data }) => {
     return Math.round((value / total) * 100);
   };
 
+
   return (
     <Card title="Work Orders by Status" subtitle="Last 30 days performance">
       <div className="h-64">
@@ -50,6 +52,7 @@ const WorkOrdersChart: React.FC<WorkOrdersChartProps> = ({ data }) => {
       </div>
 
       <div className="mt-6 pt-6 border-t border-border">
+
         <div className="flex justify-between">
           <div>
             <p className="text-sm text-neutral-500">Total Work Orders</p>
@@ -57,7 +60,7 @@ const WorkOrdersChart: React.FC<WorkOrdersChartProps> = ({ data }) => {
           </div>
           <div>
             <p className="text-sm text-neutral-500">Completion Rate</p>
-            <p className="text-xl font-semibold">{calculatePercentage(data?.completed ?? 0)}%</p>
+            <p className="text-xl font-semibold">{completionRate}%</p>
           </div>
         </div>
       </div>

@@ -15,6 +15,7 @@ import Avatar from '@common/Avatar';
 import Card from '@common/Card';
 import { Button } from '@/components/ui/button';
 import { useAuthStore, type AuthState, isAdmin as selectIsAdmin, isManager as selectIsManager } from '@/store/authStore';
+
 import { useDataStore } from '@/store/dataStore';
 import { useNavigate } from 'react-router-dom';
 
@@ -37,7 +38,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
   const { addToast } = useToast();
   const user = useAuthStore((s: AuthState) => s.user);
   const isAdmin = useAuthStore(selectIsAdmin);
-  const isManager = useAuthStore(selectIsManager);
+  const isSupervisor = useAuthStore(selectIsSupervisor);
   const { useFakeData, setUseFakeData } = useDataStore();
   const navigate = useNavigate();
   const [showHelpMenu, setShowHelpMenu] = useState(false);
@@ -216,6 +217,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
   return (
     <>
     <header className="relative h-16 bg-gradient-to-r from-primary-light to-primary-dark text-primary-foreground border-b border-border flex items-center justify-between px-2 sm:px-4 lg:px-6">
+
       <div className="flex items-center">
         <button
           onClick={onToggleSidebar} aria-label="Toggle sidebar"
@@ -223,7 +225,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
         >
           <Menu size={20} className="dark:text-white" />
         </button>
-        <h1 className="text-xl font-semibold text-neutral-900 dark:text-white ml-2 lg:ml-0">{title ?? t('nav.dashboard')}</h1>
+        <h1 className="text-xl font-semibold text-white ml-2 lg:ml-0">{title ?? t('nav.dashboard')}</h1>
         <button
           onClick={() => setShowMobileSearch(!showMobileSearch)} aria-label="Search"
           className="md:hidden ml-2 p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 focus:outline-none"
@@ -242,7 +244,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
       </div>
 
       <div className="flex items-center space-x-4">
-        {(isAdmin || isManager) && (
+        {(isAdmin || isSupervisor) && (
           <Button
             variant="outline"
             size="sm"
@@ -418,7 +420,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
           <div className="ml-2 hidden md:block">
             <p className="text-sm font-medium text-neutral-900 dark:text-white">{user?.name}</p>
             <p className="text-xs text-neutral-700 dark:text-neutral-300">
-              {t(`roles.${user?.role ?? 'viewer'}`)}
+              {t(`roles.${user?.role ?? 'tech'}`)}
             </p>
           </div>
         </div>

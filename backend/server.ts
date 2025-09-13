@@ -5,7 +5,6 @@
 import express from "express";
 import type { Request, Response, RequestHandler, Router } from "express";
 import cors from "cors";
-import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import mongoSanitize from "./middleware/mongoSanitize";
 import dotenv from "dotenv";
@@ -17,6 +16,7 @@ import rateLimit from "express-rate-limit";
 import { initKafka, sendKafkaEvent } from "./utils/kafka";
 import { initMQTTFromConfig } from "./iot/mqttClient";
 import logger from "./utils/logger";
+import requestLog from "./middleware/requestLog";
 
 import {
   authRoutes,
@@ -99,7 +99,7 @@ const corsOptions: cors.CorsOptions = {
 
 app.use(helmet());
 app.use(cors(corsOptions));
-app.use(morgan("dev"));
+app.use(requestLog);
 app.use(express.json({ limit: "1mb" }));
 app.use(mongoSanitize());
 app.use(cookieParser());

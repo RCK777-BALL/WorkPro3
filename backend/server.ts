@@ -13,6 +13,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import path from "path";
 
 import { initKafka, sendKafkaEvent } from "./utils/kafka";
 import { initMQTTFromConfig } from "./iot/mqttClient";
@@ -46,6 +47,7 @@ import {
   IntegrationRoutes,
   summaryRoutes,
   auditRoutes,
+  attachmentRoutes,
 } from "./routes";
 
 import { startPMScheduler } from "./utils/PMScheduler";
@@ -137,6 +139,8 @@ app.get("/", (_req: Request, res: Response) => {
   res.send("PLTCMMS backend is running");
 });
 
+app.use("/static/uploads", express.static(path.join(process.cwd(), "uploads")));
+
 if (env.NODE_ENV === "test") {
   app.post("/test/sanitize", (req, res) => {
     res.json(req.body);
@@ -185,6 +189,7 @@ app.use("/api/webhooks", webhooksRoutes);
 app.use("/api/calendar", calendarRoutes);
 app.use("/api/integrations", IntegrationRoutes);
 
+app.use("/api/attachments", attachmentRoutes);
 app.use("/api/summary", summaryRoutes);
 app.use("/api/audit", auditRoutes);
 

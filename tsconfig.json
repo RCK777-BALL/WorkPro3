@@ -8,5 +8,10 @@
     "target": "ES2020",
     "module": "commonjs"
   },
-  "include": ["backend/**/*.ts", "backend/types/**/*.d.ts", "dev-server/**/*.ts"]
+  "include": [
+    "backend/**/*.ts",
+    "backend/types/**/*.d.ts",
+    "dev-server/**/*.ts",
+    "shared/**/*.ts"
+  ]
 }

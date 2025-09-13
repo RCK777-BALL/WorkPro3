@@ -24,7 +24,7 @@ const consumer: Consumer | null = kafka ? kafka.consumer({ groupId }) : null;
 
 export const initKafka = async (io?: SocketIOServer) => {
   if (!enabled || !producer || !consumer) {
-    console.log('Kafka is disabled, skipping initKafka');
+    logger.info('Kafka disabled; skipping initKafka');
     return;
   }
   await producer.connect();
@@ -48,7 +48,7 @@ export const initKafka = async (io?: SocketIOServer) => {
 
 export const sendKafkaEvent = async (topic: string, payload: unknown) => {
   if (!enabled || !producer) {
-    console.log('Kafka is disabled, skipping sendKafkaEvent');
+    logger.warn('Kafka disabled; skipping sendKafkaEvent');
     return;
   }
   try {

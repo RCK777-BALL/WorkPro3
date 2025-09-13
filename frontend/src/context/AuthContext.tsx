@@ -14,12 +14,13 @@ import {
 import { useAuthStore, type AuthState } from '@/store/authStore';
 import type { AuthUser } from '@/types';
 import http from '@/lib/http';
+import { emitToast } from './ToastContext';
 
 interface AuthContextType {
   user: AuthUser | null;
   setUser: (user: AuthUser | null) => void;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   loading: boolean;
 }
 
@@ -63,11 +64,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const logout = useCallback(async () => {
-    await http.post('/auth/logout');
-    handleSetUser(null);
-    localStorage.removeItem('auth:tenantId');
-    localStorage.removeItem('auth:siteId');
-    storeLogout();
+    try {
+      await http.post('/auth/logout');
+      handleSetUser(null);
+      localStorage.removeItem('user');
+      localStorage.removeItem('auth:token');
+      localStorage.removeItem('auth:tenantId');
+      localStorage.removeItem('auth:siteId');
+      storeLogout();
+    } catch (err) {
+      emitToast('Failed to log out', 'error');
+    }
+
   }, [handleSetUser, storeLogout]);
 
   return (

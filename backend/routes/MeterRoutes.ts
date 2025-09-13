@@ -23,10 +23,10 @@ router.use(siteScope);
 
 router.get('/', getMeters);
 router.get('/:id', getMeterById);
-router.post('/', requireRoles(['admin', 'manager']), createMeter);
-router.put('/:id', requireRoles(['admin', 'manager']), updateMeter);
-router.delete('/:id', requireRoles(['admin', 'manager']), deleteMeter);
+router.post('/', requireRoles(['admin', 'supervisor']), createMeter);
+router.put('/:id', requireRoles(['admin', 'supervisor']), updateMeter);
+router.delete('/:id', requireRoles(['admin', 'supervisor']), deleteMeter);
 router.get('/:id/readings', getMeterReadings);
-router.post('/:id/readings', requireRoles(['admin', 'manager']), addMeterReading);
+router.post('/:id/readings', requireRoles(['admin', 'supervisor']), addMeterReading);
 
 export default router;

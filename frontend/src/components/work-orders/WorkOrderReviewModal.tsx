@@ -6,7 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import Button from '@common/Button';
 import type { WorkOrder } from '@/types';
-import { useAuthStore, isAdmin as selectIsAdmin, isManager as selectIsManager } from '@/store/authStore';
+import { useAuthStore, isAdmin as selectIsAdmin, isSupervisor as selectIsSupervisor } from '@/store/authStore';
 import AICopilot from '@/workorders/AICopilot';
 
 interface Props {
@@ -30,7 +30,7 @@ const WorkOrderReviewModal: React.FC<Props> = ({
   onUpdateStatus,
 }) => {
   const isAdmin = useAuthStore(selectIsAdmin);
-  const isManager = useAuthStore(selectIsManager);
+  const isSupervisor = useAuthStore(selectIsSupervisor);
   const [status, setStatus] = useState<WorkOrder['status']>('open');
 
   useEffect(() => {
@@ -82,7 +82,7 @@ const WorkOrderReviewModal: React.FC<Props> = ({
           </div>
           <div>
             <span className="font-medium">Status:</span>{' '}
-            {isAdmin || isManager ? (
+            {isAdmin || isSupervisor ? (
               <select
                 className="ml-2 border border-neutral-300 rounded-md px-2 py-1"
                 value={status}
@@ -133,7 +133,7 @@ const WorkOrderReviewModal: React.FC<Props> = ({
           )}
           <AICopilot workOrderId={workOrder.id} />
         </div>
-        {(isAdmin || isManager) && (
+        {(isAdmin || isSupervisor) && (
           <div className="flex justify-end space-x-3 p-4 border-t border-neutral-200">
             <Button variant="outline" onClick={onClose}>
               Close

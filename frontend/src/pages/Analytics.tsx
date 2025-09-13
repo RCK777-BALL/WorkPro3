@@ -166,9 +166,9 @@ export default function Analytics() {
                 >
                   <option value="all">All Roles</option>
                   <option value="admin">Admin</option>
-                  <option value="manager">Manager</option>
-                  <option value="technician">Technician</option>
-                  <option value="viewer">Viewer</option>
+                  <option value="supervisor">Supervisor</option>
+                  <option value="planner">Planner</option>
+                  <option value="tech">Tech</option>
                 </select>
               </div>
             </div>

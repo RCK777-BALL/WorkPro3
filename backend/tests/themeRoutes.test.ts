@@ -28,7 +28,7 @@ beforeAll(async () => {
     name: 'Tester',
     email: 'tester@example.com',
     passwordHash: 'pass123',
-    roles: ['viewer']
+    roles: ['planner']
   });
   token = jwt.sign({ id: user._id.toString() }, process.env.JWT_SECRET!);
 });
@@ -44,7 +44,7 @@ beforeEach(async () => {
     name: 'Tester',
     email: 'tester@example.com',
     passwordHash: 'pass123',
-    roles: ['viewer'],
+    roles: ['planner'],
     theme: 'light',
     colorScheme: 'default'
   });

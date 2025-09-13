@@ -24,11 +24,40 @@ import {
 
 
 
+const workOrderCreateFields = [
+  'title',
+  'asset',
+  'description',
+  'priority',
+  'status',
+  'approvalStatus',
+  'approvalRequestedBy',
+  'approvedBy',
+  'assignedTo',
+  'assignees',
+  'checklists',
+  'partsUsed',
+  'signatures',
+  'timeSpentMin',
+  'photos',
+  'failureCode',
+  'pmTask',
+  'department',
+  
+  'line',
+  'station',
+  'teamMemberName',
+  'importance',
+  'dueDate',
+  'completedAt',
+];
 
+const workOrderUpdateFields = [...workOrderCreateFields];
 
-function toWorkOrderUpdatePayload(doc: Partial<WorkOrderType> & { _id: Types.ObjectId | string; deleted?: boolean }): WorkOrderUpdatePayload {
-  const plain = typeof (doc as any).toObject === 'function'
-    ? (doc as any).toObject({ getters: true, virtuals: false })
+function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
+  const plain = typeof doc.toObject === "function"
+    ? doc.toObject({ getters: true, virtuals: false })
+
     : doc;
   return {
     ...plain,
@@ -538,10 +567,13 @@ export const completeWorkOrder: AuthedRequestHandler = async (req, res, next) =>
     }
     const before = workOrder.toObject();
     workOrder.status = 'completed';
-    if (parsed.data.timeSpentMin !== undefined) workOrder.timeSpentMin = parsed.data.timeSpentMin;
-    if (parsed.data.partsUsed) workOrder.partsUsed = parsed.data.partsUsed;
-    if (parsed.data.checklists) workOrder.checklists = parsed.data.checklists;
-    if (parsed.data.signatures) workOrder.signatures = parsed.data.signatures;
+    if (req.body.timeSpentMin !== undefined) workOrder.timeSpentMin = req.body.timeSpentMin;
+    if (Array.isArray(req.body.partsUsed)) workOrder.partsUsed = req.body.partsUsed;
+    if (Array.isArray(req.body.checklists)) workOrder.checklists = req.body.checklists;
+    if (Array.isArray(req.body.signatures)) workOrder.signatures = req.body.signatures;
+    if (Array.isArray(req.body.photos)) workOrder.photos = req.body.photos;
+    if (req.body.failureCode !== undefined) workOrder.failureCode = req.body.failureCode;
+
     const saved = await workOrder.save();
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     await writeAuditLog({

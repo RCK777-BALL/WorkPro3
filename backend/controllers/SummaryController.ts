@@ -26,6 +26,72 @@ const getTenantId = (req: Request): string | undefined => {
   );
 };
 
+type Summary = {
+  pmCompliance: number;
+  woBacklog: number;
+  downtimeThisMonth: number;
+  costMTD: number;
+  cmVsPmRatio: number;
+  wrenchTimePct: number;
+};
+
+const calculateSummary = async (
+  match: Record<string, unknown>,
+): Promise<Summary> => {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+  const pmMatch = { ...match, pmTask: { $exists: true } };
+
+  const [
+    pmTotal,
+    pmCompleted,
+    woBacklog,
+    cmCount,
+    downtimeAgg,
+    timesheetAgg,
+  ] = await Promise.all([
+    WorkOrder.countDocuments(pmMatch),
+    WorkOrder.countDocuments({ ...pmMatch, status: 'completed' }),
+    WorkOrder.countDocuments({ ...match, status: { $ne: 'completed' } }),
+    WorkOrder.countDocuments({ ...match, pmTask: { $exists: false } }),
+    WorkHistory.aggregate([
+      {
+        $match: {
+          ...match,
+          completedAt: { $gte: startOfMonth, $lt: endOfMonth },
+        },
+      },
+      { $group: { _id: null, hours: { $sum: '$timeSpentHours' } } },
+    ]),
+    TimeSheet.aggregate([
+      {
+        $match: { ...match, date: { $gte: startOfMonth, $lt: endOfMonth } },
+      },
+      { $group: { _id: null, hours: { $sum: '$totalHours' } } },
+    ]),
+  ]);
+
+  const maintenanceHours = downtimeAgg[0]?.hours ?? 0;
+  const totalHours = timesheetAgg[0]?.hours ?? 0;
+
+  const pmCompliance = pmTotal ? pmCompleted / pmTotal : 0;
+  const downtimeThisMonth = maintenanceHours;
+  const costMTD = maintenanceHours * 50;
+  const cmVsPmRatio = pmTotal ? cmCount / pmTotal : 0;
+  const wrenchTimePct = totalHours ? (maintenanceHours / totalHours) * 100 : 0;
+
+  return {
+    pmCompliance,
+    woBacklog,
+    downtimeThisMonth,
+    costMTD,
+    cmVsPmRatio,
+    wrenchTimePct,
+  };
+};
+
 export const getSummary: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId =
@@ -34,63 +100,40 @@ export const getSummary: AuthedRequestHandler = async (req, res, next) => {
         : getTenantId(req);
     const siteId =
       typeof req.query.siteId === 'string' ? req.query.siteId : undefined;
-    const match: any = tenantId ? { tenantId } : {};
+    const match: Record<string, unknown> = tenantId ? { tenantId } : {};
     if (siteId) match.siteId = siteId;
 
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const summary = await calculateSummary(match);
 
-    const pmMatch = { ...match, pmTask: { $exists: true } };
+    sendResponse(res, summary);
+    return;
+  } catch (err) {
+    return next(err);
+  }
+};
 
-    const [
-      pmTotal,
-      pmCompleted,
-      woBacklog,
-      cmCount,
-      downtimeAgg,
-      timesheetAgg,
-    ] = await Promise.all([
-      WorkOrder.countDocuments(pmMatch),
-      WorkOrder.countDocuments({ ...pmMatch, status: 'completed' }),
-      WorkOrder.countDocuments({ ...match, status: { $ne: 'completed' } }),
-      WorkOrder.countDocuments({ ...match, pmTask: { $exists: false } }),
-      WorkHistory.aggregate([
-        {
-          $match: {
-            ...match,
-            completedAt: { $gte: startOfMonth, $lt: endOfMonth },
-          },
-        },
-        { $group: { _id: null, hours: { $sum: '$timeSpentHours' } } },
-      ]),
-      TimeSheet.aggregate([
-        {
-          $match: { ...match, date: { $gte: startOfMonth, $lt: endOfMonth } },
-        },
-        { $group: { _id: null, hours: { $sum: '$totalHours' } } },
-      ]),
-    ]);
+export const getSummaryTrends: AuthedRequestHandler = async (req, res, next) => {
+  try {
+    const tenantId =
+      typeof req.query.tenantId === 'string'
+        ? req.query.tenantId
+        : getTenantId(req);
+    const siteId =
+      typeof req.query.siteId === 'string' ? req.query.siteId : undefined;
+    const match: Record<string, unknown> = tenantId ? { tenantId } : {};
+    if (siteId) match.siteId = siteId;
 
-    const maintenanceHours = downtimeAgg[0]?.hours ?? 0;
-    const totalHours = timesheetAgg[0]?.hours ?? 0;
+    const summary = await calculateSummary(match);
+    const trends: Record<keyof Summary, number[]> = {
+      pmCompliance: Array(10).fill(summary.pmCompliance),
+      woBacklog: Array(10).fill(summary.woBacklog),
+      downtimeThisMonth: Array(10).fill(summary.downtimeThisMonth),
+      costMTD: Array(10).fill(summary.costMTD),
+      cmVsPmRatio: Array(10).fill(summary.cmVsPmRatio),
+      wrenchTimePct: Array(10).fill(summary.wrenchTimePct),
+    };
 
-    const pmCompliance = pmTotal ? pmCompleted / pmTotal : 0;
-    const downtimeThisMonth = maintenanceHours;
-    const costMTD = maintenanceHours * 50;
-    const cmVsPmRatio = pmTotal ? cmCount / pmTotal : 0;
-    const wrenchTimePct = totalHours
-      ? (maintenanceHours / totalHours) * 100
-      : 0;
-
-    sendResponse(res, {
-      pmCompliance,
-      woBacklog,
-      downtimeThisMonth,
-      costMTD,
-      cmVsPmRatio,
-      wrenchTimePct,
-    });
+    sendResponse(res, trends);
     return;
   } catch (err) {
     return next(err);

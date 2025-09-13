@@ -95,8 +95,9 @@ export interface WorkOrder {
   assignedTo?: string;
   assignedToAvatar?: string;
   assignees?: string[];
-  checklists?: string[];
-  partsUsed?: string[];
+  checklists?: { text: string; done: boolean }[];
+  partsUsed?: { partId: string; qty: number; cost: number }[];
+  signatures?: { by: string; ts: string }[];
   timeSpentMin?: number;
   photos?: string[];
   failureCode?: string;
@@ -114,8 +115,7 @@ export interface WorkOrder {
   note?: string;
   completedBy?: string;
   attachments?: any[];
-  signature?: string;
-  parts?: string[];
+  parts?: { partId: string; qty: number; cost: number }[];
 }
 
 export interface NewWorkOrder {

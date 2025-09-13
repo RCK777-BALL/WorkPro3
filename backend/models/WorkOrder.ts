@@ -28,8 +28,20 @@ const workOrderSchema = new mongoose.Schema(
     approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     assignees: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    checklists: [String],
-    partsUsed: [{ type: mongoose.Schema.Types.ObjectId, ref: 'InventoryItem' }],
+    checklists: [{ text: String, done: { type: Boolean, default: false } }],
+    partsUsed: [
+      {
+        partId: { type: mongoose.Schema.Types.ObjectId, ref: 'InventoryItem' },
+        qty: { type: Number, default: 1 },
+        cost: { type: Number, default: 0 },
+      },
+    ],
+    signatures: [
+      {
+        by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        ts: { type: Date, default: Date.now },
+      },
+    ],
     timeSpentMin: Number,
     photos: [String],
     failureCode: String,

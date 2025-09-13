@@ -27,6 +27,7 @@ const workOrderCreateFields = [
   'assignees',
   'checklists',
   'partsUsed',
+  'signatures',
   'timeSpentMin',
   'photos',
   'failureCode',
@@ -496,6 +497,7 @@ export const completeWorkOrder: AuthedRequestHandler = async (req, res, next) =>
     if (req.body.timeSpentMin !== undefined) workOrder.timeSpentMin = req.body.timeSpentMin;
     if (Array.isArray(req.body.partsUsed)) workOrder.partsUsed = req.body.partsUsed;
     if (Array.isArray(req.body.checklists)) workOrder.checklists = req.body.checklists;
+    if (Array.isArray(req.body.signatures)) workOrder.signatures = req.body.signatures;
     if (Array.isArray(req.body.photos)) workOrder.photos = req.body.photos;
     if (req.body.failureCode !== undefined) workOrder.failureCode = req.body.failureCode;
     const saved = await workOrder.save();

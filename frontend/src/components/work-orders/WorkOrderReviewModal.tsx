@@ -121,7 +121,9 @@ const WorkOrderReviewModal: React.FC<Props> = ({
               <div className="font-medium mb-1">Checklists</div>
               <ul className="list-disc list-inside space-y-1">
                 {workOrder.checklists.map((c, idx) => (
-                  <li key={idx}>{c}</li>
+                  <li key={idx}>
+                    {c.text} {c.done ? '✔' : ''}
+                  </li>
                 ))}
               </ul>
             </div>
@@ -131,7 +133,9 @@ const WorkOrderReviewModal: React.FC<Props> = ({
               <div className="font-medium mb-1">Parts Used</div>
               <ul className="list-disc list-inside space-y-1">
                 {workOrder.partsUsed.map((p, idx) => (
-                  <li key={idx}>{p}</li>
+                  <li key={idx}>
+                    {p.partId} x{p.qty} (${p.cost})
+                  </li>
                 ))}
               </ul>
             </div>
@@ -174,14 +178,16 @@ const WorkOrderReviewModal: React.FC<Props> = ({
               </ul>
             </div>
           )}
-          {workOrder.signature && (
+          {workOrder.signatures && workOrder.signatures.length > 0 && (
             <div>
-              <div className="font-medium mb-1">Signature</div>
-              <img
-                src={workOrder.signature}
-                alt="Signature"
-                className="border rounded-md max-h-40"
-              />
+              <div className="font-medium mb-1">Signatures</div>
+              <ul className="list-disc list-inside space-y-1">
+                {workOrder.signatures.map((s, idx) => (
+                  <li key={idx}>
+                    {s.by} - {new Date(s.ts).toLocaleString()}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
           <AICopilot workOrderId={workOrder.id} />

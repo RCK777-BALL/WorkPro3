@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import http from "@/lib/http";
 import { useToast } from "@/context/ToastContext";
 import RecentActivity, { AuditLog } from "@/components/dashboard/RecentActivity";
+import { ResponsiveContainer, LineChart, Line } from "recharts";
 import {
   ClipboardList,
   Timer,
@@ -26,6 +27,8 @@ type Summary = {
   costMTD: number;
   cmVsPmRatio: number;
   wrenchTimePct: number;
+  pmComplianceTrend: number[];
+  woBacklogTrend: number[];
 };
 
 type RecentWorkOrder = {
@@ -170,11 +173,27 @@ export default function DashboardHome() {
               value={summary?.cmVsPmRatio.toFixed(2)}
               icon={<PieChartIcon className="h-5 w-5" />}
             />
-            <StatCard
+          <StatCard
               loading={loading}
               title="Wrench Time"
               value={summary ? `${summary.wrenchTimePct.toFixed(1)}%` : undefined}
               icon={<Activity className="h-5 w-5" />}
+            />
+          </div>
+
+          {/* Trend charts */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TrendChart
+              loading={loading}
+              title="PM Compliance Trend"
+              data={summary?.pmComplianceTrend}
+              color="#3b82f6"
+            />
+            <TrendChart
+              loading={loading}
+              title="WO Backlog Trend"
+              data={summary?.woBacklogTrend}
+              color="#ef4444"
             />
           </div>
 
@@ -240,6 +259,35 @@ function StatCard(props: {
         </div>
       </div>
       {footer ? <div className="mt-3 text-muted-foreground">{footer}</div> : null}
+    </div>
+  );
+}
+
+function TrendChart({
+  loading,
+  title,
+  data,
+  color,
+}: {
+  loading: boolean;
+  title: string;
+  data?: number[];
+  color: string;
+}) {
+  return (
+    <div className="rounded-2xl border p-4">
+      <p className="text-sm text-muted-foreground mb-2">{title}</p>
+      {loading ? (
+        <div className="h-16 w-full animate-pulse rounded bg-muted" />
+      ) : data && data.length > 0 ? (
+        <ResponsiveContainer width="100%" height={60}>
+          <LineChart data={data.map((v, i) => ({ i, v }))}>
+            <Line type="monotone" dataKey="v" stroke={color} strokeWidth={2} dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      ) : (
+        <p className="text-sm text-muted-foreground">No data</p>
+      )}
     </div>
   );
 }

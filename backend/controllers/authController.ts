@@ -4,6 +4,7 @@
 
 import type { Response, NextFunction } from 'express';
 import type { AuthedRequestHandler } from '../types/http';
+import { sendResponse } from '../utils/sendResponse';
 
 
 /**
@@ -13,10 +14,10 @@ export const getMe: AuthedRequestHandler = async (req, res, next) => {
   try {
     const user = (req as any).user;
     if (!user) {
-      res.status(401).json({ message: 'Unauthorized' });
+      sendResponse(res, null, 'Unauthorized', 401);
       return;
     }
-    res.status(200).json({ user });
+    sendResponse(res, { user });
     return;
   } catch (err) {
     next(err);
@@ -29,7 +30,7 @@ export const getMe: AuthedRequestHandler = async (req, res, next) => {
  */
 export const logout: AuthedRequestHandler = (req, res) => {
   res.clearCookie('token');
-  res.status(200).json({ message: 'Logged out successfully' });
+  sendResponse(res, { message: 'Logged out successfully' });
   return;
 };
  
@@ -39,7 +40,7 @@ export const logout: AuthedRequestHandler = (req, res) => {
  * generate and return a secret for the user to configure their MFA device.
  */
 export const setupMfa: AuthedRequestHandler = (req, res) => {
-  res.status(501).json({ message: 'MFA setup not implemented' });
+  sendResponse(res, null, 'MFA setup not implemented', 501);
   return;
 };
 
@@ -47,7 +48,7 @@ export const setupMfa: AuthedRequestHandler = (req, res) => {
  * Placeholder MFA token validation handler.
  */
 export const validateMfaToken: AuthedRequestHandler = (req, res) => {
-  res.status(501).json({ message: 'MFA token validation not implemented' });
+  sendResponse(res, null, 'MFA token validation not implemented', 501);
   return;
 };
 

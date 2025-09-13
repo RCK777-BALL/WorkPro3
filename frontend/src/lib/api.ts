@@ -4,23 +4,25 @@
 
 import type { ApiResult } from '@shared/http';
 
-const API_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:5010').replace(/\/+$/, '');
+export const api = axios.create({
+  baseURL: `${API_URL}/api`,
+  withCredentials: true,
+});
 
-export async function fetchJson<T>(path: string, init?: RequestInit): Promise<ApiResult<T>> {
-  const res = await fetch(`${API_URL}/api${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers ?? {}),
-    },
-    credentials: 'include',
-  });
+// Unwrap the `{ data, error }` envelope used by the backend.
+api.interceptors.response.use(
+  (response) => {
+    const { data, error } = response.data ?? {};
+    if (error) {
+      return Promise.reject(error);
+    }
+    return data;
+  },
+  (error) => {
+    const payload = error.response?.data;
+    return Promise.reject(payload?.error ?? error);
+  },
+);
 
-  const json: ApiResult<T> = await res.json();
-  if (json.error) {
-    throw new Error(json.error);
-  }
-  return json;
-}
+export default api;
 
-export default { fetchJson };

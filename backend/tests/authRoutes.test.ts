@@ -146,7 +146,7 @@ describe('Auth Routes', () => {
       .get('/api/auth/me')
       .set('Cookie', cookies)
       .expect(200);
-    expect(meRes.body.email).toBe('me@example.com');
+    expect(meRes.body.data.user.email).toBe('me@example.com');
 
     await request(app)
       .post('/api/auth/logout')

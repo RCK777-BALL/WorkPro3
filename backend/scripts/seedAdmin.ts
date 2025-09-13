@@ -41,7 +41,7 @@ const seedAdmin = async () => {
         name: 'Admin User',
         email: 'admin@example.com',
         passwordHash: hashedPassword,
-        role: 'admin',
+        roles: ['admin'],
         tenantId: tenant._id,
       },
       { new: true, upsert: true }

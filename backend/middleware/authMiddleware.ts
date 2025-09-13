@@ -61,7 +61,7 @@ export const requireAuth = async (
       id: user._id.toString(),
       _id: user._id.toString(),
       email: user.email,
-      role: user.role,
+      roles: user.roles ?? [],
     };
     req.tenantId = tenantId;
 

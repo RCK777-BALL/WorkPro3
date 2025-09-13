@@ -56,10 +56,10 @@ async function resetAndSeed() {
         const station = line.stations[0];
 
         const adminPassword = await bcrypt.hash('admin123', 10);
-        await User.create({
+        const adminUser = await User.create({
             email: 'admin@example.com',
             passwordHash: adminPassword,
-            role: 'admin'
+            roles: ['admin']
         });
         logger.info(`👤 Created admin user: ${adminUser.email}`);
 

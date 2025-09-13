@@ -62,7 +62,7 @@ async function calculateStats(tenantId: string, role?: string) {
     { $group: { _id: null, hours: { $sum: '$timeSpentHours' } } },
   ]);
   const totalLaborHours = laborAgg[0]?.hours || 0;
-  const userCount = await User.countDocuments({ tenantId, role: roleFilter });
+  const userCount = await User.countDocuments({ tenantId, roles: roleFilter });
   const availableHours = userCount * 160; // approx hours per month
   const laborUtilization = availableHours
     ? (totalLaborHours / availableHours) * 100

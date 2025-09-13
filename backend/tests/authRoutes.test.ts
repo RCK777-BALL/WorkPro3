@@ -40,7 +40,7 @@ describe('Auth Routes', () => {
       name: 'Test',
       email: 'test@example.com',
       passwordHash: 'pass123',
-      role: 'admin',
+      roles: ['admin'],
       tenantId: new mongoose.Types.ObjectId(),
     });
 
@@ -68,7 +68,7 @@ describe('Auth Routes', () => {
       name: 'Config',
       email: 'config@example.com',
       passwordHash: 'pass123',
-      role: 'admin',
+      roles: ['admin'],
       tenantId: new mongoose.Types.ObjectId(),
     });
 
@@ -87,7 +87,7 @@ describe('Auth Routes', () => {
       name: 'Me',
       email: 'me@example.com',
       passwordHash: 'pass123',
-      role: 'viewer',
+      roles: ['viewer'],
       tenantId: new mongoose.Types.ObjectId(),
     });
     // login
@@ -121,7 +121,7 @@ describe('Auth Routes', () => {
       name: 'Secure',
       email: 'secure@example.com',
       passwordHash: 'pass123',
-      role: 'viewer',
+      roles: ['viewer'],
       tenantId: new mongoose.Types.ObjectId(),
     });
 

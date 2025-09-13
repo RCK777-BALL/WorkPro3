@@ -21,6 +21,6 @@ describe('OIDC verify callback', () => {
     const profile = { emails: [{ value: 'user@example.com' }], _json: { groups: ['Admin'] } };
     const done = vi.fn();
     await oidcVerify('issuer', 'sub', profile, {}, '', '', {}, done);
-    expect(done).toHaveBeenCalledWith(null, { email: 'user@example.com', role: 'admin' });
+    expect(done).toHaveBeenCalledWith(null, { email: 'user@example.com', roles: ['admin'] });
   });
 });

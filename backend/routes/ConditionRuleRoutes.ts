@@ -11,7 +11,7 @@ import {
   deleteConditionRule,
 } from '../controllers/ConditionRuleController';
 import { requireAuth } from '../middleware/authMiddleware';
-import requireRole from '../middleware/requireRole';
+import requireRoles from '../middleware/requireRoles';
 import { validate } from '../middleware/validationMiddleware';
 import { conditionRuleValidators } from '../validators/conditionRuleValidators';
 
@@ -23,7 +23,7 @@ router.get('/:id', getConditionRuleById);
 
 router.post(
   '/',
-  requireRole('admin', 'manager'),
+  requireRoles(['admin', 'manager']),
   conditionRuleValidators,
   validate,
   createConditionRule
@@ -31,12 +31,12 @@ router.post(
 
 router.put(
   '/:id',
-  requireRole('admin', 'manager'),
+  requireRoles(['admin', 'manager']),
   conditionRuleValidators,
   validate,
   updateConditionRule
 );
 
-router.delete('/:id', requireRole('admin', 'manager'), deleteConditionRule);
+router.delete('/:id', requireRoles(['admin', 'manager']), deleteConditionRule);
 
 export default router;

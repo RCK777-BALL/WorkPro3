@@ -18,5 +18,6 @@
     "backend/types/**/*.d.ts",
     "dev-server/**/*.ts",
     "shared/types/**/*.ts"
+
   ]
 }

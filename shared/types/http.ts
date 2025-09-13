@@ -20,3 +20,4 @@ export type AuthedRequest<
   ReqBody = unknown,
   ReqQuery = ParsedQs,
 > = Request<P, ApiResult<ResBody>, ReqBody, ReqQuery> & { tenantId?: string };
+

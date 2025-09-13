@@ -6,4 +6,5 @@ export interface UploadedFile {
 
 export interface UploadResponse {
   uploads: UploadedFile[];
+
 }

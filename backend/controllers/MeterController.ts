@@ -5,6 +5,7 @@
 import type { AuthedRequestHandler } from '../types/http';
 import Meter from '../models/Meter';
 import MeterReading from '../models/MeterReading';
+import { writeAuditLog } from '../utils/audit';
 
 export const getMeters: AuthedRequestHandler = async (req, res, next) => {
   try {
@@ -42,6 +43,15 @@ export const createMeter: AuthedRequestHandler = async (req, res, next) => {
       tenantId: req.tenantId,
       siteId: req.siteId,
     });
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId: req.tenantId,
+      userId,
+      action: 'create',
+      entityType: 'Meter',
+      entityId: meter._id,
+      after: meter.toObject(),
+    });
     res.status(201).json(meter);
     return;
   } catch (err) {
@@ -53,11 +63,22 @@ export const updateMeter: AuthedRequestHandler = async (req, res, next) => {
   try {
     const filter: any = { _id: req.params.id, tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
-    const meter = await Meter.findOneAndUpdate(filter, req.body, { new: true });
-    if (!meter) {
+    const existing = await Meter.findOne(filter);
+    if (!existing) {
       res.status(404).json({ message: 'Not found' });
       return;
     }
+    const meter = await Meter.findOneAndUpdate(filter, req.body, { new: true });
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId: req.tenantId,
+      userId,
+      action: 'update',
+      entityType: 'Meter',
+      entityId: req.params.id,
+      before: existing.toObject(),
+      after: meter?.toObject(),
+    });
     res.json(meter);
     return;
   } catch (err) {
@@ -74,6 +95,15 @@ export const deleteMeter: AuthedRequestHandler = async (req, res, next) => {
       res.status(404).json({ message: 'Not found' });
       return;
     }
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId: req.tenantId,
+      userId,
+      action: 'delete',
+      entityType: 'Meter',
+      entityId: req.params.id,
+      before: meter.toObject(),
+    });
     res.json({ message: 'Deleted successfully' });
     return;
   } catch (err) {
@@ -99,6 +129,15 @@ export const addMeterReading: AuthedRequestHandler = async (req, res, next) => {
     });
     meter.currentValue = req.body.value;
     await meter.save();
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId: req.tenantId,
+      userId,
+      action: 'addReading',
+      entityType: 'Meter',
+      entityId: meter._id,
+      after: meter.toObject(),
+    });
     res.status(201).json(reading);
     return;
   } catch (err) {

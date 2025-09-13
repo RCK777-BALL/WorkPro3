@@ -12,6 +12,7 @@ import Station from '../models/Station';
 import { validationResult } from 'express-validator';
 import logger from '../utils/logger';
 import { filterFields } from '../utils/filterFields';
+import { writeAuditLog } from '../utils/audit';
 
 const assetCreateFields = [
   'name', 'type', 'location', 'departmentId', 'status', 'serialNumber',
@@ -99,7 +100,15 @@ export const createAsset: AuthedRequestHandler = async (req, res, next) => {
     const newAsset = await Asset.create(payload);
     const assetObj = newAsset.toObject();
     const response = { ...assetObj, tenantId: assetObj.tenantId.toString() };
-
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId: resolvedTenantId,
+      userId,
+      action: 'create',
+      entityType: 'Asset',
+      entityId: newAsset._id,
+      after: assetObj,
+    });
     res.status(201).json(response);
     return;
   } catch (err) {
@@ -144,14 +153,25 @@ export const updateAsset: AuthedRequestHandler = async (req, res, next) => {
     const filter: any = { _id: id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
     const update = filterFields(req.body, assetUpdateFields);
+    const existing = await Asset.findOne(filter);
+    if (!existing) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     const asset = await Asset.findOneAndUpdate(filter, update, {
       new: true,
       runValidators: true,
     });
-    if (!asset) {
-      res.status(404).json({ message: 'Not found' });
-      return;
-    }
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'update',
+      entityType: 'Asset',
+      entityId: id,
+      before: existing.toObject(),
+      after: asset?.toObject(),
+    });
     res.json(asset);
     return;
 
@@ -178,6 +198,15 @@ export const deleteAsset: AuthedRequestHandler = async (req, res, next) => {
       res.status(404).json({ message: 'Not found' });
       return;
     }
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId: req.tenantId,
+      userId,
+      action: 'delete',
+      entityType: 'Asset',
+      entityId: id,
+      before: asset.toObject(),
+    });
     res.json({ message: 'Deleted successfully' });
     return;
   } catch (err) {

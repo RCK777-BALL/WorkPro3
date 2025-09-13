@@ -8,6 +8,7 @@ import Document from '../models/Document';
 import type { AuthedRequestHandler } from '../types/http';
 import { sendResponse } from '../utils/sendResponse';
 
+
 export const getAllDocuments: AuthedRequestHandler = async (_req, res, next) => {
   try {
     const items = await Document.find();
@@ -63,6 +64,7 @@ export const createDocument: AuthedRequestHandler = async (req, res, next) => {
     const newItem = new Document({ name: finalName, url: finalUrl });
     const saved = await newItem.save();
     sendResponse(res, saved, null, 201);
+
     return;
   } catch (err) {
     next(err);
@@ -102,6 +104,7 @@ export const updateDocument: AuthedRequestHandler = async (req, res, next) => {
       return;
     }
     sendResponse(res, updated);
+
     return;
   } catch (err) {
     next(err);
@@ -111,12 +114,15 @@ export const updateDocument: AuthedRequestHandler = async (req, res, next) => {
 
 export const deleteDocument: AuthedRequestHandler = async (req, res, next) => {
   try {
+    const tenantId = req.tenantId;
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
     const deleted = await Document.findByIdAndDelete(req.params.id);
     if (!deleted) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
     sendResponse(res, { message: 'Deleted successfully' });
+
     return;
   } catch (err) {
     next(err);

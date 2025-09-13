@@ -4,6 +4,7 @@
 
 import TeamMember, { ITeamMember } from '../models/TeamMember';
 import type { AuthedRequestHandler } from '../types/http';
+import { writeAuditLog } from '../utils/audit';
 
 const roleHierarchy: Record<ITeamMember['role'], ITeamMember['role'][] | null> = {
   admin: null,
@@ -82,6 +83,15 @@ export const createTeamMember: AuthedRequestHandler = async (req, res, next) => 
     }
     const member = new TeamMember({ ...req.body, tenantId: req.tenantId });
     const saved = await member.save();
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId: req.tenantId,
+      userId,
+      action: 'create',
+      entityType: 'TeamMember',
+      entityId: saved._id,
+      after: saved.toObject(),
+    });
     res.status(201).json(saved);
     return;
   } catch (err) {
@@ -104,6 +114,12 @@ export const updateTeamMember: AuthedRequestHandler = async (req, res) => {
       }
       await validateHierarchy(role, req.body.managerId, req.tenantId as string);
     }
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const existing = await TeamMember.findById({ _id: req.params.id, tenantId: req.tenantId });
+    if (!existing) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     const updated = await TeamMember.findByIdAndUpdate(
       { _id: req.params.id, tenantId: req.tenantId },
       req.body,
@@ -112,10 +128,15 @@ export const updateTeamMember: AuthedRequestHandler = async (req, res) => {
         runValidators: true,
       }
     );
-    if (!updated) {
-      res.status(404).json({ message: 'Not found' });
-      return;
-    }
+    await writeAuditLog({
+      tenantId: req.tenantId,
+      userId,
+      action: 'update',
+      entityType: 'TeamMember',
+      entityId: req.params.id,
+      before: existing.toObject(),
+      after: updated?.toObject(),
+    });
     res.json(updated);
     return;
   } catch (err: any) {
@@ -137,6 +158,7 @@ export const deleteTeamMember: AuthedRequestHandler = async (req, res, next) => 
         .json({ message: 'Cannot delete: member manages others' });
       return;
     }
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
     const deleted = await TeamMember.findByIdAndDelete({
       _id: req.params.id,
       tenantId: req.tenantId,
@@ -145,6 +167,14 @@ export const deleteTeamMember: AuthedRequestHandler = async (req, res, next) => 
       res.status(404).json({ message: 'Not found' });
       return;
     }
+    await writeAuditLog({
+      tenantId: req.tenantId,
+      userId,
+      action: 'delete',
+      entityType: 'TeamMember',
+      entityId: req.params.id,
+      before: deleted.toObject(),
+    });
     res.json({ message: 'Deleted successfully' });
     return;
   } catch (err) {

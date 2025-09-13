@@ -16,6 +16,7 @@ import Line from '../models/Line';
 import Station from '../models/Station';
 import PMTask from '../models/PMTask';
 import WorkOrder from '../models/WorkOrder';
+import AuditLog from '../models/AuditLog';
 
 
 const app = express();
@@ -118,6 +119,9 @@ describe('Work Order Routes', () => {
       .expect(200);
 
     expect(listRes.body.length).toBe(1);
+    const logs = await AuditLog.find({ entityType: 'WorkOrder', action: 'create' });
+    expect(logs.length).toBe(1);
+    expect(logs[0].entityId).toBe(String(id));
     expect(listRes.body[0]._id).toBe(id);
     expect(listRes.body[0].department).toBe(String(department._id));
     expect(listRes.body[0].line).toBe(String(lineId));

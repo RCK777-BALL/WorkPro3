@@ -11,7 +11,7 @@ import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
 import { filterFields } from '../utils/filterFields';
-import { logAudit } from '../utils/audit';
+import { writeAuditLog } from '../utils/audit';
 import { sendResponse } from '../utils/sendResponse';
 
 const workOrderCreateFields = [
@@ -219,7 +219,15 @@ export const createWorkOrder: AuthedRequestHandler = async (req, res, next) => {
     const payload = filterFields(req.body, workOrderCreateFields);
     const newItem = new WorkOrder({ ...payload, tenantId });
     const saved = await newItem.save();
-    await logAudit(req, 'create', 'WorkOrder', saved._id, null, saved.toObject());
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'create',
+      entityType: 'WorkOrder',
+      entityId: saved._id,
+      after: saved.toObject(),
+    });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved, null, 201);
     return;
@@ -281,14 +289,16 @@ export const updateWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    await logAudit(
-      req,
-      'update',
-      'WorkOrder',
-      req.params.id,
-      existing.toObject(),
-      updated.toObject()
-    );
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'update',
+      entityType: 'WorkOrder',
+      entityId: req.params.id,
+      before: existing.toObject(),
+      after: updated.toObject(),
+    });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(updated));
     sendResponse(res, updated);
     return;
@@ -329,7 +339,15 @@ export const deleteWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    await logAudit(req, 'delete', 'WorkOrder', req.params.id, deleted.toObject(), null);
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'delete',
+      entityType: 'WorkOrder',
+      entityId: req.params.id,
+      before: deleted.toObject(),
+    });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload({ _id: req.params.id, deleted: true }));
     sendResponse(res, { message: 'Deleted successfully' });
     return;
@@ -406,7 +424,16 @@ export const approveWorkOrder: AuthedRequestHandler = async (req, res, next) => 
     }
 
     const saved = await workOrder.save();
-    await logAudit(req, 'approve', 'WorkOrder', req.params.id, before, saved.toObject());
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'approve',
+      entityType: 'WorkOrder',
+      entityId: req.params.id,
+      before,
+      after: saved.toObject(),
+    });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
 
     const message =
@@ -444,7 +471,16 @@ export const assignWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       workOrder.assignees = req.body.assignees;
     }
     const saved = await workOrder.save();
-    await logAudit(req, 'assign', 'WorkOrder', req.params.id, before, saved.toObject());
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'assign',
+      entityType: 'WorkOrder',
+      entityId: req.params.id,
+      before,
+      after: saved.toObject(),
+    });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     res.json(saved);
     return;
@@ -469,7 +505,16 @@ export const startWorkOrder: AuthedRequestHandler = async (req, res, next) => {
     const before = workOrder.toObject();
     workOrder.status = 'in_progress';
     const saved = await workOrder.save();
-    await logAudit(req, 'start', 'WorkOrder', req.params.id, before, saved.toObject());
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'start',
+      entityType: 'WorkOrder',
+      entityId: req.params.id,
+      before,
+      after: saved.toObject(),
+    });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     res.json(saved);
     return;
@@ -499,7 +544,16 @@ export const completeWorkOrder: AuthedRequestHandler = async (req, res, next) =>
     if (Array.isArray(req.body.photos)) workOrder.photos = req.body.photos;
     if (req.body.failureCode !== undefined) workOrder.failureCode = req.body.failureCode;
     const saved = await workOrder.save();
-    await logAudit(req, 'complete', 'WorkOrder', req.params.id, before, saved.toObject());
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'complete',
+      entityType: 'WorkOrder',
+      entityId: req.params.id,
+      before,
+      after: saved.toObject(),
+    });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     res.json(saved);
     return;
@@ -524,7 +578,16 @@ export const cancelWorkOrder: AuthedRequestHandler = async (req, res, next) => {
     const before = workOrder.toObject();
     workOrder.status = 'cancelled';
     const saved = await workOrder.save();
-    await logAudit(req, 'cancel', 'WorkOrder', req.params.id, before, saved.toObject());
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'cancel',
+      entityType: 'WorkOrder',
+      entityId: req.params.id,
+      before,
+      after: saved.toObject(),
+    });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     res.json(saved);
     return;

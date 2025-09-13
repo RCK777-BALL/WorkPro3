@@ -10,6 +10,7 @@ import nodemailer from 'nodemailer';
 import { assertEmail } from '../utils/assert';
 import type { AuthedRequestHandler } from '../types/http';
 import type { ParamsDictionary } from 'express-serve-static-core';
+import { writeAuditLog } from '../utils/audit';
 
 type IdParams = { id: string };
 
@@ -82,6 +83,15 @@ export const createNotification: AuthedRequestHandler<
     }
     const newItem = new Notification({ ...req.body, tenantId });
     const saved = (await newItem.save()) as NotificationDocument;
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'create',
+      entityType: 'Notification',
+      entityId: saved._id,
+      after: saved.toObject(),
+    });
 
     const io = req.app.get('io');
     io?.emit('notification', saved);
@@ -147,6 +157,16 @@ export const markNotificationRead: AuthedRequestHandler<
       res.status(404).json({ message: 'Not found' });
       return;
     }
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'markRead',
+      entityType: 'Notification',
+      entityId: req.params.id,
+      before: null,
+      after: updated.toObject(),
+    });
     res.json(updated);
     return;
   } catch (err) {
@@ -174,6 +194,12 @@ export const updateNotification: AuthedRequestHandler<
       res.status(400).json({ message: 'Tenant ID required' });
       return;
     }
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const existing = await Notification.findOne({ _id: req.params.id, tenantId });
+    if (!existing) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     const updated = await Notification.findOneAndUpdate(
       { _id: req.params.id, tenantId },
       req.body,
@@ -182,10 +208,15 @@ export const updateNotification: AuthedRequestHandler<
         runValidators: true,
       },
     );
-    if (!updated) {
-      res.status(404).json({ message: 'Not found' });
-      return;
-    }
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'update',
+      entityType: 'Notification',
+      entityId: req.params.id,
+      before: existing.toObject(),
+      after: updated?.toObject(),
+    });
     res.json(updated);
     return;
   } catch (err) {
@@ -213,11 +244,20 @@ export const deleteNotification: AuthedRequestHandler<
       res.status(400).json({ message: 'Tenant ID required' });
       return;
     }
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
     const deleted = await Notification.findOneAndDelete({ _id: req.params.id, tenantId });
     if (!deleted) {
       res.status(404).json({ message: 'Not found' });
       return;
     }
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'delete',
+      entityType: 'Notification',
+      entityId: req.params.id,
+      before: deleted.toObject(),
+    });
     res.json({ message: 'Deleted successfully' });
     return;
   } catch (err) {

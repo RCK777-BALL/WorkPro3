@@ -2,60 +2,53 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
+import { ok, fail, asyncHandler } from '../src/lib/http';
 
 import Tenant from '../models/Tenant';
 
-export const getAllTenants = async (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    const tenants = await Tenant.find();
-    res.json(tenants);
-  } catch (err) {
-    next(err);
-  }
-};
+export const getAllTenants = asyncHandler(async (_req: Request, res: Response) => {
+  const tenants = await Tenant.find();
+  ok(res, tenants);
+});
 
-export const getTenantById = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const tenant = await Tenant.findById(req.params.id);
-    if (!tenant) return res.status(404).json({ message: 'Not found' });
-    res.json(tenant);
-  } catch (err) {
-    next(err);
-  }
-};
+export const getTenantById = asyncHandler(async (
+  req: Request,
+  res: Response,
+) => {
+  const tenant = await Tenant.findById(req.params.id);
+  if (!tenant) return fail(res, 'Not found', 404);
+  ok(res, tenant);
+});
 
-export const createTenant = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const tenant = await Tenant.create(req.body);
-    res.status(201).json(tenant);
-  } catch (err) {
-    next(err);
-  }
-};
+export const createTenant = asyncHandler(async (
+  req: Request,
+  res: Response,
+) => {
+  const tenant = await Tenant.create(req.body);
+  ok(res, tenant, 201);
+});
 
-export const updateTenant = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const tenant = await Tenant.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
-    if (!tenant) return res.status(404).json({ message: 'Not found' });
-    res.json(tenant);
-  } catch (err) {
-    next(err);
-  }
-};
+export const updateTenant = asyncHandler(async (
+  req: Request,
+  res: Response,
+) => {
+  const tenant = await Tenant.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+    runValidators: true,
+  });
+  if (!tenant) return fail(res, 'Not found', 404);
+  ok(res, tenant);
+});
 
-export const deleteTenant = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const tenant = await Tenant.findByIdAndDelete(req.params.id);
-    if (!tenant) return res.status(404).json({ message: 'Not found' });
-    res.json({ message: 'Deleted successfully' });
-  } catch (err) {
-    next(err);
-  }
-};
+export const deleteTenant = asyncHandler(async (
+  req: Request,
+  res: Response,
+) => {
+  const tenant = await Tenant.findByIdAndDelete(req.params.id);
+  if (!tenant) return fail(res, 'Not found', 404);
+  ok(res, { message: 'Deleted successfully' });
+});
 
 export default {
   getAllTenants,

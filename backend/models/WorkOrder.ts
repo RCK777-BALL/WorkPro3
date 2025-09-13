@@ -7,7 +7,7 @@ import mongoose from 'mongoose';
 const workOrderSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
-    asset: { type: mongoose.Schema.Types.ObjectId, ref: 'Asset' },
+    assetId: { type: mongoose.Schema.Types.ObjectId, ref: 'Asset', index: true },
     description: String,
     priority: {
       type: String,
@@ -18,6 +18,7 @@ const workOrderSchema = new mongoose.Schema(
       type: String,
       enum: ['requested', 'assigned', 'in_progress', 'completed', 'cancelled'],
       default: 'requested',
+      index: true,
     },
     approvalStatus: {
       type: String,
@@ -28,8 +29,28 @@ const workOrderSchema = new mongoose.Schema(
     approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     assignees: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    checklists: [String],
-    partsUsed: [{ type: mongoose.Schema.Types.ObjectId, ref: 'InventoryItem' }],
+    checklists: [
+      {
+        description: { type: String, required: true },
+        completed: { type: Boolean, default: false },
+      },
+    ],
+    partsUsed: [
+      {
+        partId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'InventoryItem',
+          required: true,
+        },
+        quantity: { type: Number, default: 1 },
+      },
+    ],
+    signatures: [
+      {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        signedAt: { type: Date, default: Date.now },
+      },
+    ],
     timeSpentMin: Number,
     photos: [String],
     failureCode: String,
@@ -48,7 +69,6 @@ const workOrderSchema = new mongoose.Schema(
 
     tenantId: { type: mongoose.Schema.Types.ObjectId, required: true, index: true },
 
-    dateCreated: { type: Date, default: Date.now },
     dueDate: { type: Date },
     completedAt: Date,
   },
@@ -56,3 +76,4 @@ const workOrderSchema = new mongoose.Schema(
 );
 
 export default mongoose.model('WorkOrder', workOrderSchema);
+

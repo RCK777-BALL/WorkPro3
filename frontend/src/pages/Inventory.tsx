@@ -11,7 +11,6 @@ import InventoryMetrics from '@/components/inventory/InventoryMetrics';
 import InventoryScanModal from '@/components/inventory/InventoryScanModal';
 import { exportToExcel, exportToPDF } from '@/utils/export';
 import http from '@/lib/http';
-import { useAuth } from '@/context/AuthContext';
 import type { Part } from '@/types';
 
 const Inventory: React.FC = () => {
@@ -23,7 +22,6 @@ const Inventory: React.FC = () => {
   const [parts, setParts] = useState<Part[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
-  useAuth();
 
   const fetchParts = async () => {
     try {

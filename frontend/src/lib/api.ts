@@ -2,13 +2,25 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { API_URL } from '@/config/env';
-import axios from 'axios';
+import type { ApiResult } from '@shared/http';
 
+const API_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:5010').replace(/\/+$/, '');
 
-export const api = axios.create({
-  baseURL: `${API_URL}/api`,
-  withCredentials: true,
-});
+export async function fetchJson<T>(path: string, init?: RequestInit): Promise<ApiResult<T>> {
+  const res = await fetch(`${API_URL}/api${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {}),
+    },
+    credentials: 'include',
+  });
 
-export default api;
+  const json: ApiResult<T> = await res.json();
+  if (json.error) {
+    throw new Error(json.error);
+  }
+  return json;
+}
+
+export default { fetchJson };

@@ -2,6 +2,8 @@
  * SPDX-License-Identifier: MIT
  */
 
+import type { InventoryUpdatePayload } from '@shared/inventory';
+
 export interface WorkOrderUpdatePayload {
   _id: string;
   tenantId: string;
@@ -11,12 +13,7 @@ export interface WorkOrderUpdatePayload {
   deleted?: boolean;
 }
 
-export interface InventoryUpdatePayload {
-  _id: string;
-  tenantId: string;
-  name: string;
-  quantity: number;
-}
+export type { InventoryUpdatePayload };
 
 export type NotificationType = 'info' | 'warning' | 'critical';
 
@@ -30,4 +27,3 @@ export interface NotificationPayload {
   createdAt: Date;
   read: boolean;
 }
-

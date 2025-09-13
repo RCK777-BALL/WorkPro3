@@ -4,6 +4,7 @@
 
 import axios from 'axios';
 import type { AxiosRequestHeaders } from 'axios';
+import type { ApiResult } from '../../shared/types/http';
 
 const baseUrl = (import.meta.env.VITE_API_URL ?? 'http://localhost:5010').replace(/\/+$/, '');
 
@@ -36,7 +37,7 @@ http.interceptors.request.use((config) => {
 
 http.interceptors.response.use(
   (r) => {
-    const { data, error } = r.data ?? {};
+    const { data, error } = (r.data as ApiResult<unknown>) ?? {};
     if (error) {
       return Promise.reject(error);
     }

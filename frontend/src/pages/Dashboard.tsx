@@ -2,64 +2,135 @@
  * SPDX-License-Identifier: MIT
  */
 
-import Card from '@common/Card';
-import StatusBadge from '@common/StatusBadge';
+import { useEffect, useState } from 'react';
+import KpiCard from '@/components/dashboard/KpiCard';
+import RecentActivity, { AuditLog } from '@/components/dashboard/RecentActivity';
+import http from '@/lib/http';
 
-const kpis = [
-  { label: 'Open Work Orders', value: 12 },
-  { label: 'Assets Online', value: 128 },
-  { label: 'Maintenance Due', value: 7 },
-  { label: 'Team Members', value: 24 },
-];
+interface Summary {
+  pmCompliance: number;
+  woBacklog: number;
+  downtimeThisMonth: number;
+  costMTD: number;
+  cmVsPmRatio: number;
+  wrenchTimePct: number;
+}
 
-const sample = [
-  { id: 1, name: 'HVAC System', status: 'Active' },
-  { id: 2, name: 'Conveyor Belt', status: 'In Repair' },
-  { id: 3, name: 'Packaging Line', status: 'Offline' },
-];
+type Trends = Record<keyof Summary, number[]>;
 
 export default function Dashboard() {
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [trends, setTrends] = useState<Trends | null>(null);
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [logsError, setLogsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [summaryRes, trendsRes] = await Promise.all([
+          http.get<Summary>('/summary'),
+          http.get<Trends>('/summary/trends'),
+        ]);
+        setSummary(summaryRes.data);
+        setTrends(trendsRes.data);
+      } catch (err) {
+        console.error('Failed to load summary', err);
+      }
+    };
+    fetchData();
+    refreshLogs();
+  }, []);
+
+  const refreshLogs = async () => {
+    setLoadingLogs(true);
+    try {
+      const res = await http.get<AuditLog[]>('/audit', { params: { limit: 10 } });
+      setLogs(res.data);
+      setLogsError(null);
+    } catch (err) {
+      setLogsError('Failed to load activity');
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
+  const calcDelta = (series: number[] = []) => {
+    if (series.length < 2) return 0;
+    const first = series[0];
+    const last = series[series.length - 1];
+    if (first === 0) return 0;
+    return ((last - first) / first) * 100;
+  };
+
+  const kpis = summary && trends ? [
+    {
+      key: 'pmCompliance',
+      title: 'PM Compliance',
+      value: `${Math.round(summary.pmCompliance * 100)}%`,
+      deltaPct: calcDelta(trends.pmCompliance),
+      series: trends.pmCompliance,
+    },
+    {
+      key: 'woBacklog',
+      title: 'WO Backlog',
+      value: summary.woBacklog,
+      deltaPct: calcDelta(trends.woBacklog),
+      series: trends.woBacklog,
+    },
+    {
+      key: 'downtimeThisMonth',
+      title: 'Downtime (hrs)',
+      value: summary.downtimeThisMonth,
+      deltaPct: calcDelta(trends.downtimeThisMonth),
+      series: trends.downtimeThisMonth,
+    },
+    {
+      key: 'costMTD',
+      title: 'Cost MTD',
+      value: `$${summary.costMTD}`,
+      deltaPct: calcDelta(trends.costMTD),
+      series: trends.costMTD,
+    },
+    {
+      key: 'cmVsPmRatio',
+      title: 'CM vs PM Ratio',
+      value: summary.cmVsPmRatio.toFixed(2),
+      deltaPct: calcDelta(trends.cmVsPmRatio),
+      series: trends.cmVsPmRatio,
+    },
+    {
+      key: 'wrenchTimePct',
+      title: 'Wrench Time %',
+      value: `${summary.wrenchTimePct.toFixed(1)}%`,
+      deltaPct: calcDelta(trends.wrenchTimePct),
+      series: trends.wrenchTimePct,
+    },
+  ] : [];
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-sm text-neutral-600 dark:text-neutral-300">
-          Overview of key metrics and recent items
-        </p>
+    <div className="flex gap-4">
+      <div className="flex-1 space-y-6">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {kpis.map((k) => (
+            <KpiCard
+              key={k.key}
+              title={k.title}
+              value={k.value}
+              deltaPct={k.deltaPct}
+              series={k.series}
+            />
+          ))}
+        </div>
       </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {kpis.map((kpi) => (
-          <Card key={kpi.label} className="text-center">
-            <div className="text-sm text-neutral-600 dark:text-neutral-400">
-              {kpi.label}
-            </div>
-            <div className="mt-2 text-2xl font-semibold">{kpi.value}</div>
-          </Card>
-        ))}
+      <div className="w-80">
+        <RecentActivity
+          logs={logs}
+          loading={loadingLogs}
+          error={logsError}
+          onRefresh={refreshLogs}
+        />
       </div>
-
-      <Card noPadding>
-        <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700 text-sm">
-          <thead className="bg-neutral-50 dark:bg-neutral-800">
-            <tr>
-              <th className="px-4 py-2 text-left font-medium">Item</th>
-              <th className="px-4 py-2 text-left font-medium">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-200 dark:divide-neutral-700">
-            {sample.map((row) => (
-              <tr key={row.id}>
-                <td className="px-4 py-2">{row.name}</td>
-                <td className="px-4 py-2">
-                  <StatusBadge status={row.status} size="sm" />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
     </div>
   );
 }
-

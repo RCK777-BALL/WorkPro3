@@ -231,7 +231,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'manager' | 'technician' | 'viewer';
+  role: 'admin' | 'supervisor' | 'planner' | 'tech';
   department: string;
   avatar?: string;
 }
@@ -242,9 +242,9 @@ export interface TeamMember {
   email: string;
   role:
     | 'admin'
-    | 'manager'
-    | 'technician'
-    | 'viewer'
+    | 'supervisor'
+    | 'planner'
+    | 'tech'
     | 'team_member'
     | 'team_leader'
     | 'area_leader'
@@ -265,9 +265,9 @@ export interface TeamMemberResponse {
   email: string;
   role:
     | 'admin'
-    | 'manager'
-    | 'technician'
-    | 'viewer'
+    | 'supervisor'
+    | 'planner'
+    | 'tech'
     | 'team_member'
     | 'team_leader'
     | 'area_leader'
@@ -286,9 +286,9 @@ export interface AuthUser {
   email: string;
   role:
     | 'admin'
-    | 'manager'
-    | 'technician'
-    | 'viewer'
+    | 'supervisor'
+    | 'planner'
+    | 'tech'
     | 'team_member'
     | 'team_leader'
     | 'area_leader'

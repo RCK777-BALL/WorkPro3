@@ -30,6 +30,6 @@ export const useAuthStore = create<AuthState>((set) => ({
 }));
 
 export const isAdmin = (state: AuthState) => state.user?.role === 'admin';
-export const isManager = (state: AuthState) => state.user?.role === 'manager';
-export const isTechnician = (state: AuthState) => state.user?.role === 'technician';
-export const isViewer = (state: AuthState) => state.user?.role === 'viewer';
+export const isSupervisor = (state: AuthState) => state.user?.role === 'supervisor';
+export const isPlanner = (state: AuthState) => state.user?.role === 'planner';
+export const isTech = (state: AuthState) => state.user?.role === 'tech';

@@ -13,7 +13,7 @@ import TimeSheet from '../models/TimeSheet';
  
 
 async function calculateStats(tenantId: string, role?: string) {
-  const roleFilter = role || 'technician';
+  const roleFilter = role || 'tech';
 
   // Work order completion
   const totalWorkOrders = await WorkOrder.countDocuments({ tenantId });

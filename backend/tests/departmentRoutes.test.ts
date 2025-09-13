@@ -53,7 +53,7 @@ beforeAll(async () => {
     name: 'Tester',
     email: 'tester@example.com',
     passwordHash: 'pass123',
-    roles: ['manager'],
+    roles: ['supervisor'],
     tenantId: new mongoose.Types.ObjectId(),
   })) as unknown as UserDocument;
   token = jwt.sign(
@@ -73,7 +73,7 @@ beforeEach(async () => {
     name: 'Tester',
     email: 'tester@example.com',
     passwordHash: 'pass123',
-    roles: ['manager'],
+    roles: ['supervisor'],
     tenantId: new mongoose.Types.ObjectId(),
   })) as unknown as UserDocument;
   token = jwt.sign(

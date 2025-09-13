@@ -63,7 +63,7 @@ router.get('/search', searchAssets);
  
 router.post(
   '/',
-  requireRoles(['admin', 'manager']),
+  requireRoles(['admin', 'supervisor']),
   handleUpload,
   assetValidators,
   validate,
@@ -73,13 +73,13 @@ router.post(
 router.put(
   '/:id',
   validateObjectId('id'),
-  requireRoles(['admin', 'manager']),
+  requireRoles(['admin', 'supervisor']),
   handleUpload,
   assetValidators,
   validate,
   updateAsset
 );
-router.delete('/:id', validateObjectId('id'), requireRoles(['admin', 'manager']), deleteAsset);
+router.delete('/:id', validateObjectId('id'), requireRoles(['admin', 'supervisor']), deleteAsset);
  
 
 export default router;

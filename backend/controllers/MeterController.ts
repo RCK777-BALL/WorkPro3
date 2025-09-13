@@ -5,6 +5,7 @@
 import type { AuthedRequestHandler } from '../types/http';
 import Meter from '../models/Meter';
 import MeterReading from '../models/MeterReading';
+import { writeAuditLog } from '../utils/audit';
 
 export const getMeters: AuthedRequestHandler = async (req, res, next) => {
   try {
@@ -37,10 +38,22 @@ export const getMeterById: AuthedRequestHandler = async (req, res, next) => {
 
 export const createMeter: AuthedRequestHandler = async (req, res, next) => {
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId)
+      return res.status(400).json({ message: 'Tenant ID required' });
     const meter = await Meter.create({
       ...req.body,
-      tenantId: req.tenantId,
+      tenantId,
       siteId: req.siteId,
+    });
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'create',
+      entityType: 'Meter',
+      entityId: meter._id,
+      after: meter.toObject(),
     });
     res.status(201).json(meter);
     return;
@@ -51,13 +64,27 @@ export const createMeter: AuthedRequestHandler = async (req, res, next) => {
 
 export const updateMeter: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const filter: any = { _id: req.params.id, tenantId: req.tenantId };
+    const tenantId = req.tenantId;
+    if (!tenantId)
+      return res.status(400).json({ message: 'Tenant ID required' });
+    const filter: any = { _id: req.params.id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
-    const meter = await Meter.findOneAndUpdate(filter, req.body, { new: true });
-    if (!meter) {
+    const existing = await Meter.findOne(filter);
+    if (!existing) {
       res.status(404).json({ message: 'Not found' });
       return;
     }
+    const meter = await Meter.findOneAndUpdate(filter, req.body, { new: true });
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'update',
+      entityType: 'Meter',
+      entityId: req.params.id,
+      before: existing.toObject(),
+      after: meter?.toObject(),
+    });
     res.json(meter);
     return;
   } catch (err) {
@@ -67,13 +94,25 @@ export const updateMeter: AuthedRequestHandler = async (req, res, next) => {
 
 export const deleteMeter: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const filter: any = { _id: req.params.id, tenantId: req.tenantId };
+    const tenantId = req.tenantId;
+    if (!tenantId)
+      return res.status(400).json({ message: 'Tenant ID required' });
+    const filter: any = { _id: req.params.id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
     const meter = await Meter.findOneAndDelete(filter);
     if (!meter) {
       res.status(404).json({ message: 'Not found' });
       return;
     }
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'delete',
+      entityType: 'Meter',
+      entityId: req.params.id,
+      before: meter.toObject(),
+    });
     res.json({ message: 'Deleted successfully' });
     return;
   } catch (err) {
@@ -83,7 +122,10 @@ export const deleteMeter: AuthedRequestHandler = async (req, res, next) => {
 
 export const addMeterReading: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const filter: any = { _id: req.params.id, tenantId: req.tenantId };
+    const tenantId = req.tenantId;
+    if (!tenantId)
+      return res.status(400).json({ message: 'Tenant ID required' });
+    const filter: any = { _id: req.params.id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
     const meter = await Meter.findOne(filter);
     if (!meter) {
@@ -94,11 +136,20 @@ export const addMeterReading: AuthedRequestHandler = async (req, res, next) => {
     const reading = await MeterReading.create({
       meter: meter._id,
       value: req.body.value,
-      tenantId: req.tenantId,
+      tenantId,
       siteId: req.siteId,
     });
     meter.currentValue = req.body.value;
     await meter.save();
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'addReading',
+      entityType: 'Meter',
+      entityId: meter._id,
+      after: meter.toObject(),
+    });
     res.status(201).json(reading);
     return;
   } catch (err) {

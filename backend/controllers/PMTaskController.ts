@@ -9,6 +9,7 @@ import WorkOrder from '../models/WorkOrder';
 import Meter from '../models/Meter';
 import { nextCronOccurrenceWithin } from '../services/PMScheduler';
 import type { AuthedRequestHandler } from '../types/http';
+import { writeAuditLog } from '../utils/audit';
 
 export const getAllPMTasks: AuthedRequestHandler = async (req, res, next) => {
   try {
@@ -47,14 +48,25 @@ export const getPMTaskById: AuthedRequestHandler = async (req, res, next) => {
 
 export const createPMTask: AuthedRequestHandler = async (req, res, next) => {
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId)
+      return res.status(400).json({ message: 'Tenant ID required' });
     const errors = validationResult(req as any);
     if (!errors.isEmpty()) {
       res.status(400).json({ errors: errors.array() });
       return;
     }
-
-    const payload = { ...req.body, tenantId: req.tenantId, siteId: req.siteId };
+    const payload = { ...req.body, tenantId, siteId: req.siteId };
     const task = await PMTask.create(payload);
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'create',
+      entityType: 'PMTask',
+      entityId: task._id,
+      after: task.toObject(),
+    });
     res.status(201).json(task);
   } catch (err) {
     next(err);
@@ -63,6 +75,9 @@ export const createPMTask: AuthedRequestHandler = async (req, res, next) => {
 
 export const updatePMTask: AuthedRequestHandler = async (req, res, next) => {
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId)
+      return res.status(400).json({ message: 'Tenant ID required' });
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       res.status(400).json({ message: 'Invalid ID' });
       return;
@@ -74,17 +89,26 @@ export const updatePMTask: AuthedRequestHandler = async (req, res, next) => {
       return;
     }
 
-    const task = await PMTask.findOneAndUpdate(
-      { _id: req.params.id, tenantId: req.tenantId },
-      req.body,
-      { new: true, runValidators: true },
-    );
-
-    if (!task) {
+    const existing = await PMTask.findOne({ _id: req.params.id, tenantId });
+    if (!existing) {
       res.status(404).json({ message: 'Not found' });
       return;
     }
-
+    const task = await PMTask.findOneAndUpdate(
+      { _id: req.params.id, tenantId },
+      req.body,
+      { new: true, runValidators: true },
+    );
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'update',
+      entityType: 'PMTask',
+      entityId: req.params.id,
+      before: existing.toObject(),
+      after: task?.toObject(),
+    });
     res.json(task);
   } catch (err) {
     next(err);
@@ -93,6 +117,9 @@ export const updatePMTask: AuthedRequestHandler = async (req, res, next) => {
 
 export const deletePMTask: AuthedRequestHandler = async (req, res, next) => {
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId)
+      return res.status(400).json({ message: 'Tenant ID required' });
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       res.status(400).json({ message: 'Invalid ID' });
       return;
@@ -100,14 +127,22 @@ export const deletePMTask: AuthedRequestHandler = async (req, res, next) => {
 
     const task = await PMTask.findOneAndDelete({
       _id: req.params.id,
-      tenantId: req.tenantId,
+      tenantId,
     });
 
     if (!task) {
       res.status(404).json({ message: 'Not found' });
       return;
     }
-
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'delete',
+      entityType: 'PMTask',
+      entityId: req.params.id,
+      before: task.toObject(),
+    });
     res.json({ message: 'Deleted successfully' });
   } catch (err) {
     next(err);

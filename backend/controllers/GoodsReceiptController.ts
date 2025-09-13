@@ -10,6 +10,7 @@ import Vendor from '../models/Vendor';
 import { addStock } from '../services/inventory';
 import nodemailer from 'nodemailer';
 import { assertEmail } from '../utils/assert';
+import { writeAuditLog } from '../utils/audit';
 
 export const createGoodsReceipt = async (
   req: Request,
@@ -18,6 +19,8 @@ export const createGoodsReceipt = async (
 ) => {
   try {
     const tenantId = req.tenantId;
+    if (!tenantId)
+      return res.status(400).json({ message: 'Tenant ID required' });
     const { purchaseOrder: poId, items } = req.body as any;
 
     const po = await PurchaseOrder.findById(poId);
@@ -54,7 +57,17 @@ export const createGoodsReceipt = async (
     const gr = await GoodsReceipt.create({
       purchaseOrder: po._id,
       items,
+      tenantId,
+    });
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const grAny = gr as any;
+    await writeAuditLog({
       ...(tenantId ? { tenantId } : {}),
+      userId,
+      action: 'create',
+      entityType: 'GoodsReceipt',
+      entityId: grAny._1 as any,
+      after: typeof grAny.toObject === 'function' ? grAny.toObject() : grAny,
     });
 
     const vendor = await Vendor.findById(po.vendor).lean();

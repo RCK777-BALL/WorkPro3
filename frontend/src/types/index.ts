@@ -1,6 +1,8 @@
-/*
- * SPDX-License-Identifier: MIT
- */
+export type { Asset } from '@shared/asset';
+export type { WorkOrder, NewWorkOrder } from '@shared/workOrder';
+export type { InventoryItem, InventoryUpdatePayload } from '@shared/inventory';
+export type { UploadedFile, UploadResponse } from '@shared/uploads';
+export type { ApiResult } from '@shared/http';
 
 /**
  * Defines the allowed maintenance categories for upcoming maintenance tasks.
@@ -95,8 +97,9 @@ export interface WorkOrder {
   assignedTo?: string;
   assignedToAvatar?: string;
   assignees?: string[];
-  checklists?: string[];
-  partsUsed?: string[];
+  checklists?: { text: string; done: boolean }[];
+  partsUsed?: { partId: string; qty: number; cost: number }[];
+  signatures?: { by: string; ts: string }[];
   timeSpentMin?: number;
   photos?: string[];
   failureCode?: string;
@@ -113,9 +116,8 @@ export interface WorkOrder {
   /** Additional metadata */
   note?: string;
   completedBy?: string;
-  attachments?: unknown[];
-  signature?: string;
-  parts?: string[];
+  attachments?: any[];
+  parts?: { partId: string; qty: number; cost: number }[];
 }
 
 export interface NewWorkOrder {
@@ -491,3 +493,4 @@ export interface WorkHistory {
   metrics: WorkHistoryMetrics;
   recentWork: WorkHistoryEntry[];
 }
+

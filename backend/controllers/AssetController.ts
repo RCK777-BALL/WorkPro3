@@ -12,6 +12,7 @@ import Station from '../models/Station';
 import { validationResult } from 'express-validator';
 import logger from '../utils/logger';
 import { filterFields } from '../utils/filterFields';
+import { writeAuditLog } from '../utils/audit';
 
 const assetCreateFields = [
   'name', 'type', 'location', 'departmentId', 'status', 'serialNumber',
@@ -60,7 +61,7 @@ export const getAssetById: AuthedRequestHandler = async (req, res, next) => {
 };
 
 export const createAsset: AuthedRequestHandler = async (req, res, next) => {
- 
+
   logger.debug('createAsset body:', req.body);
   logger.debug('createAsset files:', (req as any).files);
 
@@ -71,11 +72,9 @@ export const createAsset: AuthedRequestHandler = async (req, res, next) => {
     logger.debug('No files uploaded for asset');
   }
 
-  const { user, tenantId: reqTenantId } = req as any;
- 
-  const resolvedTenantId = reqTenantId || user?.tenantId;
-  if (!resolvedTenantId) {
-    return res.status(400).json({ message: 'Tenant ID is required' });
+  const tenantId = req.tenantId;
+  if (!tenantId) {
+    return res.status(400).json({ message: 'Tenant ID required' });
   }
 
   if (!req.body.name) {
@@ -93,13 +92,21 @@ export const createAsset: AuthedRequestHandler = async (req, res, next) => {
       req.body,
       assetCreateFields,
     );
-    payload.tenantId = resolvedTenantId;
+    payload.tenantId = tenantId;
     if (req.siteId && !payload.siteId) payload.siteId = req.siteId;
 
     const newAsset = await Asset.create(payload);
     const assetObj = newAsset.toObject();
     const response = { ...assetObj, tenantId: assetObj.tenantId.toString() };
-
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'create',
+      entityType: 'Asset',
+      entityId: newAsset._id,
+      after: assetObj,
+    });
     res.status(201).json(response);
     return;
   } catch (err) {
@@ -119,11 +126,9 @@ export const updateAsset: AuthedRequestHandler = async (req, res, next) => {
     logger.debug('No files uploaded for asset update');
   }
 
-  const { user, tenantId: reqTenantId } = req as any;
- 
-  const tenantId = reqTenantId || user?.tenantId;
+  const tenantId = req.tenantId;
   if (!tenantId) {
-    return res.status(400).json({ message: 'Tenant ID is required' });
+    return res.status(400).json({ message: 'Tenant ID required' });
   }
 
   try {
@@ -144,14 +149,25 @@ export const updateAsset: AuthedRequestHandler = async (req, res, next) => {
     const filter: any = { _id: id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
     const update = filterFields(req.body, assetUpdateFields);
+    const existing = await Asset.findOne(filter);
+    if (!existing) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     const asset = await Asset.findOneAndUpdate(filter, update, {
       new: true,
       runValidators: true,
     });
-    if (!asset) {
-      res.status(404).json({ message: 'Not found' });
-      return;
-    }
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'update',
+      entityType: 'Asset',
+      entityId: id,
+      before: existing.toObject(),
+      after: asset?.toObject(),
+    });
     res.json(asset);
     return;
 
@@ -163,6 +179,10 @@ export const updateAsset: AuthedRequestHandler = async (req, res, next) => {
 export const deleteAsset: AuthedRequestHandler = async (req, res, next) => {
 
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      return res.status(400).json({ message: 'Tenant ID required' });
+    }
     const id = req.params.id;
     if (!id) {
       return res.status(400).json({ message: 'ID is required' });
@@ -170,7 +190,7 @@ export const deleteAsset: AuthedRequestHandler = async (req, res, next) => {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: 'Invalid ID' });
     }
-    const filter: any = { _id: id, tenantId: req.tenantId };
+    const filter: any = { _id: id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
 
     const asset = await Asset.findOneAndDelete(filter);
@@ -178,6 +198,15 @@ export const deleteAsset: AuthedRequestHandler = async (req, res, next) => {
       res.status(404).json({ message: 'Not found' });
       return;
     }
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'delete',
+      entityType: 'Asset',
+      entityId: id,
+      before: asset.toObject(),
+    });
     res.json({ message: 'Deleted successfully' });
     return;
   } catch (err) {

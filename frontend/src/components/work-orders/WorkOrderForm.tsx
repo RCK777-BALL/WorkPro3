@@ -44,6 +44,12 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
     type: workOrder?.type || 'corrective',
     dueDate: workOrder?.dueDate || new Date().toISOString().split('T')[0],
   });
+  const [checklists, setChecklists] = useState<{ text: string; done: boolean }[]>(workOrder?.checklists || []);
+  const [newChecklist, setNewChecklist] = useState('');
+  const [parts, setParts] = useState<{ partId: string; qty: number; cost: number }[]>(workOrder?.partsUsed || []);
+  const [newPart, setNewPart] = useState<{ partId: string; qty: number; cost: number }>({ partId: '', qty: 1, cost: 0 });
+  const [signatures, setSignatures] = useState<{ by: string; ts: string }[]>(workOrder?.signatures || []);
+  const [newSignature, setNewSignature] = useState<{ by: string; ts: string }>({ by: '', ts: '' });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -107,6 +113,9 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
       departmentId,
       lineId,
       stationId,
+      checklists,
+      partsUsed: parts,
+      signatures,
     };
     try {
       let res;
@@ -264,6 +273,187 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
             value={formData.dueDate}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('dueDate', e.target.value)}
           />
+        </div>
+      </div>
+      <div>
+        <label className="block text-sm font-medium mb-1">Checklists</label>
+        {checklists.map((c, idx) => (
+          <div key={idx} className="flex items-center space-x-2 mb-1">
+            <input
+              type="text"
+              className="flex-1 px-2 py-1 border border-neutral-300 rounded-md"
+              value={c.text}
+              onChange={(e) => {
+                const updated = [...checklists];
+                updated[idx].text = e.target.value;
+                setChecklists(updated);
+              }}
+            />
+            <input
+              type="checkbox"
+              checked={c.done}
+              onChange={(e) => {
+                const updated = [...checklists];
+                updated[idx].done = e.target.checked;
+                setChecklists(updated);
+              }}
+            />
+            <button type="button" onClick={() => setChecklists(checklists.filter((_, i) => i !== idx))}>
+              Remove
+            </button>
+          </div>
+        ))}
+        <div className="flex items-center space-x-2">
+          <input
+            type="text"
+            className="flex-1 px-2 py-1 border border-neutral-300 rounded-md"
+            value={newChecklist}
+            onChange={(e) => setNewChecklist(e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              if (newChecklist) {
+                setChecklists([...checklists, { text: newChecklist, done: false }]);
+                setNewChecklist('');
+              }
+            }}
+          >
+            Add
+          </button>
+        </div>
+      </div>
+      <div>
+        <label className="block text-sm font-medium mb-1">Parts Used</label>
+        {parts.map((p, idx) => (
+          <div key={idx} className="flex items-center space-x-2 mb-1">
+            <input
+              type="text"
+              className="px-2 py-1 border border-neutral-300 rounded-md"
+              value={p.partId}
+              placeholder="Part ID"
+              onChange={(e) => {
+                const updated = [...parts];
+                updated[idx].partId = e.target.value;
+                setParts(updated);
+              }}
+            />
+            <input
+              type="number"
+              className="w-20 px-2 py-1 border border-neutral-300 rounded-md"
+              value={p.qty}
+              onChange={(e) => {
+                const updated = [...parts];
+                updated[idx].qty = Number(e.target.value);
+                setParts(updated);
+              }}
+            />
+            <input
+              type="number"
+              className="w-24 px-2 py-1 border border-neutral-300 rounded-md"
+              value={p.cost}
+              onChange={(e) => {
+                const updated = [...parts];
+                updated[idx].cost = Number(e.target.value);
+                setParts(updated);
+              }}
+            />
+            <button type="button" onClick={() => setParts(parts.filter((_, i) => i !== idx))}>
+              Remove
+            </button>
+          </div>
+        ))}
+        <div className="flex items-center space-x-2">
+          <input
+            type="text"
+            className="px-2 py-1 border border-neutral-300 rounded-md"
+            value={newPart.partId}
+            placeholder="Part ID"
+            onChange={(e) => setNewPart((prev) => ({ ...prev, partId: e.target.value }))}
+          />
+          <input
+            type="number"
+            className="w-20 px-2 py-1 border border-neutral-300 rounded-md"
+            value={newPart.qty}
+            onChange={(e) => setNewPart((prev) => ({ ...prev, qty: Number(e.target.value) }))}
+          />
+          <input
+            type="number"
+            className="w-24 px-2 py-1 border border-neutral-300 rounded-md"
+            value={newPart.cost}
+            onChange={(e) => setNewPart((prev) => ({ ...prev, cost: Number(e.target.value) }))}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              if (newPart.partId) {
+                setParts([...parts, newPart]);
+                setNewPart({ partId: '', qty: 1, cost: 0 });
+              }
+            }}
+          >
+            Add
+          </button>
+        </div>
+      </div>
+      <div>
+        <label className="block text-sm font-medium mb-1">Signatures</label>
+        {signatures.map((s, idx) => (
+          <div key={idx} className="flex items-center space-x-2 mb-1">
+            <input
+              type="text"
+              className="px-2 py-1 border border-neutral-300 rounded-md"
+              value={s.by}
+              placeholder="User ID"
+              onChange={(e) => {
+                const updated = [...signatures];
+                updated[idx].by = e.target.value;
+                setSignatures(updated);
+              }}
+            />
+            <input
+              type="datetime-local"
+              className="px-2 py-1 border border-neutral-300 rounded-md"
+              value={s.ts}
+              onChange={(e) => {
+                const updated = [...signatures];
+                updated[idx].ts = e.target.value;
+                setSignatures(updated);
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setSignatures(signatures.filter((_, i) => i !== idx))}
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+        <div className="flex items-center space-x-2">
+          <input
+            type="text"
+            className="px-2 py-1 border border-neutral-300 rounded-md"
+            value={newSignature.by}
+            placeholder="User ID"
+            onChange={(e) => setNewSignature((prev) => ({ ...prev, by: e.target.value }))}
+          />
+          <input
+            type="datetime-local"
+            className="px-2 py-1 border border-neutral-300 rounded-md"
+            value={newSignature.ts}
+            onChange={(e) => setNewSignature((prev) => ({ ...prev, ts: e.target.value }))}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              if (newSignature.by && newSignature.ts) {
+                setSignatures([...signatures, newSignature]);
+                setNewSignature({ by: '', ts: '' });
+              }
+            }}
+          >
+            Add
+          </button>
         </div>
       </div>
       <div>

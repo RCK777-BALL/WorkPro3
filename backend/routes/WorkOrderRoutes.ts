@@ -20,8 +20,6 @@ import {
 } from '../controllers/WorkOrderController';
 import { requireAuth, requireRole } from '../middleware/authMiddleware';
 import type { UserRole } from '../types/auth';
-import { validate } from '../middleware/validationMiddleware';
-import { workOrderValidators } from '../validators/workOrderValidators';
 import validateObjectId from '../middleware/validateObjectId';
 
 const router = express.Router();
@@ -43,21 +41,12 @@ router.get(
 );
 router.get('/:id', validateObjectId('id'), getWorkOrderById);
 
-router.post(
-  '/',
-  requireRole(...ADMIN_SUPERVISOR_TECH),
-  upload.any(),
-  workOrderValidators,
-  validate,
-  createWorkOrder
-);
- 
+router.post('/', requireRole(...ADMIN_SUPERVISOR_TECH), upload.any(), createWorkOrder);
+
 router.put(
   '/:id',
   validateObjectId('id'),
   requireRole(...ADMIN_SUPERVISOR_TECH),
-  workOrderValidators,
-  validate,
   updateWorkOrder
 );
  

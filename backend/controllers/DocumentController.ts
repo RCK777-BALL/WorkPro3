@@ -2,13 +2,18 @@
  * SPDX-License-Identifier: MIT
  */
 
+import { promises as fs } from 'fs';
+import path from 'path';
 import Document from '../models/Document';
 import type { AuthedRequestHandler } from '../types/http';
+import { sendResponse } from '../utils/sendResponse';
+import { writeAuditLog } from '../utils/audit';
+
 
 export const getAllDocuments: AuthedRequestHandler = async (_req, res, next) => {
   try {
     const items = await Document.find();
-    res.json(items);
+    sendResponse(res, items);
     return;
   } catch (err) {
     next(err);
@@ -20,10 +25,10 @@ export const getDocumentById: AuthedRequestHandler = async (req, res, next) => {
   try {
     const item = await Document.findById(req.params.id);
     if (!item) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
-    res.json(item);
+    sendResponse(res, item);
     return;
   } catch (err) {
     next(err);
@@ -33,9 +38,44 @@ export const getDocumentById: AuthedRequestHandler = async (req, res, next) => {
 
 export const createDocument: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const newItem = new Document(req.body);
+    const { base64, url, name } = req.body as {
+      base64?: string;
+      url?: string;
+      name?: string;
+    };
+
+    const finalName = name ?? `document_${Date.now()}`;
+    let finalUrl = url;
+
+    if (base64) {
+      const buffer = Buffer.from(base64, 'base64');
+      const uploadDir = path.join(process.cwd(), 'uploads');
+      await fs.mkdir(uploadDir, { recursive: true });
+      await fs.writeFile(path.join(uploadDir, finalName), buffer);
+      finalUrl = `/uploads/${finalName}`;
+    }
+
+    if (!finalUrl) {
+      sendResponse(res, null, 'No document provided', 400);
+      return;
+    }
+
+    const newItem = new Document({ name: finalName, url: finalUrl });
     const saved = await newItem.save();
-    res.status(201).json(saved);
+
+    const tenantId = req.tenantId;
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'create',
+      entityType: 'Document',
+      entityId: saved._id,
+      after: saved.toObject(),
+    });
+
+    sendResponse(res, saved, null, 201);
+
     return;
   } catch (err) {
     next(err);
@@ -45,15 +85,50 @@ export const createDocument: AuthedRequestHandler = async (req, res, next) => {
 
 export const updateDocument: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const updated = await Document.findByIdAndUpdate(req.params.id, req.body, {
+    const { base64, url, name } = req.body as {
+      base64?: string;
+      url?: string;
+      name?: string;
+    };
+
+    const finalName = name ?? `document_${Date.now()}`;
+    const updateData: { name?: string; url?: string } = {};
+
+    if (base64) {
+      const buffer = Buffer.from(base64, 'base64');
+      const uploadDir = path.join(process.cwd(), 'uploads');
+      await fs.mkdir(uploadDir, { recursive: true });
+      await fs.writeFile(path.join(uploadDir, finalName), buffer);
+      updateData.url = `/uploads/${finalName}`;
+      updateData.name = finalName;
+    } else if (url) {
+      updateData.url = url;
+      updateData.name = finalName;
+    } else if (name) {
+      updateData.name = finalName;
+    }
+
+    const updated = await Document.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true,
     });
     if (!updated) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
-    res.json(updated);
+    const tenantId = req.tenantId;
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'update',
+      entityType: 'Document',
+      entityId: updated._id,
+      after: updated.toObject(),
+    });
+
+    sendResponse(res, updated);
+
     return;
   } catch (err) {
     next(err);
@@ -63,12 +138,15 @@ export const updateDocument: AuthedRequestHandler = async (req, res, next) => {
 
 export const deleteDocument: AuthedRequestHandler = async (req, res, next) => {
   try {
+    const tenantId = req.tenantId;
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
     const deleted = await Document.findByIdAndDelete(req.params.id);
     if (!deleted) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
-    res.json({ message: 'Deleted successfully' });
+    sendResponse(res, { message: 'Deleted successfully' });
+
     return;
   } catch (err) {
     next(err);

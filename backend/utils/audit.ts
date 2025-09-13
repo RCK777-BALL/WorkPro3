@@ -3,16 +3,25 @@
  */
 
 import type { Request } from 'express';
+import { Types } from 'mongoose';
 import AuditLog from '../models/AuditLog';
 import logger from './logger';
+
+function normalize(value: unknown): unknown {
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch {
+    return null;
+  }
+}
 
 export async function logAudit(
   req: Request,
   action: string,
   entityType: string,
-  entityId: string | unknown,
-  before?: Record<string, unknown> | null,
-  after?: Record<string, unknown> | null,
+  entityId: string | Types.ObjectId,
+  before?: unknown,
+  after?: unknown,
 ): Promise<void> {
   try {
     const tenantId = req.tenantId;
@@ -24,8 +33,8 @@ export async function logAudit(
       action,
       entityType,
       entityId,
-      before,
-      after,
+      before: normalize(before),
+      after: normalize(after),
       ts: new Date(),
     });
   } catch (err) {

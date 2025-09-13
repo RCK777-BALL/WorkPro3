@@ -4,7 +4,7 @@
 
 import mongoose, { Schema, Document, Model, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { ROLES } from '../types/auth';
+import { ROLES, UserRole } from '../types/auth';
 export type { UserRole } from '../types/auth';
 
 // Number of bcrypt salt rounds. Increasing this value strengthens password hashes

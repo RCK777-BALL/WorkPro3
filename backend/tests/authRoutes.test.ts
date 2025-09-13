@@ -82,6 +82,24 @@ describe('Auth Routes', () => {
     delete process.env.INCLUDE_AUTH_TOKEN;
   });
 
+  it('omits token from response when INCLUDE_AUTH_TOKEN is unset', async () => {
+    delete process.env.INCLUDE_AUTH_TOKEN;
+    await User.create({
+      name: 'NoToken',
+      email: 'notoken@example.com',
+      passwordHash: 'pass123',
+      roles: ['admin'],
+      tenantId: new mongoose.Types.ObjectId(),
+    });
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'notoken@example.com', password: 'pass123' })
+      .expect(200);
+
+    expect(res.body.token).toBeUndefined();
+  });
+
   it('gets current user with cookie and logs out', async () => {
     await User.create({
       name: 'Me',

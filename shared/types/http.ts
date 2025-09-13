@@ -1,15 +1,23 @@
-/*
- * SPDX-License-Identifier: MIT
- */
+import type { RequestHandler, Request } from 'express';
+import type { ParamsDictionary } from 'express-serve-static-core';
+import type { ParsedQs } from 'qs';
 
-export interface ApiSuccess<T> {
-  data: T;
-  error: null;
+export interface ApiResult<T> {
+  data?: T;
+  error?: string;
 }
 
-export interface ApiError<E = string> {
-  data: null;
-  error: E;
-}
+export type AuthedRequestHandler<
+  P extends ParamsDictionary = ParamsDictionary,
+  ResBody = unknown,
+  ReqBody = unknown,
+  ReqQuery = ParsedQs,
+> = RequestHandler<P, ApiResult<ResBody>, ReqBody, ReqQuery>;
 
-export type ApiResult<T, E = string> = ApiSuccess<T> | ApiError<E>;
+export type AuthedRequest<
+  P extends ParamsDictionary = ParamsDictionary,
+  ResBody = unknown,
+  ReqBody = unknown,
+  ReqQuery = ParsedQs,
+> = Request<P, ApiResult<ResBody>, ReqBody, ReqQuery> & { tenantId?: string };
+

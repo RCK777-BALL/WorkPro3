@@ -1,13 +1,14 @@
 {
-  "extends": "./tsconfig.app.json",
+  "extends": "../tsconfig.json",
   "compilerOptions": {
     "strict": true,
     "noImplicitAny": true,
     "exactOptionalPropertyTypes": true,
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
       "@shared/*": ["../shared/types/*"]
     }
   },
-  "include": ["src"]
+  "include": ["**/*.ts", "types/**/*.d.ts"],
+  "exclude": ["dist", "node_modules"]
 }

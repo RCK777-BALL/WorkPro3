@@ -215,7 +215,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
 
   return (
     <>
-    <header className="relative h-16 bg-white dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between px-2 sm:px-4 lg:px-6">
+    <header className="relative h-16 bg-gradient-to-r from-primary-600 to-accent-600 text-white flex items-center justify-between px-2 sm:px-4 lg:px-6">
       <div className="flex items-center">
         <button
           onClick={onToggleSidebar} aria-label="Toggle sidebar"
@@ -223,7 +223,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, title }) => {
         >
           <Menu size={20} className="dark:text-white" />
         </button>
-        <h1 className="text-xl font-semibold text-neutral-900 dark:text-white ml-2 lg:ml-0">{title ?? t('nav.dashboard')}</h1>
+        <h1 className="text-xl font-semibold text-white ml-2 lg:ml-0">{title ?? t('nav.dashboard')}</h1>
         <button
           onClick={() => setShowMobileSearch(!showMobileSearch)} aria-label="Search"
           className="md:hidden ml-2 p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 focus:outline-none"

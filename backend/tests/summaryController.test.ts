@@ -59,13 +59,13 @@ beforeEach(async () => {
   await WorkOrder.create({
     title: 'PM open',
     tenantId,
-    status: 'open',
+    status: 'requested',
     pmTask: pmTaskId2,
   });
   await WorkOrder.create({
     title: 'CM open',
     tenantId,
-    status: 'open',
+    status: 'requested',
   });
 
   await WorkHistory.create({

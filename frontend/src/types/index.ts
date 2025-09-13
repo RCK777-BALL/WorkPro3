@@ -85,8 +85,8 @@ export interface WorkOrder {
   /** Priority of the work order */
   priority: 'low' | 'medium' | 'high' | 'critical';
 
-  /** Current status (note: hyphenated strings) */
-  status: 'open' | 'in-progress' | 'on-hold' | 'completed';
+  /** Current status */
+  status: 'requested' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
 
   /** Type of work such as corrective or preventive */
   type: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
@@ -94,6 +94,12 @@ export interface WorkOrder {
   /** User assigned to complete the work */
   assignedTo?: string;
   assignedToAvatar?: string;
+  assignees?: string[];
+  checklists?: string[];
+  partsUsed?: string[];
+  timeSpentMin?: number;
+  photos?: string[];
+  failureCode?: string;
 
   /** Department associated with the work order */
   department: string;
@@ -330,6 +336,8 @@ export interface NotificationType {
 export interface WorkOrderUpdatePayload {
   _id: string;
   title?: string;
+  status?: 'requested' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+  assignees?: string[];
   deleted?: boolean;
 }
 

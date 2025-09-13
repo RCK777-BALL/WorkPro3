@@ -13,6 +13,10 @@ import {
   approveWorkOrder,
   searchWorkOrders,
   assistWorkOrder,
+  assignWorkOrder,
+  startWorkOrder,
+  completeWorkOrder,
+  cancelWorkOrder,
 } from '../controllers/WorkOrderController';
 import { requireAuth } from '../middleware/authMiddleware';
 import requireRoles from '../middleware/requireRoles';
@@ -57,6 +61,30 @@ router.post(
   validateObjectId('id'),
   requireRoles(['admin', 'manager']),
   approveWorkOrder
+);
+router.post(
+  '/:id/assign',
+  validateObjectId('id'),
+  requireRoles(['admin', 'manager', 'technician']),
+  assignWorkOrder
+);
+router.post(
+  '/:id/start',
+  validateObjectId('id'),
+  requireRoles(['admin', 'manager', 'technician']),
+  startWorkOrder
+);
+router.post(
+  '/:id/complete',
+  validateObjectId('id'),
+  requireRoles(['admin', 'manager', 'technician']),
+  completeWorkOrder
+);
+router.post(
+  '/:id/cancel',
+  validateObjectId('id'),
+  requireRoles(['admin', 'manager', 'technician']),
+  cancelWorkOrder
 );
 router.delete('/:id', validateObjectId('id'), requireRoles(['admin', 'manager']), deleteWorkOrder);
  

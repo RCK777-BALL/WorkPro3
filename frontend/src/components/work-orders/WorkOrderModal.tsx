@@ -52,7 +52,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
       title: workOrder?.title || "",
       description: workOrder?.description || "",
       priority: workOrder?.priority || "medium",
-      status: workOrder?.status || "open",
+      status: workOrder?.status || "requested",
       type: workOrder?.type || "corrective",
       scheduledDate:
         workOrder?.scheduledDate || new Date().toISOString().split("T")[0],
@@ -263,10 +263,11 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                 {...register("status", { required: "Status is required" })}
               >
-                <option value="open">Open</option>
-                <option value="in-progress">In Progress</option>
-                <option value="on-hold">On Hold</option>
+                <option value="requested">Requested</option>
+                <option value="assigned">Assigned</option>
+                <option value="in_progress">In Progress</option>
                 <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
               </select>
               {errors.status && (
                 <p className="text-error-500 text-sm mt-1">

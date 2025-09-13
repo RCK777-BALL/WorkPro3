@@ -28,7 +28,9 @@ export const getVideoById = async (req: Request, res: Response, next: NextFuncti
 
 export const createVideo = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = (req as any).tenantId;
+    const tenantId = req.tenantId;
+    if (!tenantId)
+      return res.status(400).json({ message: 'Tenant ID required' });
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const newItem = new Video({ ...req.body, tenantId });
     const saved = await newItem.save();
@@ -48,7 +50,9 @@ export const createVideo = async (req: Request, res: Response, next: NextFunctio
 
 export const updateVideo = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = (req as any).tenantId;
+    const tenantId = req.tenantId;
+    if (!tenantId)
+      return res.status(400).json({ message: 'Tenant ID required' });
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const existing = await Video.findById(req.params.id);
     if (!existing) return res.status(404).json({ message: 'Not found' });
@@ -73,7 +77,9 @@ export const updateVideo = async (req: Request, res: Response, next: NextFunctio
 
 export const deleteVideo = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = (req as any).tenantId;
+    const tenantId = req.tenantId;
+    if (!tenantId)
+      return res.status(400).json({ message: 'Tenant ID required' });
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const deleted = await Video.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: 'Not found' });

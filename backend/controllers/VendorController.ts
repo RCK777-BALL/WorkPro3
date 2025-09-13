@@ -82,7 +82,11 @@ export const createVendor = async (
       res.status(400).json({ message: error });
       return;
     }
-    const tenantId = (req as any).tenantId;
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const newItem = new Vendor({ ...data, tenantId });
     const saved = await newItem.save();
@@ -113,7 +117,11 @@ export const updateVendor = async (
       res.status(400).json({ message: error });
       return;
     }
-    const tenantId = (req as any).tenantId;
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const existing = await Vendor.findById(req.params.id);
     if (!existing) {
@@ -147,7 +155,11 @@ export const deleteVendor = async (
   next: NextFunction,
 ): Promise<Response | void> => {
   try {
-    const tenantId = (req as any).tenantId;
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const deleted = await Vendor.findByIdAndDelete(req.params.id);
     if (!deleted) {

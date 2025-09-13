@@ -17,9 +17,11 @@ export const createPurchaseOrder = async (
 ): Promise<Response | void> => {
   try {
     const tenantId = req.tenantId;
+    if (!tenantId)
+      return res.status(400).json({ message: 'Tenant ID required' });
     const po = await PurchaseOrder.create({
       ...req.body,
-      ...(tenantId ? { tenantId } : {}),
+      tenantId,
     });
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const entityId = new Types.ObjectId(po._id);

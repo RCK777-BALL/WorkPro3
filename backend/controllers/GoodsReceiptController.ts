@@ -19,6 +19,8 @@ export const createGoodsReceipt = async (
 ) => {
   try {
     const tenantId = req.tenantId;
+    if (!tenantId)
+      return res.status(400).json({ message: 'Tenant ID required' });
     const { purchaseOrder: poId, items } = req.body as any;
 
     const po = await PurchaseOrder.findById(poId);
@@ -55,7 +57,7 @@ export const createGoodsReceipt = async (
     const gr = await GoodsReceipt.create({
       purchaseOrder: po._id,
       items,
-      ...(tenantId ? { tenantId } : {}),
+      tenantId,
     });
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const grAny = gr as any;

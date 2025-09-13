@@ -151,6 +151,9 @@ export const getInventoryItemById = async (req: Request, res: Response, next: Ne
 // —— POST /inventory ————————————————————————————————————————————————
 export const createInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId)
+      return res.status(400).json({ message: 'Tenant ID required' });
     const { data, invalid } = buildInventoryPayload(req.body as Record<string, unknown>);
     if (invalid) {
       res.status(400).json({ message: `Invalid fields: ${invalid.join(", ")}` });
@@ -178,6 +181,9 @@ export const createInventoryItem = async (req: Request, res: Response, next: Nex
 // —— PATCH /inventory/:id ———————————————————————————————————————————————
 export const updateInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId)
+      return res.status(400).json({ message: 'Tenant ID required' });
     const { id } = req.params;
     if (!isValidObjectId(id)) {
       res.status(400).json({ message: "Invalid id" });
@@ -227,6 +233,9 @@ export const updateInventoryItem = async (req: Request, res: Response, next: Nex
 // —— DELETE /inventory/:id ——————————————————————————————————————————————
 export const deleteInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId)
+      return res.status(400).json({ message: 'Tenant ID required' });
     const { id } = req.params;
     if (!isValidObjectId(id)) {
       res.status(400).json({ message: "Invalid id" });
@@ -258,6 +267,9 @@ export const deleteInventoryItem = async (req: Request, res: Response, next: Nex
 // —— POST /inventory/:id/use ————————————————————————————————————————————
 export const useInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId)
+      return res.status(400).json({ message: 'Tenant ID required' });
     const { id } = req.params;
     const { quantity, uom } = req.body as { quantity?: number; uom?: string };
 

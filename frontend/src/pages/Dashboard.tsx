@@ -2,212 +2,63 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import FiltersBar from '@/components/dashboard/FiltersBar';
-import DashboardStats from '@/components/dashboard/DashboardStats';
-import WorkOrdersChart from '@/components/dashboard/WorkOrdersChart';
-import AssetsStatusChart from '@/components/dashboard/AssetsStatusChart';
-import UpcomingMaintenance from '@/components/dashboard/UpcomingMaintenance';
-import CriticalAlerts from '@/components/dashboard/CriticalAlerts';
-import LowStockParts from '@/components/dashboard/LowStockParts';
-import KpiTile from '@/components/kpi/KpiTile';
-import RecentActivity, { AuditLog } from '@/components/dashboard/RecentActivity';
-import { useDashboardStore } from '@/store/dashboardStore';
-import useDashboardData from '@/hooks/useDashboardData';
-import { useSummary } from '@/hooks/useSummaryData';
-import http from '@/lib/http';
-import type {
-  Department,
-  DashboardSummary,
-  LowStockPart,
-  LowStockPartResponse,
-} from '@/types';
+import Card from '@common/Card';
+import StatusBadge from '@common/StatusBadge';
+
+const kpis = [
+  { label: 'Open Work Orders', value: 12 },
+  { label: 'Assets Online', value: 128 },
+  { label: 'Maintenance Due', value: 7 },
+  { label: 'Team Members', value: 24 },
+];
+
+const sample = [
+  { id: 1, name: 'HVAC System', status: 'Active' },
+  { id: 2, name: 'Conveyor Belt', status: 'In Repair' },
+  { id: 3, name: 'Packaging Line', status: 'Offline' },
+];
 
 export default function Dashboard() {
-  const {
-    selectedRole,
-    selectedDepartment,
-    selectedTimeframe,
-    customRange,
-  } = useDashboardStore();
-
-  const {
-    workOrdersByStatus,
-    assetsByStatus,
-    upcomingMaintenance,
-    criticalAlerts,
-  } = useDashboardData(
-    selectedRole,
-    selectedDepartment,
-    selectedTimeframe,
-    customRange,
-  );
-
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
-
-  interface SummaryResponse {
-    openWorkOrders: number;
-    pmDueThisWeek: number;
-    assets: number;
-    uptime: number;
-    inventoryItems: number;
-    activeUsers: number;
-  }
-
-  const [kpis, setKpis] = useState<SummaryResponse | null>(null);
-  const [kpiLoading, setKpiLoading] = useState(true);
-  const [kpiError, setKpiError] = useState<string | null>(null);
-
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [logsLoading, setLogsLoading] = useState(true);
-  const [logsError, setLogsError] = useState<string | null>(null);
-
-  const fetchData = useCallback(async () => {
-    setKpiLoading(true);
-    setLogsLoading(true);
-    try {
-      const [summaryRes, logsRes] = await Promise.all([
-        http.get<SummaryResponse>('/api/summary'),
-        http.get<AuditLog[]>('/api/audit/logs', { params: { limit: 10 } }),
-      ]);
-      setKpis(summaryRes.data);
-      setLogs(logsRes.data);
-      setKpiError(null);
-      setLogsError(null);
-    } catch (err) {
-      setKpiError('Failed to load KPIs');
-      setLogsError('Failed to load activity');
-    } finally {
-      setKpiLoading(false);
-      setLogsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const query = useMemo(() => {
-    const params = new URLSearchParams();
-    if (selectedRole && selectedRole !== 'all') params.append('role', selectedRole);
-    if (selectedDepartment && selectedDepartment !== 'all')
-      params.append('department', selectedDepartment);
-    if (selectedTimeframe) {
-      params.append('timeframe', selectedTimeframe);
-      if (selectedTimeframe === 'custom') {
-        params.append('start', customRange.start);
-        params.append('end', customRange.end);
-      }
-    }
-    const qs = params.toString();
-    return qs ? `?${qs}` : '';
-  }, [selectedRole, selectedDepartment, selectedTimeframe, customRange]);
-
-  const [summary] = useSummary<DashboardSummary>(`/summary${query}`, [query]);
-  const [lowStockRaw] = useSummary<LowStockPartResponse[]>(
-    `/summary/low-stock${query}`,
-    [query],
-  );
-
-  const lowStock: LowStockPart[] = useMemo(
-    () =>
-      (lowStockRaw || []).map((p) => ({
-        id: p._id ?? p.id ?? '',
-        name: p.name,
-        quantity: p.quantity,
-        reorderPoint: p.reorderPoint ?? p.reorderThreshold ?? 0,
-      })),
-    [lowStockRaw],
-  );
-
-  useEffect(() => {
-    http
-      .get<Department[]>('/summary/departments')
-      .then((res) => setDepartments(res.data))
-      .catch(() => setDepartments([]));
-  }, []);
-
-  const stats = {
-    totalAssets: summary?.totalAssets ?? 0,
-    activeWorkOrders: summary?.activeWorkOrders ?? 0,
-    maintenanceCompliance: summary
-      ? Math.max(0, 100 - summary.overduePmTasks)
-      : 100,
-    inventoryAlerts: lowStock.length,
-  };
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-sm text-neutral-600 dark:text-neutral-300">
-            Live operational key performance indicators
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={fetchData}
-            className="px-3 py-2 text-sm border rounded-md"
-          >
-            Refresh
-          </button>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="px-3 py-2 text-sm border rounded-md"
-          >
-            Filters
-          </button>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <p className="text-sm text-neutral-600 dark:text-neutral-300">
+          Overview of key metrics and recent items
+        </p>
       </div>
 
-      {showFilters && <FiltersBar departments={departments} />}
-
-      {kpiError && (
-        <div className="rounded-md bg-error-100 text-error-700 p-2 text-sm">
-          {kpiError}
-        </div>
-      )}
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {[
-          { key: 'openWorkOrders', label: 'Open Work Orders' },
-          { key: 'pmDueThisWeek', label: 'PM Due (7d)' },
-          { key: 'assets', label: 'Total Assets' },
-          { key: 'uptime', label: 'Uptime', suffix: '%' },
-          { key: 'inventoryItems', label: 'Inventory Items' },
-          { key: 'activeUsers', label: 'Active Users' },
-        ].map(({ key, label, suffix }) => (
-          <KpiTile
-            key={key}
-            label={label}
-            value={(kpis as any)?.[key]}
-            suffix={suffix}
-            loading={kpiLoading}
-            error={kpiError}
-            onRetry={fetchData}
-          />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {kpis.map((kpi) => (
+          <Card key={kpi.label} className="text-center">
+            <div className="text-sm text-neutral-600 dark:text-neutral-400">
+              {kpi.label}
+            </div>
+            <div className="mt-2 text-2xl font-semibold">{kpi.value}</div>
+          </Card>
         ))}
       </div>
 
-      <DashboardStats stats={stats} />
-
-      <div className="grid gap-6 lg:grid-cols-4">
-        <div className="lg:col-span-3 grid gap-6 md:grid-cols-2">
-          <WorkOrdersChart data={workOrdersByStatus} />
-          <AssetsStatusChart data={assetsByStatus} />
-          <LowStockParts parts={lowStock} />
-          <UpcomingMaintenance maintenanceItems={upcomingMaintenance} />
-          <CriticalAlerts alerts={criticalAlerts} />
-        </div>
-        <RecentActivity
-          logs={logs}
-          loading={logsLoading}
-          error={logsError}
-          onRefresh={fetchData}
-        />
-      </div>
+      <Card noPadding>
+        <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700 text-sm">
+          <thead className="bg-neutral-50 dark:bg-neutral-800">
+            <tr>
+              <th className="px-4 py-2 text-left font-medium">Item</th>
+              <th className="px-4 py-2 text-left font-medium">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-neutral-200 dark:divide-neutral-700">
+            {sample.map((row) => (
+              <tr key={row.id}>
+                <td className="px-4 py-2">{row.name}</td>
+                <td className="px-4 py-2">
+                  <StatusBadge status={row.status} size="sm" />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
     </div>
   );
 }

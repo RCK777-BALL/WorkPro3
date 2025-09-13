@@ -42,6 +42,7 @@ import {
   calendarRoutes,
   IntegrationRoutes,
   summaryRoutes,
+  auditRoutes,
 } from "./routes";
 
 import { startPMScheduler } from "./utils/PMScheduler";
@@ -171,7 +172,8 @@ app.use("/api/calendar", calendarRoutes);
 app.use("/api/integrations", IntegrationRoutes);
 
 app.use("/api/summary", summaryRoutes);
- 
+app.use("/api/audit", auditRoutes);
+
 
 // 404 + error handler
 app.use((_req, res) => {

@@ -11,6 +11,7 @@ import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
 import { filterFields } from '../utils/filterFields';
+import { logAudit } from '../utils/audit';
 
 const workOrderCreateFields = [
   'title',
@@ -210,6 +211,7 @@ export const createWorkOrder: AuthedRequestHandler = async (req, res, next) => {
     const payload = filterFields(req.body, workOrderCreateFields);
     const newItem = new WorkOrder({ ...payload, tenantId });
     const saved = await newItem.save();
+    await logAudit(req, 'create', 'WorkOrder', saved._id, null, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     res.status(201).json(saved);
     return;
@@ -257,6 +259,11 @@ export const updateWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       return;
     }
     const update = filterFields(req.body, workOrderUpdateFields);
+    const existing = await WorkOrder.findOne({ _id: req.params.id, tenantId });
+    if (!existing) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     const updated = await WorkOrder.findOneAndUpdate(
       { _id: req.params.id, tenantId },
       update,
@@ -266,6 +273,14 @@ export const updateWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       res.status(404).json({ message: 'Not found' });
       return;
     }
+    await logAudit(
+      req,
+      'update',
+      'WorkOrder',
+      req.params.id,
+      existing.toObject(),
+      updated.toObject()
+    );
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(updated));
     res.json(updated);
     return;
@@ -306,6 +321,7 @@ export const deleteWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       res.status(404).json({ message: 'Not found' });
       return;
     }
+    await logAudit(req, 'delete', 'WorkOrder', req.params.id, deleted.toObject(), null);
     emitWorkOrderUpdate(toWorkOrderUpdatePayload({ _id: req.params.id, deleted: true }));
     res.json({ message: 'Deleted successfully' });
     return;
@@ -372,6 +388,7 @@ export const approveWorkOrder: AuthedRequestHandler = async (req, res, next) => 
       return;
     }
 
+    const before = workOrder.toObject();
     workOrder.approvalStatus = status;
 
     if (status === 'pending') {
@@ -381,6 +398,7 @@ export const approveWorkOrder: AuthedRequestHandler = async (req, res, next) => 
     }
 
     const saved = await workOrder.save();
+    await logAudit(req, 'approve', 'WorkOrder', req.params.id, before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
 
     const message =

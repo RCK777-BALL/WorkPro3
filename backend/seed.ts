@@ -23,6 +23,7 @@ import PMTask from './models/PMTask';
 import WorkOrder from './models/WorkOrder';
 import Notification from './models/Notifications';
 import Tenant from './models/Tenant';
+import AuditLog from './models/AuditLog';
 
 // Tenant id used for all seeded records
 const tenantId = process.env.SEED_TENANT_ID
@@ -48,6 +49,7 @@ mongoose.connect(mongoUri).then(async () => {
   await WorkOrder.deleteMany({});
   await Notification.deleteMany({});
   await Tenant.deleteMany({});
+  await AuditLog.deleteMany({});
 
   // Seed Tenant
   await Tenant.create({ _id: tenantId, name: 'Default Tenant' });
@@ -173,7 +175,7 @@ mongoose.connect(mongoUri).then(async () => {
   });
 
   // Seed Work Order
-  await WorkOrder.create({
+  const workOrder = await WorkOrder.create({
     title: 'Initial Maintenance',
     asset: asset._id,
     description: 'Setup inspection',
@@ -188,6 +190,29 @@ mongoose.connect(mongoUri).then(async () => {
     dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
     tenantId,
   });
+
+  // Seed sample Audit Logs
+  await AuditLog.insertMany([
+    {
+      tenantId,
+      userId: admin._id,
+      action: 'create',
+      entityType: 'WorkOrder',
+      entityId: workOrder._id,
+      after: workOrder.toObject(),
+      ts: new Date(),
+    },
+    {
+      tenantId,
+      userId: admin._id,
+      action: 'update',
+      entityType: 'WorkOrder',
+      entityId: workOrder._id,
+      before: { status: 'open' },
+      after: { status: 'in-progress' },
+      ts: new Date(),
+    },
+  ]);
 
   // Seed Notifications
   await Notification.insertMany([

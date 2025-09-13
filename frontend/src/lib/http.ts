@@ -11,9 +11,16 @@ const http = axios.create({
   withCredentials: true,
 });
 
-const TOKEN_KEY = 'auth:token';
-const TENANT_KEY = 'auth:tenantId';
-const SITE_KEY = 'auth:siteId';
+export const TOKEN_KEY = 'auth:token';
+export const TENANT_KEY = 'auth:tenantId';
+export const SITE_KEY = 'auth:siteId';
+
+type UnauthorizedCallback = () => void;
+let unauthorizedCallback: UnauthorizedCallback | null = null;
+
+export const setUnauthorizedCallback = (cb: UnauthorizedCallback) => {
+  unauthorizedCallback = cb;
+};
 
 
 http.interceptors.request.use((config) => {
@@ -36,7 +43,7 @@ http.interceptors.response.use(
   (r) => r,
   (err) => {
     if (err?.response?.status === 401) {
-      window.location.href = '/login';
+      unauthorizedCallback?.();
     }
     return Promise.reject(err);
   }

@@ -5,46 +5,24 @@
 import WorkOrder from '../models/WorkOrder';
 import type { AuthedRequestHandler } from '../types/http';
 import { emitWorkOrderUpdate } from '../server';
-import { validationResult } from 'express-validator';
 import notifyUser from '../utils/notify';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
-import { filterFields } from '../utils/filterFields';
 import { logAudit } from '../utils/audit';
 import { sendResponse } from '../utils/sendResponse';
-import type { ParamsDictionary } from 'express-serve-static-core';
-import type { WorkOrder as WorkOrderType } from '@shared/workOrder';
-import { workOrderSchema, type WorkOrderInput } from '../src/schemas/workOrder';
+import {
+  workOrderCreateSchema,
+  workOrderUpdateSchema,
+  assignWorkOrderSchema,
+  startWorkOrderSchema,
+  completeWorkOrderSchema,
+  cancelWorkOrderSchema,
+} from '../src/schemas/workOrder';
 
-const workOrderCreateFields = [
-  'title',
-  'asset',
-  'description',
-  'priority',
-  'status',
-  'approvalStatus',
-  'approvalRequestedBy',
-  'approvedBy',
-  'assignedTo',
-  'assignees',
-  'checklists',
-  'partsUsed',
-  'timeSpentMin',
-  'photos',
-  'failureCode',
-  'pmTask',
-  'department',
-  
-  'line',
-  'station',
-  'teamMemberName',
-  'importance',
-  'dueDate',
-  'completedAt',
-];
 
-const workOrderUpdateFields = [...workOrderCreateFields];
+
+
 
 function toWorkOrderUpdatePayload(doc: Partial<WorkOrderType> & { _id: Types.ObjectId | string; deleted?: boolean }): WorkOrderUpdatePayload {
   const plain = typeof (doc as any).toObject === 'function'
@@ -135,9 +113,9 @@ export const searchWorkOrders: AuthedRequestHandler = async (req, res, next) => 
     if (status) query.status = status;
     if (priority) query.priority = priority;
     if (start || end) {
-      query.dateCreated = {};
-      if (start) query.dateCreated.$gte = start;
-      if (end) query.dateCreated.$lte = end;
+      query.createdAt = {};
+      if (start) query.createdAt.$gte = start;
+      if (end) query.createdAt.$lte = end;
     }
 
     const items = await WorkOrder.find(query);
@@ -210,16 +188,18 @@ export const getWorkOrderById: AuthedRequestHandler = async (req, res, next) => 
 
 export const createWorkOrder: AuthedRequestHandler<ParamsDictionary, WorkOrderType, WorkOrderInput> = async (req, res, next) => {
   try {
-    const parsed = workOrderSchema.safeParse(req.body);
-    if (!parsed.success) {
-      sendResponse(res, null, parsed.error.flatten(), 400);
-      return;
-    }
+
     const tenantId = req.tenantId;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
+    const parsed = workOrderCreateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      sendResponse(res, null, parsed.error.flatten(), 400);
+      return;
+    }
+
     const newItem = new WorkOrder({ ...parsed.data, tenantId });
     const saved = await newItem.save();
     await logAudit(req, 'create', 'WorkOrder', saved._id, null, saved.toObject());
@@ -259,17 +239,17 @@ export const createWorkOrder: AuthedRequestHandler<ParamsDictionary, WorkOrderTy
  */
 export const updateWorkOrder: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const errors = validationResult(req as any);
-    if (!errors.isEmpty()) {
-      sendResponse(res, null, errors.array(), 400);
-      return;
-    }
     const tenantId = req.tenantId;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const update = filterFields(req.body, workOrderUpdateFields);
+    const parsed = workOrderUpdateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      sendResponse(res, null, parsed.error.flatten(), 400);
+      return;
+    }
+    const update = parsed.data;
     const existing = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!existing) {
       sendResponse(res, null, 'Not found', 404);
@@ -441,10 +421,15 @@ export const assignWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       res.status(404).json({ message: 'Not found' });
       return;
     }
+    const parsed = assignWorkOrderSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json(parsed.error.flatten());
+      return;
+    }
     const before = workOrder.toObject();
     workOrder.status = 'assigned';
-    if (Array.isArray(req.body.assignees)) {
-      workOrder.assignees = req.body.assignees;
+    if (parsed.data.assignees) {
+      workOrder.assignees = parsed.data.assignees;
     }
     const saved = await workOrder.save();
     await logAudit(req, 'assign', 'WorkOrder', req.params.id, before, saved.toObject());
@@ -462,6 +447,11 @@ export const startWorkOrder: AuthedRequestHandler = async (req, res, next) => {
     const tenantId = req.tenantId;
     if (!tenantId) {
       res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
+    const parsed = startWorkOrderSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json(parsed.error.flatten());
       return;
     }
     const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
@@ -489,6 +479,11 @@ export const completeWorkOrder: AuthedRequestHandler = async (req, res, next) =>
       res.status(400).json({ message: 'Tenant ID required' });
       return;
     }
+    const parsed = completeWorkOrderSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json(parsed.error.flatten());
+      return;
+    }
     const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!workOrder) {
       res.status(404).json({ message: 'Not found' });
@@ -496,11 +491,10 @@ export const completeWorkOrder: AuthedRequestHandler = async (req, res, next) =>
     }
     const before = workOrder.toObject();
     workOrder.status = 'completed';
-    if (req.body.timeSpentMin !== undefined) workOrder.timeSpentMin = req.body.timeSpentMin;
-    if (Array.isArray(req.body.partsUsed)) workOrder.partsUsed = req.body.partsUsed;
-    if (Array.isArray(req.body.checklists)) workOrder.checklists = req.body.checklists;
-    if (Array.isArray(req.body.photos)) workOrder.photos = req.body.photos;
-    if (req.body.failureCode !== undefined) workOrder.failureCode = req.body.failureCode;
+    if (parsed.data.timeSpentMin !== undefined) workOrder.timeSpentMin = parsed.data.timeSpentMin;
+    if (parsed.data.partsUsed) workOrder.partsUsed = parsed.data.partsUsed;
+    if (parsed.data.checklists) workOrder.checklists = parsed.data.checklists;
+    if (parsed.data.signatures) workOrder.signatures = parsed.data.signatures;
     const saved = await workOrder.save();
     await logAudit(req, 'complete', 'WorkOrder', req.params.id, before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
@@ -517,6 +511,11 @@ export const cancelWorkOrder: AuthedRequestHandler = async (req, res, next) => {
     const tenantId = req.tenantId;
     if (!tenantId) {
       res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
+    const parsed = cancelWorkOrderSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json(parsed.error.flatten());
       return;
     }
     const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });

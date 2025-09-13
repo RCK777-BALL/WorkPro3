@@ -141,7 +141,7 @@ describe('Work Order Routes', () => {
       .post('/api/workorders')
       .set('Authorization', `Bearer ${token}`)
       .send({
-        asset: asset._id,
+        assetId: asset._id,
  
       })
       .expect(400);
@@ -225,7 +225,7 @@ describe('Work Order Routes', () => {
         pmTask: pmTask._id,
         teamMemberName: 'Tester',
         importance: 'low',
-        asset: asset._id,
+        assetId: asset._id,
       })
       .expect(201);
 
@@ -265,14 +265,14 @@ describe('Work Order Routes', () => {
       priority: 'low',
       status: 'requested',
       tenantId: user.tenantId,
-      dateCreated: new Date('2024-01-01'),
+      createdAt: new Date('2024-01-01'),
     });
     await WorkOrder.create({
       title: 'OtherWO',
       priority: 'low',
       status: 'completed',
       tenantId: user.tenantId,
-      dateCreated: new Date('2024-02-01'),
+      createdAt: new Date('2024-02-01'),
     });
 
     const res = await request(app)
@@ -313,14 +313,14 @@ describe('Work Order Routes', () => {
       priority: 'low',
       status: 'requested',
       tenantId: user.tenantId,
-      dateCreated: new Date('2024-01-01'),
+      createdAt: new Date('2024-01-01'),
     });
     const woInRange = await WorkOrder.create({
       title: 'InRangeWO',
       priority: 'low',
       status: 'requested',
       tenantId: user.tenantId,
-      dateCreated: new Date('2024-02-01'),
+      createdAt: new Date('2024-02-01'),
     });
 
     const res = await request(app)

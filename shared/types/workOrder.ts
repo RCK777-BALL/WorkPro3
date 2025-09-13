@@ -1,44 +1,55 @@
-import type { Asset } from './asset';
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
+export interface ChecklistItem {
+  description: string;
+  completed?: boolean;
+}
+
+export interface WorkOrderSignature {
+  userId: string;
+  signedAt?: string;
+}
+
+export interface WorkOrderPartLine {
+  partId: string;
+  quantity: number;
+}
+
+export type WorkOrderStatus =
+  | 'requested'
+  | 'assigned'
+  | 'in_progress'
+  | 'completed'
+  | 'cancelled';
 
 export interface WorkOrder {
-  /** Unique identifier */
-  id: string;
-  /** Human readable title */
+  _id: string;
+  tenantId: string;
   title: string;
-  /** Optional detailed description */
-  description?: string;
-  /** Related asset identifier */
   assetId?: string;
-  /** Asset related to this work order */
-  asset?: Asset;
-  /** Priority of the work order */
+  description?: string;
   priority: 'low' | 'medium' | 'high' | 'critical';
-  /** Current status */
-  status: 'requested' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
-  /** Type of work such as corrective or preventive */
-  type: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
-  /** User assigned to complete the work */
-  assignedTo?: string;
-  assignedToAvatar?: string;
+  status: WorkOrderStatus;
   assignees?: string[];
-  checklists?: string[];
-  partsUsed?: string[];
+  checklists?: ChecklistItem[];
+  partsUsed?: WorkOrderPartLine[];
+  signatures?: WorkOrderSignature[];
   timeSpentMin?: number;
   photos?: string[];
   failureCode?: string;
-  /** Department associated with the work order */
-  department: string;
-  /** Date fields */
-  scheduledDate?: string;
+  pmTask?: string;
+  department?: string;
+  line?: string;
+  station?: string;
+  teamMemberName?: string;
+  importance?: 'low' | 'medium' | 'high' | 'severe';
   dueDate?: string;
-  createdAt?: string;
   completedAt?: string;
-  /** Additional metadata */
-  note?: string;
-  completedBy?: string;
-  attachments?: string[];
-  signature?: string;
-  parts?: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-export type NewWorkOrder = Omit<WorkOrder, 'id' | 'createdAt' | 'completedAt'>;
+
+

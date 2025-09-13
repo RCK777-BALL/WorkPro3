@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Search, Download, Upload, AlertTriangle, QrCode } from 'lucide-react';
 import Button from '@/components/common/Button';
 import InventoryTable from '@/components/inventory/InventoryTable';
@@ -25,7 +25,7 @@ const Inventory: React.FC = () => {
   const [modalError, setModalError] = useState<string | null>(null);
   useAuth();
 
-  const fetchParts = async () => {
+  const fetchParts = useCallback(async () => {
     try {
       const res = await http.get('/inventory');
       setParts(res.data as Part[]);
@@ -33,11 +33,11 @@ const Inventory: React.FC = () => {
       console.error('Error fetching inventory:', err);
       setError('Failed to load inventory');
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchParts();
-  }, []);
+  }, [fetchParts]);
 
   const handleOpenModal = (part: Part | null, init?: Partial<Part>) => {
     setSelectedPart(part);

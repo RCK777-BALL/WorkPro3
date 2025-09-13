@@ -54,7 +54,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload: Record<string, any> = { ...formData };
+    const payload: Record<string, unknown> = { ...formData };
 
     // Convert numeric strings to numbers if necessary
     payload.quantity = typeof payload.quantity === 'string' ? Number(payload.quantity) : payload.quantity;
@@ -73,7 +73,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
     const data = new FormData();
     Object.entries(payload).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
-        data.append(key, value as any);
+        data.append(key, String(value));
       }
     });
     if (partImage) {

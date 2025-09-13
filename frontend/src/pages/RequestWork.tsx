@@ -31,7 +31,7 @@ const RequestWork = () => {
         { type: 'validation', message: value?.[0] ?? 'Invalid value' },
       ]),
     );
-    return { values: {}, errors } as any;
+    return { values: {} as RequestWorkForm, errors };
   };
 
   const {

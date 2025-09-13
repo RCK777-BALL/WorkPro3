@@ -34,7 +34,7 @@ import http from '@/lib/http';
 const DB_NAME = 'workpro-cache';
 const STORE_NAME = 'kv';
 
-const memoryStore = new Map<string, any>();
+const memoryStore = new Map<string, unknown>();
 const hasIndexedDB = typeof indexedDB !== 'undefined';
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -60,7 +60,7 @@ const getDB = (): Promise<IDBDatabase> => {
   return dbPromise;
 };
 
-const setItem = async (key: string, value: any) => {
+const setItem = async (key: string, value: unknown) => {
   if (!hasIndexedDB) {
     memoryStore.set(key, value);
     return;
@@ -113,23 +113,23 @@ const KEYS = {
 
 // Caching helpers ----------------------------------------------------------
 
-export const cacheWorkOrders = (orders: any[]) => setItem(KEYS.workOrders, orders);
+export const cacheWorkOrders = (orders: unknown[]) => setItem(KEYS.workOrders, orders);
 export const getCachedWorkOrders = async () =>
-  (await getItem<any[]>(KEYS.workOrders)) ?? [];
+  (await getItem<unknown[]>(KEYS.workOrders)) ?? [];
 
-export const cacheAssets = (assets: any[]) => setItem(KEYS.assets, assets);
-export const getCachedAssets = async () => (await getItem<any[]>(KEYS.assets)) ?? [];
+export const cacheAssets = (assets: unknown[]) => setItem(KEYS.assets, assets);
+export const getCachedAssets = async () => (await getItem<unknown[]>(KEYS.assets)) ?? [];
 
-export const cacheInventory = (items: any[]) => setItem(KEYS.inventory, items);
+export const cacheInventory = (items: unknown[]) => setItem(KEYS.inventory, items);
 export const getCachedInventory = async () =>
-  (await getItem<any[]>(KEYS.inventory)) ?? [];
+  (await getItem<unknown[]>(KEYS.inventory)) ?? [];
 
 // Offline queue ------------------------------------------------------------
 
 export type QueuedRequest = {
   method: 'post' | 'put' | 'delete';
   url: string;
-  data?: any;
+  data?: unknown;
   retries?: number;
   error?: string;
   nextAttempt?: number;
@@ -163,8 +163,8 @@ export const flushQueue = async (
     }
     try {
       await apiFn({ method: req.method, url: req.url, data: req.data });
-    } catch (err: any) {
-      if (err?.response?.status === 409) {
+    } catch (err) {
+      if ((err as { response?: { status?: number } }).response?.status === 409) {
         console.warn('Dropping conflicted request', err);
         continue;
       }

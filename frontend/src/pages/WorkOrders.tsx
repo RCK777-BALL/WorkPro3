@@ -72,8 +72,11 @@ export default function WorkOrders() {
       const url = params.toString()
         ? `/workorders/search?${params.toString()}`
         : '/workorders';
-      const res = await http.get(url);
-      const data = (res.data as any[]).map((w) => ({ ...w, id: w._id ?? w.id })) as WorkOrder[];
+      interface WorkOrderResponse extends Partial<WorkOrder> { _id?: string; id?: string }
+      const res = await http.get<WorkOrderResponse[]>(url);
+      const data: WorkOrder[] = Array.isArray(res.data)
+        ? res.data.map((w) => ({ ...w, id: w._id ?? w.id ?? '' }))
+        : [];
       setWorkOrders(data);
       localStorage.setItem(LOCAL_KEY, JSON.stringify(data));
     } catch (err) {
@@ -130,7 +133,7 @@ export default function WorkOrders() {
     }
   };
 
-  const createWorkOrder = async (payload: FormData | Record<string, any>) => {
+  const createWorkOrder = async (payload: FormData | Record<string, unknown>) => {
     if (!navigator.onLine) {
       if (!(payload instanceof FormData)) {
         addToQueue({ method: 'post', url: '/workorders', data: payload });

@@ -16,13 +16,15 @@ const TimeSheets: React.FC = () => {
 
   const loadTimesheets = async () => {
     try {
-      const res = await http.get('/timesheets');
-      const data = (res.data as any[]).map((t) => ({
-        id: t._id ?? t.id,
-        date: t.date,
-        hours: t.hours,
-        description: t.description,
-      })) as Timesheet[];
+      const res = await http.get<Timesheet[]>('/timesheets');
+      const data: Timesheet[] = Array.isArray(res.data)
+        ? res.data.map((t) => ({
+            id: t._id ?? t.id,
+            date: t.date,
+            hours: t.hours,
+            description: t.description,
+          }))
+        : [];
       setTimesheets(data);
     } catch {
       addToast('Failed to load timesheets', 'error');

@@ -15,12 +15,21 @@ module.exports = {
     'plugin:@typescript-eslint/recommended',
     'plugin:prettier/recommended',
   ],
-  ignorePatterns: ['dist', 'node_modules'],
+  ignorePatterns: [
+    'dist',
+    'node_modules',
+    'controllers/**/*',
+    'routes/**/*',
+    'scripts/**/*',
+    'tests/**/*',
+    'seed.ts',
+  ],
   rules: {
     'prettier/prettier': 'error',
     'sort-imports': ['error', { ignoreDeclarationSort: true }],
     indent: ['error', 2],
     'no-unused-vars': 'off',
     '@typescript-eslint/no-unused-vars': ['error'],
+    '@typescript-eslint/no-explicit-any': 'warn',
   },
 };

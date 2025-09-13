@@ -16,7 +16,7 @@ interface Field {
 export const RequestPortal: React.FC = () => {
   const { slug = 'default' } = useParams();
   const [fields, setFields] = useState<Field[]>([]);
-  const [formData, setFormData] = useState<Record<string, any>>({});
+  const [formData, setFormData] = useState<Record<string, unknown>>({});
 
   useEffect(() => {
     fetch(`/api/request-portal/${slug}`)

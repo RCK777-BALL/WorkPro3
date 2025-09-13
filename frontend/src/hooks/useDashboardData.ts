@@ -41,7 +41,10 @@ const defaultWOStatus: WorkOrderStatusMap = {
  
 
 // simple debounce helper
-function debounce<F extends (...args: any[]) => void>(fn: F, delay: number) {
+interface Cancelable {
+  cancel: () => void;
+}
+function debounce<F extends (...args: unknown[]) => void>(fn: F, delay: number): F & Cancelable {
   let timer: ReturnType<typeof setTimeout> | null = null;
   const debounced = (...args: Parameters<F>) => {
     if (timer) clearTimeout(timer);
@@ -49,13 +52,14 @@ function debounce<F extends (...args: any[]) => void>(fn: F, delay: number) {
       timer = setTimeout(() => fn(...args), delay);
     }
   };
-  (debounced as any).cancel = () => {
+  const wrapped = debounced as F & Cancelable;
+  wrapped.cancel = () => {
     if (timer) {
       clearTimeout(timer);
       timer = null;
     }
   };
-  return debounced as F & { cancel: () => void };
+  return wrapped;
 }
 
 export default function useDashboardData(
@@ -118,7 +122,7 @@ export default function useDashboardData(
         ? upcomingRes.data.map((u) => ({
             id: u._id ?? u.id ?? '',
             assetName: u.asset?.name ?? 'Unknown',
-            assetId: u.asset?._id ?? (u as any).asset?.id ?? '',
+            assetId: u.asset?._id ?? u.asset?.id ?? '',
             date: u.nextDue,
              type: (u.type ?? 'preventive') as MaintenanceType,
  

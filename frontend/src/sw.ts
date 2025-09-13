@@ -102,7 +102,7 @@ loadQueue().then(() => {
   }
 });
 
-declare let self: ServiceWorkerGlobalScope & { __WB_MANIFEST: any };
+declare let self: ServiceWorkerGlobalScope & { __WB_MANIFEST: unknown };
 
 if (self.__WB_MANIFEST) {
   precacheAndRoute(self.__WB_MANIFEST);

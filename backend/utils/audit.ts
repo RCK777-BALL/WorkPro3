@@ -24,7 +24,7 @@ export async function logAudit(
   try {
     const tenantId = req.tenantId;
     const siteId = req.siteId;
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const userId = req.user?._id || req.user?.id;
     if (!tenantId) return;
     const payload = {
       tenantId,

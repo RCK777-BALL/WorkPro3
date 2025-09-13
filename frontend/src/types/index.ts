@@ -113,7 +113,7 @@ export interface WorkOrder {
   /** Additional metadata */
   note?: string;
   completedBy?: string;
-  attachments?: any[];
+  attachments?: unknown[];
   signature?: string;
   parts?: string[];
 }
@@ -383,7 +383,7 @@ export interface LowStockPart {
 export interface UpcomingMaintenanceResponse {
   _id?: string;
   id?: string;
-  asset?: { _id?: string; name?: string };
+  asset?: { _id?: string; id?: string; name?: string };
   nextDue: string;
   type?: MaintenanceType;
   assignedTo?: string;

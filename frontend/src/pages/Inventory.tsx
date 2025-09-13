@@ -39,7 +39,12 @@ const Inventory: React.FC = () => {
   const fetchVendors = useCallback(async () => {
     try {
       const res = await http.get('/vendors');
-      const list = (res.data as any[]).map((v: any) => ({ id: v.id || v._id, name: v.name }));
+      const list = Array.isArray(res.data)
+        ? (res.data as Array<Record<string, unknown>>).map((v) => ({
+            id: String(v.id ?? v._id ?? ''),
+            name: String(v.name ?? ''),
+          }))
+        : [];
       setVendors(list);
     } catch (err) {
       console.error('Error fetching vendors:', err);
@@ -231,10 +236,11 @@ const Inventory: React.FC = () => {
               await fetchParts();
               setModalOpen(false);
               setError(null);
-            } catch (error: any) {
+            } catch (error) {
               console.error('Error saving part:', error);
-              if (error.response?.data?.errors) {
-                const messages = Object.values(error.response.data.errors).join(' ');
+              const response = (error as { response?: { data?: { errors?: Record<string, string> } } }).response;
+              if (response?.data?.errors) {
+                const messages = Object.values(response.data.errors).join(' ');
                 setModalError(messages);
               } else {
                 setError('Failed to save part');

@@ -7,11 +7,16 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import http from '@/lib/http';
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<unknown>;
+}
+
 const ForgotPasswordPage: React.FC = () => {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
-  const [installEvent, setInstallEvent] = useState<any>(null);
+  const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstall, setShowInstall] = useState(false);
 
   useEffect(() => {

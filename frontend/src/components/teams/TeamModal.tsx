@@ -124,8 +124,10 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
       await fetchMembers();
       addToast('Team member saved', 'success');
       onClose();
-    } catch (e: any) {
-      const msg = e.response?.data?.message || 'Failed to save team member';
+    } catch (e) {
+      const msg =
+        (e as { response?: { data?: { message?: string } } }).response?.data?.message ||
+        'Failed to save team member';
       addToast(msg, 'error');
     } finally {
       setLoading(false);

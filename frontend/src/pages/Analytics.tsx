@@ -54,7 +54,9 @@ export default function Analytics() {
   const exportCSV = () => {
     if (!currentData.length) return;
     const headers = Object.keys(currentData[0]);
-    const rows = currentData.map((r) => headers.map((h) => (r as any)[h]));
+    const rows = currentData.map((r) =>
+      headers.map((h) => String((r as Record<string, unknown>)[h] ?? '')),
+    );
     const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     saveAs(blob, `${tab}.csv`);

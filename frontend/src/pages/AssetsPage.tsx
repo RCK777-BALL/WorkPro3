@@ -68,11 +68,11 @@ const AssetsPage = () => {
     }
 
     try {
-      const res = await http.get('/assets');
-      const data = (res.data as any[]).map((a) => ({
-        ...a,
-        id: a._id ?? a.id,
-      })) as Asset[];
+      interface AssetResponse extends Partial<Asset> { _id?: string; id?: string }
+      const res = await http.get<AssetResponse[]>('/assets');
+      const data: Asset[] = Array.isArray(res.data)
+        ? res.data.map((a) => ({ ...a, id: a._id ?? a.id ?? '' }))
+        : [];
       setAssets(data);
       localStorage.setItem(ASSET_CACHE_KEY, JSON.stringify(data));
     } catch (err) {

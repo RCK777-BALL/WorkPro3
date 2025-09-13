@@ -6,6 +6,7 @@ import { saveAs } from 'file-saver';
 import ExcelJS from 'exceljs';
 import * as mammoth from 'mammoth';
 import * as PDFJS from 'pdfjs-dist';
+import type { TextItem } from 'pdfjs-dist/types/src/display/api';
 
 export interface DocumentMetadata {
   title: string;
@@ -16,7 +17,9 @@ export interface DocumentMetadata {
   category?: string;
 }
 
-export const parseDocument = async (file: File): Promise<{ content: string; metadata: any }> => {
+export const parseDocument = async (
+  file: File,
+): Promise<{ content: string; metadata: DocumentMetadata }> => {
   const metadata: DocumentMetadata = {
     title: file.name,
     type: file.name.split('.').pop()?.toLowerCase() as 'pdf' | 'excel' | 'word',
@@ -35,9 +38,9 @@ export const parseDocument = async (file: File): Promise<{ content: string; meta
           pdf.getPage(i + 1).then(page => page.getTextContent())
         )
       );
-      content = pages.map(page => 
-        page.items.map((item: any) => item.str).join(' ')
-      ).join('\n');
+      content = pages
+        .map((page) => page.items.map((item) => (item as TextItem).str).join(' '))
+        .join('\n');
       break;
 
     case 'excel':
@@ -46,8 +49,8 @@ export const parseDocument = async (file: File): Promise<{ content: string; meta
       content = workbook.worksheets.map(worksheet => {
         const rows: string[] = [];
         worksheet.eachRow({ includeEmpty: true }, row => {
-          const values = row.values as unknown as Array<any>;
-          rows.push(values.slice(1).map(v => (v ?? '').toString()).join(','));
+          const values = row.values as unknown[];
+          rows.push(values.slice(1).map((v) => (v ?? '').toString()).join(','));
         });
         return rows.join('\n');
       }).join('\n');

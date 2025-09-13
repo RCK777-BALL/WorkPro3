@@ -16,7 +16,7 @@ export default function Layout() {
       <Sidebar />
 
       <div className="flex flex-1 flex-col">
-        <Header onToggleSidebar={() => {}} />
+        <Header />
         <main className="flex-1 overflow-auto p-4">
           <Outlet />
         </main>

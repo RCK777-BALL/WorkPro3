@@ -4,13 +4,13 @@
 
 import mongoose, { Schema, Document, Model, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { ROLES } from '../types/auth';
+export type { UserRole } from '../types/auth';
 
 // Number of bcrypt salt rounds. Increasing this value strengthens password hashes
 // but slows down hashing, impacting performance. Adjust here to change the
 // hashing cost globally.
 export const SALT_ROUNDS = 10;
-
-export type UserRole = 'admin' | 'supervisor' | 'planner' | 'tech';
 
 // ✅ Interface for a user document
 export interface UserDocument extends Document {
@@ -46,7 +46,7 @@ const userSchema = new Schema<UserDocument>(
     passwordHash: { type: String, required: true },
     roles: {
       type: [String],
-      enum: ['admin', 'supervisor', 'planner', 'tech'],
+      enum: ROLES,
       default: ['tech'],
     },
     tenantId: { type: mongoose.Schema.Types.ObjectId, required: true, index: true },

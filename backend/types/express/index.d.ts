@@ -1,7 +1,7 @@
 import type { Request, RequestHandler } from 'express';
 
 import { Types } from 'mongoose';
-import type { UserRole } from '../../models/User';
+import type { UserRole } from '../auth';
 
 export interface RequestUser {
   id?: string;

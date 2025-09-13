@@ -3,7 +3,7 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
-import type { UserRole } from '../models/User';
+import type { UserRole } from '../types/auth';
 
 // Middleware to ensure the authenticated user has one of the required roles
 const requireRoles =

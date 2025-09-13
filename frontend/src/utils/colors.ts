@@ -120,12 +120,14 @@ export const getStatusColor = (status: string): string => {
     case 'critical':
       return colors.error[600];
     case 'in repair':
-    case 'in-progress':
+    case 'in_progress':
       return colors.accent[500];
-    case 'on-hold':
-      return colors.warning[500];
+    case 'requested':
+      return colors.neutral[500];
     case 'assigned':
       return colors.primary[600];
+    case 'cancelled':
+      return colors.error[500];
     default:
       return colors.neutral[500];
   }

@@ -40,7 +40,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
     assetId: workOrder?.assetId || '',
     assignedTo: workOrder?.assignedTo || '',
     priority: workOrder?.priority || 'medium',
-    status: workOrder?.status || 'open',
+    status: workOrder?.status || 'requested',
     type: workOrder?.type || 'corrective',
     dueDate: workOrder?.dueDate || new Date().toISOString().split('T')[0],
   });
@@ -233,10 +233,11 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
             value={formData.status}
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateField('status', e.target.value as WorkOrder['status'])}
           >
-            <option value="open">Open</option>
-            <option value="in-progress">In Progress</option>
-            <option value="on-hold">On Hold</option>
+            <option value="requested">Requested</option>
+            <option value="assigned">Assigned</option>
+            <option value="in_progress">In Progress</option>
             <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
           </select>
         </div>
       </div>

@@ -110,6 +110,15 @@ export default function WorkOrders() {
     }
   };
 
+  const transition = async (id: string, action: 'assign' | 'start' | 'complete' | 'cancel') => {
+    try {
+      await http.post(`/workorders/${id}/${action}`);
+      fetchWorkOrders();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const openReview = async (order: WorkOrder) => {
     try {
       const res = await http.get(`/workorders/${order.id}`);
@@ -170,17 +179,45 @@ export default function WorkOrders() {
       ),
     },
     {
+      header: 'Assignees',
+      accessor: (row: WorkOrder) => row.assignees?.join(', ') || 'N/A',
+    },
+    {
       header: 'Due Date',
       accessor: (row: WorkOrder) =>
         row.dueDate ? new Date(row.dueDate).toLocaleDateString() : 'N/A',
     },
     {
       header: 'Actions',
-      accessor: (row: WorkOrder) => (
-        <Button variant="ghost" size="sm" onClick={() => updateStatus(row.id)}>
-          Mark Completed
-        </Button>
-      ),
+      accessor: (row: WorkOrder) => {
+        switch (row.status) {
+          case 'requested':
+            return (
+              <Button variant="ghost" size="sm" onClick={() => transition(row.id, 'assign')}>
+                Assign
+              </Button>
+            );
+          case 'assigned':
+            return (
+              <Button variant="ghost" size="sm" onClick={() => transition(row.id, 'start')}>
+                Start
+              </Button>
+            );
+          case 'in_progress':
+            return (
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" size="sm" onClick={() => transition(row.id, 'complete')}>
+                  Complete
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => transition(row.id, 'cancel')}>
+                  Cancel
+                </Button>
+              </div>
+            );
+          default:
+            return null;
+        }
+      },
       className: 'text-right',
     },
   ];
@@ -215,10 +252,11 @@ export default function WorkOrders() {
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value)}
           >
             <option value="">All Statuses</option>
-            <option value="open">Open</option>
-            <option value="in-progress">In Progress</option>
-            <option value="on-hold">On Hold</option>
+            <option value="requested">Requested</option>
+            <option value="assigned">Assigned</option>
+            <option value="in_progress">In Progress</option>
             <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
           </select>
           <select
             className="border rounded p-2 flex-1"

@@ -6,7 +6,8 @@ export interface WorkOrderUpdatePayload {
   _id: string;
   tenantId: string;
   title: string;
-  status: 'open' | 'in-progress' | 'on-hold' | 'completed';
+  status: 'requested' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+  assignees?: string[];
   deleted?: boolean;
 }
 

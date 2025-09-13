@@ -92,7 +92,7 @@ describe('Work Order Routes', () => {
         title: 'WO1',
         description: 'desc',
         priority: 'medium',
-        status: 'open',
+        status: 'requested',
         departmentId: department._id,
         department: department._id,
         line: lineId,
@@ -164,7 +164,7 @@ describe('Work Order Routes', () => {
         title: 'WO2',
         description: 'desc',
         priority: 'medium',
-        status: 'open',
+        status: 'requested',
         departmentId: department._id,
         department: department._id,
         line: lineId,
@@ -200,11 +200,70 @@ describe('Work Order Routes', () => {
     expect(listAfter.body.length).toBe(0);
   });
 
+  it('handles status transitions', async () => {
+    const asset = await Asset.create({
+      name: 'AssetTrans',
+      type: 'Mechanical',
+      location: 'Area 1',
+      department: 'Production',
+      status: 'Active',
+      tenantId: user.tenantId,
+    });
+
+    const createRes = await request(app)
+      .post('/api/workorders')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        title: 'WO-Trans',
+        description: 'desc',
+        priority: 'medium',
+        status: 'requested',
+        departmentId: department._id,
+        department: department._id,
+        line: lineId,
+        station: stationId,
+        pmTask: pmTask._id,
+        teamMemberName: 'Tester',
+        importance: 'low',
+        asset: asset._id,
+      })
+      .expect(201);
+
+    const id = createRes.body._id;
+
+    const assignRes = await request(app)
+      .post(`/api/workorders/${id}/assign`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ assignees: [user._id] })
+      .expect(200);
+    expect(assignRes.body.status).toBe('assigned');
+
+    const startRes = await request(app)
+      .post(`/api/workorders/${id}/start`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect(startRes.body.status).toBe('in_progress');
+
+    const completeRes = await request(app)
+      .post(`/api/workorders/${id}/complete`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ timeSpentMin: 5 })
+      .expect(200);
+    expect(completeRes.body.status).toBe('completed');
+    expect(completeRes.body.timeSpentMin).toBe(5);
+
+    const cancelRes = await request(app)
+      .post(`/api/workorders/${id}/cancel`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect(cancelRes.body.status).toBe('cancelled');
+  });
+
   it('searches work orders by status', async () => {
     const wo1 = await WorkOrder.create({
       title: 'StatusWO',
       priority: 'low',
-      status: 'open',
+      status: 'requested',
       tenantId: user.tenantId,
       dateCreated: new Date('2024-01-01'),
     });
@@ -217,7 +276,7 @@ describe('Work Order Routes', () => {
     });
 
     const res = await request(app)
-      .get('/api/workorders/search?status=open')
+      .get('/api/workorders/search?status=requested')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
@@ -229,13 +288,13 @@ describe('Work Order Routes', () => {
     await WorkOrder.create({
       title: 'HighPriority',
       priority: 'high',
-      status: 'open',
+      status: 'requested',
       tenantId: user.tenantId,
     });
     await WorkOrder.create({
       title: 'LowPriority',
       priority: 'low',
-      status: 'open',
+      status: 'requested',
       tenantId: user.tenantId,
     });
 
@@ -252,14 +311,14 @@ describe('Work Order Routes', () => {
     await WorkOrder.create({
       title: 'OldWO',
       priority: 'low',
-      status: 'open',
+      status: 'requested',
       tenantId: user.tenantId,
       dateCreated: new Date('2024-01-01'),
     });
     const woInRange = await WorkOrder.create({
       title: 'InRangeWO',
       priority: 'low',
-      status: 'open',
+      status: 'requested',
       tenantId: user.tenantId,
       dateCreated: new Date('2024-02-01'),
     });

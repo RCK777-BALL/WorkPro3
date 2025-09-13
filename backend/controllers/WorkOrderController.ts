@@ -24,6 +24,12 @@ const workOrderCreateFields = [
   'approvalRequestedBy',
   'approvedBy',
   'assignedTo',
+  'assignees',
+  'checklists',
+  'partsUsed',
+  'timeSpentMin',
+  'photos',
+  'failureCode',
   'pmTask',
   'department',
   'line',
@@ -412,6 +418,114 @@ export const approveWorkOrder: AuthedRequestHandler = async (req, res, next) => 
     }
 
     sendResponse(res, saved);
+    return;
+  } catch (err) {
+    next(err);
+    return;
+  }
+};
+ 
+export const assignWorkOrder: AuthedRequestHandler = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
+    const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
+    if (!workOrder) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
+    const before = workOrder.toObject();
+    workOrder.status = 'assigned';
+    if (Array.isArray(req.body.assignees)) {
+      workOrder.assignees = req.body.assignees;
+    }
+    const saved = await workOrder.save();
+    await logAudit(req, 'assign', 'WorkOrder', req.params.id, before, saved.toObject());
+    emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
+    res.json(saved);
+    return;
+  } catch (err) {
+    next(err);
+    return;
+  }
+};
+
+export const startWorkOrder: AuthedRequestHandler = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
+    const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
+    if (!workOrder) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
+    const before = workOrder.toObject();
+    workOrder.status = 'in_progress';
+    const saved = await workOrder.save();
+    await logAudit(req, 'start', 'WorkOrder', req.params.id, before, saved.toObject());
+    emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
+    res.json(saved);
+    return;
+  } catch (err) {
+    next(err);
+    return;
+  }
+};
+
+export const completeWorkOrder: AuthedRequestHandler = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
+    const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
+    if (!workOrder) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
+    const before = workOrder.toObject();
+    workOrder.status = 'completed';
+    if (req.body.timeSpentMin !== undefined) workOrder.timeSpentMin = req.body.timeSpentMin;
+    if (Array.isArray(req.body.partsUsed)) workOrder.partsUsed = req.body.partsUsed;
+    if (Array.isArray(req.body.checklists)) workOrder.checklists = req.body.checklists;
+    if (Array.isArray(req.body.photos)) workOrder.photos = req.body.photos;
+    if (req.body.failureCode !== undefined) workOrder.failureCode = req.body.failureCode;
+    const saved = await workOrder.save();
+    await logAudit(req, 'complete', 'WorkOrder', req.params.id, before, saved.toObject());
+    emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
+    res.json(saved);
+    return;
+  } catch (err) {
+    next(err);
+    return;
+  }
+};
+
+export const cancelWorkOrder: AuthedRequestHandler = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
+    const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
+    if (!workOrder) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
+    const before = workOrder.toObject();
+    workOrder.status = 'cancelled';
+    const saved = await workOrder.save();
+    await logAudit(req, 'cancel', 'WorkOrder', req.params.id, before, saved.toObject());
+    emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
+    res.json(saved);
     return;
   } catch (err) {
     next(err);

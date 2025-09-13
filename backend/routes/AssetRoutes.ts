@@ -11,6 +11,7 @@ import {
   updateAsset,
   deleteAsset,
   searchAssets,
+  getAssetTree,
 } from '../controllers/AssetController';
 import { requireAuth } from '../middleware/requireAuth'; // <— align with your actual file
 import requireRoles from '../middleware/requireRoles';
@@ -59,6 +60,7 @@ router.use(siteScope);
 
 router.get('/', getAllAssets);
 router.get('/search', searchAssets);
+router.get('/tree', getAssetTree);
  router.get('/:id', validateObjectId('id'), getAssetById);
  
 router.post(

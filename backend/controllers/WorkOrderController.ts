@@ -7,13 +7,9 @@ import type { AuthedRequestHandler } from '../types/http';
 import { emitWorkOrderUpdate } from '../server';
 import notifyUser from '../utils/notify';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
-import { Document, Document, Document, Document, Types } from 'mongoose';
+import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
-import { filterFields } from '../utils/filterFields';
 import { writeAuditLog } from '../utils/audit';
-import type { ParamsDictionary } from 'express-serve-static-core';
-import type { WorkOrderType, WorkOrderInput } from '../types/workOrder';
-
 import { sendResponse } from '../utils/sendResponse';
 import {
   workOrderCreateSchema,
@@ -24,18 +20,34 @@ import {
   cancelWorkOrderSchema,
   type WorkOrderComplete,
 } from '../src/schemas/workOrder';
-import { Response } from 'express';
-import { Response } from 'express';
-import { Response } from 'express';
-import { Response } from 'express';
-import { Response } from 'express';
-import { Response } from 'express';
-import { Response } from 'express';
-import { ObjectId } from 'bson';
-import { ObjectId } from 'bson';
-import { ObjectId } from 'bson';
-import { ObjectId } from 'bson';
-import { Response } from 'express';
+
+const mapAssignees = (assignees?: string[]) =>
+  assignees?.map((id) => new Types.ObjectId(id));
+
+const mapChecklists = (
+  checklists?: { description: string; completed?: boolean }[],
+) =>
+  checklists?.map((c) => ({
+    text: c.description,
+    done: c.completed ?? false,
+  }));
+
+const mapPartsUsed = (
+  parts?: { partId: string; quantity: number; cost?: number }[],
+) =>
+  parts?.map((p) => ({
+    partId: new Types.ObjectId(p.partId),
+    qty: p.quantity,
+    cost: p.cost ?? 0,
+  }));
+
+const mapSignatures = (
+  signatures?: { userId: string; signedAt?: Date }[],
+) =>
+  signatures?.map((s) => ({
+    by: new Types.ObjectId(s.userId),
+    ts: s.signedAt ?? new Date(),
+  }));
 
 
 
@@ -134,7 +146,7 @@ function mapSignatures(items: RawSignature[]) {
  *       200:
  *         description: List of work orders
  */
-export const getAllWorkOrders: AuthedRequestHandler = async (req: { tenantId: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
+export const getAllWorkOrders: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -180,7 +192,7 @@ export const getAllWorkOrders: AuthedRequestHandler = async (req: { tenantId: an
  *       200:
  *         description: Filtered work orders
  */
-export const searchWorkOrders: AuthedRequestHandler = async (req: { tenantId: any; query: { startDate?: any; endDate?: any; status?: any; priority?: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
+export const searchWorkOrders: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -235,7 +247,7 @@ export const searchWorkOrders: AuthedRequestHandler = async (req: { tenantId: an
  *       404:
  *         description: Work order not found
  */
-export const getWorkOrderById: AuthedRequestHandler = async (req: { tenantId: any; params: { id: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
+export const getWorkOrderById: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -275,7 +287,7 @@ export const getWorkOrderById: AuthedRequestHandler = async (req: { tenantId: an
  *         description: Validation error
  */
 
-export const createWorkOrder: AuthedRequestHandler<ParamsDictionary, WorkOrderType, WorkOrderInput> = async (req: { tenantId: any; body: unknown; user: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
+export const createWorkOrder: AuthedRequestHandler = async (req, res, next) => {
   try {
 
     const tenantId = req.tenantId;
@@ -289,19 +301,13 @@ export const createWorkOrder: AuthedRequestHandler<ParamsDictionary, WorkOrderTy
       return;
     }
 
-    const {
-      assignees: assigneeIds,
-      partsUsed,
-      checklists,
-      signatures,
-      ...rest
-    } = parsed.data;
-    const assignees = assigneeIds?.map((id) => new Types.ObjectId(id));
+    const { assignees, checklists, partsUsed, signatures, ...rest } = parsed.data;
     const newItem = new WorkOrder({
       ...rest,
-      ...(assignees && { assignees }),
-      ...(partsUsed && { partsUsed: mapPartsUsed(partsUsed) }),
+      ...(assignees && { assignees: mapAssignees(assignees) }),
       ...(checklists && { checklists: mapChecklists(checklists) }),
+      ...(partsUsed && { partsUsed: mapPartsUsed(partsUsed) }),
+
       ...(signatures && { signatures: mapSignatures(signatures) }),
       tenantId,
     });
@@ -349,7 +355,7 @@ export const createWorkOrder: AuthedRequestHandler<ParamsDictionary, WorkOrderTy
  *       404:
  *         description: Work order not found
  */
-export const updateWorkOrder: AuthedRequestHandler = async (req: { tenantId: any; body: unknown; params: { id: any; }; user: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
+export const updateWorkOrder: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -361,25 +367,19 @@ export const updateWorkOrder: AuthedRequestHandler = async (req: { tenantId: any
       sendResponse(res, null, parsed.error.flatten(), 400);
       return;
     }
-    const {
-      assignees: assigneeIds,
-      partsUsed,
-      checklists,
-      signatures,
-      ...rest
-    } = parsed.data;
-    const update: any = rest;
-    if (assigneeIds) {
-      update.assignees = assigneeIds.map((id: string) => new Types.ObjectId(id));
+    const update: any = parsed.data;
+    if (update.assignees) {
+      update.assignees = mapAssignees(update.assignees);
     }
-    if (partsUsed) {
-      update.partsUsed = mapPartsUsed(partsUsed);
+    if (update.checklists) {
+      update.checklists = mapChecklists(update.checklists);
     }
-    if (checklists) {
-      update.checklists = mapChecklists(checklists);
+    if (update.partsUsed) {
+      update.partsUsed = mapPartsUsed(update.partsUsed);
     }
-    if (signatures) {
-      update.signatures = mapSignatures(signatures);
+    if (update.signatures) {
+      update.signatures = mapSignatures(update.signatures);
+
     }
     const existing = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!existing) {
@@ -433,7 +433,7 @@ export const updateWorkOrder: AuthedRequestHandler = async (req: { tenantId: any
  *       404:
  *         description: Work order not found
  */
-export const deleteWorkOrder: AuthedRequestHandler = async (req: { tenantId: any; params: { id: any; }; user: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
+export const deleteWorkOrder: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -494,7 +494,7 @@ export const deleteWorkOrder: AuthedRequestHandler = async (req: { tenantId: any
  *         description: Work order not found
  */
  
-export const approveWorkOrder: AuthedRequestHandler = async (req: { tenantId: any; user: { _id: any; id: any; }; body: { status: any; }; params: { id: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
+export const approveWorkOrder: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -559,29 +559,27 @@ export const approveWorkOrder: AuthedRequestHandler = async (req: { tenantId: an
   }
 };
  
-export const assignWorkOrder: AuthedRequestHandler = async (req: { tenantId: any; params: { id: any; }; body: unknown; user: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message?: string; formErrors?: string[]; fieldErrors?: { assignees?: string[]; }; }): void; new(): any; }; }; json: (arg0: Document<unknown, {}, { createdAt: NativeDate; updatedAt: NativeDate; } & { title: string; priority: "low" | "medium" | "high" | "critical"; status: "requested" | "assigned" | "in_progress" | "completed" | "cancelled"; approvalStatus: "not-required" | "pending" | "approved" | "rejected"; assignees: Types.ObjectId[]; checklists: Types.DocumentArray<{ done: boolean; text?: string | null; }, Types.Subdocument<ObjectId, any, { done: boolean; text?: string | null; }> & { done: boolean; text?: string | null; }>; partsUsed: Types.DocumentArray<{ qty: number; cost: number; partId?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { qty: number; cost: number; partId?: Types.ObjectId | null; }> & { qty: number; cost: number; partId?: Types.ObjectId | null; }>; signatures: Types.DocumentArray<{ ts: NativeDate; by?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { ts: NativeDate; by?: Types.ObjectId | null; }> & { ts: NativeDate; by?: Types.ObjectId | null; }>; photos: string[]; tenantId: Types.ObjectId; description?: string | null; timeSpentMin?: number | null; failureCode?: string | null; teamMemberName?: string | null; completedAt?: NativeDate | null; assetId?: Types.ObjectId | null; approvalRequestedBy?: Types.ObjectId | null; approvedBy?: Types.ObjectId | null; assignedTo?: Types.ObjectId | null; pmTask?: Types.ObjectId | null; department?: Types.ObjectId | null; line?: Types.ObjectId | null; station?: Types.ObjectId | null; importance?: "low" | "medium" | "high" | "severe" | null; dueDate?: NativeDate | null; }, {}, { timestamps: true; }> & { createdAt: NativeDate; updatedAt: NativeDate; } & { title: string; priority: "low" | "medium" | "high" | "critical"; status: "requested" | "assigned" | "in_progress" | "completed" | "cancelled"; approvalStatus: "not-required" | "pending" | "approved" | "rejected"; assignees: Types.ObjectId[]; checklists: Types.DocumentArray<{ done: boolean; text?: string | null; }, Types.Subdocument<ObjectId, any, { done: boolean; text?: string | null; }> & { done: boolean; text?: string | null; }>; partsUsed: Types.DocumentArray<{ qty: number; cost: number; partId?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { qty: number; cost: number; partId?: Types.ObjectId | null; }> & { qty: number; cost: number; partId?: Types.ObjectId | null; }>; signatures: Types.DocumentArray<{ ts: NativeDate; by?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { ts: NativeDate; by?: Types.ObjectId | null; }> & { ts: NativeDate; by?: Types.ObjectId | null; }>; photos: string[]; tenantId: Types.ObjectId; description?: string | null; timeSpentMin?: number | null; failureCode?: string | null; teamMemberName?: string | null; completedAt?: NativeDate | null; assetId?: Types.ObjectId | null; approvalRequestedBy?: Types.ObjectId | null; approvedBy?: Types.ObjectId | null; assignedTo?: Types.ObjectId | null; pmTask?: Types.ObjectId | null; department?: Types.ObjectId | null; line?: Types.ObjectId | null; station?: Types.ObjectId | null; importance?: "low" | "medium" | "high" | "severe" | null; dueDate?: NativeDate | null; } & { _id: Types.ObjectId; } & { __v: number; }) => void; }, next: (arg0: unknown) => void) => {
+export const assignWorkOrder: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!workOrder) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const parsed = assignWorkOrderSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json(parsed.error.flatten());
+      sendResponse(res, null, parsed.error.flatten(), 400);
       return;
     }
     const before = workOrder.toObject();
     workOrder.status = 'assigned';
     if (parsed.data.assignees) {
-      workOrder.assignees = parsed.data.assignees.map(
-        (id) => new Types.ObjectId(id)
-      );
+      workOrder.assignees = mapAssignees(parsed.data.assignees) || [];
     }
     const saved = await workOrder.save();
     const userId = (req.user as any)?._id || (req.user as any)?.id;
@@ -595,7 +593,7 @@ export const assignWorkOrder: AuthedRequestHandler = async (req: { tenantId: any
       after: saved.toObject(),
     });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
-    res.json(saved);
+    sendResponse(res, saved);
     return;
   } catch (err) {
     next(err);
@@ -603,21 +601,21 @@ export const assignWorkOrder: AuthedRequestHandler = async (req: { tenantId: any
   }
 };
 
-export const startWorkOrder: AuthedRequestHandler = async (req: { tenantId: any; body: unknown; params: { id: any; }; user: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message?: string; formErrors?: string[]; fieldErrors?: {}; }): void; new(): any; }; }; json: (arg0: Document<unknown, {}, { createdAt: NativeDate; updatedAt: NativeDate; } & { title: string; priority: "low" | "medium" | "high" | "critical"; status: "requested" | "assigned" | "in_progress" | "completed" | "cancelled"; approvalStatus: "not-required" | "pending" | "approved" | "rejected"; assignees: Types.ObjectId[]; checklists: Types.DocumentArray<{ done: boolean; text?: string | null; }, Types.Subdocument<ObjectId, any, { done: boolean; text?: string | null; }> & { done: boolean; text?: string | null; }>; partsUsed: Types.DocumentArray<{ qty: number; cost: number; partId?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { qty: number; cost: number; partId?: Types.ObjectId | null; }> & { qty: number; cost: number; partId?: Types.ObjectId | null; }>; signatures: Types.DocumentArray<{ ts: NativeDate; by?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { ts: NativeDate; by?: Types.ObjectId | null; }> & { ts: NativeDate; by?: Types.ObjectId | null; }>; photos: string[]; tenantId: Types.ObjectId; description?: string | null; timeSpentMin?: number | null; failureCode?: string | null; teamMemberName?: string | null; completedAt?: NativeDate | null; assetId?: Types.ObjectId | null; approvalRequestedBy?: Types.ObjectId | null; approvedBy?: Types.ObjectId | null; assignedTo?: Types.ObjectId | null; pmTask?: Types.ObjectId | null; department?: Types.ObjectId | null; line?: Types.ObjectId | null; station?: Types.ObjectId | null; importance?: "low" | "medium" | "high" | "severe" | null; dueDate?: NativeDate | null; }, {}, { timestamps: true; }> & { createdAt: NativeDate; updatedAt: NativeDate; } & { title: string; priority: "low" | "medium" | "high" | "critical"; status: "requested" | "assigned" | "in_progress" | "completed" | "cancelled"; approvalStatus: "not-required" | "pending" | "approved" | "rejected"; assignees: Types.ObjectId[]; checklists: Types.DocumentArray<{ done: boolean; text?: string | null; }, Types.Subdocument<ObjectId, any, { done: boolean; text?: string | null; }> & { done: boolean; text?: string | null; }>; partsUsed: Types.DocumentArray<{ qty: number; cost: number; partId?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { qty: number; cost: number; partId?: Types.ObjectId | null; }> & { qty: number; cost: number; partId?: Types.ObjectId | null; }>; signatures: Types.DocumentArray<{ ts: NativeDate; by?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { ts: NativeDate; by?: Types.ObjectId | null; }> & { ts: NativeDate; by?: Types.ObjectId | null; }>; photos: string[]; tenantId: Types.ObjectId; description?: string | null; timeSpentMin?: number | null; failureCode?: string | null; teamMemberName?: string | null; completedAt?: NativeDate | null; assetId?: Types.ObjectId | null; approvalRequestedBy?: Types.ObjectId | null; approvedBy?: Types.ObjectId | null; assignedTo?: Types.ObjectId | null; pmTask?: Types.ObjectId | null; department?: Types.ObjectId | null; line?: Types.ObjectId | null; station?: Types.ObjectId | null; importance?: "low" | "medium" | "high" | "severe" | null; dueDate?: NativeDate | null; } & { _id: Types.ObjectId; } & { __v: number; }) => void; }, next: (arg0: unknown) => void) => {
+export const startWorkOrder: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const parsed = startWorkOrderSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json(parsed.error.flatten());
+      sendResponse(res, null, parsed.error.flatten(), 400);
       return;
     }
     const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!workOrder) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const before = workOrder.toObject();
@@ -634,7 +632,7 @@ export const startWorkOrder: AuthedRequestHandler = async (req: { tenantId: any;
       after: saved.toObject(),
     });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
-    res.json(saved);
+    sendResponse(res, saved);
     return;
   } catch (err) {
     next(err);
@@ -642,30 +640,31 @@ export const startWorkOrder: AuthedRequestHandler = async (req: { tenantId: any;
   }
 };
 
-export const completeWorkOrder: AuthedRequestHandler = async (req: { tenantId: any; body: unknown; params: { id: any; }; user: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message?: string; formErrors?: string[]; fieldErrors?: { timeSpentMin?: string[]; checklists?: string[]; partsUsed?: string[]; signatures?: string[]; }; }): void; new(): any; }; }; json: (arg0: Document<unknown, {}, { createdAt: NativeDate; updatedAt: NativeDate; } & { title: string; priority: "low" | "medium" | "high" | "critical"; status: "requested" | "assigned" | "in_progress" | "completed" | "cancelled"; approvalStatus: "not-required" | "pending" | "approved" | "rejected"; assignees: Types.ObjectId[]; checklists: Types.DocumentArray<{ done: boolean; text?: string | null; }, Types.Subdocument<ObjectId, any, { done: boolean; text?: string | null; }> & { done: boolean; text?: string | null; }>; partsUsed: Types.DocumentArray<{ qty: number; cost: number; partId?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { qty: number; cost: number; partId?: Types.ObjectId | null; }> & { qty: number; cost: number; partId?: Types.ObjectId | null; }>; signatures: Types.DocumentArray<{ ts: NativeDate; by?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { ts: NativeDate; by?: Types.ObjectId | null; }> & { ts: NativeDate; by?: Types.ObjectId | null; }>; photos: string[]; tenantId: Types.ObjectId; description?: string | null; timeSpentMin?: number | null; failureCode?: string | null; teamMemberName?: string | null; completedAt?: NativeDate | null; assetId?: Types.ObjectId | null; approvalRequestedBy?: Types.ObjectId | null; approvedBy?: Types.ObjectId | null; assignedTo?: Types.ObjectId | null; pmTask?: Types.ObjectId | null; department?: Types.ObjectId | null; line?: Types.ObjectId | null; station?: Types.ObjectId | null; importance?: "low" | "medium" | "high" | "severe" | null; dueDate?: NativeDate | null; }, {}, { timestamps: true; }> & { createdAt: NativeDate; updatedAt: NativeDate; } & { title: string; priority: "low" | "medium" | "high" | "critical"; status: "requested" | "assigned" | "in_progress" | "completed" | "cancelled"; approvalStatus: "not-required" | "pending" | "approved" | "rejected"; assignees: Types.ObjectId[]; checklists: Types.DocumentArray<{ done: boolean; text?: string | null; }, Types.Subdocument<ObjectId, any, { done: boolean; text?: string | null; }> & { done: boolean; text?: string | null; }>; partsUsed: Types.DocumentArray<{ qty: number; cost: number; partId?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { qty: number; cost: number; partId?: Types.ObjectId | null; }> & { qty: number; cost: number; partId?: Types.ObjectId | null; }>; signatures: Types.DocumentArray<{ ts: NativeDate; by?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { ts: NativeDate; by?: Types.ObjectId | null; }> & { ts: NativeDate; by?: Types.ObjectId | null; }>; photos: string[]; tenantId: Types.ObjectId; description?: string | null; timeSpentMin?: number | null; failureCode?: string | null; teamMemberName?: string | null; completedAt?: NativeDate | null; assetId?: Types.ObjectId | null; approvalRequestedBy?: Types.ObjectId | null; approvedBy?: Types.ObjectId | null; assignedTo?: Types.ObjectId | null; pmTask?: Types.ObjectId | null; department?: Types.ObjectId | null; line?: Types.ObjectId | null; station?: Types.ObjectId | null; importance?: "low" | "medium" | "high" | "severe" | null; dueDate?: NativeDate | null; } & { _id: Types.ObjectId; } & { __v: number; }) => void; }, next: (arg0: unknown) => void) => {
+export const completeWorkOrder: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const parsed = completeWorkOrderSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json(parsed.error.flatten());
+      sendResponse(res, null, parsed.error.flatten(), 400);
       return;
     }
     const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!workOrder) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const body = req.body as CompleteWorkOrderBody;
     const before = workOrder.toObject();
     workOrder.status = 'completed';
     if (body.timeSpentMin !== undefined) workOrder.timeSpentMin = body.timeSpentMin;
-    if (Array.isArray(body.partsUsed)) workOrder.partsUsed = mapPartsUsed(body.partsUsed);
-    if (Array.isArray(body.checklists)) workOrder.checklists = mapChecklists(body.checklists);
-    if (Array.isArray(body.signatures)) workOrder.signatures = mapSignatures(body.signatures);
+    if (Array.isArray(body.partsUsed)) workOrder.partsUsed = mapPartsUsed(body.partsUsed) || [];
+    if (Array.isArray(body.checklists)) workOrder.checklists = mapChecklists(body.checklists) || [];
+    if (Array.isArray(body.signatures)) workOrder.signatures = mapSignatures(body.signatures) || [];
+
     if (Array.isArray(body.photos)) workOrder.photos = body.photos;
     if (body.failureCode !== undefined) workOrder.failureCode = body.failureCode;
 
@@ -681,7 +680,7 @@ export const completeWorkOrder: AuthedRequestHandler = async (req: { tenantId: a
       after: saved.toObject(),
     });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
-    res.json(saved);
+    sendResponse(res, saved);
     return;
   } catch (err) {
     next(err);
@@ -689,21 +688,21 @@ export const completeWorkOrder: AuthedRequestHandler = async (req: { tenantId: a
   }
 };
 
-export const cancelWorkOrder: AuthedRequestHandler = async (req: { tenantId: any; body: unknown; params: { id: any; }; user: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message?: string; formErrors?: string[]; fieldErrors?: {}; }): void; new(): any; }; }; json: (arg0: Document<unknown, {}, { createdAt: NativeDate; updatedAt: NativeDate; } & { title: string; priority: "low" | "medium" | "high" | "critical"; status: "requested" | "assigned" | "in_progress" | "completed" | "cancelled"; approvalStatus: "not-required" | "pending" | "approved" | "rejected"; assignees: Types.ObjectId[]; checklists: Types.DocumentArray<{ done: boolean; text?: string | null; }, Types.Subdocument<ObjectId, any, { done: boolean; text?: string | null; }> & { done: boolean; text?: string | null; }>; partsUsed: Types.DocumentArray<{ qty: number; cost: number; partId?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { qty: number; cost: number; partId?: Types.ObjectId | null; }> & { qty: number; cost: number; partId?: Types.ObjectId | null; }>; signatures: Types.DocumentArray<{ ts: NativeDate; by?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { ts: NativeDate; by?: Types.ObjectId | null; }> & { ts: NativeDate; by?: Types.ObjectId | null; }>; photos: string[]; tenantId: Types.ObjectId; description?: string | null; timeSpentMin?: number | null; failureCode?: string | null; teamMemberName?: string | null; completedAt?: NativeDate | null; assetId?: Types.ObjectId | null; approvalRequestedBy?: Types.ObjectId | null; approvedBy?: Types.ObjectId | null; assignedTo?: Types.ObjectId | null; pmTask?: Types.ObjectId | null; department?: Types.ObjectId | null; line?: Types.ObjectId | null; station?: Types.ObjectId | null; importance?: "low" | "medium" | "high" | "severe" | null; dueDate?: NativeDate | null; }, {}, { timestamps: true; }> & { createdAt: NativeDate; updatedAt: NativeDate; } & { title: string; priority: "low" | "medium" | "high" | "critical"; status: "requested" | "assigned" | "in_progress" | "completed" | "cancelled"; approvalStatus: "not-required" | "pending" | "approved" | "rejected"; assignees: Types.ObjectId[]; checklists: Types.DocumentArray<{ done: boolean; text?: string | null; }, Types.Subdocument<ObjectId, any, { done: boolean; text?: string | null; }> & { done: boolean; text?: string | null; }>; partsUsed: Types.DocumentArray<{ qty: number; cost: number; partId?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { qty: number; cost: number; partId?: Types.ObjectId | null; }> & { qty: number; cost: number; partId?: Types.ObjectId | null; }>; signatures: Types.DocumentArray<{ ts: NativeDate; by?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { ts: NativeDate; by?: Types.ObjectId | null; }> & { ts: NativeDate; by?: Types.ObjectId | null; }>; photos: string[]; tenantId: Types.ObjectId; description?: string | null; timeSpentMin?: number | null; failureCode?: string | null; teamMemberName?: string | null; completedAt?: NativeDate | null; assetId?: Types.ObjectId | null; approvalRequestedBy?: Types.ObjectId | null; approvedBy?: Types.ObjectId | null; assignedTo?: Types.ObjectId | null; pmTask?: Types.ObjectId | null; department?: Types.ObjectId | null; line?: Types.ObjectId | null; station?: Types.ObjectId | null; importance?: "low" | "medium" | "high" | "severe" | null; dueDate?: NativeDate | null; } & { _id: Types.ObjectId; } & { __v: number; }) => void; }, next: (arg0: unknown) => void) => {
+export const cancelWorkOrder: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const parsed = cancelWorkOrderSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json(parsed.error.flatten());
+      sendResponse(res, null, parsed.error.flatten(), 400);
       return;
     }
     const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!workOrder) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const before = workOrder.toObject();
@@ -720,7 +719,7 @@ export const cancelWorkOrder: AuthedRequestHandler = async (req: { tenantId: any
       after: saved.toObject(),
     });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
-    res.json(saved);
+    sendResponse(res, saved);
     return;
   } catch (err) {
     next(err);
@@ -749,7 +748,7 @@ export const cancelWorkOrder: AuthedRequestHandler = async (req: { tenantId: any
  *         description: Work order not found
 */
 
-export const assistWorkOrder: AuthedRequestHandler = async (req: { tenantId: any; params: { id: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
+export const assistWorkOrder: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {

@@ -208,7 +208,7 @@ export const getDirectMessages: AuthedRequestHandler = async (
   }
 };
 
-export const createDirectMessage: AuthedRequestHandler = async (req, res, next) => {
+export const createDirectMessage: AuthedRequestHandler = async (req: { body: { userId: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
     const ids = resolveUserAndTenant(req, res);
     if (!ids) return;
@@ -271,7 +271,7 @@ export const deleteDirectMessage: AuthedRequestHandler = async (
   }
 };
 
-export const getDirectMessagesForUser: AuthedRequestHandler = async (req, res, next) => {
+export const getDirectMessagesForUser: AuthedRequestHandler = async (req: { params: { conversationId: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
     const ids = resolveUserAndTenant(req, res);
     if (!ids) return;
@@ -295,7 +295,7 @@ export const getDirectMessagesForUser: AuthedRequestHandler = async (req, res, n
   }
 };
 
-export const sendDirectMessage: AuthedRequestHandler = async (req, res, next) => {
+export const sendDirectMessage: AuthedRequestHandler = async (req: { params: { conversationId: any; }; body: { content: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
     const ids = resolveUserAndTenant(req, res);
     if (!ids) return;

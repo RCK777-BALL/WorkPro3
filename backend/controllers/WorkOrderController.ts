@@ -27,6 +27,12 @@ import {
   cancelWorkOrderSchema,
   type WorkOrderComplete,
 } from '../src/schemas/workOrder';
+import {
+  mapAssignees,
+  mapPartsUsed,
+  mapChecklists,
+  mapSignatures,
+} from '../src/utils/workOrder';
 
 
 
@@ -69,61 +75,11 @@ interface CompleteWorkOrderBody extends WorkOrderComplete {
 function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
   const plain = typeof doc.toObject === "function"
     ? doc.toObject({ getters: true, virtuals: false })
-
     : doc;
   return {
     ...plain,
     _id: (plain._id as Types.ObjectId | string)?.toString(),
   } as WorkOrderUpdatePayload;
-}
-
-type RawPart = {
-  partId: string;
-  quantity: number;
-  cost?: number;
-};
-
-type RawChecklist = {
-  description: string;
-  completed?: boolean;
-};
-
-type RawSignature = {
-  userId: string;
-  signedAt?: Date;
-};
-
-function mapPartsUsed(parts: RawPart[]) {
-  return parts.map((p) => ({
-    partId: new Types.ObjectId(p.partId),
-    qty: p.quantity,
-    cost: p.cost ?? 0,
-  }));
-}
-
-function mapAssignees(ids: string[]) {
-  return ids.map((id) => new Types.ObjectId(id));
-}
-
-function mapChecklists(items: RawChecklist[]) {
-  return items.map((c) => ({
-    text: c.description,
-    description: c.description,
-    done: Boolean(c.completed),
-    completed: Boolean(c.completed),
-  }));
-}
-
-function mapSignatures(items: RawSignature[]) {
-  return items.map((s) => {
-    const signed = s.signedAt ? new Date(s.signedAt) : new Date();
-    return {
-      by: new Types.ObjectId(s.userId),
-      userId: s.userId,
-      ts: signed,
-      signedAt: signed,
-    };
-  });
 }
 
 /**

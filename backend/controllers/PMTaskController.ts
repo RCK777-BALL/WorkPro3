@@ -9,9 +9,24 @@ import WorkOrder from '../models/WorkOrder';
 import Meter from '../models/Meter';
 import { nextCronOccurrenceWithin } from '../services/PMScheduler';
 import type { AuthedRequestHandler } from '../types/http';
+import type {
+  PMTaskRequest,
+  PMTaskParams,
+  PMTaskListResponse,
+  PMTaskResponse,
+  PMTaskCreateBody,
+  PMTaskUpdateBody,
+  PMTaskDeleteResponse,
+  PMTaskGenerateWOResponse,
+} from '../types/pmTask';
+import type { ParamsDictionary } from 'express-serve-static-core';
 import { writeAuditLog } from '../utils/audit';
 
-export const getAllPMTasks: AuthedRequestHandler = async (req: { tenantId: any; siteId: any; }, res: { json: (arg0: (mongoose.Document<unknown, {}, PmTaskDocument, {}, {}> & PmTaskDocument & Required<{ _id: unknown; }> & { __v: number; })[]) => void; }, next: (arg0: unknown) => void) => {
+export const getAllPMTasks: AuthedRequestHandler<ParamsDictionary, PMTaskListResponse> = async (
+  req: PMTaskRequest,
+  res,
+  next,
+) => {
   try {
     const filter: Record<string, unknown> = { tenantId: req.tenantId };
     if (req.siteId) (filter as any).siteId = req.siteId;
@@ -23,7 +38,11 @@ export const getAllPMTasks: AuthedRequestHandler = async (req: { tenantId: any; 
   }
 };
 
-export const getPMTaskById: AuthedRequestHandler = async (req: { params: { id: string | number | mongoose.mongo.BSON.ObjectId | Uint8Array<ArrayBufferLike> | mongoose.mongo.BSON.ObjectIdLike; }; tenantId: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: mongoose.Document<unknown, {}, PmTaskDocument, {}, {}> & PmTaskDocument & Required<{ _id: unknown; }> & { __v: number; }) => void; }, next: (arg0: unknown) => void) => {
+export const getPMTaskById: AuthedRequestHandler<PMTaskParams, PMTaskResponse> = async (
+  req: PMTaskRequest<PMTaskParams>,
+  res,
+  next,
+) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       res.status(400).json({ message: 'Invalid ID' });
@@ -46,7 +65,11 @@ export const getPMTaskById: AuthedRequestHandler = async (req: { params: { id: s
   }
 };
 
-export const createPMTask: AuthedRequestHandler = async (req: { tenantId: any; body: any; siteId: any; user: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: mongoose.Document<unknown, {}, PmTaskDocument, {}, {}> & PmTaskDocument & Required<{ _id: unknown; }> & { __v: number; }): void; new(): any; }; }; }, next: (arg0: unknown) => void) => {
+export const createPMTask: AuthedRequestHandler<ParamsDictionary, PMTaskResponse, PMTaskCreateBody> = async (
+  req: PMTaskRequest<ParamsDictionary, PMTaskCreateBody>,
+  res,
+  next,
+) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
@@ -73,7 +96,11 @@ export const createPMTask: AuthedRequestHandler = async (req: { tenantId: any; b
   }
 };
 
-export const updatePMTask: AuthedRequestHandler = async (req: { tenantId: any; params: { id: string | number | mongoose.mongo.BSON.ObjectId | Uint8Array<ArrayBufferLike> | mongoose.mongo.BSON.ObjectIdLike; }; body: mongoose.UpdateQuery<PmTaskDocument> | undefined; user: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message?: string; errors?: ValidationError[]; }): void; new(): any; }; }; json: (arg0: (mongoose.Document<unknown, {}, PmTaskDocument, {}, {}> & PmTaskDocument & Required<{ _id: unknown; }> & { __v: number; }) | null) => void; }, next: (arg0: unknown) => void) => {
+export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | null, PMTaskUpdateBody> = async (
+  req: PMTaskRequest<PMTaskParams, PMTaskUpdateBody>,
+  res,
+  next,
+) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
@@ -115,7 +142,11 @@ export const updatePMTask: AuthedRequestHandler = async (req: { tenantId: any; p
   }
 };
 
-export const deletePMTask: AuthedRequestHandler = async (req: { tenantId: any; params: { id: string | number | mongoose.mongo.BSON.ObjectId | Uint8Array<ArrayBufferLike> | mongoose.mongo.BSON.ObjectIdLike; }; user: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: { message: string; }) => void; }, next: (arg0: unknown) => void) => {
+export const deletePMTask: AuthedRequestHandler<PMTaskParams, PMTaskDeleteResponse> = async (
+  req: PMTaskRequest<PMTaskParams>,
+  res,
+  next,
+) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
@@ -149,7 +180,11 @@ export const deletePMTask: AuthedRequestHandler = async (req: { tenantId: any; p
   }
 };
 
-export const generatePMWorkOrders: AuthedRequestHandler = async (req: { tenantId: any; }, res: { json: (arg0: { generated: number; }) => void; }, next: (arg0: unknown) => void) => {
+export const generatePMWorkOrders: AuthedRequestHandler<ParamsDictionary, PMTaskGenerateWOResponse> = async (
+  req: PMTaskRequest,
+  res,
+  next,
+) => {
   try {
     const now = new Date();
     const tasks = await PMTask.find({ tenantId: req.tenantId, active: true });

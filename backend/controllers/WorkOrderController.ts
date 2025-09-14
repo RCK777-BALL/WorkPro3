@@ -380,7 +380,7 @@ export const updateWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       userId,
       action: 'update',
       entityType: 'WorkOrder',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before: existing.toObject(),
       after: updated.toObject(),
     });
@@ -430,7 +430,7 @@ export const deleteWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       userId,
       action: 'delete',
       entityType: 'WorkOrder',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before: deleted.toObject(),
     });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload({ _id: req.params.id, deleted: true }));
@@ -514,7 +514,7 @@ export const approveWorkOrder: AuthedRequestHandler = async (req, res, next) => 
       userId: userObjectId,
       action: 'approve',
       entityType: 'WorkOrder',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before,
       after: saved.toObject(),
     });
@@ -567,7 +567,7 @@ export const assignWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       userId,
       action: 'assign',
       entityType: 'WorkOrder',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before,
       after: saved.toObject(),
     });
@@ -607,7 +607,7 @@ export const startWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       userId,
       action: 'start',
       entityType: 'WorkOrder',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before,
       after: saved.toObject(),
     });
@@ -655,7 +655,7 @@ export const completeWorkOrder: AuthedRequestHandler = async (req, res, next) =>
       userId,
       action: 'complete',
       entityType: 'WorkOrder',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before,
       after: saved.toObject(),
     });
@@ -695,7 +695,7 @@ export const cancelWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       userId,
       action: 'cancel',
       entityType: 'WorkOrder',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before,
       after: saved.toObject(),
     });

@@ -3,7 +3,7 @@
  */
 
 import type { AuthedRequestHandler } from '../types/http';
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import Asset from '../models/Asset';
 import Site from '../models/Site';
 import Department from '../models/Department';
@@ -164,7 +164,7 @@ export const updateAsset: AuthedRequestHandler = async (req: { body: any; tenant
       userId,
       action: 'update',
       entityType: 'Asset',
-      entityId: id,
+      entityId: new Types.ObjectId(id),
       before: existing.toObject(),
       after: asset?.toObject(),
     });
@@ -204,7 +204,7 @@ export const deleteAsset: AuthedRequestHandler = async (req: { tenantId: any; pa
       userId,
       action: 'delete',
       entityType: 'Asset',
-      entityId: id,
+      entityId: new Types.ObjectId(id),
       before: asset.toObject(),
     });
     res.json({ message: 'Deleted successfully' });

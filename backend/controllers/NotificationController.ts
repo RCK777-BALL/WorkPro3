@@ -175,7 +175,7 @@ export const markNotificationRead: AuthedRequestHandler<
       userId,
       action: 'markRead',
       entityType: 'Notification',
-      entityId: req.params.id as unknown as string | Types.ObjectId,
+      entityId: new Types.ObjectId(req.params.id),
       before: null,
       after: updated.toObject(),
     });
@@ -225,7 +225,7 @@ export const updateNotification: AuthedRequestHandler<
       userId,
       action: 'update',
       entityType: 'Notification',
-      entityId: req.params.id as unknown as string | Types.ObjectId,
+      entityId: new Types.ObjectId(req.params.id),
       before: existing.toObject(),
       after: updated?.toObject(),
     });
@@ -267,7 +267,7 @@ export const deleteNotification: AuthedRequestHandler<
       userId,
       action: 'delete',
       entityType: 'Notification',
-      entityId: req.params.id as unknown as string | Types.ObjectId,
+      entityId: new Types.ObjectId(req.params.id),
       before: deleted.toObject(),
     });
     res.json({ message: 'Deleted successfully' });

@@ -6,14 +6,9 @@ import type { AuthedRequestHandler } from '../types/http';
 import Meter from '../models/Meter';
 import MeterReading from '../models/MeterReading';
 import { writeAuditLog } from '../utils/audit';
-import { Document, Types } from 'mongoose';
-import { Document, Types } from 'mongoose';
-import { Document, Types } from 'mongoose';
-import { UpdateQuery, Types, Document } from 'mongoose';
-import { Document, Types } from 'mongoose';
-import { Document, Types } from 'mongoose';
+import { Document, Types, UpdateQuery } from 'mongoose';
 
-export const getMeters: AuthedRequestHandler = async (req: { tenantId: any; siteId: any; query: { asset: any; }; }, res: { json: (arg0: (Document<unknown, {}, { createdAt: NativeDate; updatedAt: NativeDate; } & { name: string; tenantId: Types.ObjectId; unit: string; asset: Types.ObjectId; currentValue: number; pmInterval: number; lastWOValue: number; siteId?: Types.ObjectId | null; }, {}, { timestamps: true; }> & { createdAt: NativeDate; updatedAt: NativeDate; } & { name: string; tenantId: Types.ObjectId; unit: string; asset: Types.ObjectId; currentValue: number; pmInterval: number; lastWOValue: number; siteId?: Types.ObjectId | null; } & { _id: Types.ObjectId; } & { __v: number; })[]) => void; }, next: (arg0: unknown) => any) => {
+export const getMeters: AuthedRequestHandler = async (req, res, next) => {
   try {
     const filter: any = { tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
@@ -26,7 +21,7 @@ export const getMeters: AuthedRequestHandler = async (req: { tenantId: any; site
   }
 };
 
-export const getMeterById: AuthedRequestHandler = async (req: { params: { id: any; }; tenantId: any; siteId: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: Document<unknown, {}, { createdAt: NativeDate; updatedAt: NativeDate; } & { name: string; tenantId: Types.ObjectId; unit: string; asset: Types.ObjectId; currentValue: number; pmInterval: number; lastWOValue: number; siteId?: Types.ObjectId | null; }, {}, { timestamps: true; }> & { createdAt: NativeDate; updatedAt: NativeDate; } & { name: string; tenantId: Types.ObjectId; unit: string; asset: Types.ObjectId; currentValue: number; pmInterval: number; lastWOValue: number; siteId?: Types.ObjectId | null; } & { _id: Types.ObjectId; } & { __v: number; }) => void; }, next: (arg0: unknown) => any) => {
+export const getMeterById: AuthedRequestHandler = async (req, res, next) => {
   try {
     const filter: any = { _id: req.params.id, tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
@@ -42,11 +37,10 @@ export const getMeterById: AuthedRequestHandler = async (req: { params: { id: an
   }
 };
 
-export const createMeter: AuthedRequestHandler = async (req: { tenantId: any; body: any; siteId: any; user: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: Document<unknown, {}, { createdAt: NativeDate; updatedAt: NativeDate; } & { name: string; tenantId: Types.ObjectId; unit: string; asset: Types.ObjectId; currentValue: number; pmInterval: number; lastWOValue: number; siteId?: Types.ObjectId | null; }, {}, { timestamps: true; }> & { createdAt: NativeDate; updatedAt: NativeDate; } & { name: string; tenantId: Types.ObjectId; unit: string; asset: Types.ObjectId; currentValue: number; pmInterval: number; lastWOValue: number; siteId?: Types.ObjectId | null; } & { _id: Types.ObjectId; } & { __v: number; }): void; new(): any; }; }; }, next: (arg0: unknown) => any) => {
+export const createMeter: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId)
-      return res.status(400).json({ error: 'Tenant ID required' });
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     const meter = await Meter.create({
       ...req.body,
       tenantId,
@@ -68,11 +62,10 @@ export const createMeter: AuthedRequestHandler = async (req: { tenantId: any; bo
   }
 };
 
-export const updateMeter: AuthedRequestHandler = async (req: { tenantId: any; params: { id: any; }; siteId: any; body: UpdateQuery<{ createdAt: NativeDate; updatedAt: NativeDate; } & { name: string; tenantId: Types.ObjectId; unit: string; asset: Types.ObjectId; currentValue: number; pmInterval: number; lastWOValue: number; siteId?: Types.ObjectId | null; }> | undefined; user: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: (Document<unknown, {}, { createdAt: NativeDate; updatedAt: NativeDate; } & { name: string; tenantId: Types.ObjectId; unit: string; asset: Types.ObjectId; currentValue: number; pmInterval: number; lastWOValue: number; siteId?: Types.ObjectId | null; }, {}, { timestamps: true; }> & { createdAt: NativeDate; updatedAt: NativeDate; } & { name: string; tenantId: Types.ObjectId; unit: string; asset: Types.ObjectId; currentValue: number; pmInterval: number; lastWOValue: number; siteId?: Types.ObjectId | null; } & { _id: Types.ObjectId; } & { __v: number; }) | null) => void; }, next: (arg0: unknown) => any) => {
+export const updateMeter: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId)
-      return res.status(400).json({ message: 'Tenant ID required' });
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     const filter: any = { _id: req.params.id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
     const existing = await Meter.findOne(filter);
@@ -80,7 +73,11 @@ export const updateMeter: AuthedRequestHandler = async (req: { tenantId: any; pa
       res.status(404).json({ message: 'Not found' });
       return;
     }
-    const meter = await Meter.findOneAndUpdate(filter, req.body, { new: true });
+    const meter = await Meter.findOneAndUpdate(
+      filter,
+      req.body as UpdateQuery<Document>,
+      { new: true }
+    );
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     await writeAuditLog({
       tenantId,
@@ -98,11 +95,10 @@ export const updateMeter: AuthedRequestHandler = async (req: { tenantId: any; pa
   }
 };
 
-export const deleteMeter: AuthedRequestHandler = async (req: { tenantId: any; params: { id: any; }; siteId: any; user: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: { message: string; }) => void; }, next: (arg0: unknown) => any) => {
+export const deleteMeter: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId)
-      return res.status(400).json({ message: 'Tenant ID required' });
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     const filter: any = { _id: req.params.id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
     const meter = await Meter.findOneAndDelete(filter);
@@ -126,16 +122,15 @@ export const deleteMeter: AuthedRequestHandler = async (req: { tenantId: any; pa
   }
 };
 
-export const addMeterReading: AuthedRequestHandler = async (req: { tenantId: any; params: { id: any; }; siteId: any; body: { value: number; }; user: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: Document<unknown, {}, { createdAt: NativeDate; updatedAt: NativeDate; } & { tenantId: Types.ObjectId; meter: Types.ObjectId; timestamp: NativeDate; value: number; siteId?: Types.ObjectId | null; }, {}, { timestamps: true; }> & { createdAt: NativeDate; updatedAt: NativeDate; } & { tenantId: Types.ObjectId; meter: Types.ObjectId; timestamp: NativeDate; value: number; siteId?: Types.ObjectId | null; } & { _id: Types.ObjectId; } & { __v: number; }): void; new(): any; }; }; }, next: (arg0: unknown) => any) => {
+export const addMeterReading: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId)
-      return res.status(400).json({ error: 'Tenant ID required' });
+    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
     const filter: any = { _id: req.params.id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
     const meter = await Meter.findOne(filter);
     if (!meter) {
-      res.status(404).json({ error: 'Not found' });
+      res.status(404).json({ message: 'Not found' });
       return;
     }
 
@@ -163,7 +158,7 @@ export const addMeterReading: AuthedRequestHandler = async (req: { tenantId: any
   }
 };
 
-export const getMeterReadings: AuthedRequestHandler = async (req: { params: { id: any; }; tenantId: any; siteId: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: (Document<unknown, {}, { createdAt: NativeDate; updatedAt: NativeDate; } & { tenantId: Types.ObjectId; meter: Types.ObjectId; timestamp: NativeDate; value: number; siteId?: Types.ObjectId | null; }, {}, { timestamps: true; }> & { createdAt: NativeDate; updatedAt: NativeDate; } & { tenantId: Types.ObjectId; meter: Types.ObjectId; timestamp: NativeDate; value: number; siteId?: Types.ObjectId | null; } & { _id: Types.ObjectId; } & { __v: number; })[]) => void; }, next: (arg0: unknown) => any) => {
+export const getMeterReadings: AuthedRequestHandler = async (req, res, next) => {
   try {
     const filter: any = { _id: req.params.id, tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
@@ -183,3 +178,4 @@ export const getMeterReadings: AuthedRequestHandler = async (req: { params: { id
     return next(err);
   }
 };
+

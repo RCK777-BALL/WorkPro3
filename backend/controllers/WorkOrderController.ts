@@ -470,10 +470,9 @@ export const approveWorkOrder: AuthedRequestHandler = async (req: { tenantId: an
     }
 
     const saved = await workOrder.save();
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
     await writeAuditLog({
       tenantId,
-      userId,
+      userId: userObjectId,
       action: 'approve',
       entityType: 'WorkOrder',
       entityId: req.params.id,
@@ -503,17 +502,17 @@ export const assignWorkOrder: AuthedRequestHandler = async (req: { tenantId: any
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!workOrder) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const parsed = assignWorkOrderSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json(parsed.error.flatten());
+      sendResponse(res, null, parsed.error.flatten(), 400);
       return;
     }
     const before = workOrder.toObject();
@@ -524,7 +523,8 @@ export const assignWorkOrder: AuthedRequestHandler = async (req: { tenantId: any
       );
     }
     const saved = await workOrder.save();
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const userIdStr = (req.user as any)?._id || (req.user as any)?.id;
+    const userId = userIdStr ? new Types.ObjectId(userIdStr) : undefined;
     await writeAuditLog({
       tenantId,
       userId,
@@ -535,7 +535,7 @@ export const assignWorkOrder: AuthedRequestHandler = async (req: { tenantId: any
       after: saved.toObject(),
     });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
-    res.json(saved);
+    sendResponse(res, saved);
     return;
   } catch (err) {
     next(err);
@@ -547,23 +547,24 @@ export const startWorkOrder: AuthedRequestHandler = async (req: { tenantId: any;
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const parsed = startWorkOrderSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json(parsed.error.flatten());
+      sendResponse(res, null, parsed.error.flatten(), 400);
       return;
     }
     const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!workOrder) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const before = workOrder.toObject();
     workOrder.status = 'in_progress';
     const saved = await workOrder.save();
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const userIdStr = (req.user as any)?._id || (req.user as any)?.id;
+    const userId = userIdStr ? new Types.ObjectId(userIdStr) : undefined;
     await writeAuditLog({
       tenantId,
       userId,
@@ -574,7 +575,7 @@ export const startWorkOrder: AuthedRequestHandler = async (req: { tenantId: any;
       after: saved.toObject(),
     });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
-    res.json(saved);
+    sendResponse(res, saved);
     return;
   } catch (err) {
     next(err);
@@ -633,23 +634,24 @@ export const cancelWorkOrder: AuthedRequestHandler = async (req: { tenantId: any
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const parsed = cancelWorkOrderSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json(parsed.error.flatten());
+      sendResponse(res, null, parsed.error.flatten(), 400);
       return;
     }
     const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!workOrder) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const before = workOrder.toObject();
     workOrder.status = 'cancelled';
     const saved = await workOrder.save();
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const userIdStr = (req.user as any)?._id || (req.user as any)?.id;
+    const userId = userIdStr ? new Types.ObjectId(userIdStr) : undefined;
     await writeAuditLog({
       tenantId,
       userId,
@@ -660,7 +662,7 @@ export const cancelWorkOrder: AuthedRequestHandler = async (req: { tenantId: any
       after: saved.toObject(),
     });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
-    res.json(saved);
+    sendResponse(res, saved);
     return;
   } catch (err) {
     next(err);

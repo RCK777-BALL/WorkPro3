@@ -13,7 +13,8 @@ import { validationResult, ValidationError } from 'express-validator';
 import logger from '../utils/logger';
 import { filterFields } from '../utils/filterFields';
 import { writeAuditLog } from '../utils/audit';
-import { sendResponse } from '../utils/sendResponse';
+import { toEntityId } from '../utils/ids';
+
 
 const assetCreateFields = [
   'name', 'type', 'location', 'departmentId', 'status', 'serialNumber',
@@ -119,7 +120,7 @@ export const createAsset: AuthedRequestHandler = async (req, res, next) => {
       userId,
       action: 'create',
       entityType: 'Asset',
-      entityId: newAsset._id,
+      entityId: toEntityId(newAsset._id),
       after: assetObj,
     });
     sendResponse(res, response, null, 201);
@@ -188,7 +189,7 @@ export const updateAsset: AuthedRequestHandler = async (req, res, next) => {
       userId,
       action: 'update',
       entityType: 'Asset',
-      entityId: new Types.ObjectId(id),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before: existing.toObject(),
       after: asset?.toObject(),
     });
@@ -237,7 +238,7 @@ export const deleteAsset: AuthedRequestHandler = async (req, res, next) => {
       userId,
       action: 'delete',
       entityType: 'Asset',
-      entityId: new Types.ObjectId(id),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before: asset.toObject(),
     });
     sendResponse(res, { message: 'Deleted successfully' });

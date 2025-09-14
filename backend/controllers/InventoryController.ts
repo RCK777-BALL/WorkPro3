@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 import InventoryItem, { type IInventoryItem } from "../models/InventoryItem";
 import logger from "../utils/logger";
 import { writeAuditLog } from "../utils/audit";
+import { toEntityId } from "../utils/ids";
 
 const { isValidObjectId, Types } = mongoose;
 
@@ -168,7 +169,7 @@ export const createInventoryItem = async (req: Request, res: Response, next: Nex
       userId,
       action: "create",
       entityType: "InventoryItem",
-      entityId: saved._id,
+      entityId: toEntityId(saved._id),
       after: saved.toObject(),
     });
     res.status(201).json(saved);
@@ -219,7 +220,7 @@ export const updateInventoryItem = async (req: Request, res: Response, next: Nex
       userId: userId2,
       action: "update",
       entityType: "InventoryItem",
-      entityId: new Types.ObjectId(id),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before: existing.toObject(),
       after: updated.toObject(),
     });
@@ -255,7 +256,7 @@ export const deleteInventoryItem = async (req: Request, res: Response, next: Nex
       userId: userId3,
       action: "delete",
       entityType: "InventoryItem",
-      entityId: new Types.ObjectId(id),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before: deleted.toObject(),
     });
     res.json({ message: "Deleted successfully" });
@@ -318,7 +319,7 @@ export const useInventoryItem = async (req: Request, res: Response, next: NextFu
       userId: userId4,
       action: "use",
       entityType: "InventoryItem",
-      entityId: new Types.ObjectId(id),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before,
       after: item.toObject(),
     });

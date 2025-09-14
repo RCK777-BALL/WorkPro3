@@ -6,6 +6,7 @@ import TeamMember, { ITeamMember } from '../models/TeamMember';
 import type { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
 import { writeAuditLog } from '../utils/audit';
+import { toEntityId } from '../utils/ids';
 
 const roleHierarchy: Record<ITeamMember['role'], ITeamMember['role'][] | null> = {
   admin: null,
@@ -103,7 +104,7 @@ export const createTeamMember = async (
       userId,
       action: 'create',
       entityType: 'TeamMember',
-      entityId: saved._id,
+      entityId: toEntityId(saved._id),
       after: saved.toObject(),
     });
     res.status(201).json(saved);
@@ -155,7 +156,7 @@ export const updateTeamMember = async (
       userId,
       action: 'update',
       entityType: 'TeamMember',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: existing.toObject(),
       after: updated?.toObject(),
     });
@@ -203,7 +204,7 @@ export const deleteTeamMember = async (
       userId,
       action: 'delete',
       entityType: 'TeamMember',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: deleted.toObject(),
     });
     res.json({ message: 'Deleted successfully' });

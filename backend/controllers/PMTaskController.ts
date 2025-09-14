@@ -21,6 +21,7 @@ import type {
 } from '../types/pmTask';
 import type { ParamsDictionary } from 'express-serve-static-core';
 import { writeAuditLog } from '../utils/audit';
+import { toEntityId } from '../utils/ids';
 
 export const getAllPMTasks: AuthedRequestHandler<ParamsDictionary, PMTaskListResponse> = async (
   req: PMTaskRequest,
@@ -87,7 +88,7 @@ export const createPMTask: AuthedRequestHandler<ParamsDictionary, PMTaskResponse
       userId,
       action: 'create',
       entityType: 'PMTask',
-      entityId: task._id,
+      entityId: toEntityId(task._id),
       after: task.toObject(),
     });
     res.status(201).json(task);
@@ -132,7 +133,7 @@ export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | n
       userId,
       action: 'update',
       entityType: 'PMTask',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: existing.toObject(),
       after: task?.toObject(),
     });
@@ -171,7 +172,7 @@ export const deletePMTask: AuthedRequestHandler<PMTaskParams, PMTaskDeleteRespon
       userId,
       action: 'delete',
       entityType: 'PMTask',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: task.toObject(),
     });
     res.json({ message: 'Deleted successfully' });

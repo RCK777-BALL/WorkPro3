@@ -10,6 +10,7 @@ const envSchema = z.object({
   MONGO_URI: z.string().default('mongodb://localhost:27017/platinum_cmms'),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
   PORT: z.string().default('5010'),
+  LABOR_RATE: z.string().default('50'),
   RATE_LIMIT_WINDOW_MS: z.string().default('900000'),
   RATE_LIMIT_MAX: z.string().default('100'),
   NODE_ENV: z.string().default('development'),

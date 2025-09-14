@@ -15,17 +15,32 @@ import { filterFields } from '../utils/filterFields';
 import { writeAuditLog } from '../utils/audit';
 import { toEntityId } from '../utils/ids';
 import { sendResponse } from '../utils/sendResponse';
+import { Response } from 'express';
+import { any } from 'zod';
 
 
 const assetCreateFields = [
-  'name', 'type', 'location', 'departmentId', 'status', 'serialNumber',
-  'description', 'modelName', 'manufacturer', 'purchaseDate', 'installationDate',
-  'lineId', 'stationId', 'siteId', 'criticality', 'documents',
+  'name',
+  'type',
+  'location',
+  'departmentId',
+  'status',
+  'serialNumber',
+  'description',
+  'modelName',
+  'manufacturer',
+  'purchaseDate',
+  'installationDate',
+  'lineId',
+  'stationId',
+  'siteId',
+  'criticality',
+  'documents',
 ];
 
 const assetUpdateFields = [...assetCreateFields];
 
-export const getAllAssets: AuthedRequestHandler = async (req, res, next) => {
+export const getAllAssets: AuthedRequestHandler = async (req: { tenantId: any; siteId: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => any) => {
   try {
     const filter: any = { tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
@@ -43,7 +58,7 @@ export const getAllAssets: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const getAssetById: AuthedRequestHandler = async (req, res, next) => {
+export const getAssetById: AuthedRequestHandler = async (req: { params: { id: any; }; tenantId: any; siteId: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => any) => {
   try {
     const id = req.params.id;
     if (!id) {
@@ -75,7 +90,7 @@ export const getAssetById: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const createAsset: AuthedRequestHandler = async (req, res, next) => {
+export const createAsset: AuthedRequestHandler = async (req: { body: { name: any; }; tenantId: any; siteId: unknown; user: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => any) => {
 
   logger.debug('createAsset body:', req.body);
   logger.debug('createAsset files:', (req as any).files);
@@ -137,7 +152,7 @@ export const createAsset: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const updateAsset: AuthedRequestHandler = async (req, res, next) => {
+export const updateAsset: AuthedRequestHandler = async (req: { body: any; tenantId: any; params: { id: any; }; siteId: any; user: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => any) => {
  
   logger.debug('updateAsset body:', req.body);
   logger.debug('updateAsset files:', (req as any).files);
@@ -208,7 +223,7 @@ export const updateAsset: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const deleteAsset: AuthedRequestHandler = async (req, res, next) => {
+export const deleteAsset: AuthedRequestHandler = async (req: { tenantId: any; params: { id: any; }; siteId: any; user: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => any) => {
 
   try {
     const tenantId = req.tenantId;
@@ -255,7 +270,7 @@ export const deleteAsset: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const searchAssets: AuthedRequestHandler = async (req, res, next) => {
+export const searchAssets: AuthedRequestHandler = async (req: { query: { q: string; }; tenantId: any; siteId: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => any) => {
   try {
     const q = (req.query.q as string) || '';
     const regex = new RegExp(q, 'i');
@@ -277,7 +292,7 @@ export const searchAssets: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const getAssetTree: AuthedRequestHandler = async (req, res, next) => {
+export const getAssetTree: AuthedRequestHandler = async (req: { tenantId: any; siteId: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
     const match: any = { tenantId: req.tenantId };
     if (req.siteId) match.siteId = req.siteId;

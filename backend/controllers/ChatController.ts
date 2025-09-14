@@ -7,9 +7,10 @@ import ChatMessage, { ChatMessageDocument } from '../models/ChatMessage';
 import type { AuthedRequestHandler } from '../types/http';
 import { resolveUserAndTenant } from './chat/utils';
 import { sendResponse } from '../utils/sendResponse';
+import { Response } from 'express';
 
 // Channel controllers
-export const getChannels: AuthedRequestHandler = async (req, res, next) => {
+export const getChannels: AuthedRequestHandler = async (req: any, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
     const ids = resolveUserAndTenant(req, res);
     if (!ids) return;
@@ -27,7 +28,7 @@ export const getChannels: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const createChannel: AuthedRequestHandler = async (req, res, next) => {
+export const createChannel: AuthedRequestHandler = async (req: { body: { name: any; description: any; members?: never[] | undefined; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
     const ids = resolveUserAndTenant(req, res);
     if (!ids) return;
@@ -49,7 +50,7 @@ export const createChannel: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const updateChannel: AuthedRequestHandler = async (req, res, next) => {
+export const updateChannel: AuthedRequestHandler = async (req: { body: { name: any; description: any; members: any; }; params: { channelId: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
     const ids = resolveUserAndTenant(req, res);
     if (!ids) return;
@@ -81,7 +82,7 @@ export const updateChannel: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const deleteChannel: AuthedRequestHandler = async (req, res, next) => {
+export const deleteChannel: AuthedRequestHandler = async (req: { params: { channelId: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
     const ids = resolveUserAndTenant(req, res, { requireUser: false });
     if (!ids) return;
@@ -100,7 +101,7 @@ export const deleteChannel: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const getChannelMessages: AuthedRequestHandler = async (req, res, next) => {
+export const getChannelMessages: AuthedRequestHandler = async (req: { params: { channelId: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
     const messages: ChatMessageDocument[] = await ChatMessage.find({ channelId: req.params.channelId }).sort({ createdAt: 1 });
     sendResponse(res, messages);
@@ -111,7 +112,7 @@ export const getChannelMessages: AuthedRequestHandler = async (req, res, next) =
   }
 };
 
-export const sendChannelMessage: AuthedRequestHandler = async (req, res, next) => {
+export const sendChannelMessage: AuthedRequestHandler = async (req: { body: { content: any; }; params: { channelId: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
     const ids = resolveUserAndTenant(req, res, { requireTenant: false });
     if (!ids) return;
@@ -131,7 +132,7 @@ export const sendChannelMessage: AuthedRequestHandler = async (req, res, next) =
 };
 
 // Message controllers shared between channel and direct messages
-export const updateMessage: AuthedRequestHandler = async (req, res, next) => {
+export const updateMessage: AuthedRequestHandler = async (req: { params: { messageId: any; }; body: { content: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
     const ids = resolveUserAndTenant(req, res, { requireTenant: false });
     if (!ids) return;
@@ -153,7 +154,19 @@ export const updateMessage: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const deleteMessage: AuthedRequestHandler = async (req, res, next) => {
+interface DeleteMessageParams {
+  messageId: string;
+}
+
+interface DeleteMessageRequest {
+  params: DeleteMessageParams;
+}
+
+export const deleteMessage: AuthedRequestHandler = async (
+  req: DeleteMessageRequest,
+  res: Response<any, Record<string, any>>,
+  next: (arg0: unknown) => void
+) => {
   try {
     const ids = resolveUserAndTenant(req, res, { requireTenant: false });
     if (!ids) return;

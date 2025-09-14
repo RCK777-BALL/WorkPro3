@@ -507,10 +507,9 @@ export const approveWorkOrder: AuthedRequestHandler = async (req, res, next) => 
     }
 
     const saved = await workOrder.save();
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
     await writeAuditLog({
       tenantId,
-      userId,
+      userId: userObjectId,
       action: 'approve',
       entityType: 'WorkOrder',
       entityId: req.params.id,
@@ -559,7 +558,8 @@ export const assignWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       workOrder.assignees = mapAssignees(parsed.data.assignees) || [];
     }
     const saved = await workOrder.save();
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const userIdStr = (req.user as any)?._id || (req.user as any)?.id;
+    const userId = userIdStr ? new Types.ObjectId(userIdStr) : undefined;
     await writeAuditLog({
       tenantId,
       userId,
@@ -598,7 +598,8 @@ export const startWorkOrder: AuthedRequestHandler = async (req, res, next) => {
     const before = workOrder.toObject();
     workOrder.status = 'in_progress';
     const saved = await workOrder.save();
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const userIdStr = (req.user as any)?._id || (req.user as any)?.id;
+    const userId = userIdStr ? new Types.ObjectId(userIdStr) : undefined;
     await writeAuditLog({
       tenantId,
       userId,
@@ -685,7 +686,8 @@ export const cancelWorkOrder: AuthedRequestHandler = async (req, res, next) => {
     const before = workOrder.toObject();
     workOrder.status = 'cancelled';
     const saved = await workOrder.save();
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const userIdStr = (req.user as any)?._id || (req.user as any)?.id;
+    const userId = userIdStr ? new Types.ObjectId(userIdStr) : undefined;
     await writeAuditLog({
       tenantId,
       userId,

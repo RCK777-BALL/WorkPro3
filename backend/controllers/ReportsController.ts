@@ -118,7 +118,7 @@ export const getAnalyticsReport: AuthedRequestHandler = async (req: { query: { r
   }
 };
 
-export const downloadReport: AuthedRequestHandler = async (req: { query: { format: any; role: any; }; tenantId: any; }, res: { header: (arg0: string, arg1: string) => void; attachment: (arg0: string) => void; send: (arg0: string) => void; setHeader: (arg0: string, arg1: string) => void; }, next: (arg0: unknown) => any) => {
+export const downloadReport: AuthedRequestHandler = async (req, res, next) => {
  
   try {
     const format = String(req.query.format || 'pdf').toLowerCase();

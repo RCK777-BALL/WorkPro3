@@ -5,19 +5,15 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import type { Response as ExpressResponse } from 'express';
+import type { ParamsDictionary } from 'express-serve-static-core';
 import { Types } from 'mongoose';
 import Document from '../models/Document';
 import type { AuthedRequestHandler } from '../types/http';
 import { sendResponse } from '../utils/sendResponse';
 import { writeAuditLog } from '../utils/audit';
-import { Response } from 'express';
-import { Response } from 'express';
-import { Response } from 'express';
-import { Response } from 'express';
-import { Response } from 'express';
 
 
-export const getAllDocuments: AuthedRequestHandler = async (
+export const getAllDocuments: AuthedRequestHandler<ParamsDictionary> = async (
   _req,
   res: ExpressResponse,
   next,
@@ -32,13 +28,18 @@ export const getAllDocuments: AuthedRequestHandler = async (
   }
 };
 
-export const getDocumentById: AuthedRequestHandler = async (
+export const getDocumentById: AuthedRequestHandler<{ id: string }> = async (
   req,
   res: ExpressResponse,
   next,
 ) => {
   try {
-    const item = await Document.findById(req.params.id);
+    const { id } = req.params;
+    if (!Types.ObjectId.isValid(id)) {
+      sendResponse(res, null, 'Invalid ID', 400);
+      return;
+    }
+    const item = await Document.findById(id);
     if (!item) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -51,7 +52,7 @@ export const getDocumentById: AuthedRequestHandler = async (
   }
 };
 
-export const createDocument: AuthedRequestHandler = async (
+export const createDocument: AuthedRequestHandler<ParamsDictionary> = async (
   req,
   res: ExpressResponse,
   next,
@@ -102,12 +103,18 @@ export const createDocument: AuthedRequestHandler = async (
   }
 };
 
-export const updateDocument: AuthedRequestHandler = async (
+export const updateDocument: AuthedRequestHandler<{ id: string }> = async (
   req,
   res: ExpressResponse,
   next,
 ) => {
   try {
+    const { id } = req.params;
+    if (!Types.ObjectId.isValid(id)) {
+      sendResponse(res, null, 'Invalid ID', 400);
+      return;
+    }
+
     const { base64, url, name } = req.body as {
       base64?: string;
       url?: string;
@@ -131,7 +138,8 @@ export const updateDocument: AuthedRequestHandler = async (
       updateData.name = finalName;
     }
 
-    const updated = await Document.findByIdAndUpdate(req.params.id, updateData, {
+    const objectId = new Types.ObjectId(id);
+    const updated = await Document.findByIdAndUpdate(objectId, updateData, {
       new: true,
       runValidators: true,
     });
@@ -146,7 +154,7 @@ export const updateDocument: AuthedRequestHandler = async (
       userId,
       action: 'update',
       entityType: 'Document',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: objectId,
       after: updated.toObject(),
     });
 
@@ -159,15 +167,21 @@ export const updateDocument: AuthedRequestHandler = async (
   }
 };
 
-export const deleteDocument: AuthedRequestHandler = async (
+export const deleteDocument: AuthedRequestHandler<{ id: string }> = async (
   req,
   res: ExpressResponse,
   next,
 ) => {
   try {
+    const { id } = req.params;
+    if (!Types.ObjectId.isValid(id)) {
+      sendResponse(res, null, 'Invalid ID', 400);
+      return;
+    }
+    const objectId = new Types.ObjectId(id);
     const tenantId = req.tenantId;
     const userId = (req.user as any)?._id || (req.user as any)?.id;
-    const deleted = await Document.findByIdAndDelete(req.params.id);
+    const deleted = await Document.findByIdAndDelete(objectId);
     if (!deleted) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -177,7 +191,7 @@ export const deleteDocument: AuthedRequestHandler = async (
       userId,
       action: 'delete',
       entityType: 'Document',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: objectId,
       before: deleted.toObject(),
     });
     sendResponse(res, { message: 'Deleted successfully' });

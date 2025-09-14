@@ -104,7 +104,7 @@ async function calculateStats(tenantId: string, role?: string) {
   };
 }
 
-export const getAnalyticsReport: AuthedRequestHandler = async (req, res, next) => {
+export const getAnalyticsReport: AuthedRequestHandler = async (req: { query: { role: any; }; tenantId: any; }, res: { json: (arg0: { workOrderCompletionRate: number; averageResponseTime: number; maintenanceCompliance: number; assetUptime: number; costPerWorkOrder: number; laborUtilization: number; assetDowntime: number; topAssets: any[]; }) => void; }, next: (arg0: unknown) => any) => {
  
   try {
     const role = typeof req.query.role === 'string' ? req.query.role : undefined;
@@ -117,7 +117,7 @@ export const getAnalyticsReport: AuthedRequestHandler = async (req, res, next) =
   }
 };
 
-export const downloadReport: AuthedRequestHandler = async (req, res, next) => {
+export const downloadReport: AuthedRequestHandler = async (req: { query: { format: any; role: any; }; tenantId: any; }, res: { header: (arg0: string, arg1: string) => void; attachment: (arg0: string) => void; send: (arg0: string) => void; setHeader: (arg0: string, arg1: string) => void; }, next: (arg0: unknown) => any) => {
  
   try {
     const format = String(req.query.format || 'pdf').toLowerCase();
@@ -169,7 +169,7 @@ async function aggregateTrends(tenantId: string) {
   }));
 }
 
-export const getTrendData: AuthedRequestHandler = async (req, res, next) => {
+export const getTrendData: AuthedRequestHandler = async (req: { tenantId: any; }, res: { json: (arg0: { period: any; maintenanceCost: any; assetDowntime: any; }[]) => void; }, next: (arg0: unknown) => any) => {
  
   try {
     const tenantId = req.tenantId!;
@@ -181,7 +181,7 @@ export const getTrendData: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const exportTrendData: AuthedRequestHandler = async (req, res, next) => {
+export const exportTrendData: AuthedRequestHandler = async (req: { query: { format: any; }; tenantId: any; }, res: { header: (arg0: string, arg1: string) => void; attachment: (arg0: string) => void; send: (arg0: string) => void; json: (arg0: { period: any; maintenanceCost: any; assetDowntime: any; }[]) => void; }, next: (arg0: unknown) => any) => {
  
   try {
     const format = String(req.query.format || 'json').toLowerCase();
@@ -276,7 +276,7 @@ async function aggregateCosts(tenantId: string) {
     }));
 }
 
-export const getCostMetrics: AuthedRequestHandler = async (req, res, next) => {
+export const getCostMetrics: AuthedRequestHandler = async (req: { tenantId: any; }, res: { json: (arg0: any[]) => void; }, next: (arg0: unknown) => any) => {
  
   try {
     const tenantId = req.tenantId!;
@@ -303,7 +303,7 @@ async function aggregateDowntime(tenantId: string) {
   return results.map((r) => ({ period: r._id, downtime: r.downtime }));
 }
 
-export const getDowntimeReport: AuthedRequestHandler = async (req, res, next) => {
+export const getDowntimeReport: AuthedRequestHandler = async (req: { tenantId: any; }, res: { json: (arg0: { period: any; downtime: any; }[]) => void; }, next: (arg0: unknown) => any) => {
  
   try {
     const tenantId = req.tenantId!;
@@ -347,7 +347,7 @@ async function aggregatePmCompliance(tenantId: string) {
   return results;
 }
 
-export const getPmCompliance: AuthedRequestHandler = async (req, res, next) => {
+export const getPmCompliance: AuthedRequestHandler = async (req: { tenantId: any; }, res: { json: (arg0: any[]) => void; }, next: (arg0: unknown) => any) => {
   try {
     const tenantId = req.tenantId!;
     const data = await aggregatePmCompliance(tenantId);
@@ -388,7 +388,7 @@ async function aggregateCostByAsset(tenantId: string) {
   return results;
 }
 
-export const getCostByAsset: AuthedRequestHandler = async (req, res, next) => {
+export const getCostByAsset: AuthedRequestHandler = async (req: { tenantId: any; }, res: { json: (arg0: any[]) => void; }, next: (arg0: unknown) => any) => {
   try {
     const tenantId = req.tenantId!;
     const data = await aggregateCostByAsset(tenantId);

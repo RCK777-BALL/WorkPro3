@@ -8,9 +8,14 @@ import Document from '../models/Document';
 import type { AuthedRequestHandler } from '../types/http';
 import { sendResponse } from '../utils/sendResponse';
 import { writeAuditLog } from '../utils/audit';
+import { Response } from 'express';
+import { Response } from 'express';
+import { Response } from 'express';
+import { Response } from 'express';
+import { Response } from 'express';
 
 
-export const getAllDocuments: AuthedRequestHandler = async (_req, res, next) => {
+export const getAllDocuments: AuthedRequestHandler = async (_req: any, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
     const items = await Document.find();
     sendResponse(res, items);
@@ -21,7 +26,7 @@ export const getAllDocuments: AuthedRequestHandler = async (_req, res, next) => 
   }
 };
 
-export const getDocumentById: AuthedRequestHandler = async (req, res, next) => {
+export const getDocumentById: AuthedRequestHandler = async (req: { params: { id: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
     const item = await Document.findById(req.params.id);
     if (!item) {
@@ -36,7 +41,7 @@ export const getDocumentById: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const createDocument: AuthedRequestHandler = async (req, res, next) => {
+export const createDocument: AuthedRequestHandler = async (req: { body: { base64?: string; url?: string; name?: string; }; tenantId: any; user: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
     const { base64, url, name } = req.body as {
       base64?: string;
@@ -83,7 +88,7 @@ export const createDocument: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const updateDocument: AuthedRequestHandler = async (req, res, next) => {
+export const updateDocument: AuthedRequestHandler = async (req: { body: { base64?: string; url?: string; name?: string; }; params: { id: any; }; tenantId: any; user: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
     const { base64, url, name } = req.body as {
       base64?: string;
@@ -136,7 +141,7 @@ export const updateDocument: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const deleteDocument: AuthedRequestHandler = async (req, res, next) => {
+export const deleteDocument: AuthedRequestHandler = async (req: { tenantId: any; user: any; params: { id: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
     const tenantId = req.tenantId;
     const userId = (req.user as any)?._id || (req.user as any)?.id;

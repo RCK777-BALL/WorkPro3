@@ -8,11 +8,12 @@ import { randomUUID } from 'crypto';
 import type { Response as ExpressResponse } from 'express';
 import type { ParamsDictionary } from 'express-serve-static-core';
 
-import { Types } from 'mongoose';
 import Document from '../models/Document';
 import type { AuthedRequestHandler } from '../types/http';
 import { sendResponse } from '../utils/sendResponse';
 import { writeAuditLog } from '../utils/audit';
+import { toObjectId } from '../utils/ids';
+
 
 
 export const getAllDocuments: AuthedRequestHandler<ParamsDictionary> = async (
@@ -39,11 +40,12 @@ export const getDocumentById: AuthedRequestHandler<{ id: string }> = async (
 
   try {
     const { id } = req.params;
-    if (!Types.ObjectId.isValid(id)) {
+    const objectId = toObjectId(id);
+    if (!objectId) {
       sendResponse(res, null, 'Invalid ID', 400);
       return;
     }
-    const item = await Document.findById(id);
+    const item = await Document.findById(objectId);
     if (!item) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -130,7 +132,7 @@ export const createDocument: AuthedRequestHandler<ParamsDictionary> = async (
       userId,
       action: 'create',
       entityType: 'Document',
-      entityId: saved._id,
+      entityId: toEntityId(saved._id),
       after: saved.toObject(),
     });
 
@@ -151,7 +153,8 @@ export const updateDocument: AuthedRequestHandler<{ id: string }> = async (
 
   try {
     const { id } = req.params;
-    if (!Types.ObjectId.isValid(id)) {
+    const objectId = toObjectId(id);
+    if (!objectId) {
       sendResponse(res, null, 'Invalid ID', 400);
       return;
     }
@@ -200,7 +203,6 @@ export const updateDocument: AuthedRequestHandler<{ id: string }> = async (
       return;
     }
 
-    const objectId = new Types.ObjectId(id);
     const updated = await Document.findByIdAndUpdate(objectId, updateData, {
       new: true,
       runValidators: true,
@@ -216,7 +218,7 @@ export const updateDocument: AuthedRequestHandler<{ id: string }> = async (
       userId,
       action: 'update',
       entityType: 'Document',
-      entityId: objectId,
+      entityId: toEntityId(objectId),
       after: updated.toObject(),
     });
 
@@ -237,11 +239,11 @@ export const deleteDocument: AuthedRequestHandler<{ id: string }> = async (
 
   try {
     const { id } = req.params;
-    if (!Types.ObjectId.isValid(id)) {
+    const objectId = toObjectId(id);
+    if (!objectId) {
       sendResponse(res, null, 'Invalid ID', 400);
       return;
     }
-    const objectId = new Types.ObjectId(id);
     const tenantId = req.tenantId;
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const deleted = await Document.findByIdAndDelete(objectId);
@@ -267,7 +269,7 @@ export const deleteDocument: AuthedRequestHandler<{ id: string }> = async (
       userId,
       action: 'delete',
       entityType: 'Document',
-      entityId: objectId,
+      entityId: toEntityId(objectId),
       before: deleted.toObject(),
     });
     sendResponse(res, { message: 'Deleted successfully' });

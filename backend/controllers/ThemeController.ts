@@ -6,6 +6,7 @@ import type { AuthedRequestHandler } from '../types/http';
 import User from '../models/User';
 import { writeAuditLog } from '../utils/audit';
 import { sendResponse } from '../utils/sendResponse';
+
 import { toEntityId } from '../utils/ids';
 
 export const getTheme: AuthedRequestHandler = async (req, res, next) => {
@@ -17,7 +18,7 @@ export const getTheme: AuthedRequestHandler = async (req, res, next) => {
       colorScheme?: string;
     };
 
-    res.json({ theme, colorScheme });
+    sendResponse(res, { theme, colorScheme });
     return;
   } catch (err) {
     return next(err);
@@ -34,8 +35,9 @@ export const updateTheme: AuthedRequestHandler = async (req, res, next) => {
       return;
     }
 
+
     if (!user) {
-      return res.status(401).json({ message: 'Unauthorized' });
+      return sendResponse(res, null, 'Unauthorized', 401);
     }
 
     const updated = await User.findByIdAndUpdate(
@@ -45,7 +47,7 @@ export const updateTheme: AuthedRequestHandler = async (req, res, next) => {
     );
 
     if (!updated) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
 
@@ -56,10 +58,11 @@ export const updateTheme: AuthedRequestHandler = async (req, res, next) => {
       action: 'update',
       entityType: 'UserTheme',
       entityId: toEntityId(req.user?._id ?? req.params.id),
+
       before: null,
       after: { theme: updated.theme, colorScheme: updated.colorScheme },
     });
-    res.json({ theme: updated.theme, colorScheme: updated.colorScheme });
+    sendResponse(res, { theme: updated.theme, colorScheme: updated.colorScheme });
     return;
   } catch (err) {
     return next(err);

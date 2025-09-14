@@ -3,6 +3,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import { sendResponse } from '../utils/sendResponse';
 
 import GoodsReceipt from '../models/GoodsReceipt';
 import PurchaseOrder from '../models/PurchaseOrder';
@@ -11,6 +12,7 @@ import { addStock } from '../services/inventory';
 import nodemailer from 'nodemailer';
 import { assertEmail } from '../utils/assert';
 import { writeAuditLog } from '../utils/audit';
+import { toEntityId } from '../utils/ids';
 import logger from '../utils/logger';
 import { enqueueEmailRetry } from '../utils/emailQueue';
 
@@ -22,12 +24,12 @@ export const createGoodsReceipt = async (
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
-      return res.status(400).json({ message: 'Tenant ID required' });
+      return sendResponse(res, null, 'Tenant ID required', 400);
     const { purchaseOrder: poId, items } = req.body as any;
 
     const po = await PurchaseOrder.findById(poId);
     if (!po) {
-      res.status(404).json({ message: 'PO not found' });
+      sendResponse(res, null, 'PO not found', 404);
       return;
     }
 
@@ -68,7 +70,7 @@ export const createGoodsReceipt = async (
       userId,
       action: 'create',
       entityType: 'GoodsReceipt',
-      entityId: grAny._1 as any,
+      entityId: toEntityId(grAny._1 as any),
       after: typeof grAny.toObject === 'function' ? grAny.toObject() : grAny,
     });
 
@@ -91,7 +93,7 @@ export const createGoodsReceipt = async (
       }
     }
 
-    res.status(201).json(gr);
+    sendResponse(res, gr, null, 201);
     return;
   } catch (err) {
     next(err);

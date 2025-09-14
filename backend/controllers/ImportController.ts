@@ -6,12 +6,13 @@ import { parse } from 'csv-parse/sync';
 import Asset from '../models/Asset';
 import InventoryItem from '../models/InventoryItem';
 import type { AuthedRequestHandler } from '../types/http';
+import { sendResponse } from '../utils/sendResponse';
 
 export const importAssets: AuthedRequestHandler = async (req: { tenantId: any; siteId: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: { imported: number; }) => void; }, next: (arg0: unknown) => void) => {
   try {
     const file = (req as any).file;
     if (!file) {
-      res.status(400).json({ message: 'CSV file required' });
+      sendResponse(res, null, 'CSV file required', 400);
       return;
     }
     const records = parse(file.buffer, {
@@ -33,7 +34,7 @@ export const importAssets: AuthedRequestHandler = async (req: { tenantId: any; s
     }));
 
     const created = await Asset.insertMany(docs, { ordered: false });
-    res.json({ imported: created.length });
+    sendResponse(res, { imported: created.length });
     return;
   } catch (err) {
     next(err);
@@ -45,7 +46,7 @@ export const importParts: AuthedRequestHandler = async (req: { tenantId: any; si
   try {
     const file = (req as any).file;
     if (!file) {
-      res.status(400).json({ message: 'CSV file required' });
+      sendResponse(res, null, 'CSV file required', 400);
       return;
     }
 
@@ -70,7 +71,7 @@ export const importParts: AuthedRequestHandler = async (req: { tenantId: any; si
     }));
 
     const created = await InventoryItem.insertMany(docs, { ordered: false });
-    res.json({ imported: created.length });
+    sendResponse(res, { imported: created.length });
     return;
   } catch (err) {
     next(err);

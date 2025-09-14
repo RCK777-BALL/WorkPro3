@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import type { Types } from 'mongoose';
 import AuditLog from '../../models/AuditLog';
 import logger from '../../utils/logger';
+import { toEntityId } from '../utils/toEntityId';
 
 export type AuditValue = unknown;
 
@@ -18,7 +19,7 @@ export async function auditAction(
   try {
     const tenantId = req.tenantId;
     const siteId = req.siteId;
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const userId = toEntityId((req.user as any)?._id || (req.user as any)?.id);
     if (!tenantId) return;
     await AuditLog.create({
       tenantId,
@@ -26,7 +27,7 @@ export async function auditAction(
       userId,
       action,
       entityType,
-      entityId: String(targetId),
+      entityId: toEntityId(targetId),
       before: before === undefined ? undefined : normalize(before),
       after: after === undefined ? undefined : normalize(after),
       ts: new Date(),

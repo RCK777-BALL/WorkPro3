@@ -4,6 +4,7 @@
 
 import Department from '../models/Department';
 import type { Request, Response, NextFunction } from 'express';
+import { sendResponse } from '../utils/sendResponse';
 
 
 export const listDepartments = async (
@@ -19,7 +20,7 @@ export const listDepartments = async (
     if (q) filter.name = { $regex: new RegExp(q, 'i') };
 
     const items = await Department.find(filter).sort({ name: 1 });
-    res.json(items);
+    sendResponse(res, items);
     return;
   } catch (err) {
     next(err);

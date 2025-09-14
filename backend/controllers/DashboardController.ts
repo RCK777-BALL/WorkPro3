@@ -3,6 +3,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import { sendResponse } from '../utils/sendResponse';
 
 import Asset from '../models/Asset';
 import WorkOrder from '../models/WorkOrder';
@@ -15,7 +16,7 @@ export const getAssetSummaries = async (_req: Request, res: Response, next: Next
     const summary = await Asset.aggregate([
       { $group: { _id: '$status', count: { $sum: 1 } } },
     ]);
-    res.json(summary);
+    sendResponse(res, summary);
   } catch (err) {
     next(err);
   }
@@ -26,7 +27,7 @@ export const getWorkOrderStatus = async (_req: Request, res: Response, next: Nex
     const summary = await WorkOrder.aggregate([
       { $group: { _id: '$status', count: { $sum: 1 } } },
     ]);
-    res.json(summary);
+    sendResponse(res, summary);
   } catch (err) {
     next(err);
   }
@@ -44,7 +45,7 @@ export const getUpcomingMaintenance = async (_req: Request, res: Response, next:
       return !!nextCronOccurrenceWithin(t.rule.cron, now, 7);
     });
 
-    res.json(upcoming);
+    sendResponse(res, upcoming);
   } catch (err) {
     next(err);
   }
@@ -56,7 +57,7 @@ export const getCriticalAlerts = async (_req: Request, res: Response, next: Next
       priority: 'critical',
       status: { $ne: 'completed' },
     });
-    res.json(alerts);
+    sendResponse(res, alerts);
   } catch (err) {
     next(err);
   }
@@ -67,7 +68,7 @@ export const getLowStockInventory = async (_req: Request, res: Response, next: N
     const items = await InventoryItem.find({
       $expr: { $lte: ['$quantity', '$reorderThreshold'] },
     }).populate('vendor');
-    res.json(items);
+    sendResponse(res, items);
   } catch (err) {
     next(err);
   }

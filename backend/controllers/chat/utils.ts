@@ -1,5 +1,6 @@
 import type { Response } from 'express';
 import type { AuthedRequest } from '../../types/http';
+import { sendResponse } from '../../utils/sendResponse';
 
 interface ResolveOptions {
   requireUser?: boolean;
@@ -18,7 +19,7 @@ export function resolveUserAndTenant(
   if (requireUser) {
     const userId = (req.user as any)?._id ?? req.user?.id;
     if (!userId) {
-      res.status(401).json({ message: 'Not authenticated' });
+      sendResponse(res, null, 'Not authenticated', 401);
       return;
     }
     if (!requireTenant) {
@@ -26,7 +27,7 @@ export function resolveUserAndTenant(
     }
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     return { userId, tenantId };
@@ -35,7 +36,7 @@ export function resolveUserAndTenant(
   if (requireTenant) {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     return { tenantId };

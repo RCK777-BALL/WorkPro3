@@ -3,12 +3,11 @@
  */
 
 import type { Request, Response, NextFunction } from "express";
-import mongoose from "mongoose";
+import { Types, isValidObjectId } from "mongoose";
 import InventoryItem, { type IInventoryItem } from "../models/InventoryItem";
 import logger from "../utils/logger";
 import { writeAuditLog } from "../utils/audit";
-
-const { isValidObjectId, Types } = mongoose;
+import { toEntityId } from "../utils/ids";
 
 // Narrow helper to scope queries by tenant/site
 function scopedQuery<T extends Record<string, unknown>>(req: Request, base?: T) {
@@ -94,7 +93,7 @@ export const getInventoryItems = async (req: Request, res: Response, next: NextF
       };
     });
 
-    res.json(formatted);
+    sendResponse(res, formatted);
   } catch (err) {
     next(err);
   }
@@ -105,7 +104,7 @@ export const getAllInventoryItems = async (req: Request, res: Response, next: Ne
   try {
     const query = scopedQuery(req);
     const items = await InventoryItem.find(query).lean();
-    res.json(items);
+    sendResponse(res, items);
   } catch (err) {
     next(err);
   }
@@ -119,7 +118,7 @@ export const getLowStockItems = async (req: Request, res: Response, next: NextFu
     } as any);
 
     const items = await InventoryItem.find(query).populate("vendor").lean();
-    res.json(items);
+    sendResponse(res, items);
   } catch (err) {
     next(err);
   }
@@ -130,19 +129,19 @@ export const getInventoryItemById = async (req: Request, res: Response, next: Ne
   try {
     const { id } = req.params;
     if (!isValidObjectId(id)) {
-      res.status(400).json({ message: "Invalid id" });
+      sendResponse(res, null, "Invalid id", 400);
       return;
     }
 
     const item = await InventoryItem.findOne(scopedQuery(req, { _id: id })).exec();
     if (!item) {
-      res.status(404).json({ message: "Not found" });
+      sendResponse(res, null, "Not found", 404);
       return;
     }
 
     const qty = Number(item.quantity ?? 0);
     const threshold = Number(item.reorderThreshold ?? 0);
-    res.json({ ...item.toObject(), status: qty <= threshold ? "low" : "ok" });
+    sendResponse(res, { ...item.toObject(), status: qty <= threshold ? "low" : "ok" });
   } catch (err) {
     next(err);
   }
@@ -153,10 +152,10 @@ export const createInventoryItem = async (req: Request, res: Response, next: Nex
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
-      return res.status(400).json({ message: 'Tenant ID required' });
+      return sendResponse(res, null, 'Tenant ID required', 400);
     const { data, invalid } = buildInventoryPayload(req.body as Record<string, unknown>);
     if (invalid) {
-      res.status(400).json({ message: `Invalid fields: ${invalid.join(", ")}` });
+      sendResponse(res, null, `Invalid fields: ${invalid.join(", ")}`, 400);
       return;
     }
 
@@ -168,10 +167,10 @@ export const createInventoryItem = async (req: Request, res: Response, next: Nex
       userId,
       action: "create",
       entityType: "InventoryItem",
-      entityId: saved._id,
+      entityId: toEntityId(saved._id),
       after: saved.toObject(),
     });
-    res.status(201).json(saved);
+    sendResponse(res, saved, null, 201);
   } catch (err) {
     logger.error("Error creating inventory item", err);
     next(err);
@@ -183,23 +182,23 @@ export const updateInventoryItem = async (req: Request, res: Response, next: Nex
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
-      return res.status(400).json({ message: 'Tenant ID required' });
+      return sendResponse(res, null, 'Tenant ID required', 400);
     const { id } = req.params;
     if (!isValidObjectId(id)) {
-      res.status(400).json({ message: "Invalid id" });
+      sendResponse(res, null, "Invalid id", 400);
       return;
     }
 
     const { data, invalid } = buildInventoryPayload(req.body as Record<string, unknown>);
     if (invalid) {
-      res.status(400).json({ message: `Invalid fields: ${invalid.join(", ")}` });
+      sendResponse(res, null, `Invalid fields: ${invalid.join(", ")}`, 400);
       return;
     }
 
     const filter = scopedQuery(req, { _id: id } as any);
     const existing = await InventoryItem.findOne(filter);
     if (!existing) {
-      res.status(404).json({ message: "Not found" });
+      sendResponse(res, null, "Not found", 404);
       return;
     }
 
@@ -209,7 +208,7 @@ export const updateInventoryItem = async (req: Request, res: Response, next: Nex
     });
 
     if (!updated) {
-      res.status(404).json({ message: "Not found" });
+      sendResponse(res, null, "Not found", 404);
       return;
     }
 
@@ -219,11 +218,11 @@ export const updateInventoryItem = async (req: Request, res: Response, next: Nex
       userId: userId2,
       action: "update",
       entityType: "InventoryItem",
-      entityId: new Types.ObjectId(id),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before: existing.toObject(),
       after: updated.toObject(),
     });
-    res.json(updated);
+    sendResponse(res, updated);
   } catch (err) {
     logger.error("Error updating inventory item", err);
     next(err);
@@ -235,17 +234,17 @@ export const deleteInventoryItem = async (req: Request, res: Response, next: Nex
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
-      return res.status(400).json({ message: 'Tenant ID required' });
+      return sendResponse(res, null, 'Tenant ID required', 400);
     const { id } = req.params;
     if (!isValidObjectId(id)) {
-      res.status(400).json({ message: "Invalid id" });
+      sendResponse(res, null, "Invalid id", 400);
       return;
     }
 
     const filter = scopedQuery(req, { _id: id } as any);
     const deleted = await InventoryItem.findOneAndDelete(filter);
     if (!deleted) {
-      res.status(404).json({ message: "Not found" });
+      sendResponse(res, null, "Not found", 404);
       return;
     }
 
@@ -255,10 +254,10 @@ export const deleteInventoryItem = async (req: Request, res: Response, next: Nex
       userId: userId3,
       action: "delete",
       entityType: "InventoryItem",
-      entityId: new Types.ObjectId(id),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before: deleted.toObject(),
     });
-    res.json({ message: "Deleted successfully" });
+    sendResponse(res, { message: "Deleted successfully" });
   } catch (err) {
     next(err);
   }
@@ -269,27 +268,27 @@ export const useInventoryItem = async (req: Request, res: Response, next: NextFu
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
-      return res.status(400).json({ message: 'Tenant ID required' });
+      return sendResponse(res, null, 'Tenant ID required', 400);
     const { id } = req.params;
     const { quantity, uom } = req.body as { quantity?: number; uom?: string };
 
     if (!isValidObjectId(id)) {
-      res.status(400).json({ message: "Invalid id" });
+      sendResponse(res, null, "Invalid id", 400);
       return;
     }
     const qty = Number(quantity);
     if (!Number.isFinite(qty) || qty <= 0) {
-      res.status(400).json({ message: "Quantity must be a positive number" });
+      sendResponse(res, null, "Quantity must be a positive number", 400);
       return;
     }
     if (!uom || !isValidObjectId(uom)) {
-      res.status(400).json({ message: "uom must be a valid ObjectId" });
+      sendResponse(res, null, "uom must be a valid ObjectId", 400);
       return;
     }
 
     const item = await InventoryItem.findOne(scopedQuery(req, { _id: id } as any));
     if (!item) {
-      res.status(404).json({ message: "Not found" });
+      sendResponse(res, null, "Not found", 404);
       return;
     }
 
@@ -297,18 +296,18 @@ export const useInventoryItem = async (req: Request, res: Response, next: NextFu
 
     // If model types don’t declare .consume, call with a local narrow type
     const doc = item as typeof item & {
-      consume?: (q: number, uomId: mongoose.Types.ObjectId) => Promise<void>;
+      consume?: (q: number, uomId: Types.ObjectId) => Promise<void>;
     };
 
     if (typeof doc.consume !== "function") {
-      res.status(400).json({ message: "Consume operation not supported for this item" });
+      sendResponse(res, null, "Consume operation not supported for this item", 400);
       return;
     }
 
     try {
       await doc.consume(qty, new Types.ObjectId(uom));
     } catch (e: any) {
-      res.status(400).json({ message: e?.message ?? "Failed to consume item" });
+      sendResponse(res, null, e?.message ?? "Failed to consume item" , 400);
       return;
     }
 
@@ -318,11 +317,11 @@ export const useInventoryItem = async (req: Request, res: Response, next: NextFu
       userId: userId4,
       action: "use",
       entityType: "InventoryItem",
-      entityId: new Types.ObjectId(id),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before,
       after: item.toObject(),
     });
-    res.json(item);
+    sendResponse(res, item);
   } catch (err) {
     next(err);
   }
@@ -333,7 +332,7 @@ export const searchInventoryItems = async (req: Request, res: Response, next: Ne
   try {
     const q = String((req.query.q as string) ?? "").trim();
     if (!q) {
-      res.json([]);
+      sendResponse(res, []);
       return;
     }
 
@@ -343,7 +342,7 @@ export const searchInventoryItems = async (req: Request, res: Response, next: Ne
     } as any);
 
     const items = await InventoryItem.find(filter).limit(10).lean();
-    res.json(items);
+    sendResponse(res, items);
   } catch (err) {
     next(err);
   }

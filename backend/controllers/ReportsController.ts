@@ -2,6 +2,8 @@
  * SPDX-License-Identifier: MIT
  */
 
+/// <reference types="node" />
+
 import PDFDocument from 'pdfkit';
 import { Parser as Json2csvParser, Transform as Json2csvTransform } from 'json2csv';
 import { Readable } from 'stream';
@@ -12,6 +14,7 @@ import User from '../models/User';
 import TimeSheet from '../models/TimeSheet';
 import type { AuthedRequestHandler } from '../types/http';
 import { LABOR_RATE } from '../config/env';
+import { sendResponse } from '../utils/sendResponse';
  
 
 async function calculateStats(tenantId: string, role?: string) {
@@ -112,7 +115,7 @@ export const getAnalyticsReport: AuthedRequestHandler = async (req: { query: { r
     const role = typeof req.query.role === 'string' ? req.query.role : undefined;
     const tenantId = req.tenantId!;
     const stats = await calculateStats(tenantId, role);
-    res.json(stats);
+    sendResponse(res, stats);
     return;
   } catch (err) {
     return next(err);
@@ -131,7 +134,9 @@ export const downloadReport: AuthedRequestHandler = async (req, res, next) => {
       const transform = new Json2csvTransform();
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename=report.csv');
-      Readable.from([stats]).pipe(transform).pipe(res);
+      Readable.from([stats]).pipe(transform).pipe(
+        res as unknown as NodeJS.WritableStream,
+      );
       return;
     }
 
@@ -175,7 +180,7 @@ export const getTrendData: AuthedRequestHandler = async (req: { tenantId: any; }
   try {
     const tenantId = req.tenantId!;
     const data = await aggregateTrends(tenantId);
-    res.json(data);
+    sendResponse(res, data);
     return;
   } catch (err) {
     return next(err);
@@ -194,11 +199,11 @@ export const exportTrendData: AuthedRequestHandler = async (req: { query: { form
       const csv = parser.parse(data);
       res.header('Content-Type', 'text/csv');
       res.attachment('trends.csv');
-      res.send(csv);
+      sendResponse(res, csv);
       return;
     }
 
-    res.json(data);
+    sendResponse(res, data);
     return;
   } catch (err) {
     return next(err);
@@ -282,7 +287,7 @@ export const getCostMetrics: AuthedRequestHandler = async (req: { tenantId: any;
   try {
     const tenantId = req.tenantId!;
     const data = await aggregateCosts(tenantId);
-    res.json(data);
+    sendResponse(res, data);
     return;
   } catch (err) {
     return next(err);
@@ -309,7 +314,7 @@ export const getDowntimeReport: AuthedRequestHandler = async (req: { tenantId: a
   try {
     const tenantId = req.tenantId!;
     const data = await aggregateDowntime(tenantId);
-    res.json(data);
+    sendResponse(res, data);
     return;
   } catch (err) {
     return next(err);
@@ -352,7 +357,7 @@ export const getPmCompliance: AuthedRequestHandler = async (req: { tenantId: any
   try {
     const tenantId = req.tenantId!;
     const data = await aggregatePmCompliance(tenantId);
-    res.json(data);
+    sendResponse(res, data);
     return;
   } catch (err) {
     return next(err);
@@ -393,7 +398,7 @@ export const getCostByAsset: AuthedRequestHandler = async (req: { tenantId: any;
   try {
     const tenantId = req.tenantId!;
     const data = await aggregateCostByAsset(tenantId);
-    res.json(data);
+    sendResponse(res, data);
     return;
   } catch (err) {
     return next(err);

@@ -6,6 +6,7 @@ import TeamMember, { ITeamMember } from '../models/TeamMember';
 import type { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
 import { writeAuditLog } from '../utils/audit';
+import { toEntityId } from '../utils/ids';
 
 const roleHierarchy: Record<ITeamMember['role'], ITeamMember['role'][] | null> = {
   admin: null,
@@ -64,7 +65,7 @@ export const getTeamMembers = async (
       status: member.status,
     }));
 
-    res.json(formatted);
+    sendResponse(res, formatted);
     return;
   } catch (err) {
     return next(err);
@@ -80,7 +81,7 @@ export const createTeamMember = async (
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const role = req.body.role;
@@ -103,10 +104,10 @@ export const createTeamMember = async (
       userId,
       action: 'create',
       entityType: 'TeamMember',
-      entityId: saved._id,
+      entityId: toEntityId(saved._id),
       after: saved.toObject(),
     });
-    res.status(201).json(saved);
+    sendResponse(res, saved, null, 201);
     return;
   } catch (err) {
     return next(err);
@@ -121,7 +122,7 @@ export const updateTeamMember = async (
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const role = req.body.role;
@@ -139,7 +140,7 @@ export const updateTeamMember = async (
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const existing = await TeamMember.findById({ _id: req.params.id, tenantId });
     if (!existing) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const updated = await TeamMember.findByIdAndUpdate(
@@ -155,14 +156,14 @@ export const updateTeamMember = async (
       userId,
       action: 'update',
       entityType: 'TeamMember',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: existing.toObject(),
       after: updated?.toObject(),
     });
-    res.json(updated);
+    sendResponse(res, updated);
     return;
   } catch (err: any) {
-    res.status(400).json({ errors: err.errors ?? err });
+    sendResponse(res, null, { errors: err.errors ?? err  }, 400);
     return;
   }
 };
@@ -176,7 +177,7 @@ export const deleteTeamMember = async (
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const hasDependents = await TeamMember.findOne({
@@ -195,7 +196,7 @@ export const deleteTeamMember = async (
       tenantId,
     });
     if (!deleted) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     await writeAuditLog({
@@ -203,10 +204,10 @@ export const deleteTeamMember = async (
       userId,
       action: 'delete',
       entityType: 'TeamMember',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: deleted.toObject(),
     });
-    res.json({ message: 'Deleted successfully' });
+    sendResponse(res, { message: 'Deleted successfully' });
     return;
   } catch (err) {
     return next(err);

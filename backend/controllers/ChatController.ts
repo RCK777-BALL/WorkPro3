@@ -5,20 +5,14 @@
 import Channel from '../models/Channel';
 import ChatMessage, { ChatMessageDocument } from '../models/ChatMessage';
 import type { AuthedRequestHandler } from '../types/http';
+import { resolveUserAndTenant } from './chat/utils';
 
 // Channel controllers
 export const getChannels: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const userId = (req.user as any)?._id ?? req.user?.id;
-    if (!userId) {
-      res.status(401).json({ message: 'Not authenticated' });
-      return;
-    }
-    const tenantId = req.tenantId;
-    if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
-      return;
-    }
+    const ids = resolveUserAndTenant(req, res);
+    if (!ids) return;
+    const { userId, tenantId } = ids;
     const channels = await Channel.find({
       tenantId,
       isDirect: false,
@@ -34,16 +28,9 @@ export const getChannels: AuthedRequestHandler = async (req, res, next) => {
 
 export const createChannel: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const userId = (req.user as any)?._id ?? req.user?.id;
-    if (!userId) {
-      res.status(401).json({ message: 'Not authenticated' });
-      return;
-    }
-    const tenantId = req.tenantId;
-    if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
-      return;
-    }
+    const ids = resolveUserAndTenant(req, res);
+    if (!ids) return;
+    const { userId, tenantId } = ids;
     const { name, description, members = [] } = req.body;
     const channel = await Channel.create({
       name,
@@ -63,16 +50,9 @@ export const createChannel: AuthedRequestHandler = async (req, res, next) => {
 
 export const updateChannel: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const userId = (req.user as any)?._id ?? req.user?.id;
-    if (!userId) {
-      res.status(401).json({ message: 'Not authenticated' });
-      return;
-    }
-    const tenantId = req.tenantId;
-    if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
-      return;
-    }
+    const ids = resolveUserAndTenant(req, res);
+    if (!ids) return;
+    const { userId, tenantId } = ids;
     const { name, description, members } = req.body;
     const update: Partial<{ name: string; description?: string; members?: string[] }> = {};
     if (name !== undefined) update.name = name;
@@ -102,11 +82,9 @@ export const updateChannel: AuthedRequestHandler = async (req, res, next) => {
 
 export const deleteChannel: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const tenantId = req.tenantId;
-    if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
-      return;
-    }
+    const ids = resolveUserAndTenant(req, res, { requireUser: false });
+    if (!ids) return;
+    const { tenantId } = ids;
     await Channel.findOneAndDelete({
       _id: req.params.channelId,
       tenantId,
@@ -134,11 +112,9 @@ export const getChannelMessages: AuthedRequestHandler = async (req, res, next) =
 
 export const sendChannelMessage: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const userId = (req.user as any)?._id ?? req.user?.id;
-    if (!userId) {
-      res.status(401).json({ message: 'Not authenticated' });
-      return;
-    }
+    const ids = resolveUserAndTenant(req, res, { requireTenant: false });
+    if (!ids) return;
+    const { userId } = ids;
     const { content } = req.body;
     const message = await ChatMessage.create({
       channelId: req.params.channelId,
@@ -156,11 +132,9 @@ export const sendChannelMessage: AuthedRequestHandler = async (req, res, next) =
 // Message controllers shared between channel and direct messages
 export const updateMessage: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const userId = (req.user as any)?._id ?? req.user?.id;
-    if (!userId) {
-      res.status(401).json({ message: 'Not authenticated' });
-      return;
-    }
+    const ids = resolveUserAndTenant(req, res, { requireTenant: false });
+    if (!ids) return;
+    const { userId } = ids;
     const message = await ChatMessage.findOneAndUpdate(
       { _id: req.params.messageId, sender: userId },
       { content: req.body.content, updatedAt: new Date() },
@@ -180,11 +154,9 @@ export const updateMessage: AuthedRequestHandler = async (req, res, next) => {
 
 export const deleteMessage: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const userId = (req.user as any)?._id ?? req.user?.id;
-    if (!userId) {
-      res.status(401).json({ message: 'Not authenticated' });
-      return;
-    }
+    const ids = resolveUserAndTenant(req, res, { requireTenant: false });
+    if (!ids) return;
+    const { userId } = ids;
     await ChatMessage.findOneAndDelete({ _id: req.params.messageId, sender: userId });
     res.status(204).end();
     return;
@@ -197,16 +169,9 @@ export const deleteMessage: AuthedRequestHandler = async (req, res, next) => {
 // Direct message controllers
 export const getDirectMessages: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const userId = (req.user as any)?._id ?? req.user?.id;
-    if (!userId) {
-      res.status(401).json({ message: 'Not authenticated' });
-      return;
-    }
-    const tenantId = req.tenantId;
-    if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
-      return;
-    }
+    const ids = resolveUserAndTenant(req, res);
+    if (!ids) return;
+    const { userId, tenantId } = ids;
     const channels = await Channel.find({
       tenantId,
       isDirect: true,
@@ -222,16 +187,9 @@ export const getDirectMessages: AuthedRequestHandler = async (req, res, next) =>
 
 export const createDirectMessage: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const userId = (req.user as any)?._id ?? req.user?.id;
-    if (!userId) {
-      res.status(401).json({ message: 'Not authenticated' });
-      return;
-    }
-    const tenantId = req.tenantId;
-    if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
-      return;
-    }
+    const ids = resolveUserAndTenant(req, res);
+    if (!ids) return;
+    const { userId, tenantId } = ids;
     const otherId = req.body.userId;
     const members = [userId, otherId];
     const existing = await Channel.findOne({
@@ -260,16 +218,9 @@ export const createDirectMessage: AuthedRequestHandler = async (req, res, next) 
 
 export const deleteDirectMessage: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const userId = (req.user as any)?._id ?? req.user?.id;
-    if (!userId) {
-      res.status(401).json({ message: 'Not authenticated' });
-      return;
-    }
-    const tenantId = req.tenantId;
-    if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
-      return;
-    }
+    const ids = resolveUserAndTenant(req, res);
+    if (!ids) return;
+    const { userId, tenantId } = ids;
     await Channel.findOneAndDelete({
       _id: req.params.conversationId,
       tenantId,
@@ -287,16 +238,9 @@ export const deleteDirectMessage: AuthedRequestHandler = async (req, res, next) 
 
 export const getDirectMessagesForUser: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const userId = (req.user as any)?._id ?? req.user?.id;
-    if (!userId) {
-      res.status(401).json({ message: 'Not authenticated' });
-      return;
-    }
-    const tenantId = req.tenantId;
-    if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
-      return;
-    }
+    const ids = resolveUserAndTenant(req, res);
+    if (!ids) return;
+    const { userId, tenantId } = ids;
     const channel = await Channel.findOne({
       _id: req.params.conversationId,
       tenantId,
@@ -318,16 +262,9 @@ export const getDirectMessagesForUser: AuthedRequestHandler = async (req, res, n
 
 export const sendDirectMessage: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const userId = (req.user as any)?._id ?? req.user?.id;
-    if (!userId) {
-      res.status(401).json({ message: 'Not authenticated' });
-      return;
-    }
-    const tenantId = req.tenantId;
-    if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
-      return;
-    }
+    const ids = resolveUserAndTenant(req, res);
+    if (!ids) return;
+    const { userId, tenantId } = ids;
     const channel = await Channel.findOne({
       _id: req.params.conversationId,
       tenantId,

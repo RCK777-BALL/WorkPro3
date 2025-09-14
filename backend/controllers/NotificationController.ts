@@ -11,6 +11,8 @@ import { assertEmail } from '../utils/assert';
 import type { AuthedRequestHandler } from '../types/http';
 import type { ParamsDictionary } from 'express-serve-static-core';
 import { writeAuditLog } from '../utils/audit';
+import logger from '../utils/logger';
+import { enqueueEmailRetry } from '../utils/emailQueue';
 
 type IdParams = { id: string };
 
@@ -110,12 +112,18 @@ export const createNotification: AuthedRequestHandler<
         const user = await User.findById(saved.user);
         if (user?.email) {
           assertEmail(user.email);
-          await transporter.sendMail({
+          const mailOptions = {
             from: process.env.SMTP_FROM || process.env.SMTP_USER,
             to: user.email,
             subject: 'New Notification',
             text: saved.message || '',
-          });
+          };
+          try {
+            await transporter.sendMail(mailOptions);
+          } catch (err) {
+            logger.error('Failed to send notification email', err);
+            void enqueueEmailRetry(mailOptions);
+          }
         }
       }
     }

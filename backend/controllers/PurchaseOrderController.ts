@@ -52,7 +52,8 @@ export const getPurchaseOrder = async (
       res.status(400).json({ message: 'Invalid id' });
       return;
     }
-    const po = await PurchaseOrder.findById(id).lean();
+    const objectId = new Types.ObjectId(id);
+    const po = await PurchaseOrder.findById(objectId).lean();
     if (!po) {
       res.status(404).json({ message: 'Not found' });
       return;
@@ -99,7 +100,8 @@ export const updateVendorPurchaseOrder = async (
       res.status(400).json({ message: 'Invalid id' });
       return;
     }
-    const po = await PurchaseOrder.findById(id);
+    const objectId = new Types.ObjectId(id);
+    const po = await PurchaseOrder.findById(objectId);
     if (!po) {
       res.status(404).json({ message: 'Not found' });
       return;
@@ -112,7 +114,7 @@ export const updateVendorPurchaseOrder = async (
     po.status = status as any;
     await po.save();
     const userId = (req.user as any)?._id || (req.user as any)?.id;
-    const entityId = new Types.ObjectId(id);
+    const entityId = objectId;
     await writeAuditLog({
       tenantId: po.tenantId,
       userId,

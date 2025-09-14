@@ -3,12 +3,10 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import mongoose from 'mongoose';
+import { Types, isValidObjectId } from 'mongoose';
 
 import PurchaseOrder from '../models/PurchaseOrder';
 import { writeAuditLog } from '../utils/audit';
-
-const { Types, isValidObjectId } = mongoose;
 
 export const createPurchaseOrder = async (
   req: Request,

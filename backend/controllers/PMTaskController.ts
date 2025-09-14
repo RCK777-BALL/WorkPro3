@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import mongoose, { Types } from 'mongoose';
+import { Types } from 'mongoose';
 import { validationResult } from 'express-validator';
 import PMTask from '../models/PMTask';
 import WorkOrder from '../models/WorkOrder';
@@ -44,7 +44,7 @@ export const getPMTaskById: AuthedRequestHandler<PMTaskParams, PMTaskResponse> =
   next,
 ) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    if (!Types.ObjectId.isValid(req.params.id)) {
       res.status(400).json({ message: 'Invalid ID' });
       return;
     }
@@ -105,7 +105,7 @@ export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | n
     const tenantId = req.tenantId;
     if (!tenantId)
       return res.status(400).json({ message: 'Tenant ID required' });
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    if (!Types.ObjectId.isValid(req.params.id)) {
       res.status(400).json({ message: 'Invalid ID' });
       return;
     }
@@ -151,7 +151,7 @@ export const deletePMTask: AuthedRequestHandler<PMTaskParams, PMTaskDeleteRespon
     const tenantId = req.tenantId;
     if (!tenantId)
       return res.status(400).json({ message: 'Tenant ID required' });
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    if (!Types.ObjectId.isValid(req.params.id)) {
       res.status(400).json({ message: 'Invalid ID' });
       return;
     }

@@ -7,7 +7,6 @@ import Channel from '../models/Channel';
 import ChatMessage, { ChatMessageDocument } from '../models/ChatMessage';
 import type { AuthedRequestHandler } from '../types/http';
 import { resolveUserAndTenant } from './chat/utils';
-import { Document, Types } from 'mongoose';
 
 // Channel controllers
 export const getChannels: AuthedRequestHandler = async (req: any, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
@@ -101,7 +100,7 @@ export const deleteChannel: AuthedRequestHandler = async (req: { params: { chann
   }
 };
 
-export const getChannelMessages: AuthedRequestHandler = async (req: { params: { channelId: any; }; }, res: { json: (arg0: (Document<unknown, {}, ChatMessageDocument, {}, {}> & ChatMessageDocument & Required<{ _id: Types.ObjectId; }> & { __v: number; })[]) => void; }, next: (arg0: unknown) => void) => {
+export const getChannelMessages: AuthedRequestHandler = async (req, res, next) => {
   try {
     const messages = await ChatMessage.find({ channelId: req.params.channelId }).sort({ createdAt: 1 });
     res.json(messages);

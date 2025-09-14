@@ -3,12 +3,10 @@
  */
 
 import type { Request, Response, NextFunction } from "express";
-import mongoose from "mongoose";
+import { Types, isValidObjectId } from "mongoose";
 import InventoryItem, { type IInventoryItem } from "../models/InventoryItem";
 import logger from "../utils/logger";
 import { writeAuditLog } from "../utils/audit";
-
-const { isValidObjectId, Types } = mongoose;
 
 // Narrow helper to scope queries by tenant/site
 function scopedQuery<T extends Record<string, unknown>>(req: Request, base?: T) {
@@ -297,7 +295,7 @@ export const useInventoryItem = async (req: Request, res: Response, next: NextFu
 
     // If model types don’t declare .consume, call with a local narrow type
     const doc = item as typeof item & {
-      consume?: (q: number, uomId: mongoose.Types.ObjectId) => Promise<void>;
+      consume?: (q: number, uomId: Types.ObjectId) => Promise<void>;
     };
 
     if (typeof doc.consume !== "function") {

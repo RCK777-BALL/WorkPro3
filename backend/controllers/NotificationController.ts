@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import mongoose, { Types } from 'mongoose';
+import { Types } from 'mongoose';
 import Notification, { NotificationDocument } from '../models/Notifications';
 import User from '../models/User';
 import nodemailer from 'nodemailer';
@@ -141,7 +141,7 @@ export const markNotificationRead: AuthedRequestHandler<
   NotificationDocument | { message: string }
 > = async (req, res, next) => {
 
-  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+  if (!Types.ObjectId.isValid(req.params.id)) {
     res.status(400).json({ message: 'Invalid ID' });
     return;
   }
@@ -184,7 +184,7 @@ export const updateNotification: AuthedRequestHandler<
   NotificationDocument | { message: string }
 > = async (req, res, next) => {
 
-  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+  if (!Types.ObjectId.isValid(req.params.id)) {
     res.status(400).json({ message: 'Invalid ID' });
     return;
   }
@@ -230,7 +230,7 @@ export const deleteNotification: AuthedRequestHandler<
   { message: string }
 > = async (req, res, next) => {
 
-  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+  if (!Types.ObjectId.isValid(req.params.id)) {
     res.status(400).json({ message: 'Invalid ID' });
     return;
   }

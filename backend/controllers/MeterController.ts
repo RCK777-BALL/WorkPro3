@@ -6,7 +6,7 @@ import type { AuthedRequestHandler } from '../types/http';
 import Meter from '../models/Meter';
 import MeterReading from '../models/MeterReading';
 import { writeAuditLog } from '../utils/audit';
-import { Document, Types, UpdateQuery } from 'mongoose';
+import { Types, UpdateQuery } from 'mongoose';
 
 
 export const getMeters: AuthedRequestHandler = async (req, res, next) => {
@@ -76,7 +76,7 @@ export const updateMeter: AuthedRequestHandler = async (req, res, next) => {
     }
     const meter = await Meter.findOneAndUpdate(
       filter,
-      req.body as UpdateQuery<Document>,
+      req.body as UpdateQuery<Record<string, unknown>>,
       { new: true }
     );
     const userId = (req.user as any)?._id || (req.user as any)?.id;

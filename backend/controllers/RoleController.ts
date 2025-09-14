@@ -3,12 +3,10 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import mongoose from 'mongoose';
+import { Types, isValidObjectId } from 'mongoose';
 
 import Role from '../models/Role';
 import { writeAuditLog } from '../utils/audit';
-
-const { Types, isValidObjectId } = mongoose;
 
 export const getAllRoles = async (_req: Request, res: Response, next: NextFunction) => {
   try {

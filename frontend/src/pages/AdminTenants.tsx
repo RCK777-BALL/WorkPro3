@@ -36,9 +36,9 @@ const AdminTenants = () => {
 
   const load = async () => {
     try {
-      const res = await http.get('/tenants');
+      const res = await http.get<TenantResponse[]>('/tenants');
       const data = z.array(tenantResponseSchema).parse(res.data);
-      setTenants(data.map((t: TenantResponse) => ({ id: t._id ?? t.id!, name: t.name })));
+      setTenants(data.map((t) => ({ id: t._id ?? t.id!, name: t.name })));
     } catch (err) {
       console.error(err);
       addToast('Failed to load tenants', 'error');
@@ -55,12 +55,16 @@ const AdminTenants = () => {
       if (editing) {
         const res = await http.put(`/tenants/${editing}`, { name });
         const tenant = tenantResponseSchema.parse(res.data);
-        setTenants((ts) => ts.map((t) => (t.id === editing ? { id: tenant._id ?? tenant.id!, name: tenant.name } : t)));
+        setTenants((ts: Tenant[]) =>
+          ts.map((t: Tenant) =>
+            t.id === editing ? { id: tenant._id ?? tenant.id!, name: tenant.name } : t,
+          ),
+        );
         addToast('Tenant updated', 'success');
       } else {
         const res = await http.post('/tenants', { name });
         const tenant = tenantResponseSchema.parse(res.data);
-        setTenants((ts) => [...ts, { id: tenant._id ?? tenant.id!, name: tenant.name }]);
+        setTenants((ts: Tenant[]) => [...ts, { id: tenant._id ?? tenant.id!, name: tenant.name }]);
         addToast('Tenant created', 'success');
       }
       setName('');
@@ -79,7 +83,7 @@ const AdminTenants = () => {
   const handleDelete = async (id: string) => {
     try {
       await http.delete(`/tenants/${id}`);
-      setTenants((ts) => ts.filter((t) => t.id !== id));
+      setTenants((ts: Tenant[]) => ts.filter((t: Tenant) => t.id !== id));
       addToast('Tenant deleted', 'success');
     } catch (err) {
       console.error(err);

@@ -2,11 +2,15 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { AuthedRequestHandler } from '../types/http';
+import type { Request, Response, NextFunction } from 'express';
 import User from '../models/User';
 import { writeAuditLog } from '../utils/audit';
 
-export const getTheme: AuthedRequestHandler = async (req, res, next) => {
+export const getTheme = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { user } = req;
 
@@ -22,7 +26,11 @@ export const getTheme: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const updateTheme: AuthedRequestHandler = async (req, res, next) => {
+export const updateTheme = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { theme, colorScheme } = req.body;
     const { user } = req;

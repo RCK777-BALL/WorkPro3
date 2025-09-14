@@ -14,7 +14,7 @@ export interface PMTaskRequest<P extends ParamsDictionary = ParamsDictionary, Re
   user?: unknown;
 }
 
-export interface PMTaskParams {
+export interface PMTaskParams extends ParamsDictionary {
   id: string;
 }
 

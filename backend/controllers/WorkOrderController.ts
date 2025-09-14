@@ -91,11 +91,29 @@ interface CompleteWorkOrderBody extends WorkOrderComplete {
   failureCode?: string;
 }
 
-interface UpdateWorkOrderBody extends WorkOrderUpdate {
-  partsUsed?: RawPart[];
-  checklists?: RawChecklist[];
-  signatures?: RawSignature[];
-}
+type UpdateWorkOrderBody = Partial<
+  Omit<
+    WorkOrderInput,
+    | 'assetId'
+    | 'partsUsed'
+    | 'checklists'
+    | 'signatures'
+    | 'pmTask'
+    | 'department'
+    | 'line'
+    | 'station'
+  >
+& {
+  assetId?: Types.ObjectId;
+  partsUsed?: { partId: Types.ObjectId; qty: number; cost: number }[];
+  checklists?: { text: string; done: boolean }[];
+  signatures?: { by: Types.ObjectId; ts: Date }[];
+  pmTask?: Types.ObjectId;
+  department?: Types.ObjectId;
+  line?: Types.ObjectId;
+  station?: Types.ObjectId;
+};
+
 
 function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
   const plain = typeof doc.toObject === "function"

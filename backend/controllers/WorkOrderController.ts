@@ -27,12 +27,16 @@ import {
   completeWorkOrderSchema,
   cancelWorkOrderSchema,
   type WorkOrderComplete,
+  type WorkOrderUpdate,
 } from '../src/schemas/workOrder';
 import {
   mapAssignees,
   mapPartsUsed,
   mapChecklists,
   mapSignatures,
+  type RawPart,
+  type RawChecklist,
+  type RawSignature,
 } from '../src/utils/workOrder';
 
 
@@ -85,6 +89,12 @@ type UpdateWorkOrderBody = Partial<
 interface CompleteWorkOrderBody extends WorkOrderComplete {
   photos?: string[];
   failureCode?: string;
+}
+
+interface UpdateWorkOrderBody extends WorkOrderUpdate {
+  partsUsed?: RawPart[];
+  checklists?: RawChecklist[];
+  signatures?: RawSignature[];
 }
 
 function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {

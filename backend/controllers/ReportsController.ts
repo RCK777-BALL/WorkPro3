@@ -3,13 +3,14 @@
  */
 
 import PDFDocument from 'pdfkit';
-import { Parser as Json2csvParser } from 'json2csv';
+import { Parser as Json2csvParser, Transform as Json2csvTransform } from 'json2csv';
+import { Readable } from 'stream';
 import WorkOrder from '../models/WorkOrder';
 import Asset from '../models/Asset';
 import WorkHistory from '../models/WorkHistory';
 import User from '../models/User';
 import TimeSheet from '../models/TimeSheet';
- import type { AuthedRequestHandler } from '../types/http';
+import type { AuthedRequestHandler } from '../types/http';
  
 
 async function calculateStats(tenantId: string, role?: string) {
@@ -126,11 +127,10 @@ export const downloadReport: AuthedRequestHandler = async (req: { query: { forma
     const stats = await calculateStats(tenantId, role);
 
     if (format === 'csv') {
-      const parser = new Json2csvParser();
-      const csv = parser.parse([stats]);
-      res.header('Content-Type', 'text/csv');
-      res.attachment('report.csv');
-      res.send(csv);
+      const transform = new Json2csvTransform();
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=report.csv');
+      Readable.from([stats]).pipe(transform).pipe(res);
       return;
     }
 

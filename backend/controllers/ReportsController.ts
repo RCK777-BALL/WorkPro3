@@ -2,6 +2,8 @@
  * SPDX-License-Identifier: MIT
  */
 
+/// <reference types="node" />
+
 import PDFDocument from 'pdfkit';
 import { Parser as Json2csvParser, Transform as Json2csvTransform } from 'json2csv';
 import { Readable } from 'stream';
@@ -131,7 +133,9 @@ export const downloadReport: AuthedRequestHandler = async (req, res, next) => {
       const transform = new Json2csvTransform();
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename=report.csv');
-      Readable.from([stats]).pipe(transform).pipe(res);
+      Readable.from([stats]).pipe(transform).pipe(
+        res as unknown as NodeJS.WritableStream,
+      );
       return;
     }
 

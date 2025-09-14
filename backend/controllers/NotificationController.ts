@@ -9,8 +9,9 @@ import nodemailer from 'nodemailer';
 import { sendResponse } from '../utils/sendResponse';
 
 import { assertEmail } from '../utils/assert';
-import type { AuthedRequestHandler } from '../types/http';
+import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import type { ParamsDictionary } from 'express-serve-static-core';
+import type { Response, NextFunction } from 'express';
 import { writeAuditLog } from '../utils/audit';
 import { toEntityId } from '../utils/ids';
 import logger from '../utils/logger';
@@ -21,7 +22,11 @@ type IdParams = { id: string };
 export const getAllNotifications: AuthedRequestHandler<
   ParamsDictionary,
   NotificationDocument[] | { message: string }
-> = async (req, res, next) => {
+> = async (
+  req: AuthedRequest<ParamsDictionary, NotificationDocument[] | { message: string }>,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -40,7 +45,11 @@ export const getAllNotifications: AuthedRequestHandler<
 export const getNotificationById: AuthedRequestHandler<
   IdParams,
   NotificationDocument | { message: string }
-> = async (req, res, next) => {
+> = async (
+  req: AuthedRequest<IdParams, NotificationDocument | { message: string }>,
+  res: Response,
+  next: NextFunction,
+) => {
 
   try {
     const tenantId = req.tenantId;
@@ -64,7 +73,11 @@ export const getNotificationById: AuthedRequestHandler<
 export const createNotification: AuthedRequestHandler<
   ParamsDictionary,
   NotificationDocument | { message: string }
-> = async (req, res, next) => {
+> = async (
+  req: AuthedRequest<ParamsDictionary, NotificationDocument | { message: string }>,
+  res: Response,
+  next: NextFunction,
+) => {
 
   try {
     const tenantId = req.tenantId;
@@ -136,9 +149,13 @@ export const createNotification: AuthedRequestHandler<
 export const markNotificationRead: AuthedRequestHandler<
   IdParams,
   NotificationDocument | { message: string }
-> = async (req, res, next) => {
+> = async (
+  req: AuthedRequest<IdParams, NotificationDocument | { message: string }>,
+  res: Response,
+  next: NextFunction,
+) => {
 
-  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+  if (!Types.ObjectId.isValid(req.params.id)) {
     sendResponse(res, null, 'Invalid ID', 400);
     return;
   }
@@ -179,9 +196,13 @@ export const markNotificationRead: AuthedRequestHandler<
 export const updateNotification: AuthedRequestHandler<
   IdParams,
   NotificationDocument | { message: string }
-> = async (req, res, next) => {
+> = async (
+  req: AuthedRequest<IdParams, NotificationDocument | { message: string }>,
+  res: Response,
+  next: NextFunction,
+) => {
 
-  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+  if (!Types.ObjectId.isValid(req.params.id)) {
     sendResponse(res, null, 'Invalid ID', 400);
     return;
   }
@@ -225,9 +246,13 @@ export const updateNotification: AuthedRequestHandler<
 export const deleteNotification: AuthedRequestHandler<
   IdParams,
   { message: string }
-> = async (req, res, next) => {
+> = async (
+  req: AuthedRequest<IdParams, { message: string }>,
+  res: Response,
+  next: NextFunction,
+) => {
 
-  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+  if (!Types.ObjectId.isValid(req.params.id)) {
     sendResponse(res, null, 'Invalid ID', 400);
     return;
   }

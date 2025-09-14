@@ -2,16 +2,21 @@
  * SPDX-License-Identifier: MIT
  */
 
-import WorkOrder from '../models/WorkOrder';
+import type { ParamsDictionary } from 'express-serve-static-core';
 import type { AuthedRequestHandler } from '../types/http';
+
+import WorkOrder from '../models/WorkOrder';
 import { emitWorkOrderUpdate } from '../server';
 import notifyUser from '../utils/notify';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
-import { Document, Document, Document, Document, Types } from 'mongoose';
+
+// ✅ Only import what you need from mongoose (no duplicates)
+import { Types } from 'mongoose';
+
 import { WorkOrderUpdatePayload } from '../types/Payloads';
 import { filterFields } from '../utils/filterFields';
 import { writeAuditLog } from '../utils/audit';
-import type { ParamsDictionary } from 'express-serve-static-core';
+
 import type { WorkOrderType, WorkOrderInput } from '../types/workOrder';
 
 import { sendResponse } from '../utils/sendResponse';
@@ -24,6 +29,7 @@ import {
   cancelWorkOrderSchema,
   type WorkOrderComplete,
 } from '../src/schemas/workOrder';
+
 import { Response } from 'express';
 import { Response } from 'express';
 import { Response } from 'express';

@@ -4,6 +4,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
+import { sendResponse } from '../utils/sendResponse';
 
 import PurchaseOrder from '../models/PurchaseOrder';
 import { writeAuditLog } from '../utils/audit';
@@ -18,7 +19,7 @@ export const createPurchaseOrder = async (
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
-      return res.status(400).json({ message: 'Tenant ID required' });
+      return sendResponse(res, null, 'Tenant ID required', 400);
     const po = await PurchaseOrder.create({
       ...req.body,
       tenantId,
@@ -33,7 +34,7 @@ export const createPurchaseOrder = async (
       entityId,
       after: po.toObject(),
     });
-    res.status(201).json(po);
+    sendResponse(res, po, null, 201);
     return;
   } catch (err) {
     next(err);
@@ -49,16 +50,16 @@ export const getPurchaseOrder = async (
   try {
     const { id } = req.params;
     if (!isValidObjectId(id)) {
-      res.status(400).json({ message: 'Invalid id' });
+      sendResponse(res, null, 'Invalid id', 400);
       return;
     }
     const objectId = new Types.ObjectId(id);
     const po = await PurchaseOrder.findOne({ _id: objectId, tenantId: req.tenantId }).lean();
     if (!po) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
-    res.json(po);
+    sendResponse(res, po);
     return;
   } catch (err) {
     next(err);
@@ -74,7 +75,7 @@ export const listVendorPurchaseOrders = async (
   try {
     const vendorId = req.vendorId;
     const pos = await PurchaseOrder.find({ vendor: vendorId }).lean();
-    res.json(pos);
+    sendResponse(res, pos);
     return;
   } catch (err) {
     next(err);
@@ -93,21 +94,21 @@ export const updateVendorPurchaseOrder = async (
     const { status } = req.body as { status: string };
     const allowed = ['acknowledged', 'shipped'];
     if (!allowed.includes(status)) {
-      res.status(400).json({ message: 'Invalid status' });
+      sendResponse(res, null, 'Invalid status', 400);
       return;
     }
     if (!isValidObjectId(id)) {
-      res.status(400).json({ message: 'Invalid id' });
+      sendResponse(res, null, 'Invalid id', 400);
       return;
     }
     const objectId = new Types.ObjectId(id);
     const po = await PurchaseOrder.findById(objectId);
     if (!po) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     if (po.vendor.toString() !== vendorId) {
-      res.status(403).json({ message: 'Forbidden' });
+      sendResponse(res, null, 'Forbidden', 403);
       return;
     }
     const before = po.toObject();
@@ -124,7 +125,7 @@ export const updateVendorPurchaseOrder = async (
       before,
       after: po.toObject(),
     });
-    res.json(po);
+    sendResponse(res, po);
     return;
   } catch (err) {
     next(err);

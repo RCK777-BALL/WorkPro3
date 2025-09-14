@@ -4,6 +4,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
+import { sendResponse } from '../utils/sendResponse';
 
 import Vendor from '../models/Vendor';
 import { writeAuditLog } from '../utils/audit';
@@ -45,7 +46,7 @@ const validateVendorInput = (body: any) => {
  
   try {
     const items = await Vendor.find();
-    res.json(items);
+    sendResponse(res, items);
     return;
   } catch (err) {
     next(err);
@@ -61,10 +62,10 @@ export const getVendorById = async (
   try {
     const item = await Vendor.findById(req.params.id);
     if (!item) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
-    res.json(item);
+    sendResponse(res, item);
     return;
   } catch (err) {
     next(err);
@@ -80,12 +81,12 @@ export const createVendor = async (
   try {
     const { data, error } = validateVendorInput(req.body);
     if (error) {
-      res.status(400).json({ message: error });
+      sendResponse(res, null, error , 400);
       return;
     }
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
@@ -99,7 +100,7 @@ export const createVendor = async (
       entityId: saved._id,
       after: saved.toObject(),
     });
-    res.status(201).json(saved);
+    sendResponse(res, saved, null, 201);
     return;
   } catch (err) {
     next(err);
@@ -115,18 +116,18 @@ export const updateVendor = async (
   try {
     const { data, error } = validateVendorInput(req.body);
     if (error) {
-      res.status(400).json({ message: error });
+      sendResponse(res, null, error , 400);
       return;
     }
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const existing = await Vendor.findById(req.params.id);
     if (!existing) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const updated = await Vendor.findByIdAndUpdate(req.params.id, data, {
@@ -142,7 +143,7 @@ export const updateVendor = async (
       before: existing.toObject(),
       after: updated?.toObject(),
     });
-    res.json(updated);
+    sendResponse(res, updated);
     return;
   } catch (err) {
     next(err);
@@ -158,13 +159,13 @@ export const deleteVendor = async (
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const deleted = await Vendor.findByIdAndDelete(req.params.id);
     if (!deleted) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     await writeAuditLog({
@@ -175,7 +176,7 @@ export const deleteVendor = async (
       entityId: new Types.ObjectId(req.params.id),
       before: deleted.toObject(),
     });
-    res.json({ message: 'Deleted successfully' });
+    sendResponse(res, { message: 'Deleted successfully' });
     return;
   } catch (err) {
     next(err);

@@ -13,6 +13,7 @@ import { validationResult, ValidationError } from 'express-validator';
 import logger from '../utils/logger';
 import { filterFields } from '../utils/filterFields';
 import { writeAuditLog } from '../utils/audit';
+import { sendResponse } from '../utils/sendResponse';
 
 const assetCreateFields = [
   'name', 'type', 'location', 'departmentId', 'status', 'serialNumber',
@@ -27,7 +28,7 @@ export const getAllAssets: AuthedRequestHandler = async (req: { tenantId: any; s
     const filter: any = { tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
     const assets = await Asset.find(filter);
-    res.json(assets);
+    sendResponse(res, assets);
     return;
   } catch (err) {
     return next(err);
@@ -38,11 +39,11 @@ export const getAssetById: AuthedRequestHandler = async (req: { params: { id: an
   try {
     const id = req.params.id;
     if (!id) {
-      res.status(400).json({ message: 'ID is required' });
+      sendResponse(res, null, 'ID is required', 400);
       return;
     }
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      res.status(400).json({ message: 'Invalid ID' });
+      sendResponse(res, null, 'Invalid ID', 400);
       return;
     }
     const filter: any = { _id: id, tenantId: req.tenantId };
@@ -50,10 +51,10 @@ export const getAssetById: AuthedRequestHandler = async (req: { params: { id: an
 
     const asset = await Asset.findOne(filter);
     if (!asset) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
-    res.json(asset);
+    sendResponse(res, asset);
     return;
   } catch (err) {
     return next(err);
@@ -74,17 +75,17 @@ export const createAsset: AuthedRequestHandler = async (req: { body: { name: any
 
   const tenantId = req.tenantId;
   if (!tenantId) {
-    return res.status(400).json({ message: 'Tenant ID required' });
+    return sendResponse(res, null, 'Tenant ID required', 400);
   }
 
   if (!req.body.name) {
-    return res.status(400).json({ message: 'name is required' });
+    return sendResponse(res, null, 'name is required', 400);
   }
 
   try {
     const errors = validationResult(req as any);
     if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() as ValidationError[] });
+      sendResponse(res, null, { errors: errors.array() as ValidationError[]  }, 400);
       return;
     }
 
@@ -107,7 +108,7 @@ export const createAsset: AuthedRequestHandler = async (req: { body: { name: any
       entityId: newAsset._id,
       after: assetObj,
     });
-    res.status(201).json(response);
+    sendResponse(res, response, null, 201);
     return;
   } catch (err) {
     return next(err);
@@ -128,21 +129,21 @@ export const updateAsset: AuthedRequestHandler = async (req: { body: any; tenant
 
   const tenantId = req.tenantId;
   if (!tenantId) {
-    return res.status(400).json({ message: 'Tenant ID required' });
+    return sendResponse(res, null, 'Tenant ID required', 400);
   }
 
   try {
     const id = req.params.id;
     if (!id) {
-      return res.status(400).json({ message: 'ID is required' });
+      return sendResponse(res, null, 'ID is required', 400);
     }
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'Invalid ID' });
+      return sendResponse(res, null, 'Invalid ID', 400);
     }
     const errors = validationResult(req as any);
 
     if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() as ValidationError[] });
+      sendResponse(res, null, { errors: errors.array() as ValidationError[]  }, 400);
       return;
     }
 
@@ -151,7 +152,7 @@ export const updateAsset: AuthedRequestHandler = async (req: { body: any; tenant
     const update = filterFields(req.body, assetUpdateFields);
     const existing = await Asset.findOne(filter);
     if (!existing) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const asset = await Asset.findOneAndUpdate(filter, update, {
@@ -168,7 +169,7 @@ export const updateAsset: AuthedRequestHandler = async (req: { body: any; tenant
       before: existing.toObject(),
       after: asset?.toObject(),
     });
-    res.json(asset);
+    sendResponse(res, asset);
     return;
 
   } catch (err) {
@@ -181,21 +182,21 @@ export const deleteAsset: AuthedRequestHandler = async (req: { tenantId: any; pa
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      return res.status(400).json({ message: 'Tenant ID required' });
+      return sendResponse(res, null, 'Tenant ID required', 400);
     }
     const id = req.params.id;
     if (!id) {
-      return res.status(400).json({ message: 'ID is required' });
+      return sendResponse(res, null, 'ID is required', 400);
     }
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'Invalid ID' });
+      return sendResponse(res, null, 'Invalid ID', 400);
     }
     const filter: any = { _id: id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
 
     const asset = await Asset.findOneAndDelete(filter);
     if (!asset) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
@@ -207,7 +208,7 @@ export const deleteAsset: AuthedRequestHandler = async (req: { tenantId: any; pa
       entityId: new Types.ObjectId(id),
       before: asset.toObject(),
     });
-    res.json({ message: 'Deleted successfully' });
+    sendResponse(res, { message: 'Deleted successfully' });
     return;
   } catch (err) {
     return next(err);
@@ -223,7 +224,7 @@ export const searchAssets: AuthedRequestHandler = async (req: { query: { q: stri
     if (req.siteId) filter.siteId = req.siteId;
 
     const assets = await Asset.find(filter).limit(10);
-    res.json(assets);
+    sendResponse(res, assets);
     return;
   } catch (err) {
     return next(err);
@@ -332,7 +333,7 @@ export const getAssetTree: AuthedRequestHandler = async (req: { tenantId: any; s
       })),
     }));
 
-    res.json(tree);
+    sendResponse(res, tree);
     return;
   } catch (err) {
     next(err);

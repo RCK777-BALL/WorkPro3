@@ -7,6 +7,7 @@ import Meter from '../models/Meter';
 import MeterReading from '../models/MeterReading';
 import { writeAuditLog } from '../utils/audit';
 import { Document, Types, UpdateQuery } from 'mongoose';
+import { sendResponse } from '../utils/sendResponse';
 
 
 export const getMeters: AuthedRequestHandler = async (req, res, next) => {
@@ -15,7 +16,7 @@ export const getMeters: AuthedRequestHandler = async (req, res, next) => {
     if (req.siteId) filter.siteId = req.siteId;
     if (req.query.asset) filter.asset = req.query.asset;
     const meters = await Meter.find(filter);
-    res.json(meters);
+    sendResponse(res, meters);
     return;
   } catch (err) {
     return next(err);
@@ -28,10 +29,10 @@ export const getMeterById: AuthedRequestHandler = async (req, res, next) => {
     if (req.siteId) filter.siteId = req.siteId;
     const meter = await Meter.findOne(filter);
     if (!meter) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
-    res.json(meter);
+    sendResponse(res, meter);
     return;
   } catch (err) {
     return next(err);
@@ -41,7 +42,7 @@ export const getMeterById: AuthedRequestHandler = async (req, res, next) => {
 export const createMeter: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    if (!tenantId) return sendResponse(res, null, 'Tenant ID required', 400);
     const meter = await Meter.create({
       ...req.body,
       tenantId,
@@ -56,7 +57,7 @@ export const createMeter: AuthedRequestHandler = async (req, res, next) => {
       entityId: meter._id,
       after: meter.toObject(),
     });
-    res.status(201).json(meter);
+    sendResponse(res, meter, null, 201);
     return;
   } catch (err) {
     return next(err);
@@ -66,12 +67,12 @@ export const createMeter: AuthedRequestHandler = async (req, res, next) => {
 export const updateMeter: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    if (!tenantId) return sendResponse(res, null, 'Tenant ID required', 400);
     const filter: any = { _id: req.params.id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
     const existing = await Meter.findOne(filter);
     if (!existing) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const meter = await Meter.findOneAndUpdate(
@@ -89,7 +90,7 @@ export const updateMeter: AuthedRequestHandler = async (req, res, next) => {
       before: existing.toObject(),
       after: meter?.toObject(),
     });
-    res.json(meter);
+    sendResponse(res, meter);
     return;
   } catch (err) {
     return next(err);
@@ -99,12 +100,12 @@ export const updateMeter: AuthedRequestHandler = async (req, res, next) => {
 export const deleteMeter: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    if (!tenantId) return sendResponse(res, null, 'Tenant ID required', 400);
     const filter: any = { _id: req.params.id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
     const meter = await Meter.findOneAndDelete(filter);
     if (!meter) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
@@ -116,7 +117,7 @@ export const deleteMeter: AuthedRequestHandler = async (req, res, next) => {
       entityId: new Types.ObjectId(req.params.id),
       before: meter.toObject(),
     });
-    res.json({ message: 'Deleted successfully' });
+    sendResponse(res, { message: 'Deleted successfully' });
     return;
   } catch (err) {
     return next(err);
@@ -126,12 +127,12 @@ export const deleteMeter: AuthedRequestHandler = async (req, res, next) => {
 export const addMeterReading: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId) return res.status(400).json({ message: 'Tenant ID required' });
+    if (!tenantId) return sendResponse(res, null, 'Tenant ID required', 400);
     const filter: any = { _id: req.params.id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
     const meter = await Meter.findOne(filter);
     if (!meter) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
 
@@ -152,7 +153,7 @@ export const addMeterReading: AuthedRequestHandler = async (req, res, next) => {
       entityId: meter._id,
       after: meter.toObject(),
     });
-    res.status(201).json(reading);
+    sendResponse(res, reading, null, 201);
     return;
   } catch (err) {
     return next(err);
@@ -165,7 +166,7 @@ export const getMeterReadings: AuthedRequestHandler = async (req, res, next) => 
     if (req.siteId) filter.siteId = req.siteId;
     const meter = await Meter.findOne(filter);
     if (!meter) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const readingFilter: any = { meter: meter._id, tenantId: req.tenantId };
@@ -173,7 +174,7 @@ export const getMeterReadings: AuthedRequestHandler = async (req, res, next) => 
     const readings = await MeterReading.find(readingFilter)
       .sort({ timestamp: -1 })
       .limit(100);
-    res.json(readings);
+    sendResponse(res, readings);
     return;
   } catch (err) {
     return next(err);

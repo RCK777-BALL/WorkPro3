@@ -8,6 +8,7 @@ import ChatMessage, { ChatMessageDocument } from '../models/ChatMessage';
 import type { AuthedRequestHandler } from '../types/http';
 import { resolveUserAndTenant } from './chat/utils';
 import { Document, Types } from 'mongoose';
+import { sendResponse } from '../utils/sendResponse';
 
 // Channel controllers
 export const getChannels: AuthedRequestHandler = async (req: any, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
@@ -20,7 +21,7 @@ export const getChannels: AuthedRequestHandler = async (req: any, res: Response<
       isDirect: false,
       members: userId,
     }).sort({ name: 1 });
-    res.json(channels);
+    sendResponse(res, channels);
     return;
   } catch (err) {
     next(err);
@@ -42,7 +43,7 @@ export const createChannel: AuthedRequestHandler = async (req: { body: { name: a
       tenantId,
       isDirect: false,
     });
-    res.status(201).json(channel);
+    sendResponse(res, channel, null, 201);
     return;
   } catch (err) {
     next(err);
@@ -71,10 +72,10 @@ export const updateChannel: AuthedRequestHandler = async (req: { body: { name: a
       { new: true }
     );
     if (!channel) {
-      res.status(404).end();
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
-    res.json(channel);
+    sendResponse(res, channel);
     return;
   } catch (err) {
     next(err);
@@ -93,7 +94,7 @@ export const deleteChannel: AuthedRequestHandler = async (req: { params: { chann
       isDirect: false,
     });
     await ChatMessage.deleteMany({ channelId: req.params.channelId });
-    res.status(204).end();
+    sendResponse(res, null, null, 204);
     return;
   } catch (err) {
     next(err);
@@ -104,7 +105,7 @@ export const deleteChannel: AuthedRequestHandler = async (req: { params: { chann
 export const getChannelMessages: AuthedRequestHandler = async (req: { params: { channelId: any; }; }, res: { json: (arg0: (Document<unknown, {}, ChatMessageDocument, {}, {}> & ChatMessageDocument & Required<{ _id: Types.ObjectId; }> & { __v: number; })[]) => void; }, next: (arg0: unknown) => void) => {
   try {
     const messages = await ChatMessage.find({ channelId: req.params.channelId }).sort({ createdAt: 1 });
-    res.json(messages);
+    sendResponse(res, messages);
     return;
   } catch (err) {
     next(err);
@@ -123,7 +124,7 @@ export const sendChannelMessage: AuthedRequestHandler = async (req: { body: { co
       sender: userId,
       content,
     });
-    res.status(201).json(message);
+    sendResponse(res, message, null, 201);
     return;
   } catch (err) {
     next(err);
@@ -143,10 +144,10 @@ export const updateMessage: AuthedRequestHandler = async (req: { params: { messa
       { new: true }
     );
     if (!message) {
-      res.status(404).end();
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
-    res.json(message);
+    sendResponse(res, message);
     return;
   } catch (err) {
     next(err);
@@ -160,7 +161,7 @@ export const deleteMessage: AuthedRequestHandler = async (req: { params: { messa
     if (!ids) return;
     const { userId } = ids;
     await ChatMessage.findOneAndDelete({ _id: req.params.messageId, sender: userId });
-    res.status(204).end();
+    sendResponse(res, null, null, 204);
     return;
   } catch (err) {
     next(err);
@@ -179,7 +180,7 @@ export const getDirectMessages: AuthedRequestHandler = async (req: any, res: Res
       isDirect: true,
       members: userId,
     });
-    res.json(channels);
+    sendResponse(res, channels);
     return;
   } catch (err) {
     next(err);
@@ -200,7 +201,7 @@ export const createDirectMessage: AuthedRequestHandler = async (req: { body: { u
       members: { $all: members },
     });
     if (existing) {
-      res.json(existing);
+      sendResponse(res, existing);
       return;
     }
     const channel = await Channel.create({
@@ -210,7 +211,7 @@ export const createDirectMessage: AuthedRequestHandler = async (req: { body: { u
       createdBy: userId!,
       tenantId,
     });
-    res.status(201).json(channel);
+    sendResponse(res, channel, null, 201);
     return;
   } catch (err) {
     next(err);
@@ -230,7 +231,7 @@ export const deleteDirectMessage: AuthedRequestHandler = async (req: { params: {
       members: userId,
     });
     await ChatMessage.deleteMany({ channelId: req.params.conversationId });
-    res.status(204).end();
+    sendResponse(res, null, null, 204);
     return;
   } catch (err) {
     next(err);
@@ -250,11 +251,11 @@ export const getDirectMessagesForUser: AuthedRequestHandler = async (req: { para
       members: userId,
     });
     if (!channel) {
-      res.status(404).end();
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const messages = await ChatMessage.find({ channelId: channel._id }).sort({ createdAt: 1 });
-    res.json(messages);
+    sendResponse(res, messages);
     return;
   } catch (err) {
     next(err);
@@ -274,7 +275,7 @@ export const sendDirectMessage: AuthedRequestHandler = async (req: { params: { c
       members: userId,
     });
     if (!channel) {
-      res.status(404).end();
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const message = await ChatMessage.create({
@@ -282,7 +283,7 @@ export const sendDirectMessage: AuthedRequestHandler = async (req: { params: { c
       sender: userId!,
       content: req.body.content,
     });
-    res.status(201).json(message);
+    sendResponse(res, message, null, 201);
     return;
   } catch (err) {
     next(err);

@@ -5,6 +5,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
 import { ok, fail, asyncHandler } from '../src/lib/http';
+import { sendResponse } from '../utils/sendResponse';
 
 import Tenant from '../models/Tenant';
 import { writeAuditLog } from '../utils/audit';
@@ -12,7 +13,7 @@ import { writeAuditLog } from '../utils/audit';
 export const getAllTenants = async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const tenants = await Tenant.find();
-    res.json(tenants);
+    sendResponse(res, tenants);
   } catch (err) {
     next(err);
   }
@@ -21,8 +22,8 @@ export const getAllTenants = async (_req: Request, res: Response, next: NextFunc
 export const getTenantById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenant = await Tenant.findById(req.params.id);
-    if (!tenant) return res.status(404).json({ message: 'Not found' });
-    res.json(tenant);
+    if (!tenant) return sendResponse(res, null, 'Not found', 404);
+    sendResponse(res, tenant);
   } catch (err) {
     next(err);
   }
@@ -40,7 +41,7 @@ export const createTenant = async (req: Request, res: Response, next: NextFuncti
       entityId: tenant._id,
       after: tenant.toObject(),
     });
-    res.status(201).json(tenant);
+    sendResponse(res, tenant, null, 201);
   } catch (err) {
     next(err);
   }
@@ -50,7 +51,7 @@ export const updateTenant = async (req: Request, res: Response, next: NextFuncti
   try {
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const existing = await Tenant.findById(req.params.id);
-    if (!existing) return res.status(404).json({ message: 'Not found' });
+    if (!existing) return sendResponse(res, null, 'Not found', 404);
     const tenant = await Tenant.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
@@ -64,7 +65,7 @@ export const updateTenant = async (req: Request, res: Response, next: NextFuncti
       before: existing.toObject(),
       after: tenant?.toObject(),
     });
-    res.json(tenant);
+    sendResponse(res, tenant);
   } catch (err) {
     next(err);
   }
@@ -74,7 +75,7 @@ export const deleteTenant = async (req: Request, res: Response, next: NextFuncti
   try {
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const tenant = await Tenant.findByIdAndDelete(req.params.id);
-    if (!tenant) return res.status(404).json({ message: 'Not found' });
+    if (!tenant) return sendResponse(res, null, 'Not found', 404);
     await writeAuditLog({
       tenantId: tenant._id,
       userId,
@@ -83,7 +84,7 @@ export const deleteTenant = async (req: Request, res: Response, next: NextFuncti
       entityId: new Types.ObjectId(req.params.id),
       before: tenant.toObject(),
     });
-    res.json({ message: 'Deleted successfully' });
+    sendResponse(res, { message: 'Deleted successfully' });
   } catch (err) {
     next(err);
   }

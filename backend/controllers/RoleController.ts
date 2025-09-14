@@ -4,6 +4,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
+import { sendResponse } from '../utils/sendResponse';
 
 import Role from '../models/Role';
 import { writeAuditLog } from '../utils/audit';
@@ -13,7 +14,7 @@ const { Types, isValidObjectId } = mongoose;
 export const getAllRoles = async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const roles = await Role.find();
-    res.json(roles);
+    sendResponse(res, roles);
   } catch (err) {
     next(err);
   }
@@ -23,14 +24,14 @@ export const getRoleById = async (req: Request, res: Response, next: NextFunctio
   try {
     const { id } = req.params;
     if (!isValidObjectId(id)) {
-      res.status(400).json({ message: 'Invalid id' });
+      sendResponse(res, null, 'Invalid id', 400);
       return;
     }
 
     const roleId = new Types.ObjectId(id);
     const role = await Role.findById(roleId);
-    if (!role) return res.status(404).json({ message: 'Not found' });
-    res.json(role);
+    if (!role) return sendResponse(res, null, 'Not found', 404);
+    sendResponse(res, role);
   } catch (err) {
     next(err);
   }
@@ -40,7 +41,7 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
@@ -54,7 +55,7 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
       entityId,
       after: role.toObject(),
     });
-    res.status(201).json(role);
+    sendResponse(res, role, null, 201);
   } catch (err) {
     next(err);
   }
@@ -64,20 +65,20 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
 
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const { id } = req.params;
     if (!isValidObjectId(id)) {
-      res.status(400).json({ message: 'Invalid id' });
+      sendResponse(res, null, 'Invalid id', 400);
       return;
     }
 
     const roleId = new Types.ObjectId(id);
     const existing = await Role.findById(roleId);
-    if (!existing) return res.status(404).json({ message: 'Not found' });
+    if (!existing) return sendResponse(res, null, 'Not found', 404);
     const role = await Role.findByIdAndUpdate(roleId, req.body, {
       new: true,
       runValidators: true,
@@ -92,7 +93,7 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
       before: existing.toObject(),
       after: role?.toObject(),
     });
-    res.json(role);
+    sendResponse(res, role);
   } catch (err) {
     next(err);
   }
@@ -102,20 +103,20 @@ export const deleteRole = async (req: Request, res: Response, next: NextFunction
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
 
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const { id } = req.params;
     if (!isValidObjectId(id)) {
-      res.status(400).json({ message: 'Invalid id' });
+      sendResponse(res, null, 'Invalid id', 400);
       return;
     }
 
     const roleId = new Types.ObjectId(id);
     const role = await Role.findByIdAndDelete(roleId);
-    if (!role) return res.status(404).json({ message: 'Not found' });
+    if (!role) return sendResponse(res, null, 'Not found', 404);
     const entityId = roleId;
     await writeAuditLog({
       tenantId,
@@ -125,7 +126,7 @@ export const deleteRole = async (req: Request, res: Response, next: NextFunction
       entityId,
       before: role.toObject(),
     });
-    res.json({ message: 'Deleted successfully' });
+    sendResponse(res, { message: 'Deleted successfully' });
   } catch (err) {
     next(err);
   }

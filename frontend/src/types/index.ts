@@ -344,11 +344,6 @@ export interface WorkOrderUpdatePayload {
   deleted?: boolean;
 }
 
-export interface InventoryUpdatePayload {
-  _id: string;
-  name?: string;
-}
-
 export interface DashboardSummary {
   totalAssets: number;
   totalWorkOrders: number;

@@ -6,7 +6,7 @@ import type { ParamsDictionary } from 'express-serve-static-core';
 import type { Response, NextFunction } from 'express';
 import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 
-import WorkOrder from '../models/WorkOrder';
+import WorkOrder, { WorkOrderDocument } from '../models/WorkOrder';
 import { emitWorkOrderUpdate } from '../server';
 import notifyUser from '../utils/notify';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
@@ -72,6 +72,29 @@ interface CompleteWorkOrderBody extends WorkOrderComplete {
   photos?: string[];
   failureCode?: string;
 }
+
+type UpdateWorkOrderBody = Partial<
+  Omit<
+    WorkOrderInput,
+    | 'assetId'
+    | 'partsUsed'
+    | 'checklists'
+    | 'signatures'
+    | 'pmTask'
+    | 'department'
+    | 'line'
+    | 'station'
+  >
+& {
+  assetId?: Types.ObjectId;
+  partsUsed?: { partId: Types.ObjectId; qty: number; cost: number }[];
+  checklists?: { text: string; done: boolean }[];
+  signatures?: { by: Types.ObjectId; ts: Date }[];
+  pmTask?: Types.ObjectId;
+  department?: Types.ObjectId;
+  line?: Types.ObjectId;
+  station?: Types.ObjectId;
+};
 
 function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
   const plain = typeof doc.toObject === "function"

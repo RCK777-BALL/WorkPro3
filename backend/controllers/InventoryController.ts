@@ -8,6 +8,7 @@ import InventoryItem, { type IInventoryItem } from "../models/InventoryItem";
 import logger from "../utils/logger";
 import { writeAuditLog } from "../utils/audit";
 import { toEntityId } from "../utils/ids";
+import { sendResponse } from "../utils/sendResponse";
 
 // Narrow helper to scope queries by tenant/site
 function scopedQuery<T extends Record<string, unknown>>(req: Request, base?: T) {

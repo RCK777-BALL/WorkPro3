@@ -3,8 +3,12 @@
  */
 
 import axios from 'axios';
-import type { AxiosRequestHeaders } from 'axios';
-import type { ApiResult } from '../../shared/types/http';
+import type {
+  AxiosRequestHeaders,
+  AxiosResponse,
+  AxiosError,
+} from 'axios';
+import type { ApiResult } from 'shared/types/http';
 
 const baseUrl = (import.meta.env.VITE_API_URL ?? 'http://localhost:5010').replace(/\/+$/, '');
 
@@ -36,15 +40,16 @@ http.interceptors.request.use((config) => {
 });
 
 http.interceptors.response.use(
-  (r) => {
-    const { data, error } = (r.data as ApiResult<unknown>) ?? {};
+  (r: AxiosResponse<ApiResult<unknown>>) => {
+    const { data, error } = r.data ?? {};
     if (error) {
       return Promise.reject(error);
     }
-    r.data = data;
-    return r;
+    const resp = r as AxiosResponse<unknown>;
+    resp.data = data;
+    return resp;
   },
-  (err) => {
+  (err: AxiosError) => {
     if (err?.response?.status === 401) {
       unauthorizedCallback?.();
     }

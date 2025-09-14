@@ -85,6 +85,44 @@ function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
   } as WorkOrderUpdatePayload;
 }
 
+type RawPart = {
+  partId: string;
+  quantity: number;
+  cost?: number;
+};
+
+type RawChecklist = {
+  description: string;
+  completed?: boolean;
+};
+
+type RawSignature = {
+  userId: string;
+  signedAt?: Date;
+};
+
+function mapPartsUsed(parts: RawPart[]) {
+  return parts.map((p) => ({
+    partId: new Types.ObjectId(p.partId),
+    qty: p.quantity,
+    cost: p.cost ?? 0,
+  }));
+}
+
+function mapChecklists(items: RawChecklist[]) {
+  return items.map((c) => ({
+    text: c.description,
+    done: Boolean(c.completed),
+  }));
+}
+
+function mapSignatures(items: RawSignature[]) {
+  return items.map((s) => ({
+    by: new Types.ObjectId(s.userId),
+    ts: s.signedAt ? new Date(s.signedAt) : new Date(),
+  }));
+}
+
 /**
  * @openapi
  * /api/workorders:
@@ -251,12 +289,20 @@ export const createWorkOrder: AuthedRequestHandler<ParamsDictionary, WorkOrderTy
       return;
     }
 
-    const assignees = parsed.data.assignees?.map(
-      (id) => new Types.ObjectId(id)
-    );
+    const {
+      assignees: assigneeIds,
+      partsUsed,
+      checklists,
+      signatures,
+      ...rest
+    } = parsed.data;
+    const assignees = assigneeIds?.map((id) => new Types.ObjectId(id));
     const newItem = new WorkOrder({
-      ...parsed.data,
+      ...rest,
       ...(assignees && { assignees }),
+      ...(partsUsed && { partsUsed: mapPartsUsed(partsUsed) }),
+      ...(checklists && { checklists: mapChecklists(checklists) }),
+      ...(signatures && { signatures: mapSignatures(signatures) }),
       tenantId,
     });
     const saved = await newItem.save();
@@ -315,11 +361,25 @@ export const updateWorkOrder: AuthedRequestHandler = async (req: { tenantId: any
       sendResponse(res, null, parsed.error.flatten(), 400);
       return;
     }
-    const update: any = parsed.data;
-    if (update.assignees) {
-      update.assignees = update.assignees.map(
-        (id: string) => new Types.ObjectId(id)
-      );
+    const {
+      assignees: assigneeIds,
+      partsUsed,
+      checklists,
+      signatures,
+      ...rest
+    } = parsed.data;
+    const update: any = rest;
+    if (assigneeIds) {
+      update.assignees = assigneeIds.map((id: string) => new Types.ObjectId(id));
+    }
+    if (partsUsed) {
+      update.partsUsed = mapPartsUsed(partsUsed);
+    }
+    if (checklists) {
+      update.checklists = mapChecklists(checklists);
+    }
+    if (signatures) {
+      update.signatures = mapSignatures(signatures);
     }
     const existing = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!existing) {
@@ -603,9 +663,9 @@ export const completeWorkOrder: AuthedRequestHandler = async (req: { tenantId: a
     const before = workOrder.toObject();
     workOrder.status = 'completed';
     if (body.timeSpentMin !== undefined) workOrder.timeSpentMin = body.timeSpentMin;
-    if (Array.isArray(body.partsUsed)) workOrder.partsUsed = body.partsUsed;
-    if (Array.isArray(body.checklists)) workOrder.checklists = body.checklists;
-    if (Array.isArray(body.signatures)) workOrder.signatures = body.signatures;
+    if (Array.isArray(body.partsUsed)) workOrder.partsUsed = mapPartsUsed(body.partsUsed);
+    if (Array.isArray(body.checklists)) workOrder.checklists = mapChecklists(body.checklists);
+    if (Array.isArray(body.signatures)) workOrder.signatures = mapSignatures(body.signatures);
     if (Array.isArray(body.photos)) workOrder.photos = body.photos;
     if (body.failureCode !== undefined) workOrder.failureCode = body.failureCode;
 

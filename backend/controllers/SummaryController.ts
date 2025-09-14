@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { Request } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import type { AuthedRequestHandler } from '../types/http';
 
 import WorkOrder from '../models/WorkOrder';
@@ -92,7 +92,11 @@ const calculateSummary = async (
   };
 };
 
-export const getSummary: AuthedRequestHandler = async (req, res, next) => {
+export const getSummary: AuthedRequestHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const tenantId =
       typeof req.query.tenantId === 'string'
@@ -112,7 +116,11 @@ export const getSummary: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const getSummaryTrends: AuthedRequestHandler = async (req, res, next) => {
+export const getSummaryTrends: AuthedRequestHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const tenantId =
       typeof req.query.tenantId === 'string'
@@ -140,7 +148,11 @@ export const getSummaryTrends: AuthedRequestHandler = async (req, res, next) => 
   }
 };
 
-export const getAssetSummary: AuthedRequestHandler = async (req, res, next) => {
+export const getAssetSummary: AuthedRequestHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const tenantId = getTenantId(req);
     const match = tenantId ? { tenantId } : {};
@@ -156,9 +168,9 @@ export const getAssetSummary: AuthedRequestHandler = async (req, res, next) => {
 };
 
 export const getWorkOrderSummary: AuthedRequestHandler = async (
-  req,
-  res,
-  next,
+  req: Request,
+  res: Response,
+  next: NextFunction,
 ) => {
   try {
     const tenantId = getTenantId(req);
@@ -175,9 +187,9 @@ export const getWorkOrderSummary: AuthedRequestHandler = async (
 };
 
 export const getUpcomingMaintenance: AuthedRequestHandler = async (
-  req,
-  res,
-  next,
+  req: Request,
+  res: Response,
+  next: NextFunction,
 ) => {
   try {
     const tenantId = getTenantId(req);
@@ -196,7 +208,11 @@ export const getUpcomingMaintenance: AuthedRequestHandler = async (
   }
 };
 
-export const getCriticalAlerts: AuthedRequestHandler = async (req, res, next) => {
+export const getCriticalAlerts: AuthedRequestHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const tenantId = getTenantId(req);
     const match: any = tenantId ? { tenantId } : {};

@@ -3,6 +3,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import { Types } from 'mongoose';
 
 import Vendor from '../models/Vendor';
 import { writeAuditLog } from '../utils/audit';
@@ -137,7 +138,7 @@ export const updateVendor = async (
       userId,
       action: 'update',
       entityType: 'Vendor',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before: existing.toObject(),
       after: updated?.toObject(),
     });
@@ -171,7 +172,7 @@ export const deleteVendor = async (
       userId,
       action: 'delete',
       entityType: 'Vendor',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before: deleted.toObject(),
     });
     res.json({ message: 'Deleted successfully' });

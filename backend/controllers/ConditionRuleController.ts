@@ -5,6 +5,7 @@
 import type { ParamsDictionary } from 'express-serve-static-core';
 import type { AuthedRequestHandler } from '../types/http';
 
+
 import ConditionRule from '../models/ConditionRule';
 import { writeAuditLog } from '../utils/audit';
 
@@ -86,7 +87,7 @@ export const updateConditionRule: AuthedRequestHandler<{ id: string }> = async (
       userId,
       action: 'update',
       entityType: 'ConditionRule',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before: existing.toObject(),
       after: updated?.toObject(),
     });
@@ -116,7 +117,7 @@ export const deleteConditionRule: AuthedRequestHandler<{ id: string }> = async (
       userId,
       action: 'delete',
       entityType: 'ConditionRule',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before: deleted.toObject(),
     });
     res.json({ message: 'Deleted successfully' });

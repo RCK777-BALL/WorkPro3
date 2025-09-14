@@ -17,11 +17,7 @@ type IdParams = { id: string };
 export const getAllNotifications: AuthedRequestHandler<
   ParamsDictionary,
   NotificationDocument[] | { message: string }
-> = async (
-  req: { tenantId: any; },
-  res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: (mongoose.Document<unknown, {}, NotificationDocument, {}, {}> & NotificationDocument & Required<{ _id: mongoose.Types.ObjectId; }> & { __v: number; })[]) => void; },
-  next: (arg0: unknown) => void,
-) => {
+> = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -41,11 +37,7 @@ export const getAllNotifications: AuthedRequestHandler<
 export const getNotificationById: AuthedRequestHandler<
   IdParams,
   NotificationDocument | { message: string }
-> = async (
-  req: { tenantId: any; params: { id: any; }; },
-  res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: mongoose.Document<unknown, {}, NotificationDocument, {}, {}> & NotificationDocument & Required<{ _id: mongoose.Types.ObjectId; }> & { __v: number; }) => void; },
-  next: (arg0: unknown) => void,
-) => {
+> = async (req, res, next) => {
 
   try {
     const tenantId = req.tenantId;
@@ -69,11 +61,7 @@ export const getNotificationById: AuthedRequestHandler<
 export const createNotification: AuthedRequestHandler<
   ParamsDictionary,
   NotificationDocument | { message: string }
-> = async (
-  req: { tenantId: any; body: any; user: any; app: { get: (arg0: string) => any; }; },
-  res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: NotificationDocument): void; new(): any; }; }; },
-  next: (arg0: unknown) => void,
-) => {
+> = async (req, res, next) => {
 
   try {
     const tenantId = req.tenantId;
@@ -143,11 +131,7 @@ export const createNotification: AuthedRequestHandler<
 export const markNotificationRead: AuthedRequestHandler<
   IdParams,
   NotificationDocument | { message: string }
-> = async (
-  req: { params: { id: string | number | mongoose.mongo.BSON.ObjectId | Uint8Array<ArrayBufferLike> | mongoose.mongo.BSON.ObjectIdLike; }; tenantId: any; user: any; },
-  res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: mongoose.Document<unknown, {}, NotificationDocument, {}, {}> & NotificationDocument & Required<{ _id: mongoose.Types.ObjectId; }> & { __v: number; }) => void; },
-  next: (arg0: unknown) => void,
-) => {
+> = async (req, res, next) => {
 
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
     res.status(400).json({ message: 'Invalid ID' });
@@ -175,7 +159,7 @@ export const markNotificationRead: AuthedRequestHandler<
       userId,
       action: 'markRead',
       entityType: 'Notification',
-      entityId: req.params.id as unknown as string | Types.ObjectId,
+      entityId: new Types.ObjectId(req.params.id),
       before: null,
       after: updated.toObject(),
     });
@@ -190,11 +174,7 @@ export const markNotificationRead: AuthedRequestHandler<
 export const updateNotification: AuthedRequestHandler<
   IdParams,
   NotificationDocument | { message: string }
-> = async (
-  req: { params: { id: string | number | mongoose.mongo.BSON.ObjectId | Uint8Array<ArrayBufferLike> | mongoose.mongo.BSON.ObjectIdLike; }; tenantId: any; user: any; body: mongoose.UpdateQuery<NotificationDocument> | undefined; },
-  res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: (mongoose.Document<unknown, {}, NotificationDocument, {}, {}> & NotificationDocument & Required<{ _id: mongoose.Types.ObjectId; }> & { __v: number; }) | null) => void; },
-  next: (arg0: unknown) => void,
-) => {
+> = async (req, res, next) => {
 
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
     res.status(400).json({ message: 'Invalid ID' });
@@ -225,7 +205,7 @@ export const updateNotification: AuthedRequestHandler<
       userId,
       action: 'update',
       entityType: 'Notification',
-      entityId: req.params.id as unknown as string | Types.ObjectId,
+      entityId: new Types.ObjectId(req.params.id),
       before: existing.toObject(),
       after: updated?.toObject(),
     });
@@ -240,11 +220,7 @@ export const updateNotification: AuthedRequestHandler<
 export const deleteNotification: AuthedRequestHandler<
   IdParams,
   { message: string }
-> = async (
-  req: { params: { id: string | number | mongoose.mongo.BSON.ObjectId | Uint8Array<ArrayBufferLike> | mongoose.mongo.BSON.ObjectIdLike; }; tenantId: any; user: any; },
-  res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: { message: string; }) => void; },
-  next: (arg0: unknown) => void,
-) => {
+> = async (req, res, next) => {
 
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
     res.status(400).json({ message: 'Invalid ID' });
@@ -267,7 +243,7 @@ export const deleteNotification: AuthedRequestHandler<
       userId,
       action: 'delete',
       entityType: 'Notification',
-      entityId: req.params.id as unknown as string | Types.ObjectId,
+      entityId: new Types.ObjectId(req.params.id),
       before: deleted.toObject(),
     });
     res.json({ message: 'Deleted successfully' });

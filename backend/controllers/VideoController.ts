@@ -3,6 +3,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import { Types } from 'mongoose';
 
 import Video from '../models/Video';
 import { writeAuditLog } from '../utils/audit';
@@ -65,7 +66,7 @@ export const updateVideo = async (req: Request, res: Response, next: NextFunctio
       userId,
       action: 'update',
       entityType: 'Video',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before: existing.toObject(),
       after: updated?.toObject(),
     });
@@ -88,7 +89,7 @@ export const deleteVideo = async (req: Request, res: Response, next: NextFunctio
       userId,
       action: 'delete',
       entityType: 'Video',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before: deleted.toObject(),
     });
     res.json({ message: 'Deleted successfully' });

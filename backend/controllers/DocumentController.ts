@@ -6,6 +6,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import type { Response as ExpressResponse } from 'express';
 import type { ParamsDictionary } from 'express-serve-static-core';
+
 import { Types } from 'mongoose';
 import Document from '../models/Document';
 import type { AuthedRequestHandler } from '../types/http';
@@ -18,6 +19,7 @@ export const getAllDocuments: AuthedRequestHandler<ParamsDictionary> = async (
   res: ExpressResponse,
   next,
 ) => {
+
   try {
     const items = await Document.find();
     sendResponse(res, items);
@@ -33,6 +35,7 @@ export const getDocumentById: AuthedRequestHandler<{ id: string }> = async (
   res: ExpressResponse,
   next,
 ) => {
+
   try {
     const { id } = req.params;
     if (!Types.ObjectId.isValid(id)) {
@@ -57,6 +60,7 @@ export const createDocument: AuthedRequestHandler<ParamsDictionary> = async (
   res: ExpressResponse,
   next,
 ) => {
+
   try {
     const { base64, url, name } = req.body as {
       base64?: string;
@@ -108,6 +112,7 @@ export const updateDocument: AuthedRequestHandler<{ id: string }> = async (
   res: ExpressResponse,
   next,
 ) => {
+
   try {
     const { id } = req.params;
     if (!Types.ObjectId.isValid(id)) {
@@ -172,6 +177,7 @@ export const deleteDocument: AuthedRequestHandler<{ id: string }> = async (
   res: ExpressResponse,
   next,
 ) => {
+
   try {
     const { id } = req.params;
     if (!Types.ObjectId.isValid(id)) {

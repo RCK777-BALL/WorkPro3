@@ -3,6 +3,7 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
+import { Types } from 'mongoose';
 import { ok, fail, asyncHandler } from '../src/lib/http';
 
 import Tenant from '../models/Tenant';
@@ -59,7 +60,7 @@ export const updateTenant = async (req: Request, res: Response, next: NextFuncti
       userId,
       action: 'update',
       entityType: 'Tenant',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before: existing.toObject(),
       after: tenant?.toObject(),
     });
@@ -79,7 +80,7 @@ export const deleteTenant = async (req: Request, res: Response, next: NextFuncti
       userId,
       action: 'delete',
       entityType: 'Tenant',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before: tenant.toObject(),
     });
     res.json({ message: 'Deleted successfully' });

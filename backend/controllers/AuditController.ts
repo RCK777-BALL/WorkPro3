@@ -2,10 +2,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-import AuditLog from '../models/AuditLog';
+import { FlattenMaps } from 'mongoose';
+import AuditLog, { AuditLogDocument } from '../models/AuditLog';
 import type { AuthedRequestHandler } from '../types/http';
 
-export const getAuditLogs: AuthedRequestHandler = async (req, res, next) => {
+export const getAuditLogs: AuthedRequestHandler = async (req: { tenantId: any; query: { limit: any; entityType: any; entityId: any; userId: any; }; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: (FlattenMaps<AuditLogDocument> & Required<{ _id: FlattenMaps<unknown>; }> & { __v: number; })[]) => void; }, next: (arg0: unknown) => void) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {

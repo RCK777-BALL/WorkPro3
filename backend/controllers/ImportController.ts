@@ -7,7 +7,7 @@ import Asset from '../models/Asset';
 import InventoryItem from '../models/InventoryItem';
 import type { AuthedRequestHandler } from '../types/http';
 
-export const importAssets: AuthedRequestHandler = async (req, res, next) => {
+export const importAssets: AuthedRequestHandler = async (req: { tenantId: any; siteId: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: { imported: number; }) => void; }, next: (arg0: unknown) => void) => {
   try {
     const file = (req as any).file;
     if (!file) {
@@ -41,7 +41,7 @@ export const importAssets: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const importParts: AuthedRequestHandler = async (req, res, next) => {
+export const importParts: AuthedRequestHandler = async (req: { tenantId: any; siteId: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: { imported: number; }) => void; }, next: (arg0: unknown) => void) => {
   try {
     const file = (req as any).file;
     if (!file) {

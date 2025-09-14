@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import { validationResult } from 'express-validator';
 import PMTask from '../models/PMTask';
 import WorkOrder from '../models/WorkOrder';
@@ -11,7 +11,7 @@ import { nextCronOccurrenceWithin } from '../services/PMScheduler';
 import type { AuthedRequestHandler } from '../types/http';
 import { writeAuditLog } from '../utils/audit';
 
-export const getAllPMTasks: AuthedRequestHandler = async (req, res, next) => {
+export const getAllPMTasks: AuthedRequestHandler = async (req: { tenantId: any; siteId: any; }, res: { json: (arg0: (mongoose.Document<unknown, {}, PmTaskDocument, {}, {}> & PmTaskDocument & Required<{ _id: unknown; }> & { __v: number; })[]) => void; }, next: (arg0: unknown) => void) => {
   try {
     const filter: Record<string, unknown> = { tenantId: req.tenantId };
     if (req.siteId) (filter as any).siteId = req.siteId;
@@ -23,7 +23,7 @@ export const getAllPMTasks: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const getPMTaskById: AuthedRequestHandler = async (req, res, next) => {
+export const getPMTaskById: AuthedRequestHandler = async (req: { params: { id: string | number | mongoose.mongo.BSON.ObjectId | Uint8Array<ArrayBufferLike> | mongoose.mongo.BSON.ObjectIdLike; }; tenantId: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: mongoose.Document<unknown, {}, PmTaskDocument, {}, {}> & PmTaskDocument & Required<{ _id: unknown; }> & { __v: number; }) => void; }, next: (arg0: unknown) => void) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       res.status(400).json({ message: 'Invalid ID' });
@@ -46,7 +46,7 @@ export const getPMTaskById: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const createPMTask: AuthedRequestHandler = async (req, res, next) => {
+export const createPMTask: AuthedRequestHandler = async (req: { tenantId: any; body: any; siteId: any; user: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: mongoose.Document<unknown, {}, PmTaskDocument, {}, {}> & PmTaskDocument & Required<{ _id: unknown; }> & { __v: number; }): void; new(): any; }; }; }, next: (arg0: unknown) => void) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
@@ -73,7 +73,7 @@ export const createPMTask: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const updatePMTask: AuthedRequestHandler = async (req, res, next) => {
+export const updatePMTask: AuthedRequestHandler = async (req: { tenantId: any; params: { id: string | number | mongoose.mongo.BSON.ObjectId | Uint8Array<ArrayBufferLike> | mongoose.mongo.BSON.ObjectIdLike; }; body: mongoose.UpdateQuery<PmTaskDocument> | undefined; user: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message?: string; errors?: ValidationError[]; }): void; new(): any; }; }; json: (arg0: (mongoose.Document<unknown, {}, PmTaskDocument, {}, {}> & PmTaskDocument & Required<{ _id: unknown; }> & { __v: number; }) | null) => void; }, next: (arg0: unknown) => void) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
@@ -105,7 +105,7 @@ export const updatePMTask: AuthedRequestHandler = async (req, res, next) => {
       userId,
       action: 'update',
       entityType: 'PMTask',
-      entityId: req.params.id,
+      entityId: req.params.id as string | Types.ObjectId,
       before: existing.toObject(),
       after: task?.toObject(),
     });
@@ -115,7 +115,7 @@ export const updatePMTask: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const deletePMTask: AuthedRequestHandler = async (req, res, next) => {
+export const deletePMTask: AuthedRequestHandler = async (req: { tenantId: any; params: { id: string | number | mongoose.mongo.BSON.ObjectId | Uint8Array<ArrayBufferLike> | mongoose.mongo.BSON.ObjectIdLike; }; user: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: { message: string; }) => void; }, next: (arg0: unknown) => void) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
@@ -140,7 +140,7 @@ export const deletePMTask: AuthedRequestHandler = async (req, res, next) => {
       userId,
       action: 'delete',
       entityType: 'PMTask',
-      entityId: req.params.id,
+      entityId: req.params.id as string | Types.ObjectId,
       before: task.toObject(),
     });
     res.json({ message: 'Deleted successfully' });
@@ -149,7 +149,7 @@ export const deletePMTask: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const generatePMWorkOrders: AuthedRequestHandler = async (req, res, next) => {
+export const generatePMWorkOrders: AuthedRequestHandler = async (req: { tenantId: any; }, res: { json: (arg0: { generated: number; }) => void; }, next: (arg0: unknown) => void) => {
   try {
     const now = new Date();
     const tasks = await PMTask.find({ tenantId: req.tenantId, active: true });

@@ -3,10 +3,14 @@
  */
 
 import Department from '../models/Department';
-import type { AuthedRequestHandler } from '../types/http';
+import type { Request, Response, NextFunction } from 'express';
 
 
-export const listDepartments: AuthedRequestHandler = async (req, res, next) => {
+export const listDepartments = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const filter: any = { tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;

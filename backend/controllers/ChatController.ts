@@ -2,12 +2,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-import Channel from '../models/Channel';
-import ChatMessage from '../models/ChatMessage';
+import { Document, Types } from 'mongoose';
+import Channel, { ChannelDocument } from '../models/Channel';
+import ChatMessage, { ChatMessageDocument }, { ChatMessageDocument }, { ChatMessageDocument }, { ChatMessageDocument }, { ChatMessageDocument } from '../models/ChatMessage';
 import type { AuthedRequestHandler } from '../types/http';
 
 // Channel controllers
-export const getChannels: AuthedRequestHandler = async (req, res, next) => {
+export const getChannels: AuthedRequestHandler = async (req: { user: { id: any; }; tenantId: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: (Document<unknown, {}, ChannelDocument, {}, {}> & ChannelDocument & Required<{ _id: Types.ObjectId; }> & { __v: number; })[]) => void; }, next: (arg0: unknown) => void) => {
   try {
     const userId = (req.user as any)?._id ?? req.user?.id;
     if (!userId) {
@@ -32,7 +33,7 @@ export const getChannels: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const createChannel: AuthedRequestHandler = async (req, res, next) => {
+export const createChannel: AuthedRequestHandler = async (req: { user: { id: any; }; tenantId: any; body: { name: any; description: any; members?: never[] | undefined; }; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: Document<unknown, {}, ChannelDocument, {}, {}> & ChannelDocument & Required<{ _id: Types.ObjectId; }> & { __v: number; }): void; new(): any; }; }; }, next: (arg0: unknown) => void) => {
   try {
     const userId = (req.user as any)?._id ?? req.user?.id;
     if (!userId) {
@@ -61,7 +62,7 @@ export const createChannel: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const updateChannel: AuthedRequestHandler = async (req, res, next) => {
+export const updateChannel: AuthedRequestHandler = async (req: { user: { id: any; }; tenantId: any; body: { name: any; description: any; members: any; }; params: { channelId: any; }; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; end: { (): void; new(): any; }; }; json: (arg0: Document<unknown, {}, ChannelDocument, {}, {}> & ChannelDocument & Required<{ _id: Types.ObjectId; }> & { __v: number; }) => void; }, next: (arg0: unknown) => void) => {
   try {
     const userId = (req.user as any)?._id ?? req.user?.id;
     if (!userId) {
@@ -100,7 +101,7 @@ export const updateChannel: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const deleteChannel: AuthedRequestHandler = async (req, res, next) => {
+export const deleteChannel: AuthedRequestHandler = async (req: { tenantId: any; params: { channelId: any; }; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; end: { (): void; new(): any; }; }; }, next: (arg0: unknown) => void) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -121,7 +122,7 @@ export const deleteChannel: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const getChannelMessages: AuthedRequestHandler = async (req, res, next) => {
+export const getChannelMessages: AuthedRequestHandler = async (req: { params: { channelId: any; }; }, res: { json: (arg0: (Document<unknown, {}, ChatMessageDocument, {}, {}> & ChatMessageDocument & Required<{ _id: Types.ObjectId; }> & { __v: number; })[]) => void; }, next: (arg0: unknown) => void) => {
   try {
     const messages = await ChatMessage.find({ channelId: req.params.channelId }).sort({ createdAt: 1 });
     res.json(messages);
@@ -132,7 +133,7 @@ export const getChannelMessages: AuthedRequestHandler = async (req, res, next) =
   }
 };
 
-export const sendChannelMessage: AuthedRequestHandler = async (req, res, next) => {
+export const sendChannelMessage: AuthedRequestHandler = async (req: { user: { id: any; }; body: { content: any; }; params: { channelId: any; }; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: Document<unknown, {}, ChatMessageDocument, {}, {}> & ChatMessageDocument & Required<{ _id: Types.ObjectId; }> & { __v: number; }): void; new(): any; }; }; }, next: (arg0: unknown) => void) => {
   try {
     const userId = (req.user as any)?._id ?? req.user?.id;
     if (!userId) {
@@ -154,7 +155,7 @@ export const sendChannelMessage: AuthedRequestHandler = async (req, res, next) =
 };
 
 // Message controllers shared between channel and direct messages
-export const updateMessage: AuthedRequestHandler = async (req, res, next) => {
+export const updateMessage: AuthedRequestHandler = async (req: { user: { id: any; }; params: { messageId: any; }; body: { content: any; }; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; end: { (): void; new(): any; }; }; json: (arg0: Document<unknown, {}, ChatMessageDocument, {}, {}> & ChatMessageDocument & Required<{ _id: Types.ObjectId; }> & { __v: number; }) => void; }, next: (arg0: unknown) => void) => {
   try {
     const userId = (req.user as any)?._id ?? req.user?.id;
     if (!userId) {
@@ -178,7 +179,7 @@ export const updateMessage: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const deleteMessage: AuthedRequestHandler = async (req, res, next) => {
+export const deleteMessage: AuthedRequestHandler = async (req: { user: { id: any; }; params: { messageId: any; }; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; end: { (): void; new(): any; }; }; }, next: (arg0: unknown) => void) => {
   try {
     const userId = (req.user as any)?._id ?? req.user?.id;
     if (!userId) {
@@ -195,7 +196,7 @@ export const deleteMessage: AuthedRequestHandler = async (req, res, next) => {
 };
 
 // Direct message controllers
-export const getDirectMessages: AuthedRequestHandler = async (req, res, next) => {
+export const getDirectMessages: AuthedRequestHandler = async (req: { user: { id: any; }; tenantId: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: (Document<unknown, {}, ChannelDocument, {}, {}> & ChannelDocument & Required<{ _id: Types.ObjectId; }> & { __v: number; })[]) => void; }, next: (arg0: unknown) => void) => {
   try {
     const userId = (req.user as any)?._id ?? req.user?.id;
     if (!userId) {
@@ -220,7 +221,7 @@ export const getDirectMessages: AuthedRequestHandler = async (req, res, next) =>
   }
 };
 
-export const createDirectMessage: AuthedRequestHandler = async (req, res, next) => {
+export const createDirectMessage: AuthedRequestHandler = async (req: { user: { id: any; }; tenantId: any; body: { userId: any; }; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: Document<unknown, {}, ChannelDocument, {}, {}> & ChannelDocument & Required<{ _id: Types.ObjectId; }> & { __v: number; }): void; new(): any; }; }; json: (arg0: Document<unknown, {}, ChannelDocument, {}, {}> & ChannelDocument & Required<{ _id: Types.ObjectId; }> & { __v: number; }) => void; }, next: (arg0: unknown) => void) => {
   try {
     const userId = (req.user as any)?._id ?? req.user?.id;
     if (!userId) {
@@ -258,7 +259,7 @@ export const createDirectMessage: AuthedRequestHandler = async (req, res, next) 
   }
 };
 
-export const deleteDirectMessage: AuthedRequestHandler = async (req, res, next) => {
+export const deleteDirectMessage: AuthedRequestHandler = async (req: { user: { id: any; }; tenantId: any; params: { conversationId: any; }; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; end: { (): void; new(): any; }; }; }, next: (arg0: unknown) => void) => {
   try {
     const userId = (req.user as any)?._id ?? req.user?.id;
     if (!userId) {
@@ -285,7 +286,7 @@ export const deleteDirectMessage: AuthedRequestHandler = async (req, res, next) 
   }
 };
 
-export const getDirectMessagesForUser: AuthedRequestHandler = async (req, res, next) => {
+export const getDirectMessagesForUser: AuthedRequestHandler = async (req: { user: { id: any; }; tenantId: any; params: { conversationId: any; }; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; end: { (): void; new(): any; }; }; json: (arg0: (Document<unknown, {}, ChatMessageDocument, {}, {}> & ChatMessageDocument & Required<{ _id: Types.ObjectId; }> & { __v: number; })[]) => void; }, next: (arg0: unknown) => void) => {
   try {
     const userId = (req.user as any)?._id ?? req.user?.id;
     if (!userId) {
@@ -316,7 +317,7 @@ export const getDirectMessagesForUser: AuthedRequestHandler = async (req, res, n
   }
 };
 
-export const sendDirectMessage: AuthedRequestHandler = async (req, res, next) => {
+export const sendDirectMessage: AuthedRequestHandler = async (req: { user: { id: any; }; tenantId: any; params: { conversationId: any; }; body: { content: any; }; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: Document<unknown, {}, ChatMessageDocument, {}, {}> & ChatMessageDocument & Required<{ _id: Types.ObjectId; }> & { __v: number; }): void; new(): any; }; end: { (): void; new(): any; }; }; }, next: (arg0: unknown) => void) => {
   try {
     const userId = (req.user as any)?._id ?? req.user?.id;
     if (!userId) {

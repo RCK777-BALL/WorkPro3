@@ -7,7 +7,7 @@ import type { AuthedRequestHandler } from '../types/http';
 import { emitWorkOrderUpdate } from '../server';
 import notifyUser from '../utils/notify';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
-import { Types } from 'mongoose';
+import { Document, Document, Document, Document, Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
 import { filterFields } from '../utils/filterFields';
 import { writeAuditLog } from '../utils/audit';
@@ -23,6 +23,18 @@ import {
   completeWorkOrderSchema,
   cancelWorkOrderSchema,
 } from '../src/schemas/workOrder';
+import { Response } from 'express';
+import { Response } from 'express';
+import { Response } from 'express';
+import { Response } from 'express';
+import { Response } from 'express';
+import { Response } from 'express';
+import { Response } from 'express';
+import { ObjectId } from 'bson';
+import { ObjectId } from 'bson';
+import { ObjectId } from 'bson';
+import { ObjectId } from 'bson';
+import { Response } from 'express';
 
 
 
@@ -78,7 +90,7 @@ function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
  *       200:
  *         description: List of work orders
  */
-export const getAllWorkOrders: AuthedRequestHandler = async (req, res, next) => {
+export const getAllWorkOrders: AuthedRequestHandler = async (req: { tenantId: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -124,7 +136,7 @@ export const getAllWorkOrders: AuthedRequestHandler = async (req, res, next) => 
  *       200:
  *         description: Filtered work orders
  */
-export const searchWorkOrders: AuthedRequestHandler = async (req, res, next) => {
+export const searchWorkOrders: AuthedRequestHandler = async (req: { tenantId: any; query: { startDate?: any; endDate?: any; status?: any; priority?: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -179,7 +191,7 @@ export const searchWorkOrders: AuthedRequestHandler = async (req, res, next) => 
  *       404:
  *         description: Work order not found
  */
-export const getWorkOrderById: AuthedRequestHandler = async (req, res, next) => {
+export const getWorkOrderById: AuthedRequestHandler = async (req: { tenantId: any; params: { id: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -219,7 +231,7 @@ export const getWorkOrderById: AuthedRequestHandler = async (req, res, next) => 
  *         description: Validation error
  */
 
-export const createWorkOrder: AuthedRequestHandler<ParamsDictionary, WorkOrderType, WorkOrderInput> = async (req, res, next) => {
+export const createWorkOrder: AuthedRequestHandler<ParamsDictionary, WorkOrderType, WorkOrderInput> = async (req: { tenantId: any; body: unknown; user: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
 
     const tenantId = req.tenantId;
@@ -285,7 +297,7 @@ export const createWorkOrder: AuthedRequestHandler<ParamsDictionary, WorkOrderTy
  *       404:
  *         description: Work order not found
  */
-export const updateWorkOrder: AuthedRequestHandler = async (req, res, next) => {
+export const updateWorkOrder: AuthedRequestHandler = async (req: { tenantId: any; body: unknown; params: { id: any; }; user: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -355,7 +367,7 @@ export const updateWorkOrder: AuthedRequestHandler = async (req, res, next) => {
  *       404:
  *         description: Work order not found
  */
-export const deleteWorkOrder: AuthedRequestHandler = async (req, res, next) => {
+export const deleteWorkOrder: AuthedRequestHandler = async (req: { tenantId: any; params: { id: any; }; user: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -416,7 +428,7 @@ export const deleteWorkOrder: AuthedRequestHandler = async (req, res, next) => {
  *         description: Work order not found
  */
  
-export const approveWorkOrder: AuthedRequestHandler = async (req, res, next) => {
+export const approveWorkOrder: AuthedRequestHandler = async (req: { tenantId: any; user: { _id: any; id: any; }; body: { status: any; }; params: { id: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -481,7 +493,7 @@ export const approveWorkOrder: AuthedRequestHandler = async (req, res, next) => 
   }
 };
  
-export const assignWorkOrder: AuthedRequestHandler = async (req, res, next) => {
+export const assignWorkOrder: AuthedRequestHandler = async (req: { tenantId: any; params: { id: any; }; body: unknown; user: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message?: string; formErrors?: string[]; fieldErrors?: { assignees?: string[]; }; }): void; new(): any; }; }; json: (arg0: Document<unknown, {}, { createdAt: NativeDate; updatedAt: NativeDate; } & { title: string; priority: "low" | "medium" | "high" | "critical"; status: "requested" | "assigned" | "in_progress" | "completed" | "cancelled"; approvalStatus: "not-required" | "pending" | "approved" | "rejected"; assignees: Types.ObjectId[]; checklists: Types.DocumentArray<{ done: boolean; text?: string | null; }, Types.Subdocument<ObjectId, any, { done: boolean; text?: string | null; }> & { done: boolean; text?: string | null; }>; partsUsed: Types.DocumentArray<{ qty: number; cost: number; partId?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { qty: number; cost: number; partId?: Types.ObjectId | null; }> & { qty: number; cost: number; partId?: Types.ObjectId | null; }>; signatures: Types.DocumentArray<{ ts: NativeDate; by?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { ts: NativeDate; by?: Types.ObjectId | null; }> & { ts: NativeDate; by?: Types.ObjectId | null; }>; photos: string[]; tenantId: Types.ObjectId; description?: string | null; timeSpentMin?: number | null; failureCode?: string | null; teamMemberName?: string | null; completedAt?: NativeDate | null; assetId?: Types.ObjectId | null; approvalRequestedBy?: Types.ObjectId | null; approvedBy?: Types.ObjectId | null; assignedTo?: Types.ObjectId | null; pmTask?: Types.ObjectId | null; department?: Types.ObjectId | null; line?: Types.ObjectId | null; station?: Types.ObjectId | null; importance?: "low" | "medium" | "high" | "severe" | null; dueDate?: NativeDate | null; }, {}, { timestamps: true; }> & { createdAt: NativeDate; updatedAt: NativeDate; } & { title: string; priority: "low" | "medium" | "high" | "critical"; status: "requested" | "assigned" | "in_progress" | "completed" | "cancelled"; approvalStatus: "not-required" | "pending" | "approved" | "rejected"; assignees: Types.ObjectId[]; checklists: Types.DocumentArray<{ done: boolean; text?: string | null; }, Types.Subdocument<ObjectId, any, { done: boolean; text?: string | null; }> & { done: boolean; text?: string | null; }>; partsUsed: Types.DocumentArray<{ qty: number; cost: number; partId?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { qty: number; cost: number; partId?: Types.ObjectId | null; }> & { qty: number; cost: number; partId?: Types.ObjectId | null; }>; signatures: Types.DocumentArray<{ ts: NativeDate; by?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { ts: NativeDate; by?: Types.ObjectId | null; }> & { ts: NativeDate; by?: Types.ObjectId | null; }>; photos: string[]; tenantId: Types.ObjectId; description?: string | null; timeSpentMin?: number | null; failureCode?: string | null; teamMemberName?: string | null; completedAt?: NativeDate | null; assetId?: Types.ObjectId | null; approvalRequestedBy?: Types.ObjectId | null; approvedBy?: Types.ObjectId | null; assignedTo?: Types.ObjectId | null; pmTask?: Types.ObjectId | null; department?: Types.ObjectId | null; line?: Types.ObjectId | null; station?: Types.ObjectId | null; importance?: "low" | "medium" | "high" | "severe" | null; dueDate?: NativeDate | null; } & { _id: Types.ObjectId; } & { __v: number; }) => void; }, next: (arg0: unknown) => void) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -525,7 +537,7 @@ export const assignWorkOrder: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const startWorkOrder: AuthedRequestHandler = async (req, res, next) => {
+export const startWorkOrder: AuthedRequestHandler = async (req: { tenantId: any; body: unknown; params: { id: any; }; user: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message?: string; formErrors?: string[]; fieldErrors?: {}; }): void; new(): any; }; }; json: (arg0: Document<unknown, {}, { createdAt: NativeDate; updatedAt: NativeDate; } & { title: string; priority: "low" | "medium" | "high" | "critical"; status: "requested" | "assigned" | "in_progress" | "completed" | "cancelled"; approvalStatus: "not-required" | "pending" | "approved" | "rejected"; assignees: Types.ObjectId[]; checklists: Types.DocumentArray<{ done: boolean; text?: string | null; }, Types.Subdocument<ObjectId, any, { done: boolean; text?: string | null; }> & { done: boolean; text?: string | null; }>; partsUsed: Types.DocumentArray<{ qty: number; cost: number; partId?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { qty: number; cost: number; partId?: Types.ObjectId | null; }> & { qty: number; cost: number; partId?: Types.ObjectId | null; }>; signatures: Types.DocumentArray<{ ts: NativeDate; by?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { ts: NativeDate; by?: Types.ObjectId | null; }> & { ts: NativeDate; by?: Types.ObjectId | null; }>; photos: string[]; tenantId: Types.ObjectId; description?: string | null; timeSpentMin?: number | null; failureCode?: string | null; teamMemberName?: string | null; completedAt?: NativeDate | null; assetId?: Types.ObjectId | null; approvalRequestedBy?: Types.ObjectId | null; approvedBy?: Types.ObjectId | null; assignedTo?: Types.ObjectId | null; pmTask?: Types.ObjectId | null; department?: Types.ObjectId | null; line?: Types.ObjectId | null; station?: Types.ObjectId | null; importance?: "low" | "medium" | "high" | "severe" | null; dueDate?: NativeDate | null; }, {}, { timestamps: true; }> & { createdAt: NativeDate; updatedAt: NativeDate; } & { title: string; priority: "low" | "medium" | "high" | "critical"; status: "requested" | "assigned" | "in_progress" | "completed" | "cancelled"; approvalStatus: "not-required" | "pending" | "approved" | "rejected"; assignees: Types.ObjectId[]; checklists: Types.DocumentArray<{ done: boolean; text?: string | null; }, Types.Subdocument<ObjectId, any, { done: boolean; text?: string | null; }> & { done: boolean; text?: string | null; }>; partsUsed: Types.DocumentArray<{ qty: number; cost: number; partId?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { qty: number; cost: number; partId?: Types.ObjectId | null; }> & { qty: number; cost: number; partId?: Types.ObjectId | null; }>; signatures: Types.DocumentArray<{ ts: NativeDate; by?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { ts: NativeDate; by?: Types.ObjectId | null; }> & { ts: NativeDate; by?: Types.ObjectId | null; }>; photos: string[]; tenantId: Types.ObjectId; description?: string | null; timeSpentMin?: number | null; failureCode?: string | null; teamMemberName?: string | null; completedAt?: NativeDate | null; assetId?: Types.ObjectId | null; approvalRequestedBy?: Types.ObjectId | null; approvedBy?: Types.ObjectId | null; assignedTo?: Types.ObjectId | null; pmTask?: Types.ObjectId | null; department?: Types.ObjectId | null; line?: Types.ObjectId | null; station?: Types.ObjectId | null; importance?: "low" | "medium" | "high" | "severe" | null; dueDate?: NativeDate | null; } & { _id: Types.ObjectId; } & { __v: number; }) => void; }, next: (arg0: unknown) => void) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -564,7 +576,7 @@ export const startWorkOrder: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const completeWorkOrder: AuthedRequestHandler = async (req, res, next) => {
+export const completeWorkOrder: AuthedRequestHandler = async (req: { tenantId: any; body: unknown; params: { id: any; }; user: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message?: string; formErrors?: string[]; fieldErrors?: { timeSpentMin?: string[]; checklists?: string[]; partsUsed?: string[]; signatures?: string[]; }; }): void; new(): any; }; }; json: (arg0: Document<unknown, {}, { createdAt: NativeDate; updatedAt: NativeDate; } & { title: string; priority: "low" | "medium" | "high" | "critical"; status: "requested" | "assigned" | "in_progress" | "completed" | "cancelled"; approvalStatus: "not-required" | "pending" | "approved" | "rejected"; assignees: Types.ObjectId[]; checklists: Types.DocumentArray<{ done: boolean; text?: string | null; }, Types.Subdocument<ObjectId, any, { done: boolean; text?: string | null; }> & { done: boolean; text?: string | null; }>; partsUsed: Types.DocumentArray<{ qty: number; cost: number; partId?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { qty: number; cost: number; partId?: Types.ObjectId | null; }> & { qty: number; cost: number; partId?: Types.ObjectId | null; }>; signatures: Types.DocumentArray<{ ts: NativeDate; by?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { ts: NativeDate; by?: Types.ObjectId | null; }> & { ts: NativeDate; by?: Types.ObjectId | null; }>; photos: string[]; tenantId: Types.ObjectId; description?: string | null; timeSpentMin?: number | null; failureCode?: string | null; teamMemberName?: string | null; completedAt?: NativeDate | null; assetId?: Types.ObjectId | null; approvalRequestedBy?: Types.ObjectId | null; approvedBy?: Types.ObjectId | null; assignedTo?: Types.ObjectId | null; pmTask?: Types.ObjectId | null; department?: Types.ObjectId | null; line?: Types.ObjectId | null; station?: Types.ObjectId | null; importance?: "low" | "medium" | "high" | "severe" | null; dueDate?: NativeDate | null; }, {}, { timestamps: true; }> & { createdAt: NativeDate; updatedAt: NativeDate; } & { title: string; priority: "low" | "medium" | "high" | "critical"; status: "requested" | "assigned" | "in_progress" | "completed" | "cancelled"; approvalStatus: "not-required" | "pending" | "approved" | "rejected"; assignees: Types.ObjectId[]; checklists: Types.DocumentArray<{ done: boolean; text?: string | null; }, Types.Subdocument<ObjectId, any, { done: boolean; text?: string | null; }> & { done: boolean; text?: string | null; }>; partsUsed: Types.DocumentArray<{ qty: number; cost: number; partId?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { qty: number; cost: number; partId?: Types.ObjectId | null; }> & { qty: number; cost: number; partId?: Types.ObjectId | null; }>; signatures: Types.DocumentArray<{ ts: NativeDate; by?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { ts: NativeDate; by?: Types.ObjectId | null; }> & { ts: NativeDate; by?: Types.ObjectId | null; }>; photos: string[]; tenantId: Types.ObjectId; description?: string | null; timeSpentMin?: number | null; failureCode?: string | null; teamMemberName?: string | null; completedAt?: NativeDate | null; assetId?: Types.ObjectId | null; approvalRequestedBy?: Types.ObjectId | null; approvedBy?: Types.ObjectId | null; assignedTo?: Types.ObjectId | null; pmTask?: Types.ObjectId | null; department?: Types.ObjectId | null; line?: Types.ObjectId | null; station?: Types.ObjectId | null; importance?: "low" | "medium" | "high" | "severe" | null; dueDate?: NativeDate | null; } & { _id: Types.ObjectId; } & { __v: number; }) => void; }, next: (arg0: unknown) => void) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -610,7 +622,7 @@ export const completeWorkOrder: AuthedRequestHandler = async (req, res, next) =>
   }
 };
 
-export const cancelWorkOrder: AuthedRequestHandler = async (req, res, next) => {
+export const cancelWorkOrder: AuthedRequestHandler = async (req: { tenantId: any; body: unknown; params: { id: any; }; user: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message?: string; formErrors?: string[]; fieldErrors?: {}; }): void; new(): any; }; }; json: (arg0: Document<unknown, {}, { createdAt: NativeDate; updatedAt: NativeDate; } & { title: string; priority: "low" | "medium" | "high" | "critical"; status: "requested" | "assigned" | "in_progress" | "completed" | "cancelled"; approvalStatus: "not-required" | "pending" | "approved" | "rejected"; assignees: Types.ObjectId[]; checklists: Types.DocumentArray<{ done: boolean; text?: string | null; }, Types.Subdocument<ObjectId, any, { done: boolean; text?: string | null; }> & { done: boolean; text?: string | null; }>; partsUsed: Types.DocumentArray<{ qty: number; cost: number; partId?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { qty: number; cost: number; partId?: Types.ObjectId | null; }> & { qty: number; cost: number; partId?: Types.ObjectId | null; }>; signatures: Types.DocumentArray<{ ts: NativeDate; by?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { ts: NativeDate; by?: Types.ObjectId | null; }> & { ts: NativeDate; by?: Types.ObjectId | null; }>; photos: string[]; tenantId: Types.ObjectId; description?: string | null; timeSpentMin?: number | null; failureCode?: string | null; teamMemberName?: string | null; completedAt?: NativeDate | null; assetId?: Types.ObjectId | null; approvalRequestedBy?: Types.ObjectId | null; approvedBy?: Types.ObjectId | null; assignedTo?: Types.ObjectId | null; pmTask?: Types.ObjectId | null; department?: Types.ObjectId | null; line?: Types.ObjectId | null; station?: Types.ObjectId | null; importance?: "low" | "medium" | "high" | "severe" | null; dueDate?: NativeDate | null; }, {}, { timestamps: true; }> & { createdAt: NativeDate; updatedAt: NativeDate; } & { title: string; priority: "low" | "medium" | "high" | "critical"; status: "requested" | "assigned" | "in_progress" | "completed" | "cancelled"; approvalStatus: "not-required" | "pending" | "approved" | "rejected"; assignees: Types.ObjectId[]; checklists: Types.DocumentArray<{ done: boolean; text?: string | null; }, Types.Subdocument<ObjectId, any, { done: boolean; text?: string | null; }> & { done: boolean; text?: string | null; }>; partsUsed: Types.DocumentArray<{ qty: number; cost: number; partId?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { qty: number; cost: number; partId?: Types.ObjectId | null; }> & { qty: number; cost: number; partId?: Types.ObjectId | null; }>; signatures: Types.DocumentArray<{ ts: NativeDate; by?: Types.ObjectId | null; }, Types.Subdocument<ObjectId, any, { ts: NativeDate; by?: Types.ObjectId | null; }> & { ts: NativeDate; by?: Types.ObjectId | null; }>; photos: string[]; tenantId: Types.ObjectId; description?: string | null; timeSpentMin?: number | null; failureCode?: string | null; teamMemberName?: string | null; completedAt?: NativeDate | null; assetId?: Types.ObjectId | null; approvalRequestedBy?: Types.ObjectId | null; approvedBy?: Types.ObjectId | null; assignedTo?: Types.ObjectId | null; pmTask?: Types.ObjectId | null; department?: Types.ObjectId | null; line?: Types.ObjectId | null; station?: Types.ObjectId | null; importance?: "low" | "medium" | "high" | "severe" | null; dueDate?: NativeDate | null; } & { _id: Types.ObjectId; } & { __v: number; }) => void; }, next: (arg0: unknown) => void) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -670,7 +682,7 @@ export const cancelWorkOrder: AuthedRequestHandler = async (req, res, next) => {
  *         description: Work order not found
 */
 
-export const assistWorkOrder: AuthedRequestHandler = async (req, res, next) => {
+export const assistWorkOrder: AuthedRequestHandler = async (req: { tenantId: any; params: { id: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {

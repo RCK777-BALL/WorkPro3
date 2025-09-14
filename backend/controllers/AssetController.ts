@@ -9,7 +9,7 @@ import Site from '../models/Site';
 import Department from '../models/Department';
 import Line from '../models/Line';
 import Station from '../models/Station';
-import { ValidationError, ValidationError, validationResult } from 'express-validator';
+import { validationResult, ValidationError as ExpressValidationError } from 'express-validator';
 import logger from '../utils/logger';
 import { filterFields } from '../utils/filterFields';
 import { writeAuditLog } from '../utils/audit';
@@ -84,7 +84,7 @@ export const createAsset: AuthedRequestHandler = async (req: { body: { name: any
   try {
     const errors = validationResult(req as any);
     if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() });
+      res.status(400).json({ errors: errors.array() as ExpressValidationError[] });
       return;
     }
 
@@ -142,7 +142,7 @@ export const updateAsset: AuthedRequestHandler = async (req: { body: any; tenant
     const errors = validationResult(req as any);
 
     if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() });
+      res.status(400).json({ errors: errors.array() as ExpressValidationError[] });
       return;
     }
 

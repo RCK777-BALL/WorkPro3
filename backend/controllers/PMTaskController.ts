@@ -2,9 +2,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-import mongoose from 'mongoose';
-import { ValidationError, validationResult } from 'express-validator';
-import PMTask, { PmTaskDocument }, { PmTaskDocument }, { PmTaskDocument }, { PmTaskDocument } from '../models/PMTask';
+import mongoose, { Types } from 'mongoose';
+import { validationResult } from 'express-validator';
+import PMTask from '../models/PMTask';
 import WorkOrder from '../models/WorkOrder';
 import Meter from '../models/Meter';
 import { nextCronOccurrenceWithin } from '../services/PMScheduler';
@@ -105,7 +105,7 @@ export const updatePMTask: AuthedRequestHandler = async (req: { tenantId: any; p
       userId,
       action: 'update',
       entityType: 'PMTask',
-      entityId: req.params.id,
+      entityId: req.params.id as string | Types.ObjectId,
       before: existing.toObject(),
       after: task?.toObject(),
     });
@@ -140,7 +140,7 @@ export const deletePMTask: AuthedRequestHandler = async (req: { tenantId: any; p
       userId,
       action: 'delete',
       entityType: 'PMTask',
-      entityId: req.params.id,
+      entityId: req.params.id as string | Types.ObjectId,
       before: task.toObject(),
     });
     res.json({ message: 'Deleted successfully' });

@@ -46,7 +46,7 @@ export const createMeter: AuthedRequestHandler = async (req: { tenantId: any; bo
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
-      return res.status(400).json({ message: 'Tenant ID required' });
+      return res.status(400).json({ error: 'Tenant ID required' });
     const meter = await Meter.create({
       ...req.body,
       tenantId,
@@ -130,12 +130,12 @@ export const addMeterReading: AuthedRequestHandler = async (req: { tenantId: any
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
-      return res.status(400).json({ message: 'Tenant ID required' });
+      return res.status(400).json({ error: 'Tenant ID required' });
     const filter: any = { _id: req.params.id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
     const meter = await Meter.findOne(filter);
     if (!meter) {
-      res.status(404).json({ message: 'Not found' });
+      res.status(404).json({ error: 'Not found' });
       return;
     }
 

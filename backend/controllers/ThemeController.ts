@@ -30,8 +30,12 @@ export const updateTheme: AuthedRequestHandler = async (req, res, next) => {
     if (!tenantId)
       return res.status(400).json({ message: 'Tenant ID required' });
 
+    if (!user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
     const updated = await User.findByIdAndUpdate(
-      user!._id,
+      user?._id,
       { theme, colorScheme },
       { new: true, runValidators: true }
     );
@@ -47,7 +51,7 @@ export const updateTheme: AuthedRequestHandler = async (req, res, next) => {
       userId,
       action: 'update',
       entityType: 'UserTheme',
-      entityId: req.user!._id,
+      entityId: req.user?._id,
       before: null,
       after: { theme: updated.theme, colorScheme: updated.colorScheme },
     });

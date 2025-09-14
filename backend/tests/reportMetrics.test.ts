@@ -22,6 +22,7 @@ let base: Date;
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'testsecret';
+  process.env.LABOR_RATE = '50';
   mongo = await MongoMemoryServer.create();
   await mongoose.connect(mongo.getUri());
 });
@@ -76,10 +77,11 @@ describe('Reports metrics', () => {
     expect(res.body).toHaveLength(1);
     const expectedPeriod = base.toISOString().slice(0, 7);
     expect(res.body[0].period).toBe(expectedPeriod);
-    expect(res.body[0].laborCost).toBeCloseTo(400);
-    expect(res.body[0].maintenanceCost).toBeCloseTo(200);
+    const laborRate = Number(process.env.LABOR_RATE);
+    expect(res.body[0].laborCost).toBeCloseTo(8 * laborRate);
+    expect(res.body[0].maintenanceCost).toBeCloseTo(4 * laborRate);
     expect(res.body[0].materialCost).toBeCloseTo(5);
-    expect(res.body[0].totalCost).toBeCloseTo(605);
+    expect(res.body[0].totalCost).toBeCloseTo(12 * laborRate + 5);
   });
 
   it('aggregates downtime data', async () => {

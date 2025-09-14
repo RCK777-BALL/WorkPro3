@@ -25,6 +25,7 @@ let tenantId: mongoose.Types.ObjectId;
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'testsecret';
+  process.env.LABOR_RATE = '50';
   mongo = await MongoMemoryServer.create();
   await mongoose.connect(mongo.getUri());
 });
@@ -93,12 +94,13 @@ describe('Summary KPIs', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
+    const laborRate = Number(process.env.LABOR_RATE);
     expect(res.body).toMatchObject({
       data: {
         pmCompliance: 0.5,
         woBacklog: 2,
         downtimeThisMonth: 8,
-        costMTD: 400,
+        costMTD: 8 * laborRate,
         cmVsPmRatio: 0.5,
         wrenchTimePct: 40,
       },

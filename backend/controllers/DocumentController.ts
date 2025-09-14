@@ -4,6 +4,7 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
+import { randomUUID } from 'crypto';
 import type { Response as ExpressResponse } from 'express';
 import type { ParamsDictionary } from 'express-serve-static-core';
 
@@ -55,6 +56,20 @@ export const getDocumentById: AuthedRequestHandler<{ id: string }> = async (
   }
 };
 
+const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.txt', '.png', '.jpg', '.jpeg'];
+
+const validateFileName = (input: string): { base: string; ext: string } => {
+  const base = path.basename(input);
+  if (base !== input) {
+    throw new Error('Invalid file name');
+  }
+  const ext = path.extname(base).toLowerCase();
+  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    throw new Error('Invalid file extension');
+  }
+  return { base, ext };
+};
+
 export const createDocument: AuthedRequestHandler<ParamsDictionary> = async (
   req,
   res: ExpressResponse,
@@ -68,15 +83,36 @@ export const createDocument: AuthedRequestHandler<ParamsDictionary> = async (
       name?: string;
     };
 
-    const finalName = name ?? `document_${Date.now()}`;
+    let displayName = name ?? `document_${Date.now()}`;
     let finalUrl = url;
 
     if (base64) {
+      if (!name) {
+        sendResponse(res, null, 'Name is required for file uploads', 400);
+        return;
+      }
+      let safeName;
+      try {
+        safeName = validateFileName(name);
+      } catch {
+        sendResponse(res, null, 'Invalid file name', 400);
+        return;
+      }
       const buffer = Buffer.from(base64, 'base64');
-      const uploadDir = path.join(process.cwd(), 'uploads');
+      const uploadDir = path.join(process.cwd(), 'uploads', 'documents');
       await fs.mkdir(uploadDir, { recursive: true });
-      await fs.writeFile(path.join(uploadDir, finalName), buffer);
-      finalUrl = `/uploads/${finalName}`;
+      const uniqueName = `${randomUUID()}${safeName.ext}`;
+      await fs.writeFile(path.join(uploadDir, uniqueName), buffer);
+      finalUrl = `/uploads/documents/${uniqueName}`;
+      displayName = safeName.base;
+    } else if (name) {
+      try {
+        const safeName = validateFileName(name);
+        displayName = safeName.base;
+      } catch {
+        sendResponse(res, null, 'Invalid file name', 400);
+        return;
+      }
     }
 
     if (!finalUrl) {
@@ -84,7 +120,7 @@ export const createDocument: AuthedRequestHandler<ParamsDictionary> = async (
       return;
     }
 
-    const newItem = new Document({ name: finalName, url: finalUrl });
+    const newItem = new Document({ name: displayName, url: finalUrl });
     const saved = await newItem.save();
 
     const tenantId = req.tenantId;
@@ -126,21 +162,42 @@ export const updateDocument: AuthedRequestHandler<{ id: string }> = async (
       name?: string;
     };
 
-    const finalName = name ?? `document_${Date.now()}`;
     const updateData: { name?: string; url?: string } = {};
 
     if (base64) {
+      if (!name) {
+        sendResponse(res, null, 'Name is required for file uploads', 400);
+        return;
+      }
+      let safeName;
+      try {
+        safeName = validateFileName(name);
+      } catch {
+        sendResponse(res, null, 'Invalid file name', 400);
+        return;
+      }
       const buffer = Buffer.from(base64, 'base64');
-      const uploadDir = path.join(process.cwd(), 'uploads');
+      const uploadDir = path.join(process.cwd(), 'uploads', 'documents');
       await fs.mkdir(uploadDir, { recursive: true });
-      await fs.writeFile(path.join(uploadDir, finalName), buffer);
-      updateData.url = `/uploads/${finalName}`;
-      updateData.name = finalName;
+      const uniqueName = `${randomUUID()}${safeName.ext}`;
+      await fs.writeFile(path.join(uploadDir, uniqueName), buffer);
+      updateData.url = `/uploads/documents/${uniqueName}`;
+      updateData.name = safeName.base;
     } else if (url) {
       updateData.url = url;
-      updateData.name = finalName;
-    } else if (name) {
-      updateData.name = finalName;
+      if (name) {
+        try {
+          const safeName = validateFileName(name);
+          updateData.name = safeName.base;
+        } catch {
+          sendResponse(res, null, 'Invalid file name', 400);
+          return;
+        }
+      }
+    } else {
+      // Should not happen due to validators, but handle gracefully
+      sendResponse(res, null, 'No document provided', 400);
+      return;
     }
 
     const objectId = new Types.ObjectId(id);
@@ -192,6 +249,19 @@ export const deleteDocument: AuthedRequestHandler<{ id: string }> = async (
       sendResponse(res, null, 'Not found', 404);
       return;
     }
+
+    if (deleted.url && deleted.url.startsWith('/uploads/documents/')) {
+      const filePath = path.join(process.cwd(), deleted.url.replace(/^\//, ''));
+      try {
+        await fs.unlink(filePath);
+      } catch (err: any) {
+        if (err.code !== 'ENOENT') {
+          // ignore missing file, but rethrow others
+          throw err;
+        }
+      }
+    }
+
     await writeAuditLog({
       tenantId,
       userId,

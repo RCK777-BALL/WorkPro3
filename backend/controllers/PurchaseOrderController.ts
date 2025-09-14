@@ -53,7 +53,7 @@ export const getPurchaseOrder = async (
       return;
     }
     const objectId = new Types.ObjectId(id);
-    const po = await PurchaseOrder.findById(objectId).lean();
+    const po = await PurchaseOrder.findOne({ _id: objectId, tenantId: req.tenantId }).lean();
     if (!po) {
       res.status(404).json({ message: 'Not found' });
       return;

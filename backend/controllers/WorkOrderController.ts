@@ -334,6 +334,17 @@ export const createWorkOrder: AuthedRequestHandler<ParamsDictionary, WorkOrderTy
  *       404:
  *         description: Work order not found
  */
+interface UpdateWorkOrderBody extends Partial<WorkOrderInput> {
+  assignees?: unknown[]; // typed as unknown because assignee input shape is defined elsewhere
+  checklists?: RawChecklist[];
+  partsUsed?: RawPart[];
+  signatures?: RawSignature[];
+}
+
+interface WorkOrderDocument extends WorkOrderType {
+  toObject: () => any;
+}
+
 export const updateWorkOrder: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
@@ -346,7 +357,7 @@ export const updateWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       sendResponse(res, null, parsed.error.flatten(), 400);
       return;
     }
-    const update: any = parsed.data;
+    const update: UpdateWorkOrderBody = parsed.data as UpdateWorkOrderBody;
     if (update.assignees) {
       update.assignees = mapAssignees(update.assignees);
     }
@@ -360,7 +371,7 @@ export const updateWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       update.signatures = mapSignatures(update.signatures);
 
     }
-    const existing = await WorkOrder.findOne({ _id: req.params.id, tenantId });
+    const existing = await WorkOrder.findOne({ _id: req.params.id, tenantId }) as WorkOrderDocument | null;
     if (!existing) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -369,7 +380,7 @@ export const updateWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       { _id: req.params.id, tenantId },
       update,
       { new: true, runValidators: true }
-    );
+    ) as WorkOrderDocument | null;
     if (!updated) {
       sendResponse(res, null, 'Not found', 404);
       return;

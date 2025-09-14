@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 
 import PurchaseOrder from '../models/PurchaseOrder';
 import { writeAuditLog } from '../utils/audit';
+import { toEntityId } from '../utils/ids';
 
 const { Types, isValidObjectId } = mongoose;
 
@@ -24,7 +25,7 @@ export const createPurchaseOrder = async (
       tenantId,
     });
     const userId = (req.user as any)?._id || (req.user as any)?.id;
-    const entityId = new Types.ObjectId(po._id);
+    const entityId = toEntityId(new Types.ObjectId(po._id));
     await writeAuditLog({
       tenantId,
       userId,
@@ -114,7 +115,7 @@ export const updateVendorPurchaseOrder = async (
     po.status = status as any;
     await po.save();
     const userId = (req.user as any)?._id || (req.user as any)?.id;
-    const entityId = objectId;
+    const entityId = toEntityId(objectId);
     await writeAuditLog({
       tenantId: po.tenantId,
       userId,

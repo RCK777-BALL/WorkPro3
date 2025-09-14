@@ -6,6 +6,7 @@ import type { AuthedRequestHandler } from '../types/http';
 import Meter from '../models/Meter';
 import MeterReading from '../models/MeterReading';
 import { writeAuditLog } from '../utils/audit';
+import { toEntityId } from '../utils/ids';
 import { Document, Types, UpdateQuery } from 'mongoose';
 
 
@@ -53,7 +54,7 @@ export const createMeter: AuthedRequestHandler = async (req, res, next) => {
       userId,
       action: 'create',
       entityType: 'Meter',
-      entityId: meter._id,
+      entityId: toEntityId(meter._id),
       after: meter.toObject(),
     });
     res.status(201).json(meter);
@@ -85,7 +86,7 @@ export const updateMeter: AuthedRequestHandler = async (req, res, next) => {
       userId,
       action: 'update',
       entityType: 'Meter',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: existing.toObject(),
       after: meter?.toObject(),
     });
@@ -113,7 +114,7 @@ export const deleteMeter: AuthedRequestHandler = async (req, res, next) => {
       userId,
       action: 'delete',
       entityType: 'Meter',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: meter.toObject(),
     });
     res.json({ message: 'Deleted successfully' });
@@ -149,7 +150,7 @@ export const addMeterReading: AuthedRequestHandler = async (req, res, next) => {
       userId,
       action: 'addReading',
       entityType: 'Meter',
-      entityId: meter._id,
+      entityId: toEntityId(meter._id),
       after: meter.toObject(),
     });
     res.status(201).json(reading);

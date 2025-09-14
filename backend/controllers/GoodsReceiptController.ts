@@ -11,6 +11,7 @@ import { addStock } from '../services/inventory';
 import nodemailer from 'nodemailer';
 import { assertEmail } from '../utils/assert';
 import { writeAuditLog } from '../utils/audit';
+import { toEntityId } from '../utils/ids';
 import logger from '../utils/logger';
 import { enqueueEmailRetry } from '../utils/emailQueue';
 
@@ -68,7 +69,7 @@ export const createGoodsReceipt = async (
       userId,
       action: 'create',
       entityType: 'GoodsReceipt',
-      entityId: grAny._1 as any,
+      entityId: toEntityId(grAny._1 as any),
       after: typeof grAny.toObject === 'function' ? grAny.toObject() : grAny,
     });
 

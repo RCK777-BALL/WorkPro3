@@ -7,6 +7,7 @@ import { Types } from 'mongoose';
 
 import TimeSheet from '../models/TimeSheet';
 import { writeAuditLog } from '../utils/audit';
+import { toEntityId } from '../utils/ids';
 
  export const getAllTimeSheets = async (
   req: Request,
@@ -62,7 +63,7 @@ export const createTimeSheet = async (
       userId,
       action: 'create',
       entityType: 'TimeSheet',
-      entityId: saved._id,
+      entityId: toEntityId(saved._id),
       after: saved.toObject(),
     });
     res.status(201).json(saved);
@@ -99,7 +100,7 @@ export const updateTimeSheet = async (
       userId,
       action: 'update',
       entityType: 'TimeSheet',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: existing.toObject(),
       after: updated?.toObject(),
     });
@@ -133,7 +134,7 @@ export const deleteTimeSheet = async (
       userId,
       action: 'delete',
       entityType: 'TimeSheet',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: deleted.toObject(),
     });
     res.json({ message: 'Deleted successfully' });

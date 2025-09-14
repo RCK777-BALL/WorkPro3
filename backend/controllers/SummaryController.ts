@@ -10,6 +10,7 @@ import WorkHistory from '../models/WorkHistory';
 import TimeSheet from '../models/TimeSheet';
 import Asset from '../models/Asset';
 import { sendResponse } from '../utils/sendResponse';
+import { LABOR_RATE } from '../config/env';
 
 /**
  * Helper to resolve the tenant id from the request. It checks the `tenantId`
@@ -78,7 +79,7 @@ const calculateSummary = async (
 
   const pmCompliance = pmTotal ? pmCompleted / pmTotal : 0;
   const downtimeThisMonth = maintenanceHours;
-  const costMTD = maintenanceHours * 50;
+  const costMTD = maintenanceHours * LABOR_RATE;
   const cmVsPmRatio = pmTotal ? cmCount / pmTotal : 0;
   const wrenchTimePct = totalHours ? (maintenanceHours / totalHours) * 100 : 0;
 

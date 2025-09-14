@@ -11,6 +11,7 @@ import WorkHistory from '../models/WorkHistory';
 import User from '../models/User';
 import TimeSheet from '../models/TimeSheet';
 import type { AuthedRequestHandler } from '../types/http';
+import { LABOR_RATE } from '../config/env';
  
 
 async function calculateStats(tenantId: string, role?: string) {
@@ -69,9 +70,9 @@ async function calculateStats(tenantId: string, role?: string) {
     ? (totalLaborHours / availableHours) * 100
     : 0;
 
-  // Average cost per work order (assume $50 per hour)
+  // Average cost per work order based on hourly labor rate
   const costPerWorkOrder = totalWorkOrders
-    ? (totalLaborHours * 50) / totalWorkOrders
+    ? (totalLaborHours * LABOR_RATE) / totalWorkOrders
     : 0;
 
   // Top assets by downtime
@@ -88,7 +89,7 @@ async function calculateStats(tenantId: string, role?: string) {
         name: '$asset.name',
         downtime: 1,
         issues: 1,
-        cost: { $multiply: ['$downtime', 50] },
+        cost: { $multiply: ['$downtime', LABOR_RATE] },
       },
     },
   ]);
@@ -155,7 +156,7 @@ async function aggregateTrends(tenantId: string) {
     {
       $group: {
         _id: { $dateToString: { format: '%Y-%m', date: '$completedAt' } },
-        maintenanceCost: { $sum: { $multiply: ['$timeSpentHours', 50] } },
+        maintenanceCost: { $sum: { $multiply: ['$timeSpentHours', LABOR_RATE] } },
         assetDowntime: { $sum: '$timeSpentHours' },
       },
     },
@@ -214,7 +215,7 @@ async function aggregateCosts(tenantId: string) {
       },
     },
     {
-      $project: { _id: 0, period: '$_id', laborCost: { $multiply: ['$hours', 50] } },
+      $project: { _id: 0, period: '$_id', laborCost: { $multiply: ['$hours', LABOR_RATE] } },
     },
   ]);
 
@@ -223,7 +224,7 @@ async function aggregateCosts(tenantId: string) {
     {
       $group: {
         _id: { $dateToString: { format: '%Y-%m', date: '$completedAt' } },
-        maintenanceCost: { $sum: { $multiply: ['$timeSpentHours', 50] } },
+        maintenanceCost: { $sum: { $multiply: ['$timeSpentHours', LABOR_RATE] } },
       },
     },
     { $project: { _id: 0, period: '$_id', maintenanceCost: 1 } },
@@ -380,7 +381,7 @@ async function aggregateCostByAsset(tenantId: string) {
       $project: {
         _id: 0,
         asset: '$asset.name',
-        cost: { $multiply: ['$hours', 50] },
+        cost: { $multiply: ['$hours', LABOR_RATE] },
       },
     },
     { $sort: { cost: -1 } },

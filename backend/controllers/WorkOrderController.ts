@@ -80,6 +80,7 @@ function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
   return {
     ...plain,
     _id: (plain._id as Types.ObjectId | string)?.toString(),
+    tenantId: (plain.tenantId as Types.ObjectId | string)?.toString(),
   } as WorkOrderUpdatePayload;
 }
 

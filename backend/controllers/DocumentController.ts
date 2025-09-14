@@ -4,13 +4,19 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
+import type { Response as ExpressResponse } from 'express';
+import { Types } from 'mongoose';
 import Document from '../models/Document';
 import type { AuthedRequestHandler } from '../types/http';
 import { sendResponse } from '../utils/sendResponse';
 import { writeAuditLog } from '../utils/audit';
 
 
-export const getAllDocuments: AuthedRequestHandler = async (_req, res, next) => {
+export const getAllDocuments: AuthedRequestHandler = async (
+  _req,
+  res: ExpressResponse,
+  next,
+) => {
   try {
     const items = await Document.find();
     sendResponse(res, items);
@@ -21,7 +27,11 @@ export const getAllDocuments: AuthedRequestHandler = async (_req, res, next) => 
   }
 };
 
-export const getDocumentById: AuthedRequestHandler = async (req, res, next) => {
+export const getDocumentById: AuthedRequestHandler = async (
+  req,
+  res: ExpressResponse,
+  next,
+) => {
   try {
     const item = await Document.findById(req.params.id);
     if (!item) {
@@ -36,7 +46,11 @@ export const getDocumentById: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const createDocument: AuthedRequestHandler = async (req, res, next) => {
+export const createDocument: AuthedRequestHandler = async (
+  req,
+  res: ExpressResponse,
+  next,
+) => {
   try {
     const { base64, url, name } = req.body as {
       base64?: string;
@@ -83,7 +97,11 @@ export const createDocument: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const updateDocument: AuthedRequestHandler = async (req, res, next) => {
+export const updateDocument: AuthedRequestHandler = async (
+  req,
+  res: ExpressResponse,
+  next,
+) => {
   try {
     const { base64, url, name } = req.body as {
       base64?: string;
@@ -123,7 +141,7 @@ export const updateDocument: AuthedRequestHandler = async (req, res, next) => {
       userId,
       action: 'update',
       entityType: 'Document',
-      entityId: updated._id,
+      entityId: new Types.ObjectId(req.params.id),
       after: updated.toObject(),
     });
 
@@ -136,7 +154,11 @@ export const updateDocument: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const deleteDocument: AuthedRequestHandler = async (req, res, next) => {
+export const deleteDocument: AuthedRequestHandler = async (
+  req,
+  res: ExpressResponse,
+  next,
+) => {
   try {
     const tenantId = req.tenantId;
     const userId = (req.user as any)?._id || (req.user as any)?.id;
@@ -145,6 +167,14 @@ export const deleteDocument: AuthedRequestHandler = async (req, res, next) => {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'delete',
+      entityType: 'Document',
+      entityId: new Types.ObjectId(req.params.id),
+      before: deleted.toObject(),
+    });
     sendResponse(res, { message: 'Deleted successfully' });
 
     return;

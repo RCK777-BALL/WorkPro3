@@ -3,6 +3,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import { Types } from 'mongoose';
 
 import WorkHistory from '../models/WorkHistory';
 import { writeAuditLog } from '../utils/audit';
@@ -98,7 +99,7 @@ export const updateWorkHistory = async (
       userId,
       action: 'update',
       entityType: 'WorkHistory',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before: existing.toObject(),
       after: updated?.toObject(),
     });
@@ -132,7 +133,7 @@ export const deleteWorkHistory = async (
       userId,
       action: 'delete',
       entityType: 'WorkHistory',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before: deleted.toObject(),
     });
     res.json({ message: 'Deleted successfully' });

@@ -105,7 +105,7 @@ export const updatePMTask: AuthedRequestHandler = async (req: { tenantId: any; p
       userId,
       action: 'update',
       entityType: 'PMTask',
-      entityId: req.params.id as string | Types.ObjectId,
+      entityId: new Types.ObjectId(req.params.id),
       before: existing.toObject(),
       after: task?.toObject(),
     });
@@ -140,7 +140,7 @@ export const deletePMTask: AuthedRequestHandler = async (req: { tenantId: any; p
       userId,
       action: 'delete',
       entityType: 'PMTask',
-      entityId: req.params.id as string | Types.ObjectId,
+      entityId: new Types.ObjectId(req.params.id),
       before: task.toObject(),
     });
     res.json({ message: 'Deleted successfully' });

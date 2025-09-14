@@ -3,6 +3,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import { Types } from 'mongoose';
 
 import TimeSheet from '../models/TimeSheet';
 import { writeAuditLog } from '../utils/audit';
@@ -98,7 +99,7 @@ export const updateTimeSheet = async (
       userId,
       action: 'update',
       entityType: 'TimeSheet',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before: existing.toObject(),
       after: updated?.toObject(),
     });
@@ -132,7 +133,7 @@ export const deleteTimeSheet = async (
       userId,
       action: 'delete',
       entityType: 'TimeSheet',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before: deleted.toObject(),
     });
     res.json({ message: 'Deleted successfully' });

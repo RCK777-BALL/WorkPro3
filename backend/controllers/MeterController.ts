@@ -6,12 +6,8 @@ import type { AuthedRequestHandler } from '../types/http';
 import Meter from '../models/Meter';
 import MeterReading from '../models/MeterReading';
 import { writeAuditLog } from '../utils/audit';
-import { Document, Types } from 'mongoose';
-import { Document, Types } from 'mongoose';
-import { Document, Types } from 'mongoose';
-import { UpdateQuery, Types, Document } from 'mongoose';
-import { Document, Types } from 'mongoose';
-import { Document, Types } from 'mongoose';
+import { Types } from 'mongoose';
+import type { Document, UpdateQuery } from 'mongoose';
 
 export const getMeters: AuthedRequestHandler = async (req: { tenantId: any; siteId: any; query: { asset: any; }; }, res: { json: (arg0: (Document<unknown, {}, { createdAt: NativeDate; updatedAt: NativeDate; } & { name: string; tenantId: Types.ObjectId; unit: string; asset: Types.ObjectId; currentValue: number; pmInterval: number; lastWOValue: number; siteId?: Types.ObjectId | null; }, {}, { timestamps: true; }> & { createdAt: NativeDate; updatedAt: NativeDate; } & { name: string; tenantId: Types.ObjectId; unit: string; asset: Types.ObjectId; currentValue: number; pmInterval: number; lastWOValue: number; siteId?: Types.ObjectId | null; } & { _id: Types.ObjectId; } & { __v: number; })[]) => void; }, next: (arg0: unknown) => any) => {
   try {
@@ -87,7 +83,7 @@ export const updateMeter: AuthedRequestHandler = async (req: { tenantId: any; pa
       userId,
       action: 'update',
       entityType: 'Meter',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before: existing.toObject(),
       after: meter?.toObject(),
     });
@@ -116,7 +112,7 @@ export const deleteMeter: AuthedRequestHandler = async (req: { tenantId: any; pa
       userId,
       action: 'delete',
       entityType: 'Meter',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before: meter.toObject(),
     });
     res.json({ message: 'Deleted successfully' });

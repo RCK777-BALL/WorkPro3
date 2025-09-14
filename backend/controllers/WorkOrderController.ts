@@ -33,6 +33,9 @@ import {
   mapPartsUsed,
   mapChecklists,
   mapSignatures,
+  type RawPart,
+  type RawChecklist,
+  type RawSignature,
 } from '../src/utils/workOrder';
 
 
@@ -271,20 +274,40 @@ export const createWorkOrder: AuthedRequestHandler<
     }
 
     const { assignees, checklists, partsUsed, signatures, ...rest } = parsed.data;
-    const validParts = validateItems(res, partsUsed, p => Types.ObjectId.isValid(p.partId), 'part');
+    const validParts = validateItems<RawPart>(
+      res,
+      partsUsed,
+      p => Types.ObjectId.isValid(p.partId),
+      'part'
+    );
     if (partsUsed && !validParts) return;
-    const validAssignees = validateItems(res, assignees, id => Types.ObjectId.isValid(id), 'assignee');
+    const validAssignees = validateItems<string>(
+      res,
+      assignees,
+      id => Types.ObjectId.isValid(id),
+      'assignee'
+    );
     if (assignees && !validAssignees) return;
-    const validChecklists = validateItems(res, checklists, c => typeof c.description === 'string', 'checklist');
+    const validChecklists = validateItems<RawChecklist>(
+      res,
+      checklists,
+      c => typeof c.description === 'string',
+      'checklist'
+    );
     if (checklists && !validChecklists) return;
-    const validSignatures = validateItems(res, signatures, s => Types.ObjectId.isValid(s.userId), 'signature');
+    const validSignatures = validateItems<RawSignature>(
+      res,
+      signatures,
+      s => Types.ObjectId.isValid(s.userId),
+      'signature'
+    );
     if (signatures && !validSignatures) return;
     const newItem = new WorkOrder({
       ...rest,
       ...(validAssignees && { assignees: mapAssignees(validAssignees) }),
-      ...(validChecklists && { checklists: mapChecklists(validChecklists) }),
-      ...(validParts && { partsUsed: mapPartsUsed(validParts) }),
-      ...(validSignatures && { signatures: mapSignatures(validSignatures) }),
+      ...(validChecklists && { checklists: mapChecklists(validChecklists as RawChecklist[]) }),
+      ...(validParts && { partsUsed: mapPartsUsed(validParts as RawPart[]) }),
+      ...(validSignatures && { signatures: mapSignatures(validSignatures as RawSignature[]) }),
       tenantId,
     });
     const saved = await newItem.save();
@@ -349,24 +372,44 @@ export const updateWorkOrder: AuthedRequestHandler = async (
     }
     const update: UpdateWorkOrderBody = parsed.data as UpdateWorkOrderBody;
     if (update.partsUsed) {
-      const validParts = validateItems(res, update.partsUsed, p => Types.ObjectId.isValid(p.partId), 'part');
+      const validParts = validateItems<RawPart>(
+        res,
+        update.partsUsed,
+        p => Types.ObjectId.isValid(p.partId),
+        'part'
+      );
       if (!validParts) return;
-      update.partsUsed = mapPartsUsed(validParts);
+      update.partsUsed = mapPartsUsed(validParts as RawPart[]);
     }
     if (update.assignees) {
-      const validAssignees = validateItems(res, update.assignees, id => Types.ObjectId.isValid(id), 'assignee');
+      const validAssignees = validateItems<string>(
+        res,
+        update.assignees,
+        id => Types.ObjectId.isValid(id),
+        'assignee'
+      );
       if (!validAssignees) return;
       update.assignees = mapAssignees(validAssignees);
     }
     if (update.checklists) {
-      const validChecklists = validateItems(res, update.checklists, c => typeof c.description === 'string', 'checklist');
+      const validChecklists = validateItems<RawChecklist>(
+        res,
+        update.checklists,
+        c => typeof c.description === 'string',
+        'checklist'
+      );
       if (!validChecklists) return;
-      update.checklists = mapChecklists(validChecklists);
+      update.checklists = mapChecklists(validChecklists as RawChecklist[]);
     }
     if (update.signatures) {
-      const validSignatures = validateItems(res, update.signatures, s => Types.ObjectId.isValid(s.userId), 'signature');
+      const validSignatures = validateItems<RawSignature>(
+        res,
+        update.signatures,
+        s => Types.ObjectId.isValid(s.userId),
+        'signature'
+      );
       if (!validSignatures) return;
-      update.signatures = mapSignatures(validSignatures);
+      update.signatures = mapSignatures(validSignatures as RawSignature[]);
     }
     const existing = await WorkOrder.findOne({ _id: req.params.id, tenantId }) as WorkOrderDocument | null;
     if (!existing) {

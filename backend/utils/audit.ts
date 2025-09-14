@@ -5,6 +5,7 @@
 import { Types } from 'mongoose';
 import AuditLog from '../models/AuditLog';
 import logger from './logger';
+import { toEntityId } from '../src/utils/toEntityId';
 
 type AuditVal = unknown;
 
@@ -36,10 +37,10 @@ export async function writeAuditLog({
     if (!tenantId) return;
     const payload = {
       tenantId,
-      userId,
+      userId: toEntityId(userId),
       action,
       entityType,
-      entityId: String(entityId),
+      entityId: toEntityId(entityId),
       before: before === undefined ? undefined : normalize(before),
       after: after === undefined ? undefined : normalize(after),
       ts: new Date(),

@@ -142,10 +142,10 @@ app.get("/", (_req: Request, res: Response) => {
 app.use("/static/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 if (env.NODE_ENV === "test") {
-  app.post("/test/sanitize", (req, res) => {
+  app.post("/test/sanitize", (req: Request, res: Response) => {
     res.json(req.body);
   });
-  app.get("/test/sanitize", (req, res) => {
+  app.get("/test/sanitize", (req: Request, res: Response) => {
     res.json(req.query);
   });
 }

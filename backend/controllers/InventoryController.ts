@@ -219,7 +219,7 @@ export const updateInventoryItem = async (req: Request, res: Response, next: Nex
       userId: userId2,
       action: "update",
       entityType: "InventoryItem",
-      entityId: id,
+      entityId: new Types.ObjectId(id),
       before: existing.toObject(),
       after: updated.toObject(),
     });
@@ -255,7 +255,7 @@ export const deleteInventoryItem = async (req: Request, res: Response, next: Nex
       userId: userId3,
       action: "delete",
       entityType: "InventoryItem",
-      entityId: id,
+      entityId: new Types.ObjectId(id),
       before: deleted.toObject(),
     });
     res.json({ message: "Deleted successfully" });
@@ -318,7 +318,7 @@ export const useInventoryItem = async (req: Request, res: Response, next: NextFu
       userId: userId4,
       action: "use",
       entityType: "InventoryItem",
-      entityId: id,
+      entityId: new Types.ObjectId(id),
       before,
       after: item.toObject(),
     });

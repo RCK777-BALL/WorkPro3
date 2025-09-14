@@ -3,7 +3,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-
+import { Types } from 'mongoose';
 
 import ConditionRule from '../models/ConditionRule';
 import { writeAuditLog } from '../utils/audit';
@@ -86,7 +86,7 @@ export const updateConditionRule = async (
       userId,
       action: 'update',
       entityType: 'ConditionRule',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before: existing.toObject(),
       after: updated?.toObject(),
     });
@@ -116,7 +116,7 @@ export const deleteConditionRule = async (
       userId,
       action: 'delete',
       entityType: 'ConditionRule',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before: deleted.toObject(),
     });
     res.json({ message: 'Deleted successfully' });

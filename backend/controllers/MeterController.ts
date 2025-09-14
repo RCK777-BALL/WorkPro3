@@ -8,6 +8,7 @@ import MeterReading from '../models/MeterReading';
 import { writeAuditLog } from '../utils/audit';
 import { Document, Types, UpdateQuery } from 'mongoose';
 
+
 export const getMeters: AuthedRequestHandler = async (req, res, next) => {
   try {
     const filter: any = { tenantId: req.tenantId };
@@ -84,7 +85,7 @@ export const updateMeter: AuthedRequestHandler = async (req, res, next) => {
       userId,
       action: 'update',
       entityType: 'Meter',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before: existing.toObject(),
       after: meter?.toObject(),
     });
@@ -112,7 +113,7 @@ export const deleteMeter: AuthedRequestHandler = async (req, res, next) => {
       userId,
       action: 'delete',
       entityType: 'Meter',
-      entityId: req.params.id,
+      entityId: new Types.ObjectId(req.params.id),
       before: meter.toObject(),
     });
     res.json({ message: 'Deleted successfully' });

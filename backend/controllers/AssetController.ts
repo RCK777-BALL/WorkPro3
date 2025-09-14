@@ -3,13 +3,13 @@
  */
 
 import type { AuthedRequestHandler } from '../types/http';
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import Asset from '../models/Asset';
 import Site from '../models/Site';
 import Department from '../models/Department';
 import Line from '../models/Line';
 import Station from '../models/Station';
-import { validationResult, ValidationError as ExpressValidationError } from 'express-validator';
+import { validationResult, ValidationError } from 'express-validator';
 import logger from '../utils/logger';
 import { filterFields } from '../utils/filterFields';
 import { writeAuditLog } from '../utils/audit';
@@ -84,7 +84,7 @@ export const createAsset: AuthedRequestHandler = async (req: { body: { name: any
   try {
     const errors = validationResult(req as any);
     if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() as ExpressValidationError[] });
+      res.status(400).json({ errors: errors.array() as ValidationError[] });
       return;
     }
 
@@ -142,7 +142,7 @@ export const updateAsset: AuthedRequestHandler = async (req: { body: any; tenant
     const errors = validationResult(req as any);
 
     if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() as ExpressValidationError[] });
+      res.status(400).json({ errors: errors.array() as ValidationError[] });
       return;
     }
 
@@ -164,7 +164,7 @@ export const updateAsset: AuthedRequestHandler = async (req: { body: any; tenant
       userId,
       action: 'update',
       entityType: 'Asset',
-      entityId: id,
+      entityId: new Types.ObjectId(id),
       before: existing.toObject(),
       after: asset?.toObject(),
     });
@@ -204,7 +204,7 @@ export const deleteAsset: AuthedRequestHandler = async (req: { tenantId: any; pa
       userId,
       action: 'delete',
       entityType: 'Asset',
-      entityId: id,
+      entityId: new Types.ObjectId(id),
       before: asset.toObject(),
     });
     res.json({ message: 'Deleted successfully' });

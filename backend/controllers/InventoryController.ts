@@ -3,13 +3,11 @@
  */
 
 import type { Request, Response, NextFunction } from "express";
-import mongoose from "mongoose";
+import { Types, isValidObjectId } from "mongoose";
 import InventoryItem, { type IInventoryItem } from "../models/InventoryItem";
 import logger from "../utils/logger";
 import { writeAuditLog } from "../utils/audit";
-import { sendResponse } from '../utils/sendResponse';
-
-const { isValidObjectId, Types } = mongoose;
+import { toEntityId } from "../utils/ids";
 
 // Narrow helper to scope queries by tenant/site
 function scopedQuery<T extends Record<string, unknown>>(req: Request, base?: T) {
@@ -169,7 +167,7 @@ export const createInventoryItem = async (req: Request, res: Response, next: Nex
       userId,
       action: "create",
       entityType: "InventoryItem",
-      entityId: saved._id,
+      entityId: toEntityId(saved._id),
       after: saved.toObject(),
     });
     sendResponse(res, saved, null, 201);
@@ -220,7 +218,7 @@ export const updateInventoryItem = async (req: Request, res: Response, next: Nex
       userId: userId2,
       action: "update",
       entityType: "InventoryItem",
-      entityId: new Types.ObjectId(id),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before: existing.toObject(),
       after: updated.toObject(),
     });
@@ -256,7 +254,7 @@ export const deleteInventoryItem = async (req: Request, res: Response, next: Nex
       userId: userId3,
       action: "delete",
       entityType: "InventoryItem",
-      entityId: new Types.ObjectId(id),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before: deleted.toObject(),
     });
     sendResponse(res, { message: "Deleted successfully" });
@@ -298,7 +296,7 @@ export const useInventoryItem = async (req: Request, res: Response, next: NextFu
 
     // If model types don’t declare .consume, call with a local narrow type
     const doc = item as typeof item & {
-      consume?: (q: number, uomId: mongoose.Types.ObjectId) => Promise<void>;
+      consume?: (q: number, uomId: Types.ObjectId) => Promise<void>;
     };
 
     if (typeof doc.consume !== "function") {
@@ -319,7 +317,7 @@ export const useInventoryItem = async (req: Request, res: Response, next: NextFu
       userId: userId4,
       action: "use",
       entityType: "InventoryItem",
-      entityId: new Types.ObjectId(id),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before,
       after: item.toObject(),
     });

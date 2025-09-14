@@ -7,7 +7,7 @@ import { filterFields } from '../utils/filterFields';
 import { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
 import { writeAuditLog } from '../utils/audit';
-import { sendResponse } from '../utils/sendResponse';
+import { toEntityId } from '../utils/ids';
 
 const userCreateFields = [
   'name',
@@ -124,7 +124,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
       userId,
       action: 'create',
       entityType: 'User',
-      entityId: saved._id,
+      entityId: toEntityId(saved._id),
       after: safeUser,
     });
     sendResponse(res, safeUser, null, 201);
@@ -187,7 +187,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
       userId,
       action: 'update',
       entityType: 'User',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: existing.toObject(),
       after: updated?.toObject(),
     });
@@ -236,7 +236,7 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
       userId,
       action: 'delete',
       entityType: 'User',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: deleted.toObject(),
     });
     sendResponse(res, { message: 'Deleted successfully' });

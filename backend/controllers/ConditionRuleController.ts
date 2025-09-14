@@ -9,6 +9,7 @@ import { sendResponse } from '../utils/sendResponse';
 
 import ConditionRule from '../models/ConditionRule';
 import { writeAuditLog } from '../utils/audit';
+import { toEntityId } from '../utils/ids';
 
 export const getAllConditionRules: AuthedRequestHandler<ParamsDictionary> = async (
   req,
@@ -57,7 +58,7 @@ export const createConditionRule: AuthedRequestHandler<ParamsDictionary> = async
       userId,
       action: 'create',
       entityType: 'ConditionRule',
-      entityId: saved._id,
+      entityId: toEntityId(saved._id),
       after: saved.toObject(),
     });
     sendResponse(res, saved, null, 201);
@@ -88,7 +89,7 @@ export const updateConditionRule: AuthedRequestHandler<{ id: string }> = async (
       userId,
       action: 'update',
       entityType: 'ConditionRule',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: existing.toObject(),
       after: updated?.toObject(),
     });
@@ -118,7 +119,7 @@ export const deleteConditionRule: AuthedRequestHandler<{ id: string }> = async (
       userId,
       action: 'delete',
       entityType: 'ConditionRule',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: deleted.toObject(),
     });
     sendResponse(res, { message: 'Deleted successfully' });

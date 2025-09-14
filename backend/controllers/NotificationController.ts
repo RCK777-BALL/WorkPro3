@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import mongoose, { Types } from 'mongoose';
+import { Types } from 'mongoose';
 import Notification, { NotificationDocument } from '../models/Notifications';
 import User from '../models/User';
 import nodemailer from 'nodemailer';
@@ -12,8 +12,10 @@ import { assertEmail } from '../utils/assert';
 import type { AuthedRequestHandler } from '../types/http';
 import type { ParamsDictionary } from 'express-serve-static-core';
 import { writeAuditLog } from '../utils/audit';
+import { toEntityId } from '../utils/ids';
 import logger from '../utils/logger';
 import { enqueueEmailRetry } from '../utils/emailQueue';
+import { sendResponse } from '../utils/sendResponse';
 
 type IdParams = { id: string };
 
@@ -28,7 +30,6 @@ export const getAllNotifications: AuthedRequestHandler<
       return;
     }
     const items = await Notification.find({ tenantId });
- 
     sendResponse(res, items);
     return;
   } catch (err) {
@@ -72,27 +73,23 @@ export const createNotification: AuthedRequestHandler<
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-
     const { title, message, type, assetId, user, read } = req.body;
-    const notification: NotificationDocument = {
+    const saved = await Notification.create({
       title,
       message,
       type,
       tenantId: tenantId as unknown as Types.ObjectId,
       ...(assetId ? { assetId } : {}),
       ...(user ? { user } : {}),
-      read: read ?? false,
-      createdAt: new Date(),
-    } as NotificationDocument;
-
-    const saved = await Notification.create(notification);
+      ...(read !== undefined ? { read } : {}),
+    });
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     await writeAuditLog({
       tenantId,
       userId,
       action: 'create',
       entityType: 'Notification',
-      entityId: saved._id,
+      entityId: toEntityId(saved._id),
       after: saved.toObject(),
     });
 
@@ -168,7 +165,7 @@ export const markNotificationRead: AuthedRequestHandler<
       userId,
       action: 'markRead',
       entityType: 'Notification',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: null,
       after: updated.toObject(),
     });
@@ -214,7 +211,7 @@ export const updateNotification: AuthedRequestHandler<
       userId,
       action: 'update',
       entityType: 'Notification',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: existing.toObject(),
       after: updated?.toObject(),
     });
@@ -252,7 +249,7 @@ export const deleteNotification: AuthedRequestHandler<
       userId,
       action: 'delete',
       entityType: 'Notification',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: deleted.toObject(),
     });
     sendResponse(res, { message: 'Deleted successfully' });

@@ -5,7 +5,7 @@
 import type { AuthedRequestHandler } from '../types/http';
 import User from '../models/User';
 import { writeAuditLog } from '../utils/audit';
-import { sendResponse } from '../utils/sendResponse';
+import { toEntityId } from '../utils/ids';
 
 export const getTheme: AuthedRequestHandler = async (req, res, next) => {
   try {
@@ -52,7 +52,7 @@ export const updateTheme: AuthedRequestHandler = async (req, res, next) => {
       userId,
       action: 'update',
       entityType: 'UserTheme',
-      entityId: req.user?._id,
+      entityId: toEntityId(req.user?._id),
       before: null,
       after: { theme: updated.theme, colorScheme: updated.colorScheme },
     });

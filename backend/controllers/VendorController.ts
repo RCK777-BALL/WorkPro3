@@ -8,6 +8,7 @@ import { sendResponse } from '../utils/sendResponse';
 
 import Vendor from '../models/Vendor';
 import { writeAuditLog } from '../utils/audit';
+import { toEntityId } from '../utils/ids';
 
 const allowedFields = [
   'name',
@@ -97,7 +98,7 @@ export const createVendor = async (
       userId,
       action: 'create',
       entityType: 'Vendor',
-      entityId: saved._id,
+      entityId: toEntityId(saved._id),
       after: saved.toObject(),
     });
     sendResponse(res, saved, null, 201);
@@ -139,7 +140,7 @@ export const updateVendor = async (
       userId,
       action: 'update',
       entityType: 'Vendor',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: existing.toObject(),
       after: updated?.toObject(),
     });
@@ -173,7 +174,7 @@ export const deleteVendor = async (
       userId,
       action: 'delete',
       entityType: 'Vendor',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: deleted.toObject(),
     });
     sendResponse(res, { message: 'Deleted successfully' });

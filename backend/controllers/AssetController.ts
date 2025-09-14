@@ -3,7 +3,7 @@
  */
 
 import type { AuthedRequestHandler } from '../types/http';
-import mongoose, { Types } from 'mongoose';
+import mongoose, { Error as MongooseError, Types } from 'mongoose';
 import Asset from '../models/Asset';
 import Site from '../models/Site';
 import Department from '../models/Department';
@@ -13,7 +13,8 @@ import { validationResult, ValidationError } from 'express-validator';
 import logger from '../utils/logger';
 import { filterFields } from '../utils/filterFields';
 import { writeAuditLog } from '../utils/audit';
-import { sendResponse } from '../utils/sendResponse';
+import { toEntityId } from '../utils/ids';
+
 
 const assetCreateFields = [
   'name', 'type', 'location', 'departmentId', 'status', 'serialNumber',
@@ -23,7 +24,7 @@ const assetCreateFields = [
 
 const assetUpdateFields = [...assetCreateFields];
 
-export const getAllAssets: AuthedRequestHandler = async (req: { tenantId: any; siteId: any; }, res: { json: (arg0: (mongoose.Document<unknown, {}, { createdAt: NativeDate; updatedAt: NativeDate; } & { type: "Electrical" | "Mechanical" | "Tooling" | "Interface"; tenantId: mongoose.Types.ObjectId; status: "Active" | "Offline" | "In Repair"; name: string; location: string; criticality: "low" | "medium" | "high"; documents: mongoose.Types.ObjectId[]; description?: string | null; siteId?: mongoose.Types.ObjectId | null; modelName?: string | null; lineId?: mongoose.Types.ObjectId | null; stationId?: mongoose.Types.ObjectId | null; departmentId?: mongoose.Types.ObjectId | null; serialNumber?: string | null; manufacturer?: string | null; purchaseDate?: NativeDate | null; installationDate?: NativeDate | null; }, {}, { timestamps: true; }> & { createdAt: NativeDate; updatedAt: NativeDate; } & { type: "Electrical" | "Mechanical" | "Tooling" | "Interface"; tenantId: mongoose.Types.ObjectId; status: "Active" | "Offline" | "In Repair"; name: string; location: string; criticality: "low" | "medium" | "high"; documents: mongoose.Types.ObjectId[]; description?: string | null; siteId?: mongoose.Types.ObjectId | null; modelName?: string | null; lineId?: mongoose.Types.ObjectId | null; stationId?: mongoose.Types.ObjectId | null; departmentId?: mongoose.Types.ObjectId | null; serialNumber?: string | null; manufacturer?: string | null; purchaseDate?: NativeDate | null; installationDate?: NativeDate | null; } & { _id: mongoose.Types.ObjectId; } & { __v: number; })[]) => void; }, next: (arg0: unknown) => any) => {
+export const getAllAssets: AuthedRequestHandler = async (req, res, next) => {
   try {
     const filter: any = { tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
@@ -31,11 +32,17 @@ export const getAllAssets: AuthedRequestHandler = async (req: { tenantId: any; s
     sendResponse(res, assets);
     return;
   } catch (err) {
+    if (err instanceof MongooseError.ValidationError) {
+      const verr = err as MongooseError.ValidationError;
+      const errors = Object.values(verr.errors).map((e) => e.message);
+      sendResponse(res, null, errors, 400);
+      return;
+    }
     return next(err);
   }
 };
 
-export const getAssetById: AuthedRequestHandler = async (req: { params: { id: any; }; tenantId: any; siteId: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: mongoose.Document<unknown, {}, { createdAt: NativeDate; updatedAt: NativeDate; } & { type: "Electrical" | "Mechanical" | "Tooling" | "Interface"; tenantId: mongoose.Types.ObjectId; status: "Active" | "Offline" | "In Repair"; name: string; location: string; criticality: "low" | "medium" | "high"; documents: mongoose.Types.ObjectId[]; description?: string | null; siteId?: mongoose.Types.ObjectId | null; modelName?: string | null; lineId?: mongoose.Types.ObjectId | null; stationId?: mongoose.Types.ObjectId | null; departmentId?: mongoose.Types.ObjectId | null; serialNumber?: string | null; manufacturer?: string | null; purchaseDate?: NativeDate | null; installationDate?: NativeDate | null; }, {}, { timestamps: true; }> & { createdAt: NativeDate; updatedAt: NativeDate; } & { type: "Electrical" | "Mechanical" | "Tooling" | "Interface"; tenantId: mongoose.Types.ObjectId; status: "Active" | "Offline" | "In Repair"; name: string; location: string; criticality: "low" | "medium" | "high"; documents: mongoose.Types.ObjectId[]; description?: string | null; siteId?: mongoose.Types.ObjectId | null; modelName?: string | null; lineId?: mongoose.Types.ObjectId | null; stationId?: mongoose.Types.ObjectId | null; departmentId?: mongoose.Types.ObjectId | null; serialNumber?: string | null; manufacturer?: string | null; purchaseDate?: NativeDate | null; installationDate?: NativeDate | null; } & { _id: mongoose.Types.ObjectId; } & { __v: number; }) => void; }, next: (arg0: unknown) => any) => {
+export const getAssetById: AuthedRequestHandler = async (req, res, next) => {
   try {
     const id = req.params.id;
     if (!id) {
@@ -57,11 +64,17 @@ export const getAssetById: AuthedRequestHandler = async (req: { params: { id: an
     sendResponse(res, asset);
     return;
   } catch (err) {
+    if (err instanceof MongooseError.ValidationError) {
+      const verr = err as MongooseError.ValidationError;
+      const errors = Object.values(verr.errors).map((e) => e.message);
+      sendResponse(res, null, errors, 400);
+      return;
+    }
     return next(err);
   }
 };
 
-export const createAsset: AuthedRequestHandler = async (req: { body: { name: any; }; tenantId: any; siteId: unknown; user: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message?: string; errors?: ValidationError[]; tenantId?: string; createdAt?: NativeDate; updatedAt?: NativeDate; type?: any; status?: any; name?: any; location?: any; criticality?: any; documents?: any; description?: any; siteId?: any; modelName?: any; lineId?: any; stationId?: any; departmentId?: any; serialNumber?: any; manufacturer?: any; purchaseDate?: any; installationDate?: any; _id?: mongoose.Types.ObjectId; __v?: any; }): void; new(): any; }; }; }, next: (arg0: unknown) => any) => {
+export const createAsset: AuthedRequestHandler = async (req, res, next) => {
 
   logger.debug('createAsset body:', req.body);
   logger.debug('createAsset files:', (req as any).files);
@@ -75,17 +88,19 @@ export const createAsset: AuthedRequestHandler = async (req: { body: { name: any
 
   const tenantId = req.tenantId;
   if (!tenantId) {
-    return sendResponse(res, null, 'Tenant ID required', 400);
+    sendResponse(res, null, 'Tenant ID required', 400);
+    return;
   }
 
   if (!req.body.name) {
-    return sendResponse(res, null, 'name is required', 400);
+    sendResponse(res, null, 'name is required', 400);
+    return;
   }
 
   try {
     const errors = validationResult(req as any);
     if (!errors.isEmpty()) {
-      sendResponse(res, null, { errors: errors.array() as ValidationError[]  }, 400);
+      sendResponse(res, null, errors.array() as ValidationError[], 400);
       return;
     }
 
@@ -105,17 +120,23 @@ export const createAsset: AuthedRequestHandler = async (req: { body: { name: any
       userId,
       action: 'create',
       entityType: 'Asset',
-      entityId: newAsset._id,
+      entityId: toEntityId(newAsset._id),
       after: assetObj,
     });
     sendResponse(res, response, null, 201);
     return;
   } catch (err) {
+    if (err instanceof MongooseError.ValidationError) {
+      const verr = err as MongooseError.ValidationError;
+      const errors = Object.values(verr.errors).map((e) => e.message);
+      sendResponse(res, null, errors, 400);
+      return;
+    }
     return next(err);
   }
 };
 
-export const updateAsset: AuthedRequestHandler = async (req: { body: any; tenantId: any; params: { id: any; }; siteId: any; user: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message?: string; errors?: ValidationError[]; }): void; new(): any; }; }; json: (arg0: (mongoose.Document<unknown, {}, { createdAt: NativeDate; updatedAt: NativeDate; } & { type: "Electrical" | "Mechanical" | "Tooling" | "Interface"; tenantId: mongoose.Types.ObjectId; status: "Active" | "Offline" | "In Repair"; name: string; location: string; criticality: "low" | "medium" | "high"; documents: mongoose.Types.ObjectId[]; description?: string | null; siteId?: mongoose.Types.ObjectId | null; modelName?: string | null; lineId?: mongoose.Types.ObjectId | null; stationId?: mongoose.Types.ObjectId | null; departmentId?: mongoose.Types.ObjectId | null; serialNumber?: string | null; manufacturer?: string | null; purchaseDate?: NativeDate | null; installationDate?: NativeDate | null; }, {}, { timestamps: true; }> & { createdAt: NativeDate; updatedAt: NativeDate; } & { type: "Electrical" | "Mechanical" | "Tooling" | "Interface"; tenantId: mongoose.Types.ObjectId; status: "Active" | "Offline" | "In Repair"; name: string; location: string; criticality: "low" | "medium" | "high"; documents: mongoose.Types.ObjectId[]; description?: string | null; siteId?: mongoose.Types.ObjectId | null; modelName?: string | null; lineId?: mongoose.Types.ObjectId | null; stationId?: mongoose.Types.ObjectId | null; departmentId?: mongoose.Types.ObjectId | null; serialNumber?: string | null; manufacturer?: string | null; purchaseDate?: NativeDate | null; installationDate?: NativeDate | null; } & { _id: mongoose.Types.ObjectId; } & { __v: number; }) | null) => void; }, next: (arg0: unknown) => any) => {
+export const updateAsset: AuthedRequestHandler = async (req, res, next) => {
  
   logger.debug('updateAsset body:', req.body);
   logger.debug('updateAsset files:', (req as any).files);
@@ -129,21 +150,24 @@ export const updateAsset: AuthedRequestHandler = async (req: { body: any; tenant
 
   const tenantId = req.tenantId;
   if (!tenantId) {
-    return sendResponse(res, null, 'Tenant ID required', 400);
+    sendResponse(res, null, 'Tenant ID required', 400);
+    return;
   }
 
   try {
     const id = req.params.id;
     if (!id) {
-      return sendResponse(res, null, 'ID is required', 400);
+      sendResponse(res, null, 'ID is required', 400);
+      return;
     }
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return sendResponse(res, null, 'Invalid ID', 400);
+      sendResponse(res, null, 'Invalid ID', 400);
+      return;
     }
     const errors = validationResult(req as any);
 
     if (!errors.isEmpty()) {
-      sendResponse(res, null, { errors: errors.array() as ValidationError[]  }, 400);
+      sendResponse(res, null, errors.array() as ValidationError[], 400);
       return;
     }
 
@@ -165,7 +189,7 @@ export const updateAsset: AuthedRequestHandler = async (req: { body: any; tenant
       userId,
       action: 'update',
       entityType: 'Asset',
-      entityId: new Types.ObjectId(id),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before: existing.toObject(),
       after: asset?.toObject(),
     });
@@ -173,23 +197,32 @@ export const updateAsset: AuthedRequestHandler = async (req: { body: any; tenant
     return;
 
   } catch (err) {
+    if (err instanceof MongooseError.ValidationError) {
+      const verr = err as MongooseError.ValidationError;
+      const errors = Object.values(verr.errors).map((e) => e.message);
+      sendResponse(res, null, errors, 400);
+      return;
+    }
     return next(err);
   }
 };
 
-export const deleteAsset: AuthedRequestHandler = async (req: { tenantId: any; params: { id: any; }; siteId: any; user: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: { message: string; }) => void; }, next: (arg0: unknown) => any) => {
+export const deleteAsset: AuthedRequestHandler = async (req, res, next) => {
 
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      return sendResponse(res, null, 'Tenant ID required', 400);
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
     }
     const id = req.params.id;
     if (!id) {
-      return sendResponse(res, null, 'ID is required', 400);
+      sendResponse(res, null, 'ID is required', 400);
+      return;
     }
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return sendResponse(res, null, 'Invalid ID', 400);
+      sendResponse(res, null, 'Invalid ID', 400);
+      return;
     }
     const filter: any = { _id: id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
@@ -205,17 +238,23 @@ export const deleteAsset: AuthedRequestHandler = async (req: { tenantId: any; pa
       userId,
       action: 'delete',
       entityType: 'Asset',
-      entityId: new Types.ObjectId(id),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before: asset.toObject(),
     });
     sendResponse(res, { message: 'Deleted successfully' });
     return;
   } catch (err) {
+    if (err instanceof MongooseError.ValidationError) {
+      const verr = err as MongooseError.ValidationError;
+      const errors = Object.values(verr.errors).map((e) => e.message);
+      sendResponse(res, null, errors, 400);
+      return;
+    }
     return next(err);
   }
 };
 
-export const searchAssets: AuthedRequestHandler = async (req: { query: { q: string; }; tenantId: any; siteId: any; }, res: { json: (arg0: (mongoose.Document<unknown, {}, { createdAt: NativeDate; updatedAt: NativeDate; } & { type: "Electrical" | "Mechanical" | "Tooling" | "Interface"; tenantId: mongoose.Types.ObjectId; status: "Active" | "Offline" | "In Repair"; name: string; location: string; criticality: "low" | "medium" | "high"; documents: mongoose.Types.ObjectId[]; description?: string | null; siteId?: mongoose.Types.ObjectId | null; modelName?: string | null; lineId?: mongoose.Types.ObjectId | null; stationId?: mongoose.Types.ObjectId | null; departmentId?: mongoose.Types.ObjectId | null; serialNumber?: string | null; manufacturer?: string | null; purchaseDate?: NativeDate | null; installationDate?: NativeDate | null; }, {}, { timestamps: true; }> & { createdAt: NativeDate; updatedAt: NativeDate; } & { type: "Electrical" | "Mechanical" | "Tooling" | "Interface"; tenantId: mongoose.Types.ObjectId; status: "Active" | "Offline" | "In Repair"; name: string; location: string; criticality: "low" | "medium" | "high"; documents: mongoose.Types.ObjectId[]; description?: string | null; siteId?: mongoose.Types.ObjectId | null; modelName?: string | null; lineId?: mongoose.Types.ObjectId | null; stationId?: mongoose.Types.ObjectId | null; departmentId?: mongoose.Types.ObjectId | null; serialNumber?: string | null; manufacturer?: string | null; purchaseDate?: NativeDate | null; installationDate?: NativeDate | null; } & { _id: mongoose.Types.ObjectId; } & { __v: number; })[]) => void; }, next: (arg0: unknown) => any) => {
+export const searchAssets: AuthedRequestHandler = async (req, res, next) => {
   try {
     const q = (req.query.q as string) || '';
     const regex = new RegExp(q, 'i');
@@ -227,11 +266,17 @@ export const searchAssets: AuthedRequestHandler = async (req: { query: { q: stri
     sendResponse(res, assets);
     return;
   } catch (err) {
+    if (err instanceof MongooseError.ValidationError) {
+      const verr = err as MongooseError.ValidationError;
+      const errors = Object.values(verr.errors).map((e) => e.message);
+      sendResponse(res, null, errors, 400);
+      return;
+    }
     return next(err);
   }
 };
 
-export const getAssetTree: AuthedRequestHandler = async (req: { tenantId: any; siteId: any; }, res: { json: (arg0: { id: any; name: any; areas: { id: any; name: any; lines: { id: any; name: any; stations: unknown[]; }[]; }[]; }[]) => void; }, next: (arg0: unknown) => void) => {
+export const getAssetTree: AuthedRequestHandler = async (req, res, next) => {
   try {
     const match: any = { tenantId: req.tenantId };
     if (req.siteId) match.siteId = req.siteId;
@@ -336,6 +381,12 @@ export const getAssetTree: AuthedRequestHandler = async (req: { tenantId: any; s
     sendResponse(res, tree);
     return;
   } catch (err) {
+    if (err instanceof MongooseError.ValidationError) {
+      const verr = err as MongooseError.ValidationError;
+      const errors = Object.values(verr.errors).map((e) => e.message);
+      sendResponse(res, null, errors, 400);
+      return;
+    }
     next(err);
     return;
   }

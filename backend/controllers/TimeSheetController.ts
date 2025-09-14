@@ -8,6 +8,7 @@ import { sendResponse } from '../utils/sendResponse';
 
 import TimeSheet from '../models/TimeSheet';
 import { writeAuditLog } from '../utils/audit';
+import { toEntityId } from '../utils/ids';
 
  export const getAllTimeSheets = async (
   req: Request,
@@ -63,7 +64,7 @@ export const createTimeSheet = async (
       userId,
       action: 'create',
       entityType: 'TimeSheet',
-      entityId: saved._id,
+      entityId: toEntityId(saved._id),
       after: saved.toObject(),
     });
     sendResponse(res, saved, null, 201);
@@ -100,7 +101,7 @@ export const updateTimeSheet = async (
       userId,
       action: 'update',
       entityType: 'TimeSheet',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: existing.toObject(),
       after: updated?.toObject(),
     });
@@ -134,7 +135,7 @@ export const deleteTimeSheet = async (
       userId,
       action: 'delete',
       entityType: 'TimeSheet',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: deleted.toObject(),
     });
     sendResponse(res, { message: 'Deleted successfully' });

@@ -14,6 +14,7 @@ import logger from '../utils/logger';
 import { filterFields } from '../utils/filterFields';
 import { writeAuditLog } from '../utils/audit';
 import { toEntityId } from '../utils/ids';
+import { sendResponse } from '../utils/sendResponse';
 
 
 const assetCreateFields = [

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import Notification, { NotificationDocument } from '../models/Notifications';
 import User from '../models/User';
 import nodemailer from 'nodemailer';
@@ -81,8 +81,20 @@ export const createNotification: AuthedRequestHandler<
       res.status(400).json({ message: 'Tenant ID required' });
       return;
     }
-    const newItem = new Notification({ ...req.body, tenantId });
-    const saved = (await newItem.save()) as NotificationDocument;
+
+    const { title, message, type, assetId, user, read } = req.body;
+    const notification: NotificationDocument = {
+      title,
+      message,
+      type,
+      tenantId: tenantId as unknown as Types.ObjectId,
+      ...(assetId ? { assetId } : {}),
+      ...(user ? { user } : {}),
+      read: read ?? false,
+      createdAt: new Date(),
+    } as NotificationDocument;
+
+    const saved = await Notification.create(notification);
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     await writeAuditLog({
       tenantId,
@@ -163,7 +175,7 @@ export const markNotificationRead: AuthedRequestHandler<
       userId,
       action: 'markRead',
       entityType: 'Notification',
-      entityId: req.params.id,
+      entityId: req.params.id as unknown as string | Types.ObjectId,
       before: null,
       after: updated.toObject(),
     });
@@ -213,7 +225,7 @@ export const updateNotification: AuthedRequestHandler<
       userId,
       action: 'update',
       entityType: 'Notification',
-      entityId: req.params.id,
+      entityId: req.params.id as unknown as string | Types.ObjectId,
       before: existing.toObject(),
       after: updated?.toObject(),
     });
@@ -255,7 +267,7 @@ export const deleteNotification: AuthedRequestHandler<
       userId,
       action: 'delete',
       entityType: 'Notification',
-      entityId: req.params.id,
+      entityId: req.params.id as unknown as string | Types.ObjectId,
       before: deleted.toObject(),
     });
     res.json({ message: 'Deleted successfully' });

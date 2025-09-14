@@ -7,6 +7,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
 import { writeAuditLog } from '../utils/audit';
 import { toEntityId } from '../utils/ids';
+import { sendResponse } from '../utils/sendResponse';
 
 const roleHierarchy: Record<ITeamMember['role'], ITeamMember['role'][] | null> = {
   admin: null,

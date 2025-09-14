@@ -15,7 +15,6 @@ import { writeAuditLog } from '../utils/audit';
 import { toEntityId } from '../utils/ids';
 import logger from '../utils/logger';
 import { enqueueEmailRetry } from '../utils/emailQueue';
-import { sendResponse } from '../utils/sendResponse';
 
 type IdParams = { id: string };
 

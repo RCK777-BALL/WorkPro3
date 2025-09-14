@@ -2,7 +2,37 @@
  * SPDX-License-Identifier: MIT
  */
 
-import mongoose from 'mongoose';
+import mongoose, { Document, Types } from 'mongoose';
+
+export interface WorkOrderDocument extends Document {
+  title: string;
+  assetId?: Types.ObjectId;
+  description?: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  status: 'requested' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+  approvalStatus: 'not-required' | 'pending' | 'approved' | 'rejected';
+  approvalRequestedBy?: Types.ObjectId;
+  approvedBy?: Types.ObjectId;
+  assignedTo?: Types.ObjectId;
+  assignees?: Types.ObjectId[];
+  checklists?: { text: string; done: boolean }[];
+  partsUsed?: { partId: Types.ObjectId; qty: number; cost: number }[];
+  signatures?: { by: Types.ObjectId; ts: Date }[];
+  timeSpentMin?: number;
+  photos?: string[];
+  failureCode?: string;
+  pmTask?: Types.ObjectId;
+  department?: Types.ObjectId;
+  line?: Types.ObjectId;
+  station?: Types.ObjectId;
+  teamMemberName?: string;
+  importance?: 'low' | 'medium' | 'high' | 'severe';
+  tenantId: Types.ObjectId;
+  dueDate?: Date;
+  completedAt?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
 const workOrderSchema = new mongoose.Schema(
   {
@@ -69,5 +99,5 @@ const workOrderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model('WorkOrder', workOrderSchema);
+export default mongoose.model<WorkOrderDocument>('WorkOrder', workOrderSchema);
 

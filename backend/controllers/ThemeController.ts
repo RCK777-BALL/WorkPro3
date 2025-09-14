@@ -5,6 +5,8 @@
 import type { AuthedRequestHandler } from '../types/http';
 import User from '../models/User';
 import { writeAuditLog } from '../utils/audit';
+import { sendResponse } from '../utils/sendResponse';
+import { toEntityId } from '../utils/ids';
 
 export const getTheme: AuthedRequestHandler = async (req, res, next) => {
   try {
@@ -27,8 +29,10 @@ export const updateTheme: AuthedRequestHandler = async (req, res, next) => {
     const { theme, colorScheme } = req.body;
     const { user } = req;
     const tenantId = req.tenantId;
-    if (!tenantId)
-      return res.status(400).json({ message: 'Tenant ID required' });
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
 
     if (!user) {
       return res.status(401).json({ message: 'Unauthorized' });
@@ -51,7 +55,7 @@ export const updateTheme: AuthedRequestHandler = async (req, res, next) => {
       userId,
       action: 'update',
       entityType: 'UserTheme',
-      entityId: req.user?._id,
+      entityId: toEntityId(req.user?._id ?? req.params.id),
       before: null,
       after: { theme: updated.theme, colorScheme: updated.colorScheme },
     });

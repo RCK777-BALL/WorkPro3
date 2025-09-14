@@ -33,7 +33,12 @@ export const getAllNotifications: AuthedRequestHandler<
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const items = await Notification.find({ tenantId });
+    if (!Types.ObjectId.isValid(tenantId)) {
+      sendResponse(res, null, 'Invalid tenant ID', 400);
+      return;
+    }
+    const tenantObjectId = new Types.ObjectId(tenantId);
+    const items = await Notification.find({ tenantId: tenantObjectId });
     sendResponse(res, items);
     return;
   } catch (err) {
@@ -57,7 +62,12 @@ export const getNotificationById: AuthedRequestHandler<
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const item = await Notification.findOne({ _id: req.params.id, tenantId });
+    if (!Types.ObjectId.isValid(tenantId)) {
+      sendResponse(res, null, 'Invalid tenant ID', 400);
+      return;
+    }
+    const tenantObjectId = new Types.ObjectId(tenantId);
+    const item = await Notification.findOne({ _id: req.params.id, tenantId: tenantObjectId });
     if (!item) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -85,19 +95,24 @@ export const createNotification: AuthedRequestHandler<
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
+    if (!Types.ObjectId.isValid(tenantId)) {
+      sendResponse(res, null, 'Invalid tenant ID', 400);
+      return;
+    }
+    const tenantObjectId = new Types.ObjectId(tenantId);
     const { title, message, type, assetId, user, read } = req.body;
     const saved = await Notification.create({
       title,
       message,
       type,
-      tenantId: tenantId as unknown as Types.ObjectId,
+      tenantId: tenantObjectId,
       ...(assetId ? { assetId } : {}),
       ...(user ? { user } : {}),
       ...(read !== undefined ? { read } : {}),
     });
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     await writeAuditLog({
-      tenantId,
+      tenantId: tenantObjectId,
       userId,
       action: 'create',
       entityType: 'Notification',
@@ -166,8 +181,13 @@ export const markNotificationRead: AuthedRequestHandler<
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
+    if (!Types.ObjectId.isValid(tenantId)) {
+      sendResponse(res, null, 'Invalid tenant ID', 400);
+      return;
+    }
+    const tenantObjectId = new Types.ObjectId(tenantId);
     const updated = await Notification.findOneAndUpdate(
-      { _id: req.params.id, tenantId },
+      { _id: req.params.id, tenantId: tenantObjectId },
       { read: true },
       { new: true },
     );
@@ -177,7 +197,7 @@ export const markNotificationRead: AuthedRequestHandler<
     }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     await writeAuditLog({
-      tenantId,
+      tenantId: tenantObjectId,
       userId,
       action: 'markRead',
       entityType: 'Notification',
@@ -212,14 +232,19 @@ export const updateNotification: AuthedRequestHandler<
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
+    if (!Types.ObjectId.isValid(tenantId)) {
+      sendResponse(res, null, 'Invalid tenant ID', 400);
+      return;
+    }
+    const tenantObjectId = new Types.ObjectId(tenantId);
     const userId = (req.user as any)?._id || (req.user as any)?.id;
-    const existing = await Notification.findOne({ _id: req.params.id, tenantId });
+    const existing = await Notification.findOne({ _id: req.params.id, tenantId: tenantObjectId });
     if (!existing) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
     const updated = await Notification.findOneAndUpdate(
-      { _id: req.params.id, tenantId },
+      { _id: req.params.id, tenantId: tenantObjectId },
       req.body,
       {
         new: true,
@@ -227,7 +252,7 @@ export const updateNotification: AuthedRequestHandler<
       },
     );
     await writeAuditLog({
-      tenantId,
+      tenantId: tenantObjectId,
       userId,
       action: 'update',
       entityType: 'Notification',
@@ -262,14 +287,19 @@ export const deleteNotification: AuthedRequestHandler<
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
+    if (!Types.ObjectId.isValid(tenantId)) {
+      sendResponse(res, null, 'Invalid tenant ID', 400);
+      return;
+    }
+    const tenantObjectId = new Types.ObjectId(tenantId);
     const userId = (req.user as any)?._id || (req.user as any)?.id;
-    const deleted = await Notification.findOneAndDelete({ _id: req.params.id, tenantId });
+    const deleted = await Notification.findOneAndDelete({ _id: req.params.id, tenantId: tenantObjectId });
     if (!deleted) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
     await writeAuditLog({
-      tenantId,
+      tenantId: tenantObjectId,
       userId,
       action: 'delete',
       entityType: 'Notification',

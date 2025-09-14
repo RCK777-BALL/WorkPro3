@@ -22,6 +22,7 @@ import {
   startWorkOrderSchema,
   completeWorkOrderSchema,
   cancelWorkOrderSchema,
+  type WorkOrderComplete,
 } from '../src/schemas/workOrder';
 import { Response } from 'express';
 import { Response } from 'express';
@@ -67,6 +68,11 @@ const workOrderCreateFields = [
 ];
 
 const workOrderUpdateFields = [...workOrderCreateFields];
+
+interface CompleteWorkOrderBody extends WorkOrderComplete {
+  photos?: string[];
+  failureCode?: string;
+}
 
 function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
   const plain = typeof doc.toObject === "function"
@@ -593,14 +599,15 @@ export const completeWorkOrder: AuthedRequestHandler = async (req: { tenantId: a
       res.status(404).json({ message: 'Not found' });
       return;
     }
+    const body = req.body as CompleteWorkOrderBody;
     const before = workOrder.toObject();
     workOrder.status = 'completed';
-    if (req.body.timeSpentMin !== undefined) workOrder.timeSpentMin = req.body.timeSpentMin;
-    if (Array.isArray(req.body.partsUsed)) workOrder.partsUsed = req.body.partsUsed;
-    if (Array.isArray(req.body.checklists)) workOrder.checklists = req.body.checklists;
-    if (Array.isArray(req.body.signatures)) workOrder.signatures = req.body.signatures;
-    if (Array.isArray(req.body.photos)) workOrder.photos = req.body.photos;
-    if (req.body.failureCode !== undefined) workOrder.failureCode = req.body.failureCode;
+    if (body.timeSpentMin !== undefined) workOrder.timeSpentMin = body.timeSpentMin;
+    if (Array.isArray(body.partsUsed)) workOrder.partsUsed = body.partsUsed;
+    if (Array.isArray(body.checklists)) workOrder.checklists = body.checklists;
+    if (Array.isArray(body.signatures)) workOrder.signatures = body.signatures;
+    if (Array.isArray(body.photos)) workOrder.photos = body.photos;
+    if (body.failureCode !== undefined) workOrder.failureCode = body.failureCode;
 
     const saved = await workOrder.save();
     const userId = (req.user as any)?._id || (req.user as any)?.id;

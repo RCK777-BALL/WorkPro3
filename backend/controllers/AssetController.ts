@@ -136,7 +136,7 @@ export const createAsset: AuthedRequestHandler = async (req: { body: { name: any
       userId,
       action: 'create',
       entityType: 'Asset',
-      entityId: toEntityId(newAsset._id),
+      entityId: toEntityId(newAsset._id as Types.ObjectId),
       after: assetObj,
     });
     sendResponse(res, response, null, 201);

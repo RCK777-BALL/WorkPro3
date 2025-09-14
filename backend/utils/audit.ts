@@ -20,6 +20,9 @@ interface AuditPayload {
   after?: AuditVal;
 }
 
+export const toEntityId = (id: string | Types.ObjectId): Types.ObjectId =>
+  typeof id === 'string' ? new Types.ObjectId(id) : id;
+
 export async function writeAuditLog({
   tenantId,
   userId,

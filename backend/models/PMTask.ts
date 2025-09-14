@@ -11,7 +11,7 @@ interface Rule {
   threshold?: number;
 }
 
-export interface PmTaskDocument extends Document {
+export interface PMTaskDocument extends Document {
   title: string;
   tenantId: Schema.Types.ObjectId;
   notes?: string;
@@ -22,7 +22,7 @@ export interface PmTaskDocument extends Document {
   active: boolean;
 }
 
-const PmTaskSchema = new Schema<PmTaskDocument>(
+const PmTaskSchema = new Schema<PMTaskDocument>(
   {
     title: { type: String, required: true },
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
@@ -45,4 +45,4 @@ const PmTaskSchema = new Schema<PmTaskDocument>(
   { timestamps: true }
 );
 
-export default mongoose.model<PmTaskDocument>('PmTask', PmTaskSchema);
+export default mongoose.model<PMTaskDocument>('PmTask', PmTaskSchema);

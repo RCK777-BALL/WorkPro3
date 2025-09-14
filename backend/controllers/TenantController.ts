@@ -8,6 +8,7 @@ import { ok, fail, asyncHandler } from '../src/lib/http';
 
 import Tenant from '../models/Tenant';
 import { writeAuditLog } from '../utils/audit';
+import { toEntityId } from '../utils/ids';
 
 export const getAllTenants = async (_req: Request, res: Response, next: NextFunction) => {
   try {
@@ -37,7 +38,7 @@ export const createTenant = async (req: Request, res: Response, next: NextFuncti
       userId,
       action: 'create',
       entityType: 'Tenant',
-      entityId: tenant._id,
+      entityId: toEntityId(tenant._id),
       after: tenant.toObject(),
     });
     res.status(201).json(tenant);
@@ -60,7 +61,7 @@ export const updateTenant = async (req: Request, res: Response, next: NextFuncti
       userId,
       action: 'update',
       entityType: 'Tenant',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: existing.toObject(),
       after: tenant?.toObject(),
     });
@@ -80,7 +81,7 @@ export const deleteTenant = async (req: Request, res: Response, next: NextFuncti
       userId,
       action: 'delete',
       entityType: 'Tenant',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: tenant.toObject(),
     });
     res.json({ message: 'Deleted successfully' });

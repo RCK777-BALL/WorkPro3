@@ -7,6 +7,7 @@ import { Types } from 'mongoose';
 
 import Video from '../models/Video';
 import { writeAuditLog } from '../utils/audit';
+import { toEntityId } from '../utils/ids';
 
 export const getAllVideos = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -40,7 +41,7 @@ export const createVideo = async (req: Request, res: Response, next: NextFunctio
       userId,
       action: 'create',
       entityType: 'Video',
-      entityId: saved._id,
+      entityId: toEntityId(saved._id),
       after: saved.toObject(),
     });
     res.status(201).json(saved);
@@ -66,7 +67,7 @@ export const updateVideo = async (req: Request, res: Response, next: NextFunctio
       userId,
       action: 'update',
       entityType: 'Video',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: existing.toObject(),
       after: updated?.toObject(),
     });
@@ -89,7 +90,7 @@ export const deleteVideo = async (req: Request, res: Response, next: NextFunctio
       userId,
       action: 'delete',
       entityType: 'Video',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: deleted.toObject(),
     });
     res.json({ message: 'Deleted successfully' });

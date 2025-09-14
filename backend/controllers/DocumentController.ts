@@ -15,6 +15,7 @@ import { writeAuditLog } from '../utils/audit';
 import { toObjectId } from '../utils/ids';
 
 
+
 export const getAllDocuments: AuthedRequestHandler<ParamsDictionary> = async (
   _req: any,
   res: ExpressResponse,
@@ -131,7 +132,7 @@ export const createDocument: AuthedRequestHandler<ParamsDictionary> = async (
       userId,
       action: 'create',
       entityType: 'Document',
-      entityId: saved._id,
+      entityId: toEntityId(saved._id),
       after: saved.toObject(),
     });
 
@@ -217,7 +218,7 @@ export const updateDocument: AuthedRequestHandler<{ id: string }> = async (
       userId,
       action: 'update',
       entityType: 'Document',
-      entityId: objectId,
+      entityId: toEntityId(objectId),
       after: updated.toObject(),
     });
 
@@ -268,7 +269,7 @@ export const deleteDocument: AuthedRequestHandler<{ id: string }> = async (
       userId,
       action: 'delete',
       entityType: 'Document',
-      entityId: objectId,
+      entityId: toEntityId(objectId),
       before: deleted.toObject(),
     });
     sendResponse(res, { message: 'Deleted successfully' });

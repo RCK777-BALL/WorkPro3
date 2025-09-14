@@ -9,6 +9,7 @@ import { writeAuditLog } from '../utils/audit';
 import { sendResponse } from '../utils/sendResponse';
 import { toObjectId } from '../utils/ids';
 
+
 export const getAllRoles = async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const roles = await Role.find();
@@ -43,6 +44,7 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const role = await Role.create({ ...req.body, tenantId });
     const entityId = role._id;
+
     await writeAuditLog({
       tenantId,
       userId,
@@ -77,7 +79,7 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
       new: true,
       runValidators: true,
     });
-    const entityId = roleId;
+    const entityId = toEntityId(roleId);
     await writeAuditLog({
       tenantId,
       userId,
@@ -109,7 +111,7 @@ export const deleteRole = async (req: Request, res: Response, next: NextFunction
     }
     const role = await Role.findByIdAndDelete(roleId);
     if (!role) return res.status(404).json({ message: 'Not found' });
-    const entityId = roleId;
+    const entityId = toEntityId(roleId);
     await writeAuditLog({
       tenantId,
       userId,

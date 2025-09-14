@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Error as MongooseError, Types } from 'mongoose';
+import { Error as MongooseError, Types, UpdateQuery } from 'mongoose';
 import { validationResult } from 'express-validator';
 import PMTask, { PMTaskDocument } from '../models/PMTask';
 import WorkOrder from '../models/WorkOrder';
@@ -23,12 +23,14 @@ import type {
 import type { ParamsDictionary } from 'express-serve-static-core';
 import { writeAuditLog } from '../utils/audit';
 import { toEntityId } from '../utils/ids';
+import { Response } from 'express';
+import { ObjectId, ObjectIdLike } from 'bson';
 
 
 export const getAllPMTasks: AuthedRequestHandler<ParamsDictionary, PMTaskListResponse> = async (
-  req,
-  res,
-  next,
+  req: { tenantId: any; siteId: any; },
+  res: Response<any, Record<string, any>>,
+  next: (arg0: unknown) => void,
 ) => {
   try {
     const filter: Record<string, unknown> = { tenantId: req.tenantId };
@@ -46,9 +48,9 @@ export const getAllPMTasks: AuthedRequestHandler<ParamsDictionary, PMTaskListRes
 };
 
 export const getPMTaskById: AuthedRequestHandler<PMTaskParams, PMTaskResponse> = async (
-  req,
-  res,
-  next,
+  req: { params: { id: string | number | ObjectId | Uint8Array<ArrayBufferLike> | ObjectIdLike; }; tenantId: any; },
+  res: Response<any, Record<string, any>>,
+  next: (arg0: unknown) => void,
 ) => {
   try {
     if (!Types.ObjectId.isValid(req.params.id)) {
@@ -77,9 +79,9 @@ export const getPMTaskById: AuthedRequestHandler<PMTaskParams, PMTaskResponse> =
 };
 
 export const createPMTask: AuthedRequestHandler<ParamsDictionary, PMTaskResponse, PMTaskCreateBody> = async (
-  req,
-  res,
-  next,
+  req: { tenantId: any; body: any; siteId: any; user: any; },
+  res: Response<any, Record<string, any>>,
+  next: (arg0: unknown) => void,
 ) => {
   try {
     const tenantId = req.tenantId;
@@ -112,9 +114,9 @@ export const createPMTask: AuthedRequestHandler<ParamsDictionary, PMTaskResponse
 };
 
 export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | null, PMTaskUpdateBody> = async (
-  req,
-  res,
-  next,
+  req: { tenantId: any; params: { id: string | number | ObjectId | Uint8Array<ArrayBufferLike> | ObjectIdLike; }; body: UpdateQuery<PMTaskDocument> | undefined; user: any; },
+  res: Response<any, Record<string, any>>,
+  next: (arg0: unknown) => void,
 ) => {
   try {
     const tenantId = req.tenantId;
@@ -163,9 +165,9 @@ export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | n
 };
 
 export const deletePMTask: AuthedRequestHandler<PMTaskParams, PMTaskDeleteResponse> = async (
-  req,
-  res,
-  next,
+  req: { tenantId: any; params: { id: string | number | ObjectId | Uint8Array<ArrayBufferLike> | ObjectIdLike; }; user: any; },
+  res: Response<any, Record<string, any>>,
+  next: (arg0: unknown) => void,
 ) => {
   try {
     const tenantId = req.tenantId;
@@ -206,9 +208,9 @@ export const deletePMTask: AuthedRequestHandler<PMTaskParams, PMTaskDeleteRespon
 };
 
 export const generatePMWorkOrders: AuthedRequestHandler<ParamsDictionary, PMTaskGenerateWOResponse> = async (
-  req,
-  res,
-  next,
+  req: { tenantId: any; },
+  res: Response<any, Record<string, any>>,
+  next: (arg0: unknown) => void,
 ) => {
   try {
     const now = new Date();

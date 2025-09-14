@@ -4,6 +4,7 @@
 
 import mongoose, { Schema, Document, Model, Types } from 'mongoose';
 
+
 export interface WorkOrderDocument extends Document {
   _id: Types.ObjectId;
   title: string;
@@ -107,4 +108,5 @@ const workOrderSchema = new Schema<WorkOrderDocument>(
 const WorkOrder: Model<WorkOrderDocument> = mongoose.model<WorkOrderDocument>('WorkOrder', workOrderSchema);
 
 export default WorkOrder;
+
 

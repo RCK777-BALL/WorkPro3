@@ -7,7 +7,7 @@ import Meter from '../models/Meter';
 import MeterReading from '../models/MeterReading';
 import { writeAuditLog } from '../utils/audit';
 import { toEntityId } from '../utils/ids';
-import { Document, Types, UpdateQuery } from 'mongoose';
+import { Types, UpdateQuery, Error as MongooseError } from 'mongoose';
 import { sendResponse } from '../utils/sendResponse';
 
 

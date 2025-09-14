@@ -5,7 +5,7 @@
 import { Types } from 'mongoose';
 import AuditLog from '../models/AuditLog';
 import logger from './logger';
-import { toEntityId } from '../src/utils/toEntityId';
+import { toEntityId } from './ids';
 
 type AuditVal = unknown;
 
@@ -20,9 +20,6 @@ interface AuditPayload {
   before?: AuditVal;
   after?: AuditVal;
 }
-
-export const toEntityId = (id: string | Types.ObjectId): Types.ObjectId =>
-  typeof id === 'string' ? new Types.ObjectId(id) : id;
 
 export async function writeAuditLog({
   tenantId,

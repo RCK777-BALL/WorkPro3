@@ -5,22 +5,16 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { randomUUID } from 'crypto';
-import type { Response as ExpressResponse } from 'express';
-import type { ParamsDictionary } from 'express-serve-static-core';
 
 import Document from '../models/Document';
 import type { AuthedRequestHandler } from '../types/http';
 import { sendResponse } from '../utils/sendResponse';
 import { writeAuditLog } from '../utils/audit';
-import { toObjectId } from '../utils/ids';
+import { toObjectId, toEntityId } from '../utils/ids';
 
 
 
-export const getAllDocuments: AuthedRequestHandler<ParamsDictionary> = async (
-  _req: any,
-  res: ExpressResponse,
-  next: (arg0: unknown) => void,
-) => {
+export const getAllDocuments: AuthedRequestHandler = async (_req, res, next) => {
 
   try {
     const items = await Document.find();
@@ -33,9 +27,9 @@ export const getAllDocuments: AuthedRequestHandler<ParamsDictionary> = async (
 };
 
 export const getDocumentById: AuthedRequestHandler<{ id: string }> = async (
-  req: { params: { id: any; }; },
-  res: ExpressResponse,
-  next: (arg0: unknown) => void,
+  req,
+  res,
+  next,
 ) => {
 
   try {
@@ -72,10 +66,10 @@ const validateFileName = (input: string): { base: string; ext: string } => {
   return { base, ext };
 };
 
-export const createDocument: AuthedRequestHandler<ParamsDictionary> = async (
-  req: { body: { base64?: string; url?: string; name?: string; }; tenantId: any; user: any; },
-  res: ExpressResponse,
-  next: (arg0: unknown) => void,
+export const createDocument: AuthedRequestHandler = async (
+  req,
+  res,
+  next,
 ) => {
 
   try {
@@ -147,7 +141,7 @@ export const createDocument: AuthedRequestHandler<ParamsDictionary> = async (
 
 export const updateDocument: AuthedRequestHandler<{ id: string }> = async (
   req,
-  res: ExpressResponse,
+  res,
   next,
 ) => {
 
@@ -233,7 +227,7 @@ export const updateDocument: AuthedRequestHandler<{ id: string }> = async (
 
 export const deleteDocument: AuthedRequestHandler<{ id: string }> = async (
   req,
-  res: ExpressResponse,
+  res,
   next,
 ) => {
 

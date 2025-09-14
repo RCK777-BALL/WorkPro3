@@ -17,6 +17,7 @@ import { writeAuditLog } from '../utils/audit';
 import type { WorkOrderType, WorkOrderInput } from '../types/workOrder';
 
 import { sendResponse } from '../utils/sendResponse';
+import { validateItems } from '../utils/validateItems';
 import {
   workOrderCreateSchema,
   workOrderUpdateSchema,
@@ -313,13 +314,20 @@ export const createWorkOrder: AuthedRequestHandler<
     }
 
     const { assignees, checklists, partsUsed, signatures, ...rest } = parsed.data;
+    const validParts = validateItems(res, partsUsed, p => Types.ObjectId.isValid(p.partId), 'part');
+    if (partsUsed && !validParts) return;
+    const validAssignees = validateItems(res, assignees, id => Types.ObjectId.isValid(id), 'assignee');
+    if (assignees && !validAssignees) return;
+    const validChecklists = validateItems(res, checklists, c => typeof c.description === 'string', 'checklist');
+    if (checklists && !validChecklists) return;
+    const validSignatures = validateItems(res, signatures, s => Types.ObjectId.isValid(s.userId), 'signature');
+    if (signatures && !validSignatures) return;
     const newItem = new WorkOrder({
       ...rest,
-      ...(assignees && { assignees: mapAssignees(assignees) }),
-      ...(checklists && { checklists: mapChecklists(checklists) }),
-      ...(partsUsed && { partsUsed: mapPartsUsed(partsUsed) }),
-
-      ...(signatures && { signatures: mapSignatures(signatures) }),
+      ...(validAssignees && { assignees: mapAssignees(validAssignees) }),
+      ...(validChecklists && { checklists: mapChecklists(validChecklists) }),
+      ...(validParts && { partsUsed: mapPartsUsed(validParts) }),
+      ...(validSignatures && { signatures: mapSignatures(validSignatures) }),
       tenantId,
     });
     const saved = await newItem.save();
@@ -383,18 +391,25 @@ export const updateWorkOrder: AuthedRequestHandler = async (
       return;
     }
     const update: UpdateWorkOrderBody = parsed.data as UpdateWorkOrderBody;
+    if (update.partsUsed) {
+      const validParts = validateItems(res, update.partsUsed, p => Types.ObjectId.isValid(p.partId), 'part');
+      if (!validParts) return;
+      update.partsUsed = mapPartsUsed(validParts);
+    }
     if (update.assignees) {
-      update.assignees = mapAssignees(update.assignees);
+      const validAssignees = validateItems(res, update.assignees, id => Types.ObjectId.isValid(id), 'assignee');
+      if (!validAssignees) return;
+      update.assignees = mapAssignees(validAssignees);
     }
     if (update.checklists) {
-      update.checklists = mapChecklists(update.checklists);
-    }
-    if (update.partsUsed) {
-      update.partsUsed = mapPartsUsed(update.partsUsed);
+      const validChecklists = validateItems(res, update.checklists, c => typeof c.description === 'string', 'checklist');
+      if (!validChecklists) return;
+      update.checklists = mapChecklists(validChecklists);
     }
     if (update.signatures) {
-      update.signatures = mapSignatures(update.signatures);
-
+      const validSignatures = validateItems(res, update.signatures, s => Types.ObjectId.isValid(s.userId), 'signature');
+      if (!validSignatures) return;
+      update.signatures = mapSignatures(validSignatures);
     }
     const existing = await WorkOrder.findOne({ _id: req.params.id, tenantId }) as WorkOrderDocument | null;
     if (!existing) {
@@ -605,7 +620,9 @@ export const assignWorkOrder: AuthedRequestHandler = async (
     const before = workOrder.toObject();
     workOrder.status = 'assigned';
     if (parsed.data.assignees) {
-      workOrder.assignees = mapAssignees(parsed.data.assignees) || [];
+      const validAssignees = validateItems(res, parsed.data.assignees, id => Types.ObjectId.isValid(id), 'assignee');
+      if (!validAssignees) return;
+      workOrder.assignees = mapAssignees(validAssignees) || [];
     }
     const saved = await workOrder.save();
     const userIdStr = (req.user as any)?._id || (req.user as any)?.id;
@@ -697,9 +714,21 @@ export const completeWorkOrder: AuthedRequestHandler = async (
     const before = workOrder.toObject();
     workOrder.status = 'completed';
     if (body.timeSpentMin !== undefined) workOrder.timeSpentMin = body.timeSpentMin;
-    if (Array.isArray(body.partsUsed)) workOrder.partsUsed = mapPartsUsed(body.partsUsed) || [];
-    if (Array.isArray(body.checklists)) workOrder.checklists = mapChecklists(body.checklists) || [];
-    if (Array.isArray(body.signatures)) workOrder.signatures = mapSignatures(body.signatures) || [];
+    if (Array.isArray(body.partsUsed)) {
+      const validParts = validateItems(res, body.partsUsed, p => Types.ObjectId.isValid(p.partId), 'part');
+      if (!validParts) return;
+      workOrder.partsUsed = mapPartsUsed(validParts) || [];
+    }
+    if (Array.isArray(body.checklists)) {
+      const validChecklists = validateItems(res, body.checklists, c => typeof c.description === 'string', 'checklist');
+      if (!validChecklists) return;
+      workOrder.checklists = mapChecklists(validChecklists) || [];
+    }
+    if (Array.isArray(body.signatures)) {
+      const validSignatures = validateItems(res, body.signatures, s => Types.ObjectId.isValid(s.userId), 'signature');
+      if (!validSignatures) return;
+      workOrder.signatures = mapSignatures(validSignatures) || [];
+    }
 
     if (Array.isArray(body.photos)) workOrder.photos = body.photos;
     if (body.failureCode !== undefined) workOrder.failureCode = body.failureCode;

@@ -2,16 +2,17 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { Types } from 'mongoose';
+import type { ParamsDictionary } from 'express-serve-static-core';
+import type { AuthedRequestHandler } from '../types/http';
+
 
 import ConditionRule from '../models/ConditionRule';
 import { writeAuditLog } from '../utils/audit';
 
-export const getAllConditionRules = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
+export const getAllConditionRules: AuthedRequestHandler<ParamsDictionary> = async (
+  req,
+  res,
+  next,
 ) => {
   try {
     const items = await ConditionRule.find({ tenantId: req.tenantId });
@@ -21,10 +22,10 @@ export const getAllConditionRules = async (
   }
 };
 
-export const getConditionRuleById = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
+export const getConditionRuleById: AuthedRequestHandler<{ id: string }> = async (
+  req,
+  res,
+  next,
 ) => {
   try {
     const item = await ConditionRule.findOne({
@@ -38,10 +39,10 @@ export const getConditionRuleById = async (
   }
 };
 
-export const createConditionRule = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
+export const createConditionRule: AuthedRequestHandler<ParamsDictionary> = async (
+  req,
+  res,
+  next,
 ) => {
   try {
     const tenantId = req.tenantId;
@@ -64,10 +65,10 @@ export const createConditionRule = async (
   }
 };
 
-export const updateConditionRule = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
+export const updateConditionRule: AuthedRequestHandler<{ id: string }> = async (
+  req,
+  res,
+  next,
 ) => {
   try {
     const tenantId = req.tenantId;
@@ -96,10 +97,10 @@ export const updateConditionRule = async (
   }
 };
 
-export const deleteConditionRule = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
+export const deleteConditionRule: AuthedRequestHandler<{ id: string }> = async (
+  req,
+  res,
+  next,
 ) => {
   try {
     const tenantId = req.tenantId;

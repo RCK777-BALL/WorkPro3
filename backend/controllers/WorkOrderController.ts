@@ -13,6 +13,7 @@ import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
 import { writeAuditLog } from '../utils/audit';
+import { toEntityId } from '../utils/ids';
 
 import type { WorkOrderType, WorkOrderInput } from '../types/workOrder';
 
@@ -337,7 +338,7 @@ export const createWorkOrder: AuthedRequestHandler<
       userId,
       action: 'create',
       entityType: 'WorkOrder',
-      entityId: saved._id,
+      entityId: toEntityId(saved._id),
       after: saved.toObject(),
     });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
@@ -431,7 +432,7 @@ export const updateWorkOrder: AuthedRequestHandler = async (
       userId,
       action: 'update',
       entityType: 'WorkOrder',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: existing.toObject(),
       after: updated.toObject(),
     });
@@ -485,7 +486,7 @@ export const deleteWorkOrder: AuthedRequestHandler = async (
       userId,
       action: 'delete',
       entityType: 'WorkOrder',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: deleted.toObject(),
     });
     emitWorkOrderUpdate(toWorkOrderUpdatePayload({ _id: req.params.id, deleted: true }));
@@ -573,7 +574,7 @@ export const approveWorkOrder: AuthedRequestHandler = async (
       userId: userObjectId,
       action: 'approve',
       entityType: 'WorkOrder',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before,
       after: saved.toObject(),
     });
@@ -632,7 +633,7 @@ export const assignWorkOrder: AuthedRequestHandler = async (
       userId,
       action: 'assign',
       entityType: 'WorkOrder',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before,
       after: saved.toObject(),
     });
@@ -676,7 +677,7 @@ export const startWorkOrder: AuthedRequestHandler = async (
       userId,
       action: 'start',
       entityType: 'WorkOrder',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before,
       after: saved.toObject(),
     });
@@ -740,7 +741,7 @@ export const completeWorkOrder: AuthedRequestHandler = async (
       userId,
       action: 'complete',
       entityType: 'WorkOrder',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before,
       after: saved.toObject(),
     });
@@ -784,7 +785,7 @@ export const cancelWorkOrder: AuthedRequestHandler = async (
       userId,
       action: 'cancel',
       entityType: 'WorkOrder',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before,
       after: saved.toObject(),
     });

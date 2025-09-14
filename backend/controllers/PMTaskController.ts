@@ -22,6 +22,7 @@ import type {
 import type { ParamsDictionary } from 'express-serve-static-core';
 import { writeAuditLog, toEntityId } from '../utils/audit';
 
+
 export const getAllPMTasks: AuthedRequestHandler<ParamsDictionary, PMTaskListResponse> = async (
   req: PMTaskRequest,
   res,
@@ -145,6 +146,7 @@ export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | n
       action: 'update',
       entityType: 'PMTask',
       entityId: toEntityId(task!._id),
+
       before: existing.toObject(),
       after: task?.toObject(),
     });
@@ -188,6 +190,7 @@ export const deletePMTask: AuthedRequestHandler<PMTaskParams, PMTaskDeleteRespon
       action: 'delete',
       entityType: 'PMTask',
       entityId: toEntityId(task._id),
+
       before: task.toObject(),
     });
     res.json({ message: 'Deleted successfully' });

@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 
 import Role from '../models/Role';
 import { writeAuditLog } from '../utils/audit';
+import { toEntityId } from '../utils/ids';
 
 const { Types, isValidObjectId } = mongoose;
 
@@ -45,7 +46,7 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
     }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const role = await Role.create({ ...req.body, tenantId });
-    const entityId = new Types.ObjectId(role._id);
+    const entityId = toEntityId(new Types.ObjectId(role._id));
     await writeAuditLog({
       tenantId,
       userId,
@@ -82,7 +83,7 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
       new: true,
       runValidators: true,
     });
-    const entityId = roleId;
+    const entityId = toEntityId(roleId);
     await writeAuditLog({
       tenantId,
       userId,
@@ -116,7 +117,7 @@ export const deleteRole = async (req: Request, res: Response, next: NextFunction
     const roleId = new Types.ObjectId(id);
     const role = await Role.findByIdAndDelete(roleId);
     if (!role) return res.status(404).json({ message: 'Not found' });
-    const entityId = roleId;
+    const entityId = toEntityId(roleId);
     await writeAuditLog({
       tenantId,
       userId,

@@ -4,19 +4,12 @@
 
 import { Types } from 'mongoose';
 
-/**
- * Safely convert a string to a Mongoose ObjectId.
- *
- * Returns `null` when the input is not a valid ObjectId string.
- */
-export const toObjectId = (id: unknown): Types.ObjectId | null => {
-  if (typeof id !== 'string' || !Types.ObjectId.isValid(id)) return null;
-  try {
-    return new Types.ObjectId(id);
-  } catch {
-    return null;
-  }
+export const toEntityId = (
+  id?: string | Types.ObjectId,
+): Types.ObjectId | undefined => {
+  if (typeof id === 'string') return new Types.ObjectId(id);
+  return id;
 };
 
-export default toObjectId;
+export default toEntityId;
 

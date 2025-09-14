@@ -10,6 +10,9 @@ import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
 import { writeAuditLog } from '../utils/audit';
+import type { ParamsDictionary } from 'express-serve-static-core';
+import type { WorkOrderType, WorkOrderInput } from '../types/workOrder';
+
 import { sendResponse } from '../utils/sendResponse';
 import {
   workOrderCreateSchema,
@@ -21,33 +24,6 @@ import {
   type WorkOrderComplete,
 } from '../src/schemas/workOrder';
 
-const mapAssignees = (assignees?: string[]) =>
-  assignees?.map((id) => new Types.ObjectId(id));
-
-const mapChecklists = (
-  checklists?: { description: string; completed?: boolean }[],
-) =>
-  checklists?.map((c) => ({
-    text: c.description,
-    done: c.completed ?? false,
-  }));
-
-const mapPartsUsed = (
-  parts?: { partId: string; quantity: number; cost?: number }[],
-) =>
-  parts?.map((p) => ({
-    partId: new Types.ObjectId(p.partId),
-    qty: p.quantity,
-    cost: p.cost ?? 0,
-  }));
-
-const mapSignatures = (
-  signatures?: { userId: string; signedAt?: Date }[],
-) =>
-  signatures?.map((s) => ({
-    by: new Types.ObjectId(s.userId),
-    ts: s.signedAt ?? new Date(),
-  }));
 
 
 
@@ -287,7 +263,8 @@ export const getWorkOrderById: AuthedRequestHandler = async (req, res, next) => 
  *         description: Validation error
  */
 
-export const createWorkOrder: AuthedRequestHandler = async (req, res, next) => {
+export const createWorkOrder: AuthedRequestHandler<ParamsDictionary, WorkOrderType, WorkOrderInput> = async (req, res, next) => {
+
   try {
 
     const tenantId = req.tenantId;

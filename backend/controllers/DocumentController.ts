@@ -16,9 +16,9 @@ import { writeAuditLog } from '../utils/audit';
 
 
 export const getAllDocuments: AuthedRequestHandler<ParamsDictionary> = async (
-  _req,
+  _req: any,
   res: ExpressResponse,
-  next,
+  next: (arg0: unknown) => void,
 ) => {
 
   try {
@@ -32,9 +32,9 @@ export const getAllDocuments: AuthedRequestHandler<ParamsDictionary> = async (
 };
 
 export const getDocumentById: AuthedRequestHandler<{ id: string }> = async (
-  req,
+  req: { params: { id: any; }; },
   res: ExpressResponse,
-  next,
+  next: (arg0: unknown) => void,
 ) => {
 
   try {
@@ -71,9 +71,9 @@ const validateFileName = (input: string): { base: string; ext: string } => {
 };
 
 export const createDocument: AuthedRequestHandler<ParamsDictionary> = async (
-  req,
+  req: { body: { base64?: string; url?: string; name?: string; }; tenantId: any; user: any; },
   res: ExpressResponse,
-  next,
+  next: (arg0: unknown) => void,
 ) => {
 
   try {

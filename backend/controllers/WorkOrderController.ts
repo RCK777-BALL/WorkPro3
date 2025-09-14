@@ -6,7 +6,7 @@ import type { ParamsDictionary } from 'express-serve-static-core';
 import type { Response, NextFunction } from 'express';
 import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 
-import WorkOrder from '../models/WorkOrder';
+import WorkOrder, { WorkOrderDocument } from '../models/WorkOrder';
 import { emitWorkOrderUpdate } from '../server';
 import notifyUser from '../utils/notify';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
@@ -67,6 +67,20 @@ const workOrderCreateFields = [
 ];
 
 const workOrderUpdateFields = [...workOrderCreateFields];
+
+type UpdateWorkOrderBody = Partial<
+  Omit<
+    WorkOrderInput,
+    'assetId' | 'pmTask' | 'department' | 'line' | 'station' | 'partsUsed'
+  >
+> & {
+  assetId?: Types.ObjectId;
+  pmTask?: Types.ObjectId;
+  department?: Types.ObjectId;
+  line?: Types.ObjectId;
+  station?: Types.ObjectId;
+  partsUsed?: { partId: Types.ObjectId; qty: number; cost?: number }[];
+};
 
 interface CompleteWorkOrderBody extends WorkOrderComplete {
   photos?: string[];

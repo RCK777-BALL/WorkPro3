@@ -181,7 +181,16 @@ export const deleteMessage: AuthedRequestHandler = async (
 };
 
 // Direct message controllers
-export const getDirectMessages: AuthedRequestHandler = async (req, res, next) => {
+interface GetDirectMessagesRequest {
+  params?: Record<string, any>;
+  body?: Record<string, any>;
+}
+
+export const getDirectMessages: AuthedRequestHandler = async (
+  req: GetDirectMessagesRequest,
+  res: Response<any, Record<string, any>>,
+  next: (arg0: unknown) => void
+) => {
   try {
     const ids = resolveUserAndTenant(req, res);
     if (!ids) return;
@@ -230,7 +239,19 @@ export const createDirectMessage: AuthedRequestHandler = async (req, res, next) 
   }
 };
 
-export const deleteDirectMessage: AuthedRequestHandler = async (req, res, next) => {
+interface DeleteDirectMessageParams {
+  conversationId: string;
+}
+
+interface DeleteDirectMessageRequest {
+  params: DeleteDirectMessageParams;
+}
+
+export const deleteDirectMessage: AuthedRequestHandler = async (
+  req: DeleteDirectMessageRequest,
+  res: Response<any, Record<string, any>>,
+  next: (arg0: unknown) => void
+) => {
   try {
     const ids = resolveUserAndTenant(req, res);
     if (!ids) return;

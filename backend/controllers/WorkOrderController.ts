@@ -97,6 +97,44 @@ function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
   } as WorkOrderUpdatePayload;
 }
 
+type RawPart = {
+  partId: string;
+  quantity: number;
+  cost?: number;
+};
+
+type RawChecklist = {
+  description: string;
+  completed?: boolean;
+};
+
+type RawSignature = {
+  userId: string;
+  signedAt?: Date;
+};
+
+function mapPartsUsed(parts: RawPart[]) {
+  return parts.map((p) => ({
+    partId: new Types.ObjectId(p.partId),
+    qty: p.quantity,
+    cost: p.cost ?? 0,
+  }));
+}
+
+function mapChecklists(items: RawChecklist[]) {
+  return items.map((c) => ({
+    text: c.description,
+    done: Boolean(c.completed),
+  }));
+}
+
+function mapSignatures(items: RawSignature[]) {
+  return items.map((s) => ({
+    by: new Types.ObjectId(s.userId),
+    ts: s.signedAt ? new Date(s.signedAt) : new Date(),
+  }));
+}
+
 /**
  * @openapi
  * /api/workorders:
@@ -269,6 +307,7 @@ export const createWorkOrder: AuthedRequestHandler = async (req, res, next) => {
       ...(assignees && { assignees: mapAssignees(assignees) }),
       ...(checklists && { checklists: mapChecklists(checklists) }),
       ...(partsUsed && { partsUsed: mapPartsUsed(partsUsed) }),
+
       ...(signatures && { signatures: mapSignatures(signatures) }),
       tenantId,
     });
@@ -340,6 +379,7 @@ export const updateWorkOrder: AuthedRequestHandler = async (req, res, next) => {
     }
     if (update.signatures) {
       update.signatures = mapSignatures(update.signatures);
+
     }
     const existing = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!existing) {
@@ -624,6 +664,7 @@ export const completeWorkOrder: AuthedRequestHandler = async (req, res, next) =>
     if (Array.isArray(body.partsUsed)) workOrder.partsUsed = mapPartsUsed(body.partsUsed) || [];
     if (Array.isArray(body.checklists)) workOrder.checklists = mapChecklists(body.checklists) || [];
     if (Array.isArray(body.signatures)) workOrder.signatures = mapSignatures(body.signatures) || [];
+
     if (Array.isArray(body.photos)) workOrder.photos = body.photos;
     if (body.failureCode !== undefined) workOrder.failureCode = body.failureCode;
 

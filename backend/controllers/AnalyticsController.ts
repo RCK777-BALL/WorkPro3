@@ -7,12 +7,13 @@ import { getKPIs } from '../services/analytics';
 import { Parser as Json2csvParser } from 'json2csv';
 import PDFDocument from 'pdfkit';
 import { escapeXml } from '../utils/escapeXml';
+import { sendResponse } from '../utils/sendResponse';
 
  export const kpiJson = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
  
   try {
     const data = await getKPIs(req.tenantId!);
-    res.json(data);
+    sendResponse(res, data);
   } catch (err) {
     next(err);
   }
@@ -26,7 +27,7 @@ import { escapeXml } from '../utils/escapeXml';
     const csv = parser.parse([data]);
     res.header('Content-Type', 'text/csv');
     res.attachment('kpis.csv');
-    res.send(csv);
+    sendResponse(res, csv);
   } catch (err) {
     next(err);
   }
@@ -45,7 +46,7 @@ import { escapeXml } from '../utils/escapeXml';
     const xml = `<?xml version="1.0"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="KPIs"><Table><Row><Cell><Data ss:Type="String">Metric</Data></Cell><Cell><Data ss:Type="String">Value</Data></Cell></Row>${rows}</Table></Worksheet></Workbook>`;
     res.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.attachment('kpis.xlsx');
-    res.send(xml);
+    sendResponse(res, xml);
   } catch (err) {
     next(err);
   }

@@ -4,6 +4,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
+import { sendResponse } from '../utils/sendResponse';
 
 import Video from '../models/Video';
 import { writeAuditLog } from '../utils/audit';
@@ -12,7 +13,7 @@ import { toEntityId } from '../utils/ids';
 export const getAllVideos = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const items = await Video.find();
-    res.json(items);
+    sendResponse(res, items);
   } catch (err) {
     next(err);
   }
@@ -21,8 +22,8 @@ export const getAllVideos = async (req: Request, res: Response, next: NextFuncti
 export const getVideoById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const item = await Video.findById(req.params.id);
-    if (!item) return res.status(404).json({ message: 'Not found' });
-    res.json(item);
+    if (!item) return sendResponse(res, null, 'Not found', 404);
+    sendResponse(res, item);
   } catch (err) {
     next(err);
   }
@@ -32,7 +33,7 @@ export const createVideo = async (req: Request, res: Response, next: NextFunctio
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
-      return res.status(400).json({ message: 'Tenant ID required' });
+      return sendResponse(res, null, 'Tenant ID required', 400);
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const newItem = new Video({ ...req.body, tenantId });
     const saved = await newItem.save();
@@ -44,7 +45,7 @@ export const createVideo = async (req: Request, res: Response, next: NextFunctio
       entityId: toEntityId(saved._id),
       after: saved.toObject(),
     });
-    res.status(201).json(saved);
+    sendResponse(res, saved, null, 201);
   } catch (err) {
     next(err);
   }
@@ -54,10 +55,10 @@ export const updateVideo = async (req: Request, res: Response, next: NextFunctio
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
-      return res.status(400).json({ message: 'Tenant ID required' });
+      return sendResponse(res, null, 'Tenant ID required', 400);
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const existing = await Video.findById(req.params.id);
-    if (!existing) return res.status(404).json({ message: 'Not found' });
+    if (!existing) return sendResponse(res, null, 'Not found', 404);
     const updated = await Video.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
@@ -71,7 +72,7 @@ export const updateVideo = async (req: Request, res: Response, next: NextFunctio
       before: existing.toObject(),
       after: updated?.toObject(),
     });
-    res.json(updated);
+    sendResponse(res, updated);
   } catch (err) {
     next(err);
   }
@@ -81,10 +82,10 @@ export const deleteVideo = async (req: Request, res: Response, next: NextFunctio
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
-      return res.status(400).json({ message: 'Tenant ID required' });
+      return sendResponse(res, null, 'Tenant ID required', 400);
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const deleted = await Video.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: 'Not found' });
+    if (!deleted) return sendResponse(res, null, 'Not found', 404);
     await writeAuditLog({
       tenantId,
       userId,
@@ -93,7 +94,7 @@ export const deleteVideo = async (req: Request, res: Response, next: NextFunctio
       entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: deleted.toObject(),
     });
-    res.json({ message: 'Deleted successfully' });
+    sendResponse(res, { message: 'Deleted successfully' });
   } catch (err) {
     next(err);
   }

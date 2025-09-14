@@ -6,6 +6,7 @@ import { Types } from 'mongoose';
 import Notification, { NotificationDocument } from '../models/Notifications';
 import User from '../models/User';
 import nodemailer from 'nodemailer';
+import { sendResponse } from '../utils/sendResponse';
 
 import { assertEmail } from '../utils/assert';
 import type { AuthedRequestHandler } from '../types/http';
@@ -29,7 +30,6 @@ export const getAllNotifications: AuthedRequestHandler<
       return;
     }
     const items = await Notification.find({ tenantId });
-
     sendResponse(res, items);
     return;
   } catch (err) {

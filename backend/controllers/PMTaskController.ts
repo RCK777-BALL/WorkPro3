@@ -10,6 +10,7 @@ import Meter from '../models/Meter';
 import { nextCronOccurrenceWithin } from '../services/PMScheduler';
 import type { AuthedRequestHandler } from '../types/http';
 import type {
+import { sendResponse } from '../utils/sendResponse';
   PMTaskRequest,
   PMTaskParams,
   PMTaskListResponse,
@@ -33,7 +34,7 @@ export const getAllPMTasks: AuthedRequestHandler<ParamsDictionary, PMTaskListRes
     if (req.siteId) (filter as any).siteId = req.siteId;
 
     const tasks = await PMTask.find(filter);
-    res.json(tasks);
+    sendResponse(res, tasks);
   } catch (err) {
     if (err instanceof MongooseError.ValidationError) {
       res.status(400).json({ message: err.message });
@@ -60,11 +61,11 @@ export const getPMTaskById: AuthedRequestHandler<PMTaskParams, PMTaskResponse> =
     });
 
     if (!task) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
 
-    res.json(task);
+    sendResponse(res, task);
   } catch (err) {
     if (err instanceof MongooseError.ValidationError) {
       res.status(400).json({ message: err.message });
@@ -82,10 +83,10 @@ export const createPMTask: AuthedRequestHandler<ParamsDictionary, PMTaskResponse
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
-      return res.status(400).json({ message: 'Tenant ID required' });
+      return sendResponse(res, null, 'Tenant ID required', 400);
     const errors = validationResult(req as any);
     if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() });
+      sendResponse(res, null, { errors: errors.array()  }, 400);
       return;
     }
     const payload = { ...req.body, tenantId, siteId: req.siteId };
@@ -99,7 +100,7 @@ export const createPMTask: AuthedRequestHandler<ParamsDictionary, PMTaskResponse
       entityId: toEntityId(task._id),
       after: task.toObject(),
     });
-    res.status(201).json(task);
+    sendResponse(res, task, null, 201);
   } catch (err) {
     if (err instanceof MongooseError.ValidationError) {
       res.status(400).json({ message: err.message });
@@ -125,13 +126,13 @@ export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | n
 
     const errors = validationResult(req as any);
     if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() });
+      sendResponse(res, null, { errors: errors.array()  }, 400);
       return;
     }
 
     const existing = await PMTask.findOne({ _id: req.params.id, tenantId });
     if (!existing) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const task = await PMTask.findOneAndUpdate(
@@ -150,7 +151,7 @@ export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | n
       before: existing.toObject(),
       after: task?.toObject(),
     });
-    res.json(task);
+    sendResponse(res, task);
   } catch (err) {
     if (err instanceof MongooseError.ValidationError) {
       res.status(400).json({ message: err.message });
@@ -180,7 +181,7 @@ export const deletePMTask: AuthedRequestHandler<PMTaskParams, PMTaskDeleteRespon
     });
 
     if (!task) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
@@ -193,7 +194,7 @@ export const deletePMTask: AuthedRequestHandler<PMTaskParams, PMTaskDeleteRespon
 
       before: task.toObject(),
     });
-    res.json({ message: 'Deleted successfully' });
+    sendResponse(res, { message: 'Deleted successfully' });
   } catch (err) {
     if (err instanceof MongooseError.ValidationError) {
       res.status(400).json({ message: err.message });
@@ -258,7 +259,7 @@ export const generatePMWorkOrders: AuthedRequestHandler<ParamsDictionary, PMTask
         }
       }
     }
-    res.json({ generated: count });
+    sendResponse(res, { generated: count });
   } catch (err) {
     if (err instanceof MongooseError.ValidationError) {
       res.status(400).json({ message: err.message });

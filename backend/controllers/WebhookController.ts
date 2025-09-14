@@ -4,6 +4,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import logger from '../utils/logger';
+import { sendResponse } from '../utils/sendResponse';
 
 
 /**
@@ -18,5 +19,5 @@ export const handleWorkOrderHook = async (
   // In a real implementation the payload could be validated and used to
   // create or update work orders. For now we simply log it.
   logger.info('Webhook received:', req.body);
-  res.json({ status: 'received' });
+  sendResponse(res, { status: 'received' });
 };

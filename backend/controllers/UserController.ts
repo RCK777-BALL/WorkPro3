@@ -39,11 +39,11 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const items = await User.find({ tenantId }).select('-passwordHash');
-    res.json(items);
+    sendResponse(res, items);
     return;
   } catch (err) {
     next(err);
@@ -74,15 +74,15 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const item = await User.findOne({ _id: req.params.id, tenantId }).select('-passwordHash');
     if (!item) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
-    res.json(item);
+    sendResponse(res, item);
     return;
   } catch (err) {
     next(err);
@@ -111,7 +111,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
@@ -127,7 +127,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
       entityId: toEntityId(saved._id),
       after: safeUser,
     });
-    res.status(201).json(safeUser);
+    sendResponse(res, safeUser, null, 201);
     return;
   } catch (err) {
     next(err);
@@ -164,14 +164,14 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const update = filterFields(req.body, userUpdateFields);
     const existing = await User.findOne({ _id: req.params.id, tenantId }).select('-passwordHash');
     if (!existing) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const updated = await User.findOneAndUpdate(
@@ -191,7 +191,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
       before: existing.toObject(),
       after: updated?.toObject(),
     });
-    res.json(updated);
+    sendResponse(res, updated);
     return;
   } catch (err) {
     next(err);
@@ -222,13 +222,13 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const deleted = await User.findOneAndDelete({ _id: req.params.id, tenantId });
     if (!deleted) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     await writeAuditLog({
@@ -239,7 +239,7 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
       entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: deleted.toObject(),
     });
-    res.json({ message: 'Deleted successfully' });
+    sendResponse(res, { message: 'Deleted successfully' });
     return;
   } catch (err) {
     next(err);
@@ -272,20 +272,20 @@ export const getUserTheme = async (req: Request, res: Response, next: NextFuncti
   try {
     const userId = (req.user as any)?._id ?? req.user?.id;
     if (!userId) {
-      res.status(401).json({ message: 'Not authenticated' });
+      sendResponse(res, null, 'Not authenticated', 401);
       return;
     }
     if (req.params.id !== userId && !req.user?.roles?.includes('admin')) {
-      res.status(403).json({ message: 'Forbidden' });
+      sendResponse(res, null, 'Forbidden', 403);
       return;
     }
 
     const user = await User.findById(req.params.id).select('theme');
     if (!user) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
-    res.json({ theme: user.theme ?? 'system' });
+    sendResponse(res, { theme: user.theme ?? 'system' });
     return;
   } catch (err) {
     next(err);
@@ -328,17 +328,17 @@ export const updateUserTheme = async (req: Request, res: Response, next: NextFun
   try {
     const userId = (req.user as any)?._id ?? req.user?.id;
     if (!userId) {
-      res.status(401).json({ message: 'Not authenticated' });
+      sendResponse(res, null, 'Not authenticated', 401);
       return;
     }
     if (req.params.id !== userId && !req.user?.roles?.includes('admin')) {
-      res.status(403).json({ message: 'Forbidden' });
+      sendResponse(res, null, 'Forbidden', 403);
       return;
     }
 
     const { theme } = req.body;
     if (!['light', 'dark', 'system'].includes(theme)) {
-      res.status(400).json({ message: 'Invalid theme' });
+      sendResponse(res, null, 'Invalid theme', 400);
       return;
     }
 
@@ -348,10 +348,10 @@ export const updateUserTheme = async (req: Request, res: Response, next: NextFun
       { new: true }
     ).select('theme');
     if (!user) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
-    res.json({ theme: user.theme });
+    sendResponse(res, { theme: user.theme });
     return;
   } catch (err) {
     next(err);

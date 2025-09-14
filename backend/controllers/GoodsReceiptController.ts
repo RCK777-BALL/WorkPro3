@@ -11,6 +11,8 @@ import { addStock } from '../services/inventory';
 import nodemailer from 'nodemailer';
 import { assertEmail } from '../utils/assert';
 import { writeAuditLog } from '../utils/audit';
+import logger from '../utils/logger';
+import { enqueueEmailRetry } from '../utils/emailQueue';
 
 export const createGoodsReceipt = async (
   req: Request,
@@ -74,11 +76,19 @@ export const createGoodsReceipt = async (
     if (vendor?.email) {
       assertEmail(vendor.email);
       const transporter = nodemailer.createTransport({ jsonTransport: true });
-      await transporter.sendMail({
+      const mailOptions = {
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
         to: vendor.email,
         subject: `Goods received for PO ${po._id}`,
         text: 'Items received',
-      });
+      };
+
+      try {
+        await transporter.sendMail(mailOptions);
+      } catch (err) {
+        logger.error('Failed to send goods receipt email', err);
+        void enqueueEmailRetry(mailOptions);
+      }
     }
 
     res.status(201).json(gr);

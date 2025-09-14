@@ -12,7 +12,6 @@ import type { AuthedRequestHandler } from '../types/http';
 import { sendResponse } from '../utils/sendResponse';
 
 import type {
-  PMTaskRequest,
   PMTaskParams,
   PMTaskListResponse,
   PMTaskResponse,
@@ -21,13 +20,13 @@ import type {
   PMTaskDeleteResponse,
   PMTaskGenerateWOResponse,
 } from '../types/pmTask';
-import { sendResponse } from '../utils/sendResponse';
 import type { ParamsDictionary } from 'express-serve-static-core';
-import { writeAuditLog, toEntityId } from '../utils/audit';
+import { writeAuditLog } from '../utils/audit';
+import { toEntityId } from '../utils/ids';
 
 
 export const getAllPMTasks: AuthedRequestHandler<ParamsDictionary, PMTaskListResponse> = async (
-  req: PMTaskRequest,
+  req,
   res,
   next,
 ) => {
@@ -47,7 +46,7 @@ export const getAllPMTasks: AuthedRequestHandler<ParamsDictionary, PMTaskListRes
 };
 
 export const getPMTaskById: AuthedRequestHandler<PMTaskParams, PMTaskResponse> = async (
-  req: PMTaskRequest<PMTaskParams>,
+  req,
   res,
   next,
 ) => {
@@ -78,7 +77,7 @@ export const getPMTaskById: AuthedRequestHandler<PMTaskParams, PMTaskResponse> =
 };
 
 export const createPMTask: AuthedRequestHandler<ParamsDictionary, PMTaskResponse, PMTaskCreateBody> = async (
-  req: PMTaskRequest<ParamsDictionary, PMTaskCreateBody>,
+  req,
   res,
   next,
 ) => {
@@ -113,7 +112,7 @@ export const createPMTask: AuthedRequestHandler<ParamsDictionary, PMTaskResponse
 };
 
 export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | null, PMTaskUpdateBody> = async (
-  req: PMTaskRequest<PMTaskParams, PMTaskUpdateBody>,
+  req,
   res,
   next,
 ) => {
@@ -164,7 +163,7 @@ export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | n
 };
 
 export const deletePMTask: AuthedRequestHandler<PMTaskParams, PMTaskDeleteResponse> = async (
-  req: PMTaskRequest<PMTaskParams>,
+  req,
   res,
   next,
 ) => {
@@ -207,7 +206,7 @@ export const deletePMTask: AuthedRequestHandler<PMTaskParams, PMTaskDeleteRespon
 };
 
 export const generatePMWorkOrders: AuthedRequestHandler<ParamsDictionary, PMTaskGenerateWOResponse> = async (
-  req: PMTaskRequest,
+  req,
   res,
   next,
 ) => {

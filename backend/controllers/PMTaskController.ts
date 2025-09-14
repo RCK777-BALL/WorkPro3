@@ -2,9 +2,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Types } from 'mongoose';
+import { Error as MongooseError, Types } from 'mongoose';
 import { validationResult } from 'express-validator';
-import PMTask from '../models/PMTask';
+import PMTask, { PMTaskDocument } from '../models/PMTask';
 import WorkOrder from '../models/WorkOrder';
 import Meter from '../models/Meter';
 import { nextCronOccurrenceWithin } from '../services/PMScheduler';
@@ -20,7 +20,8 @@ import type {
   PMTaskGenerateWOResponse,
 } from '../types/pmTask';
 import type { ParamsDictionary } from 'express-serve-static-core';
-import { writeAuditLog } from '../utils/audit';
+import { writeAuditLog, toEntityId } from '../utils/audit';
+
 
 export const getAllPMTasks: AuthedRequestHandler<ParamsDictionary, PMTaskListResponse> = async (
   req: PMTaskRequest,
@@ -34,6 +35,10 @@ export const getAllPMTasks: AuthedRequestHandler<ParamsDictionary, PMTaskListRes
     const tasks = await PMTask.find(filter);
     res.json(tasks);
   } catch (err) {
+    if (err instanceof MongooseError.ValidationError) {
+      res.status(400).json({ message: err.message });
+      return;
+    }
     next(err);
   }
 };
@@ -61,6 +66,10 @@ export const getPMTaskById: AuthedRequestHandler<PMTaskParams, PMTaskResponse> =
 
     res.json(task);
   } catch (err) {
+    if (err instanceof MongooseError.ValidationError) {
+      res.status(400).json({ message: err.message });
+      return;
+    }
     next(err);
   }
 };
@@ -80,18 +89,22 @@ export const createPMTask: AuthedRequestHandler<ParamsDictionary, PMTaskResponse
       return;
     }
     const payload = { ...req.body, tenantId, siteId: req.siteId };
-    const task = await PMTask.create(payload);
+    const task: PMTaskDocument = await PMTask.create(payload);
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     await writeAuditLog({
       tenantId,
       userId,
       action: 'create',
       entityType: 'PMTask',
-      entityId: task._id,
+      entityId: toEntityId(task._id),
       after: task.toObject(),
     });
     res.status(201).json(task);
   } catch (err) {
+    if (err instanceof MongooseError.ValidationError) {
+      res.status(400).json({ message: err.message });
+      return;
+    }
     next(err);
   }
 };
@@ -132,12 +145,17 @@ export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | n
       userId,
       action: 'update',
       entityType: 'PMTask',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(task!._id),
+
       before: existing.toObject(),
       after: task?.toObject(),
     });
     res.json(task);
   } catch (err) {
+    if (err instanceof MongooseError.ValidationError) {
+      res.status(400).json({ message: err.message });
+      return;
+    }
     next(err);
   }
 };
@@ -171,11 +189,16 @@ export const deletePMTask: AuthedRequestHandler<PMTaskParams, PMTaskDeleteRespon
       userId,
       action: 'delete',
       entityType: 'PMTask',
-      entityId: new Types.ObjectId(req.params.id),
+      entityId: toEntityId(task._id),
+
       before: task.toObject(),
     });
     res.json({ message: 'Deleted successfully' });
   } catch (err) {
+    if (err instanceof MongooseError.ValidationError) {
+      res.status(400).json({ message: err.message });
+      return;
+    }
     next(err);
   }
 };
@@ -237,6 +260,10 @@ export const generatePMWorkOrders: AuthedRequestHandler<ParamsDictionary, PMTask
     }
     res.json({ generated: count });
   } catch (err) {
+    if (err instanceof MongooseError.ValidationError) {
+      res.status(400).json({ message: err.message });
+      return;
+    }
     next(err);
   }
 };

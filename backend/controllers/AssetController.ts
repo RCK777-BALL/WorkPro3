@@ -3,7 +3,7 @@
  */
 
 import type { AuthedRequestHandler } from '../types/http';
-import { Types } from 'mongoose';
+import mongoose, { Error as MongooseError, Types } from 'mongoose';
 import Asset from '../models/Asset';
 import Site from '../models/Site';
 import Department from '../models/Department';
@@ -13,6 +13,8 @@ import { validationResult, ValidationError } from 'express-validator';
 import logger from '../utils/logger';
 import { filterFields } from '../utils/filterFields';
 import { writeAuditLog } from '../utils/audit';
+import { toEntityId } from '../utils/ids';
+
 
 const assetCreateFields = [
   'name', 'type', 'location', 'departmentId', 'status', 'serialNumber',
@@ -27,9 +29,15 @@ export const getAllAssets: AuthedRequestHandler = async (req, res, next) => {
     const filter: any = { tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
     const assets = await Asset.find(filter);
-    res.json(assets);
+    sendResponse(res, assets);
     return;
   } catch (err) {
+    if (err instanceof MongooseError.ValidationError) {
+      const verr = err as MongooseError.ValidationError;
+      const errors = Object.values(verr.errors).map((e) => e.message);
+      sendResponse(res, null, errors, 400);
+      return;
+    }
     return next(err);
   }
 };
@@ -38,11 +46,11 @@ export const getAssetById: AuthedRequestHandler = async (req, res, next) => {
   try {
     const id = req.params.id;
     if (!id) {
-      res.status(400).json({ message: 'ID is required' });
+      sendResponse(res, null, 'ID is required', 400);
       return;
     }
-    if (!Types.ObjectId.isValid(id)) {
-      res.status(400).json({ message: 'Invalid ID' });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      sendResponse(res, null, 'Invalid ID', 400);
       return;
     }
     const filter: any = { _id: id, tenantId: req.tenantId };
@@ -50,12 +58,18 @@ export const getAssetById: AuthedRequestHandler = async (req, res, next) => {
 
     const asset = await Asset.findOne(filter);
     if (!asset) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
-    res.json(asset);
+    sendResponse(res, asset);
     return;
   } catch (err) {
+    if (err instanceof MongooseError.ValidationError) {
+      const verr = err as MongooseError.ValidationError;
+      const errors = Object.values(verr.errors).map((e) => e.message);
+      sendResponse(res, null, errors, 400);
+      return;
+    }
     return next(err);
   }
 };
@@ -74,17 +88,19 @@ export const createAsset: AuthedRequestHandler = async (req, res, next) => {
 
   const tenantId = req.tenantId;
   if (!tenantId) {
-    return res.status(400).json({ message: 'Tenant ID required' });
+    sendResponse(res, null, 'Tenant ID required', 400);
+    return;
   }
 
   if (!req.body.name) {
-    return res.status(400).json({ message: 'name is required' });
+    sendResponse(res, null, 'name is required', 400);
+    return;
   }
 
   try {
     const errors = validationResult(req as any);
     if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() as ValidationError[] });
+      sendResponse(res, null, errors.array() as ValidationError[], 400);
       return;
     }
 
@@ -104,12 +120,18 @@ export const createAsset: AuthedRequestHandler = async (req, res, next) => {
       userId,
       action: 'create',
       entityType: 'Asset',
-      entityId: newAsset._id,
+      entityId: toEntityId(newAsset._id),
       after: assetObj,
     });
-    res.status(201).json(response);
+    sendResponse(res, response, null, 201);
     return;
   } catch (err) {
+    if (err instanceof MongooseError.ValidationError) {
+      const verr = err as MongooseError.ValidationError;
+      const errors = Object.values(verr.errors).map((e) => e.message);
+      sendResponse(res, null, errors, 400);
+      return;
+    }
     return next(err);
   }
 };
@@ -128,21 +150,24 @@ export const updateAsset: AuthedRequestHandler = async (req, res, next) => {
 
   const tenantId = req.tenantId;
   if (!tenantId) {
-    return res.status(400).json({ message: 'Tenant ID required' });
+    sendResponse(res, null, 'Tenant ID required', 400);
+    return;
   }
 
   try {
     const id = req.params.id;
     if (!id) {
-      return res.status(400).json({ message: 'ID is required' });
+      sendResponse(res, null, 'ID is required', 400);
+      return;
     }
-    if (!Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'Invalid ID' });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      sendResponse(res, null, 'Invalid ID', 400);
+      return;
     }
     const errors = validationResult(req as any);
 
     if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() as ValidationError[] });
+      sendResponse(res, null, errors.array() as ValidationError[], 400);
       return;
     }
 
@@ -151,7 +176,7 @@ export const updateAsset: AuthedRequestHandler = async (req, res, next) => {
     const update = filterFields(req.body, assetUpdateFields);
     const existing = await Asset.findOne(filter);
     if (!existing) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const asset = await Asset.findOneAndUpdate(filter, update, {
@@ -164,14 +189,20 @@ export const updateAsset: AuthedRequestHandler = async (req, res, next) => {
       userId,
       action: 'update',
       entityType: 'Asset',
-      entityId: new Types.ObjectId(id),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before: existing.toObject(),
       after: asset?.toObject(),
     });
-    res.json(asset);
+    sendResponse(res, asset);
     return;
 
   } catch (err) {
+    if (err instanceof MongooseError.ValidationError) {
+      const verr = err as MongooseError.ValidationError;
+      const errors = Object.values(verr.errors).map((e) => e.message);
+      sendResponse(res, null, errors, 400);
+      return;
+    }
     return next(err);
   }
 };
@@ -181,21 +212,24 @@ export const deleteAsset: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      return res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
     }
     const id = req.params.id;
     if (!id) {
-      return res.status(400).json({ message: 'ID is required' });
+      sendResponse(res, null, 'ID is required', 400);
+      return;
     }
-    if (!Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'Invalid ID' });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      sendResponse(res, null, 'Invalid ID', 400);
+      return;
     }
     const filter: any = { _id: id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
 
     const asset = await Asset.findOneAndDelete(filter);
     if (!asset) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
@@ -204,12 +238,18 @@ export const deleteAsset: AuthedRequestHandler = async (req, res, next) => {
       userId,
       action: 'delete',
       entityType: 'Asset',
-      entityId: new Types.ObjectId(id),
+      entityId: toEntityId(new Types.ObjectId(id)),
       before: asset.toObject(),
     });
-    res.json({ message: 'Deleted successfully' });
+    sendResponse(res, { message: 'Deleted successfully' });
     return;
   } catch (err) {
+    if (err instanceof MongooseError.ValidationError) {
+      const verr = err as MongooseError.ValidationError;
+      const errors = Object.values(verr.errors).map((e) => e.message);
+      sendResponse(res, null, errors, 400);
+      return;
+    }
     return next(err);
   }
 };
@@ -223,9 +263,15 @@ export const searchAssets: AuthedRequestHandler = async (req, res, next) => {
     if (req.siteId) filter.siteId = req.siteId;
 
     const assets = await Asset.find(filter).limit(10);
-    res.json(assets);
+    sendResponse(res, assets);
     return;
   } catch (err) {
+    if (err instanceof MongooseError.ValidationError) {
+      const verr = err as MongooseError.ValidationError;
+      const errors = Object.values(verr.errors).map((e) => e.message);
+      sendResponse(res, null, errors, 400);
+      return;
+    }
     return next(err);
   }
 };
@@ -332,9 +378,15 @@ export const getAssetTree: AuthedRequestHandler = async (req, res, next) => {
       })),
     }));
 
-    res.json(tree);
+    sendResponse(res, tree);
     return;
   } catch (err) {
+    if (err instanceof MongooseError.ValidationError) {
+      const verr = err as MongooseError.ValidationError;
+      const errors = Object.values(verr.errors).map((e) => e.message);
+      sendResponse(res, null, errors, 400);
+      return;
+    }
     next(err);
     return;
   }

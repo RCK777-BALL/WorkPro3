@@ -3,7 +3,7 @@
  */
 
 import TeamMember, { ITeamMember } from '../models/TeamMember';
-import type { AuthedRequestHandler } from '../types/http';
+import type { Request, Response, NextFunction } from 'express';
 import { writeAuditLog } from '../utils/audit';
 
 const roleHierarchy: Record<ITeamMember['role'], ITeamMember['role'][] | null> = {
@@ -44,7 +44,11 @@ async function validateHierarchy(
   }
 }
 
-export const getTeamMembers: AuthedRequestHandler = async (req, res, next) => {
+export const getTeamMembers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
 
   try {
     // Only return basic information for each team member
@@ -66,7 +70,11 @@ export const getTeamMembers: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const createTeamMember: AuthedRequestHandler = async (req, res, next) => {
+export const createTeamMember = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
 
   try {
     const tenantId = req.tenantId;
@@ -104,7 +112,10 @@ export const createTeamMember: AuthedRequestHandler = async (req, res, next) => 
   }
 };
 
-export const updateTeamMember: AuthedRequestHandler = async (req, res) => {
+export const updateTeamMember = async (
+  req: Request,
+  res: Response,
+) => {
 
   try {
     const tenantId = req.tenantId;
@@ -155,7 +166,11 @@ export const updateTeamMember: AuthedRequestHandler = async (req, res) => {
   }
 };
 
-export const deleteTeamMember: AuthedRequestHandler = async (req, res, next) => {
+export const deleteTeamMember = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
 
   try {
     const tenantId = req.tenantId;

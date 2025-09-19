@@ -48,6 +48,8 @@ export const workOrderCreateSchema = z.object({
   importance: z.enum(['low', 'medium', 'high', 'severe']).optional(),
   dueDate: z.coerce.date().optional(),
   completedAt: z.coerce.date().optional(),
+  permits: z.array(z.string()).optional(),
+  requiredPermitTypes: z.array(z.string()).optional(),
 });
 
 export const workOrderUpdateSchema = workOrderCreateSchema.partial();

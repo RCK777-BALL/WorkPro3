@@ -3,6 +3,15 @@ export type { WorkOrder as SharedWorkOrder } from '@shared/workOrder';
 export type { InventoryItem, InventoryUpdatePayload } from '@shared/inventory';
 export type { UploadedFile, UploadResponse } from '@shared/uploads';
 export type { ApiResult } from '@shared/http';
+export type {
+  Permit,
+  PermitHistoryEntry,
+  PermitApprovalStep,
+  PermitIsolationStep,
+  SafetyIncident,
+  SafetyKpiResponse,
+  PermitActivitySummary,
+} from '@shared/permit';
 
 /**
  * Defines the allowed maintenance categories for upcoming maintenance tasks.
@@ -103,6 +112,8 @@ export interface WorkOrder {
   timeSpentMin?: number;
   photos?: string[];
   failureCode?: string;
+  permits?: string[];
+  requiredPermitTypes?: string[];
 
   /** Department associated with the work order */
   department: string;

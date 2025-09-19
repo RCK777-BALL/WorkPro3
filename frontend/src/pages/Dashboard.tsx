@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import KpiCard from '@/components/dashboard/KpiCard';
 import RecentActivity, { AuditLog } from '@/components/dashboard/RecentActivity';
 import http from '@/lib/http';
+import type { SafetyKpiResponse } from '@/types';
 
 interface Summary {
   pmCompliance: number;
@@ -24,6 +25,7 @@ export default function Dashboard() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [logsError, setLogsError] = useState<string | null>(null);
+  const [safetyKpis, setSafetyKpis] = useState<SafetyKpiResponse | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -39,8 +41,18 @@ export default function Dashboard() {
       }
     };
     fetchData();
+    fetchSafetyKpis();
     refreshLogs();
   }, []);
+
+  const fetchSafetyKpis = async () => {
+    try {
+      const res = await http.get<SafetyKpiResponse>('/permits/kpis');
+      setSafetyKpis(res.data);
+    } catch (err) {
+      console.error('Failed to load safety KPIs', err);
+    }
+  };
 
   const refreshLogs = async () => {
     setLoadingLogs(true);
@@ -122,6 +134,31 @@ export default function Dashboard() {
             />
           ))}
         </div>
+        {safetyKpis && (
+          <div className="grid gap-4 sm:grid-cols-3">
+            <KpiCard
+              key="activePermits"
+              title="Active Permits"
+              value={safetyKpis.activeCount}
+              deltaPct={0}
+              series={[]}
+            />
+            <KpiCard
+              key="overdueApprovals"
+              title="Overdue Approvals"
+              value={safetyKpis.overdueApprovals}
+              deltaPct={0}
+              series={[]}
+            />
+            <KpiCard
+              key="incidents30"
+              title="Incidents (30d)"
+              value={safetyKpis.incidentsLast30}
+              deltaPct={0}
+              series={[]}
+            />
+          </div>
+        )}
       </div>
       <div className="w-80">
         <RecentActivity

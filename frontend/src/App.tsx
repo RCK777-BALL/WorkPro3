@@ -12,6 +12,7 @@ import Layout from './components/layout/Layout';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import Reports from './pages/Reports';
 import { useAuth } from '@/context/AuthContext';
+import SafetyPermits from './pages/SafetyPermits';
 import {
   setUnauthorizedCallback,
   TOKEN_KEY,
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/permits" element={<SafetyPermits />} />
           <Route path="/imports" element={<Imports />} />
         </Route>
       </Routes>

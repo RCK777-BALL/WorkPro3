@@ -6,6 +6,7 @@ import Asset from '../models/Asset';
 import SensorReading from '../models/SensorReading';
 import Notification from '../models/Notifications';
 import Prediction from '../models/Prediction';
+import WorkOrder from '../models/WorkOrder';
 import config from '../config/default';
 import ArimaLib from 'arima';
 
@@ -230,10 +231,28 @@ export async function predictForAsset(
   return results;
 }
 
-export async function getPredictions(tenantId: string): Promise<PredictionResult[]> {
+export async function getPredictions(
+  tenantId: string,
+  workOrderType?: string,
+): Promise<PredictionResult[]> {
   const assets = await Asset.find({ tenantId });
   const results: PredictionResult[] = [];
   for (const asset of assets) {
+    if (workOrderType) {
+      const hasMatchingOrder = await WorkOrder.exists({
+        tenantId,
+        type: workOrderType,
+        $or: [
+          { assetId: asset._id },
+          { assetId: asset._id.toString() },
+          { asset: asset._id },
+          { asset: asset._id.toString() },
+        ],
+      });
+      if (!hasMatchingOrder) {
+        continue;
+      }
+    }
     const preds = await predictForAsset(asset._id.toString(), tenantId);
     results.push(...preds);
   }

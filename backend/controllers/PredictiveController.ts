@@ -18,7 +18,8 @@ export const getPredictions = async (
       sendResponse(res, null, 'Missing tenantId', 400);
       return;
     }
-    const results = await predictiveService.getPredictions(tenantId);
+    const typeFilter = typeof req.query.type === 'string' ? req.query.type : undefined;
+    const results = await predictiveService.getPredictions(tenantId, typeFilter);
     sendResponse(res, results);
   } catch (err) {
     next(err);

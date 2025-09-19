@@ -12,6 +12,7 @@ export interface WorkOrderDocument extends Document {
   description?: string;
   priority: 'low' | 'medium' | 'high' | 'critical';
   status: 'requested' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+  type: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
   approvalStatus: 'not-required' | 'pending' | 'approved' | 'rejected';
   approvalRequestedBy?: Types.ObjectId;
   approvedBy?: Types.ObjectId;
@@ -32,6 +33,8 @@ export interface WorkOrderDocument extends Document {
 
   teamMemberName?: string;
   importance?: 'low' | 'medium' | 'high' | 'severe';
+  complianceProcedureId?: string;
+  calibrationIntervalDays?: number;
   tenantId: Types.ObjectId;
 
   dueDate?: Date;
@@ -54,6 +57,12 @@ const workOrderSchema = new Schema<WorkOrderDocument>(
       type: String,
       enum: ['requested', 'assigned', 'in_progress', 'completed', 'cancelled'],
       default: 'requested',
+      index: true,
+    },
+    type: {
+      type: String,
+      enum: ['corrective', 'preventive', 'inspection', 'calibration', 'safety'],
+      default: 'corrective',
       index: true,
     },
     approvalStatus: {
@@ -96,6 +105,8 @@ const workOrderSchema = new Schema<WorkOrderDocument>(
       type: String,
       enum: ['low', 'medium', 'high', 'severe'],
     },
+    complianceProcedureId: String,
+    calibrationIntervalDays: Number,
 
     tenantId: { type: Schema.Types.ObjectId, required: true, index: true },
 

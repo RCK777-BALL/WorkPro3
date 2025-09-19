@@ -94,6 +94,9 @@ describe('Work Order Routes', () => {
         description: 'desc',
         priority: 'medium',
         status: 'requested',
+        type: 'calibration',
+        complianceProcedureId: 'PROC-1',
+        calibrationIntervalDays: 365,
         departmentId: department._id,
         department: department._id,
         line: lineId,
@@ -110,6 +113,9 @@ describe('Work Order Routes', () => {
     expect(createRes.body.pmTask).toBe(String(pmTask._id));
     expect(createRes.body.teamMemberName).toBe('Tester');
     expect(createRes.body.importance).toBe('low');
+    expect(createRes.body.type).toBe('calibration');
+    expect(createRes.body.complianceProcedureId).toBe('PROC-1');
+    expect(createRes.body.calibrationIntervalDays).toBe(365);
 
     const id = createRes.body._id;
 
@@ -129,6 +135,9 @@ describe('Work Order Routes', () => {
     expect(listRes.body[0].pmTask).toBe(String(pmTask._id));
     expect(listRes.body[0].teamMemberName).toBe('Tester');
     expect(listRes.body[0].importance).toBe('low');
+    expect(listRes.body[0].type).toBe('calibration');
+    expect(listRes.body[0].complianceProcedureId).toBe('PROC-1');
+    expect(listRes.body[0].calibrationIntervalDays).toBe(365);
   });
 
   it('fails to create a work order when required fields are missing', async () => {

@@ -32,6 +32,7 @@ export interface WorkOrder {
   description?: string;
   priority: 'low' | 'medium' | 'high' | 'critical';
   status: WorkOrderStatus;
+  type: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
   assignees?: string[];
   checklists?: ChecklistItem[];
   partsUsed?: WorkOrderPartLine[];
@@ -47,6 +48,8 @@ export interface WorkOrder {
   station?: string;
   teamMemberName?: string;
   importance?: 'low' | 'medium' | 'high' | 'severe';
+  complianceProcedureId?: string;
+  calibrationIntervalDays?: number;
   dueDate?: string;
   completedAt?: string;
   createdAt?: string;

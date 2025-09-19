@@ -24,6 +24,9 @@ import WorkOrder from './models/WorkOrder';
 import Notification from './models/Notifications';
 import Tenant from './models/Tenant';
 import AuditLog from './models/AuditLog';
+import Site from './models/Site';
+import SensorReading from './models/SensorReading';
+import ProductionRecord from './models/ProductionRecord';
 
 // Tenant id used for all seeded records
 const tenantId = process.env.SEED_TENANT_ID
@@ -45,14 +48,20 @@ mongoose.connect(mongoUri).then(async () => {
   await User.deleteMany({});
   await Department.deleteMany({});
   await Asset.deleteMany({});
+  await Site.deleteMany({});
   await PMTask.deleteMany({});
   await WorkOrder.deleteMany({});
+  await ProductionRecord.deleteMany({});
+  await SensorReading.deleteMany({});
   await Notification.deleteMany({});
   await Tenant.deleteMany({});
   await AuditLog.deleteMany({});
 
   // Seed Tenant
   await Tenant.create({ _id: tenantId, name: 'Default Tenant' });
+
+  // Seed Site for analytics
+  const mainSite = await Site.create({ name: 'Main Plant', tenantId });
 
   // Seed Users
   const admin = await User.create({
@@ -155,6 +164,7 @@ mongoose.connect(mongoUri).then(async () => {
     status: 'Active',
     description: 'Main conveyor belt for packaging line',
     tenantId,
+    siteId: mainSite._id,
   };
 
   const asset = await Asset.create(assetData);
@@ -173,6 +183,10 @@ mongoose.connect(mongoUri).then(async () => {
     tenantId,
   });
 
+  const analyticsBase = new Date();
+  const day1 = new Date(analyticsBase.getTime() - 2 * 24 * 60 * 60 * 1000);
+  const day2 = new Date(analyticsBase.getTime() - 1 * 24 * 60 * 60 * 1000);
+
   // Seed Work Order
   const workOrder = await WorkOrder.create({
     title: 'Initial Maintenance',
@@ -189,6 +203,79 @@ mongoose.connect(mongoUri).then(async () => {
     dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
     tenantId,
   });
+
+  await WorkOrder.insertMany([
+    {
+      title: 'Line stoppage - Motor',
+      asset: asset._id,
+      tenantId,
+      status: 'completed',
+      createdAt: new Date(day1.getTime() + 6 * 60 * 60 * 1000),
+      completedAt: new Date(day1.getTime() + 7.5 * 60 * 60 * 1000),
+      timeSpentMin: 90,
+      failureCode: 'mechanical',
+    },
+    {
+      title: 'Sensor fault reset',
+      asset: asset._id,
+      tenantId,
+      status: 'completed',
+      createdAt: new Date(day2.getTime() + 11 * 60 * 60 * 1000),
+      completedAt: new Date(day2.getTime() + 12 * 60 * 60 * 1000),
+      timeSpentMin: 60,
+      failureCode: 'electrical',
+    },
+  ]);
+
+  await ProductionRecord.insertMany([
+    {
+      tenantId,
+      asset: asset._id,
+      site: mainSite._id,
+      recordedAt: day1,
+      plannedUnits: 1200,
+      actualUnits: 1100,
+      goodUnits: 1080,
+      idealCycleTimeSec: 28,
+      plannedTimeMinutes: 720,
+      runTimeMinutes: 660,
+      downtimeMinutes: 60,
+      downtimeReason: 'unplanned-stop',
+      energyConsumedKwh: 80,
+    },
+    {
+      tenantId,
+      asset: asset._id,
+      site: mainSite._id,
+      recordedAt: day2,
+      plannedUnits: 1150,
+      actualUnits: 1050,
+      goodUnits: 1025,
+      idealCycleTimeSec: 28,
+      plannedTimeMinutes: 720,
+      runTimeMinutes: 690,
+      downtimeMinutes: 30,
+      downtimeReason: 'changeover',
+      energyConsumedKwh: 78,
+    },
+  ]);
+
+  await SensorReading.insertMany([
+    {
+      tenantId,
+      asset: asset._id,
+      metric: 'energy_kwh',
+      value: 45,
+      timestamp: new Date(day1.getTime() + 12 * 60 * 60 * 1000),
+    },
+    {
+      tenantId,
+      asset: asset._id,
+      metric: 'energy_kwh',
+      value: 47,
+      timestamp: new Date(day2.getTime() + 12 * 60 * 60 * 1000),
+    },
+  ]);
 
   // Seed sample Audit Logs
   await AuditLog.insertMany([

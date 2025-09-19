@@ -40,6 +40,8 @@ export interface WorkOrder {
   timeSpentMin?: number;
   photos?: string[];
   failureCode?: string;
+  permits?: string[];
+  requiredPermitTypes?: string[];
   pmTask?: string;
   department?: string;
   line?: string;

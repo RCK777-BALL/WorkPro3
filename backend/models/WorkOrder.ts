@@ -21,6 +21,8 @@ export interface WorkOrderDocument extends Document {
   checklists: { text: string; done: boolean }[];
   partsUsed: { partId: Types.ObjectId; qty: number; cost: number }[];
   signatures: { by: Types.ObjectId; ts: Date }[];
+  permits: Types.ObjectId[];
+  requiredPermitTypes: string[];
   timeSpentMin?: number;
   photos: string[];
   failureCode?: string;
@@ -90,6 +92,11 @@ const workOrderSchema = new Schema<WorkOrderDocument>(
 
       },
     ],
+    permits: {
+      type: [{ type: Schema.Types.ObjectId, ref: 'Permit' }],
+      default: [],
+    },
+    requiredPermitTypes: { type: [String], default: [] },
     timeSpentMin: Number,
     photos: [String],
     failureCode: String,

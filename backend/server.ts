@@ -48,6 +48,7 @@ import {
   summaryRoutes,
   auditRoutes,
   attachmentRoutes,
+  permitRoutes,
 } from "./routes";
 
 import { startPMScheduler } from "./utils/PMScheduler";
@@ -164,6 +165,7 @@ app.use(/^\/api(?!\/(auth|public))/, generalLimiter);
 
 app.use("/api/departments", departmentRoutes);
 app.use("/api/workorders", workOrdersRoutes);
+app.use("/api/permits", permitRoutes);
 app.use("/api/assets", assetsRoutes);
 app.use("/api/meters", meterRoutes);
 app.use("/api/condition-rules", conditionRuleRoutes);

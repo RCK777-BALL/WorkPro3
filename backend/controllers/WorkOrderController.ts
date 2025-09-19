@@ -7,6 +7,7 @@ import type { Response, NextFunction } from 'express';
 import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 
 import WorkOrder, { WorkOrderDocument } from '../models/WorkOrder';
+import Permit, { type PermitDocument } from '../models/Permit';
 import { emitWorkOrderUpdate } from '../server';
 import notifyUser from '../utils/notify';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
@@ -71,14 +72,12 @@ const workOrderCreateFields = [
   'calibrationIntervalDays',
   'dueDate',
   'completedAt',
+  'permits',
+  'requiredPermitTypes',
 ];
 
 const workOrderUpdateFields = [...workOrderCreateFields];
 
-interface CompleteWorkOrderBody extends WorkOrderComplete {
-  photos?: string[];
-  failureCode?: string;
-}
 
 type UpdateWorkOrderBody = Partial<
   Omit<
@@ -91,8 +90,10 @@ type UpdateWorkOrderBody = Partial<
     | 'department'
     | 'line'
     | 'station'
+    | 'permits'
+    | 'requiredPermitTypes'
   >
-& {
+> & {
   assetId?: Types.ObjectId;
   partsUsed?: { partId: Types.ObjectId; qty: number; cost: number }[];
   checklists?: { text: string; done: boolean }[];
@@ -101,7 +102,84 @@ type UpdateWorkOrderBody = Partial<
   department?: Types.ObjectId;
   line?: Types.ObjectId;
   station?: Types.ObjectId;
+  permits?: Types.ObjectId[];
+  requiredPermitTypes?: string[];
 };
+
+interface CompleteWorkOrderBody extends WorkOrderComplete {
+  photos?: string[];
+  failureCode?: string;
+}
+
+const START_APPROVED_STATUSES = new Set(['approved', 'active']);
+const COMPLETION_ALLOWED_STATUSES = new Set(['active', 'approved', 'closed']);
+
+const toObjectId = (value: Types.ObjectId | string): Types.ObjectId =>
+  value instanceof Types.ObjectId ? value : new Types.ObjectId(value);
+
+async function ensurePermitReadiness(
+  tenantId: string,
+  permitIds: (Types.ObjectId | string)[] | undefined,
+  requiredTypes: string[] | undefined,
+  stage: 'start' | 'complete',
+): Promise<{ ok: boolean; message?: string; permits: PermitDocument[] }> {
+  const ids = permitIds?.filter(Boolean) ?? [];
+  const normalizedIds = ids.map((id) => toObjectId(id));
+  const permits = normalizedIds.length
+    ? await Permit.find({ tenantId, _id: { $in: normalizedIds } })
+    : [];
+
+  if (normalizedIds.length && permits.length !== normalizedIds.length) {
+    return {
+      ok: false,
+      message: 'One or more linked permits could not be found',
+      permits,
+    };
+  }
+
+  const required = requiredTypes ?? [];
+  for (const type of required) {
+    if (!permits.some((permit) => permit.type === type)) {
+      return {
+        ok: false,
+        message: `Permit type ${type} is required before this action`,
+        permits,
+      };
+    }
+  }
+
+  if (stage === 'start') {
+    const notReady = permits.find((permit) => !START_APPROVED_STATUSES.has(permit.status));
+    if (notReady) {
+      return {
+        ok: false,
+        message: `Permit ${notReady.permitNumber} is not approved for activation`,
+        permits,
+      };
+    }
+  } else {
+    const pendingIsolation = permits.find((permit) =>
+      permit.isolationSteps?.some((step) => !step.completed),
+    );
+    if (pendingIsolation) {
+      return {
+        ok: false,
+        message: `Isolation steps remain open on permit ${pendingIsolation.permitNumber}`,
+        permits,
+      };
+    }
+    const blocked = permits.find((permit) => !COMPLETION_ALLOWED_STATUSES.has(permit.status));
+    if (blocked) {
+      return {
+        ok: false,
+        message: `Permit ${blocked.permitNumber} must be active before completion`,
+        permits,
+      };
+    }
+  }
+
+  return { ok: true, permits };
+}
 
 
 function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
@@ -308,7 +386,18 @@ export const createWorkOrder: AuthedRequestHandler<
       return;
     }
 
-    const { assignees, checklists, partsUsed, signatures, ...rest } = parsed.data;
+    const {
+      assignees,
+      checklists,
+      partsUsed,
+      signatures,
+      permits,
+      requiredPermitTypes,
+      ...rest
+    } = parsed.data;
+    const normalizedRequiredPermitTypes = requiredPermitTypes
+      ? Array.from(new Set(requiredPermitTypes))
+      : [];
     const validParts = validateItems<RawPart>(
       res,
       partsUsed,
@@ -337,16 +426,54 @@ export const createWorkOrder: AuthedRequestHandler<
       'signature'
     );
     if (signatures && !validSignatures) return;
+    const validPermits = validateItems<string>(
+      res,
+      permits,
+      id => Types.ObjectId.isValid(id),
+      'permit'
+    );
+    if (permits && !validPermits) return;
+    let permitDocs: PermitDocument[] = [];
+    if (validPermits && validPermits.length) {
+      permitDocs = await Permit.find({
+        _id: { $in: validPermits.map((id) => new Types.ObjectId(id)) },
+        tenantId,
+      });
+      if (permitDocs.length !== validPermits.length) {
+        sendResponse(res, null, 'One or more permits were not found', 404);
+        return;
+      }
+    }
     const newItem = new WorkOrder({
       ...rest,
       ...(validAssignees && { assignees: mapAssignees(validAssignees) }),
       ...(validChecklists && { checklists: mapChecklists(validChecklists as RawChecklist[]) }),
       ...(validParts && { partsUsed: mapPartsUsed(validParts as RawPart[]) }),
       ...(validSignatures && { signatures: mapSignatures(validSignatures as RawSignature[]) }),
+      ...(validPermits && { permits: validPermits.map((id) => new Types.ObjectId(id)) }),
+      requiredPermitTypes: normalizedRequiredPermitTypes,
       tenantId,
     });
     const saved = await newItem.save();
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const userIdStr = (req.user as any)?._id || (req.user as any)?.id;
+    const userObjectId = userIdStr ? new Types.ObjectId(userIdStr) : undefined;
+    if (permitDocs.length) {
+      await Promise.all(
+        permitDocs.map(async (doc) => {
+          if (!doc.workOrder || !doc.workOrder.equals(saved._id)) {
+            doc.workOrder = saved._id;
+          }
+          doc.history.push({
+            action: 'linked-work-order',
+            by: userObjectId,
+            at: new Date(),
+            notes: `Linked to work order ${saved.title}`,
+          });
+          await doc.save();
+        }),
+      );
+    }
+    const userId = userObjectId;
     await writeAuditLog({
       tenantId,
       userId,
@@ -405,7 +532,10 @@ export const updateWorkOrder: AuthedRequestHandler = async (
       sendResponse(res, null, parsed.error.flatten(), 400);
       return;
     }
+    const incomingPermits = parsed.data?.permits;
+    const incomingRequiredPermitTypes = parsed.data?.requiredPermitTypes;
     const update: UpdateWorkOrderBody = parsed.data as UpdateWorkOrderBody;
+    let permitDocs: PermitDocument[] | undefined;
     if (update.partsUsed) {
       const validParts = validateItems<RawPart>(
         res,
@@ -446,6 +576,27 @@ export const updateWorkOrder: AuthedRequestHandler = async (
       if (!validSignatures) return;
       update.signatures = mapSignatures(validSignatures as RawSignature[]);
     }
+    if (incomingPermits) {
+      const validPermits = validateItems<string>(
+        res,
+        incomingPermits,
+        id => Types.ObjectId.isValid(id),
+        'permit'
+      );
+      if (!validPermits) return;
+      permitDocs = await Permit.find({
+        _id: { $in: validPermits.map((id) => new Types.ObjectId(id)) },
+        tenantId,
+      });
+      if (permitDocs.length !== validPermits.length) {
+        sendResponse(res, null, 'One or more permits were not found', 404);
+        return;
+      }
+      update.permits = permitDocs.map((doc) => doc._id);
+    }
+    if (incomingRequiredPermitTypes) {
+      update.requiredPermitTypes = Array.from(new Set(incomingRequiredPermitTypes));
+    }
     const existing = await WorkOrder.findOne({ _id: req.params.id, tenantId }) as WorkOrderDocument | null;
     if (!existing) {
       sendResponse(res, null, 'Not found', 404);
@@ -460,10 +611,31 @@ export const updateWorkOrder: AuthedRequestHandler = async (
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const userIdStr = (req.user as any)?._id || (req.user as any)?.id;
+    const userObjectId = userIdStr ? new Types.ObjectId(userIdStr) : undefined;
+    if (permitDocs) {
+      const newIds = new Set(permitDocs.map((doc) => doc._id.toString()));
+      const previousIds = (existing.permits ?? []).map((id) => id.toString());
+      const removedIds = previousIds.filter((id) => !newIds.has(id));
+      if (removedIds.length) {
+        await Permit.updateMany({ _id: { $in: removedIds.map(toObjectId) } }, { $unset: { workOrder: '' } });
+      }
+      await Promise.all(
+        permitDocs.map(async (doc) => {
+          doc.workOrder = updated._id;
+          doc.history.push({
+            action: 'linked-work-order',
+            by: userObjectId,
+            at: new Date(),
+            notes: `Linked to work order ${updated.title}`,
+          });
+          await doc.save();
+        }),
+      );
+    }
     await writeAuditLog({
       tenantId,
-      userId,
+      userId: userObjectId,
       action: 'update',
       entityType: 'WorkOrder',
       entityId: toEntityId(new Types.ObjectId(req.params.id)),
@@ -592,6 +764,16 @@ export const approveWorkOrder: AuthedRequestHandler = async (
       sendResponse(res, null, 'Not found', 404);
       return;
     }
+    const readiness = await ensurePermitReadiness(
+      tenantId,
+      workOrder.permits,
+      workOrder.requiredPermitTypes,
+      'start'
+    );
+    if (!readiness.ok) {
+      sendResponse(res, null, readiness.message ?? 'Permits are not approved for work start', 409);
+      return;
+    }
 
     const before = workOrder.toObject();
     workOrder.approvalStatus = status;
@@ -645,6 +827,26 @@ export const assignWorkOrder: AuthedRequestHandler = async (
     const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!workOrder) {
       sendResponse(res, null, 'Not found', 404);
+      return;
+    }
+    const readiness = await ensurePermitReadiness(
+      tenantId,
+      workOrder.permits,
+      workOrder.requiredPermitTypes,
+      'complete'
+    );
+    if (!readiness.ok) {
+      sendResponse(res, null, readiness.message ?? 'Permits not satisfied for completion', 409);
+      return;
+    }
+    const readiness = await ensurePermitReadiness(
+      tenantId,
+      workOrder.permits,
+      workOrder.requiredPermitTypes,
+      'start'
+    );
+    if (!readiness.ok) {
+      sendResponse(res, null, readiness.message ?? 'Permits are not approved for work start', 409);
       return;
     }
     const parsed = assignWorkOrderSchema.safeParse(req.body);
@@ -701,14 +903,40 @@ export const startWorkOrder: AuthedRequestHandler = async (
       sendResponse(res, null, 'Not found', 404);
       return;
     }
+    const readiness = await ensurePermitReadiness(
+      tenantId,
+      workOrder.permits,
+      workOrder.requiredPermitTypes,
+      'start'
+    );
+    if (!readiness.ok) {
+      sendResponse(res, null, readiness.message ?? 'Permits are not approved for work start', 409);
+      return;
+    }
     const before = workOrder.toObject();
     workOrder.status = 'in_progress';
     const saved = await workOrder.save();
     const userIdStr = (req.user as any)?._id || (req.user as any)?.id;
-    const userId = userIdStr ? new Types.ObjectId(userIdStr) : undefined;
+    const userObjectId = userIdStr ? new Types.ObjectId(userIdStr) : undefined;
+    if (readiness.permits.length) {
+      await Promise.all(
+        readiness.permits.map(async (permit) => {
+          if (permit.status === 'approved') {
+            permit.status = 'active';
+          }
+          permit.history.push({
+            action: 'work-order-started',
+            by: userObjectId,
+            at: new Date(),
+            notes: `Work order ${workOrder.title} started`,
+          });
+          await permit.save();
+        }),
+      );
+    }
     await writeAuditLog({
       tenantId,
-      userId,
+      userId: userObjectId,
       action: 'start',
       entityType: 'WorkOrder',
       entityId: toEntityId(new Types.ObjectId(req.params.id)),
@@ -745,6 +973,16 @@ export const completeWorkOrder: AuthedRequestHandler = async (
       sendResponse(res, null, 'Not found', 404);
       return;
     }
+    const readiness = await ensurePermitReadiness(
+      tenantId,
+      workOrder.permits,
+      workOrder.requiredPermitTypes,
+      'start'
+    );
+    if (!readiness.ok) {
+      sendResponse(res, null, readiness.message ?? 'Permits are not approved for work start', 409);
+      return;
+    }
     const body = req.body as CompleteWorkOrderBody;
     const before = workOrder.toObject();
     workOrder.status = 'completed';
@@ -769,10 +1007,27 @@ export const completeWorkOrder: AuthedRequestHandler = async (
     if (body.failureCode !== undefined) workOrder.failureCode = body.failureCode;
 
     const saved = await workOrder.save();
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const userIdStr = (req.user as any)?._id || (req.user as any)?.id;
+    const userObjectId = userIdStr ? new Types.ObjectId(userIdStr) : undefined;
+    if (readiness.permits.length) {
+      await Promise.all(
+        readiness.permits.map(async (permit) => {
+          if (!permit.status || permit.status !== 'closed') {
+            permit.status = 'closed';
+          }
+          permit.history.push({
+            action: 'work-order-completed',
+            by: userObjectId,
+            at: new Date(),
+            notes: `Work order ${workOrder.title} completed`,
+          });
+          await permit.save();
+        }),
+      );
+    }
     await writeAuditLog({
       tenantId,
-      userId,
+      userId: userObjectId,
       action: 'complete',
       entityType: 'WorkOrder',
       entityId: toEntityId(new Types.ObjectId(req.params.id)),
@@ -807,6 +1062,16 @@ export const cancelWorkOrder: AuthedRequestHandler = async (
     const workOrder = await WorkOrder.findOne({ _id: req.params.id, tenantId });
     if (!workOrder) {
       sendResponse(res, null, 'Not found', 404);
+      return;
+    }
+    const readiness = await ensurePermitReadiness(
+      tenantId,
+      workOrder.permits,
+      workOrder.requiredPermitTypes,
+      'start'
+    );
+    if (!readiness.ok) {
+      sendResponse(res, null, readiness.message ?? 'Permits are not approved for work start', 409);
       return;
     }
     const before = workOrder.toObject();

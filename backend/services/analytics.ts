@@ -37,8 +37,17 @@ function calculateBacklog(workOrders: { status: string }[]): number {
   return workOrders.filter((w) => w.status !== 'completed').length;
 }
 
-export async function getKPIs(tenantId: string): Promise<KPIResult> {
-  const workOrders = await WorkOrder.find({ tenantId }).select('createdAt completedAt status').lean();
+export async function getKPIs(
+  tenantId: string,
+  workOrderType?: string,
+): Promise<KPIResult> {
+  const baseFilter = {
+    tenantId,
+    ...(workOrderType ? { type: workOrderType } : {}),
+  };
+  const workOrders = await WorkOrder.find(baseFilter)
+    .select('createdAt completedAt status type')
+    .lean();
   return {
     mttr: calculateMTTR(workOrders),
     mtbf: calculateMTBF(workOrders),

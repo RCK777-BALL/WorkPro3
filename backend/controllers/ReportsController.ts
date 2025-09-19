@@ -17,28 +17,40 @@ import { LABOR_RATE } from '../config/env';
 import { sendResponse } from '../utils/sendResponse';
  
 
-async function calculateStats(tenantId: string, role?: string) {
+async function calculateStats(tenantId: string, role?: string, workOrderType?: string) {
   const roleFilter = role || 'tech';
 
+  const baseFilter = {
+    tenantId,
+    ...(workOrderType ? { type: workOrderType } : {}),
+  };
+
   // Work order completion
-  const totalWorkOrders = await WorkOrder.countDocuments({ tenantId });
-  const completedOrders = await WorkOrder.countDocuments({ status: 'completed', tenantId });
+  const totalWorkOrders = await WorkOrder.countDocuments(baseFilter);
+  const completedOrders = await WorkOrder.countDocuments({
+    ...baseFilter,
+    status: 'completed',
+  });
   const workOrderCompletionRate = totalWorkOrders
     ? (completedOrders / totalWorkOrders) * 100
     : 0;
 
   // Preventive maintenance completion
-  const pmTotal = await WorkOrder.countDocuments({ type: 'preventive', tenantId });
-  const pmCompleted = await WorkOrder.countDocuments({
-    type: 'preventive',
-    status: 'completed',
+  const complianceType = workOrderType ?? 'preventive';
+  const pmBase = {
     tenantId,
+    type: complianceType,
+  };
+  const pmTotal = await WorkOrder.countDocuments(pmBase);
+  const pmCompleted = await WorkOrder.countDocuments({
+    ...pmBase,
+    status: 'completed',
   });
   const maintenanceCompliance = pmTotal ? (pmCompleted / pmTotal) * 100 : 0;
 
   // Average response time for completed orders (hours)
   const completed = await WorkOrder.find(
-    { completedAt: { $exists: true }, tenantId },
+    { completedAt: { $exists: true }, ...baseFilter },
     {
       createdAt: 1,
       completedAt: 1,
@@ -109,12 +121,13 @@ async function calculateStats(tenantId: string, role?: string) {
   };
 }
 
-export const getAnalyticsReport: AuthedRequestHandler = async (req: { query: { role: any; }; tenantId: any; }, res: { json: (arg0: { workOrderCompletionRate: number; averageResponseTime: number; maintenanceCompliance: number; assetUptime: number; costPerWorkOrder: number; laborUtilization: number; assetDowntime: number; topAssets: any[]; }) => void; }, next: (arg0: unknown) => any) => {
- 
+export const getAnalyticsReport: AuthedRequestHandler = async (req: { query: { role: any; type?: any }; tenantId: any; }, res: { json: (arg0: { workOrderCompletionRate: number; averageResponseTime: number; maintenanceCompliance: number; assetUptime: number; costPerWorkOrder: number; laborUtilization: number; assetDowntime: number; topAssets: any[]; }) => void; }, next: (arg0: unknown) => any) => {
+
   try {
     const role = typeof req.query.role === 'string' ? req.query.role : undefined;
     const tenantId = req.tenantId!;
-    const stats = await calculateStats(tenantId, role);
+    const typeFilter = typeof req.query.type === 'string' ? req.query.type : undefined;
+    const stats = await calculateStats(tenantId, role, typeFilter);
     sendResponse(res, stats);
     return;
   } catch (err) {
@@ -123,12 +136,13 @@ export const getAnalyticsReport: AuthedRequestHandler = async (req: { query: { r
 };
 
 export const downloadReport: AuthedRequestHandler = async (req, res, next) => {
- 
+
   try {
     const format = String(req.query.format || 'pdf').toLowerCase();
     const role = typeof req.query.role === 'string' ? req.query.role : undefined;
     const tenantId = req.tenantId!;
-    const stats = await calculateStats(tenantId, role);
+    const typeFilter = typeof req.query.type === 'string' ? req.query.type : undefined;
+    const stats = await calculateStats(tenantId, role, typeFilter);
 
     if (format === 'csv') {
       const transform = new Json2csvTransform();

@@ -14,6 +14,7 @@ import User from '../models/User';
 import Asset from '../models/Asset';
 import SensorReading from '../models/SensorReading';
 import Notification from '../models/Notifications';
+import WorkOrder from '../models/WorkOrder';
 
 const app = express();
 app.use(express.json());
@@ -79,6 +80,15 @@ describe('Predictive Routes', () => {
       { asset: asset2._id, metric: 'temp', value: 95, tenantId: otherTenant },
     ]);
 
+    await WorkOrder.create({
+      title: 'Calibration required',
+      priority: 'medium',
+      status: 'requested',
+      type: 'calibration',
+      tenantId: user.tenantId,
+      assetId: asset1._id,
+    });
+
     const res = await request(app)
       .get('/api/predictive')
       .set('Authorization', `Bearer ${token}`)
@@ -91,6 +101,19 @@ describe('Predictive Routes', () => {
     const notes = await Notification.find();
     expect(notes.length).toBe(1);
     expect(notes[0].tenantId.toString()).toBe(user.tenantId.toString());
+
+    const calibrationFiltered = await request(app)
+      .get('/api/predictive?type=calibration')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect(Array.isArray(calibrationFiltered.body)).toBe(true);
+    expect(calibrationFiltered.body.length).toBe(1);
+
+    const safetyFiltered = await request(app)
+      .get('/api/predictive?type=safety')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect(safetyFiltered.body.length).toBe(0);
   });
 });
 

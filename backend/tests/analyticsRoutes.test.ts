@@ -40,14 +40,14 @@ describe('Analytics routes', () => {
   it('returns KPI data as JSON', async () => {
     const res = await request(app).get('/api/v1/analytics/kpis').expect(200);
     expect(res.body).toEqual({ mttr: 1, mtbf: 5, backlog: 2 });
-    expect(getKPIs).toHaveBeenCalledWith('tenant123');
+    expect(getKPIs).toHaveBeenCalledWith('tenant123', undefined);
   });
 
   it('exports KPI data as CSV, XLSX and PDF', async () => {
     const csvRes = await request(app).get('/api/v1/analytics/kpis.csv').expect(200);
     expect(csvRes.headers['content-type']).toContain('text/csv');
     expect(csvRes.text).toContain('mttr');
-    expect(getKPIs).toHaveBeenCalledWith('tenant123');
+    expect(getKPIs).toHaveBeenCalledWith('tenant123', undefined);
 
     getKPIs.mockClear();
     const xlsxRes = await request(app)
@@ -57,7 +57,7 @@ describe('Analytics routes', () => {
       .expect(200);
     expect(xlsxRes.headers['content-type']).toContain('spreadsheet');
     expect(xlsxRes.body.length).toBeGreaterThan(0);
-    expect(getKPIs).toHaveBeenCalledWith('tenant123');
+    expect(getKPIs).toHaveBeenCalledWith('tenant123', undefined);
 
     getKPIs.mockClear();
     const pdfRes = await request(app)
@@ -67,7 +67,14 @@ describe('Analytics routes', () => {
       .expect(200);
     expect(pdfRes.headers['content-type']).toBe('application/pdf');
     expect(pdfRes.body.slice(0, 4).toString()).toBe('%PDF');
-    expect(getKPIs).toHaveBeenCalledWith('tenant123');
+    expect(getKPIs).toHaveBeenCalledWith('tenant123', undefined);
+  });
+
+  it('passes type filters through to analytics service', async () => {
+    await request(app)
+      .get('/api/v1/analytics/kpis?type=calibration')
+      .expect(200);
+    expect(getKPIs).toHaveBeenLastCalledWith('tenant123', 'calibration');
   });
 });
 

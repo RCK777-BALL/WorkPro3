@@ -10,9 +10,10 @@ import { escapeXml } from '../utils/escapeXml';
 import { sendResponse } from '../utils/sendResponse';
 
  export const kpiJson = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
- 
+
   try {
-    const data = await getKPIs(req.tenantId!);
+    const typeFilter = typeof req.query.type === 'string' ? req.query.type : undefined;
+    const data = await getKPIs(req.tenantId!, typeFilter);
     sendResponse(res, data);
   } catch (err) {
     next(err);
@@ -20,9 +21,10 @@ import { sendResponse } from '../utils/sendResponse';
 };
 
  export const kpiCsv = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
- 
+
   try {
-    const data = await getKPIs(req.tenantId!);
+    const typeFilter = typeof req.query.type === 'string' ? req.query.type : undefined;
+    const data = await getKPIs(req.tenantId!, typeFilter);
     const parser = new Json2csvParser();
     const csv = parser.parse([data]);
     res.header('Content-Type', 'text/csv');
@@ -34,9 +36,10 @@ import { sendResponse } from '../utils/sendResponse';
 };
 
  export const kpiXlsx = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
- 
+
   try {
-    const data = await getKPIs(req.tenantId!);
+    const typeFilter = typeof req.query.type === 'string' ? req.query.type : undefined;
+    const data = await getKPIs(req.tenantId!, typeFilter);
     const rows = Object.entries(data)
       .map(
         ([k, v]) =>
@@ -53,9 +56,10 @@ import { sendResponse } from '../utils/sendResponse';
 };
 
  export const kpiPdf = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
- 
+
   try {
-    const data = await getKPIs(req.tenantId!);
+    const typeFilter = typeof req.query.type === 'string' ? req.query.type : undefined;
+    const data = await getKPIs(req.tenantId!, typeFilter);
     const doc = new PDFDocument();
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename=kpis.pdf');

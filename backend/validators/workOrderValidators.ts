@@ -23,6 +23,9 @@ export const workOrderValidators = [
     .withMessage('status is required')
     .bail()
     .isIn(['requested', 'assigned', 'in_progress', 'completed', 'cancelled']),
+  body('type')
+    .optional()
+    .isIn(['corrective', 'preventive', 'inspection', 'calibration', 'safety']),
   body('assignees').optional().isArray(),
   body('assignees.*').isMongoId(),
   body('checklists').optional().isArray(),
@@ -41,6 +44,8 @@ export const workOrderValidators = [
     .isString()
     .custom((val) => /^https?:\/\//.test(val) || val.startsWith('/static/')),
   body('failureCode').optional().isString(),
+  body('complianceProcedureId').optional().isString(),
+  body('calibrationIntervalDays').optional().isInt({ min: 1 }).toInt(),
   body('scheduledDate').optional().isISO8601().toDate(),
   body('asset').optional().isMongoId(),
   body('dueDate').optional().isISO8601().toDate(),

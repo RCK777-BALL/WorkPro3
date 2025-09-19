@@ -67,12 +67,14 @@ describe('Analytics routes', () => {
       availability: 0.9,
     });
     expect(getKPIs).toHaveBeenCalledWith('tenant123', {});
+
   });
 
   it('exports KPI data as CSV, XLSX and PDF', async () => {
     const csvRes = await request(app).get('/api/v1/analytics/kpis.csv').expect(200);
     expect(csvRes.headers['content-type']).toContain('text/csv');
     expect(csvRes.text).toContain('mttr');
+
 
     const xlsxRes = await request(app)
       .get('/api/v1/analytics/kpis.xlsx')
@@ -82,6 +84,7 @@ describe('Analytics routes', () => {
     expect(xlsxRes.headers['content-type']).toContain('spreadsheet');
     expect(xlsxRes.body.length).toBeGreaterThan(0);
 
+
     const pdfRes = await request(app)
       .get('/api/v1/analytics/kpis.pdf')
       .buffer()
@@ -89,6 +92,7 @@ describe('Analytics routes', () => {
       .expect(200);
     expect(pdfRes.headers['content-type']).toBe('application/pdf');
     expect(pdfRes.body.slice(0, 4).toString()).toBe('%PDF');
+
   });
 
   it('returns trend datasets with exports', async () => {

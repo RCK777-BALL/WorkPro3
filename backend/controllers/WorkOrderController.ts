@@ -48,6 +48,7 @@ const workOrderCreateFields = [
   'description',
   'priority',
   'status',
+  'type',
   'approvalStatus',
   'approvalRequestedBy',
   'approvedBy',
@@ -61,30 +62,18 @@ const workOrderCreateFields = [
   'failureCode',
   'pmTask',
   'department',
-  
+
   'line',
   'station',
   'teamMemberName',
   'importance',
+  'complianceProcedureId',
+  'calibrationIntervalDays',
   'dueDate',
   'completedAt',
 ];
 
 const workOrderUpdateFields = [...workOrderCreateFields];
-
-type UpdateWorkOrderBody = Partial<
-  Omit<
-    WorkOrderInput,
-    'assetId' | 'pmTask' | 'department' | 'line' | 'station' | 'partsUsed'
-  >
-> & {
-  assetId?: Types.ObjectId;
-  pmTask?: Types.ObjectId;
-  department?: Types.ObjectId;
-  line?: Types.ObjectId;
-  station?: Types.ObjectId;
-  partsUsed?: { partId: Types.ObjectId; qty: number; cost?: number }[];
-};
 
 interface CompleteWorkOrderBody extends WorkOrderComplete {
   photos?: string[];
@@ -148,7 +137,11 @@ export const getAllWorkOrders: AuthedRequestHandler = async (
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const items = await WorkOrder.find({ tenantId });
+    const typeFilter = typeof req.query.type === 'string' ? req.query.type : undefined;
+    const items = await WorkOrder.find({
+      tenantId,
+      ...(typeFilter ? { type: typeFilter } : {}),
+    });
     sendResponse(res, items);
     return;
   } catch (err) {
@@ -199,6 +192,7 @@ export const searchWorkOrders: AuthedRequestHandler = async (
       return;
     }
     const { status, priority } = req.query;
+    const typeFilter = typeof req.query.type === 'string' ? req.query.type : undefined;
     const start = req.query.startDate ? new Date(String(req.query.startDate)) : undefined;
     const end = req.query.endDate ? new Date(String(req.query.endDate)) : undefined;
     if (start && isNaN(start.getTime())) {
@@ -212,6 +206,7 @@ export const searchWorkOrders: AuthedRequestHandler = async (
     const query: any = { tenantId };
     if (status) query.status = status;
     if (priority) query.priority = priority;
+    if (typeFilter) query.type = typeFilter;
     if (start || end) {
       query.createdAt = {};
       if (start) query.createdAt.$gte = start;

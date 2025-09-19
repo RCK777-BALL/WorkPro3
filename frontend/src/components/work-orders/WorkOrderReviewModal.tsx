@@ -31,7 +31,7 @@ const WorkOrderReviewModal: React.FC<Props> = ({
   onUpdateStatus,
 }) => {
   const isAdmin = useAuthStore(selectIsAdmin);
-  const isManager = useAuthStore(selectIsManager);
+  const isSupervisor = useAuthStore(selectIsSupervisor);
   const [status, setStatus] = useState<WorkOrder['status']>('requested');
 
 
@@ -72,6 +72,25 @@ const WorkOrderReviewModal: React.FC<Props> = ({
           <div>
             <span className="font-medium">Priority:</span> {workOrder.priority}
           </div>
+          <div>
+            <span className="font-medium">Type:</span> {workOrder.type}
+          </div>
+          {(workOrder.complianceProcedureId || workOrder.calibrationIntervalDays) && (
+            <div className="space-y-1">
+              {workOrder.complianceProcedureId && (
+                <div>
+                  <span className="font-medium">Procedure ID:</span>{' '}
+                  {workOrder.complianceProcedureId}
+                </div>
+              )}
+              {workOrder.calibrationIntervalDays && (
+                <div>
+                  <span className="font-medium">Calibration Interval:</span>{' '}
+                  {workOrder.calibrationIntervalDays} days
+                </div>
+              )}
+            </div>
+          )}
           <div>
             <span className="font-medium">Description:</span>{' '}
             {workOrder.description || 'N/A'}

@@ -9,6 +9,9 @@ export interface WorkOrderUpdatePayload {
   tenantId: string;
   title: string;
   status: 'requested' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+  type?: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
+  complianceProcedureId?: string;
+  calibrationIntervalDays?: number;
   assignees?: string[];
   deleted?: boolean;
 }

@@ -93,6 +93,12 @@ export interface WorkOrder {
   /** Type of work such as corrective or preventive */
   type: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
 
+  /** Optional compliance procedure identifier */
+  complianceProcedureId?: string;
+
+  /** Optional calibration interval in days */
+  calibrationIntervalDays?: number;
+
   /** User assigned to complete the work */
   assignedTo?: string;
   assignedToAvatar?: string;
@@ -338,8 +344,12 @@ export interface NotificationType {
 
 export interface WorkOrderUpdatePayload {
   _id: string;
+  tenantId?: string;
   title?: string;
   status?: 'requested' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+  type?: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
+  complianceProcedureId?: string;
+  calibrationIntervalDays?: number;
   assignees?: string[];
   deleted?: boolean;
 }

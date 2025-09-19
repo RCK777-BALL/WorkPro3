@@ -384,6 +384,7 @@ function computeEnergyStats(
   }
   const averagePerHour = hours ? totalKwh / hours : totalKwh;
 
+
   return {
     totalKwh,
     averagePerHour,

@@ -42,6 +42,8 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
     priority: workOrder?.priority || 'medium',
     status: workOrder?.status || 'requested',
     type: workOrder?.type || 'corrective',
+    complianceProcedureId: workOrder?.complianceProcedureId || '',
+    calibrationIntervalDays: workOrder?.calibrationIntervalDays,
     dueDate: workOrder?.dueDate || new Date().toISOString().split('T')[0],
   });
   const [checklists, setChecklists] = useState<{ text: string; done: boolean }[]>(workOrder?.checklists || []);
@@ -99,6 +101,19 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
     });
   }, [departmentId, lineId, fetchStations]);
 
+  useEffect(() => {
+    setFormData((prev) => {
+      const updates: Partial<WorkOrder> = {};
+      if (prev.type !== 'calibration' && prev.calibrationIntervalDays !== undefined) {
+        updates.calibrationIntervalDays = undefined;
+      }
+      if (!['calibration', 'safety'].includes(prev.type ?? '') && prev.complianceProcedureId) {
+        updates.complianceProcedureId = '';
+      }
+      return Object.keys(updates).length > 0 ? { ...prev, ...updates } : prev;
+    });
+  }, [formData.type]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = {
@@ -109,6 +124,8 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
       priority: formData.priority,
       status: formData.status,
       type: formData.type,
+      complianceProcedureId: formData.complianceProcedureId || undefined,
+      calibrationIntervalDays: formData.calibrationIntervalDays,
       dueDate: formData.dueDate,
       departmentId,
       lineId,
@@ -275,6 +292,39 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
           />
         </div>
       </div>
+      {(formData.type === 'calibration' || formData.type === 'safety') && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Compliance Procedure ID</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+              value={formData.complianceProcedureId || ''}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                updateField('complianceProcedureId', e.target.value)
+              }
+            />
+          </div>
+          {formData.type === 'calibration' && (
+            <div>
+              <label className="block text-sm font-medium mb-1">Calibration Interval (days)</label>
+              <input
+                type="number"
+                min={1}
+                className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+                value={formData.calibrationIntervalDays?.toString() || ''}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const value = e.target.value;
+                  updateField(
+                    'calibrationIntervalDays',
+                    value ? Number(value) : undefined,
+                  );
+                }}
+              />
+            </div>
+          )}
+        </div>
+      )}
       <div>
         <label className="block text-sm font-medium mb-1">Checklists</label>
         {checklists.map((c, idx) => (

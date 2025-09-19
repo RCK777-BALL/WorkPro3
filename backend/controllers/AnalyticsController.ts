@@ -83,6 +83,7 @@ export const kpiJson = async (req: Request, res: Response, next: NextFunction): 
   try {
     const filters = parseFilters(req);
     const data = await getKPIs(req.tenantId!, filters);
+
     sendResponse(res, data);
   } catch (err) {
     next(err);
@@ -93,6 +94,7 @@ export const kpiCsv = async (req: Request, res: Response, next: NextFunction): P
   try {
     const filters = parseFilters(req);
     const data = await getKPIs(req.tenantId!, filters);
+
     const parser = new Json2csvParser();
     const csv = parser.parse([flattenKpiForExport(data)]);
     res.header('Content-Type', 'text/csv');
@@ -109,6 +111,7 @@ export const kpiXlsx = async (req: Request, res: Response, next: NextFunction): 
     const data = await getKPIs(req.tenantId!, filters);
     const flat = flattenKpiForExport(data);
     const rows = Object.entries(flat)
+
       .map(
         ([k, v]) =>
           `<Row><Cell><Data ss:Type="String">${escapeXml(k)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(String(v))}</Data></Cell></Row>`,

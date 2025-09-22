@@ -54,7 +54,8 @@ describe('OAuth and MFA flows', () => {
     const loginRes = await request(app)
       .post('/api/auth/login')
       .send({ email: 'mfa@example.com', password: 'pass123' });
-    expect(loginRes.body.mfaRequired).toBe(true);
+    expect(loginRes.body.data.mfaRequired).toBe(true);
+    expect(loginRes.body.data.userId).toBe(user._id.toString());
 
     const verifyRes = await request(app)
       .post('/api/auth/mfa/verify')

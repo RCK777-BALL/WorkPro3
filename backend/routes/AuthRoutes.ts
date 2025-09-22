@@ -84,12 +84,16 @@ router.post('/login', loginLimiter, async (
       return;
     }
 
+    const tenantId = (user as any).tenantId ? (user as any).tenantId.toString() : undefined;
+
     if ((user as any).mfaEnabled) {
-      sendResponse(res, { mfaRequired: true });
+      sendResponse(res, {
+        mfaRequired: true,
+        userId: user._id.toString(),
+      });
+
       return;
     }
-
-    const tenantId = (user as any).tenantId ? (user as any).tenantId.toString() : undefined;
 
     let secret: string;
     try {

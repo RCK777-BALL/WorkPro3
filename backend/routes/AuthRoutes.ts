@@ -56,7 +56,7 @@ router.post('/login', loginLimiter, async (
 ): Promise<void> => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ message: 'Invalid request' });
+    sendResponse(res, null, { message: 'Invalid request' }, 400);
     return;
   }
   const { email, password } = parsed.data;
@@ -66,7 +66,7 @@ router.post('/login', loginLimiter, async (
     const user = await User.findOne({ email }).select('+password +mfaEnabled +tenantId +tokenVersion +email +name');
     if (!user) {
       await bcrypt.compare(password, FAKE_PASSWORD_HASH); // mitigate timing
-      res.status(400).json({ message: 'Invalid email or password' });
+      sendResponse(res, null, { message: 'Invalid email or password' }, 400);
       return;
     }
 
@@ -74,13 +74,13 @@ router.post('/login', loginLimiter, async (
     if (!hashed) {
       // If password is still missing due to schema, treat as invalid
       await bcrypt.compare(password, FAKE_PASSWORD_HASH);
-      res.status(400).json({ message: 'Invalid email or password' });
+      sendResponse(res, null, { message: 'Invalid email or password' }, 400);
       return;
     }
 
     const valid = await bcrypt.compare(password, hashed);
     if (!valid) {
-      res.status(400).json({ message: 'Invalid email or password' });
+      sendResponse(res, null, { message: 'Invalid email or password' }, 400);
       return;
     }
 
@@ -91,6 +91,7 @@ router.post('/login', loginLimiter, async (
         mfaRequired: true,
         userId: user._id.toString(),
       });
+
       return;
     }
 
@@ -98,7 +99,7 @@ router.post('/login', loginLimiter, async (
     try {
       secret = getJwtSecret();
     } catch {
-      res.status(500).json({ message: 'Server configuration issue' });
+      sendResponse(res, null, { message: 'Server configuration issue' }, 500);
       return;
     }
 
@@ -116,21 +117,22 @@ router.post('/login', loginLimiter, async (
     const userObj = user.toObject();
     delete (userObj as any).password;
 
-    const responseBody: Record<string, unknown> = {
+    const responseData: {
+      user: typeof userObj & { tenantId?: string };
+      token?: string;
+    } = {
       user: { ...userObj, tenantId },
     };
     if (process.env.INCLUDE_AUTH_TOKEN === 'true') {
-      responseBody.token = token;
+      responseData.token = token;
     }
 
-    res
-      .cookie('token', token, {
-        httpOnly: true,
-        sameSite: 'strict',
-        secure: isCookieSecure(),
-      })
-      .status(200)
-      .json(responseBody);
+    res.cookie('token', token, {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: isCookieSecure(),
+    });
+    sendResponse(res, responseData);
     return;
   } catch (err) {
     logger.error('Login error:', err);

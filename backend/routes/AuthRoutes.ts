@@ -20,6 +20,7 @@ import { assertEmail } from '../utils/assert';
 import { requireAuth } from '../middleware/requireAuth';
 import logger from '../utils/logger';
 import { isCookieSecure } from '../utils/isCookieSecure';
+import { sendResponse } from '../utils/sendResponse';
 
 
 const FAKE_PASSWORD_HASH =
@@ -83,12 +84,15 @@ router.post('/login', loginLimiter, async (
       return;
     }
 
+    const tenantId = (user as any).tenantId ? (user as any).tenantId.toString() : undefined;
+
     if ((user as any).mfaEnabled) {
-      res.status(200).json({ mfaRequired: true });
+      sendResponse(res, {
+        mfaRequired: true,
+        userId: user._id.toString(),
+      });
       return;
     }
-
-    const tenantId = (user as any).tenantId ? (user as any).tenantId.toString() : undefined;
 
     let secret: string;
     try {

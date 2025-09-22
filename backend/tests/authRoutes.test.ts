@@ -87,6 +87,31 @@ describe('Auth Routes', () => {
     expect(payload.tenantId).toBe(res.body.user.tenantId);
   });
 
+  it('indicates MFA is required and includes the user id', async () => {
+    const tenantId = new mongoose.Types.ObjectId();
+    const user = await User.create({
+      name: 'MFA User',
+      email: 'mfa-user@example.com',
+      passwordHash: 'pass123',
+      roles: ['admin'],
+      tenantId,
+      mfaEnabled: true,
+    });
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'mfa-user@example.com', password: 'pass123' })
+      .expect(200);
+
+    expect(res.body).toEqual({
+      data: {
+        mfaRequired: true,
+        userId: user._id.toString(),
+      },
+      error: null,
+    });
+  });
+
   it('optionally returns token in response when enabled', async () => {
     process.env.INCLUDE_AUTH_TOKEN = 'true';
     await User.create({

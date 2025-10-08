@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   addToQueue,
@@ -5,11 +9,19 @@ import {
   clearQueue,
   enqueueAssetRequest,
   enqueueDepartmentRequest,
-} from '../utils/offlineQueue';
+  type QueuedRequest,
+  diffObjects,
+  MAX_QUEUE_RETRIES,
+} from '@/utils/offlineQueue';
 import http from '../lib/http';
+import { emitToast } from '../context/ToastContext';
+ 
 
 vi.mock('../lib/http', () => ({
   default: vi.fn(),
+}));
+vi.mock('../context/ToastContext', () => ({
+  emitToast: vi.fn(),
 }));
 
 type LocalStorageMock = {
@@ -58,7 +70,9 @@ describe('offline queue helpers', () => {
     const req = { method: 'post' as const, url: '/task', data: { foo: 'bar' } };
     addToQueue(req);
     expect(localStorageMock.setItem).toHaveBeenCalledTimes(1);
-    const saved = JSON.parse(localStorageMock.setItem.mock.calls[0][1]) as any[];
+    const saved = JSON.parse(
+      localStorageMock.setItem.mock.calls[0][1]
+    ) as QueuedRequest[];
     expect(saved[0]).toEqual({ ...req, retries: 0 });
   });
 
@@ -88,7 +102,9 @@ describe('offline queue helpers', () => {
   it('enqueues asset requests', () => {
     const asset = { id: '1', name: 'A' } as any;
     enqueueAssetRequest('put', asset);
-    const saved = JSON.parse(localStorageMock.setItem.mock.calls[0][1]) as any[];
+    const saved = JSON.parse(
+      localStorageMock.setItem.mock.calls[0][1]
+    ) as QueuedRequest[];
     expect(saved[0]).toEqual({ method: 'put', url: '/assets/1', data: asset, retries: 0 });
   });
 
@@ -96,7 +112,9 @@ describe('offline queue helpers', () => {
     localStorageMock.setItem.mockClear();
     const dep = { id: '1', name: 'Dept' } as any;
     enqueueDepartmentRequest('delete', dep);
-    const saved = JSON.parse(localStorageMock.setItem.mock.calls[0][1]) as any[];
+    const saved = JSON.parse(
+      localStorageMock.setItem.mock.calls[0][1]
+    ) as QueuedRequest[];
     expect(saved[0]).toEqual({ method: 'delete', url: '/departments/1', data: dep, retries: 0 });
   });
 
@@ -113,7 +131,10 @@ describe('offline queue helpers', () => {
 
     expect(apiMock).toHaveBeenCalledTimes(2);
     expect(localStorageMock.setItem).toHaveBeenCalled();
-    const saved = JSON.parse(localStorageMock.setItem.mock.calls[0][1]) as any[];
+     const saved = JSON.parse(
+      localStorageMock.setItem.mock.calls[0][1]
+    ) as QueuedRequest[];
+ 
     expect(saved).toHaveLength(1);
     expect(saved[0].url).toBe('/b');
     expect(saved[0].retries).toBe(1);
@@ -148,6 +169,20 @@ describe('offline queue helpers', () => {
 
     expect(apiMock).toHaveBeenCalledTimes(1);
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('offline-queue');
+  });
+
+  it('drops requests after exceeding max retries and notifies user', async () => {
+    const apiMock = http as unknown as ReturnType<typeof vi.fn>;
+    (apiMock as any).mockRejectedValue(new Error('fail'));
+    const queue = [
+      { method: 'post' as const, url: '/a', data: { a: 1 }, retries: MAX_QUEUE_RETRIES },
+    ];
+    localStorageMock.store['offline-queue'] = JSON.stringify(queue);
+
+    await flushQueue(false);
+
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('offline-queue');
+    expect(emitToast).toHaveBeenCalled();
   });
 
   it('processes 1k queued records within 5s', async () => {
@@ -189,4 +224,82 @@ describe('offline queue helpers', () => {
     expect(apiMock).toHaveBeenCalledWith({ method: 'post', url: '/uploads/signature', data: { sig: 'dataurl' } });
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('offline-queue');
   });
+
+  it('prevents overlapping flushes', async () => {
+    const apiMock = http as unknown as ReturnType<typeof vi.fn>;
+    let resolveFirst: (value?: any) => void = () => {};
+    (apiMock as any).mockReturnValue(
+      new Promise((res) => {
+        resolveFirst = res;
+      })
+    );
+    const queue = [{ method: 'post' as const, url: '/a', data: { a: 1 } }];
+    localStorageMock.store['offline-queue'] = JSON.stringify(queue);
+
+    const first = flushQueue();
+    const second = flushQueue();
+    expect(second).toBeUndefined();
+
+    resolveFirst({});
+    await first;
+
+    expect(apiMock).toHaveBeenCalledTimes(1);
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('offline-queue');
+  });
+
+  it('preserves new requests added during a flush', async () => {
+    const apiMock = http as unknown as ReturnType<typeof vi.fn>;
+    let resolveFirst: (value?: any) => void = () => {};
+    (apiMock as any)
+      .mockReturnValueOnce(
+        new Promise((res) => {
+          resolveFirst = res;
+        })
+      )
+      .mockResolvedValue({});
+
+    const initial = [{ method: 'post' as const, url: '/a', data: { a: 1 } }];
+    localStorageMock.store['offline-queue'] = JSON.stringify(initial);
+
+    const running = flushQueue();
+    addToQueue({ method: 'post', url: '/b', data: { b: 2 } });
+
+    resolveFirst({});
+    await running;
+
+    const stored = JSON.parse(localStorageMock.store['offline-queue']);
+    expect(stored).toHaveLength(1);
+    expect(stored[0].url).toBe('/b');
+
+    await flushQueue();
+
+    expect(apiMock).toHaveBeenCalledTimes(2);
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('offline-queue');
+  });
 });
+
+describe('diffObjects', () => {
+  it('detects changes in nested structures', () => {
+    const local = { id: 1, meta: { tags: ['a'], info: { active: true } } };
+    const server = { id: 1, meta: { tags: ['a', 'b'], info: { active: true } } };
+    const diffs = diffObjects(local, server);
+    expect(diffs).toEqual([
+      { field: 'meta', local: local.meta, server: server.meta },
+    ]);
+  });
+
+  it('safely compares circular references', () => {
+    const local: any = { id: 1 };
+    local.self = local;
+    const server: any = { id: 1 };
+    server.self = server;
+    expect(diffObjects(local, server)).toEqual([]);
+
+    const serverChanged: any = { id: 1, name: 'srv' };
+    serverChanged.self = serverChanged;
+    expect(diffObjects(local, serverChanged)).toEqual([
+      { field: 'name', local: undefined, server: 'srv' },
+    ]);
+  });
+});
+

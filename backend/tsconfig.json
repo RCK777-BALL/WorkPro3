@@ -1,32 +1,14 @@
 {
+  "extends": "../tsconfig.json",
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "outDir": "dist",
-    "types": ["node"],
-    "typeRoots": ["./node_modules/@types", "./types"],
-    "noImplicitAny": true,
     "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "noImplicitOverride": true,
+    "noImplicitAny": true,
     "exactOptionalPropertyTypes": true,
-    "useUnknownInCatchVariables": true,
-    "noFallthroughCasesInSwitch": true
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["../shared/types/*"]
+    }
   },
-  "include": [
-    "**/*.ts",
-    "**/*.d.ts"
-  ],
-  "exclude": [
-    "dist",
-    "node_modules"
-  ]
+  "include": ["**/*.ts", "types/**/*.d.ts"],
+  "exclude": ["dist", "node_modules"]
 }

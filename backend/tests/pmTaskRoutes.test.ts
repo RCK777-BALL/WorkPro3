@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { describe, it, beforeAll, afterAll, beforeEach, expect } from "vitest";
 import request from 'supertest';
 import express from 'express';
@@ -10,6 +14,7 @@ import User from '../models/User';
 const app = express();
 app.use(express.json());
 app.use('/api/pm-tasks', PMTaskRoutes);
+app.use('/api/pm', PMTaskRoutes);
 
 let mongo: MongoMemoryServer;
 let token: string;
@@ -32,10 +37,10 @@ beforeEach(async () => {
     name: 'Tester',
     email: 'tester@example.com',
     passwordHash: 'pass123',
-    role: 'manager',
+    roles: ['supervisor'],
     tenantId: new mongoose.Types.ObjectId(),
   });
-  token = jwt.sign({ id: user._id.toString(), role: user.role }, process.env.JWT_SECRET!);
+  token = jwt.sign({ id: user._id.toString(), roles: user.roles }, process.env.JWT_SECRET!);
 });
 
 describe('PM Task Routes', () => {
@@ -49,7 +54,7 @@ describe('PM Task Routes', () => {
     const createRes = await request(app)
       .post('/api/pm-tasks')
       .set('Authorization', `Bearer ${token}`)
-      .send({ title: 'PM1', frequency: 'monthly' })
+      .send({ title: 'PM1', rule: { type: 'calendar', cron: '0 0 * * *' } })
       .expect(201);
 
     const id = createRes.body._id;
@@ -65,7 +70,7 @@ describe('PM Task Routes', () => {
     const updateRes = await request(app)
       .put(`/api/pm-tasks/${id}`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ title: 'Updated PM', frequency: 'monthly' })
+      .send({ title: 'Updated PM', rule: { type: 'calendar', cron: '0 0 * * *' } })
       .expect(200);
 
     expect(updateRes.body.title).toBe('Updated PM');

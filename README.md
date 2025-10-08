@@ -21,11 +21,11 @@ not committed to the repository.
 ## backend setup
 
 1. `cd backend`
-2. Copy `backend/.env.example` to `.env`:
+2. Copy `../.env.sample` to `.env`:
    ```bash
-   cp .env.example .env
+   cp ../.env.sample .env
    ```
-    Update the required environment variables such as `MONGO_URI`, `JWT_SECRET`,
+   Update the required environment variables such as `MONGO_URI`, `JWT_SECRET`,
    and `CORS_ORIGIN`. The example connection string uses
    `mongodb://localhost:27017/platinum_cmms`.
  
@@ -44,8 +44,8 @@ not committed to the repository.
 ## frontend setup
 
 1. `cd frontend`
-2. Copy `frontend/.env.example` to `.env.local` and update `VITE_API_URL`,
-    `VITE_WS_URL`, and `VITE_WS_PATH`.
+2. Copy `../.env.sample` to `.env.local` and update `VITE_API_URL`,
+    `VITE_WS_URL`, and `VITE_SOCKET_PATH`.
  
 3. Install dependencies with `npm install`.
 4. Run the development server:
@@ -92,8 +92,9 @@ This will deploy the backend, frontend and ingress resources.
 - **frontend unit tests**: `cd frontend && npm run test`
 - **frontend e2e tests**: `cd frontend && npm run test:e2e`
 
-Both test suites use Vitest and enforce a minimum of 80% code coverage. backend
-tests spin up a temporary MongoDB using `mongodb-memory-server`, which
+Both test suites use Vitest and enforce a minimum of 80% code coverage. The backend
+installs Vite only so Vitest can bundle modules during testing; the runtime and production
+build do not depend on Vite. backend tests spin up a temporary MongoDB using `mongodb-memory-server`, which
 downloads a MongoDB binary the first time it runs. Make sure network access is
 allowed when running the tests for the first time or the download will fail.
 See [backend/tests/README.md](backend/tests/README.md) for more details about

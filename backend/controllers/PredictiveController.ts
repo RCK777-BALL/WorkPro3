@@ -1,31 +1,45 @@
-import { Response, NextFunction } from 'express';
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
+import { Request, Response, NextFunction } from 'express';
+import { sendResponse } from '../utils/sendResponse';
+
 import predictiveService from '../utils/predictiveService';
 
 export const getPredictions = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const results = await predictiveService.getPredictions(req.tenantId);
-    res.json(results);
+    const { tenantId } = req;
+    if (!tenantId) {
+      sendResponse(res, null, 'Missing tenantId', 400);
+      return;
+    }
+    const typeFilter = typeof req.query.type === 'string' ? req.query.type : undefined;
+    const results = await predictiveService.getPredictions(tenantId, typeFilter);
+    sendResponse(res, results);
   } catch (err) {
     next(err);
   }
 };
 
 export const getTrend = async (
-  req: AuthedRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const trend = await predictiveService.getPredictionTrend(
-      req.params.assetId,
-      req.params.metric,
-      req.tenantId
-    );
-    res.json(trend);
+    const { assetId, metric } = req.params;
+    const { tenantId } = req;
+    if (!assetId || !metric || !tenantId) {
+      sendResponse(res, null, 'Missing required parameters', 400);
+      return;
+    }
+    const trend = await predictiveService.getPredictionTrend(assetId, metric, tenantId);
+    sendResponse(res, trend);
   } catch (err) {
     next(err);
   }

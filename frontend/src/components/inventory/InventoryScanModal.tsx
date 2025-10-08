@@ -1,12 +1,16 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useEffect, useRef } from 'react';
-import Modal from '../modals/Modal';
-import { scanQRCode } from '../../utils/qr';
-import type { Part } from '../../types';
+import Modal from '@/components/modals/Modal';
+import { scanQRCode } from '@/utils/qr';
+import type { Part } from '@/types';
 
 interface InventoryScanModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onScanComplete: (data: Partial<Part>) => void;
+  onScanComplete: (part: Part | null, init?: Partial<Part>) => void;
 }
 
 const InventoryScanModal: React.FC<InventoryScanModalProps> = ({
@@ -26,7 +30,7 @@ const InventoryScanModal: React.FC<InventoryScanModalProps> = ({
         if (cancelled) return;
         try {
           const data = JSON.parse(raw) as Partial<Part>;
-          onScanComplete(data);
+          onScanComplete(null, data);
         } catch (err) {
           console.error('Invalid QR data', err);
         } finally {
@@ -43,7 +47,7 @@ const InventoryScanModal: React.FC<InventoryScanModalProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, onClose, onScanComplete]);
+  }, [isOpen, onClose]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Scan QR Code">

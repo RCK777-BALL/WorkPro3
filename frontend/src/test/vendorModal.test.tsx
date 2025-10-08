@@ -1,7 +1,11 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, Mock, vi } from 'vitest';
-import VendorModal from '../components/vendors/VendorModal';
+import { describe, it, expect, vi } from 'vitest';
+import VendorModal from '@/components/vendors/VendorModal';
 
 describe('VendorModal', () => {
   it('submits form data', async () => {

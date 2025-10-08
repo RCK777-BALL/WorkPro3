@@ -1,15 +1,25 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import App from "./App";
-import DSThemeProvider from "./design-system/theme/ThemeProvider";
-import { ThemeProvider } from "./context/ThemeContext";
+/*
+ * SPDX-License-Identifier: MIT
+ */
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <ThemeProvider>
-      <DSThemeProvider>
-        <App />
-      </DSThemeProvider>
-    </ThemeProvider>
-  </React.StrictMode>
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import { AuthProvider } from '@/context/AuthContext';
+import App from './App';
+
+declare global {
+  interface Window {
+    initNavBar: () => void;
+  }
+}
+
+window.initNavBar();
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <BrowserRouter>
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+  </BrowserRouter>
 );

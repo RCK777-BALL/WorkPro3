@@ -1,8 +1,12 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useEffect, useState } from 'react';
-import Button from '../components/common/Button';
-import http from '../lib/http';
-import type { Timesheet } from '../types';
-import { useToast } from '../context/ToastContext';
+import Button from '@/components/common/Button';
+import http from '@/lib/http';
+import type { Timesheet } from '@/types';
+import { useToast } from '@/context/ToastContext';
 
 const TimeSheets: React.FC = () => {
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
@@ -12,13 +16,15 @@ const TimeSheets: React.FC = () => {
 
   const loadTimesheets = async () => {
     try {
-      const res = await http.get('/timesheets');
-      const data = (res.data as any[]).map((t) => ({
-        id: t._id ?? t.id,
-        date: t.date,
-        hours: t.hours,
-        description: t.description,
-      })) as Timesheet[];
+      const res = await http.get<Timesheet[]>('/timesheets');
+      const data: Timesheet[] = Array.isArray(res.data)
+        ? res.data.map((t) => ({
+            id: t._id ?? t.id,
+            date: t.date,
+            hours: t.hours,
+            description: t.description,
+          }))
+        : [];
       setTimesheets(data);
     } catch {
       addToast('Failed to load timesheets', 'error');
@@ -94,14 +100,14 @@ const TimeSheets: React.FC = () => {
           <input
             type="date"
             value={form.date}
-            onChange={(e) => setForm({ ...form, date: e.target.value })}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, date: e.target.value })}
             className="w-full p-2 border rounded"
             required
           />
           <input
             type="number"
             value={form.hours}
-            onChange={(e) => setForm({ ...form, hours: e.target.value })}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, hours: e.target.value })}
             className="w-full p-2 border rounded"
             placeholder="Hours"
             required
@@ -109,7 +115,7 @@ const TimeSheets: React.FC = () => {
           <input
             type="text"
             value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, description: e.target.value })}
             className="w-full p-2 border rounded"
             placeholder="Description"
           />

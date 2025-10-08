@@ -1,4 +1,8 @@
-import React, { useEffect, useState } from 'react';
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
+import { useEffect, useState } from 'react';
 import HookForm from './HookForm';
 
 interface Hook {

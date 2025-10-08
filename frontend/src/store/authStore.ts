@@ -1,7 +1,11 @@
-import { create } from 'zustand';
-import type { AuthUser } from '../types';
+/*
+ * SPDX-License-Identifier: MIT
+ */
 
-interface AuthState {
+import { create } from 'zustand';
+import type { AuthUser } from '@/types';
+
+export interface AuthState {
   user: AuthUser | null;
   setUser: (user: AuthUser | null) => void;
   isAuthenticated: boolean;
@@ -13,7 +17,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   // Session management should rely on secure, server-managed cookies.
   user: null,
   isAuthenticated: false,
-  setUser: (user) =>
+  setUser: (user: AuthUser | null) =>
     set({
       user,
       isAuthenticated: !!user,
@@ -26,6 +30,6 @@ export const useAuthStore = create<AuthState>((set) => ({
 }));
 
 export const isAdmin = (state: AuthState) => state.user?.role === 'admin';
-export const isManager = (state: AuthState) => state.user?.role === 'manager';
-export const isTechnician = (state: AuthState) => state.user?.role === 'technician';
-export const isViewer = (state: AuthState) => state.user?.role === 'viewer';
+export const isSupervisor = (state: AuthState) => state.user?.role === 'supervisor';
+export const isPlanner = (state: AuthState) => state.user?.role === 'planner';
+export const isTech = (state: AuthState) => state.user?.role === 'tech';

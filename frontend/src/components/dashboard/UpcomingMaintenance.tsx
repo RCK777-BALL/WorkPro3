@@ -1,9 +1,13 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React from 'react';
 import { Calendar, Clock, PenTool as Tool } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import Card from '../common/Card';
-import Badge from '../common/Badge';
-import type { MaintenanceType } from '../../types';
+import Card from '@common/Card';
+import Badge from '@common/Badge';
+import type { MaintenanceType } from '@/types';
  
 
 interface MaintenanceItem {

@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import crypto from 'crypto';
 import Webhook from '../models/Webhook';
 
@@ -32,7 +36,7 @@ async function sendWithRetry(
   }
 }
 
-export async function dispatchEvent(event: string, data: any): Promise<void> {
+export async function dispatchEvent<T>(event: string, data: T): Promise<void> {
   const hooks = await Webhook.find({ event }).lean();
   const body = { event, data };
   await Promise.all(hooks.map((h) => sendWithRetry(h.url, body, h.secret)));

@@ -1,17 +1,18 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useEffect, useState } from 'react';
-import http from '../../lib/http';
-import { useDepartmentStore } from '../../store/departmentStore';
-import Button from '../common/Button';
-import { useToast } from '../../context/ToastContext';
+import http from '@/lib/http';
+import { useDepartmentStore } from '@/store/departmentStore';
+import Button from '@common/Button';
+import { useToast } from '@/context/ToastContext';
 import type {
   WorkOrder,
   Asset,
   User,
   WorkOrderUpdatePayload,
-  Department,
-  Line,
-  Station,
-} from '../../types';
+} from '@/types';
 
 interface WorkOrderFormProps {
   workOrder?: WorkOrder;
@@ -39,31 +40,40 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
     assetId: workOrder?.assetId || '',
     assignedTo: workOrder?.assignedTo || '',
     priority: workOrder?.priority || 'medium',
-    status: workOrder?.status || 'open',
+    status: workOrder?.status || 'requested',
     type: workOrder?.type || 'corrective',
+    complianceProcedureId: workOrder?.complianceProcedureId || '',
+    calibrationIntervalDays: workOrder?.calibrationIntervalDays,
     dueDate: workOrder?.dueDate || new Date().toISOString().split('T')[0],
   });
+  const [checklists, setChecklists] = useState<{ text: string; done: boolean }[]>(workOrder?.checklists || []);
+  const [newChecklist, setNewChecklist] = useState('');
+  const [parts, setParts] = useState<{ partId: string; qty: number; cost: number }[]>(workOrder?.partsUsed || []);
+  const [newPart, setNewPart] = useState<{ partId: string; qty: number; cost: number }>({ partId: '', qty: 1, cost: 0 });
+  const [signatures, setSignatures] = useState<{ by: string; ts: string }[]>(workOrder?.signatures || []);
+  const [newSignature, setNewSignature] = useState<{ by: string; ts: string }>({ by: '', ts: '' });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const assetRes = await http.get('/assets');
         setAssets((assetRes.data as any[]).map(a => ({ ...a, id: a._id ?? a.id })) as Asset[]);
-      } catch (err) {
-        console.error('Failed to load assets', err);
+      } catch {
+        addToast('Failed to load assets', 'error');
       }
       try {
         const userRes = await http.get('/users');
-        setTechs((userRes.data as any[])
-          .filter((u) => u.role === 'technician')
-          .map(u => ({ ...u, id: u._id ?? u.id })) as User[]);
-      } catch (err) {
-        console.error('Failed to load users', err);
+        setTechs(
+          (userRes.data as any[])
+            .filter((u) => u.role === 'tech')
+            .map((u) => ({ ...u, id: u._id ?? u.id })) as User[],
+        );
+      } catch {
+        addToast('Failed to load users', 'error');
       }
       try {
         await fetchDepartments();
-      } catch (err) {
-        console.error('Failed to load departments', err);
+      } catch {
         addToast('Failed to load departments', 'error');
       }
     };
@@ -76,8 +86,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
       setStationId('');
       return;
     }
-    fetchLines(departmentId).catch((err) => {
-      console.error('Failed to load lines', err);
+    fetchLines(departmentId).catch(() => {
       addToast('Failed to load lines', 'error');
     });
   }, [departmentId, fetchLines]);
@@ -87,11 +96,23 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
       setStationId('');
       return;
     }
-    fetchStations(departmentId, lineId).catch((err) => {
-      console.error('Failed to load stations', err);
+    fetchStations(departmentId, lineId).catch(() => {
       addToast('Failed to load stations', 'error');
     });
   }, [departmentId, lineId, fetchStations]);
+
+  useEffect(() => {
+    setFormData((prev) => {
+      const updates: Partial<WorkOrder> = {};
+      if (prev.type !== 'calibration' && prev.calibrationIntervalDays !== undefined) {
+        updates.calibrationIntervalDays = undefined;
+      }
+      if (!['calibration', 'safety'].includes(prev.type ?? '') && prev.complianceProcedureId) {
+        updates.complianceProcedureId = '';
+      }
+      return Object.keys(updates).length > 0 ? { ...prev, ...updates } : prev;
+    });
+  }, [formData.type]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,10 +124,15 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
       priority: formData.priority,
       status: formData.status,
       type: formData.type,
+      complianceProcedureId: formData.complianceProcedureId || undefined,
+      calibrationIntervalDays: formData.calibrationIntervalDays,
       dueDate: formData.dueDate,
       departmentId,
       lineId,
       stationId,
+      checklists,
+      partsUsed: parts,
+      signatures,
     };
     try {
       let res;
@@ -118,8 +144,8 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
       const data = res.data as WorkOrderUpdatePayload;
       if (onSuccess) onSuccess({ ...(data as Partial<WorkOrder>), id: data._id } as WorkOrder);
       addToast(workOrder ? 'Work Order updated' : 'Work Order created', 'success');
-    } catch (err) {
-      console.error('Failed to submit work order', err);
+    } catch {
+      addToast('Failed to submit work order', 'error');
     }
   };
 
@@ -134,7 +160,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
         <select
           className="w-full px-3 py-2 border border-neutral-300 rounded-md"
           value={departmentId}
-          onChange={(e) => setDepartmentId(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setDepartmentId(e.target.value)}
         >
           <option value="">Select Department</option>
           {departments.map((d) => (
@@ -149,7 +175,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
         <select
           className="w-full px-3 py-2 border border-neutral-300 rounded-md"
           value={lineId}
-          onChange={(e) => setLineId(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setLineId(e.target.value)}
           disabled={!departmentId}
         >
           <option value="">Select Line</option>
@@ -165,7 +191,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
         <select
           className="w-full px-3 py-2 border border-neutral-300 rounded-md"
           value={stationId}
-          onChange={(e) => setStationId(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStationId(e.target.value)}
           disabled={!lineId}
         >
           <option value="">Select Station</option>
@@ -182,7 +208,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
           type="text"
           className="w-full px-3 py-2 border border-neutral-300 rounded-md"
           value={formData.title}
-          onChange={(e) => updateField('title', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('title', e.target.value)}
           required
         />
       </div>
@@ -191,7 +217,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
         <select
           className="w-full px-3 py-2 border border-neutral-300 rounded-md"
           value={formData.assetId}
-          onChange={(e) => updateField('assetId', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateField('assetId', e.target.value)}
         >
           <option value="">Select Asset</option>
           {assets.map((asset) => (
@@ -204,7 +230,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
         <select
           className="w-full px-3 py-2 border border-neutral-300 rounded-md"
           value={formData.assignedTo}
-          onChange={(e) => updateField('assignedTo', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateField('assignedTo', e.target.value)}
         >
           <option value="">Unassigned</option>
           {techs.map((t) => (
@@ -218,7 +244,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
           <select
             className="w-full px-3 py-2 border border-neutral-300 rounded-md"
             value={formData.priority}
-            onChange={(e) => updateField('priority', e.target.value as WorkOrder['priority'])}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateField('priority', e.target.value as WorkOrder['priority'])}
           >
             <option value="low">Low</option>
             <option value="medium">Medium</option>
@@ -231,12 +257,13 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
           <select
             className="w-full px-3 py-2 border border-neutral-300 rounded-md"
             value={formData.status}
-            onChange={(e) => updateField('status', e.target.value as WorkOrder['status'])}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateField('status', e.target.value as WorkOrder['status'])}
           >
-            <option value="open">Open</option>
-            <option value="in-progress">In Progress</option>
-            <option value="on-hold">On Hold</option>
+            <option value="requested">Requested</option>
+            <option value="assigned">Assigned</option>
+            <option value="in_progress">In Progress</option>
             <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
           </select>
         </div>
       </div>
@@ -246,7 +273,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
           <select
             className="w-full px-3 py-2 border border-neutral-300 rounded-md"
             value={formData.type}
-            onChange={(e) => updateField('type', e.target.value as WorkOrder['type'])}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateField('type', e.target.value as WorkOrder['type'])}
           >
             <option value="corrective">Corrective</option>
             <option value="preventive">Preventive</option>
@@ -261,8 +288,222 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
             type="date"
             className="w-full px-3 py-2 border border-neutral-300 rounded-md"
             value={formData.dueDate}
-            onChange={(e) => updateField('dueDate', e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('dueDate', e.target.value)}
           />
+        </div>
+      </div>
+      {(formData.type === 'calibration' || formData.type === 'safety') && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Compliance Procedure ID</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+              value={formData.complianceProcedureId || ''}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                updateField('complianceProcedureId', e.target.value)
+              }
+            />
+          </div>
+          {formData.type === 'calibration' && (
+            <div>
+              <label className="block text-sm font-medium mb-1">Calibration Interval (days)</label>
+              <input
+                type="number"
+                min={1}
+                className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+                value={formData.calibrationIntervalDays?.toString() || ''}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const value = e.target.value;
+                  updateField(
+                    'calibrationIntervalDays',
+                    value ? Number(value) : undefined,
+                  );
+                }}
+              />
+            </div>
+          )}
+        </div>
+      )}
+      <div>
+        <label className="block text-sm font-medium mb-1">Checklists</label>
+        {checklists.map((c, idx) => (
+          <div key={idx} className="flex items-center space-x-2 mb-1">
+            <input
+              type="text"
+              className="flex-1 px-2 py-1 border border-neutral-300 rounded-md"
+              value={c.text}
+              onChange={(e) => {
+                const updated = [...checklists];
+                updated[idx].text = e.target.value;
+                setChecklists(updated);
+              }}
+            />
+            <input
+              type="checkbox"
+              checked={c.done}
+              onChange={(e) => {
+                const updated = [...checklists];
+                updated[idx].done = e.target.checked;
+                setChecklists(updated);
+              }}
+            />
+            <button type="button" onClick={() => setChecklists(checklists.filter((_, i) => i !== idx))}>
+              Remove
+            </button>
+          </div>
+        ))}
+        <div className="flex items-center space-x-2">
+          <input
+            type="text"
+            className="flex-1 px-2 py-1 border border-neutral-300 rounded-md"
+            value={newChecklist}
+            onChange={(e) => setNewChecklist(e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              if (newChecklist) {
+                setChecklists([...checklists, { text: newChecklist, done: false }]);
+                setNewChecklist('');
+              }
+            }}
+          >
+            Add
+          </button>
+        </div>
+      </div>
+      <div>
+        <label className="block text-sm font-medium mb-1">Parts Used</label>
+        {parts.map((p, idx) => (
+          <div key={idx} className="flex items-center space-x-2 mb-1">
+            <input
+              type="text"
+              className="px-2 py-1 border border-neutral-300 rounded-md"
+              value={p.partId}
+              placeholder="Part ID"
+              onChange={(e) => {
+                const updated = [...parts];
+                updated[idx].partId = e.target.value;
+                setParts(updated);
+              }}
+            />
+            <input
+              type="number"
+              className="w-20 px-2 py-1 border border-neutral-300 rounded-md"
+              value={p.qty}
+              onChange={(e) => {
+                const updated = [...parts];
+                updated[idx].qty = Number(e.target.value);
+                setParts(updated);
+              }}
+            />
+            <input
+              type="number"
+              className="w-24 px-2 py-1 border border-neutral-300 rounded-md"
+              value={p.cost}
+              onChange={(e) => {
+                const updated = [...parts];
+                updated[idx].cost = Number(e.target.value);
+                setParts(updated);
+              }}
+            />
+            <button type="button" onClick={() => setParts(parts.filter((_, i) => i !== idx))}>
+              Remove
+            </button>
+          </div>
+        ))}
+        <div className="flex items-center space-x-2">
+          <input
+            type="text"
+            className="px-2 py-1 border border-neutral-300 rounded-md"
+            value={newPart.partId}
+            placeholder="Part ID"
+            onChange={(e) => setNewPart((prev) => ({ ...prev, partId: e.target.value }))}
+          />
+          <input
+            type="number"
+            className="w-20 px-2 py-1 border border-neutral-300 rounded-md"
+            value={newPart.qty}
+            onChange={(e) => setNewPart((prev) => ({ ...prev, qty: Number(e.target.value) }))}
+          />
+          <input
+            type="number"
+            className="w-24 px-2 py-1 border border-neutral-300 rounded-md"
+            value={newPart.cost}
+            onChange={(e) => setNewPart((prev) => ({ ...prev, cost: Number(e.target.value) }))}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              if (newPart.partId) {
+                setParts([...parts, newPart]);
+                setNewPart({ partId: '', qty: 1, cost: 0 });
+              }
+            }}
+          >
+            Add
+          </button>
+        </div>
+      </div>
+      <div>
+        <label className="block text-sm font-medium mb-1">Signatures</label>
+        {signatures.map((s, idx) => (
+          <div key={idx} className="flex items-center space-x-2 mb-1">
+            <input
+              type="text"
+              className="px-2 py-1 border border-neutral-300 rounded-md"
+              value={s.by}
+              placeholder="User ID"
+              onChange={(e) => {
+                const updated = [...signatures];
+                updated[idx].by = e.target.value;
+                setSignatures(updated);
+              }}
+            />
+            <input
+              type="datetime-local"
+              className="px-2 py-1 border border-neutral-300 rounded-md"
+              value={s.ts}
+              onChange={(e) => {
+                const updated = [...signatures];
+                updated[idx].ts = e.target.value;
+                setSignatures(updated);
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setSignatures(signatures.filter((_, i) => i !== idx))}
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+        <div className="flex items-center space-x-2">
+          <input
+            type="text"
+            className="px-2 py-1 border border-neutral-300 rounded-md"
+            value={newSignature.by}
+            placeholder="User ID"
+            onChange={(e) => setNewSignature((prev) => ({ ...prev, by: e.target.value }))}
+          />
+          <input
+            type="datetime-local"
+            className="px-2 py-1 border border-neutral-300 rounded-md"
+            value={newSignature.ts}
+            onChange={(e) => setNewSignature((prev) => ({ ...prev, ts: e.target.value }))}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              if (newSignature.by && newSignature.ts) {
+                setSignatures([...signatures, newSignature]);
+                setNewSignature({ by: '', ts: '' });
+              }
+            }}
+          >
+            Add
+          </button>
         </div>
       </div>
       <div>
@@ -271,7 +512,7 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
           className="w-full px-3 py-2 border border-neutral-300 rounded-md"
           rows={4}
           value={formData.description}
-          onChange={(e) => updateField('description', e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateField('description', e.target.value)}
         />
       </div>
       <div className="pt-4">

@@ -1,7 +1,11 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useEffect, useState } from 'react';
-import Button from '../common/Button';
-import Modal from '../modals/Modal';
-import type { Vendor } from '../../types';
+import Button from '@/components/common/Button';
+import Modal from '@/components/modals/Modal';
+import type { Vendor } from '@/types';
 
 interface VendorModalProps {
   isOpen: boolean;
@@ -38,7 +42,7 @@ const VendorModal = ({ isOpen, onClose, vendor, onSave }: VendorModalProps) => {
             type="text"
             className="w-full px-3 py-2 border border-neutral-300 rounded-md"
             value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, name: e.target.value })}
             required
           />
         </div>
@@ -51,7 +55,7 @@ const VendorModal = ({ isOpen, onClose, vendor, onSave }: VendorModalProps) => {
             type="text"
             className="w-full px-3 py-2 border border-neutral-300 rounded-md"
             value={form.contact}
-            onChange={(e) => setForm({ ...form, contact: e.target.value })}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, contact: e.target.value })}
           />
         </div>
         <div className="flex justify-end space-x-2 pt-4 border-t border-neutral-200">

@@ -1,10 +1,14 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { z } from 'zod';
 
 export const workOrderSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().min(1, 'Description is required'),
   priority: z.enum(['critical', 'high', 'medium', 'low']),
-  status: z.enum(['open', 'in-progress', 'on-hold', 'completed']),
+  status: z.enum(['requested', 'assigned', 'in_progress', 'completed', 'cancelled']),
   assignedTo: z.string().optional(),
   scheduledDate: z.string().optional(),
 });

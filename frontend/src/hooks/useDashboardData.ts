@@ -1,42 +1,50 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import http from '../lib/http';
+import http from '@/lib/http';
 import type {
   StatusCountResponse,
   UpcomingMaintenanceResponse,
   CriticalAlertResponse,
   UpcomingMaintenanceItem,
   CriticalAlertItem,
-   AssetStatusMap,
- 
-} from '../types';
-import type { DateRange, Timeframe } from '../store/dashboardStore';
+  AssetStatusMap,
+  MaintenanceType,
+} from '@/types';
+import type { DateRange, Timeframe } from '@/store/dashboardStore';
 
 // normalize backend work-order status keys to camelCase
 const normalizeWOKey = (key: string): keyof WorkOrderStatusMap => {
-  if (key === 'in-progress') return 'inProgress';
-  if (key === 'on-hold') return 'onHold';
+  if (key === 'in_progress') return 'inProgress';
   return key as keyof WorkOrderStatusMap;
 };
 
 interface WorkOrderStatusMap {
-  open: number;
+  requested: number;
+  assigned: number;
   inProgress: number;
-  onHold: number;
   completed: number;
+  cancelled: number;
 }
 
 const defaultWOStatus: WorkOrderStatusMap = {
-  open: 0,
+  requested: 0,
+  assigned: 0,
   inProgress: 0,
-  onHold: 0,
   completed: 0,
+  cancelled: 0,
 };
 
  const defaultAssetStatus: AssetStatusMap = {};
  
 
 // simple debounce helper
-function debounce<F extends (...args: any[]) => void>(fn: F, delay: number) {
+interface Cancelable {
+  cancel: () => void;
+}
+function debounce<F extends (...args: unknown[]) => void>(fn: F, delay: number): F & Cancelable {
   let timer: ReturnType<typeof setTimeout> | null = null;
   const debounced = (...args: Parameters<F>) => {
     if (timer) clearTimeout(timer);
@@ -44,13 +52,14 @@ function debounce<F extends (...args: any[]) => void>(fn: F, delay: number) {
       timer = setTimeout(() => fn(...args), delay);
     }
   };
-  (debounced as any).cancel = () => {
+  const wrapped = debounced as F & Cancelable;
+  wrapped.cancel = () => {
     if (timer) {
       clearTimeout(timer);
       timer = null;
     }
   };
-  return debounced as F & { cancel: () => void };
+  return wrapped;
 }
 
 export default function useDashboardData(
@@ -113,7 +122,7 @@ export default function useDashboardData(
         ? upcomingRes.data.map((u) => ({
             id: u._id ?? u.id ?? '',
             assetName: u.asset?.name ?? 'Unknown',
-            assetId: u.asset?._id ?? (u as any).asset?.id ?? '',
+            assetId: u.asset?._id ?? u.asset?.id ?? '',
             date: u.nextDue,
              type: (u.type ?? 'preventive') as MaintenanceType,
  

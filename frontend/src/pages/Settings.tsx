@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState } from 'react';
 import {
  
@@ -6,32 +10,29 @@ import {
   Save,
   Book
 } from 'lucide-react';
-import Button from '../components/common/Button';
-import Card from '../components/common/Card';
-import DocumentUploader from '../components/documentation/DocumentUploader';
-import DocumentViewer from '../components/documentation/DocumentViewer';
-import { parseDocument } from '../utils/documentation';
-import { useThemeStore } from '../store/themeStore';
-import { useSettingsStore } from '../store/settingsStore';
-import type { ThemeSettings } from '../store/settingsStore';
-import { useToast } from '../context/ToastContext';
-import http from '../lib/http';
+import Button from '@/components/common/Button';
+import Card from '@/components/common/Card';
+import DocumentUploader from '@/components/documentation/DocumentUploader';
+import DocumentViewer from '@/components/documentation/DocumentViewer';
+import { parseDocument, type DocumentMetadata } from '@/utils/documentation';
+import { useThemeStore } from '@/store/themeStore';
+import { useSettingsStore } from '@/store/settingsStore';
+import type { ThemeSettings } from '@/store/settingsStore';
+import { useToast } from '@/context/ToastContext';
+import http from '@/lib/http';
 
 const Settings: React.FC = () => {
   const { theme, setTheme, updateTheme } = useThemeStore();
-  const {
-    general,
-    theme: themeSettings,
-    setGeneral,
-    setTheme: setThemeSettings,
-  } = useSettingsStore();
+  const { general, theme: themeSettings, setGeneral } = useSettingsStore();
+  const setThemeSettings = (updater: (prev: ThemeSettings) => ThemeSettings) =>
+    useSettingsStore.setState((state) => ({ theme: updater(state.theme) }));
   const { addToast } = useToast();
 
   type ThemeOptionKey = {
     [K in keyof ThemeSettings]: ThemeSettings[K] extends boolean ? K : never
-  }[keyof ThemeSettings];
+  }[keyof ThemeSettings & string];
 
-  const themeOptions: { label: string; description: string; key: ThemeOptionKey }[] = [
+  const themeOptions = [
     {
       label: 'Collapsed Sidebar',
       description: 'Use a compact sidebar layout',
@@ -47,13 +48,9 @@ const Settings: React.FC = () => {
       description: 'Increase contrast for better visibility',
       key: 'highContrast',
     },
-  ];
+  ] satisfies { label: string; description: string; key: ThemeOptionKey }[];
 
-  type MissingThemeOption = Exclude<ThemeOptionKey, typeof themeOptions[number]['key']>;
-  const _themeOptionCheck: MissingThemeOption extends never ? true : never = true;
-  void _themeOptionCheck;
-
-  const [documents, setDocuments] = useState<Array<{ content: string; metadata: any }>>([]);
+  const [documents, setDocuments] = useState<Array<{ content: string; metadata: DocumentMetadata }>>([]);
 
   const handleDocumentUpload = async (files: File[]) => {
     try {
@@ -69,9 +66,10 @@ const Settings: React.FC = () => {
       const settings = useSettingsStore.getState();
       await http.post('/settings', settings);
       addToast('Settings saved', 'success');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving settings:', error);
-      if (error.response?.status === 401) {
+      const status = (error as { response?: { status?: number } }).response?.status;
+      if (status === 401) {
         addToast('Unauthorized', 'error');
       } else {
         addToast('Failed to save settings', 'error');
@@ -103,7 +101,7 @@ const Settings: React.FC = () => {
                   type="text"
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
                   value={general.companyName}
-                  onChange={(e) => setGeneral({ companyName: e.target.value })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGeneral({ companyName: e.target.value })}
                 />
               </div>
 
@@ -114,7 +112,7 @@ const Settings: React.FC = () => {
                 <select
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
                   value={general.timezone}
-                  onChange={(e) => setGeneral({ timezone: e.target.value })}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGeneral({ timezone: e.target.value })}
                 >
                   <option value="America/New_York">Eastern Time (ET)</option>
                   <option value="America/Chicago">Central Time (CT)</option>
@@ -130,7 +128,7 @@ const Settings: React.FC = () => {
                 <select
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
                   value={general.dateFormat}
-                  onChange={(e) => setGeneral({ dateFormat: e.target.value })}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGeneral({ dateFormat: e.target.value })}
                 >
                   <option value="MM/DD/YYYY">MM/DD/YYYY</option>
                   <option value="DD/MM/YYYY">DD/MM/YYYY</option>
@@ -145,7 +143,7 @@ const Settings: React.FC = () => {
                 <select
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
                   value={general.language}
-                  onChange={(e) => setGeneral({ language: e.target.value })}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGeneral({ language: e.target.value })}
                 >
                   <option value="en-US">English (US)</option>
                   <option value="es-ES">Español</option>
@@ -166,7 +164,7 @@ const Settings: React.FC = () => {
                 <select
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
                   value={theme}
-                  onChange={(e) => {
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                     const value = e.target.value as 'light' | 'dark' | 'system';
                     setTheme(value);
                     updateTheme({ theme: value });
@@ -185,9 +183,9 @@ const Settings: React.FC = () => {
                 <select
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
                   value={themeSettings.colorScheme ?? 'default'}
-                  onChange={(e) => {
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                     const value = e.target.value;
-                    setThemeSettings({ colorScheme: value });
+                    setThemeSettings((prev) => ({ ...prev, colorScheme: value }));
                     updateTheme({ colorScheme: value });
                   }}
                 >
@@ -208,8 +206,11 @@ const Settings: React.FC = () => {
                       type="checkbox"
                       className="sr-only peer"
                       checked={themeSettings[key]}
-                      onChange={(e) =>
-                        setThemeSettings({ [key]: e.target.checked })
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setThemeSettings((prev) => ({
+                          ...prev,
+                          [key]: e.target.checked,
+                        }))
                       }
                     />
                     <div className="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>

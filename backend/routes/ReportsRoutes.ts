@@ -1,11 +1,16 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import express from 'express';
 import {
   getAnalyticsReport,
   downloadReport,
   getTrendData,
   exportTrendData,
-  getCostMetrics,
-  getDowntimeMetrics,
+  getPmCompliance,
+  getCostByAsset,
+  getDowntimeReport,
 } from '../controllers/ReportsController';
 import { requireAuth } from '../middleware/authMiddleware';
 
@@ -18,7 +23,8 @@ router.get('/analytics', getAnalyticsReport);
 router.get('/download', downloadReport);
 router.get('/trends', getTrendData);
 router.get('/trends/export', exportTrendData);
-router.get('/costs', getCostMetrics);
-router.get('/downtime', getDowntimeMetrics);
+router.get('/pm-compliance', getPmCompliance);
+router.get('/downtime', getDowntimeReport);
+router.get('/cost-by-asset', getCostByAsset);
 
 export default router;

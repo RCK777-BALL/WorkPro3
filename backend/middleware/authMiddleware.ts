@@ -1,10 +1,16 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 
 import jwt from 'jsonwebtoken';
+import type { Request, Response, NextFunction } from 'express';
+import type { UserRole } from '../types/auth';
 import User, { UserDocument } from '../models/User';
-import { RequestHandler } from 'express';
 
 interface TokenPayload {
   id: string;
+  tokenVersion?: number;
 }
 
 /**
@@ -14,10 +20,10 @@ interface TokenPayload {
  * loaded and attached to `req.user`.
  */
  
-export const requireAuth: RequestHandler = async (
-  req,
-  res,
-  next
+export const requireAuth = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
 ): Promise<void> => {
  
   try {
@@ -33,7 +39,10 @@ export const requireAuth: RequestHandler = async (
       return;
     }
 
-    const { id } = jwt.verify(token, process.env.JWT_SECRET!) as TokenPayload;
+    const { id, tokenVersion } = jwt.verify(
+      token,
+      process.env.JWT_SECRET!,
+    ) as TokenPayload;
 
     if (!id) {
       res.status(401).json({ message: 'Unauthorized' });
@@ -43,19 +52,19 @@ export const requireAuth: RequestHandler = async (
  
     const user = await User.findById(id).lean<UserDocument>().exec();
 
-    if (!user) {
+    if (!user || (tokenVersion ?? 0) !== user.tokenVersion) {
       res.status(401).json({ message: 'Unauthorized' });
       return;
     }
 
     const tenantId = user.tenantId.toString();
-    (req as AuthedRequest).user = {
+    req.user = {
       id: user._id.toString(),
       _id: user._id.toString(),
       email: user.email,
-      role: user.role,
+      roles: user.roles ?? [],
     };
-    (req as AuthedRequest).tenantId = tenantId;
+    req.tenantId = tenantId;
 
     next();
   } catch (_err) {
@@ -63,6 +72,17 @@ export const requireAuth: RequestHandler = async (
   }
 };
 
+export const requireRole = (...allowed: UserRole[]) =>
+  (req: Request, res: Response, next: NextFunction): void => {
+    const roles = (req as any).user?.roles as UserRole[] | undefined;
+    if (!roles || !allowed.some((r) => roles.includes(r))) {
+      res.status(403).json({ message: 'Forbidden' });
+      return;
+    }
+    next();
+  };
+
 export default {
   requireAuth,
+  requireRole,
 };

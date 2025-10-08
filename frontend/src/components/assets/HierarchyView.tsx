@@ -1,8 +1,12 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useEffect, useState } from 'react';
-import http from '../../lib/http';
-import type { DepartmentHierarchy } from '../../types';
-import { useDepartmentStore } from '../../store/departmentStore';
-import { useToast } from '../../context/ToastContext';
+import http from '@/lib/http';
+import type { DepartmentHierarchy, LineWithStations, StationWithAssets, Asset } from '@/types';
+import { useDepartmentStore } from '@/store/departmentStore';
+import { useToast } from '@/context/ToastContext';
 
 const HierarchyView: React.FC = () => {
   const [data, setData] = useState<DepartmentHierarchy[]>([]);
@@ -20,8 +24,7 @@ const HierarchyView: React.FC = () => {
         })
       );
       setData(detailed);
-    } catch (err) {
-      console.error('Failed to load hierarchy', err);
+    } catch {
       addToast('Failed to load departments', 'error');
     }
   };
@@ -35,14 +38,14 @@ const HierarchyView: React.FC = () => {
       {data.map((dep) => (
         <div key={dep.id} className="border p-4 rounded">
           <h3 className="font-semibold">{dep.name}</h3>
-          {dep.lines.map((line) => (
+          {dep.lines.map((line: LineWithStations) => (
             <div key={line.id} className="ml-4 mt-2">
               <p className="font-medium">{line.name}</p>
-              {line.stations.map((st) => (
+              {line.stations.map((st: StationWithAssets) => (
                 <div key={st.id} className="ml-4 mt-1">
                   <p>{st.name}</p>
                   <ul className="ml-4 list-disc">
-                    {st.assets.map((a) => (
+                    {st.assets.map((a: Asset) => (
                       <li key={a.id}>{a.name}</li>
                     ))}
                   </ul>

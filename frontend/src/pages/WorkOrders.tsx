@@ -1,14 +1,18 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useEffect, useState } from 'react';
-import http from '../lib/http';
-import { addToQueue, onSyncConflict, type SyncConflict } from '../utils/offlineQueue';
-import ConflictResolver from '../components/offline/ConflictResolver';
-import DataTable from '../components/common/DataTable';
-import Badge from '../components/common/Badge';
-import Button from '../components/common/Button';
+import http from '@/lib/http';
+import { addToQueue, onSyncConflict, type SyncConflict } from '@/utils/offlineQueue';
+import ConflictResolver from '@/components/offline/ConflictResolver';
+import DataTable from '@/components/common/DataTable';
+import Badge from '@/components/common/Badge';
+import Button from '@/components/common/Button';
 import { Search } from 'lucide-react';
-import NewWorkOrderModal from '../components/work-orders/NewWorkOrderModal';
-import WorkOrderReviewModal from '../components/work-orders/WorkOrderReviewModal';
-import type { WorkOrder } from '../types';
+import NewWorkOrderModal from '@/components/work-orders/NewWorkOrderModal';
+import WorkOrderReviewModal from '@/components/work-orders/WorkOrderReviewModal';
+import type { WorkOrder } from '@/types';
 
 const LOCAL_KEY = 'offline-workorders';
 
@@ -27,7 +31,9 @@ export default function WorkOrders() {
 
   useEffect(() => {
     const unsub = onSyncConflict(setConflict);
-    return () => unsub();
+    return () => {
+      unsub();
+    };
   }, []);
 
   const resolveConflict = async (choice: 'local' | 'server') => {
@@ -66,8 +72,11 @@ export default function WorkOrders() {
       const url = params.toString()
         ? `/workorders/search?${params.toString()}`
         : '/workorders';
-      const res = await http.get(url);
-      const data = (res.data as any[]).map((w) => ({ ...w, id: w._id ?? w.id })) as WorkOrder[];
+      interface WorkOrderResponse extends Partial<WorkOrder> { _id?: string; id?: string }
+      const res = await http.get<WorkOrderResponse[]>(url);
+      const data: WorkOrder[] = Array.isArray(res.data)
+        ? res.data.map((w) => ({ ...w, id: w._id ?? w.id ?? '' }))
+        : [];
       setWorkOrders(data);
       localStorage.setItem(LOCAL_KEY, JSON.stringify(data));
     } catch (err) {
@@ -104,6 +113,15 @@ export default function WorkOrders() {
     }
   };
 
+  const transition = async (id: string, action: 'assign' | 'start' | 'complete' | 'cancel') => {
+    try {
+      await http.post(`/workorders/${id}/${action}`);
+      fetchWorkOrders();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const openReview = async (order: WorkOrder) => {
     try {
       const res = await http.get(`/workorders/${order.id}`);
@@ -115,7 +133,7 @@ export default function WorkOrders() {
     }
   };
 
-  const createWorkOrder = async (payload: FormData | Record<string, any>) => {
+  const createWorkOrder = async (payload: FormData | Record<string, unknown>) => {
     if (!navigator.onLine) {
       if (!(payload instanceof FormData)) {
         addToQueue({ method: 'post', url: '/workorders', data: payload });
@@ -164,17 +182,45 @@ export default function WorkOrders() {
       ),
     },
     {
+      header: 'Assignees',
+      accessor: (row: WorkOrder) => row.assignees?.join(', ') || 'N/A',
+    },
+    {
       header: 'Due Date',
       accessor: (row: WorkOrder) =>
         row.dueDate ? new Date(row.dueDate).toLocaleDateString() : 'N/A',
     },
     {
       header: 'Actions',
-      accessor: (row: WorkOrder) => (
-        <Button variant="ghost" size="sm" onClick={() => updateStatus(row.id)}>
-          Mark Completed
-        </Button>
-      ),
+      accessor: (row: WorkOrder) => {
+        switch (row.status) {
+          case 'requested':
+            return (
+              <Button variant="ghost" size="sm" onClick={() => transition(row.id, 'assign')}>
+                Assign
+              </Button>
+            );
+          case 'assigned':
+            return (
+              <Button variant="ghost" size="sm" onClick={() => transition(row.id, 'start')}>
+                Start
+              </Button>
+            );
+          case 'in_progress':
+            return (
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" size="sm" onClick={() => transition(row.id, 'complete')}>
+                  Complete
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => transition(row.id, 'cancel')}>
+                  Cancel
+                </Button>
+              </div>
+            );
+          default:
+            return null;
+        }
+      },
       className: 'text-right',
     },
   ];
@@ -198,7 +244,7 @@ export default function WorkOrders() {
             placeholder="Search work orders..."
             className="flex-1 bg-transparent border-none outline-none text-neutral-900 placeholder-neutral-400"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
           />
         </div>
 
@@ -206,18 +252,19 @@ export default function WorkOrders() {
           <select
             className="border rounded p-2 flex-1"
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value)}
           >
             <option value="">All Statuses</option>
-            <option value="open">Open</option>
-            <option value="in-progress">In Progress</option>
-            <option value="on-hold">On Hold</option>
+            <option value="requested">Requested</option>
+            <option value="assigned">Assigned</option>
+            <option value="in_progress">In Progress</option>
             <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
           </select>
           <select
             className="border rounded p-2 flex-1"
             value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setPriorityFilter(e.target.value)}
           >
             <option value="">All Priorities</option>
             <option value="low">Low</option>
@@ -229,13 +276,13 @@ export default function WorkOrders() {
             type="date"
             className="border rounded p-2"
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStartDate(e.target.value)}
           />
           <input
             type="date"
             className="border rounded p-2"
             value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEndDate(e.target.value)}
           />
           <Button
             variant="secondary"

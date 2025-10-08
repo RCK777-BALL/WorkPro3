@@ -1,11 +1,15 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import Badge from '../common/Badge';
-import Avatar from '../common/Avatar';
-import Button from '../common/Button';
+import Badge from '@common/Badge';
+import Avatar from '@common/Avatar';
+import Button from '@common/Button';
 import WorkHistoryCard from './WorkHistoryCard';
 import { Users } from 'lucide-react';
-import type { TeamMember } from '../../types';
+import type { TeamMember, WorkHistory, WorkHistoryEntry } from '@/types';
 
 interface TeamTableProps {
   teamMembers: TeamMember[];
@@ -26,13 +30,16 @@ const TeamTable: React.FC<TeamTableProps> = ({
     )
   );
 
-  const getRoleBadgeColor = (role: string) => {
+  const getRoleBadgeColor = (role: TeamMember['role']) => {
     switch (role) {
       case 'admin':
         return 'bg-primary-100 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300';
-      case 'manager':
+      case 'supervisor':
+      case 'department_leader':
         return 'bg-success-100 text-success-700 dark:bg-success-900/20 dark:text-success-300';
-      case 'technician':
+      case 'tech':
+      case 'area_leader':
+      case 'team_leader':
         return 'bg-accent-100 text-accent-700 dark:bg-accent-900/20 dark:text-accent-300';
       default:
         return 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/20 dark:text-neutral-300';
@@ -40,7 +47,7 @@ const TeamTable: React.FC<TeamTableProps> = ({
   };
 
   // Updated work history data to match the WorkHistoryCard interface
-  const sampleWorkHistory = {
+  const sampleWorkHistory: WorkHistory = {
     metrics: {
       safety: {
         incidentRate: 0.5,
@@ -96,7 +103,7 @@ const TeamTable: React.FC<TeamTableProps> = ({
         status: 'completed',
         duration: 4
       }
-    ]
+    ] as WorkHistoryEntry[]
   };
 
   return (

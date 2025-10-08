@@ -1,7 +1,11 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import Button from '../common/Button';
-import type { Line, Department } from '../../types';
+import Button from '@common/Button';
+import type { Line, Department } from '@/types';
 
 interface Props {
   isOpen: boolean;
@@ -41,7 +45,7 @@ const LineModal: React.FC<Props> = ({ isOpen, onClose, line, departments, onUpda
               type="text"
               className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, name: e.target.value })}
               required
             />
           </div>
@@ -50,7 +54,7 @@ const LineModal: React.FC<Props> = ({ isOpen, onClose, line, departments, onUpda
             <select
               className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
               value={formData.department}
-              onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData({ ...formData, department: e.target.value })}
             >
               {departments.map((d) => (
                 <option key={d.id} value={d.id}>

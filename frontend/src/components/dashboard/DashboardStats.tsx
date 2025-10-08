@@ -1,6 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDashboardStore } from '../../store/dashboardStore';
+import { useDashboardStore } from '@/store/dashboardStore';
 import {
   DndContext,
   closestCenter,
@@ -18,7 +22,7 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import Card from '../common/Card';
+import Card from '@common/Card';
 import {
   ArrowUp,
   ArrowDown,
@@ -136,7 +140,7 @@ const SortableStatCard: React.FC<StatCardProps> = (props) => {
               <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{props.title}</h3>
               {props.onRemove && (
                 <button
-                  onClick={(e) => {
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                     e.stopPropagation();
                     props.onRemove?.();
                   }}
@@ -245,7 +249,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
 
   const role = selectedRole;
   const defaultKPIs: StatCardProps[] =
-    role === 'technician'
+    role === 'tech'
       ? baseKPIs.filter((kpi) => ['work_orders', 'pm_tasks', 'inventory'].includes(kpi.id))
       : baseKPIs;
 
@@ -253,7 +257,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
 
   // Build extra KPIs from selection (null-safe)
   const extraKPIs: StatCardProps[] = selectedKPIs
-    .map((kpiId) => {
+    .map((kpiId: string) => {
       const kpi = availableKPIs.find((k) => k.id === kpiId);
       if (!kpi) return null;
 

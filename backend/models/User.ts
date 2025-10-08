@@ -1,12 +1,16 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import mongoose, { Schema, Document, Model, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { ROLES, UserRole } from '../types/auth';
+export type { UserRole } from '../types/auth';
 
 // Number of bcrypt salt rounds. Increasing this value strengthens password hashes
 // but slows down hashing, impacting performance. Adjust here to change the
 // hashing cost globally.
 export const SALT_ROUNDS = 10;
-
-export type UserRole = 'admin' | 'manager' | 'technician' | 'viewer';
 
 // ✅ Interface for a user document
 export interface UserDocument extends Document {
@@ -14,7 +18,7 @@ export interface UserDocument extends Document {
   name: string;
   email: string;
   passwordHash: string;
-  role: UserRole;
+  roles: UserRole[];
   tenantId: mongoose.Schema.Types.ObjectId;
   employeeId: string;
   managerId?: Types.ObjectId;
@@ -24,6 +28,7 @@ export interface UserDocument extends Document {
   passwordResetExpires?: Date;
   mfaEnabled: boolean;
   mfaSecret?: string;
+  tokenVersion: number;
 }
 
 // ✅ Schema definition
@@ -39,10 +44,10 @@ const userSchema = new Schema<UserDocument>(
       lowercase: true,
     },
     passwordHash: { type: String, required: true },
-    role: {
-      type: String,
-      enum: ['admin', 'manager', 'technician', 'viewer'],
-      default: 'viewer',
+    roles: {
+      type: [String],
+      enum: ROLES,
+      default: ['tech'],
     },
     tenantId: { type: mongoose.Schema.Types.ObjectId, required: true, index: true },
     employeeId: { type: String, required: true, unique: true },
@@ -64,6 +69,7 @@ const userSchema = new Schema<UserDocument>(
 
     mfaEnabled: { type: Boolean, default: false },
     mfaSecret: { type: String },
+    tokenVersion: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

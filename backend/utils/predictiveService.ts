@@ -1,19 +1,17 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import Asset from '../models/Asset';
 import SensorReading from '../models/SensorReading';
 import Notification from '../models/Notifications';
 import Prediction from '../models/Prediction';
+import WorkOrder from '../models/WorkOrder';
 import config from '../config/default';
+import ArimaLib from 'arima';
 
-// Attempt to load external ARIMA library if installed. Fallback logic is used
-// when the dependency is not available in the environment.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-let ArimaLib: any = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  ArimaLib = require('arima');
-} catch {
-  ArimaLib = null;
-}
+// The ARIMA library is a regular dependency. If it's unavailable, the
+// fallback logic in `arimaForecast` will handle forecasting without it.
 
 export interface PredictionTrend {
   timestamp: Date;
@@ -233,10 +231,28 @@ export async function predictForAsset(
   return results;
 }
 
-export async function getPredictions(tenantId: string): Promise<PredictionResult[]> {
+export async function getPredictions(
+  tenantId: string,
+  workOrderType?: string,
+): Promise<PredictionResult[]> {
   const assets = await Asset.find({ tenantId });
   const results: PredictionResult[] = [];
   for (const asset of assets) {
+    if (workOrderType) {
+      const hasMatchingOrder = await WorkOrder.exists({
+        tenantId,
+        type: workOrderType,
+        $or: [
+          { assetId: asset._id },
+          { assetId: asset._id.toString() },
+          { asset: asset._id },
+          { asset: asset._id.toString() },
+        ],
+      });
+      if (!hasMatchingOrder) {
+        continue;
+      }
+    }
     const preds = await predictForAsset(asset._id.toString(), tenantId);
     results.push(...preds);
   }

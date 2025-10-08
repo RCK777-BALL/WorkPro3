@@ -1,7 +1,11 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState } from 'react';
 
 interface Props {
-  onCreated: (hook: any) => void;
+  onCreated: (hook: unknown) => void;
 }
 
 export default function HookForm({ onCreated }: Props) {
@@ -23,8 +27,8 @@ export default function HookForm({ onCreated }: Props) {
 
   return (
     <form onSubmit={submit}>
-      <input placeholder="name" value={name} onChange={(e) => setName(e.target.value)} />
-      <input placeholder="url" value={url} onChange={(e) => setUrl(e.target.value)} />
+      <input placeholder="name" value={name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)} />
+      <input placeholder="url" value={url} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUrl(e.target.value)} />
       <button type="submit">Register</button>
     </form>
   );

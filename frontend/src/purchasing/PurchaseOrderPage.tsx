@@ -1,5 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useState } from 'react';
-import { createPurchaseOrder } from '../api/purchasing';
+import { createPurchaseOrder } from '@/api/purchasing';
 
 export default function PurchaseOrderPage() {
   const [vendor, setVendor] = useState('');
@@ -19,18 +23,18 @@ export default function PurchaseOrderPage() {
       <input
         placeholder="Vendor ID"
         value={vendor}
-        onChange={(e) => setVendor(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVendor(e.target.value)}
       />
       <input
         placeholder="Item ID"
         value={item}
-        onChange={(e) => setItem(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setItem(e.target.value)}
       />
       <input
         type="number"
         placeholder="Quantity"
         value={qty}
-        onChange={(e) => setQty(Number(e.target.value))}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQty(Number(e.target.value))}
       />
       <button onClick={submit}>Create</button>
     </div>

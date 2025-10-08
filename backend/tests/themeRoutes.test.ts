@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { describe, it, beforeAll, afterAll, beforeEach, expect } from "vitest";
 import request from 'supertest';
 import express from 'express';
@@ -24,7 +28,7 @@ beforeAll(async () => {
     name: 'Tester',
     email: 'tester@example.com',
     passwordHash: 'pass123',
-    role: 'viewer'
+    roles: ['planner']
   });
   token = jwt.sign({ id: user._id.toString() }, process.env.JWT_SECRET!);
 });
@@ -40,7 +44,7 @@ beforeEach(async () => {
     name: 'Tester',
     email: 'tester@example.com',
     passwordHash: 'pass123',
-    role: 'viewer',
+    roles: ['planner'],
     theme: 'light',
     colorScheme: 'default'
   });

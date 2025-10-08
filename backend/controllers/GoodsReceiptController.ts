@@ -1,10 +1,20 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { Request, Response, NextFunction } from 'express';
+import { sendResponse } from '../utils/sendResponse';
+
 import GoodsReceipt from '../models/GoodsReceipt';
 import PurchaseOrder from '../models/PurchaseOrder';
 import Vendor from '../models/Vendor';
 import { addStock } from '../services/inventory';
 import nodemailer from 'nodemailer';
 import { assertEmail } from '../utils/assert';
+import { writeAuditLog } from '../utils/audit';
+import { toEntityId } from '../utils/ids';
+import logger from '../utils/logger';
+import { enqueueEmailRetry } from '../utils/emailQueue';
 
 export const createGoodsReceipt = async (
   req: Request,
@@ -12,28 +22,37 @@ export const createGoodsReceipt = async (
   next: NextFunction,
 ) => {
   try {
-    const tenantId = (req as any).tenantId as string | undefined;
+    const tenantId = req.tenantId;
+    if (!tenantId)
+      return sendResponse(res, null, 'Tenant ID required', 400);
     const { purchaseOrder: poId, items } = req.body as any;
 
     const po = await PurchaseOrder.findById(poId);
-    if (!po) return res.status(404).json({ message: 'PO not found' });
+    if (!po) {
+      sendResponse(res, null, 'PO not found', 404);
+      return;
+    }
+
+    const mongoose = (await import('mongoose')).default;
+    const db = mongoose.connection.db;
+    if (!db) throw new Error('Database connection not ready');
 
     for (const grItem of items) {
       await addStock(grItem.item, grItem.quantity, grItem.uom);
-      const poItem = po.items.find((i) => i.item.toString() === grItem.item);
+      const poItem = po.items?.find((i) => i.item.toString() === grItem.item);
+      let qty = grItem.quantity;
+      if (grItem.uom && poItem?.uom && grItem.uom.toString() !== poItem.uom.toString()) {
+        const conv = await db
+          .collection('conversions')
+          .findOne({ from: grItem.uom, to: poItem.uom });
+        if (conv) qty = qty * conv.factor;
+      }
       if (poItem) {
-        let qty = grItem.quantity;
-        if (grItem.uom && poItem.uom && grItem.uom.toString() !== poItem.uom.toString()) {
-          const conv = await (await import('mongoose')).default.connection.db
-            .collection('conversions')
-            .findOne({ from: grItem.uom, to: poItem.uom });
-          if (conv) qty = qty * conv.factor;
-        }
         poItem.received += qty;
       }
     }
 
-    if (po.items.every((i) => i.received >= i.quantity)) {
+    if (po.items?.every((i) => i.received >= i.quantity)) {
       po.status = 'closed';
     }
 
@@ -42,22 +61,42 @@ export const createGoodsReceipt = async (
     const gr = await GoodsReceipt.create({
       purchaseOrder: po._id,
       items,
+      tenantId,
+    });
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const grAny = gr as any;
+    await writeAuditLog({
       ...(tenantId ? { tenantId } : {}),
+      userId,
+      action: 'create',
+      entityType: 'GoodsReceipt',
+      entityId: toEntityId(grAny._1 as any),
+      after: typeof grAny.toObject === 'function' ? grAny.toObject() : grAny,
     });
 
     const vendor = await Vendor.findById(po.vendor).lean();
     if (vendor?.email) {
       assertEmail(vendor.email);
       const transporter = nodemailer.createTransport({ jsonTransport: true });
-      await transporter.sendMail({
+      const mailOptions = {
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
         to: vendor.email,
         subject: `Goods received for PO ${po._id}`,
         text: 'Items received',
-      });
+      };
+
+      try {
+        await transporter.sendMail(mailOptions);
+      } catch (err) {
+        logger.error('Failed to send goods receipt email', err);
+        void enqueueEmailRetry(mailOptions);
+      }
     }
 
-    res.status(201).json(gr);
+    sendResponse(res, gr, null, 201);
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };

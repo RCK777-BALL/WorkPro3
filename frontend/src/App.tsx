@@ -1,34 +1,52 @@
- import { Routes, Route, Navigate } from "react-router-dom";
-import Dashboard from "./pages/Dashboard";
+/*
+ * SPDX-License-Identifier: MIT
+ */
 
-import Analytics from "./pages/Analytics";
-import Reports from "./pages/Reports";
-import Layout from "./components/layout/Layout";
-import Departments from "./pages/Departments";
-import Login from "./pages/Login";
-import RegisterPage from "./pages/RegisterPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import NotFound from "./pages/NotFound";
+import { useEffect } from 'react';
+import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Analytics from './pages/Analytics';
+import Imports from './pages/Imports';
+import Layout from './components/layout/Layout';
+import ErrorBoundary from './components/common/ErrorBoundary';
+import Reports from './pages/Reports';
+import { useAuth } from '@/context/AuthContext';
+import SafetyPermits from './pages/SafetyPermits';
+import {
+  setUnauthorizedCallback,
+  TOKEN_KEY,
+  TENANT_KEY,
+  SITE_KEY,
+} from '@/lib/http';
 
 export default function App() {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  useEffect(() => {
+    setUnauthorizedCallback(() => {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(TENANT_KEY);
+      localStorage.removeItem(SITE_KEY);
+      logout();
+      navigate('/login');
+    });
+  }, [logout, navigate]);
+
   return (
-     <div className="min-h-screen bg-white text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100">
-              <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/dashboard/analytics" element={<Analytics />} />
-            <Route path="/dashboard/reports" element={<Reports />} />
-            <Route path="/departments" element={<Departments />} />
-          </Route>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="*" element={<NotFound />} />
- 
-        </Routes>
-    </div>
- 
- 
+    <ErrorBoundary>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route element={<Layout />}>
+          <Route path="/" element={<Navigate to="/dashboard" />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/permits" element={<SafetyPermits />} />
+          <Route path="/imports" element={<Imports />} />
+        </Route>
+      </Routes>
+    </ErrorBoundary>
   );
 }

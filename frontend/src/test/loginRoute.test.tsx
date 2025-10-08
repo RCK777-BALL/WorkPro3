@@ -1,8 +1,16 @@
-import { describe, it, expect } from "vitest";
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
+import { describe, it, expect, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { render, screen } from "@testing-library/react";
-import App from "../App";
-import { AuthProvider } from "../context/AuthContext";
+import App from "@/App";
+import { AuthProvider } from "@/context/AuthContext";
+
+vi.mock("@/lib/http", () => ({
+  default: { get: vi.fn().mockResolvedValue({ data: null }), post: vi.fn() },
+}));
 
 describe("App routing", () => {
   it("renders Login page on /login", () => {

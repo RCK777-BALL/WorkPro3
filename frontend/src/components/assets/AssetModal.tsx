@@ -1,14 +1,18 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useDropzone } from "react-dropzone";
 import { X, Upload, Download } from "lucide-react";
-import Button from "../common/Button";
-import http from "../../lib/http";
-import { useToast } from "../../context/ToastContext";
-import { useDepartmentStore } from "../../store/departmentStore";
-import { useAuthStore } from "../../store/authStore";
-import type { Asset, Department, Line, Station } from "../../types";
-import AssetQRCode from "../qr/AssetQRCode";
+import Button from "@common/Button";
+import http from "@/lib/http";
+import { useToast } from "@/context/ToastContext";
+import { useDepartmentStore } from "@/store/departmentStore";
+import { useAuthStore, type AuthState } from "@/store/authStore";
+import type { Asset, Department, Line, Station } from "@/types";
+import AssetQRCode from "@/qr/AssetQRCode";
 
 const defaultAssetState = {
   name: "",
@@ -52,7 +56,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
   const fetchDepartments = useDepartmentStore((s) => s.fetchDepartments);
   const fetchLines = useDepartmentStore((s) => s.fetchLines);
   const fetchStations = useDepartmentStore((s) => s.fetchStations);
-  const tenantId = useAuthStore((s) => s.user?.tenantId);
+  const tenantId = useAuthStore((s: AuthState) => s.user?.tenantId);
   const [departmentId, setDepartmentId] = useState("");
   const [lineId, setLineId] = useState("");
   const [stationId, setStationId] = useState("");
@@ -70,8 +74,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
   }, [asset, reset]);
 
   useEffect(() => {
-    fetchDepartments().catch((err) => {
-      console.error("Failed to load departments", err);
+    fetchDepartments().catch(() => {
       addToast("Failed to load departments", "error");
     });
   }, [fetchDepartments, addToast]);
@@ -82,8 +85,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
       setStationId("");
       return;
     }
-    fetchLines(departmentId).catch((err) => {
-      console.error("Failed to load lines", err);
+    fetchLines(departmentId).catch(() => {
       addToast("Failed to load lines", "error");
     });
   }, [departmentId, fetchLines, addToast]);
@@ -93,8 +95,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
       setStationId("");
       return;
     }
-    fetchStations(departmentId, lineId).catch((err) => {
-      console.error("Failed to load stations", err);
+    fetchStations(departmentId, lineId).catch(() => {
       addToast("Failed to load stations", "error");
     });
   }, [departmentId, lineId, fetchStations, addToast]);
@@ -140,7 +141,6 @@ const AssetModal: React.FC<AssetModalProps> = ({
       onUpdate({ ...(res.data as any), id: res.data._id } as Asset);
       onClose();
     } catch (err: any) {
-      console.error("Failed to create asset", err);
       const message =
         err.response?.data?.message ||
         (Array.isArray(err.response?.data?.errors)
@@ -294,7 +294,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
               <select
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
                 value={departmentId}
-                onChange={(e) => setDepartmentId(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setDepartmentId(e.target.value)}
               >
                 <option value="">Select Department</option>
                 {departments.map((d) => (
@@ -311,7 +311,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
               <select
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
                 value={lineId}
-                onChange={(e) => setLineId(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setLineId(e.target.value)}
                 disabled={!departmentId}
               >
                 <option value="">Select Line</option>
@@ -329,7 +329,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
               <select
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
                 value={stationId}
-                onChange={(e) => setStationId(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStationId(e.target.value)}
                 disabled={!lineId}
               >
                 <option value="">Select Station</option>

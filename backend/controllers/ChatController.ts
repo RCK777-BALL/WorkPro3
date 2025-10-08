@@ -1,271 +1,324 @@
-import Channel from '../models/Channel';
-import ChatMessage from '../models/ChatMessage';
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
+import Channel, { ChannelDocument } from '../models/Channel';
+import ChatMessage, { ChatMessageDocument } from '../models/ChatMessage';
+import type { AuthedRequestHandler } from '../types/http';
+import { resolveUserAndTenant } from './chat/utils';
+import { sendResponse } from '../utils/sendResponse';
+import { Response } from 'express';
 
 // Channel controllers
-export const getChannels: AuthedRequestHandler = async (
-  req: AuthedRequest,
-  res,
-  next
-) => {
+export const getChannels: AuthedRequestHandler = async (req: any, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
-    const userId = req.user?._id || req.user?.id;
-    const channels = await Channel.find({
-      tenantId: req.tenantId,
+    const ids = resolveUserAndTenant(req, res);
+    if (!ids) return;
+    const { userId, tenantId } = ids;
+    const channels: ChannelDocument[] = await Channel.find({
+      tenantId,
       isDirect: false,
-      ...(userId ? { members: userId } : {}),
+      members: userId,
     }).sort({ name: 1 });
-    return res.json(channels);
+    sendResponse(res, channels);
+    return;
   } catch (err) {
-    return next(err);
+    next(err);
+    return;
   }
 };
 
-export const createChannel: AuthedRequestHandler<unknown, any, { name: string; description?: string; members?: string[] }> = async (
-  req: AuthedRequest<unknown, any, { name: string; description?: string; members?: string[] }>,
-  res,
-  next
-) => {
+export const createChannel: AuthedRequestHandler = async (req: { body: { name: any; description: any; members?: never[] | undefined; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
-    const userId = req.user?._id || req.user?.id;
+    const ids = resolveUserAndTenant(req, res);
+    if (!ids) return;
+    const { userId, tenantId } = ids;
     const { name, description, members = [] } = req.body;
-    if (!userId) return res.status(400).json({ message: 'User required' });
-    const channel = await Channel.create({
+    const channel: ChannelDocument = await Channel.create({
       name,
       description,
       members: Array.from(new Set([userId, ...members])),
       createdBy: userId,
-      tenantId: req.tenantId,
+      tenantId,
       isDirect: false,
     });
-    return res.status(201).json(channel);
+    sendResponse(res, channel, null, 201);
+    return;
   } catch (err) {
-    return next(err);
+    next(err);
+    return;
   }
 };
 
-export const updateChannel: AuthedRequestHandler<{ channelId: string }, any, { name?: string; description?: string; members?: string[] }> = async (
-  req: AuthedRequest<{ channelId: string }, any, { name?: string; description?: string; members?: string[] }>,
-  res,
-  next
-) => {
+export const updateChannel: AuthedRequestHandler = async (req: { body: { name: any; description: any; members: any; }; params: { channelId: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
-    const userId = req.user?._id || req.user?.id;
-    if (!userId) return res.status(400).json({ message: 'User required' });
+    const ids = resolveUserAndTenant(req, res);
+    if (!ids) return;
+    const { userId, tenantId } = ids;
     const { name, description, members } = req.body;
     const update: Partial<{ name: string; description?: string; members?: string[] }> = {};
     if (name !== undefined) update.name = name;
     if (description !== undefined) update.description = description;
     if (members !== undefined) update.members = members;
-    const channel = await Channel.findOneAndUpdate(
+    const channel: ChannelDocument | null = await Channel.findOneAndUpdate(
       {
         _id: req.params.channelId,
-        tenantId: req.tenantId,
+        tenantId,
         isDirect: false,
         members: userId,
       },
       update,
       { new: true }
     );
-    if (!channel) return res.status(404).end();
-    return res.json(channel);
+    if (!channel) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
+    sendResponse(res, channel);
+    return;
   } catch (err) {
-    return next(err);
+    next(err);
+    return;
   }
 };
 
-export const deleteChannel: AuthedRequestHandler<{ channelId: string }> = async (
-  req: AuthedRequest<{ channelId: string }>,
-  res,
-  next
-) => {
+export const deleteChannel: AuthedRequestHandler = async (req: { params: { channelId: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
+    const ids = resolveUserAndTenant(req, res, { requireUser: false });
+    if (!ids) return;
+    const { tenantId } = ids;
     await Channel.findOneAndDelete({
       _id: req.params.channelId,
-      tenantId: req.tenantId,
+      tenantId,
       isDirect: false,
     });
     await ChatMessage.deleteMany({ channelId: req.params.channelId });
-    return res.status(204).end();
+    sendResponse(res, { message: 'Deleted successfully' });
+    return;
   } catch (err) {
-    return next(err);
+    next(err);
+    return;
   }
 };
 
-export const getChannelMessages: AuthedRequestHandler<{ channelId: string }> = async (
-  req: AuthedRequest<{ channelId: string }>,
-  res,
-  next
-) => {
+export const getChannelMessages: AuthedRequestHandler = async (req: { params: { channelId: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
-    const messages = await ChatMessage.find({ channelId: req.params.channelId }).sort({ createdAt: 1 });
-    return res.json(messages);
+    const messages: ChatMessageDocument[] = await ChatMessage.find({ channelId: req.params.channelId }).sort({ createdAt: 1 });
+    sendResponse(res, messages);
+    return;
   } catch (err) {
-    return next(err);
+    next(err);
+    return;
   }
 };
 
-export const sendChannelMessage: AuthedRequestHandler<{ channelId: string }, any, { content: string }> = async (
-  req: AuthedRequest<{ channelId: string }, any, { content: string }>,
-  res,
-  next
-) => {
+export const sendChannelMessage: AuthedRequestHandler = async (req: { body: { content: any; }; params: { channelId: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
-    const userId = req.user?._id || req.user?.id;
+    const ids = resolveUserAndTenant(req, res, { requireTenant: false });
+    if (!ids) return;
+    const { userId } = ids;
     const { content } = req.body;
-    const message = await ChatMessage.create({
+    const message: ChatMessageDocument = await ChatMessage.create({
       channelId: req.params.channelId,
       sender: userId,
       content,
     });
-    return res.status(201).json(message);
+    sendResponse(res, message, null, 201);
+    return;
   } catch (err) {
-    return next(err);
+    next(err);
+    return;
   }
 };
 
 // Message controllers shared between channel and direct messages
-export const updateMessage: AuthedRequestHandler<{ channelId: string; messageId: string }, any, { content: string }> = async (
-  req: AuthedRequest<{ channelId: string; messageId: string }, any, { content: string }>,
-  res,
-  next
-) => {
+export const updateMessage: AuthedRequestHandler = async (req: { params: { messageId: any; }; body: { content: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
-    const userId = req.user?._id || req.user?.id;
-    const message = await ChatMessage.findOneAndUpdate(
+    const ids = resolveUserAndTenant(req, res, { requireTenant: false });
+    if (!ids) return;
+    const { userId } = ids;
+    const message: ChatMessageDocument | null = await ChatMessage.findOneAndUpdate(
       { _id: req.params.messageId, sender: userId },
       { content: req.body.content, updatedAt: new Date() },
       { new: true }
     );
-    if (!message) return res.status(404).end();
-    return res.json(message);
+    if (!message) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
+    sendResponse(res, message);
+    return;
   } catch (err) {
-    return next(err);
+    next(err);
+    return;
   }
 };
 
-export const deleteMessage: AuthedRequestHandler<{ channelId: string; messageId: string }> = async (
-  req: AuthedRequest<{ channelId: string; messageId: string }>,
-  res,
-  next
+interface DeleteMessageParams {
+  messageId: string;
+}
+
+interface DeleteMessageRequest {
+  params: DeleteMessageParams;
+}
+
+export const deleteMessage: AuthedRequestHandler = async (
+  req: DeleteMessageRequest,
+  res: Response<any, Record<string, any>>,
+  next: (arg0: unknown) => void
 ) => {
   try {
-    const userId = req.user?._id || req.user?.id;
+    const ids = resolveUserAndTenant(req, res, { requireTenant: false });
+    if (!ids) return;
+    const { userId } = ids;
     await ChatMessage.findOneAndDelete({ _id: req.params.messageId, sender: userId });
-    return res.status(204).end();
+    sendResponse(res, { message: 'Deleted successfully' });
+    return;
   } catch (err) {
-    return next(err);
+    next(err);
+    return;
   }
 };
 
 // Direct message controllers
+interface GetDirectMessagesRequest {
+  params?: Record<string, any>;
+  body?: Record<string, any>;
+}
+
 export const getDirectMessages: AuthedRequestHandler = async (
-  req: AuthedRequest,
-  res,
-  next
+  req: GetDirectMessagesRequest,
+  res: Response<any, Record<string, any>>,
+  next: (arg0: unknown) => void
 ) => {
   try {
-    const userId = req.user?._id || req.user?.id;
-    const channels = await Channel.find({
-      tenantId: req.tenantId,
+    const ids = resolveUserAndTenant(req, res);
+    if (!ids) return;
+    const { userId, tenantId } = ids;
+    const channels: ChannelDocument[] = await Channel.find({
+      tenantId,
       isDirect: true,
       members: userId,
     });
-    return res.json(channels);
+    sendResponse(res, channels);
+    return;
   } catch (err) {
-    return next(err);
+    next(err);
+    return;
   }
 };
 
-export const createDirectMessage: AuthedRequestHandler<unknown, any, { userId: string }> = async (
-  req: AuthedRequest<unknown, any, { userId: string }>,
-  res,
-  next
-) => {
+export const createDirectMessage: AuthedRequestHandler = async (req: { body: { userId: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
-    const userId = req.user?._id || req.user?.id;
+    const ids = resolveUserAndTenant(req, res);
+    if (!ids) return;
+    const { userId, tenantId } = ids;
     const otherId = req.body.userId;
     const members = [userId, otherId];
-    const existing = await Channel.findOne({
-      tenantId: req.tenantId,
+    const existing: ChannelDocument | null = await Channel.findOne({
+      tenantId,
       isDirect: true,
       members: { $all: members },
     });
-    if (existing) return res.json(existing);
-    const channel = await Channel.create({
+    if (existing) {
+      sendResponse(res, existing);
+      return;
+    }
+    const channel: ChannelDocument = await Channel.create({
       name: '',
       isDirect: true,
       members,
       createdBy: userId!,
-      tenantId: req.tenantId,
+      tenantId,
     });
-    return res.status(201).json(channel);
+    sendResponse(res, channel, null, 201);
+    return;
   } catch (err) {
-    return next(err);
+    next(err);
+    return;
   }
 };
 
-export const deleteDirectMessage: AuthedRequestHandler<{ conversationId: string }> = async (
-  req: AuthedRequest<{ conversationId: string }>,
-  res,
-  next
+interface DeleteDirectMessageParams {
+  conversationId: string;
+}
+
+interface DeleteDirectMessageRequest {
+  params: DeleteDirectMessageParams;
+}
+
+export const deleteDirectMessage: AuthedRequestHandler = async (
+  req: DeleteDirectMessageRequest,
+  res: Response<any, Record<string, any>>,
+  next: (arg0: unknown) => void
 ) => {
   try {
-    const userId = req.user?._id || req.user?.id;
+    const ids = resolveUserAndTenant(req, res);
+    if (!ids) return;
+    const { userId, tenantId } = ids;
     await Channel.findOneAndDelete({
       _id: req.params.conversationId,
-      tenantId: req.tenantId,
+      tenantId,
       isDirect: true,
       members: userId,
     });
     await ChatMessage.deleteMany({ channelId: req.params.conversationId });
-    return res.status(204).end();
+    sendResponse(res, { message: 'Deleted successfully' });
+    return;
   } catch (err) {
-    return next(err);
+    next(err);
+    return;
   }
 };
 
-export const getDirectMessagesForUser: AuthedRequestHandler<{ conversationId: string }> = async (
-  req: AuthedRequest<{ conversationId: string }>,
-  res,
-  next
-) => {
+export const getDirectMessagesForUser: AuthedRequestHandler = async (req: { params: { conversationId: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
-    const userId = req.user?._id || req.user?.id;
-    const channel = await Channel.findOne({
+    const ids = resolveUserAndTenant(req, res);
+    if (!ids) return;
+    const { userId, tenantId } = ids;
+    const channel: ChannelDocument | null = await Channel.findOne({
       _id: req.params.conversationId,
-      tenantId: req.tenantId,
+      tenantId,
       isDirect: true,
       members: userId,
     });
-    if (!channel) return res.status(404).end();
-    const messages = await ChatMessage.find({ channelId: channel._id }).sort({ createdAt: 1 });
-    return res.json(messages);
+    if (!channel) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
+    const messages: ChatMessageDocument[] = await ChatMessage.find({ channelId: channel._id }).sort({ createdAt: 1 });
+    sendResponse(res, messages);
+    return;
   } catch (err) {
-    return next(err);
+    next(err);
+    return;
   }
 };
 
-export const sendDirectMessage: AuthedRequestHandler<{ conversationId: string }, any, { content: string }> = async (
-  req: AuthedRequest<{ conversationId: string }, any, { content: string }>,
-  res,
-  next
-) => {
+export const sendDirectMessage: AuthedRequestHandler = async (req: { params: { conversationId: any; }; body: { content: any; }; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
   try {
-    const userId = req.user?._id || req.user?.id;
-    const channel = await Channel.findOne({
+    const ids = resolveUserAndTenant(req, res);
+    if (!ids) return;
+    const { userId, tenantId } = ids;
+    const channel: ChannelDocument | null = await Channel.findOne({
       _id: req.params.conversationId,
-      tenantId: req.tenantId,
+      tenantId,
       isDirect: true,
       members: userId,
     });
-    if (!channel) return res.status(404).end();
-    const message = await ChatMessage.create({
+    if (!channel) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
+    const message: ChatMessageDocument = await ChatMessage.create({
       channelId: channel._id,
       sender: userId!,
       content: req.body.content,
     });
-    return res.status(201).json(message);
+    sendResponse(res, message, null, 201);
+    return;
   } catch (err) {
-    return next(err);
+    next(err);
+    return;
   }
 };

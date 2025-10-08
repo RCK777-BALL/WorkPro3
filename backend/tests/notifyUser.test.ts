@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -15,7 +19,7 @@ beforeAll(async () => {
     name: 'Test User',
     email: 'test@example.com',
     passwordHash: 'pass',
-    role: 'admin',
+    roles: ['admin'],
     tenantId: new mongoose.Types.ObjectId(),
   });
   userId = user._id;

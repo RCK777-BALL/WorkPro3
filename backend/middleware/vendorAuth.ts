@@ -1,4 +1,8 @@
-import { Request, Response, NextFunction, RequestHandler } from 'express';
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
+import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import Vendor from '../models/Vendor';
 
@@ -12,7 +16,7 @@ interface VendorTokenPayload {
  * - Loads the vendor document
  * - Attaches `req.vendor` and `req.vendorId`
  */
-export const requireVendorAuth: RequestHandler = async (
+export const requireVendorAuth = async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -39,8 +43,8 @@ export const requireVendorAuth: RequestHandler = async (
       return;
     }
 
-    (req as any).vendor = vendor;
-    (req as any).vendorId = vendor._id?.toString?.() ?? id;
+    req.vendor = vendor;
+    req.vendorId = vendor._id?.toString?.() ?? id;
 
     next();
   } catch {

@@ -1,11 +1,24 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { create } from 'zustand';
-import type { Department, Line, Station } from '../types';
+import type { Department, Line, Station } from '@/types';
 import {
   listDepartments as apiListDepartments,
   listLines as apiListLines,
   listStations as apiListStations,
-} from '../api/departments';
- 
+} from '@/api/departments';
+
+interface LineResponse {
+  _id: string;
+  name: string;
+}
+
+interface StationResponse {
+  _id: string;
+  name: string;
+}
 
 interface DepartmentState {
   departments: Department[];
@@ -60,8 +73,8 @@ export const useDepartmentStore = create<DepartmentState>((set, get) => ({
   fetchLines: async (departmentId) => {
     const { linesByDepartment } = get();
     if (linesByDepartment[departmentId]) return linesByDepartment[departmentId];
-    const res = await apiListLines({ departmentId });
-    const lines = res.map((l) => ({
+    const res = await apiListLines(departmentId);
+    const lines = res.map((l: LineResponse) => ({
       id: l._id,
       name: l.name,
       department: departmentId,
@@ -75,7 +88,7 @@ export const useDepartmentStore = create<DepartmentState>((set, get) => ({
     const { stationsByLine } = get();
     if (stationsByLine[lineId]) return stationsByLine[lineId];
     const res = await apiListStations(departmentId, lineId);
-    const stations = res.map((s) => ({
+    const stations = res.map((s: StationResponse) => ({
       id: s._id,
       name: s.name,
       line: lineId,

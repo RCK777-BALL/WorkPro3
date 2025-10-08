@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import mongoose, { Schema, Document, Model, Types } from 'mongoose';
 
  
@@ -7,7 +11,7 @@ export interface ITeamMember extends Document {
   email: string;
   role:
     | 'admin'
-    | 'manager'
+    | 'supervisor'
     | 'department_leader'
     | 'area_leader'
     | 'team_leader'
@@ -26,7 +30,7 @@ const teamMemberSchema = new Schema<ITeamMember>(
       type: String,
       enum: [
         'admin',
-        'manager',
+        'supervisor',
         'department_leader',
         'area_leader',
         'team_leader',

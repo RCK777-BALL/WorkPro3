@@ -1,34 +1,56 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
+/// <reference types="node" />
+
 import PDFDocument from 'pdfkit';
-import { Parser as Json2csvParser } from 'json2csv';
+import { Parser as Json2csvParser, Transform as Json2csvTransform } from 'json2csv';
+import { Readable } from 'stream';
 import WorkOrder from '../models/WorkOrder';
 import Asset from '../models/Asset';
 import WorkHistory from '../models/WorkHistory';
 import User from '../models/User';
 import TimeSheet from '../models/TimeSheet';
-import Inventory from '../models/Inventory';
+import type { AuthedRequestHandler } from '../types/http';
+import { LABOR_RATE } from '../config/env';
+import { sendResponse } from '../utils/sendResponse';
+ 
 
-async function calculateStats(tenantId: string, role?: string) {
-  const roleFilter = role || 'technician';
+async function calculateStats(tenantId: string, role?: string, workOrderType?: string) {
+  const roleFilter = role || 'tech';
+
+  const baseFilter = {
+    tenantId,
+    ...(workOrderType ? { type: workOrderType } : {}),
+  };
 
   // Work order completion
-  const totalWorkOrders = await WorkOrder.countDocuments({ tenantId });
-  const completedOrders = await WorkOrder.countDocuments({ status: 'completed', tenantId });
+  const totalWorkOrders = await WorkOrder.countDocuments(baseFilter);
+  const completedOrders = await WorkOrder.countDocuments({
+    ...baseFilter,
+    status: 'completed',
+  });
   const workOrderCompletionRate = totalWorkOrders
     ? (completedOrders / totalWorkOrders) * 100
     : 0;
 
   // Preventive maintenance completion
-  const pmTotal = await WorkOrder.countDocuments({ type: 'preventive', tenantId });
-  const pmCompleted = await WorkOrder.countDocuments({
-    type: 'preventive',
-    status: 'completed',
+  const complianceType = workOrderType ?? 'preventive';
+  const pmBase = {
     tenantId,
+    type: complianceType,
+  };
+  const pmTotal = await WorkOrder.countDocuments(pmBase);
+  const pmCompleted = await WorkOrder.countDocuments({
+    ...pmBase,
+    status: 'completed',
   });
   const maintenanceCompliance = pmTotal ? (pmCompleted / pmTotal) * 100 : 0;
 
   // Average response time for completed orders (hours)
   const completed = await WorkOrder.find(
-    { completedAt: { $exists: true }, tenantId },
+    { completedAt: { $exists: true }, ...baseFilter },
     {
       createdAt: 1,
       completedAt: 1,
@@ -57,15 +79,15 @@ async function calculateStats(tenantId: string, role?: string) {
     { $group: { _id: null, hours: { $sum: '$timeSpentHours' } } },
   ]);
   const totalLaborHours = laborAgg[0]?.hours || 0;
-  const userCount = await User.countDocuments({ tenantId, role: roleFilter });
+  const userCount = await User.countDocuments({ tenantId, roles: roleFilter });
   const availableHours = userCount * 160; // approx hours per month
   const laborUtilization = availableHours
     ? (totalLaborHours / availableHours) * 100
     : 0;
 
-  // Average cost per work order (assume $50 per hour)
+  // Average cost per work order based on hourly labor rate
   const costPerWorkOrder = totalWorkOrders
-    ? (totalLaborHours * 50) / totalWorkOrders
+    ? (totalLaborHours * LABOR_RATE) / totalWorkOrders
     : 0;
 
   // Top assets by downtime
@@ -82,7 +104,7 @@ async function calculateStats(tenantId: string, role?: string) {
         name: '$asset.name',
         downtime: 1,
         issues: 1,
-        cost: { $multiply: ['$downtime', 50] },
+        cost: { $multiply: ['$downtime', LABOR_RATE] },
       },
     },
   ]);
@@ -99,38 +121,37 @@ async function calculateStats(tenantId: string, role?: string) {
   };
 }
 
-export const getAnalyticsReport: AuthedRequestHandler = async (
-  req,
-  res,
-  next,
-) => {
+export const getAnalyticsReport: AuthedRequestHandler = async (req: { query: { role: any; type?: any }; tenantId: any; }, res: { json: (arg0: { workOrderCompletionRate: number; averageResponseTime: number; maintenanceCompliance: number; assetUptime: number; costPerWorkOrder: number; laborUtilization: number; assetDowntime: number; topAssets: any[]; }) => void; }, next: (arg0: unknown) => any) => {
+
   try {
     const role = typeof req.query.role === 'string' ? req.query.role : undefined;
     const tenantId = req.tenantId!;
-    const stats = await calculateStats(tenantId, role);
-    res.json(stats);
+    const typeFilter = typeof req.query.type === 'string' ? req.query.type : undefined;
+    const stats = await calculateStats(tenantId, role, typeFilter);
+    sendResponse(res, stats);
+    return;
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 
-export const downloadReport: AuthedRequestHandler = async (
-  req,
-  res,
-  next,
-) => {
+export const downloadReport: AuthedRequestHandler = async (req, res, next) => {
+
   try {
     const format = String(req.query.format || 'pdf').toLowerCase();
     const role = typeof req.query.role === 'string' ? req.query.role : undefined;
     const tenantId = req.tenantId!;
-    const stats = await calculateStats(tenantId, role);
+    const typeFilter = typeof req.query.type === 'string' ? req.query.type : undefined;
+    const stats = await calculateStats(tenantId, role, typeFilter);
 
     if (format === 'csv') {
-      const parser = new Json2csvParser();
-      const csv = parser.parse([stats]);
-      res.header('Content-Type', 'text/csv');
-      res.attachment('report.csv');
-      return res.send(csv);
+      const transform = new Json2csvTransform();
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=report.csv');
+      Readable.from([stats]).pipe(transform).pipe(
+        res as unknown as NodeJS.WritableStream,
+      );
+      return;
     }
 
     const doc = new PDFDocument();
@@ -144,7 +165,7 @@ export const downloadReport: AuthedRequestHandler = async (
     });
     doc.end();
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 
@@ -154,7 +175,7 @@ async function aggregateTrends(tenantId: string) {
     {
       $group: {
         _id: { $dateToString: { format: '%Y-%m', date: '$completedAt' } },
-        maintenanceCost: { $sum: { $multiply: ['$timeSpentHours', 50] } },
+        maintenanceCost: { $sum: { $multiply: ['$timeSpentHours', LABOR_RATE] } },
         assetDowntime: { $sum: '$timeSpentHours' },
       },
     },
@@ -168,25 +189,20 @@ async function aggregateTrends(tenantId: string) {
   }));
 }
 
-export const getTrendData: AuthedRequestHandler = async (
-  req,
-  res,
-  next,
-) => {
+export const getTrendData: AuthedRequestHandler = async (req: { tenantId: any; }, res: { json: (arg0: { period: any; maintenanceCost: any; assetDowntime: any; }[]) => void; }, next: (arg0: unknown) => any) => {
+ 
   try {
     const tenantId = req.tenantId!;
     const data = await aggregateTrends(tenantId);
-    res.json(data);
+    sendResponse(res, data);
+    return;
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 
-export const exportTrendData: AuthedRequestHandler = async (
-  req,
-  res,
-  next,
-) => {
+export const exportTrendData: AuthedRequestHandler = async (req: { query: { format: any; }; tenantId: any; }, res: { header: (arg0: string, arg1: string) => void; attachment: (arg0: string) => void; send: (arg0: string) => void; json: (arg0: { period: any; maintenanceCost: any; assetDowntime: any; }[]) => void; }, next: (arg0: unknown) => any) => {
+ 
   try {
     const format = String(req.query.format || 'json').toLowerCase();
     const tenantId = req.tenantId!;
@@ -197,12 +213,14 @@ export const exportTrendData: AuthedRequestHandler = async (
       const csv = parser.parse(data);
       res.header('Content-Type', 'text/csv');
       res.attachment('trends.csv');
-      return res.send(csv);
+      sendResponse(res, csv);
+      return;
     }
 
-    res.json(data);
+    sendResponse(res, data);
+    return;
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 
@@ -216,7 +234,7 @@ async function aggregateCosts(tenantId: string) {
       },
     },
     {
-      $project: { _id: 0, period: '$_id', laborCost: { $multiply: ['$hours', 50] } },
+      $project: { _id: 0, period: '$_id', laborCost: { $multiply: ['$hours', LABOR_RATE] } },
     },
   ]);
 
@@ -225,7 +243,7 @@ async function aggregateCosts(tenantId: string) {
     {
       $group: {
         _id: { $dateToString: { format: '%Y-%m', date: '$completedAt' } },
-        maintenanceCost: { $sum: { $multiply: ['$timeSpentHours', 50] } },
+        maintenanceCost: { $sum: { $multiply: ['$timeSpentHours', LABOR_RATE] } },
       },
     },
     { $project: { _id: 0, period: '$_id', maintenanceCost: 1 } },
@@ -278,13 +296,15 @@ async function aggregateCosts(tenantId: string) {
     }));
 }
 
-export const getCostMetrics: AuthedRequestHandler = async (req, res, next) => {
+export const getCostMetrics: AuthedRequestHandler = async (req: { tenantId: any; }, res: { json: (arg0: any[]) => void; }, next: (arg0: unknown) => any) => {
+ 
   try {
     const tenantId = req.tenantId!;
     const data = await aggregateCosts(tenantId);
-    res.json(data);
+    sendResponse(res, data);
+    return;
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 
@@ -303,16 +323,98 @@ async function aggregateDowntime(tenantId: string) {
   return results.map((r) => ({ period: r._id, downtime: r.downtime }));
 }
 
-export const getDowntimeMetrics: AuthedRequestHandler = async (
-  req,
-  res,
-  next,
-) => {
+export const getDowntimeReport: AuthedRequestHandler = async (req: { tenantId: any; }, res: { json: (arg0: { period: any; downtime: any; }[]) => void; }, next: (arg0: unknown) => any) => {
+ 
   try {
     const tenantId = req.tenantId!;
     const data = await aggregateDowntime(tenantId);
-    res.json(data);
+    sendResponse(res, data);
+    return;
   } catch (err) {
-    next(err);
+    return next(err);
+  }
+};
+
+async function aggregatePmCompliance(tenantId: string) {
+  const results = await WorkOrder.aggregate([
+    { $match: { tenantId, type: 'preventive' } },
+    {
+      $group: {
+        _id: { $dateToString: { format: '%Y-%m', date: '$scheduledDate' } },
+        total: { $sum: 1 },
+        completed: {
+          $sum: {
+            $cond: [{ $eq: ['$status', 'completed'] }, 1, 0],
+          },
+        },
+      },
+    },
+    { $sort: { _id: 1 } },
+    {
+      $project: {
+        _id: 0,
+        period: '$_id',
+        compliance: {
+          $cond: [
+            { $eq: ['$total', 0] },
+            0,
+            { $multiply: [{ $divide: ['$completed', '$total'] }, 100] },
+          ],
+        },
+      },
+    },
+  ]);
+  return results;
+}
+
+export const getPmCompliance: AuthedRequestHandler = async (req: { tenantId: any; }, res: { json: (arg0: any[]) => void; }, next: (arg0: unknown) => any) => {
+  try {
+    const tenantId = req.tenantId!;
+    const data = await aggregatePmCompliance(tenantId);
+    sendResponse(res, data);
+    return;
+  } catch (err) {
+    return next(err);
+  }
+};
+
+async function aggregateCostByAsset(tenantId: string) {
+  const results = await WorkHistory.aggregate([
+    { $match: { tenantId } },
+    {
+      $group: {
+        _id: '$asset',
+        hours: { $sum: '$timeSpentHours' },
+      },
+    },
+    {
+      $lookup: {
+        from: 'assets',
+        localField: '_id',
+        foreignField: '_id',
+        as: 'asset',
+      },
+    },
+    { $unwind: '$asset' },
+    {
+      $project: {
+        _id: 0,
+        asset: '$asset.name',
+        cost: { $multiply: ['$hours', LABOR_RATE] },
+      },
+    },
+    { $sort: { cost: -1 } },
+  ]);
+  return results;
+}
+
+export const getCostByAsset: AuthedRequestHandler = async (req: { tenantId: any; }, res: { json: (arg0: any[]) => void; }, next: (arg0: unknown) => any) => {
+  try {
+    const tenantId = req.tenantId!;
+    const data = await aggregateCostByAsset(tenantId);
+    sendResponse(res, data);
+    return;
+  } catch (err) {
+    return next(err);
   }
 };

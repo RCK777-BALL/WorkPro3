@@ -1,123 +1,173 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import FiltersBar from '../components/dashboard/FiltersBar';
-import DashboardStats from '../components/dashboard/DashboardStats';
-import WorkOrdersChart from '../components/dashboard/WorkOrdersChart';
-import AssetsStatusChart from '../components/dashboard/AssetsStatusChart';
-import UpcomingMaintenance from '../components/dashboard/UpcomingMaintenance';
-import CriticalAlerts from '../components/dashboard/CriticalAlerts';
-import LowStockParts from '../components/dashboard/LowStockParts';
-import { useDashboardStore } from '../store/dashboardStore';
-import useDashboardData from '../hooks/useDashboardData';
-import { useSummary } from '../hooks/useSummaryData';
-import http from '../lib/http';
-import type {
-  Department,
-  DashboardSummary,
-  LowStockPart,
-  LowStockPartResponse,
-} from '../types';
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
+import { useEffect, useState } from 'react';
+import KpiCard from '@/components/dashboard/KpiCard';
+import RecentActivity, { AuditLog } from '@/components/dashboard/RecentActivity';
+import http from '@/lib/http';
+import type { SafetyKpiResponse } from '@/types';
+
+interface Summary {
+  pmCompliance: number;
+  woBacklog: number;
+  downtimeThisMonth: number;
+  costMTD: number;
+  cmVsPmRatio: number;
+  wrenchTimePct: number;
+}
+
+type Trends = Record<keyof Summary, number[]>;
 
 export default function Dashboard() {
-  const {
-    selectedRole,
-    selectedDepartment,
-    selectedTimeframe,
-    customRange,
-  } = useDashboardStore();
-
-  const {
-    workOrdersByStatus,
-    assetsByStatus,
-    upcomingMaintenance,
-    criticalAlerts,
-  } = useDashboardData(
-    selectedRole,
-    selectedDepartment,
-    selectedTimeframe,
-    customRange,
-  );
-
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
-
-  const query = useMemo(() => {
-    const params = new URLSearchParams();
-    if (selectedRole && selectedRole !== 'all') params.append('role', selectedRole);
-    if (selectedDepartment && selectedDepartment !== 'all')
-      params.append('department', selectedDepartment);
-    if (selectedTimeframe) {
-      params.append('timeframe', selectedTimeframe);
-      if (selectedTimeframe === 'custom') {
-        params.append('start', customRange.start);
-        params.append('end', customRange.end);
-      }
-    }
-    const qs = params.toString();
-    return qs ? `?${qs}` : '';
-  }, [selectedRole, selectedDepartment, selectedTimeframe, customRange]);
-
-  const [summary] = useSummary<DashboardSummary>(`/summary${query}`, [query]);
-  const [lowStockRaw] = useSummary<LowStockPartResponse[]>(
-    `/summary/low-stock${query}`,
-    [query],
-  );
-
-  const lowStock: LowStockPart[] = useMemo(
-    () =>
-      (lowStockRaw || []).map((p) => ({
-        id: p._id ?? p.id ?? '',
-        name: p.name,
-        quantity: p.quantity,
-        reorderPoint: p.reorderPoint ?? p.reorderThreshold ?? 0,
-      })),
-    [lowStockRaw],
-  );
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [trends, setTrends] = useState<Trends | null>(null);
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [logsError, setLogsError] = useState<string | null>(null);
+  const [safetyKpis, setSafetyKpis] = useState<SafetyKpiResponse | null>(null);
 
   useEffect(() => {
-    http
-      .get<Department[]>('/summary/departments')
-      .then((res) => setDepartments(res.data))
-      .catch(() => setDepartments([]));
+    const fetchData = async () => {
+      try {
+        const [summaryRes, trendsRes] = await Promise.all([
+          http.get<Summary>('/summary'),
+          http.get<Trends>('/summary/trends'),
+        ]);
+        setSummary(summaryRes.data);
+        setTrends(trendsRes.data);
+      } catch (err) {
+        console.error('Failed to load summary', err);
+      }
+    };
+    fetchData();
+    fetchSafetyKpis();
+    refreshLogs();
   }, []);
 
-  const stats = {
-    totalAssets: summary?.totalAssets ?? 0,
-    activeWorkOrders: summary?.activeWorkOrders ?? 0,
-    maintenanceCompliance: summary
-      ? Math.max(0, 100 - summary.overduePmTasks)
-      : 100,
-    inventoryAlerts: lowStock.length,
+  const fetchSafetyKpis = async () => {
+    try {
+      const res = await http.get<SafetyKpiResponse>('/permits/kpis');
+      setSafetyKpis(res.data);
+    } catch (err) {
+      console.error('Failed to load safety KPIs', err);
+    }
   };
 
+  const refreshLogs = async () => {
+    setLoadingLogs(true);
+    try {
+      const res = await http.get<AuditLog[]>('/audit', { params: { limit: 10 } });
+      setLogs(res.data);
+      setLogsError(null);
+    } catch (err) {
+      setLogsError('Failed to load activity');
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
+  const calcDelta = (series: number[] = []) => {
+    if (series.length < 2) return 0;
+    const first = series[0];
+    const last = series[series.length - 1];
+    if (first === 0) return 0;
+    return ((last - first) / first) * 100;
+  };
+
+  const kpis = summary && trends ? [
+    {
+      key: 'pmCompliance',
+      title: 'PM Compliance',
+      value: `${Math.round(summary.pmCompliance * 100)}%`,
+      deltaPct: calcDelta(trends.pmCompliance),
+      series: trends.pmCompliance,
+    },
+    {
+      key: 'woBacklog',
+      title: 'WO Backlog',
+      value: summary.woBacklog,
+      deltaPct: calcDelta(trends.woBacklog),
+      series: trends.woBacklog,
+    },
+    {
+      key: 'downtimeThisMonth',
+      title: 'Downtime (hrs)',
+      value: summary.downtimeThisMonth,
+      deltaPct: calcDelta(trends.downtimeThisMonth),
+      series: trends.downtimeThisMonth,
+    },
+    {
+      key: 'costMTD',
+      title: 'Cost MTD',
+      value: `$${summary.costMTD}`,
+      deltaPct: calcDelta(trends.costMTD),
+      series: trends.costMTD,
+    },
+    {
+      key: 'cmVsPmRatio',
+      title: 'CM vs PM Ratio',
+      value: summary.cmVsPmRatio.toFixed(2),
+      deltaPct: calcDelta(trends.cmVsPmRatio),
+      series: trends.cmVsPmRatio,
+    },
+    {
+      key: 'wrenchTimePct',
+      title: 'Wrench Time %',
+      value: `${summary.wrenchTimePct.toFixed(1)}%`,
+      deltaPct: calcDelta(trends.wrenchTimePct),
+      series: trends.wrenchTimePct,
+    },
+  ] : [];
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-sm text-neutral-600 dark:text-neutral-300">
-            Live operational key performance indicators
-          </p>
+    <div className="flex gap-4">
+      <div className="flex-1 space-y-6">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {kpis.map((k) => (
+            <KpiCard
+              key={k.key}
+              title={k.title}
+              value={k.value}
+              deltaPct={k.deltaPct}
+              series={k.series}
+            />
+          ))}
         </div>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="px-3 py-2 text-sm border rounded-md"
-        >
-          Filters
-        </button>
+        {safetyKpis && (
+          <div className="grid gap-4 sm:grid-cols-3">
+            <KpiCard
+              key="activePermits"
+              title="Active Permits"
+              value={safetyKpis.activeCount}
+              deltaPct={0}
+              series={[]}
+            />
+            <KpiCard
+              key="overdueApprovals"
+              title="Overdue Approvals"
+              value={safetyKpis.overdueApprovals}
+              deltaPct={0}
+              series={[]}
+            />
+            <KpiCard
+              key="incidents30"
+              title="Incidents (30d)"
+              value={safetyKpis.incidentsLast30}
+              deltaPct={0}
+              series={[]}
+            />
+          </div>
+        )}
       </div>
-
-      {showFilters && <FiltersBar departments={departments} />}
-
-      <DashboardStats stats={stats} />
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <WorkOrdersChart data={workOrdersByStatus} />
-        <AssetsStatusChart data={assetsByStatus} />
-        <LowStockParts parts={lowStock} />
-        <UpcomingMaintenance maintenanceItems={upcomingMaintenance} />
-        <CriticalAlerts alerts={criticalAlerts} />
+      <div className="w-80">
+        <RecentActivity
+          logs={logs}
+          loading={loadingLogs}
+          error={logsError}
+          onRefresh={refreshLogs}
+        />
       </div>
     </div>
   );
 }
-

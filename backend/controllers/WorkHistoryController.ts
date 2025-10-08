@@ -1,54 +1,147 @@
-import { Request, Response, NextFunction } from 'express';
-import WorkHistory from '../models/WorkHistory';
+/*
+ * SPDX-License-Identifier: MIT
+ */
 
-export const getAllWorkHistories = async (req: Request, res: Response, next: NextFunction) => {
+import { Request, Response, NextFunction } from 'express';
+import { Types } from 'mongoose';
+import { sendResponse } from '../utils/sendResponse';
+
+import WorkHistory from '../models/WorkHistory';
+import { writeAuditLog } from '../utils/audit';
+import { toEntityId } from '../utils/ids';
+ 
+ export const getAllWorkHistories = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<Response | void> => {
+ 
   try {
     const items = await WorkHistory.find();
-    res.json(items);
+    sendResponse(res, items);
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };
 
-export const getWorkHistoryById = async (req: Request, res: Response, next: NextFunction) => {
+export const getWorkHistoryById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<Response | void> => {
   try {
     const item = await WorkHistory.findById(req.params.id);
-    if (!item) return res.status(404).json({ message: 'Not found' });
-    res.json(item);
+    if (!item) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
+    sendResponse(res, item);
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };
 
-export const createWorkHistory = async (req: Request, res: Response, next: NextFunction) => {
+export const createWorkHistory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<Response | void> => {
   try {
-    const newItem = new WorkHistory(req.body);
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const newItem = new WorkHistory({ ...req.body, tenantId });
     const saved = await newItem.save();
-    res.status(201).json(saved);
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'create',
+      entityType: 'WorkHistory',
+      entityId: toEntityId(saved._id),
+      after: saved.toObject(),
+    });
+    sendResponse(res, saved, null, 201);
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };
 
-export const updateWorkHistory = async (req: Request, res: Response, next: NextFunction) => {
+export const updateWorkHistory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<Response | void> => {
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const existing = await WorkHistory.findById(req.params.id);
+    if (!existing) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
     const updated = await WorkHistory.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
     });
-    if (!updated) return res.status(404).json({ message: 'Not found' });
-    res.json(updated);
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'update',
+      entityType: 'WorkHistory',
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      before: existing.toObject(),
+      after: updated?.toObject(),
+    });
+    sendResponse(res, updated);
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };
 
-export const deleteWorkHistory = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteWorkHistory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<Response | void> => {
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
     const deleted = await WorkHistory.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: 'Not found' });
-    res.json({ message: 'Deleted successfully' });
+    if (!deleted) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'delete',
+      entityType: 'WorkHistory',
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      before: deleted.toObject(),
+    });
+    sendResponse(res, { message: 'Deleted successfully' });
+    return;
   } catch (err) {
     next(err);
+    return;
   }
 };

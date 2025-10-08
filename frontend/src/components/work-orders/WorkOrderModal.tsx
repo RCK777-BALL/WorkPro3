@@ -1,40 +1,54 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
    
-import React, { useState, useRef, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
-import SignaturePad from "react-signature-canvas";
+import React, { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { useDropzone } from "react-dropzone";
 import { X, Upload, Download, Camera } from "lucide-react";
-import Button from "../common/Button";
-import AutoCompleteInput from "../common/AutoCompleteInput";
-import type { WorkOrder, Department } from "../../types";
-import http from "../../lib/http";
-import { searchAssets } from "../../api/search";
-import { useDepartmentStore } from "../../store/departmentStore";
-import { useToast } from "../../context/ToastContext";
+import Button from "@/components/common/Button";
+import AutoCompleteInput from "@/components/common/AutoCompleteInput";
+import type { WorkOrder, Part } from "@/types";
+import { searchAssets } from "@/api/search";
+import http from "@/lib/http";
+import { useDepartmentStore } from "@/store/departmentStore";
+import { useToast } from "@/context/ToastContext";
    
 
 interface WorkOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
   workOrder: WorkOrder | null;
-  onUpdate: (payload: FormData | Record<string, any>) => void;
   initialData?: Partial<WorkOrder>;
+  onUpdate: (payload: FormData | Record<string, any>) => void;
 }
 
 const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
   isOpen,
   onClose,
   workOrder,
-  onUpdate,
   initialData,
+  onUpdate,
 }) => {
   const [files, setFiles] = useState<File[]>([]);
-  const signaturePadRef = useRef<SignaturePad>(null);
-  const [showSignaturePad, setShowSignaturePad] = useState(false);
+  const [signatures, setSignatures] = useState<{ by: string; ts: string }[]>(
+    workOrder?.signatures || initialData?.signatures || []
+  );
+  const [newSignature, setNewSignature] = useState<{ by: string; ts: string }>({ by: '', ts: '' });
+
   const departments = useDepartmentStore((s) => s.departments);
   const fetchDepartments = useDepartmentStore((s) => s.fetchDepartments);
   const [loadingDeps, setLoadingDeps] = useState(true);
   const { addToast } = useToast();
+  const [availableParts, setAvailableParts] = useState<Part[]>([]);
+  const [parts, setParts] = useState<{ partId: string; qty: number; cost: number }[]>(
+    workOrder?.partsUsed || initialData?.partsUsed || []
+  );
+  const [checklists, setChecklists] = useState<{ text: string; done: boolean }[]>(
+    workOrder?.checklists || initialData?.checklists || []
+  );
+  const [newChecklist, setNewChecklist] = useState('');
   
   const {
     register,
@@ -49,11 +63,11 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
       title: workOrder?.title || "",
       description: workOrder?.description || "",
       priority: workOrder?.priority || "medium",
-      status: workOrder?.status || "open",
+      status: workOrder?.status || "requested",
       type: workOrder?.type || "corrective",
       scheduledDate:
         workOrder?.scheduledDate || new Date().toISOString().split("T")[0],
-      assetId: workOrder?.assetId || "",
+      assetId: workOrder?.assetId || initialData?.assetId || "",
     },
   });
   
@@ -62,30 +76,30 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
       "image/*": [".png", ".jpg", ".jpeg"],
       "application/pdf": [".pdf"],
     },
-    onDrop: (acceptedFiles) => {
+    onDrop: (acceptedFiles: File[]) => {
       setFiles([...files, ...acceptedFiles]);
     },
   });
 
   useEffect(() => {
     fetchDepartments()
-      .catch((err) => {
-        console.error("Failed to load departments", err);
+      .catch(() => {
         addToast("Failed to load departments", "error");
       })
       .finally(() => setLoadingDeps(false));
   }, [fetchDepartments, addToast]);
 
+  useEffect(() => {
+    http
+      .get('/parts')
+      .then((res) => setAvailableParts(res.data as Part[]))
+      .catch(() => {});
+  }, []);
+
   if (!isOpen) return null;
 
  
   const onSubmit = async (data: any) => {
- 
-    let signature = null;
-    if (signaturePadRef.current && !signaturePadRef.current.isEmpty()) {
-      signature = signaturePadRef.current.toDataURL();
-    }
-
     const payload: Record<string, any> = {
       departmentId: data.departmentId,
       title: data.title,
@@ -94,15 +108,20 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
       status: data.status,
       scheduledDate: data.scheduledDate,
       assetId: data.assetId,
+      partsUsed: parts,
+      signatures,
+      checklists,
     };
-
-    if (signature) payload.signature = signature;
 
     if (files.length > 0) {
       const fd = new FormData();
       Object.entries(payload).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
-          fd.append(key, value as any);
+          if (Array.isArray(value)) {
+            value.forEach((v) => fd.append(`${key}[]`, v as any));
+          } else {
+            fd.append(key, value as any);
+          }
         }
       });
       files.forEach((f) => fd.append("files", f));
@@ -118,8 +137,37 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
       // Implementation for capturing image from camera
       // This would typically involve creating a video element and canvas
       // to capture the image
-    } catch (err) {
-      console.error("Error accessing camera:", err);
+    } catch {
+      addToast('Error accessing camera', 'error');
+    }
+  };
+
+  const fileToBase64 = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        resolve(result.split(',')[1]);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const uploadDocument = async () => {
+    try {
+      if (docFile) {
+        const base64 = await fileToBase64(docFile);
+        await http.post('/documents', { name: docFile.name, base64 });
+        addToast('Document uploaded', 'success');
+        setDocFile(null);
+      } else if (docUrl) {
+        const name = docUrl.split('/').pop() || 'document';
+        await http.post('/documents', { name, url: docUrl });
+        addToast('Document uploaded', 'success');
+        setDocUrl('');
+      }
+    } catch {
+      addToast('Failed to upload document', 'error');
     }
   };
 
@@ -175,7 +223,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 <select
                   className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                   value={watch("departmentId")}
-                  onChange={(e) => setValue("departmentId", e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setValue("departmentId", e.target.value)}
                   {...register("departmentId", {
                     required: "Department is required",
                   })}
@@ -243,6 +291,116 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1">
+              Checklists
+            </label>
+            {checklists.map((c, idx) => (
+              <div key={idx} className="flex items-center space-x-2 mb-1">
+                <input
+                  type="text"
+                  className="flex-1 px-2 py-1 border border-neutral-300 rounded-md"
+                  value={c.text}
+                  onChange={(e) => {
+                    const updated = [...checklists];
+                    updated[idx].text = e.target.value;
+                    setChecklists(updated);
+                  }}
+                />
+                <input
+                  type="checkbox"
+                  checked={c.done}
+                  onChange={(e) => {
+                    const updated = [...checklists];
+                    updated[idx].done = e.target.checked;
+                    setChecklists(updated);
+                  }}
+                />
+                <button type="button" onClick={() => setChecklists(checklists.filter((_, i) => i !== idx))}>
+                  Remove
+                </button>
+              </div>
+            ))}
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                className="flex-1 px-2 py-1 border border-neutral-300 rounded-md"
+                value={newChecklist}
+                onChange={(e) => setNewChecklist(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (newChecklist) {
+                    setChecklists([...checklists, { text: newChecklist, done: false }]);
+                    setNewChecklist('');
+                  }
+                }}
+              >
+                Add
+              </button>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
+              Parts
+            </label>
+            <select
+              className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+              onChange={(e) => {
+                const id = e.target.value;
+                if (id && !parts.find((p) => p.partId === id)) {
+                  setParts([...parts, { partId: id, qty: 1, cost: 0 }]);
+                }
+                e.target.value = '';
+              }}
+            >
+              <option value="">Select Part</option>
+              {availableParts.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <ul className="mt-2 space-y-1">
+              {parts.map((pt, idx) => {
+                const p = availableParts.find((ap) => ap.id === pt.partId);
+                return (
+                  <li key={pt.partId} className="flex items-center space-x-2 text-sm">
+                    <span className="flex-1">{p?.name || pt.partId}</span>
+                    <input
+                      type="number"
+                      className="w-16 px-1 py-0.5 border border-neutral-300 rounded"
+                      value={pt.qty}
+                      onChange={(e) => {
+                        const updated = [...parts];
+                        updated[idx].qty = Number(e.target.value);
+                        setParts(updated);
+                      }}
+                    />
+                    <input
+                      type="number"
+                      className="w-20 px-1 py-0.5 border border-neutral-300 rounded"
+                      value={pt.cost}
+                      onChange={(e) => {
+                        const updated = [...parts];
+                        updated[idx].cost = Number(e.target.value);
+                        setParts(updated);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="text-error-500"
+                      onClick={() => setParts(parts.filter((_, i) => i !== idx))}
+                    >
+                      Remove
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
               Description
             </label>
             <textarea
@@ -261,10 +419,11 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                 {...register("status", { required: "Status is required" })}
               >
-                <option value="open">Open</option>
-                <option value="in-progress">In Progress</option>
-                <option value="on-hold">On Hold</option>
+                <option value="requested">Requested</option>
+                <option value="assigned">Assigned</option>
+                <option value="in_progress">In Progress</option>
                 <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
               </select>
               {errors.status && (
                 <p className="text-error-500 text-sm mt-1">
@@ -307,11 +466,11 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 Supports: Images, PDFs, and documents
               </p>
             </div>
-            {files.length > 0 && (
-              <div className="mt-4 space-y-2">
-                {files.map((file, index) => (
-                  <div
-                    key={index}
+          {files.length > 0 && (
+            <div className="mt-4 space-y-2">
+              {files.map((file, index) => (
+                <div
+                  key={index}
                     className="flex items-center justify-between p-2 bg-neutral-50 rounded-md"
                   >
                     <div className="flex items-center">
@@ -337,6 +496,27 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1">
+              Document
+            </label>
+            <input
+              type="file"
+              onChange={(e) => setDocFile(e.target.files?.[0] || null)}
+              className="mb-2"
+            />
+            <input
+              type="text"
+              value={docUrl}
+              onChange={(e) => setDocUrl(e.target.value)}
+              placeholder="Or paste URL"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-md mb-2"
+            />
+            <Button type="button" variant="outline" className="w-full" onClick={uploadDocument}>
+              Upload Document
+            </Button>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
               Capture Image
             </label>
             <Button
@@ -352,45 +532,65 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1">
-              Signature
+              Signatures
             </label>
-            {showSignaturePad ? (
-              <div className="border border-neutral-300 rounded-md p-2">
-                <SignaturePad
-                  ref={signaturePadRef}
-                  canvasProps={{
-                    className: "w-full h-40 border rounded-md",
+            {signatures.map((s, idx) => (
+              <div key={idx} className="flex items-center space-x-2 mb-1">
+                <input
+                  type="text"
+                  className="px-2 py-1 border border-neutral-300 rounded-md"
+                  value={s.by}
+                  placeholder="User ID"
+                  onChange={(e) => {
+                    const updated = [...signatures];
+                    updated[idx].by = e.target.value;
+                    setSignatures(updated);
                   }}
                 />
-                <div className="mt-2 flex justify-end space-x-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => signaturePadRef.current?.clear()}
-                  >
-                    Clear
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="sm"
-                    onClick={() => setShowSignaturePad(false)}
-                  >
-                    Done
-                  </Button>
-                </div>
+                <input
+                  type="datetime-local"
+                  className="px-2 py-1 border border-neutral-300 rounded-md"
+                  value={s.ts}
+                  onChange={(e) => {
+                    const updated = [...signatures];
+                    updated[idx].ts = e.target.value;
+                    setSignatures(updated);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setSignatures(signatures.filter((_, i) => i !== idx))}
+                >
+                  Remove
+                </button>
               </div>
-            ) : (
-              <Button
+            ))}
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                className="px-2 py-1 border border-neutral-300 rounded-md"
+                value={newSignature.by}
+                placeholder="User ID"
+                onChange={(e) => setNewSignature((prev) => ({ ...prev, by: e.target.value }))}
+              />
+              <input
+                type="datetime-local"
+                className="px-2 py-1 border border-neutral-300 rounded-md"
+                value={newSignature.ts}
+                onChange={(e) => setNewSignature((prev) => ({ ...prev, ts: e.target.value }))}
+              />
+              <button
                 type="button"
-                variant="outline"
-                onClick={() => setShowSignaturePad(true)}
-                className="w-full"
+                onClick={() => {
+                  if (newSignature.by && newSignature.ts) {
+                    setSignatures([...signatures, newSignature]);
+                    setNewSignature({ by: '', ts: '' });
+                  }
+                }}
               >
-                Add Signature
-              </Button>
-            )}
+                Add
+              </button>
+            </div>
           </div>
 
           <div className="flex justify-end space-x-3 pt-6 border-t border-neutral-200">

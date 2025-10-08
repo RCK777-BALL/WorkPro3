@@ -1,7 +1,8 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { z } from 'zod';
- import Tenant from '../models/Tenant';
-import TeamMember from '../models/TeamMember';
- 
 
 const email = z.string().email();
 
@@ -12,7 +13,7 @@ export const loginSchema = z
   })
   .strict();
 
- export const registerSchema = z
+export const registerSchema = z
   .object({
     name: z.string().min(1),
     email,
@@ -21,8 +22,6 @@ export const loginSchema = z
     employeeId: z.string().min(1),
   })
   .strict();
- 
 
- 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;

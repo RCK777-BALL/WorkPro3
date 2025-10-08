@@ -1,24 +1,23 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React from 'react';
-import Badge from '../common/Badge';
+import Badge from '@common/Badge';
 import { Package } from 'lucide-react';
-import type { Part } from '../../types';
+import type { Part } from '@/types';
 
 interface InventoryTableProps {
   parts: Part[];
-  search: string;
   onRowClick: (part: Part) => void;
+  onAdjust: (part: Part) => void;
 }
 
 const InventoryTable: React.FC<InventoryTableProps> = ({
   parts,
-  search,
   onRowClick,
+  onAdjust,
 }) => {
-  const filteredParts = parts.filter((part) =>
-    Object.values(part).some((value) =>
-      String(value).toLowerCase().includes(search.toLowerCase())
-    )
-  );
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -60,10 +59,13 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
               <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                 Last Ordered
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                Adjust
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-neutral-200">
-            {filteredParts.map((part) => (
+            {parts.map((part) => (
               <tr
                 key={part.id}
                 className="hover:bg-neutral-50 cursor-pointer transition-colors duration-150"
@@ -131,13 +133,24 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
                   {part.lastOrderDate ? new Date(part.lastOrderDate).toLocaleDateString() : 'Never'}
                 </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                  <button
+                    className="text-primary-600 hover:underline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAdjust(part);
+                    }}
+                  >
+                    Adjust
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       
-      {filteredParts.length === 0 && (
+      {parts.length === 0 && (
         <div className="text-center py-12">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-neutral-100 mb-4">
             <Package className="h-8 w-8 text-neutral-500" />

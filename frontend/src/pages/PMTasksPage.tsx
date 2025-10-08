@@ -1,8 +1,12 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useEffect, useState } from 'react';
-import Button from '../components/common/Button';
-import PmTaskForm from '../components/maintenance/PmTaskForm';
-import http from '../lib/http';
-import type { PMTask } from '../types';
+import Button from '@/components/common/Button';
+import PmTaskForm from '@/components/maintenance/PmTaskForm';
+import http from '@/lib/http';
+import type { PMTask } from '@/types';
 
 const PMTasksPage: React.FC = () => {
   const [tasks, setTasks] = useState<PMTask[]>([]);
@@ -12,11 +16,15 @@ const PMTasksPage: React.FC = () => {
 
   const loadTasks = async () => {
     try {
-      const res = await http.get('/pm-tasks', { withCredentials: true });
-      setTasks((res.data as any[]).map(t => ({ ...t, id: t._id ?? t.id })) as PMTask[]);
-    } catch (err: any) {
+      const res = await http.get<PMTask[]>('/pm-tasks', { withCredentials: true });
+      const data: PMTask[] = Array.isArray(res.data)
+        ? res.data.map((t) => ({ ...t, id: t._id ?? t.id }))
+        : [];
+      setTasks(data);
+    } catch (err) {
       console.error(err);
-      if (err.response?.status === 401) {
+      const status = (err as { response?: { status?: number } }).response?.status;
+      if (status === 401) {
         setError('Unauthorized. Please log in.');
       } else {
         setError('Failed to load tasks');

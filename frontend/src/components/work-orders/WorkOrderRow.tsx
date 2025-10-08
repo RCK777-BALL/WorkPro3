@@ -1,12 +1,16 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { format } from 'date-fns';
-import Badge from '../common/Badge';
-import Avatar from '../common/Avatar';
-import Button from '../common/Button';
+import Badge from '@/components/common/Badge';
+import Avatar from '@/components/common/Avatar';
+import Button from '@/components/common/Button';
 import { MoreVertical, GripVertical, Box } from 'lucide-react';
-import type { WorkOrder } from '../../types';
+import type { WorkOrder } from '@/types';
 
 interface WorkOrderRowProps {
   workOrder: WorkOrder;
@@ -88,6 +92,15 @@ export const WorkOrderRow: React.FC<WorkOrderRowProps> = ({ workOrder, onClick }
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <span className="text-sm text-neutral-500">{workOrder.type}</span>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span className="text-sm text-neutral-500">
+          {workOrder.complianceProcedureId
+            ? workOrder.complianceProcedureId
+            : workOrder.calibrationIntervalDays
+            ? `${workOrder.calibrationIntervalDays} days`
+            : '—'}
+        </span>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <span className="text-sm text-neutral-500">

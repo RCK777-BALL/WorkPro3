@@ -1,8 +1,13 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import bcrypt from "bcryptjs";
+import logger from "../utils/logger";
 
 import User from "../models/User";
 import Tenant from "../models/Tenant";
@@ -18,14 +23,14 @@ if (fs.existsSync(envPath)) {
 }
 
 if (!process.env.MONGO_URI) {
-  console.error("❌ MONGO_URI not defined in .env");
+  logger.error("❌ MONGO_URI not defined in .env");
   process.exit(1);
 }
 
 const seedTeam = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI as string);
-    console.log("✅ Connected to MongoDB");
+    logger.info("✅ Connected to MongoDB");
 
     const tenantName = process.env.TENANT_NAME || "Default Tenant";
     const adminEmail = "admin@example.com";
@@ -40,9 +45,9 @@ const seedTeam = async () => {
         status: "active",
       });
       await tenant.save();
-      console.log(`✅ Tenant created: ${tenant.name}`);
+      logger.info(`✅ Tenant created: ${tenant.name}`);
     } else {
-      console.log(`ℹ️ Using existing tenant: ${tenant.name}`);
+      logger.info(`ℹ️ Using existing tenant: ${tenant.name}`);
     }
 
     // Upsert admin user
@@ -52,19 +57,19 @@ const seedTeam = async () => {
       {
         email: adminEmail,
         passwordHash: hashedPassword,
-        role: "admin",
+        roles: ["admin"],
         tenantId: tenant._id,
       },
       { upsert: true, new: true }
     );
-    console.log(`✅ Admin seeded: ${adminEmail} / ${adminPassword}`);
+    logger.info(`✅ Admin seeded: ${adminEmail} / ${adminPassword}`);
 
     // Ensure a department exists
     const departmentName = "Sample Department";
     let department = await Department.findOne({ name: departmentName });
     if (!department) {
       department = await Department.create({ name: departmentName, lines: [] });
-      console.log(`✅ Department created: ${department.name}`);
+      logger.info(`✅ Department created: ${department.name}`);
     }
 
     // Team hierarchy
@@ -137,10 +142,10 @@ const seedTeam = async () => {
       { upsert: true, new: true }
     );
 
-    console.log("✅ Team hierarchy seeded successfully");
+    logger.info("✅ Team hierarchy seeded successfully");
     process.exit(0);
   } catch (err) {
-    console.error("❌ Error seeding team:", err);
+    logger.error("❌ Error seeding team:", err);
     process.exit(1);
   }
 };

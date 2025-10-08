@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { describe, it, beforeAll, afterAll, beforeEach, expect } from 'vitest';
 import request from 'supertest';
 import express from 'express';
@@ -6,7 +10,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 import * as speakeasy from 'speakeasy';
 
-import authRoutes from '../routes/authRoutes';
+import authRoutes from '../routes/AuthRoutes';
 import User from '../models/User';
 
 const app = express();
@@ -36,7 +40,7 @@ describe('MFA Routes', () => {
       name: 'Setup',
       email: 'setup@example.com',
       passwordHash: 'pass123',
-      role: 'viewer',
+      roles: ['planner'],
       tenantId: new mongoose.Types.ObjectId(),
       employeeId: 'EMP001',
     });
@@ -74,7 +78,7 @@ describe('MFA Routes', () => {
       name: 'Verify',
       email: 'verify@example.com',
       passwordHash: 'pass123',
-      role: 'viewer',
+      roles: ['planner'],
       tenantId: new mongoose.Types.ObjectId(),
       employeeId: 'EMP002',
     });
@@ -108,7 +112,7 @@ describe('MFA Routes', () => {
       name: 'Fail',
       email: 'fail@example.com',
       passwordHash: 'pass123',
-      role: 'viewer',
+      roles: ['planner'],
       tenantId: new mongoose.Types.ObjectId(),
       employeeId: 'EMP003',
     });

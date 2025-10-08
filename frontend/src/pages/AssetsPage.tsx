@@ -1,15 +1,19 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useEffect, useState } from 'react';
-import AssetTable from '../components/assets/AssetTable';
-import AssetModal from '../components/assets/AssetModal';
-import WorkOrderModal from '../components/work-orders/WorkOrderModal';
-import Button from '../components/common/Button';
-import http from '../lib/http';
-import { enqueueAssetRequest, onSyncConflict, type SyncConflict } from '../utils/offlineQueue';
-import { useAssetStore } from '../store/assetStore';
-import type { Asset } from '../types';
-import { duplicateAsset } from '../utils/duplicate';
-import { useToast } from '../context/ToastContext';
-import ConflictResolver from '../components/offline/ConflictResolver';
+import AssetTable from '@/components/assets/AssetTable';
+import AssetModal from '@/components/assets/AssetModal';
+import WorkOrderModal from '@/components/work-orders/WorkOrderModal';
+import Button from '@/components/common/Button';
+import http from '@/lib/http';
+import { enqueueAssetRequest, onSyncConflict, type SyncConflict } from '@/utils/offlineQueue';
+import { useAssetStore } from '@/store/assetStore';
+import type { Asset } from '@/types';
+import { duplicateAsset } from '@/utils/duplicate';
+import { useToast } from '@/context/ToastContext';
+import ConflictResolver from '@/components/offline/ConflictResolver';
 
 const ASSET_CACHE_KEY = 'offline-assets';
 
@@ -32,7 +36,9 @@ const AssetsPage = () => {
 
   useEffect(() => {
     const unsub = onSyncConflict(setConflict);
-    return () => unsub();
+    return () => {
+      unsub();
+    };
   }, []);
 
   const resolveConflict = async (choice: 'local' | 'server') => {
@@ -62,11 +68,11 @@ const AssetsPage = () => {
     }
 
     try {
-      const res = await http.get('/assets');
-      const data = (res.data as any[]).map((a) => ({
-        ...a,
-        id: a._id ?? a.id,
-      })) as Asset[];
+      interface AssetResponse extends Partial<Asset> { _id?: string; id?: string }
+      const res = await http.get<AssetResponse[]>('/assets');
+      const data: Asset[] = Array.isArray(res.data)
+        ? res.data.map((a) => ({ ...a, id: a._id ?? a.id ?? '' }))
+        : [];
       setAssets(data);
       localStorage.setItem(ASSET_CACHE_KEY, JSON.stringify(data));
     } catch (err) {
@@ -127,7 +133,7 @@ const AssetsPage = () => {
             placeholder="Search assets..."
             className="flex-1 bg-transparent border-none outline-none"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
           />
         </div>
         <AssetTable

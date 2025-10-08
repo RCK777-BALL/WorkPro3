@@ -1,15 +1,9 @@
-import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+/*
+ * SPDX-License-Identifier: MIT
+ */
 
-function isTokenValid(token: string): boolean {
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    if (!payload.exp) return false;
-    return payload.exp * 1000 > Date.now();
-  } catch {
-    return false;
-  }
-}
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 export default function RequireAuth() {
   const { user, loading } = useAuth();
@@ -17,10 +11,7 @@ export default function RequireAuth() {
 
   if (loading) return null;
 
-  const token = localStorage.getItem("auth:token");
-  const isAuthenticated = !!user || (token ? isTokenValid(token) : false);
-
-  if (!isAuthenticated) {
+  if (!user) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 

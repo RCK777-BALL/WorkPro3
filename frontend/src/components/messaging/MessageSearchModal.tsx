@@ -1,8 +1,12 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState } from 'react';
-import Modal from '../modals/Modal';
-import { searchMessages } from '../../api/channels';
-import type { Message } from '../../types';
-import { useToast } from '../../context/ToastContext';
+import Modal from '@/modals/Modal';
+import { searchMessages } from '@/api/channels';
+import type { Message } from '@/types';
+import { useToast } from '@/context/ToastContext';
 
 interface MessageSearchModalProps {
   isOpen: boolean;
@@ -43,7 +47,7 @@ const MessageSearchModal: React.FC<MessageSearchModalProps> = ({
           <input
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
             placeholder="Search messages..."
             className="w-full px-3 py-2 border border-neutral-300 rounded-md"
           />

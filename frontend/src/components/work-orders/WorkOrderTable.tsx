@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React from 'react';
 import {
   DndContext,
@@ -13,8 +17,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { WorkOrderRow } from './WorkOrderRow';
-import Badge from '../common/Badge';
-import type { WorkOrder } from '../../types';
+import type { WorkOrder } from '@/types';
 
 interface WorkOrderTableProps {
   workOrders: WorkOrder[];
@@ -77,6 +80,9 @@ const WorkOrderTable: React.FC<WorkOrderTableProps> = ({
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                 Type
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                Compliance
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                 Due Date

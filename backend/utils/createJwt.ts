@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import jwt from 'jsonwebtoken';
 
 export interface JwtData {
@@ -5,7 +9,7 @@ export interface JwtData {
   id?: string;
   email?: string;
   tenantId?: { toString(): string } | string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -14,7 +18,7 @@ export interface JwtData {
  * converted to an `id` string. `tenantId` values will also be stringified.
  */
 export const createJwt = (data: JwtData, secret: string): string => {
-  const payload: Record<string, any> = { ...data };
+  const payload: Record<string, unknown> = { ...data };
 
   if (data._id) {
     payload.id = typeof data._id === 'string' ? data._id : data._id.toString();

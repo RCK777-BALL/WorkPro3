@@ -1,8 +1,12 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useEffect, useState } from 'react';
-import Modal from '../modals/Modal';
-import { getChannelMembers, addMembers, removeMember } from '../../api/channels';
-import type { Member } from '../../types';
-import { useToast } from '../../context/ToastContext';
+import Modal from '@/modals/Modal';
+import { getChannelMembers, addMembers, removeMember } from '@/api/channels';
+import type { Member } from '@/types';
+import { useToast } from '@/context/ToastContext';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -57,7 +61,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, channelId, onClos
           <input
             type="text"
             value={newMember}
-            onChange={(e) => setNewMember(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewMember(e.target.value)}
             placeholder="Member ID"
             className="flex-1 px-2 py-1 border border-neutral-300 rounded"
           />

@@ -1,9 +1,15 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
  
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../context/AuthContext';
+ import { useAuth } from '../context/AuthContext';
+import { emitToast } from '../context/ToastContext';
 import http from '../lib/http';
+ 
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -38,10 +44,8 @@ const Login: React.FC = () => {
       setUser({
         id,
         name: emailFromOauth.split('@')[0],
-        role: 'viewer',
+        role: 'tech',
         email: emailFromOauth,
- 
-        token,
       });
       navigate('/dashboard');
     }
@@ -63,8 +67,8 @@ const Login: React.FC = () => {
     setShowInstall(false);
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     setError('');
     try {
       const { data } = await http.post('/auth/login', { email, password });
@@ -72,22 +76,22 @@ const Login: React.FC = () => {
         setMfaUser(data.userId);
         return;
       }
-      setUser({ ...data.user, token: data.token });
-      localStorage.setItem('auth:token', data.token);
+      setUser({ ...data.user });
       if (data.user?.tenantId) localStorage.setItem('auth:tenantId', data.user.tenantId);
       if (data.user?.siteId) localStorage.setItem('auth:siteId', data.user.siteId);
       navigate('/dashboard');
-    } catch (err: any) {
-       console.error(err);
-      const isNetworkError =
-        err?.code === 'ERR_NETWORK' ||
-        err?.message?.toLowerCase().includes('network');
-      setError(
-        isNetworkError
-          ? t('auth.networkError', 'Cannot connect to server')
-          : t('auth.loginFailed', 'Login failed')
-      );
- 
+    } catch (err: unknown) {
+      let isNetworkError = false;
+      if (err instanceof Error) {
+        const code = (err as { code?: string }).code;
+        const message = err.message.toLowerCase();
+        isNetworkError = code === 'ERR_NETWORK' || message.includes('network');
+      }
+      const errorMessage = isNetworkError
+        ? t('auth.networkError', 'Cannot connect to server')
+        : t('auth.loginFailed', 'Login failed');
+      emitToast(errorMessage, 'error');
+      setError(errorMessage);
     }
   };
 
@@ -99,8 +103,7 @@ const Login: React.FC = () => {
         userId: mfaUser,
         token: code,
       });
-      setUser({ ...data.user, token: data.token });
-      localStorage.setItem('auth:token', data.token);
+      setUser({ ...data.user });
       if (data.user?.tenantId) localStorage.setItem('auth:tenantId', data.user.tenantId);
       if (data.user?.siteId) localStorage.setItem('auth:siteId', data.user.siteId);
       navigate('/dashboard');
@@ -110,8 +113,8 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <div className="space-y-4 w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-neutral-900 p-4">
+      <div className="space-y-4 w-full max-w-md text-gray-900 dark:text-white">
         {showInstall && (
           <div className="flex justify-center">
             <button
@@ -124,14 +127,14 @@ const Login: React.FC = () => {
         )}
 
         {!mfaUser ? (
-          <form onSubmit={handleLogin} className="space-y-4 bg-white p-6 rounded shadow">
-            <h2 className="text-xl font-bold">{t('auth.login', 'Login')}</h2>
+          <form onSubmit={handleLogin} className="space-y-4 bg-white dark:bg-neutral-800 p-6 rounded shadow">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('auth.login', 'Login')}</h2>
             <input
               type="email"
               placeholder={t('auth.email', 'Email')}
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-2 border rounded"
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+              className="w-full p-2 border rounded bg-white dark:bg-neutral-700 dark:border-neutral-600 dark:text-white"
               autoComplete="email"
               required
             />
@@ -139,40 +142,40 @@ const Login: React.FC = () => {
               type="password"
               placeholder={t('auth.password', 'Password')}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-2 border rounded"
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+              className="w-full p-2 border rounded bg-white dark:bg-neutral-700 dark:border-neutral-600 dark:text-white"
               autoComplete="current-password"
               required
             />
-            {error && <div className="text-red-500">{error}</div>}
+            {error && <div className="text-red-600 dark:text-red-400">{error}</div>}
             <button type="submit" className="bg-primary-600 text-white px-4 py-2 rounded w-full">
               {t('auth.login', 'Login')}
             </button>
 
             {/* OAuth shortcuts */}
             <div className="flex flex-col space-y-2 pt-2">
-              <a href="/api/auth/oauth/google" className="text-primary-600">
+              <a href="/api/auth/oauth/google" className="text-primary-600 dark:text-primary-400">
                 {t('auth.loginWithGoogle', 'Login with Google')}
               </a>
-              <a href="/api/auth/oauth/github" className="text-primary-600">
+              <a href="/api/auth/oauth/github" className="text-primary-600 dark:text-primary-400">
                 {t('auth.loginWithGitHub', 'Login with GitHub')}
               </a>
             </div>
           </form>
         ) : (
-          <form onSubmit={handleVerify} className="space-y-4 bg-white p-6 rounded shadow">
-            <h2 className="text-xl font-bold">{t('auth.mfaVerification', 'MFA Verification')}</h2>
+          <form onSubmit={handleVerify} className="space-y-4 bg-white dark:bg-neutral-800 p-6 rounded shadow">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('auth.mfaVerification', 'MFA Verification')}</h2>
             <input
               type="text"
               placeholder={t('auth.oneTimeCode', 'One-time code')}
               value={code}
-              onChange={(e) => setCode(e.target.value)}
-              className="w-full p-2 border rounded"
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCode(e.target.value)}
+              className="w-full p-2 border rounded bg-white dark:bg-neutral-700 dark:border-neutral-600 dark:text-white"
               inputMode="numeric"
               autoComplete="one-time-code"
               required
             />
-            {error && <div className="text-red-500">{error}</div>}
+            {error && <div className="text-red-600 dark:text-red-400">{error}</div>}
             <button type="submit" className="bg-primary-600 text-white px-4 py-2 rounded w-full">
               {t('auth.verify', 'Verify')}
             </button>
@@ -180,10 +183,10 @@ const Login: React.FC = () => {
         )}
 
         <div className="flex justify-between text-sm">
-          <Link to="/register" className="text-primary-600">
+          <Link to="/register" className="text-primary-600 dark:text-primary-400">
             {t('auth.register', 'Register')}
           </Link>
-          <Link to="/forgot-password" className="text-primary-600">
+          <Link to="/forgot-password" className="text-primary-600 dark:text-primary-400">
             {t('auth.forgotPassword', 'Forgot Password?')}
           </Link>
         </div>

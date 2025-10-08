@@ -1,0 +1,26 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
+import express from 'express';
+import {
+  getAllNotifications,
+  createNotification,
+  updateNotification,
+  deleteNotification,
+  markNotificationRead,
+} from '../controllers/NotificationController';
+import { requireAuth } from '../middleware/authMiddleware';
+
+const router = express.Router();
+
+router.use(requireAuth);
+router.get('/', getAllNotifications);
+router.post('/', createNotification);
+ 
+router.patch('/:id/read', markNotificationRead);
+router.patch('/:id', updateNotification);
+ 
+router.delete('/:id', deleteNotification);
+
+export default router;

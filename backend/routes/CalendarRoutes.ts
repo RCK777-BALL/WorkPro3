@@ -1,9 +1,13 @@
-import express from 'express';
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
+import express, { type Request, type Response, type NextFunction } from 'express';
 import WorkOrder from '../models/WorkOrder';
 
 const router = express.Router();
 
-router.get('/', async (_req, res, next) => {
+router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const events = await WorkOrder.find({ dueDate: { $exists: true } }).select(
       'title dueDate',

@@ -1,8 +1,13 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeAll } from 'vitest';
-import React from 'react';
+import type { Mock } from 'vitest';
+
 import { Chart as ChartJS } from 'chart.js';
-import http from '../lib/http';
+import http from '@/lib/http';
 
 vi.mock('../lib/http');
 
@@ -17,38 +22,39 @@ beforeAll(() => {
     },
   });
 
-  HTMLCanvasElement.prototype.getContext = () => ({
-    canvas: document.createElement('canvas'),
-    fillRect: () => {},
-    clearRect: () => {},
-    getImageData: () => ({ data: [] }),
-    putImageData: () => {},
-    createImageData: () => [],
-    setTransform: () => {},
-    drawImage: () => {},
-    save: () => {},
-    fillText: () => {},
-    restore: () => {},
-    beginPath: () => {},
-    moveTo: () => {},
-    lineTo: () => {},
-    closePath: () => {},
-    stroke: () => {},
-    translate: () => {},
-    scale: () => {},
-    rotate: () => {},
-    arc: () => {},
-    fill: () => {},
-    measureText: () => ({ width: 0 }),
-    transform: () => {},
-    rect: () => {},
-    clip: () => {},
-  });
+  HTMLCanvasElement.prototype.getContext = () =>
+    ({
+      canvas: document.createElement('canvas'),
+      fillRect: () => {},
+      clearRect: () => {},
+      getImageData: () => ({ data: new Uint8ClampedArray(), width: 0, height: 0 } as ImageData),
+      putImageData: () => {},
+      createImageData: () => new ImageData(1, 1),
+      setTransform: () => {},
+      drawImage: () => {},
+      save: () => {},
+      fillText: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      closePath: () => {},
+      stroke: () => {},
+      translate: () => {},
+      scale: () => {},
+      rotate: () => {},
+      arc: () => {},
+      fill: () => {},
+      measureText: () => ({ width: 0 } as TextMetrics),
+      transform: () => {},
+      rect: () => {},
+      clip: () => {},
+    } as unknown as CanvasRenderingContext2D);
 });
 
-import Analytics from '../pages/Analytics';
+import Analytics from '@/pages/Analytics';
 
-const mockedGet = http.get as unknown as vi.Mock;
+const mockedGet = http.get as unknown as Mock;
 
 mockedGet.mockImplementation((url: string) => {
   if (url === '/reports/analytics') {

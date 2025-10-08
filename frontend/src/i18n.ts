@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
@@ -58,9 +62,9 @@ export const resources = {
       },
       roles: {
         admin: 'Admin',
-        manager: 'Manager',
-        technician: 'Technician',
-        viewer: 'Viewer',
+        supervisor: 'Supervisor',
+        planner: 'Planner',
+        tech: 'Tech',
       },
       error: {
         title: 'Something went wrong',
@@ -130,9 +134,9 @@ export const resources = {
       },
       roles: {
         admin: 'Administrador',
-        manager: 'Gerente',
-        technician: 'Técnico',
-        viewer: 'Observador',
+        supervisor: 'Supervisor',
+        planner: 'Planificador',
+        tech: 'Técnico',
       },
       error: {
         title: 'Algo salió mal',

@@ -1,7 +1,13 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import path from 'path';
 import { Express } from 'express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
+import logger from './logger';
+import { safeStringify } from './safeStringify';
 
 const swaggerDefinition = {
   openapi: '3.0.0',
@@ -24,5 +30,5 @@ export const setupSwagger = (app: Express) => {
 
 if (require.main === module) {
   // When run directly, output the spec for validation
-  console.log(JSON.stringify(swaggerSpec, null, 2));
+  logger.info(safeStringify(swaggerSpec));
 }

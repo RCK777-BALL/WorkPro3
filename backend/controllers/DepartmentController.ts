@@ -1,9 +1,16 @@
-import Department from '../models/Department';
+/*
+ * SPDX-License-Identifier: MIT
+ */
 
-export const listDepartments: AuthedRequestHandler<unknown, any, unknown, { q?: string }> = async (
-  req: AuthedRequest<unknown, any, unknown, { q?: string }>,
-  res,
-  next
+import Department from '../models/Department';
+import type { Request, Response, NextFunction } from 'express';
+import { sendResponse } from '../utils/sendResponse';
+
+
+export const listDepartments = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
 ) => {
   try {
     const filter: any = { tenantId: req.tenantId };
@@ -13,8 +20,10 @@ export const listDepartments: AuthedRequestHandler<unknown, any, unknown, { q?: 
     if (q) filter.name = { $regex: new RegExp(q, 'i') };
 
     const items = await Department.find(filter).sort({ name: 1 });
-    return res.json(items);
+    sendResponse(res, items);
+    return;
   } catch (err) {
-    return next(err);
+    next(err);
+    return;
   }
 };

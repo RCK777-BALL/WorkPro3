@@ -1,5 +1,11 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import type { RouteObject } from 'react-router-dom';
+import { lazy } from 'react';
 
 interface Field {
   name: string;
@@ -7,10 +13,10 @@ interface Field {
   type?: string;
 }
 
-const Portal: React.FC = () => {
+export const RequestPortal: React.FC = () => {
   const { slug = 'default' } = useParams();
   const [fields, setFields] = useState<Field[]>([]);
-  const [formData, setFormData] = useState<Record<string, any>>({});
+  const [formData, setFormData] = useState<Record<string, unknown>>({});
 
   useEffect(() => {
     fetch(`/api/request-portal/${slug}`)
@@ -69,4 +75,11 @@ const Portal: React.FC = () => {
   );
 };
 
-export default Portal;
+const RequestWork = lazy(() => import('../pages/RequestWork'));
+
+const routes: RouteObject[] = [
+  { path: '/portal/:slug', element: <RequestPortal /> },
+  { path: '/request', element: <RequestWork /> },
+];
+
+export default routes;

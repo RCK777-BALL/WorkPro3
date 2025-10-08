@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { describe, it, beforeAll, afterAll, beforeEach, expect } from 'vitest';
 import request from 'supertest';
 import express from 'express';
@@ -16,7 +20,7 @@ app.get('/protected', requireAuth, authorize('admin'), (_req, res) => {
 
 let mongo: MongoMemoryServer;
 let tokenAdmin: string;
-let tokenViewer: string;
+let tokenPlanner: string;
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'testsecret';
@@ -36,19 +40,19 @@ beforeEach(async () => {
     name: 'Admin',
     email: 'admin@example.com',
     passwordHash: 'pass123',
-    role: 'admin',
+    roles: ['admin'],
     tenantId: new mongoose.Types.ObjectId(),
   });
   tokenAdmin = jwt.sign({ id: admin._id.toString() }, process.env.JWT_SECRET!);
 
-  const viewer = await User.create({
-    name: 'Viewer',
-    email: 'viewer@example.com',
+  const planner = await User.create({
+    name: 'Planner',
+    email: 'planner@example.com',
     passwordHash: 'pass123',
-    role: 'viewer',
+    roles: ['planner'],
     tenantId: new mongoose.Types.ObjectId(),
   });
-  tokenViewer = jwt.sign({ id: viewer._id.toString() }, process.env.JWT_SECRET!);
+  tokenPlanner = jwt.sign({ id: planner._id.toString() }, process.env.JWT_SECRET!);
 });
 
 describe('authorize middleware', () => {
@@ -63,7 +67,7 @@ describe('authorize middleware', () => {
   it('denies access when role is not permitted', async () => {
     await request(app)
       .get('/protected')
-      .set('Authorization', `Bearer ${tokenViewer}`)
+      .set('Authorization', `Bearer ${tokenPlanner}`)
       .expect(403);
   });
 

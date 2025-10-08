@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
+import '@testing-library/jest-dom/vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import RouteWorkflow from './RouteWorkflow';

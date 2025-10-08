@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { describe, it, expect, vi } from 'vitest';
 import { oidcVerify, mapRoles } from '../auth/oidc';
 
@@ -5,9 +9,9 @@ import { oidcVerify, mapRoles } from '../auth/oidc';
 describe('OIDC role mapping', () => {
   it('maps provider groups to internal roles', () => {
     expect(mapRoles(['Admin'])).toBe('admin');
-    expect(mapRoles(['Manager'])).toBe('manager');
-    expect(mapRoles(['Technician'])).toBe('technician');
-    expect(mapRoles([])).toBe('viewer');
+    expect(mapRoles(['Manager'])).toBe('supervisor');
+    expect(mapRoles(['Technician'])).toBe('tech');
+    expect(mapRoles([])).toBe('planner');
   });
 });
 
@@ -17,6 +21,6 @@ describe('OIDC verify callback', () => {
     const profile = { emails: [{ value: 'user@example.com' }], _json: { groups: ['Admin'] } };
     const done = vi.fn();
     await oidcVerify('issuer', 'sub', profile, {}, '', '', {}, done);
-    expect(done).toHaveBeenCalledWith(null, { email: 'user@example.com', role: 'admin' });
+    expect(done).toHaveBeenCalledWith(null, { email: 'user@example.com', roles: ['admin'] });
   });
 });

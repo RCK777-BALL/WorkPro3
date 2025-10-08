@@ -1,14 +1,18 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 // utils/export.ts
 import { saveAs } from 'file-saver';
 import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
-import type { Asset } from '../types';
+import type { Asset } from '@/types';
 
 export const exportToExcel = async <T>(
   data: T[],
   filename: string,
-  map: (item: T) => Record<string, any>
+  map: (item: T) => Record<string, unknown>
 ) => {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet(filename);
@@ -28,7 +32,7 @@ export const exportToExcel = async <T>(
 export const exportToPDF = <T>(
   data: T[],
   filename: string,
-  map: (item: T) => Record<string, any>
+  map: (item: T) => Record<string, unknown>
 ) => {
   const doc = new jsPDF();
   const rows = data.map(map);
@@ -40,7 +44,7 @@ export const exportToPDF = <T>(
 export const exportToCSV = <T>(
   data: T[],
   filename: string,
-  map: (item: T) => Record<string, any>
+  map: (item: T) => Record<string, unknown>
 ) => {
   const rows = data.map(map);
   const headers = rows.length ? Object.keys(rows[0]) : [];
@@ -112,17 +116,17 @@ export const exportAssetsToPDF = (assets: Asset[], filename: string) => {
 
 // Generic helpers for metric exports
 export const exportMetricsToCSV = (
-  data: Record<string, any>[],
+  data: Record<string, unknown>[],
   filename: string,
 ) => exportToCSV(data, filename, (d) => d);
 
 export const exportMetricsToPDF = (
-  data: Record<string, any>[],
+  data: Record<string, unknown>[],
   filename: string,
 ) => exportToPDF(data, filename, (d) => d);
 
 export const exportMetrics = (
-  data: Record<string, any>[],
+  data: Record<string, unknown>[],
   filename: string,
   format: 'csv' | 'pdf',
 ) =>

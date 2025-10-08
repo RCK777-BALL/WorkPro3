@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useEffect, useRef } from 'react';
 
 interface QueueItem {
@@ -39,16 +43,13 @@ export function useOfflineQueue() {
       queue.current.push(item);
       localStorage.setItem('offline-queue', JSON.stringify(queue.current));
 
-      if ('serviceWorker' in navigator && 'SyncManager' in window) {
-        try {
-          const reg = await navigator.serviceWorker.ready;
-          reg.sync.register('offline-queue');
-          navigator.serviceWorker.controller?.postMessage({
-            type: 'QUEUE_REQUEST',
-            payload: item,
-          });
-        } catch {
-          // ignore
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.ready;
+        const sync = (reg as ServiceWorkerRegistration).sync;
+        if (sync && typeof sync.register === 'function') {
+          await sync.register('offline-wo-sync');
+        } else {
+          // Fallback: queue locally and flush on focus/online
         }
       }
     }

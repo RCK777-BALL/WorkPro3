@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { describe, it, beforeAll, afterAll, beforeEach, expect } from 'vitest';
 import request from 'supertest';
 import express, { type Request, type Response, type NextFunction } from 'express';
@@ -22,12 +26,12 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   }
   try {
     const token = header.split(' ')[1];
-    const { id, role, tenantId } = jwt.verify(token, secret) as {
+    const { id, roles, tenantId } = jwt.verify(token, secret) as {
       id: string;
-      role: string;
+      roles: string[];
       tenantId: string;
     };
-    (req as any).user = { id, role, tenantId };
+    (req as any).user = { id, roles, tenantId };
     (req as any).tenantId = tenantId;
     next();
   } catch {
@@ -49,11 +53,11 @@ beforeAll(async () => {
     name: 'Tester',
     email: 'tester@example.com',
     passwordHash: 'pass123',
-    role: 'manager',
+    roles: ['supervisor'],
     tenantId: new mongoose.Types.ObjectId(),
   })) as unknown as UserDocument;
   token = jwt.sign(
-    { id: user._id.toString(), role: user.role, tenantId: user.tenantId.toString() },
+    { id: user._id.toString(), roles: user.roles, tenantId: user.tenantId.toString() },
     process.env.JWT_SECRET!,
   );
 });
@@ -69,11 +73,11 @@ beforeEach(async () => {
     name: 'Tester',
     email: 'tester@example.com',
     passwordHash: 'pass123',
-    role: 'manager',
+    roles: ['supervisor'],
     tenantId: new mongoose.Types.ObjectId(),
   })) as unknown as UserDocument;
   token = jwt.sign(
-    { id: user._id.toString(), role: user.role, tenantId: user.tenantId.toString() },
+    { id: user._id.toString(), roles: user.roles, tenantId: user.tenantId.toString() },
     process.env.JWT_SECRET!,
   );
 });

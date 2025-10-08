@@ -1,4 +1,8 @@
-import { Request, Response, NextFunction } from 'express';
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
+import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 /**

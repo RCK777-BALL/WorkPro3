@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { describe, it, beforeAll, afterAll, beforeEach, expect } from "vitest";
 import request from 'supertest';
 import express from 'express';
@@ -12,6 +16,7 @@ import Line from '../models/Line';
 import Station from '../models/Station';
 import PMTask from '../models/PMTask';
 import WorkOrder from '../models/WorkOrder';
+import AuditLog from '../models/AuditLog';
 
 
 const app = express();
@@ -45,10 +50,10 @@ beforeEach(async () => {
     name: 'Tester',
     email: 'tester@example.com',
     passwordHash: 'pass123',
-    role: 'manager',
+    roles: ['supervisor'],
     tenantId: new mongoose.Types.ObjectId(),
   });
-  token = jwt.sign({ id: user._id.toString(), role: user.role }, process.env.JWT_SECRET!);
+  token = jwt.sign({ id: user._id.toString(), roles: user.roles }, process.env.JWT_SECRET!);
 
   department = await Department.create({
     name: 'Prod',
@@ -65,8 +70,8 @@ beforeEach(async () => {
   stationId = department.lines[0].stations[0]._id;
   pmTask = await PMTask.create({
     title: 'PM1',
-    frequency: 'monthly',
     tenantId: user.tenantId,
+    rule: { type: 'calendar', cron: '0 0 * * *' },
   });
 });
 
@@ -88,7 +93,10 @@ describe('Work Order Routes', () => {
         title: 'WO1',
         description: 'desc',
         priority: 'medium',
-        status: 'open',
+        status: 'requested',
+        type: 'calibration',
+        complianceProcedureId: 'PROC-1',
+        calibrationIntervalDays: 365,
         departmentId: department._id,
         department: department._id,
         line: lineId,
@@ -105,6 +113,9 @@ describe('Work Order Routes', () => {
     expect(createRes.body.pmTask).toBe(String(pmTask._id));
     expect(createRes.body.teamMemberName).toBe('Tester');
     expect(createRes.body.importance).toBe('low');
+    expect(createRes.body.type).toBe('calibration');
+    expect(createRes.body.complianceProcedureId).toBe('PROC-1');
+    expect(createRes.body.calibrationIntervalDays).toBe(365);
 
     const id = createRes.body._id;
 
@@ -114,6 +125,9 @@ describe('Work Order Routes', () => {
       .expect(200);
 
     expect(listRes.body.length).toBe(1);
+    const logs = await AuditLog.find({ entityType: 'WorkOrder', action: 'create' });
+    expect(logs.length).toBe(1);
+    expect(logs[0].entityId).toBe(String(id));
     expect(listRes.body[0]._id).toBe(id);
     expect(listRes.body[0].department).toBe(String(department._id));
     expect(listRes.body[0].line).toBe(String(lineId));
@@ -121,6 +135,9 @@ describe('Work Order Routes', () => {
     expect(listRes.body[0].pmTask).toBe(String(pmTask._id));
     expect(listRes.body[0].teamMemberName).toBe('Tester');
     expect(listRes.body[0].importance).toBe('low');
+    expect(listRes.body[0].type).toBe('calibration');
+    expect(listRes.body[0].complianceProcedureId).toBe('PROC-1');
+    expect(listRes.body[0].calibrationIntervalDays).toBe(365);
   });
 
   it('fails to create a work order when required fields are missing', async () => {
@@ -137,7 +154,7 @@ describe('Work Order Routes', () => {
       .post('/api/workorders')
       .set('Authorization', `Bearer ${token}`)
       .send({
-        asset: asset._id,
+        assetId: asset._id,
  
       })
       .expect(400);
@@ -160,7 +177,7 @@ describe('Work Order Routes', () => {
         title: 'WO2',
         description: 'desc',
         priority: 'medium',
-        status: 'open',
+        status: 'requested',
         departmentId: department._id,
         department: department._id,
         line: lineId,
@@ -196,24 +213,83 @@ describe('Work Order Routes', () => {
     expect(listAfter.body.length).toBe(0);
   });
 
+  it('handles status transitions', async () => {
+    const asset = await Asset.create({
+      name: 'AssetTrans',
+      type: 'Mechanical',
+      location: 'Area 1',
+      department: 'Production',
+      status: 'Active',
+      tenantId: user.tenantId,
+    });
+
+    const createRes = await request(app)
+      .post('/api/workorders')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        title: 'WO-Trans',
+        description: 'desc',
+        priority: 'medium',
+        status: 'requested',
+        departmentId: department._id,
+        department: department._id,
+        line: lineId,
+        station: stationId,
+        pmTask: pmTask._id,
+        teamMemberName: 'Tester',
+        importance: 'low',
+        assetId: asset._id,
+      })
+      .expect(201);
+
+    const id = createRes.body._id;
+
+    const assignRes = await request(app)
+      .post(`/api/workorders/${id}/assign`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ assignees: [user._id] })
+      .expect(200);
+    expect(assignRes.body.status).toBe('assigned');
+
+    const startRes = await request(app)
+      .post(`/api/workorders/${id}/start`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect(startRes.body.status).toBe('in_progress');
+
+    const completeRes = await request(app)
+      .post(`/api/workorders/${id}/complete`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ timeSpentMin: 5 })
+      .expect(200);
+    expect(completeRes.body.status).toBe('completed');
+    expect(completeRes.body.timeSpentMin).toBe(5);
+
+    const cancelRes = await request(app)
+      .post(`/api/workorders/${id}/cancel`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect(cancelRes.body.status).toBe('cancelled');
+  });
+
   it('searches work orders by status', async () => {
     const wo1 = await WorkOrder.create({
       title: 'StatusWO',
       priority: 'low',
-      status: 'open',
+      status: 'requested',
       tenantId: user.tenantId,
-      dateCreated: new Date('2024-01-01'),
+      createdAt: new Date('2024-01-01'),
     });
     await WorkOrder.create({
       title: 'OtherWO',
       priority: 'low',
       status: 'completed',
       tenantId: user.tenantId,
-      dateCreated: new Date('2024-02-01'),
+      createdAt: new Date('2024-02-01'),
     });
 
     const res = await request(app)
-      .get('/api/workorders/search?status=open')
+      .get('/api/workorders/search?status=requested')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
@@ -225,13 +301,13 @@ describe('Work Order Routes', () => {
     await WorkOrder.create({
       title: 'HighPriority',
       priority: 'high',
-      status: 'open',
+      status: 'requested',
       tenantId: user.tenantId,
     });
     await WorkOrder.create({
       title: 'LowPriority',
       priority: 'low',
-      status: 'open',
+      status: 'requested',
       tenantId: user.tenantId,
     });
 
@@ -248,16 +324,16 @@ describe('Work Order Routes', () => {
     await WorkOrder.create({
       title: 'OldWO',
       priority: 'low',
-      status: 'open',
+      status: 'requested',
       tenantId: user.tenantId,
-      dateCreated: new Date('2024-01-01'),
+      createdAt: new Date('2024-01-01'),
     });
     const woInRange = await WorkOrder.create({
       title: 'InRangeWO',
       priority: 'low',
-      status: 'open',
+      status: 'requested',
       tenantId: user.tenantId,
-      dateCreated: new Date('2024-02-01'),
+      createdAt: new Date('2024-02-01'),
     });
 
     const res = await request(app)

@@ -1,4 +1,5 @@
-import type { User } from '../types';
+ import type { User } from '@/types';
+ 
 
 export interface TeamMember extends User {
   phone: string;
@@ -21,7 +22,7 @@ export const teamMembers: TeamMember[] = [
     id: 'TM001',
     name: 'Michael Chen',
     email: 'michael.chen@example.com',
-    role: 'manager',
+    role: 'supervisor',
     department: 'Maintenance',
     avatar: 'https://i.pravatar.cc/150?u=michael',
     phone: '555-0101',
@@ -31,7 +32,7 @@ export const teamMembers: TeamMember[] = [
     id: 'TM003',
     name: 'David Wilson',
     email: 'david.wilson@example.com',
-    role: 'technician',
+    role: 'tech',
     department: 'Electrical',
     avatar: 'https://i.pravatar.cc/150?u=david',
     phone: '555-0103',

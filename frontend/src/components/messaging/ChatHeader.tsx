@@ -1,12 +1,16 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Hash, Users, Bell, Pin, Search, Settings } from 'lucide-react';
-import Button from '../common/Button';
-import Card from '../common/Card';
-import Avatar from '../common/Avatar';
+import Button from '@common/Button';
+import Card from '@common/Card';
+import Avatar from '@common/Avatar';
  
-import type { Channel } from '../../types';
-import { togglePin, toggleMute } from '../../api/channels';
-import { useToast } from '../../context/ToastContext';
+import type { Channel } from '@/types';
+import { togglePin, toggleMute } from '@/api/channels';
+import { useToast } from '@/context/ToastContext';
  
 
 interface Member {
@@ -135,7 +139,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
                   placeholder="Search members..."
                   className="w-full px-3 py-1.5 text-sm border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
                   value={searchMembers}
-                  onChange={(e) => setSearchMembers(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchMembers(e.target.value)}
                 />
               </div>
             </div>

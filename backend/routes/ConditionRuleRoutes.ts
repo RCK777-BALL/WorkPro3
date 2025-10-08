@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import express from 'express';
 import {
   getAllConditionRules,
@@ -7,7 +11,7 @@ import {
   deleteConditionRule,
 } from '../controllers/ConditionRuleController';
 import { requireAuth } from '../middleware/authMiddleware';
-import requireRole from '../middleware/requireRole';
+import requireRoles from '../middleware/requireRoles';
 import { validate } from '../middleware/validationMiddleware';
 import { conditionRuleValidators } from '../validators/conditionRuleValidators';
 
@@ -19,7 +23,7 @@ router.get('/:id', getConditionRuleById);
 
 router.post(
   '/',
-  requireRole('admin', 'manager'),
+  requireRoles(['admin', 'supervisor']),
   conditionRuleValidators,
   validate,
   createConditionRule
@@ -27,12 +31,12 @@ router.post(
 
 router.put(
   '/:id',
-  requireRole('admin', 'manager'),
+  requireRoles(['admin', 'supervisor']),
   conditionRuleValidators,
   validate,
   updateConditionRule
 );
 
-router.delete('/:id', requireRole('admin', 'manager'), deleteConditionRule);
+router.delete('/:id', requireRoles(['admin', 'supervisor']), deleteConditionRule);
 
 export default router;

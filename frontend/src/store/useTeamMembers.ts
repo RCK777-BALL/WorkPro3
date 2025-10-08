@@ -1,6 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { create } from 'zustand';
-import http from '../lib/http';
-import type { TeamMember, TeamMemberResponse } from '../types';
+import http from '@/lib/http';
+import type { TeamMember, TeamMemberResponse } from '@/types';
 
 interface TeamMemberState {
   members: TeamMember[];
@@ -22,7 +26,7 @@ export const useTeamMembers = create<TeamMemberState>((set) => ({
 
   addMember: async (data) => {
     const isForm = data instanceof FormData;
-    const res = await http.post<TeamMemberResponse>('/team', data as any, {
+    const res = await http.post<TeamMemberResponse>('/team', data, {
       headers: isForm ? { 'Content-Type': 'multipart/form-data' } : undefined,
     });
     const member = mapMember(res.data);
@@ -32,7 +36,7 @@ export const useTeamMembers = create<TeamMemberState>((set) => ({
 
   updateMember: async (id, data) => {
     const isForm = data instanceof FormData;
-    const res = await http.put<TeamMemberResponse>(`/team/${id}`, data as any, {
+    const res = await http.put<TeamMemberResponse>(`/team/${id}`, data, {
       headers: isForm ? { 'Content-Type': 'multipart/form-data' } : undefined,
     });
     const member = mapMember(res.data);

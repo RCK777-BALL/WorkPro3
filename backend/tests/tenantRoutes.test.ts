@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { describe, it, beforeAll, afterAll, beforeEach, expect } from 'vitest';
 import request from 'supertest';
 import express from 'express';
@@ -31,11 +35,11 @@ beforeEach(async () => {
     name: 'Admin',
     email: 'admin@example.com',
     passwordHash: 'pass123',
-    role: 'admin',
+    roles: ['admin'],
     tenantId: new mongoose.Types.ObjectId(),
     employeeId: 'ADMIN1',
   });
-  token = jwt.sign({ id: admin._id.toString(), role: admin.role }, process.env.JWT_SECRET!);
+  token = jwt.sign({ id: admin._id.toString(), roles: admin.roles }, process.env.JWT_SECRET!);
 });
 
 describe('Tenant Routes', () => {

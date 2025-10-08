@@ -1,6 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getVendorPurchaseOrder, updateVendorPurchaseOrder } from '../api/vendorPurchaseOrders';
+import { getVendorPurchaseOrder, updateVendorPurchaseOrder } from '@/api/vendorPurchaseOrders';
 
 interface PurchaseOrder {
   id: string;
@@ -47,7 +51,7 @@ export default function VendorPODetail() {
           <input
             className="input input-bordered"
             value={status}
-            onChange={(e) => setStatus(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStatus(e.target.value)}
           />
         </label>
         <button type="submit" className="btn-primary">

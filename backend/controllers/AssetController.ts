@@ -1,154 +1,409 @@
-import Asset from '../models/Asset';
-import mongoose from 'mongoose';
-import { validationResult } from 'express-validator';
-import type { Express } from 'express';
-import logger from '../utils/logger';
+/*
+ * SPDX-License-Identifier: MIT
+ */
 
-export const getAllAssets: AuthedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+import type { AuthedRequestHandler } from '../types/http';
+import mongoose, { Error as MongooseError, Types } from 'mongoose';
+import Asset from '../models/Asset';
+import Site from '../models/Site';
+import Department from '../models/Department';
+import Line from '../models/Line';
+import Station from '../models/Station';
+import { validationResult, ValidationError } from 'express-validator';
+import logger from '../utils/logger';
+import { filterFields } from '../utils/filterFields';
+import { writeAuditLog } from '../utils/audit';
+import { toEntityId } from '../utils/ids';
+import { sendResponse } from '../utils/sendResponse';
+import { Response } from 'express';
+import { any } from 'zod';
+
+
+const assetCreateFields = [
+  'name',
+  'type',
+  'location',
+  'departmentId',
+  'status',
+  'serialNumber',
+  'description',
+  'modelName',
+  'manufacturer',
+  'purchaseDate',
+  'installationDate',
+  'lineId',
+  'stationId',
+  'siteId',
+  'criticality',
+  'documents',
+];
+
+const assetUpdateFields = [...assetCreateFields];
+
+export const getAllAssets: AuthedRequestHandler = async (req: { tenantId: any; siteId: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => any) => {
   try {
     const filter: any = { tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
     const assets = await Asset.find(filter);
-    res.json(assets);
+    sendResponse(res, assets);
+    return;
   } catch (err) {
-    next(err);
+    if (err instanceof MongooseError.ValidationError) {
+      const verr = err as MongooseError.ValidationError;
+      const errors = Object.values(verr.errors).map((e) => e.message);
+      sendResponse(res, null, errors, 400);
+      return;
+    }
+    return next(err);
   }
 };
 
-export const getAssetById: AuthedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const getAssetById: AuthedRequestHandler = async (req: { params: { id: any; }; tenantId: any; siteId: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => any) => {
   try {
-    const filter: any = { _id: req.params.id, tenantId: req.tenantId };
+    const id = req.params.id;
+    if (!id) {
+      sendResponse(res, null, 'ID is required', 400);
+      return;
+    }
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      sendResponse(res, null, 'Invalid ID', 400);
+      return;
+    }
+    const filter: any = { _id: id, tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
+
     const asset = await Asset.findOne(filter);
-    if (!asset) return res.status(404).json({ message: 'Not found' });
-    res.json(asset);
+    if (!asset) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
+    sendResponse(res, asset);
+    return;
   } catch (err) {
-    next(err);
+    if (err instanceof MongooseError.ValidationError) {
+      const verr = err as MongooseError.ValidationError;
+      const errors = Object.values(verr.errors).map((e) => e.message);
+      sendResponse(res, null, errors, 400);
+      return;
+    }
+    return next(err);
   }
 };
 
-export const createAsset: AuthedRequestHandler = async (
-  req,
-  res,
-  next
-  ) => {
+export const createAsset: AuthedRequestHandler = async (req: { body: { name: any; }; tenantId: any; siteId: unknown; user: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => any) => {
+
   logger.debug('createAsset body:', req.body);
   logger.debug('createAsset files:', (req as any).files);
-  const files = (req as any).files as Express.Multer.File[] | undefined;
+
+  const files = (req as any).files as
+    | Array<{ originalname?: string; mimetype?: string; size?: number }>
+    | undefined;
   if (!files || files.length === 0) {
     logger.debug('No files uploaded for asset');
   }
 
-  const { user, tenantId: reqTenantId } = req as AuthedRequest;
-  const resolvedTenantId = reqTenantId || user?.tenantId;
-  if (!resolvedTenantId) {
-    return res.status(400).json({ message: 'Tenant ID is required' });
+  const tenantId = req.tenantId;
+  if (!tenantId) {
+    sendResponse(res, null, 'Tenant ID required', 400);
+    return;
   }
 
   if (!req.body.name) {
-    return res.status(400).json({ message: 'name is required' });
+    sendResponse(res, null, 'name is required', 400);
+    return;
   }
 
   try {
-    const errors = validationResult(req);
+    const errors = validationResult(req as any);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      sendResponse(res, null, errors.array() as ValidationError[], 400);
+      return;
     }
 
-    const tenantId = resolvedTenantId;
-
-    const payload: any = { ...req.body, tenantId };
+    const payload: Record<string, unknown> = filterFields(
+      req.body,
+      assetCreateFields,
+    );
+    payload.tenantId = tenantId;
     if (req.siteId && !payload.siteId) payload.siteId = req.siteId;
+
     const newAsset = await Asset.create(payload);
     const assetObj = newAsset.toObject();
     const response = { ...assetObj, tenantId: assetObj.tenantId.toString() };
-
-    res.status(201).json(response);
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'create',
+      entityType: 'Asset',
+      entityId: toEntityId(newAsset._id as Types.ObjectId),
+      after: assetObj,
+    });
+    sendResponse(res, response, null, 201);
+    return;
   } catch (err) {
-    next(err);
+    if (err instanceof MongooseError.ValidationError) {
+      const verr = err as MongooseError.ValidationError;
+      const errors = Object.values(verr.errors).map((e) => e.message);
+      sendResponse(res, null, errors, 400);
+      return;
+    }
+    return next(err);
   }
 };
 
-export const updateAsset: AuthedRequestHandler = async (
-  req,
-  res,
-  next
-  ) => {
+export const updateAsset: AuthedRequestHandler = async (req: { body: any; tenantId: any; params: { id: any; }; siteId: any; user: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => any) => {
+ 
   logger.debug('updateAsset body:', req.body);
   logger.debug('updateAsset files:', (req as any).files);
-  const files = (req as any).files as Express.Multer.File[] | undefined;
+
+  const files = (req as any).files as
+    | Array<{ originalname?: string; mimetype?: string; size?: number }>
+    | undefined;
   if (!files || files.length === 0) {
     logger.debug('No files uploaded for asset update');
   }
 
-  const { user, tenantId: reqTenantId } = req as AuthedRequest;
-  const tenantId = reqTenantId || user?.tenantId;
+  const tenantId = req.tenantId;
   if (!tenantId) {
-    return res.status(400).json({ message: 'Tenant ID is required' });
+    sendResponse(res, null, 'Tenant ID required', 400);
+    return;
   }
 
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+    const id = req.params.id;
+    if (!id) {
+      sendResponse(res, null, 'ID is required', 400);
+      return;
     }
-    const filter: any = { _id: req.params.id, tenantId };
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      sendResponse(res, null, 'Invalid ID', 400);
+      return;
+    }
+    const errors = validationResult(req as any);
+
+    if (!errors.isEmpty()) {
+      sendResponse(res, null, errors.array() as ValidationError[], 400);
+      return;
+    }
+
+    const filter: any = { _id: id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
-    const asset = await Asset.findOneAndUpdate(
-      filter,
-      req.body,
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
-    if (!asset) return res.status(404).json({ message: 'Not found' });
-    res.json(asset);
+    const update = filterFields(req.body, assetUpdateFields);
+    const existing = await Asset.findOne(filter);
+    if (!existing) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
+    const asset = await Asset.findOneAndUpdate(filter, update, {
+      new: true,
+      runValidators: true,
+    });
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'update',
+      entityType: 'Asset',
+      entityId: toEntityId(new Types.ObjectId(id)),
+      before: existing.toObject(),
+      after: asset?.toObject(),
+    });
+    sendResponse(res, asset);
+    return;
+
   } catch (err) {
-    next(err);
+    if (err instanceof MongooseError.ValidationError) {
+      const verr = err as MongooseError.ValidationError;
+      const errors = Object.values(verr.errors).map((e) => e.message);
+      sendResponse(res, null, errors, 400);
+      return;
+    }
+    return next(err);
   }
 };
 
-export const deleteAsset: AuthedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const deleteAsset: AuthedRequestHandler = async (req: { tenantId: any; params: { id: any; }; siteId: any; user: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => any) => {
+
   try {
-    const filter: any = { _id: req.params.id, tenantId: req.tenantId };
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+    const id = req.params.id;
+    if (!id) {
+      sendResponse(res, null, 'ID is required', 400);
+      return;
+    }
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      sendResponse(res, null, 'Invalid ID', 400);
+      return;
+    }
+    const filter: any = { _id: id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
+
     const asset = await Asset.findOneAndDelete(filter);
-    if (!asset) return res.status(404).json({ message: 'Not found' });
-    res.json({ message: 'Deleted successfully' });
+    if (!asset) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'delete',
+      entityType: 'Asset',
+      entityId: toEntityId(new Types.ObjectId(id)),
+      before: asset.toObject(),
+    });
+    sendResponse(res, { message: 'Deleted successfully' });
+    return;
   } catch (err) {
-    next(err);
+    if (err instanceof MongooseError.ValidationError) {
+      const verr = err as MongooseError.ValidationError;
+      const errors = Object.values(verr.errors).map((e) => e.message);
+      sendResponse(res, null, errors, 400);
+      return;
+    }
+    return next(err);
   }
 };
 
-export const searchAssets: AuthedRequestHandler = async (
-  req,
-  res,
-  next
-) => {
+export const searchAssets: AuthedRequestHandler = async (req: { query: { q: string; }; tenantId: any; siteId: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => any) => {
   try {
     const q = (req.query.q as string) || '';
     const regex = new RegExp(q, 'i');
-    const filter: any = {
-      name: { $regex: regex },
-      tenantId: req.tenantId,
-    };
+
+    const filter: any = { name: { $regex: regex }, tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
+
     const assets = await Asset.find(filter).limit(10);
-    res.json(assets);
+    sendResponse(res, assets);
+    return;
   } catch (err) {
+    if (err instanceof MongooseError.ValidationError) {
+      const verr = err as MongooseError.ValidationError;
+      const errors = Object.values(verr.errors).map((e) => e.message);
+      sendResponse(res, null, errors, 400);
+      return;
+    }
+    return next(err);
+  }
+};
+
+export const getAssetTree: AuthedRequestHandler = async (req: { tenantId: any; siteId: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
+  try {
+    const match: any = { tenantId: req.tenantId };
+    if (req.siteId) match.siteId = req.siteId;
+
+    const assets = await Asset.find(match).lean();
+
+    const siteIds = new Set<string>();
+    const deptIds = new Set<string>();
+    const lineIds = new Set<string>();
+    const stationIds = new Set<string>();
+
+    assets.forEach((a: any) => {
+      if (a.siteId) siteIds.add(a.siteId.toString());
+      if (a.departmentId) deptIds.add(a.departmentId.toString());
+      if (a.lineId) lineIds.add(a.lineId.toString());
+      if (a.stationId) stationIds.add(a.stationId.toString());
+    });
+
+    const [sites, departments, lines, stations] = await Promise.all([
+      Site.find({ _id: { $in: Array.from(siteIds) } }).lean(),
+      Department.find({ _id: { $in: Array.from(deptIds) } }).lean(),
+      Line.find({ _id: { $in: Array.from(lineIds) } }).lean(),
+      Station.find({ _id: { $in: Array.from(stationIds) } }).lean(),
+    ]);
+
+    const siteMap = new Map<string, any>();
+    const deptName = new Map(departments.map((d: any) => [d._id.toString(), d.name]));
+    const lineName = new Map(lines.map((l: any) => [l._id.toString(), l.name]));
+    const stationName = new Map(stations.map((s: any) => [s._id.toString(), s.name]));
+
+    sites.forEach((s: any) => {
+      siteMap.set(s._id.toString(), {
+        id: s._id.toString(),
+        name: s.name,
+        areas: new Map<string, any>(),
+      });
+    });
+
+    assets.forEach((a: any) => {
+      const sid = a.siteId ? a.siteId.toString() : 'unknown';
+      const did = a.departmentId ? a.departmentId.toString() : 'unknown';
+      const lid = a.lineId ? a.lineId.toString() : 'unknown';
+      const stid = a.stationId ? a.stationId.toString() : 'unknown';
+
+      let site = siteMap.get(sid);
+      if (!site) {
+        site = { id: sid, name: 'Unknown Site', areas: new Map<string, any>() };
+        siteMap.set(sid, site);
+      }
+
+      let area = site.areas.get(did);
+      if (!area) {
+        area = {
+          id: did,
+          name: deptName.get(did) || 'Unknown Area',
+          lines: new Map<string, any>(),
+        };
+        site.areas.set(did, area);
+      }
+
+      let line = area.lines.get(lid);
+      if (!line) {
+        line = {
+          id: lid,
+          name: lineName.get(lid) || 'Unknown Line',
+          stations: new Map<string, any>(),
+        };
+        area.lines.set(lid, line);
+      }
+
+      let station = line.stations.get(stid);
+      if (!station) {
+        station = {
+          id: stid,
+          name: stationName.get(stid) || 'Unknown Station',
+          assets: [] as any[],
+        };
+        line.stations.set(stid, station);
+      }
+
+      station.assets.push({
+        id: a._id.toString(),
+        name: a.name,
+        qr: JSON.stringify({ type: 'asset', id: a._id.toString() }),
+      });
+    });
+
+    const tree = Array.from(siteMap.values()).map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      areas: Array.from(s.areas.values()).map((a: any) => ({
+        id: a.id,
+        name: a.name,
+        lines: Array.from(a.lines.values()).map((l: any) => ({
+          id: l.id,
+          name: l.name,
+          stations: Array.from(l.stations.values()),
+        })),
+      })),
+    }));
+
+    sendResponse(res, tree);
+    return;
+  } catch (err) {
+    if (err instanceof MongooseError.ValidationError) {
+      const verr = err as MongooseError.ValidationError;
+      const errors = Object.values(verr.errors).map((e) => e.message);
+      sendResponse(res, null, errors, 400);
+      return;
+    }
     next(err);
+    return;
   }
 };

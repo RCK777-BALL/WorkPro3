@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
@@ -11,20 +15,21 @@ import User from '../models/User';
 import Asset from '../models/Asset';
 import Department from '../models/Department';
 import Tenant from '../models/Tenant';
+import logger from '../utils/logger';
 
 dotenv.config();
 
 const MONGO_URI = process.env.MONGO_URI || '';
 
 if (!MONGO_URI) {
-    console.error('❌ MONGO_URI is not defined in .env');
+    logger.error('❌ MONGO_URI is not defined in .env');
     process.exit(1);
 }
 
 async function resetAndSeed() {
     try {
         await mongoose.connect(MONGO_URI);
-        console.log('✅ Connected to MongoDB');
+        logger.info('✅ Connected to MongoDB');
 
  
         // 1️⃣ Clear existing data
@@ -34,7 +39,7 @@ async function resetAndSeed() {
             Department.deleteMany({}),
             Tenant.deleteMany({}),
         ]);
-        console.log('🗑️ Existing data cleared');
+        logger.info('🗑️ Existing data cleared');
 
         // 2️⃣ Insert seed data
         const tenant = await Tenant.create({ name: 'Default Tenant' });
@@ -51,12 +56,12 @@ async function resetAndSeed() {
         const station = line.stations[0];
 
         const adminPassword = await bcrypt.hash('admin123', 10);
-        await User.create({
+        const adminUser = await User.create({
             email: 'admin@example.com',
             passwordHash: adminPassword,
-            role: 'admin'
+            roles: ['admin']
         });
-        console.log(`👤 Created admin user: ${adminUser.email}`);
+        logger.info(`👤 Created admin user: ${adminUser.email}`);
 
         // Seed Departments → Lines → Stations → Assets
         const department = await Department.create({ name: 'Production' });
@@ -86,11 +91,11 @@ async function resetAndSeed() {
  
         ]);
 
-        console.log('🌱 Seeded sample Departments, Lines, Stations, and Assets');
+        logger.info('🌱 Seeded sample Departments, Lines, Stations, and Assets');
 
         process.exit(0);
     } catch (err) {
-        console.error('❌ Error seeding:', err);
+        logger.error('❌ Error seeding:', err);
         process.exit(1);
     }
 }

@@ -1,7 +1,11 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React from 'react';
-import Card from '../common/Card';
+import Card from '@common/Card';
 import { Users, UserCheck, Clock, Award } from 'lucide-react';
-import type { User } from '../../types';
+import type { User } from '@/types';
 
 interface TeamMetricsProps {
   teamMembers: User[];

@@ -1,3 +1,18 @@
+export type { Asset as SharedAsset } from '@shared/asset';
+export type { WorkOrder as SharedWorkOrder } from '@shared/workOrder';
+export type { InventoryItem, InventoryUpdatePayload } from '@shared/inventory';
+export type { UploadedFile, UploadResponse } from '@shared/uploads';
+export type { ApiResult } from '@shared/http';
+export type {
+  Permit,
+  PermitHistoryEntry,
+  PermitApprovalStep,
+  PermitIsolationStep,
+  SafetyIncident,
+  SafetyKpiResponse,
+  PermitActivitySummary,
+} from '@shared/permit';
+
 /**
  * Defines the allowed maintenance categories for upcoming maintenance tasks.
  */
@@ -81,15 +96,30 @@ export interface WorkOrder {
   /** Priority of the work order */
   priority: 'low' | 'medium' | 'high' | 'critical';
 
-  /** Current status (note: hyphenated strings) */
-  status: 'open' | 'in-progress' | 'on-hold' | 'completed';
+  /** Current status */
+  status: 'requested' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
 
   /** Type of work such as corrective or preventive */
   type: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
 
+  /** Optional compliance procedure identifier */
+  complianceProcedureId?: string;
+
+  /** Optional calibration interval in days */
+  calibrationIntervalDays?: number;
+
   /** User assigned to complete the work */
   assignedTo?: string;
   assignedToAvatar?: string;
+  assignees?: string[];
+  checklists?: { text: string; done: boolean }[];
+  partsUsed?: { partId: string; qty: number; cost: number }[];
+  signatures?: { by: string; ts: string }[];
+  timeSpentMin?: number;
+  photos?: string[];
+  failureCode?: string;
+  permits?: string[];
+  requiredPermitTypes?: string[];
 
   /** Department associated with the work order */
   department: string;
@@ -104,7 +134,7 @@ export interface WorkOrder {
   note?: string;
   completedBy?: string;
   attachments?: any[];
-  signature?: string;
+  parts?: { partId: string; qty: number; cost: number }[];
 }
 
 export interface NewWorkOrder {
@@ -227,7 +257,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'manager' | 'technician' | 'viewer';
+  role: 'admin' | 'supervisor' | 'planner' | 'tech';
   department: string;
   avatar?: string;
 }
@@ -236,7 +266,15 @@ export interface TeamMember {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'manager' | 'technician' | 'viewer';
+  role:
+    | 'admin'
+    | 'supervisor'
+    | 'planner'
+    | 'tech'
+    | 'team_member'
+    | 'team_leader'
+    | 'area_leader'
+    | 'department_leader';
   department?: string;
   /** Unique employee identifier */
   employeeId?: string;
@@ -251,7 +289,15 @@ export interface TeamMemberResponse {
   id?: string;
   name: string;
   email: string;
-  role: 'admin' | 'manager' | 'technician' | 'viewer';
+  role:
+    | 'admin'
+    | 'supervisor'
+    | 'planner'
+    | 'tech'
+    | 'team_member'
+    | 'team_leader'
+    | 'area_leader'
+    | 'department_leader';
   department?: string;
   employeeId?: string;
   managerId?: string | null;
@@ -264,7 +310,15 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'manager' | 'technician' | 'viewer';
+  role:
+    | 'admin'
+    | 'supervisor'
+    | 'planner'
+    | 'tech'
+    | 'team_member'
+    | 'team_leader'
+    | 'area_leader'
+    | 'department_leader';
   /** Identifier for the user's tenant */
   tenantId?: string;
   /** Optional JWT token used for authenticated requests */
@@ -301,13 +355,14 @@ export interface NotificationType {
 
 export interface WorkOrderUpdatePayload {
   _id: string;
+  tenantId?: string;
   title?: string;
+  status?: 'requested' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+  type?: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
+  complianceProcedureId?: string;
+  calibrationIntervalDays?: number;
+  assignees?: string[];
   deleted?: boolean;
-}
-
-export interface InventoryUpdatePayload {
-  _id: string;
-  name?: string;
 }
 
 export interface DashboardSummary {
@@ -346,7 +401,7 @@ export interface LowStockPart {
 export interface UpcomingMaintenanceResponse {
   _id?: string;
   id?: string;
-  asset?: { _id?: string; name?: string };
+  asset?: { _id?: string; id?: string; name?: string };
   nextDue: string;
   type?: MaintenanceType;
   assignedTo?: string;
@@ -401,3 +456,57 @@ export interface Timesheet {
   hours: number;
   description?: string;
 }
+
+export type WorkType =
+  | 'work_order'
+  | 'maintenance'
+  | 'training'
+  | 'safety'
+  | 'improvement';
+
+export interface WorkHistoryMetrics {
+  safety: {
+    incidentRate: number;
+    safetyCompliance: number;
+    nearMisses: number;
+    lastIncidentDate: string;
+    safetyMeetingsAttended: number;
+  };
+  people: {
+    trainingHours: number;
+    certifications: string[];
+    teamCollaboration: number;
+    attendanceRate: number;
+    mentorshipHours: number;
+  };
+  productivity: {
+    completedTasks: number;
+    onTimeCompletion: number;
+    averageResponseTime: string;
+    overtimeHours: number;
+    taskEfficiencyRate: number;
+  };
+  improvement: {
+    suggestionsSubmitted: number;
+    suggestionsImplemented: number;
+    processImprovements: number;
+    costSavings: number;
+  };
+}
+
+export interface WorkHistoryEntry {
+  id: string;
+  date: string;
+  type: WorkType;
+  title: string;
+  status: 'completed' | 'delayed' | 'in_progress';
+  duration: number;
+  notes?: string;
+  category?: 'safety' | 'people' | 'productivity' | 'improvement';
+}
+
+export interface WorkHistory {
+  metrics: WorkHistoryMetrics;
+  recentWork: WorkHistoryEntry[];
+}
+

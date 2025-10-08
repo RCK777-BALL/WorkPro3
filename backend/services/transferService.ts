@@ -1,12 +1,16 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import TransferOrder from '../models/TransferOrder';
 import InventoryItem from '../models/InventoryItem';
 
 /**
  * Receive a transfer order and adjust inventory levels.
- * Only admins or managers may perform this action.
+ * Only admins or supervisors may perform this action.
  */
 export async function receiveTransfer(orderId: string, role: string) {
-  if (role !== 'admin' && role !== 'manager') {
+  if (role !== 'admin' && role !== 'supervisor') {
     throw new Error('Forbidden');
   }
   const order = await TransferOrder.findById(orderId);

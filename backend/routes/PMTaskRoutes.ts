@@ -1,10 +1,15 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import express from 'express';
 import {
   getAllPMTasks,
   getPMTaskById,
   createPMTask,
   updatePMTask,
-  deletePMTask
+  deletePMTask,
+  generatePMWorkOrders,
 } from '../controllers/PMTaskController';
 import { requireAuth } from '../middleware/authMiddleware';
 import { validate } from '../middleware/validationMiddleware';
@@ -18,5 +23,6 @@ router.get('/:id', getPMTaskById);
 router.post('/', pmTaskValidators, validate, createPMTask);
 router.put('/:id', pmTaskValidators, validate, updatePMTask);
 router.delete('/:id', deletePMTask);
+router.post('/generate', generatePMWorkOrders);
 
 export default router;

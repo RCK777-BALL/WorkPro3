@@ -1,4 +1,5 @@
-import type { Asset, WorkOrder, MaintenanceSchedule } from '../types';
+ import type { Asset, WorkOrder, MaintenanceSchedule } from '@/types';
+ 
 
 export const duplicateAsset = (asset: Asset): Asset => {
   const newAsset = {
@@ -20,7 +21,7 @@ export const duplicateWorkOrder = (workOrder: WorkOrder): WorkOrder => {
     ...workOrder,
     id: `${workOrder.id}-copy`,
     title: `${workOrder.title} (Copy)`,
-    status: 'open',
+    status: 'requested',
     createdAt: new Date().toISOString(),
     scheduledDate: new Date().toISOString().split('T')[0],
   };

@@ -1,8 +1,12 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useState } from 'react';
 import { Search, Book, Video, FileText, MessageCircle, ChevronRight, Plus, Trash2, FolderPlus, Edit2 } from 'lucide-react';
-import Card from '../components/common/Card';
-import Button from '../components/common/Button';
-import DocumentUploader from '../components/documentation/DocumentUploader';
+import Card from '@/components/common/Card';
+import Button from '@/components/common/Button';
+import DocumentUploader from '@/components/documentation/DocumentUploader';
 
 interface Category {
   id: string;
@@ -140,7 +144,7 @@ const Documentation: React.FC = () => {
                   type="text"
                   className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                   value={newCategory.title}
-                  onChange={(e) => setNewCategory({ ...newCategory, title: e.target.value })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewCategory({ ...newCategory, title: e.target.value })}
                   placeholder="Enter category title"
                 />
               </div>
@@ -151,7 +155,7 @@ const Documentation: React.FC = () => {
                 <textarea
                   className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                   value={newCategory.description}
-                  onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewCategory({ ...newCategory, description: e.target.value })}
                   placeholder="Enter category description"
                   rows={3}
                 />
@@ -249,13 +253,13 @@ const Documentation: React.FC = () => {
         </div>
 
         {/* Help Section */}
-        <Card className="bg-gradient-to-r from-primary-950 to-primary-900 text-white">
+        <Card className="bg-gradient-to-r from-primary-dark to-primary text-primary-foreground">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-semibold">Need Help?</h3>
               <p className="mt-1 text-primary-200">Our support team is here to assist you</p>
             </div>
-            <button className="px-4 py-2 bg-white text-primary-950 rounded-lg hover:bg-primary-50 transition-colors duration-150">
+            <button className="px-4 py-2 bg-white text-primary-dark rounded-lg hover:bg-primary-light transition-colors duration-150">
               Contact Support
             </button>
           </div>

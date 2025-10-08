@@ -1,4 +1,11 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { Request, Response, NextFunction } from 'express';
+import logger from '../utils/logger';
+import { sendResponse } from '../utils/sendResponse';
+
 
 /**
  * Handle incoming work order webhook events. The endpoint currently just
@@ -11,6 +18,6 @@ export const handleWorkOrderHook = async (
 ): Promise<void> => {
   // In a real implementation the payload could be validated and used to
   // create or update work orders. For now we simply log it.
-  console.log('Webhook received:', req.body);
-  res.json({ status: 'received' });
+  logger.info('Webhook received:', req.body);
+  sendResponse(res, { status: 'received' });
 };

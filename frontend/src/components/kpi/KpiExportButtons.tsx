@@ -1,28 +1,42 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React from 'react';
-import Button from '../common/Button';
+import Button from '@common/Button';
 import { Download } from 'lucide-react';
 
-const formats = ['csv', 'xlsx', 'pdf'] as const;
+type Resource = 'kpis' | 'trends';
 
-const exportFile = (format: string) => {
+interface Props {
+  resource?: Resource;
+  query?: string;
+}
+
+const resourceFormats: Record<Resource, Array<'csv' | 'xlsx' | 'pdf'>> = {
+  kpis: ['csv', 'xlsx', 'pdf'],
+  trends: ['csv', 'pdf'],
+};
+
+const exportFile = (resource: Resource, format: string, query?: string) => {
   const link = document.createElement('a');
-  link.href = `/api/v1/analytics/kpis.${format}`;
-  link.download = `kpis.${format}`;
+  link.href = `/api/v1/analytics/${resource}.${format}${query ? `?${query}` : ''}`;
+  link.download = `${resource}.${format}`;
   document.body.appendChild(link);
   link.click();
   link.remove();
 };
 
-const KpiExportButtons: React.FC = () => (
+const KpiExportButtons: React.FC<Props> = ({ resource = 'kpis', query }) => (
   <div className="flex gap-2">
-    {formats.map((f) => (
+    {resourceFormats[resource].map((format) => (
       <Button
-        key={f}
+        key={format}
         variant="outline"
         icon={<Download size={16} />}
-        onClick={() => exportFile(f)}
+        onClick={() => exportFile(resource, format, query)}
       >
-        {f.toUpperCase()}
+        {format.toUpperCase()}
       </Button>
     ))}
   </div>

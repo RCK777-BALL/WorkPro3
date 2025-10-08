@@ -1,8 +1,12 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React from 'react';
-import Badge from '../common/Badge';
-import Button from '../common/Button';
-import DuplicateButton from '../common/DuplicateButton';
-import type { Asset } from '../../types';
+import Badge from '@common/Badge';
+import Button from '@common/Button';
+import DuplicateButton from '@common/DuplicateButton';
+import type { Asset } from '@/types';
 
 interface AssetTableProps {
   assets: Asset[];
@@ -111,7 +115,7 @@ const AssetTable: React.FC<AssetTableProps> = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={(e) => {
+                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                           e.stopPropagation();
                           onCreateWorkOrder(asset);
                         }}
@@ -120,7 +124,7 @@ const AssetTable: React.FC<AssetTableProps> = ({
                       </Button>
                     )}
                     <DuplicateButton
-                      onClick={(e) => {
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation();
                         onDuplicate(asset);
                       }}
@@ -128,7 +132,7 @@ const AssetTable: React.FC<AssetTableProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={(e) => {
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation();
                         onDelete(asset);
                       }}

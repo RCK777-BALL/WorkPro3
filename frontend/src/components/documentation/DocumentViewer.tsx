@@ -1,8 +1,12 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React from 'react';
 import { Download, Trash2, Tag, Share } from 'lucide-react';
-import Button from '../common/Button';
-import Badge from '../common/Badge';
-import type { DocumentMetadata } from '../../utils/documentation';
+import Button from '@common/Button';
+import Badge from '@common/Badge';
+import type { DocumentMetadata } from '@/utils/documentation';
 
 interface DocumentViewerProps {
   content: string;

@@ -1,11 +1,15 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useEffect, useState } from 'react';
 import { Plus, Search, Calendar, Download, Upload } from 'lucide-react';
-import Button from '../components/common/Button';
-import MaintenanceScheduleTable from '../components/maintenance/MaintenanceSchedule';
-import MaintenanceModal from '../components/maintenance/MaintenanceModal';
-import MaintenanceMetrics from '../components/maintenance/MaintenanceMetrics';
-import { exportToExcel, exportToPDF } from '../utils/export';
-import type { MaintenanceSchedule } from '../types';
+import Button from '@/components/common/Button';
+import MaintenanceScheduleTable from '@/components/maintenance/MaintenanceSchedule';
+import MaintenanceModal from '@/components/maintenance/MaintenanceModal';
+import MaintenanceMetrics from '@/components/maintenance/MaintenanceMetrics';
+import { exportToExcel, exportToPDF } from '@/utils/export';
+import type { MaintenanceSchedule } from '@/types';
 
 const sampleSchedules: MaintenanceSchedule[] = [
   {
@@ -18,6 +22,7 @@ const sampleSchedules: MaintenanceSchedule[] = [
     nextDue: '2024-03-15',
     assignedTo: 'Mike Johnson',
     instructions: '1. Check belt tension\n2. Inspect for wear\n3. Verify alignment\n4. Lubricate bearings',
+    type: 'preventive',
     estimatedDuration: 2,
     repeatConfig: { interval: 1, unit: 'month' },
     parts: []
@@ -32,6 +37,7 @@ const sampleSchedules: MaintenanceSchedule[] = [
     nextDue: '2024-04-01',
     assignedTo: 'Sarah Wilson',
     instructions: '1. Replace filters\n2. Clean coils\n3. Check refrigerant levels\n4. Test operation',
+    type: 'preventive',
     estimatedDuration: 4,
     repeatConfig: { interval: 3, unit: 'month' },
     parts: []
@@ -126,7 +132,7 @@ const Maintenance: React.FC = () => {
             placeholder="Search maintenance schedules..."
             className="flex-1 bg-transparent border-none outline-none text-neutral-900 placeholder-neutral-400"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
           />
         </div>
 

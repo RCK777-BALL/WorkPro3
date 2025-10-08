@@ -1,7 +1,13 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import http from "../../lib/http";
-import { useToast } from "../../context/ToastContext";
+import http from "@/lib/http";
+import { useToast } from "@/context/ToastContext";
+import RecentActivity, { AuditLog } from "@/components/dashboard/RecentActivity";
+import { ResponsiveContainer, LineChart, Line } from "recharts";
 import {
   ClipboardList,
   Timer,
@@ -9,14 +15,20 @@ import {
   Activity,
   ChevronRight,
   Plus,
+  AlertTriangle,
+  PieChart as PieChartIcon,
 } from "lucide-react";
 
 /** ---- Types ---- */
 type Summary = {
-  openWorkOrders: number;
-  pmDueThisWeek: number;
-  assets: number;
-  uptime: number; // 0-100
+  pmCompliance: number;
+  woBacklog: number;
+  downtimeThisMonth: number;
+  costMTD: number;
+  cmVsPmRatio: number;
+  wrenchTimePct: number;
+  pmComplianceTrend: number[];
+  woBacklogTrend: number[];
 };
 
 type RecentWorkOrder = {
@@ -33,6 +45,9 @@ export default function DashboardHome() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [recent, setRecent] = useState<RecentWorkOrder[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [activityLogs, setActivityLogs] = useState<AuditLog[]>([]);
+  const [activityLoading, setActivityLoading] = useState(true);
+  const [activityError, setActivityError] = useState<string | null>(null);
   const { addToast } = useToast();
 
   useEffect(() => {
@@ -42,14 +57,14 @@ export default function DashboardHome() {
       try {
         setError(null);
         const [sumRes, woRes] = await Promise.all([
-          http.get<Summary>("/api/summary"),
+          http.get<{ data: Summary }>("/api/summary"),
           http.get<RecentWorkOrder[]>("/api/workorders", {
             params: { limit: 5, sort: "-updatedAt" },
           }),
         ]);
 
         if (!cancelled) {
-          setSummary(sumRes.data);
+          setSummary(sumRes.data.data);
           setRecent(woRes.data);
         }
       } catch (e) {
@@ -70,6 +85,24 @@ export default function DashboardHome() {
     };
   }, [addToast]);
 
+  const fetchActivity = async () => {
+    try {
+      setActivityError(null);
+      setActivityLoading(true);
+      const res = await http.get<AuditLog[]>("/api/audit", { params: { limit: 10 } });
+      setActivityLogs(res.data);
+    } catch (e) {
+      setActivityError("Failed to load activity");
+      addToast("Failed to load activity", "error");
+    } finally {
+      setActivityLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchActivity();
+  }, []);
+
   return (
     <div className="space-y-6">
       {error && (
@@ -77,88 +110,125 @@ export default function DashboardHome() {
           {error}
         </div>
       )}
- 
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">
-            Quick view of health, workload, and recent activity.
-          </p>
-        </div>
 
-        {/* Quick actions */}
-        <div className="flex items-center gap-2">
-          <Link
-            to="/dashboard/work-orders/new"
-            className="inline-flex items-center gap-2 rounded-xl px-3 py-2 border hover:bg-muted transition"
-          >
-            <Plus className="h-4 w-4" />
-            Create Work Order
-          </Link>
-          <Link
-            to="/dashboard/assets/new"
-            className="inline-flex items-center gap-2 rounded-xl px-3 py-2 border hover:bg-muted transition"
-          >
-            <Plus className="h-4 w-4" />
-            Add Asset
-          </Link>
-        </div>
-      </div>
-
-      {/* Stat cards */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          loading={loading}
-          title="Open Work Orders"
-          value={summary?.openWorkOrders}
-          icon={<ClipboardList className="h-5 w-5" />}
-          footer={<Link className="inline-flex items-center gap-1 text-sm" to="/dashboard/work-orders">View all <ChevronRight className="h-4 w-4" /></Link>}
-        />
-        <StatCard
-          loading={loading}
-          title="PM Due (7d)"
-          value={summary?.pmDueThisWeek}
-          icon={<Timer className="h-5 w-5" />}
-          footer={<Link className="inline-flex items-center gap-1 text-sm" to="/dashboard/pm">Open PM schedule <ChevronRight className="h-4 w-4" /></Link>}
-        />
-        <StatCard
-          loading={loading}
-          title="Total Assets"
-          value={summary?.assets}
-          icon={<Boxes className="h-5 w-5" />}
-          footer={<Link className="inline-flex items-center gap-1 text-sm" to="/dashboard/assets">Manage assets <ChevronRight className="h-4 w-4" /></Link>}
-        />
-        <StatCard
-          loading={loading}
-          title="Uptime"
-          value={summary ? `${summary.uptime.toFixed(1)}%` : undefined}
-          icon={<Activity className="h-5 w-5" />}
-          footer={<Link className="inline-flex items-center gap-1 text-sm" to="/dashboard/analytics">See analytics <ChevronRight className="h-4 w-4" /></Link>}
-        />
-      </div>
-
-      {/* Recent work orders */}
-      <div className="rounded-2xl border">
-        <div className="flex items-center justify-between p-4">
-          <h2 className="text-lg font-semibold">Recent Work Orders</h2>
-          <Link
-            to="/dashboard/work-orders"
-            className="inline-flex items-center gap-1 text-sm"
-          >
-            View all <ChevronRight className="h-4 w-4" />
-          </Link>
-        </div>
-        <div className="divide-y">
-          {loading ? (
-            <SkeletonRows rows={5} />
-          ) : recent.length === 0 ? (
-            <div className="p-6 text-sm text-muted-foreground">
-              No recent work orders.
+      <div className="lg:grid lg:grid-cols-3 lg:gap-6">
+        <div className="space-y-6 lg:col-span-2">
+          {/* Header */}
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+              <p className="text-sm text-muted-foreground">
+                Quick view of health, workload, and recent activity.
+              </p>
             </div>
-          ) : (
-            recent.map((wo) => <RecentWOItem key={wo.id} wo={wo} />)
-          )}
+
+            {/* Quick actions */}
+            <div className="flex items-center gap-2">
+              <Link
+                to="/dashboard/work-orders/new"
+                className="inline-flex items-center gap-2 rounded-xl px-3 py-2 border hover:bg-muted transition"
+              >
+                <Plus className="h-4 w-4" />
+                Create Work Order
+              </Link>
+              <Link
+                to="/dashboard/assets/new"
+                className="inline-flex items-center gap-2 rounded-xl px-3 py-2 border hover:bg-muted transition"
+              >
+                <Plus className="h-4 w-4" />
+                Add Asset
+              </Link>
+            </div>
+          </div>
+
+          {/* Stat cards */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <StatCard
+              loading={loading}
+              title="PM Compliance"
+              value={summary?.pmCompliance.toFixed(2)}
+              icon={<Timer className="h-5 w-5" />}
+            />
+            <StatCard
+              loading={loading}
+              title="WO Backlog"
+              value={summary?.woBacklog}
+              icon={<ClipboardList className="h-5 w-5" />}
+            />
+            <StatCard
+              loading={loading}
+              title="Downtime (This Month)"
+              value={summary?.downtimeThisMonth}
+              icon={<AlertTriangle className="h-5 w-5" />}
+            />
+            <StatCard
+              loading={loading}
+              title="Cost MTD"
+              value={summary?.costMTD}
+              icon={<Boxes className="h-5 w-5" />}
+            />
+            <StatCard
+              loading={loading}
+              title="CM vs PM Ratio"
+              value={summary?.cmVsPmRatio.toFixed(2)}
+              icon={<PieChartIcon className="h-5 w-5" />}
+            />
+          <StatCard
+              loading={loading}
+              title="Wrench Time"
+              value={summary ? `${summary.wrenchTimePct.toFixed(1)}%` : undefined}
+              icon={<Activity className="h-5 w-5" />}
+            />
+          </div>
+
+          {/* Trend charts */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TrendChart
+              loading={loading}
+              title="PM Compliance Trend"
+              data={summary?.pmComplianceTrend}
+              color="#3b82f6"
+            />
+            <TrendChart
+              loading={loading}
+              title="WO Backlog Trend"
+              data={summary?.woBacklogTrend}
+              color="#ef4444"
+            />
+          </div>
+
+          {/* Recent work orders */}
+          <div className="rounded-2xl border">
+            <div className="flex items-center justify-between p-4">
+              <h2 className="text-lg font-semibold">Recent Work Orders</h2>
+              <Link
+                to="/dashboard/work-orders"
+                className="inline-flex items-center gap-1 text-sm"
+              >
+                View all <ChevronRight className="h-4 w-4" />
+              </Link>
+            </div>
+            <div className="divide-y">
+              {loading ? (
+                <SkeletonRows rows={5} />
+              ) : recent.length === 0 ? (
+                <div className="p-6 text-sm text-muted-foreground">
+                  No recent work orders.
+                </div>
+              ) : (
+                recent.map((wo) => <RecentWOItem key={wo.id} wo={wo} />)
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6 mt-6 lg:mt-0">
+          <RecentActivity
+            logs={activityLogs}
+            loading={activityLoading}
+            error={activityError}
+            onRefresh={fetchActivity}
+          />
         </div>
       </div>
     </div>
@@ -189,6 +259,35 @@ function StatCard(props: {
         </div>
       </div>
       {footer ? <div className="mt-3 text-muted-foreground">{footer}</div> : null}
+    </div>
+  );
+}
+
+function TrendChart({
+  loading,
+  title,
+  data,
+  color,
+}: {
+  loading: boolean;
+  title: string;
+  data?: number[];
+  color: string;
+}) {
+  return (
+    <div className="rounded-2xl border p-4">
+      <p className="text-sm text-muted-foreground mb-2">{title}</p>
+      {loading ? (
+        <div className="h-16 w-full animate-pulse rounded bg-muted" />
+      ) : data && data.length > 0 ? (
+        <ResponsiveContainer width="100%" height={60}>
+          <LineChart data={data.map((v, i) => ({ i, v }))}>
+            <Line type="monotone" dataKey="v" stroke={color} strokeWidth={2} dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      ) : (
+        <p className="text-sm text-muted-foreground">No data</p>
+      )}
     </div>
   );
 }

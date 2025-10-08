@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import express from 'express';
 import multer from 'multer';
 import {
@@ -9,43 +13,79 @@ import {
   approveWorkOrder,
   searchWorkOrders,
   assistWorkOrder,
+  assignWorkOrder,
+  startWorkOrder,
+  completeWorkOrder,
+  cancelWorkOrder,
 } from '../controllers/WorkOrderController';
-import { requireAuth } from '../middleware/authMiddleware';
-import requireRole from '../middleware/requireRole';
-import { validate } from '../middleware/validationMiddleware';
-import { workOrderValidators } from '../validators/workOrderValidators';
+import { requireAuth, requireRole } from '../middleware/authMiddleware';
+import type { UserRole } from '../types/auth';
+import validateObjectId from '../middleware/validateObjectId';
 
 const router = express.Router();
 const upload = multer();
 
+const ADMIN_SUPERVISOR_TECH: UserRole[] = ['admin', 'supervisor', 'tech'];
+const ADMIN_SUPERVISOR: UserRole[] = ['admin', 'supervisor'];
+const MANAGER_OR_TECH: UserRole[] = ['manager', 'technician'];
+const ADMIN_MANAGER: UserRole[] = ['admin', 'manager'];
+
 router.use(requireAuth);
 router.get('/', getAllWorkOrders);
 router.get('/search', searchWorkOrders);
-router.get('/:id/assist', requireRole('admin', 'manager', 'technician'), assistWorkOrder);
-router.get('/:id', getWorkOrderById);
-
-router.post(
-  '/',
-  requireRole('admin', 'manager', 'technician'),
-  upload.any(),
-  workOrderValidators,
-  validate,
-  createWorkOrder
+router.get(
+  '/:id/assist',
+  validateObjectId('id'),
+  requireRole(...ADMIN_SUPERVISOR_TECH),
+  assistWorkOrder
 );
- 
+router.get('/:id', validateObjectId('id'), getWorkOrderById);
+
+router.post('/', requireRole(...ADMIN_SUPERVISOR_TECH), upload.any(), createWorkOrder);
+
 router.put(
   '/:id',
-  requireRole('admin', 'manager', 'technician'),
-  workOrderValidators,
-  validate,
+  validateObjectId('id'),
+  requireRole(...ADMIN_SUPERVISOR_TECH),
   updateWorkOrder
 );
  
 router.post(
   '/:id/approve',
-  requireRole('admin', 'manager'),
+  validateObjectId('id'),
+  requireRole(...ADMIN_SUPERVISOR),
   approveWorkOrder
 );
-router.delete('/:id', requireRole('admin', 'manager'), deleteWorkOrder);
+router.post(
+  '/:id/assign',
+  validateObjectId('id'),
+  requireRole(...MANAGER_OR_TECH, 'admin'),
+  assignWorkOrder
+);
+router.post(
+  '/:id/start',
+  validateObjectId('id'),
+  requireRole(...MANAGER_OR_TECH, 'admin'),
+  startWorkOrder
+);
+router.post(
+  '/:id/complete',
+  validateObjectId('id'),
+  requireRole(...MANAGER_OR_TECH, 'admin'),
+  completeWorkOrder
+);
+router.post(
+  '/:id/cancel',
+  validateObjectId('id'),
+  requireRole(...MANAGER_OR_TECH, 'admin'),
+  cancelWorkOrder
+);
+router.delete(
+  '/:id',
+  validateObjectId('id'),
+  requireRole(...ADMIN_MANAGER),
+  deleteWorkOrder
+);
+
  
 export default router;

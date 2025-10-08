@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import { BrowserQRCodeReader } from '@zxing/browser';
 import QRCode from 'qrcode';
 
@@ -13,6 +17,6 @@ export const scanQRCode = async (
     const result = await reader.decodeOnceFromVideoDevice(undefined, videoElem);
     return result.getText();
   } finally {
-    (reader as any).reset?.();
+    (reader as unknown as { reset?: () => void }).reset?.();
   }
 };

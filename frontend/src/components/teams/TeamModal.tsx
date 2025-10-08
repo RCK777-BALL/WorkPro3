@@ -1,12 +1,16 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React, { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { X } from 'lucide-react';
-import Button from '../common/Button';
-import AutoCompleteInput from '../common/AutoCompleteInput';
-import { useDepartmentStore } from '../../store/departmentStore';
-import { useTeamMembers } from '../../store/useTeamMembers';
-import type { TeamMember } from '../../types';
-import { useToast } from '../../context/ToastContext';
+import Button from '@common/Button';
+import AutoCompleteInput from '@common/AutoCompleteInput';
+import { useDepartmentStore } from '@/store/departmentStore';
+import { useTeamMembers } from '@/store/useTeamMembers';
+import type { TeamMember } from '@/types';
+import { useToast } from '@/context/ToastContext';
 
 interface TeamModalProps {
   isOpen: boolean;
@@ -14,7 +18,24 @@ interface TeamModalProps {
   member: TeamMember | null;
 }
 
-const defaultValues = {
+type Role =
+  | 'admin'
+  | 'supervisor'
+  | 'department_leader'
+  | 'area_leader'
+  | 'team_leader'
+  | 'team_member';
+
+interface TeamFormData {
+  name: string;
+  email: string;
+  role: Role;
+  department: string;
+  employeeId: string;
+  managerId: string;
+}
+
+const defaultValues: TeamFormData = {
   name: '',
   email: '',
   role: 'team_member',
@@ -37,7 +58,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
     watch,
     setValue,
     formState: { errors },
-  } = useForm({ defaultValues });
+  } = useForm<TeamFormData>({ defaultValues });
 
   useEffect(() => {
     setValue('name', member?.name ?? '');
@@ -48,7 +69,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
     setValue('managerId', member?.managerId ?? '');
   }, [member, setValue]);
 
-  const role = watch('role');
+  const role = watch('role') as TeamMember['role'];
 
   const reportOptions = useMemo(() => {
     if (role === 'team_member')
@@ -57,13 +78,13 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
       return members.filter((m) => m.role === 'area_leader');
     if (role === 'area_leader')
       return members.filter((m) =>
-        ['manager', 'department_leader'].includes(m.role)
+        ['supervisor', 'department_leader'].includes(m.role)
       );
     return [];
   }, [role, members]);
 
   useEffect(() => {
-    if (['admin', 'manager', 'department_leader'].includes(role))
+    if (['admin', 'supervisor', 'department_leader'].includes(role))
       setValue('managerId', '');
   }, [role, setValue]);
 
@@ -80,12 +101,16 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
     }
   };
 
-  const onSubmit = handleSubmit(async (data) => {
+  const handleRoleChange = (value: Role) => {
+    setValue('role', value);
+  };
+
+  const onSubmit = handleSubmit(async (data: TeamFormData) => {
     setLoading(true);
     try {
-      const payload: any = { ...data };
+      const payload: Partial<TeamMember> = { ...data };
       if (!payload.managerId) delete payload.managerId;
-      let body: any = payload;
+      let body: Partial<TeamMember> | FormData = payload;
       if (avatarFile) {
         const fd = new FormData();
         Object.entries(payload).forEach(([k, v]) => {
@@ -99,8 +124,10 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
       await fetchMembers();
       addToast('Team member saved', 'success');
       onClose();
-    } catch (e: any) {
-      const msg = e.response?.data?.message || 'Failed to save team member';
+    } catch (e) {
+      const msg =
+        (e as { response?: { data?: { message?: string } } }).response?.data?.message ||
+        'Failed to save team member';
       addToast(msg, 'error');
     } finally {
       setLoading(false);
@@ -130,7 +157,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => setAvatarFile(e.target.files?.[0] || null)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAvatarFile(e.target.files?.[0] || null)}
             />
           </div>
 
@@ -161,13 +188,16 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
 
           <div className="grid grid-cols-2 gap-6">
             <div>
-            <label className="block text-sm font-medium mb-1">Role</label>
-            <select
-              className="w-full px-3 py-2 border border-neutral-300 rounded-md"
-              {...register('role')}
-            >
+              <label className="block text-sm font-medium mb-1">Role</label>
+              <select
+                className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+                {...register('role', {
+                  onChange: (e) =>
+                    handleRoleChange(e.target.value as Role),
+                })}
+              >
                 <option value="admin">Admin</option>
-                <option value="manager">Manager</option>
+                <option value="supervisor">Supervisor</option>
                 <option value="department_leader">Department Leader</option>
                 <option value="area_leader">Area Leader</option>
                 <option value="team_leader">Team Leader</option>
@@ -206,7 +236,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
                   className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                   {...register('managerId', {
                     validate: (value) => {
-                      if (['admin', 'manager', 'department_leader'].includes(role))
+                      if (['admin', 'supervisor', 'department_leader'].includes(role))
                         return true;
                       if (!value) return 'Reports To is required';
                       const mgr = members.find((m) => m.id === value);
@@ -216,9 +246,9 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
                         return 'Team leaders must report to an area leader';
                       if (
                         role === 'area_leader' &&
-                        !['manager', 'department_leader'].includes(mgr?.role ?? '')
+                        !['supervisor', 'department_leader'].includes(mgr?.role ?? '')
                       )
-                        return 'Area leaders must report to a manager or department leader';
+                        return 'Area leaders must report to a supervisor or department leader';
                       return true;
                     },
                   })}

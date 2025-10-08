@@ -1,5 +1,9 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
 import React from 'react';
-import Card from '../common/Card';
+import Card from '@common/Card';
 
 interface AlertItem {
   id: string;

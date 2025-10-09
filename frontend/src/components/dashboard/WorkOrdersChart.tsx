@@ -4,7 +4,7 @@
 
 import React from 'react';
 import Card from '@common/Card';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell } from 'recharts';
+import { SimpleBarChart } from '@/components/charts/SimpleBarChart';
 
 
 interface WorkOrdersChartProps {
@@ -18,37 +18,20 @@ interface WorkOrdersChartProps {
 
 const WorkOrdersChart: React.FC<WorkOrdersChartProps> = ({ data }) => {
   const chartData = [
-    { name: 'Open', value: data?.open ?? 0, fill: 'hsl(var(--primary))' },
-    { name: 'In Progress', value: data?.inProgress ?? 0, fill: '#06b6d4' },
-    { name: 'On Hold', value: data?.onHold ?? 0, fill: '#f59e0b' },
-    { name: 'Completed', value: data?.completed ?? 0, fill: '#10b981' },
+    { label: 'Open', value: data?.open ?? 0, color: 'hsl(var(--primary))' },
+    { label: 'In Progress', value: data?.inProgress ?? 0, color: '#06b6d4' },
+    { label: 'On Hold', value: data?.onHold ?? 0, color: '#f59e0b' },
+    { label: 'Completed', value: data?.completed ?? 0, color: '#10b981' },
   ];
   const total = chartData.reduce((sum, d) => sum + d.value, 0);
 
-  const calculatePercentage = (value: number) => {
-    if (total === 0) {
-      return 0;
-    }
-    return Math.round((value / total) * 100);
-  };
+  const completionRate = total === 0 ? 0 : Math.round(((data?.completed ?? 0) / total) * 100);
 
 
   return (
     <Card title="Work Orders by Status" subtitle="Last 30 days performance">
       <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis allowDecimals={false} />
-            <Tooltip />
-            <Bar dataKey="value">
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.fill} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        <SimpleBarChart data={chartData} className="h-full" />
       </div>
 
       <div className="mt-6 pt-6 border-t border-border">

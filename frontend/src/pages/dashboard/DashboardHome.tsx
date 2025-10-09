@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 import http from "@/lib/http";
 import { useToast } from "@/context/ToastContext";
 import RecentActivity, { AuditLog } from "@/components/dashboard/RecentActivity";
-import { ResponsiveContainer, LineChart, Line } from "recharts";
+import { Sparkline } from "@/components/charts/Sparkline";
 import {
   ClipboardList,
   Timer,
@@ -280,11 +280,9 @@ function TrendChart({
       {loading ? (
         <div className="h-16 w-full animate-pulse rounded bg-muted" />
       ) : data && data.length > 0 ? (
-        <ResponsiveContainer width="100%" height={60}>
-          <LineChart data={data.map((v, i) => ({ i, v }))}>
-            <Line type="monotone" dataKey="v" stroke={color} strokeWidth={2} dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
+        <div className="h-16">
+          <Sparkline data={data} color={color} className="h-full w-full" />
+        </div>
       ) : (
         <p className="text-sm text-muted-foreground">No data</p>
       )}

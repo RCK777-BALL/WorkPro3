@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { ResponsiveContainer, LineChart, Line } from 'recharts';
+import { Sparkline } from '@/components/charts/Sparkline';
 
 export interface KpiCardProps {
   title: string;
@@ -14,8 +14,6 @@ export interface KpiCardProps {
 
 const KpiCard: React.FC<KpiCardProps> = ({ title, value, deltaPct, series = [] }) => {
   const deltaClass = deltaPct && deltaPct < 0 ? 'text-red-600' : 'text-green-600';
-
-  const chartData = series.map((v, i) => ({ index: i, value: v }));
 
   return (
     <div className="rounded border bg-card p-4 text-card-foreground shadow">
@@ -29,17 +27,7 @@ const KpiCard: React.FC<KpiCardProps> = ({ title, value, deltaPct, series = [] }
       )}
       {series.length > 0 && (
         <div className="mt-2 h-8 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <Line
-                type="monotone"
-                dataKey="value"
-                stroke="var(--color-brand-start)"
-                dot={false}
-                strokeWidth={2}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <Sparkline data={series} color="var(--color-brand-start)" className="h-full w-full" />
         </div>
       )}
     </div>

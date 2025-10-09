@@ -27,12 +27,11 @@ router.post('/request-work', async (req, res) => {
     });
 
     logger.info('Work request submitted', { code });
-    res.status(201).json({ data: { code }, error: null });
+    console.log('Work request submitted', code);
+    res.status(201).json({ code });
   } catch (err) {
     logger.error('Work request submission failed', err);
-    res
-      .status(500)
-      .json({ data: null, error: 'Failed to submit work request' });
+    res.status(500).json({ error: 'Failed to submit work request' });
   }
 });
 
@@ -41,14 +40,12 @@ router.get('/request-work/:code', async (req, res) => {
   try {
     const request = await WorkRequest.findOne({ code });
     if (!request) {
-      return res.status(404).json({ data: null, error: 'Not found' });
+      return res.status(404).json({ error: 'Not found' });
     }
-    res.json({ data: { status: request.status }, error: null });
+    res.json({ status: request.status });
   } catch (err) {
     logger.error('Work request retrieval failed', err);
-    res
-      .status(500)
-      .json({ data: null, error: 'Failed to fetch work request' });
+    res.status(500).json({ error: 'Failed to fetch work request' });
   }
 });
 

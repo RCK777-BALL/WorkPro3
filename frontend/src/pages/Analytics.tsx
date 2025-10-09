@@ -3,23 +3,13 @@
  */
 
 import { useEffect, useState } from 'react';
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
 import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import http from '@/lib/http';
 import { saveAs } from 'file-saver';
 import ExcelJS from 'exceljs';
+import { SimpleLineChart } from '@/components/charts/SimpleLineChart';
+import { SimpleBarChart } from '@/components/charts/SimpleBarChart';
 
 type PmRecord = { period: string; compliance: number };
 type DowntimeRecord = { period: string; downtime: number };
@@ -77,32 +67,31 @@ export default function Analytics() {
 
   const renderChart = () => {
     if (tab === 'cost') {
+      if (!cost.length) {
+        return <p className="text-sm text-muted-foreground">No cost data available.</p>;
+      }
+
       return (
-        <BarChart data={cost}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="asset" />
-          <YAxis />
-          <Tooltip />
-          <Legend />
-          <Bar dataKey="cost" fill="#8884d8" />
-        </BarChart>
+        <SimpleBarChart
+          data={cost.map((item, index) => ({
+            label: item.asset,
+            value: item.cost,
+            color: ['#6366f1', '#22c55e', '#f59e0b', '#ef4444'][index % 4],
+          }))}
+          className="h-full"
+        />
       );
     }
-    const data = tab === 'pm' ? pm : downtime;
-    return (
-      <LineChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="period" />
-        <YAxis />
-        <Tooltip />
-        <Legend />
-        <Line
-          type="monotone"
-          dataKey={tab === 'pm' ? 'compliance' : 'downtime'}
-          stroke="#8884d8"
-        />
-      </LineChart>
-    );
+
+    const data = tab === 'pm'
+      ? pm.map((item) => ({ label: item.period, value: item.compliance }))
+      : downtime.map((item) => ({ label: item.period, value: item.downtime }));
+
+    if (!data.length) {
+      return <p className="text-sm text-muted-foreground">No trend data available.</p>;
+    }
+
+    return <SimpleLineChart data={data} className="h-full" showDots stroke="#6366f1" />;
   };
 
   return (
@@ -132,11 +121,7 @@ export default function Analytics() {
         <Button onClick={exportCSV}>Export CSV</Button>
         <Button onClick={exportExcel}>Export Excel</Button>
       </div>
-      <div className="w-full h-80">
-        <ResponsiveContainer width="100%" height="100%">
-          {renderChart()}
-        </ResponsiveContainer>
-      </div>
+      <div className="w-full h-80 flex items-center justify-center">{renderChart()}</div>
     </Card>
   );
 }

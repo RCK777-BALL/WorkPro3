@@ -296,7 +296,19 @@ function buildBenchmark(
     const id = idSelector(record);
     const key = id ? id.toString() : 'unassigned';
     if (!groups.has(key)) {
-      groups.set(key, { id: key, name: nameLookup.get(key), records: [] });
+      const name = nameLookup.get(key);
+      const group: {
+        id: string;
+        name?: string;
+        records: AnalyticsSources['production'];
+      } = {
+        id: key,
+        records: [],
+      };
+      if (name !== undefined) {
+        group.name = name;
+      }
+      groups.set(key, group);
     }
     groups.get(key)!.records.push(record);
   });
@@ -389,10 +401,18 @@ function computeEnergyStats(
     totalKwh,
     averagePerHour,
     perAsset: Array.from(perAsset.entries())
-      .map(([assetId, value]) => ({ assetId, assetName: assetNames.get(assetId), totalKwh: value }))
+      .map(([assetId, value]) => {
+        const base = { assetId, totalKwh: value };
+        const assetName = assetNames.get(assetId);
+        return assetName !== undefined ? { ...base, assetName } : base;
+      })
       .sort((a, b) => b.totalKwh - a.totalKwh),
     perSite: Array.from(perSite.entries())
-      .map(([siteId, value]) => ({ siteId, siteName: siteNames.get(siteId), totalKwh: value }))
+      .map(([siteId, value]) => {
+        const base = { siteId, totalKwh: value };
+        const siteName = siteNames.get(siteId);
+        return siteName !== undefined ? { ...base, siteName } : base;
+      })
       .sort((a, b) => b.totalKwh - a.totalKwh),
   };
 }
@@ -518,8 +538,8 @@ export async function getKPIs(tenantId: string, filters: AnalyticsFilters = {}):
     },
     thresholds: DEFAULT_THRESHOLDS,
     range: {
-      start: filters.startDate?.toISOString(),
-      end: filters.endDate?.toISOString(),
+      ...(filters.startDate ? { start: filters.startDate.toISOString() } : {}),
+      ...(filters.endDate ? { end: filters.endDate.toISOString() } : {}),
     },
   };
 }

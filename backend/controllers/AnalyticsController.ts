@@ -15,11 +15,22 @@ import {
 import { escapeXml } from '../utils/escapeXml';
 import { sendResponse } from '../utils/sendResponse';
 
-function parseList(param?: string | string[]): string[] | undefined {
+function parseList(param: unknown): string[] | undefined {
   if (!param) return undefined;
-  const values = Array.isArray(param) ? param : param.split(',');
-  const trimmed = values.map((value) => value.trim()).filter(Boolean);
-  return trimmed.length ? trimmed : undefined;
+
+  const collectFromArray = (values: unknown[]): string[] =>
+    values
+      .flatMap((value) => (typeof value === 'string' ? value.split(',') : []))
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+  const parsed = Array.isArray(param)
+    ? collectFromArray(param)
+    : typeof param === 'string'
+    ? param.split(',').map((value) => value.trim()).filter(Boolean)
+    : [];
+
+  return parsed.length ? parsed : undefined;
 }
 
 function parseFilters(req: Request): AnalyticsFilters {

@@ -65,12 +65,15 @@ export const createGoodsReceipt = async (
     });
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const grAny = gr as any;
+    const entityId =
+      toEntityId((grAny?._id ?? grAny?.id) as any) ?? (grAny?._id ?? gr._id);
+
     await writeAuditLog({
       ...(tenantId ? { tenantId } : {}),
       userId,
       action: 'create',
       entityType: 'GoodsReceipt',
-      entityId: toEntityId(grAny._1 as any),
+      entityId,
       after: typeof grAny.toObject === 'function' ? grAny.toObject() : grAny,
     });
 

@@ -13,7 +13,8 @@ export type AuthedRequest<
   ResBody = unknown,
   ReqBody = unknown,
   ReqQuery extends ParsedQs = ParsedQs,
-> = Request<P, ResBody, ReqBody, ReqQuery> & {
+  Locals extends Record<string, any> = Record<string, any>,
+> = Request<P, ResBody, ReqBody, ReqQuery, Locals> & {
   user: Express.User;
 };
 
@@ -22,8 +23,9 @@ export type AuthedRequestHandler<
   ResBody = unknown,
   ReqBody = unknown,
   ReqQuery extends ParsedQs = ParsedQs,
+  Locals extends Record<string, any> = Record<string, any>,
 > = (
-  req: AuthedRequest<P, ResBody, ReqBody, ReqQuery>,
-  res: Response<ResBody>,
+  req: AuthedRequest<P, ResBody, ReqBody, ReqQuery, Locals>,
+  res: Response<ResBody, Locals>,
   next: NextFunction,
-) => unknown | Promise<unknown>;
+) => void | Promise<void>;

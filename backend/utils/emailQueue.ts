@@ -2,10 +2,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { SendMailOptions } from 'nodemailer';
+import type { Options as MailOptions } from 'nodemailer/lib/mailer';
 import { sendKafkaEvent } from './kafka';
 
-export const enqueueEmailRetry = async (mailOptions: SendMailOptions) => {
+export const enqueueEmailRetry = async (mailOptions: MailOptions) => {
   await sendKafkaEvent('emailRetries', mailOptions);
 };
 

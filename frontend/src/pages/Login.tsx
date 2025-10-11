@@ -6,9 +6,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
- import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { emitToast } from '../context/ToastContext';
-import http from '../lib/http';
+import http, { SITE_KEY, TENANT_KEY, TOKEN_KEY } from '../lib/http';
+import type { AuthLoginResponse, AuthMfaVerifyResponse, AuthSession } from '../types';
  
 
 type BeforeInstallPromptEvent = Event & {
@@ -37,7 +38,7 @@ const Login: React.FC = () => {
     const token = params.get('token');
     const emailFromOauth = params.get('email');
     if (token && emailFromOauth) {
-       const id =
+      const id =
         typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
           ? crypto.randomUUID()
           : `${Date.now()}`;
@@ -47,6 +48,7 @@ const Login: React.FC = () => {
         role: 'tech',
         email: emailFromOauth,
       });
+      localStorage.setItem(TOKEN_KEY, token);
       navigate('/dashboard');
     }
 
@@ -71,14 +73,16 @@ const Login: React.FC = () => {
     e?.preventDefault();
     setError('');
     try {
-      const { data } = await http.post('/auth/login', { email, password });
-      if (data.mfaRequired) {
+      const { data } = await http.post<AuthLoginResponse>('/auth/login', { email, password });
+      if ('mfaRequired' in data && data.mfaRequired) {
         setMfaUser(data.userId);
         return;
       }
-      setUser({ ...data.user });
-      if (data.user?.tenantId) localStorage.setItem('auth:tenantId', data.user.tenantId);
-      if (data.user?.siteId) localStorage.setItem('auth:siteId', data.user.siteId);
+      const session = data as AuthSession;
+      setUser({ ...session.user });
+      if (session.token) localStorage.setItem(TOKEN_KEY, session.token);
+      if (session.user?.tenantId) localStorage.setItem(TENANT_KEY, session.user.tenantId);
+      if (session.user?.siteId) localStorage.setItem(SITE_KEY, session.user.siteId);
       navigate('/dashboard');
     } catch (err: unknown) {
       let isNetworkError = false;
@@ -99,13 +103,15 @@ const Login: React.FC = () => {
     e.preventDefault();
     if (!mfaUser) return;
     try {
-      const { data } = await http.post('/auth/mfa/verify', {
+      const { data } = await http.post<AuthMfaVerifyResponse>('/auth/mfa/verify', {
         userId: mfaUser,
         token: code,
       });
-      setUser({ ...data.user });
-      if (data.user?.tenantId) localStorage.setItem('auth:tenantId', data.user.tenantId);
-      if (data.user?.siteId) localStorage.setItem('auth:siteId', data.user.siteId);
+      const session = data as AuthSession;
+      setUser({ ...session.user });
+      if (session.token) localStorage.setItem(TOKEN_KEY, session.token);
+      if (session.user?.tenantId) localStorage.setItem(TENANT_KEY, session.user.tenantId);
+      if (session.user?.siteId) localStorage.setItem(SITE_KEY, session.user.siteId);
       navigate('/dashboard');
     } catch {
       setError(t('auth.invalidCode', 'Invalid code'));

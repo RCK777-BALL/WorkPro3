@@ -26,7 +26,23 @@ export const getTheme: AuthedRequestHandler<ParamsDictionary, ThemeResponse> = a
   next,
 ) => {
   try {
-    const { theme = 'system', colorScheme = 'default' } = (req.user ?? {}) as ThemePreference;
+    const userId = req.user?._id ?? req.user?.id;
+
+    if (!userId) {
+      sendResponse(res, null, 'Unauthorized', 401);
+      return;
+    }
+
+    const user = await User.findById(userId).select('theme colorScheme').lean().exec();
+
+    if (!user) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
+
+    const theme = user.theme ?? 'system';
+    const colorScheme = user.colorScheme ?? 'default';
+
     sendResponse(res, { theme, colorScheme });
   } catch (err) {
     next(err);

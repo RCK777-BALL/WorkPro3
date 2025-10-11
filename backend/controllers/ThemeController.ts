@@ -8,7 +8,6 @@ import type { AuthedRequestHandler } from '../types/http';
 import User from '../models/User';
 import { writeAuditLog } from '../utils/audit';
 import { sendResponse } from '../utils/sendResponse';
-
 import { toEntityId } from '../utils/ids';
 
 type ThemePreference = {
@@ -21,59 +20,43 @@ type ThemeResponse = {
   colorScheme: string;
 };
 
-type GetThemeHandler = AuthedRequestHandler<ParamsDictionary, ThemeResponse>;
-
-type GetThemeParams = Parameters<GetThemeHandler>;
-
-export const getTheme: GetThemeHandler = async (
-  req: GetThemeParams[0],
-  res: GetThemeParams[1],
-  next: GetThemeParams[2],
+export const getTheme: AuthedRequestHandler<ParamsDictionary, ThemeResponse> = async (
+  req,
+  res,
+  next,
 ) => {
   try {
-    const { user } = req;
-
-    const { theme = 'system', colorScheme = 'default' } = (user ?? {}) as ThemePreference;
-
+    const { theme = 'system', colorScheme = 'default' } = (req.user ?? {}) as ThemePreference;
     sendResponse(res, { theme, colorScheme });
-    return;
   } catch (err) {
-    return next(err);
+    next(err);
   }
 };
 
 type UpdateThemeBody = ThemePreference;
 
-type UpdateThemeHandler = AuthedRequestHandler<
-  ParamsDictionary,
-  ThemeResponse,
-  UpdateThemeBody
->;
+type UpdateThemeHandler = AuthedRequestHandler<ParamsDictionary, ThemeResponse, UpdateThemeBody>;
 
-type UpdateThemeParams = Parameters<UpdateThemeHandler>;
-
-export const updateTheme: UpdateThemeHandler = async (
-  req: UpdateThemeParams[0],
-  res: UpdateThemeParams[1],
-  next: UpdateThemeParams[2],
-) => {
+export const updateTheme: UpdateThemeHandler = async (req, res, next) => {
   try {
-    const { theme, colorScheme } = req.body;
-    const { user } = req;
+    const { theme, colorScheme } = req.body ?? {};
     const tenantId = req.tenantId;
+
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
 
-    if (!user) {
-      return sendResponse(res, null, 'Unauthorized', 401);
+    const userId = req.user._id ?? req.user.id;
+    if (!userId) {
+      sendResponse(res, null, 'Unauthorized', 401);
+      return;
     }
 
     const updated = await User.findByIdAndUpdate(
-      user?._id,
+      userId,
       { theme, colorScheme },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (!updated) {
@@ -81,13 +64,13 @@ export const updateTheme: UpdateThemeHandler = async (
       return;
     }
 
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
-    const entityId = req.user?._id ?? req.user?.id ?? updated._id ?? req.params.id;
+    const entityId = req.user._id ?? req.user.id ?? updated._id?.toString() ?? req.params.id;
+    const actorId = (req.user._id ?? req.user.id)?.toString();
 
-    if (entityId) {
+    if (entityId && tenantId) {
       await writeAuditLog({
         tenantId,
-        userId,
+        userId: actorId,
         action: 'update',
         entityType: 'UserTheme',
         entityId: toEntityId(entityId) ?? entityId,
@@ -95,9 +78,9 @@ export const updateTheme: UpdateThemeHandler = async (
         after: { theme: updated.theme, colorScheme: updated.colorScheme },
       });
     }
+
     sendResponse(res, { theme: updated.theme, colorScheme: updated.colorScheme });
-    return;
   } catch (err) {
-    return next(err);
+    next(err);
   }
 };

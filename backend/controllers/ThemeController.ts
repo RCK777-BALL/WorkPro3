@@ -23,11 +23,7 @@ type ThemeResponse = {
 
 type GetThemeHandler = AuthedRequestHandler<ParamsDictionary, ThemeResponse>;
 
-export const getTheme: GetThemeHandler = async (
-  req: Parameters<GetThemeHandler>[0],
-  res: Parameters<GetThemeHandler>[1],
-  next: Parameters<GetThemeHandler>[2],
-) => {
+export const getTheme: GetThemeHandler = async (req, res, next) => {
   try {
     const { user } = req;
 
@@ -42,13 +38,13 @@ export const getTheme: GetThemeHandler = async (
 
 type UpdateThemeBody = ThemePreference;
 
-type UpdateThemeHandler = AuthedRequestHandler<ParamsDictionary, ThemeResponse, UpdateThemeBody>;
+type UpdateThemeHandler = AuthedRequestHandler<
+  ParamsDictionary,
+  ThemeResponse,
+  UpdateThemeBody
+>;
 
-export const updateTheme: UpdateThemeHandler = async (
-  req: Parameters<UpdateThemeHandler>[0],
-  res: Parameters<UpdateThemeHandler>[1],
-  next: Parameters<UpdateThemeHandler>[2],
-) => {
+export const updateTheme: UpdateThemeHandler = async (req, res, next) => {
   try {
     const { theme, colorScheme } = req.body;
     const { user } = req;

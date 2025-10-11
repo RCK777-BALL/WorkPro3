@@ -40,14 +40,15 @@ http.interceptors.request.use((config) => {
 });
 
 http.interceptors.response.use(
-  (r: AxiosResponse<ApiResult<unknown>>) => {
-    const { data, error } = r.data ?? {};
+  <T>(response: AxiosResponse<ApiResult<T>>): AxiosResponse<T> => {
+    const { data, error } = response.data ?? {};
     if (error) {
       return Promise.reject(error);
     }
-    const resp = r as AxiosResponse<unknown>;
-    resp.data = data;
-    return resp;
+
+    const typedResponse = response as AxiosResponse<T>;
+    typedResponse.data = data as T;
+    return typedResponse;
   },
   (err: AxiosError) => {
     if (err?.response?.status === 401) {

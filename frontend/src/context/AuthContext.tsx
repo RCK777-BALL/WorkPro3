@@ -12,14 +12,23 @@ import {
   useCallback,
 } from 'react';
 import { useAuthStore, type AuthState } from '@/store/authStore';
-import type { AuthUser } from '@/types';
-import http from '@/lib/http';
+import type {
+  AuthLoginMfaChallenge,
+  AuthLoginResponse,
+  AuthMeResponse,
+  AuthSession,
+  AuthUser,
+} from '@/types';
+import http, { SITE_KEY, TENANT_KEY, TOKEN_KEY } from '@/lib/http';
 import { emitToast } from './ToastContext';
 
 interface AuthContextType {
   user: AuthUser | null;
   setUser: (user: AuthUser | null) => void;
-  login: (email: string, password: string) => Promise<void>;
+  login: (
+    email: string,
+    password: string,
+  ) => Promise<AuthSession | AuthLoginMfaChallenge>;
   logout: () => Promise<void>;
   loading: boolean;
 }
@@ -44,8 +53,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const { data } = await http.get('/auth/me');
-        handleSetUser(data);
+        const { data } = await http.get<AuthMeResponse>('/auth/me');
+        handleSetUser(data?.user ?? null);
       } catch {
         handleSetUser(null);
       } finally {
@@ -60,8 +69,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = useCallback(
     async (email: string, password: string) => {
-      const { data } = await http.post('/auth/login', { email, password });
-      handleSetUser(data.user);
+      const { data } = await http.post<AuthLoginResponse>('/auth/login', { email, password });
+
+      if ('mfaRequired' in data && data.mfaRequired) {
+        emitToast('Multi-factor authentication is required to log in.', 'error');
+        return data;
+      }
+
+      const session: AuthSession = data;
+      handleSetUser(session.user);
+      if (session.token) {
+        localStorage.setItem(TOKEN_KEY, session.token);
+      }
+      if (session.user?.tenantId) {
+        localStorage.setItem(TENANT_KEY, session.user.tenantId);
+      }
+      if (session.user?.siteId) {
+        localStorage.setItem(SITE_KEY, session.user.siteId);
+      }
+      return session;
     },
     [handleSetUser]
   );
@@ -71,9 +97,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await http.post('/auth/logout');
       handleSetUser(null);
       localStorage.removeItem('user');
-      localStorage.removeItem('auth:token');
-      localStorage.removeItem('auth:tenantId');
-      localStorage.removeItem('auth:siteId');
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(TENANT_KEY);
+      localStorage.removeItem(SITE_KEY);
       storeLogout();
     } catch (err) {
       emitToast('Failed to log out', 'error');

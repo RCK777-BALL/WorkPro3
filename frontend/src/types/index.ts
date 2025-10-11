@@ -321,11 +321,31 @@ export interface AuthUser {
     | 'department_leader';
   /** Identifier for the user's tenant */
   tenantId?: string;
+  /** Optional site identifier associated with the user */
+  siteId?: string;
   /** Optional JWT token used for authenticated requests */
   token?: string;
   /** Optional URL for the user's avatar */
   avatar?: string;
 }
+
+export interface AuthSession {
+  user: AuthUser;
+  token?: string;
+}
+
+export interface AuthMeResponse {
+  user: AuthUser;
+}
+
+export interface AuthLoginMfaChallenge {
+  mfaRequired: true;
+  userId: string;
+}
+
+export type AuthLoginResponse = AuthSession | AuthLoginMfaChallenge;
+
+export type AuthMfaVerifyResponse = AuthSession;
 
 export interface Member {
   id: string;

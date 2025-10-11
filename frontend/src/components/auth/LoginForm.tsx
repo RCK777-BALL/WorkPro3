@@ -20,7 +20,13 @@ const LoginForm = () => {
     e?.preventDefault();
     setError('');
     try {
-      await authLogin(email, password);
+      const result = await authLogin(email, password);
+      if ('mfaRequired' in result) {
+        setError('Multi-factor authentication is required.');
+        addToast('Multi-factor authentication is required to continue.', 'error');
+        return;
+      }
+
       navigate('/dashboard');
     } catch (err) {
       if (err instanceof Error && err.message === 'Invalid credentials') {

@@ -6,7 +6,7 @@ import type { RequestHandler, Response } from 'express';
 import type { ApiResult } from '../../../shared/types/http';
 
 export const ok = <T>(res: Response, data: T, status = 200) => {
-  const body: ApiResult<T> = { data, error: undefined };
+  const body: ApiResult<T> = { data };
   return res.status(status).json(body);
 };
 
@@ -16,7 +16,7 @@ export const fail = (
   status = 400,
 ) => {
   const message = error instanceof Error ? error.message : String(error);
-  const body: ApiResult<never> = { data: undefined, error: message };
+  const body: ApiResult<never> = { error: message };
   return res.status(status).json(body);
 };
 

@@ -2,6 +2,8 @@
  * SPDX-License-Identifier: MIT
  */
 
+import type { ParamsDictionary } from 'express-serve-static-core';
+
 import type { AuthedRequestHandler } from '../types/http';
 import User from '../models/User';
 import { writeAuditLog } from '../utils/audit';
@@ -9,20 +11,25 @@ import { sendResponse } from '../utils/sendResponse';
 
 import { toEntityId } from '../utils/ids';
 
-type HandlerParams = Parameters<AuthedRequestHandler>;
+type ThemePreference = {
+  theme?: 'light' | 'dark' | 'system';
+  colorScheme?: string;
+};
 
-export const getTheme: AuthedRequestHandler = async (
-  req: HandlerParams[0],
-  res: HandlerParams[1],
-  next: HandlerParams[2],
+type ThemeResponse = {
+  theme: 'light' | 'dark' | 'system';
+  colorScheme: string;
+};
+
+export const getTheme: AuthedRequestHandler<ParamsDictionary, ThemeResponse> = async (
+  req,
+  res,
+  next,
 ) => {
   try {
     const { user } = req;
 
-    const { theme = 'system', colorScheme = 'default' } = (user ?? {}) as {
-      theme?: 'light' | 'dark' | 'system';
-      colorScheme?: string;
-    };
+    const { theme = 'system', colorScheme = 'default' } = (user ?? {}) as ThemePreference;
 
     sendResponse(res, { theme, colorScheme });
     return;
@@ -31,10 +38,12 @@ export const getTheme: AuthedRequestHandler = async (
   }
 };
 
-export const updateTheme: AuthedRequestHandler = async (
-  req: HandlerParams[0],
-  res: HandlerParams[1],
-  next: HandlerParams[2],
+type UpdateThemeBody = ThemePreference;
+
+export const updateTheme: AuthedRequestHandler<ParamsDictionary, ThemeResponse, UpdateThemeBody> = async (
+  req,
+  res,
+  next,
 ) => {
   try {
     const { theme, colorScheme } = req.body;

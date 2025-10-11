@@ -10,6 +10,7 @@ import path from 'path';
 import { requireAuth } from '../middleware/authMiddleware';
 import { sendResponse } from '../utils/sendResponse';
 import type { AttachmentInput, Attachment } from '../../shared/types/uploads';
+import type { AuthedRequestHandler } from '../types/http';
 
 const router = express.Router();
 
@@ -35,8 +36,12 @@ const validators = [
 
 router.use(requireAuth);
 
-router.post('/', validators, async (req, res) => {
-  const errors = validationResult(req as any);
+const createAttachment: AuthedRequestHandler<
+  Record<string, string>,
+  { data: Attachment | null; error: unknown },
+  AttachmentInput
+> = async (req, res) => {
+  const errors = validationResult(req);
   if (!errors.isEmpty()) {
     sendResponse(res, null, errors.array(), 400);
     return;
@@ -48,7 +53,7 @@ router.post('/', validators, async (req, res) => {
     return;
   }
 
-  const input = req.body as AttachmentInput;
+  const input = req.body;
   let result: Attachment;
 
   const uploadRoot = path.join(process.cwd(), 'uploads');
@@ -79,7 +84,9 @@ router.post('/', validators, async (req, res) => {
   }
 
   sendResponse(res, result, null, 201);
-});
+};
+
+router.post('/', validators, createAttachment);
 
 export default router;
 

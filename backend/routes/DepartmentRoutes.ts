@@ -30,7 +30,7 @@ type DepartmentUpdatePayload = Partial<DepartmentPayload>;
 // GET /api/departments → list by tenantId (+optional siteId)
 const listDepartments: AuthedRequestHandler<
   Record<string, string>,
-  DepartmentDoc[],
+  unknown,
   unknown,
   { assetCount?: string }
 > = async (req, res, next) => {
@@ -79,11 +79,10 @@ const listDepartments: AuthedRequestHandler<
 };
 
 // GET /api/departments/:id
-const getDepartment: AuthedRequestHandler<{ id: string }> = async (
-  req,
-  res,
-  next,
-) => {
+const getDepartment: AuthedRequestHandler<
+  { id: string },
+  DepartmentDoc | { message: string }
+> = async (req, res, next) => {
   try {
     const item = await Department.findOne({
       _id: req.params.id,
@@ -121,7 +120,7 @@ const createDepartment: AuthedRequestHandler<
 // PUT /api/departments/:id
 const updateDepartment: AuthedRequestHandler<
   { id: string },
-  DepartmentDoc,
+  DepartmentDoc | { message: string },
   DepartmentUpdatePayload
 > = async (req, res, next) => {
   try {

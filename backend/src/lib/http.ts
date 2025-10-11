@@ -3,10 +3,11 @@
  */
 
 import type { RequestHandler, Response } from 'express';
-import type { ApiSuccess, ApiError } from '../../../shared/types/http';
+import type { ApiResult } from '../../../shared/types/http';
 
 export const ok = <T>(res: Response, data: T, status = 200) => {
-  return res.status(status).json({ data, error: null } as ApiSuccess<T>);
+  const body: ApiResult<T> = { data, error: undefined };
+  return res.status(status).json(body);
 };
 
 export const fail = (
@@ -15,9 +16,8 @@ export const fail = (
   status = 400,
 ) => {
   const message = error instanceof Error ? error.message : String(error);
-  return res
-    .status(status)
-    .json({ data: null, error: message } as ApiError);
+  const body: ApiResult<never> = { data: undefined, error: message };
+  return res.status(status).json(body);
 };
 
 export const asyncHandler = (fn: RequestHandler): RequestHandler => {

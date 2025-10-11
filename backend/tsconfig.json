@@ -9,7 +9,9 @@
       "@shared/*": ["../shared/types/*"]
     },
     "types": ["node"],
-    "typeRoots": ["./node_modules/@types", "./types"]
+    "typeRoots": ["./types", "./node_modules/@types"],
+    "esModuleInterop": true,
+    "skipLibCheck": true
   },
   "include": ["**/*.ts", "types/**/*.d.ts"],
   "exclude": ["dist", "node_modules"]

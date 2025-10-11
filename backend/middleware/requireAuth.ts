@@ -3,8 +3,9 @@
  */
 
 import jwt from 'jsonwebtoken';
+import type { RequestHandler } from 'express';
 import { getJwtSecret } from '../utils/getJwtSecret';
-import type { AuthedRequestHandler } from '../types/http';
+import type { AuthedRequest } from '../types/http';
 import { fail } from '../src/lib/http';
 
 export interface AuthPayload {
@@ -21,7 +22,8 @@ export interface AuthPayload {
  *  - Authorization: Bearer <token>
  *  - cookies.token (requires cookie-parser)
  */
-export const requireAuth: AuthedRequestHandler = (req, res, next) => {
+export const requireAuth: RequestHandler = (req, res, next) => {
+  const authedReq = req as AuthedRequest;
   const bearer = req.headers.authorization?.startsWith('Bearer ')
     ? req.headers.authorization.slice(7)
     : undefined;
@@ -44,16 +46,21 @@ export const requireAuth: AuthedRequestHandler = (req, res, next) => {
 
   try {
     const payload = jwt.verify(token, secret) as AuthPayload;
-    (req as any).user = payload;
+    authedReq.user = {
+      id: payload.id,
+      email: payload.email,
+      tenantId: payload.tenantId,
+      siteId: payload.siteId,
+    };
 
     if (payload.tenantId) {
-      (req as any).tenantId = payload.tenantId;
+      req.tenantId = payload.tenantId;
     }
 
     const headerSiteId = req.header('x-site-id');
     const resolvedSiteId = payload.siteId ?? headerSiteId;
     if (resolvedSiteId) {
-      (req as any).siteId = resolvedSiteId;
+      req.siteId = resolvedSiteId;
     }
 
     next();

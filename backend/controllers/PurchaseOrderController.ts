@@ -7,7 +7,6 @@ import { Types, isValidObjectId } from 'mongoose';
 
 import PurchaseOrder from '../models/PurchaseOrder';
 import { writeAuditLog } from '../utils/audit';
-import { toEntityId } from '../utils/ids';
 import { sendResponse } from '../utils/sendResponse';
 
 export const createPurchaseOrder = async (
@@ -24,7 +23,7 @@ export const createPurchaseOrder = async (
       tenantId,
     });
     const userId = (req.user as any)?._id || (req.user as any)?.id;
-    const entityId = toEntityId(new Types.ObjectId(po._id));
+    const entityId = po._id as Types.ObjectId;
     await writeAuditLog({
       tenantId,
       userId,
@@ -114,7 +113,7 @@ export const updateVendorPurchaseOrder = async (
     po.status = status as any;
     await po.save();
     const userId = (req.user as any)?._id || (req.user as any)?.id;
-    const entityId = toEntityId(objectId);
+    const entityId = objectId;
     await writeAuditLog({
       tenantId: po.tenantId,
       userId,

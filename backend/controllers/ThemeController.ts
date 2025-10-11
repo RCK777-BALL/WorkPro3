@@ -10,6 +10,15 @@ import { writeAuditLog } from '../utils/audit';
 import { sendResponse } from '../utils/sendResponse';
 import { toEntityId } from '../utils/ids';
 
+// Helper to normalize a possible ObjectId/string into string
+function toIdString(v: unknown): string | undefined {
+  if (!v) return undefined;
+  // Mongoose ObjectId has a toString method that yields the hex string
+  if (typeof (v as any).toString === 'function') return (v as any).toString();
+  if (typeof v === 'string') return v;
+  return undefined;
+}
+
 type ThemePreference = {
   theme?: 'light' | 'dark' | 'system';
   colorScheme?: string;
@@ -26,7 +35,12 @@ export const getTheme: AuthedRequestHandler<ParamsDictionary, ThemeResponse> = a
   next,
 ) => {
   try {
-    const userId = req.user?._id ?? req.user?.id;
+    if (!req.user) {
+      sendResponse(res, null, 'Unauthorized', 401);
+      return;
+    }
+
+    const userId = toIdString(req.user._id) ?? toIdString(req.user.id);
 
     if (!userId) {
       sendResponse(res, null, 'Unauthorized', 401);
@@ -63,7 +77,12 @@ export const updateTheme: UpdateThemeHandler = async (req, res, next) => {
       return;
     }
 
-    const userId = req.user._id ?? req.user.id;
+    if (!req.user) {
+      sendResponse(res, null, 'Unauthorized', 401);
+      return;
+    }
+
+    const userId = toIdString(req.user._id) ?? toIdString(req.user.id);
     if (!userId) {
       sendResponse(res, null, 'Unauthorized', 401);
       return;
@@ -80,8 +99,13 @@ export const updateTheme: UpdateThemeHandler = async (req, res, next) => {
       return;
     }
 
-    const entityId = req.user._id ?? req.user.id ?? updated._id?.toString() ?? req.params.id;
-    const actorId = (req.user._id ?? req.user.id)?.toString();
+    const entityId =
+      toIdString(req.user._id) ??
+      toIdString(req.user.id) ??
+      toIdString(updated?._id) ??
+      req.params.id;
+
+    const actorId = toIdString(req.user._id) ?? toIdString(req.user.id);
 
     if (entityId && tenantId) {
       await writeAuditLog({

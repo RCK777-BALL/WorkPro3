@@ -1,30 +1,26 @@
-import 'express';
-
 import type { Types } from 'mongoose';
 import type { UserRole } from './auth';
 
-declare global {
-  namespace Express {
-    interface User {
-      id: string;
+declare module 'express-serve-static-core' {
+  interface Request {
+    // req.user is optional at type level; controllers must guard before using it.
+    user?: {
       _id?: Types.ObjectId | string;
+      id?: string;
       email?: string;
+      name?: string;
+      role?: string;
       tenantId?: string;
       siteId?: string;
       vendorId?: string;
-      role?: string;
       roles?: UserRole[];
       theme?: 'light' | 'dark' | 'system';
       colorScheme?: string;
-    }
-
-    interface Request {
-      user?: User;
-      tenantId?: string;
-      siteId?: string;
-      vendorId?: string;
-      thirdParty?: any;
-    }
+    };
+    tenantId?: string;
+    siteId?: string;
+    vendorId?: string;
+    thirdParty?: any;
   }
 }
 

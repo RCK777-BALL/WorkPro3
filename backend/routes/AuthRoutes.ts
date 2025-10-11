@@ -114,8 +114,9 @@ router.post('/login', loginLimiter, async (
       { expiresIn: '7d' },
     );
 
-    const userObj = user.toObject();
-    delete (userObj as any).password;
+    const userObj = user.toObject<Record<string, unknown>>();
+    delete userObj.password;
+    delete userObj.passwordHash;
 
     const responseData: {
       user: typeof userObj & { tenantId?: string };

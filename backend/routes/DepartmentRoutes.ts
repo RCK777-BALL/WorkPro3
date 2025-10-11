@@ -2,35 +2,56 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Router } from "express";
-import type { FilterQuery } from "mongoose";
-import Department, { type DepartmentDoc } from "../models/Department";
-import Asset from "../models/Asset";
-import { requireAuth } from "../middleware/authMiddleware";
-import { departmentValidators } from "../validators/departmentValidators";
-import { validate } from "../middleware/validationMiddleware";
-import type { AuthedRequestHandler } from "../types/http";
+import { Router } from 'express';
+import type { FilterQuery } from 'mongoose';
+import Department, { type DepartmentDoc, type LineSubdoc, type StationSubdoc } from '../models/Department';
+import Asset from '../models/Asset';
+import { requireAuth } from '../middleware/authMiddleware';
+import { departmentValidators } from '../validators/departmentValidators';
+import { validate } from '../middleware/validationMiddleware';
+import type { AuthedRequestHandler } from '../types/http';
+
+interface StationPayload {
+  name: string;
+}
+
+interface LinePayload {
+  name: string;
+  stations?: StationPayload[];
+}
+
+interface DepartmentPayload {
+  name: string;
+  lines?: LinePayload[];
+}
+
+type DepartmentUpdatePayload = Partial<DepartmentPayload>;
 
 // GET /api/departments → list by tenantId (+optional siteId)
 const listDepartments: AuthedRequestHandler<
   Record<string, string>,
-  any,
+  DepartmentDoc[],
   unknown,
   { assetCount?: string }
 > = async (req, res, next) => {
   try {
-    const filter: FilterQuery<DepartmentDoc> & { siteId?: unknown } = {
+    const filter: FilterQuery<DepartmentDoc> & Record<string, unknown> = {
       tenantId: req.tenantId,
     };
-    if (req.siteId) filter.siteId = req.siteId;
-    const includeAssetCount = req.query.assetCount === "true";
+    if (req.siteId) {
+      filter.siteId = req.siteId;
+    }
+    const includeAssetCount = req.query.assetCount === 'true';
     const items = await Department.find(filter)
       .select({ name: 1, lines: 1, createdAt: 1 })
       .lean();
 
-    if (!includeAssetCount) return res.json(items);
+    if (!includeAssetCount) {
+      res.json(items);
+      return;
+    }
 
-    const assetMatch: FilterQuery<{ tenantId: unknown; siteId?: unknown }> = {
+    const assetMatch: Record<string, unknown> = {
       tenantId: req.tenantId,
     };
     if (req.siteId) assetMatch.siteId = req.siteId;
@@ -39,8 +60,8 @@ const listDepartments: AuthedRequestHandler<
       _id: any;
       count: number;
     }>([
-      { $match: { ...assetMatch } },
-      { $group: { _id: "$departmentId", count: { $sum: 1 } } },
+      { $match: assetMatch },
+      { $group: { _id: '$departmentId', count: { $sum: 1 } } },
     ]);
     const map = new Map<string, number>();
     counts.forEach((c) => {
@@ -50,7 +71,8 @@ const listDepartments: AuthedRequestHandler<
       ...d,
       assetCount: map.get(d._id.toString()) || 0,
     }));
-    return res.json(withCounts);
+    res.json(withCounts);
+    return;
   } catch (err) {
     next(err);
   }
@@ -67,40 +89,53 @@ const getDepartment: AuthedRequestHandler<{ id: string }> = async (
       _id: req.params.id,
       tenantId: req.tenantId,
     });
-    if (!item) return res.status(404).json({ message: "Not found" });
-    return res.json(item);
+    if (!item) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
+    res.json(item);
+    return;
   } catch (err) {
     next(err);
   }
 };
 
 // POST /api/departments
-const createDepartment: AuthedRequestHandler = async (req, res, next) => {
+const createDepartment: AuthedRequestHandler<
+  Record<string, string>,
+  DepartmentDoc,
+  DepartmentPayload
+> = async (req, res, next) => {
   try {
     const doc = await Department.create({
       ...req.body,
       tenantId: req.tenantId,
     });
-    return res.status(201).json(doc);
+    res.status(201).json(doc);
+    return;
   } catch (err) {
     next(err);
   }
 };
 
 // PUT /api/departments/:id
-const updateDepartment: AuthedRequestHandler<{ id: string }> = async (
-  req,
-  res,
-  next,
-) => {
+const updateDepartment: AuthedRequestHandler<
+  { id: string },
+  DepartmentDoc,
+  DepartmentUpdatePayload
+> = async (req, res, next) => {
   try {
     const doc = await Department.findOneAndUpdate(
       { _id: req.params.id, tenantId: req.tenantId },
       req.body,
       { new: true, runValidators: true },
     );
-    if (!doc) return res.status(404).json({ message: "Not found" });
-    return res.json(doc);
+    if (!doc) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
+    res.json(doc);
+    return;
   } catch (err) {
     next(err);
   }
@@ -117,8 +152,12 @@ const deleteDepartment: AuthedRequestHandler<{ id: string }> = async (
       _id: req.params.id,
       tenantId: req.tenantId,
     });
-    if (!doc) return res.status(404).json({ message: "Not found" });
-    return res.json({ message: "Deleted" });
+    if (!doc) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
+    res.json({ message: 'Deleted' });
+    return;
   } catch (err) {
     next(err);
   }
@@ -129,16 +168,17 @@ const getAllLines: AuthedRequestHandler = async (req, res, next) => {
   try {
     const lines = await Department.aggregate([
       { $match: { tenantId: req.tenantId } },
-      { $unwind: "$lines" },
+      { $unwind: '$lines' },
       {
         $replaceRoot: {
           newRoot: {
-            $mergeObjects: ["$lines", { departmentId: "$_id" }],
+            $mergeObjects: ['$lines', { departmentId: '$_id' }],
           },
         },
       },
     ]).exec();
     res.json(lines);
+    return;
   } catch (err) {
     next(err);
   }
@@ -151,28 +191,44 @@ const getLineById: AuthedRequestHandler<{ id: string }> = async (
 ) => {
   try {
     const department = await Department.findOne({
-      "lines._id": req.params.id,
+      'lines._id': req.params.id,
       tenantId: req.tenantId,
     });
-    if (!department) return res.status(404).json({ message: "Not found" });
+    if (!department) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     const line = department.lines.id(req.params.id);
-    if (!line) return res.status(404).json({ message: "Not found" });
+    if (!line) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     res.json(line);
+    return;
   } catch (err) {
     next(err);
   }
 };
 
-const createLine: AuthedRequestHandler = async (req, res, next) => {
+const createLine: AuthedRequestHandler<
+  { deptId: string },
+  unknown,
+  LinePayload
+> = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId) return res.status(400).json({ message: "Tenant ID required" });
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const department = await Department.findOne({
       _id: req.params.deptId,
       tenantId,
     });
-    if (!department)
-      return res.status(404).json({ message: "Department not found" });
+    if (!department) {
+      res.status(404).json({ message: 'Department not found' });
+      return;
+    }
     department.lines.push({
       name: req.body.name,
       tenantId,
@@ -181,44 +237,73 @@ const createLine: AuthedRequestHandler = async (req, res, next) => {
     await department.save();
     const line = department.lines[department.lines.length - 1];
     res.status(201).json(line);
+    return;
   } catch (err) {
     next(err);
   }
 };
 
-const updateLine: AuthedRequestHandler = async (req, res, next) => {
+const updateLine: AuthedRequestHandler<
+  { deptId: string; lineId: string },
+  unknown,
+  Partial<LinePayload>
+> = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId) return res.status(400).json({ message: "Tenant ID required" });
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const department = await Department.findOne({
       _id: req.params.deptId,
       tenantId,
     });
-    if (!department) return res.status(404).json({ message: "Not found" });
+    if (!department) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     const line = department.lines.id(req.params.lineId);
-    if (!line) return res.status(404).json({ message: "Not found" });
+    if (!line) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     line.set(req.body);
     await department.save();
     res.json(line);
+    return;
   } catch (err) {
     next(err);
   }
 };
 
-const deleteLine: AuthedRequestHandler = async (req, res, next) => {
+const deleteLine: AuthedRequestHandler<{ deptId: string; lineId: string }> = async (
+  req,
+  res,
+  next,
+) => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId) return res.status(400).json({ message: "Tenant ID required" });
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const department = await Department.findOne({
       _id: req.params.deptId,
       tenantId,
     });
-    if (!department) return res.status(404).json({ message: "Not found" });
+    if (!department) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     const line = department.lines.id(req.params.lineId);
-    if (!line) return res.status(404).json({ message: "Not found" });
+    if (!line) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     line.deleteOne();
     await department.save();
-    res.json({ message: "Deleted successfully" });
+    res.json({ message: 'Deleted successfully' });
+    return;
   } catch (err) {
     next(err);
   }
@@ -231,34 +316,46 @@ const getLinesByDepartment: AuthedRequestHandler<{ departmentId: string }> = asy
 ) => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId) return res.status(400).json({ message: "Tenant ID required" });
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const department = await Department.findOne({
       _id: req.params.departmentId,
       tenantId,
     });
-    if (!department) return res.status(404).json({ message: "Not found" });
+    if (!department) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     res.json(department.lines);
-
+    return;
   } catch (err) {
     next(err);
   }
 };
 
- const getLineHierarchy: AuthedRequestHandler<{ id: string }> = async (
- 
+const getLineHierarchy: AuthedRequestHandler<{ id: string }> = async (
   req,
   res,
   next,
 ) => {
   try {
-     const department = await Department.findOne({
-      "lines._id": req.params.id,
+    const department = await Department.findOne({
+      'lines._id': req.params.id,
       tenantId: req.tenantId,
     });
-    if (!department) return res.status(404).json({ message: "Not found" });
+    if (!department) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     const line = department.lines.id(req.params.id);
-    if (!line) return res.status(404).json({ message: "Not found" });
+    if (!line) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     res.json(line);
+    return;
   } catch (err) {
     next(err);
   }
@@ -274,92 +371,138 @@ const getAllStations: AuthedRequestHandler = async (req, res, next) => {
       ),
     );
     res.json(stations);
- 
+    return;
   } catch (err) {
     next(err);
   }
 };
 
- const getStationById: AuthedRequestHandler<{ id: string }> = async (
- 
+const getStationById: AuthedRequestHandler<{ id: string }> = async (
   req,
   res,
   next,
 ) => {
   try {
-     const department = await Department.findOne({
-      "lines.stations._id": req.params.id,
+    const department = await Department.findOne({
+      'lines.stations._id': req.params.id,
       tenantId: req.tenantId,
     });
-    if (!department) return res.status(404).json({ message: "Not found" });
-    let station;
-    department.lines.forEach((line) => {
-      const s = line.stations.id(req.params.id);
-      if (s) station = s;
+    if (!department) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
+    let station: StationSubdoc | null = null;
+    department.lines.forEach((line: LineSubdoc) => {
+      if (station) return;
+      const found = line.stations.id(req.params.id) as StationSubdoc | null;
+      if (found) {
+        station = found;
+      }
     });
-    if (!station) return res.status(404).json({ message: "Not found" });
+    if (!station) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     res.json(station);
- 
+    return;
   } catch (err) {
     next(err);
   }
 };
 
-const createStation: AuthedRequestHandler = async (req, res, next) => {
+const createStation: AuthedRequestHandler<
+  { deptId: string; lineId: string },
+  unknown,
+  StationPayload
+> = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId) return res.status(400).json({ message: "Tenant ID required" });
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     const department = await Department.findOne({
       _id: req.params.deptId,
       tenantId,
     });
-    if (!department) return res.status(404).json({ message: "Line not found" });
+    if (!department) {
+      res.status(404).json({ message: 'Line not found' });
+      return;
+    }
     const line = department.lines.id(req.params.lineId);
-    if (!line) return res.status(404).json({ message: "Line not found" });
+    if (!line) {
+      res.status(404).json({ message: 'Line not found' });
+      return;
+    }
     line.stations.push({ name: req.body.name, tenantId } as any);
     await department.save();
     const station = line.stations[line.stations.length - 1];
     res.status(201).json(station);
-
+    return;
   } catch (err) {
     next(err);
   }
 };
 
- const updateStation: AuthedRequestHandler = async (req, res, next) => {
+const updateStation: AuthedRequestHandler<
+  { deptId: string; lineId: string; stationId: string },
+  unknown,
+  Partial<StationPayload>
+> = async (req, res, next) => {
   try {
     const department = await Department.findOne({
       _id: req.params.deptId,
       tenantId: req.tenantId,
     });
-    if (!department) return res.status(404).json({ message: "Not found" });
+    if (!department) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     const line = department.lines.id(req.params.lineId);
-    if (!line) return res.status(404).json({ message: "Not found" });
+    if (!line) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     const station = line.stations.id(req.params.stationId);
-    if (!station) return res.status(404).json({ message: "Not found" });
+    if (!station) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     station.set(req.body);
     await department.save();
     res.json(station);
-
+    return;
   } catch (err) {
     next(err);
   }
 };
 
- const deleteStation: AuthedRequestHandler = async (req, res, next) => {
+const deleteStation: AuthedRequestHandler<
+  { deptId: string; lineId: string; stationId: string }
+> = async (req, res, next) => {
   try {
     const department = await Department.findOne({
       _id: req.params.deptId,
       tenantId: req.tenantId,
     });
-    if (!department) return res.status(404).json({ message: "Not found" });
+    if (!department) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     const line = department.lines.id(req.params.lineId);
-    if (!line) return res.status(404).json({ message: "Not found" });
+    if (!line) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     const station = line.stations.id(req.params.stationId);
-    if (!station) return res.status(404).json({ message: "Not found" });
+    if (!station) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     station.deleteOne();
     await department.save();
-    res.json({ message: "Deleted successfully" });
+    res.json({ message: 'Deleted successfully' });
+    return;
   } catch (err) {
     next(err);
   }
@@ -372,14 +515,20 @@ const getStationsByLine: AuthedRequestHandler<{ lineId: string }> = async (
 ) => {
   try {
     const department = await Department.findOne({
-      "lines._id": req.params.lineId,
+      'lines._id': req.params.lineId,
       tenantId: req.tenantId,
     });
-    if (!department) return res.status(404).json({ message: "Not found" });
+    if (!department) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     const line = department.lines.id(req.params.lineId);
-    if (!line) return res.status(404).json({ message: "Not found" });
+    if (!line) {
+      res.status(404).json({ message: 'Not found' });
+      return;
+    }
     res.json(line.stations);
- 
+    return;
   } catch (err) {
     next(err);
   }

@@ -49,8 +49,8 @@ export const requireAuth: RequestHandler = (req, res, next) => {
     authedReq.user = {
       id: payload.id,
       email: payload.email,
-      tenantId: payload.tenantId,
-      siteId: payload.siteId,
+      ...(payload.tenantId ? { tenantId: payload.tenantId } : {}),
+      ...(payload.siteId ? { siteId: payload.siteId } : {}),
     };
 
     if (payload.tenantId) {

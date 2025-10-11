@@ -108,15 +108,22 @@ export const updateTheme: UpdateThemeHandler = async (req, res, next) => {
     const actorId = toIdString(req.user._id) ?? toIdString(req.user.id);
 
     if (entityId && tenantId) {
-      await writeAuditLog({
+      const normalizedEntityId = toEntityId(entityId) ?? entityId;
+
+      const auditPayload: Parameters<typeof writeAuditLog>[0] = {
         tenantId,
-        userId: actorId,
         action: 'update',
         entityType: 'UserTheme',
-        entityId: toEntityId(entityId) ?? entityId,
+        entityId: normalizedEntityId,
         before: null,
         after: { theme: updated.theme, colorScheme: updated.colorScheme },
-      });
+      };
+
+      if (actorId) {
+        auditPayload.userId = toEntityId(actorId) ?? actorId;
+      }
+
+      await writeAuditLog(auditPayload);
     }
 
     sendResponse(res, { theme: updated.theme, colorScheme: updated.colorScheme });

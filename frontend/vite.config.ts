@@ -13,6 +13,7 @@ export default defineConfig({
     alias: [
       { find: '@common', replacement: fileURLToPath(new URL('./src/components/common', import.meta.url)) },
       { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
+      { find: '@radix-ui/react-slot', replacement: fileURLToPath(new URL('./src/lib/radix-slot.tsx', import.meta.url)) },
     ],
   },
 })

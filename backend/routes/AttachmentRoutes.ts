@@ -67,7 +67,7 @@ const createAttachment: AuthedRequestHandler<
     result = {
       url: `/static/uploads/${tenantId}/${storedName}`,
       filename: input.filename,
-      contentType: input.contentType,
+      ...(input.contentType ? { contentType: input.contentType } : {}),
     };
   } else {
     let contentType = input.contentType;
@@ -80,7 +80,11 @@ const createAttachment: AuthedRequestHandler<
       }
     }
     const filename = input.filename || path.basename(new URL(input.url).pathname) || 'file';
-    result = { url: input.url, filename, contentType };
+    result = {
+      url: input.url,
+      filename,
+      ...(contentType ? { contentType } : {}),
+    };
   }
 
   sendResponse(res, result, null, 201);

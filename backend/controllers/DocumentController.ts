@@ -121,13 +121,13 @@ export const createDocument: AuthedRequestHandler<
     const saved = await newItem.save();
 
     const tenantId = req.tenantId;
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
     await writeAuditLog({
-      tenantId,
-      userId,
+      ...(tenantId ? { tenantId } : {}),
+      ...(userId ? { userId } : {}),
       action: 'create',
       entityType: 'Document',
-      entityId: toEntityId(saved._id),
+      entityId: saved._id,
       after: saved.toObject(),
     });
 
@@ -203,13 +203,13 @@ export const updateDocument: AuthedRequestHandler<
       return;
     }
     const tenantId = req.tenantId;
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
     await writeAuditLog({
-      tenantId,
-      userId,
+      ...(tenantId ? { tenantId } : {}),
+      ...(userId ? { userId } : {}),
       action: 'update',
       entityType: 'Document',
-      entityId: toEntityId(objectId),
+      entityId: objectId,
       after: updated.toObject(),
     });
 
@@ -236,7 +236,7 @@ export const deleteDocument: AuthedRequestHandler<{ id: string }> = async (
       return;
     }
     const tenantId = req.tenantId;
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
     const deleted = await Document.findByIdAndDelete(objectId);
     if (!deleted) {
       sendResponse(res, null, 'Not found', 404);
@@ -256,11 +256,11 @@ export const deleteDocument: AuthedRequestHandler<{ id: string }> = async (
     }
 
     await writeAuditLog({
-      tenantId,
-      userId,
+      ...(tenantId ? { tenantId } : {}),
+      ...(userId ? { userId } : {}),
       action: 'delete',
       entityType: 'Document',
-      entityId: toEntityId(objectId),
+      entityId: objectId,
       before: deleted.toObject(),
     });
     sendResponse(res, { message: 'Deleted successfully' });

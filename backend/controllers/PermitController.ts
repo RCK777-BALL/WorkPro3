@@ -5,10 +5,13 @@
 import type { ParamsDictionary } from 'express-serve-static-core';
 import type { Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
+import type { z } from 'zod';
 
 import Permit, {
   type PermitDocument,
   type PermitApprovalStep,
+  type PermitIsolationStep,
+  type PermitHistoryEntry,
 } from '../models/Permit';
 import SafetyIncident from '../models/SafetyIncident';
 import WorkOrder from '../models/WorkOrder';
@@ -18,35 +21,92 @@ import { toEntityId } from '../utils/ids';
 import notifyUser from '../utils/notify';
 import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import {
+  permitApprovalStepSchema,
   permitCreateSchema,
-  permitUpdateSchema,
   permitDecisionSchema,
-  permitIsolationSchema,
   permitIncidentSchema,
+  permitIsolationSchema,
+  permitIsolationStepSchema,
+  permitUpdateSchema,
 } from '../src/schemas/permit';
 
 const toObjectId = (value: Types.ObjectId | string): Types.ObjectId =>
   value instanceof Types.ObjectId ? value : new Types.ObjectId(value);
 
-function getActiveStep(permit: PermitDocument): PermitApprovalStep | undefined {
-  return permit.approvalChain.find((step) => step.status === 'pending');
+const toOptionalObjectId = (
+  value?: string | Types.ObjectId,
+): Types.ObjectId | undefined => (value ? toObjectId(value) : undefined);
+
+function resolveRequestUserId(req: AuthedRequest): Types.ObjectId | undefined {
+  const raw = (req.user as any)?._id ?? (req.user as any)?.id;
+  return raw ? toObjectId(raw as Types.ObjectId | string) : undefined;
 }
 
-function initializeApprovalChain(chain: PermitApprovalStep[] = []): PermitApprovalStep[] {
-  return chain
-    .map((step, index) => ({
-      ...step,
-      sequence: index,
+function resolveAuditUserId(req: AuthedRequest) {
+  return toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
+}
+
+type PermitApprovalStepInput = z.infer<typeof permitApprovalStepSchema>;
+type PermitIsolationStepInput = z.infer<typeof permitIsolationStepSchema>;
+type PermitCreateBody = z.infer<typeof permitCreateSchema>;
+type PermitUpdateBody = z.infer<typeof permitUpdateSchema>;
+type PermitDecisionBody = z.infer<typeof permitDecisionSchema>;
+type PermitIsolationBody = z.infer<typeof permitIsolationSchema>;
+type PermitIncidentBody = z.infer<typeof permitIncidentSchema>;
+
+function initializeApprovalChain(
+  chain: PermitApprovalStepInput[] = [],
+): PermitApprovalStep[] {
+  return chain.map((step, index) => {
+    const escalateAt =
+      step.escalateAfterHours && index === 0
+        ? new Date(Date.now() + step.escalateAfterHours * 60 * 60 * 1000)
+        : null;
+
+    return {
+      sequence: step.sequence ?? index,
+      role: step.role,
       status: index === 0 ? 'pending' : 'blocked',
-      escalateAt:
-        step.escalateAfterHours && index === 0
-          ? new Date(Date.now() + step.escalateAfterHours * 60 * 60 * 1000)
-          : undefined,
-    }))
-    .map((step) => ({
-      ...step,
-      escalateAt: step.escalateAt ?? null,
-    }));
+      ...(step.user ? { user: toObjectId(step.user) } : {}),
+      escalateAfterHours: step.escalateAfterHours,
+      escalateAt,
+      ...(step.notes ? { notes: step.notes } : {}),
+    } satisfies PermitApprovalStep;
+  });
+}
+
+function mapIsolationSteps(
+  steps: PermitIsolationStepInput[] = [],
+): PermitIsolationStep[] {
+  return steps.map((step, index) => ({
+    index,
+    description: step.description,
+    ...(step.completed !== undefined ? { completed: step.completed } : {}),
+    ...(step.completedAt ? { completedAt: step.completedAt } : {}),
+    ...(step.completedBy ? { completedBy: toObjectId(step.completedBy) } : {}),
+    ...(step.verificationNotes ? { verificationNotes: step.verificationNotes } : {}),
+  }));
+}
+
+function pushHistory(
+  permit: PermitDocument,
+  entry: Pick<PermitHistoryEntry, 'action'> & {
+    notes?: string;
+    by?: Types.ObjectId;
+    at?: Date;
+  },
+): void {
+  const payload: PermitHistoryEntry = {
+    action: entry.action,
+    at: entry.at ?? new Date(),
+    ...(entry.notes !== undefined ? { notes: entry.notes } : {}),
+    ...(entry.by ? { by: entry.by } : {}),
+  };
+  permit.history.push(payload);
+}
+
+function getActiveStep(permit: PermitDocument): PermitApprovalStep | undefined {
+  return permit.approvalChain.find((step) => step.status === 'pending');
 }
 
 async function processEscalations(tenantId: string): Promise<void> {
@@ -63,10 +123,10 @@ async function processEscalations(tenantId: string): Promise<void> {
       const active = getActiveStep(permit);
       if (!active || !active.escalateAt || active.escalateAt > now) return;
       active.status = 'escalated';
+      active.escalateAt = null;
       permit.status = 'escalated';
-      permit.history.push({
+      pushHistory(permit, {
         action: 'escalated',
-        at: new Date(),
         notes: `Escalated approval step for role ${active.role}`,
       });
       await permit.save();
@@ -118,7 +178,11 @@ export const getPermit: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const createPermit: AuthedRequestHandler = async (req, res, next) => {
+export const createPermit: AuthedRequestHandler<
+  ParamsDictionary,
+  PermitDocument,
+  PermitCreateBody
+> = async (req, res, next) => {
   try {
     const tenantId = ensureTenant(req, res);
     if (!tenantId) return;
@@ -131,6 +195,10 @@ export const createPermit: AuthedRequestHandler = async (req, res, next) => {
     const permitNumber =
       body.permitNumber ?? `PER-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const approvalChain = initializeApprovalChain(body.approvalChain);
+    const isolationSteps = mapIsolationSteps(body.isolationSteps);
+    const watchers = body.watchers?.map((id) => toObjectId(id)) ?? [];
+    const requestUserId = resolveRequestUserId(req);
+
     const permit = await Permit.create({
       tenantId,
       permitNumber,
@@ -138,24 +206,19 @@ export const createPermit: AuthedRequestHandler = async (req, res, next) => {
       description: body.description,
       status: 'pending',
       requestedBy: toObjectId(body.requestedBy),
-      workOrder: body.workOrder ? toObjectId(body.workOrder) : undefined,
+      workOrder: toOptionalObjectId(body.workOrder),
       approvalChain,
-      isolationSteps:
-        body.isolationSteps?.map((step, index) => ({
-          index,
-          description: step.description,
-          verificationNotes: step.verificationNotes,
-        })) ?? [],
-      watchers: body.watchers?.map(toObjectId) ?? [],
+      isolationSteps,
+      watchers,
       validFrom: body.validFrom,
       validTo: body.validTo,
       riskLevel: body.riskLevel,
       history: [
         {
           action: 'created',
-          by: req.user?._id ? toObjectId(req.user._id) : undefined,
           at: new Date(),
-          notes: body.description,
+          ...(requestUserId ? { by: requestUserId } : {}),
+          ...(body.description ? { notes: body.description } : {}),
         },
       ],
     });
@@ -172,15 +235,19 @@ export const createPermit: AuthedRequestHandler = async (req, res, next) => {
 
     const active = getActiveStep(permit);
     if (active?.user) {
-      await notifyUser(toObjectId(active.user), `Permit ${permit.permitNumber} requires your approval.`);
+      await notifyUser(
+        toObjectId(active.user),
+        `Permit ${permit.permitNumber} requires your approval.`,
+      );
     }
 
+    const auditUserId = resolveAuditUserId(req);
     await writeAuditLog({
       tenantId,
-      userId: req.user?._id,
+      ...(auditUserId ? { userId: auditUserId } : {}),
       action: 'create',
       entityType: 'Permit',
-      entityId: toEntityId(permit._id),
+      entityId: permit._id,
       after: permit.toObject(),
     });
 
@@ -190,7 +257,11 @@ export const createPermit: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const updatePermit: AuthedRequestHandler = async (req, res, next) => {
+export const updatePermit: AuthedRequestHandler<
+  ParamsDictionary,
+  PermitDocument,
+  PermitUpdateBody
+> = async (req, res, next) => {
   try {
     const tenantId = ensureTenant(req, res);
     if (!tenantId) return;
@@ -200,58 +271,55 @@ export const updatePermit: AuthedRequestHandler = async (req, res, next) => {
       return;
     }
     const update = parsed.data;
-    if (update.approvalChain) {
-      update.approvalChain = initializeApprovalChain(update.approvalChain as PermitApprovalStep[]);
-    }
     const permit = await Permit.findOne({ _id: req.params.id, tenantId });
     if (!permit) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
+
     const before = permit.toObject();
-    if (update.type) permit.type = update.type;
+
+    if (update.type !== undefined) permit.type = update.type;
     if (update.description !== undefined) permit.description = update.description;
     if (update.validFrom !== undefined) permit.validFrom = update.validFrom;
     if (update.validTo !== undefined) permit.validTo = update.validTo;
     if (update.riskLevel !== undefined) permit.riskLevel = update.riskLevel;
-    if (update.watchers) permit.watchers = update.watchers.map(toObjectId);
-    if (update.approvalChain) permit.approvalChain = update.approvalChain as PermitApprovalStep[];
-    if (update.isolationSteps) {
-      permit.isolationSteps = update.isolationSteps.map((step, index) => ({
-        index,
-        description: step.description,
-        completed: step.completed,
-        completedAt: step.completedAt,
-        completedBy: step.completedBy ? toObjectId(step.completedBy) : undefined,
-        verificationNotes: step.verificationNotes,
-      }));
+    if (update.watchers) permit.watchers = update.watchers.map((id) => toObjectId(id));
+    if (update.approvalChain) {
+      permit.approvalChain = initializeApprovalChain(update.approvalChain);
     }
-    if (update.workOrder) {
-      permit.workOrder = toObjectId(update.workOrder);
-      await WorkOrder.findByIdAndUpdate(
-        permit.workOrder,
-        {
-          $addToSet: { permits: permit._id, requiredPermitTypes: permit.type },
-        },
-        { new: true },
-      );
+    if (update.isolationSteps) {
+      permit.isolationSteps = mapIsolationSteps(update.isolationSteps);
+    }
+    if (update.workOrder !== undefined) {
+      permit.workOrder = toOptionalObjectId(update.workOrder);
+      if (permit.workOrder) {
+        await WorkOrder.findByIdAndUpdate(
+          permit.workOrder,
+          {
+            $addToSet: { permits: permit._id, requiredPermitTypes: permit.type },
+          },
+          { new: true },
+        );
+      }
     }
 
-    permit.history.push({
+    const requestUserId = resolveRequestUserId(req);
+    pushHistory(permit, {
       action: 'updated',
-      by: req.user?._id ? toObjectId(req.user._id) : undefined,
-      at: new Date(),
+      by: requestUserId,
       notes: update.description,
     });
 
     const saved = await permit.save();
 
+    const auditUserId = resolveAuditUserId(req);
     await writeAuditLog({
       tenantId,
-      userId: req.user?._id,
+      ...(auditUserId ? { userId: auditUserId } : {}),
       action: 'update',
       entityType: 'Permit',
-      entityId: toEntityId(saved._id),
+      entityId: saved._id,
       before,
       after: saved.toObject(),
     });
@@ -262,7 +330,11 @@ export const updatePermit: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const approvePermit: AuthedRequestHandler = async (req, res, next) => {
+export const approvePermit: AuthedRequestHandler<
+  ParamsDictionary,
+  PermitDocument,
+  PermitDecisionBody
+> = async (req, res, next) => {
   try {
     const tenantId = ensureTenant(req, res);
     if (!tenantId) return;
@@ -281,10 +353,10 @@ export const approvePermit: AuthedRequestHandler = async (req, res, next) => {
       sendResponse(res, permit, null, 200);
       return;
     }
-    const userId = req.user?._id ? toObjectId(req.user._id) : undefined;
-    const userRoles = (req.user as any)?.roles ?? [];
+    const requestUserId = resolveRequestUserId(req);
+    const userRoles = ((req.user as any)?.roles ?? []) as string[];
     if (active.user) {
-      if (!userId || !toObjectId(active.user).equals(userId)) {
+      if (!requestUserId || !toObjectId(active.user).equals(requestUserId)) {
         sendResponse(res, null, 'You are not assigned to approve this step', 403);
         return;
       }
@@ -295,13 +367,12 @@ export const approvePermit: AuthedRequestHandler = async (req, res, next) => {
 
     active.status = 'approved';
     active.approvedAt = new Date();
-    active.actedBy = userId;
+    if (requestUserId) active.actedBy = requestUserId;
     active.notes = parsed.data.notes;
 
-    permit.history.push({
+    pushHistory(permit, {
       action: 'approved',
-      by: userId,
-      at: new Date(),
+      by: requestUserId,
       notes: `Step approved for role ${active.role}`,
     });
 
@@ -312,6 +383,8 @@ export const approvePermit: AuthedRequestHandler = async (req, res, next) => {
         remaining.escalateAt = new Date(
           Date.now() + remaining.escalateAfterHours * 60 * 60 * 1000,
         );
+      } else {
+        remaining.escalateAt = null;
       }
       if (remaining.user) {
         await notifyUser(
@@ -325,12 +398,13 @@ export const approvePermit: AuthedRequestHandler = async (req, res, next) => {
     }
 
     const saved = await permit.save();
+    const auditUserId = resolveAuditUserId(req);
     await writeAuditLog({
       tenantId,
-      userId,
+      ...(auditUserId ? { userId: auditUserId } : {}),
       action: 'approve',
       entityType: 'Permit',
-      entityId: toEntityId(saved._id),
+      entityId: saved._id,
       after: saved.toObject(),
     });
     sendResponse(res, saved);
@@ -339,7 +413,11 @@ export const approvePermit: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const rejectPermit: AuthedRequestHandler = async (req, res, next) => {
+export const rejectPermit: AuthedRequestHandler<
+  ParamsDictionary,
+  PermitDocument,
+  PermitDecisionBody
+> = async (req, res, next) => {
   try {
     const tenantId = ensureTenant(req, res);
     if (!tenantId) return;
@@ -358,23 +436,24 @@ export const rejectPermit: AuthedRequestHandler = async (req, res, next) => {
       sendResponse(res, null, 'Permit already decided', 400);
       return;
     }
+    const requestUserId = resolveRequestUserId(req);
     active.status = 'rejected';
-    active.actedBy = req.user?._id ? toObjectId(req.user._id) : undefined;
+    active.actedBy = requestUserId;
     active.notes = parsed.data.notes;
     permit.status = 'rejected';
-    permit.history.push({
+    pushHistory(permit, {
       action: 'rejected',
-      by: active.actedBy,
-      at: new Date(),
+      by: requestUserId,
       notes: parsed.data.notes,
     });
     const saved = await permit.save();
+    const auditUserId = resolveAuditUserId(req);
     await writeAuditLog({
       tenantId,
-      userId: active.actedBy,
+      ...(auditUserId ? { userId: auditUserId } : {}),
       action: 'reject',
       entityType: 'Permit',
-      entityId: toEntityId(saved._id),
+      entityId: saved._id,
       after: saved.toObject(),
     });
     sendResponse(res, saved);
@@ -400,10 +479,10 @@ export const escalatePermit: AuthedRequestHandler = async (req, res, next) => {
     active.status = 'escalated';
     active.escalateAt = null;
     permit.status = 'escalated';
-    permit.history.push({
+    const requestUserId = resolveRequestUserId(req);
+    pushHistory(permit, {
       action: 'escalated',
-      by: req.user?._id ? toObjectId(req.user._id) : undefined,
-      at: new Date(),
+      by: requestUserId,
       notes: `Escalated approval for role ${active.role}`,
     });
     await Promise.all(
@@ -412,12 +491,13 @@ export const escalatePermit: AuthedRequestHandler = async (req, res, next) => {
       ),
     );
     const saved = await permit.save();
+    const auditUserId = resolveAuditUserId(req);
     await writeAuditLog({
       tenantId,
-      userId: req.user?._id,
+      ...(auditUserId ? { userId: auditUserId } : {}),
       action: 'escalate',
       entityType: 'Permit',
-      entityId: toEntityId(saved._id),
+      entityId: saved._id,
       after: saved.toObject(),
     });
     sendResponse(res, saved);
@@ -429,7 +509,7 @@ export const escalatePermit: AuthedRequestHandler = async (req, res, next) => {
 export const completeIsolationStep: AuthedRequestHandler<
   ParamsDictionary,
   PermitDocument,
-  unknown,
+  PermitIsolationBody,
   { index?: string }
 > = async (req, res, next) => {
   try {
@@ -451,23 +531,26 @@ export const completeIsolationStep: AuthedRequestHandler<
       return;
     }
     const step = permit.isolationSteps[index];
+    const requestUserId = resolveRequestUserId(req);
     step.completed = true;
     step.completedAt = new Date();
-    step.completedBy = req.user?._id ? toObjectId(req.user._id) : undefined;
+    if (requestUserId) {
+      step.completedBy = requestUserId;
+    }
     step.verificationNotes = parsed.data.verificationNotes;
-    permit.history.push({
+    pushHistory(permit, {
       action: 'isolation-step-completed',
-      by: step.completedBy,
-      at: new Date(),
+      by: requestUserId,
       notes: `Step ${index + 1}: ${step.description}`,
     });
     const saved = await permit.save();
+    const auditUserId = resolveAuditUserId(req);
     await writeAuditLog({
       tenantId,
-      userId: step.completedBy,
+      ...(auditUserId ? { userId: auditUserId } : {}),
       action: 'isolation-step-completed',
       entityType: 'Permit',
-      entityId: toEntityId(saved._id),
+      entityId: saved._id,
       after: saved.toObject(),
     });
     sendResponse(res, saved);
@@ -476,7 +559,11 @@ export const completeIsolationStep: AuthedRequestHandler<
   }
 };
 
-export const logPermitIncident: AuthedRequestHandler = async (req, res, next) => {
+export const logPermitIncident: AuthedRequestHandler<
+  ParamsDictionary,
+  unknown,
+  PermitIncidentBody
+> = async (req, res, next) => {
   try {
     const tenantId = ensureTenant(req, res);
     if (!tenantId) return;
@@ -490,6 +577,9 @@ export const logPermitIncident: AuthedRequestHandler = async (req, res, next) =>
       sendResponse(res, null, 'Not found', 404);
       return;
     }
+    const requestUserId = resolveRequestUserId(req) ?? permit.requestedBy;
+    const historyUser = resolveRequestUserId(req);
+    const auditUserId = resolveAuditUserId(req);
     const incident = await SafetyIncident.create({
       tenantId: toObjectId(tenantId),
       permit: permit._id,
@@ -498,31 +588,38 @@ export const logPermitIncident: AuthedRequestHandler = async (req, res, next) =>
       description: parsed.data.description,
       severity: parsed.data.severity,
       status: parsed.data.status ?? 'open',
-      reportedBy: req.user?._id ? toObjectId(req.user._id) : permit.requestedBy,
+      reportedBy: requestUserId,
       actions:
         parsed.data.actions?.map((action) => ({
           description: action.description,
-          assignedTo: action.assignedTo ? toObjectId(action.assignedTo) : undefined,
+          assignedTo: toOptionalObjectId(action.assignedTo),
           dueDate: action.dueDate,
         })) ?? [],
       timeline: parsed.data.message
         ? [
             {
               at: new Date(),
-              by: req.user?._id ? toObjectId(req.user._id) : undefined,
+              by: historyUser,
               message: parsed.data.message,
             },
           ]
         : [],
     });
     permit.incidents.push(incident._id);
-    permit.history.push({
+    pushHistory(permit, {
       action: 'incident-logged',
-      by: req.user?._id ? toObjectId(req.user._id) : undefined,
-      at: new Date(),
+      by: historyUser,
       notes: parsed.data.title,
     });
     await permit.save();
+    await writeAuditLog({
+      tenantId,
+      ...(auditUserId ? { userId: auditUserId } : {}),
+      action: 'incident-log',
+      entityType: 'Permit',
+      entityId: permit._id,
+      after: permit.toObject(),
+    });
     sendResponse(res, incident, null, 201);
   } catch (err) {
     next(err);
@@ -619,7 +716,7 @@ export const getPermitActivity: AuthedRequestHandler = async (req, res, next) =>
       const step = getActiveStep(permit);
       if (!step) return false;
       if (step.user && toObjectId(step.user).equals(userObjectId)) return true;
-      return step.role ? (req.user as any)?.roles?.includes(step.role) ?? false : false;
+      return step.role ? ((req.user as any)?.roles ?? []).includes(step.role) : false;
     }).length;
     const activePermits = permits.filter((permit) => permit.status === 'active').length;
     const recentHistory = permits

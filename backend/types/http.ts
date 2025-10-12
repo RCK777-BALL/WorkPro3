@@ -18,16 +18,23 @@ export type AuthedRequest<
   user: Express.User;
 };
 
-export interface AuthedRequestHandler<
+type AuthedHandlerFn<
+  P extends ParamsDictionary,
+  ResBody,
+  ReqBody,
+  ReqQuery extends ParsedQs,
+  Locals extends Record<string, any>,
+> = (
+  req: AuthedRequest<P, ResBody, ReqBody, ReqQuery, Locals>,
+  res: Response<ResBody, Locals>,
+  next: NextFunction,
+) => void | Promise<void>;
+
+export type AuthedRequestHandler<
   P extends ParamsDictionary = ParamsDictionary,
   ResBody = unknown,
   ReqBody = unknown,
   ReqQuery extends ParsedQs = ParsedQs,
   Locals extends Record<string, any> = Record<string, any>,
-> extends RequestHandler<P, ResBody, ReqBody, ReqQuery, Locals> {
-  (
-    req: AuthedRequest<P, ResBody, ReqBody, ReqQuery, Locals>,
-    res: Response<ResBody, Locals>,
-    next: NextFunction,
-  ): void | Promise<void>;
-}
+> = AuthedHandlerFn<P, ResBody, ReqBody, ReqQuery, Locals> &
+  RequestHandler<P, ResBody, ReqBody, ReqQuery, Locals>;

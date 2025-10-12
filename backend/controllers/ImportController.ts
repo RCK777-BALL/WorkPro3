@@ -5,12 +5,16 @@
 import { parse } from 'csv-parse/sync';
 import Asset from '../models/Asset';
 import InventoryItem from '../models/InventoryItem';
-import type { AuthedRequestHandler } from '../types/http';
+import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import { sendResponse } from '../utils/sendResponse';
 
-export const importAssets: AuthedRequestHandler = async (req: { tenantId: any; siteId: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: { imported: number; }) => void; }, next: (arg0: unknown) => void) => {
+type FileUploadRequest = AuthedRequest & {
+  file?: { buffer: Buffer };
+};
+
+export const importAssets: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const file = (req as any).file;
+    const { file } = req as FileUploadRequest;
     if (!file) {
       sendResponse(res, null, 'CSV file required', 400);
       return;
@@ -21,7 +25,11 @@ export const importAssets: AuthedRequestHandler = async (req: { tenantId: any; s
       trim: true,
     });
 
-    const tenantId = req.tenantId!;
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
     const siteId = req.siteId;
 
     const docs = records.map((r: any) => ({
@@ -42,9 +50,9 @@ export const importAssets: AuthedRequestHandler = async (req: { tenantId: any; s
   }
 };
 
-export const importParts: AuthedRequestHandler = async (req: { tenantId: any; siteId: any; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: { imported: number; }) => void; }, next: (arg0: unknown) => void) => {
+export const importParts: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const file = (req as any).file;
+    const { file } = req as FileUploadRequest;
     if (!file) {
       sendResponse(res, null, 'CSV file required', 400);
       return;
@@ -56,7 +64,11 @@ export const importParts: AuthedRequestHandler = async (req: { tenantId: any; si
       trim: true,
     });
 
-    const tenantId = req.tenantId!;
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
     const siteId = req.siteId;
 
     const docs = records.map((r: any) => ({

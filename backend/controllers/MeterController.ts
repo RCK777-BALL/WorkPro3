@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+import type { ParamsDictionary } from 'express-serve-static-core';
 import type { AuthedRequestHandler } from '../types/http';
 import Meter from '../models/Meter';
 import MeterReading from '../models/MeterReading';
@@ -10,7 +11,20 @@ import { toEntityId } from '../utils/ids';
 import { Types, UpdateQuery, Error as MongooseError } from 'mongoose';
 import { sendResponse } from '../utils/sendResponse';
 
+interface MeterBody {
+  asset: string;
+  name: string;
+  unit: string;
+  currentValue?: number;
+  pmInterval: number;
+  lastWOValue?: number;
+}
 
+type MeterUpdateBody = Partial<MeterBody>;
+
+interface MeterReadingBody {
+  value: number;
+}
 
 export const getMeters: AuthedRequestHandler = async (req, res, next) => {
   try {
@@ -61,22 +75,32 @@ export const getMeterById: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const createMeter: AuthedRequestHandler = async (req, res, next) => {
+export const createMeter: AuthedRequestHandler<
+  ParamsDictionary,
+  unknown,
+  MeterBody
+> = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
+    const body = req.body;
     const meter = await Meter.create({
-      ...req.body,
+      asset: body.asset,
+      name: body.name,
+      unit: body.unit,
+      currentValue: body.currentValue ?? 0,
+      pmInterval: body.pmInterval,
+      lastWOValue: body.lastWOValue ?? 0,
       tenantId,
       siteId: req.siteId,
     });
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
     await writeAuditLog({
       tenantId,
-      userId,
+      ...(userId ? { userId } : {}),
       action: 'create',
       entityType: 'Meter',
       entityId: toEntityId(meter._id),
@@ -99,7 +123,11 @@ export const createMeter: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const updateMeter: AuthedRequestHandler = async (req, res, next) => {
+export const updateMeter: AuthedRequestHandler<
+  ParamsDictionary,
+  unknown,
+  MeterUpdateBody
+> = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -115,13 +143,13 @@ export const updateMeter: AuthedRequestHandler = async (req, res, next) => {
     }
     const meter = await Meter.findOneAndUpdate(
       filter,
-      req.body as UpdateQuery<any>,
+      (req.body ?? {}) as UpdateQuery<MeterUpdateBody>,
       { new: true },
     );
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
     await writeAuditLog({
       tenantId,
-      userId,
+      ...(userId ? { userId } : {}),
       action: 'update',
       entityType: 'Meter',
       entityId: toEntityId(new Types.ObjectId(req.params.id)),
@@ -159,10 +187,10 @@ export const deleteMeter: AuthedRequestHandler = async (req, res, next) => {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
     await writeAuditLog({
       tenantId,
-      userId,
+      ...(userId ? { userId } : {}),
       action: 'delete',
       entityType: 'Meter',
       entityId: toEntityId(new Types.ObjectId(req.params.id)),
@@ -185,7 +213,11 @@ export const deleteMeter: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const addMeterReading: AuthedRequestHandler = async (req, res, next) => {
+export const addMeterReading: AuthedRequestHandler<
+  ParamsDictionary,
+  unknown,
+  MeterReadingBody
+> = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -206,14 +238,14 @@ export const addMeterReading: AuthedRequestHandler = async (req, res, next) => {
       tenantId,
       siteId: req.siteId,
     });
-    meter.currentValue = req.body.value;
-    await meter.save();
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
-    await writeAuditLog({
-      tenantId,
-      userId,
-      action: 'addReading',
-      entityType: 'Meter',
+      meter.currentValue = req.body.value;
+      await meter.save();
+      const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
+      await writeAuditLog({
+        tenantId,
+        ...(userId ? { userId } : {}),
+        action: 'addReading',
+        entityType: 'Meter',
       entityId: toEntityId(meter._id),
       after: meter.toObject(),
     });

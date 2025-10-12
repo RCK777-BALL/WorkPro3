@@ -112,7 +112,7 @@ export const createPMTask: AuthedRequestHandler<ParamsDictionary, PMTaskResponse
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     await writeAuditLog({
       tenantId,
-      userId,
+      ...(userId ? { userId } : {}),
       action: 'create',
       entityType: 'PMTask',
       entityId: toEntityId(task._id),
@@ -167,7 +167,7 @@ export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | n
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     await writeAuditLog({
       tenantId,
-      userId,
+      ...(userId ? { userId } : {}),
       action: 'update',
       entityType: 'PMTask',
       entityId: toEntityId(task._id),
@@ -213,7 +213,7 @@ export const deletePMTask: AuthedRequestHandler<PMTaskParams, PMTaskDeleteRespon
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     await writeAuditLog({
       tenantId,
-      userId,
+      ...(userId ? { userId } : {}),
       action: 'delete',
       entityType: 'PMTask',
       entityId: toEntityId(task._id),

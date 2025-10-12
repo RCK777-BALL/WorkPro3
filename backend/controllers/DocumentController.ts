@@ -161,6 +161,7 @@ export const updateDocument: AuthedRequestHandler<
 
     const { base64, url, name } = req.body ?? {};
 
+    const entityId: Types.ObjectId = objectId;
     const updateData: { name?: string; url?: string } = {};
 
     if (base64) {
@@ -214,7 +215,7 @@ export const updateDocument: AuthedRequestHandler<
       ...(userId ? { userId } : {}),
       action: 'update',
       entityType: 'Document',
-      entityId: objectId,
+      entityId,
       after: updated.toObject(),
     });
 
@@ -242,6 +243,7 @@ export const deleteDocument: AuthedRequestHandler<{ id: string }> = async (
     }
     const tenantId = req.tenantId;
     const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
+    const entityId: Types.ObjectId = objectId;
     const deleted = await Document.findByIdAndDelete(objectId);
     if (!deleted) {
       sendResponse(res, null, 'Not found', 404);
@@ -265,7 +267,7 @@ export const deleteDocument: AuthedRequestHandler<{ id: string }> = async (
       ...(userId ? { userId } : {}),
       action: 'delete',
       entityType: 'Document',
-      entityId: objectId,
+      entityId,
       before: deleted.toObject(),
     });
     sendResponse(res, { message: 'Deleted successfully' });

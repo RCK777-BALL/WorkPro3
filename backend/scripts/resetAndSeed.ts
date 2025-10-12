@@ -5,15 +5,12 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
+
 import User from '../models/User';
 import Department from '../models/Department';
 import Line from '../models/Line';
 import Station from '../models/Station';
 import Asset from '../models/Asset';
-
-import User from '../models/User';
-import Asset from '../models/Asset';
-import Department from '../models/Department';
 import Tenant from '../models/Tenant';
 import logger from '../utils/logger';
 
@@ -43,7 +40,7 @@ async function resetAndSeed() {
 
         // 2️⃣ Insert seed data
         const tenant = await Tenant.create({ name: 'Default Tenant' });
-        const department = await Department.create({
+        await Department.create({
             name: 'Maintenance',
             lines: [
                 {
@@ -52,9 +49,6 @@ async function resetAndSeed() {
                 },
             ],
         });
-        const line = department.lines[0];
-        const station = line.stations[0];
-
         const adminPassword = await bcrypt.hash('admin123', 10);
         const adminUser = await User.create({
             email: 'admin@example.com',
@@ -64,9 +58,9 @@ async function resetAndSeed() {
         logger.info(`👤 Created admin user: ${adminUser.email}`);
 
         // Seed Departments → Lines → Stations → Assets
-        const department = await Department.create({ name: 'Production' });
-        const line = await Line.create({ name: 'Line A', department: department._id });
-        const station = await Station.create({ name: 'Station 1', line: line._id });
+        const productionDepartment = await Department.create({ name: 'Production' });
+        const productionLine = await Line.create({ name: 'Line A', department: productionDepartment._id });
+        const productionStation = await Station.create({ name: 'Station 1', line: productionLine._id });
 
  
         await Asset.insertMany([
@@ -74,18 +68,18 @@ async function resetAndSeed() {
                 name: 'Motor 1',
                 type: 'Electrical',
                 location: 'Plant 1',
-                departmentId: department._id,
-                lineId: line._id,
-                stationId: station._id,
+                departmentId: productionDepartment._id,
+                lineId: productionLine._id,
+                stationId: productionStation._id,
                 tenantId: tenant._id,
             },
             {
                 name: 'Pump 2',
                 type: 'Mechanical',
                 location: 'Plant 1',
-                departmentId: department._id,
-                lineId: line._id,
-                stationId: station._id,
+                departmentId: productionDepartment._id,
+                lineId: productionLine._id,
+                stationId: productionStation._id,
                 tenantId: tenant._id,
             },
  

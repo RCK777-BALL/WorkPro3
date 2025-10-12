@@ -296,10 +296,11 @@ export const updatePermit: AuthedRequestHandler<
       permit.isolationSteps = mapIsolationSteps(update.isolationSteps);
     }
     if (update.workOrder !== undefined) {
-      permit.workOrder = toOptionalObjectId(update.workOrder);
-      if (permit.workOrder) {
+      const workOrderId = toOptionalObjectId(update.workOrder);
+      permit.set('workOrder', workOrderId);
+      if (workOrderId) {
         await WorkOrder.findByIdAndUpdate(
-          permit.workOrder,
+          workOrderId,
           {
             $addToSet: { permits: permit._id, requiredPermitTypes: permit.type },
           },

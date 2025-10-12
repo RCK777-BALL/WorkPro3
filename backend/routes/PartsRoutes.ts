@@ -5,6 +5,8 @@
 import express from 'express';
 import type { NextFunction, Response } from 'express';
 import type { ParamsDictionary } from 'express-serve-static-core';
+import type { LeanDocument } from 'mongoose';
+import { Types } from 'mongoose';
 import Part, { type IPart } from '../models/Part';
 import { requireAuth } from '../middleware/authMiddleware';
 import siteScope from '../middleware/siteScope';
@@ -15,6 +17,20 @@ type PartRequest<
   P extends ParamsDictionary = ParamsDictionary,
   ReqBody = Record<string, unknown>
 > = AuthedRequest<P, any, ReqBody> & { auditId?: string };
+
+type PartLean = LeanDocument<IPart>;
+
+const toPartResponse = (part: PartLean | IPart) => {
+  const raw = typeof (part as IPart).toObject === 'function'
+    ? ((part as IPart).toObject() as PartLean)
+    : (part as PartLean);
+  const idSource = (part as { _id?: unknown })._id ?? raw._id;
+  return {
+    ...raw,
+    id: String(idSource),
+    quantity: raw.onHand,
+  };
+};
 
 interface AdjustPartPayload {
   delta: number;
@@ -27,11 +43,11 @@ const router = express.Router();
 router.use(requireAuth);
 router.use(siteScope);
 
-const loadPart = async (req: PartRequest): Promise<IPart | null> => {
+const loadPart = async (req: PartRequest): Promise<PartLean | null> => {
   const tenantId = req.user?.tenantId;
   const id = req.auditId || req.params.id;
   if (!id) return null;
-  return Part.findOne({ _id: id, tenantId }).lean<IPart>().exec();
+  return Part.findOne({ _id: id, tenantId }).lean<PartLean>().exec();
 };
 
 const listParts = async (
@@ -41,8 +57,8 @@ const listParts = async (
 ): Promise<void> => {
   try {
     const tenantId = req.user?.tenantId;
-    const parts = await Part.find({ tenantId }).lean<IPart>().exec();
-    res.json(parts.map((p) => ({ ...p, id: p._id, quantity: p.onHand })));
+    const parts = await Part.find({ tenantId }).lean<PartLean>().exec();
+    res.json(parts.map((p) => toPartResponse(p)));
   } catch (err) {
     next(err);
   }
@@ -55,12 +71,12 @@ const getPartById = async (
 ): Promise<void> => {
   try {
     const tenantId = req.user?.tenantId;
-    const part = await Part.findOne({ _id: req.params.id, tenantId }).lean<IPart>().exec();
+    const part = await Part.findOne({ _id: req.params.id, tenantId }).lean<PartLean>().exec();
     if (!part) {
       res.status(404).json({ message: 'Not found' });
       return;
     }
-    res.json({ ...part, id: part._id, quantity: part.onHand });
+    res.json(toPartResponse(part));
   } catch (err) {
     next(err);
   }
@@ -84,9 +100,8 @@ router.post(
       const tenantId = req.user?.tenantId;
       const payload = req.body as Partial<IPart>;
       const part = await Part.create({ ...payload, tenantId });
-      req.auditId = part._id;
-      const obj = part.toObject();
-      res.status(201).json({ ...obj, id: part._id, quantity: obj.onHand });
+      req.auditId = String(part._id);
+      res.status(201).json(toPartResponse(part));
     } catch (err) {
       next(err);
     }
@@ -109,14 +124,14 @@ router.put(
         update,
         { new: true },
       )
-        .lean<IPart>()
+        .lean<PartLean>()
         .exec();
       if (!part) {
         res.status(404).json({ message: 'Not found' });
         return;
       }
-      req.auditId = part._id;
-      res.json({ ...part, id: part._id, quantity: part.onHand });
+      req.auditId = String(part._id);
+      res.json(toPartResponse(part));
     } catch (err) {
       next(err);
     }
@@ -158,11 +173,11 @@ router.post(
         return;
       }
       part.onHand += Number(delta);
-      part.adjustments.push({ delta, reason, woId, date: new Date() });
+      const adjustmentWoId = woId ? new Types.ObjectId(woId) : undefined;
+      part.adjustments.push({ delta, reason, woId: adjustmentWoId, date: new Date() });
       await part.save();
-      req.auditId = part._id;
-      const obj = part.toObject();
-      res.json({ ...obj, id: part._id, quantity: obj.onHand });
+      req.auditId = String(part._id);
+      res.json(toPartResponse(part));
     } catch (err) {
       next(err);
     }

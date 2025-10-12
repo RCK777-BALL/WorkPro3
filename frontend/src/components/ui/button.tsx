@@ -11,13 +11,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary-dark',
-        destructive: 'bg-error-600 text-white hover:bg-error-700',
+        default:
+          'bg-primary-600 text-white shadow-sm transition hover:bg-primary-500 focus-visible:ring-2 focus-visible:ring-primary-400',
+        destructive:
+          'bg-error-600 text-white shadow-sm hover:bg-error-500 focus-visible:ring-2 focus-visible:ring-error-400',
         outline:
           'border border-neutral-300 bg-background hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800',
-        secondary: 'bg-secondary text-secondary-foreground',
+        secondary:
+          'bg-secondary-800 text-white shadow-sm hover:bg-secondary-700 focus-visible:ring-2 focus-visible:ring-secondary-500',
         ghost: 'hover:bg-neutral-100 dark:hover:bg-neutral-800',
-        link: 'underline-offset-4 hover:underline text-primary',
+        link: 'underline-offset-4 hover:underline text-primary-600',
       },
       size: {
         default: 'h-9 px-4 py-2',

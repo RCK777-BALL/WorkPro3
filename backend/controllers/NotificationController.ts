@@ -3,7 +3,7 @@
  */
 
 import { Types } from 'mongoose';
-import Notification, { NotificationDocument } from '../models/Notifications';
+import Notification, { NotificationDocument, NotificationType } from '../models/Notifications';
 import User from '../models/User';
 import nodemailer from 'nodemailer';
 import { sendResponse } from '../utils/sendResponse';
@@ -18,6 +18,17 @@ import logger from '../utils/logger';
 import { enqueueEmailRetry } from '../utils/emailQueue';
 
 type IdParams = { id: string };
+
+interface NotificationCreateBody {
+  title: string;
+  message: string;
+  type: NotificationType;
+  assetId?: string;
+  user?: string;
+  read?: boolean;
+}
+
+type NotificationUpdateBody = Partial<NotificationCreateBody>;
 
 export const getAllNotifications: AuthedRequestHandler<
   ParamsDictionary,
@@ -82,9 +93,10 @@ export const getNotificationById: AuthedRequestHandler<
 
 export const createNotification: AuthedRequestHandler<
   ParamsDictionary,
-  NotificationDocument | { message: string }
+  NotificationDocument | { message: string },
+  NotificationCreateBody
 > = async (
-  req: AuthedRequest<ParamsDictionary, NotificationDocument | { message: string }>,
+  req: AuthedRequest<ParamsDictionary, NotificationDocument | { message: string }, NotificationCreateBody>,
   res: Response,
   next: NextFunction,
 ) => {
@@ -110,10 +122,10 @@ export const createNotification: AuthedRequestHandler<
       ...(user ? { user } : {}),
       ...(read !== undefined ? { read } : {}),
     });
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
     await writeAuditLog({
       tenantId: tenantObjectId,
-      userId,
+      ...(userId ? { userId } : {}),
       action: 'create',
       entityType: 'Notification',
       entityId: toEntityId(saved._id),
@@ -190,15 +202,15 @@ export const markNotificationRead: AuthedRequestHandler<
       { _id: req.params.id, tenantId: tenantObjectId },
       { read: true },
       { new: true },
-    );
+    ).exec();
     if (!updated) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
     await writeAuditLog({
       tenantId: tenantObjectId,
-      userId,
+      ...(userId ? { userId } : {}),
       action: 'markRead',
       entityType: 'Notification',
       entityId: toEntityId(new Types.ObjectId(req.params.id)),
@@ -215,9 +227,10 @@ export const markNotificationRead: AuthedRequestHandler<
 
 export const updateNotification: AuthedRequestHandler<
   IdParams,
-  NotificationDocument | { message: string }
+  NotificationDocument | { message: string },
+  NotificationUpdateBody
 > = async (
-  req: AuthedRequest<IdParams, NotificationDocument | { message: string }>,
+  req: AuthedRequest<IdParams, NotificationDocument | { message: string }, NotificationUpdateBody>,
   res: Response,
   next: NextFunction,
 ) => {
@@ -237,7 +250,7 @@ export const updateNotification: AuthedRequestHandler<
       return;
     }
     const tenantObjectId = new Types.ObjectId(tenantId);
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
     const existing = await Notification.findOne({ _id: req.params.id, tenantId: tenantObjectId });
     if (!existing) {
       sendResponse(res, null, 'Not found', 404);
@@ -245,15 +258,15 @@ export const updateNotification: AuthedRequestHandler<
     }
     const updated = await Notification.findOneAndUpdate(
       { _id: req.params.id, tenantId: tenantObjectId },
-      req.body,
+      req.body ?? {},
       {
         new: true,
         runValidators: true,
       },
-    );
+    ).exec();
     await writeAuditLog({
       tenantId: tenantObjectId,
-      userId,
+      ...(userId ? { userId } : {}),
       action: 'update',
       entityType: 'Notification',
       entityId: toEntityId(new Types.ObjectId(req.params.id)),
@@ -292,7 +305,7 @@ export const deleteNotification: AuthedRequestHandler<
       return;
     }
     const tenantObjectId = new Types.ObjectId(tenantId);
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
     const deleted = await Notification.findOneAndDelete({ _id: req.params.id, tenantId: tenantObjectId });
     if (!deleted) {
       sendResponse(res, null, 'Not found', 404);
@@ -300,7 +313,7 @@ export const deleteNotification: AuthedRequestHandler<
     }
     await writeAuditLog({
       tenantId: tenantObjectId,
-      userId,
+      ...(userId ? { userId } : {}),
       action: 'delete',
       entityType: 'Notification',
       entityId: toEntityId(new Types.ObjectId(req.params.id)),

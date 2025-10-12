@@ -22,17 +22,17 @@ import {
 
 export default function App() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { resetAuthState } = useAuth();
 
   useEffect(() => {
     setUnauthorizedCallback(() => {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(TENANT_KEY);
       localStorage.removeItem(SITE_KEY);
-      logout();
+      resetAuthState();
       navigate('/login');
     });
-  }, [logout, navigate]);
+  }, [navigate, resetAuthState]);
 
   return (
     <ErrorBoundary>

@@ -30,6 +30,13 @@ interface AuthContextType {
     password: string,
   ) => Promise<AuthSession | AuthLoginMfaChallenge>;
   logout: () => Promise<void>;
+  /**
+   * Clears all authentication state without making a network request.
+   * Useful when the server responds with 401 and we need to locally
+   * invalidate the session without triggering another unauthorized
+   * response loop.
+   */
+  resetAuthState: () => void;
   loading: boolean;
 }
 
@@ -92,23 +99,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     [handleSetUser]
   );
 
+  const resetAuthState = useCallback(() => {
+    handleSetUser(null);
+    localStorage.removeItem('user');
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(TENANT_KEY);
+    localStorage.removeItem(SITE_KEY);
+    storeLogout();
+  }, [handleSetUser, storeLogout]);
+
   const logout = useCallback(async () => {
     try {
       await http.post('/auth/logout');
-      handleSetUser(null);
-      localStorage.removeItem('user');
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(TENANT_KEY);
-      localStorage.removeItem(SITE_KEY);
-      storeLogout();
     } catch (err) {
-      emitToast('Failed to log out', 'error');
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status !== 401) {
+        emitToast('Failed to log out', 'error');
+      }
+    } finally {
+      resetAuthState();
     }
 
-  }, [handleSetUser, storeLogout]);
+  }, [resetAuthState]);
 
   return (
-    <AuthContext.Provider value={{ user, setUser: handleSetUser, login, logout, loading }}>
+    <AuthContext.Provider
+      value={{ user, setUser: handleSetUser, login, logout, resetAuthState, loading }}
+    >
       {children}
     </AuthContext.Provider>
   );

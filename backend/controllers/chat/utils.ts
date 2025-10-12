@@ -17,7 +17,8 @@ export function resolveUserAndTenant(
   { requireUser = true, requireTenant = true }: ResolveOptions = {}
 ): { userId?: string; tenantId?: string } | undefined {
   if (requireUser) {
-    const userId = (req.user as any)?._id ?? req.user?.id;
+    const user = req.user as ({ _id?: string; id?: string } & Record<string, any>) | undefined;
+    const userId = user?._id ?? user?.id;
     if (!userId) {
       sendResponse(res, null, 'Not authenticated', 401);
       return;

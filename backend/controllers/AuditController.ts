@@ -2,20 +2,34 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { FlattenMaps } from 'mongoose';
-import AuditLog, { AuditLogDocument } from '../models/AuditLog';
+import type { ParsedQs } from 'qs';
+import type { ParamsDictionary } from 'express-serve-static-core';
+import AuditLog from '../models/AuditLog';
 import type { AuthedRequestHandler } from '../types/http';
 import { sendResponse } from '../utils/sendResponse';
 
-export const getAuditLogs: AuthedRequestHandler = async (req: { tenantId: any; query: { limit: any; entityType: any; entityId: any; userId: any; }; }, res: { status: (arg0: number) => { (): any; new(): any; json: { (arg0: { message: string; }): void; new(): any; }; }; json: (arg0: (FlattenMaps<AuditLogDocument> & Required<{ _id: FlattenMaps<unknown>; }> & { __v: number; })[]) => void; }, next: (arg0: unknown) => void) => {
+type AuditQuery = ParsedQs & {
+  limit?: string;
+  entityType?: string;
+  entityId?: string;
+  userId?: string;
+};
+
+export const getAuditLogs: AuthedRequestHandler<
+  ParamsDictionary,
+  unknown,
+  unknown,
+  AuditQuery
+> = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const limit = Math.min(parseInt(String(req.query.limit || '10'), 10), 100);
-    const filter: any = { tenantId };
+    const limitParam = req.query.limit ?? '10';
+    const limit = Math.min(parseInt(String(limitParam), 10), 100);
+    const filter: Record<string, unknown> = { tenantId };
     if (req.query.entityType) filter.entityType = req.query.entityType;
     if (req.query.entityId) filter.entityId = req.query.entityId;
     if (req.query.userId) filter.userId = req.query.userId;

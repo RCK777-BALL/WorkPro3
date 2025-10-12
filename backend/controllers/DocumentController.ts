@@ -6,16 +6,20 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { randomUUID } from 'crypto';
 
+import type { ParamsDictionary } from 'express-serve-static-core';
 import Document from '../models/Document';
 import type { AuthedRequestHandler } from '../types/http';
 import { sendResponse } from '../utils/sendResponse';
 import { writeAuditLog } from '../utils/audit';
 import { toObjectId, toEntityId } from '../utils/ids';
-import { Response } from 'express';
 
+interface DocumentPayload {
+  base64?: string;
+  url?: string;
+  name?: string;
+}
 
-
-export const getAllDocuments: AuthedRequestHandler = async (_req: any, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
+export const getAllDocuments: AuthedRequestHandler = async (_req, res, next) => {
 
   try {
     const items = await Document.find();
@@ -28,9 +32,9 @@ export const getAllDocuments: AuthedRequestHandler = async (_req: any, res: Resp
 };
 
 export const getDocumentById: AuthedRequestHandler<{ id: string }> = async (
-  req: { params: { id: any; }; },
-  res: Response<any, Record<string, any>>,
-  next: (arg0: unknown) => void,
+  req,
+  res,
+  next,
 ) => {
 
   try {
@@ -67,18 +71,14 @@ const validateFileName = (input: string): { base: string; ext: string } => {
   return { base, ext };
 };
 
-export const createDocument: AuthedRequestHandler = async (
-  req: { body: { base64?: string; url?: string; name?: string; }; tenantId: any; user: any; },
-  res: Response<any, Record<string, any>>,
-  next: (arg0: unknown) => void,
-) => {
+export const createDocument: AuthedRequestHandler<
+  ParamsDictionary,
+  unknown,
+  DocumentPayload
+> = async (req, res, next) => {
 
   try {
-    const { base64, url, name } = req.body as {
-      base64?: string;
-      url?: string;
-      name?: string;
-    };
+    const { base64, url, name } = req.body ?? {};
 
     let displayName = name ?? `document_${Date.now()}`;
     let finalUrl = url;
@@ -140,11 +140,11 @@ export const createDocument: AuthedRequestHandler = async (
   }
 };
 
-export const updateDocument: AuthedRequestHandler<{ id: string }> = async (
-  req: { params: { id: any; }; body: { base64?: string; url?: string; name?: string; }; tenantId: any; user: any; },
-  res: Response<any, Record<string, any>>,
-  next: (arg0: unknown) => void,
-) => {
+export const updateDocument: AuthedRequestHandler<
+  { id: string },
+  unknown,
+  DocumentPayload
+> = async (req, res, next) => {
 
   try {
     const { id } = req.params;
@@ -154,11 +154,7 @@ export const updateDocument: AuthedRequestHandler<{ id: string }> = async (
       return;
     }
 
-    const { base64, url, name } = req.body as {
-      base64?: string;
-      url?: string;
-      name?: string;
-    };
+    const { base64, url, name } = req.body ?? {};
 
     const updateData: { name?: string; url?: string } = {};
 
@@ -227,9 +223,9 @@ export const updateDocument: AuthedRequestHandler<{ id: string }> = async (
 };
 
 export const deleteDocument: AuthedRequestHandler<{ id: string }> = async (
-  req: { params: { id: any; }; tenantId: any; user: any; },
-  res: Response<any, Record<string, any>>,
-  next: (arg0: unknown) => void,
+  req,
+  res,
+  next,
 ) => {
 
   try {

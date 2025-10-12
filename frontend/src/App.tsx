@@ -18,7 +18,7 @@ import {
   TENANT_KEY,
   SITE_KEY,
 } from '@/lib/http';
-import PlatinumLogin from './components/PlatinumLogin';
+import PlatinumLoginVanilla from './components/PlatinumLoginVanilla';
 import { api } from './utils/api';
 
 export default function App() {
@@ -42,9 +42,7 @@ export default function App() {
         <Route
           path="/login"
           element={
-            <PlatinumLogin
-              brandName="CMMS"
-              productName="WorkPro Suite"
+            <PlatinumLoginVanilla
               errorMessage={loginError}
               onSubmit={async (email, password, remember) => {
                 try {

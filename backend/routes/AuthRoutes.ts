@@ -62,15 +62,17 @@ router.post('/login', loginLimiter, async (
   const { email, password } = parsed.data;
 
   try {
-    // make sure password is selectable in your schema (select: false -> use +password)
-    const user = await User.findOne({ email }).select('+password +mfaEnabled +tenantId +tokenVersion +email +name');
+    // make sure the hashed password is selectable in your schema (select: false -> use +passwordHash)
+    const user = await User.findOne({ email }).select(
+      '+passwordHash +mfaEnabled +tenantId +tokenVersion +email +name',
+    );
     if (!user) {
       await bcrypt.compare(password, FAKE_PASSWORD_HASH); // mitigate timing
       sendResponse(res, null, { message: 'Invalid email or password' }, 400);
       return;
     }
 
-    const hashed = (user as any).password as string | undefined;
+    const hashed = (user as any).passwordHash as string | undefined;
     if (!hashed) {
       // If password is still missing due to schema, treat as invalid
       await bcrypt.compare(password, FAKE_PASSWORD_HASH);

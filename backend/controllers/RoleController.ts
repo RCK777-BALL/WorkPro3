@@ -3,11 +3,12 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import { Types } from 'mongoose';
 
 import Role from '../models/Role';
 import { writeAuditLog } from '../utils/audit';
 import { sendResponse } from '../utils/sendResponse';
-import { toObjectId } from '../utils/ids';
+import { toObjectId, toEntityId } from '../utils/ids';
 
 export const getAllRoles = async (_req: Request, res: Response, next: NextFunction) => {
   try {
@@ -40,13 +41,16 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const rawUserId = (req.user as any)?._id ?? (req.user as any)?.id;
+    const auditUserId = rawUserId
+      ? toEntityId(rawUserId as string | Types.ObjectId)
+      : undefined;
     const role = await Role.create({ ...req.body, tenantId });
-    const entityId = role._id;
+    const entityId = toEntityId(role._id as Types.ObjectId) ?? (role._id as Types.ObjectId);
 
     await writeAuditLog({
       tenantId,
-      userId,
+      ...(auditUserId ? { userId: auditUserId } : {}),
       action: 'create',
       entityType: 'Role',
       entityId,
@@ -66,7 +70,10 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
       return;
     }
 
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const rawUserId = (req.user as any)?._id ?? (req.user as any)?.id;
+    const auditUserId = rawUserId
+      ? toEntityId(rawUserId as string | Types.ObjectId)
+      : undefined;
     const { id } = req.params;
     const roleId = toObjectId(id);
     if (!roleId) {
@@ -78,10 +85,10 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
       new: true,
       runValidators: true,
     });
-    const entityId = toEntityId(roleId);
+    const entityId = toEntityId(roleId) ?? roleId;
     await writeAuditLog({
       tenantId,
-      userId,
+      ...(auditUserId ? { userId: auditUserId } : {}),
       action: 'update',
       entityType: 'Role',
       entityId,
@@ -102,18 +109,23 @@ export const deleteRole = async (req: Request, res: Response, next: NextFunction
       return;
     }
 
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const rawUserId = (req.user as any)?._id ?? (req.user as any)?.id;
+    const auditUserId = rawUserId
+      ? toEntityId(rawUserId as string | Types.ObjectId)
+      : undefined;
     const { id } = req.params;
     const roleId = toObjectId(id);
     if (!roleId) {
       return sendResponse(res, null, 'Invalid id', 400);
     }
     const role = await Role.findByIdAndDelete(roleId);
-    if (!role) return res.status(404).json({ message: 'Not found' });
-    const entityId = toEntityId(roleId);
+    if (!role) {
+      return sendResponse(res, null, 'Not found', 404);
+    }
+    const entityId = toEntityId(roleId) ?? roleId;
     await writeAuditLog({
       tenantId,
-      userId,
+      ...(auditUserId ? { userId: auditUserId } : {}),
       action: 'delete',
       entityType: 'Role',
       entityId,

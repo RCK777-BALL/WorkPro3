@@ -372,7 +372,9 @@ export const approvePermit: AuthedRequestHandler<
     active.status = 'approved';
     active.approvedAt = new Date();
     if (requestUserId) active.actedBy = requestUserId;
-    active.notes = parsed.data.notes;
+    if (parsed.data.notes !== undefined) {
+      active.notes = parsed.data.notes;
+    }
 
     pushHistory(permit, {
       action: 'approved',
@@ -442,8 +444,12 @@ export const rejectPermit: AuthedRequestHandler<
     }
     const requestUserId = resolveRequestUserId(req);
     active.status = 'rejected';
-    active.actedBy = requestUserId;
-    active.notes = parsed.data.notes;
+    if (requestUserId) {
+      active.actedBy = requestUserId;
+    }
+    if (parsed.data.notes !== undefined) {
+      active.notes = parsed.data.notes;
+    }
     permit.status = 'rejected';
     pushHistory(permit, {
       action: 'rejected',
@@ -541,7 +547,9 @@ export const completeIsolationStep: AuthedRequestHandler<
     if (requestUserId) {
       step.completedBy = requestUserId;
     }
-    step.verificationNotes = parsed.data.verificationNotes;
+    if (parsed.data.verificationNotes !== undefined) {
+      step.verificationNotes = parsed.data.verificationNotes;
+    }
     pushHistory(permit, {
       action: 'isolation-step-completed',
       ...(requestUserId ? { by: requestUserId } : {}),
@@ -581,9 +589,11 @@ export const logPermitIncident: AuthedRequestHandler<
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    const requestUserId = resolveRequestUserId(req) ?? permit.requestedBy;
+    const requestUserId = resolveRequestUserId(req);
+    const reporterId: Types.ObjectId = requestUserId ?? permit.requestedBy;
     const historyUser = resolveRequestUserId(req);
     const auditUserId = resolveAuditUserId(req);
+    const message = parsed.data.message;
     const incident = await SafetyIncident.create({
       tenantId: toObjectId(tenantId),
       permit: permit._id,
@@ -592,22 +602,23 @@ export const logPermitIncident: AuthedRequestHandler<
       description: parsed.data.description,
       severity: parsed.data.severity,
       status: parsed.data.status ?? 'open',
-      reportedBy: requestUserId,
+      reportedBy: reporterId,
       actions:
         parsed.data.actions?.map((action) => ({
           description: action.description,
           assignedTo: toOptionalObjectId(action.assignedTo),
           dueDate: action.dueDate,
         })) ?? [],
-      timeline: parsed.data.message
-        ? [
-            {
-              at: new Date(),
-              message: parsed.data.message,
-              ...(historyUser ? { by: historyUser } : {}),
-            },
-          ]
-        : [],
+      timeline:
+        message !== undefined && message !== ''
+          ? [
+              {
+                at: new Date(),
+                message,
+                ...(historyUser ? { by: historyUser } : {}),
+              },
+            ]
+          : [],
     });
     permit.incidents.push(incident._id);
     pushHistory(permit, {

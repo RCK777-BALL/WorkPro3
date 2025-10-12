@@ -9,7 +9,8 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@radix-ui/react-slot": ["src/lib/radix-slot.tsx"]
     },
     "types": ["vite/client", "react", "react-dom"]
   },

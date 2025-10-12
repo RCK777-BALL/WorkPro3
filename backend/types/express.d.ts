@@ -22,6 +22,7 @@ declare module 'express-serve-static-core' {
     tenantId?: string;
     siteId?: string;
     vendorId?: string;
+    vendor?: Record<string, unknown>;
     thirdParty?: any;
   }
 }

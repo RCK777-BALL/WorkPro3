@@ -120,9 +120,11 @@ type ApprovalStatus = (typeof APPROVAL_STATUS_VALUES)[number];
 const toObjectId = (value: Types.ObjectId | string): Types.ObjectId =>
   value instanceof Types.ObjectId ? value : new Types.ObjectId(value);
 
-const toOptionalObjectId = (
-  value?: Types.ObjectId | string,
-): Types.ObjectId | undefined => (value ? toObjectId(value) : undefined);
+function toOptionalObjectId(value: Types.ObjectId | string): Types.ObjectId;
+function toOptionalObjectId(value?: Types.ObjectId | string): Types.ObjectId | undefined;
+function toOptionalObjectId(value?: Types.ObjectId | string): Types.ObjectId | undefined {
+  return value ? toObjectId(value) : undefined;
+}
 
 const resolveUserObjectId = (
   req: { user?: unknown },

@@ -33,9 +33,11 @@ import {
 const toObjectId = (value: Types.ObjectId | string): Types.ObjectId =>
   value instanceof Types.ObjectId ? value : new Types.ObjectId(value);
 
-const toOptionalObjectId = (
-  value?: string | Types.ObjectId,
-): Types.ObjectId | undefined => (value ? toObjectId(value) : undefined);
+function toOptionalObjectId(value: Types.ObjectId | string): Types.ObjectId;
+function toOptionalObjectId(value?: string | Types.ObjectId): Types.ObjectId | undefined;
+function toOptionalObjectId(value?: string | Types.ObjectId): Types.ObjectId | undefined {
+  return value ? toObjectId(value) : undefined;
+}
 
 function resolveRequestUserId(req: AuthedRequest | Request): Types.ObjectId | undefined {
   const raw = (req.user as any)?._id ?? (req.user as any)?.id;

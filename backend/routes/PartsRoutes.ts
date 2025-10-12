@@ -15,7 +15,7 @@ import type { AuthedRequest } from '../types/http';
 
 type PartRequest<
   P extends ParamsDictionary = ParamsDictionary,
-  ReqBody = Record<string, unknown>
+  ReqBody extends Record<string, unknown> = Record<string, unknown>,
 > = AuthedRequest<P, any, ReqBody> & { auditId?: string };
 
 type PartLean = Omit<IPart, keyof Document> & { _id: Types.ObjectId };
@@ -42,7 +42,7 @@ const toPartResponse = (part: PartLean | IPart) => {
   };
 };
 
-interface AdjustPartPayload {
+interface AdjustPartPayload extends Record<string, unknown> {
   delta: number;
   reason: string;
   woId?: string;
@@ -55,7 +55,7 @@ router.use(siteScope);
 
 const loadPart = async <
   P extends ParamsDictionary = ParamsDictionary,
-  ReqBody = Record<string, unknown>,
+  ReqBody extends Record<string, unknown> = Record<string, unknown>,
 >(req: PartRequest<P, ReqBody>): Promise<PartLean | null> => {
   const tenantId = getTenantId(req);
   const id = req.auditId || req.params.id;
@@ -70,7 +70,7 @@ const listParts = async (
 ): Promise<void> => {
   try {
     const tenantId = getTenantId(req);
-    const parts = await Part.find({ tenantId }).lean<PartLean>().exec();
+    const parts = await Part.find({ tenantId }).lean<PartLean[]>().exec();
     res.json(parts.map((part: PartLean) => toPartResponse(part)));
   } catch (err) {
     next(err);

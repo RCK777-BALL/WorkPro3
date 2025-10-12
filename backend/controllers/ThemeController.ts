@@ -19,6 +19,11 @@ function toIdString(v: unknown): string | undefined {
   return undefined;
 }
 
+function resolveUserId(user: unknown): string | undefined {
+  const candidate = user as { _id?: unknown; id?: unknown } | undefined;
+  return toIdString(candidate?._id) ?? toIdString(candidate?.id);
+}
+
 type ThemePreference = {
   theme?: 'light' | 'dark' | 'system';
   colorScheme?: string;
@@ -40,7 +45,7 @@ export const getTheme: AuthedRequestHandler<ParamsDictionary, ThemeResponse> = a
       return;
     }
 
-    const userId = toIdString(req.user._id) ?? toIdString(req.user.id);
+    const userId = resolveUserId(req.user);
 
     if (!userId) {
       sendResponse(res, null, 'Unauthorized', 401);
@@ -82,7 +87,7 @@ export const updateTheme: UpdateThemeHandler = async (req, res, next) => {
       return;
     }
 
-    const userId = toIdString(req.user._id) ?? toIdString(req.user.id);
+    const userId = resolveUserId(req.user);
     if (!userId) {
       sendResponse(res, null, 'Unauthorized', 401);
       return;
@@ -100,12 +105,11 @@ export const updateTheme: UpdateThemeHandler = async (req, res, next) => {
     }
 
     const entityId =
-      toIdString(req.user._id) ??
-      toIdString(req.user.id) ??
+      resolveUserId(req.user) ??
       toIdString(updated?._id) ??
       req.params.id;
 
-    const actorId = toIdString(req.user._id) ?? toIdString(req.user.id);
+    const actorId = resolveUserId(req.user);
 
     if (entityId && tenantId) {
       const normalizedEntityId = toEntityId(entityId) ?? entityId;

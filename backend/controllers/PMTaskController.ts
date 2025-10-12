@@ -46,7 +46,7 @@ export const getAllPMTasks: AuthedRequestHandler<ParamsDictionary, PMTaskListRes
     sendResponse(res, tasks);
   } catch (err) {
     if (err instanceof MongooseError.ValidationError) {
-      res.status(400).json({ message: err.message });
+      sendResponse(res, null, err.message, 400);
       return;
     }
     next(err);
@@ -66,7 +66,7 @@ export const getPMTaskById: AuthedRequestHandler<PMTaskParams, PMTaskResponse> =
     }
 
     if (!Types.ObjectId.isValid(req.params.id)) {
-      res.status(400).json({ message: 'Invalid ID' });
+      sendResponse(res, null, 'Invalid ID', 400);
       return;
     }
 
@@ -83,7 +83,7 @@ export const getPMTaskById: AuthedRequestHandler<PMTaskParams, PMTaskResponse> =
     sendResponse(res, task);
   } catch (err) {
     if (err instanceof MongooseError.ValidationError) {
-      res.status(400).json({ message: err.message });
+      sendResponse(res, null, err.message, 400);
       return;
     }
     next(err);
@@ -109,19 +109,22 @@ export const createPMTask: AuthedRequestHandler<ParamsDictionary, PMTaskResponse
     }
     const payload = { ...req.body, tenantId, siteId: req.siteId };
     const task: PMTaskDocument = await PMTask.create(payload);
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const rawUserId = (req.user as any)?._id ?? (req.user as any)?.id;
+    const auditUserId = rawUserId
+      ? toEntityId(rawUserId as string | Types.ObjectId)
+      : undefined;
     await writeAuditLog({
       tenantId,
-      ...(userId ? { userId } : {}),
+      ...(auditUserId ? { userId: auditUserId } : {}),
       action: 'create',
       entityType: 'PMTask',
-      entityId: toEntityId(task._id),
+      entityId: toEntityId(task._id as Types.ObjectId),
       after: task.toObject(),
     });
     sendResponse(res, task, null, 201);
   } catch (err) {
     if (err instanceof MongooseError.ValidationError) {
-      res.status(400).json({ message: err.message });
+      sendResponse(res, null, err.message, 400);
       return;
     }
     next(err);
@@ -136,11 +139,11 @@ export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | n
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     if (!Types.ObjectId.isValid(req.params.id)) {
-      res.status(400).json({ message: 'Invalid ID' });
+      sendResponse(res, null, 'Invalid ID', 400);
       return;
     }
 
@@ -164,13 +167,16 @@ export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | n
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const rawUserId = (req.user as any)?._id ?? (req.user as any)?.id;
+    const auditUserId = rawUserId
+      ? toEntityId(rawUserId as string | Types.ObjectId)
+      : undefined;
     await writeAuditLog({
       tenantId,
-      ...(userId ? { userId } : {}),
+      ...(auditUserId ? { userId: auditUserId } : {}),
       action: 'update',
       entityType: 'PMTask',
-      entityId: toEntityId(task._id),
+      entityId: toEntityId(task._id as Types.ObjectId),
 
       before: existing.toObject(),
       after: task.toObject(),
@@ -178,7 +184,7 @@ export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | n
     sendResponse(res, task);
   } catch (err) {
     if (err instanceof MongooseError.ValidationError) {
-      res.status(400).json({ message: err.message });
+      sendResponse(res, null, err.message, 400);
       return;
     }
     next(err);
@@ -193,11 +199,11 @@ export const deletePMTask: AuthedRequestHandler<PMTaskParams, PMTaskDeleteRespon
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     if (!Types.ObjectId.isValid(req.params.id)) {
-      res.status(400).json({ message: 'Invalid ID' });
+      sendResponse(res, null, 'Invalid ID', 400);
       return;
     }
 
@@ -210,20 +216,23 @@ export const deletePMTask: AuthedRequestHandler<PMTaskParams, PMTaskDeleteRespon
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const rawUserId = (req.user as any)?._id ?? (req.user as any)?.id;
+    const auditUserId = rawUserId
+      ? toEntityId(rawUserId as string | Types.ObjectId)
+      : undefined;
     await writeAuditLog({
       tenantId,
-      ...(userId ? { userId } : {}),
+      ...(auditUserId ? { userId: auditUserId } : {}),
       action: 'delete',
       entityType: 'PMTask',
-      entityId: toEntityId(task._id),
+      entityId: toEntityId(task._id as Types.ObjectId),
 
       before: task.toObject(),
     });
     sendResponse(res, { message: 'Deleted successfully' });
   } catch (err) {
     if (err instanceof MongooseError.ValidationError) {
-      res.status(400).json({ message: err.message });
+      sendResponse(res, null, err.message, 400);
       return;
     }
     next(err);
@@ -293,7 +302,7 @@ export const generatePMWorkOrders: AuthedRequestHandler<ParamsDictionary, PMTask
     sendResponse(res, { generated: count });
   } catch (err) {
     if (err instanceof MongooseError.ValidationError) {
-      res.status(400).json({ message: err.message });
+      sendResponse(res, null, err.message, 400);
       return;
     }
     next(err);

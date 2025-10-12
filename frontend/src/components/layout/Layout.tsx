@@ -2,8 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 
 import AppHeader from './AppHeader';
 import Sidebar from './Sidebar';
@@ -11,6 +10,16 @@ import RightPanel from './RightPanel';
 import CommandPalette from '@/components/global/CommandPalette';
 
 export default function Layout() {
+  const { pathname } = useLocation();
+  const isAuthRoute =
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/register') ||
+    pathname.startsWith('/forgot');
+
+  if (isAuthRoute) {
+    return <Outlet />;
+  }
+
   return (
     <div className="relative min-h-screen bg-slate-950 text-slate-100">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">

@@ -34,6 +34,9 @@ const loginLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
+  // Count only failed login attempts so background jobs or legitimate
+  // repeated sign-ins don't immediately hit the limiter.
+  skipSuccessfulRequests: true,
   message: { message: 'Too many login attempts. Please try again later.' },
 });
 

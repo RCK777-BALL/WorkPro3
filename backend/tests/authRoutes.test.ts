@@ -79,12 +79,31 @@ describe('Auth Routes', () => {
     expect(cookies[0]).toMatch(/token=/);
     expect(cookies[0]).toMatch(/SameSite=Strict/);
 
-    expect(res.body.user.email).toBe('test@example.com');
-    expect(res.body.token).toBeUndefined();
+    const session = res.body.data as { user: any; token?: string };
+    expect(session.user.email).toBe('test@example.com');
+    expect(session.token).toBeUndefined();
 
     const token = cookies[0].split(';')[0].split('=')[1];
     const payload = jwt.verify(token, process.env.JWT_SECRET!) as jwt.JwtPayload;
-    expect(payload.tenantId).toBe(res.body.user.tenantId);
+    expect(payload.tenantId).toBe(session.user.tenantId);
+  });
+
+  it('allows login with uppercase email input', async () => {
+    await User.create({
+      name: 'Case',
+      email: 'case@example.com',
+      passwordHash: 'pass123',
+      roles: ['admin'],
+      tenantId: new mongoose.Types.ObjectId(),
+    });
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'CASE@EXAMPLE.COM', password: 'pass123' })
+      .expect(200);
+
+    const session = res.body.data as { user: any };
+    expect(session.user.email).toBe('case@example.com');
   });
 
   it('indicates MFA is required and includes the user id', async () => {
@@ -127,7 +146,8 @@ describe('Auth Routes', () => {
       .send({ email: 'config@example.com', password: 'pass123' })
       .expect(200);
 
-    expect(res.body.token).toBeDefined();
+    const session = res.body.data as { token?: string };
+    expect(session.token).toBeDefined();
 
     delete process.env.INCLUDE_AUTH_TOKEN;
   });
@@ -148,7 +168,8 @@ describe('Auth Routes', () => {
       .send({ email: 'notoken@example.com', password: 'pass123' })
       .expect(200);
 
-    expect(res.body.token).toBeUndefined();
+    const session = res.body.data as { token?: string };
+    expect(session.token).toBeUndefined();
   });
 
   it('gets current user with cookie and logs out', async () => {
@@ -166,12 +187,15 @@ describe('Auth Routes', () => {
       .expect(200);
 
     const cookies = login.headers['set-cookie'];
+    const loginSession = login.body.data as { user: any };
 
     const meRes = await request(app)
       .get('/api/auth/me')
       .set('Cookie', cookies)
       .expect(200);
-    expect(meRes.body.data.user.email).toBe('me@example.com');
+    expect(loginSession.user.email).toBe('me@example.com');
+    const meSession = meRes.body.data as { user: any };
+    expect(meSession.user.email).toBe('me@example.com');
 
     await request(app)
       .post('/api/auth/logout')

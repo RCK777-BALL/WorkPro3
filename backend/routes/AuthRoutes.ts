@@ -63,10 +63,11 @@ router.post('/login', loginLimiter, async (
     return;
   }
   const { email, password } = parsed.data;
+  const normalizedEmail = email.trim().toLowerCase();
 
   try {
     // make sure the hashed password is selectable in your schema (select: false -> use +passwordHash)
-    const user = await User.findOne({ email }).select(
+    const user = await User.findOne({ email: normalizedEmail }).select(
       '+passwordHash +mfaEnabled +tenantId +tokenVersion +email +name',
     );
     if (!user) {

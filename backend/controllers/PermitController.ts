@@ -61,16 +61,20 @@ function initializeApprovalChain(
     const escalateAt =
       step.escalateAfterHours && index === 0
         ? new Date(Date.now() + step.escalateAfterHours * 60 * 60 * 1000)
-        : null;
+        : step.escalateAfterHours !== undefined
+          ? null
+          : undefined;
 
     return {
       sequence: step.sequence ?? index,
       role: step.role,
       status: index === 0 ? 'pending' : 'blocked',
       ...(step.user ? { user: toObjectId(step.user) } : {}),
-      escalateAfterHours: step.escalateAfterHours,
-      escalateAt,
-      ...(step.notes ? { notes: step.notes } : {}),
+      ...(step.escalateAfterHours !== undefined
+        ? { escalateAfterHours: step.escalateAfterHours }
+        : {}),
+      ...(escalateAt !== undefined ? { escalateAt } : {}),
+      ...(step.notes !== undefined ? { notes: step.notes } : {}),
     } satisfies PermitApprovalStep;
   });
 }
@@ -307,8 +311,8 @@ export const updatePermit: AuthedRequestHandler<
     const requestUserId = resolveRequestUserId(req);
     pushHistory(permit, {
       action: 'updated',
-      by: requestUserId,
-      notes: update.description,
+      ...(requestUserId ? { by: requestUserId } : {}),
+      ...(update.description !== undefined ? { notes: update.description } : {}),
     });
 
     const saved = await permit.save();
@@ -372,7 +376,7 @@ export const approvePermit: AuthedRequestHandler<
 
     pushHistory(permit, {
       action: 'approved',
-      by: requestUserId,
+      ...(requestUserId ? { by: requestUserId } : {}),
       notes: `Step approved for role ${active.role}`,
     });
 
@@ -443,8 +447,8 @@ export const rejectPermit: AuthedRequestHandler<
     permit.status = 'rejected';
     pushHistory(permit, {
       action: 'rejected',
-      by: requestUserId,
-      notes: parsed.data.notes,
+      ...(requestUserId ? { by: requestUserId } : {}),
+      ...(parsed.data.notes !== undefined ? { notes: parsed.data.notes } : {}),
     });
     const saved = await permit.save();
     const auditUserId = resolveAuditUserId(req);
@@ -482,7 +486,7 @@ export const escalatePermit: AuthedRequestHandler = async (req, res, next) => {
     const requestUserId = resolveRequestUserId(req);
     pushHistory(permit, {
       action: 'escalated',
-      by: requestUserId,
+      ...(requestUserId ? { by: requestUserId } : {}),
       notes: `Escalated approval for role ${active.role}`,
     });
     await Promise.all(
@@ -540,7 +544,7 @@ export const completeIsolationStep: AuthedRequestHandler<
     step.verificationNotes = parsed.data.verificationNotes;
     pushHistory(permit, {
       action: 'isolation-step-completed',
-      by: requestUserId,
+      ...(requestUserId ? { by: requestUserId } : {}),
       notes: `Step ${index + 1}: ${step.description}`,
     });
     const saved = await permit.save();
@@ -599,8 +603,8 @@ export const logPermitIncident: AuthedRequestHandler<
         ? [
             {
               at: new Date(),
-              by: historyUser,
               message: parsed.data.message,
+              ...(historyUser ? { by: historyUser } : {}),
             },
           ]
         : [],
@@ -608,8 +612,8 @@ export const logPermitIncident: AuthedRequestHandler<
     permit.incidents.push(incident._id);
     pushHistory(permit, {
       action: 'incident-logged',
-      by: historyUser,
-      notes: parsed.data.title,
+      ...(historyUser ? { by: historyUser } : {}),
+      ...(parsed.data.title !== undefined ? { notes: parsed.data.title } : {}),
     });
     await permit.save();
     await writeAuditLog({

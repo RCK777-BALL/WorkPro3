@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Error as MongooseError, Types, UpdateQuery } from 'mongoose';
+import { Error as MongooseError, Types } from 'mongoose';
 import { validationResult } from 'express-validator';
 import PMTask, { PMTaskDocument } from '../models/PMTask';
 import WorkOrder from '../models/WorkOrder';
@@ -23,18 +23,24 @@ import type {
 import type { ParamsDictionary } from 'express-serve-static-core';
 import { writeAuditLog } from '../utils/audit';
 import { toEntityId } from '../utils/ids';
-import { Response } from 'express';
-import { ObjectId, ObjectIdLike } from 'bson';
 
 
 export const getAllPMTasks: AuthedRequestHandler<ParamsDictionary, PMTaskListResponse> = async (
-  req: { tenantId: any; siteId: any; },
-  res: Response<any, Record<string, any>>,
-  next: (arg0: unknown) => void,
+  req,
+  res,
+  next,
 ) => {
   try {
-    const filter: Record<string, unknown> = { tenantId: req.tenantId };
-    if (req.siteId) (filter as any).siteId = req.siteId;
+    const { tenantId, siteId } = req;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const filter: Record<string, unknown> = { tenantId };
+    if (siteId) {
+      filter.siteId = siteId;
+    }
 
     const tasks = await PMTask.find(filter);
     sendResponse(res, tasks);
@@ -48,11 +54,17 @@ export const getAllPMTasks: AuthedRequestHandler<ParamsDictionary, PMTaskListRes
 };
 
 export const getPMTaskById: AuthedRequestHandler<PMTaskParams, PMTaskResponse> = async (
-  req: { params: { id: string | number | ObjectId | Uint8Array<ArrayBufferLike> | ObjectIdLike; }; tenantId: any; },
-  res: Response<any, Record<string, any>>,
-  next: (arg0: unknown) => void,
+  req,
+  res,
+  next,
 ) => {
   try {
+    const { tenantId } = req;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
     if (!Types.ObjectId.isValid(req.params.id)) {
       res.status(400).json({ message: 'Invalid ID' });
       return;
@@ -60,7 +72,7 @@ export const getPMTaskById: AuthedRequestHandler<PMTaskParams, PMTaskResponse> =
 
     const task = await PMTask.findOne({
       _id: req.params.id,
-      tenantId: req.tenantId,
+      tenantId,
     });
 
     if (!task) {
@@ -79,17 +91,20 @@ export const getPMTaskById: AuthedRequestHandler<PMTaskParams, PMTaskResponse> =
 };
 
 export const createPMTask: AuthedRequestHandler<ParamsDictionary, PMTaskResponse, PMTaskCreateBody> = async (
-  req: { tenantId: any; body: any; siteId: any; user: any; },
-  res: Response<any, Record<string, any>>,
-  next: (arg0: unknown) => void,
+  req,
+  res,
+  next,
 ) => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId)
-      return sendResponse(res, null, 'Tenant ID required', 400);
-    const errors = validationResult(req as any);
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      sendResponse(res, null, { errors: errors.array()  }, 400);
+      sendResponse(res, null, { errors: errors.array() }, 400);
       return;
     }
     const payload = { ...req.body, tenantId, siteId: req.siteId };
@@ -114,22 +129,24 @@ export const createPMTask: AuthedRequestHandler<ParamsDictionary, PMTaskResponse
 };
 
 export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | null, PMTaskUpdateBody> = async (
-  req: { tenantId: any; params: { id: string | number | ObjectId | Uint8Array<ArrayBufferLike> | ObjectIdLike; }; body: UpdateQuery<PMTaskDocument> | undefined; user: any; },
-  res: Response<any, Record<string, any>>,
-  next: (arg0: unknown) => void,
+  req,
+  res,
+  next,
 ) => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId)
-      return res.status(400).json({ message: 'Tenant ID required' });
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     if (!Types.ObjectId.isValid(req.params.id)) {
       res.status(400).json({ message: 'Invalid ID' });
       return;
     }
 
-    const errors = validationResult(req as any);
+    const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      sendResponse(res, null, { errors: errors.array()  }, 400);
+      sendResponse(res, null, { errors: errors.array() }, 400);
       return;
     }
 
@@ -143,16 +160,20 @@ export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | n
       req.body,
       { new: true, runValidators: true },
     );
+    if (!task) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     await writeAuditLog({
       tenantId,
       userId,
       action: 'update',
       entityType: 'PMTask',
-      entityId: toEntityId(task!._id),
+      entityId: toEntityId(task._id),
 
       before: existing.toObject(),
-      after: task?.toObject(),
+      after: task.toObject(),
     });
     sendResponse(res, task);
   } catch (err) {
@@ -165,14 +186,16 @@ export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | n
 };
 
 export const deletePMTask: AuthedRequestHandler<PMTaskParams, PMTaskDeleteResponse> = async (
-  req: { tenantId: any; params: { id: string | number | ObjectId | Uint8Array<ArrayBufferLike> | ObjectIdLike; }; user: any; },
-  res: Response<any, Record<string, any>>,
-  next: (arg0: unknown) => void,
+  req,
+  res,
+  next,
 ) => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId)
-      return res.status(400).json({ message: 'Tenant ID required' });
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID required' });
+      return;
+    }
     if (!Types.ObjectId.isValid(req.params.id)) {
       res.status(400).json({ message: 'Invalid ID' });
       return;
@@ -208,13 +231,18 @@ export const deletePMTask: AuthedRequestHandler<PMTaskParams, PMTaskDeleteRespon
 };
 
 export const generatePMWorkOrders: AuthedRequestHandler<ParamsDictionary, PMTaskGenerateWOResponse> = async (
-  req: { tenantId: any; },
-  res: Response<any, Record<string, any>>,
-  next: (arg0: unknown) => void,
+  req,
+  res,
+  next,
 ) => {
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
     const now = new Date();
-    const tasks = await PMTask.find({ tenantId: req.tenantId, active: true });
+    const tasks = await PMTask.find({ tenantId, active: true });
     let count = 0;
     for (const task of tasks) {
       if (task.rule?.type === 'calendar' && task.rule.cron) {

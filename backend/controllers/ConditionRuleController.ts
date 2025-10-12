@@ -5,11 +5,11 @@
 import type { ParamsDictionary } from 'express-serve-static-core';
 import type { AuthedRequestHandler } from '../types/http';
 import { sendResponse } from '../utils/sendResponse';
-
-
 import ConditionRule from '../models/ConditionRule';
 import { writeAuditLog } from '../utils/audit';
 import { toEntityId } from '../utils/ids';
+
+type ConditionRuleBody = Record<string, unknown>;
 
 export const getAllConditionRules: AuthedRequestHandler<ParamsDictionary> = async (
   req,
@@ -34,22 +34,27 @@ export const getConditionRuleById: AuthedRequestHandler<{ id: string }> = async 
       _id: req.params.id,
       tenantId: req.tenantId,
     });
-    if (!item) return sendResponse(res, null, 'Not found', 404);
+    if (!item) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
     sendResponse(res, item);
   } catch (err) {
     next(err);
   }
 };
 
-export const createConditionRule: AuthedRequestHandler<ParamsDictionary> = async (
-  req,
-  res,
-  next,
-) => {
+export const createConditionRule: AuthedRequestHandler<
+  ParamsDictionary,
+  unknown,
+  ConditionRuleBody
+> = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId)
-      return sendResponse(res, null, 'Tenant ID required', 400);
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const newItem = new ConditionRule({ ...req.body, tenantId });
     const saved = await newItem.save();
@@ -67,18 +72,23 @@ export const createConditionRule: AuthedRequestHandler<ParamsDictionary> = async
   }
 };
 
-export const updateConditionRule: AuthedRequestHandler<{ id: string }> = async (
-  req,
-  res,
-  next,
-) => {
+export const updateConditionRule: AuthedRequestHandler<
+  { id: string },
+  unknown,
+  ConditionRuleBody
+> = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId)
-      return sendResponse(res, null, 'Tenant ID required', 400);
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const existing = await ConditionRule.findOne({ _id: req.params.id, tenantId });
-    if (!existing) return sendResponse(res, null, 'Not found', 404);
+    if (!existing) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
     const updated = await ConditionRule.findOneAndUpdate(
       { _id: req.params.id, tenantId },
       { ...req.body, tenantId },
@@ -89,7 +99,7 @@ export const updateConditionRule: AuthedRequestHandler<{ id: string }> = async (
       userId,
       action: 'update',
       entityType: 'ConditionRule',
-      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      entityId: toEntityId(req.params.id),
       before: existing.toObject(),
       after: updated?.toObject(),
     });
@@ -106,20 +116,25 @@ export const deleteConditionRule: AuthedRequestHandler<{ id: string }> = async (
 ) => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId)
-      return sendResponse(res, null, 'Tenant ID required', 400);
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const deleted = await ConditionRule.findOneAndDelete({
       _id: req.params.id,
       tenantId,
     });
-    if (!deleted) return sendResponse(res, null, 'Not found', 404);
+    if (!deleted) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
     await writeAuditLog({
       tenantId,
       userId,
       action: 'delete',
       entityType: 'ConditionRule',
-      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      entityId: toEntityId(req.params.id),
       before: deleted.toObject(),
     });
     sendResponse(res, { message: 'Deleted successfully' });

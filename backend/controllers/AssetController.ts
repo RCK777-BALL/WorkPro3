@@ -3,6 +3,7 @@
  */
 
 import type { AuthedRequestHandler } from '../types/http';
+import type { ParsedQs } from 'qs';
 import mongoose, { Error as MongooseError, Types } from 'mongoose';
 import Asset from '../models/Asset';
 import Site from '../models/Site';
@@ -15,9 +16,12 @@ import { filterFields } from '../utils/filterFields';
 import { writeAuditLog } from '../utils/audit';
 import { toEntityId } from '../utils/ids';
 import { sendResponse } from '../utils/sendResponse';
-import { Response } from 'express';
-import { any } from 'zod';
+import type { ParamsDictionary } from 'express-serve-static-core';
 
+type AssetParams = ParamsDictionary & { id: string };
+type AssetBody = Record<string, unknown> & { name?: string };
+type AssetUpdateBody = Record<string, unknown>;
+type SearchAssetsQuery = ParsedQs & { q?: string };
 
 const assetCreateFields = [
   'name',
@@ -40,9 +44,9 @@ const assetCreateFields = [
 
 const assetUpdateFields = [...assetCreateFields];
 
-export const getAllAssets: AuthedRequestHandler = async (req: { tenantId: any; siteId: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => any) => {
+export const getAllAssets: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const filter: any = { tenantId: req.tenantId };
+    const filter: Record<string, unknown> = { tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
     const assets = await Asset.find(filter);
     sendResponse(res, assets);
@@ -58,7 +62,11 @@ export const getAllAssets: AuthedRequestHandler = async (req: { tenantId: any; s
   }
 };
 
-export const getAssetById: AuthedRequestHandler = async (req: { params: { id: any; }; tenantId: any; siteId: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => any) => {
+export const getAssetById: AuthedRequestHandler<AssetParams> = async (
+  req,
+  res,
+  next,
+) => {
   try {
     const id = req.params.id;
     if (!id) {
@@ -90,7 +98,11 @@ export const getAssetById: AuthedRequestHandler = async (req: { params: { id: an
   }
 };
 
-export const createAsset: AuthedRequestHandler = async (req: { body: { name: any; }; tenantId: any; siteId: unknown; user: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => any) => {
+export const createAsset: AuthedRequestHandler<
+  ParamsDictionary,
+  unknown,
+  AssetBody
+> = async (req, res, next) => {
 
   logger.debug('createAsset body:', req.body);
   logger.debug('createAsset files:', (req as any).files);
@@ -152,8 +164,12 @@ export const createAsset: AuthedRequestHandler = async (req: { body: { name: any
   }
 };
 
-export const updateAsset: AuthedRequestHandler = async (req: { body: any; tenantId: any; params: { id: any; }; siteId: any; user: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => any) => {
- 
+export const updateAsset: AuthedRequestHandler<
+  AssetParams,
+  unknown,
+  AssetUpdateBody
+> = async (req, res, next) => {
+
   logger.debug('updateAsset body:', req.body);
   logger.debug('updateAsset files:', (req as any).files);
 
@@ -187,7 +203,7 @@ export const updateAsset: AuthedRequestHandler = async (req: { body: any; tenant
       return;
     }
 
-    const filter: any = { _id: id, tenantId };
+    const filter: Record<string, unknown> = { _id: id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
     const update = filterFields(req.body, assetUpdateFields);
     const existing = await Asset.findOne(filter);
@@ -223,7 +239,11 @@ export const updateAsset: AuthedRequestHandler = async (req: { body: any; tenant
   }
 };
 
-export const deleteAsset: AuthedRequestHandler = async (req: { tenantId: any; params: { id: any; }; siteId: any; user: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => any) => {
+export const deleteAsset: AuthedRequestHandler<AssetParams> = async (
+  req,
+  res,
+  next,
+) => {
 
   try {
     const tenantId = req.tenantId;
@@ -240,7 +260,7 @@ export const deleteAsset: AuthedRequestHandler = async (req: { tenantId: any; pa
       sendResponse(res, null, 'Invalid ID', 400);
       return;
     }
-    const filter: any = { _id: id, tenantId };
+    const filter: Record<string, unknown> = { _id: id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
 
     const asset = await Asset.findOneAndDelete(filter);
@@ -270,12 +290,21 @@ export const deleteAsset: AuthedRequestHandler = async (req: { tenantId: any; pa
   }
 };
 
-export const searchAssets: AuthedRequestHandler = async (req: { query: { q: string; }; tenantId: any; siteId: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => any) => {
+export const searchAssets: AuthedRequestHandler<
+  ParamsDictionary,
+  unknown,
+  unknown,
+  SearchAssetsQuery
+> = async (req, res, next) => {
   try {
-    const q = (req.query.q as string) || '';
+    const qValue = req.query.q;
+    const q = typeof qValue === 'string' ? qValue : '';
     const regex = new RegExp(q, 'i');
 
-    const filter: any = { name: { $regex: regex }, tenantId: req.tenantId };
+    const filter: Record<string, unknown> = {
+      name: { $regex: regex },
+      tenantId: req.tenantId,
+    };
     if (req.siteId) filter.siteId = req.siteId;
 
     const assets = await Asset.find(filter).limit(10);
@@ -292,9 +321,9 @@ export const searchAssets: AuthedRequestHandler = async (req: { query: { q: stri
   }
 };
 
-export const getAssetTree: AuthedRequestHandler = async (req: { tenantId: any; siteId: any; }, res: Response<any, Record<string, any>>, next: (arg0: unknown) => void) => {
+export const getAssetTree: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const match: any = { tenantId: req.tenantId };
+    const match: Record<string, unknown> = { tenantId: req.tenantId };
     if (req.siteId) match.siteId = req.siteId;
 
     const assets = await Asset.find(match).lean();

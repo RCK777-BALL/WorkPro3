@@ -5,6 +5,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { randomUUID } from 'crypto';
+import { Types } from 'mongoose';
 
 import type { ParamsDictionary } from 'express-serve-static-core';
 import Document from '../models/Document';
@@ -122,12 +123,16 @@ export const createDocument: AuthedRequestHandler<
 
     const tenantId = req.tenantId;
     const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
+    const entityId = toEntityId(saved._id as Types.ObjectId);
+    if (!entityId) {
+      throw new Error('Unable to resolve document identifier for auditing');
+    }
     await writeAuditLog({
       ...(tenantId ? { tenantId } : {}),
       ...(userId ? { userId } : {}),
       action: 'create',
       entityType: 'Document',
-      entityId: saved._id,
+      entityId,
       after: saved.toObject(),
     });
 

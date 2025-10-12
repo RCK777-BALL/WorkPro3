@@ -15,7 +15,7 @@ export type AuthedRequest<
   ReqQuery extends ParsedQs = ParsedQs,
   Locals extends Record<string, any> = Record<string, any>,
 > = Omit<Request<P, ResBody, ReqBody, ReqQuery, Locals>, 'user'> & {
-  user: Express.User;
+  user?: Express.User;
 };
 
 type AuthedHandlerFn<

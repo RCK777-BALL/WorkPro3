@@ -1,4 +1,4 @@
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import type { AuthedRequest } from '../../types/http';
 import { sendResponse } from '../../utils/sendResponse';
 
@@ -12,7 +12,7 @@ interface ResolveOptions {
  * Handles sending standard 401/400 responses when values are missing.
  */
 export function resolveUserAndTenant(
-  req: AuthedRequest,
+  req: AuthedRequest | Request,
   res: Response,
   { requireUser = true, requireTenant = true }: ResolveOptions = {}
 ): { userId?: string; tenantId?: string } | undefined {

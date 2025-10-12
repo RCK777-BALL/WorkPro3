@@ -3,7 +3,7 @@
  */
 
 import type { ParamsDictionary } from 'express-serve-static-core';
-import type { Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
 import type { z } from 'zod';
 
@@ -37,12 +37,12 @@ const toOptionalObjectId = (
   value?: string | Types.ObjectId,
 ): Types.ObjectId | undefined => (value ? toObjectId(value) : undefined);
 
-function resolveRequestUserId(req: AuthedRequest): Types.ObjectId | undefined {
+function resolveRequestUserId(req: AuthedRequest | Request): Types.ObjectId | undefined {
   const raw = (req.user as any)?._id ?? (req.user as any)?.id;
   return raw ? toObjectId(raw as Types.ObjectId | string) : undefined;
 }
 
-function resolveAuditUserId(req: AuthedRequest) {
+function resolveAuditUserId(req: AuthedRequest | Request) {
   return toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
 }
 
@@ -143,7 +143,7 @@ async function processEscalations(tenantId: string): Promise<void> {
   );
 }
 
-function ensureTenant(req: AuthedRequest, res: Response): string | null {
+function ensureTenant(req: AuthedRequest | Request, res: Response): string | null {
   const tenantId = req.tenantId;
   if (!tenantId) {
     sendResponse(res, null, 'Tenant ID required', 400);

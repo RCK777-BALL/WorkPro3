@@ -5,9 +5,9 @@
 import express from 'express';
 import type { NextFunction, Response } from 'express';
 import type { ParamsDictionary } from 'express-serve-static-core';
-import type { LeanDocument } from 'mongoose';
+import type { Document } from 'mongoose';
 import { Types } from 'mongoose';
-import Part, { type IPart } from '../models/Part';
+import Part, { type Adjustment, type IPart } from '../models/Part';
 import { requireAuth } from '../middleware/authMiddleware';
 import siteScope from '../middleware/siteScope';
 import { withAudit } from '../src/lib/audit';
@@ -18,7 +18,17 @@ type PartRequest<
   ReqBody = Record<string, unknown>
 > = AuthedRequest<P, any, ReqBody> & { auditId?: string };
 
-type PartLean = LeanDocument<IPart>;
+type PartLean = Omit<IPart, keyof Document> & { _id: Types.ObjectId };
+
+const getTenantId = (
+  req: PartRequest,
+): string | undefined => {
+  if (req.tenantId) {
+    return req.tenantId;
+  }
+  const userWithTenant = req.user as { tenantId?: string } | undefined;
+  return userWithTenant?.tenantId;
+};
 
 const toPartResponse = (part: PartLean | IPart) => {
   const raw = typeof (part as IPart).toObject === 'function'
@@ -43,8 +53,11 @@ const router = express.Router();
 router.use(requireAuth);
 router.use(siteScope);
 
-const loadPart = async (req: PartRequest): Promise<PartLean | null> => {
-  const tenantId = req.user?.tenantId;
+const loadPart = async <
+  P extends ParamsDictionary = ParamsDictionary,
+  ReqBody = Record<string, unknown>,
+>(req: PartRequest<P, ReqBody>): Promise<PartLean | null> => {
+  const tenantId = getTenantId(req);
   const id = req.auditId || req.params.id;
   if (!id) return null;
   return Part.findOne({ _id: id, tenantId }).lean<PartLean>().exec();
@@ -56,9 +69,9 @@ const listParts = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const tenantId = req.user?.tenantId;
+    const tenantId = getTenantId(req);
     const parts = await Part.find({ tenantId }).lean<PartLean>().exec();
-    res.json(parts.map((p) => toPartResponse(p)));
+    res.json(parts.map((part: PartLean) => toPartResponse(part)));
   } catch (err) {
     next(err);
   }
@@ -70,7 +83,7 @@ const getPartById = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const tenantId = req.user?.tenantId;
+    const tenantId = getTenantId(req);
     const part = await Part.findOne({ _id: req.params.id, tenantId }).lean<PartLean>().exec();
     if (!part) {
       res.status(404).json({ message: 'Not found' });
@@ -97,7 +110,7 @@ router.post(
     next: NextFunction,
   ) => {
     try {
-      const tenantId = req.user?.tenantId;
+      const tenantId = getTenantId(req);
       const payload = req.body as Partial<IPart>;
       const part = await Part.create({ ...payload, tenantId });
       req.auditId = String(part._id);
@@ -117,7 +130,7 @@ router.put(
     next: NextFunction,
   ) => {
     try {
-      const tenantId = req.user?.tenantId;
+      const tenantId = getTenantId(req);
       const update = req.body as Partial<IPart>;
       const part = await Part.findOneAndUpdate(
         { _id: req.params.id, tenantId },
@@ -147,7 +160,7 @@ router.delete(
     next: NextFunction,
   ) => {
     try {
-      const tenantId = req.user?.tenantId;
+      const tenantId = getTenantId(req);
       await Part.deleteOne({ _id: req.params.id, tenantId });
       res.status(204).end();
     } catch (err) {
@@ -165,7 +178,7 @@ router.post(
     next: NextFunction,
   ) => {
     try {
-      const tenantId = req.user?.tenantId;
+      const tenantId = getTenantId(req);
       const { delta, reason, woId } = req.body;
       const part = await Part.findOne({ _id: req.params.id, tenantId });
       if (!part) {
@@ -173,8 +186,11 @@ router.post(
         return;
       }
       part.onHand += Number(delta);
-      const adjustmentWoId = woId ? new Types.ObjectId(woId) : undefined;
-      part.adjustments.push({ delta, reason, woId: adjustmentWoId, date: new Date() });
+      const adjustment: Adjustment = { delta, reason, date: new Date() };
+      if (woId) {
+        adjustment.woId = new Types.ObjectId(woId);
+      }
+      part.adjustments.push(adjustment);
       await part.save();
       req.auditId = String(part._id);
       res.json(toPartResponse(part));

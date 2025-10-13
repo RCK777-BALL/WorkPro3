@@ -18,16 +18,12 @@ import {
   TENANT_KEY,
   SITE_KEY,
 } from '@/lib/http';
-import PlatinumLoginVanilla from './components/PlatinumLoginVanilla';
-import { API_BASE } from './utils/api';
+import Login from './pages/Login';
 
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { resetAuthState, login: authLogin } = useAuth();
-  const [loginError, setLoginError] = React.useState<string | null>(null);
-  const [inflight, setInflight] = React.useState(false);
-  const oauthBase = `${API_BASE}/auth/oauth`;
+  const { resetAuthState } = useAuth();
   const { pathname } = location;
 
   React.useEffect(() => {
@@ -55,38 +51,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <Routes>
-        <Route
-          path="/login"
-          element={
-            <PlatinumLoginVanilla
-              errorMessage={loginError}
-              onSubmit={async (email, password, remember) => {
-                if (inflight) return;
-
-                setInflight(true);
-                setLoginError(null);
-
-                try {
-                  const result = await authLogin(email, password, !!remember);
-
-                  if ('mfaRequired' in result) {
-                    setLoginError('Multi-factor authentication is required. Please complete verification to continue.');
-                    return;
-                  }
-
-                  navigate('/dashboard', { replace: true });
-                } catch (e: any) {
-                  const msg = e?.data?.message || e?.message || 'Login failed';
-                  setLoginError(msg);
-                } finally {
-                  setInflight(false);
-                }
-              }}
-              onGoogle={() => (window.location.href = `${oauthBase}/google`)}
-              onGithub={() => (window.location.href = `${oauthBase}/github`)}
-            />
-          }
-        />
+        <Route path="/login" element={<Login />} />
         <Route element={<Layout />}>
           <Route path="/" element={<Navigate to="/dashboard" />} />
           <Route path="/dashboard" element={<Dashboard />} />

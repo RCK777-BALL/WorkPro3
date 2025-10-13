@@ -1,15 +1,19 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "@tailwindcss/postcss/base";
+@import "@tailwindcss/postcss/components";
+@import "@tailwindcss/postcss/utilities";
 
 /* Put any @apply rules inside layers so Tailwind sees them */
 @layer base {
-  :root { color-scheme: light dark; }
+  :root {
+    color-scheme: light dark;
+  }
+
   html,
   body,
   #root {
     height: 100%;
   }
+
   body {
     @apply bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100;
     font-synthesis-weight: none;

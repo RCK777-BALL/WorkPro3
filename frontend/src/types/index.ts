@@ -253,11 +253,25 @@ export interface Message {
   reactions: Reaction[];
 }
 
+export type AuthRole =
+  | 'admin'
+  | 'supervisor'
+  | 'manager'
+  | 'planner'
+  | 'tech'
+  | 'technician'
+  | 'team_member'
+  | 'team_leader'
+  | 'area_leader'
+  | 'department_leader'
+  | 'viewer';
+
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'supervisor' | 'planner' | 'tech';
+  role: AuthRole;
+  roles?: AuthRole[];
   department: string;
   avatar?: string;
 }
@@ -266,15 +280,7 @@ export interface TeamMember {
   id: string;
   name: string;
   email: string;
-  role:
-    | 'admin'
-    | 'supervisor'
-    | 'planner'
-    | 'tech'
-    | 'team_member'
-    | 'team_leader'
-    | 'area_leader'
-    | 'department_leader';
+  role: AuthRole;
   department?: string;
   /** Unique employee identifier */
   employeeId?: string;
@@ -289,15 +295,7 @@ export interface TeamMemberResponse {
   id?: string;
   name: string;
   email: string;
-  role:
-    | 'admin'
-    | 'supervisor'
-    | 'planner'
-    | 'tech'
-    | 'team_member'
-    | 'team_leader'
-    | 'area_leader'
-    | 'department_leader';
+  role: AuthRole;
   department?: string;
   employeeId?: string;
   managerId?: string | null;
@@ -310,15 +308,8 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  role:
-    | 'admin'
-    | 'supervisor'
-    | 'planner'
-    | 'tech'
-    | 'team_member'
-    | 'team_leader'
-    | 'area_leader'
-    | 'department_leader';
+  role: AuthRole;
+  roles?: AuthRole[];
   /** Identifier for the user's tenant */
   tenantId?: string;
   /** Optional site identifier associated with the user */

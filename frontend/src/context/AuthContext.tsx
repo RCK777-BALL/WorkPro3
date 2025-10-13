@@ -13,10 +13,68 @@ import {
 } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuthStore, type AuthState } from '@/store/authStore';
-import type { AuthLoginResponse, AuthSession, AuthUser } from '@/types';
+import type { AuthLoginResponse, AuthRole, AuthSession, AuthUser } from '@/types';
 import { SITE_KEY, TENANT_KEY, TOKEN_KEY } from '@/lib/http';
 import { emitToast } from './ToastContext';
 import { api } from '@/utils/api';
+
+type AuthUserInput =
+  | (AuthUser & { roles?: unknown })
+  | (Omit<AuthUser, 'role'> & { role?: unknown; roles?: unknown });
+
+const ROLE_PRIORITY: AuthRole[] = [
+  'admin',
+  'supervisor',
+  'manager',
+  'planner',
+  'tech',
+  'technician',
+  'team_leader',
+  'team_member',
+  'area_leader',
+  'department_leader',
+  'viewer',
+];
+
+const normalizeRoles = (roles: unknown): AuthRole[] => {
+  if (!roles) return [];
+  const list = Array.isArray(roles) ? roles : [roles];
+  const normalized: AuthRole[] = [];
+  for (const role of list) {
+    if (typeof role !== 'string') continue;
+    const candidate = role.toLowerCase() as AuthRole;
+    if (ROLE_PRIORITY.includes(candidate) && !normalized.includes(candidate)) {
+      normalized.push(candidate);
+    }
+  }
+  return normalized;
+};
+
+const derivePrimaryRole = (role: unknown, roles: AuthRole[]): AuthRole => {
+  if (typeof role === 'string') {
+    const candidate = role.toLowerCase() as AuthRole;
+    if (ROLE_PRIORITY.includes(candidate)) {
+      return candidate;
+    }
+  }
+  for (const candidate of ROLE_PRIORITY) {
+    if (roles.includes(candidate)) {
+      return candidate;
+    }
+  }
+  return roles[0] ?? 'tech';
+};
+
+const normalizeAuthUser = (user: AuthUserInput): AuthUser => {
+  const normalizedRoles = normalizeRoles(user.roles);
+  const primaryRole = derivePrimaryRole((user as { role?: unknown }).role, normalizedRoles);
+  const roles = Array.from(new Set<AuthRole>([primaryRole, ...normalizedRoles]));
+  return {
+    ...(user as Record<string, unknown>),
+    role: primaryRole,
+    roles,
+  } as AuthUser;
+};
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -49,8 +107,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const handleSetUser = useCallback(
     (u: AuthUser | null) => {
-      setUser(u);
-      setStoreUser(u);
+      const normalized = u ? normalizeAuthUser(u) : null;
+      setUser(normalized);
+      setStoreUser(normalized);
     },
     [setStoreUser]
   );
@@ -106,12 +165,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       const token = (result as AuthSession).token;
+      const normalizedUser = normalizeAuthUser(result.user as AuthUserInput);
       const session: AuthSession = {
-        user: result.user as AuthUser,
+        user: normalizedUser,
         ...(token ? { token } : {}),
       };
 
-      handleSetUser(session.user);
+      handleSetUser(normalizedUser);
       if (token) {
         localStorage.setItem(TOKEN_KEY, token);
       } else {

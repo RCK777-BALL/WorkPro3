@@ -10,6 +10,9 @@ const apiTarget = process.env.VITE_API_URL || 'http://localhost:5010';
 
 export default defineConfig({
   plugins: [react()],
+  css: {
+    modules: false,
+  },
   server: {
     port: 5173,
     proxy: {

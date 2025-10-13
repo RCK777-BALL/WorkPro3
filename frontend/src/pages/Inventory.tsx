@@ -220,7 +220,7 @@ const Inventory: React.FC = () => {
             setInitialData(undefined);
           }}
           part={selectedPart}
-          initialData={initialData}
+          {...(initialData ? { initialData } : {})}
           error={modalError}
           onUpdate={async (data: FormData) => {
             try {

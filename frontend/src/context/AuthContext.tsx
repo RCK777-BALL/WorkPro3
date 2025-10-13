@@ -11,16 +11,12 @@ import {
   useEffect,
   useCallback,
 } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuthStore, type AuthState } from '@/store/authStore';
-import type {
-  AuthLoginMfaChallenge,
-  AuthLoginResponse,
-  AuthMeResponse,
-  AuthSession,
-  AuthUser,
-} from '@/types';
-import http, { SITE_KEY, TENANT_KEY, TOKEN_KEY } from '@/lib/http';
+import type { AuthSession, AuthUser } from '@/types';
+import { SITE_KEY, TENANT_KEY, TOKEN_KEY } from '@/lib/http';
 import { emitToast } from './ToastContext';
+import { api } from '@/utils/api';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -28,7 +24,8 @@ interface AuthContextType {
   login: (
     email: string,
     password: string,
-  ) => Promise<AuthSession | AuthLoginMfaChallenge>;
+    remember?: boolean,
+  ) => Promise<AuthSession>;
   logout: () => Promise<void>;
   /**
    * Clears all authentication state without making a network request.
@@ -45,6 +42,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const location = useLocation();
 
   const setStoreUser = useAuthStore((state: AuthState) => state.setUser);
   const storeLogout = useAuthStore((state: AuthState) => state.logout);
@@ -57,36 +55,61 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     [setStoreUser]
   );
 
+  const { pathname } = location;
+  const isAuthRoute =
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/register') ||
+    pathname.startsWith('/forgot');
+
   useEffect(() => {
+    let cancelled = false;
+
     const fetchUser = async () => {
+      if (isAuthRoute) {
+        if (!cancelled) {
+          handleSetUser(null);
+          setLoading(false);
+        }
+        return;
+      }
+
+      setLoading(true);
       try {
-        const { data } = await http.get<AuthMeResponse>('/auth/me');
-        handleSetUser(data?.user ?? null);
+        const { user: currentUser } = await api.me();
+        if (!cancelled) {
+          handleSetUser(currentUser ?? null);
+        }
       } catch {
-        handleSetUser(null);
+        if (!cancelled) {
+          handleSetUser(null);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
-    fetchUser();
-    // handleSetUser is intentionally omitted from the dependency array to
-    // avoid re-fetching on every render when it updates state
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+
+    void fetchUser();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [handleSetUser, isAuthRoute]);
 
   const login = useCallback(
-    async (email: string, password: string) => {
-      const { data } = await http.post<AuthLoginResponse>('/auth/login', { email, password });
-
-      if ('mfaRequired' in data && data.mfaRequired) {
-        emitToast('Multi-factor authentication is required to log in.', 'error');
-        return data;
-      }
-
-      const session: AuthSession = data;
+    async (email: string, password: string, remember = false) => {
+      const result = await api.login({ email, password, remember });
+      const token = (result as AuthSession).token;
+      const session: AuthSession = {
+        user: result.user as AuthUser,
+        ...(token ? { token } : {}),
+      };
       handleSetUser(session.user);
-      if (session.token) {
-        localStorage.setItem(TOKEN_KEY, session.token);
+      if (token) {
+        localStorage.setItem(TOKEN_KEY, token);
+      } else {
+        localStorage.removeItem(TOKEN_KEY);
       }
       if (session.user?.tenantId) {
         localStorage.setItem(TENANT_KEY, session.user.tenantId);
@@ -110,9 +133,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = useCallback(async () => {
     try {
-      await http.post('/auth/logout');
+      await api.logout();
     } catch (err) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
+      const status = (err as { status?: number })?.status;
       if (status !== 401) {
         emitToast('Failed to log out', 'error');
       }

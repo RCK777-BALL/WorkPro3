@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Analytics from './pages/Analytics';
 import Imports from './pages/Imports';
@@ -23,8 +23,11 @@ import { api } from './utils/api';
 
 export default function App() {
   const navigate = useNavigate();
-  const { resetAuthState } = useAuth();
+  const location = useLocation();
+  const { resetAuthState, setUser } = useAuth();
   const [loginError, setLoginError] = React.useState<string | null>(null);
+  const [inflight, setInflight] = React.useState(false);
+  const { pathname } = location;
 
   React.useEffect(() => {
     setUnauthorizedCallback(() => {
@@ -36,6 +39,18 @@ export default function App() {
     });
   }, [navigate, resetAuthState]);
 
+  // IMPORTANT: do not call /auth/me while on login/register/forgot to avoid 401 spam
+  const isAuthRoute =
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/register') ||
+    pathname.startsWith('/forgot');
+
+  React.useEffect(() => {
+    if (isAuthRoute) return;
+    // Optionally fetch current user for protected areas
+    // api.me().catch(() => {/* ignore here, handled by guards */});
+  }, [isAuthRoute]);
+
   return (
     <ErrorBoundary>
       <Routes>
@@ -45,20 +60,38 @@ export default function App() {
             <PlatinumLoginVanilla
               errorMessage={loginError}
               onSubmit={async (email, password, remember) => {
+                if (inflight) return;
+                setInflight(true);
+                setLoginError(null);
                 try {
-                  setLoginError(null);
-                  await api.login({ email, password, remember });
-                  window.location.href = '/';
-                } catch (error: unknown) {
-                  if (error instanceof Error) {
-                    setLoginError(error.message || 'Login failed');
-                  } else {
-                    setLoginError('Login failed');
+                  const result = await api.login({ email, password, remember: !!remember });
+                  if (result?.user) {
+                    setUser(result.user);
+                    const maybeToken = (result as { token?: string }).token;
+                    if (maybeToken) {
+                      localStorage.setItem(TOKEN_KEY, maybeToken);
+                    } else {
+                      localStorage.removeItem(TOKEN_KEY);
+                    }
+                    const maybeTenant = (result as { user?: { tenantId?: string } }).user?.tenantId;
+                    if (maybeTenant) {
+                      localStorage.setItem(TENANT_KEY, maybeTenant);
+                    }
+                    const maybeSite = (result as { user?: { siteId?: string } }).user?.siteId;
+                    if (maybeSite) {
+                      localStorage.setItem(SITE_KEY, maybeSite);
+                    }
                   }
+                  navigate('/', { replace: true });
+                } catch (e: any) {
+                  const msg = e?.data?.message || e?.message || 'Login failed';
+                  setLoginError(msg);
+                } finally {
+                  setInflight(false);
                 }
               }}
-              onGoogle={() => api.oauth('google')}
-              onGithub={() => api.oauth('github')}
+              onGoogle={() => (window.location.href = `${import.meta.env.VITE_API_BASE || ''}/auth/google`)}
+              onGithub={() => (window.location.href = `${import.meta.env.VITE_API_BASE || ''}/auth/github`)}
             />
           }
         />

@@ -20,7 +20,7 @@ export interface AuthPayload {
  * Require a valid JWT to access the route.
  * Reads token from:
  *  - Authorization: Bearer <token>
- *  - cookies.token (requires cookie-parser)
+ *  - cookies.auth (requires cookie-parser)
  */
 export const requireAuth: RequestHandler = (req, res, next) => {
   const authedReq = req as AuthedRequest;
@@ -28,7 +28,7 @@ export const requireAuth: RequestHandler = (req, res, next) => {
     ? req.headers.authorization.slice(7)
     : undefined;
 
-  const cookieToken = (req as any).cookies?.token as string | undefined;
+  const cookieToken = (req as any).cookies?.auth as string | undefined;
 
   const token = bearer ?? cookieToken;
   if (!token) {

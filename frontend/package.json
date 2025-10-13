@@ -50,6 +50,7 @@
     "zustand": "5.0.8"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0",
     "@eslint/js": "^8.57.0",
     "@playwright/test": "^1.49.1",
     "@testing-library/jest-dom": "^6.8.0",

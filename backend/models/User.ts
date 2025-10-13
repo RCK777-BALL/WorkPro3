@@ -19,7 +19,7 @@ export interface UserDocument extends Document {
   email: string;
   passwordHash: string;
   roles: UserRole[];
-  tenantId: mongoose.Schema.Types.ObjectId;
+  tenantId: Types.ObjectId;
   employeeId: string;
   managerId?: Types.ObjectId;
   theme?: 'light' | 'dark' | 'system';

@@ -38,6 +38,10 @@ const seedAdmin = async () => {
       { new: true, upsert: true }
     );
 
+    if (!tenant) {
+      throw new Error('Failed to create or retrieve default tenant');
+    }
+
     let user = await User.findOne({ email: ADMIN_EMAIL });
     if (!user) {
       user = new User({

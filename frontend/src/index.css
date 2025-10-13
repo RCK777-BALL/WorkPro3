@@ -5,5 +5,8 @@
 @tailwind utilities;
 
 body {
-  @apply bg-zinc-50 text-neutral-900 antialiased;
+  background-color: #fafafa; /* Tailwind bg-zinc-50 */
+  color: #171717; /* Tailwind text-neutral-900 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }

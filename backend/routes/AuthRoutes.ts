@@ -20,7 +20,6 @@ import { assertEmail } from '../utils/assert';
 import { requireAuth } from '../middleware/requireAuth';
 import logger from '../utils/logger';
 import { isCookieSecure } from '../utils/isCookieSecure';
-import { sendResponse } from '../utils/sendResponse';
 
 
 const FAKE_PASSWORD_HASH =
@@ -59,10 +58,10 @@ router.post('/login', loginLimiter, async (
 ): Promise<void> => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
-    sendResponse(res, null, { message: 'Invalid request' }, 400);
+    res.status(400).json({ message: 'Invalid request.' });
     return;
   }
-  const { email, password } = parsed.data;
+  const { email, password, remember = false } = parsed.data;
   const normalizedEmail = email.trim().toLowerCase();
 
   try {
@@ -72,7 +71,7 @@ router.post('/login', loginLimiter, async (
     );
     if (!user) {
       await bcrypt.compare(password, FAKE_PASSWORD_HASH); // mitigate timing
-      sendResponse(res, null, { message: 'Invalid email or password' }, 400);
+      res.status(400).json({ message: 'Invalid email or password.' });
       return;
     }
 
@@ -80,24 +79,23 @@ router.post('/login', loginLimiter, async (
     if (!hashed) {
       // If password is still missing due to schema, treat as invalid
       await bcrypt.compare(password, FAKE_PASSWORD_HASH);
-      sendResponse(res, null, { message: 'Invalid email or password' }, 400);
+      res.status(400).json({ message: 'Invalid email or password.' });
       return;
     }
 
     const valid = await bcrypt.compare(password, hashed);
     if (!valid) {
-      sendResponse(res, null, { message: 'Invalid email or password' }, 400);
+      res.status(400).json({ message: 'Invalid email or password.' });
       return;
     }
 
     const tenantId = (user as any).tenantId ? (user as any).tenantId.toString() : undefined;
 
     if ((user as any).mfaEnabled) {
-      sendResponse(res, {
+      res.json({
         mfaRequired: true,
         userId: user._id.toString(),
       });
-
       return;
     }
 
@@ -105,7 +103,7 @@ router.post('/login', loginLimiter, async (
     try {
       secret = getJwtSecret();
     } catch {
-      sendResponse(res, null, { message: 'Server configuration issue' }, 500);
+      res.status(500).json({ message: 'Server configuration issue' });
       return;
     }
 
@@ -134,12 +132,14 @@ router.post('/login', loginLimiter, async (
       responseData.token = token;
     }
 
-    res.cookie('token', token, {
+    const maxAge = remember ? 1000 * 60 * 60 * 24 * 30 : 1000 * 60 * 60 * 8;
+    res.cookie('auth', token, {
       httpOnly: true,
-      sameSite: 'strict',
+      sameSite: 'lax',
       secure: isCookieSecure(),
+      maxAge,
     });
-    sendResponse(res, responseData);
+    res.json(responseData);
     return;
   } catch (err) {
     logger.error('Login error:', err);

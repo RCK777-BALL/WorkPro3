@@ -16,7 +16,7 @@ interface TokenPayload {
 /**
  * Authenticate requests using a JWT token. The token may be provided
  * in the `Authorization` header as a Bearer token or via the
- * `token` cookie. When valid, the corresponding user document is
+ * `auth` cookie. When valid, the corresponding user document is
  * loaded and attached to `req.user`.
  */
  
@@ -27,7 +27,7 @@ export const requireAuth: RequestHandler = (
 ): void => {
   void (async () => {
     try {
-      let token: string | undefined = req.cookies?.token;
+      let token: string | undefined = req.cookies?.auth;
 
       const authHeader = req.headers.authorization;
       if (!token && authHeader && authHeader.startsWith('Bearer ')) {

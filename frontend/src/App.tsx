@@ -19,14 +19,15 @@ import {
   SITE_KEY,
 } from '@/lib/http';
 import PlatinumLoginVanilla from './components/PlatinumLoginVanilla';
-import { api } from './utils/api';
+import { API_BASE } from './utils/api';
 
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { resetAuthState, setUser } = useAuth();
+  const { resetAuthState, login: authLogin } = useAuth();
   const [loginError, setLoginError] = React.useState<string | null>(null);
   const [inflight, setInflight] = React.useState(false);
+  const oauthBase = `${API_BASE}/auth/oauth`;
   const { pathname } = location;
 
   React.useEffect(() => {
@@ -61,28 +62,19 @@ export default function App() {
               errorMessage={loginError}
               onSubmit={async (email, password, remember) => {
                 if (inflight) return;
+
                 setInflight(true);
                 setLoginError(null);
+
                 try {
-                  const result = await api.login({ email, password, remember: !!remember });
-                  if (result?.user) {
-                    setUser(result.user);
-                    const maybeToken = (result as { token?: string }).token;
-                    if (maybeToken) {
-                      localStorage.setItem(TOKEN_KEY, maybeToken);
-                    } else {
-                      localStorage.removeItem(TOKEN_KEY);
-                    }
-                    const maybeTenant = (result as { user?: { tenantId?: string } }).user?.tenantId;
-                    if (maybeTenant) {
-                      localStorage.setItem(TENANT_KEY, maybeTenant);
-                    }
-                    const maybeSite = (result as { user?: { siteId?: string } }).user?.siteId;
-                    if (maybeSite) {
-                      localStorage.setItem(SITE_KEY, maybeSite);
-                    }
+                  const result = await authLogin(email, password, !!remember);
+
+                  if ('mfaRequired' in result) {
+                    setLoginError('Multi-factor authentication is required. Please complete verification to continue.');
+                    return;
                   }
-                  navigate('/', { replace: true });
+
+                  navigate('/dashboard', { replace: true });
                 } catch (e: any) {
                   const msg = e?.data?.message || e?.message || 'Login failed';
                   setLoginError(msg);
@@ -90,8 +82,8 @@ export default function App() {
                   setInflight(false);
                 }
               }}
-              onGoogle={() => (window.location.href = `${import.meta.env.VITE_API_BASE || ''}/auth/google`)}
-              onGithub={() => (window.location.href = `${import.meta.env.VITE_API_BASE || ''}/auth/github`)}
+              onGoogle={() => (window.location.href = `${oauthBase}/google`)}
+              onGithub={() => (window.location.href = `${oauthBase}/github`)}
             />
           }
         />

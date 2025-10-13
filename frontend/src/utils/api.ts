@@ -1,6 +1,9 @@
+import type { AuthLoginResponse } from '@/types';
+
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
-const BASE = import.meta.env.VITE_API_BASE ?? '/api';
+export const API_BASE = (import.meta.env.VITE_API_BASE ?? '/api').replace(/\/+$/, '');
+const BASE = API_BASE;
 
 async function req<T>(
   path: string,
@@ -34,7 +37,7 @@ async function req<T>(
 
 export const api = {
   login(payload: { email: string; password: string; remember?: boolean }) {
-    return req<{ user: any }>('/auth/login', 'POST', payload);
+    return req<AuthLoginResponse>('/auth/login', 'POST', payload);
   },
   me() {
     return req<{ user: any }>('/auth/me', 'GET');

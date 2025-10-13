@@ -44,14 +44,24 @@ const mapRole = (role?: string): AuthUser['role'] => {
   return 'admin';
 };
 
-const toAuthUser = (payload: RawAuthUser): AuthUser => ({
-  id: payload.id,
-  email: payload.email,
-  name: payload.email.split('@')[0] ?? payload.email,
-  role: mapRole(payload.role),
-  tenantId: payload.tenantId,
-  siteId: payload.siteId,
-});
+const toAuthUser = (payload: RawAuthUser): AuthUser => {
+  const user: AuthUser = {
+    id: payload.id,
+    email: payload.email,
+    name: payload.email.split('@')[0] ?? payload.email,
+    role: mapRole(payload.role),
+  };
+
+  if (payload.tenantId !== undefined) {
+    user.tenantId = payload.tenantId;
+  }
+
+  if (payload.siteId !== undefined) {
+    user.siteId = payload.siteId;
+  }
+
+  return user;
+};
 
 type AuthUserInput =
   | (AuthUser & { roles?: unknown })
@@ -195,38 +205,83 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = useCallback(
     async (email: string, password: string, remember = false) => {
-      const response = await api.post<{ data?: { user?: RawAuthUser } }>('/api/auth/login', {
+      const response = await api.post<unknown>('/api/auth/login', {
         email,
         password,
         remember,
       });
-      const payload = response.data?.data?.user;
-      if (!payload) {
+
+      const payload = response.data;
+
+      if (
+        payload &&
+        typeof payload === 'object' &&
+        'mfaRequired' in payload &&
+        (payload as { mfaRequired?: unknown }).mfaRequired === true
+      ) {
+        return payload as AuthLoginResponse;
+      }
+
+      const sessionSource = (() => {
+        if (
+          payload &&
+          typeof payload === 'object' &&
+          'data' in payload &&
+          (payload as { data?: unknown }).data &&
+          typeof (payload as { data?: unknown }).data === 'object'
+        ) {
+          return (payload as { data?: { user?: unknown; token?: string } }).data;
+        }
+        return payload as { user?: unknown; token?: string };
+      })();
+
+      if (!sessionSource || typeof sessionSource !== 'object' || !('user' in sessionSource)) {
         throw new Error('Invalid login response');
       }
 
-      const token = (result as AuthSession).token;
-      const normalizedUser = normalizeAuthUser(result.user as AuthUserInput);
+      const { user: rawUser, token } = sessionSource as {
+        user?: unknown;
+        token?: string;
+      };
+
+      if (!rawUser || typeof rawUser !== 'object') {
+        throw new Error('Invalid login response');
+      }
+
+      const rawUserRecord = rawUser as Record<string, unknown>;
+      const userInput = (
+        ('name' in rawUserRecord && 'role' in rawUserRecord) || 'roles' in rawUserRecord
+          ? (rawUserRecord as AuthUserInput)
+          : toAuthUser(rawUserRecord as unknown as RawAuthUser)
+      ) as AuthUserInput;
+
+      const normalizedUser = normalizeAuthUser(userInput);
+
       const session: AuthSession = {
         user: normalizedUser,
         ...(token ? { token } : {}),
       };
 
       handleSetUser(normalizedUser);
-      if (token) {
-        localStorage.setItem(TOKEN_KEY, token);
+
+      if (session.token) {
+        localStorage.setItem(TOKEN_KEY, session.token);
       } else {
         localStorage.removeItem(TOKEN_KEY);
       }
-      if (session.user?.tenantId) {
-        localStorage.setItem(TENANT_KEY, session.user.tenantId);
-      }
-      if (authUser.siteId) {
-        localStorage.setItem(SITE_KEY, authUser.siteId);
-      }
-      localStorage.removeItem(TOKEN_KEY);
 
-      const session: AuthSession = { user: authUser };
+      if (normalizedUser.tenantId) {
+        localStorage.setItem(TENANT_KEY, normalizedUser.tenantId);
+      } else {
+        localStorage.removeItem(TENANT_KEY);
+      }
+
+      if (normalizedUser.siteId) {
+        localStorage.setItem(SITE_KEY, normalizedUser.siteId);
+      } else {
+        localStorage.removeItem(SITE_KEY);
+      }
+
       return session;
     },
     [handleSetUser]

@@ -42,6 +42,12 @@ const OPTIONAL_WORK_ORDER_KEYS: (keyof WorkOrder)[] = [
   'parts',
 ];
 
+function assignIfDefined<T, K extends keyof T>(target: T, key: K, value: T[K] | undefined) {
+  if (value !== undefined) {
+    target[key] = value;
+  }
+}
+
 export default function WorkOrders() {
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -116,9 +122,7 @@ export default function WorkOrders() {
         };
         OPTIONAL_WORK_ORDER_KEYS.forEach((key) => {
           const value = raw[key];
-          if (value !== undefined) {
-            normalized[key] = value as WorkOrder[typeof key];
-          }
+          assignIfDefined(normalized, key, value);
         });
         return normalized;
       };
@@ -190,9 +194,7 @@ export default function WorkOrders() {
         };
         OPTIONAL_WORK_ORDER_KEYS.forEach((key) => {
           const value = res.data[key];
-          if (value !== undefined) {
-            normalizedOrder[key] = value as WorkOrder[typeof key];
-          }
+          assignIfDefined(normalizedOrder, key, value);
         });
         return normalizedOrder;
       })();

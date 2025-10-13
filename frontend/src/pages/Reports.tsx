@@ -98,9 +98,10 @@ function determineStatus(value: number, threshold: number): 'good' | 'warning' |
 function mergeTrends(data: TrendData | null): MergedTrend[] {
   if (!data) return [];
   const map = new Map<string, MergedTrend>();
-  const assign = (key: keyof MergedTrend, points: TrendPoint[]) => {
+  const assign = (key: Exclude<keyof MergedTrend, 'period'>, points: TrendPoint[]) => {
     points.forEach((point) => {
-      const entry = map.get(point.period) ?? { period: point.period };
+      const existing = map.get(point.period);
+      const entry: MergedTrend = existing ?? { period: point.period };
       entry[key] = point.value;
       map.set(point.period, entry);
     });

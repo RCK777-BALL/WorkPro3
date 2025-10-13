@@ -146,37 +146,37 @@ export default function DashboardHome() {
             <StatCard
               loading={loading}
               title="PM Compliance"
-              value={summary?.pmCompliance.toFixed(2)}
+              value={summary ? summary.pmCompliance.toFixed(2) : "—"}
               icon={<Timer className="h-5 w-5" />}
             />
             <StatCard
               loading={loading}
               title="WO Backlog"
-              value={summary?.woBacklog}
+              value={summary ? summary.woBacklog : "—"}
               icon={<ClipboardList className="h-5 w-5" />}
             />
             <StatCard
               loading={loading}
               title="Downtime (This Month)"
-              value={summary?.downtimeThisMonth}
+              value={summary ? summary.downtimeThisMonth : "—"}
               icon={<AlertTriangle className="h-5 w-5" />}
             />
             <StatCard
               loading={loading}
               title="Cost MTD"
-              value={summary?.costMTD}
+              value={summary ? summary.costMTD : "—"}
               icon={<Boxes className="h-5 w-5" />}
             />
             <StatCard
               loading={loading}
               title="CM vs PM Ratio"
-              value={summary?.cmVsPmRatio.toFixed(2)}
+              value={summary ? summary.cmVsPmRatio.toFixed(2) : "—"}
               icon={<PieChartIcon className="h-5 w-5" />}
             />
-          <StatCard
+            <StatCard
               loading={loading}
               title="Wrench Time"
-              value={summary ? `${summary.wrenchTimePct.toFixed(1)}%` : undefined}
+              value={summary ? `${summary.wrenchTimePct.toFixed(1)}%` : "—"}
               icon={<Activity className="h-5 w-5" />}
             />
           </div>
@@ -186,13 +186,13 @@ export default function DashboardHome() {
             <TrendChart
               loading={loading}
               title="PM Compliance Trend"
-              data={summary?.pmComplianceTrend}
+              data={summary ? summary.pmComplianceTrend : []}
               color="#3b82f6"
             />
             <TrendChart
               loading={loading}
               title="WO Backlog Trend"
-              data={summary?.woBacklogTrend}
+              data={summary ? summary.woBacklogTrend : []}
               color="#ef4444"
             />
           </div>

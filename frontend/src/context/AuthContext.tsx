@@ -13,7 +13,7 @@ import {
 } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuthStore, type AuthState } from '@/store/authStore';
-import type { AuthSession, AuthUser } from '@/types';
+import type { AuthLoginResponse, AuthSession, AuthUser } from '@/types';
 import { SITE_KEY, TENANT_KEY, TOKEN_KEY } from '@/lib/http';
 import { emitToast } from './ToastContext';
 import { api } from '@/utils/api';
@@ -25,7 +25,7 @@ interface AuthContextType {
     email: string,
     password: string,
     remember?: boolean,
-  ) => Promise<AuthSession>;
+  ) => Promise<AuthLoginResponse>;
   logout: () => Promise<void>;
   /**
    * Clears all authentication state without making a network request.
@@ -100,11 +100,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = useCallback(
     async (email: string, password: string, remember = false) => {
       const result = await api.login({ email, password, remember });
+
+      if ('mfaRequired' in result) {
+        return result;
+      }
+
       const token = (result as AuthSession).token;
       const session: AuthSession = {
         user: result.user as AuthUser,
         ...(token ? { token } : {}),
       };
+
       handleSetUser(session.user);
       if (token) {
         localStorage.setItem(TOKEN_KEY, token);

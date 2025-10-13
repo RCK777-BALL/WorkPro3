@@ -67,16 +67,27 @@ function normalizeEmail(email: string): string {
 }
 
 function buildJwtPayload(user: { _id: unknown; email: string; tenantId?: unknown; roles?: string[]; role?: string; siteId?: unknown }): JwtUser {
-  return {
+  const payload: JwtUser = {
     id: String(user._id),
     email: user.email,
-    tenantId: user.tenantId ? String(user.tenantId) : undefined,
-    siteId: user.siteId ? String(user.siteId) : undefined,
-    role:
-      Array.isArray(user.roles) && user.roles.length > 0
-        ? user.roles[0]
-        : user.role,
   };
+
+  if (user.tenantId) {
+    payload.tenantId = String(user.tenantId);
+  }
+
+  if (user.siteId) {
+    payload.siteId = String(user.siteId);
+  }
+
+  const primaryRole =
+    Array.isArray(user.roles) && user.roles.length > 0 ? user.roles[0] : user.role;
+
+  if (primaryRole) {
+    payload.role = primaryRole;
+  }
+
+  return payload;
 }
 
 async function ensureDefaultTenant() {
@@ -190,10 +201,19 @@ export async function refresh(req: Request, res: Response) {
     const payload: JwtUser = {
       id: decoded.id,
       email: decoded.email,
-      tenantId: decoded.tenantId,
-      role: decoded.role,
-      siteId: decoded.siteId,
     };
+
+    if (decoded.tenantId) {
+      payload.tenantId = decoded.tenantId;
+    }
+
+    if (decoded.role) {
+      payload.role = decoded.role;
+    }
+
+    if (decoded.siteId) {
+      payload.siteId = decoded.siteId;
+    }
     const access = signAccess(payload);
     const refreshToken = signRefresh(payload);
     setAuthCookies(res, access, refreshToken, { remember: true });

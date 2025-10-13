@@ -257,7 +257,11 @@ const Messages: React.FC = () => {
         <ChatSidebar
           channels={channels}
           directMessages={directMessages}
-          activeChannelId={activeDM ? activeDM.id : activeChannel?.id}
+          {...(activeDM
+            ? { activeChannelId: activeDM.id }
+            : activeChannel
+              ? { activeChannelId: activeChannel.id }
+              : {})}
           onChannelSelect={(channelId) => {
             const channel = channels.find((c) => c.id === channelId);
             if (channel) {

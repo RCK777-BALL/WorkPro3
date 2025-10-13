@@ -161,7 +161,6 @@ export default function Reports() {
 
   const mergedTrends = useMemo(() => mergeTrends(trends), [trends]);
   const labels = mergedTrends.map((point) => point.period);
-
   const performanceLineData = useMemo(
     () => ({
       labels,
@@ -229,19 +228,19 @@ export default function Reports() {
     [labels, mergedTrends],
   );
 
-  const downtimeReasonData = useMemo(
-    () => ({
-      labels: kpis?.downtime.reasons.map((item) => item.reason) ?? [],
+  const downtimeReasonData = useMemo(() => {
+    const reasons: { reason: string; minutes: number }[] = kpis?.downtime.reasons ?? [];
+    return {
+      labels: reasons.map((item) => item.reason),
       datasets: [
         {
           label: 'Minutes',
-          data: kpis?.downtime.reasons.map((item) => item.minutes) ?? [],
+          data: reasons.map((item) => item.minutes),
           backgroundColor: '#f97316',
         },
       ],
-    }),
-    [kpis?.downtime.reasons],
-  );
+    };
+  }, [kpis?.downtime.reasons]);
 
   if (loading) return <p>Loading...</p>;
   if (error || !kpis || !trends) return <p className="text-red-600">{error || 'No data available'}</p>;

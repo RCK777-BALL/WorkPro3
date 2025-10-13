@@ -16,14 +16,24 @@ const TimeSheets: React.FC = () => {
 
   const loadTimesheets = async () => {
     try {
-      const res = await http.get<Timesheet[]>('/timesheets');
+      interface TimesheetResponse extends Partial<Timesheet> { _id?: string; id?: string }
+      const res = await http.get<TimesheetResponse[]>('/timesheets');
       const data: Timesheet[] = Array.isArray(res.data)
-        ? res.data.map((t) => ({
-            id: t._id ?? t.id,
-            date: t.date,
-            hours: t.hours,
-            description: t.description,
-          }))
+        ? res.data.flatMap((item) => {
+            const resolvedId = item._id ?? item.id;
+            if (!resolvedId || !item.date || typeof item.hours !== 'number') {
+              return [];
+            }
+            const normalized: Timesheet = {
+              id: resolvedId,
+              date: item.date,
+              hours: item.hours,
+            };
+            if (item.description !== undefined) {
+              normalized.description = item.description;
+            }
+            return [normalized];
+          })
         : [];
       setTimesheets(data);
     } catch {
@@ -37,10 +47,11 @@ const TimeSheets: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = {
+    const description = form.description.trim();
+    const payload: { date: string; hours: number; description?: string } = {
       date: form.date,
       hours: Number(form.hours),
-      description: form.description,
+      ...(description ? { description } : {}),
     };
     if (!Number.isFinite(payload.hours) || payload.hours < 0) {
       addToast('Hours must be a non-negative number', 'error');
@@ -50,14 +61,30 @@ const TimeSheets: React.FC = () => {
       if (editingId) {
         await http.put(`/timesheets/${editingId}`, payload);
         setTimesheets((prev) =>
-          prev.map((t) => (t.id === editingId ? { id: editingId, ...payload } : t)),
+          prev.map((t) =>
+            t.id === editingId
+              ? {
+                  id: editingId,
+                  date: payload.date,
+                  hours: payload.hours,
+                  ...(payload.description ? { description: payload.description } : {}),
+                }
+              : t,
+          ),
         );
       } else {
-        const res = await http.post('/timesheets', payload);
-        setTimesheets((prev) => [
-          ...prev,
-          { id: res.data._id ?? res.data.id, ...payload },
-        ]);
+        interface TimesheetResponse extends Partial<Timesheet> { _id?: string; id?: string }
+        const res = await http.post<TimesheetResponse>('/timesheets', payload);
+        const createdId = res.data._id ?? res.data.id ?? Date.now().toString();
+        const newEntry: Timesheet = {
+          id: createdId,
+          date: payload.date,
+          hours: payload.hours,
+        };
+        if (payload.description) {
+          newEntry.description = payload.description;
+        }
+        setTimesheets((prev) => [...prev, newEntry]);
       }
       setForm({ date: '', hours: '', description: '' });
       setEditingId(null);

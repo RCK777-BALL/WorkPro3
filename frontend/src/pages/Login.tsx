@@ -2,9 +2,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useForm } from 'react-hook-form';
+import { useForm, type FieldErrors, type Resolver } from 'react-hook-form';
 import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getErrorMessage } from '../lib/api';
@@ -18,12 +17,27 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+const resolver: Resolver<FormValues> = async (values) => {
+  const parsed = schema.safeParse(values);
+  if (parsed.success) {
+    return { values: parsed.data, errors: {} };
+  }
+  const fieldErrors = parsed.error.flatten().fieldErrors;
+  const errors = Object.entries(fieldErrors).reduce<FieldErrors<FormValues>>((acc, [key, messages]) => {
+    if (messages && messages.length > 0) {
+      acc[key as keyof FormValues] = { type: 'manual', message: messages[0] };
+    }
+    return acc;
+  }, {} as FieldErrors<FormValues>);
+  return { values: {}, errors };
+};
+
 export default function Login() {
   const nav = useNavigate();
   const { login } = useAuth();
   const [serverMsg, setServerMsg] = useState<string | null>(null);
   const { register, handleSubmit, formState: { errors, isSubmitting } } =
-    useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { email: '', password: '', remember: true } });
+    useForm<FormValues>({ resolver, defaultValues: { email: '', password: '', remember: true } });
 
   const onSubmit = async (values: FormValues) => {
     setServerMsg(null);

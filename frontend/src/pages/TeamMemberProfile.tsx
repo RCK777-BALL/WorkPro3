@@ -107,7 +107,11 @@ const TeamMemberProfile = () => {
   return (
     <div className="space-y-6">
         <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6 flex items-center space-x-4">
-          <Avatar name={member.name} src={member.avatar} size="lg" />
+          <Avatar
+            name={member.name}
+            size="lg"
+            {...(member.avatar ? { src: member.avatar } : {})}
+          />
           <div>
             <h2 className="text-2xl font-bold text-neutral-900">{member.name}</h2>
             <p className="text-neutral-500">{member.role}</p>

@@ -16,9 +16,27 @@ const PMTasksPage: React.FC = () => {
 
   const loadTasks = async () => {
     try {
-      const res = await http.get<PMTask[]>('/pm-tasks', { withCredentials: true });
+      interface PMTaskResponse extends Partial<PMTask> { _id?: string; id?: string }
+      const res = await http.get<PMTaskResponse[]>('/pm-tasks', { withCredentials: true });
       const data: PMTask[] = Array.isArray(res.data)
-        ? res.data.map((t) => ({ ...t, id: t._id ?? t.id }))
+        ? res.data.flatMap((task) => {
+            const resolvedId = task._id ?? task.id;
+            if (!resolvedId) {
+              return [];
+            }
+            const normalized: PMTask = {
+              id: resolvedId,
+              title: task.title ?? 'Untitled Task',
+              frequency: task.frequency ?? 'monthly',
+              active: task.active ?? true,
+            };
+            if (task.lastRun !== undefined) normalized.lastRun = task.lastRun;
+            if (task.nextDue !== undefined) normalized.nextDue = task.nextDue;
+            if (task.notes !== undefined) normalized.notes = task.notes;
+            if (task.asset !== undefined) normalized.asset = task.asset;
+            if (task.department !== undefined) normalized.department = task.department;
+            return [normalized];
+          })
         : [];
       setTasks(data);
     } catch (err) {
@@ -32,7 +50,9 @@ const PMTasksPage: React.FC = () => {
     }
   };
 
-  useEffect(() => { loadTasks(); }, []);
+  useEffect(() => {
+    loadTasks();
+  }, []);
 
   const handleSuccess = async () => {
     await loadTasks();
@@ -65,7 +85,10 @@ const PMTasksPage: React.FC = () => {
         </ul>
         {showForm && (
           <div className="bg-white p-4 rounded shadow">
-            <PmTaskForm task={selected || undefined} onSuccess={handleSuccess} />
+            <PmTaskForm
+              {...(selected ? { task: selected } : {})}
+              onSuccess={() => { void handleSuccess(); }}
+            />
           </div>
         )}
       </div>

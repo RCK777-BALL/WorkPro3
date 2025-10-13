@@ -23,8 +23,8 @@ function normalizePermit(raw: Permit): Permit {
 }
 
 const defaultApprovalChain: Omit<PermitApprovalStep, 'status'>[] = [
-  { role: 'supervisor' },
-  { role: 'manager' },
+  { role: 'supervisor', sequence: 1 },
+  { role: 'manager', sequence: 2 },
 ];
 
 export default function SafetyPermits() {

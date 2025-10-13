@@ -47,6 +47,49 @@ const registerLimiter = rateLimit({
   message: { message: 'Too many registration attempts. Please try again later.' },
 });
 
+const ROLE_PRIORITY = [
+  'admin',
+  'supervisor',
+  'manager',
+  'planner',
+  'tech',
+  'technician',
+  'team_leader',
+  'team_member',
+  'area_leader',
+  'department_leader',
+  'viewer',
+];
+
+const normalizeRoles = (roles: unknown): string[] => {
+  if (!roles) return [];
+  const list = Array.isArray(roles) ? roles : [roles];
+  const normalized: string[] = [];
+  for (const role of list) {
+    if (typeof role !== 'string') continue;
+    const candidate = role.toLowerCase();
+    if (!normalized.includes(candidate)) {
+      normalized.push(candidate);
+    }
+  }
+  return normalized;
+};
+
+const derivePrimaryRole = (role: unknown, roles: string[]): string => {
+  if (typeof role === 'string') {
+    const candidate = role.toLowerCase();
+    if (ROLE_PRIORITY.includes(candidate)) {
+      return candidate;
+    }
+  }
+  for (const candidate of ROLE_PRIORITY) {
+    if (roles.includes(candidate)) {
+      return candidate;
+    }
+  }
+  return roles[0] ?? 'tech';
+};
+
 const router = Router();
 router.use(passport.initialize());
 
@@ -122,11 +165,23 @@ router.post('/login', loginLimiter, async (
     delete userObj.password;
     delete userObj.passwordHash;
 
+    const normalizedRoles = normalizeRoles((userObj as { roles?: unknown }).roles);
+    const primaryRole = derivePrimaryRole((userObj as { role?: unknown }).role, normalizedRoles);
+    const roles = Array.from(new Set([primaryRole, ...normalizedRoles]));
+    const userId = user._id.toString();
+
     const responseData: {
-      user: typeof userObj & { tenantId?: string };
+      user: typeof userObj & { tenantId?: string; role: string; roles: string[]; id: string; _id: string };
       token?: string;
     } = {
-      user: { ...userObj, tenantId },
+      user: {
+        ...userObj,
+        id: userId,
+        _id: userId,
+        tenantId,
+        role: primaryRole,
+        roles,
+      },
     };
     if (process.env.INCLUDE_AUTH_TOKEN === 'true') {
       responseData.token = token;

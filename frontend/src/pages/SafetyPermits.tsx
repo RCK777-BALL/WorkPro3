@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import http from '@/lib/http';
 import { useAuth } from '@/context/AuthContext';
+import { hasAuthRole } from '@/store/authStore';
 import type {
   Permit,
   PermitHistoryEntry,
@@ -50,7 +51,7 @@ export default function SafetyPermits() {
     const activeStep = selectedPermit.approvalChain.find((step) => step.status === 'pending');
     if (!activeStep) return false;
     if (activeStep.user && activeStep.user === user.id) return true;
-    if (activeStep.role && user.role && activeStep.role === user.role) return true;
+    if (activeStep.role && hasAuthRole(user, activeStep.role)) return true;
     return false;
   }, [user, selectedPermit]);
 
@@ -298,10 +299,10 @@ export default function SafetyPermits() {
                     const canUserApprove = (() => {
                       if (!user) return false;
                       if (activeStep?.user && activeStep.user === user.id) return true;
-                      if (activeStep?.role && user.role && activeStep.role === user.role) return true;
+                      if (activeStep?.role && hasAuthRole(user, activeStep.role)) return true;
                       return false;
                     })();
-                    const canUserEscalate = user?.role === 'admin' || user?.role === 'supervisor';
+                    const canUserEscalate = hasAuthRole(user, 'admin') || hasAuthRole(user, 'supervisor');
                     return (
                       <tr key={permit.id ?? permit._id}>
                         <td className="px-3 py-2">

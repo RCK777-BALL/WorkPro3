@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt, { type SignOptions } from 'jsonwebtoken';
 import type { Response } from 'express';
 
 export interface JwtUser {
@@ -35,7 +35,8 @@ export function signAccess(payload: JwtUser) {
     throw new Error('JWT_ACCESS_SECRET is not configured');
   }
   const expiresIn = process.env.ACCESS_TOKEN_TTL ?? '15m';
-  return jwt.sign(payload, secret, { expiresIn });
+  const options: SignOptions = { expiresIn };
+  return jwt.sign(payload, secret, options);
 }
 
 export function signRefresh(payload: JwtUser) {
@@ -44,7 +45,8 @@ export function signRefresh(payload: JwtUser) {
     throw new Error('JWT_REFRESH_SECRET is not configured');
   }
   const expiresIn = process.env.REFRESH_TOKEN_TTL ?? '7d';
-  return jwt.sign(payload, secret, { expiresIn });
+  const options: SignOptions = { expiresIn };
+  return jwt.sign(payload, secret, options);
 }
 
 interface CookieOptions {

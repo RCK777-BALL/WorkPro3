@@ -47,8 +47,10 @@ export const requireAuth: RequestHandler = (req, res, next) => {
     }
 
     const headerSiteId = req.header('x-site-id');
-    if (payload.siteId || headerSiteId) {
-      req.siteId = payload.siteId ?? headerSiteId ?? undefined;
+    if (typeof payload.siteId === 'string') {
+      req.siteId = payload.siteId;
+    } else if (typeof headerSiteId === 'string') {
+      req.siteId = headerSiteId;
     }
 
     next();

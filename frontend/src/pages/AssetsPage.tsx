@@ -70,11 +70,24 @@ const AssetsPage = () => {
     try {
       interface AssetResponse extends Partial<Asset> { _id?: string; id?: string }
       const res = await http.get<AssetResponse[]>('/assets');
-      const data: Asset[] = Array.isArray(res.data)
-        ? res.data.map((a) => ({ ...a, id: a._id ?? a.id ?? '' }))
+      const normalized: Asset[] = Array.isArray(res.data)
+        ? res.data.flatMap((asset) => {
+            const { _id, id: assetId, name, ...rest } = asset;
+            const resolvedId = _id ?? assetId;
+            if (!resolvedId) {
+              return [] as Asset[];
+            }
+            const restFields: Partial<Omit<Asset, 'id' | 'name'>> = rest;
+            const normalizedAsset: Asset = {
+              id: resolvedId,
+              name: name ?? 'Unnamed Asset',
+              ...restFields,
+            };
+            return [normalizedAsset];
+          })
         : [];
-      setAssets(data);
-      localStorage.setItem(ASSET_CACHE_KEY, JSON.stringify(data));
+      setAssets(normalized);
+      localStorage.setItem(ASSET_CACHE_KEY, JSON.stringify(normalized));
     } catch (err) {
       console.error('Error fetching assets:', err);
       if (!loadCached()) {
@@ -155,7 +168,7 @@ const AssetsPage = () => {
           isOpen={showWO}
           onClose={() => setShowWO(false)}
           workOrder={null}
-          initialData={woAsset ? { assetId: woAsset.id } : undefined}
+          {...(woAsset ? { initialData: { assetId: woAsset.id } } : {})}
           onUpdate={async (payload) => {
             try {
               if (payload instanceof FormData) {

@@ -22,7 +22,7 @@ const ForgotPasswordPage: React.FC = () => {
   useEffect(() => {
     const handler = (e: Event) => {
       e.preventDefault();
-      setInstallEvent(e);
+      setInstallEvent(e as BeforeInstallPromptEvent);
       setShowInstall(true);
     };
     window.addEventListener('beforeinstallprompt', handler as EventListener);

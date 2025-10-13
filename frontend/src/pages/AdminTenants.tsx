@@ -3,7 +3,7 @@
  */
 
 import { useEffect, useState } from 'react';
- import { z } from 'zod';
+import { z } from 'zod';
 import Button from '../components/common/Button';
 import http from '../lib/http';
 import { useToast } from '../context/ToastContext';
@@ -14,19 +14,15 @@ interface Tenant {
   name: string;
 }
 
-interface TenantResponse {
-  _id?: string;
-  id?: string;
-  name: string;
-}
-
-const tenantResponseSchema: z.ZodType<TenantResponse> = z
+const tenantResponseSchema = z
   .object({
     _id: z.string().optional(),
     id: z.string().optional(),
     name: z.string(),
   })
-  .refine((t) => t._id || t.id, { message: 'Missing tenant id' });
+  .refine((tenant) => tenant._id || tenant.id, { message: 'Missing tenant id' });
+
+type TenantResponse = z.infer<typeof tenantResponseSchema>;
 
 const AdminTenants = () => {
   const { addToast } = useToast();

@@ -15,6 +15,32 @@ import WorkOrderReviewModal from '@/components/work-orders/WorkOrderReviewModal'
 import type { WorkOrder } from '@/types';
 
 const LOCAL_KEY = 'offline-workorders';
+const OPTIONAL_WORK_ORDER_KEYS: (keyof WorkOrder)[] = [
+  'description',
+  'assetId',
+  'asset',
+  'complianceProcedureId',
+  'calibrationIntervalDays',
+  'assignedTo',
+  'assignedToAvatar',
+  'assignees',
+  'checklists',
+  'partsUsed',
+  'signatures',
+  'timeSpentMin',
+  'photos',
+  'failureCode',
+  'permits',
+  'requiredPermitTypes',
+  'scheduledDate',
+  'dueDate',
+  'createdAt',
+  'completedAt',
+  'note',
+  'completedBy',
+  'attachments',
+  'parts',
+];
 
 export default function WorkOrders() {
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
@@ -73,12 +99,38 @@ export default function WorkOrders() {
         ? `/workorders/search?${params.toString()}`
         : '/workorders';
       interface WorkOrderResponse extends Partial<WorkOrder> { _id?: string; id?: string }
+      const normalize = (
+        raw: WorkOrderResponse,
+      ): WorkOrder | null => {
+        const resolvedId = raw._id ?? raw.id;
+        if (!resolvedId) {
+          return null;
+        }
+        const normalized: WorkOrder = {
+          id: resolvedId,
+          title: raw.title ?? 'Untitled Work Order',
+          priority: raw.priority ?? 'medium',
+          status: raw.status ?? 'requested',
+          type: raw.type ?? 'corrective',
+          department: raw.department ?? 'General',
+        };
+        OPTIONAL_WORK_ORDER_KEYS.forEach((key) => {
+          const value = raw[key];
+          if (value !== undefined) {
+            normalized[key] = value as WorkOrder[typeof key];
+          }
+        });
+        return normalized;
+      };
       const res = await http.get<WorkOrderResponse[]>(url);
-      const data: WorkOrder[] = Array.isArray(res.data)
-        ? res.data.map((w) => ({ ...w, id: w._id ?? w.id ?? '' }))
+      const normalized: WorkOrder[] = Array.isArray(res.data)
+        ? res.data.flatMap((item) => {
+            const workOrder = normalize(item);
+            return workOrder ? [workOrder] : [];
+          })
         : [];
-      setWorkOrders(data);
-      localStorage.setItem(LOCAL_KEY, JSON.stringify(data));
+      setWorkOrders(normalized);
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(normalized));
     } catch (err) {
       console.error(err);
       const cached = localStorage.getItem(LOCAL_KEY);
@@ -124,10 +176,30 @@ export default function WorkOrders() {
 
   const openReview = async (order: WorkOrder) => {
     try {
-      const res = await http.get(`/workorders/${order.id}`);
-      const data = { ...res.data, id: res.data._id ?? res.data.id } as WorkOrder;
-      setSelectedOrder(data);
-      setShowReviewModal(true);
+      interface WorkOrderResponse extends Partial<WorkOrder> { _id?: string; id?: string }
+      const res = await http.get<WorkOrderResponse>(`/workorders/${order.id}`);
+      const normalized = ((): WorkOrder | null => {
+        const resolvedId = res.data._id ?? res.data.id ?? order.id;
+        const normalizedOrder: WorkOrder = {
+          id: resolvedId,
+          title: res.data.title ?? order.title,
+          priority: res.data.priority ?? order.priority,
+          status: res.data.status ?? order.status,
+          type: res.data.type ?? order.type,
+          department: res.data.department ?? order.department,
+        };
+        OPTIONAL_WORK_ORDER_KEYS.forEach((key) => {
+          const value = res.data[key];
+          if (value !== undefined) {
+            normalizedOrder[key] = value as WorkOrder[typeof key];
+          }
+        });
+        return normalizedOrder;
+      })();
+      if (normalized) {
+        setSelectedOrder(normalized);
+        setShowReviewModal(true);
+      }
     } catch (err) {
       console.error(err);
     }

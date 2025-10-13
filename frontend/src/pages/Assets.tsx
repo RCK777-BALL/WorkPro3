@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import http from '@/lib/http';
 import Drawer from '@/components/ui/Drawer';
 import Button from '@/components/common/Button';
-import AssetQRCode from '@/qr/AssetQRCode';
+import AssetQRCode from '@/components/qr/AssetQRCode';
 import WorkOrderModal from '@/components/work-orders/WorkOrderModal';
 import type { Asset } from '@/types';
 
@@ -106,7 +106,11 @@ const Assets = () => {
           </ul>
         )}
       </div>
-      <Drawer open={!!selected} onClose={() => setSelected(null)} title={selected?.name}>
+      <Drawer
+        open={Boolean(selected)}
+        onClose={() => setSelected(null)}
+        {...(selected ? { title: selected.name } : {})}
+      >
         {selected && (
           <div className="space-y-4">
             <div className="flex gap-2">
@@ -130,7 +134,7 @@ const Assets = () => {
         isOpen={woOpen}
         onClose={() => setWoOpen(false)}
         workOrder={null}
-        initialData={selected ? { assetId: selected.id } : undefined}
+        {...(selected ? { initialData: { assetId: selected.id } } : {})}
         onUpdate={async (payload) => {
           try {
             await http.post('/workorders', payload);

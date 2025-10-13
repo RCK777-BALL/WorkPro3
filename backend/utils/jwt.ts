@@ -11,6 +11,9 @@ export interface JwtUser {
 
 const durationRegex = /^(\d+)(ms|s|m|h|d)$/i;
 
+const ACCESS_TOKEN_DEFAULT_TTL = '15m';
+const REFRESH_TOKEN_DEFAULT_TTL = '7d';
+
 function parseDuration(ttl: string | undefined, fallback: string): number {
   const duration = (ttl ?? fallback).trim();
   const match = durationRegex.exec(duration);
@@ -34,8 +37,8 @@ export function signAccess(payload: JwtUser) {
   if (!secret) {
     throw new Error('JWT_ACCESS_SECRET is not configured');
   }
-  const expiresIn = process.env.ACCESS_TOKEN_TTL ?? '15m';
-  const options: SignOptions = { expiresIn };
+  const accessTtlMs = parseDuration(process.env.ACCESS_TOKEN_TTL, ACCESS_TOKEN_DEFAULT_TTL);
+  const options: SignOptions = { expiresIn: Math.floor(accessTtlMs / 1000) };
   return jwt.sign(payload, secret, options);
 }
 
@@ -44,8 +47,8 @@ export function signRefresh(payload: JwtUser) {
   if (!secret) {
     throw new Error('JWT_REFRESH_SECRET is not configured');
   }
-  const expiresIn = process.env.REFRESH_TOKEN_TTL ?? '7d';
-  const options: SignOptions = { expiresIn };
+  const refreshTtlMs = parseDuration(process.env.REFRESH_TOKEN_TTL, REFRESH_TOKEN_DEFAULT_TTL);
+  const options: SignOptions = { expiresIn: Math.floor(refreshTtlMs / 1000) };
   return jwt.sign(payload, secret, options);
 }
 
@@ -56,8 +59,8 @@ interface CookieOptions {
 export function setAuthCookies(res: Response, access: string, refresh: string, options: CookieOptions = {}) {
   const secure = process.env.NODE_ENV === 'production';
   const domain = process.env.COOKIE_DOMAIN || undefined;
-  const accessTtlMs = parseDuration(process.env.ACCESS_TOKEN_TTL, '15m');
-  const refreshTtlMs = parseDuration(process.env.REFRESH_TOKEN_TTL, '7d');
+  const accessTtlMs = parseDuration(process.env.ACCESS_TOKEN_TTL, ACCESS_TOKEN_DEFAULT_TTL);
+  const refreshTtlMs = parseDuration(process.env.REFRESH_TOKEN_TTL, REFRESH_TOKEN_DEFAULT_TTL);
   const refreshOptions = options.remember ? { maxAge: refreshTtlMs } : {};
 
   res.cookie('access_token', access, {

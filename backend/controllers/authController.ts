@@ -2,10 +2,21 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { Request, Response, NextFunction } from 'express';
+import { randomUUID } from 'crypto';
+import type { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
+import Tenant from '../models/Tenant';
 import User from '../models/User';
-import { sendResponse } from '../utils/sendResponse';
-import { isCookieSecure } from '../utils/isCookieSecure';
+import logger from '../utils/logger';
+import {
+  type JwtUser,
+  clearAuthCookies,
+  setAuthCookies,
+  signAccess,
+  signRefresh,
+} from '../utils/jwt';
+
+const DEFAULT_TENANT_NAME = 'Default Tenant';
 
 const ROLE_PRIORITY = [
   'admin',

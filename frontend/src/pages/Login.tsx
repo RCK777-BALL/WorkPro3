@@ -2,162 +2,71 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import { useAuth } from "../context/AuthContext";
-import { emitToast } from "../context/ToastContext";
-import http, { SITE_KEY, TENANT_KEY, TOKEN_KEY } from "../lib/http";
-import type { AuthMfaVerifyResponse, AuthSession } from "../types";
-import { api, API_BASE } from "../utils/api";
-import PlatinumLoginVanilla from "../components/PlatinumLoginVanilla";
-import PlatinumLoginMfa from "../components/PlatinumLoginMfa";
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getErrorMessage } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
-};
+const schema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+  remember: z.boolean().optional(),
+});
 
-type MfaLoginResponse = {
-  mfaRequired: true;
-  userId: string;
-};
+type FormValues = z.infer<typeof schema>;
 
-type LoginResult = AuthSession | MfaLoginResponse;
+export default function Login() {
+  const nav = useNavigate();
+  const { login } = useAuth();
+  const [serverMsg, setServerMsg] = useState<string | null>(null);
+  const { register, handleSubmit, formState: { errors, isSubmitting } } =
+    useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { email: '', password: '', remember: true } });
 
-const Login: React.FC = () => {
-  const { t } = useTranslation();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { setUser } = useAuth();
-
-  const [error, setError] = useState<string | null>(null);
-  const [mfaUser, setMfaUser] = useState<string | null>(null);
-  const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
-  const [showInstall, setShowInstall] = useState(false);
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const token = params.get("token");
-    const emailFromOauth = params.get("email");
-
-    if (token && emailFromOauth) {
-      const id =
-        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-          ? crypto.randomUUID()
-          : `${Date.now()}`;
-
-      setUser({
-        id,
-        name: emailFromOauth.split("@")[0],
-        role: "tech",
-        email: emailFromOauth,
-      });
-      localStorage.setItem(TOKEN_KEY, token);
-      navigate("/dashboard", { replace: true });
-      return;
-    }
-
-    const handler = (event: Event) => {
-      event.preventDefault();
-      setInstallEvent(event as BeforeInstallPromptEvent);
-      setShowInstall(true);
-    };
-
-    window.addEventListener("beforeinstallprompt", handler as EventListener);
-    return () => window.removeEventListener("beforeinstallprompt", handler as EventListener);
-  }, [location.search, navigate, setUser]);
-
-  const promptInstall = async () => {
-    if (!installEvent) return;
-    await installEvent.prompt();
-    await installEvent.userChoice;
-    setInstallEvent(null);
-    setShowInstall(false);
-  };
-
-  const persistSession = (session: AuthSession) => {
-    setUser({ ...session.user });
-    if (session.token) {
-      localStorage.setItem(TOKEN_KEY, session.token);
-    } else {
-      localStorage.removeItem(TOKEN_KEY);
-    }
-    if (session.user?.tenantId) localStorage.setItem(TENANT_KEY, session.user.tenantId);
-    if (session.user?.siteId) localStorage.setItem(SITE_KEY, session.user.siteId);
-  };
-
-  const handleLogin = async (email: string, password: string, remember: boolean) => {
-    setError(null);
+  const onSubmit = async (values: FormValues) => {
+    setServerMsg(null);
     try {
-      const result = (await api.login({ email, password, remember })) as LoginResult;
-
-      if ("mfaRequired" in result && result.mfaRequired) {
-        setMfaUser(result.userId);
-        return;
-      }
-
-      persistSession(result);
-      navigate("/dashboard", { replace: true });
-    } catch (err: unknown) {
-      const message = (err as { message?: string })?.message;
-      const errorMessage = message || t("auth.loginFailed", "Login failed");
-      emitToast(errorMessage, "error");
-      setError(errorMessage);
+      await login(values.email, values.password, Boolean(values.remember));
+      nav('/dashboard', { replace: true });
+    } catch (e) {
+      setServerMsg(getErrorMessage(e));
     }
   };
-
-  const handleVerify = async (code: string) => {
-    if (!mfaUser) return;
-    setError(null);
-    try {
-      const { data } = await http.post<AuthMfaVerifyResponse>("/auth/mfa/verify", {
-        userId: mfaUser,
-        token: code,
-      });
-      const session = data as AuthSession;
-      persistSession(session);
-      navigate("/dashboard", { replace: true });
-    } catch {
-      const invalidMessage = t("auth.invalidCode", "Invalid code");
-      setError(invalidMessage);
-      emitToast(invalidMessage, "error");
-    }
-  };
-
-  const installSlot = showInstall ? (
-    <div style={{ marginBottom: 16 }}>
-      <button type="button" className="pl-btn" onClick={promptInstall}>
-        {t("app.install", "Install App")}
-      </button>
-    </div>
-  ) : null;
-
-  const oauthBase = `${API_BASE}/auth/oauth`;
-
-  if (mfaUser) {
-    return (
-      <PlatinumLoginMfa
-        onSubmit={handleVerify}
-        onCancel={() => {
-          setMfaUser(null);
-          setError(null);
-        }}
-        errorMessage={error}
-        actionSlot={installSlot}
-      />
-    );
-  }
 
   return (
-    <PlatinumLoginVanilla
-      onSubmit={handleLogin}
-      onGoogle={() => (window.location.href = `${oauthBase}/google`)}
-      onGithub={() => (window.location.href = `${oauthBase}/github`)}
-      errorMessage={error}
-      actionSlot={installSlot}
-    />
+    <div className="min-h-screen grid place-items-center bg-neutral-950 text-neutral-100">
+      <div className="w-full max-w-md bg-neutral-900/60 backdrop-blur rounded-2xl p-6 shadow-xl">
+        <h1 className="text-xl font-semibold mb-4">Access your command center</h1>
+        {serverMsg && (
+          <div className="mb-3 rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm">
+            {serverMsg}
+          </div>
+        )}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+          <div>
+            <label className="text-sm">Email</label>
+            <input className="mt-1 w-full rounded-md bg-neutral-800 px-3 py-2 outline-none"
+              type="email" {...register('email')} />
+            {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email.message}</p>}
+          </div>
+          <div>
+            <label className="text-sm">Password</label>
+            <input className="mt-1 w-full rounded-md bg-neutral-800 px-3 py-2 outline-none"
+              type="password" {...register('password')} />
+            {errors.password && <p className="text-xs text-red-400 mt-1">{errors.password.message}</p>}
+          </div>
+          <label className="inline-flex items-center gap-2 text-sm">
+            <input type="checkbox" {...register('remember')} />
+            Remember this device
+          </label>
+          <button disabled={isSubmitting}
+            className="w-full rounded-md bg-white/90 text-black font-semibold py-2 disabled:opacity-50">
+            {isSubmitting ? 'Signing in…' : 'Sign in'}
+          </button>
+        </form>
+      </div>
+    </div>
   );
-};
-
-export default Login;
+}

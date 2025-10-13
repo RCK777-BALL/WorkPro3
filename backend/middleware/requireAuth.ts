@@ -4,69 +4,55 @@
 
 import jwt from 'jsonwebtoken';
 import type { RequestHandler } from 'express';
-import { getJwtSecret } from '../utils/getJwtSecret';
 import type { AuthedRequest } from '../types/http';
-import { fail } from '../src/lib/http';
+import type { JwtUser } from '../utils/jwt';
 
-export interface AuthPayload {
-  id: string;
-  email: string;
-  tenantId?: string;
-  siteId?: string;
-  tokenVersion?: number;
+interface DecodedToken extends JwtUser {
+  exp?: number;
+  iat?: number;
 }
 
-/**
- * Require a valid JWT to access the route.
- * Reads token from:
- *  - Authorization: Bearer <token>
- *  - cookies.auth (requires cookie-parser)
- */
 export const requireAuth: RequestHandler = (req, res, next) => {
   const authedReq = req as AuthedRequest;
   const bearer = req.headers.authorization?.startsWith('Bearer ')
     ? req.headers.authorization.slice(7)
     : undefined;
-
-  const cookieToken = (req as any).cookies?.auth as string | undefined;
-
+  const cookieToken = (req as any).cookies?.access_token as string | undefined;
   const token = bearer ?? cookieToken;
+
   if (!token) {
-    fail(res, 'Unauthorized', 401);
+    res.status(401).json({ error: { code: 401, message: 'Unauthorized' } });
     return;
   }
 
-  let secret: string;
-  try {
-    secret = getJwtSecret();
-  } catch {
-    fail(res, 'Server configuration issue', 500);
+  const secret = process.env.JWT_ACCESS_SECRET;
+  if (!secret) {
+    res.status(500).json({ error: { code: 500, message: 'Server configuration issue' } });
     return;
   }
 
   try {
-    const payload = jwt.verify(token, secret) as AuthPayload;
-    authedReq.user = {
+    const payload = jwt.verify(token, secret) as DecodedToken;
+    const userPayload: Express.User = {
       id: payload.id,
       email: payload.email,
-      ...(payload.tenantId ? { tenantId: payload.tenantId } : {}),
-      ...(payload.siteId ? { siteId: payload.siteId } : {}),
+      role: payload.role,
+      tenantId: payload.tenantId,
+      siteId: payload.siteId,
     };
+    authedReq.user = userPayload;
 
     if (payload.tenantId) {
       req.tenantId = payload.tenantId;
     }
 
     const headerSiteId = req.header('x-site-id');
-    const resolvedSiteId = payload.siteId ?? headerSiteId;
-    if (resolvedSiteId) {
-      req.siteId = resolvedSiteId;
+    if (payload.siteId || headerSiteId) {
+      req.siteId = payload.siteId ?? headerSiteId ?? undefined;
     }
 
     next();
-    return;
   } catch {
-    fail(res, 'Invalid or expired token', 401);
-    return;
+    res.status(401).json({ error: { code: 401, message: 'Invalid or expired token' } });
   }
 };

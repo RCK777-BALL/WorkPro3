@@ -16,7 +16,42 @@ import { useAuthStore, type AuthState } from '@/store/authStore';
 import type { AuthLoginResponse, AuthSession, AuthUser } from '@/types';
 import { SITE_KEY, TENANT_KEY, TOKEN_KEY } from '@/lib/http';
 import { emitToast } from './ToastContext';
-import { api } from '@/utils/api';
+import { api, getErrorMessage } from '@/lib/api';
+
+type RawAuthUser = {
+  id: string;
+  email: string;
+  tenantId?: string;
+  siteId?: string;
+  role?: string;
+};
+
+const allowedRoles: AuthUser['role'][] = [
+  'admin',
+  'supervisor',
+  'planner',
+  'tech',
+  'team_member',
+  'team_leader',
+  'area_leader',
+  'department_leader',
+];
+
+const mapRole = (role?: string): AuthUser['role'] => {
+  if (role && allowedRoles.includes(role as AuthUser['role'])) {
+    return role as AuthUser['role'];
+  }
+  return 'admin';
+};
+
+const toAuthUser = (payload: RawAuthUser): AuthUser => ({
+  id: payload.id,
+  email: payload.email,
+  name: payload.email.split('@')[0] ?? payload.email,
+  role: mapRole(payload.role),
+  tenantId: payload.tenantId,
+  siteId: payload.siteId,
+});
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -75,12 +110,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       setLoading(true);
       try {
-        const { user: currentUser } = await api.me();
+        const { data } = await api.get<{ data?: { user?: RawAuthUser | null } }>('/api/auth/me');
         if (!cancelled) {
-          handleSetUser(currentUser ?? null);
+          const payload = data?.data?.user;
+          handleSetUser(payload ? toAuthUser(payload) : null);
         }
-      } catch {
-        if (!cancelled) {
+      } catch (err) {
+        const message = getErrorMessage(err);
+        if (!cancelled && message) {
           handleSetUser(null);
         }
       } finally {
@@ -99,30 +136,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = useCallback(
     async (email: string, password: string, remember = false) => {
-      const result = await api.login({ email, password, remember });
-
-      if ('mfaRequired' in result) {
-        return result;
+      const response = await api.post<{ data?: { user?: RawAuthUser } }>('/api/auth/login', {
+        email,
+        password,
+        remember,
+      });
+      const payload = response.data?.data?.user;
+      if (!payload) {
+        throw new Error('Invalid login response');
       }
 
-      const token = (result as AuthSession).token;
-      const session: AuthSession = {
-        user: result.user as AuthUser,
-        ...(token ? { token } : {}),
-      };
+      const authUser = toAuthUser(payload);
+      handleSetUser(authUser);
 
-      handleSetUser(session.user);
-      if (token) {
-        localStorage.setItem(TOKEN_KEY, token);
-      } else {
-        localStorage.removeItem(TOKEN_KEY);
+      if (authUser.tenantId) {
+        localStorage.setItem(TENANT_KEY, authUser.tenantId);
       }
-      if (session.user?.tenantId) {
-        localStorage.setItem(TENANT_KEY, session.user.tenantId);
+      if (authUser.siteId) {
+        localStorage.setItem(SITE_KEY, authUser.siteId);
       }
-      if (session.user?.siteId) {
-        localStorage.setItem(SITE_KEY, session.user.siteId);
-      }
+      localStorage.removeItem(TOKEN_KEY);
+
+      const session: AuthSession = { user: authUser };
       return session;
     },
     [handleSetUser]
@@ -139,11 +174,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = useCallback(async () => {
     try {
-      await api.logout();
+      await api.post('/api/auth/logout');
     } catch (err) {
-      const status = (err as { status?: number })?.status;
-      if (status !== 401) {
-        emitToast('Failed to log out', 'error');
+      const message = getErrorMessage(err);
+      if (message) {
+        emitToast(message, 'error');
       }
     } finally {
       resetAuthState();

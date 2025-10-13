@@ -20,21 +20,12 @@ const LoginForm = () => {
     e?.preventDefault();
     setError('');
     try {
-      const result = await authLogin(email, password);
-      if ('mfaRequired' in result) {
-        setError('Multi-factor authentication is required.');
-        addToast('Multi-factor authentication is required to continue.', 'error');
-        return;
-      }
-
+      await authLogin(email, password);
       navigate('/dashboard');
     } catch (err) {
-      if (err instanceof Error && err.message === 'Invalid credentials') {
-        setError(err.message);
-      } else {
-        setError('Server error. Please try again.');
-        addToast('Server error. Please try again.', 'error');
-      }
+      const message = (err as { message?: string })?.message ?? 'Server error. Please try again.';
+      setError(message);
+      addToast(message, 'error');
     }
   };
 

@@ -77,6 +77,7 @@ try {
 }
 
 const app = express();
+app.set("trust proxy", 1);
 const httpServer = createServer(app);
 const PORT = parseInt(env.PORT, 10);
 const MONGO_URI = env.MONGO_URI;
@@ -84,13 +85,17 @@ const MONGO_URI = env.MONGO_URI;
 const RATE_LIMIT_WINDOW_MS = parseInt(env.RATE_LIMIT_WINDOW_MS, 10);
 const RATE_LIMIT_MAX = parseInt(env.RATE_LIMIT_MAX, 10);
 
-const allowedOrigins = env.CORS_ORIGIN.split(",").map((origin) =>
-  origin.trim(),
+const allowedOrigins = new Set(
+  env.CORS_ORIGIN
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0),
 );
+allowedOrigins.add("http://localhost:5173");
 
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.has(origin)) {
       callback(null, true);
     } else {
       callback(new Error("Not allowed by CORS"));
@@ -100,12 +105,12 @@ const corsOptions: cors.CorsOptions = {
   allowedHeaders: ["Content-Type", "Authorization", "usertokenaccess"],
 };
 
-app.use(helmet());
+app.use(cookieParser());
 app.use(cors(corsOptions));
+app.use(helmet());
 app.use(requestLog);
 app.use(express.json({ limit: "1mb" }));
 app.use(mongoSanitize());
-app.use(cookieParser());
 setupSwagger(app);
 
 const dev = env.NODE_ENV !== "production";

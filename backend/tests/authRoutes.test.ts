@@ -76,10 +76,10 @@ describe('Auth Routes', () => {
 
     const cookies = res.headers['set-cookie'];
     expect(cookies).toBeDefined();
-    expect(cookies[0]).toMatch(/token=/);
-    expect(cookies[0]).toMatch(/SameSite=Strict/);
+    expect(cookies[0]).toMatch(/auth=/);
+    expect(cookies[0]).toMatch(/SameSite=Lax/);
 
-    const session = res.body.data as { user: any; token?: string };
+    const session = res.body as { user: any; token?: string };
     expect(session.user.email).toBe('test@example.com');
     expect(session.token).toBeUndefined();
 
@@ -102,7 +102,7 @@ describe('Auth Routes', () => {
       .send({ email: 'CASE@EXAMPLE.COM', password: 'pass123' })
       .expect(200);
 
-    const session = res.body.data as { user: any };
+    const session = res.body as { user: any };
     expect(session.user.email).toBe('case@example.com');
   });
 
@@ -123,11 +123,8 @@ describe('Auth Routes', () => {
       .expect(200);
 
     expect(res.body).toEqual({
-      data: {
-        mfaRequired: true,
-        userId: user._id.toString(),
-      },
-      error: null,
+      mfaRequired: true,
+      userId: user._id.toString(),
     });
   });
 
@@ -146,7 +143,7 @@ describe('Auth Routes', () => {
       .send({ email: 'config@example.com', password: 'pass123' })
       .expect(200);
 
-    const session = res.body.data as { token?: string };
+    const session = res.body as { token?: string };
     expect(session.token).toBeDefined();
 
     delete process.env.INCLUDE_AUTH_TOKEN;
@@ -168,7 +165,7 @@ describe('Auth Routes', () => {
       .send({ email: 'notoken@example.com', password: 'pass123' })
       .expect(200);
 
-    const session = res.body.data as { token?: string };
+    const session = res.body as { token?: string };
     expect(session.token).toBeUndefined();
   });
 
@@ -187,14 +184,14 @@ describe('Auth Routes', () => {
       .expect(200);
 
     const cookies = login.headers['set-cookie'];
-    const loginSession = login.body.data as { user: any };
+    const loginSession = login.body as { user: any };
 
     const meRes = await request(app)
       .get('/api/auth/me')
       .set('Cookie', cookies)
       .expect(200);
     expect(loginSession.user.email).toBe('me@example.com');
-    const meSession = meRes.body.data as { user: any };
+    const meSession = meRes.body as { user: any };
     expect(meSession.user.email).toBe('me@example.com');
 
     await request(app)

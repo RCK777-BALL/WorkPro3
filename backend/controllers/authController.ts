@@ -4,6 +4,7 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import { sendResponse } from '../utils/sendResponse';
+import { isCookieSecure } from '../utils/isCookieSecure';
 
 
 /**
@@ -17,10 +18,10 @@ export const getMe = async (
   try {
     const user = (req as any).user;
     if (!user) {
-      sendResponse(res, null, 'Unauthorized', 401);
+      res.status(401).json({ message: 'Unauthenticated' });
       return;
     }
-    sendResponse(res, { user });
+    res.json({ user });
     return;
   } catch (err) {
     next(err);
@@ -36,8 +37,12 @@ export const logout = (
   res: Response,
   _next: NextFunction,
 ) => {
-  res.clearCookie('token');
-  sendResponse(res, { message: 'Logged out successfully' });
+  res.clearCookie('auth', {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: isCookieSecure(),
+  });
+  res.json({ message: 'ok' });
   return;
 };
  

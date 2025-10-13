@@ -9,7 +9,8 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { emitToast } from '../context/ToastContext';
 import http, { SITE_KEY, TENANT_KEY, TOKEN_KEY } from '../lib/http';
-import type { AuthLoginResponse, AuthMfaVerifyResponse, AuthSession } from '../types';
+import type { AuthMfaVerifyResponse, AuthSession } from '../types';
+import { api } from '../utils/api';
  
 
 type BeforeInstallPromptEvent = Event & {
@@ -73,27 +74,24 @@ const Login: React.FC = () => {
     e?.preventDefault();
     setError('');
     try {
-      const { data } = await http.post<AuthLoginResponse>('/auth/login', { email, password });
-      if ('mfaRequired' in data && data.mfaRequired) {
-        setMfaUser(data.userId);
+      const result = await api.login({ email, password });
+      if ((result as any)?.mfaRequired) {
+        setMfaUser((result as any).userId);
         return;
       }
-      const session = data as AuthSession;
+      const session = result as AuthSession;
       setUser({ ...session.user });
-      if (session.token) localStorage.setItem(TOKEN_KEY, session.token);
+      if (session.token) {
+        localStorage.setItem(TOKEN_KEY, session.token);
+      } else {
+        localStorage.removeItem(TOKEN_KEY);
+      }
       if (session.user?.tenantId) localStorage.setItem(TENANT_KEY, session.user.tenantId);
       if (session.user?.siteId) localStorage.setItem(SITE_KEY, session.user.siteId);
       navigate('/dashboard');
     } catch (err: unknown) {
-      let isNetworkError = false;
-      if (err instanceof Error) {
-        const code = (err as { code?: string }).code;
-        const message = err.message.toLowerCase();
-        isNetworkError = code === 'ERR_NETWORK' || message.includes('network');
-      }
-      const errorMessage = isNetworkError
-        ? t('auth.networkError', 'Cannot connect to server')
-        : t('auth.loginFailed', 'Login failed');
+      const message = (err as { message?: string })?.message;
+      const errorMessage = message || t('auth.loginFailed', 'Login failed');
       emitToast(errorMessage, 'error');
       setError(errorMessage);
     }

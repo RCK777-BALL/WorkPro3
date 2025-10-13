@@ -10,6 +10,7 @@ export const loginSchema = z
   .object({
     email,
     password: z.string().min(1),
+    remember: z.boolean().optional(),
   })
   .strict();
 

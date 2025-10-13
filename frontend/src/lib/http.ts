@@ -40,8 +40,21 @@ http.interceptors.request.use((config) => {
 });
 
 http.interceptors.response.use(
-  <T>(response: AxiosResponse<ApiResult<T>>): AxiosResponse<T> => {
-    const { data, error } = response.data ?? {};
+  <T>(response: AxiosResponse<ApiResult<T> | T>): AxiosResponse<T> => {
+    const payload = response.data as ApiResult<T> | T | undefined;
+
+    if (!payload || typeof payload !== 'object') {
+      return response as AxiosResponse<T>;
+    }
+
+    const hasDataKey = Object.prototype.hasOwnProperty.call(payload, 'data');
+    const hasErrorKey = Object.prototype.hasOwnProperty.call(payload, 'error');
+
+    if (!hasDataKey && !hasErrorKey) {
+      return response as AxiosResponse<T>;
+    }
+
+    const { data, error } = payload as ApiResult<T>;
     if (error) {
       return Promise.reject(error);
     }

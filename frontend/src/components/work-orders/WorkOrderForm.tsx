@@ -65,7 +65,14 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
         const userRes = await http.get('/users');
         setTechs(
           (userRes.data as any[])
-            .filter((u) => u.role === 'tech')
+            .filter((u) => {
+              const roles: string[] = Array.isArray(u.roles) ? u.roles : [];
+              const primary = typeof u.role === 'string' ? u.role : roles[0];
+              return (
+                (typeof primary === 'string' && primary.toLowerCase() === 'tech') ||
+                roles.some((role) => typeof role === 'string' && role.toLowerCase() === 'tech')
+              );
+            })
             .map((u) => ({ ...u, id: u._id ?? u.id })) as User[],
         );
       } catch {

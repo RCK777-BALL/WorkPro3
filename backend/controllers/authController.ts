@@ -2,15 +2,54 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { randomUUID } from 'crypto';
-import type { Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
+import type { Request, Response, NextFunction } from 'express';
 import User from '../models/User';
-import Tenant from '../models/Tenant';
-import { signAccess, signRefresh, setAuthCookies, clearAuthCookies, type JwtUser } from '../utils/jwt';
-import logger from '../utils/logger';
+import { sendResponse } from '../utils/sendResponse';
+import { isCookieSecure } from '../utils/isCookieSecure';
 
-const DEFAULT_TENANT_NAME = 'Default Tenant';
+const ROLE_PRIORITY = [
+  'admin',
+  'supervisor',
+  'manager',
+  'planner',
+  'tech',
+  'technician',
+  'team_leader',
+  'team_member',
+  'area_leader',
+  'department_leader',
+  'viewer',
+];
+
+const normalizeRoles = (roles: unknown): string[] => {
+  if (!roles) return [];
+  const list = Array.isArray(roles) ? roles : [roles];
+  const normalized: string[] = [];
+  for (const role of list) {
+    if (typeof role !== 'string') continue;
+    const candidate = role.toLowerCase();
+    if (!normalized.includes(candidate)) {
+      normalized.push(candidate);
+    }
+  }
+  return normalized;
+};
+
+const derivePrimaryRole = (role: unknown, roles: string[]): string => {
+  if (typeof role === 'string') {
+    const candidate = role.toLowerCase();
+    if (ROLE_PRIORITY.includes(candidate)) {
+      return candidate;
+    }
+  }
+  for (const candidate of ROLE_PRIORITY) {
+    if (roles.includes(candidate)) {
+      return candidate;
+    }
+  }
+  return roles[0] ?? 'tech';
+};
+
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -76,31 +115,44 @@ export async function register(req: Request, res: Response) {
 
 export async function login(req: Request, res: Response) {
   try {
-    const { email, password, remember } = req.body as { email: string; password: string; remember?: boolean };
-    const normalizedEmail = normalizeEmail(email);
-
-    const user = await User.findOne({ email: normalizedEmail })
-      .select('+passwordHash +roles +tenantId');
-
-    if (!user) {
-      return res.status(401).json({
-        error: { code: 401, message: 'Invalid credentials' },
-      });
+    const sessionUser = (req as any).user;
+    if (!sessionUser?.id) {
+      res.status(401).json({ message: 'Unauthenticated' });
+      return;
     }
 
-    const valid = await user.comparePassword(password);
-    if (!valid) {
-      return res.status(401).json({
-        error: { code: 401, message: 'Invalid credentials' },
-      });
+    const dbUser = await User.findById(sessionUser.id)
+      .select(
+        '+tenantId +roles +tokenVersion +email +name +avatar +theme +colorScheme +siteId',
+      )
+      .lean<Record<string, unknown> | null>();
+
+    if (!dbUser) {
+      res.status(404).json({ message: 'User not found' });
+      return;
     }
 
-    const payload = buildJwtPayload(user);
-    const access = signAccess(payload);
-    const refresh = signRefresh(payload);
-    setAuthCookies(res, access, refresh, { remember: Boolean(remember) });
+    const normalizedRoles = normalizeRoles((dbUser as { roles?: unknown }).roles);
+    const primaryRole = derivePrimaryRole((dbUser as { role?: unknown }).role, normalizedRoles);
+    const roles = Array.from(new Set([primaryRole, ...normalizedRoles]));
+    const tenantId = (dbUser as { tenantId?: any }).tenantId
+      ? ((dbUser as { tenantId?: any }).tenantId as any).toString()
+      : sessionUser.tenantId;
+    const userId = ((dbUser as { _id?: any })._id ?? (dbUser as { id?: any }).id ?? sessionUser.id).toString();
 
-    return res.json({ data: { user: payload } });
+    const { passwordHash, passwordResetToken, passwordResetExpires, mfaSecret, ...safeUser } = dbUser;
+
+    res.json({
+      user: {
+        ...safeUser,
+        id: userId,
+        _id: userId,
+        tenantId,
+        role: primaryRole,
+        roles,
+      },
+    });
+    return;
   } catch (err) {
     logger.error('Login error', err);
     return res.status(500).json({ error: { code: 500, message: 'Unable to sign in' } });

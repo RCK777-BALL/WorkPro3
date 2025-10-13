@@ -51,14 +51,69 @@ const derivePrimaryRole = (role: unknown, roles: string[]): string => {
 };
 
 
-/**
- * Return the authenticated user's payload from the request.
- */
-export const getMe = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+function buildJwtPayload(user: { _id: unknown; email: string; tenantId?: unknown; roles?: string[]; role?: string; siteId?: unknown }): JwtUser {
+  return {
+    id: String(user._id),
+    email: user.email,
+    tenantId: user.tenantId ? String(user.tenantId) : undefined,
+    siteId: user.siteId ? String(user.siteId) : undefined,
+    role:
+      Array.isArray(user.roles) && user.roles.length > 0
+        ? user.roles[0]
+        : user.role,
+  };
+}
+
+async function ensureDefaultTenant() {
+  let tenant = await Tenant.findOne({ name: DEFAULT_TENANT_NAME });
+  if (!tenant) {
+    tenant = await Tenant.create({ name: DEFAULT_TENANT_NAME });
+  }
+  return tenant;
+}
+
+export async function register(req: Request, res: Response) {
+  try {
+    const { email, password } = req.body as { email: string; password: string };
+    const normalizedEmail = normalizeEmail(email);
+
+    const existing = await User.findOne({ email: normalizedEmail });
+    if (existing) {
+      return res.status(409).json({
+        error: { code: 409, message: 'Email already in use' },
+      });
+    }
+
+    const tenant = await ensureDefaultTenant();
+    const name = normalizedEmail.split('@')[0] || 'User';
+
+    const user = await User.create({
+      name,
+      email: normalizedEmail,
+      passwordHash: password,
+      roles: ['admin'],
+      tenantId: tenant._id,
+      employeeId: randomUUID(),
+    });
+
+    const payload = buildJwtPayload(user);
+
+    return res.status(201).json({
+      data: { id: payload.id, email: payload.email },
+    });
+  } catch (err) {
+    logger.error('Failed to register user', err);
+    return res.status(500).json({
+      error: { code: 500, message: 'Unable to register user' },
+    });
+  }
+}
+
+export async function login(req: Request, res: Response) {
   try {
     const sessionUser = (req as any).user;
     if (!sessionUser?.id) {
@@ -99,51 +154,47 @@ export const getMe = async (
     });
     return;
   } catch (err) {
-    next(err);
-    return;
+    logger.error('Login error', err);
+    return res.status(500).json({ error: { code: 500, message: 'Unable to sign in' } });
   }
-};
- 
- /**
- * Clear the authentication token cookie and end the session.
- */
-export const logout = (
-  req: Request,
-  res: Response,
-  _next: NextFunction,
-) => {
-  res.clearCookie('auth', {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: isCookieSecure(),
-  });
-  res.json({ message: 'ok' });
-  return;
-};
- 
+}
 
-/**
- * Placeholder MFA setup handler. In a real implementation this would
- * generate and return a secret for the user to configure their MFA device.
- */
-export const setupMfa = (
-  req: Request,
-  res: Response,
-  _next: NextFunction,
-) => {
-  sendResponse(res, null, 'MFA setup not implemented', 501);
-  return;
-};
+export async function me(req: Request, res: Response) {
+  if (!req.user) {
+    return res.status(401).json({ error: { code: 401, message: 'Unauthorized' } });
+  }
+  return res.json({ data: { user: req.user } });
+}
 
-/**
- * Placeholder MFA token validation handler.
- */
-export const validateMfaToken = (
-  req: Request,
-  res: Response,
-  _next: NextFunction,
-) => {
-  sendResponse(res, null, 'MFA token validation not implemented', 501);
-  return;
-};
+export async function refresh(req: Request, res: Response) {
+  const token = req.cookies?.refresh_token;
+  if (!token) {
+    return res.status(401).json({ error: { code: 401, message: 'Missing refresh token' } });
+  }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET ?? '') as JwtUser;
+    if (!decoded?.id) {
+      throw new Error('Invalid refresh token payload');
+    }
+    const payload: JwtUser = {
+      id: decoded.id,
+      email: decoded.email,
+      tenantId: decoded.tenantId,
+      role: decoded.role,
+      siteId: decoded.siteId,
+    };
+    const access = signAccess(payload);
+    const refreshToken = signRefresh(payload);
+    setAuthCookies(res, access, refreshToken, { remember: true });
+    return res.json({ data: { user: payload } });
+  } catch (err) {
+    logger.warn('Failed to refresh token', err);
+    clearAuthCookies(res);
+    return res.status(401).json({ error: { code: 401, message: 'Invalid refresh token' } });
+  }
+}
 
+export async function logout(_req: Request, res: Response) {
+  clearAuthCookies(res);
+  return res.json({ data: { ok: true } });
+}

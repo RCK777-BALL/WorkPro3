@@ -1,28 +1,15 @@
-/*
- * SPDX-License-Identifier: MIT
- */
-
-import type { ApiResult } from '@shared/http';
+import axios from 'axios';
 
 export const api = axios.create({
-  baseURL: `${API_URL}/api`,
-  withCredentials: true,
+  baseURL: import.meta.env.VITE_API_URL || '/api',
+  withCredentials: true, // send cookies
 });
 
-// Unwrap the `{ data, error }` envelope used by the backend.
-api.interceptors.response.use(
-  (response) => {
-    const { data, error } = response.data ?? {};
-    if (error) {
-      return Promise.reject(error);
-    }
-    return data;
-  },
-  (error) => {
-    const payload = error.response?.data;
-    return Promise.reject(payload?.error ?? error);
-  },
-);
+export type ApiError = { error?: { code: number; message: string; details?: unknown } };
 
-export default api;
-
+export function getErrorMessage(err: unknown) {
+  if (axios.isAxiosError(err)) {
+    return (err.response?.data as ApiError)?.error?.message ?? err.message;
+  }
+  return 'Unexpected error';
+}

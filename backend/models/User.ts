@@ -29,6 +29,7 @@ export interface UserDocument extends Document {
   mfaEnabled: boolean;
   mfaSecret?: string;
   tokenVersion: number;
+  comparePassword(candidate: string): Promise<boolean>;
 }
 
 // ✅ Schema definition
@@ -43,7 +44,7 @@ const userSchema = new Schema<UserDocument>(
       index: true,
       lowercase: true,
     },
-    passwordHash: { type: String, required: true },
+    passwordHash: { type: String, required: true, select: false },
     roles: {
       type: [String],
       enum: ROLES,
@@ -85,6 +86,13 @@ userSchema.pre<UserDocument>('save', async function (next) {
     next(err as Error);
   }
 });
+
+userSchema.methods.comparePassword = async function comparePassword(this: UserDocument, candidate: string) {
+  if (!this.passwordHash) {
+    return false;
+  }
+  return bcrypt.compare(candidate, this.passwordHash);
+};
 
 // ✅ Export model
 const User: Model<UserDocument> = mongoose.model<UserDocument>('User', userSchema);

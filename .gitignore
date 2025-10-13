@@ -3,6 +3,7 @@
 **/.env.*
 !.env.sample
 !frontend/.env
+!backend/.env.example
  
 
 # Dependencies

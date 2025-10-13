@@ -2,50 +2,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Router, Request, Response, NextFunction } from 'express';
-import passport from 'passport';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import rateLimit from 'express-rate-limit';
-
-import { getMe, logout, setupMfa, validateMfaToken } from '../controllers/authController';
-import { configureOIDC } from '../auth/oidc';
-import { configureOAuth } from '../auth/oauth';
-import { OAuthProvider, getOAuthScope } from '../config/oauthScopes';
-import { getJwtSecret } from '../utils/getJwtSecret';
-import User from '../models/User';
+import { Router } from 'express';
+import { register, login, me, refresh, logout } from '../controllers/authController';
+import { validate } from '../middleware/validate';
 import { loginSchema, registerSchema } from '../validators/authValidators';
-import { assertEmail } from '../utils/assert';
-// Adjust this import path if your middleware lives elsewhere:
 import { requireAuth } from '../middleware/requireAuth';
-import logger from '../utils/logger';
-import { isCookieSecure } from '../utils/isCookieSecure';
-
-
-const FAKE_PASSWORD_HASH =
-  '$2b$10$lbmUy86xKlj1/lR8TPPby.1/KfNmrRrgOgGs3u21jcd2SzCBRqDB.';
-
-configureOIDC();
-configureOAuth();
-
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60_000,
-  max: 5,
-  standardHeaders: true,
-  legacyHeaders: false,
-  // Count only failed login attempts so background jobs or legitimate
-  // repeated sign-ins don't immediately hit the limiter.
-  skipSuccessfulRequests: true,
-  message: { message: 'Too many login attempts. Please try again later.' },
-});
-
-const registerLimiter = rateLimit({
-  windowMs: 60 * 60_000,
-  max: 5,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { message: 'Too many registration attempts. Please try again later.' },
-});
+import { authLimiter } from '../middleware/rateLimiters';
 
 const ROLE_PRIORITY = [
   'admin',
@@ -316,8 +278,10 @@ router.get(
 router.post('/mfa/setup', setupMfa);
 router.post('/mfa/verify', validateMfaToken);
 
-// Authenticated routes
-router.get('/me', requireAuth, getMe);
-router.post('/logout', requireAuth, logout);
+router.post('/register', validate(registerSchema), register);
+router.post('/login', authLimiter, validate(loginSchema), login);
+router.get('/me', requireAuth, me);
+router.post('/refresh', authLimiter, refresh);
+router.post('/logout', logout);
 
 export default router;

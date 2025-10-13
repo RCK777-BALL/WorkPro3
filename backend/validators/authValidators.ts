@@ -4,25 +4,16 @@
 
 import { z } from 'zod';
 
-const email = z.string().email();
+export const registerSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+});
 
-export const loginSchema = z
-  .object({
-    email,
-    password: z.string().min(1),
-    remember: z.boolean().optional(),
-  })
-  .strict();
+export const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+  remember: z.boolean().optional(),
+});
 
-export const registerSchema = z
-  .object({
-    name: z.string().min(1),
-    email,
-    password: z.string().min(1),
-    tenantId: z.string().min(1),
-    employeeId: z.string().min(1),
-  })
-  .strict();
-
-export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
+export type LoginInput = z.infer<typeof loginSchema>;

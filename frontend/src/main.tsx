@@ -11,11 +11,13 @@ import App from './App';
 
 declare global {
   interface Window {
-    initNavBar: () => void;
+    initNavBar?: () => void;
   }
 }
 
-window.initNavBar();
+if (typeof window !== 'undefined' && typeof window.initNavBar === 'function') {
+  window.initNavBar();
+}
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <BrowserRouter>

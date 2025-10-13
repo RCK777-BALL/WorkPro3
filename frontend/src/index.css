@@ -1,11 +1,9 @@
-/* Declare that this file can reference theme tokens */
-@theme reference;
+@theme inline;
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ✅ global styles */
 body {
   @apply bg-zinc-50 text-neutral-900 antialiased;
 }

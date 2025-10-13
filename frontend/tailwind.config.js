@@ -115,7 +115,6 @@ export default {
   theme: {
     extend: {
       colors: {
-        ...colors,
         ...brandColors,
       },
     },

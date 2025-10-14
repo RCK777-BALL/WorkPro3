@@ -17,9 +17,21 @@ router.get('/workorders', (req, res) => {
 });
 
 router.post('/workorders', (req, res) => {
-  res
-    .status(201)
-    .json({ id: 'wo_new', ...req.body, createdAt: new Date().toISOString() });
+  const { title, asset, priority, dueDate, description } = req.body;
+  const workOrder = {
+    id: Date.now().toString(),
+    title,
+    asset,
+    priority,
+    status: 'Open',
+    dueDate,
+    description,
+    createdAt: new Date().toISOString(),
+  };
+
+  console.log('New Work Order:', workOrder);
+
+  res.status(201).json(workOrder);
 });
 
 router.put('/workorders/:id', (req, res) => {

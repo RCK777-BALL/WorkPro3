@@ -20,6 +20,7 @@ import Login from './pages/Login';
 import WorkOrdersPage from './pages/workorders/WorkOrdersPage';
 import PermitsPage from './pages/permits/PermitsPage';
 import AnalyticsPage from './pages/analytics/AnalyticsPage';
+import WorkOrderForm from './pages/workorders/WorkOrderForm';
 
 export default function App() {
   const navigate = useNavigate();
@@ -56,6 +57,9 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<Navigate to="/dashboard" />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard/work-orders" element={<WorkOrdersPage />} />
+          <Route path="/dashboard/work-orders/new" element={<WorkOrderForm />} />
+          <Route path="/work-orders/new" element={<WorkOrderForm />} />
           <Route path="/work-orders" element={<WorkOrdersPage />} />
           <Route path="/permits" element={<PermitsPage />} />
           <Route path="/analytics" element={<AnalyticsPage />} />

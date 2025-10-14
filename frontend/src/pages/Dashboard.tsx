@@ -21,11 +21,13 @@ import KpiCard from "@/components/dashboard/KpiCard";
 import RecentActivity, { AuditLog } from "@/components/dashboard/RecentActivity";
 import { Sparkline } from "@/components/charts/Sparkline";
 import Button from "@/components/ui/button";
+import WorkOrderModal from "@/components/work-orders/WorkOrderModal";
+import AssetModal from "@/components/assets/AssetModal";
 import { useToast } from "@/context/ToastContext";
 import { useAuth } from "@/context/AuthContext";
 import useApi from "@/hooks/useApi";
 import http from "@/lib/http";
-import type { SafetyKpiResponse } from "@/types";
+import type { Asset, SafetyKpiResponse } from "@/types";
 
 interface Summary {
   pmCompliance: number;
@@ -117,6 +119,8 @@ export default function Dashboard() {
   const [recent, setRecent] = useState<RecentWorkOrder[]>([]);
   const [permits, setPermits] = useState<PermitPreview[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [workOrderModalOpen, setWorkOrderModalOpen] = useState(false);
+  const [assetModalOpen, setAssetModalOpen] = useState(false);
 
   const { addToast } = useToast();
   const navigate = useNavigate();
@@ -192,6 +196,37 @@ export default function Dashboard() {
       }
     },
     [fetchPermits, addToast],
+  );
+
+  const handleCreateWorkOrder = useCallback(
+    async (payload: FormData | Record<string, any>) => {
+      try {
+        if (payload instanceof FormData) {
+          await http.post("/workorders", payload, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+        } else {
+          await http.post("/workorders", payload);
+        }
+        addToast("Work order created");
+        setWorkOrderModalOpen(false);
+        await refreshOverview();
+        await loadWorkOrders(false);
+      } catch (err) {
+        console.error(err);
+        addToast("Failed to create work order", "error");
+      }
+    },
+    [addToast, refreshOverview, loadWorkOrders],
+  );
+
+  const handleAssetCreated = useCallback(
+    (_asset: Asset) => {
+      addToast("Asset created");
+      setAssetModalOpen(false);
+      void refreshOverview();
+    },
+    [addToast, refreshOverview],
   );
 
   const fetchSafetyKpis = useCallback(async () => {
@@ -357,229 +392,232 @@ export default function Dashboard() {
   const overviewErrors = [error, overviewErrorMessage, workOrdersErrorMessage, permitsErrorMessage, importsErrorMessage].filter(Boolean);
 
   return (
-    <div className="flex gap-6">
-      <div className="flex-1 space-y-6">
-        <header className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-white">Command Center</h1>
-            <p className="text-sm text-white/70">
-              Monitor teams, maintenance, and compliance from a single view.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              to="/dashboard/work-orders/new"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm text-white transition hover:bg-white/10"
-            >
-              <Plus className="h-4 w-4" />
-              Create Work Order
-            </Link>
-            <Link
-              to="/dashboard/assets/new"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm text-white transition hover:bg-white/10"
-            >
-              <Plus className="h-4 w-4" />
-              Add Asset
-            </Link>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => refreshOverview(true)}
-              disabled={overviewLoading}
-            >
-              {overviewLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Refresh data
-            </Button>
-          </div>
-        </header>
-
-        {overviewErrors.length > 0 && (
-          <div className="space-y-2">
-            {overviewErrors.map((msg, index) => (
-              <div
-                key={index}
-                className="rounded-2xl border border-error-500/30 bg-error-500/10 p-3 text-sm text-error-100"
+    <>
+      <div className="flex gap-6">
+        <div className="flex-1 space-y-6">
+          <header className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-white">Command Center</h1>
+              <p className="text-sm text-white/70">
+                Monitor teams, maintenance, and compliance from a single view.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setWorkOrderModalOpen(true)}
+                className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm text-white transition hover:bg-white/10"
               >
-                {msg}
-              </div>
+                <Plus className="h-4 w-4" />
+                Create Work Order
+              </button>
+              <button
+                type="button"
+                onClick={() => setAssetModalOpen(true)}
+                className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm text-white transition hover:bg-white/10"
+              >
+                <Plus className="h-4 w-4" />
+                Add Asset
+              </button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => refreshOverview(true)}
+                disabled={overviewLoading}
+              >
+                {overviewLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Refresh data
+              </Button>
+            </div>
+          </header>
+
+          {overviewErrors.length > 0 && (
+            <div className="space-y-2">
+              {overviewErrors.map((msg, index) => (
+                <div
+                  key={index}
+                  className="rounded-2xl border border-error-500/30 bg-error-500/10 p-3 text-sm text-error-100"
+                >
+                  {msg}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <ModuleCard
+              title="Command Center"
+              description="Dispatch readiness and workload"
+              icon={Activity}
+              metrics={[
+                { label: "Active work orders", value: formatNumber(overview?.commandCenter.activeWorkOrders) },
+                { label: "Overdue", value: formatNumber(overview?.commandCenter.overdueWorkOrders) },
+                { label: "Technicians dispatched", value: formatNumber(overview?.commandCenter.techniciansDispatched) },
+              ]}
+              loading={overviewLoading && !overview}
+              actionLabel="Launch planner"
+              onAction={handleLaunchPlanner}
+              actionDisabled={!canLaunchPlanner}
+              actionLoading={launchingPlanner}
+              roleNotice={!canLaunchPlanner ? "Technician or admin role required" : undefined}
+            />
+            <ModuleCard
+              title="Analytics"
+              description="Performance and response time trends"
+              icon={LineChart}
+              metrics={[
+                {
+                  label: "Completion rate",
+                  value: formatPercent(overview?.analytics.completionRate),
+                },
+                {
+                  label: "Critical backlog",
+                  value: formatNumber(overview?.analytics.criticalBacklog),
+                },
+                {
+                  label: "Last updated",
+                  value: formatDate(overview?.analytics.lastUpdatedAt),
+                },
+              ]}
+              loading={overviewLoading && !overview}
+              actionLabel="Open analytics"
+              onAction={handleOpenAnalytics}
+            />
+            <ModuleCard
+              title="Reports"
+              description="Exports and scheduled summaries"
+              icon={BarChart3}
+              metrics={[
+                {
+                  label: "Generated this week",
+                  value: formatNumber(overview?.reports.generatedThisWeek),
+                },
+                {
+                  label: "Scheduled",
+                  value: formatNumber(overview?.reports.scheduledReports),
+                },
+                {
+                  label: "Last export",
+                  value: formatDate(overview?.reports.lastExportAt),
+                },
+              ]}
+              loading={overviewLoading && !overview}
+              actionLabel="View reports"
+              onAction={handleOpenReports}
+            />
+            <ModuleCard
+              title="Safety permits"
+              description="Approval and expiry watchlist"
+              icon={ShieldCheck}
+              metrics={[
+                { label: "Pending approvals", value: formatNumber(overview?.permits.pending) },
+                { label: "Expiring soon", value: formatNumber(overview?.permits.expiringSoon) },
+              ]}
+              loading={overviewLoading && !overview}
+              actionLabel="Refresh permits"
+              onAction={handleViewPermits}
+              actionLoading={permitsLoading}
+            >
+              <PermitList permits={permits} loading={permitsLoading} error={permitsErrorMessage ?? undefined} />
+            </ModuleCard>
+            <ModuleCard
+              title="Work orders"
+              description="Execution pace and schedule adherence"
+              icon={Workflow}
+              metrics={[
+                { label: "Active", value: formatNumber(overview?.workOrders.active) },
+                { label: "Completed today", value: formatNumber(overview?.workOrders.completedToday) },
+                {
+                  label: "On-time completion",
+                  value: formatPercent(overview?.workOrders.onTimeCompletionRate),
+                },
+              ]}
+              loading={overviewLoading && !overview}
+              actionLabel="Refresh work orders"
+              onAction={handleViewWorkOrders}
+              actionLoading={workOrdersLoading}
+            >
+              <WorkOrderPreviewList workOrders={recent.slice(0, 3)} loading={workOrdersLoading} />
+            </ModuleCard>
+            <ModuleCard
+              title="Data imports"
+              description="Sync spreadsheets and asset catalogs"
+              icon={UploadCloud}
+              metrics={[
+                {
+                  label: "Last sync",
+                  value: overview?.imports.lastSync ? formatDate(overview.imports.lastSync) : "Not synced",
+                },
+                { label: "Records tracked", value: formatNumber(overview?.imports.processedItems) },
+                { label: "Sync failures", value: formatNumber(overview?.imports.failed) },
+              ]}
+              loading={overviewLoading && !overview}
+              actionLabel="Sync now"
+              onAction={handleSyncImports}
+              actionDisabled={!canRunImports}
+              actionLoading={syncingImports}
+              roleNotice={!canRunImports ? "Admin access required" : undefined}
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {kpis.map((kpi) => (
+              <KpiCard
+                key={kpi.key}
+                title={kpi.title}
+                value={kpi.value}
+                deltaPct={kpi.deltaPct}
+                series={kpi.series}
+              />
             ))}
           </div>
-        )}
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <ModuleCard
-            title="Command Center"
-            description="Dispatch readiness and workload"
-            icon={Activity}
-            metrics={[
-              { label: "Active work orders", value: formatNumber(overview?.commandCenter.activeWorkOrders) },
-              { label: "Overdue", value: formatNumber(overview?.commandCenter.overdueWorkOrders) },
-              { label: "Technicians dispatched", value: formatNumber(overview?.commandCenter.techniciansDispatched) },
-            ]}
-            loading={overviewLoading && !overview}
-            actionLabel="Launch planner"
-            onAction={handleLaunchPlanner}
-            actionDisabled={!canLaunchPlanner}
-            actionLoading={launchingPlanner}
-            roleNotice={!canLaunchPlanner ? "Technician or admin role required" : undefined}
-          />
-          <ModuleCard
-            title="Analytics"
-            description="Performance and response time trends"
-            icon={LineChart}
-            metrics={[
-              {
-                label: "Completion rate",
-                value: formatPercent(overview?.analytics.completionRate),
-              },
-              {
-                label: "Critical backlog",
-                value: formatNumber(overview?.analytics.criticalBacklog),
-              },
-              {
-                label: "Last updated",
-                value: formatDate(overview?.analytics.lastUpdatedAt),
-              },
-            ]}
-            loading={overviewLoading && !overview}
-            actionLabel="Open analytics"
-            onAction={handleOpenAnalytics}
-          />
-          <ModuleCard
-            title="Reports"
-            description="Exports and scheduled summaries"
-            icon={BarChart3}
-            metrics={[
-              {
-                label: "Generated this week",
-                value: formatNumber(overview?.reports.generatedThisWeek),
-              },
-              {
-                label: "Scheduled",
-                value: formatNumber(overview?.reports.scheduledReports),
-              },
-              {
-                label: "Last export",
-                value: formatDate(overview?.reports.lastExportAt),
-              },
-            ]}
-            loading={overviewLoading && !overview}
-            actionLabel="View reports"
-            onAction={handleOpenReports}
-          />
-          <ModuleCard
-            title="Safety permits"
-            description="Approval and expiry watchlist"
-            icon={ShieldCheck}
-            metrics={[
-              { label: "Pending approvals", value: formatNumber(overview?.permits.pending) },
-              { label: "Expiring soon", value: formatNumber(overview?.permits.expiringSoon) },
-            ]}
-            loading={overviewLoading && !overview}
-            actionLabel="Refresh permits"
-            onAction={handleViewPermits}
-            actionLoading={permitsLoading}
-          >
-            <PermitList permits={permits} loading={permitsLoading} error={permitsErrorMessage ?? undefined} />
-          </ModuleCard>
-          <ModuleCard
-            title="Work orders"
-            description="Execution pace and schedule adherence"
-            icon={Workflow}
-            metrics={[
-              { label: "Active", value: formatNumber(overview?.workOrders.active) },
-              { label: "Completed today", value: formatNumber(overview?.workOrders.completedToday) },
-              {
-                label: "On-time completion",
-                value: formatPercent(overview?.workOrders.onTimeCompletionRate),
-              },
-            ]}
-            loading={overviewLoading && !overview}
-            actionLabel="Refresh work orders"
-            onAction={handleViewWorkOrders}
-            actionLoading={workOrdersLoading}
-          >
-            <WorkOrderPreviewList workOrders={recent.slice(0, 3)} loading={workOrdersLoading} />
-          </ModuleCard>
-          <ModuleCard
-            title="Data imports"
-            description="Sync spreadsheets and asset catalogs"
-            icon={UploadCloud}
-            metrics={[
-              {
-                label: "Last sync",
-                value: overview?.imports.lastSync ? formatDate(overview.imports.lastSync) : "Not synced",
-              },
-              { label: "Records tracked", value: formatNumber(overview?.imports.processedItems) },
-              { label: "Sync failures", value: formatNumber(overview?.imports.failed) },
-            ]}
-            loading={overviewLoading && !overview}
-            actionLabel="Sync now"
-            onAction={handleSyncImports}
-            actionDisabled={!canRunImports}
-            actionLoading={syncingImports}
-            roleNotice={!canRunImports ? "Admin access required" : undefined}
-          />
-        </div>
+          {safetyKpis && (
+            <div className="grid gap-4 sm:grid-cols-3">
+              <KpiCard
+                key="activePermits"
+                title="Active Permits"
+                value={safetyKpis.activeCount}
+                deltaPct={0}
+                series={[]}
+              />
+              <KpiCard
+                key="overdueApprovals"
+                title="Overdue Approvals"
+                value={safetyKpis.overdueApprovals}
+                deltaPct={0}
+                series={[]}
+              />
+              <KpiCard
+                key="incidents30"
+                title="Incidents (30d)"
+                value={safetyKpis.incidentsLast30}
+                deltaPct={0}
+                series={[]}
+              />
+            </div>
+          )}
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {kpis.map((kpi) => (
-            <KpiCard
-              key={kpi.key}
-              title={kpi.title}
-              value={kpi.value}
-              deltaPct={kpi.deltaPct}
-              series={kpi.series}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TrendChart
+              loading={!summary}
+              title="PM Compliance Trend"
+              data={summary ? trends?.pmCompliance : []}
+              color="#3b82f6"
             />
-          ))}
-        </div>
-
-        {safetyKpis && (
-          <div className="grid gap-4 sm:grid-cols-3">
-            <KpiCard
-              key="activePermits"
-              title="Active Permits"
-              value={safetyKpis.activeCount}
-              deltaPct={0}
-              series={[]}
-            />
-            <KpiCard
-              key="overdueApprovals"
-              title="Overdue Approvals"
-              value={safetyKpis.overdueApprovals}
-              deltaPct={0}
-              series={[]}
-            />
-            <KpiCard
-              key="incidents30"
-              title="Incidents (30d)"
-              value={safetyKpis.incidentsLast30}
-              deltaPct={0}
-              series={[]}
+            <TrendChart
+              loading={!summary}
+              title="WO Backlog Trend"
+              data={summary ? trends?.woBacklog : []}
+              color="#ef4444"
             />
           </div>
-        )}
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <TrendChart
-            loading={!summary}
-            title="PM Compliance Trend"
-            data={summary ? trends?.pmCompliance : []}
-            color="#3b82f6"
-          />
-          <TrendChart
-            loading={!summary}
-            title="WO Backlog Trend"
-            data={summary ? trends?.woBacklog : []}
-            color="#ef4444"
-          />
-        </div>
-
-        <div className="rounded-2xl border border-white/10 bg-white/5">
-          <div className="flex items-center justify-between border-b border-white/10 p-4 text-white">
-            <h2 className="text-lg font-semibold">Recent Work Orders</h2>
-            <Link to="/dashboard/work-orders" className="inline-flex items-center gap-1 text-sm text-white/70 hover:text-white">
-              View all
+          <div className="rounded-2xl border border-white/10 bg-white/5">
+            <div className="flex items-center justify-between border-b border-white/10 p-4 text-white">
+              <h2 className="text-lg font-semibold">Recent Work Orders</h2>
+              <Link to="/dashboard/work-orders" className="inline-flex items-center gap-1 text-sm text-white/70 hover:text-white">
+                View all
               <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
@@ -593,17 +631,28 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+        <div className="w-80">
+          <RecentActivity
+            logs={logs}
+            loading={loadingLogs}
+            error={logsError}
+            onRefresh={refreshLogs}
+          />
+        </div>
       </div>
-
-      <div className="w-80">
-        <RecentActivity
-          logs={logs}
-          loading={loadingLogs}
-          error={logsError}
-          onRefresh={refreshLogs}
-        />
-      </div>
-    </div>
+      <WorkOrderModal
+        isOpen={workOrderModalOpen}
+        onClose={() => setWorkOrderModalOpen(false)}
+        workOrder={null}
+        onUpdate={handleCreateWorkOrder}
+      />
+      <AssetModal
+        isOpen={assetModalOpen}
+        onClose={() => setAssetModalOpen(false)}
+        asset={null}
+        onUpdate={handleAssetCreated}
+      />
+    </>
   );
 }
 

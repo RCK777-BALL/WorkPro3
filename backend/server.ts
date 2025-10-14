@@ -111,6 +111,7 @@ const corsOptions: cors.CorsOptions = {
     "X-Tenant-Id",
     "X-Requested-With",
     "usertokenaccess",
+    "x-tenant-id",
   ],
 };
 

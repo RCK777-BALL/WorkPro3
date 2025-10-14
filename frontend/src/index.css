@@ -1,16 +1,17 @@
-@import "tailwindcss";
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
-@theme inline;
+/* ✅ Remove @theme inline — not valid syntax for Tailwind v4 */
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* ✅ Optional global styles */
-body {
-  @apply bg-zinc-50 text-neutral-900 antialiased;
+/* Optional custom styles */
+:root {
+  --background: #0a0a0f;
+  --text: #e5e7eb;
 }
 
-.card {
-  @apply bg-slate-900/50 text-white rounded-2xl p-6 text-left shadow-lg transition transform hover:-translate-y-1 hover:shadow-2xl border border-white/10;
+body {
+  background: var(--background);
+  color: var(--text);
+  font-family: "Inter", sans-serif;
 }

@@ -53,7 +53,7 @@ const workflowLinks: NavItem[] = [
     icon: ShieldCheck,
   },
   {
-    to: '/workorders',
+    to: '/work-orders',
     label: 'Work Orders',
     description: 'Plan, dispatch & complete jobs',
     icon: Workflow,

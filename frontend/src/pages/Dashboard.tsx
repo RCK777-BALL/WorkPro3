@@ -616,7 +616,10 @@ export default function Dashboard() {
           <div className="rounded-2xl border border-white/10 bg-white/5">
             <div className="flex items-center justify-between border-b border-white/10 p-4 text-white">
               <h2 className="text-lg font-semibold">Recent Work Orders</h2>
-              <Link to="/dashboard/work-orders" className="inline-flex items-center gap-1 text-sm text-white/70 hover:text-white">
+              <Link
+                to="/dashboard/work-orders"
+                className="inline-flex items-center gap-1 text-sm text-white/70 hover:text-white"
+              >
                 View all
               <ChevronRight className="h-4 w-4" />
             </Link>

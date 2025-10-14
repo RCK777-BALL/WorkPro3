@@ -1,8 +1,9 @@
 import axios from 'axios';
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
-  withCredentials: true, // send cookies
+  baseURL: 'http://localhost:5010/api',
+  withCredentials: true,
+  headers: { 'X-Tenant-Id': 'demo' },
 });
 
 export type ApiError = { error?: { code: number; message: string; details?: unknown } };
@@ -13,3 +14,10 @@ export function getErrorMessage(err: unknown) {
   }
   return 'Unexpected error';
 }
+
+export type PageQuery = {
+  page?: number;
+  pageSize?: number;
+  q?: string;
+  status?: string;
+};

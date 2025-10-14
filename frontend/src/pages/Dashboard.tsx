@@ -121,52 +121,83 @@ export default function Dashboard() {
   ] : [];
 
   return (
-    <div className="flex gap-4">
-      <div className="flex-1 space-y-6">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {kpis.map((k) => (
-            <KpiCard
-              key={k.key}
-              title={k.title}
-              value={k.value}
-              deltaPct={k.deltaPct}
-              series={k.series}
-            />
-          ))}
-        </div>
-        {safetyKpis && (
-          <div className="grid gap-4 sm:grid-cols-3">
-            <KpiCard
-              key="activePermits"
-              title="Active Permits"
-              value={safetyKpis.activeCount}
-              deltaPct={0}
-              series={[]}
-            />
-            <KpiCard
-              key="overdueApprovals"
-              title="Overdue Approvals"
-              value={safetyKpis.overdueApprovals}
-              deltaPct={0}
-              series={[]}
-            />
-            <KpiCard
-              key="incidents30"
-              title="Incidents (30d)"
-              value={safetyKpis.incidentsLast30}
-              deltaPct={0}
-              series={[]}
-            />
-          </div>
-        )}
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          onClick={() => {
+            window.location.href = '/work-orders';
+          }}
+        >
+          Work Orders
+        </button>
+        <button
+          type="button"
+          className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+          onClick={() => {
+            window.location.href = '/permits';
+          }}
+        >
+          Safety Permits
+        </button>
+        <button
+          type="button"
+          className="rounded-lg bg-purple-600 px-3 py-2 text-sm font-medium text-white hover:bg-purple-700"
+          onClick={() => {
+            window.location.href = '/analytics';
+          }}
+        >
+          Analytics
+        </button>
       </div>
-      <div className="w-80">
-        <RecentActivity
-          logs={logs}
-          loading={loadingLogs}
-          error={logsError}
-          onRefresh={refreshLogs}
-        />
+      <div className="flex gap-4">
+        <div className="flex-1 space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {kpis.map((k) => (
+              <KpiCard
+                key={k.key}
+                title={k.title}
+                value={k.value}
+                deltaPct={k.deltaPct}
+                series={k.series}
+              />
+            ))}
+          </div>
+          {safetyKpis && (
+            <div className="grid gap-4 sm:grid-cols-3">
+              <KpiCard
+                key="activePermits"
+                title="Active Permits"
+                value={safetyKpis.activeCount}
+                deltaPct={0}
+                series={[]}
+              />
+              <KpiCard
+                key="overdueApprovals"
+                title="Overdue Approvals"
+                value={safetyKpis.overdueApprovals}
+                deltaPct={0}
+                series={[]}
+              />
+              <KpiCard
+                key="incidents30"
+                title="Incidents (30d)"
+                value={safetyKpis.incidentsLast30}
+                deltaPct={0}
+                series={[]}
+              />
+            </div>
+          )}
+        </div>
+        <div className="w-80">
+          <RecentActivity
+            logs={logs}
+            loading={loadingLogs}
+            error={logsError}
+            onRefresh={refreshLogs}
+          />
+        </div>
       </div>
     </div>
   );

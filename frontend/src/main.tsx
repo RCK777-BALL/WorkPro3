@@ -5,6 +5,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from '@/context/AuthContext';
 import './i18n';
 import './index.css';
@@ -23,7 +24,10 @@ if (typeof window !== 'undefined' && typeof window.initNavBar === 'function') {
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <BrowserRouter>
     <AuthProvider>
-      <App />
+      <>
+        <App />
+        <Toaster position="top-right" />
+      </>
     </AuthProvider>
   </BrowserRouter>
 );

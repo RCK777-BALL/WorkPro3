@@ -50,6 +50,7 @@ import {
   attachmentRoutes,
   permitRoutes,
 } from "./routes";
+import uiRoutes from "./routes/uiRoutes";
 
 import { startPMScheduler } from "./utils/PMScheduler";
 import { setupSwagger } from "./utils/swagger";
@@ -164,6 +165,7 @@ if (env.NODE_ENV === "test") {
 }
 
 app.use("/api/public", publicRequestRoutes);
+app.use("/api", uiRoutes);
 
 // --- Routes (order matters for the limiter) ---
 app.use("/api/auth", authRoutes);

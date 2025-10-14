@@ -10,3 +10,7 @@
 body {
   @apply bg-zinc-50 text-neutral-900 antialiased;
 }
+
+.card {
+  @apply bg-slate-900/50 text-white rounded-2xl p-6 text-left shadow-lg transition transform hover:-translate-y-1 hover:shadow-2xl border border-white/10;
+}

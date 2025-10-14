@@ -102,7 +102,14 @@ const corsOptions: cors.CorsOptions = {
     }
   },
   credentials: true,
-  allowedHeaders: ["Content-Type", "Authorization", "usertokenaccess"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Tenant-Id",
+    "X-Requested-With",
+    "usertokenaccess",
+  ],
 };
 
 app.use(cookieParser());

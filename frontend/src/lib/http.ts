@@ -8,7 +8,7 @@ import type {
   AxiosResponse,
   AxiosError,
 } from 'axios';
-import type { ApiResult } from 'shared/types/http';
+import type { ApiResult } from '@shared/http';
 
 const baseUrl = (import.meta.env.VITE_API_URL ?? 'http://localhost:5010').replace(/\/+$/, '');
 

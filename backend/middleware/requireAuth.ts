@@ -3,7 +3,7 @@
  */
 
 import jwt from 'jsonwebtoken';
-import type { RequestHandler } from 'express';
+import type { Request, RequestHandler } from 'express';
 import User from '../models/User';
 import type { AuthedRequest } from '../types/http';
 
@@ -32,16 +32,40 @@ const sendServerError = (res: Parameters<RequestHandler>[1], message: string) =>
   res.status(500).json({ error: { code: 500, message } });
 };
 
-export const requireAuth: RequestHandler = async (req, res, next) => {
-  const authedReq = req as AuthedRequest;
+const extractToken = (req: Request): string | undefined => {
   const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    sendUnauthorized(res, 'Missing token');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const candidate = authHeader.slice('Bearer '.length).trim();
+    if (candidate) {
+      return candidate;
+    }
+  }
+
+  const cookies = (req as Request & { cookies?: Record<string, unknown> }).cookies;
+  if (cookies) {
+    const cookieKeys = ['auth', 'access_token', 'token'];
+    for (const key of cookieKeys) {
+      const value = cookies[key];
+      if (typeof value === 'string' && value.trim()) {
+        return value.trim();
+      }
+    }
+  }
+
+  return undefined;
+};
+
+export const requireAuth: RequestHandler = async (req, res, next) => {
+  const authedReq = req as AuthedRequest;
+
+  const token = extractToken(req);
+
+  if (!token) {
+    sendUnauthorized(res, 'Missing authentication token');
     return;
   }
 
-  const token = authHeader.split(' ')[1];
   const secret = process.env.JWT_SECRET;
 
   if (!secret) {

@@ -4,64 +4,99 @@
 
 import jwt from 'jsonwebtoken';
 import type { RequestHandler } from 'express';
+import User from '../models/User';
 import type { AuthedRequest } from '../types/http';
-import type { JwtUser } from '../utils/jwt';
 
-interface DecodedToken extends JwtUser {
-  exp?: number;
-  iat?: number;
+interface TokenPayload {
+  id?: string;
+  tenantId?: string;
+  role?: string;
+  siteId?: string;
 }
 
-export const requireAuth: RequestHandler = (req, res, next) => {
-  const authedReq = req as AuthedRequest;
-  const bearer = req.headers.authorization?.startsWith('Bearer ')
-    ? req.headers.authorization.slice(7)
-    : undefined;
-  const cookies = (req as any).cookies as
-    | (Record<string, unknown> & { access_token?: unknown; auth?: unknown })
-    | undefined;
-  const cookieToken = typeof cookies?.access_token === 'string'
-    ? cookies.access_token
-    : typeof cookies?.auth === 'string'
-    ? cookies.auth
-    : undefined;
-  const token = bearer ?? cookieToken;
+const toStringSafe = (value: unknown): string | undefined => {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (value && typeof (value as { toString?: () => string }).toString === 'function') {
+    return (value as { toString(): string }).toString();
+  }
+  return undefined;
+};
 
-  if (!token) {
-    res.status(401).json({ error: { code: 401, message: 'Unauthorized' } });
+const sendUnauthorized = (res: Parameters<RequestHandler>[1], message: string) => {
+  res.status(401).json({ error: { code: 401, message } });
+};
+
+const sendServerError = (res: Parameters<RequestHandler>[1], message: string) => {
+  res.status(500).json({ error: { code: 500, message } });
+};
+
+export const requireAuth: RequestHandler = async (req, res, next) => {
+  const authedReq = req as AuthedRequest;
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    sendUnauthorized(res, 'Missing token');
     return;
   }
 
-  const secret = process.env.JWT_ACCESS_SECRET;
+  const token = authHeader.split(' ')[1];
+  const secret = process.env.JWT_SECRET;
+
   if (!secret) {
-    res.status(500).json({ error: { code: 500, message: 'Server configuration issue' } });
+    sendServerError(res, 'Server configuration issue');
     return;
   }
 
   try {
-    const payload = jwt.verify(token, secret) as DecodedToken;
-    const userPayload: Express.User = {
-      id: payload.id,
-      email: payload.email,
-      role: payload.role,
-      tenantId: payload.tenantId,
-      siteId: payload.siteId,
-    };
-    authedReq.user = userPayload;
+    const decoded = jwt.verify(token, secret) as TokenPayload;
 
-    if (payload.tenantId) {
-      req.tenantId = payload.tenantId;
+    if (!decoded?.id) {
+      sendUnauthorized(res, 'Unauthorized: Invalid token');
+      return;
     }
 
-    const headerSiteId = req.header('x-site-id');
-    if (typeof payload.siteId === 'string') {
-      req.siteId = payload.siteId;
-    } else if (typeof headerSiteId === 'string') {
-      req.siteId = headerSiteId;
+    const user = await User.findById(decoded.id)
+      .select('-passwordHash')
+      .lean<Record<string, unknown> | null>();
+
+    if (!user) {
+      sendUnauthorized(res, 'Unauthorized: Invalid token');
+      return;
+    }
+
+    const tenantId = decoded.tenantId ?? toStringSafe((user as { tenantId?: unknown }).tenantId);
+    const siteId = decoded.siteId ?? toStringSafe((user as { siteId?: unknown }).siteId);
+    const rolesSource = (user as { roles?: unknown }).roles;
+    const normalizedRoles = Array.isArray(rolesSource)
+      ? rolesSource.map((role) => String(role))
+      : [];
+    const decodedRole = decoded.role ? String(decoded.role) : undefined;
+    const primaryRole = decodedRole ?? normalizedRoles[0] ?? 'tech';
+    const roles = Array.from(new Set([primaryRole, ...normalizedRoles]));
+
+    authedReq.user = {
+      id: toStringSafe((user as { _id?: unknown })._id) ?? decoded.id,
+      _id: toStringSafe((user as { _id?: unknown })._id) ?? decoded.id,
+      email: (user as { email?: unknown }).email,
+      name: (user as { name?: unknown }).name,
+      tenantId,
+      siteId,
+      role: primaryRole,
+      roles,
+    } as Express.User;
+
+    if (tenantId) {
+      req.tenantId = tenantId;
+    }
+
+    if (siteId) {
+      req.siteId = siteId;
     }
 
     next();
-  } catch {
-    res.status(401).json({ error: { code: 401, message: 'Invalid or expired token' } });
+  } catch (err) {
+    sendUnauthorized(res, 'Unauthorized: Invalid token');
   }
 };

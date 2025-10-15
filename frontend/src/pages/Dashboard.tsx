@@ -9,6 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import type { LucideIcon } from "lucide-react";
 import { AlertTriangle, Clock, ClipboardList, Wrench } from "lucide-react";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api";
@@ -121,7 +122,7 @@ function ModuleCard({
   metrics,
   children,
 }: {
-  icon?: ComponentType<{ className?: string }>;
+  icon?: LucideIcon | ComponentType<{ className?: string }>;
   title: string;
   description?: string;
   metrics?: { label: string; value: string | number }[];
@@ -255,7 +256,7 @@ export default function Dashboard() {
           {metricCards.map((card) => (
             <ModuleCard
               key={card.title}
-              icon={card.icon as ComponentType<{ className?: string }>}
+              icon={card.icon}
               title={card.title}
               description={card.description}
               metrics={card.metrics}

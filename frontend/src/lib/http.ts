@@ -39,6 +39,10 @@ const http = axios.create({
 });
 
 http.interceptors.request.use((config) => {
+  if (config.baseURL && typeof config.url === 'string' && config.url.startsWith('/')) {
+    config.url = config.url.replace(/^\/+/, '');
+  }
+
   const headers: AxiosRequestHeaders = config.headers ?? {};
   const tenantId = localStorage.getItem(TENANT_KEY);
   const siteId = localStorage.getItem(SITE_KEY);

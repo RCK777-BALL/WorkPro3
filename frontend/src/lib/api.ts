@@ -20,6 +20,10 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  if (config.baseURL && typeof config.url === "string" && config.url.startsWith("/")) {
+    config.url = config.url.replace(/^\/+/, "");
+  }
+
   const tenantId = localStorage.getItem("tenantId") || "default";
   const headers =
     config.headers instanceof AxiosHeaders ? config.headers : new AxiosHeaders(config.headers);

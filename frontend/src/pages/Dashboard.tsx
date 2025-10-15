@@ -621,9 +621,9 @@ export default function Dashboard() {
                 className="inline-flex items-center gap-1 text-sm text-white/70 hover:text-white"
               >
                 View all
-              <ChevronRight className="h-4 w-4" />
-            </Link>
-          </div>
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+            </div>
           <div className="divide-y divide-white/10">
             {workOrdersLoading && recent.length === 0 ? (
               <SkeletonRows rows={5} />

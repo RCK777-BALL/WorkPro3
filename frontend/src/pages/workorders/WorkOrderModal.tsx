@@ -1,9 +1,9 @@
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import toast from 'react-hot-toast';
-import { api } from '@/lib/api';
-import type { WorkOrder } from '@/types/cmms';
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import toast from "react-hot-toast";
+import { api } from "@/lib/api";
+import type { WorkOrder } from "@/types/cmms";
 
 const schema = z.object({
   title: z.string().min(2, 'Title is required'),

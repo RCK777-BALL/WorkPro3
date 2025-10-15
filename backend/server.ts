@@ -105,18 +105,13 @@ const corsOptions: cors.CorsOptions = {
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization",
-    "X-Tenant-Id",
-    "X-Requested-With",
-    "usertokenaccess",
-    "x-tenant-id",
-  ],
+  allowedHeaders: ["Content-Type", "Authorization", "x-tenant-id", "X-Tenant-Id"],
+  exposedHeaders: ["x-tenant-id"],
 };
 
 app.use(cookieParser());
 app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 app.use(helmet());
 app.use(requestLog);
 app.use(express.json({ limit: "1mb" }));

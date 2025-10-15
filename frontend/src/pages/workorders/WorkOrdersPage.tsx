@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
-import { api } from '@/lib/api';
-import type { WorkOrder } from '@/types/cmms';
-import { useQueryState } from '@/hooks/useQueryState';
-import WorkOrderModal from './WorkOrderModal';
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { api } from "@/lib/api";
+import type { WorkOrder } from "@/types/cmms";
+import { useQueryState } from "@/hooks/useQueryState";
+import WorkOrderModal from "./WorkOrderModal";
 
 export default function WorkOrdersPage() {
   const [modal, setModal] = useState<{ open: boolean; wo?: WorkOrder }>({ open: false });

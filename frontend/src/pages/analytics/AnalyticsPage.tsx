@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import {
   CartesianGrid,
   Line,
@@ -8,8 +8,8 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from 'recharts';
-import { api } from '@/lib/api';
+} from "recharts";
+import { api } from "@/lib/api";
 
 type KpiResponse = {
   completionRate: number;

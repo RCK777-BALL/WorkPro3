@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
-import { api } from '@/lib/api';
-import type { Permit } from '@/types/cmms';
-import { useQueryState } from '@/hooks/useQueryState';
-import PermitModal from './PermitModal';
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { api } from "@/lib/api";
+import type { Permit } from "@/types/cmms";
+import { useQueryState } from "@/hooks/useQueryState";
+import PermitModal from "./PermitModal";
 
 export default function PermitsPage() {
   const [modal, setModal] = useState<{ open: boolean; permit?: Permit }>({ open: false });

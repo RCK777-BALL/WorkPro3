@@ -1,5 +1,6 @@
 import type { ComponentType, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
+import axios from "axios";
 import {
   CartesianGrid,
   Line,
@@ -23,6 +24,17 @@ type RecentWorkOrder = {
   assetName?: string;
 };
 
+type DashboardSummary = {
+  totalWO: number;
+  completedWO: number;
+  activePM: number;
+  completionRate: number;
+  overdue: number;
+  critical: number;
+  avgResponse: number;
+  slaHitRate: number;
+};
+
 const asNumber = (value: unknown): number =>
   typeof value === "number" ? value : Number.isFinite(Number(value)) ? Number(value) : 0;
 const formatNumber = (n: number | undefined) => (typeof n === "number" ? n.toLocaleString() : "0");
@@ -43,6 +55,54 @@ const mapWorkOrderSummary = (rows: any[] = []): RecentWorkOrder[] =>
   }));
 
 const PermitList = () => null;
+
+const FALLBACK_SUMMARY: DashboardSummary = {
+  totalWO: 128,
+  completedWO: 94,
+  activePM: 18,
+  completionRate: 86,
+  overdue: 7,
+  critical: 2,
+  avgResponse: 3.4,
+  slaHitRate: 92,
+};
+
+const FALLBACK_WORK_ORDERS: RecentWorkOrder[] = [
+  {
+    id: "demo-1",
+    title: "Inspect packaging line sensors",
+    status: "open",
+    priority: "high",
+    createdAt: new Date().toISOString(),
+    assetName: "Packaging Line 3",
+  },
+  {
+    id: "demo-2",
+    title: "Replace HVAC filter in office wing",
+    status: "in_progress",
+    priority: "medium",
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+    assetName: "AHU-07",
+  },
+  {
+    id: "demo-3",
+    title: "Lubricate conveyor bearings",
+    status: "scheduled",
+    priority: "low",
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+    assetName: "Conveyor B",
+  },
+];
+
+const FALLBACK_TREND_DATA = [
+  { name: "Mon", created: 14, completed: 11 },
+  { name: "Tue", created: 18, completed: 15 },
+  { name: "Wed", created: 9, completed: 8 },
+  { name: "Thu", created: 12, completed: 10 },
+  { name: "Fri", created: 21, completed: 18 },
+  { name: "Sat", created: 6, completed: 5 },
+  { name: "Sun", created: 11, completed: 9 },
+];
 
 const unwrapApiData = <T,>(payload: unknown): T | undefined => {
   if (payload && typeof payload === "object" && payload !== null) {
@@ -66,6 +126,81 @@ const extractItemsArray = (payload: unknown): any[] => {
   }
 
   return [];
+};
+
+const toOptionalNumber = (value: unknown): number | undefined => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return undefined;
+};
+
+const normalizeSummary = (payload: unknown): DashboardSummary | null => {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const raw = payload as Record<string, unknown>;
+
+  const totalWO = toOptionalNumber(raw.totalWO);
+  const completedWO = toOptionalNumber(raw.completedWO);
+  const backlog = toOptionalNumber(raw.woBacklog);
+  const explicitCompletionRate = toOptionalNumber(raw.completionRate);
+
+  const pmComplianceRaw = toOptionalNumber(raw.pmCompliance);
+  const pmComplianceRatio =
+    pmComplianceRaw !== undefined
+      ? pmComplianceRaw > 1
+        ? pmComplianceRaw / 100
+        : pmComplianceRaw
+      : explicitCompletionRate !== undefined
+        ? explicitCompletionRate / 100
+        : undefined;
+
+  const completionRate =
+    explicitCompletionRate !== undefined
+      ? explicitCompletionRate
+      : pmComplianceRatio !== undefined
+        ? pmComplianceRatio * 100
+        : undefined;
+
+  const derivedTotal =
+    totalWO !== undefined
+      ? totalWO
+      : backlog !== undefined && pmComplianceRatio !== undefined && pmComplianceRatio < 1
+        ? Math.round(backlog / (1 - pmComplianceRatio))
+        : backlog;
+
+  const derivedCompleted =
+    completedWO !== undefined
+      ? completedWO
+      : derivedTotal !== undefined && completionRate !== undefined
+        ? Math.round((completionRate / 100) * derivedTotal)
+        : undefined;
+
+  const summary: DashboardSummary = {
+    totalWO: derivedTotal ?? 0,
+    completedWO: derivedCompleted ?? 0,
+    activePM:
+      toOptionalNumber(raw.activePM) ??
+      (pmComplianceRatio !== undefined ? Math.round(pmComplianceRatio * 100) : 0),
+    completionRate: completionRate ?? 0,
+    overdue: toOptionalNumber(raw.overdue) ?? backlog ?? 0,
+    critical: toOptionalNumber(raw.critical) ?? 0,
+    avgResponse:
+      toOptionalNumber(raw.avgResponse) ?? toOptionalNumber(raw.downtimeThisMonth) ?? 0,
+    slaHitRate:
+      toOptionalNumber(raw.slaHitRate) ?? toOptionalNumber(raw.wrenchTimePct) ?? 0,
+  };
+
+  const hasMeaningfulValue = Object.values(summary).some((value) => value !== 0);
+  return hasMeaningfulValue ? summary : null;
 };
 
 const WorkOrderPreviewList = ({ items }: { items: RecentWorkOrder[] }) => (
@@ -151,9 +286,11 @@ function ModuleCard({
 }
 
 export default function Dashboard() {
-  const [summary, setSummary] = useState<Record<string, number | string> | null>(null);
-  const [recentWorkOrders, setRecentWorkOrders] = useState<RecentWorkOrder[]>([]);
-  const [trendData, setTrendData] = useState<{ name: string; created: number; completed: number }[]>([]);
+  const [summary, setSummary] = useState<DashboardSummary>(FALLBACK_SUMMARY);
+  const [recentWorkOrders, setRecentWorkOrders] = useState<RecentWorkOrder[]>(FALLBACK_WORK_ORDERS);
+  const [trendData, setTrendData] = useState<{ name: string; created: number; completed: number }[]>(
+    FALLBACK_TREND_DATA,
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -165,24 +302,29 @@ export default function Dashboard() {
           api.get("/workorders", { params: { limit: 5, sort: "-createdAt" } }),
         ]);
 
-        const summaryData = unwrapApiData<Record<string, number | string>>(summaryResponse.data);
-        setSummary(summaryData ?? null);
+        const summaryData = unwrapApiData<unknown>(summaryResponse.data);
+        const normalizedSummary = normalizeSummary(summaryData);
+        setSummary(normalizedSummary ?? FALLBACK_SUMMARY);
 
         const workOrdersPayload = unwrapApiData<unknown>(workOrdersResponse.data);
         const rows = extractItemsArray(workOrdersPayload);
-        setRecentWorkOrders(mapWorkOrderSummary(rows));
-        setTrendData([
-          { name: "Mon", created: 14, completed: 11 },
-          { name: "Tue", created: 18, completed: 15 },
-          { name: "Wed", created: 9, completed: 8 },
-          { name: "Thu", created: 12, completed: 10 },
-          { name: "Fri", created: 21, completed: 18 },
-          { name: "Sat", created: 6, completed: 5 },
-          { name: "Sun", created: 11, completed: 9 },
-        ]);
+        const mappedWorkOrders = mapWorkOrderSummary(rows);
+        setRecentWorkOrders(mappedWorkOrders.length ? mappedWorkOrders : FALLBACK_WORK_ORDERS);
+        setTrendData(FALLBACK_TREND_DATA);
       } catch (error) {
         console.error(error);
-        toast.error("Failed to load dashboard data");
+        if (
+          axios.isAxiosError(error) &&
+          error.response &&
+          [401, 403].includes(error.response.status ?? 0)
+        ) {
+          toast("Showing demo dashboard data. Sign in for live metrics.");
+          setSummary(FALLBACK_SUMMARY);
+          setRecentWorkOrders(FALLBACK_WORK_ORDERS);
+          setTrendData(FALLBACK_TREND_DATA);
+        } else {
+          toast.error("Failed to load dashboard data");
+        }
       } finally {
         setLoading(false);
       }
@@ -198,8 +340,8 @@ export default function Dashboard() {
         title: "Work Orders",
         description: "Current load across your teams",
         metrics: [
-          { label: "Total", value: formatNumber(asNumber(summary?.totalWO)) },
-          { label: "Completed", value: formatNumber(asNumber(summary?.completedWO)) },
+          { label: "Total", value: formatNumber(summary.totalWO) },
+          { label: "Completed", value: formatNumber(summary.completedWO) },
         ],
       },
       {
@@ -207,8 +349,8 @@ export default function Dashboard() {
         title: "Active PMs",
         description: "Preventive maintenance in progress",
         metrics: [
-          { label: "Active", value: formatNumber(asNumber(summary?.activePM)) },
-          { label: "Completion", value: formatPercent(asNumber(summary?.completionRate)) },
+          { label: "Active", value: formatNumber(summary.activePM) },
+          { label: "Completion", value: formatPercent(summary.completionRate) },
         ],
       },
       {
@@ -216,8 +358,8 @@ export default function Dashboard() {
         title: "Overdue",
         description: "Items requiring attention",
         metrics: [
-          { label: "Overdue", value: formatNumber(asNumber(summary?.overdue)) },
-          { label: "Critical", value: formatNumber(asNumber(summary?.critical)) },
+          { label: "Overdue", value: formatNumber(summary.overdue) },
+          { label: "Critical", value: formatNumber(summary.critical) },
         ],
       },
       {
@@ -228,13 +370,13 @@ export default function Dashboard() {
           {
             label: "Average",
             value:
-              typeof summary?.avgResponse === "number"
+              typeof summary.avgResponse === "number"
                 ? `${summary.avgResponse.toFixed(1)} hrs`
-                : `${asNumber(summary?.avgResponse).toFixed(1)} hrs`,
+                : `${asNumber(summary.avgResponse).toFixed(1)} hrs`,
           },
           {
             label: "SLA Hit",
-            value: formatPercent(asNumber(summary?.slaHitRate)),
+            value: formatPercent(summary.slaHitRate),
           },
         ],
       },

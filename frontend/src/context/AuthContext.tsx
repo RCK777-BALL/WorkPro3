@@ -215,6 +215,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         email,
         password,
         remember,
+        username: email,
       });
 
       const payload = response.data;

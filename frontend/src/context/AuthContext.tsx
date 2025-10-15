@@ -20,7 +20,7 @@ import { api, getErrorMessage } from '@/lib/api';
 
 type RawAuthUser = {
   id: string;
-  email: string;
+  email?: string | null;
   tenantId?: string;
   siteId?: string;
   role?: string;
@@ -45,10 +45,16 @@ const mapRole = (role?: string): AuthUser['role'] => {
 };
 
 const toAuthUser = (payload: RawAuthUser): AuthUser => {
+  const fallbackEmail = `${payload.id}@unknown.local`;
+  const rawEmail = typeof payload.email === 'string' ? payload.email.trim() : '';
+  const email = rawEmail || fallbackEmail;
+  const nameSource = rawEmail || payload.id;
   const user: AuthUser = {
     id: payload.id,
-    email: payload.email,
-    name: payload.email.split('@')[0] ?? payload.email,
+    email,
+    name: typeof nameSource === 'string' && nameSource.includes('@')
+      ? nameSource.split('@')[0] ?? nameSource
+      : nameSource,
     role: mapRole(payload.role),
   };
 
@@ -249,11 +255,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       const rawUserRecord = rawUser as Record<string, unknown>;
-      const userInput = (
-        ('name' in rawUserRecord && 'role' in rawUserRecord) || 'roles' in rawUserRecord
-          ? (rawUserRecord as AuthUserInput)
-          : toAuthUser(rawUserRecord as unknown as RawAuthUser)
-      ) as AuthUserInput;
+      const hasExplicitAuthShape =
+        typeof rawUserRecord.email === 'string' &&
+        (('name' in rawUserRecord && 'role' in rawUserRecord) || 'roles' in rawUserRecord);
+
+      const userInput = hasExplicitAuthShape
+        ? (rawUserRecord as AuthUserInput)
+        : toAuthUser(rawUserRecord as unknown as RawAuthUser);
 
       const normalizedUser = normalizeAuthUser(userInput);
 

@@ -10,7 +10,36 @@ import type {
 } from 'axios';
 import type { ApiResult } from '@shared/http';
 
-const baseUrl = (import.meta.env.VITE_API_URL ?? 'http://localhost:5010').replace(/\/+$/, '');
+const DEFAULT_API_BASE_URL = 'http://localhost:5010/api';
+
+const resolveBaseUrl = (value?: string) => {
+  const raw = (value ?? DEFAULT_API_BASE_URL).trim();
+  if (!raw) return DEFAULT_API_BASE_URL;
+
+  const withoutTrailingSlash = raw.replace(/\/+$/, '');
+  const hasProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(withoutTrailingSlash);
+  const withLeadingSlash = hasProtocol
+    ? withoutTrailingSlash
+    : withoutTrailingSlash.startsWith('/')
+    ? withoutTrailingSlash
+    : `/${withoutTrailingSlash}`;
+
+  const ensuredApi = /\/api(?:\b|\/)/.test(withLeadingSlash)
+    ? withLeadingSlash
+    : `${withLeadingSlash}/api`;
+
+  if (hasProtocol) {
+    return ensuredApi;
+  }
+
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return `${window.location.origin}${ensuredApi}`;
+  }
+
+  return ensuredApi.startsWith('/') ? ensuredApi : `/${ensuredApi}`;
+};
+
+const baseUrl = resolveBaseUrl(import.meta.env.VITE_API_URL);
 
 export const TOKEN_KEY = 'auth:token';
 export const TENANT_KEY = 'auth:tenantId';
@@ -22,11 +51,15 @@ export const setUnauthorizedCallback = (cb: () => void) => {
 };
 
 const http = axios.create({
-  baseURL: `${baseUrl}/api`,
+  baseURL: baseUrl,
   withCredentials: true,
 });
 
 http.interceptors.request.use((config) => {
+  if (config.baseURL && typeof config.url === 'string' && config.url.startsWith('/')) {
+    config.url = config.url.replace(/^\/+/, '');
+  }
+
   const headers: AxiosRequestHeaders = config.headers ?? {};
   const tenantId = localStorage.getItem(TENANT_KEY);
   const siteId = localStorage.getItem(SITE_KEY);

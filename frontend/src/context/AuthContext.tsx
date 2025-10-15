@@ -179,7 +179,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       setLoading(true);
       try {
-        const { data } = await api.get<{ data?: { user?: RawAuthUser | null } }>('/api/auth/me');
+        const { data } = await api.get<{ data?: { user?: RawAuthUser | null } }>('/auth/me');
         if (!cancelled) {
           const payload = data?.data?.user;
           handleSetUser(payload ? toAuthUser(payload) : null);
@@ -205,7 +205,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = useCallback(
     async (email: string, password: string, remember = false) => {
-      const response = await api.post<unknown>('/api/auth/login', {
+      const response = await api.post<unknown>('/auth/login', {
         email,
         password,
         remember,
@@ -298,7 +298,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = useCallback(async () => {
     try {
-      await api.post('/api/auth/logout');
+      await api.post('/auth/logout');
     } catch (err) {
       const message = getErrorMessage(err);
       if (message) {

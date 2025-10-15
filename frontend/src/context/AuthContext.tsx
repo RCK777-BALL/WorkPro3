@@ -14,7 +14,13 @@ import {
 import { useLocation } from 'react-router-dom';
 import { useAuthStore, type AuthState } from '@/store/authStore';
 import type { AuthLoginResponse, AuthRole, AuthSession, AuthUser } from '@/types';
-import { SITE_KEY, TENANT_KEY, TOKEN_KEY } from '@/lib/http';
+import {
+  FALLBACK_TOKEN_KEY,
+  SITE_KEY,
+  TENANT_KEY,
+  TOKEN_KEY,
+  USER_STORAGE_KEY,
+} from '@/lib/http';
 import { emitToast } from './ToastContext';
 import { api, getErrorMessage } from '@/lib/api';
 
@@ -127,6 +133,41 @@ const normalizeAuthUser = (user: AuthUserInput): AuthUser => {
   } as AuthUser;
 };
 
+const persistAuthStorage = (user: AuthUser | null, token?: string) => {
+  if (!user) {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(FALLBACK_TOKEN_KEY);
+    localStorage.removeItem(TENANT_KEY);
+    localStorage.removeItem(SITE_KEY);
+    localStorage.removeItem(USER_STORAGE_KEY);
+    return;
+  }
+
+  if (token) {
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(FALLBACK_TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(FALLBACK_TOKEN_KEY);
+  }
+
+  if (user.tenantId) {
+    localStorage.setItem(TENANT_KEY, user.tenantId);
+  } else {
+    localStorage.removeItem(TENANT_KEY);
+  }
+
+  if (user.siteId) {
+    localStorage.setItem(SITE_KEY, user.siteId);
+  } else {
+    localStorage.removeItem(SITE_KEY);
+  }
+
+  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+};
+
+const clearAuthStorage = () => persistAuthStorage(null);
+
 interface AuthContextType {
   user: AuthUser | null;
   setUser: (user: AuthUser | null) => void;
@@ -183,6 +224,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
+      const storedToken =
+        localStorage.getItem(TOKEN_KEY) ?? localStorage.getItem(FALLBACK_TOKEN_KEY);
+      if (!storedToken) {
+        if (!cancelled) {
+          handleSetUser(null);
+          clearAuthStorage();
+          setLoading(false);
+        }
+        return;
+      }
+
       setLoading(true);
       try {
         const { data } = await api.get<{ data?: { user?: RawAuthUser | null } }>('/auth/me');
@@ -193,6 +245,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch (err) {
         const message = getErrorMessage(err);
         if (!cancelled && message) {
+          clearAuthStorage();
           handleSetUser(null);
         }
       } finally {
@@ -273,23 +326,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       handleSetUser(normalizedUser);
 
-      if (session.token) {
-        localStorage.setItem(TOKEN_KEY, session.token);
-      } else {
-        localStorage.removeItem(TOKEN_KEY);
-      }
-
-      if (normalizedUser.tenantId) {
-        localStorage.setItem(TENANT_KEY, normalizedUser.tenantId);
-      } else {
-        localStorage.removeItem(TENANT_KEY);
-      }
-
-      if (normalizedUser.siteId) {
-        localStorage.setItem(SITE_KEY, normalizedUser.siteId);
-      } else {
-        localStorage.removeItem(SITE_KEY);
-      }
+      persistAuthStorage(normalizedUser, session.token);
 
       return session;
     },
@@ -298,10 +335,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const resetAuthState = useCallback(() => {
     handleSetUser(null);
-    localStorage.removeItem('user');
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(TENANT_KEY);
-    localStorage.removeItem(SITE_KEY);
+    clearAuthStorage();
     storeLogout();
   }, [handleSetUser, storeLogout]);
 

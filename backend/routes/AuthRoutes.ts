@@ -17,7 +17,7 @@ import { z } from 'zod';
 
 import User, { type UserDocument } from '../models/User';
 import { loginSchema, registerSchema } from '../validators/authValidators';
-import { requireAuth } from '../middleware/requireAuth';
+import { requireAuth } from '../middleware/authMiddleware';
 import { authLimiter } from '../middleware/rateLimiters';
 import { getJwtSecret } from '../utils/getJwtSecret';
 import { isCookieSecure } from '../utils/isCookieSecure';

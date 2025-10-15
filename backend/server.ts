@@ -60,7 +60,7 @@ import errorHandler from "./middleware/errorHandler";
 import { validateEnv, type EnvVars } from "./config/validateEnv";
 import { initChatSocket } from "./socket/chatSocket";
 import User from "./models/User";
-import { requireAuth } from "./middleware/requireAuth";
+import { requireAuth } from "./middleware/authMiddleware";
 import tenantScope from "./middleware/tenantScope";
 import type {
   WorkOrderUpdatePayload,
@@ -105,7 +105,15 @@ const corsOptions: cors.CorsOptions = {
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "x-tenant-id", "X-Tenant-Id"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "authorization",
+    "x-tenant-id",
+    "X-Tenant-Id",
+    "x-site-id",
+    "X-Site-Id",
+  ],
   exposedHeaders: ["x-tenant-id"],
 };
 

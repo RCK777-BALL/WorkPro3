@@ -3,7 +3,8 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useForm, type Resolver } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import http from '@/lib/http';
 
@@ -19,26 +20,13 @@ export type RequestWorkForm = z.infer<typeof requestWorkSchema>;
 const POLL_INTERVAL = 1000;
 
 const RequestWork = () => {
-  const resolver: Resolver<RequestWorkForm> = async (values) => {
-    const result = requestWorkSchema.safeParse(values);
-    if (result.success) {
-      return { values: result.data, errors: {} };
-    }
-    const fieldErrors = result.error.flatten().fieldErrors;
-    const errors = Object.fromEntries(
-      Object.entries(fieldErrors).map(([key, value]) => [
-        key,
-        { type: 'validation', message: value?.[0] ?? 'Invalid value' },
-      ]),
-    );
-    return { values: {} as RequestWorkForm, errors };
-  };
-
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<RequestWorkForm>({ resolver });
+  } = useForm<RequestWorkForm>({
+    resolver: zodResolver(requestWorkSchema),
+  });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

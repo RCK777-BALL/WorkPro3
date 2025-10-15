@@ -59,17 +59,7 @@ async function openDB() {
   }
 }
 
-async function loadQueue() {
-  const db = await openDB();
-  const tx = db.transaction(STORE_NAME, 'readonly');
-  const store = tx.objectStore(STORE_NAME);
-  const request = store.get('queue');
-  const result: QueueItem[] = await new Promise((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result || []);
-    request.onerror = () => reject(request.error);
-  });
-  offlineQueue = result;
-}
+// duplicate loadQueue removed because an implementation with error handling exists above
 
 async function saveQueue() {
   const db = await openDB();
@@ -176,3 +166,7 @@ async function processQueue() {
     }
   }
 }
+function notifyClients(arg0: string, err: any) {
+  throw new Error('Function not implemented.');
+}
+

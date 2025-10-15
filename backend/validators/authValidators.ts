@@ -9,10 +9,32 @@ export const registerSchema = z.object({
   password: z.string().min(6),
 });
 
+const rememberField = z
+  .preprocess((input) => {
+    if (input == null || input === '') {
+      return undefined;
+    }
+
+    if (typeof input === 'string') {
+      const normalized = input.trim().toLowerCase();
+
+      if (['true', '1', 'on', 'yes'].includes(normalized)) {
+        return true;
+      }
+
+      if (['false', '0', 'off', 'no'].includes(normalized)) {
+        return false;
+      }
+    }
+
+    return input;
+  }, z.boolean())
+  .optional();
+
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
-  remember: z.boolean().optional(),
+  remember: rememberField,
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

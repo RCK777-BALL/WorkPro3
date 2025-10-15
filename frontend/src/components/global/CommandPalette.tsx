@@ -3,6 +3,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import http from '@/lib/http';
 
 interface SearchResult {
@@ -17,6 +18,7 @@ interface CommandPaletteProps {
 }
 
 const CommandPalette: React.FC<CommandPaletteProps> = ({ onNavigate }) => {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -54,8 +56,11 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ onNavigate }) => {
   }, [query, open]);
 
   const handleSelect = (url: string) => {
-    if (onNavigate) onNavigate(url);
-    else window.location.href = url;
+    if (onNavigate) {
+      onNavigate(url);
+    } else {
+      navigate(url);
+    }
     setOpen(false);
   };
 

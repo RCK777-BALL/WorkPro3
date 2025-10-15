@@ -4,6 +4,7 @@
 
 import { randomUUID } from 'crypto';
 import type { Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import Tenant from '../models/Tenant';
 import User from '../models/User';
@@ -137,47 +138,74 @@ export async function register(req: Request, res: Response) {
 
 export async function login(req: Request, res: Response) {
   try {
-    const sessionUser = (req as any).user;
-    if (!sessionUser?.id) {
-      res.status(401).json({ message: 'Unauthenticated' });
+    const { email, password } = req.body as { email?: string; password?: string };
+
+    if (!email || !password) {
+      res.status(400).json({ error: { code: 400, message: 'Email and password are required' } });
       return;
     }
 
-    const dbUser = await User.findById(sessionUser.id)
-      .select(
-        '+tenantId +roles +tokenVersion +email +name +avatar +theme +colorScheme +siteId',
-      )
-      .lean<Record<string, unknown> | null>();
+    const normalizedEmail = normalizeEmail(email);
+    const user = await User.findOne({ email: normalizedEmail }).select(
+      '+passwordHash +roles +role +tenantId +siteId +name +email',
+    );
 
-    if (!dbUser) {
-      res.status(404).json({ message: 'User not found' });
+    if (!user || typeof user.passwordHash !== 'string') {
+      res.status(401).json({ error: { code: 401, message: 'Invalid email or password' } });
       return;
     }
 
-    const normalizedRoles = normalizeRoles((dbUser as { roles?: unknown }).roles);
-    const primaryRole = derivePrimaryRole((dbUser as { role?: unknown }).role, normalizedRoles);
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!isMatch) {
+      res.status(401).json({ error: { code: 401, message: 'Invalid email or password' } });
+      return;
+    }
+
+    const normalizedRoles = normalizeRoles(user.roles ?? []);
+    const primaryRole = derivePrimaryRole(user.role, normalizedRoles);
     const roles = Array.from(new Set([primaryRole, ...normalizedRoles]));
-    const tenantId = (dbUser as { tenantId?: any }).tenantId
-      ? ((dbUser as { tenantId?: any }).tenantId as any).toString()
-      : sessionUser.tenantId;
-    const userId = ((dbUser as { _id?: any })._id ?? (dbUser as { id?: any }).id ?? sessionUser.id).toString();
 
-    const { passwordHash, passwordResetToken, passwordResetExpires, mfaSecret, ...safeUser } = dbUser;
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      logger.error('JWT_SECRET is not configured');
+      res.status(500).json({ error: { code: 500, message: 'Server configuration issue' } });
+      return;
+    }
+
+    const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
+    const rawSiteId = (user as { siteId?: unknown }).siteId;
+    const siteId =
+      typeof rawSiteId === 'string'
+        ? rawSiteId
+        : rawSiteId && typeof (rawSiteId as { toString?: () => string }).toString === 'function'
+        ? (rawSiteId as { toString(): string }).toString()
+        : undefined;
+
+    const tokenPayload = {
+      id: user._id.toString(),
+      role: primaryRole,
+      tenantId,
+      ...(siteId ? { siteId } : {}),
+    };
+
+    const token = jwt.sign(tokenPayload, secret, { expiresIn: '7d' });
 
     res.json({
+      success: true,
+      token,
       user: {
-        ...safeUser,
-        id: userId,
-        _id: userId,
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
         tenantId,
+        siteId,
         role: primaryRole,
         roles,
       },
     });
-    return;
   } catch (err) {
     logger.error('Login error', err);
-    return res.status(500).json({ error: { code: 500, message: 'Unable to sign in' } });
+    res.status(500).json({ error: { code: 500, message: 'Unable to sign in' } });
   }
 }
 

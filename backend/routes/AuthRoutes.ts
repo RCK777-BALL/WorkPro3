@@ -148,9 +148,6 @@ const sendAuthSuccess = (
   remember: boolean,
 ): void => {
   const maxAge = remember ? LONG_SESSION_MS : SHORT_SESSION_MS;
-  const response: { user: AuthUser; token?: string } = {
-    user: authUser,
-  };
 
   res.cookie(AUTH_COOKIE_NAME, token, {
     httpOnly: true,
@@ -159,11 +156,11 @@ const sendAuthSuccess = (
     maxAge,
   });
 
-  if (process.env.INCLUDE_AUTH_TOKEN === 'true') {
-    response.token = token;
-  }
-
-  res.json(response);
+  res.json({
+    success: true,
+    token,
+    user: authUser,
+  });
 };
 
 const setupMfa = async (req: Request, res: Response, next: NextFunction): Promise<void> => {

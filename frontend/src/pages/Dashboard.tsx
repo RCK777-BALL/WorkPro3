@@ -43,6 +43,30 @@ const mapWorkOrderSummary = (rows: any[] = []): RecentWorkOrder[] =>
 
 const PermitList = () => null;
 
+const unwrapApiData = <T,>(payload: unknown): T | undefined => {
+  if (payload && typeof payload === "object" && payload !== null) {
+    if ("data" in payload) {
+      return (payload as { data?: T }).data;
+    }
+  }
+  return payload as T;
+};
+
+const extractItemsArray = (payload: unknown): any[] => {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (payload && typeof payload === "object" && payload !== null) {
+    const items = (payload as { items?: unknown }).items;
+    if (Array.isArray(items)) {
+      return items;
+    }
+  }
+
+  return [];
+};
+
 const WorkOrderPreviewList = ({ items }: { items: RecentWorkOrder[] }) => (
   <ul className="divide-y divide-zinc-800/80">
     {items.map((item) => (
@@ -140,12 +164,11 @@ export default function Dashboard() {
           api.get("/workorders", { params: { limit: 5, sort: "-createdAt" } }),
         ]);
 
-        setSummary(summaryResponse.data ?? null);
-        const rows = Array.isArray(workOrdersResponse.data?.items)
-          ? workOrdersResponse.data.items
-          : Array.isArray(workOrdersResponse.data)
-            ? workOrdersResponse.data
-            : [];
+        const summaryData = unwrapApiData<Record<string, number | string>>(summaryResponse.data);
+        setSummary(summaryData ?? null);
+
+        const workOrdersPayload = unwrapApiData<unknown>(workOrdersResponse.data);
+        const rows = extractItemsArray(workOrdersPayload);
         setRecentWorkOrders(mapWorkOrderSummary(rows));
         setTrendData([
           { name: "Mon", created: 14, completed: 11 },

@@ -57,14 +57,14 @@ export default function DashboardHome() {
       try {
         setError(null);
         const [sumRes, woRes] = await Promise.all([
-          http.get<{ data: Summary }>("/api/summary"),
-          http.get<RecentWorkOrder[]>("/api/workorders", {
+          http.get<Summary>("/summary"),
+          http.get<RecentWorkOrder[]>("/workorders", {
             params: { limit: 5, sort: "-updatedAt" },
           }),
         ]);
 
         if (!cancelled) {
-          setSummary(sumRes.data.data);
+          setSummary(sumRes.data);
           setRecent(woRes.data);
         }
       } catch (e) {
@@ -89,7 +89,7 @@ export default function DashboardHome() {
     try {
       setActivityError(null);
       setActivityLoading(true);
-      const res = await http.get<AuditLog[]>("/api/audit", { params: { limit: 10 } });
+      const res = await http.get<AuditLog[]>("/audit", { params: { limit: 10 } });
       setActivityLogs(res.data);
     } catch (e) {
       setActivityError("Failed to load activity");

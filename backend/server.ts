@@ -49,7 +49,9 @@ import {
   auditRoutes,
   attachmentRoutes,
   permitRoutes,
+  dashboardRoutes,
 } from "./routes";
+import uiRoutes from "./routes/uiRoutes";
 
 import { startPMScheduler } from "./utils/PMScheduler";
 import { setupSwagger } from "./utils/swagger";
@@ -102,11 +104,14 @@ const corsOptions: cors.CorsOptions = {
     }
   },
   credentials: true,
-  allowedHeaders: ["Content-Type", "Authorization", "usertokenaccess"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-tenant-id", "X-Tenant-Id"],
+  exposedHeaders: ["x-tenant-id"],
 };
 
 app.use(cookieParser());
 app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 app.use(helmet());
 app.use(requestLog);
 app.use(express.json({ limit: "1mb" }));
@@ -157,6 +162,7 @@ if (env.NODE_ENV === "test") {
 }
 
 app.use("/api/public", publicRequestRoutes);
+app.use("/api", uiRoutes);
 
 // --- Routes (order matters for the limiter) ---
 app.use("/api/auth", authRoutes);
@@ -199,6 +205,7 @@ app.use("/api/integrations", IntegrationRoutes);
 app.use("/api/attachments", attachmentRoutes);
 app.use("/api/summary", summaryRoutes);
 app.use("/api/audit", auditRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 
 // 404 + error handler

@@ -60,19 +60,29 @@ export default function Login() {
         )}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
           <div>
-            <label className="text-sm">Email</label>
-            <input className="mt-1 w-full rounded-md bg-neutral-800 px-3 py-2 outline-none"
-              type="email" {...register('email')} />
+            <label className="text-sm" htmlFor="login-email">Email</label>
+            <input
+              id="login-email"
+              className="mt-1 w-full rounded-md bg-neutral-800 px-3 py-2 outline-none"
+              type="email"
+              autoComplete="email"
+              {...register('email')}
+            />
             {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email.message}</p>}
           </div>
           <div>
-            <label className="text-sm">Password</label>
-            <input className="mt-1 w-full rounded-md bg-neutral-800 px-3 py-2 outline-none"
-              type="password" {...register('password')} />
+            <label className="text-sm" htmlFor="login-password">Password</label>
+            <input
+              id="login-password"
+              className="mt-1 w-full rounded-md bg-neutral-800 px-3 py-2 outline-none"
+              type="password"
+              autoComplete="current-password"
+              {...register('password')}
+            />
             {errors.password && <p className="text-xs text-red-400 mt-1">{errors.password.message}</p>}
           </div>
-          <label className="inline-flex items-center gap-2 text-sm">
-            <input type="checkbox" {...register('remember')} />
+          <label className="inline-flex items-center gap-2 text-sm" htmlFor="login-remember">
+            <input id="login-remember" type="checkbox" {...register('remember')} />
             Remember this device
           </label>
           <button disabled={isSubmitting}

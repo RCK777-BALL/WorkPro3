@@ -7,8 +7,8 @@ import { useNavigate } from 'react-router-dom';
 
 const schema = z.object({
   title: z.string().min(3, 'Title is required'),
-  asset: z.string().optional(),
-  priority: z.enum(['Low', 'Medium', 'High', 'Critical']),
+  assetId: z.string().optional(),
+  priority: z.enum(['low', 'medium', 'high', 'critical']),
   dueDate: z.string().optional(),
   description: z.string().optional(),
 });
@@ -23,12 +23,16 @@ export default function WorkOrderForm() {
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { priority: 'Medium' },
+    defaultValues: { priority: 'medium' },
   });
 
   const onSubmit = async (values: FormData) => {
     try {
-      await api.post('/workorders', values);
+      const payload = {
+        ...values,
+        dueDate: values.dueDate ? new Date(values.dueDate).toISOString() : undefined,
+      };
+      await api.post('/workorders', payload);
       toast.success('Work order created successfully!');
       navigate('/dashboard/work-orders');
     } catch (err) {
@@ -53,18 +57,22 @@ export default function WorkOrderForm() {
         </div>
 
         <div>
-          <label className="block text-sm mb-1">Asset</label>
-          <input {...register('asset')} className="w-full bg-slate-800 px-3 py-2 rounded" placeholder="Machine name or ID" />
+          <label className="block text-sm mb-1">Asset ID</label>
+          <input
+            {...register('assetId')}
+            className="w-full bg-slate-800 px-3 py-2 rounded"
+            placeholder="Machine ID"
+          />
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="block text-sm mb-1">Priority</label>
             <select {...register('priority')} className="w-full bg-slate-800 px-3 py-2 rounded">
-              <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
-              <option value="High">High</option>
-              <option value="Critical">Critical</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
             </select>
           </div>
 

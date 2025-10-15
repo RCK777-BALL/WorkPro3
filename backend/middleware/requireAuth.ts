@@ -17,7 +17,14 @@ export const requireAuth: RequestHandler = (req, res, next) => {
   const bearer = req.headers.authorization?.startsWith('Bearer ')
     ? req.headers.authorization.slice(7)
     : undefined;
-  const cookieToken = (req as any).cookies?.access_token as string | undefined;
+  const cookies = (req as any).cookies as
+    | (Record<string, unknown> & { access_token?: unknown; auth?: unknown })
+    | undefined;
+  const cookieToken = typeof cookies?.access_token === 'string'
+    ? cookies.access_token
+    : typeof cookies?.auth === 'string'
+    ? cookies.auth
+    : undefined;
   const token = bearer ?? cookieToken;
 
   if (!token) {

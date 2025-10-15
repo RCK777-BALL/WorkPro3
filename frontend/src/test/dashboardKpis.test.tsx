@@ -14,7 +14,7 @@ vi.mock('../lib/http');
 const mockedGet = http.get as unknown as Mock;
 
 mockedGet.mockImplementation((url: string) => {
-  if (url === '/api/summary') {
+  if (url === '/summary') {
     return Promise.resolve({
       data: {
         openWorkOrders: 7,
@@ -26,7 +26,7 @@ mockedGet.mockImplementation((url: string) => {
       },
     });
   }
-  if (url === '/api/audit/logs') {
+  if (url === '/audit/logs') {
     return Promise.resolve({ data: [] });
   }
   if (url === '/summary/departments') {

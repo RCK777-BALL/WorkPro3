@@ -10,7 +10,19 @@ import type {
 } from 'axios';
 import type { ApiResult } from '@shared/http';
 
-const baseUrl = (import.meta.env.VITE_API_URL ?? 'http://localhost:5010').replace(/\/+$/, '');
+const DEFAULT_API_BASE_URL = 'http://localhost:5010/api';
+
+const resolveBaseUrl = (value?: string) => {
+  const raw = (value ?? DEFAULT_API_BASE_URL).trim();
+  if (!raw) return DEFAULT_API_BASE_URL;
+  const normalized = raw.replace(/\/+$/, '');
+  if (/\/api(?:\b|\/)/.test(normalized)) {
+    return normalized;
+  }
+  return `${normalized}/api`;
+};
+
+const baseUrl = resolveBaseUrl(import.meta.env.VITE_API_URL);
 
 export const TOKEN_KEY = 'auth:token';
 export const TENANT_KEY = 'auth:tenantId';
@@ -22,7 +34,7 @@ export const setUnauthorizedCallback = (cb: () => void) => {
 };
 
 const http = axios.create({
-  baseURL: `${baseUrl}/api`,
+  baseURL: baseUrl,
   withCredentials: true,
 });
 

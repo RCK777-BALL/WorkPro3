@@ -1,7 +1,21 @@
 import axios, { AxiosHeaders } from "axios";
 
+const DEFAULT_API_BASE_URL = "http://localhost:5010/api";
+
+const resolveBaseUrl = (value?: string) => {
+  const raw = (value ?? DEFAULT_API_BASE_URL).trim();
+  if (!raw) return DEFAULT_API_BASE_URL;
+  const normalized = raw.replace(/\/+$/, "");
+  if (/\/api(?:\b|\/)/.test(normalized)) {
+    return normalized;
+  }
+  return `${normalized}/api`;
+};
+
+const baseURL = resolveBaseUrl(import.meta.env.VITE_API_URL);
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:5010/api",
+  baseURL,
   withCredentials: true,
 });
 

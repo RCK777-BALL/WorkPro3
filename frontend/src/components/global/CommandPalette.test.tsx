@@ -7,6 +7,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import CommandPalette from './CommandPalette';
 import http from '@/lib/http';
+import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('@/lib/http');
 
@@ -22,7 +23,11 @@ describe('CommandPalette', () => {
       data: [{ id: '1', name: 'Pump', type: 'asset', url: '/assets/1' }],
     });
     const navigate = vi.fn();
-    render(<CommandPalette onNavigate={navigate} />);
+    render(
+      <MemoryRouter>
+        <CommandPalette onNavigate={navigate} />
+      </MemoryRouter>,
+    );
 
     fireEvent.keyDown(window, { key: 'k', ctrlKey: true });
     const input = await screen.findByPlaceholderText('Search...');

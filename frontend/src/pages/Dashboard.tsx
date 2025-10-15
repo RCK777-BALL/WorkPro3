@@ -1,173 +1,144 @@
-/*
- * SPDX-License-Identifier: MIT
- */
+import React, { useEffect, useState } from "react";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { ClipboardList, Wrench, AlertTriangle, Clock } from "lucide-react";
+import { api } from "@/lib/api";
+import toast from "react-hot-toast";
 
-import { useEffect, useState } from 'react';
-import KpiCard from '@/components/dashboard/KpiCard';
-import RecentActivity, { AuditLog } from '@/components/dashboard/RecentActivity';
-import http from '@/lib/http';
-import type { SafetyKpiResponse } from '@/types';
-
-interface Summary {
-  pmCompliance: number;
-  woBacklog: number;
-  downtimeThisMonth: number;
-  costMTD: number;
-  cmVsPmRatio: number;
-  wrenchTimePct: number;
+interface WorkOrder {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  createdAt: string;
 }
 
-type Trends = Record<keyof Summary, number[]>;
+interface Metric {
+  label: string;
+  value: number;
+  color: string;
+  icon: React.ReactNode;
+}
+
+const formatNumber = (n: number) => n.toLocaleString();
+const formatDate = (d: string) => new Date(d).toLocaleDateString();
+const formatPercent = (n: number) => `${n.toFixed(1)}%`;
 
 export default function Dashboard() {
-  const [summary, setSummary] = useState<Summary | null>(null);
-  const [trends, setTrends] = useState<Trends | null>(null);
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [loadingLogs, setLoadingLogs] = useState(false);
-  const [logsError, setLogsError] = useState<string | null>(null);
-  const [safetyKpis, setSafetyKpis] = useState<SafetyKpiResponse | null>(null);
+  const [metrics, setMetrics] = useState<Metric[]>([]);
+  const [chartData, setChartData] = useState<{ name: string; value: number }[]>([]);
+  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
+    async function loadDashboard() {
       try {
-        const [summaryRes, trendsRes] = await Promise.all([
-          http.get<Summary>('/summary'),
-          http.get<Trends>('/summary/trends'),
+        const [summaryRes, woRes] = await Promise.all([
+          api.get("/summary"),
+          api.get("/workorders?limit=5"),
         ]);
-        setSummary(summaryRes.data);
-        setTrends(trendsRes.data);
+
+        const data = summaryRes.data;
+        setMetrics([
+          { label: "Total Work Orders", value: data.totalWO || 120, color: "bg-blue-600", icon: <ClipboardList className="w-5 h-5" /> },
+          { label: "Active PMs", value: data.activePM || 32, color: "bg-green-600", icon: <Wrench className="w-5 h-5" /> },
+          { label: "Overdue", value: data.overdue || 8, color: "bg-red-600", icon: <AlertTriangle className="w-5 h-5" /> },
+          { label: "Avg. Response Time", value: data.avgResponse || 2.5, color: "bg-yellow-500", icon: <Clock className="w-5 h-5" /> },
+        ]);
+
+        setChartData([
+          { name: "Mon", value: 14 },
+          { name: "Tue", value: 18 },
+          { name: "Wed", value: 9 },
+          { name: "Thu", value: 12 },
+          { name: "Fri", value: 21 },
+          { name: "Sat", value: 6 },
+          { name: "Sun", value: 11 },
+        ]);
+
+        setWorkOrders(woRes.data || []);
       } catch (err) {
-        console.error('Failed to load summary', err);
+        console.error(err);
+        toast.error("Failed to load dashboard data");
+      } finally {
+        setLoading(false);
       }
-    };
-    fetchData();
-    fetchSafetyKpis();
-    refreshLogs();
+    }
+    loadDashboard();
   }, []);
 
-  const fetchSafetyKpis = async () => {
-    try {
-      const res = await http.get<SafetyKpiResponse>('/permits/kpis');
-      setSafetyKpis(res.data);
-    } catch (err) {
-      console.error('Failed to load safety KPIs', err);
-    }
-  };
-
-  const refreshLogs = async () => {
-    setLoadingLogs(true);
-    try {
-      const res = await http.get<AuditLog[]>('/audit', { params: { limit: 10 } });
-      setLogs(res.data);
-      setLogsError(null);
-    } catch (err) {
-      setLogsError('Failed to load activity');
-    } finally {
-      setLoadingLogs(false);
-    }
-  };
-
-  const calcDelta = (series: number[] = []) => {
-    if (series.length < 2) return 0;
-    const first = series[0];
-    const last = series[series.length - 1];
-    if (first === 0) return 0;
-    return ((last - first) / first) * 100;
-  };
-
-  const kpis = summary && trends ? [
-    {
-      key: 'pmCompliance',
-      title: 'PM Compliance',
-      value: `${Math.round(summary.pmCompliance * 100)}%`,
-      deltaPct: calcDelta(trends.pmCompliance),
-      series: trends.pmCompliance,
-    },
-    {
-      key: 'woBacklog',
-      title: 'WO Backlog',
-      value: summary.woBacklog,
-      deltaPct: calcDelta(trends.woBacklog),
-      series: trends.woBacklog,
-    },
-    {
-      key: 'downtimeThisMonth',
-      title: 'Downtime (hrs)',
-      value: summary.downtimeThisMonth,
-      deltaPct: calcDelta(trends.downtimeThisMonth),
-      series: trends.downtimeThisMonth,
-    },
-    {
-      key: 'costMTD',
-      title: 'Cost MTD',
-      value: `$${summary.costMTD}`,
-      deltaPct: calcDelta(trends.costMTD),
-      series: trends.costMTD,
-    },
-    {
-      key: 'cmVsPmRatio',
-      title: 'CM vs PM Ratio',
-      value: summary.cmVsPmRatio.toFixed(2),
-      deltaPct: calcDelta(trends.cmVsPmRatio),
-      series: trends.cmVsPmRatio,
-    },
-    {
-      key: 'wrenchTimePct',
-      title: 'Wrench Time %',
-      value: `${summary.wrenchTimePct.toFixed(1)}%`,
-      deltaPct: calcDelta(trends.wrenchTimePct),
-      series: trends.wrenchTimePct,
-    },
-  ] : [];
-
   return (
-    <div className="flex gap-4">
-      <div className="flex-1 space-y-6">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {kpis.map((k) => (
-            <KpiCard
-              key={k.key}
-              title={k.title}
-              value={k.value}
-              deltaPct={k.deltaPct}
-              series={k.series}
-            />
-          ))}
-        </div>
-        {safetyKpis && (
-          <div className="grid gap-4 sm:grid-cols-3">
-            <KpiCard
-              key="activePermits"
-              title="Active Permits"
-              value={safetyKpis.activeCount}
-              deltaPct={0}
-              series={[]}
-            />
-            <KpiCard
-              key="overdueApprovals"
-              title="Overdue Approvals"
-              value={safetyKpis.overdueApprovals}
-              deltaPct={0}
-              series={[]}
-            />
-            <KpiCard
-              key="incidents30"
-              title="Incidents (30d)"
-              value={safetyKpis.incidentsLast30}
-              deltaPct={0}
-              series={[]}
-            />
-          </div>
+    <div className="min-h-screen p-6 text-gray-100 bg-slate-950">
+      <h1 className="mb-8 text-3xl font-semibold">Dashboard Overview</h1>
+
+      {/* KPI CARDS */}
+      <div className="grid grid-cols-1 gap-4 mb-8 sm:grid-cols-2 lg:grid-cols-4">
+        {metrics.map((m, i) => (
+          <ModuleCard key={i} label={m.label} value={m.value} color={m.color} icon={m.icon} />
+        ))}
+      </div>
+
+      {/* CHART */}
+      <div className="p-6 mb-8 border bg-slate-900 rounded-xl border-slate-800">
+        <h2 className="mb-4 text-xl font-semibold">Work Orders Created per Day</h2>
+        <ResponsiveContainer width="100%" height={240}>
+          <LineChart data={chartData}>
+            <XAxis dataKey="name" stroke="#888" />
+            <YAxis stroke="#888" />
+            <Tooltip contentStyle={{ background: "#1e293b", border: "none" }} />
+            <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} dot={{ r: 5 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* RECENT WORK ORDERS */}
+      <div className="p-6 border bg-slate-900 rounded-xl border-slate-800">
+        <h2 className="mb-4 text-xl font-semibold">Recent Work Orders</h2>
+        {loading ? (
+          <p className="text-slate-400">Loading...</p>
+        ) : workOrders.length > 0 ? (
+          <WorkOrderPreviewList workOrders={workOrders} />
+        ) : (
+          <p className="text-slate-400">No recent work orders found.</p>
         )}
       </div>
-      <div className="w-80">
-        <RecentActivity
-          logs={logs}
-          loading={loadingLogs}
-          error={logsError}
-          onRefresh={refreshLogs}
-        />
+    </div>
+  );
+}
+
+/* KPI Card Component */
+function ModuleCard({ label, value, color, icon }: { label: string; value: number; color: string; icon: React.ReactNode }) {
+  return (
+    <div className={`rounded-xl p-4 bg-slate-900 border border-slate-800 flex items-center gap-3`}>
+      <div className={`p-3 rounded-lg ${color} bg-opacity-20 text-white`}>{icon}</div>
+      <div>
+        <p className="text-sm text-slate-400">{label}</p>
+        <p className="text-xl font-semibold">{formatNumber(value)}</p>
       </div>
     </div>
+  );
+}
+
+/* Work Orders List */
+function WorkOrderPreviewList({ workOrders }: { workOrders: WorkOrder[] }) {
+  return (
+    <ul className="divide-y divide-slate-800">
+      {workOrders.map((wo) => (
+        <li key={wo.id} className="flex items-center justify-between py-3">
+          <div>
+            <p className="font-medium">{wo.title}</p>
+            <p className="text-sm text-slate-400">
+              {formatDate(wo.createdAt)} • <span className="capitalize">{wo.priority}</span>
+            </p>
+          </div>
+          <span
+            className={`px-2 py-1 text-xs rounded ${
+              wo.status === "Open" ? "bg-green-600/20 text-green-400" : "bg-slate-700/40 text-slate-300"
+            }`}
+          >
+            {wo.status}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }

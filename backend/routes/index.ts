@@ -38,3 +38,4 @@ export { default as workOrdersRoutes } from './WorkOrderRoutes';
 export { default as webhooksRoutes } from './WebhooksRoutes';
 export { default as publicRequestRoutes } from './publicRequestRoutes';
 export { default as permitRoutes } from './PermitRoutes';
+export { default as dashboardRoutes } from './DashboardRoutes';

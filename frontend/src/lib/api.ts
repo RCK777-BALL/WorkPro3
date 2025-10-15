@@ -1,5 +1,7 @@
 import axios, { AxiosHeaders } from "axios";
 
+import { SITE_KEY, TENANT_KEY, TOKEN_KEY } from "./http";
+
 const DEFAULT_API_BASE_URL = "http://localhost:5010/api";
 
 const resolveBaseUrl = (value?: string) => {
@@ -24,10 +26,25 @@ api.interceptors.request.use((config) => {
     config.url = config.url.replace(/^\/+/, "");
   }
 
-  const tenantId = localStorage.getItem("tenantId") || "default";
   const headers =
     config.headers instanceof AxiosHeaders ? config.headers : new AxiosHeaders(config.headers);
-  headers.set("x-tenant-id", tenantId);
+
+  const tenantId = localStorage.getItem(TENANT_KEY);
+  const siteId = localStorage.getItem(SITE_KEY);
+  const token = localStorage.getItem(TOKEN_KEY);
+
+  if (tenantId) {
+    headers.set("x-tenant-id", tenantId);
+  }
+
+  if (siteId) {
+    headers.set("x-site-id", siteId);
+  }
+
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
   config.headers = headers;
   return config;
 });

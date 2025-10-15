@@ -1,29 +1,8 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind v4+ style order */
+@import "tailwindcss";
 
-@layer base {
-  :root {
-    color-scheme: light dark;
-  }
+@custom-variant dark (&:where(.dark, .dark *));
+/* your custom vars/utilities can go here */
 
-  html,
-  body,
-  #root {
-    height: 100%;
-  }
-
-  body {
-    @apply bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100;
-    font-synthesis-weight: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-}
-
-@layer components {
-  .btn-primary {
-    @apply inline-flex items-center justify-center rounded-md px-3 py-2 font-medium bg-zinc-900 text-white hover:bg-zinc-800;
-  }
-}
+/* (optional) theme tokens – remove if not using */
+/* @theme inline; */

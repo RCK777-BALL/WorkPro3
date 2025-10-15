@@ -5,28 +5,11 @@ const DEFAULT_API_BASE_URL = "http://localhost:5010/api";
 const resolveBaseUrl = (value?: string) => {
   const raw = (value ?? DEFAULT_API_BASE_URL).trim();
   if (!raw) return DEFAULT_API_BASE_URL;
-
-  const withoutTrailingSlash = raw.replace(/\/+$/, "");
-  const hasProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(withoutTrailingSlash);
-  const withLeadingSlash = hasProtocol
-    ? withoutTrailingSlash
-    : withoutTrailingSlash.startsWith("/")
-    ? withoutTrailingSlash
-    : `/${withoutTrailingSlash}`;
-
-  const ensuredApi = /\/api(?:\b|\/)/.test(withLeadingSlash)
-    ? withLeadingSlash
-    : `${withLeadingSlash}/api`;
-
-  if (hasProtocol) {
-    return ensuredApi;
+  const normalized = raw.replace(/\/+$/, "");
+  if (/\/api(?:\b|\/)/.test(normalized)) {
+    return normalized;
   }
-
-  if (typeof window !== "undefined" && window.location?.origin) {
-    return `${window.location.origin}${ensuredApi}`;
-  }
-
-  return ensuredApi.startsWith("/") ? ensuredApi : `/${ensuredApi}`;
+  return `${normalized}/api`;
 };
 
 const baseURL = resolveBaseUrl(import.meta.env.VITE_API_URL);

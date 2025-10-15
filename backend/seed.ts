@@ -170,7 +170,9 @@ mongoose.connect(mongoUri).then(async () => {
   const asset = await Asset.create(assetData);
 
   // Also store the asset reference inside the station hierarchy
-  dept.lines[0].stations[0].assets.push(asset._id);
+  // ensure the station has an assets array (cast to any to satisfy TS)
+  (dept.lines[0].stations[0] as any).assets = (dept.lines[0].stations[0] as any).assets || [];
+  (dept.lines[0].stations[0] as any).assets.push(asset._id);
   await dept.save();
 
   // Seed PM Task

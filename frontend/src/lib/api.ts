@@ -6,6 +6,7 @@ import {
   TENANT_KEY,
   TOKEN_KEY,
   USER_STORAGE_KEY,
+  triggerUnauthorized,
 } from "./http";
 
 const DEFAULT_API_BASE_URL = "http://localhost:5010/api";
@@ -78,9 +79,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       clearAuthStorage();
-      if (typeof window !== "undefined" && window.location.pathname !== "/login") {
-        window.location.href = "/login";
-      }
+      triggerUnauthorized();
     }
     return Promise.reject(error);
   }

@@ -9,8 +9,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
-import type { UserDocument } from '../models/User';
-import AssetRoutes from '../routes/AssetRoutes';
+import AssetRoutes from '../routes/assetRoutes';
 import Asset from '../models/Asset';
 
 const app = express();
@@ -21,7 +20,7 @@ let mongo: MongoMemoryServer;
 let token: string;
 
 // Store the created user so the JWT contains a valid id
-let user: UserDocument;
+let user: any;
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'testsecret';

@@ -11,10 +11,12 @@ import ErrorBoundary from './components/common/ErrorBoundary';
 import Reports from './pages/Reports';
 import { useAuth } from '@/context/AuthContext';
 import {
-  setUnauthorizedCallback,
-  TOKEN_KEY,
-  TENANT_KEY,
+  FALLBACK_TOKEN_KEY,
   SITE_KEY,
+  TENANT_KEY,
+  TOKEN_KEY,
+  USER_STORAGE_KEY,
+  setUnauthorizedCallback,
 } from '@/lib/http';
 import Login from './pages/Login';
 import WorkOrdersPage from './pages/workorders/WorkOrdersPage';
@@ -30,6 +32,8 @@ export default function App() {
 
   React.useEffect(() => {
     setUnauthorizedCallback(() => {
+      localStorage.removeItem(FALLBACK_TOKEN_KEY);
+      localStorage.removeItem(USER_STORAGE_KEY);
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(TENANT_KEY);
       localStorage.removeItem(SITE_KEY);

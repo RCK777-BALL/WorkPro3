@@ -27,6 +27,8 @@ const baseUrl = resolveBaseUrl(import.meta.env.VITE_API_URL);
 export const TOKEN_KEY = 'auth:token';
 export const TENANT_KEY = 'auth:tenantId';
 export const SITE_KEY = 'auth:siteId';
+export const FALLBACK_TOKEN_KEY = 'token';
+export const USER_STORAGE_KEY = 'user';
 
 let unauthorizedCallback: (() => void) | undefined;
 export const setUnauthorizedCallback = (cb: () => void) => {
@@ -46,7 +48,7 @@ http.interceptors.request.use((config) => {
   const headers: AxiosRequestHeaders = config.headers ?? {};
   const tenantId = localStorage.getItem(TENANT_KEY);
   const siteId = localStorage.getItem(SITE_KEY);
-  const token = localStorage.getItem(TOKEN_KEY);
+  const token = localStorage.getItem(TOKEN_KEY) ?? localStorage.getItem(FALLBACK_TOKEN_KEY);
   if (tenantId) headers['x-tenant-id'] = tenantId;
   if (siteId) headers['x-site-id'] = siteId;
   if (token) headers['Authorization'] = `Bearer ${token}`;

@@ -13,7 +13,7 @@ import {
   searchAssets,
   getAssetTree,
 } from '../controllers/AssetController';
-import { requireAuth } from '../middleware/requireAuth'; // <— align with your actual file
+import { requireAuth } from '../middleware/authMiddleware';
 import requireRoles from '../middleware/requireRoles';
 import { validate } from '../middleware/validationMiddleware';
 import { assetValidators } from '../validators/assetValidators';

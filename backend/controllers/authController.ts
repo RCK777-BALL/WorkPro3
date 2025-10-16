@@ -195,8 +195,8 @@ export async function login(req: Request, res: Response) {
       token,
       user: {
         id: user._id.toString(),
-        name: user.name,
         email: user.email,
+        name: user.name,
         tenantId,
         siteId,
         role: primaryRole,

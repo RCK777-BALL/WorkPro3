@@ -2,75 +2,40 @@
  * SPDX-License-Identifier: MIT
  */
 
-import express from 'express';
-import { requireAuth, requireRole } from '../middleware/authMiddleware';
-import validateObjectId from '../middleware/validateObjectId';
-import type { UserRole } from '../types/auth';
-import {
-  listPermits,
-  getPermit,
-  createPermit,
-  updatePermit,
-  approvePermit,
-  rejectPermit,
-  escalatePermit,
-  completeIsolationStep,
-  logPermitIncident,
-  getPermitHistory,
-  getSafetyKpis,
-  getPermitActivity,
-} from '../controllers/PermitController';
+import { Router } from "express";
 
-const router = express.Router();
+import legacyPermitRoutes from "./PermitRoutes";
 
-const ADMIN_SUPERVISOR_MANAGER: UserRole[] = ['admin', 'supervisor', 'manager'];
-const APPROVER_ROLES: UserRole[] = ['admin', 'supervisor', 'manager', 'technician'];
+const router = Router();
 
-router.use(requireAuth);
+const summary = [
+  {
+    id: "PR-088",
+    type: "Hot Work",
+    requester: "Kim Romero",
+    status: "Pending Approval",
+    createdAt: "2024-06-05",
+  },
+  {
+    id: "PR-074",
+    type: "Confined Space",
+    requester: "Jordan Chen",
+    status: "In Progress",
+    createdAt: "2024-06-02",
+  },
+  {
+    id: "PR-069",
+    type: "Lockout/Tagout",
+    requester: "Avery Johnson",
+    status: "Completed",
+    createdAt: "2024-05-29",
+  },
+];
 
-router.get('/', listPermits);
-router.get('/kpis', getSafetyKpis);
-router.get('/activity', getPermitActivity);
-router.get('/:id/history', validateObjectId('id'), getPermitHistory);
-router.get('/:id', validateObjectId('id'), getPermit);
+router.get("/summary", (_req, res) => {
+  res.json({ success: true, data: summary, message: "Permit summary" });
+});
 
-router.post('/', requireRole(...ADMIN_SUPERVISOR_MANAGER), createPermit);
-router.put(
-  '/:id',
-  validateObjectId('id'),
-  requireRole(...ADMIN_SUPERVISOR_MANAGER),
-  updatePermit,
-);
-
-router.post(
-  '/:id/approve',
-  validateObjectId('id'),
-  requireRole(...APPROVER_ROLES),
-  approvePermit,
-);
-router.post(
-  '/:id/reject',
-  validateObjectId('id'),
-  requireRole(...APPROVER_ROLES),
-  rejectPermit,
-);
-router.post(
-  '/:id/escalate',
-  validateObjectId('id'),
-  requireRole(...ADMIN_SUPERVISOR_MANAGER),
-  escalatePermit,
-);
-router.post(
-  '/:id/isolation/:stepIndex/complete',
-  validateObjectId('id'),
-  requireRole(...APPROVER_ROLES),
-  completeIsolationStep,
-);
-router.post(
-  '/:id/incidents',
-  validateObjectId('id'),
-  requireRole(...ADMIN_SUPERVISOR_MANAGER),
-  logPermitIncident,
-);
+router.use("/", legacyPermitRoutes);
 
 export default router;

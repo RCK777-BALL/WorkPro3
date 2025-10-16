@@ -2,23 +2,43 @@
  * SPDX-License-Identifier: MIT
  */
 
-import express from 'express';
-import {
-  getAllVendors,
-  getVendorById,
-  createVendor,
-  updateVendor,
-  deleteVendor
-} from '../controllers/VendorController';
-import { requireAuth } from '../middleware/authMiddleware';
+import { Router } from "express";
 
-const router = express.Router();
+import legacyVendorRoutes from "./VendorRoutes";
 
-router.use(requireAuth);
-router.get('/', getAllVendors);
-router.get('/:id', getVendorById);
-router.post('/', createVendor);
-router.put('/:id', updateVendor);
-router.delete('/:id', deleteVendor);
+const router = Router();
+
+const summary = [
+  {
+    id: "VEN-001",
+    vendor: "ProParts Supply",
+    category: "MRO",
+    spendYtd: 18500,
+    nextReview: "2024-07-30",
+    status: "Open",
+  },
+  {
+    id: "VEN-002",
+    vendor: "Northwind Safety",
+    category: "PPE",
+    spendYtd: 8200,
+    nextReview: "2024-09-12",
+    status: "In Progress",
+  },
+  {
+    id: "VEN-003",
+    vendor: "Metro Automation",
+    category: "Controls",
+    spendYtd: 23200,
+    nextReview: "2024-08-04",
+    status: "Completed",
+  },
+];
+
+router.get("/summary", (_req, res) => {
+  res.json({ success: true, data: summary, message: "Vendor summary" });
+});
+
+router.use("/", legacyVendorRoutes);
 
 export default router;

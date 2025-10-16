@@ -2,49 +2,43 @@
  * SPDX-License-Identifier: MIT
  */
 
-import express from 'express';
-import {
-  getChannels,
-  createChannel,
-  updateChannel,
-  deleteChannel,
-  getChannelMessages,
-  sendChannelMessage,
-  updateMessage,
-  deleteMessage,
-  getDirectMessages,
-  createDirectMessage,
-  deleteDirectMessage,
-  getDirectMessagesForUser,
-  sendDirectMessage,
-} from '../controllers/ChatController';
-import { requireAuth } from '../middleware/authMiddleware';
+import { Router } from "express";
 
-const router = express.Router();
+import legacyChatRoutes from "./ChatRoutes";
 
-// All chat routes require authentication
-router.use(requireAuth);
+const router = Router();
 
-// Channel management
-router.get('/channels', getChannels);
-router.post('/channels', createChannel);
-router.put('/channels/:channelId', updateChannel);
-router.delete('/channels/:channelId', deleteChannel);
+const summary = [
+  {
+    id: "chat-001",
+    thread: "Line A - Shift Handoff",
+    participants: ["Avery", "Jordan", "Priya"],
+    lastMessage: "Night shift logged motor vibration spike.",
+    updatedAt: "2024-06-06T07:45:00Z",
+    status: "Open",
+  },
+  {
+    id: "chat-002",
+    thread: "Safety Permit Review",
+    participants: ["Kim", "Safety Team"],
+    lastMessage: "Awaiting approval from EHS lead.",
+    updatedAt: "2024-06-05T15:10:00Z",
+    status: "Pending Approval",
+  },
+  {
+    id: "chat-003",
+    thread: "PM Optimization",
+    participants: ["Reliability", "Maintenance"],
+    lastMessage: "Updated lubrication cadence shared.",
+    updatedAt: "2024-06-04T11:02:00Z",
+    status: "Completed",
+  },
+];
 
-// Channel messages
-router.get('/channels/:channelId/messages', getChannelMessages);
-router.post('/channels/:channelId/messages', sendChannelMessage);
-router.put('/channels/:channelId/messages/:messageId', updateMessage);
-router.delete('/channels/:channelId/messages/:messageId', deleteMessage);
+router.get("/summary", (_req, res) => {
+  res.json({ success: true, data: summary, message: "Chat summary" });
+});
 
-// Direct messages
-router.get('/dm', getDirectMessages);
-router.post('/dm', createDirectMessage);
-router.delete('/dm/:conversationId', deleteDirectMessage);
-
-router.get('/dm/:conversationId/messages', getDirectMessagesForUser);
-router.post('/dm/:conversationId/messages', sendDirectMessage);
-router.put('/dm/:conversationId/messages/:messageId', updateMessage);
-router.delete('/dm/:conversationId/messages/:messageId', deleteMessage);
+router.use("/", legacyChatRoutes);
 
 export default router;

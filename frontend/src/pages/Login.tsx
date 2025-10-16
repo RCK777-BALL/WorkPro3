@@ -2,95 +2,91 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useForm, type FieldErrors, type Resolver } from 'react-hook-form';
-import { z } from 'zod';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getErrorMessage } from '../lib/api';
-import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
-const schema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
-  remember: z.boolean().optional(),
-});
-
-type FormValues = z.infer<typeof schema>;
-
-const resolver: Resolver<FormValues> = async (values) => {
-  const parsed = schema.safeParse(values);
-  if (parsed.success) {
-    return { values: parsed.data, errors: {} };
-  }
-  const fieldErrors = parsed.error.flatten().fieldErrors;
-  const errors = Object.entries(fieldErrors).reduce<FieldErrors<FormValues>>((acc, [key, messages]) => {
-    if (messages && messages.length > 0) {
-      acc[key as keyof FormValues] = { type: 'manual', message: messages[0] };
-    }
-    return acc;
-  }, {} as FieldErrors<FormValues>);
-  return { values: {}, errors };
-};
+import { api } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
+import type { AuthUser } from '@/types';
+import { FALLBACK_TOKEN_KEY, SITE_KEY, TENANT_KEY, TOKEN_KEY, USER_STORAGE_KEY } from '@/lib/http';
 
 export default function Login() {
-  const nav = useNavigate();
-  const { login } = useAuth();
-  const [serverMsg, setServerMsg] = useState<string | null>(null);
-  const { register, handleSubmit, formState: { errors, isSubmitting } } =
-    useForm<FormValues>({ resolver, defaultValues: { email: '', password: '', remember: true } });
+  const [email, setEmail] = useState('admin@cmms.com');
+  const [password, setPassword] = useState('Password123!');
+  const [loading, setLoading] = useState(false);
+  const { setUser } = useAuth();
 
-  const onSubmit = async (values: FormValues) => {
-    setServerMsg(null);
+  const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoading(true);
     try {
-      await login(values.email, values.password, Boolean(values.remember));
-      nav('/dashboard', { replace: true });
-    } catch (e) {
-      setServerMsg(getErrorMessage(e));
+      const response = await api.post('/auth/login', { email, password });
+      const { token, user } = response.data ?? {};
+
+      if (!token || !user) {
+        throw new Error('Invalid login response');
+      }
+
+      const normalizedUser = user as AuthUser;
+
+      localStorage.setItem(FALLBACK_TOKEN_KEY, token);
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(normalizedUser));
+
+      if (normalizedUser.tenantId) {
+        localStorage.setItem(TENANT_KEY, normalizedUser.tenantId);
+      } else {
+        localStorage.removeItem(TENANT_KEY);
+      }
+
+      if (normalizedUser.siteId) {
+        localStorage.setItem(SITE_KEY, normalizedUser.siteId);
+      } else {
+        localStorage.removeItem(SITE_KEY);
+      }
+
+      setUser(normalizedUser);
+
+      toast.success('Login successful!');
+      window.location.href = '/dashboard';
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { message?: string } } }).response?.data?.message ??
+        (err instanceof Error ? err.message : 'Login failed');
+      toast.error(message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen grid place-items-center bg-neutral-950 text-neutral-100">
-      <div className="w-full max-w-md bg-neutral-900/60 backdrop-blur rounded-2xl p-6 shadow-xl">
-        <h1 className="text-xl font-semibold mb-4">Access your command center</h1>
-        {serverMsg && (
-          <div className="mb-3 rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm">
-            {serverMsg}
-          </div>
-        )}
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-          <div>
-            <label className="text-sm" htmlFor="login-email">Email</label>
-            <input
-              id="login-email"
-              className="mt-1 w-full rounded-md bg-neutral-800 px-3 py-2 outline-none"
-              type="email"
-              autoComplete="email"
-              {...register('email')}
-            />
-            {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email.message}</p>}
-          </div>
-          <div>
-            <label className="text-sm" htmlFor="login-password">Password</label>
-            <input
-              id="login-password"
-              className="mt-1 w-full rounded-md bg-neutral-800 px-3 py-2 outline-none"
-              type="password"
-              autoComplete="current-password"
-              {...register('password')}
-            />
-            {errors.password && <p className="text-xs text-red-400 mt-1">{errors.password.message}</p>}
-          </div>
-          <label className="inline-flex items-center gap-2 text-sm" htmlFor="login-remember">
-            <input id="login-remember" type="checkbox" {...register('remember')} />
-            Remember this device
-          </label>
-          <button disabled={isSubmitting}
-            className="w-full rounded-md bg-white/90 text-black font-semibold py-2 disabled:opacity-50">
-            {isSubmitting ? 'Signing in…' : 'Sign in'}
-          </button>
-        </form>
-      </div>
+    <div className="flex h-screen items-center justify-center bg-black">
+      <form onSubmit={handleLogin} className="w-80 space-y-4 rounded-lg bg-zinc-900 p-6">
+        <h2 className="text-center text-lg font-medium text-white">Access your command center</h2>
+        <input
+          className="w-full rounded bg-zinc-800 p-2 text-white"
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="Email"
+          autoComplete="email"
+        />
+        <input
+          className="w-full rounded bg-zinc-800 p-2 text-white"
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="Password"
+          autoComplete="current-password"
+        />
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded bg-indigo-600 p-2 text-white hover:bg-indigo-500 disabled:opacity-50"
+        >
+          {loading ? 'Signing in...' : 'Sign in'}
+        </button>
+      </form>
     </div>
   );
 }

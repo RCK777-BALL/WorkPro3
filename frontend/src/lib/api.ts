@@ -1,6 +1,12 @@
 import axios, { AxiosHeaders } from "axios";
 
-import { SITE_KEY, TENANT_KEY, TOKEN_KEY } from "./http";
+import {
+  FALLBACK_TOKEN_KEY,
+  SITE_KEY,
+  TENANT_KEY,
+  TOKEN_KEY,
+  USER_STORAGE_KEY,
+} from "./http";
 
 const DEFAULT_API_BASE_URL = "http://localhost:5010/api";
 
@@ -15,6 +21,17 @@ const resolveBaseUrl = (value?: string) => {
 };
 
 const baseURL = resolveBaseUrl(import.meta.env.VITE_API_URL);
+
+const clearAuthStorage = () => {
+  [TOKEN_KEY, TENANT_KEY, SITE_KEY, FALLBACK_TOKEN_KEY, USER_STORAGE_KEY].forEach((key) => {
+    if (key) {
+      localStorage.removeItem(key);
+    }
+  });
+};
+
+const resolveToken = () =>
+  localStorage.getItem(TOKEN_KEY) ?? localStorage.getItem(FALLBACK_TOKEN_KEY) ?? undefined;
 
 export const api = axios.create({
   baseURL,
@@ -31,7 +48,7 @@ api.interceptors.request.use((config) => {
 
   const tenantId = localStorage.getItem(TENANT_KEY);
   const siteId = localStorage.getItem(SITE_KEY);
-  const token = localStorage.getItem(TOKEN_KEY);
+  const token = resolveToken();
 
   if (tenantId) {
     headers.set("x-tenant-id", tenantId);
@@ -48,6 +65,19 @@ api.interceptors.request.use((config) => {
   config.headers = headers;
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      clearAuthStorage();
+      if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export type ApiError = { error?: { code: number; message: string; details?: unknown } };
 

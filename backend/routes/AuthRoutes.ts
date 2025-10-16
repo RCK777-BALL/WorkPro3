@@ -25,6 +25,7 @@ import logger from '../utils/logger';
 import { assertEmail } from '../utils/assert';
 import { getOAuthScope, type OAuthProvider } from '../config/oauthScopes';
 import { me, refresh, logout } from '../controllers/authController';
+import sendResponse from '../utils/sendResponse';
 
 const ROLE_PRIORITY = [
   'admin',
@@ -156,11 +157,16 @@ const sendAuthSuccess = (
     maxAge,
   });
 
-  res.json({
-    success: true,
-    token,
-    user: authUser,
-  });
+  sendResponse(
+    res,
+    {
+      token,
+      user: authUser,
+    },
+    null,
+    200,
+    'Login successful',
+  );
 };
 
 const setupMfa = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -263,7 +269,7 @@ router.use(passport.initialize());
 router.post('/login', loginLimiter, async (req: Request, res: Response, next: NextFunction) => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ message: 'Invalid request.' });
+    sendResponse(res, null, 'Invalid request.', 400);
     return;
   }
 
@@ -277,28 +283,34 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
 
     if (!user) {
       await bcrypt.compare(password, FAKE_PASSWORD_HASH);
-      res.status(400).json({ message: 'Invalid email or password.' });
+      sendResponse(res, null, 'Invalid email or password.', 400);
       return;
     }
 
     const hashed = user.passwordHash;
     if (!hashed) {
       await bcrypt.compare(password, FAKE_PASSWORD_HASH);
-      res.status(400).json({ message: 'Invalid email or password.' });
+      sendResponse(res, null, 'Invalid email or password.', 400);
       return;
     }
 
     const valid = await bcrypt.compare(password, hashed);
     if (!valid) {
-      res.status(400).json({ message: 'Invalid email or password.' });
+      sendResponse(res, null, 'Invalid email or password.', 400);
       return;
     }
 
     if (user.mfaEnabled) {
-      res.json({
-        mfaRequired: true,
-        userId: user._id.toString(),
-      });
+      sendResponse(
+        res,
+        {
+          mfaRequired: true,
+          userId: user._id.toString(),
+        },
+        null,
+        200,
+        'Multi-factor authentication required',
+      );
       return;
     }
 
@@ -306,7 +318,7 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
     try {
       secret = getJwtSecret();
     } catch {
-      res.status(500).json({ message: 'Server configuration issue' });
+      sendResponse(res, null, 'Server configuration issue', 500);
       return;
     }
 

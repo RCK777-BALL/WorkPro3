@@ -31,15 +31,15 @@ const rememberField = z
   }, z.boolean())
   .optional();
 
+const emailField = z
+  .string()
+  .trim()
+  .min(1, 'Email is required')
+  .email();
+
 const loginBaseSchema = z.object({
-  email: z
-    .string()
-    .email()
-    .optional(),
-  username: z
-    .string()
-    .email()
-    .optional(),
+  email: emailField.optional(),
+  username: emailField.optional(),
   password: z.string().min(1),
   remember: rememberField,
 });

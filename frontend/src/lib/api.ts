@@ -21,7 +21,7 @@ const resolveBaseUrl = (value?: string) => {
   return `${normalized}/api`;
 };
 
-const baseURL = resolveBaseUrl(import.meta.env.VITE_API_URL);
+const baseURL = resolveBaseUrl(import.meta.env.VITE_API_BASE_URL);
 
 const clearAuthStorage = () => {
   [TOKEN_KEY, TENANT_KEY, SITE_KEY, FALLBACK_TOKEN_KEY, USER_STORAGE_KEY].forEach((key) => {

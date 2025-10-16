@@ -9,7 +9,8 @@
     "test": "vitest run",
     "preview": "vite preview",
     "lint": "eslint . --ext .ts,.tsx && tsc -p tsconfig.json --noEmit",
-    "clean": "rimraf node_modules .vite .turbo dist && git clean -fdX -- .vite dist || exit 0"
+    "clean": "rimraf node_modules .vite .turbo dist && git clean -fdX -- .vite dist || exit 0",
+    "fix:frontend": "node ../fixWorkPro.js frontend"
   },
   "dependencies": {
     "@dnd-kit/core": "6.3.1",

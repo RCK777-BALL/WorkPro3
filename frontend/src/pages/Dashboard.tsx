@@ -14,6 +14,7 @@ import type { LucideIcon } from "lucide-react";
 import { AlertTriangle, Clock, ClipboardList, Wrench } from "lucide-react";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api";
+import StatusLegend from "@/components/common/StatusLegend";
 
 type RecentWorkOrder = {
   id: string;
@@ -536,6 +537,7 @@ export default function Dashboard() {
             Monitor maintenance operations, recent activity, and outstanding work orders at a glance.
           </p>
         </header>
+        <StatusLegend />
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {metricCards.map((card) => (

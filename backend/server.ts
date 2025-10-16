@@ -20,37 +20,42 @@ import logger from "./utils/logger";
 import requestLog from "./middleware/requestLog";
 
 import {
-  authRoutes,
-  notificationsRoutes,
-  departmentRoutes,
-  workOrdersRoutes,
-  assetsRoutes,
-  meterRoutes,
-  conditionRuleRoutes,
-  TenantRoutes,
-  pmTasksRoutes,
-  reportsRoutes,
-  LineRoutes,
-  StationRoutes,
-  inventoryRoutes,
-  importRoutes,
-
+  adminRoutes,
   analyticsRoutes,
-  teamRoutes,
-  ThemeRoutes,
-  requestPortalRoutes,
-  publicRequestRoutes,
-  vendorPortalRoutes,
-  chatRoutes,
-  webhooksRoutes,
-  calendarRoutes,
-  IntegrationRoutes,
-  summaryRoutes,
-  auditRoutes,
+  assetsRoutes,
   attachmentRoutes,
-  permitRoutes,
+  auditRoutes,
+  authRoutes,
+  calendarRoutes,
+  chatRoutes,
+  complianceRoutes,
+  conditionRuleRoutes,
   dashboardRoutes,
+  departmentRoutes,
+  importRoutes,
+  integrationsRoutes,
+  inventoryRoutes,
+  kbRoutes,
+  laborRoutes,
+  LineRoutes,
+  meterRoutes,
+  notificationsRoutes,
+  permitRoutes,
+  pmRoutes,
+  pmTasksRoutes,
+  publicRequestRoutes,
+  reportsRoutes,
+  requestPortalRoutes,
   statusRoutes,
+  StationRoutes,
+  summaryRoutes,
+  teamRoutes,
+  TenantRoutes,
+  ThemeRoutes,
+  vendorPortalRoutes,
+  vendorRoutes,
+  webhooksRoutes,
+  workOrdersRoutes,
 } from "./routes";
 import uiRoutes from "./routes/uiRoutes";
 
@@ -197,13 +202,17 @@ app.use("/api/meters", meterRoutes);
 app.use("/api/condition-rules", conditionRuleRoutes);
 app.use("/api/tenants", TenantRoutes);
 app.use("/api/pm-tasks", pmTasksRoutes);
-app.use("/api/pm", pmTasksRoutes);
+app.use("/api/pm", pmRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/lines", LineRoutes);
 app.use("/api/stations", StationRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/import", importRoutes);
+app.use("/api/vendors", vendorRoutes);
+app.use("/api/labor", laborRoutes);
+app.use("/api/knowledge-base", kbRoutes);
 
+app.use("/api/analytics", analyticsRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
 app.use("/api/team", teamRoutes);
 app.use("/api/theme", ThemeRoutes);
@@ -215,7 +224,9 @@ app.use("/api/vendor-portal", vendorPortalRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/webhooks", webhooksRoutes);
 app.use("/api/calendar", calendarRoutes);
-app.use("/api/integrations", IntegrationRoutes);
+app.use("/api/integrations", integrationsRoutes);
+app.use("/api/compliance", complianceRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.use("/api/attachments", attachmentRoutes);
 app.use("/api/summary", summaryRoutes);

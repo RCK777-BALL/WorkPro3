@@ -9,6 +9,18 @@ import Imports from './pages/Imports';
 import Layout from './components/layout/Layout';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import Reports from './pages/Reports';
+import PreventiveMaintenancePage from './pages/PreventiveMaintenancePage';
+import AssetsLocationsPage from './pages/AssetsLocationsPage';
+import PartsInventoryPage from './pages/PartsInventoryPage';
+import VendorsPurchasingPage from './pages/VendorsPurchasingPage';
+import LaborTechniciansPage from './pages/LaborTechniciansPage';
+import MetersReadingsPage from './pages/MetersReadingsPage';
+import KnowledgeBasePage from './pages/KnowledgeBasePage';
+import ChatCollaborationPage from './pages/ChatCollaborationPage';
+import NotificationsCenterPage from './pages/NotificationsCenterPage';
+import IntegrationsApiPage from './pages/IntegrationsApiPage';
+import ComplianceAuditLogsPage from './pages/ComplianceAuditLogsPage';
+import AdminSettingsPage from './pages/AdminSettingsPage';
 import { useAuth } from '@/context/AuthContext';
 import {
   FALLBACK_TOKEN_KEY,
@@ -62,6 +74,22 @@ export default function App() {
           <Route path="/" element={<Navigate to="/dashboard" />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/work-orders" element={<WorkOrdersPage />} />
+          <Route path="/dashboard/work-orders/new" element={<NewWorkOrder />} />
+          <Route path="/dashboard/preventive-maintenance" element={<PreventiveMaintenancePage />} />
+          <Route path="/dashboard/assets" element={<AssetsLocationsPage />} />
+          <Route path="/dashboard/permits" element={<PermitsPage />} />
+          <Route path="/dashboard/parts-inventory" element={<PartsInventoryPage />} />
+          <Route path="/dashboard/vendors-purchasing" element={<VendorsPurchasingPage />} />
+          <Route path="/dashboard/labor" element={<LaborTechniciansPage />} />
+          <Route path="/dashboard/meters" element={<MetersReadingsPage />} />
+          <Route path="/dashboard/analytics" element={<AnalyticsPage />} />
+          <Route path="/dashboard/reports" element={<Reports />} />
+          <Route path="/dashboard/knowledge-base" element={<KnowledgeBasePage />} />
+          <Route path="/dashboard/chat" element={<ChatCollaborationPage />} />
+          <Route path="/dashboard/notifications" element={<NotificationsCenterPage />} />
+          <Route path="/dashboard/integrations" element={<IntegrationsApiPage />} />
+          <Route path="/dashboard/compliance" element={<ComplianceAuditLogsPage />} />
+          <Route path="/dashboard/admin" element={<AdminSettingsPage />} />
           <Route path="/dashboard/work-orders/new" element={<NewWorkOrder />} />
           <Route path="/work-orders/new" element={<NewWorkOrder />} />
           <Route path="/work-orders" element={<WorkOrdersPage />} />

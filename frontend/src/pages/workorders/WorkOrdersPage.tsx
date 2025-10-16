@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import StatusBadge from "@/components/common/StatusBadge";
+import StatusLegend from "@/components/common/StatusLegend";
 import { api } from "@/lib/api";
 import type { WorkOrder } from "@/types/cmms";
 import { useQueryState } from "@/hooks/useQueryState";
@@ -38,6 +40,8 @@ export default function WorkOrdersPage() {
           Create Work Order
         </button>
       </div>
+
+      <StatusLegend />
 
       <div className="flex flex-wrap gap-2">
         <input
@@ -78,7 +82,9 @@ export default function WorkOrdersPage() {
                 <td className="px-3 py-2 font-medium">{workOrder.title}</td>
                 <td className="px-3 py-2">{workOrder.asset ?? '—'}</td>
                 <td className="px-3 py-2">{workOrder.priority}</td>
-                <td className="px-3 py-2">{workOrder.status}</td>
+                <td className="px-3 py-2">
+                  <StatusBadge status={workOrder.status} size="sm" />
+                </td>
                 <td className="px-3 py-2">{workOrder.dueDate?.slice(0, 10) ?? '—'}</td>
                 <td className="px-3 py-2 text-right">
                   <button

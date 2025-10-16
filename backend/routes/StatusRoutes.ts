@@ -4,24 +4,19 @@
 
 import { Router } from 'express';
 
-import { getStatusDefinitions } from '../config/statuses';
-import sendResponse from '../utils/sendResponse';
-
 const router = Router();
 
+const statuses = [
+  { label: 'Open', color: 'red' },
+  { label: 'In Progress', color: 'yellow' },
+  { label: 'Pending Approval', color: 'purple' },
+  { label: 'Completed', color: 'green' },
+  { label: 'On Hold', color: 'gray' },
+  { label: 'Cancelled', color: 'slate' },
+];
+
 router.get('/', (_req, res) => {
-  const statuses = getStatusDefinitions();
-  sendResponse(
-    res,
-    {
-      statuses,
-      updatedAt: new Date().toISOString(),
-      total: statuses.length,
-    },
-    null,
-    200,
-    'Status definitions retrieved',
-  );
+  res.json({ statuses, updatedAt: new Date().toISOString() });
 });
 
 export default router;

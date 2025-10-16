@@ -35,6 +35,10 @@ export const setUnauthorizedCallback = (cb: () => void) => {
   unauthorizedCallback = cb;
 };
 
+export const triggerUnauthorized = () => {
+  unauthorizedCallback?.();
+};
+
 const http = axios.create({
   baseURL: baseUrl,
   withCredentials: true,

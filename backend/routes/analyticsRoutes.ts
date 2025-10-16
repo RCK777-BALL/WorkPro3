@@ -4,7 +4,7 @@
 
 import { Router } from "express";
 
-import legacyAnalyticsRoutes from "./AnalyticsRoutes";
+import legacyAnalyticsRoutes from "./analyticsRoutes";
 
 const router = Router();
 

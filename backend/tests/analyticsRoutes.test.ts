@@ -16,7 +16,7 @@ vi.mock('../services/analytics', () => ({
   getTrendDatasets: (...args: any[]) => getTrendDatasets(...args),
 }));
 
-import AnalyticsRoutes from '../routes/AnalyticsRoutes';
+import AnalyticsRoutes from '../routes/analyticsRoutes';
 
 const app = express();
 app.use('/api/v1/analytics', AnalyticsRoutes);

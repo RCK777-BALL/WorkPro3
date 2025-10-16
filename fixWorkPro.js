@@ -2,8 +2,27 @@
 import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
-import chalk from "chalk";
 import { fileURLToPath } from "url";
+
+const RESET = "\u001b[0m";
+const COLOR_CODES = {
+  cyan: "\u001b[36m",
+  yellow: "\u001b[33m",
+  green: "\u001b[32m",
+  red: "\u001b[31m",
+  orange: "\u001b[38;5;208m",
+};
+
+const chalk = {
+  cyan: (message) => `${COLOR_CODES.cyan}${message}${RESET}`,
+  yellow: (message) => `${COLOR_CODES.yellow}${message}${RESET}`,
+  green: (message) => `${COLOR_CODES.green}${message}${RESET}`,
+  red: (message) => `${COLOR_CODES.red}${message}${RESET}`,
+  keyword: (name) => {
+    const color = COLOR_CODES[name] || "";
+    return (message) => `${color}${message}${color ? RESET : ""}`;
+  },
+};
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

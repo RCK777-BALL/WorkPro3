@@ -4,25 +4,56 @@
 
 import type { Response } from 'express';
 
+const SUCCESS_MESSAGE_BY_STATUS: Record<number, string> = {
+  200: 'OK',
+  201: 'Created',
+  202: 'Accepted',
+  204: 'No Content',
+};
+
 /**
  * Helper to send a consistent JSON envelope from controllers.
  *
- * The response is always in the form `{ data, error }` and uses the provided
- * HTTP status code. This keeps the API shape uniform across successful and
- * error responses.
- *
- * @param res    Express response object
- * @param data   Payload to return on success, or `null` on error
- * @param error  Error information when the request fails
- * @param status HTTP status code (defaults to `200`)
+ * Responses now always follow the shape `{ success, data, message, error }`
+ * so the frontend can reliably inspect the payload regardless of the HTTP
+ * status code. The `error` field mirrors the previously exposed structure to
+ * remain backwards compatible with existing consumers while the new
+ * `success` and `message` properties add higher-level context.
  */
 export const sendResponse = <T>(
   res: Response,
   data: T | null,
-  error: unknown = null,
+  errorOrMessage: unknown = null,
   status = 200,
+  messageOverride?: string,
 ): Response => {
-  return res.status(status).json({ data, error });
+  const isErrorStatus = status >= 400;
+  let message =
+    messageOverride ??
+    SUCCESS_MESSAGE_BY_STATUS[status] ??
+    (isErrorStatus ? 'Request failed' : 'OK');
+
+  let errorPayload: unknown = null;
+
+  if (errorOrMessage !== null && errorOrMessage !== undefined) {
+    if (typeof errorOrMessage === 'string' && messageOverride === undefined) {
+      message = errorOrMessage;
+      if (isErrorStatus) {
+        errorPayload = errorOrMessage;
+      }
+    } else {
+      errorPayload = errorOrMessage;
+    }
+  }
+
+  const success = !isErrorStatus && errorPayload == null;
+
+  return res.status(status).json({
+    success,
+    data,
+    message,
+    error: errorPayload,
+  });
 };
 
 export default sendResponse;

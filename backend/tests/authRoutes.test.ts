@@ -106,6 +106,24 @@ describe('Auth Routes', () => {
     expect(session.user.email).toBe('case@example.com');
   });
 
+  it('trims surrounding whitespace from login email input', async () => {
+    await User.create({
+      name: 'Spaced',
+      email: 'spaced@example.com',
+      passwordHash: 'pass123',
+      roles: ['admin'],
+      tenantId: new mongoose.Types.ObjectId(),
+    });
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: '  spaced@example.com  ', password: 'pass123' })
+      .expect(200);
+
+    const session = res.body as { user: any };
+    expect(session.user.email).toBe('spaced@example.com');
+  });
+
   it('accepts username as an email alias when logging in', async () => {
     await User.create({
       name: 'Alias',

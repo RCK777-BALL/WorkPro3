@@ -41,8 +41,15 @@ const http = axios.create({
 });
 
 http.interceptors.request.use((config) => {
-  if (config.baseURL && typeof config.url === 'string' && config.url.startsWith('/')) {
-    config.url = config.url.replace(/^\/+/, '');
+  if (config.baseURL && typeof config.url === 'string' && !/^https?:\/\//i.test(config.url)) {
+    const baseHasTrailingSlash = config.baseURL.endsWith('/');
+    const urlHasLeadingSlash = config.url.startsWith('/');
+
+    if (baseHasTrailingSlash && urlHasLeadingSlash) {
+      config.url = config.url.replace(/^\/+/, '');
+    } else if (!baseHasTrailingSlash && !urlHasLeadingSlash) {
+      config.url = `/${config.url}`;
+    }
   }
 
   const headers: AxiosRequestHeaders = config.headers ?? {};

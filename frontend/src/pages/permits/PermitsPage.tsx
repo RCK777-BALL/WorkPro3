@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import StatusBadge from "@/components/common/StatusBadge";
 import { api } from "@/lib/api";
 import type { Permit } from "@/types/cmms";
 import { useQueryState } from "@/hooks/useQueryState";
@@ -64,7 +65,9 @@ export default function PermitsPage() {
               <tr key={permit.id} className="border-t border-slate-800 hover:bg-slate-900/40">
                 <td className="px-3 py-2 font-medium">{permit.type}</td>
                 <td className="px-3 py-2">{permit.requester}</td>
-                <td className="px-3 py-2">{permit.status}</td>
+                <td className="px-3 py-2">
+                  <StatusBadge status={permit.status} size="sm" />
+                </td>
                 <td className="px-3 py-2">{permit.createdAt.slice(0, 10)}</td>
                 <td className="px-3 py-2 text-right">
                   <button

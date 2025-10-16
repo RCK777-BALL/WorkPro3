@@ -4,14 +4,25 @@
 
 import type { LucideIcon } from 'lucide-react';
 import {
+  Bell,
+  BookOpen,
+  Boxes,
+  ClipboardList,
+  Clock,
+  FileCheck,
+  FileSpreadsheet,
+  Gauge,
   LayoutDashboard,
-  ShieldCheck,
-  Workflow,
-  FileText,
-  LineChart,
-  UploadCloud,
   LifeBuoy,
+  LineChart,
+  MessageSquare,
+  Package,
+  Plug,
+  Settings,
+  ShieldCheck,
   Sparkles,
+  Store,
+  Users,
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
@@ -24,45 +35,133 @@ type NavItem = {
   icon: LucideIcon;
 };
 
-const insightLinks: NavItem[] = [
-  {
-    to: '/dashboard',
-    label: 'Command Center',
-    description: 'Live equipment and team health',
-    icon: LayoutDashboard,
-  },
-  {
-    to: '/analytics',
-    label: 'Analytics',
-    description: 'Trends & KPIs over time',
-    icon: LineChart,
-  },
-  {
-    to: '/reports',
-    label: 'Reports',
-    description: 'Exportable summaries & PDFs',
-    icon: FileText,
-  },
-];
+type NavSection = {
+  heading: string;
+  items: NavItem[];
+};
 
-const workflowLinks: NavItem[] = [
+const sections: NavSection[] = [
   {
-    to: '/permits',
-    label: 'Safety Permits',
-    description: 'Track approvals & expirations',
-    icon: ShieldCheck,
+    heading: 'Operations',
+    items: [
+      {
+        to: '/dashboard',
+        label: 'Dashboard',
+        description: 'Live command center overview',
+        icon: LayoutDashboard,
+      },
+      {
+        to: '/dashboard/work-orders',
+        label: 'Work Orders',
+        description: 'Plan, dispatch & complete jobs',
+        icon: ClipboardList,
+      },
+      {
+        to: '/dashboard/preventive-maintenance',
+        label: 'Preventive Maintenance',
+        description: 'Recurring tasks & compliance cadence',
+        icon: Clock,
+      },
+      {
+        to: '/dashboard/assets',
+        label: 'Assets & Locations',
+        description: 'Hierarchy, locations & uptime',
+        icon: Package,
+      },
+      {
+        to: '/dashboard/permits',
+        label: 'Permits / Safety',
+        description: 'Lockout, safety and compliance',
+        icon: ShieldCheck,
+      },
+    ],
   },
   {
-    to: '/work-orders',
-    label: 'Work Orders',
-    description: 'Plan, dispatch & complete jobs',
-    icon: Workflow,
+    heading: 'Resources',
+    items: [
+      {
+        to: '/dashboard/parts-inventory',
+        label: 'Parts & Inventory',
+        description: 'Stock levels & reorder points',
+        icon: Boxes,
+      },
+      {
+        to: '/dashboard/vendors-purchasing',
+        label: 'Vendors & Purchasing',
+        description: 'Suppliers, contracts & sourcing',
+        icon: Store,
+      },
+      {
+        to: '/dashboard/labor',
+        label: 'Labor / Technicians',
+        description: 'Teams, certifications & availability',
+        icon: Users,
+      },
+      {
+        to: '/dashboard/meters',
+        label: 'Meters / Readings',
+        description: 'Runtime & condition tracking',
+        icon: Gauge,
+      },
+    ],
   },
   {
-    to: '/imports',
-    label: 'Data Imports',
-    description: 'Sync spreadsheets & assets',
-    icon: UploadCloud,
+    heading: 'Intelligence',
+    items: [
+      {
+        to: '/dashboard/analytics',
+        label: 'Analytics & KPIs',
+        description: 'Performance dashboards & trends',
+        icon: LineChart,
+      },
+      {
+        to: '/dashboard/reports',
+        label: 'Reports',
+        description: 'Exportable summaries & PDFs',
+        icon: FileSpreadsheet,
+      },
+      {
+        to: '/dashboard/knowledge-base',
+        label: 'Knowledge Base',
+        description: 'SOPs, manuals & best practices',
+        icon: BookOpen,
+      },
+      {
+        to: '/dashboard/chat',
+        label: 'Chat / Collaboration',
+        description: 'Team messaging & handoffs',
+        icon: MessageSquare,
+      },
+    ],
+  },
+  {
+    heading: 'System',
+    items: [
+      {
+        to: '/dashboard/notifications',
+        label: 'Notifications',
+        description: 'Alerts & in-app updates',
+        icon: Bell,
+      },
+      {
+        to: '/dashboard/integrations',
+        label: 'Integrations / API',
+        description: 'Connectors, webhooks & API keys',
+        icon: Plug,
+      },
+      {
+        to: '/dashboard/compliance',
+        label: 'Compliance / Audit Logs',
+        description: 'Traceability & policy history',
+        icon: FileCheck,
+      },
+      {
+        to: '/dashboard/admin',
+        label: 'Admin Settings',
+        description: 'Sites, teams & system config',
+        icon: Settings,
+      },
+    ],
   },
 ];
 
@@ -70,6 +169,7 @@ const renderLink = ({ to, label, description, icon: Icon }: NavItem) => (
   <NavLink
     key={to}
     to={to}
+    title={description}
     className={({ isActive }) =>
       cn(
         'group relative flex items-center gap-3 rounded-2xl px-3 py-2 text-sm text-white/70 transition-all hover:bg-white/10 hover:text-white hover:shadow-lg hover:shadow-primary-500/10',
@@ -102,15 +202,12 @@ export default function Sidebar() {
       </div>
 
       <nav className="mt-8 flex-1 space-y-6">
-        <div>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.4em] text-white/40">Insights</p>
-          <div className="space-y-2">{insightLinks.map(renderLink)}</div>
-        </div>
-
-        <div>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.4em] text-white/40">Workflow</p>
-          <div className="space-y-2">{workflowLinks.map(renderLink)}</div>
-        </div>
+        {sections.map((section) => (
+          <div key={section.heading}>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.4em] text-white/40">{section.heading}</p>
+            <div className="space-y-2">{section.items.map(renderLink)}</div>
+          </div>
+        ))}
       </nav>
 
       <div className="mt-auto space-y-4">

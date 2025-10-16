@@ -4,7 +4,7 @@
 
 import { Router } from "express";
 
-import legacyAssetRoutes from "./AssetRoutes";
+import legacyAssetRoutes from "./assetRoutes";
 
 const router = Router();
 

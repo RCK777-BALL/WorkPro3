@@ -9,7 +9,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
-import AssetRoutes from '../routes/AssetRoutes';
+import AssetRoutes from '../routes/assetRoutes';
 
 const app = express();
 app.use(express.json());
@@ -17,7 +17,7 @@ app.use('/api/assets', AssetRoutes);
 
 let mongo: MongoMemoryServer;
 let token: string;
-let user: Awaited<ReturnType<typeof User.create>>;
+let user: any;
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'testsecret';

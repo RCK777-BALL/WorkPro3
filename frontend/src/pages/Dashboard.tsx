@@ -19,12 +19,12 @@ type RecentWorkOrder = {
   id: string;
   title: string;
   status: string;
-  priority?: "low" | "medium" | "high" | "critical";
-  createdAt?: string | Date;
-  updatedAt?: string | Date;
-  completedAt?: string | Date;
-  dueDate?: string | Date | null;
-  assetName?: string;
+  priority?: "low" | "medium" | "high" | "critical" | undefined;
+  createdAt?: string | Date | undefined;
+  updatedAt?: string | Date | undefined;
+  completedAt?: string | Date | undefined;
+  dueDate?: string | Date | null | undefined;
+  assetName?: string | undefined;
 };
 
 type DashboardSummary = {
@@ -209,7 +209,7 @@ const WorkOrderPreviewList = ({ items }: { items: RecentWorkOrder[] }) => (
           </p>
         </div>
         {item.assetName ? (
-          <span className="rounded bg-zinc-800 px-2 py-1 text-xs text-zinc-300">{item.assetName}</span>
+          <span className="px-2 py-1 text-xs rounded bg-zinc-800 text-zinc-300">{item.assetName}</span>
         ) : null}
       </li>
     ))}
@@ -239,7 +239,7 @@ const TrendChart = ({
 );
 
 const SkeletonRows = () => (
-  <div className="animate-pulse text-sm text-zinc-400">Loading…</div>
+  <div className="text-sm animate-pulse text-zinc-400">Loading…</div>
 );
 
 const aggregateWorkOrderCounts = (payload: unknown) => {
@@ -301,7 +301,7 @@ const computeTrendData = (orders: RecentWorkOrder[], days = 7) => {
         typeof order.completedAt === "string"
           ? order.completedAt
           : order.completedAt?.toString() ??
-            (typeof order.updatedAt === "string" ? order.updatedAt : order.updatedAt?.toString());
+          (typeof order.updatedAt === "string" ? order.updatedAt : order.updatedAt?.toString());
       increment(completedCounts, completedSource);
     }
   });
@@ -335,16 +335,16 @@ function ModuleCard({
   children?: ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-800/60 bg-zinc-900/40 p-4">
+    <div className="p-4 border rounded-xl border-zinc-800/60 bg-zinc-900/40">
       <div className="flex items-center gap-3">
-        {Icon ? <Icon className="h-5 w-5 text-zinc-300" /> : null}
+        {Icon ? <Icon className="w-5 h-5 text-zinc-300" /> : null}
         <div className="font-medium text-zinc-100">{title}</div>
       </div>
       {description ? <p className="mt-1 text-xs text-zinc-400">{description}</p> : null}
       {metrics?.length ? (
-        <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+        <div className="grid grid-cols-2 gap-2 mt-3 text-sm">
           {metrics.map((m, i) => (
-            <div key={i} className="rounded-lg bg-zinc-800/40 p-2">
+            <div key={i} className="p-2 rounded-lg bg-zinc-800/40">
               <div className="text-zinc-400">{m.label}</div>
               <div className="font-semibold text-zinc-100">{m.value}</div>
             </div>
@@ -524,9 +524,9 @@ export default function Dashboard() {
 
   return (
     <>
-      <div className="min-h-screen space-y-8 bg-slate-950 p-6 text-zinc-100">
+      <div className="min-h-screen p-6 space-y-8 bg-slate-950 text-zinc-100">
         {error ? (
-          <div className="rounded-lg border border-red-500/40 bg-red-950/40 p-3 text-sm text-red-200">
+          <div className="p-3 text-sm text-red-200 border rounded-lg border-red-500/40 bg-red-950/40">
             {error}
           </div>
         ) : null}

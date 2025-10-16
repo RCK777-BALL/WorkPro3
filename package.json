@@ -1,23 +1,25 @@
 {
-  "name": "workpro3-cmms",
-  "description": "Platinum CMMS repair + auto-sync utility",
+  "name": "workpro3",
   "version": "1.0.0",
-  "type": "module",
+  "description": "This repository contains a small full‑stack app split into two folders:",
   "main": "fixWorkPro.js",
-  "license": "MIT",
+  "directories": {
+    "doc": "docs"
+  },
+  "devDependencies": {},
   "scripts": {
-    "fix:backend": "node fixWorkPro.js backend",
-    "fix:frontend": "node fixWorkPro.js frontend",
-    "fix:all": "node fixWorkPro.js all"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "dependencies": {
-    "axios": "^1.7.2",
-    "chalk": "^5.3.0",
-    "react-hot-toast": "^2.4.1"
-  },
-  "author": "Ricardo Edwards <RCK777-BALL>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/RCK777-BALL/WorkPro3.git"
-  }
+    "url": "git+https://github.com/RCK777-BALL/WORKPRO3.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/RCK777-BALL/WORKPRO3/issues"
+  },
+  "homepage": "https://github.com/RCK777-BALL/WORKPRO3#readme"
 }

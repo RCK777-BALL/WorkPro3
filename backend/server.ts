@@ -50,6 +50,7 @@ import {
   attachmentRoutes,
   permitRoutes,
   dashboardRoutes,
+  statusRoutes,
 } from "./routes";
 import uiRoutes from "./routes/uiRoutes";
 
@@ -218,6 +219,7 @@ app.use("/api/integrations", IntegrationRoutes);
 
 app.use("/api/attachments", attachmentRoutes);
 app.use("/api/summary", summaryRoutes);
+app.use("/api/status", statusRoutes);
 app.use("/api/audit", auditRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 

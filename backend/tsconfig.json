@@ -13,6 +13,9 @@
     "esModuleInterop": true,
     "skipLibCheck": true
   },
+  "ts-node": {
+    "preferTsExts": true
+  },
   "include": ["**/*.ts", "types/**/*.d.ts"],
   "exclude": ["dist", "node_modules"]
 }

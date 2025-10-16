@@ -10,7 +10,9 @@ import {
   getDashboardOverview,
   getDashboardLivePulse,
   getDashboardWorkOrders,
+  getDashboardRecentActivity,
   getDashboardPermits,
+  getDashboardExportPdf,
   postDashboardImportSync,
   postLaunchPlanner,
 } from '../controllers/DashboardController';
@@ -27,7 +29,9 @@ router.use(requireAuth);
 router.get('/overview', getDashboardOverview);
 router.get('/live-pulse', getDashboardLivePulse);
 router.get('/workorders', requireRole(...READ_ROLES), getDashboardWorkOrders);
+router.get('/recent-activity', requireRole(...READ_ROLES), getDashboardRecentActivity);
 router.get('/permits', requireRole(...PERMIT_ROLES), getDashboardPermits);
+router.get('/export.pdf', requireRole(...READ_ROLES), getDashboardExportPdf);
 router.post('/imports/sync', requireRole(...IMPORT_ROLES), postDashboardImportSync);
 router.post('/command-center/launch', requireRole(...PLANNER_ROLES), postLaunchPlanner);
 

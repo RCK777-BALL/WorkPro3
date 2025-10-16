@@ -2,13 +2,17 @@
   "name": "workpro3",
   "version": "1.0.0",
   "description": "This repository contains a small full‑stack app split into two folders:",
+  "private": true,
   "main": "fixWorkPro.js",
   "directories": {
     "doc": "docs"
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "fix:backend": "node fixWorkPro.js backend",
+    "fix:frontend": "node fixWorkPro.js frontend",
+    "fix:all": "node fixWorkPro.js all"
   },
   "repository": {
     "type": "git",
@@ -17,7 +21,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/RCK777-BALL/WORKPRO3/issues"
   },

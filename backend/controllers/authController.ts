@@ -138,14 +138,19 @@ export async function register(req: Request, res: Response) {
 
 export async function login(req: Request, res: Response) {
   try {
-    const { email, password } = req.body as { email?: string; password?: string };
+    const { email, username, password } = req.body as {
+      email?: string;
+      username?: string;
+      password?: string;
+    };
 
-    if (!email || !password) {
+    const rawEmail = typeof email === 'string' && email.trim() ? email : username;
+    if (!rawEmail || !password) {
       res.status(400).json({ error: { code: 400, message: 'Email and password are required' } });
       return;
     }
 
-    const normalizedEmail = normalizeEmail(email);
+    const normalizedEmail = normalizeEmail(rawEmail);
     const user = await User.findOne({ email: normalizedEmail }).select(
       '+passwordHash +roles +role +tenantId +siteId +name +email',
     );

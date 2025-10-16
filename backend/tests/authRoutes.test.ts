@@ -106,6 +106,24 @@ describe('Auth Routes', () => {
     expect(session.user.email).toBe('case@example.com');
   });
 
+  it('accepts username as an email alias when logging in', async () => {
+    await User.create({
+      name: 'Alias',
+      email: 'alias@example.com',
+      passwordHash: 'pass123',
+      roles: ['admin'],
+      tenantId: new mongoose.Types.ObjectId(),
+    });
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ username: 'alias@example.com', password: 'pass123' })
+      .expect(200);
+
+    const session = res.body as { user: any };
+    expect(session.user.email).toBe('alias@example.com');
+  });
+
   it('indicates MFA is required and includes the user id', async () => {
     const tenantId = new mongoose.Types.ObjectId();
     const user = await User.create({

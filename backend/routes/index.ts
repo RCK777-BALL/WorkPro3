@@ -3,7 +3,7 @@ export { default as goodsReceiptRoutes } from './GoodsReceiptRoutes';
 export { default as purchaseOrderRoutes } from './PurchaseOrderRoutes';
 export { default as ThemeRoutes } from './ThemeRoutes';
 export { default as authRoutes } from './AuthRoutes';
-export { default as assetsRoutes } from './assetRoutes';
+export { default as assetsRoutes } from './AssetRoutes';
 export { default as integrationsRoutes } from './integrationsRoutes';
 export { default as reportsRoutes } from './reportsRoutes';
 export { default as importRoutes } from './ImportRoutes';

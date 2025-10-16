@@ -9,6 +9,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
+import type { UserDocument } from '../models/User';
 import AssetRoutes from '../routes/AssetRoutes';
 import Asset from '../models/Asset';
 
@@ -20,7 +21,7 @@ let mongo: MongoMemoryServer;
 let token: string;
 
 // Store the created user so the JWT contains a valid id
-let user: Awaited<ReturnType<typeof User.create>>;
+let user: UserDocument;
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'testsecret';
@@ -35,13 +36,16 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await mongoose.connection.db?.dropDatabase();
-  user = await User.create({
+  const createdUser = new User({
     name: 'Tester',
     email: 'tester@example.com',
     passwordHash: 'pass123',
     roles: ['supervisor'],
     tenantId: new mongoose.Types.ObjectId(),
+    employeeId: 'EMP-1',
   });
+  await createdUser.save();
+  user = createdUser;
   token = jwt.sign({ id: user._id.toString(), roles: user.roles }, process.env.JWT_SECRET!);
 });
 

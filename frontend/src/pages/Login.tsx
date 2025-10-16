@@ -3,52 +3,33 @@
  */
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
-import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import type { AuthUser } from '@/types';
-import { FALLBACK_TOKEN_KEY, SITE_KEY, TENANT_KEY, TOKEN_KEY, USER_STORAGE_KEY } from '@/lib/http';
 
 export default function Login() {
   const [email, setEmail] = useState('admin@cmms.com');
   const [password, setPassword] = useState('Password123!');
   const [loading, setLoading] = useState(false);
-  const { setUser } = useAuth();
+  const { login: authLogin } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
     try {
-      const response = await api.post('/auth/login', { email, password });
-      const { token, user } = response.data ?? {};
+      const result = await authLogin(email, password);
 
-      if (!token || !user) {
-        throw new Error('Invalid login response');
+      if ('mfaRequired' in result && result.mfaRequired) {
+        toast('Multi-factor authentication required. Please complete the MFA challenge.', {
+          icon: '🔐',
+        });
+        return;
       }
-
-      const normalizedUser = user as AuthUser;
-
-      localStorage.setItem(FALLBACK_TOKEN_KEY, token);
-      localStorage.setItem(TOKEN_KEY, token);
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(normalizedUser));
-
-      if (normalizedUser.tenantId) {
-        localStorage.setItem(TENANT_KEY, normalizedUser.tenantId);
-      } else {
-        localStorage.removeItem(TENANT_KEY);
-      }
-
-      if (normalizedUser.siteId) {
-        localStorage.setItem(SITE_KEY, normalizedUser.siteId);
-      } else {
-        localStorage.removeItem(SITE_KEY);
-      }
-
-      setUser(normalizedUser);
 
       toast.success('Login successful!');
-      window.location.href = '/dashboard';
+      navigate('/dashboard');
     } catch (err) {
       const message =
         (err as { response?: { data?: { message?: string } } }).response?.data?.message ??

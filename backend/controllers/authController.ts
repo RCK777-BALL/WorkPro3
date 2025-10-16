@@ -167,7 +167,7 @@ export async function login(req: Request, res: Response) {
     }
 
     const normalizedRoles = normalizeRoles(user.roles ?? []);
-    const primaryRole = derivePrimaryRole(user.role, normalizedRoles);
+    const primaryRole = derivePrimaryRole((user as any).role, normalizedRoles);
     const roles = Array.from(new Set([primaryRole, ...normalizedRoles]));
 
     const secret = process.env.JWT_SECRET;

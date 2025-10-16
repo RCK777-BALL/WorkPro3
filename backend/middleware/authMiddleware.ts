@@ -30,7 +30,7 @@ const toPlainUser = (user: HydratedDocument<UserDocument>, decoded: DecodedToken
   delete (plain as { passwordHash?: unknown }).passwordHash;
 
   const tenantId = decoded.tenantId ?? (plain.tenantId ? String(plain.tenantId) : undefined);
-  const siteId = decoded.siteId ?? (plain.siteId ? String(plain.siteId) : undefined);
+  const siteId = decoded.siteId ?? ((plain as { siteId?: unknown }).siteId ? String((plain as { siteId?: unknown }).siteId) : undefined);
   const roleFromDoc = (plain as { role?: unknown }).role;
   const rolesFromDoc = Array.isArray((plain as { roles?: unknown }).roles)
     ? ((plain as { roles?: unknown }).roles as unknown[]).map((value) => String(value))
@@ -76,14 +76,14 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
     }
 
     const authedReq = req as AuthedRequest;
-    const plainUser = toPlainUser(user, decoded);
+    const plainUser = toPlainUser(user, decoded) as any;
 
     authedReq.user = plainUser;
     if (plainUser.tenantId) {
-      req.tenantId = String(plainUser.tenantId);
+      authedReq.tenantId = String(plainUser.tenantId);
     }
     if (plainUser.siteId) {
-      req.siteId = String(plainUser.siteId);
+      authedReq.siteId = String(plainUser.siteId);
     }
 
     next();
@@ -96,7 +96,7 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
 
 export const requireRole = (...allowed: UserRole[]) =>
   (req: Request, res: Response, next: NextFunction): void => {
-    const roles = (req as AuthedRequest).user?.roles as UserRole[] | undefined;
+    const roles = ((req as AuthedRequest).user as any)?.roles as UserRole[] | undefined;
     if (!roles || !allowed.some((role) => roles.includes(role))) {
       res.status(403).json({ message: 'Forbidden' });
       return;

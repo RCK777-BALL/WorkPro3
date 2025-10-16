@@ -20,7 +20,7 @@ let mongo: MongoMemoryServer;
 let token: string;
 
 // Store the created user so the JWT contains a valid id
-let user: Awaited<ReturnType<typeof User.create>>;
+let user: any;
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'testsecret';

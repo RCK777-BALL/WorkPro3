@@ -31,11 +31,34 @@ const rememberField = z
   }, z.boolean())
   .optional();
 
-export const loginSchema = z.object({
-  email: z.string().email(),
+const loginBaseSchema = z.object({
+  email: z
+    .string()
+    .email()
+    .optional(),
+  username: z
+    .string()
+    .email()
+    .optional(),
   password: z.string().min(1),
   remember: rememberField,
 });
+
+export const loginSchema = loginBaseSchema
+  .superRefine((data, ctx) => {
+    if (!data.email && !data.username) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Email is required',
+        path: ['email'],
+      });
+    }
+  })
+  .transform((data) => ({
+    email: (data.email ?? data.username ?? '').trim(),
+    password: data.password,
+    remember: data.remember,
+  }));
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;

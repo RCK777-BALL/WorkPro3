@@ -1,4 +1,6 @@
-// AssetRoutes is a plain JS module; use the @ts-ignore above its import instead of augmenting the module.
+/*
+ * SPDX-License-Identifier: MIT
+ */
 
 export { default as analyticsRoutes } from './analyticsRoutes';
 export { default as goodsReceiptRoutes } from './GoodsReceiptRoutes';

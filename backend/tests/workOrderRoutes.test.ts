@@ -9,7 +9,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
-import WorkOrderRoutes from '../routes/WorkOrderRoutes';
+import WorkOrderRoutes from '../routes/workOrdersRoutes';
 import Asset from '../models/Asset';
 import Department from '../models/Department';
 import Line from '../models/Line';

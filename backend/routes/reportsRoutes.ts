@@ -4,7 +4,7 @@
 
 import { Router } from "express";
 
-import legacyReportsRoutes from "./ReportsRoutes";
+import legacyReportsRoutes from "./ReportsLegacyRoutes";
 
 const router = Router();
 

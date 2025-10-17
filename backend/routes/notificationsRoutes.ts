@@ -4,7 +4,7 @@
 
 import { Router } from "express";
 
-import legacyNotificationsRoutes from "./NotificationsRoutes";
+import legacyNotificationsRoutes from "./NotificationsLegacyRoutes";
 
 const router = Router();
 

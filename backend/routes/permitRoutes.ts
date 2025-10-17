@@ -4,7 +4,7 @@
 
 import { Router } from "express";
 
-import legacyPermitRoutes from "./PermitRoutes";
+import legacyPermitRoutes from "./PermitLegacyRoutes";
 
 const router = Router();
 

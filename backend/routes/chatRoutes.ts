@@ -4,7 +4,7 @@
 
 import { Router } from "express";
 
-import legacyChatRoutes from "./ChatRoutes";
+import legacyChatRoutes from "./ChatRoutesLegacy";
 
 const router = Router();
 

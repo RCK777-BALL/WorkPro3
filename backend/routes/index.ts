@@ -1,3 +1,9 @@
+// Provide a fallback declaration for the JS module so TypeScript treats it as 'any' and stops erroring.
+declare module './AssetRoutes' {
+  const routes: any;
+  export default routes;
+}
+
 export { default as analyticsRoutes } from './analyticsRoutes';
 export { default as goodsReceiptRoutes } from './GoodsReceiptRoutes';
 export { default as purchaseOrderRoutes } from './PurchaseOrderRoutes';

@@ -18,6 +18,9 @@ import Button from '@/components/ui/button';
 export type AssetFormValues = {
   name: string;
   location: string;
+  department?: string;
+  line?: string;
+  station?: string;
   type: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface';
   status: 'Active' | 'Offline' | 'In Repair';
   criticality: 'high' | 'medium' | 'low';
@@ -35,6 +38,9 @@ export interface AssetFormModalProps {
 const defaultValues: AssetFormValues = {
   name: '',
   location: '',
+  department: '',
+  line: '',
+  station: '',
   type: 'Mechanical',
   status: 'Active',
   criticality: 'medium',
@@ -109,6 +115,47 @@ export default function AssetFormModal({
               {errors.location && (
                 <p className="text-sm text-error-400">{errors.location.message}</p>
               )}
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-neutral-200" htmlFor="asset-department">
+                Department (optional)
+              </label>
+              <input
+                id="asset-department"
+                className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                placeholder="Assembly"
+                disabled={loading}
+                {...register('department')}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-neutral-200" htmlFor="asset-line">
+                Line (optional)
+              </label>
+              <input
+                id="asset-line"
+                className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                placeholder="Line 1"
+                disabled={loading}
+                {...register('line')}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-neutral-200" htmlFor="asset-station">
+                Station (optional)
+              </label>
+              <input
+                id="asset-station"
+                className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                placeholder="Station A"
+                disabled={loading}
+                {...register('station')}
+              />
             </div>
           </div>
 

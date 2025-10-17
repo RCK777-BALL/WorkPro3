@@ -42,10 +42,10 @@ type Summary = {
 };
 
 type WorkOrderFilters = {
-  department?: Types.ObjectId;
-  line?: Types.ObjectId;
-  statuses?: string[];
-  assignedTo?: Types.ObjectId;
+  department?: Types.ObjectId | undefined;
+  line?: Types.ObjectId | undefined;
+  statuses?: string[] | undefined;
+  assignedTo?: Types.ObjectId | undefined;
 };
 
 const ALL_WORK_ORDER_STATUSES = [
@@ -183,12 +183,12 @@ export const calculateSummary = async (
       },
       { $group: { _id: null, hours: { $sum: '$totalHours' } } },
     ]),
-    completedStatuses.length
+    pmCompletedStatuses.length
       ? WorkOrder.aggregate([
           {
             $match: {
               ...baseWorkOrderMatch,
-              status: { $in: completedStatuses.length ? completedStatuses : ['completed'] },
+              status: { $in: pmCompletedStatuses.length ? pmCompletedStatuses : ['completed'] },
               completedAt: { $ne: null },
               createdAt: { $ne: null },
             },
@@ -203,12 +203,12 @@ export const calculateSummary = async (
           { $group: { _id: null, avgDuration: { $avg: '$durationHours' } } },
         ])
       : [],
-    completedStatuses.length
+    pmCompletedStatuses.length
       ? WorkOrder.aggregate([
           {
             $match: {
               ...baseWorkOrderMatch,
-              status: { $in: completedStatuses.length ? completedStatuses : ['completed'] },
+              status: { $in: pmCompletedStatuses.length ? pmCompletedStatuses : ['completed'] },
               dueDate: { $ne: null },
               completedAt: { $ne: null },
             },

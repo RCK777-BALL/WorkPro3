@@ -114,12 +114,13 @@ const resolveDashboardFilters = (req: Request): DashboardFilters => {
       ? toObjectId(req.user?._id ?? (req.user as any)?.id ?? null)
       : toObjectId(assignedParam);
 
-  return {
-    department,
-    line,
-    statuses,
-    assignedTo,
-  };
+  const filters: DashboardFilters = {};
+  if (department) filters.department = department;
+  if (line) filters.line = line;
+  if (statuses && statuses.length) filters.statuses = statuses;
+  if (assignedTo) filters.assignedTo = assignedTo;
+
+  return filters;
 };
 
 const computeLivePulse = async (

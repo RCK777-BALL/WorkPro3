@@ -69,6 +69,9 @@ const fallbackAssets: AssetRecord[] = [
   },
 ];
 
+const toOptionalString = (value: unknown): string | undefined =>
+  typeof value === 'string' && value.trim().length > 0 ? value : undefined;
+
 const normalizeAsset = (payload: AssetApiRecord): AssetRecord | null => {
   const id = typeof payload.id === 'string' && payload.id ? payload.id : payload._id;
   if (!id) {
@@ -83,9 +86,9 @@ const normalizeAsset = (payload: AssetApiRecord): AssetRecord | null => {
     id,
     name: payload.name ?? 'Unnamed Asset',
     location: payload.location ?? 'Unassigned location',
-    department: payload.department,
-    line: payload.line,
-    station: payload.station,
+    department: toOptionalString(payload.department),
+    line: toOptionalString(payload.line),
+    station: toOptionalString(payload.station),
     type,
     status,
     criticality,

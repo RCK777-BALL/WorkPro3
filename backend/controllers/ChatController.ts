@@ -143,7 +143,12 @@ export const getChannelMessages: AuthedRequestHandler<ChannelIdParams> = async (
   next,
 ) => {
   try {
-    const messages: ChatMessageDocument[] = await ChatMessage.find({ channelId: req.params.channelId }).sort({ createdAt: 1 });
+    const ids = resolveUserAndTenant(req, res, { requireUser: false });
+    if (!ids?.tenantId) return;
+    const messages: ChatMessageDocument[] = await ChatMessage.find({
+      channelId: req.params.channelId,
+      tenantId: ids.tenantId,
+    }).sort({ createdAt: 1 });
     sendResponse(res, messages);
     return;
   } catch (err) {
@@ -158,14 +163,16 @@ export const sendChannelMessage: AuthedRequestHandler<
   MessageBody
 > = async (req, res, next) => {
   try {
-    const ids = resolveUserAndTenant(req, res, { requireTenant: false });
+    const ids = resolveUserAndTenant(req, res);
     if (!ids) return;
-    const { userId } = ids;
+    const { userId, tenantId } = ids;
     const { content } = req.body;
     const message: ChatMessageDocument = await ChatMessage.create({
       channelId: req.params.channelId,
       sender: userId,
+      tenantId: tenantId!,
       content,
+      plainText: content,
     });
     sendResponse(res, message, null, 201);
     return;
@@ -348,7 +355,9 @@ export const sendDirectMessage: AuthedRequestHandler<
     const message: ChatMessageDocument = await ChatMessage.create({
       channelId: channel._id,
       sender: userId!,
+      tenantId: tenantId!,
       content: req.body.content,
+      plainText: req.body.content,
     });
     sendResponse(res, message, null, 201);
     return;

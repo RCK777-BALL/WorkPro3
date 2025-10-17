@@ -9,6 +9,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
+// @ts-ignore: module '../routes/AssetRoutes' has no declaration file
 import AssetRoutes from '../routes/AssetRoutes';
 import Asset from '../models/Asset';
 

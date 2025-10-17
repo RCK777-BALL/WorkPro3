@@ -305,8 +305,11 @@ export const searchAssets: AuthedRequestHandler<
     const regex = new RegExp(q, 'i');
 
     const filter: Record<string, unknown> = {
-      name: { $regex: regex },
       tenantId: req.tenantId,
+      $or: [
+        { name: { $regex: regex } },
+        { location: { $regex: regex } },
+      ],
     };
     if (req.siteId) filter.siteId = req.siteId;
 

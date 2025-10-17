@@ -19,6 +19,9 @@ interface AssetRecord {
   id: string;
   name: string;
   location: string;
+  department?: string;
+  line?: string;
+  station?: string;
   type: AssetType;
   status: AssetStatus;
   criticality: AssetCriticality;
@@ -32,6 +35,9 @@ const fallbackAssets: AssetRecord[] = [
     id: 'asset-001',
     name: 'Main Air Compressor',
     location: 'Plant 1 - Utility Room',
+    department: 'Maintenance',
+    line: 'Utilities',
+    station: 'Compressor Bay',
     type: 'Mechanical',
     status: 'Active',
     criticality: 'high',
@@ -41,6 +47,9 @@ const fallbackAssets: AssetRecord[] = [
     id: 'asset-002',
     name: 'Packaging Line',
     location: 'Plant 1 - Line B',
+    department: 'Production',
+    line: 'Line B',
+    station: 'Packaging Station',
     type: 'Mechanical',
     status: 'Offline',
     criticality: 'medium',
@@ -50,6 +59,9 @@ const fallbackAssets: AssetRecord[] = [
     id: 'asset-003',
     name: 'Warehouse Lift 3',
     location: 'Distribution Center',
+    department: 'Logistics',
+    line: 'Material Handling',
+    station: 'Lift Zone 3',
     type: 'Tooling',
     status: 'In Repair',
     criticality: 'medium',
@@ -71,6 +83,9 @@ const normalizeAsset = (payload: AssetApiRecord): AssetRecord | null => {
     id,
     name: payload.name ?? 'Unnamed Asset',
     location: payload.location ?? 'Unassigned location',
+    department: payload.department,
+    line: payload.line,
+    station: payload.station,
     type,
     status,
     criticality,
@@ -81,6 +96,9 @@ const normalizeAsset = (payload: AssetApiRecord): AssetRecord | null => {
 const toFormValues = (asset: AssetRecord): AssetFormValues => ({
   name: asset.name,
   location: asset.location,
+  department: asset.department ?? '',
+  line: asset.line ?? '',
+  station: asset.station ?? '',
   type: asset.type,
   status: asset.status,
   criticality: asset.criticality,
@@ -183,6 +201,18 @@ export default function AssetsLocationsPage() {
     () => [
       { header: 'Asset', accessor: 'name' as const },
       { header: 'Location', accessor: 'location' as const },
+      {
+        header: 'Department',
+        accessor: (asset: AssetRecord) => asset.department ?? '—',
+      },
+      {
+        header: 'Line',
+        accessor: (asset: AssetRecord) => asset.line ?? '—',
+      },
+      {
+        header: 'Station',
+        accessor: (asset: AssetRecord) => asset.station ?? '—',
+      },
       { header: 'Type', accessor: 'type' as const },
       {
         header: 'Status',

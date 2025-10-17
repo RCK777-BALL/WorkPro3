@@ -14,6 +14,7 @@ const assetSchema = new mongoose.Schema(
     },
     location: { type: String, required: true },
     departmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
+    department: { type: String },
     status: {
       type: String,
       enum: ['Active', 'Offline', 'In Repair'],
@@ -25,6 +26,8 @@ const assetSchema = new mongoose.Schema(
     manufacturer: { type: String },
     purchaseDate: { type: Date },
     installationDate: { type: Date },
+    line: { type: String },
+    station: { type: String },
     lineId: mongoose.Schema.Types.ObjectId,
     stationId: mongoose.Schema.Types.ObjectId,
     tenantId: {

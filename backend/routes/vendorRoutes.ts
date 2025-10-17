@@ -4,7 +4,7 @@
 
 import { Router } from "express";
 
-import legacyVendorRoutes from "./VendorRoutes";
+import legacyVendorRoutes from "./VendorLegacyRoutes";
 
 const router = Router();
 

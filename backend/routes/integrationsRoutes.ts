@@ -4,7 +4,7 @@
 
 import { Router } from "express";
 
-import legacyIntegrationRoutes from "./IntegrationRoutes";
+import legacyIntegrationRoutes from "./IntegrationLegacyRoutes";
 
 const router = Router();
 

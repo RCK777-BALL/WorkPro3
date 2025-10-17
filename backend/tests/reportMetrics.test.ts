@@ -8,7 +8,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
-import ReportsRoutes from '../routes/ReportsRoutes';
+import ReportsRoutes from '../routes/reportsRoutes';
 import User from '../models/User';
 
 const app = express();

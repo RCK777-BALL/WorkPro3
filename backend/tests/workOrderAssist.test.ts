@@ -11,7 +11,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
-import WorkOrderRoutes from '../routes/WorkOrderRoutes';
+import WorkOrderRoutes from '../routes/workOrdersRoutes';
 import WorkOrder from '../models/WorkOrder';
 import { getWorkOrderAssistance } from '../services/aiCopilot';
 

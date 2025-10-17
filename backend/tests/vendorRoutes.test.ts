@@ -9,7 +9,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 
-import VendorRoutes from '../routes/VendorRoutes';
+import VendorRoutes from '../routes/vendorRoutes';
 import User from '../models/User';
 
 const app = express();

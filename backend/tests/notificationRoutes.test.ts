@@ -6,7 +6,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 
-import notificationRoutes from '../routes/NotificationsRoutes';
+import notificationRoutes from '../routes/notificationsRoutes';
 import Notification from '../models/Notifications';
 import User, { type UserDocument } from '../models/User';
 import type { MockIO } from './testUtils';

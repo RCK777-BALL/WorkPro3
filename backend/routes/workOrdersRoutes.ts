@@ -4,7 +4,7 @@
 
 import { Router } from "express";
 
-import legacyWorkOrderRoutes from "./WorkOrderRoutes";
+import legacyWorkOrderRoutes from "./WorkOrderLegacyRoutes";
 
 const router = Router();
 

@@ -9,8 +9,8 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 
-import PermitRoutes from '../routes/PermitRoutes';
-import WorkOrderRoutes from '../routes/WorkOrderRoutes';
+import PermitRoutes from '../routes/permitRoutes';
+import WorkOrderRoutes from '../routes/workOrdersRoutes';
 import User from '../models/User';
 import WorkOrder from '../models/WorkOrder';
 import Permit from '../models/Permit';

@@ -4,7 +4,7 @@
 
 import { Router } from "express";
 
-import legacyMeterRoutes from "./MeterRoutes";
+import legacyMeterRoutes from "./MeterLegacyRoutes";
 
 const router = Router();
 

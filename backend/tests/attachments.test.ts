@@ -12,7 +12,7 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import AttachmentRoutes from '../routes/AttachmentRoutes';
-import WorkOrderRoutes from '../routes/WorkOrderRoutes';
+import WorkOrderRoutes from '../routes/workOrdersRoutes';
 import User from '../models/User';
 import Department from '../models/Department';
 

@@ -1,41 +1,63 @@
 import { Router } from 'express';
 
+interface MockWorkOrder {
+  id: string;
+  title: string;
+  asset?: string;
+  priority: string;
+  status: string;
+  dueDate?: string;
+  description?: string;
+  createdAt: string;
+}
+
 const router = Router();
+
+const workOrders: MockWorkOrder[] = mockWorkOrders();
 
 router.get('/workorders', (req, res) => {
   const page = Number(req.query.page ?? 1);
   const pageSize = Number(req.query.pageSize ?? 10);
   const query = String(req.query.q ?? '').toLowerCase();
   const status = String(req.query.status ?? '');
-  const all = mockWorkOrders().filter(
-    (workOrder) =>
-      (!query || workOrder.title.toLowerCase().includes(query)) &&
-      (!status || workOrder.status === status)
+  const all = workOrders.filter(
+      (workOrder) =>
+        (!query || workOrder.title.toLowerCase().includes(query)) &&
+        (!status || workOrder.status === status)
   );
   const start = (page - 1) * pageSize;
   res.json({ items: all.slice(start, start + pageSize), total: all.length });
 });
 
 router.post('/workorders', (req, res) => {
-  const { title, asset, priority, dueDate, description } = req.body;
-  const workOrder = {
+  const { title, asset, priority, dueDate, description, status } = req.body;
+  const workOrder: MockWorkOrder = {
     id: Date.now().toString(),
     title,
     asset,
     priority,
-    status: 'Open',
+    status: status ?? 'Open',
     dueDate,
     description,
     createdAt: new Date().toISOString(),
   };
 
-  console.log('New Work Order:', workOrder);
+  workOrders.unshift(workOrder);
 
   res.status(201).json(workOrder);
 });
 
 router.put('/workorders/:id', (req, res) => {
-  res.json({ id: req.params.id, ...req.body });
+  const index = workOrders.findIndex((workOrder) => workOrder.id === req.params.id);
+
+  if (index === -1) {
+    res.status(404).json({ message: 'Work order not found' });
+    return;
+  }
+
+  workOrders[index] = { ...workOrders[index], ...req.body };
+
+  res.json(workOrders[index]);
 });
 
 router.get('/permits', (req, res) => {
@@ -82,8 +104,8 @@ router.get('/analytics/trends', (_req, res) => {
   res.json(data);
 });
 
-function mockWorkOrders() {
-  const base = [
+function mockWorkOrders(): MockWorkOrder[] {
+  const base: MockWorkOrder[] = [
     {
       id: 'wo1',
       title: 'Replace belt on Line 3',

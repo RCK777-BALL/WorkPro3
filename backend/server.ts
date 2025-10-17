@@ -165,6 +165,8 @@ export const io = new Server(httpServer, {
   cors: { origin: true, credentials: true },
 });
 
+app.set('io', io);
+
 initChatSocket(io);
 
 io.on("connection", (socket) => {

@@ -2,9 +2,32 @@
  * SPDX-License-Identifier: MIT
  */
 
-import mongoose from 'mongoose';
+import mongoose, { Schema, type Document, type Types } from 'mongoose';
 
-const assetSchema = new mongoose.Schema(
+export interface AssetDoc extends Document {
+  _id: Types.ObjectId;
+  name: string;
+  type: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface';
+  location?: string;
+  departmentId?: Types.ObjectId;
+  department?: string;
+  lineId?: Types.ObjectId;
+  stationId?: Types.ObjectId;
+  tenantId: Types.ObjectId;
+  siteId?: Types.ObjectId;
+  notes?: string;
+  status?: string;
+  serialNumber?: string;
+  description?: string;
+  modelName?: string;
+  manufacturer?: string;
+  purchaseDate?: Date;
+  installationDate?: Date;
+  criticality?: string;
+  documents?: Types.Array<Types.ObjectId>;
+}
+
+const assetSchema = new Schema<AssetDoc>(
   {
     name: { type: String, required: true },
     type: {
@@ -12,8 +35,9 @@ const assetSchema = new mongoose.Schema(
       enum: ['Electrical', 'Mechanical', 'Tooling', 'Interface'],
       required: true,
     },
-    location: { type: String, required: true },
-    departmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
+    location: { type: String, required: false },
+    notes: { type: String, default: '' },
+    departmentId: { type: Schema.Types.ObjectId, ref: 'Department' },
     department: { type: String },
     status: {
       type: String,
@@ -28,16 +52,16 @@ const assetSchema = new mongoose.Schema(
     installationDate: { type: Date },
     line: { type: String },
     station: { type: String },
-    lineId: mongoose.Schema.Types.ObjectId,
-    stationId: mongoose.Schema.Types.ObjectId,
+    lineId: { type: Schema.Types.ObjectId, ref: 'Line', index: true },
+    stationId: { type: Schema.Types.ObjectId, ref: 'Station', index: true },
     tenantId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'Tenant',
       required: true,
       index: true,
     },
     siteId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'Site',
       index: true,
     },
@@ -46,11 +70,9 @@ const assetSchema = new mongoose.Schema(
       enum: ['high', 'medium', 'low'],
       default: 'medium',
     },
-    documents: [
-      { type: mongoose.Schema.Types.ObjectId, ref: 'Document' }
-    ],
+    documents: [{ type: Schema.Types.ObjectId, ref: 'Document' }],
   },
   { timestamps: true }
 );
 
-export default mongoose.model('Asset', assetSchema);
+export default mongoose.model<AssetDoc>('Asset', assetSchema);

@@ -86,21 +86,39 @@ export default function Imports() {
   return (
     <div className="space-y-6">
       <Card title="Import Assets">
-        <div className="flex items-center gap-4">
-          <input type="file" accept=".csv" onChange={handleFile('assets')} />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            aria-label="Upload assets CSV"
+            onChange={handleFile('assets')}
+          />
+          <p className="text-sm text-muted-foreground">Upload a .csv file.</p>
           {assetCount !== null && <span>{assetCount} imported</span>}
         </div>
       </Card>
 
       <Card title="Import Parts">
-        <div className="flex items-center gap-4">
-          <input type="file" accept=".csv" onChange={handleFile('parts')} />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            aria-label="Upload parts CSV"
+            onChange={handleFile('parts')}
+          />
+          <p className="text-sm text-muted-foreground">Upload a .csv file.</p>
           {partCount !== null && <span>{partCount} imported</span>}
         </div>
       </Card>
       <Card id="department-import-card" tabIndex={-1} title="Import Departments, Lines & Stations">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
-          <input type="file" accept=".csv" onChange={handleFile('departments')} />
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            aria-label="Upload departments, lines and stations CSV"
+            onChange={handleFile('departments')}
+          />
+          <p className="text-sm text-muted-foreground sm:mt-1">Upload a .csv file.</p>
           {departmentResult && (
             <div className="text-sm space-y-1">
               <p>

@@ -14,7 +14,7 @@ import { validationResult, ValidationError } from 'express-validator';
 import logger from '../utils/logger';
 import { filterFields } from '../utils/filterFields';
 import { writeAuditLog } from '../utils/audit';
-import { toEntityId } from '../utils/ids';
+import { toEntityId, toObjectId } from '../utils/ids';
 import { sendResponse } from '../utils/sendResponse';
 import type { ParamsDictionary } from 'express-serve-static-core';
 
@@ -46,6 +46,127 @@ const assetCreateFields = [
 ];
 
 const assetUpdateFields = [...assetCreateFields];
+
+type MaybeObjectId = string | Types.ObjectId | undefined | null;
+
+interface AssetHierarchyLocation {
+  departmentId?: MaybeObjectId;
+  lineId?: MaybeObjectId;
+  stationId?: MaybeObjectId;
+}
+
+interface HierarchyContext extends AssetHierarchyLocation {
+  tenantId?: MaybeObjectId;
+  assetId: MaybeObjectId;
+}
+
+const normalizeId = (value?: MaybeObjectId): Types.ObjectId | undefined => {
+  if (!value) return undefined;
+  if (value instanceof Types.ObjectId) return value;
+  if (typeof value === 'string') return toObjectId(value);
+  return undefined;
+};
+
+const addAssetToHierarchy = async ({
+  tenantId,
+  departmentId,
+  lineId,
+  stationId,
+  assetId,
+}: HierarchyContext) => {
+  const tenantObjectId = normalizeId(tenantId);
+  const departmentObjectId = normalizeId(departmentId);
+  const lineObjectId = normalizeId(lineId);
+  const stationObjectId = normalizeId(stationId);
+  const assetObjectId = normalizeId(assetId);
+
+  if (
+    !tenantObjectId ||
+    !departmentObjectId ||
+    !lineObjectId ||
+    !stationObjectId ||
+    !assetObjectId
+  ) {
+    return;
+  }
+
+  const department = await Department.findOne({
+    _id: departmentObjectId,
+    tenantId: tenantObjectId,
+  });
+
+  if (!department) return;
+
+  const line = department.lines.id(lineObjectId);
+  if (!line) return;
+
+  const station = line.stations.id(stationObjectId);
+  if (!station) return;
+
+  const alreadyLinked = station.assets.some((existing) =>
+    existing.equals(assetObjectId),
+  );
+
+  if (!alreadyLinked) {
+    station.assets.push(assetObjectId);
+    await department.save();
+  }
+};
+
+const removeAssetFromHierarchy = async ({
+  tenantId,
+  departmentId,
+  lineId,
+  stationId,
+  assetId,
+}: HierarchyContext) => {
+  const tenantObjectId = normalizeId(tenantId);
+  const departmentObjectId = normalizeId(departmentId);
+  const lineObjectId = normalizeId(lineId);
+  const stationObjectId = normalizeId(stationId);
+  const assetObjectId = normalizeId(assetId);
+
+  if (
+    !tenantObjectId ||
+    !departmentObjectId ||
+    !lineObjectId ||
+    !stationObjectId ||
+    !assetObjectId
+  ) {
+    return;
+  }
+
+  const department = await Department.findOne({
+    _id: departmentObjectId,
+    tenantId: tenantObjectId,
+  });
+
+  if (!department) return;
+
+  const line = department.lines.id(lineObjectId);
+  if (!line) return;
+
+  const station = line.stations.id(stationObjectId);
+  if (!station) return;
+
+  const index = station.assets.findIndex((existing) =>
+    existing.equals(assetObjectId),
+  );
+
+  if (index !== -1) {
+    station.assets.splice(index, 1);
+    await department.save();
+  }
+};
+
+const locationKey = ({ departmentId, lineId, stationId }: AssetHierarchyLocation) => {
+  const department = departmentId instanceof Types.ObjectId ? departmentId.toString() : departmentId;
+  const line = lineId instanceof Types.ObjectId ? lineId.toString() : lineId;
+  const station = stationId instanceof Types.ObjectId ? stationId.toString() : stationId;
+
+  if (!department || !line || !station) return undefined;
+  return `${department}::${line}::${station}`;
+};
 
 export const getAllAssets: AuthedRequestHandler = async (req, res, next) => {
   try {
@@ -143,6 +264,13 @@ export const createAsset: AuthedRequestHandler<
     if (req.siteId && !payload.siteId) payload.siteId = req.siteId;
 
     const newAsset = await Asset.create(payload);
+    await addAssetToHierarchy({
+      tenantId,
+      departmentId: newAsset.departmentId as MaybeObjectId,
+      lineId: newAsset.lineId as MaybeObjectId,
+      stationId: newAsset.stationId as MaybeObjectId,
+      assetId: newAsset._id,
+    });
     const assetObj = newAsset.toObject();
     const response = { ...assetObj, tenantId: assetObj.tenantId.toString() };
     const userId = (req.user as any)?._id || (req.user as any)?.id;
@@ -218,6 +346,38 @@ export const updateAsset: AuthedRequestHandler<
       new: true,
       runValidators: true,
     });
+    const previousLocation: AssetHierarchyLocation = {
+      departmentId: existing.departmentId as MaybeObjectId,
+      lineId: existing.lineId as MaybeObjectId,
+      stationId: existing.stationId as MaybeObjectId,
+    };
+    const updatedLocation: AssetHierarchyLocation = {
+      departmentId: asset?.departmentId as MaybeObjectId,
+      lineId: asset?.lineId as MaybeObjectId,
+      stationId: asset?.stationId as MaybeObjectId,
+    };
+    const previousKey = locationKey(previousLocation);
+    const nextKey = locationKey(updatedLocation);
+
+    if (previousKey && previousKey !== nextKey) {
+      await removeAssetFromHierarchy({
+        tenantId,
+        departmentId: previousLocation.departmentId,
+        lineId: previousLocation.lineId,
+        stationId: previousLocation.stationId,
+        assetId: existing._id,
+      });
+    }
+
+    if (nextKey) {
+      await addAssetToHierarchy({
+        tenantId,
+        departmentId: updatedLocation.departmentId,
+        lineId: updatedLocation.lineId,
+        stationId: updatedLocation.stationId,
+        assetId: (asset?._id ?? existing._id) as MaybeObjectId,
+      });
+    }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     await writeAuditLog({
       tenantId,
@@ -271,6 +431,13 @@ export const deleteAsset: AuthedRequestHandler<AssetParams> = async (
       sendResponse(res, null, 'Not found', 404);
       return;
     }
+    await removeAssetFromHierarchy({
+      tenantId,
+      departmentId: asset.departmentId as MaybeObjectId,
+      lineId: asset.lineId as MaybeObjectId,
+      stationId: asset.stationId as MaybeObjectId,
+      assetId: asset._id,
+    });
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     await writeAuditLog({
       tenantId,

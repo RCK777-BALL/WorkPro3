@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import {
@@ -14,6 +14,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import Button from '@/components/ui/button';
+import { useToast } from '@/context/ToastContext';
+import { useDepartmentStore } from '@/store/departmentStore';
 
 export type AssetFormValues = {
   name: string;
@@ -58,13 +60,113 @@ export default function AssetFormModal({
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<AssetFormValues>({ defaultValues });
+  const { addToast } = useToast();
+  const departments = useDepartmentStore((state) => state.departments);
+  const linesByDepartment = useDepartmentStore((state) => state.linesByDepartment);
+  const stationsByLine = useDepartmentStore((state) => state.stationsByLine);
+  const fetchDepartments = useDepartmentStore((state) => state.fetchDepartments);
+  const fetchLines = useDepartmentStore((state) => state.fetchLines);
+  const fetchStations = useDepartmentStore((state) => state.fetchStations);
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState('');
+  const [selectedLineId, setSelectedLineId] = useState('');
+  const departmentName = watch('department');
+  const lineName = watch('line');
+  const stationName = watch('station');
+
+  const lineOptions = useMemo(() => {
+    if (!selectedDepartmentId) return [];
+    return linesByDepartment[selectedDepartmentId] ?? [];
+  }, [linesByDepartment, selectedDepartmentId]);
+
+  const stationOptions = useMemo(() => {
+    if (!selectedLineId) return [];
+    return stationsByLine[selectedLineId] ?? [];
+  }, [selectedLineId, stationsByLine]);
 
   useEffect(() => {
     if (!open) return;
     reset(initialValues ?? defaultValues);
   }, [initialValues, open, reset]);
+
+  useEffect(() => {
+    if (!open) return;
+    fetchDepartments().catch(() => addToast('Failed to load departments', 'error'));
+  }, [addToast, fetchDepartments, open]);
+
+  useEffect(() => {
+    if (!departmentName) {
+      setSelectedDepartmentId('');
+      return;
+    }
+
+    const department = departments.find((item) => item.name === departmentName);
+    if (department) {
+      setSelectedDepartmentId(department.id);
+    } else {
+      setSelectedDepartmentId('');
+    }
+  }, [departmentName, departments]);
+
+  useEffect(() => {
+    if (!selectedDepartmentId) {
+      if (lineName) setValue('line', '');
+      if (stationName) setValue('station', '');
+      setSelectedLineId('');
+      return;
+    }
+
+    fetchLines(selectedDepartmentId).catch(() =>
+      addToast('Failed to load lines', 'error'),
+    );
+  }, [addToast, fetchLines, lineName, selectedDepartmentId, setValue, stationName]);
+
+  useEffect(() => {
+    if (!lineName || !selectedDepartmentId) {
+      setSelectedLineId('');
+      return;
+    }
+
+    const lines = linesByDepartment[selectedDepartmentId] ?? [];
+    const line = lines.find((item) => item.name === lineName);
+    if (line) {
+      setSelectedLineId(line.id);
+    } else {
+      setSelectedLineId('');
+    }
+  }, [lineName, linesByDepartment, selectedDepartmentId]);
+
+  useEffect(() => {
+    if (!selectedLineId || !selectedDepartmentId) {
+      if (stationName) setValue('station', '');
+      return;
+    }
+
+    fetchStations(selectedDepartmentId, selectedLineId).catch(() =>
+      addToast('Failed to load stations', 'error'),
+    );
+  }, [addToast, fetchStations, selectedDepartmentId, selectedLineId, setValue, stationName]);
+
+  useEffect(() => {
+    if (!stationName || !selectedLineId) return;
+
+    const stations = stationsByLine[selectedLineId] ?? [];
+    if (stationName && !stations.some((item) => item.name === stationName)) {
+      setValue('station', '');
+    }
+  }, [selectedLineId, setValue, stationName, stationsByLine]);
+
+  useEffect(() => {
+    if (!lineName || !selectedDepartmentId) return;
+
+    const lines = linesByDepartment[selectedDepartmentId] ?? [];
+    if (lineName && !lines.some((item) => item.name === lineName)) {
+      setValue('line', '');
+    }
+  }, [lineName, linesByDepartment, selectedDepartmentId, setValue]);
 
   return (
     <Dialog open={open} onOpenChange={(value) => !value && onClose()}>
@@ -123,39 +225,61 @@ export default function AssetFormModal({
               <label className="text-sm font-medium text-neutral-200" htmlFor="asset-department">
                 Department (optional)
               </label>
-              <input
+              <select
                 id="asset-department"
                 className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                placeholder="Assembly"
-                disabled={loading}
+                disabled={loading || departments.length === 0}
                 {...register('department')}
-              />
+              >
+                <option value="">Select department</option>
+                {departments.map((department) => (
+                  <option key={department.id} value={department.name}>
+                    {department.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-neutral-200" htmlFor="asset-line">
                 Line (optional)
               </label>
-              <input
+              <select
                 id="asset-line"
                 className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                placeholder="Line 1"
-                disabled={loading}
+                disabled={
+                  loading || !selectedDepartmentId || lineOptions.length === 0
+                }
                 {...register('line')}
-              />
+              >
+                <option value="">Select line</option>
+                {lineOptions.map((line) => (
+                  <option key={line.id} value={line.name}>
+                    {line.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-neutral-200" htmlFor="asset-station">
                 Station (optional)
               </label>
-              <input
+              <select
                 id="asset-station"
                 className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                placeholder="Station A"
-                disabled={loading}
+                disabled={
+                  loading || !selectedLineId || stationOptions.length === 0
+                }
                 {...register('station')}
-              />
+              >
+                <option value="">Select station</option>
+                {stationOptions.map((station) => (
+                  <option key={station.id} value={station.name}>
+                    {station.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 

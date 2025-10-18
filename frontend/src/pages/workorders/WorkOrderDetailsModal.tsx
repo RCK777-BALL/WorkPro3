@@ -1,4 +1,5 @@
 import type { WorkOrder } from "@/types/cmms";
+import { formatWorkOrderPriority, formatWorkOrderStatus } from "@/types/cmms";
 
 interface WorkOrderDetailsModalProps {
   wo: WorkOrder;
@@ -36,11 +37,11 @@ export default function WorkOrderDetailsModal({ wo, onClose }: WorkOrderDetailsM
           </div>
           <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
             <dt className="text-xs uppercase tracking-wide text-slate-400">Priority</dt>
-            <dd className={fieldClass}>{wo.priority}</dd>
+            <dd className={fieldClass}>{formatWorkOrderPriority(wo.priority)}</dd>
           </div>
           <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
             <dt className="text-xs uppercase tracking-wide text-slate-400">Status</dt>
-            <dd className={fieldClass}>{wo.status}</dd>
+            <dd className={fieldClass}>{formatWorkOrderStatus(wo.status)}</dd>
           </div>
           <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
             <dt className="text-xs uppercase tracking-wide text-slate-400">Due Date</dt>

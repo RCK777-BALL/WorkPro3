@@ -6,11 +6,15 @@ import { api } from "@/lib/api";
 import type { WorkOrder } from "@/types/cmms";
 import { useQueryState } from "@/hooks/useQueryState";
 import WorkOrderModal from "./WorkOrderModal";
+import WorkOrderDetailsModal from "./WorkOrderDetailsModal";
 
 export default function WorkOrdersPage() {
   const [modal, setModal] = useState<{ open: boolean; wo?: WorkOrder }>({ open: false });
   const [data, setData] = useState<{ items: WorkOrder[]; total: number }>({ items: [], total: 0 });
   const [query, setQuery] = useQueryState({ page: 1, pageSize: 10, q: '', status: '' });
+  const [details, setDetails] = useState<WorkOrder | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<WorkOrder | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     api
@@ -86,14 +90,30 @@ export default function WorkOrdersPage() {
                   <StatusBadge status={workOrder.status} size="sm" />
                 </td>
                 <td className="px-3 py-2">{workOrder.dueDate?.slice(0, 10) ?? '—'}</td>
-                <td className="px-3 py-2 text-right">
-                  <button
-                    type="button"
-                    className="rounded bg-slate-800 px-2 py-1 text-xs font-medium hover:bg-slate-700"
-                    onClick={() => setModal({ open: true, wo: workOrder })}
-                  >
-                    View
-                  </button>
+                <td className="px-3 py-2">
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      className="rounded bg-slate-800 px-2 py-1 text-xs font-medium hover:bg-slate-700"
+                      onClick={() => setDetails(workOrder)}
+                    >
+                      View
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded bg-blue-600 px-2 py-1 text-xs font-medium hover:bg-blue-700"
+                      onClick={() => setModal({ open: true, wo: workOrder })}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded bg-red-600 px-2 py-1 text-xs font-medium hover:bg-red-700"
+                      onClick={() => setDeleteTarget(workOrder)}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -139,6 +159,54 @@ export default function WorkOrdersPage() {
             refresh();
           }}
         />
+      )}
+      {details && (
+        <WorkOrderDetailsModal wo={details} onClose={() => setDetails(null)} />
+      )}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4">
+          <div className="w-full max-w-sm space-y-4 rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-xl">
+            <div>
+              <h2 className="text-lg font-semibold">Delete Work Order</h2>
+              <p className="mt-1 text-sm text-slate-300">
+                Are you sure you want to delete <span className="font-semibold">{deleteTarget.title}</span>? This
+                action cannot be undone.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                className="rounded bg-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-600"
+                onClick={() => setDeleteTarget(null)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="rounded bg-red-600 px-4 py-2 text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
+                onClick={async () => {
+                  if (!deleteTarget) return;
+                  try {
+                    setIsDeleting(true);
+                    await api.delete(`/workorders/${deleteTarget.id}`);
+                    toast.success('Work order deleted');
+                    setDeleteTarget(null);
+                    refresh();
+                  } catch (error) {
+                    console.error(error);
+                    toast.error('Failed to delete work order');
+                  } finally {
+                    setIsDeleting(false);
+                  }
+                }}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

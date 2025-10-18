@@ -8,6 +8,7 @@ import { CalendarClock, Search, Sparkles } from 'lucide-react';
 import NotificationMenu from './NotificationMenu';
 import GlobalSearch from './GlobalSearch';
 import { useAuth } from '@/context/AuthContext';
+import ThemeControls from './ThemeControls';
 
 const formatTimestamp = () =>
   new Intl.DateTimeFormat(undefined, {
@@ -95,6 +96,7 @@ const AppHeader: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          <ThemeControls />
           <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/70 sm:flex">
             <Sparkles className="h-4 w-4 text-white/60" />
             <span className="font-medium text-white">{user?.name ?? 'Guest'}</span>

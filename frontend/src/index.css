@@ -4,5 +4,16 @@
 @custom-variant dark (&:where(.dark, .dark *));
 /* your custom vars/utilities can go here */
 
+:root {
+  --app-background-color: #0f172a;
+  --app-text-color: #f8fafc;
+}
+
+body {
+  background-color: var(--app-background-color);
+  color: var(--app-text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
 /* (optional) theme tokens – remove if not using */
 /* @theme inline; */

@@ -1,0 +1,122 @@
+[
+  {
+    "name": "LAMBDA",
+    "lines": [
+      {
+        "name": "Line 1 - Body Framing",
+        "stations": [
+          {
+            "name": "ST.101 - Body Weld",
+            "assets": [
+              { "name": "Fanuc 100iC", "type": "Electrical", "status": "Active", "criticality": "High" },
+              { "name": "Robot Welder Cell 1", "type": "Mechanical", "status": "Active", "criticality": "Medium" }
+            ]
+          },
+          {
+            "name": "ST.102 - Roof Assembly",
+            "assets": [
+              { "name": "ABB IRB 6700", "type": "Mechanical", "status": "Active", "criticality": "High" },
+              { "name": "Safety Scanner", "type": "Interface", "status": "Active", "criticality": "Low" }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "BRONCO",
+    "lines": [
+      {
+        "name": "Line 2 - Frame Weld",
+        "stations": [
+          {
+            "name": "ST.201 - Weld Cell A",
+            "assets": [
+              { "name": "Comau NJ220", "type": "Mechanical", "status": "Active", "criticality": "High" },
+              { "name": "PLC Panel #1", "type": "Electrical", "status": "Active", "criticality": "Medium" }
+            ]
+          },
+          {
+            "name": "ST.202 - Inspection Zone",
+            "assets": [
+              { "name": "Cognex Vision Cam", "type": "Interface", "status": "Active", "criticality": "Low" },
+              { "name": "Lighting Rack A", "type": "Electrical", "status": "Active", "criticality": "Medium" }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "RANGER",
+    "lines": [
+      {
+        "name": "Line 3 - Chassis",
+        "stations": [
+          {
+            "name": "ST.301 - Frame Install",
+            "assets": [
+              { "name": "Robot Arm R1", "type": "Mechanical", "status": "Active", "criticality": "Medium" },
+              { "name": "Hydraulic Pump #3", "type": "Tooling", "status": "Active", "criticality": "Low" }
+            ]
+          },
+          {
+            "name": "ST.302 - Torque Tightening",
+            "assets": [
+              { "name": "Atlas Copco Controller", "type": "Tooling", "status": "Active", "criticality": "High" },
+              { "name": "Safety Light Curtain", "type": "Interface", "status": "Active", "criticality": "Low" }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "C1U2X",
+    "lines": [
+      {
+        "name": "Line 4 - Sub Assembly",
+        "stations": [
+          {
+            "name": "ST.401 - Press Fit",
+            "assets": [
+              { "name": "Hydraulic Press A", "type": "Mechanical", "status": "Active", "criticality": "High" },
+              { "name": "Lubrication System", "type": "Tooling", "status": "Active", "criticality": "Low" }
+            ]
+          },
+          {
+            "name": "ST.402 - Sensor Test",
+            "assets": [
+              { "name": "Omron PLC", "type": "Electrical", "status": "Active", "criticality": "Medium" },
+              { "name": "Sensor Rig #1", "type": "Interface", "status": "Active", "criticality": "Medium" }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "DELTAX001",
+    "lines": [
+      {
+        "name": "Line 5 - Final Assembly",
+        "stations": [
+          {
+            "name": "ST.501 - Door Assembly",
+            "assets": [
+              { "name": "Torque Arm #5", "type": "Tooling", "status": "Active", "criticality": "Medium" },
+              { "name": "HMI Panel A", "type": "Interface", "status": "Active", "criticality": "Low" }
+            ]
+          },
+          {
+            "name": "ST.502 - Quality Check",
+            "assets": [
+              { "name": "Camera Station", "type": "Interface", "status": "Active", "criticality": "Medium" },
+              { "name": "Lighting Board", "type": "Electrical", "status": "Active", "criticality": "Low" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

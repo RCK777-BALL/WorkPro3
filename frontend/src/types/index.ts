@@ -23,6 +23,7 @@ export interface Asset {
   name: string;
   type?: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface';
   location?: string;
+  notes?: string;
   department?: string;
   category?: string;
   status?: 'Active' | 'Offline' | 'In Repair';
@@ -51,18 +52,21 @@ export type AssetStatusMap = Record<string, number>;
 export interface Department {
   id: string;
   name: string;
+  notes?: string;
 }
 
 export interface Line {
   id: string;
   name: string;
   department: string;
+  notes?: string;
 }
 
 export interface Station {
   id: string;
   name: string;
   line: string;
+  notes?: string;
 }
 
 export interface StationWithAssets extends Station {

@@ -9,7 +9,7 @@ import Asset from '../models/Asset';
 import Site from '../models/Site';
 import Department from '../models/Department';
 import Line from '../models/Line';
-import Station from '../models/Station';
+import Station, { type StationDoc } from '../models/Station';
 import { validationResult, ValidationError } from 'express-validator';
 import logger from '../utils/logger';
 import { filterFields } from '../utils/filterFields';
@@ -27,6 +27,7 @@ const assetCreateFields = [
   'name',
   'type',
   'location',
+  'notes',
   'departmentId',
   'department',
   'status',
@@ -260,6 +261,41 @@ export const createAsset: AuthedRequestHandler<
       req.body,
       assetCreateFields,
     );
+    let stationForAsset: StationDoc | null = null;
+    if (payload.stationId) {
+      const stationId = payload.stationId as string;
+      if (!mongoose.Types.ObjectId.isValid(stationId)) {
+        sendResponse(res, null, 'Invalid stationId', 400);
+        return;
+      }
+      stationForAsset = await Station.findOne({ _id: stationId, tenantId });
+      if (!stationForAsset) {
+        sendResponse(res, null, 'Station not found', 400);
+        return;
+      }
+      payload.stationId = stationForAsset._id;
+      payload.lineId = stationForAsset.lineId;
+      payload.departmentId = stationForAsset.departmentId;
+    } else if (payload.lineId) {
+      const lineId = payload.lineId as string;
+      if (!mongoose.Types.ObjectId.isValid(lineId)) {
+        sendResponse(res, null, 'Invalid lineId', 400);
+        return;
+      }
+      const lineDoc = await Line.findOne({ _id: lineId, tenantId });
+      if (!lineDoc) {
+        sendResponse(res, null, 'Line not found', 400);
+        return;
+      }
+      payload.lineId = lineDoc._id;
+      payload.departmentId = lineDoc.departmentId;
+    } else if (payload.departmentId) {
+      const departmentId = payload.departmentId as string;
+      if (!mongoose.Types.ObjectId.isValid(departmentId)) {
+        sendResponse(res, null, 'Invalid departmentId', 400);
+        return;
+      }
+    }
     payload.tenantId = tenantId;
     if (req.siteId && !payload.siteId) payload.siteId = req.siteId;
 
@@ -272,6 +308,22 @@ export const createAsset: AuthedRequestHandler<
       assetId: newAsset._id,
     });
     const assetObj = newAsset.toObject();
+    if (stationForAsset) {
+      await Department.updateOne(
+        { _id: stationForAsset.departmentId, tenantId },
+        {
+          $addToSet: {
+            'lines.$[line].stations.$[station].assets': newAsset._id,
+          },
+        },
+        {
+          arrayFilters: [
+            { 'line._id': stationForAsset.lineId },
+            { 'station._id': stationForAsset._id },
+          ],
+        },
+      );
+    }
     const response = { ...assetObj, tenantId: assetObj.tenantId.toString() };
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     await writeAuditLog({
@@ -337,6 +389,41 @@ export const updateAsset: AuthedRequestHandler<
     const filter: Record<string, unknown> = { _id: id, tenantId };
     if (req.siteId) filter.siteId = req.siteId;
     const update = filterFields(req.body, assetUpdateFields);
+    let stationForAsset: StationDoc | null = null;
+    if (update.stationId) {
+      const stationId = update.stationId as string;
+      if (!mongoose.Types.ObjectId.isValid(stationId)) {
+        sendResponse(res, null, 'Invalid stationId', 400);
+        return;
+      }
+      stationForAsset = await Station.findOne({ _id: stationId, tenantId });
+      if (!stationForAsset) {
+        sendResponse(res, null, 'Station not found', 400);
+        return;
+      }
+      update.stationId = stationForAsset._id;
+      update.lineId = stationForAsset.lineId;
+      update.departmentId = stationForAsset.departmentId;
+    } else if (update.lineId) {
+      const lineId = update.lineId as string;
+      if (!mongoose.Types.ObjectId.isValid(lineId)) {
+        sendResponse(res, null, 'Invalid lineId', 400);
+        return;
+      }
+      const lineDoc = await Line.findOne({ _id: lineId, tenantId });
+      if (!lineDoc) {
+        sendResponse(res, null, 'Line not found', 400);
+        return;
+      }
+      update.lineId = lineDoc._id;
+      update.departmentId = lineDoc.departmentId;
+    } else if (update.departmentId) {
+      const departmentId = update.departmentId as string;
+      if (!mongoose.Types.ObjectId.isValid(departmentId)) {
+        sendResponse(res, null, 'Invalid departmentId', 400);
+        return;
+      }
+    }
     const existing = await Asset.findOne(filter);
     if (!existing) {
       sendResponse(res, null, 'Not found', 404);
@@ -388,6 +475,42 @@ export const updateAsset: AuthedRequestHandler<
       before: existing.toObject(),
       after: asset?.toObject(),
     });
+    if (asset && stationForAsset) {
+      if (
+        existing.stationId &&
+        !existing.stationId.equals(stationForAsset._id)
+      ) {
+        await Department.updateOne(
+          { _id: existing.departmentId, tenantId },
+          {
+            $pull: {
+              'lines.$[line].stations.$[station].assets': existing._id,
+            },
+          },
+          {
+            arrayFilters: [
+              { 'line._id': existing.lineId },
+              { 'station._id': existing.stationId },
+            ],
+          },
+        );
+      }
+      await Department.updateOne(
+        { _id: stationForAsset.departmentId, tenantId },
+        {
+          $addToSet: {
+            'lines.$[line].stations.$[station].assets': asset._id,
+          },
+        },
+        {
+          arrayFilters: [
+            { 'line._id': stationForAsset.lineId },
+            { 'station._id': stationForAsset._id },
+          ],
+        },
+      );
+    }
+
     sendResponse(res, asset);
     return;
 

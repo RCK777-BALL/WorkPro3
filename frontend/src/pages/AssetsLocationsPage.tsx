@@ -166,6 +166,24 @@ export default function AssetsLocationsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<AssetRecord | null>(null);
   const [assetToDelete, setAssetToDelete] = useState<AssetRecord | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | AssetStatus>('all');
+  const [page, setPage] = useState(1);
+
+  const pageSize = 10;
+
+  const statusFilterOptions: Array<{ label: string; value: 'all' | AssetStatus }> = [
+    { label: 'All statuses', value: 'all' },
+    { label: 'Active', value: 'Active' },
+    { label: 'Offline', value: 'Offline' },
+    { label: 'In Repair', value: 'In Repair' },
+  ];
+
+  const statusLegendItems: Array<{ label: string; color: string }> = [
+    { label: 'Active', color: 'bg-emerald-500' },
+    { label: 'Offline', color: 'bg-red-500' },
+    { label: 'In Repair', color: 'bg-amber-500' },
+  ];
   const handleDownloadTemplate = () => {
     const csvContent = createHierarchyTemplateCsv();
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -202,6 +220,10 @@ export default function AssetsLocationsPage() {
     void fetchAssets();
   }, [fetchAssets]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, statusFilter]);
+
   const handleOpenCreate = () => {
     setSelectedAsset(null);
     setIsModalOpen(true);
@@ -234,6 +256,7 @@ export default function AssetsLocationsPage() {
         const created = normalizeAsset(data);
         if (created) {
           setAssets((prev) => [created, ...prev]);
+          setPage(1);
         } else {
           await fetchAssets();
         }
@@ -257,6 +280,45 @@ export default function AssetsLocationsPage() {
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
+  };
+
+  const filteredAssets = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    return assets.filter((asset) => {
+      const matchesStatus = statusFilter === 'all' || asset.status === statusFilter;
+      if (!matchesStatus) return false;
+
+      if (!normalizedSearch) {
+        return true;
+      }
+
+      const haystack = [
+        asset.name,
+        asset.location,
+        asset.department,
+        asset.line,
+        asset.station,
+        asset.type,
+        asset.description,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return haystack.includes(normalizedSearch);
+    });
+  }, [assets, searchTerm, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredAssets.length / pageSize));
+  const paginatedAssets = useMemo(
+    () => filteredAssets.slice((page - 1) * pageSize, page * pageSize),
+    [filteredAssets, page, pageSize],
+  );
+
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
   };
 
   const tableColumns = useMemo(
@@ -321,7 +383,7 @@ export default function AssetsLocationsPage() {
   );
 
   return (
-    <div className="space-y-4 p-6 text-gray-200">
+    <div className="space-y-5 p-6 text-slate-100">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="mb-2 text-2xl font-semibold">Assets & Locations</h1>
@@ -352,14 +414,74 @@ export default function AssetsLocationsPage() {
         </div>
       </div>
 
+      <div className="flex flex-wrap gap-3">
+        <input
+          className="rounded-md bg-slate-800 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Search assets or locations…"
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
+        />
+        <select
+          className="rounded-md bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:ring-2 focus:ring-blue-500"
+          value={statusFilter}
+          onChange={(event) => setStatusFilter(event.target.value as 'all' | AssetStatus)}
+        >
+          {statusFilterOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        {(searchTerm || statusFilter !== 'all') && (
+          <button
+            type="button"
+            className="rounded-md bg-slate-700 px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-600"
+            onClick={handleResetFilters}
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-4">
+        {statusLegendItems.map((item) => (
+          <div key={item.label} className="flex items-center gap-2">
+            <span className={`h-3 w-3 rounded-full ${item.color}`} />
+            <span className="text-sm text-slate-300">{item.label}</span>
+          </div>
+        ))}
+      </div>
+
       <DataTable
         keyField="id"
-        data={assets}
+        data={paginatedAssets}
         isLoading={isLoading}
         columns={tableColumns}
         emptyMessage="No assets found"
-        className="rounded-xl border border-slate-800 bg-slate-900/60"
+        variant="dark"
       />
+
+      <div className="flex items-center gap-3 text-sm text-slate-300">
+        <button
+          type="button"
+          className="rounded bg-slate-800 px-3 py-2 font-medium text-slate-200 hover:bg-slate-700 disabled:opacity-40"
+          disabled={page <= 1}
+          onClick={() => setPage((current) => Math.max(1, current - 1))}
+        >
+          Previous
+        </button>
+        <span>
+          Page {page} of {totalPages}
+        </span>
+        <button
+          type="button"
+          className="rounded bg-slate-800 px-3 py-2 font-medium text-slate-200 hover:bg-slate-700 disabled:opacity-40"
+          disabled={page >= totalPages}
+          onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+        >
+          Next
+        </button>
+      </div>
 
       <AssetFormModal
         open={isModalOpen}

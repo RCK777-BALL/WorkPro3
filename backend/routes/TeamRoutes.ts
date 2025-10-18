@@ -3,8 +3,14 @@
  */
 
 import express from 'express';
-import { getTeamMembers } from '../controllers/TeamMemberController';
+import {
+  getTeamMembers,
+  createTeamMember,
+  updateTeamMember,
+  deleteTeamMember,
+} from '../controllers/TeamMemberController';
 import { requireAuth } from '../middleware/authMiddleware';
+import requireRoles from '../middleware/requireRoles';
 
 const router = express.Router();
 
@@ -12,5 +18,8 @@ const router = express.Router();
 router.use(requireAuth);
 
 router.get('/', getTeamMembers);
+router.post('/', requireRoles(['admin', 'manager']), createTeamMember);
+router.put('/:id', requireRoles(['admin', 'manager']), updateTeamMember);
+router.delete('/:id', requireRoles(['admin', 'manager']), deleteTeamMember);
 
 export default router;

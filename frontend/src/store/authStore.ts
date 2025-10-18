@@ -45,5 +45,6 @@ export const hasAuthRole = (user: AuthUser | null | undefined, role: AuthRole | 
 
 export const isAdmin = (state: AuthState) => hasRole(state.user, 'admin');
 export const isSupervisor = (state: AuthState) => hasRole(state.user, 'supervisor');
+export const isManager = (state: AuthState) => hasRole(state.user, 'manager');
 export const isPlanner = (state: AuthState) => hasRole(state.user, 'planner');
 export const isTech = (state: AuthState) => hasRole(state.user, 'tech');

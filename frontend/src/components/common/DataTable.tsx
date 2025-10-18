@@ -3,12 +3,15 @@
  */
 
 import React, { useState } from 'react';
+import clsx from 'clsx';
 
 interface Column<T> {
   header: string;
   accessor: keyof T | ((row: T) => React.ReactNode);
   className?: string;
 }
+
+type DataTableVariant = 'default' | 'dark';
 
 interface DataTableProps<T> {
   columns: Column<T>[];
@@ -18,6 +21,7 @@ interface DataTableProps<T> {
   isLoading?: boolean;
   emptyMessage?: string;
   className?: string;
+  variant?: DataTableVariant;
 }
 
 function DataTable<T>({
@@ -28,6 +32,7 @@ function DataTable<T>({
   isLoading = false,
   emptyMessage = 'No data available',
   className = '',
+  variant = 'default',
 }: DataTableProps<T>) {
   const [sortColumn, setSortColumn] = useState<keyof T | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -91,6 +96,50 @@ function DataTable<T>({
     });
   }, [data, sortColumn, sortDirection]);
 
+  const variants: Record<DataTableVariant, {
+    container: string;
+    table: string;
+    header: string;
+    headerCell: string;
+    sortIndicator: string;
+    body: string;
+    row: string;
+    rowClickable: string;
+    cell: string;
+    emptyCell: string;
+  }> = {
+    default: {
+      container: '',
+      table: 'divide-y divide-neutral-200 dark:divide-neutral-700',
+      header: 'bg-neutral-50 dark:bg-neutral-800',
+      headerCell:
+        'px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide',
+      sortIndicator: 'text-neutral-400 dark:text-neutral-500',
+      body: 'bg-white dark:bg-neutral-800 divide-y divide-neutral-200 dark:divide-neutral-700',
+      row: '',
+      rowClickable:
+        'hover:bg-neutral-50 dark:hover:bg-neutral-700 cursor-pointer transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-primary-500 dark:focus-visible:ring-primary-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900',
+      cell: 'px-6 py-4 whitespace-nowrap text-sm text-neutral-900 dark:text-neutral-200',
+      emptyCell: 'px-6 py-10 text-center text-sm text-neutral-500 dark:text-neutral-400',
+    },
+    dark: {
+      container: 'rounded-xl border border-slate-800 bg-slate-900/60',
+      table: 'text-slate-200',
+      header: 'bg-slate-900/60',
+      headerCell:
+        'px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-400',
+      sortIndicator: 'text-slate-500',
+      body: 'bg-slate-950/20',
+      row: 'border-t border-slate-800',
+      rowClickable:
+        'hover:bg-slate-900/40 cursor-pointer transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950',
+      cell: 'px-4 py-3 whitespace-nowrap text-sm text-slate-200',
+      emptyCell: 'px-4 py-10 text-center text-sm text-slate-400',
+    },
+  };
+
+  const styles = variants[variant];
+
   if (isLoading) {
     return (
       <div className="min-h-[200px] flex items-center justify-center">
@@ -103,15 +152,21 @@ function DataTable<T>({
   }
 
   return (
-    <div className={`overflow-x-auto ${className}`}>
-      <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
-        <thead className="bg-neutral-50 dark:bg-neutral-800">
+    <div className={clsx('overflow-x-auto', styles.container, className)}>
+      <table className={clsx('min-w-full text-sm', styles.table)}>
+        <thead className={styles.header}>
           <tr>
             {columns.map((column) => (
               <th
                 key={column.header}
                 scope="col"
-                className={`px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider cursor-pointer focus-visible:ring-2 focus-visible:ring-primary-500 dark:focus-visible:ring-primary-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900 ${column.className || ''}`}
+                className={clsx(
+                  styles.headerCell,
+                  typeof column.accessor !== 'function'
+                    ? 'cursor-pointer focus-visible:ring-2 focus-visible:ring-primary-500 dark:focus-visible:ring-primary-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900'
+                    : 'cursor-default',
+                  column.className,
+                )}
                 onClick={() => typeof column.accessor !== 'function' && handleSort(column.accessor)}
                 tabIndex={typeof column.accessor !== 'function' ? 0 : undefined}
                 onKeyDown={(e) => handleHeaderKeyDown(e, column.accessor)}
@@ -126,7 +181,7 @@ function DataTable<T>({
                 <div className="flex items-center space-x-1">
                   <span>{column.header}</span>
                   {sortColumn === column.accessor && (
-                    <span>
+                    <span className={styles.sortIndicator}>
                       {sortDirection === 'asc' ? '↑' : '↓'}
                     </span>
                   )}
@@ -135,19 +190,25 @@ function DataTable<T>({
             ))}
           </tr>
         </thead>
-        <tbody className="bg-white dark:bg-neutral-800 divide-y divide-neutral-200 dark:divide-neutral-700">
+        <tbody className={styles.body}>
           {sortedData.length > 0 ? (
             sortedData.map((row) => (
               <tr
                 key={String(row[keyField])}
-                className={onRowClick ? 'hover:bg-neutral-50 dark:hover:bg-neutral-700 cursor-pointer transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-primary-500 dark:focus-visible:ring-primary-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900' : ''}
+                className={clsx(
+                  styles.row,
+                  onRowClick ? styles.rowClickable : undefined,
+                )}
                 onClick={() => onRowClick && onRowClick(row)}
                 role={onRowClick ? 'button' : undefined}
                 tabIndex={onRowClick ? 0 : undefined}
                 onKeyDown={(e) => handleRowKeyDown(e, row)}
               >
                 {columns.map((column) => (
-                  <td key={column.header} className={`px-6 py-4 whitespace-nowrap text-sm text-neutral-900 dark:text-neutral-200 ${column.className || ''}`}>
+                  <td
+                    key={column.header}
+                    className={clsx(styles.cell, column.className)}
+                  >
                     {getCellValue(row, column.accessor) as React.ReactNode}
                   </td>
                 ))}
@@ -155,7 +216,7 @@ function DataTable<T>({
             ))
           ) : (
             <tr>
-              <td colSpan={columns.length} className="px-6 py-10 text-center text-sm text-neutral-500 dark:text-neutral-400">
+              <td colSpan={columns.length} className={styles.emptyCell}>
                 {emptyMessage}
               </td>
             </tr>

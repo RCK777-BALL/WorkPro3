@@ -7,6 +7,7 @@ import { Schema, model, Types, Document } from 'mongoose';
 export interface StationSubdoc {
   _id: Types.ObjectId;
   name: string;
+  assets: Types.Array<Types.ObjectId>;
 }
 
 export interface LineSubdoc {
@@ -25,6 +26,15 @@ export interface DepartmentDoc extends Document {
 
 const StationSchema = new Schema<StationSubdoc>({
   name: { type: String, required: true },
+  assets: {
+    type: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Asset',
+      },
+    ],
+    default: [],
+  },
 });
 
 const LineSchema = new Schema<LineSubdoc>({

@@ -71,12 +71,35 @@ export default function ComplianceAuditLogsPage() {
     return ['all', ...Array.from(unique).sort((a, b) => a.localeCompare(b))];
   }, [audits]);
 
+  useEffect(() => {
+    if (!modules.includes(filter)) {
+      setFilter('all');
+    }
+  }, [modules, filter]);
+
   const visibleAudits = useMemo(() => {
     if (filter === 'all') {
       return audits;
     }
     return audits.filter((audit) => audit.module === filter);
   }, [audits, filter]);
+
+  useEffect(() => {
+    if (!selectedAudit) {
+      return;
+    }
+
+    const updatedAudit = audits.find((audit) => audit.id === selectedAudit.id);
+
+    if (!updatedAudit) {
+      setSelectedAudit(null);
+      return;
+    }
+
+    if (updatedAudit !== selectedAudit) {
+      setSelectedAudit(updatedAudit);
+    }
+  }, [audits, selectedAudit]);
 
   const handleViewDetails = (audit: AuditRecord) => {
     setSelectedAudit(audit);

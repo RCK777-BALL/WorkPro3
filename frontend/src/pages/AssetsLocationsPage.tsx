@@ -123,6 +123,7 @@ const hierarchyTemplateHeaders = [
   'Station Name*',
   'Station Number (optional)',
   'Station Notes (optional)',
+  'Station Increment (optional)',
 ];
 
 const hierarchyTemplateExampleRows: string[][] = [
@@ -134,6 +135,7 @@ const hierarchyTemplateExampleRows: string[][] = [
     'Compressor Bay',
     'ST-100',
     'Primary compressor servicing area.',
+    '+5',
   ],
   [
     'Production',
@@ -143,6 +145,7 @@ const hierarchyTemplateExampleRows: string[][] = [
     'Packaging Station',
     'PK-12',
     'Automated wrapping and palletizing.',
+    'None',
   ],
 ];
 

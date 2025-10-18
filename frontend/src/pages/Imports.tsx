@@ -2,7 +2,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useState, type ChangeEvent } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Card from '@/components/common/Card';
 import http from '@/lib/http';
 
@@ -36,6 +37,19 @@ export default function Imports() {
   const [partCount, setPartCount] = useState<number | null>(null);
   const [departmentResult, setDepartmentResult] = useState<DepartmentImportReport | null>(null);
   const [loading, setLoading] = useState(false);
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('section') !== 'hierarchy') {
+      return;
+    }
+
+    const target = document.getElementById('department-import-card');
+    if (target instanceof HTMLElement) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      target.focus({ preventScroll: true });
+    }
+  }, [searchParams]);
 
   const upload = async (type: ImportType, file: File) => {
     const form = new FormData();
@@ -84,7 +98,7 @@ export default function Imports() {
           {partCount !== null && <span>{partCount} imported</span>}
         </div>
       </Card>
-      <Card title="Import Departments, Lines & Stations">
+      <Card id="department-import-card" tabIndex={-1} title="Import Departments, Lines & Stations">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
           <input type="file" accept=".csv" onChange={handleFile('departments')} />
           {departmentResult && (

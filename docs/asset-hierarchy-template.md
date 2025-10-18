@@ -10,6 +10,7 @@ Excel for bulk creating departments, lines, and stations that feed asset drop-do
 - **Station Name*** – required when defining a station on the line.
 - **Station Number (optional)** – numeric or alphanumeric reference used on the shop floor.
 - **Station Notes (optional)** – extra context about the station.
+- **Station Increment (optional)** – choose how generated station numbers should advance (for example, None, +5, or +10).
 
 Example rows in the template illustrate how to complete the sheet before uploading it through the import flow.
 

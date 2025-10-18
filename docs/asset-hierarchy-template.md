@@ -36,5 +36,4 @@ The **Station Increment** column represents the optional increment selector that
 form. Choose **None** to keep the provided station values as-is, or pick a preset such as **+5** or **+10**
 to auto-generate evenly spaced station numbers within the specified range. Additional increments (for
 example **+25**) can be added to the spreadsheet if your implementation supports them, and the importer
-will respect whichever option is selected for each row. The exported CSV downloaded from the app includes
-the same Station Increment column so the uploaded data matches the selections made in this layout.
+will respect whichever option is selected for each row.

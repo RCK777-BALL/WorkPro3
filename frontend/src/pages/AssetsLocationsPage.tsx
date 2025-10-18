@@ -412,7 +412,7 @@ export default function AssetsLocationsPage() {
             variant="secondary"
             size="md"
             icon={<Upload className="h-4 w-4" />}
-            onClick={() => navigate('/imports?section=hierarchy')}
+            onClick={() => navigate('/imports')}
           >
             Import Hierarchy
           </Button>

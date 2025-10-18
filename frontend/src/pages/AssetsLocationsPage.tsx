@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Download, Plus, Pencil, Trash2 } from 'lucide-react';
 
 import DataTable from '@/components/common/DataTable';
 import StatusBadge from '@/components/common/StatusBadge';
@@ -114,6 +114,51 @@ const criticalityClasses: Record<AssetCriticality, string> = {
   low: 'text-success-400',
 };
 
+const hierarchyTemplateHeaders = [
+  'Department Name*',
+  'Department Notes (optional)',
+  'Line Name*',
+  'Line Notes (optional)',
+  'Station Name*',
+  'Station Number (optional)',
+  'Station Notes (optional)',
+];
+
+const hierarchyTemplateExampleRows: string[][] = [
+  [
+    'Maintenance',
+    'Oversees facility upkeep and repairs.',
+    'Utilities Support',
+    'Provides compressed air for tooling lines.',
+    'Compressor Bay',
+    'ST-100',
+    'Primary compressor servicing area.',
+  ],
+  [
+    'Production',
+    'Manages packaging and assembly operations.',
+    'Line B',
+    'High-volume packaging line.',
+    'Packaging Station',
+    'PK-12',
+    'Automated wrapping and palletizing.',
+  ],
+];
+
+const toCsvValue = (value: string): string => {
+  if (/[",\n]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+};
+
+const createHierarchyTemplateCsv = (): string => {
+  const rows = [hierarchyTemplateHeaders, ...hierarchyTemplateExampleRows];
+  return rows
+    .map((row) => row.map((cell) => toCsvValue(cell)).join(','))
+    .join('\r\n');
+};
+
 export default function AssetsLocationsPage() {
   const [assets, setAssets] = useState<AssetRecord[]>(fallbackAssets);
   const [isLoading, setIsLoading] = useState(false);
@@ -121,6 +166,20 @@ export default function AssetsLocationsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<AssetRecord | null>(null);
   const [assetToDelete, setAssetToDelete] = useState<AssetRecord | null>(null);
+  const handleDownloadTemplate = () => {
+    const csvContent = createHierarchyTemplateCsv();
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'asset-hierarchy-import-template.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+  };
 
   const fetchAssets = useCallback(async () => {
     setIsLoading(true);
@@ -269,15 +328,28 @@ export default function AssetsLocationsPage() {
           <p className="text-sm text-slate-300">
             Visualize critical equipment, locations, and their operational readiness.
           </p>
+          <p className="text-xs text-slate-400">
+            Download the hierarchy template to bulk prepare departments, lines, and stations for asset dropdowns.
+          </p>
         </div>
-        <Button
-          variant="primary"
-          size="md"
-          icon={<Plus className="h-4 w-4" />}
-          onClick={handleOpenCreate}
-        >
-          Add Asset
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            variant="outline"
+            size="md"
+            icon={<Download className="h-4 w-4" />}
+            onClick={handleDownloadTemplate}
+          >
+            Download Hierarchy Template
+          </Button>
+          <Button
+            variant="primary"
+            size="md"
+            icon={<Plus className="h-4 w-4" />}
+            onClick={handleOpenCreate}
+          >
+            Add Asset
+          </Button>
+        </div>
       </div>
 
       <DataTable

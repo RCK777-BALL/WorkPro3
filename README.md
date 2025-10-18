@@ -27,7 +27,7 @@ not committed to the repository.
    ```
    Update the required environment variables such as `MONGO_URI`, `JWT_SECRET`,
    and `CORS_ORIGIN`. The example connection string uses
-   `mongodb://localhost:27017/platinum_cmms`.
+   `mongodb://localhost:27017/workpro`.
  
 3. Seed the database with a tenant and admin account:
    ```bash

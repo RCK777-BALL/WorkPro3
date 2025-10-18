@@ -19,7 +19,7 @@ spec:
             - containerPort: 5010
           env:
             - name: MONGO_URI
-              value: mongodb://mongo:27017/platinum_cmms
+              value: mongodb://mongo:27017/workpro
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:

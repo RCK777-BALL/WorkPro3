@@ -7,7 +7,9 @@ import logger from '../utils/logger';
 
 const envSchema = z.object({
   JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
-  MONGO_URI: z.string().default('mongodb://localhost:27017/platinum_cmms'),
+  MONGO_URI: z
+    .string()
+    .default('mongodb://localhost:27017/workpro'),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
   PORT: z.string().default('5010'),
   LABOR_RATE: z.string().default('50'),

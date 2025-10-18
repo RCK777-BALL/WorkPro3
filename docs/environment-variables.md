@@ -7,7 +7,7 @@ The application uses the following environment variables. All names use `UPPER_S
 | Variable | Description | Default |
 | --- | --- | --- |
 | `JWT_SECRET` | Secret used to sign JWT tokens | required |
-| `MONGO_URI` | MongoDB connection string | `mongodb://localhost:27017/platinum_cmms` |
+| `MONGO_URI` | MongoDB connection string | `mongodb://localhost:27017/workpro` |
 | `CORS_ORIGIN` | Allowed CORS origin | `http://localhost:5173` |
 | `PORT` | Port the server listens on | `5010` |
 | `RATE_LIMIT_WINDOW_MS` | Rate limiter window in ms | `900000` |

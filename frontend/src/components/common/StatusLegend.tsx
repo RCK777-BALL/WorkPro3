@@ -4,11 +4,10 @@
 
 export function StatusLegend() {
   const statuses = [
-    { label: 'Open', color: 'bg-red-500' },
+    { label: 'Requested', color: 'bg-sky-500' },
+    { label: 'Assigned', color: 'bg-indigo-500' },
     { label: 'In Progress', color: 'bg-yellow-500' },
-    { label: 'Pending Approval', color: 'bg-purple-500' },
-    { label: 'Completed', color: 'bg-green-500' },
-    { label: 'On Hold', color: 'bg-gray-500' },
+    { label: 'Completed', color: 'bg-emerald-500' },
     { label: 'Cancelled', color: 'bg-slate-400' },
   ];
 

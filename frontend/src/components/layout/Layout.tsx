@@ -2,15 +2,18 @@
  * SPDX-License-Identifier: MIT
  */
 
+import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 
 import AppHeader from './AppHeader';
 import Sidebar from './Sidebar';
 import RightPanel from './RightPanel';
 import CommandPalette from '@/components/global/CommandPalette';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function Layout() {
   const { pathname } = useLocation();
+  const { backgroundColor, textColor } = useTheme();
   const isAuthRoute =
     pathname.startsWith('/login') ||
     pathname.startsWith('/register') ||
@@ -21,7 +24,10 @@ export default function Layout() {
   }
 
   return (
-    <div className="relative min-h-screen bg-slate-950 text-slate-100">
+    <div
+      className="relative min-h-screen transition-colors duration-300"
+      style={{ backgroundColor, color: textColor }}
+    >
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-primary-500/30 blur-3xl" />
         <div className="absolute bottom-[-40%] left-1/2 h-80 w-[32rem] -translate-x-1/2 rounded-full bg-primary-700/20 blur-3xl" />

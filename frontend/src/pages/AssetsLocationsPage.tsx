@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Download, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Download, Plus, Pencil, Trash2, Upload } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 import DataTable from '@/components/common/DataTable';
 import StatusBadge from '@/components/common/StatusBadge';
@@ -122,6 +123,7 @@ const hierarchyTemplateHeaders = [
   'Station Name*',
   'Station Number (optional)',
   'Station Notes (optional)',
+  'Station Increment (optional)',
 ];
 
 const hierarchyTemplateExampleRows: string[][] = [
@@ -133,6 +135,7 @@ const hierarchyTemplateExampleRows: string[][] = [
     'Compressor Bay',
     'ST-100',
     'Primary compressor servicing area.',
+    '+5',
   ],
   [
     'Production',
@@ -142,6 +145,7 @@ const hierarchyTemplateExampleRows: string[][] = [
     'Packaging Station',
     'PK-12',
     'Automated wrapping and palletizing.',
+    'None',
   ],
 ];
 
@@ -160,6 +164,7 @@ const createHierarchyTemplateCsv = (): string => {
 };
 
 export default function AssetsLocationsPage() {
+  const navigate = useNavigate();
   const [assets, setAssets] = useState<AssetRecord[]>(fallbackAssets);
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -402,6 +407,14 @@ export default function AssetsLocationsPage() {
             onClick={handleDownloadTemplate}
           >
             Download Hierarchy Template
+          </Button>
+          <Button
+            variant="secondary"
+            size="md"
+            icon={<Upload className="h-4 w-4" />}
+            onClick={() => navigate('/imports?section=hierarchy')}
+          >
+            Import Hierarchy
           </Button>
           <Button
             variant="primary"

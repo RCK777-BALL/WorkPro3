@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Download, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Download, Plus, Pencil, Trash2, Upload } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 import DataTable from '@/components/common/DataTable';
 import StatusBadge from '@/components/common/StatusBadge';
@@ -160,6 +161,7 @@ const createHierarchyTemplateCsv = (): string => {
 };
 
 export default function AssetsLocationsPage() {
+  const navigate = useNavigate();
   const [assets, setAssets] = useState<AssetRecord[]>(fallbackAssets);
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -402,6 +404,14 @@ export default function AssetsLocationsPage() {
             onClick={handleDownloadTemplate}
           >
             Download Hierarchy Template
+          </Button>
+          <Button
+            variant="secondary"
+            size="md"
+            icon={<Upload className="h-4 w-4" />}
+            onClick={() => navigate('/imports')}
+          >
+            Import Hierarchy
           </Button>
           <Button
             variant="primary"

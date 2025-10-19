@@ -2,9 +2,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-const PDFDocument = require('pdfkit');
-const { Parser: Json2csvParser, Transform: Json2csvTransform } = require('json2csv');
-const { Readable } = require('stream');
+import PDFDocument from "pdfkit";
+import { Parser: Json2csvParser, Transform: Json2csvTransform } from "json2csv";
+import { Readable } from "stream";
 
 const toDefault = (mod) => (mod && mod.__esModule ? mod.default : mod);
 
@@ -13,7 +13,7 @@ const Asset = toDefault(require('../models/Asset'));
 const WorkHistory = toDefault(require('../models/WorkHistory'));
 const User = toDefault(require('../models/User'));
 const TimeSheet = toDefault(require('../models/TimeSheet'));
-const { LABOR_RATE } = require('../config/env');
+import { LABOR_RATE } from "../config/env";
 const sendResponse = toDefault(require('../utils/sendResponse'));
 
 async function calculateStats(tenantId, role, workOrderType) {
@@ -400,15 +400,6 @@ async function getCostByAsset(req, res, next) {
   }
 }
 
-module.exports = {
-  getAnalyticsReport,
-  downloadReport,
-  getTrendData,
-  exportTrendData,
-  getCostMetrics,
-  getDowntimeReport,
-  getPmCompliance,
-  getCostByAsset,
-};
+export { getAnalyticsReport, downloadReport, getTrendData, exportTrendData, getCostMetrics, getDowntimeReport, getPmCompliance, getCostByAsset };
 
-module.exports.default = module.exports;
+module.export const default = module.exports;

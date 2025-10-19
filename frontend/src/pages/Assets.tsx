@@ -217,7 +217,7 @@ const AssetsPage = () => {
   const fetchHierarchy = useCallback(async () => {
     try {
       setLoadingHierarchy(true);
-      const { data } = await http.get<DepartmentNode[]>('/api/departments', {
+      const { data } = await http.get<DepartmentNode[]>('/departments', {
         params: { include: 'lines,stations,assets' },
       });
       setDepartments(data);
@@ -460,14 +460,14 @@ const AssetsPage = () => {
     setDepartmentModalState((prev) => ({ ...prev, loading: true }));
     try {
       if (departmentModalState.mode === 'create') {
-        const { data: department } = await http.post<DepartmentNode>('/api/departments', {
+        const { data: department } = await http.post<DepartmentNode>('/departments', {
           name: form.name,
           notes: form.notes,
         });
 
         for (const line of form.lines) {
           const { data: createdLine } = await http.post<{ _id: string }>(
-            '/api/lines',
+            '/lines',
             {
               name: line.name,
               notes: line.notes ? line.notes : undefined,
@@ -476,7 +476,7 @@ const AssetsPage = () => {
           );
 
           for (const station of line.stations) {
-            await http.post('/api/stations', {
+            await http.post('/stations', {
               name: station.name,
               notes: station.notes ? station.notes : undefined,
               lineId: createdLine._id,
@@ -486,7 +486,7 @@ const AssetsPage = () => {
 
         addToast('Department created', 'success');
       } else if (departmentModalState.department) {
-        await http.put(`/api/departments/${departmentModalState.department._id}`, {
+        await http.put(`/departments/${departmentModalState.department._id}`, {
           name: form.name,
           notes: form.notes,
         });
@@ -505,7 +505,7 @@ const AssetsPage = () => {
     if (!departmentModalState.department) return;
     setDepartmentModalState((prev) => ({ ...prev, loading: true }));
     try {
-      await http.delete(`/api/departments/${departmentModalState.department._id}`);
+      await http.delete(`/departments/${departmentModalState.department._id}`);
       addToast('Department deleted', 'success');
       setDepartmentModalState({ open: false, mode: 'create', department: null, loading: false });
       await fetchHierarchy();
@@ -521,14 +521,14 @@ const AssetsPage = () => {
     setLineModalState((prev) => ({ ...prev, loading: true }));
     try {
       if (lineModalState.mode === 'create') {
-        await http.post('/api/lines', {
+        await http.post('/lines', {
           name: form.name,
           notes: form.notes,
           departmentId: lineModalState.departmentId,
         });
         addToast('Line created', 'success');
       } else if (lineModalState.line) {
-        await http.put(`/api/lines/${lineModalState.line._id}`, {
+        await http.put(`/lines/${lineModalState.line._id}`, {
           name: form.name,
           notes: form.notes,
         });
@@ -554,7 +554,7 @@ const AssetsPage = () => {
     if (!lineModalState.line) return;
     setLineModalState((prev) => ({ ...prev, loading: true }));
     try {
-      await http.delete(`/api/lines/${lineModalState.line._id}`);
+      await http.delete(`/lines/${lineModalState.line._id}`);
       addToast('Line deleted', 'success');
       setLineModalState({
         open: false,
@@ -577,14 +577,14 @@ const AssetsPage = () => {
     setStationModalState((prev) => ({ ...prev, loading: true }));
     try {
       if (stationModalState.mode === 'create') {
-        await http.post('/api/stations', {
+        await http.post('/stations', {
           name: form.name,
           notes: form.notes,
           lineId: stationModalState.lineId,
         });
         addToast('Station created', 'success');
       } else if (stationModalState.station) {
-        await http.put(`/api/stations/${stationModalState.station._id}`, {
+        await http.put(`/stations/${stationModalState.station._id}`, {
           name: form.name,
           notes: form.notes,
         });
@@ -612,7 +612,7 @@ const AssetsPage = () => {
     if (!stationModalState.station) return;
     setStationModalState((prev) => ({ ...prev, loading: true }));
     try {
-      await http.delete(`/api/stations/${stationModalState.station._id}`);
+      await http.delete(`/stations/${stationModalState.station._id}`);
       addToast('Station deleted', 'success');
       setStationModalState({
         open: false,
@@ -644,13 +644,13 @@ const AssetsPage = () => {
     setAssetModalState((prev) => ({ ...prev, loading: true }));
     try {
       if (assetModalState.mode === 'create') {
-        await http.post('/api/assets', {
+        await http.post('/assets', {
           ...form,
           stationId: assetModalState.stationId,
         });
         addToast('Asset created', 'success');
       } else if (assetModalState.asset) {
-        await http.put(`/api/assets/${assetModalState.asset._id}`, form);
+        await http.put(`/assets/${assetModalState.asset._id}`, form);
         addToast('Asset updated', 'success');
       }
       setAssetModalState({
@@ -675,7 +675,7 @@ const AssetsPage = () => {
     if (!assetModalState.asset) return;
     setAssetModalState((prev) => ({ ...prev, loading: true }));
     try {
-      await http.delete(`/api/assets/${assetModalState.asset._id}`);
+      await http.delete(`/assets/${assetModalState.asset._id}`);
       addToast('Asset deleted', 'success');
       setAssetModalState({
         open: false,
@@ -699,7 +699,7 @@ const AssetsPage = () => {
     const assetInfo = findAssetById(asset.id);
     if (!assetInfo) return;
     try {
-      await http.post('/api/assets', {
+      await http.post('/assets', {
         name: `${asset.name} Copy`,
         type: (asset.type as AssetNode['type']) ?? 'Electrical',
         status: asset.status ?? 'Active',
@@ -731,7 +731,7 @@ const AssetsPage = () => {
 
   const handleAssetDeleteFromTable = async (asset: Asset) => {
     try {
-      await http.delete(`/api/assets/${asset.id}`);
+      await http.delete(`/assets/${asset.id}`);
       addToast('Asset deleted', 'success');
       await fetchHierarchy();
     } catch (error) {
@@ -805,7 +805,7 @@ const AssetsPage = () => {
           const department = departments.find((item) => item._id === target.departmentId);
           if (!department) break;
           if (typeof window !== 'undefined' && !window.confirm(`Delete department "${department.name}"?`)) return;
-          await http.delete(`/api/departments/${department._id}`);
+          await http.delete(`/departments/${department._id}`);
           addToast('Department deleted', 'success');
           await fetchHierarchy();
           break;
@@ -815,7 +815,7 @@ const AssetsPage = () => {
           const info = findLineById(target.lineId);
           if (!info) break;
           if (typeof window !== 'undefined' && !window.confirm(`Delete line "${info.line.name}"?`)) return;
-          await http.delete(`/api/lines/${info.line._id}`);
+          await http.delete(`/lines/${info.line._id}`);
           addToast('Line deleted', 'success');
           await fetchHierarchy();
           break;
@@ -825,7 +825,7 @@ const AssetsPage = () => {
           const info = findStationById(target.stationId);
           if (!info) break;
           if (typeof window !== 'undefined' && !window.confirm(`Delete station "${info.station.name}"?`)) return;
-          await http.delete(`/api/stations/${info.station._id}`);
+          await http.delete(`/stations/${info.station._id}`);
           addToast('Station deleted', 'success');
           await fetchHierarchy();
           break;
@@ -835,7 +835,7 @@ const AssetsPage = () => {
           const info = findAssetById(target.assetId);
           if (!info) break;
           if (typeof window !== 'undefined' && !window.confirm(`Delete asset "${info.asset.name}"?`)) return;
-          await http.delete(`/api/assets/${info.asset._id}`);
+          await http.delete(`/assets/${info.asset._id}`);
           addToast('Asset deleted', 'success');
           await fetchHierarchy();
           break;

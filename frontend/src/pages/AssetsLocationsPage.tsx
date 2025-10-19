@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Building2, Download, Plus, Pencil, Trash2, Upload } from 'lucide-react';
+import { Download, Plus, Pencil, Trash2, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import DataTable from '@/components/common/DataTable';
@@ -462,9 +462,9 @@ export default function AssetsLocationsPage() {
             Import Hierarchy
           </Button>
           <Button
-            variant="secondary"
+            variant="primary"
             size="md"
-            icon={<Building2 className="h-4 w-4" />}
+            icon={<Plus className="h-4 w-4" />}
             onClick={() => setIsDepartmentModalOpen(true)}
           >
             Create Department

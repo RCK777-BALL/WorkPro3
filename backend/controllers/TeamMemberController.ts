@@ -18,6 +18,19 @@ const roleHierarchy: Record<ITeamMember['role'], ITeamMember['role'][] | null> =
   team_member: ['team_leader'],
 };
 
+const toPlainObject = (
+  value: unknown,
+): Record<string, unknown> | undefined => {
+  if (!value) return undefined;
+  if (typeof value === 'object' && typeof (value as any).toObject === 'function') {
+    return (value as any).toObject();
+  }
+  if (typeof value === 'object') {
+    return value as Record<string, unknown>;
+  }
+  return undefined;
+};
+
 async function validateHierarchy(
   role: ITeamMember['role'],
   managerId: string | null | undefined,
@@ -106,7 +119,7 @@ export const createTeamMember = async (
       action: 'create',
       entityType: 'TeamMember',
       entityId: toEntityId(saved._id),
-      after: saved.toObject(),
+      after: toPlainObject(saved),
     });
     sendResponse(res, saved, null, 201);
     return;
@@ -152,14 +165,16 @@ export const updateTeamMember = async (
         runValidators: true,
       }
     );
+    const before = toPlainObject(existing);
+    const after = toPlainObject(updated);
     await writeAuditLog({
       tenantId,
       userId,
       action: 'update',
       entityType: 'TeamMember',
       entityId: toEntityId(new Types.ObjectId(req.params.id)),
-      before: existing.toObject(),
-      after: updated?.toObject(),
+      before,
+      after,
     });
     sendResponse(res, updated);
     return;
@@ -206,7 +221,7 @@ export const deleteTeamMember = async (
       action: 'delete',
       entityType: 'TeamMember',
       entityId: toEntityId(new Types.ObjectId(req.params.id)),
-      before: deleted.toObject(),
+      before: toPlainObject(deleted),
     });
     sendResponse(res, { message: 'Deleted successfully' });
     return;

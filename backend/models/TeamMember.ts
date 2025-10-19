@@ -5,7 +5,7 @@
 import mongoose, { Schema, Document, Model, Types } from 'mongoose';
 
  
-export interface ITeamMember extends Document {
+export interface ITeamMember extends Document<ITeamMember> {
   _id: Types.ObjectId;
   name: string;
   email: string;

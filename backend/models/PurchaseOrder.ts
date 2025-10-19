@@ -12,7 +12,8 @@ export interface IPurchaseOrderItem {
   received: number;
 }
 
-export interface IPurchaseOrder extends Document {
+export interface IPurchaseOrder extends Document<IPurchaseOrder> {
+  _id: Types.ObjectId;
   tenantId: Types.ObjectId;
   vendor: Types.ObjectId;
   items: IPurchaseOrderItem[];

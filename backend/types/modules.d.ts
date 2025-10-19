@@ -7,28 +7,43 @@
  */
 
 declare module 'express' {
-  export interface Request {
-    params: Record<string, string>;
-    query: Record<string, any>;
-    body?: any;
+  export type NextFunction = (err?: any) => void;
+
+  export interface Request<
+    P = Record<string, string>,
+    ResBody = any,
+    ReqBody = any,
+    ReqQuery = Record<string, any>,
+  > {
+    params: P extends Record<string, any> ? P : Record<string, string>;
+    query: ReqQuery extends Record<string, any> ? ReqQuery : Record<string, any>;
+    body: ReqBody;
     ip?: string;
     headers: Record<string, string | string[]>;
     [key: string]: any;
   }
-  export interface Response {
+
+  export interface Response<ResBody = any> {
     locals?: any;
-    json(body?: any): Response;
-    send(body?: any): Response;
-    status(code: number): Response;
+    json(body?: ResBody): Response<ResBody>;
+    send(body?: ResBody): Response<ResBody>;
+    status(code: number): Response<ResBody>;
     setHeader(name: string, value: string): void;
     header(name: string, value: string): void;
-    attachment(filename?: string): Response;
-    cookie(name: string, value: string, options?: any): Response;
-    clearCookie(name: string, options?: any): Response;
+    attachment(filename?: string): Response<ResBody>;
+    cookie(name: string, value: string, options?: any): Response<ResBody>;
+    clearCookie(name: string, options?: any): Response<ResBody>;
     [key: string]: any;
   }
-  export type NextFunction = (err?: any) => void;
-  export type RequestHandler = (req: Request, res: Response, next: NextFunction) => any;
+
+  export interface RequestHandler<
+    P = Record<string, string>,
+    ResBody = any,
+    ReqBody = any,
+    ReqQuery = Record<string, any>,
+  > {
+    (req: Request<P, ResBody, ReqBody, ReqQuery>, res: Response<ResBody>, next: NextFunction): any;
+  }
 
   export interface Router {
     (...handlers: RequestHandler[]): Router;
@@ -73,11 +88,14 @@ declare module 'express-serve-static-core' {
     [key: string]: string;
   }
 
-  export interface Request {
-    [key: string]: any;
-  }
+  export interface Request<
+    P = Record<string, string>,
+    ResBody = any,
+    ReqBody = any,
+    ReqQuery = Record<string, any>,
+  > extends import('express').Request<P, ResBody, ReqBody, ReqQuery> {}
 
-  export interface Response extends import('express').Response {}
+  export interface Response<ResBody = any> extends import('express').Response<ResBody> {}
 }
 
 declare module 'qs' {
@@ -87,11 +105,22 @@ declare module 'qs' {
 }
 
 declare module 'mongoose' {
+  export interface Query<T> extends Promise<T> {
+    select(fields: any): Query<T>;
+    populate(path: any, select?: any): Query<T>;
+    lean<U = T>(): Query<U>;
+    limit(n: number): Query<T>;
+    sort(sort: any): Query<T>;
+    exec(): Promise<T>;
+  }
+
   export namespace Types {
     class ObjectId {
       constructor(id?: string | number | import('crypto').BinaryLike);
       toHexString(): string;
       toString(): string;
+      equals(other: any): boolean;
+      static isValid(id: any): boolean;
     }
   }
 
@@ -103,16 +132,22 @@ declare module 'mongoose' {
 
   export type UpdateQuery<T> = Partial<T> & Record<string, any>;
   export type FilterQuery<T> = Partial<Record<keyof T, any>> & Record<string, any>;
-  export type HydratedDocument<T> = T & { _id: Types.ObjectId; toObject(): any };
+  export type HydratedDocument<T> = T & {
+    _id: Types.ObjectId;
+    toObject(): any;
+    markModified(path: string): void;
+  };
   export type ClientSession = any;
 
   export interface Model<T = any> {
-    find(filter?: FilterQuery<T>, projection?: any): Promise<T[]>;
-    findOne(filter?: FilterQuery<T>, projection?: any): Promise<T | null>;
-    findById(id: any): Promise<T | null>;
-    findByIdAndUpdate(id: any, update: UpdateQuery<T>, options?: any): Promise<T | null>;
-    findByIdAndDelete(id: any): Promise<T | null>;
-    findOneAndUpdate(filter: FilterQuery<T>, update: UpdateQuery<T>, options?: any): Promise<T | null>;
+    new (doc?: Partial<T>): HydratedDocument<T>;
+    find(filter?: FilterQuery<T>, projection?: any): Query<T[]>;
+    findOne(filter?: FilterQuery<T>, projection?: any): Query<T | null>;
+    findById(id: any): Query<T | null>;
+    findByIdAndUpdate(id: any, update: UpdateQuery<T>, options?: any): Query<T | null>;
+    findByIdAndDelete(id: any): Query<T | null>;
+    findOneAndUpdate(filter: FilterQuery<T>, update: UpdateQuery<T>, options?: any): Query<T | null>;
+    findOneAndDelete(filter: FilterQuery<T>, options?: any): Query<T | null>;
     countDocuments(filter?: FilterQuery<T>): Promise<number>;
     aggregate(pipeline: any[]): Promise<any[]>;
     updateOne(filter: FilterQuery<T>, update: UpdateQuery<T>, options?: any): Promise<any>;
@@ -143,12 +178,14 @@ declare module 'mongoose' {
   export const Types: typeof Types & {
     Array: new <U = any>(items?: U[]) => any;
   };
+  export function isValidObjectId(value: any): boolean;
   const mongoose: {
     Schema: typeof Schema;
     model: typeof model;
     connect: typeof connect;
     connection: typeof connection;
     Types: typeof Types;
+    isValidObjectId: typeof isValidObjectId;
   };
   export default mongoose;
 }
@@ -336,12 +373,30 @@ declare module 'kafkajs' {
 }
 
 declare module 'mqtt' {
+  export interface IClientOptions {
+    clientId?: string;
+    username?: string;
+    password?: string | Buffer;
+    keepalive?: number;
+  }
+
   export interface Client {
     on(event: string, handler: (...args: any[]) => void): void;
     publish(topic: string, message: string | Buffer, options?: any): void;
     subscribe(topic: string, options?: any): void;
+    end(force?: boolean, options?: any): void;
   }
-  export function connect(url: string, options?: any): Client;
+
+  export type MqttClient = Client;
+
+  export function connect(url: string, options?: IClientOptions): MqttClient;
+
+  interface MqttModule {
+    connect: typeof connect;
+  }
+
+  const mqtt: MqttModule;
+  export default mqtt;
 }
 
 declare module 'node-cron' {
@@ -365,6 +420,19 @@ declare module 'swagger-ui-express' {
 
 declare module 'csv-parse' {
   export function parse(input: string, options?: any): Promise<any>;
+}
+
+declare module 'csv-parse/sync' {
+  export interface ParseOptions {
+    columns?: boolean | string[];
+    skip_empty_lines?: boolean;
+    trim?: boolean;
+  }
+
+  export function parse(
+    input: Buffer | string,
+    options?: ParseOptions & { columns?: boolean | string[] },
+  ): any[];
 }
 
 declare module 'arima' {

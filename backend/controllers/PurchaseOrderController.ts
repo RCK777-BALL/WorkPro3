@@ -9,6 +9,17 @@ import PurchaseOrder from '../models/PurchaseOrder';
 import { writeAuditLog } from '../utils/audit';
 import { sendResponse } from '../utils/sendResponse';
 
+const toPlainObject = (value: unknown): Record<string, unknown> | undefined => {
+  if (!value) return undefined;
+  if (typeof value === 'object' && typeof (value as any).toObject === 'function') {
+    return (value as any).toObject();
+  }
+  if (typeof value === 'object') {
+    return value as Record<string, unknown>;
+  }
+  return undefined;
+};
+
 export const createPurchaseOrder = async (
   req: Request,
   res: Response,
@@ -30,7 +41,7 @@ export const createPurchaseOrder = async (
       action: 'create',
       entityType: 'PurchaseOrder',
       entityId,
-      after: po.toObject(),
+      after: toPlainObject(po),
     });
     sendResponse(res, po, null, 201);
     return;
@@ -109,7 +120,7 @@ export const updateVendorPurchaseOrder = async (
       sendResponse(res, null, 'Forbidden', 403);
       return;
     }
-    const before = po.toObject();
+    const before = toPlainObject(po);
     po.status = status as any;
     await po.save();
     const userId = (req.user as any)?._id || (req.user as any)?.id;
@@ -121,7 +132,7 @@ export const updateVendorPurchaseOrder = async (
       entityType: 'PurchaseOrder',
       entityId,
       before,
-      after: po.toObject(),
+      after: toPlainObject(po),
     });
     sendResponse(res, po);
     return;

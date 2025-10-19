@@ -30,6 +30,19 @@ interface NotificationCreateBody {
 
 type NotificationUpdateBody = Partial<NotificationCreateBody>;
 
+const toPlainObject = (
+  value: unknown,
+): Record<string, unknown> | undefined => {
+  if (!value) return undefined;
+  if (typeof value === 'object' && typeof (value as any).toObject === 'function') {
+    return (value as any).toObject();
+  }
+  if (typeof value === 'object') {
+    return value as Record<string, unknown>;
+  }
+  return undefined;
+};
+
 export const getAllNotifications: AuthedRequestHandler<
   ParamsDictionary,
   NotificationDocument[] | { message: string }
@@ -129,7 +142,7 @@ export const createNotification: AuthedRequestHandler<
       action: 'create',
       entityType: 'Notification',
       entityId: toEntityId(saved._id),
-      after: saved.toObject(),
+      after: toPlainObject(saved),
     });
 
     const io = req.app.get('io');
@@ -215,7 +228,7 @@ export const markNotificationRead: AuthedRequestHandler<
       entityType: 'Notification',
       entityId: toEntityId(new Types.ObjectId(req.params.id)),
       before: null,
-      after: updated.toObject(),
+      after: toPlainObject(updated),
     });
     sendResponse(res, updated);
     return;
@@ -264,14 +277,16 @@ export const updateNotification: AuthedRequestHandler<
         runValidators: true,
       },
     ).exec();
+    const before = toPlainObject(existing);
+    const after = toPlainObject(updated);
     await writeAuditLog({
       tenantId: tenantObjectId,
       ...(userId ? { userId } : {}),
       action: 'update',
       entityType: 'Notification',
       entityId: toEntityId(new Types.ObjectId(req.params.id)),
-      before: existing.toObject(),
-      after: updated?.toObject(),
+      before,
+      after,
     });
     sendResponse(res, updated);
     return;
@@ -317,7 +332,7 @@ export const deleteNotification: AuthedRequestHandler<
       action: 'delete',
       entityType: 'Notification',
       entityId: toEntityId(new Types.ObjectId(req.params.id)),
-      before: deleted.toObject(),
+      before: toPlainObject(deleted),
     });
     sendResponse(res, { message: 'Deleted successfully' });
     return;

@@ -78,6 +78,16 @@ function buildInventoryPayload(body: Record<string, unknown>) {
 
 type InventorySummaryProjection = Pick<IInventoryItem, "name" | "quantity" | "reorderThreshold">;
 
+const toPlainObject = (value: unknown): Record<string, unknown> => {
+  if (value && typeof (value as any).toObject === "function") {
+    return (value as any).toObject();
+  }
+  if (value && typeof value === "object") {
+    return value as Record<string, unknown>;
+  }
+  return {};
+};
+
 // —— GET /inventory/summary (name, stock, status) ————————————————————————
 export const getInventoryItems = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -150,7 +160,8 @@ export const getInventoryItemById = async (req: Request, res: Response, next: Ne
 
     const qty = Number(item.quantity ?? 0);
     const threshold = Number(item.reorderThreshold ?? 0);
-    sendResponse(res, { ...item.toObject(), status: qty <= threshold ? "low" : "ok" });
+    const plainItem = toPlainObject(item);
+    sendResponse(res, { ...plainItem, status: qty <= threshold ? "low" : "ok" });
   } catch (err) {
     next(err);
   }
@@ -171,13 +182,14 @@ export const createInventoryItem = async (req: Request, res: Response, next: Nex
     const payload: Partial<IInventoryItem> = scopedQuery(req, data);
     const saved = await new InventoryItem(payload).save();
     const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const savedPlain = toPlainObject(saved);
     await writeAuditLog({
       tenantId,
       userId,
       action: "create",
       entityType: "InventoryItem",
       entityId: toEntityId(saved._id),
-      after: saved.toObject(),
+      after: savedPlain,
     });
     sendResponse(res, saved, null, 201);
   } catch (err) {
@@ -224,14 +236,16 @@ export const updateInventoryItem = async (req: Request, res: Response, next: Nex
     }
 
     const userId2 = (req.user as any)?._id || (req.user as any)?.id;
+    const before = toPlainObject(existing);
+    const after = toPlainObject(updated);
     await writeAuditLog({
       tenantId,
       userId: userId2,
       action: "update",
       entityType: "InventoryItem",
-      entityId: toEntityId(new Types.ObjectId(id)),
-      before: existing.toObject(),
-      after: updated.toObject(),
+      entityId: toEntityId(id),
+      before,
+      after,
     });
     sendResponse(res, updated);
   } catch (err) {
@@ -261,13 +275,14 @@ export const deleteInventoryItem = async (req: Request, res: Response, next: Nex
     }
 
     const userId3 = (req.user as any)?._id || (req.user as any)?.id;
+    const deletedPlain = toPlainObject(deleted);
     await writeAuditLog({
       tenantId,
       userId: userId3,
       action: "delete",
       entityType: "InventoryItem",
-      entityId: toEntityId(new Types.ObjectId(id)),
-      before: deleted.toObject(),
+      entityId: toEntityId(id),
+      before: deletedPlain,
     });
     sendResponse(res, { message: "Deleted successfully" });
   } catch (err) {
@@ -305,7 +320,7 @@ export const useInventoryItem = async (req: Request, res: Response, next: NextFu
       return;
     }
 
-    const before = item.toObject();
+    const before = toPlainObject(item);
 
     // If model types don’t declare .consume, call with a local narrow type
     const doc = item as typeof item & {
@@ -330,9 +345,9 @@ export const useInventoryItem = async (req: Request, res: Response, next: NextFu
       userId: userId4,
       action: "use",
       entityType: "InventoryItem",
-      entityId: toEntityId(new Types.ObjectId(id)),
+      entityId: toEntityId(id),
       before,
-      after: item.toObject(),
+      after: toPlainObject(item),
     });
     sendResponse(res, item);
   } catch (err) {

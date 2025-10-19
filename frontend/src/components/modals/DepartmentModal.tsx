@@ -3,7 +3,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { PlusCircle, Trash2 } from 'lucide-react';
+import { PlusCircle, Trash2, X } from 'lucide-react';
 import Button from '../common/Button';
 
 import Modal from './Modal';
@@ -482,7 +482,13 @@ const DepartmentModal = ({
             <span />
           )}
           <div className="flex items-center gap-2">
-            <Button type="button" variant="ghost" onClick={onClose} disabled={loading}>
+            <Button
+              type="button"
+              variant="primary"
+              icon={<X className="w-4 h-4" />}
+              onClick={onClose}
+              disabled={loading}
+            >
               Cancel
             </Button>
             <Button type="submit" variant="primary" disabled={loading} loading={loading}>

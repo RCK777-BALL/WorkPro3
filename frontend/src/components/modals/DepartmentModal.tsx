@@ -23,6 +23,7 @@ interface LineFormState {
   id: string;
   name: string;
   notes: string;
+  stationIncrement: number;
   stations: StationFormState[];
 }
 
@@ -81,29 +82,54 @@ const createStationState = (station?: DepartmentModalInitialData['lines'][number
   notes: station?.notes ?? '',
 });
 
-const createLineState = (line?: DepartmentModalInitialData['lines'][number]): LineFormState => ({
-  id: line?.id ?? line?._id ?? createId(),
-  name: line?.name ?? '',
-  notes: line?.notes ?? '',
-  stations: (line?.stations ?? []).map((station) => createStationState(station)),
-});
-
-const getNextStationNumber = (stations: StationFormState[]): number => {
-  if (!stations.length) return 1;
-  return (
-    stations.reduce((highest, station) => {
+const extractStationNumbers = (stations: StationFormState[]): number[] =>
+  stations
+    .map((station) => {
       const match = station.name.match(/(\d+)\s*$/);
-      if (!match) return highest;
+      if (!match) return undefined;
       const value = Number.parseInt(match[1], 10);
-      if (Number.isNaN(value)) return highest;
-      return Math.max(highest, value);
-    }, 0) + 1
-  );
+      return Number.isNaN(value) ? undefined : value;
+    })
+    .filter((value): value is number => typeof value === 'number');
+
+const inferStationIncrement = (stations: StationFormState[]): number => {
+  const numbers = extractStationNumbers(stations).sort((a, b) => a - b);
+  if (numbers.length < 2) return 1;
+
+  let minDiff = Number.POSITIVE_INFINITY;
+  for (let index = 1; index < numbers.length; index += 1) {
+    const diff = numbers[index] - numbers[index - 1];
+    if (diff > 0) {
+      minDiff = Math.min(minDiff, diff);
+    }
+  }
+
+  return Number.isFinite(minDiff) && minDiff > 0 ? minDiff : 1;
+};
+
+const createLineState = (line?: DepartmentModalInitialData['lines'][number]): LineFormState => {
+  const stations = (line?.stations ?? []).map((station) => createStationState(station));
+
+  return {
+    id: line?.id ?? line?._id ?? createId(),
+    name: line?.name ?? '',
+    notes: line?.notes ?? '',
+    stationIncrement: inferStationIncrement(stations),
+    stations,
+  };
+};
+
+const getNextStationNumber = (stations: StationFormState[], increment: number): number => {
+  const numbers = extractStationNumbers(stations);
+  if (!numbers.length) return increment;
+  const highest = numbers.reduce((max, value) => Math.max(max, value), 0);
+  return highest + increment;
 };
 
 const getDefaultStationName = (line: LineFormState) => {
   const prefix = line.name.trim() ? `${line.name.trim()} Station` : 'Station';
-  const nextNumber = getNextStationNumber(line.stations);
+  const increment = Number.isFinite(line.stationIncrement) && line.stationIncrement > 0 ? line.stationIncrement : 1;
+  const nextNumber = getNextStationNumber(line.stations, increment);
   const padded = nextNumber < 10 ? nextNumber.toString().padStart(2, '0') : nextNumber.toString();
   return `${prefix} ${padded}`;
 };
@@ -169,6 +195,7 @@ const DepartmentModal = ({
           id: createId(),
           name: '',
           notes: '',
+          stationIncrement: 1,
           stations: [],
         },
       ],
@@ -191,6 +218,21 @@ const DepartmentModal = ({
           ? {
               ...line,
               name,
+            }
+          : line,
+      ),
+    }));
+  };
+
+  const handleStationIncrementChange = (lineId: string, increment: number) => {
+    if (!canModifyHierarchy) return;
+    setForm((prev) => ({
+      ...prev,
+      lines: prev.lines.map((line) =>
+        line.id === lineId
+          ? {
+              ...line,
+              stationIncrement: increment > 0 ? increment : 1,
             }
           : line,
       ),
@@ -294,9 +336,10 @@ const DepartmentModal = ({
             {canModifyHierarchy && (
               <Button
                 type="button"
-                variant="ghost"
+                variant="secondary"
                 size="sm"
                 icon={<PlusCircle className="h-4 w-4" />}
+                className="font-semibold"
                 onClick={handleAddLine}
               >
                 Add Line
@@ -336,16 +379,37 @@ const DepartmentModal = ({
                 </div>
 
                 <div className="rounded-md border border-slate-100 bg-slate-50 p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Stations
-                    </span>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Stations
+                      </span>
+                      {canModifyHierarchy && (
+                        <label className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                          Increment
+                          <input
+                            type="number"
+                            min={1}
+                            step={1}
+                            value={line.stationIncrement}
+                            onChange={(event) =>
+                              handleStationIncrementChange(
+                                line.id,
+                                Number.parseInt(event.target.value, 10) || 1,
+                              )
+                            }
+                            className="h-8 w-20 rounded border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-700 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                          />
+                        </label>
+                      )}
+                    </div>
                     {canModifyHierarchy && (
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="secondary"
                         size="sm"
                         icon={<PlusCircle className="h-4 w-4" />}
+                        className="font-semibold"
                         onClick={() => handleAddStation(line.id)}
                       >
                         Add Station

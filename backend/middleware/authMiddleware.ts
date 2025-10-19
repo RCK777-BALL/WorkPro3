@@ -50,7 +50,9 @@ const toPlainUser = (user: HydratedDocument<UserDocument>, decoded: DecodedToken
 
 export const requireAuth: RequestHandler = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+    const rawAuthHeader = req.headers.authorization;
+    const authHeader = Array.isArray(rawAuthHeader) ? rawAuthHeader[0] : rawAuthHeader;
+
     if (!authHeader || !authHeader.toLowerCase().startsWith('bearer ')) {
       res.status(401).json({ message: 'Missing or invalid Authorization header' });
       return;

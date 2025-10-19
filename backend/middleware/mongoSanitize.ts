@@ -15,8 +15,8 @@ const sanitize = (obj: Record<string, any>, replaceWith = "_") => {
 const mongoSanitize = (replaceWith = "_") => {
   return (req: Request, _res: Response, next: NextFunction) => {
     ["body", "query", "params"].forEach((key) => {
-      // @ts-expect-error dynamic access
-      sanitize(req[key], replaceWith);
+      const value = (req as Record<string, any>)[key];
+      sanitize(value, replaceWith);
     });
     next();
   };

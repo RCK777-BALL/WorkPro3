@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Router } from 'express';
+import { Request, Response, Router } from 'express';
 
 import { requireAuth } from '../middleware/authMiddleware';
 import {
@@ -29,7 +29,7 @@ const trend = [
   { date: '2024-06-03', created: 4, completed: 6 },
 ];
 
-router.get('/summary', (_req, res) => {
+router.get('/summary', (_req: Request, res: Response) => {
   res.json({ success: true, data: { kpis, trend }, message: 'Analytics summary' });
 });
 

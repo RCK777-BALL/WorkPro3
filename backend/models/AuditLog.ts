@@ -12,6 +12,8 @@ export interface AuditLogDocument extends Document {
   entityId: Types.ObjectId | string;
   before?: Record<string, unknown> | null;
   after?: Record<string, unknown> | null;
+  module?: string;
+  details?: Record<string, unknown> | null;
   ts: Date;
 }
 
@@ -24,6 +26,8 @@ const auditLogSchema = new Schema<AuditLogDocument>(
     entityId: { type: Schema.Types.Mixed, required: true },
     before: { type: Schema.Types.Mixed },
     after: { type: Schema.Types.Mixed },
+    module: { type: String },
+    details: { type: Schema.Types.Mixed },
     ts: { type: Date, default: Date.now },
   },
   { collection: 'audit_logs' }

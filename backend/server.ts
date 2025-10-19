@@ -101,16 +101,18 @@ const MONGO_URI = env.MONGO_URI;
 const RATE_LIMIT_WINDOW_MS = parseInt(env.RATE_LIMIT_WINDOW_MS, 10);
 const RATE_LIMIT_MAX = parseInt(env.RATE_LIMIT_MAX, 10);
 
-const allowedOrigins = new Set(
+const allowedOrigins = new Set<string>(
   env.CORS_ORIGIN
     .split(",")
-    .map((origin) => origin.trim())
-    .filter((origin) => origin.length > 0),
+    .map((origin: string) => origin.trim())
+    .filter((origin: string) => origin.length > 0),
 );
 allowedOrigins.add("http://localhost:5173");
 
+type CorsOriginCallback = (err: Error | null, allow?: boolean) => void;
+
 const corsOptions: CorsOptions = {
-  origin: (origin, callback) => {
+  origin: (origin: string | undefined, callback: CorsOriginCallback) => {
     if (!origin || allowedOrigins.has(origin)) {
       callback(null, true);
     } else {

@@ -90,12 +90,3 @@ export const deleteTenant = async (req: Request, res: Response, next: NextFuncti
     next(err);
   }
 };
-
-
-export default {
-  getAllTenants,
-  getTenantById,
-  createTenant,
-  updateTenant,
-  deleteTenant,
-};

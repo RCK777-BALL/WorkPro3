@@ -76,15 +76,18 @@ function buildInventoryPayload(body: Record<string, unknown>) {
   return { data };
 }
 
+type InventorySummaryProjection = Pick<IInventoryItem, "name" | "quantity" | "reorderThreshold">;
+
 // —— GET /inventory/summary (name, stock, status) ————————————————————————
 export const getInventoryItems = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const query = scopedQuery(req);
-    const items = await InventoryItem.find(query)
-      .select({ name: 1, quantity: 1, reorderThreshold: 1 })
-      .lean();
+    const summaryQuery = InventoryItem.find(query);
+    summaryQuery.select({ name: 1, quantity: 1, reorderThreshold: 1 });
+    summaryQuery.lean<InventorySummaryProjection>();
+    const items = await summaryQuery.exec();
 
-    const formatted = items.map((item) => {
+    const formatted = items.map((item: InventorySummaryProjection) => {
       const qty = Number(item.quantity ?? 0);
       const threshold = Number(item.reorderThreshold ?? 0);
       return {
@@ -104,7 +107,9 @@ export const getInventoryItems = async (req: Request, res: Response, next: NextF
 export const getAllInventoryItems = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const query = scopedQuery(req);
-    const items = await InventoryItem.find(query).lean();
+    const itemsQuery = InventoryItem.find(query);
+    itemsQuery.lean<IInventoryItem>();
+    const items = await itemsQuery.exec();
     sendResponse(res, items);
   } catch (err) {
     next(err);
@@ -118,7 +123,9 @@ export const getLowStockItems = async (req: Request, res: Response, next: NextFu
       $expr: { $lte: ["$quantity", { $ifNull: ["$reorderThreshold", 0] }] },
     } as any);
 
-    const items = await InventoryItem.find(query).populate("vendor").lean();
+    const itemsQuery = InventoryItem.find(query);
+    itemsQuery.populate("vendor");
+    const items = await itemsQuery.exec();
     sendResponse(res, items);
   } catch (err) {
     next(err);
@@ -134,7 +141,8 @@ export const getInventoryItemById = async (req: Request, res: Response, next: Ne
       return;
     }
 
-    const item = await InventoryItem.findOne(scopedQuery(req, { _id: id })).exec();
+    const itemQuery = InventoryItem.findOne(scopedQuery(req, { _id: id }));
+    const item = await itemQuery.exec();
     if (!item) {
       sendResponse(res, null, "Not found", 404);
       return;
@@ -197,16 +205,18 @@ export const updateInventoryItem = async (req: Request, res: Response, next: Nex
     }
 
     const filter = scopedQuery(req, { _id: id } as any);
-    const existing = await InventoryItem.findOne(filter);
+    const existingQuery = InventoryItem.findOne(filter);
+    const existing = await existingQuery.exec();
     if (!existing) {
       sendResponse(res, null, "Not found", 404);
       return;
     }
 
-    const updated = await InventoryItem.findOneAndUpdate(filter, data, {
+    const updateQuery = InventoryItem.findOneAndUpdate(filter, data, {
       new: true,
       runValidators: true,
     });
+    const updated = await updateQuery.exec();
 
     if (!updated) {
       sendResponse(res, null, "Not found", 404);
@@ -243,7 +253,8 @@ export const deleteInventoryItem = async (req: Request, res: Response, next: Nex
     }
 
     const filter = scopedQuery(req, { _id: id } as any);
-    const deleted = await InventoryItem.findOneAndDelete(filter);
+    const deleteQuery = InventoryItem.findOneAndDelete(filter);
+    const deleted = await deleteQuery.exec();
     if (!deleted) {
       sendResponse(res, null, "Not found", 404);
       return;
@@ -287,7 +298,8 @@ export const useInventoryItem = async (req: Request, res: Response, next: NextFu
       return;
     }
 
-    const item = await InventoryItem.findOne(scopedQuery(req, { _id: id } as any));
+    const itemQuery = InventoryItem.findOne(scopedQuery(req, { _id: id } as any));
+    const item = await itemQuery.exec();
     if (!item) {
       sendResponse(res, null, "Not found", 404);
       return;
@@ -342,7 +354,10 @@ export const searchInventoryItems = async (req: Request, res: Response, next: Ne
       $or: [{ name: regex }, { sku: regex }, { partNumber: regex }],
     } as any);
 
-    const items = await InventoryItem.find(filter).limit(10).lean();
+    const itemsQuery = InventoryItem.find(filter);
+    itemsQuery.limit(10);
+    itemsQuery.lean<IInventoryItem>();
+    const items = await itemsQuery.exec();
     sendResponse(res, items);
   } catch (err) {
     next(err);

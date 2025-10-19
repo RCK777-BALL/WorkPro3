@@ -11,7 +11,8 @@
     "types": ["node"],
     "typeRoots": ["./types", "./node_modules/@types"],
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "outDir": "./dist"
   },
   "ts-node": {
     "preferTsExts": true

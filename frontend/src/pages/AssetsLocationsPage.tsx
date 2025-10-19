@@ -9,7 +9,7 @@ import Button from '@/components/common/Button';
 import IconButton from '@/components/ui/button';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import AssetFormModal, { type AssetFormValues } from '@/components/assets/AssetFormModal';
-import DepartmentModal from '@/components/modals/DepartmentModal';
+import DepartmentModal, { type DepartmentHierarchyFormValues } from '@/components/modals/DepartmentModal';
 import { useDepartmentStore } from '@/store/departmentStore';
 import http from '@/lib/http';
 import { getErrorMessage } from '@/lib/api';
@@ -332,14 +332,30 @@ export default function AssetsLocationsPage() {
     setStatusFilter('all');
   };
 
-  const handleCreateDepartment = async ({ name, notes }: { name: string; notes: string }) => {
+  const handleCreateDepartment = async ({ name, notes, lines }: DepartmentHierarchyFormValues) => {
     const trimmedNotes = notes.trim();
     setIsDepartmentSaving(true);
     try {
-      await http.post('/departments', {
+      const { data: department } = await http.post<{ _id: string }>('/departments', {
         name: name.trim(),
         notes: trimmedNotes ? trimmedNotes : undefined,
       });
+
+      for (const line of lines) {
+        const { data: createdLine } = await http.post<{ _id: string }>('/lines', {
+          name: line.name,
+          notes: line.notes ? line.notes : undefined,
+          departmentId: department._id,
+        });
+
+        for (const station of line.stations) {
+          await http.post('/stations', {
+            name: station.name,
+            notes: station.notes ? station.notes : undefined,
+            lineId: createdLine._id,
+          });
+        }
+      }
       toast.success('Department created successfully');
       try {
         await refreshDepartmentCache();

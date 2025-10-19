@@ -10,7 +10,7 @@ import AssetTable from '@/components/assets/AssetTable';
 import DepartmentTree from '@/components/assets/DepartmentTree';
 import LineTree from '@/components/assets/LineTree';
 import StationTree from '@/components/assets/StationTree';
-import DepartmentModal from '@/components/modals/DepartmentModal';
+import DepartmentModal, { type DepartmentHierarchyFormValues } from '@/components/modals/DepartmentModal';
 import LineModal from '@/components/modals/LineModal';
 import StationModal from '@/components/modals/StationModal';
 import AssetModal from '@/components/modals/AssetModal';
@@ -456,14 +456,40 @@ const AssetsPage = () => {
     });
   };
 
-  const handleDepartmentSubmit = async (form: { name: string; notes: string }) => {
+  const handleDepartmentSubmit = async (form: DepartmentHierarchyFormValues) => {
     setDepartmentModalState((prev) => ({ ...prev, loading: true }));
     try {
       if (departmentModalState.mode === 'create') {
-        await http.post('/api/departments', form);
+        const { data: department } = await http.post<DepartmentNode>('/api/departments', {
+          name: form.name,
+          notes: form.notes,
+        });
+
+        for (const line of form.lines) {
+          const { data: createdLine } = await http.post<{ _id: string }>(
+            '/api/lines',
+            {
+              name: line.name,
+              notes: line.notes ? line.notes : undefined,
+              departmentId: department._id,
+            },
+          );
+
+          for (const station of line.stations) {
+            await http.post('/api/stations', {
+              name: station.name,
+              notes: station.notes ? station.notes : undefined,
+              lineId: createdLine._id,
+            });
+          }
+        }
+
         addToast('Department created', 'success');
       } else if (departmentModalState.department) {
-        await http.put(`/api/departments/${departmentModalState.department._id}`, form);
+        await http.put(`/api/departments/${departmentModalState.department._id}`, {
+          name: form.name,
+          notes: form.notes,
+        });
         addToast('Department updated', 'success');
       }
       setDepartmentModalState({ open: false, mode: 'create', department: null, loading: false });

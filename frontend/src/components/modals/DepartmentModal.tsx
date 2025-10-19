@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import { PlusCircle, Trash2 } from 'lucide-react';
-import Button from '@common/Button';
+import Button from '../common/Button';
 
 import Modal from './Modal';
 
@@ -76,7 +76,7 @@ const emptyForm: DepartmentFormState = {
   lines: [],
 };
 
-const createStationState = (station?: DepartmentModalInitialData['lines'][number]['stations'][number]): StationFormState => ({
+const createStationState = (station?: { id?: string; _id?: string; name?: string; notes?: string }): StationFormState => ({
   id: station?.id ?? station?._id ?? createId(),
   name: station?.name ?? '',
   notes: station?.notes ?? '',
@@ -107,7 +107,7 @@ const inferStationIncrement = (stations: StationFormState[]): number => {
   return Number.isFinite(minDiff) && minDiff > 0 ? minDiff : 1;
 };
 
-const createLineState = (line?: DepartmentModalInitialData['lines'][number]): LineFormState => {
+const createLineState = (line?: { id?: string; _id?: string; name?: string; notes?: string; stations?: { id?: string; _id?: string; name?: string; notes?: string }[] }): LineFormState => {
   const stations = (line?.stations ?? []).map((station) => createStationState(station));
 
   return {
@@ -165,17 +165,17 @@ const DepartmentModal = ({
 
     const sanitizedLines = canModifyHierarchy
       ? form.lines
-          .map((line) => ({
-            name: line.name.trim(),
-            notes: line.notes.trim(),
-            stations: line.stations
-              .map((station) => ({
-                name: station.name.trim(),
-                notes: station.notes.trim(),
-              }))
-              .filter((station) => station.name.length > 0),
-          }))
-          .filter((line) => line.name.length > 0)
+        .map((line) => ({
+          name: line.name.trim(),
+          notes: line.notes.trim(),
+          stations: line.stations
+            .map((station) => ({
+              name: station.name.trim(),
+              notes: station.notes.trim(),
+            }))
+            .filter((station) => station.name.length > 0),
+        }))
+        .filter((line) => line.name.length > 0)
       : [];
 
     await onSubmit({
@@ -216,9 +216,9 @@ const DepartmentModal = ({
       lines: prev.lines.map((line) =>
         line.id === lineId
           ? {
-              ...line,
-              name,
-            }
+            ...line,
+            name,
+          }
           : line,
       ),
     }));
@@ -231,9 +231,9 @@ const DepartmentModal = ({
       lines: prev.lines.map((line) =>
         line.id === lineId
           ? {
-              ...line,
-              stationIncrement: increment > 0 ? increment : 1,
-            }
+            ...line,
+            stationIncrement: increment > 0 ? increment : 1,
+          }
           : line,
       ),
     }));
@@ -265,9 +265,9 @@ const DepartmentModal = ({
       lines: prev.lines.map((line) =>
         line.id === lineId
           ? {
-              ...line,
-              stations: line.stations.filter((station) => station.id !== stationId),
-            }
+            ...line,
+            stations: line.stations.filter((station) => station.id !== stationId),
+          }
           : line,
       ),
     }));
@@ -279,16 +279,16 @@ const DepartmentModal = ({
       lines: prev.lines.map((line) =>
         line.id === lineId
           ? {
-              ...line,
-              stations: line.stations.map((station) =>
-                station.id === stationId
-                  ? {
-                      ...station,
-                      name,
-                    }
-                  : station,
-              ),
-            }
+            ...line,
+            stations: line.stations.map((station) =>
+              station.id === stationId
+                ? {
+                  ...station,
+                  name,
+                }
+                : station,
+            ),
+          }
           : line,
       ),
     }));
@@ -303,9 +303,9 @@ const DepartmentModal = ({
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="md:col-span-2">
-            <label className="mb-1 block text-sm font-medium text-slate-700">Department name</label>
+            <label className="block mb-1 text-sm font-medium text-slate-700">Department name</label>
             <input
-              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              className="w-full px-3 py-2 text-sm bg-white border rounded-md border-slate-300 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
               value={form.name}
               onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
               required
@@ -313,9 +313,9 @@ const DepartmentModal = ({
             />
           </div>
           <div className="md:col-span-2">
-            <label className="mb-1 block text-sm font-medium text-slate-700">Notes</label>
+            <label className="block mb-1 text-sm font-medium text-slate-700">Notes</label>
             <textarea
-              className="h-28 w-full resize-none rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              className="w-full px-3 py-2 text-sm bg-white border rounded-md resize-none h-28 border-slate-300 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
               value={form.notes}
               onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
               placeholder="Optional notes about this department"
@@ -323,7 +323,7 @@ const DepartmentModal = ({
           </div>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <div className="p-4 border rounded-lg border-slate-200 bg-slate-50">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h3 className="text-sm font-semibold text-slate-700">Lines &amp; stations</h3>
@@ -338,7 +338,7 @@ const DepartmentModal = ({
                 type="button"
                 variant="secondary"
                 size="sm"
-                icon={<PlusCircle className="h-4 w-4" />}
+                icon={<PlusCircle className="w-4 h-4" />}
                 className="font-semibold"
                 onClick={handleAddLine}
               >
@@ -351,15 +351,15 @@ const DepartmentModal = ({
             {form.lines.map((line, index) => (
               <div
                 key={line.id}
-                className="space-y-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm"
+                className="p-4 space-y-4 bg-white border rounded-md shadow-sm border-slate-200"
               >
                 <div className="flex items-start gap-3">
                   <div className="flex-1">
-                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <label className="block mb-1 text-xs font-semibold tracking-wide uppercase text-slate-500">
                       Line {index + 1}
                     </label>
                     <input
-                      className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100"
+                      className="w-full px-3 py-2 text-sm bg-white border rounded-md border-slate-300 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100"
                       value={line.name}
                       onChange={(event) => handleLineNameChange(line.id, event.target.value)}
                       placeholder="Line name"
@@ -370,18 +370,18 @@ const DepartmentModal = ({
                     <button
                       type="button"
                       onClick={() => handleRemoveLine(line.id)}
-                      className="mt-6 rounded-md border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+                      className="p-2 mt-6 transition border rounded-md border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                       aria-label="Remove line"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   )}
                 </div>
 
-                <div className="rounded-md border border-slate-100 bg-slate-50 p-3">
+                <div className="p-3 border rounded-md border-slate-100 bg-slate-50">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex flex-wrap items-center gap-3">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <span className="text-xs font-semibold tracking-wide uppercase text-slate-500">
                         Stations
                       </span>
                       {canModifyHierarchy && (
@@ -398,7 +398,7 @@ const DepartmentModal = ({
                                 Number.parseInt(event.target.value, 10) || 1,
                               )
                             }
-                            className="h-8 w-20 rounded border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-700 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                            className="w-20 h-8 px-2 text-xs font-semibold bg-white border rounded border-slate-300 text-slate-700 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                           />
                         </label>
                       )}
@@ -408,7 +408,7 @@ const DepartmentModal = ({
                         type="button"
                         variant="secondary"
                         size="sm"
-                        icon={<PlusCircle className="h-4 w-4" />}
+                        icon={<PlusCircle className="w-4 h-4" />}
                         className="font-semibold"
                         onClick={() => handleAddStation(line.id)}
                       >
@@ -424,7 +424,7 @@ const DepartmentModal = ({
                             Station {stationIndex + 1}
                           </label>
                           <input
-                            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100"
+                            className="w-full px-3 py-2 text-sm bg-white border rounded-md border-slate-300 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100"
                             value={station.name}
                             onChange={(event) =>
                               handleStationNameChange(line.id, station.id, event.target.value)
@@ -437,10 +437,10 @@ const DepartmentModal = ({
                           <button
                             type="button"
                             onClick={() => handleRemoveStation(line.id, station.id)}
-                            className="mt-5 rounded-md border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+                            className="p-2 mt-5 transition border rounded-md border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                             aria-label="Remove station"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         )}
                       </div>

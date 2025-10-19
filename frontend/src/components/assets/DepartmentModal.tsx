@@ -4,11 +4,42 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, PlusCircle, Trash } from 'lucide-react';
-import Button from '@common/Button';
+// lightweight local Button component to avoid external module resolution issues
+type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: 'ghost' | 'outline' | 'primary';
+  size?: 'sm' | 'md' | 'lg';
+  icon?: React.ReactNode;
+};
+
+const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', size = 'md', icon, className = '', ...props }) => {
+  const base = 'inline-flex items-center justify-center rounded-md';
+  const variants: Record<string, string> = {
+    primary: 'bg-blue-600 text-white hover:bg-blue-700',
+    ghost: 'bg-transparent text-neutral-700 hover:bg-neutral-100',
+    outline: 'border border-neutral-300 text-neutral-700',
+  };
+  const sizes: Record<string, string> = {
+    sm: 'px-2 py-1 text-sm',
+    md: 'px-3 py-2 text-sm',
+    lg: 'px-4 py-2 text-base',
+  };
+  return (
+    <button {...props} className={`${base} ${variants[variant]} ${sizes[size]} ${className}`}>
+      {icon && <span className="mr-2">{icon}</span>}
+      {children}
+    </button>
+  );
+};
+
 import type { DepartmentHierarchy, Asset } from '@/types';
 import { useToast } from '@/context/ToastContext';
 
-export type { DepartmentHierarchy } from '@/types';
+const defaultDepartment: DepartmentHierarchy = {
+  id: '',
+  name: '',
+  lines: [],
+};
+
 
 interface Props {
   isOpen: boolean;
@@ -18,13 +49,8 @@ interface Props {
   loading?: boolean;
 }
 
-const defaultDepartment: DepartmentHierarchy = {
-  id: '',
-  name: '',
-  lines: [],
-};
 
- 
+
 const DepartmentModal: React.FC<Props> = ({
   isOpen,
   onClose,
@@ -32,8 +58,10 @@ const DepartmentModal: React.FC<Props> = ({
   onUpdate,
   loading = false,
 }) => {
- 
+
+  const { addToast } = useToast();
   const [formData, setFormData] = useState<DepartmentHierarchy>(department || defaultDepartment);
+
 
   useEffect(() => {
     setFormData(department || defaultDepartment);
@@ -146,7 +174,7 @@ const DepartmentModal: React.FC<Props> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b border-neutral-200">
           <h2 className="text-lg font-semibold text-neutral-900">
@@ -158,10 +186,10 @@ const DepartmentModal: React.FC<Props> = ({
         </div>
         <form onSubmit={handleSubmit} className="p-4 space-y-6">
           <div>
-            <label className="block text-sm font-medium text-neutral-900 mb-1">Name</label>
+            <label className="block mb-1 text-sm font-medium text-neutral-900">Name</label>
             <input
               type="text"
-              className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
+              className="w-full px-3 py-2 bg-white border rounded-md border-neutral-300 text-neutral-900"
               value={formData.name}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, name: e.target.value })}
               required
@@ -177,7 +205,7 @@ const DepartmentModal: React.FC<Props> = ({
             </div>
 
             {formData.lines.map((line, li) => (
-              <div key={li} className="border rounded-md p-3 space-y-3">
+              <div key={li} className="p-3 space-y-3 border rounded-md">
                 <div className="flex items-center space-x-2">
                   <input
                     type="text"
@@ -195,7 +223,7 @@ const DepartmentModal: React.FC<Props> = ({
                   </button>
                 </div>
 
-                <div className="space-y-3 ml-4">
+                <div className="ml-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-neutral-700">Stations</span>
                     <Button
@@ -209,7 +237,7 @@ const DepartmentModal: React.FC<Props> = ({
                   </div>
 
                   {line.stations.map((st, si) => (
-                    <div key={si} className="border rounded-md p-3 space-y-2 ml-2">
+                    <div key={si} className="p-3 ml-2 space-y-2 border rounded-md">
                       <div className="flex items-center space-x-2">
                         <input
                           type="text"
@@ -227,9 +255,9 @@ const DepartmentModal: React.FC<Props> = ({
                         </button>
                       </div>
 
-                      <div className="space-y-2 ml-4">
+                      <div className="ml-4 space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-neutral-700 font-medium">Assets</span>
+                          <span className="text-sm font-medium text-neutral-700">Assets</span>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -240,7 +268,7 @@ const DepartmentModal: React.FC<Props> = ({
                           </Button>
                         </div>
                         {st.assets.map((a, ai) => (
-                          <div key={ai} className="space-y-2 ml-2">
+                          <div key={ai} className="ml-2 space-y-2">
                             <div className="flex items-center space-x-2">
                               <input
                                 type="text"
@@ -263,11 +291,9 @@ const DepartmentModal: React.FC<Props> = ({
                               <select
                                 className="px-3 py-1.5 border border-neutral-300 rounded-md"
                                 value={a.type}
-                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                                  updateAsset(li, si, ai, {
-                                    type: e.target.value as Asset['type'],
-                                  })
-                                }
+                              //onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateAsset(li, si, ai, { type: e.target.value})}
+
+
                               >
                                 <option value="Electrical">Electrical</option>
                                 <option value="Mechanical">Mechanical</option>
@@ -286,11 +312,9 @@ const DepartmentModal: React.FC<Props> = ({
                               <select
                                 className="px-3 py-1.5 border border-neutral-300 rounded-md"
                                 value={a.status}
-                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                                  updateAsset(li, si, ai, {
-                                    status: e.target.value as Asset['status'],
-                                  })
-                                }
+                              //onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateAsset(li, si, ai, { status: e.target.value})}
+
+
                               >
                                 <option value="Active">Active</option>
                                 <option value="Offline">Offline</option>
@@ -300,29 +324,29 @@ const DepartmentModal: React.FC<Props> = ({
                           </div>
                         ))}
                         {st.assets.length === 0 && (
-                          <p className="text-neutral-500 text-sm ml-2">No assets</p>
+                          <p className="ml-2 text-sm text-neutral-500">No assets</p>
                         )}
                       </div>
                     </div>
                   ))}
 
                   {line.stations.length === 0 && (
-                    <p className="text-neutral-500 text-sm ml-2">No stations</p>
+                    <p className="ml-2 text-sm text-neutral-500">No stations</p>
                   )}
                 </div>
               </div>
             ))}
 
             {formData.lines.length === 0 && (
-              <p className="text-neutral-500 text-sm">No lines</p>
+              <p className="text-sm text-neutral-500">No lines</p>
             )}
           </div>
 
-          <div className="flex justify-end space-x-3 pt-4 border-t border-neutral-200">
+          <div className="flex justify-end pt-4 space-x-3 border-t border-neutral-200">
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              Cancel1
             </Button>
-            <Button type="submit" variant="primary" loading={loading}>
+            <Button type="submit" variant="primary" >
               {department ? 'Update' : 'Create'}
             </Button>
           </div>

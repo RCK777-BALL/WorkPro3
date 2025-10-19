@@ -489,8 +489,45 @@ declare module 'http' {
 }
 
 declare module 'morgan' {
-  export interface MorganOptions {
-    skip?: (req: any, res: any) => boolean;
+  import type { RequestHandler } from 'express';
+  import type { IncomingMessage, ServerResponse } from 'http';
+
+  export interface StreamOptions {
+    write(str: string): void;
   }
-  export default function morgan(format: string, options?: MorganOptions): any;
+
+  export interface MorganOptions<
+    Request extends IncomingMessage = IncomingMessage,
+    Response extends ServerResponse = ServerResponse,
+  > {
+    immediate?: boolean;
+    skip?: (req: Request, res: Response) => boolean;
+    stream?: StreamOptions;
+  }
+
+  export type FormatFn<
+    Request extends IncomingMessage = IncomingMessage,
+    Response extends ServerResponse = ServerResponse,
+  > = (tokens: any, req: Request, res: Response) => string;
+
+  export interface MorganModule {
+    <
+      Request extends IncomingMessage = IncomingMessage,
+      Response extends ServerResponse = ServerResponse,
+    >(
+      format: string | FormatFn<Request, Response>,
+      options?: MorganOptions<Request, Response>,
+    ): RequestHandler<Request, Response>;
+    token<
+      Request extends IncomingMessage = IncomingMessage,
+      Response extends ServerResponse = ServerResponse,
+    >(
+      name: string,
+      callback: (req: Request, res: Response) => string,
+    ): void;
+  }
+
+  const morgan: MorganModule;
+
+  export default morgan;
 }

@@ -7,7 +7,7 @@ import mongoose, {
   Document,
   Model,
   Types,
-  SchemaDefinitionProperty,
+  SchemaTypeOptions,
 } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { ROLES, UserRole } from '../types/auth';
@@ -39,13 +39,13 @@ export interface UserDocument extends Document {
 }
 
 // ✅ Schema definition
-const rolesField: SchemaDefinitionProperty<UserRole[]> = {
-  type: [String] as const,
+const rolesField: SchemaTypeOptions<UserRole[]> = {
+  type: [String],
   enum: ROLES,
   default: ['tech'],
 };
 
-const tenantIdField: SchemaDefinitionProperty<Types.ObjectId> = {
+const tenantIdField: SchemaTypeOptions<Types.ObjectId> = {
   type: Schema.Types.ObjectId,
   required: true,
   index: true,

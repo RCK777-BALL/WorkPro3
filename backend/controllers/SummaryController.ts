@@ -506,11 +506,3 @@ export const getCriticalAlerts: AuthedRequestHandler = async (
   }
 };
 
-export default {
-  getSummary,
-  getAssetSummary,
-  getWorkOrderSummary,
-  getUpcomingMaintenance,
-  getCriticalAlerts,
-};
-

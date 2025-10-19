@@ -11,9 +11,19 @@ interface MockWorkOrder {
   createdAt: string;
 }
 
+interface MockPermit {
+  id: string;
+  type: 'Hot Work' | 'Confined Space' | 'Electrical' | 'Work at Height';
+  requester: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  createdAt: string;
+  notes?: string;
+}
+
 const router = Router();
 
 const workOrders: MockWorkOrder[] = mockWorkOrders();
+const permits: MockPermit[] = mockPermits();
 
 router.get('/workorders', (req, res) => {
   const page = Number(req.query.page ?? 1);
@@ -65,7 +75,7 @@ router.get('/permits', (req, res) => {
   const pageSize = Number(req.query.pageSize ?? 10);
   const query = String(req.query.q ?? '').toLowerCase();
   const status = String(req.query.status ?? '');
-  const all = mockPermits().filter(
+  const all = permits.filter(
     (permit) =>
       (!query ||
         permit.requester.toLowerCase().includes(query) ||
@@ -76,12 +86,71 @@ router.get('/permits', (req, res) => {
   res.json({ items: all.slice(start, start + pageSize), total: all.length });
 });
 
+router.post('/permits', (req, res) => {
+  const { type, requester, status, notes } = req.body as Partial<MockPermit>;
+
+  const permit: MockPermit = {
+    id: Date.now().toString(),
+    type: type ?? 'Hot Work',
+    requester: requester ?? 'Unknown',
+    status: (status as MockPermit['status']) ?? 'Pending',
+    notes,
+    createdAt: new Date().toISOString(),
+  };
+
+  permits.unshift(permit);
+
+  res.status(201).json(permit);
+});
+
+router.put('/permits/:id', (req, res) => {
+  const index = permits.findIndex((permit) => permit.id === req.params.id);
+
+  if (index === -1) {
+    res.status(404).json({ message: 'Permit not found' });
+    return;
+  }
+
+  permits[index] = {
+    ...permits[index],
+    ...req.body,
+  };
+
+  res.json(permits[index]);
+});
+
+router.delete('/permits/:id', (req, res) => {
+  const index = permits.findIndex((permit) => permit.id === req.params.id);
+
+  if (index === -1) {
+    res.status(404).json({ message: 'Permit not found' });
+    return;
+  }
+
+  const [removed] = permits.splice(index, 1);
+
+  res.json(removed);
+});
+
 router.post('/permits/:id/decision', (req, res) => {
-  res.json({
-    id: req.params.id,
-    decision: req.body.decision,
-    notes: req.body.notes,
-  });
+  const permit = permits.find((item) => item.id === req.params.id);
+
+  if (!permit) {
+    res.status(404).json({ message: 'Permit not found' });
+    return;
+  }
+
+  const decision = req.body.decision as MockPermit['status'];
+
+  if (decision === 'Approved' || decision === 'Rejected') {
+    permit.status = decision;
+  }
+
+  if (typeof req.body.notes === 'string') {
+    permit.notes = req.body.notes;
+  }
+
+  res.json(permit);
 });
 
 router.get('/analytics/kpis', (_req, res) => {
@@ -144,17 +213,15 @@ function mockWorkOrders(): MockWorkOrder[] {
     },
   ];
 
-  return base as any[];
+  return base;
 }
 
-function mockPermits() {
-  const base = [
+function mockPermits(): MockPermit[] {
+  return [
     { id: 'p1', type: 'Hot Work', requester: 'J. Smith', status: 'Pending', createdAt: offsetDays(-1) },
     { id: 'p2', type: 'Confined Space', requester: 'L. Brown', status: 'Approved', createdAt: offsetDays(-3) },
     { id: 'p3', type: 'Electrical', requester: 'A. Patel', status: 'Rejected', createdAt: offsetDays(-2) },
   ];
-
-  return base as any[];
 }
 
 function offsetDays(days: number) {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Download, Plus, Pencil, Trash2, Upload } from 'lucide-react';
+import { Building2, Download, Plus, Pencil, Trash2, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import DataTable from '@/components/common/DataTable';
@@ -9,6 +9,8 @@ import Button from '@/components/common/Button';
 import IconButton from '@/components/ui/button';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import AssetFormModal, { type AssetFormValues } from '@/components/assets/AssetFormModal';
+import DepartmentModal from '@/components/modals/DepartmentModal';
+import { useDepartmentStore } from '@/store/departmentStore';
 import http from '@/lib/http';
 import { getErrorMessage } from '@/lib/api';
 
@@ -174,8 +176,12 @@ export default function AssetsLocationsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | AssetStatus>('all');
   const [page, setPage] = useState(1);
+  const [isDepartmentModalOpen, setIsDepartmentModalOpen] = useState(false);
+  const [isDepartmentSaving, setIsDepartmentSaving] = useState(false);
 
   const pageSize = 10;
+
+  const refreshDepartmentCache = useDepartmentStore((state) => state.refreshCache);
 
   const statusFilterOptions: Array<{ label: string; value: 'all' | AssetStatus }> = [
     { label: 'All statuses', value: 'all' },
@@ -326,6 +332,29 @@ export default function AssetsLocationsPage() {
     setStatusFilter('all');
   };
 
+  const handleCreateDepartment = async ({ name, notes }: { name: string; notes: string }) => {
+    const trimmedNotes = notes.trim();
+    setIsDepartmentSaving(true);
+    try {
+      await http.post('/departments', {
+        name: name.trim(),
+        notes: trimmedNotes ? trimmedNotes : undefined,
+      });
+      toast.success('Department created successfully');
+      try {
+        await refreshDepartmentCache();
+      } catch (error) {
+        console.error('Failed to refresh department cache', error);
+        toast.error('Department created, but failed to refresh the department list');
+      }
+      setIsDepartmentModalOpen(false);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setIsDepartmentSaving(false);
+    }
+  };
+
   const tableColumns = useMemo(
     () => [
       { header: 'Asset', accessor: 'name' as const },
@@ -415,6 +444,14 @@ export default function AssetsLocationsPage() {
             onClick={() => navigate('/imports')}
           >
             Import Hierarchy
+          </Button>
+          <Button
+            variant="secondary"
+            size="md"
+            icon={<Building2 className="h-4 w-4" />}
+            onClick={() => setIsDepartmentModalOpen(true)}
+          >
+            Create Department
           </Button>
           <Button
             variant="primary"
@@ -514,6 +551,13 @@ export default function AssetsLocationsPage() {
             ? `Are you sure you want to delete ${assetToDelete.name}? This action cannot be undone.`
             : 'Are you sure you want to delete this asset?'
         }
+      />
+      <DepartmentModal
+        isOpen={isDepartmentModalOpen}
+        mode="create"
+        onSubmit={handleCreateDepartment}
+        onClose={() => setIsDepartmentModalOpen(false)}
+        loading={isDepartmentSaving}
       />
     </div>
   );

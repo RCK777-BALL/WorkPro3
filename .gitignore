@@ -18,6 +18,7 @@ backend/logs/
 
 # Compiled JavaScript from TypeScript
 backend/**/*.js
+!backend/controllers/ReportsController.js
 
 # MongoDB playground files
 playground-*.mongodb.js

@@ -3,8 +3,8 @@
  */
 
 import express from "express";
-import type { Request, Response, RequestHandler, Router } from "express";
-import cors from "cors";
+import type { Request, Response } from "express";
+import cors, { type CorsOptions } from "cors";
 import cookieParser from "cookie-parser";
 import mongoSanitize from "./middleware/mongoSanitize";
 import dotenv from "dotenv";
@@ -85,17 +85,13 @@ try {
 }
 
 const app = express();
-app.use(cors({
-  origin: ["http://localhost:5173"],
-  credentials: true,
-  allowedHeaders: ["Content-Type","Authorization","x-tenant-id"],
-}));
-
-app.use(cors({
-  origin: ["http://localhost:5173"],
-  credentials: true,
-  allowedHeaders: ["Content-Type","Authorization","x-tenant-id"],
-}));
+app.use(
+  cors({
+    origin: ["http://localhost:5173"],
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization", "x-tenant-id"],
+  }),
+);
 
 app.set("trust proxy", 1);
 const httpServer = createServer(app);
@@ -113,7 +109,7 @@ const allowedOrigins = new Set(
 );
 allowedOrigins.add("http://localhost:5173");
 
-const corsOptions: cors.CorsOptions = {
+const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.has(origin)) {
       callback(null, true);

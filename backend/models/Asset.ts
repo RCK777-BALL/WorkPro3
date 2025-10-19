@@ -11,6 +11,8 @@ export interface AssetDoc extends Document {
   location?: string;
   departmentId?: Types.ObjectId;
   department?: string;
+  line?: string;
+  station?: string;
   lineId?: Types.ObjectId;
   stationId?: Types.ObjectId;
   tenantId: Types.ObjectId;

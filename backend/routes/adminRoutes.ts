@@ -2,40 +2,42 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Router } from "express";
+import { Router } from 'express';
 
-import tenantRoutes from "./TenantRoutes";
+import {
+  createIntegrationKey,
+  getAdminSettings,
+  getAiStatus,
+  getAuditLog,
+  getIoTGateways,
+  revokeIntegrationKey,
+  trainAiModels,
+  triggerBackup,
+  updateAdminSetting,
+} from '../controllers/AdminSettingsController';
+import { requireAuth, requireRole } from '../middleware/authMiddleware';
+import auditTrail from '../middleware/auditTrail';
+import tenantRoutes from './TenantRoutes';
 
 const router = Router();
 
-const settings = [
-  {
-    id: "admin-001",
-    setting: "Site Configuration",
-    description: "Manage sites, locations, and asset hierarchies",
-    owner: "System Admin",
-    status: "Open",
-  },
-  {
-    id: "admin-002",
-    setting: "Role Permissions",
-    description: "Adjust user roles and access control policies",
-    owner: "Security",
-    status: "In Progress",
-  },
-  {
-    id: "admin-003",
-    setting: "API Access",
-    description: "Rotate API keys and webhook endpoints",
-    owner: "Platform",
-    status: "Completed",
-  },
-];
+router.use(requireAuth);
+router.use(requireRole('admin'));
 
-router.get("/", (_req, res) => {
-  res.json({ success: true, data: settings, message: "Admin settings" });
-});
+router.get('/settings', getAdminSettings);
+router.put('/settings/:section', auditTrail('Admin Settings', 'Update section'), updateAdminSetting);
 
-router.use("/tenants", tenantRoutes);
+router.post('/integrations', auditTrail('Integrations', 'Create API key'), createIntegrationKey);
+router.delete('/integrations/:id', auditTrail('Integrations', 'Revoke API key'), revokeIntegrationKey);
+
+router.get('/audit', getAuditLog);
+router.post('/backup', auditTrail('Backup', 'Trigger backup'), triggerBackup);
+router.get('/iot', getIoTGateways);
+
+router.post('/ai/train', auditTrail('AI Automation', 'Train models'), trainAiModels);
+router.get('/ai/status', getAiStatus);
+
+router.use('/tenants', tenantRoutes);
 
 export default router;
+

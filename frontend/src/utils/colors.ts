@@ -121,7 +121,12 @@ export const getStatusColor = (status: string): string => {
       return colors.error[600];
     case 'in repair':
     case 'in_progress':
+    case 'in progress':
       return colors.accent[500];
+    case 'pending':
+      return colors.warning[500];
+    case 'disabled':
+      return colors.neutral[500];
     case 'requested':
       return colors.neutral[500];
     case 'assigned':

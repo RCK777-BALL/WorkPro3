@@ -46,13 +46,16 @@ const userSchema = new Schema<UserDocument>(
     },
     passwordHash: { type: String, required: true, select: false },
     roles: {
-      type: [String],
-      enum: ROLES,
+      type: [{ type: String, enum: ROLES }],
       default: ['tech'],
     },
-    tenantId: { type: mongoose.Schema.Types.ObjectId, required: true, index: true },
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      required: true,
+      index: true,
+    },
     employeeId: { type: String, required: true, unique: true },
-    managerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    managerId: { type: Schema.Types.ObjectId, ref: 'User' },
 
     passwordResetToken: { type: String },
     passwordResetExpires: { type: Date },

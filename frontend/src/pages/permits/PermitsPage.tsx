@@ -5,9 +5,12 @@ import { api } from "@/lib/api";
 import type { Permit } from "@/types/cmms";
 import { useQueryState } from "@/hooks/useQueryState";
 import PermitModal from "./PermitModal";
+import PermitFormModal, { type PermitFormValues } from "./PermitFormModal";
 
 export default function PermitsPage() {
   const [modal, setModal] = useState<{ open: boolean; permit?: Permit }>({ open: false });
+  const [formModal, setFormModal] = useState<{ open: boolean; permit?: Permit }>({ open: false });
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [data, setData] = useState<{ items: Permit[]; total: number }>({ items: [], total: 0 });
   const [query, setQuery] = useQueryState({ page: 1, pageSize: 10, q: '', status: '' });
 
@@ -22,10 +25,51 @@ export default function PermitsPage() {
     loadPermits();
   }, [query]);
 
+  const handleFormSubmit = async (values: PermitFormValues) => {
+    try {
+      if (formModal.permit) {
+        await api.put(`/permits/${formModal.permit.id}`, values);
+        toast.success('Permit updated');
+      } else {
+        await api.post('/permits', values);
+        toast.success('Permit created');
+      }
+      setFormModal({ open: false });
+      loadPermits();
+    } catch (error) {
+      toast.error('Failed to save permit');
+      console.error(error);
+    }
+  };
+
+  const handleDelete = async (permit: Permit) => {
+    const confirmed = window.confirm(`Delete permit ${permit.type} requested by ${permit.requester}?`);
+    if (!confirmed) return;
+
+    try {
+      setDeletingId(permit.id);
+      await api.delete(`/permits/${permit.id}`);
+      toast.success('Permit deleted');
+      loadPermits();
+    } catch (error) {
+      toast.error('Failed to delete permit');
+      console.error(error);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <div className="space-y-4 p-6 text-white">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Safety Permits</h1>
+        <button
+          type="button"
+          className="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500"
+          onClick={() => setFormModal({ open: true })}
+        >
+          Add Permit
+        </button>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -57,7 +101,7 @@ export default function PermitsPage() {
               <th>Requester</th>
               <th>Status</th>
               <th>Created</th>
-              <th className="w-24" />
+              <th className="w-44" />
             </tr>
           </thead>
           <tbody>
@@ -69,14 +113,31 @@ export default function PermitsPage() {
                   <StatusBadge status={permit.status} size="sm" />
                 </td>
                 <td className="px-3 py-2">{permit.createdAt.slice(0, 10)}</td>
-                <td className="px-3 py-2 text-right">
-                  <button
-                    type="button"
-                    className="rounded bg-slate-800 px-2 py-1 text-xs font-medium hover:bg-slate-700"
-                    onClick={() => setModal({ open: true, permit })}
-                  >
-                    Review
-                  </button>
+                <td className="px-3 py-2">
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      className="rounded bg-slate-800 px-2 py-1 text-xs font-medium hover:bg-slate-700"
+                      onClick={() => setFormModal({ open: true, permit })}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded bg-red-600 px-2 py-1 text-xs font-medium hover:bg-red-500 disabled:opacity-50"
+                      onClick={() => handleDelete(permit)}
+                      disabled={deletingId === permit.id}
+                    >
+                      {deletingId === permit.id ? 'Deleting…' : 'Delete'}
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded bg-slate-800 px-2 py-1 text-xs font-medium hover:bg-slate-700"
+                      onClick={() => setModal({ open: true, permit })}
+                    >
+                      Review
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -101,6 +162,14 @@ export default function PermitsPage() {
             setModal({ open: false });
             loadPermits();
           }}
+        />
+      )}
+
+      {formModal.open && (
+        <PermitFormModal
+          permit={formModal.permit}
+          onClose={() => setFormModal({ open: false })}
+          onSubmit={handleFormSubmit}
         />
       )}
     </div>

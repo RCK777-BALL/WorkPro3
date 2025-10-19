@@ -147,7 +147,7 @@ const generalLimiter = rateLimit({
   max: dev ? 600 : RATE_LIMIT_MAX,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => dev || req.ip === "::1" || req.ip === "127.0.0.1",
+  skip: (req: Request) => dev || req.ip === "::1" || req.ip === "127.0.0.1",
 });
 
 const burstFriendly = rateLimit({
@@ -240,7 +240,7 @@ app.use("/api/dashboard", dashboardRoutes);
 
 
 // 404 + error handler
-app.use((_req, res) => {
+app.use((_req: Request, res: Response) => {
   res.status(404).json({ message: "Not Found" });
 });
 

@@ -297,7 +297,8 @@ const computeAnalyticsHighlights = async (
   }
 
   const [latestWorkOrder, createdThisWeek, completedThisWeek, criticalBacklog] = await Promise.all([
-    WorkOrder.findOne(latestMatch).sort({ updatedAt: -1 }).select('updatedAt').lean(),
+    // use find + limit(1) and then extract the first item to avoid calling .sort on a Promise-returning overload
+    WorkOrder.find(latestMatch).sort({ updatedAt: -1 }).select('updatedAt').limit(1).lean().then((arr) => (Array.isArray(arr) ? arr[0] ?? null : null)),
     allStatuses.length
       ? WorkOrder.countDocuments({
           ...workOrderMatch,
@@ -794,7 +795,7 @@ export const getDashboardExportPdf = async (req: Request, res: Response, next: N
     ]);
 
     const doc = new PDFDocument({ margin: 40, size: 'A4' });
-    doc.on('error', (error) => {
+    (doc as any).on('error', (error) => {
       next(error);
     });
 

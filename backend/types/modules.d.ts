@@ -276,16 +276,62 @@ declare module 'ioredis' {
 }
 
 declare module 'kafkajs' {
-  export type logLevel = number;
+  export const logLevel: {
+    NOTHING: number;
+    ERROR: number;
+    WARN: number;
+    INFO: number;
+    DEBUG: number;
+  };
+  export type logLevel = (typeof logLevel)[keyof typeof logLevel];
+
+  export interface ProducerRecord {
+    topic: string;
+    messages: Array<{ value: string | Buffer | null; key?: string | Buffer | null }>;
+  }
+
+  export interface Producer {
+    connect(): Promise<void>;
+    disconnect(): Promise<void>;
+    send(record: ProducerRecord): Promise<unknown>;
+  }
+
+  export interface ConsumerSubscribeTopic {
+    topic: string;
+    fromBeginning?: boolean;
+  }
+
   export interface EachMessagePayload {
     topic: string;
     partition: number;
     message: { value: Buffer | null };
   }
+
+  export interface ConsumerRunConfig {
+    eachMessage(payload: EachMessagePayload): Promise<void> | void;
+  }
+
+  export interface Consumer {
+    connect(): Promise<void>;
+    disconnect(): Promise<void>;
+    subscribe(topic: ConsumerSubscribeTopic): Promise<void>;
+    run(config: ConsumerRunConfig): Promise<void>;
+  }
+
+  export interface KafkaConfig {
+    clientId?: string;
+    brokers: string[];
+    logLevel?: logLevel;
+  }
+
+  export interface ConsumerConfig {
+    groupId: string;
+  }
+
   export class Kafka {
-    constructor(opts: any);
-    consumer(opts: any): any;
-    producer(opts?: any): any;
+    constructor(opts: KafkaConfig);
+    consumer(opts: ConsumerConfig): Consumer;
+    producer(opts?: unknown): Producer;
   }
 }
 

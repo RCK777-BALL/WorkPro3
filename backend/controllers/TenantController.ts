@@ -2,16 +2,20 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { Request, Response, NextFunction } from 'express';
+import type { Response, NextFunction } from 'express';
+import type { AuthedRequest } from '../types/http';
 import { Types } from 'mongoose';
-import { ok, fail, asyncHandler } from '../src/lib/http';
 import { sendResponse } from '../utils/sendResponse';
 
-import Tenant from '../models/Tenant';
+import Tenant, { type TenantDocument } from '../models/Tenant';
 import { writeAuditLog } from '../utils/audit';
 import { toEntityId } from '../utils/ids';
 
-export const getAllTenants = async (_req: Request, res: Response, next: NextFunction) => {
+export const getAllTenants = async (
+  _req: AuthedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const tenants = await Tenant.find();
     sendResponse(res, tenants);
@@ -20,7 +24,11 @@ export const getAllTenants = async (_req: Request, res: Response, next: NextFunc
   }
 };
 
-export const getTenantById = async (req: Request, res: Response, next: NextFunction) => {
+export const getTenantById = async (
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const tenant = await Tenant.findById(req.params.id);
     if (!tenant) return sendResponse(res, null, 'Not found', 404);
@@ -30,10 +38,14 @@ export const getTenantById = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-export const createTenant = async (req: Request, res: Response, next: NextFunction) => {
+export const createTenant = async (
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const userId = (req.user as any)?._id || (req.user as any)?.id;
-    const tenant = await Tenant.create(req.body);
+    const tenant = (await Tenant.create(req.body as Partial<TenantDocument>)) as TenantDocument;
     await writeAuditLog({
       tenantId: tenant._id,
       userId,
@@ -48,7 +60,11 @@ export const createTenant = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
-export const updateTenant = async (req: Request, res: Response, next: NextFunction) => {
+export const updateTenant = async (
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const existing = await Tenant.findById(req.params.id);
@@ -72,7 +88,11 @@ export const updateTenant = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
-export const deleteTenant = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteTenant = async (
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const tenant = await Tenant.findByIdAndDelete(req.params.id);

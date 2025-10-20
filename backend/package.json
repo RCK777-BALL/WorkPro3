@@ -22,7 +22,6 @@
     "fix:backend": "node ../fixWorkPro.js backend"
   },
   "dependencies": {
-    "@types/mongoose": "^5.11.96",
     "arima": "0.2.5",
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",

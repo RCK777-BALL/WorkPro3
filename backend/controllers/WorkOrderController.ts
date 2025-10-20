@@ -4,7 +4,9 @@
 
 import type { ParamsDictionary } from 'express-serve-static-core';
 import type { Response, NextFunction } from 'express';
-import type { AuthedRequestHandler } from '../types/http';
+import type { ParsedQs } from 'qs';
+
+import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 
 import WorkOrder, { WorkOrderDocument } from '../models/WorkOrder';
 import Permit, { type PermitDocument } from '../models/Permit';
@@ -126,11 +128,86 @@ function toOptionalObjectId(value?: Types.ObjectId | string): Types.ObjectId | u
   return value ? toObjectId(value) : undefined;
 }
 
+type RequestWithOptionalUser = Pick<AuthedRequest, 'user'>;
+
 const resolveUserObjectId = (
-  req: { user?: unknown },
+  req: RequestWithOptionalUser,
 ): Types.ObjectId | undefined => {
-  const raw = (req.user as any)?._id ?? (req.user as any)?.id;
-  return raw ? toOptionalObjectId(raw as Types.ObjectId | string) : undefined;
+  const raw = req.user?._id ?? req.user?.id;
+  return raw ? toOptionalObjectId(raw) : undefined;
+};
+
+const getQueryString = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : undefined;
+};
+
+interface WorkOrderListQuery extends ParsedQs {
+  type?: string;
+}
+
+interface WorkOrderSearchQuery extends WorkOrderListQuery {
+  status?: string;
+  priority?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+type WorkOrderCollectionResponse = WorkOrderDocument[];
+
+interface WorkOrderQueryFilter {
+  tenantId: Types.ObjectId | string;
+  status?: string;
+  priority?: string;
+  type?: string;
+  createdAt?: {
+    $gte?: Date;
+    $lte?: Date;
+  };
+}
+
+const buildWorkOrderListFilter = (
+  tenantId: string,
+  filters: { type?: string },
+): WorkOrderQueryFilter => {
+  const query: WorkOrderQueryFilter = { tenantId };
+
+  if (filters.type) {
+    query.type = filters.type;
+  }
+
+  return query;
+};
+
+const buildWorkOrderSearchFilter = (
+  tenantId: string,
+  filters: {
+    status?: string;
+    priority?: string;
+    type?: string;
+    startDate?: Date;
+    endDate?: Date;
+  },
+): WorkOrderQueryFilter => {
+  const query = buildWorkOrderListFilter(tenantId, { type: filters.type });
+
+  if (filters.status) {
+    query.status = filters.status;
+  }
+
+  if (filters.priority) {
+    query.priority = filters.priority;
+  }
+
+  if (filters.startDate || filters.endDate) {
+    query.createdAt = {
+      ...(filters.startDate ? { $gte: filters.startDate } : {}),
+      ...(filters.endDate ? { $lte: filters.endDate } : {}),
+    };
+  }
+
+  return query;
 };
 
 const isRawPartArray = (
@@ -225,24 +302,22 @@ function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
  *       200:
  *         description: List of work orders
  */
-export const getAllWorkOrders: AuthedRequestHandler = async (
-  req,
-  res: Response,
-  next: NextFunction,
-) => {
+export const getAllWorkOrders: AuthedRequestHandler<
+  ParamsDictionary,
+  WorkOrderCollectionResponse,
+  unknown,
+  WorkOrderListQuery
+> = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const typeFilter = typeof req.query.type === 'string' ? req.query.type : undefined;
-    const items = await WorkOrder.find({
-      tenantId,
-      ...(typeFilter ? { type: typeFilter } : {}),
-    })
-      .lean()
-      .exec();
+    const typeFilter = getQueryString(req.query.type);
+    const items = await WorkOrder.find(
+      buildWorkOrderListFilter(tenantId, { type: typeFilter }),
+    );
     sendResponse(res, items);
     return;
   } catch (err) {
@@ -281,40 +356,45 @@ export const getAllWorkOrders: AuthedRequestHandler = async (
  *       200:
  *         description: Filtered work orders
  */
-export const searchWorkOrders: AuthedRequestHandler = async (
-  req,
-  res: Response,
-  next: NextFunction,
-) => {
+export const searchWorkOrders: AuthedRequestHandler<
+  ParamsDictionary,
+  WorkOrderCollectionResponse,
+  unknown,
+  WorkOrderSearchQuery
+> = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const { status, priority } = req.query;
-    const typeFilter = typeof req.query.type === 'string' ? req.query.type : undefined;
-    const start = req.query.startDate ? new Date(String(req.query.startDate)) : undefined;
-    const end = req.query.endDate ? new Date(String(req.query.endDate)) : undefined;
-    if (start && isNaN(start.getTime())) {
+    const status = getQueryString(req.query.status);
+    const priority = getQueryString(req.query.priority);
+    const typeFilter = getQueryString(req.query.type);
+
+    const startRaw = getQueryString(req.query.startDate);
+    const endRaw = getQueryString(req.query.endDate);
+
+    const start = startRaw ? new Date(startRaw) : undefined;
+    const end = endRaw ? new Date(endRaw) : undefined;
+
+    if (startRaw && (!start || Number.isNaN(start.getTime()))) {
       sendResponse(res, null, 'Invalid startDate', 400);
       return;
     }
-    if (end && isNaN(end.getTime())) {
+    if (endRaw && (!end || Number.isNaN(end.getTime()))) {
       sendResponse(res, null, 'Invalid endDate', 400);
       return;
     }
-    const query: any = { tenantId };
-    if (status) query.status = status;
-    if (priority) query.priority = priority;
-    if (typeFilter) query.type = typeFilter;
-    if (start || end) {
-      query.createdAt = {};
-      if (start) query.createdAt.$gte = start;
-      if (end) query.createdAt.$lte = end;
-    }
-
-    const items = await WorkOrder.find(query).lean().exec();
+    const items = await WorkOrder.find(
+      buildWorkOrderSearchFilter(tenantId, {
+        status,
+        priority,
+        type: typeFilter,
+        startDate: start,
+        endDate: end,
+      }),
+    );
     sendResponse(res, items);
     return;
   } catch (err) {

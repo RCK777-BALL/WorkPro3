@@ -229,12 +229,3 @@ export const trendPdf = async (req: Request, res: Response, next: NextFunction):
   }
 };
 
-export default {
-  kpiJson,
-  kpiCsv,
-  kpiXlsx,
-  kpiPdf,
-  trendJson,
-  trendCsv,
-  trendPdf,
-};

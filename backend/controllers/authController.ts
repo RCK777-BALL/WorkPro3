@@ -3,7 +3,7 @@
  */
 
 import { randomUUID } from 'crypto';
-import type { Request, Response } from 'express';
+import type { Request, Response, RequestHandler as ExpressRequestHandler } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import Tenant from '../models/Tenant';
@@ -16,6 +16,7 @@ import {
   signAccess,
   signRefresh,
 } from '../utils/jwt';
+import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 
 const DEFAULT_TENANT_NAME = 'Default Tenant';
 
@@ -99,166 +100,191 @@ async function ensureDefaultTenant() {
   return tenant;
 }
 
-export async function register(req: Request, res: Response) {
-  try {
-    const { email, password } = req.body as { email: string; password: string };
-    const normalizedEmail = normalizeEmail(email);
+type HandlerRequest = Request | AuthedRequest;
 
-    const existing = await User.findOne({ email: normalizedEmail });
-    if (existing) {
-      return res.status(409).json({
-        error: { code: 409, message: 'Email already in use' },
-      });
+type HandlerLogic<Req extends HandlerRequest> = (req: Req, res: Response) => Promise<void> | void;
+
+const baseHandler = <Req extends HandlerRequest>(
+  handler: HandlerLogic<Req>,
+  name?: string,
+): ExpressRequestHandler => {
+  const wrapped: ExpressRequestHandler = async (req, res, next) => {
+    try {
+      await handler(req as Req, res);
+    } catch (error) {
+      const label = name ?? handler.name ?? 'anonymous';
+      logger.error(`Unhandled error in auth controller handler "${label}"`, error);
+      next(error);
     }
+  };
 
-    const tenant = await ensureDefaultTenant();
-    const name = normalizedEmail.split('@')[0] || 'User';
+  return wrapped;
+};
 
-    const user = await User.create({
-      name,
-      email: normalizedEmail,
-      passwordHash: password,
-      roles: ['admin'],
-      tenantId: tenant._id,
-      employeeId: randomUUID(),
+const requestHandler = <Req extends Request>(handler: HandlerLogic<Req>, name?: string) =>
+  baseHandler<Req>(handler, name);
+
+const authedRequestHandler = <Req extends AuthedRequest>(
+  handler: HandlerLogic<Req>,
+  name?: string,
+) => baseHandler<Req>(handler, name) as AuthedRequestHandler;
+
+export const register: ExpressRequestHandler = requestHandler(async (req, res) => {
+  const { email, password } = req.body as { email: string; password: string };
+  const normalizedEmail = normalizeEmail(email);
+
+  const existing = await User.findOne({ email: normalizedEmail });
+  if (existing) {
+    res.status(409).json({
+      error: { code: 409, message: 'Email already in use' },
     });
-
-    const payload = buildJwtPayload(user);
-
-    return res.status(201).json({
-      data: { id: payload.id, email: payload.email },
-    });
-  } catch (err) {
-    logger.error('Failed to register user', err);
-    return res.status(500).json({
-      error: { code: 500, message: 'Unable to register user' },
-    });
+    return;
   }
-}
 
-export async function login(req: Request, res: Response) {
-  try {
-    const { email, username, password } = req.body as {
-      email?: string;
-      username?: string;
-      password?: string;
-    };
+  const tenant = await ensureDefaultTenant();
+  const name = normalizedEmail.split('@')[0] || 'User';
 
-    const rawEmail = typeof email === 'string' && email.trim() ? email : username;
-    if (!rawEmail || !password) {
-      res.status(400).json({ error: { code: 400, message: 'Email and password are required' } });
-      return;
-    }
+  const user = await User.create({
+    name,
+    email: normalizedEmail,
+    passwordHash: password,
+    roles: ['admin'],
+    tenantId: tenant._id,
+    employeeId: randomUUID(),
+  });
 
-    const normalizedEmail = normalizeEmail(rawEmail);
-    const user = await User.findOne({ email: normalizedEmail }).select(
-      '+passwordHash +roles +role +tenantId +siteId +name +email',
-    );
+  const payload = buildJwtPayload(user);
 
-    if (!user || typeof user.passwordHash !== 'string') {
-      res.status(401).json({ error: { code: 401, message: 'Invalid email or password' } });
-      return;
-    }
+  res.status(201).json({
+    data: { id: payload.id, email: payload.email },
+  });
+}, 'register');
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) {
-      res.status(401).json({ error: { code: 401, message: 'Invalid email or password' } });
-      return;
-    }
+export const login: ExpressRequestHandler = requestHandler(async (req, res) => {
+  const { email, username, password } = req.body as {
+    email?: string;
+    username?: string;
+    password?: string;
+  };
 
-    const normalizedRoles = normalizeRoles(user.roles ?? []);
-    const primaryRole = derivePrimaryRole((user as any).role, normalizedRoles);
-    const roles = Array.from(new Set([primaryRole, ...normalizedRoles]));
+  const rawEmail = typeof email === 'string' && email.trim() ? email : username;
+  if (!rawEmail || !password) {
+    res.status(400).json({ error: { code: 400, message: 'Email and password are required' } });
+    return;
+  }
 
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-      logger.error('JWT_SECRET is not configured');
-      res.status(500).json({ error: { code: 500, message: 'Server configuration issue' } });
-      return;
-    }
+  const normalizedEmail = normalizeEmail(rawEmail);
+  const user = await User.findOne({ email: normalizedEmail }).select(
+    '+passwordHash +roles +role +tenantId +siteId +name +email',
+  );
 
-    const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
-    const rawSiteId = (user as { siteId?: unknown }).siteId;
-    const siteId =
-      typeof rawSiteId === 'string'
-        ? rawSiteId
-        : rawSiteId && typeof (rawSiteId as { toString?: () => string }).toString === 'function'
-        ? (rawSiteId as { toString(): string }).toString()
-        : undefined;
+  if (!user || typeof user.passwordHash !== 'string') {
+    res.status(401).json({ error: { code: 401, message: 'Invalid email or password' } });
+    return;
+  }
 
-    const tokenPayload = {
+  const isMatch = await bcrypt.compare(password, user.passwordHash);
+  if (!isMatch) {
+    res.status(401).json({ error: { code: 401, message: 'Invalid email or password' } });
+    return;
+  }
+
+  const normalizedRoles = normalizeRoles(user.roles ?? []);
+  const primaryRole = derivePrimaryRole((user as any).role, normalizedRoles);
+  const roles = Array.from(new Set([primaryRole, ...normalizedRoles]));
+
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    logger.error('JWT_SECRET is not configured');
+    res.status(500).json({ error: { code: 500, message: 'Server configuration issue' } });
+    return;
+  }
+
+  const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
+  const rawSiteId = (user as { siteId?: unknown }).siteId;
+  const siteId =
+    typeof rawSiteId === 'string'
+      ? rawSiteId
+      : rawSiteId && typeof (rawSiteId as { toString?: () => string }).toString === 'function'
+      ? (rawSiteId as { toString(): string }).toString()
+      : undefined;
+
+  const tokenPayload = {
+    id: user._id.toString(),
+    role: primaryRole,
+    tenantId,
+    ...(siteId ? { siteId } : {}),
+  };
+
+  const token = jwt.sign(tokenPayload, secret, { expiresIn: '7d' });
+
+  res.json({
+    success: true,
+    token,
+    user: {
       id: user._id.toString(),
-      role: primaryRole,
+      email: user.email,
+      name: user.name,
       tenantId,
-      ...(siteId ? { siteId } : {}),
-    };
+      siteId,
+      role: primaryRole,
+      roles,
+    },
+  });
+}, 'login');
 
-    const token = jwt.sign(tokenPayload, secret, { expiresIn: '7d' });
-
-    res.json({
-      success: true,
-      token,
-      user: {
-        id: user._id.toString(),
-        email: user.email,
-        name: user.name,
-        tenantId,
-        siteId,
-        role: primaryRole,
-        roles,
-      },
-    });
-  } catch (err) {
-    logger.error('Login error', err);
-    res.status(500).json({ error: { code: 500, message: 'Unable to sign in' } });
-  }
-}
-
-export async function me(req: Request, res: Response) {
+export const me: AuthedRequestHandler = authedRequestHandler(async (req, res) => {
   if (!req.user) {
-    return res.status(401).json({ error: { code: 401, message: 'Unauthorized' } });
+    res.status(401).json({ error: { code: 401, message: 'Unauthorized' } });
+    return;
   }
-  return res.json({ data: { user: req.user } });
-}
+  res.json({ data: { user: req.user } });
+}, 'me');
 
-export async function refresh(req: Request, res: Response) {
+export const refresh: ExpressRequestHandler = requestHandler(async (req, res) => {
   const token = req.cookies?.refresh_token;
   if (!token) {
-    return res.status(401).json({ error: { code: 401, message: 'Missing refresh token' } });
+    res.status(401).json({ error: { code: 401, message: 'Missing refresh token' } });
+    return;
   }
+
+  let decoded: JwtUser | null = null;
   try {
-    const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET ?? '') as JwtUser;
-    if (!decoded?.id) {
-      throw new Error('Invalid refresh token payload');
-    }
-    const payload: JwtUser = {
-      id: decoded.id,
-      email: decoded.email,
-    };
-
-    if (decoded.tenantId) {
-      payload.tenantId = decoded.tenantId;
-    }
-
-    if (decoded.role) {
-      payload.role = decoded.role;
-    }
-
-    if (decoded.siteId) {
-      payload.siteId = decoded.siteId;
-    }
-    const access = signAccess(payload);
-    const refreshToken = signRefresh(payload);
-    setAuthCookies(res, access, refreshToken, { remember: true });
-    return res.json({ data: { user: payload } });
+    decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET ?? '') as JwtUser;
   } catch (err) {
     logger.warn('Failed to refresh token', err);
-    clearAuthCookies(res);
-    return res.status(401).json({ error: { code: 401, message: 'Invalid refresh token' } });
   }
-}
 
-export async function logout(_req: Request, res: Response) {
+  if (!decoded?.id) {
+    clearAuthCookies(res);
+    res.status(401).json({ error: { code: 401, message: 'Invalid refresh token' } });
+    return;
+  }
+
+  const payload: JwtUser = {
+    id: decoded.id,
+    email: decoded.email,
+  };
+
+  if (decoded.tenantId) {
+    payload.tenantId = decoded.tenantId;
+  }
+
+  if (decoded.role) {
+    payload.role = decoded.role;
+  }
+
+  if (decoded.siteId) {
+    payload.siteId = decoded.siteId;
+  }
+
+  const access = signAccess(payload);
+  const refreshToken = signRefresh(payload);
+  setAuthCookies(res, access, refreshToken, { remember: true });
+  res.json({ data: { user: payload } });
+}, 'refresh');
+
+export const logout: ExpressRequestHandler = requestHandler(async (_req, res) => {
   clearAuthCookies(res);
-  return res.json({ data: { ok: true } });
-}
+  res.json({ data: { ok: true } });
+}, 'logout');

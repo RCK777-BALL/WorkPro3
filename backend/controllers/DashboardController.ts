@@ -955,12 +955,3 @@ export const postLaunchPlanner = async (req: Request, res: Response, next: NextF
   }
 };
 
-export default {
-  getDashboardOverview,
-  getDashboardLivePulse,
-  getDashboardWorkOrders,
-  getDashboardPermits,
-  getDashboardExportPdf,
-  postDashboardImportSync,
-  postLaunchPlanner,
-};

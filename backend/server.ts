@@ -71,8 +71,7 @@ import tenantScope from "./middleware/tenantScope";
 import type {
   WorkOrderUpdatePayload,
   InventoryUpdatePayload,
-  Notificaimport cors from "cors";
-tionPayload,
+  NotificationPayload,
 } from "./types/Payloads";
 
 dotenv.config();
@@ -86,26 +85,6 @@ try {
 }
 
 const app = express();
-app.use(cors({
-  origin: ["http://localhost:5173"],
-  credentials: true,
-  allowedHeaders: ["Content-Type","Authorization","x-tenant-id"],
-}));
-
-app.use(cors({
-  origin: ["http://localhost:5173"],
-  credentials: true,
-  allowedHeaders: ["Content-Type","Authorization","x-tenant-id"],
-}));
-
-app.use(
-  cors({
-    origin: ["http://localhost:5173"],
-    credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization", "x-tenant-id"],
-  }),
-);
-
 app.set("trust proxy", 1);
 const httpServer = createServer(app);
 const PORT = parseInt(env.PORT, 10);

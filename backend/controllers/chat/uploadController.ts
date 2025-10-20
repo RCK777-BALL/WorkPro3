@@ -5,7 +5,7 @@
 import path from 'path';
 import fs from 'fs';
 import multer from 'multer';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import type { AuthedRequestHandler } from '../../types/http';
 import { resolveUserAndTenant } from './utils';
 import { sendResponse } from '../../utils/sendResponse';
@@ -38,12 +38,21 @@ const uploadMiddleware = multer({
   },
 }).array('files', 5);
 
-export const handleChatUpload: AuthedRequestHandler = (req, res, next) => {
-  uploadMiddleware(req as Request, res, (err: unknown) => {
-    if (err) {
-      next(err);
-      return;
-    }
+const runUploadMiddleware = (req: Request, res: Response) =>
+  new Promise<void>((resolve, reject) => {
+    uploadMiddleware(req, res, (err: unknown) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      resolve();
+    });
+  });
+
+export const handleChatUpload: AuthedRequestHandler = async (req, res, next) => {
+  try {
+    await runUploadMiddleware(req as Request, res);
 
     const resolved = resolveUserAndTenant(req, res, { requireTenant: false });
     if (!resolved) return;
@@ -58,6 +67,8 @@ export const handleChatUpload: AuthedRequestHandler = (req, res, next) => {
     }));
 
     sendResponse(res, payload, null, 201);
-  });
+  } catch (error) {
+    next(error);
+  }
 };
 

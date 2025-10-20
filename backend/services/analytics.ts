@@ -241,9 +241,9 @@ async function loadSources(tenantId: string, filters: AnalyticsFilters): Promise
   if (!assetFilter && siteFilter && siteFilter.length) {
     const assetsForSites = await Asset.find({ tenantId: tenantFilter, siteId: { $in: siteFilter } })
       .select('_id')
-      .lean();
+      .lean<{ _id: Types.ObjectId }>();
     if (assetsForSites.length) {
-      assetFilter = assetsForSites.map((doc) => doc._id as Types.ObjectId);
+      assetFilter = assetsForSites.map((doc: { _id: Types.ObjectId }) => doc._id);
     }
   }
 
@@ -492,11 +492,13 @@ export async function getKPIs(tenantId: string, filters: AnalyticsFilters = {}):
   });
 
   const assetDocs = assetIds.size
-    ? await Asset.find({ _id: { $in: Array.from(assetIds) } }).select('name siteId').lean()
+    ? await Asset.find({ _id: { $in: Array.from(assetIds) } })
+        .select('name siteId')
+        .lean<{ _id: Types.ObjectId; name: string; siteId?: Types.ObjectId | null }>()
     : [];
   const assetNames = new Map<string, string>();
   const assetSite = new Map<string, string | undefined>();
-  assetDocs.forEach((asset) => {
+  assetDocs.forEach((asset: { _id: Types.ObjectId; name: string; siteId?: Types.ObjectId | null }) => {
     const id = asset._id.toString();
     assetNames.set(id, asset.name);
     assetSite.set(id, asset.siteId ? asset.siteId.toString() : undefined);
@@ -505,8 +507,10 @@ export async function getKPIs(tenantId: string, filters: AnalyticsFilters = {}):
 
   const siteNames = new Map<string, string>();
   if (siteIds.size) {
-    const docs = await Site.find({ _id: { $in: Array.from(siteIds) } }).select('name').lean();
-    docs.forEach((site) => siteNames.set(site._id.toString(), site.name));
+    const docs = await Site.find({ _id: { $in: Array.from(siteIds) } })
+      .select('name')
+      .lean<{ _id: Types.ObjectId; name: string }>();
+    docs.forEach((site: { _id: Types.ObjectId; name: string }) => siteNames.set(site._id.toString(), site.name));
   }
 
   const energy = computeEnergyStats(sources.sensorReadings, sources.production, assetNames, siteNames, assetSite, filters);

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Types } from 'mongoose';
+import { Types, type HydratedDocument } from 'mongoose';
 import Notification, { NotificationDocument, NotificationType } from '../models/Notifications';
 import User from '../models/User';
 import nodemailer from 'nodemailer';
@@ -126,7 +126,7 @@ export const createNotification: AuthedRequestHandler<
     }
     const tenantObjectId = new Types.ObjectId(tenantId);
     const { title, message, type, assetId, user, read } = req.body;
-    const saved = await Notification.create({
+    const saved = (await Notification.create({
       title,
       message,
       type,
@@ -134,7 +134,7 @@ export const createNotification: AuthedRequestHandler<
       ...(assetId ? { assetId } : {}),
       ...(user ? { user } : {}),
       ...(read !== undefined ? { read } : {}),
-    });
+    })) as HydratedDocument<NotificationDocument>;
     const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
     await writeAuditLog({
       tenantId: tenantObjectId,
@@ -159,12 +159,12 @@ export const createNotification: AuthedRequestHandler<
       });
 
       if (saved.user) {
-        const user = await User.findById(saved.user);
-        if (user?.email) {
-          assertEmail(user.email);
+        const userRecord = await User.findById(saved.user);
+        if (userRecord?.email) {
+          assertEmail(userRecord.email);
           const mailOptions = {
             from: process.env.SMTP_FROM || process.env.SMTP_USER,
-            to: user.email,
+            to: userRecord.email,
             subject: 'New Notification',
             text: saved.message || '',
           };

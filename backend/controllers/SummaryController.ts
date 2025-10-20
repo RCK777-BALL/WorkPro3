@@ -2,9 +2,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { Request, Response, NextFunction } from 'express';
+import type { Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
-import type { AuthedRequestHandler } from '../types/http';
+import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 
 import WorkOrder from '../models/WorkOrder';
 import WorkHistory from '../models/WorkHistory';
@@ -20,7 +20,7 @@ import { LABOR_RATE } from '../config/env';
  * injected by auth middleware, falls back to the authenticated user and then
  * to the `x-tenant-id` header.
  */
-const getTenantId = (req: Request): string | undefined => {
+const getTenantId = (req: AuthedRequest): string | undefined => {
   return (
     req.tenantId ||
     req.user?.tenantId ||
@@ -255,7 +255,7 @@ export const calculateSummary = async (
 };
 
 export const getSummary: AuthedRequestHandler = async (
-  req: Request,
+  req: AuthedRequest,
   res: Response,
   next: NextFunction,
 ) => {
@@ -380,7 +380,7 @@ export const getSummary: AuthedRequestHandler = async (
 };
 
 export const getSummaryTrends: AuthedRequestHandler = async (
-  req: Request,
+  req: AuthedRequest,
   res: Response,
   next: NextFunction,
 ) => {
@@ -426,7 +426,7 @@ export const getSummaryTrends: AuthedRequestHandler = async (
 };
 
 export const getAssetSummary: AuthedRequestHandler = async (
-  req: Request,
+  req: AuthedRequest,
   res: Response,
   next: NextFunction,
 ) => {
@@ -445,7 +445,7 @@ export const getAssetSummary: AuthedRequestHandler = async (
 };
 
 export const getWorkOrderSummary: AuthedRequestHandler = async (
-  req: Request,
+  req: AuthedRequest,
   res: Response,
   next: NextFunction,
 ) => {
@@ -464,7 +464,7 @@ export const getWorkOrderSummary: AuthedRequestHandler = async (
 };
 
 export const getUpcomingMaintenance: AuthedRequestHandler = async (
-  req: Request,
+  req: AuthedRequest,
   res: Response,
   next: NextFunction,
 ) => {
@@ -486,7 +486,7 @@ export const getUpcomingMaintenance: AuthedRequestHandler = async (
 };
 
 export const getCriticalAlerts: AuthedRequestHandler = async (
-  req: Request,
+  req: AuthedRequest,
   res: Response,
   next: NextFunction,
 ) => {

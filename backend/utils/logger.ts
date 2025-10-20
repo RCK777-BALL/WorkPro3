@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import * as winston from 'winston';
+import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
 import fs from 'fs';
 
@@ -16,7 +16,9 @@ if (destinations.includes('file') && !fs.existsSync(logDir)) {
   fs.mkdirSync(logDir, { recursive: true });
 }
 
-const transports: winston.transport[] = [];
+type TransportInstance = ReturnType<typeof winston.createLogger>['transports'][number];
+
+const transports: TransportInstance[] = [];
 
 if (destinations.includes('console')) {
   transports.push(

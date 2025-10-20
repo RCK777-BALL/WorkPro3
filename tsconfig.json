@@ -19,5 +19,13 @@
     "dev-server/**/*.ts",
     "shared/types/**/*.ts"
 
+  ],
+  "exclude": [
+    "backend/tests",
+    "backend/scripts",
+    "backend/seed.ts",
+    "dev-server",
+    "frontend",
+    "node_modules"
   ]
 }

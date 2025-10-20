@@ -71,6 +71,8 @@ declare module 'express' {
     set(setting: string, value: any): Application;
   }
 
+  export type Express = Application;
+
   interface ExpressFactory {
     (): Application;
     Router(): Router;
@@ -122,6 +124,9 @@ declare module 'mongoose' {
       equals(other: any): boolean;
       static isValid(id: any): boolean;
     }
+    class Array<T = any> extends global.Array<T> {}
+    class DocumentArray<T = any> extends global.Array<T> {}
+    const Mixed: any;
   }
 
   export namespace Error {
@@ -138,6 +143,7 @@ declare module 'mongoose' {
     markModified(path: string): void;
   };
   export type ClientSession = any;
+  export type SchemaDefinitionProperty<T = any, Doc = any> = any;
 
   export interface Model<T = any> {
     new (doc?: Partial<T>): HydratedDocument<T>;
@@ -157,6 +163,7 @@ declare module 'mongoose' {
     create(doc: any): Promise<T>;
     syncIndexes(): Promise<void>;
     insertMany(docs: any[], options?: any): Promise<T[]>;
+    exists(filter?: FilterQuery<T>): Promise<{ _id: Types.ObjectId } | null>;
   }
 
   export interface Document<T = any> extends HydratedDocument<T> {
@@ -168,26 +175,46 @@ declare module 'mongoose' {
   export class Schema<T = any> {
     static Types: {
       ObjectId: typeof Types.ObjectId;
-      Array: new <U = any>(items?: U[]) => any;
+      Array: typeof Types.Array;
+      DocumentArray: typeof Types.DocumentArray;
+      Mixed: typeof Types.Mixed;
     };
     constructor(definition: any, options?: any);
+    methods: Record<string, any>;
+    statics: Record<string, any>;
+    index(fields: any, options?: any): this;
+    pre(hook: string, fn: (...args: any[]) => void): this;
+    post(hook: string, fn: (...args: any[]) => void): this;
+    virtual(name: string, options?: any): any;
   }
   export function model<T = any>(name: string, schema?: Schema<T>): Model<T>;
   export function connect(uri: string, options?: any): Promise<any>;
+  export function disconnect(): Promise<void>;
   export const connection: any;
   export const Types: typeof Types & {
-    Array: new <U = any>(items?: U[]) => any;
+    Array: typeof Types.Array;
+    DocumentArray: typeof Types.DocumentArray;
+    Mixed: typeof Types.Mixed;
   };
   export function isValidObjectId(value: any): boolean;
   const mongoose: {
     Schema: typeof Schema;
     model: typeof model;
     connect: typeof connect;
+    disconnect: typeof disconnect;
     connection: typeof connection;
     Types: typeof Types;
     isValidObjectId: typeof isValidObjectId;
   };
   export default mongoose;
+}
+
+declare namespace mongoose {
+  namespace Types {
+    class ObjectId extends import('mongoose').Types.ObjectId {}
+    class Array<T = any> extends import('mongoose').Types.Array<T> {}
+    class DocumentArray<T = any> extends import('mongoose').Types.DocumentArray<T> {}
+  }
 }
 
 declare module 'dotenv' {
@@ -243,6 +270,9 @@ declare module 'jsonwebtoken' {
   export interface SignOptions {
     expiresIn?: string | number;
   }
+  export interface JwtPayload {
+    [key: string]: any;
+  }
   export function sign(payload: any, secret: string, options?: SignOptions): string;
   export function verify(token: string, secret: string, options?: any): any;
   export const decode: (token: string) => any;
@@ -288,6 +318,185 @@ declare module 'socket.io' {
     constructor(httpServer: any, options?: any);
     on(event: string, handler: (...args: any[]) => void): void;
     emit(event: string, ...args: any[]): void;
+    to(room: string): { emit(event: string, ...args: any[]): void };
+  }
+}
+
+declare module 'passport' {
+  export interface Profile {
+    id: string;
+    displayName?: string;
+    emails?: Array<{ value: string }>;
+    photos?: Array<{ value: string }>;
+    [key: string]: unknown;
+  }
+
+  export interface AuthenticateOptions {
+    session?: boolean;
+    scope?: string | string[];
+    callbackURL?: string;
+    state?: string;
+    [key: string]: unknown;
+  }
+
+  export type VerifyCallback = (error: any, user?: any, info?: any) => void;
+
+  export class Strategy {
+    name?: string;
+    authenticate(req: any, options?: AuthenticateOptions): void;
+  }
+
+  export interface PassportStatic {
+    use(name: string | Strategy, strategy?: Strategy): this;
+    initialize(): any;
+    session(): any;
+    authenticate(name: string | Strategy | Array<string | Strategy>, options?: AuthenticateOptions): any;
+    serializeUser(fn: (user: any, done: VerifyCallback) => void): void;
+    deserializeUser(fn: (id: any, done: VerifyCallback) => void): void;
+    Strategy: typeof Strategy;
+  }
+
+  const passport: PassportStatic;
+  export default passport;
+  export { Strategy };
+}
+
+declare module 'zod' {
+  export type ZodTypeAny = any;
+  export type ZodSchema<T = any> = {
+    parse(data: unknown): T;
+    safeParse(data: unknown): { success: true; data: T } | { success: false; error: ZodError<T> };
+  } & Record<string, any>;
+
+  export interface ZodIssue {
+    message: string;
+    path?: Array<string | number>;
+    code?: string;
+    [key: string]: unknown;
+  }
+
+  export class ZodError<T = any> extends Error {
+    issues: ZodIssue[];
+  }
+
+  export interface ZodEffects<T = any> extends ZodSchema<T> {}
+
+  export const ZodIssueCode: Record<string, string> & { custom: 'custom' };
+
+  export const z: {
+    string(): ZodSchema<string>;
+    number(): ZodSchema<number>;
+    boolean(): ZodSchema<boolean>;
+    date(): ZodSchema<Date>;
+    any(): ZodSchema<any>;
+    unknown(): ZodSchema<unknown>;
+    void(): ZodSchema<void>;
+    enum<T extends [string, ...string[]]>(values: T): ZodSchema<T[number]>;
+    nativeEnum<T extends Record<string, string | number>>(values: T): ZodSchema<T[keyof T]>;
+    literal<T extends string | number | boolean>(value: T): ZodSchema<T>;
+    array<T>(schema: ZodSchema<T>): ZodSchema<T[]>;
+    object<T extends Record<string, ZodSchema<any>>>(shape: T): ZodSchema<{ [K in keyof T]: any }>;
+    record(key: ZodSchema<any>, value: ZodSchema<any>): ZodSchema<Record<string, any>>;
+    record(value: ZodSchema<any>): ZodSchema<Record<string, any>>;
+    union<T extends [ZodSchema<any>, ZodSchema<any>, ...ZodSchema<any>[]]>(schemas: T): ZodSchema<any>;
+    discriminatedUnion(discriminator: string, schemas: Array<ZodSchema<any>>): ZodSchema<any>;
+    intersection(a: ZodSchema<any>, b: ZodSchema<any>): ZodSchema<any>;
+    tuple<T extends ZodSchema<any>[]>(schemas: T): ZodSchema<any>;
+    effect<T>(schema: ZodSchema<T>, effect?: any): ZodEffects<T>;
+    preprocess(effect: (arg: unknown) => unknown, schema: ZodSchema<any>): ZodSchema<any>;
+    nullable<T>(schema: ZodSchema<T>): ZodSchema<T | null>;
+    optional<T>(schema: ZodSchema<T>): ZodSchema<T | undefined>;
+    coerce: {
+      date(): ZodSchema<Date>;
+      number(): ZodSchema<number>;
+      string(): ZodSchema<string>;
+    };
+  };
+
+  export type infer<T extends ZodSchema<any>> = T extends ZodSchema<infer U> ? U : never;
+
+  export namespace z {
+    export type infer<T extends ZodSchema<any>> = T extends ZodSchema<infer U> ? U : never;
+  }
+}
+
+declare module 'vitest' {
+  export const describe: (name: string, fn: () => Promise<void> | void) => void;
+  export const it: (name: string, fn: () => Promise<void> | void) => void;
+  export const test: typeof it;
+  export const beforeAll: (fn: () => Promise<void> | void) => void;
+  export const afterAll: (fn: () => Promise<void> | void) => void;
+  export const beforeEach: (fn: () => Promise<void> | void) => void;
+  export const afterEach: (fn: () => Promise<void> | void) => void;
+  export type MockInstance<T extends (...args: any[]) => any = (...args: any[]) => any> = ((
+    ...args: Parameters<T>
+  ) => ReturnType<T>) & {
+    mockImplementation(fn: T): MockInstance<T>;
+    mockImplementationOnce(fn: T): MockInstance<T>;
+    mockResolvedValue(value: any): MockInstance<T>;
+    mockResolvedValueOnce(value: any): MockInstance<T>;
+    mockRejectedValue(value: any): MockInstance<T>;
+    mockRejectedValueOnce(value: any): MockInstance<T>;
+    mockReturnValue(value: any): MockInstance<T>;
+    mockReturnValueOnce(value: any): MockInstance<T>;
+    mockClear(): MockInstance<T>;
+    mockReset(): MockInstance<T>;
+    mockRestore(): void;
+    mock: {
+      calls: any[][];
+      lastCall?: any[];
+      results?: any[];
+    };
+  };
+  export type SpyInstance<T extends (...args: any[]) => any = (...args: any[]) => any> = MockInstance<T>;
+  export const vi: {
+    fn<T extends (...args: any[]) => any>(impl?: T): MockInstance<T>;
+    spyOn<T extends Record<string, any>, K extends keyof T>(obj: T, method: K): MockInstance<T[K]>;
+    mock(moduleName: string, factory: () => any, options?: any): void;
+    mocked<T>(item: T): T;
+    useFakeTimers(): void;
+    useRealTimers(): void;
+    advanceTimersByTime(ms: number): void;
+    clearAllMocks(): void;
+    resetAllMocks(): void;
+    restoreAllMocks(): void;
+    resetModules(): void;
+    stubGlobal(name: string, value: any): void;
+    unstubAllGlobals(): void;
+  };
+  export const expect: ((value: any) => any) & {
+    any(constructor: any): any;
+    arrayContaining(values: any[]): any;
+    objectContaining(value: any): any;
+    stringContaining(value: string): any;
+    toHaveBeenCalledWith?: any;
+    toBeCalled?: any;
+  };
+}
+
+declare module 'vitest/config' {
+  export function defineConfig(config: any): any;
+}
+
+declare module 'winston' {
+  const winston: {
+    createLogger(options?: any): any;
+    transports: Record<string, any>;
+    format: Record<string, (...args: any[]) => any>;
+  };
+  export default winston;
+}
+
+declare module 'winston-daily-rotate-file' {
+  const DailyRotateFile: any;
+  export default DailyRotateFile;
+}
+
+declare module 'mongodb-memory-server' {
+  export class MongoMemoryServer {
+    static create(options?: any): Promise<MongoMemoryServer>;
+    getUri(): string;
+    stop(): Promise<void>;
   }
 }
 

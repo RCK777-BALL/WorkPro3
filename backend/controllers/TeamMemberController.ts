@@ -4,7 +4,7 @@
 
 import TeamMember, { ITeamMember } from '../models/TeamMember';
 import type { Request, Response, NextFunction } from 'express';
-import { Types } from 'mongoose';
+import { Error as MongooseError, Types } from 'mongoose';
 import { writeAuditLog } from '../utils/audit';
 import { toEntityId } from '../utils/ids';
 import { sendResponse } from '../utils/sendResponse';
@@ -131,6 +131,7 @@ export const createTeamMember = async (
 export const updateTeamMember = async (
   req: Request,
   res: Response,
+  next: NextFunction,
 ) => {
 
   try {
@@ -149,7 +150,16 @@ export const updateTeamMember = async (
           .json({ message: `managerId is required for role ${role}` });
         return;
       }
-      await validateHierarchy(role, req.body.managerId, tenantId as string);
+      try {
+        await validateHierarchy(role, req.body.managerId, tenantId as string);
+      } catch (validationErr) {
+        const message =
+          validationErr instanceof Error
+            ? validationErr.message
+            : 'Invalid manager information';
+        res.status(400).json({ message });
+        return;
+      }
     }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const existing = await TeamMember.findById({ _id: req.params.id, tenantId });
@@ -178,9 +188,20 @@ export const updateTeamMember = async (
     });
     sendResponse(res, updated);
     return;
-  } catch (err: any) {
-    sendResponse(res, null, { errors: err.errors ?? err  }, 400);
-    return;
+  } catch (err: unknown) {
+    if (err instanceof MongooseError.ValidationError) {
+      const errors = Object.values(err.errors).map((error) => error.message);
+      sendResponse(res, null, { errors }, 400);
+      return;
+    }
+    if (err instanceof MongooseError.CastError) {
+      sendResponse(res, null, { errors: [err.message] }, 400);
+      return;
+    }
+    if (!(err instanceof Error)) {
+      return next(new Error('Unknown error occurred while updating team member'));
+    }
+    return next(err);
   }
 };
 

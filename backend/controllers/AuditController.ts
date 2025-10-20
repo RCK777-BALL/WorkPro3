@@ -4,9 +4,12 @@
 
 import type { ParsedQs } from 'qs';
 import type { ParamsDictionary } from 'express-serve-static-core';
-import AuditLog from '../models/AuditLog';
+import mongoose, { type LeanDocument } from 'mongoose';
+
+import AuditLog, { type AuditLogDocument } from '../models/AuditLog';
 import type { AuthedRequestHandler } from '../types/http';
 import { sendResponse } from '../utils/sendResponse';
+import handleControllerError from '../utils/handleControllerError';
 
 type AuditQuery = ParsedQs & {
   limit?: string;
@@ -14,6 +17,8 @@ type AuditQuery = ParsedQs & {
   entityId?: string;
   userId?: string;
 };
+
+type AuditLogLean = LeanDocument<AuditLogDocument>;
 
 export const getAuditLogs: AuthedRequestHandler<
   ParamsDictionary,
@@ -31,17 +36,30 @@ export const getAuditLogs: AuthedRequestHandler<
     const limit = Math.min(parseInt(String(limitParam), 10), 100);
     const filter: Record<string, unknown> = { tenantId };
     if (req.query.entityType) filter.entityType = req.query.entityType;
-    if (req.query.entityId) filter.entityId = req.query.entityId;
-    if (req.query.userId) filter.userId = req.query.userId;
+    if (req.query.entityId) {
+      if (!mongoose.isValidObjectId(req.query.entityId) && req.query.entityId !== '*') {
+        sendResponse(res, null, 'Invalid entityId', 400);
+        return;
+      }
+      filter.entityId = req.query.entityId === '*' ? { $exists: true } : req.query.entityId;
+    }
+    if (req.query.userId) {
+      if (!mongoose.isValidObjectId(req.query.userId)) {
+        sendResponse(res, null, 'Invalid userId', 400);
+        return;
+      }
+      filter.userId = req.query.userId;
+    }
 
     const logs = await AuditLog.find(filter)
       .sort({ ts: -1 })
       .limit(limit)
-      .lean();
+      .lean<AuditLogLean>()
+      .exec();
     sendResponse(res, logs);
     return;
   } catch (err) {
-    next(err);
+    handleControllerError(res, err, next);
     return;
   }
 };

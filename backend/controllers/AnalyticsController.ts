@@ -90,6 +90,13 @@ function mergeTrendResult(data: TrendResult): Array<Record<string, number | stri
   return Array.from(map.values()).sort((a, b) => (a.period < b.period ? -1 : 1));
 }
 
+type PdfDocumentOptions = ConstructorParameters<typeof PDFDocument>[0];
+type StreamablePdfDocument = InstanceType<typeof PDFDocument> & NodeJS.ReadableStream;
+
+function createPdfDocument(options?: PdfDocumentOptions): StreamablePdfDocument {
+  return new PDFDocument(options) as StreamablePdfDocument;
+}
+
 export const kpiJson = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const filters = parseFilters(req);
@@ -141,7 +148,7 @@ export const kpiPdf = async (req: Request, res: Response, next: NextFunction): P
   try {
     const filters = parseFilters(req);
     const data = await getKPIs(req.tenantId!, filters);
-    const doc = new PDFDocument();
+    const doc = createPdfDocument();
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename=kpis.pdf');
     doc.pipe(res);
@@ -198,7 +205,7 @@ export const trendPdf = async (req: Request, res: Response, next: NextFunction):
     const filters = parseFilters(req);
     const data = await getTrendDatasets(req.tenantId!, filters);
     const merged = mergeTrendResult(data);
-    const doc = new PDFDocument({ margin: 40 });
+    const doc = createPdfDocument({ margin: 40 });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename=trends.pdf');
     doc.pipe(res);

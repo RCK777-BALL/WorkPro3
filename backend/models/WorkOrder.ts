@@ -93,10 +93,14 @@ const workOrderSchema = new Schema<WorkOrderDocument>(
       },
     ],
     permits: {
-      type: [{ type: Schema.Types.ObjectId, ref: 'Permit' }],
-      default: [],
-    },
-    requiredPermitTypes: { type: [String], default: [] },
+      type: [Schema.Types.ObjectId],
+      ref: 'Permit',
+      default: [] as Types.ObjectId[],
+    } as unknown,
+    requiredPermitTypes: {
+      type: [String],
+      default: [] as string[],
+    } as unknown,
     timeSpentMin: Number,
     photos: [String],
     failureCode: String,

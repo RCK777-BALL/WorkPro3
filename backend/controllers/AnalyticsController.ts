@@ -5,6 +5,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { Parser as Json2csvParser } from 'json2csv';
 import PDFDocument from 'pdfkit';
+import type { Readable } from 'stream';
 import {
   getKPIs,
   getTrendDatasets,
@@ -91,7 +92,7 @@ function mergeTrendResult(data: TrendResult): Array<Record<string, number | stri
 }
 
 type PdfDocumentOptions = ConstructorParameters<typeof PDFDocument>[0];
-type StreamablePdfDocument = InstanceType<typeof PDFDocument> & NodeJS.ReadableStream;
+type StreamablePdfDocument = InstanceType<typeof PDFDocument> & Readable;
 
 function createPdfDocument(options?: PdfDocumentOptions): StreamablePdfDocument {
   return new PDFDocument(options) as StreamablePdfDocument;

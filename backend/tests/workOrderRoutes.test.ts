@@ -107,37 +107,44 @@ describe('Work Order Routes', () => {
       })
       .expect(201);
 
-    expect(createRes.body.department).toBe(String(department._id));
-    expect(createRes.body.line).toBe(String(lineId));
-    expect(createRes.body.station).toBe(String(stationId));
-    expect(createRes.body.pmTask).toBe(String(pmTask._id));
-    expect(createRes.body.teamMemberName).toBe('Tester');
-    expect(createRes.body.importance).toBe('low');
-    expect(createRes.body.type).toBe('calibration');
-    expect(createRes.body.complianceProcedureId).toBe('PROC-1');
-    expect(createRes.body.calibrationIntervalDays).toBe(365);
+    expect(createRes.body.success).toBe(true);
+    const created = createRes.body.data;
+    expect(created.department).toBe(String(department._id));
+    expect(created.line).toBe(String(lineId));
+    expect(created.station).toBe(String(stationId));
+    expect(created.pmTask).toBe(String(pmTask._id));
+    expect(created.teamMemberName).toBe('Tester');
+    expect(created.importance).toBe('low');
+    expect(created.type).toBe('calibration');
+    expect(created.complianceProcedureId).toBe('PROC-1');
+    expect(created.calibrationIntervalDays).toBe(365);
 
-    const id = createRes.body._id;
+    const id = created._id;
 
     const listRes = await request(app)
       .get('/api/workorders')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(listRes.body.length).toBe(1);
+    expect(listRes.body.success).toBe(true);
+    const listData = listRes.body.data;
+    expect(Array.isArray(listData)).toBe(true);
+    expect(listData.length).toBe(1);
     const logs = await AuditLog.find({ entityType: 'WorkOrder', action: 'create' });
     expect(logs.length).toBe(1);
     expect(logs[0].entityId).toBe(String(id));
-    expect(listRes.body[0]._id).toBe(id);
-    expect(listRes.body[0].department).toBe(String(department._id));
-    expect(listRes.body[0].line).toBe(String(lineId));
-    expect(listRes.body[0].station).toBe(String(stationId));
-    expect(listRes.body[0].pmTask).toBe(String(pmTask._id));
-    expect(listRes.body[0].teamMemberName).toBe('Tester');
-    expect(listRes.body[0].importance).toBe('low');
-    expect(listRes.body[0].type).toBe('calibration');
-    expect(listRes.body[0].complianceProcedureId).toBe('PROC-1');
-    expect(listRes.body[0].calibrationIntervalDays).toBe(365);
+    const first = listData[0];
+    expect(first._id).toBe(id);
+    expect(first.department).toBe(String(department._id));
+    expect(first.line).toBe(String(lineId));
+    expect(first.station).toBe(String(stationId));
+    expect(first.pmTask).toBe(String(pmTask._id));
+    expect(first.teamMemberName).toBe('Tester');
+    expect(first.importance).toBe('low');
+    expect(first.type).toBe('calibration');
+    expect(first.complianceProcedureId).toBe('PROC-1');
+    expect(first.calibrationIntervalDays).toBe(365);
+    expect(typeof first.toObject).toBe('undefined');
   });
 
   it('fails to create a work order when required fields are missing', async () => {
@@ -170,7 +177,7 @@ describe('Work Order Routes', () => {
       tenantId: user.tenantId,
     });
 
-  const createRes = await request(app)
+    const createRes = await request(app)
       .post('/api/workorders')
       .set('Authorization', `Bearer ${token}`)
       .send({
@@ -188,9 +195,11 @@ describe('Work Order Routes', () => {
       })
       .expect(201);
 
-    expect(createRes.body.department).toBe(String(department._id));
+    expect(createRes.body.success).toBe(true);
+    const created = createRes.body.data;
+    expect(created.department).toBe(String(department._id));
 
-    const id = createRes.body._id;
+    const id = created._id;
 
     const updateRes = await request(app)
       .put(`/api/workorders/${id}`)
@@ -198,7 +207,8 @@ describe('Work Order Routes', () => {
       .send({ title: 'Updated WO' })
       .expect(200);
 
-    expect(updateRes.body.title).toBe('Updated WO');
+    expect(updateRes.body.success).toBe(true);
+    expect(updateRes.body.data.title).toBe('Updated WO');
 
     await request(app)
       .delete(`/api/workorders/${id}`)
@@ -210,7 +220,8 @@ describe('Work Order Routes', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(listAfter.body.length).toBe(0);
+    expect(listAfter.body.success).toBe(true);
+    expect(listAfter.body.data.length).toBe(0);
   });
 
   it('handles status transitions', async () => {
@@ -242,34 +253,38 @@ describe('Work Order Routes', () => {
       })
       .expect(201);
 
-    const id = createRes.body._id;
+    const id = createRes.body.data._id;
 
     const assignRes = await request(app)
       .post(`/api/workorders/${id}/assign`)
       .set('Authorization', `Bearer ${token}`)
       .send({ assignees: [user._id] })
       .expect(200);
-    expect(assignRes.body.status).toBe('assigned');
+    expect(assignRes.body.success).toBe(true);
+    expect(assignRes.body.data.status).toBe('assigned');
 
     const startRes = await request(app)
       .post(`/api/workorders/${id}/start`)
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
-    expect(startRes.body.status).toBe('in_progress');
+    expect(startRes.body.success).toBe(true);
+    expect(startRes.body.data.status).toBe('in_progress');
 
     const completeRes = await request(app)
       .post(`/api/workorders/${id}/complete`)
       .set('Authorization', `Bearer ${token}`)
       .send({ timeSpentMin: 5 })
       .expect(200);
-    expect(completeRes.body.status).toBe('completed');
-    expect(completeRes.body.timeSpentMin).toBe(5);
+    expect(completeRes.body.success).toBe(true);
+    expect(completeRes.body.data.status).toBe('completed');
+    expect(completeRes.body.data.timeSpentMin).toBe(5);
 
     const cancelRes = await request(app)
       .post(`/api/workorders/${id}/cancel`)
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
-    expect(cancelRes.body.status).toBe('cancelled');
+    expect(cancelRes.body.success).toBe(true);
+    expect(cancelRes.body.data.status).toBe('cancelled');
   });
 
   it('searches work orders by status', async () => {
@@ -293,8 +308,11 @@ describe('Work Order Routes', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(res.body.length).toBe(1);
-    expect(res.body[0]._id).toBe(wo1._id.toString());
+    expect(res.body.success).toBe(true);
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(res.body.data.length).toBe(1);
+    expect(res.body.data[0]._id).toBe(wo1._id.toString());
+    expect(typeof res.body.data[0].toObject).toBe('undefined');
   });
 
   it('searches work orders by priority', async () => {
@@ -316,8 +334,10 @@ describe('Work Order Routes', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(res.body.length).toBe(1);
-    expect(res.body[0].priority).toBe('high');
+    expect(res.body.success).toBe(true);
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(res.body.data.length).toBe(1);
+    expect(res.body.data[0].priority).toBe('high');
   });
 
   it('searches work orders by date range', async () => {
@@ -341,7 +361,9 @@ describe('Work Order Routes', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(res.body.length).toBe(1);
-    expect(res.body[0]._id).toBe(woInRange._id.toString());
+    expect(res.body.success).toBe(true);
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(res.body.data.length).toBe(1);
+    expect(res.body.data[0]._id).toBe(woInRange._id.toString());
   });
 });

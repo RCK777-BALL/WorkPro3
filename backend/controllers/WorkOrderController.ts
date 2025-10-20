@@ -240,7 +240,9 @@ export const getAllWorkOrders: AuthedRequestHandler = async (
     const items = await WorkOrder.find({
       tenantId,
       ...(typeFilter ? { type: typeFilter } : {}),
-    });
+    })
+      .lean()
+      .exec();
     sendResponse(res, items);
     return;
   } catch (err) {
@@ -312,7 +314,7 @@ export const searchWorkOrders: AuthedRequestHandler = async (
       if (end) query.createdAt.$lte = end;
     }
 
-    const items = await WorkOrder.find(query);
+    const items = await WorkOrder.find(query).lean().exec();
     sendResponse(res, items);
     return;
   } catch (err) {
@@ -351,7 +353,9 @@ export const getWorkOrderById: AuthedRequestHandler = async (
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const item = await WorkOrder.findOne({ _id: req.params.id, tenantId });
+    const item = await WorkOrder.findOne({ _id: req.params.id, tenantId })
+      .lean()
+      .exec();
     if (!item) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -1158,7 +1162,9 @@ export const assistWorkOrder: AuthedRequestHandler = async (
     const workOrder = await WorkOrder.findOne({
       _id: req.params.id,
       tenantId,
-    });
+    })
+      .lean()
+      .exec();
     if (!workOrder) {
       sendResponse(res, null, 'Not found', 404);
       return;

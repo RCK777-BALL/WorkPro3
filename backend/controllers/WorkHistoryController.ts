@@ -17,7 +17,7 @@ import { toEntityId } from '../utils/ids';
 ): Promise<Response | void> => {
  
   try {
-    const items = await WorkHistory.find();
+    const items = await WorkHistory.find().lean().exec();
     sendResponse(res, items);
     return;
   } catch (err) {
@@ -32,7 +32,7 @@ export const getWorkHistoryById = async (
   next: NextFunction,
 ): Promise<Response | void> => {
   try {
-    const item = await WorkHistory.findById(req.params.id);
+    const item = await WorkHistory.findById(req.params.id).lean().exec();
     if (!item) {
       sendResponse(res, null, 'Not found', 404);
       return;

@@ -6,6 +6,8 @@ import PDFDocument from "pdfkit";
 import { Parser: Json2csvParser, Transform: Json2csvTransform } from "json2csv";
 import { Readable } from "stream";
 
+/** @typedef {import('express').Response} Response */
+
 const toDefault = (mod) => (mod && mod.__esModule ? mod.default : mod);
 
 const WorkOrder = toDefault(require('../models/WorkOrder'));
@@ -129,6 +131,9 @@ async function getAnalyticsReport(req, res, next) {
   }
 }
 
+/**
+ * @param {Response} res
+ */
 async function downloadReport(req, res, next) {
   try {
     const format = String(req.query.format || 'pdf').toLowerCase();
@@ -141,6 +146,7 @@ async function downloadReport(req, res, next) {
       const transform = new Json2csvTransform();
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename=report.csv');
+      transform.on('error', next);
       Readable.from([stats]).pipe(transform).pipe(res);
       return;
     }
@@ -148,6 +154,7 @@ async function downloadReport(req, res, next) {
     const doc = new PDFDocument();
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename=report.pdf');
+    doc.on('error', next);
     doc.pipe(res);
     doc.fontSize(18).text('Analytics Report', { align: 'center' });
     doc.moveDown();

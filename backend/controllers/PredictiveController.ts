@@ -97,7 +97,3 @@ async function computeTrendCorrelation(
 
 export { getPredictions, getTrend, computeTrendCorrelation };
 
-export default {
-  getPredictions,
-  getTrend,
-};

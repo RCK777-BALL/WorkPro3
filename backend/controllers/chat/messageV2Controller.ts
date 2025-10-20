@@ -503,10 +503,3 @@ export const markMessageRead: AuthedRequestHandler<{ messageId: string }> = asyn
   }
 };
 
-export default {
-  listMessages,
-  createMessage,
-  reactToMessage,
-  removeReaction,
-  markMessageRead,
-};

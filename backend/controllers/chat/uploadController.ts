@@ -61,4 +61,3 @@ export const handleChatUpload: AuthedRequestHandler = (req, res, next) => {
   });
 };
 
-export default { handleChatUpload };

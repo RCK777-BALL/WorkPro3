@@ -469,10 +469,3 @@ export const getChannel: AuthedRequestHandler<{ channelId: string }> = async (re
   }
 };
 
-export default {
-  listChannels,
-  createChannel,
-  updateChannel,
-  archiveChannel,
-  getChannel,
-};

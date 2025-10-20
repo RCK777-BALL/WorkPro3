@@ -71,9 +71,7 @@ import tenantScope from "./middleware/tenantScope";
 import type {
   WorkOrderUpdatePayload,
   InventoryUpdatePayload,
-  Notificaimport cors from "cors";
-import { NotificationPayload } from "types/Payloads";
-tionPayload,
+  NotificationPayload,
 } from "./types/Payloads";
 
 dotenv.config();

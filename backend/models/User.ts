@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import mongoose, { Schema, Document, Model, Types } from 'mongoose';
+import mongoose, { Schema, Document, Model, Types, type SchemaDefinitionProperty } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { ROLES, UserRole } from '../types/auth';
 export type { UserRole } from '../types/auth';
@@ -49,12 +49,13 @@ const userSchema = new Schema<UserDocument>(
       type: [String],
       enum: ROLES,
       default: ['tech'],
-    },
+    } as SchemaDefinitionProperty<UserRole[], UserDocument>,
     tenantId: {
       type: Schema.Types.ObjectId,
+      ref: 'Tenant',
       required: true,
       index: true,
-    },
+    } as SchemaDefinitionProperty<Types.ObjectId, UserDocument>,
     employeeId: { type: String, required: true, unique: true },
     managerId: { type: Schema.Types.ObjectId, ref: 'User' },
 

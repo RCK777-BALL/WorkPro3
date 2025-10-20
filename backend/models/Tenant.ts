@@ -2,20 +2,32 @@
  * SPDX-License-Identifier: MIT
  */
 
-import mongoose from 'mongoose';
+import mongoose, { Schema, type Document, type Model, type Types } from 'mongoose';
 
-const tenantSchema = new mongoose.Schema(
+export interface TenantSSOConfig {
+  provider?: 'okta' | 'azure';
+  issuer?: string;
+  clientId?: string;
+}
+
+export interface TenantDocument extends Document {
+  _id: Types.ObjectId;
+  name: string;
+  sso?: TenantSSOConfig;
+}
+
+const tenantSchema = new Schema<TenantDocument>(
   {
     name: { type: String, required: true },
- 
     sso: {
       provider: { type: String, enum: ['okta', 'azure'], required: false },
       issuer: { type: String, required: false },
       clientId: { type: String, required: false },
     },
- 
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-export default mongoose.model('Tenant', tenantSchema);
+const Tenant: Model<TenantDocument> = mongoose.model<TenantDocument>('Tenant', tenantSchema);
+
+export default Tenant;

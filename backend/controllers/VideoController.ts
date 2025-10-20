@@ -12,7 +12,7 @@ import { toEntityId } from '../utils/ids';
 
 export const getAllVideos = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const items = await Video.find();
+    const items = await Video.find().lean().exec();
     sendResponse(res, items);
   } catch (err) {
     next(err);
@@ -21,7 +21,7 @@ export const getAllVideos = async (req: Request, res: Response, next: NextFuncti
 
 export const getVideoById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const item = await Video.findById(req.params.id);
+    const item = await Video.findById(req.params.id).lean().exec();
     if (!item) return sendResponse(res, null, 'Not found', 404);
     sendResponse(res, item);
   } catch (err) {

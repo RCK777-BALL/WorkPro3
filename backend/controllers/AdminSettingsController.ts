@@ -7,12 +7,12 @@ import type { ParsedQs } from 'qs';
 import { randomUUID } from 'crypto';
 import bcrypt from 'bcryptjs';
 import speakeasy from 'speakeasy';
-import { Types } from 'mongoose';
+import mongoose, { type LeanDocument, Types } from 'mongoose';
 import { z } from 'zod';
 
-import AdminSetting from '../models/AdminSetting';
-import ApiKey from '../models/ApiKey';
-import AuditLog from '../models/AuditLog';
+import AdminSetting, { type AdminSettingDocument } from '../models/AdminSetting';
+import ApiKey, { type ApiKeyDocument } from '../models/ApiKey';
+import AuditLog, { type AuditLogDocument } from '../models/AuditLog';
 import sendResponse from '../utils/sendResponse';
 import type { AuthedRequestHandler } from '../types/http';
 import type {
@@ -24,6 +24,7 @@ import type {
 } from '@shared/admin';
 import { ADMIN_SETTING_TEMPLATES, getTemplateForSection } from '@shared/admin';
 import type { AuditContext } from '../middleware/auditTrail';
+import handleControllerError from '../utils/handleControllerError';
 
 const statusSchema = z.enum(["Active", "In Progress", "Pending", "Disabled", "Completed"]);
 
@@ -47,14 +48,9 @@ const ensureObjectId = (value?: string): Types.ObjectId | undefined => {
 
 type AnyRecord = Record<string, unknown>;
 
-type AdminSettingSnapshot = {
-  config?: AnyRecord;
-  status?: string;
-  updatedAt?: Date;
-  updatedBy?: Types.ObjectId | string;
-  updatedByName?: string;
-  metadata?: AnyRecord | null;
-};
+type AdminSettingLean = LeanDocument<AdminSettingDocument>;
+type ApiKeyLean = LeanDocument<ApiKeyDocument>;
+type AuditLogLean = LeanDocument<AuditLogDocument>;
 
 const mergeConfig = <T>(base: T, override: unknown): T => {
   if (override == null || typeof override !== 'object') {
@@ -94,7 +90,7 @@ const maskSensitiveConfig = (section: AdminSettingSection, config: AnyRecord, me
 
 const buildSettingDetail = (
   section: AdminSettingSection,
-  document: AdminSettingSnapshot | null,
+  document: (AdminSettingLean | null) | undefined,
 ): AdminSettingDetail => {
   const template = getTemplateForSection(section);
   if (!template) {
@@ -102,7 +98,7 @@ const buildSettingDetail = (
   }
   const storedConfig = document?.config ?? {};
   const mergedConfig = mergeConfig(template.defaultConfig, storedConfig);
-  const metadata = (document?.metadata as AnyRecord | null) ?? null;
+  const metadata = (document?.metadata as AnyRecord | null | undefined) ?? null;
   maskSensitiveConfig(section, mergedConfig as AnyRecord, metadata ?? undefined);
 
   return {
@@ -120,10 +116,12 @@ const buildSettingDetail = (
 
 const sanitizeSettingsPayload = async (tenantId: string): Promise<AdminSettingsPayload> => {
   const tenantObjectId = ensureObjectId(tenantId);
-  const settings = await AdminSetting.find({ tenantId: tenantObjectId }).lean().exec();
-  const settingsBySection = new Map<AdminSettingSection, AdminSettingSnapshot>();
+  const settings = await AdminSetting.find({ tenantId: tenantObjectId })
+    .lean<AdminSettingLean>()
+    .exec();
+  const settingsBySection = new Map<AdminSettingSection, AdminSettingLean>();
   settings.forEach((entry) => {
-    settingsBySection.set(entry.section as AdminSettingSection, entry as unknown as AdminSettingSnapshot);
+    settingsBySection.set(entry.section as AdminSettingSection, entry);
   });
 
   const sections = ADMIN_SETTING_TEMPLATES.map((template) =>
@@ -133,7 +131,7 @@ const sanitizeSettingsPayload = async (tenantId: string): Promise<AdminSettingsP
   const keyQuery: AnyRecord = { tenantId: tenantObjectId, status: { $ne: 'deleted' } };
   const keys = await ApiKey.find(keyQuery)
     .sort({ createdAt: -1 })
-    .lean()
+    .lean<ApiKeyLean>()
     .exec();
 
   const apiKeys: ApiKeySummary[] = keys.map((doc) => ({
@@ -162,7 +160,7 @@ export const getAdminSettings: AuthedRequestHandler = async (req, res, next) => 
     const payload = await sanitizeSettingsPayload(tenantId);
     sendResponse(res, payload);
   } catch (err) {
-    next(err);
+    handleControllerError(res, err, next);
   }
 };
 
@@ -184,7 +182,9 @@ export const updateAdminSetting: AuthedRequestHandler<{ section: string }> = asy
     const parsed = updatePayloadSchema.parse(req.body ?? {});
     const tenantObjectId = ensureObjectId(tenantId) ?? tenantId;
 
-    const current = await AdminSetting.findOne({ tenantId: tenantObjectId, section: sectionParam }).lean();
+    const current = await AdminSetting.findOne({ tenantId: tenantObjectId, section: sectionParam })
+      .lean<AdminSettingLean>()
+      .exec();
 
     let nextConfig = template.defaultConfig;
     let nextStatus: AdminSettingStatus = template.defaultStatus;
@@ -252,10 +252,13 @@ export const updateAdminSetting: AuthedRequestHandler<{ section: string }> = asy
       }
     }
 
-    const detail = buildSettingDetail(sectionParam, updated);
+    const detail = buildSettingDetail(
+      sectionParam,
+      updated ? (updated.toObject() as unknown as AdminSettingLean) : current ?? null,
+    );
     sendResponse(res, detail, 'Setting updated');
   } catch (err) {
-    next(err);
+    handleControllerError(res, err, next);
   }
 };
 
@@ -282,7 +285,15 @@ export const createIntegrationKey: AuthedRequestHandler = async (req, res, next)
     const rawKey = `wkp_${randomUUID().replace(/-/g, '')}`;
     const keyHash = await bcrypt.hash(rawKey, 12);
     const tenantObjectId = ensureObjectId(tenantId) ?? tenantId;
-    const expires = expiresAt ? new Date(expiresAt) : undefined;
+    let expires: Date | undefined;
+    if (expiresAt) {
+      const parsedDate = new Date(expiresAt);
+      if (Number.isNaN(parsedDate.getTime())) {
+        sendResponse(res, null, 'Invalid expiration date', 400);
+        return;
+      }
+      expires = parsedDate;
+    }
 
     const created = await ApiKey.create({
       tenantId: tenantObjectId,
@@ -307,7 +318,7 @@ export const createIntegrationKey: AuthedRequestHandler = async (req, res, next)
 
     sendResponse(res, { id: created._id.toString(), key: rawKey, lastFour: created.lastFour }, 'API key created', 201);
   } catch (err) {
-    next(err);
+    handleControllerError(res, err, next);
   }
 };
 
@@ -321,8 +332,13 @@ export const revokeIntegrationKey: AuthedRequestHandler<{ id: string }> = async 
     const keyId = req.params.id;
     const tenantObjectId = ensureObjectId(tenantId) ?? tenantId;
 
+    if (!mongoose.isValidObjectId(keyId)) {
+      sendResponse(res, null, 'Invalid API key id', 400);
+      return;
+    }
+
     const updated = await ApiKey.findOneAndUpdate(
-      { _id: keyId, tenantId: tenantObjectId },
+      { _id: new Types.ObjectId(keyId), tenantId: tenantObjectId },
       { $set: { status: 'revoked' } },
       { new: true },
     );
@@ -343,7 +359,7 @@ export const revokeIntegrationKey: AuthedRequestHandler<{ id: string }> = async 
 
     sendResponse(res, { id: updated._id.toString() }, 'API key revoked');
   } catch (err) {
-    next(err);
+    handleControllerError(res, err, next);
   }
 };
 
@@ -371,11 +387,10 @@ export const getAuditLog: AuthedRequestHandler<ParamsDictionary, unknown, unknow
       'Notifications',
     ]);
 
-    const logs = await AuditLog
-      .find({ tenantId: tenantObjectId, module: { $in: Array.from(modules) } })
+    const logs = await AuditLog.find({ tenantId: tenantObjectId, module: { $in: Array.from(modules) } })
       .sort({ ts: -1 })
       .limit(limit)
-      .lean()
+      .lean<AuditLogLean>()
       .exec();
 
     const data = logs.map((log) => ({
@@ -389,7 +404,7 @@ export const getAuditLog: AuthedRequestHandler<ParamsDictionary, unknown, unknow
 
     sendResponse(res, data);
   } catch (err) {
-    next(err);
+    handleControllerError(res, err, next);
   }
 };
 
@@ -434,7 +449,7 @@ export const triggerBackup: AuthedRequestHandler = async (req, res, next) => {
 
     sendResponse(res, { triggeredAt: now.toISOString() }, 'Backup started');
   } catch (err) {
-    next(err);
+    handleControllerError(res, err, next);
   }
 };
 
@@ -447,11 +462,13 @@ export const getIoTGateways: AuthedRequestHandler = async (req, res, next) => {
     }
 
     const tenantObjectId = ensureObjectId(tenantId) ?? tenantId;
-    const setting = await AdminSetting.findOne({ tenantId: tenantObjectId, section: 'iot' }).lean();
+    const setting = await AdminSetting.findOne({ tenantId: tenantObjectId, section: 'iot' })
+      .lean<AdminSettingLean>()
+      .exec();
     const detail = buildSettingDetail('iot', setting ?? null);
     sendResponse(res, detail.config);
   } catch (err) {
-    next(err);
+    handleControllerError(res, err, next);
   }
 };
 
@@ -464,7 +481,9 @@ export const trainAiModels: AuthedRequestHandler = async (req, res, next) => {
     }
 
     const tenantObjectId = ensureObjectId(tenantId) ?? tenantId;
-    const existing = await AdminSetting.findOne({ tenantId: tenantObjectId, section: 'ai' }).lean();
+    const existing = await AdminSetting.findOne({ tenantId: tenantObjectId, section: 'ai' })
+      .lean<AdminSettingLean>()
+      .exec();
     const detail = buildSettingDetail('ai', existing ?? null);
     const now = new Date().toISOString();
     const nextConfig = {
@@ -496,7 +515,7 @@ export const trainAiModels: AuthedRequestHandler = async (req, res, next) => {
 
     sendResponse(res, { status: 'training', lastTrainingRun: now }, 'AI training started');
   } catch (err) {
-    next(err);
+    handleControllerError(res, err, next);
   }
 };
 
@@ -509,7 +528,9 @@ export const getAiStatus: AuthedRequestHandler = async (req, res, next) => {
     }
 
     const tenantObjectId = ensureObjectId(tenantId) ?? tenantId;
-    const setting = await AdminSetting.findOne({ tenantId: tenantObjectId, section: 'ai' }).lean();
+    const setting = await AdminSetting.findOne({ tenantId: tenantObjectId, section: 'ai' })
+      .lean<AdminSettingLean>()
+      .exec();
     const detail = buildSettingDetail('ai', setting ?? null);
     sendResponse(res, {
       assistantEnabled: detail.config.assistantEnabled,
@@ -518,7 +539,7 @@ export const getAiStatus: AuthedRequestHandler = async (req, res, next) => {
       predictiveMaintenanceThreshold: detail.config.predictiveMaintenanceThreshold,
     });
   } catch (err) {
-    next(err);
+    handleControllerError(res, err, next);
   }
 };
 

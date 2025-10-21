@@ -1,11 +1,45 @@
 #!/usr/bin/env node
-import fs from "fs";
 import path from "path";
-import { execSync } from "child_process";
 import { fileURLToPath } from "url";
+import { execSync } from "child_process";
+let Project;
+let ts;
+let SyntaxKind;
+let QuoteKind;
+let fs;
+let globSync;
+try {
+  const fsExtra = await import("fs-extra");
+  fs = fsExtra.default ?? fsExtra;
+} catch (error) {
+  console.error("❌ Missing dependency 'fs-extra'. Install it with `npm install fs-extra`.");
+  process.exit(1);
+}
 
-const RESET = "\u001b[0m";
-const COLOR_CODES = {
+try {
+  const globModule = await import("glob");
+  globSync = globModule.globSync;
+} catch (error) {
+  console.error("❌ Missing dependency 'glob'. Install it with `npm install glob`.");
+  process.exit(1);
+}
+
+try {
+  const tsMorph = await import("ts-morph");
+  Project = tsMorph.Project;
+  ts = tsMorph.ts;
+  SyntaxKind = tsMorph.SyntaxKind;
+  QuoteKind = tsMorph.QuoteKind;
+} catch (error) {
+  console.error("❌ Missing dependency 'ts-morph'. Install it with `npm install ts-morph`.");
+  process.exit(1);
+}
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const ANSI = {
+  reset: "\u001b[0m",
   cyan: "\u001b[36m",
   yellow: "\u001b[33m",
   green: "\u001b[32m",
@@ -13,501 +47,555 @@ const COLOR_CODES = {
   orange: "\u001b[38;5;208m",
 };
 
-const chalk = {
-  cyan: (message) => `${COLOR_CODES.cyan}${message}${RESET}`,
-  yellow: (message) => `${COLOR_CODES.yellow}${message}${RESET}`,
-  green: (message) => `${COLOR_CODES.green}${message}${RESET}`,
-  red: (message) => `${COLOR_CODES.red}${message}${RESET}`,
-  keyword: (name) => {
-    const color = COLOR_CODES[name] || "";
-    return (message) => `${color}${message}${color ? RESET : ""}`;
-  },
+const log = {
+  info: (message) => console.log(`${ANSI.cyan}%s${ANSI.reset}`, message),
+  step: (message) => console.log(`${ANSI.yellow}%s${ANSI.reset}`, message),
+  success: (message) => console.log(`${ANSI.green}%s${ANSI.reset}`, message),
+  warn: (message) => console.log(`${ANSI.orange}%s${ANSI.reset}`, message),
+  error: (message) => console.log(`${ANSI.red}%s${ANSI.reset}`, message),
 };
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const args = process.argv.slice(2);
-const mode = (args[0] || "all").toLowerCase();
-const runBackend = mode === "all" || mode === "backend";
-const runFrontend = mode === "all" || mode === "frontend";
+const hasFixFlag = args.includes("--fix");
+const checkMode = args.includes("--check");
 
-function logInfo(message) {
-  console.log(chalk.cyan(message));
+if (checkMode && hasFixFlag) {
+  log.error("Cannot run with both --check and --fix.");
+  process.exit(1);
 }
 
-function logStep(message) {
-  console.log(chalk.yellow(message));
+const rootDir = __dirname;
+const backupRoot = path.join(rootDir, ".fix-backups");
+const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+const backupDir = path.join(backupRoot, timestamp);
+const reportPath = path.join(rootDir, "fixReport.log");
+const reportEntries = [];
+let totalFixed = 0;
+let totalSkipped = 0;
+let totalFailed = 0;
+
+const IMPORT_MAP = {
+  Request: { module: "express", named: true },
+  Response: { module: "express", named: true },
+  NextFunction: { module: "express", named: true },
+  Router: { module: "express", named: true },
+  Types: { module: "mongoose", named: true },
+  Schema: { module: "mongoose", named: true },
+  model: { module: "mongoose", named: true },
+  PDFDocument: { module: "pdfkit", named: false, default: true },
+  Document: { module: "mongoose", named: true },
+};
+
+function appendReport(message) {
+  reportEntries.push(message);
 }
 
-function logSuccess(message) {
-  console.log(chalk.green(message));
+function ensureBackup(relativePath) {
+  if (checkMode) return;
+  const source = path.join(rootDir, relativePath);
+  const target = path.join(backupDir, relativePath);
+  fs.ensureDirSync(path.dirname(target));
+  if (!fs.existsSync(target)) {
+    fs.copyFileSync(source, target);
+  }
 }
 
-function logWarn(message) {
-  console.log(chalk.keyword("orange")(message));
+function flattenMessage(message) {
+  if (typeof message === "string") return message;
+  let current = message;
+  const parts = [];
+  while (current) {
+    parts.push(current.messageText);
+    current = current.next;
+  }
+  return parts.join(" \u2192 ");
 }
 
-function logError(message) {
-  console.log(chalk.red(message));
+function toRelative(filePath) {
+  return path.relative(rootDir, filePath);
 }
 
-function findExistingDir(names) {
-  for (const name of names) {
-    const candidate = path.join(__dirname, name);
-    if (fs.existsSync(candidate) && fs.lstatSync(candidate).isDirectory()) {
-      return candidate;
+function addImport(sourceFile, identifier, config) {
+  const existing = sourceFile
+    .getImportDeclarations()
+    .find((imp) => imp.getModuleSpecifierValue() === config.module);
+
+  if (existing) {
+    if (config.default || config.named === false) {
+      if (!existing.getDefaultImport()) {
+        existing.setDefaultImport(identifier);
+      }
+    } else if (!existing.getNamedImports().some((ni) => ni.getName() === identifier)) {
+      existing.addNamedImport({ name: identifier });
     }
+    return;
   }
-  return null;
+
+  sourceFile.addImportDeclaration({
+    moduleSpecifier: config.module,
+    defaultImport: config.default ? identifier : undefined,
+    namedImports: config.named && !config.default ? [identifier] : [],
+  });
 }
 
-function traverseDir(dir, handler) {
-  if (!fs.existsSync(dir)) return;
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-  for (const entry of entries) {
-    if (entry.name === "node_modules" || entry.name === ".git") continue;
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      traverseDir(fullPath, handler);
-    } else if (/\.(cjs|mjs|js|ts)$/i.test(entry.name)) {
-      handler(fullPath);
+function addRelativeImport(sourceFile, identifier, targetFile) {
+  const relativePath = sourceFile.getRelativePathAsModuleSpecifierTo(targetFile);
+  const existing = sourceFile
+    .getImportDeclarations()
+    .find((imp) => imp.getModuleSpecifierValue() === relativePath);
+
+  if (existing) {
+    if (!existing.getNamedImports().some((ni) => ni.getName() === identifier)) {
+      existing.addNamedImport({ name: identifier });
     }
+    return;
   }
+
+  sourceFile.addImportDeclaration({
+    moduleSpecifier: relativePath,
+    namedImports: [identifier],
+  });
 }
 
-function convertCommonJsToEsModule(content) {
-  let updated = content;
+function fixDuplicateDeclarations(sourceFile, diagnostics) {
+  const duplicates = diagnostics.filter((diag) => diag.getCode() === 2451);
+  if (!duplicates.length) return;
 
-  updated = updated.replace(
-    /const\s+\{\s*([^}]+?)\s*\}\s*=\s*require\(["']([^"']+)["']\);?/g,
-    (_match, bindings, moduleName) => {
-      const normalized = bindings
-        .split(",")
-        .map((part) => part.trim())
-        .filter(Boolean)
-        .join(", ");
-      return `import { ${normalized} } from "${moduleName}";`;
-    },
-  );
+  const renameCounts = new Map();
 
-  updated = updated.replace(
-    /const\s+([A-Za-z0-9_$]+)\s*=\s*require\(["']([^"']+)["']\)\.([A-Za-z0-9_$]+);?/g,
-    (_match, binding, moduleName, property) => `import { ${property} as ${binding} } from "${moduleName}";`,
-  );
+  for (const diagnostic of duplicates) {
+    const text = flattenMessage(diagnostic.getMessageText());
+    const match = text.match(/'([^']+)'/);
+    if (!match) continue;
+    const name = match[1];
+    const declarations = [
+      ...sourceFile.getVariableDeclarations().filter((decl) => decl.getName() === name),
+      ...sourceFile.getFunctions().filter((decl) => decl.getName() === name),
+      ...sourceFile.getClasses().filter((decl) => decl.getName() === name),
+      ...sourceFile.getInterfaces().filter((decl) => decl.getName() === name),
+      ...sourceFile.getEnums().filter((decl) => decl.getName() === name),
+    ];
+    if (declarations.length <= 1) continue;
 
-  updated = updated.replace(
-    /const\s+([A-Za-z0-9_$]+)\s*=\s*require\(["']([^"']+)["']\);?/g,
-    (_match, binding, moduleName) => `import ${binding} from "${moduleName}";`,
-  );
-
-  updated = updated.replace(/module\.exports\s*=\s*router\s*;/g, "export default router;");
-
-  updated = updated.replace(
-    /module\.exports\s*=\s*([A-Za-z0-9_$]+)\s*;/g,
-    (_match, binding) => `export default ${binding};`,
-  );
-
-  updated = updated.replace(
-    /module\.exports\s*=\s*\{([^}]+)\};?/g,
-    (_match, body) => {
-      const parts = body
-        .split(",")
-        .map((part) => part.trim())
-        .filter(Boolean)
-        .map((part) => part.replace(/\s+as\s+.+$/, ""));
-      if (!parts.length) return "";
-      return `export { ${parts.join(", ")} };`;
-    },
-  );
-
-  updated = updated.replace(
-    /exports\.([A-Za-z0-9_$]+)\s*=\s*/g,
-    (_match, name) => `export const ${name} = `,
-  );
-
-  return updated;
-}
-
-function ensureRouterExport(content) {
-  if (!/export\s+default\s+router/.test(content) && /const\s+router\s*=/.test(content)) {
-    return `${content.replace(/\s+$/, "")}\n\nexport default router;\n`;
-  }
-  return content;
-}
-
-function ensurePlaceholder(content) {
-  if (content.trim().length === 0) {
-    return "// Placeholder generated by fixWorkPro to maintain module structure.\n";
-  }
-  return content;
-}
-
-function ensureCorsConfiguration(backendDir) {
-  const corsSnippet = `app.use(cors({\n  origin: ["http://localhost:5173"],\n  credentials: true,\n  allowedHeaders: ["Content-Type","Authorization","x-tenant-id"],\n}));`;
-  const serverCandidates = [
-    path.join(backendDir, "server.ts"),
-    path.join(backendDir, "server.js"),
-    path.join(backendDir, "src", "server.ts"),
-    path.join(backendDir, "src", "server.js"),
-    path.join(backendDir, "index.ts"),
-    path.join(backendDir, "index.js"),
-  ];
-
-  for (const candidate of serverCandidates) {
-    if (!fs.existsSync(candidate)) continue;
-    let content = fs.readFileSync(candidate, "utf8");
-    let updated = content;
-
-    if (!/import\s+cors\s+from\s+["']cors["']/.test(updated)) {
-      if (/const\s+cors\s*=\s*require\(["']cors["']\);?/.test(updated)) {
-        updated = updated.replace(
-          /const\s+cors\s*=\s*require\(["']cors["']\);?/,
-          "import cors from \"cors\";",
-        );
-      } else {
-        const importBlock = updated.match(/(import[^;]+;\s*)+/);
-        if (importBlock) {
-          const insertIndex = importBlock[0].length;
-          updated = `${updated.slice(0, insertIndex)}import cors from "cors";\n${updated.slice(insertIndex)}`;
-        } else {
-          updated = `import cors from "cors";\n${updated}`;
-        }
+    for (let i = 1; i < declarations.length; i += 1) {
+      const decl = declarations[i];
+      const count = (renameCounts.get(name) || 0) + 1;
+      renameCounts.set(name, count);
+      const newName = `${name}_${count}`;
+      try {
+        decl.rename(newName);
+        appendReport(`Renamed duplicate declaration ${name} -> ${newName} in ${toRelative(sourceFile.getFilePath())}`);
+        totalFixed += 1;
+      } catch (error) {
+        appendReport(`Failed to rename duplicate ${name} in ${toRelative(sourceFile.getFilePath())}: ${error.message}`);
+        totalFailed += 1;
       }
     }
-
-    if (!updated.includes(corsSnippet)) {
-      const anchor = /const\s+app\s*=\s*express\s*\(\s*\)\s*;/.exec(updated);
-      if (anchor) {
-        const insertPos = anchor.index + anchor[0].length;
-        updated = `${updated.slice(0, insertPos)}\n${corsSnippet}\n${updated.slice(insertPos)}`;
-      } else {
-        updated = `${updated}\n${corsSnippet}\n`;
-      }
-    }
-
-    if (updated !== content) {
-      fs.writeFileSync(candidate, updated, "utf8");
-    }
   }
 }
 
-function ensureBackendPackageScript(backendDir) {
-  const packagePath = path.join(backendDir, "package.json");
-  if (!fs.existsSync(packagePath)) return;
-  const pkg = JSON.parse(fs.readFileSync(packagePath, "utf8"));
-  pkg.scripts = pkg.scripts || {};
-  const desired = "node ../fixWorkPro.js backend";
-  if (pkg.scripts["fix:backend"] !== desired) {
-    pkg.scripts["fix:backend"] = desired;
-    fs.writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`, "utf8");
+function fixImplicitAny(sourceFile, diagnostics) {
+  const targetDiagnostics = diagnostics.filter((diag) => diag.getCode() === 7006);
+  for (const diagnostic of targetDiagnostics) {
+    const node = diagnostic.getNode();
+    if (!node) continue;
+    const parameter = node.getFirstAncestorByKind(SyntaxKind.Parameter);
+    if (!parameter || parameter.getTypeNode()) continue;
+    parameter.setType("any");
+    appendReport(`Added 'any' type to parameter ${parameter.getName()} in ${toRelative(sourceFile.getFilePath())}`);
+    totalFixed += 1;
   }
 }
 
-function ensureFrontendPackageScript(frontendDir) {
-  const packagePath = path.join(frontendDir, "package.json");
-  if (!fs.existsSync(packagePath)) return;
-  const pkg = JSON.parse(fs.readFileSync(packagePath, "utf8"));
-  pkg.scripts = pkg.scripts || {};
-  const desired = "node ../fixWorkPro.js frontend";
+function fixAwaitedMisuse(sourceFile) {
+  const references = sourceFile.getDescendantsOfKind(SyntaxKind.TypeReference);
   let changed = false;
-  if (pkg.scripts["fix:frontend"] !== desired) {
-    pkg.scripts["fix:frontend"] = desired;
-    changed = true;
-  }
-  const deps = pkg.dependencies || {};
-  if (!deps.axios) {
-    deps.axios = "^1.7.9";
-    pkg.dependencies = deps;
-    changed = true;
-  }
-  if (!deps["react-hot-toast"]) {
-    deps["react-hot-toast"] = "^2.4.1";
-    pkg.dependencies = deps;
-    changed = true;
+  for (const reference of references) {
+    if (reference.getText().startsWith("Awaited<")) {
+      const typeArguments = reference.getTypeArguments();
+      if (typeArguments.length === 1) {
+        reference.replaceWithText(typeArguments[0].getText());
+        changed = true;
+      }
+    }
   }
   if (changed) {
-    fs.writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`, "utf8");
+    appendReport(`Replaced Awaited<T> usages in ${toRelative(sourceFile.getFilePath())}`);
+    totalFixed += 1;
   }
 }
 
-function ensureRootPackageScripts() {
-  const packagePath = path.join(__dirname, "package.json");
-  let pkg = { name: "workpro3", private: true, scripts: {} };
-  if (fs.existsSync(packagePath)) {
-    try {
-      const parsed = JSON.parse(fs.readFileSync(packagePath, "utf8"));
-      pkg = { ...parsed, scripts: { ...(parsed.scripts || {}) } };
-    } catch (err) {
-      logWarn("⚠️ Unable to parse root package.json, recreating scripts section.");
-    }
-  }
-  let changed = false;
-  if (pkg.type !== "module") {
-    pkg.type = "module";
-    changed = true;
-  }
-  if (pkg.private !== true) {
-    pkg.private = true;
-    changed = true;
-  }
-  const desiredScripts = {
-    "fix:backend": "node fixWorkPro.js backend",
-    "fix:frontend": "node fixWorkPro.js frontend",
-    "fix:all": "node fixWorkPro.js all",
-  };
-  for (const [key, value] of Object.entries(desiredScripts)) {
-    if (pkg.scripts[key] !== value) {
-      pkg.scripts[key] = value;
-      changed = true;
+function ensurePdfDocumentImport(sourceFile) {
+  const text = sourceFile.getFullText();
+  if (!/new\s+PDFDocument/.test(text)) return;
+
+  const hasImport = sourceFile
+    .getImportDeclarations()
+    .some((imp) => imp.getModuleSpecifierValue() === "pdfkit");
+
+  if (!hasImport) {
+    sourceFile.addImportDeclaration({ moduleSpecifier: "pdfkit", defaultImport: "PDFDocument" });
+    appendReport(`Added PDFDocument import in ${toRelative(sourceFile.getFilePath())}`);
+    totalFixed += 1;
+  } else {
+    const importDecl = sourceFile
+      .getImportDeclarations()
+      .find((imp) => imp.getModuleSpecifierValue() === "pdfkit");
+    if (importDecl && !importDecl.getDefaultImport()) {
+      importDecl.setDefaultImport("PDFDocument");
+      appendReport(`Ensured PDFDocument default import from pdfkit in ${toRelative(sourceFile.getFilePath())}`);
+      totalFixed += 1;
     }
   }
 
-  if (!fs.existsSync(packagePath) || changed) {
-    fs.writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`, "utf8");
-  }
-}
+  const constructorMatches = sourceFile
+    .getDescendantsOfKind(SyntaxKind.NewExpression)
+    .filter((expr) => expr.getExpression().getText() === "PDFDocument");
 
-function ensureApiFile(frontendDir) {
-  const libPath = path.join(frontendDir, "src", "lib", "api.ts");
-  const utilsPath = path.join(frontendDir, "src", "utils", "api.ts");
-  const targetPath = fs.existsSync(libPath)
-    ? libPath
-    : fs.existsSync(utilsPath)
-      ? utilsPath
-      : libPath;
-
-  if (!fs.existsSync(targetPath)) {
-    const template = `import axios from "axios";\n\nconst api = axios.create({\n  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5010/api",\n  withCredentials: true,\n});\n\napi.interceptors.request.use((config) => {\n  const token = localStorage.getItem("token");\n  if (token) {\n    config.headers = config.headers ?? {};\n    config.headers.Authorization = \`Bearer ${token}\`;\n  }\n  return config;\n});\n\napi.interceptors.response.use(\n  (response) => response,\n  (error) => {\n    if (error.response?.status === 401) {\n      window.location.href = "/login";\n    }\n    return Promise.reject(error);\n  },\n);\n\nexport default api;\n`;
-    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-    fs.writeFileSync(targetPath, template, "utf8");
-    return;
-  }
-
-  let content = fs.readFileSync(targetPath, "utf8");
-  let updated = content;
-
-  if (/import\.meta\.env\.VITE_API_URL/.test(updated)) {
-    updated = updated.replace(/import\.meta\.env\.VITE_API_URL/g, "import.meta.env.VITE_API_BASE_URL");
-  }
-
-  if (!/baseURL:\s*import\.meta\.env\.VITE_API_BASE_URL/.test(updated)) {
-    updated = updated.replace(
-      /baseURL:\s*[^,]+/,
-      "baseURL: import.meta.env.VITE_API_BASE_URL || \"http://localhost:5010/api\"",
-    );
-  }
-
-  if (!/withCredentials:\s*true/.test(updated)) {
-    updated = updated.replace(
-      /axios\.create\(\{([\s\S]*?)\}\)/,
-      (_match, body) => {
-        const cleaned = body.includes("withCredentials")
-          ? body.replace(/withCredentials:\s*false/g, "withCredentials: true")
-          : `${body.trim()}\n  withCredentials: true,\n`;
-        return `axios.create({${cleaned}})`;
-      },
-    );
-  }
-
-  if (!/interceptors\.request/.test(updated)) {
-    updated = `${updated.trim()}\n\napi.interceptors.request.use((config) => {\n  const token = localStorage.getItem("token");\n  if (token) {\n    config.headers = config.headers ?? {};\n    config.headers.Authorization = \`Bearer ${token}\`;\n  }\n  return config;\n});\n`;
-  }
-
-  if (!/interceptors\.response/.test(updated)) {
-    updated = `${updated.trim()}\n\napi.interceptors.response.use(\n  (response) => response,\n  (error) => {\n    if (error.response?.status === 401) {\n      window.location.href = "/login";\n    }\n    return Promise.reject(error);\n  },\n);\n`;
-  }
-
-  if (updated !== content) {
-    fs.writeFileSync(targetPath, updated, "utf8");
-  }
-}
-
-function ensureAuthContext(frontendDir) {
-  const authPath = path.join(frontendDir, "src", "context", "AuthContext.tsx");
-  const template = `import { createContext, useContext, useMemo, useState, type ReactNode } from "react";\n\ntype AuthContextValue = {\n  login: (email: string, password: string) => Promise<void>;\n  logout: () => void;\n  user: { email: string } | null;\n};\n\nconst AuthContext = createContext<AuthContextValue | undefined>(undefined);\n\nexport const AuthProvider = ({ children }: { children: ReactNode }) => {\n  const [user, setUser] = useState<AuthContextValue["user"]>(null);\n\n  const value = useMemo<AuthContextValue>(\n    () => ({\n      user,\n      login: async (email: string, password: string) => {\n        if (!email || !password) throw new Error("Missing credentials");\n        setUser({ email });\n      },\n      logout: () => setUser(null),\n    }),\n    [user],\n  );\n\n  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;\n};\n\nexport const useAuth = () => {\n  const context = useContext(AuthContext);\n  if (!context) throw new Error("useAuth must be used within an AuthProvider");\n  return context;\n};\n`;
-  if (!fs.existsSync(authPath)) {
-    fs.mkdirSync(path.dirname(authPath), { recursive: true });
-    fs.writeFileSync(authPath, template, "utf8");
-    return;
-  }
-  const content = fs.readFileSync(authPath, "utf8");
-  if (!/export\s+const\s+AuthProvider/.test(content) || !/export\s+const\s+useAuth/.test(content)) {
-    fs.writeFileSync(authPath, template, "utf8");
-  }
-}
-
-function ensureLoginPage(frontendDir) {
-  const loginPath = path.join(frontendDir, "src", "pages", "Login.tsx");
-  const template = `import { FormEvent, useState } from "react";\nimport { useNavigate } from "react-router-dom";\nimport toast from "react-hot-toast";\n\nimport { useAuth } from "@/context/AuthContext";\n\nconst DEFAULT_EMAIL = "admin@cmms.com";\nconst DEFAULT_PASSWORD = "Password123!";\n\nexport default function Login() {\n  const [email, setEmail] = useState(DEFAULT_EMAIL);\n  const [password, setPassword] = useState(DEFAULT_PASSWORD);\n  const [loading, setLoading] = useState(false);\n  const navigate = useNavigate();\n  const { login } = useAuth();\n\n  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {\n    event.preventDefault();\n    setLoading(true);\n    try {\n      await login(email, password);\n      toast.success("Login successful!");\n      navigate("/dashboard");\n    } catch (error) {\n      const message =\n        (error as { response?: { data?: { message?: string } } }).response?.data?.message ||\n        (error instanceof Error ? error.message : "Login failed");\n      toast.error(message);\n    } finally {\n      setLoading(false);\n    }\n  };\n\n  return (\n    <div className="flex h-screen items-center justify-center bg-black">\n      <form onSubmit={handleSubmit} className="w-80 space-y-4 rounded-lg bg-zinc-900 p-6">\n        <h2 className="text-center text-lg font-medium text-white">Access your command center</h2>\n        <input\n          type="email"\n          value={email}\n          onChange={(event) => setEmail(event.target.value)}\n          className="w-full rounded bg-zinc-800 p-2 text-white"\n          placeholder="Email"\n          autoComplete="email"\n        />\n        <input\n          type="password"\n          value={password}\n          onChange={(event) => setPassword(event.target.value)}\n          className="w-full rounded bg-zinc-800 p-2 text-white"\n          placeholder="Password"\n          autoComplete="current-password"\n        />\n        <button\n          type="submit"\n          disabled={loading}\n          className="w-full rounded bg-indigo-600 p-2 text-white hover:bg-indigo-500 disabled:opacity-50"\n        >\n          {loading ? "Signing in..." : "Sign in"}\n        </button>\n      </form>\n    </div>\n  );\n}\n`;
-  if (!fs.existsSync(loginPath)) {
-    fs.mkdirSync(path.dirname(loginPath), { recursive: true });
-    fs.writeFileSync(loginPath, template, "utf8");
-    return;
-  }
-  const content = fs.readFileSync(loginPath, "utf8");
-  if (!/useAuth/.test(content) || !/handle(Login|Submit)/.test(content)) {
-    fs.writeFileSync(loginPath, template, "utf8");
-  }
-}
-
-function ensureEnv(frontendDir) {
-  const envPath = path.join(frontendDir, ".env");
-  const required = {
-    VITE_API_BASE_URL: "http://localhost:5010/api",
-    VITE_APP_TITLE: "WorkPro CMMS",
-  };
-  const existing = {};
-  if (fs.existsSync(envPath)) {
-    const lines = fs.readFileSync(envPath, "utf8").split(/\r?\n/);
-    for (const line of lines) {
-      if (!line || /^\s*#/.test(line)) continue;
-      const [key, ...rest] = line.split("=");
-      if (!key) continue;
-      existing[key.trim()] = rest.join("=").trim();
+  for (const match of constructorMatches) {
+    const parent = match.getParentIfKind(SyntaxKind.VariableDeclaration);
+    if (!parent) continue;
+    const variableName = parent.getName();
+    const usage = new RegExp(`${variableName}\\.pipe\\(`);
+    if (!usage.test(text)) {
+      appendReport(`Warning: ${variableName}.pipe(...) missing in ${toRelative(sourceFile.getFilePath())}`);
+      totalSkipped += 1;
     }
   }
-  let changed = false;
-  for (const [key, value] of Object.entries(required)) {
-    if (existing[key] !== value) {
-      existing[key] = value;
-      changed = true;
+}
+
+function ensureExports(sourceFile) {
+  const routerDeclaration = sourceFile.getVariableDeclaration("router");
+  if (routerDeclaration) {
+    const hasDefaultExport = sourceFile
+      .getExportAssignments()
+      .some((assignment) => !assignment.isExportEquals());
+    if (!hasDefaultExport) {
+      sourceFile.addExportAssignment({ expression: "router" });
+      appendReport(`Added default export for router in ${toRelative(sourceFile.getFilePath())}`);
+      totalFixed += 1;
     }
   }
-  if (changed || !fs.existsSync(envPath)) {
-    const content = Object.entries(existing)
-      .map(([key, value]) => `${key}=${value}`)
-      .join("\n");
-    fs.writeFileSync(envPath, `${content}\n`, "utf8");
-  }
-}
 
-function ensureMainToaster(frontendDir) {
-  const mainPath = path.join(frontendDir, "src", "main.tsx");
-  if (!fs.existsSync(mainPath)) return;
-  let content = fs.readFileSync(mainPath, "utf8");
-  let updated = content;
-  if (!/react-hot-toast/.test(updated)) {
-    updated = updated.replace(
-      /import\s+ReactDOM[^;]+;/,
-      (match) => `${match}\nimport { Toaster } from "react-hot-toast";`,
-    );
-  }
-  if (!/<Toaster/.test(updated)) {
-    updated = updated.replace(
-      /<AuthProvider>([\s\S]*?)<\/AuthProvider>/,
-      (match, inner) => `<AuthProvider>${inner}\n      <Toaster position="top-right" />\n    </AuthProvider>`,
-    );
-  }
-  if (updated !== content) {
-    fs.writeFileSync(mainPath, updated, "utf8");
-  }
-}
-
-function fixBackend() {
-  const backendDir = findExistingDir(["Backend", "backend"]);
-  if (!backendDir) {
-    logWarn("⚠️ Backend folder not found; skipping backend repairs.");
-    return;
-  }
-
-  const targets = ["routes", "controllers", "middleware"];
-  for (const target of targets) {
-    const folder = path.join(backendDir, target);
-    traverseDir(folder, (filePath) => {
-      const content = fs.readFileSync(filePath, "utf8");
-      let updated = ensurePlaceholder(content);
-      updated = convertCommonJsToEsModule(updated);
-      if (filePath.includes(`${path.sep}routes${path.sep}`)) {
-        updated = ensureRouterExport(updated);
+  sourceFile.getExportDeclarations().forEach((exportDecl) => {
+    const named = exportDecl.getNamedExports();
+    const seen = new Set();
+    let modified = false;
+    for (const namedExport of [...named]) {
+      const name = namedExport.getName();
+      if (seen.has(name)) {
+        namedExport.remove();
+        modified = true;
+      } else {
+        seen.add(name);
       }
-      if (updated !== content) {
-        fs.writeFileSync(filePath, updated, "utf8");
+    }
+    if (modified) {
+      appendReport(`Removed duplicate named exports in ${toRelative(sourceFile.getFilePath())}`);
+      totalFixed += 1;
+    }
+  });
+}
+
+function convertCommonJs(sourceFile) {
+  let converted = false;
+  sourceFile.getVariableStatements().forEach((statement) => {
+    const declarations = statement.getDeclarations();
+    if (declarations.length !== 1) return;
+    const declaration = declarations[0];
+    const initializer = declaration.getInitializerIfKind(SyntaxKind.CallExpression);
+    if (!initializer) return;
+    if (initializer.getExpression().getText() !== "require") return;
+    const [moduleArg] = initializer.getArguments();
+    if (!moduleArg || moduleArg.getKind() !== SyntaxKind.StringLiteral) return;
+    const moduleName = moduleArg.getText().slice(1, -1);
+
+    if (declaration.isKind(SyntaxKind.VariableDeclaration)) {
+      const nameNode = declaration.getNameNode();
+      if (nameNode.isKind(SyntaxKind.ObjectBindingPattern)) {
+        const elements = nameNode.getElements().map((el) => ({
+          name: el.getName(),
+          propertyName: el.getPropertyNameNode()?.getText(),
+        }));
+        sourceFile.addImportDeclaration({
+          moduleSpecifier: moduleName,
+          namedImports: elements.map((el) =>
+            el.propertyName && el.propertyName !== el.name
+              ? { name: el.propertyName.replace(/^["']|["']$/g, ""), alias: el.name }
+              : el.name,
+          ),
+        });
+      } else if (nameNode.isKind(SyntaxKind.ArrayBindingPattern)) {
+        return;
+      } else {
+        sourceFile.addImportDeclaration({
+          moduleSpecifier: moduleName,
+          defaultImport: nameNode.getText(),
+        });
       }
+      statement.remove();
+      converted = true;
+    }
+  });
+
+  const moduleExports = sourceFile.getDescendantsOfKind(SyntaxKind.BinaryExpression);
+  moduleExports.forEach((expr) => {
+    if (expr.getLeft().getText() === "module.exports") {
+      const right = expr.getRight();
+      if (right.isKind(SyntaxKind.Identifier)) {
+        sourceFile.addExportAssignment({ expression: right.getText(), isExportEquals: false });
+        expr.getStatement().remove();
+        converted = true;
+      } else if (right.isKind(SyntaxKind.ObjectLiteralExpression)) {
+        right.getProperties().forEach((property) => {
+          if (property.isKind(SyntaxKind.ShorthandPropertyAssignment)) {
+            sourceFile.addExportDeclaration({ namedExports: [property.getName()] });
+          } else if (property.isKind(SyntaxKind.PropertyAssignment)) {
+            const name = property.getName();
+            const initializer = property.getInitializer();
+            if (initializer && initializer.isKind(SyntaxKind.Identifier)) {
+              sourceFile.addStatements(`export const ${name} = ${initializer.getText()};`);
+            }
+          }
+        });
+        expr.getStatement().remove();
+        converted = true;
+      }
+    }
+  });
+
+  if (converted) {
+    appendReport(`Converted CommonJS to ES module in ${toRelative(sourceFile.getFilePath())}`);
+    totalFixed += 1;
+  }
+}
+
+function ensureImportsFromDiagnostics(sourceFile, diagnostics, project) {
+  const missingNames = diagnostics
+    .filter((diag) => diag.getCode() === 2304)
+    .map((diag) => {
+      const text = flattenMessage(diagnostic.getMessageText());
+      const match = text.match(/'([^']+)'/);
+      return match ? match[1] : null;
+    })
+    .filter(Boolean);
+
+  if (!missingNames.length) return;
+
+  for (const name of missingNames) {
+    if (IMPORT_MAP[name]) {
+      addImport(sourceFile, name, {
+        module: IMPORT_MAP[name].module,
+        named: IMPORT_MAP[name].named,
+        default: IMPORT_MAP[name].default,
+      });
+      appendReport(`Added mapped import for ${name} in ${toRelative(sourceFile.getFilePath())}`);
+      totalFixed += 1;
+      continue;
+    }
+
+    const exportedFile = project.getSourceFiles().find((file) => {
+      const exportedSymbols = file.getExportSymbols();
+      return exportedSymbols.some((symbol) => symbol.getName() === name);
     });
-  }
 
-  ensureCorsConfiguration(backendDir);
-  ensureBackendPackageScript(backendDir);
-  logSuccess("✅ Backend validation complete.");
+    if (exportedFile) {
+      addRelativeImport(sourceFile, name, exportedFile);
+      appendReport(`Added relative import for ${name} from ${toRelative(exportedFile.getFilePath())}`);
+      totalFixed += 1;
+    } else {
+      appendReport(`Skipped adding import for ${name} (definition not found) in ${toRelative(sourceFile.getFilePath())}`);
+      totalSkipped += 1;
+    }
+  }
 }
 
-function fixFrontend() {
-  const frontendDir = findExistingDir(["Frontend", "frontend"]);
-  if (!frontendDir) {
-    logWarn("⚠️ Frontend folder not found; skipping frontend repairs.");
+function fixTypeMismatches(sourceFile, diagnostics) {
+  const mismatchDiagnostics = diagnostics.filter((diag) => diag.getCode() === 2322);
+  for (const diagnostic of mismatchDiagnostics) {
+    const text = flattenMessage(diagnostic.getMessageText());
+    const match = text.match(/Type '([^']+)' is not assignable to type '([^']+)'/);
+    if (!match) continue;
+    const [, , targetType] = match;
+    const node = diagnostic.getNode();
+    if (!node) continue;
+    const expression = node.getFirstAncestor((ancestor) =>
+      ancestor.isKind(SyntaxKind.BinaryExpression) || ancestor.isKind(SyntaxKind.ReturnStatement),
+    );
+    if (!expression) continue;
+
+    if (expression.isKind(SyntaxKind.BinaryExpression)) {
+      const right = expression.getRight();
+      right.replaceWithText(`${right.getText()} as unknown as ${targetType}`);
+      appendReport(`Inserted safe cast for assignment in ${toRelative(sourceFile.getFilePath())}`);
+      totalFixed += 1;
+    } else if (expression.isKind(SyntaxKind.ReturnStatement)) {
+      const expr = expression.getExpression();
+      if (!expr) continue;
+      expr.replaceWithText(`${expr.getText()} as unknown as ${targetType}`);
+      appendReport(`Inserted safe cast for return in ${toRelative(sourceFile.getFilePath())}`);
+      totalFixed += 1;
+    }
+  }
+}
+
+function handleDiagnostics(project) {
+  const diagnostics = project.getPreEmitDiagnostics();
+  const diagnosticsByFile = new Map();
+
+  diagnostics.forEach((diagnostic) => {
+    const sourceFile = diagnostic.getSourceFile();
+    if (!sourceFile) return;
+    const list = diagnosticsByFile.get(sourceFile) || [];
+    list.push(diagnostic);
+    diagnosticsByFile.set(sourceFile, list);
+  });
+
+  diagnosticsByFile.forEach((fileDiagnostics, sourceFile) => {
+    ensureBackup(toRelative(sourceFile.getFilePath()));
+    fixDuplicateDeclarations(sourceFile, fileDiagnostics);
+    fixImplicitAny(sourceFile, fileDiagnostics);
+    fixTypeMismatches(sourceFile, fileDiagnostics);
+    ensureImportsFromDiagnostics(sourceFile, fileDiagnostics, project);
+  });
+}
+
+function gatherFiles() {
+  return globSync("**/*.{ts,tsx,js}", {
+    cwd: rootDir,
+    ignore: ["**/node_modules/**", "**/.next/**", "**/dist/**", "**/build/**", "**/.fix-backups/**"],
+    nodir: true,
+  });
+}
+
+function createProject() {
+  const tsconfigPath = path.join(rootDir, "tsconfig.json");
+  const options = fs.existsSync(tsconfigPath)
+    ? { tsConfigFilePath: tsconfigPath }
+    : {
+        compilerOptions: {
+          allowJs: true,
+          checkJs: true,
+          noEmit: true,
+          skipLibCheck: true,
+          esModuleInterop: true,
+          module: ts.ModuleKind.ESNext,
+          target: ts.ScriptTarget.ES2021,
+        },
+      };
+
+  return new Project({
+    ...options,
+    skipFileDependencyResolution: true,
+    manipulationSettings: {
+      quoteKind: QuoteKind.Double,
+      usePrefixAndSuffixTextForRename: false,
+    },
+  });
+}
+
+function convertAllCommonJs(project) {
+  project.getSourceFiles().forEach((sourceFile) => {
+    ensureBackup(toRelative(sourceFile.getFilePath()));
+    convertCommonJs(sourceFile);
+  });
+}
+
+function ensurePdfUsage(project) {
+  project.getSourceFiles().forEach((sourceFile) => {
+    ensureBackup(toRelative(sourceFile.getFilePath()));
+    ensurePdfDocumentImport(sourceFile);
+  });
+}
+
+function enforceExports(project) {
+  project.getSourceFiles().forEach((sourceFile) => {
+    ensureBackup(toRelative(sourceFile.getFilePath()));
+    ensureExports(sourceFile);
+    fixAwaitedMisuse(sourceFile);
+  });
+}
+
+function runFormatters() {
+  if (checkMode) return;
+  try {
+    execSync("npx prettier --write \"**/*.{ts,tsx,js,json}\"", { cwd: rootDir, stdio: "inherit" });
+  } catch (error) {
+    appendReport(`Prettier failed: ${error.message}`);
+    totalFailed += 1;
+  }
+  try {
+    execSync("npx eslint --ext .ts,.tsx,.js --fix .", { cwd: rootDir, stdio: "inherit" });
+  } catch (error) {
+    appendReport(`ESLint failed: ${error.message}`);
+    totalFailed += 1;
+  }
+}
+
+function writeReport() {
+  const header = `Fix report generated ${new Date().toISOString()}\nMode: ${checkMode ? "CHECK" : "FIX"}\n`; 
+  const counts = `Totals -> Fixed: ${totalFixed}, Skipped: ${totalSkipped}, Failed: ${totalFailed}\n`;
+  const content = `${header}${counts}${reportEntries.map((entry) => `- ${entry}`).join("\n")}\n\n`;
+  fs.ensureFileSync(reportPath);
+  fs.appendFileSync(reportPath, content, "utf8");
+}
+
+async function main() {
+  log.info("Scanning project for TypeScript diagnostics...");
+
+  const files = gatherFiles();
+  if (!files.length) {
+    log.warn("No TypeScript or JavaScript files found.");
     return;
   }
 
-  ensureApiFile(frontendDir);
-  ensureAuthContext(frontendDir);
-  ensureLoginPage(frontendDir);
-  ensureEnv(frontendDir);
-  ensureMainToaster(frontendDir);
-  ensureFrontendPackageScript(frontendDir);
-  logSuccess("✅ Frontend validation complete.");
+  if (!checkMode) {
+    fs.ensureDirSync(backupDir);
+  }
+
+  const project = createProject();
+  project.addSourceFilesAtPaths(
+    files.map((file) => path.join(rootDir, file)),
+  );
+
+  convertAllCommonJs(project);
+  enforceExports(project);
+  ensurePdfUsage(project);
+
+  handleDiagnostics(project);
+
+  if (!checkMode) {
+    await project.save();
+    runFormatters();
+  }
+
+  const remainingDiagnostics = project.getPreEmitDiagnostics();
+  const summary = remainingDiagnostics.length
+    ? `${remainingDiagnostics.length} diagnostics remain.`
+    : "No diagnostics remain.";
+
+  appendReport(summary);
+
+  if (remainingDiagnostics.length) {
+    remainingDiagnostics.forEach((diag) => {
+      const file = diag.getSourceFile();
+      if (!file) return;
+      const message = flattenMessage(diag.getMessageText());
+      appendReport(`Remaining issue in ${toRelative(file.getFilePath())}: ${message}`);
+    });
+    log.warn(summary);
+    totalSkipped += remainingDiagnostics.length;
+  } else {
+    log.success("Project is free of TypeScript diagnostics (as far as automatic fixes allowed).");
+  }
+
+  log.success(`Fixed: ${totalFixed}, Skipped: ${totalSkipped}, Failed: ${totalFailed}`);
+  writeReport();
 }
 
-function autoSyncWithGit() {
-  const gitDir = path.join(__dirname, ".git");
-  if (!fs.existsSync(gitDir)) {
-    logWarn("⚠️ Git repository not detected. Skipping auto-commit and push.");
-    return null;
-  }
-  let status = "";
-  try {
-    status = execSync("git status --porcelain", { cwd: __dirname, encoding: "utf8" }).trim();
-  } catch (err) {
-    logWarn("⚠️ Unable to read git status. Skipping auto-sync.");
-    return null;
-  }
-  if (!status) {
-    logInfo("ℹ️ No changes detected; skipping auto-commit.");
-    return null;
-  }
-
-  const branch = `auto-fix-${new Date().toISOString().replace(/[:.]/g, "-")}`;
-  try {
-    execSync("git add .", { cwd: __dirname, stdio: "inherit" });
-    execSync('git commit -m "🛠 Auto-fix: Full CMMS repair"', { cwd: __dirname, stdio: "inherit" });
-    execSync(`git checkout -b ${branch}`, { cwd: __dirname, stdio: "inherit" });
-    execSync(`git push origin ${branch}`, { cwd: __dirname, stdio: "inherit" });
-    try {
-      const remoteUrl = execSync("git remote get-url origin", { cwd: __dirname, encoding: "utf8" })
-        .trim()
-        .replace(/\.git$/, "");
-      logSuccess(`✅ Pushed auto-fix branch: ${remoteUrl}/tree/${branch}`);
-    } catch (err) {
-      logSuccess(`✅ Auto-fix branch pushed: ${branch}`);
-    }
-    return branch;
-  } catch (err) {
-    logError(`❌ Git auto-sync failed: ${err.message}`);
-    return null;
-  }
-}
-
-(function main() {
-  logInfo("🔧 Scanning project...");
-  const detected = runBackend && runFrontend ? "Backend + Frontend" : runBackend ? "Backend" : "Frontend";
-  logInfo(`🎯 DETECTED: ${detected}`);
-  logStep("🔧 Running repairs...");
-
-  if (runBackend) {
-    fixBackend();
-    logSuccess("✅ Backend repaired");
-  }
-
-  if (runFrontend) {
-    fixFrontend();
-    logSuccess("✅ Frontend repaired");
-  }
-
-  ensureRootPackageScripts();
-  const branch = autoSyncWithGit();
-  if (branch) {
-    logSuccess(`🚀 Auto-fix branch pushed: ${branch}`);
-  }
-
-  logSuccess("🎉 WorkPro3 CMMS fully operational!");
-})();
+main().catch((error) => {
+  appendReport(`Fatal error: ${error.stack || error.message}`);
+  writeReport();
+  log.error(error.stack || error.message);
+  process.exit(1);
+});

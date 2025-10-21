@@ -92,23 +92,8 @@ const workOrderSchema = new Schema<WorkOrderDocument>(
 
       },
     ],
-    permits: {
-      type: [
-        {
-          type: Schema.Types.ObjectId,
-          ref: 'Permit',
-        },
-      ],
-      default: [],
-    },
-    requiredPermitTypes: {
-      type: [
-        {
-          type: String,
-        },
-      ],
-      default: [],
-    },
+    permits: [{ type: Schema.Types.ObjectId, ref: 'Permit' }],
+    requiredPermitTypes: [{ type: String }],
     timeSpentMin: Number,
     photos: [String],
     failureCode: String,
@@ -127,7 +112,12 @@ const workOrderSchema = new Schema<WorkOrderDocument>(
     complianceProcedureId: String,
     calibrationIntervalDays: Number,
 
-    tenantId: { type: Schema.Types.ObjectId, required: true, index: true },
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Tenant',
+      required: true,
+      index: true,
+    },
 
     dueDate: { type: Date },
     completedAt: Date,

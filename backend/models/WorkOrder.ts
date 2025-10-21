@@ -93,8 +93,7 @@ const workOrderSchema = new Schema<WorkOrderDocument>(
       },
     ],
     permits: {
-      type: [Schema.Types.ObjectId],
-      ref: 'Permit',
+      type: [{ type: Schema.Types.ObjectId, ref: 'Permit' }],
       default: [],
     },
     requiredPermitTypes: {

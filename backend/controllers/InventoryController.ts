@@ -89,7 +89,7 @@ const toPlainObject = (value: unknown): Record<string, unknown> => {
 };
 
 // —— GET /inventory/summary (name, stock, status) ————————————————————————
-export const getInventoryItems = async (req: Request, res: Response, next: NextFunction) => {
+const getInventoryItems = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const query = scopedQuery(req);
     const summaryQuery = InventoryItem.find(query);
@@ -114,7 +114,7 @@ export const getInventoryItems = async (req: Request, res: Response, next: NextF
 };
 
 // —— GET /inventory ————————————————————————————————————————————————
-export const getAllInventoryItems = async (req: Request, res: Response, next: NextFunction) => {
+const getAllInventoryItems = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const query = scopedQuery(req);
     const itemsQuery = InventoryItem.find(query);
@@ -127,7 +127,7 @@ export const getAllInventoryItems = async (req: Request, res: Response, next: Ne
 };
 
 // —— GET /inventory/low-stock ————————————————————————————————————————
-export const getLowStockItems = async (req: Request, res: Response, next: NextFunction) => {
+const getLowStockItems = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const query = scopedQuery(req, {
       $expr: { $lte: ["$quantity", { $ifNull: ["$reorderThreshold", 0] }] },
@@ -143,7 +143,7 @@ export const getLowStockItems = async (req: Request, res: Response, next: NextFu
 };
 
 // —— GET /inventory/:id ———————————————————————————————————————————————
-export const getInventoryItemById = async (req: Request, res: Response, next: NextFunction) => {
+const getInventoryItemById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     if (!isValidObjectId(id)) {
@@ -168,7 +168,7 @@ export const getInventoryItemById = async (req: Request, res: Response, next: Ne
 };
 
 // —— POST /inventory ————————————————————————————————————————————————
-export const createInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
+const createInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
@@ -199,7 +199,7 @@ export const createInventoryItem = async (req: Request, res: Response, next: Nex
 };
 
 // —— PATCH /inventory/:id ———————————————————————————————————————————————
-export const updateInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
+const updateInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
@@ -255,7 +255,7 @@ export const updateInventoryItem = async (req: Request, res: Response, next: Nex
 };
 
 // —— DELETE /inventory/:id ——————————————————————————————————————————————
-export const deleteInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
+const deleteInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
@@ -291,7 +291,7 @@ export const deleteInventoryItem = async (req: Request, res: Response, next: Nex
 };
 
 // —— POST /inventory/:id/use ————————————————————————————————————————————
-export const useInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
+const useInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
@@ -356,7 +356,7 @@ export const useInventoryItem = async (req: Request, res: Response, next: NextFu
 };
 
 // —— GET /inventory/search?q= ————————————————————————————————————————————
-export const searchInventoryItems = async (req: Request, res: Response, next: NextFunction) => {
+const searchInventoryItems = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const q = String((req.query.q as string) ?? "").trim();
     if (!q) {
@@ -377,4 +377,16 @@ export const searchInventoryItems = async (req: Request, res: Response, next: Ne
   } catch (err) {
     next(err);
   }
+};
+
+export {
+  getInventoryItems,
+  getAllInventoryItems,
+  getLowStockItems,
+  getInventoryItemById,
+  createInventoryItem,
+  updateInventoryItem,
+  deleteInventoryItem,
+  useInventoryItem,
+  searchInventoryItems,
 };

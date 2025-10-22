@@ -53,6 +53,7 @@ export interface Department {
   id: string;
   name: string;
   notes?: string;
+  description?: string;
 }
 
 export interface Line {
@@ -60,6 +61,7 @@ export interface Line {
   name: string;
   department: string;
   notes?: string;
+  description?: string;
 }
 
 export interface Station {
@@ -67,6 +69,7 @@ export interface Station {
   name: string;
   line: string;
   notes?: string;
+  description?: string;
 }
 
 export interface StationWithAssets extends Station {

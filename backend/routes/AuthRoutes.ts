@@ -172,14 +172,14 @@ const sendAuthSuccess = (
 const setupMfa = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const parsed = mfaSetupSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ message: 'Invalid request' });
+    sendResponse(res, null, 'Invalid request', 400);
     return;
   }
 
   try {
     const user = await User.findById(parsed.data.userId).select('+mfaSecret +mfaEnabled');
     if (!user) {
-      res.status(404).json({ message: 'User not found' });
+      sendResponse(res, null, 'User not found', 404);
       return;
     }
 
@@ -189,7 +189,13 @@ const setupMfa = async (req: Request, res: Response, next: NextFunction): Promis
     await user.save();
 
     const token = speakeasy.totp({ secret: secret.base32, encoding: 'base32' });
-    res.json({ secret: secret.base32, token });
+    sendResponse(
+      res,
+      { secret: secret.base32, token },
+      null,
+      200,
+      'MFA secret generated',
+    );
   } catch (err) {
     logger.error('MFA setup error:', err);
     next(err);
@@ -203,7 +209,7 @@ const validateMfaToken = async (
 ): Promise<void> => {
   const parsed = mfaVerifySchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ message: 'Invalid request' });
+    sendResponse(res, null, 'Invalid request', 400);
     return;
   }
 
@@ -214,7 +220,7 @@ const validateMfaToken = async (
       '+mfaSecret +mfaEnabled +tenantId +tokenVersion +email +name +roles +role +siteId',
     );
     if (!user || !user.mfaSecret) {
-      res.status(400).json({ message: 'MFA not configured' });
+      sendResponse(res, null, 'MFA not configured', 400);
       return;
     }
 
@@ -226,7 +232,7 @@ const validateMfaToken = async (
     });
 
     if (!valid) {
-      res.status(400).json({ message: 'Invalid MFA token' });
+      sendResponse(res, null, 'Invalid MFA token', 400);
       return;
     }
 
@@ -237,7 +243,7 @@ const validateMfaToken = async (
     try {
       secret = getJwtSecret();
     } catch {
-      res.status(500).json({ message: 'Server configuration issue' });
+      sendResponse(res, null, 'Server configuration issue', 500);
       return;
     }
 
@@ -346,7 +352,7 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
 router.post('/register', registerLimiter, async (req: Request, res: Response, next: NextFunction) => {
   const parsed = await registerBodySchema.safeParseAsync(req.body);
   if (!parsed.success) {
-    res.status(400).json({ message: 'Invalid request' });
+    sendResponse(res, null, 'Invalid request', 400);
     return;
   }
 
@@ -356,7 +362,7 @@ router.post('/register', registerLimiter, async (req: Request, res: Response, ne
   try {
     const existing = await User.findOne({ email: normalizedEmail });
     if (existing) {
-      res.status(400).json({ message: 'Email already in use' });
+      sendResponse(res, null, 'Email already in use', 400);
       return;
     }
 
@@ -370,10 +376,22 @@ router.post('/register', registerLimiter, async (req: Request, res: Response, ne
 
     await user.save();
 
-    res.status(201).json({ message: 'User registered successfully' });
+    sendResponse(
+      res,
+      {
+        id: user._id.toString(),
+        email: user.email,
+        name: user.name,
+        tenantId: user.tenantId?.toString(),
+        employeeId: user.employeeId,
+      },
+      null,
+      201,
+      'User registered successfully',
+    );
   } catch (err: any) {
     if (err?.code === 11000) {
-      res.status(400).json({ message: 'Email or employee ID already in use' });
+      sendResponse(res, null, 'Email or employee ID already in use', 400);
       return;
     }
 
@@ -411,7 +429,7 @@ router.get(
             if (err) {
               logger.error(`OAuth ${provider} callback error:`, err);
             }
-            res.status(400).json({ message: 'Authentication failed' });
+            sendResponse(res, null, 'Authentication failed', 400);
             return;
           }
 
@@ -419,7 +437,7 @@ router.get(
           try {
             secret = getJwtSecret();
           } catch {
-            res.status(500).json({ message: 'Server configuration issue' });
+            sendResponse(res, null, 'Server configuration issue', 500);
             return;
           }
 

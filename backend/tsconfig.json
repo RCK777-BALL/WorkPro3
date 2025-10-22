@@ -6,10 +6,16 @@
     "exactOptionalPropertyTypes": true,
     "baseUrl": ".",
     "paths": {
-      "@shared/*": ["../shared/types/*"]
+      "@shared/*": ["../shared/types/*"],
+      "mongoose": ["./types/stubs/mongoose"],
+      "zod": ["./types/stubs/zod"],
+      "node-cron": ["./types/stubs/node-cron"],
+      "express": ["./types/stubs/express"],
+      "express-serve-static-core": ["./types/stubs/express"],
+      "qs": ["./types/stubs/qs"]
     },
     "types": ["node"],
-    "typeRoots": ["./types", "./node_modules/@types"],
+    "typeRoots": ["./types"],
     "esModuleInterop": true,
     "skipLibCheck": true,
     "outDir": "./dist"

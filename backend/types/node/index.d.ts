@@ -11,6 +11,14 @@ declare namespace NodeJS {
     env: ProcessEnv;
     cwd(): string;
     exit(code?: number): never;
+    uptime(): number;
+    memoryUsage(): {
+      rss: number;
+      heapTotal: number;
+      heapUsed: number;
+      external: number;
+      arrayBuffers?: number;
+    };
   }
 
   interface WritableStream {
@@ -116,3 +124,12 @@ declare function fetch(input: any, init?: any): Promise<{
   text(): Promise<string>;
   headers: { get(name: string): string | null };
 }>;
+
+declare module 'os' {
+  export function loadavg(): number[];
+  export function totalmem(): number;
+  export function freemem(): number;
+  export function cpus(): Array<{ model: string; speed: number; times: Record<string, number> }>;
+  export function hostname(): string;
+  export function platform(): string;
+}

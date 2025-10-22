@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { Request, Response, NextFunction, RequestHandler } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import type { ParamsDictionary } from 'express-serve-static-core';
 import type { ParsedQs } from 'qs';
 
@@ -13,8 +13,7 @@ export type AuthedRequest<
   ResBody = unknown,
   ReqBody = unknown,
   ReqQuery extends ParsedQs = ParsedQs,
-  Locals extends Record<string, any> = Record<string, any>,
-> = Omit<Request<P, ResBody, ReqBody, ReqQuery, Locals>, 'user'> & {
+> = Omit<Request<P, ResBody, ReqBody, ReqQuery>, 'user'> & {
   user?: Express.User;
 };
 
@@ -23,10 +22,9 @@ type AuthedHandlerFn<
   ResBody,
   ReqBody,
   ReqQuery extends ParsedQs,
-  Locals extends Record<string, any>,
 > = (
-  req: AuthedRequest<P, ResBody, ReqBody, ReqQuery, Locals>,
-  res: Response<ResBody, Locals>,
+  req: AuthedRequest<P, ResBody, ReqBody, ReqQuery>,
+  res: Response<ResBody>,
   next: NextFunction,
 ) => void | Promise<void>;
 
@@ -35,5 +33,4 @@ export type AuthedRequestHandler<
   ResBody = unknown,
   ReqBody = unknown,
   ReqQuery extends ParsedQs = ParsedQs,
-  Locals extends Record<string, any> = Record<string, any>,
-> = AuthedHandlerFn<P, ResBody, ReqBody, ReqQuery, Locals>;
+> = AuthedHandlerFn<P, ResBody, ReqBody, ReqQuery>;

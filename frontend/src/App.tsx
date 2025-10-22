@@ -2,26 +2,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React from 'react';
-import { Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
-import Dashboard from './pages/Dashboard';
-import Imports from './pages/Imports';
-import Layout from './components/layout/Layout';
-import ErrorBoundary from './components/common/ErrorBoundary';
-import Reports from './pages/Reports';
-import PreventiveMaintenancePage from './pages/PreventiveMaintenancePage';
-import AssetsLocationsPage from './pages/AssetsLocationsPage';
-import PartsInventoryPage from './pages/PartsInventoryPage';
-import VendorsPurchasingPage from './pages/VendorsPurchasingPage';
-import LaborTechniciansPage from './pages/LaborTechniciansPage';
-import MetersReadingsPage from './pages/MetersReadingsPage';
-import KnowledgeBasePage from './pages/KnowledgeBasePage';
-import ChatCollaborationPage from './pages/ChatCollaborationPage';
-import NotificationsCenterPage from './pages/NotificationsCenterPage';
-import IntegrationsApiPage from './pages/IntegrationsApiPage';
-import ComplianceAuditLogsPage from './pages/ComplianceAuditLogsPage';
-import AdminSettingsPage from './pages/AdminSettingsPage';
-import { useAuth } from '@/context/AuthContext';
+import React from "react";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+
+import Layout from "@/components/layout/Layout";
+import ErrorBoundary from "@/components/common/ErrorBoundary";
+import { useAuth } from "@/context/AuthContext";
 import {
   FALLBACK_TOKEN_KEY,
   SITE_KEY,
@@ -29,12 +15,32 @@ import {
   TOKEN_KEY,
   USER_STORAGE_KEY,
   setUnauthorizedCallback,
-} from '@/lib/http';
-import Login from './pages/Login';
-import WorkOrdersPage from './pages/workorders/WorkOrdersPage';
-import PermitsPage from './pages/permits/PermitsPage';
-import AnalyticsPage from './pages/analytics/AnalyticsPage';
-import NewWorkOrder from './pages/workorders/NewWorkOrder';
+} from "@/lib/http";
+import Dashboard from "@/pages/Dashboard";
+import Analytics from "@/pages/Analytics";
+import WorkOrders from "@/pages/WorkOrders";
+import Maintenance from "@/pages/Maintenance";
+import AssetsPage from "@/pages/AssetsPage";
+import AssetDetails from "@/pages/AssetDetails";
+import Inventory from "@/pages/Inventory";
+import VendorsPage from "@/pages/VendorsPage";
+import Reports from "@/pages/Reports";
+import Notifications from "@/pages/Notifications";
+import Messages from "@/pages/Messages";
+import Documentation from "@/pages/Documentation";
+import Departments from "@/pages/Departments";
+import Teams from "@/pages/Teams";
+import TeamMemberProfile from "@/pages/TeamMemberProfile";
+import Settings from "@/pages/Settings";
+import TimeSheets from "@/pages/TimeSheets";
+import PMScheduler from "@/pages/PMScheduler";
+import PMTasksPage from "@/pages/PMTasksPage";
+import AdminTenants from "@/pages/AdminTenants";
+import Imports from "@/pages/Imports";
+import Login from "@/pages/Login";
+import RegisterPage from "@/pages/RegisterPage";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import NotFound from "@/pages/NotFound";
 
 export default function App() {
   const navigate = useNavigate();
@@ -50,53 +56,48 @@ export default function App() {
       localStorage.removeItem(TENANT_KEY);
       localStorage.removeItem(SITE_KEY);
       resetAuthState();
-      navigate('/login');
+      navigate("/login");
     });
   }, [navigate, resetAuthState]);
 
-  // IMPORTANT: do not call /auth/me while on login/register/forgot to avoid 401 spam
   const isAuthRoute =
-    pathname.startsWith('/login') ||
-    pathname.startsWith('/register') ||
-    pathname.startsWith('/forgot');
+    pathname.startsWith("/login") || pathname.startsWith("/register") || pathname.startsWith("/forgot");
 
   React.useEffect(() => {
     if (isAuthRoute) return;
-    // Optionally fetch current user for protected areas
-    // api.me().catch(() => {/* ignore here, handled by guards */});
+    // api.me().catch(() => {/* handled globally */});
   }, [isAuthRoute]);
 
   return (
     <ErrorBoundary>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot" element={<ForgotPasswordPage />} />
         <Route element={<Layout />}>
-          <Route path="/" element={<Navigate to="/dashboard" />} />
+          <Route index element={<Navigate to="/dashboard" />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/dashboard/work-orders" element={<WorkOrdersPage />} />
-          <Route path="/dashboard/work-orders/new" element={<NewWorkOrder />} />
-          <Route path="/dashboard/preventive-maintenance" element={<PreventiveMaintenancePage />} />
-          <Route path="/dashboard/assets" element={<AssetsLocationsPage />} />
-          <Route path="/dashboard/permits" element={<PermitsPage />} />
-          <Route path="/dashboard/parts-inventory" element={<PartsInventoryPage />} />
-          <Route path="/dashboard/vendors-purchasing" element={<VendorsPurchasingPage />} />
-          <Route path="/dashboard/labor" element={<LaborTechniciansPage />} />
-          <Route path="/dashboard/meters" element={<MetersReadingsPage />} />
-          <Route path="/dashboard/analytics" element={<AnalyticsPage />} />
-          <Route path="/dashboard/reports" element={<Reports />} />
-          <Route path="/dashboard/knowledge-base" element={<KnowledgeBasePage />} />
-          <Route path="/dashboard/chat" element={<ChatCollaborationPage />} />
-          <Route path="/dashboard/notifications" element={<NotificationsCenterPage />} />
-          <Route path="/dashboard/integrations" element={<IntegrationsApiPage />} />
-          <Route path="/dashboard/compliance" element={<ComplianceAuditLogsPage />} />
-          <Route path="/dashboard/admin" element={<AdminSettingsPage />} />
-          <Route path="/dashboard/work-orders/new" element={<NewWorkOrder />} />
-          <Route path="/work-orders/new" element={<NewWorkOrder />} />
-          <Route path="/work-orders" element={<WorkOrdersPage />} />
-          <Route path="/permits" element={<PermitsPage />} />
-          <Route path="/analytics" element={<AnalyticsPage />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/work-orders" element={<WorkOrders />} />
+          <Route path="/maintenance" element={<Maintenance />} />
+          <Route path="/assets" element={<AssetsPage />} />
+          <Route path="/assets/:assetId" element={<AssetDetails />} />
+          <Route path="/inventory" element={<Inventory />} />
+          <Route path="/vendors" element={<VendorsPage />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/documentation" element={<Documentation />} />
+          <Route path="/departments" element={<Departments />} />
+          <Route path="/teams" element={<Teams />} />
+          <Route path="/team-members/:teamMemberId" element={<TeamMemberProfile />} />
+          <Route path="/pm/scheduler" element={<PMScheduler />} />
+          <Route path="/pm/tasks" element={<PMTasksPage />} />
+          <Route path="/timesheets" element={<TimeSheets />} />
+          <Route path="/admin/tenants" element={<AdminTenants />} />
           <Route path="/imports" element={<Imports />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
     </ErrorBoundary>

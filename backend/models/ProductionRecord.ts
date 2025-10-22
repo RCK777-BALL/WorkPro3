@@ -6,6 +6,7 @@ import mongoose, {
   Schema,
   type HydratedDocument,
   type Model,
+  type SchemaDefinitionProperty,
   type Types,
 } from 'mongoose';
 
@@ -28,16 +29,18 @@ export interface ProductionRecord {
 
 export type ProductionRecordDocument = HydratedDocument<ProductionRecord>;
 
+const tenantRef = {
+  type: Schema.Types.ObjectId,
+  ref: 'Tenant',
+  required: true,
+  index: true,
+} as SchemaDefinitionProperty<Types.ObjectId>;
+
 const productionRecordSchema = new Schema<ProductionRecord>(
   {
     asset: { type: Schema.Types.ObjectId, ref: 'Asset', index: true },
     site: { type: Schema.Types.ObjectId, ref: 'Site', index: true },
-    tenantId: {
-      type: Schema.Types.ObjectId,
-      ref: 'Tenant',
-      required: true,
-      index: true,
-    },
+    tenantId: tenantRef,
     recordedAt: { type: Date, default: Date.now, index: true },
     plannedUnits: { type: Number, default: 0 },
     actualUnits: { type: Number, default: 0 },

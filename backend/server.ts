@@ -3,7 +3,7 @@
  */
 
 import express from "express";
-import type { Request, Response } from "express";
+import type { Request, Response, RequestHandler } from "express";
 import cors, { type CorsOptions } from "cors";
 import cookieParser from "cookie-parser";
 import mongoSanitize from "./middleware/mongoSanitize";
@@ -85,11 +85,6 @@ try {
 }
 
 const app = express();
-app.use(cors({
-  origin: ["http://localhost:5173"],
-  credentials: true,
-  allowedHeaders: ["Content-Type","Authorization","x-tenant-id"],
-}));
 
 app.set("trust proxy", 1);
 const httpServer = createServer(app);
@@ -131,9 +126,11 @@ const corsOptions: CorsOptions = {
   exposedHeaders: ["x-tenant-id"],
 };
 
+const corsMiddleware = cors(corsOptions) as unknown as RequestHandler;
+
 app.use(cookieParser());
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+app.use(corsMiddleware);
+app.options("*", corsMiddleware);
 app.use(helmet());
 app.use(requestLog);
 app.use(express.json({ limit: "1mb" }));

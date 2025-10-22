@@ -51,7 +51,7 @@ const productionRecordSchema = new Schema<ProductionRecord>(
     downtimeMinutes: { type: Number, default: 0 },
     downtimeReason: { type: String, default: 'unspecified' },
     energyConsumedKwh: { type: Number, default: 0 },
-  },
+  } satisfies SchemaDefinition<ProductionRecord>,
   { timestamps: true },
 );
 

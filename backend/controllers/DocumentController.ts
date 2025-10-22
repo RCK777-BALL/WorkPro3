@@ -127,14 +127,16 @@ export const createDocument: AuthedRequestHandler<
     if (!entityId) {
       throw new Error('Unable to resolve document identifier for auditing');
     }
-    await writeAuditLog({
-      ...(tenantId ? { tenantId } : {}),
-      ...(userId ? { userId } : {}),
-      action: 'create',
-      entityType: 'Document',
-      entityId,
-      after: saved.toObject(),
-    });
+    if (tenantId) {
+      await writeAuditLog({
+        tenantId,
+        ...(userId ? { userId } : {}),
+        action: 'create',
+        entityType: 'Document',
+        entityId,
+        after: saved.toObject(),
+      });
+    }
 
     sendResponse(res, saved, null, 201);
 
@@ -210,14 +212,16 @@ export const updateDocument: AuthedRequestHandler<
     }
     const tenantId = req.tenantId;
     const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
-    await writeAuditLog({
-      ...(tenantId ? { tenantId } : {}),
-      ...(userId ? { userId } : {}),
-      action: 'update',
-      entityType: 'Document',
-      entityId,
-      after: updated.toObject(),
-    });
+    if (tenantId) {
+      await writeAuditLog({
+        tenantId,
+        ...(userId ? { userId } : {}),
+        action: 'update',
+        entityType: 'Document',
+        entityId,
+        after: updated.toObject(),
+      });
+    }
 
     sendResponse(res, updated);
 
@@ -262,14 +266,16 @@ export const deleteDocument: AuthedRequestHandler<{ id: string }> = async (
       }
     }
 
-    await writeAuditLog({
-      ...(tenantId ? { tenantId } : {}),
-      ...(userId ? { userId } : {}),
-      action: 'delete',
-      entityType: 'Document',
-      entityId,
-      before: deleted.toObject(),
-    });
+    if (tenantId) {
+      await writeAuditLog({
+        tenantId,
+        ...(userId ? { userId } : {}),
+        action: 'delete',
+        entityType: 'Document',
+        entityId,
+        before: deleted.toObject(),
+      });
+    }
     sendResponse(res, { message: 'Deleted successfully' });
 
     return;

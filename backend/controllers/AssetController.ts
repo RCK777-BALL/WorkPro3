@@ -2,7 +2,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { AuthedRequestHandler } from '../types/http';
+import type { NextFunction, Response } from 'express';
+import type { AuthedRequest } from '../types/http';
 import type { ParsedQs } from 'qs';
 import mongoose, { Error as MongooseError, Types } from 'mongoose';
 import Asset from '../models/Asset';
@@ -169,7 +170,11 @@ const locationKey = ({ departmentId, lineId, stationId }: AssetHierarchyLocation
   return `${department}::${line}::${station}`;
 };
 
-export const getAllAssets: AuthedRequestHandler = async (req, res, next) => {
+export async function getAllAssets(
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const filter: Record<string, unknown> = { tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
@@ -183,15 +188,16 @@ export const getAllAssets: AuthedRequestHandler = async (req, res, next) => {
       sendResponse(res, null, errors, 400);
       return;
     }
-    return next(err);
+    next(err);
+    return;
   }
-};
+}
 
-export const getAssetById: AuthedRequestHandler<AssetParams> = async (
-  req,
-  res,
-  next,
-) => {
+export async function getAssetById(
+  req: AuthedRequest<AssetParams>,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const id = req.params.id;
     if (!id) {
@@ -219,15 +225,16 @@ export const getAssetById: AuthedRequestHandler<AssetParams> = async (
       sendResponse(res, null, errors, 400);
       return;
     }
-    return next(err);
+    next(err);
+    return;
   }
-};
+}
 
-export const createAsset: AuthedRequestHandler<
-  ParamsDictionary,
-  unknown,
-  AssetBody
-> = async (req, res, next) => {
+export async function createAsset(
+  req: AuthedRequest<ParamsDictionary, unknown, AssetBody>,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
 
   logger.debug('createAsset body:', req.body);
   logger.debug('createAsset files:', (req as any).files);
@@ -343,15 +350,16 @@ export const createAsset: AuthedRequestHandler<
       sendResponse(res, null, errors, 400);
       return;
     }
-    return next(err);
+    next(err);
+    return;
   }
-};
+}
 
-export const updateAsset: AuthedRequestHandler<
-  AssetParams,
-  unknown,
-  AssetUpdateBody
-> = async (req, res, next) => {
+export async function updateAsset(
+  req: AuthedRequest<AssetParams, unknown, AssetUpdateBody>,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
 
   logger.debug('updateAsset body:', req.body);
   logger.debug('updateAsset files:', (req as any).files);
@@ -521,15 +529,16 @@ export const updateAsset: AuthedRequestHandler<
       sendResponse(res, null, errors, 400);
       return;
     }
-    return next(err);
+    next(err);
+    return;
   }
-};
+}
 
-export const deleteAsset: AuthedRequestHandler<AssetParams> = async (
-  req,
-  res,
-  next,
-) => {
+export async function deleteAsset(
+  req: AuthedRequest<AssetParams>,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
 
   try {
     const tenantId = req.tenantId;
@@ -579,16 +588,16 @@ export const deleteAsset: AuthedRequestHandler<AssetParams> = async (
       sendResponse(res, null, errors, 400);
       return;
     }
-    return next(err);
+    next(err);
+    return;
   }
-};
+}
 
-export const searchAssets: AuthedRequestHandler<
-  ParamsDictionary,
-  unknown,
-  unknown,
-  SearchAssetsQuery
-> = async (req, res, next) => {
+export async function searchAssets(
+  req: AuthedRequest<ParamsDictionary, unknown, unknown, SearchAssetsQuery>,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const qValue = req.query.q;
     const q = typeof qValue === 'string' ? qValue : '';
@@ -613,11 +622,16 @@ export const searchAssets: AuthedRequestHandler<
       sendResponse(res, null, errors, 400);
       return;
     }
-    return next(err);
+    next(err);
+    return;
   }
-};
+}
 
-export const getAssetTree: AuthedRequestHandler = async (req, res, next) => {
+export async function getAssetTree(
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const match: Record<string, unknown> = { tenantId: req.tenantId };
     if (req.siteId) match.siteId = req.siteId;
@@ -731,5 +745,5 @@ export const getAssetTree: AuthedRequestHandler = async (req, res, next) => {
     next(err);
     return;
   }
-};
+}
 

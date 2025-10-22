@@ -2,10 +2,11 @@
  * SPDX-License-Identifier: MIT
  */
 
+import type { NextFunction, Response } from 'express';
 import type { ParamsDictionary } from 'express-serve-static-core';
 import Channel, { ChannelDocument } from '../models/Channel';
 import ChatMessage, { ChatMessageDocument } from '../models/ChatMessage';
-import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
+import type { AuthedRequest } from '../types/http';
 import { resolveUserAndTenant } from './chat/utils';
 import { sendResponse } from '../utils/sendResponse';
 
@@ -34,11 +35,11 @@ interface CreateDirectMessageBody {
 }
 
 // Channel controllers
-export const getChannels: AuthedRequestHandler = async (
+export async function getChannels(
   req: AuthedRequest,
-  res,
-  next,
-) => {
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const ids = resolveUserAndTenant(req, res);
     if (!ids) return;
@@ -54,17 +55,13 @@ export const getChannels: AuthedRequestHandler = async (
     next(err);
     return;
   }
-};
+}
 
-export const createChannel: AuthedRequestHandler<
-  ParamsDictionary,
-  unknown,
-  CreateChannelBody
-> = async (
+export async function createChannel(
   req: AuthedRequest<ParamsDictionary, unknown, CreateChannelBody>,
-  res,
-  next,
-) => {
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const ids = resolveUserAndTenant(req, res);
     if (!ids) return;
@@ -84,17 +81,13 @@ export const createChannel: AuthedRequestHandler<
     next(err);
     return;
   }
-};
+}
 
-export const updateChannel: AuthedRequestHandler<
-  ChannelIdParams,
-  unknown,
-  UpdateChannelBody
-> = async (
+export async function updateChannel(
   req: AuthedRequest<ChannelIdParams, unknown, UpdateChannelBody>,
-  res,
-  next,
-) => {
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const ids = resolveUserAndTenant(req, res);
     if (!ids) return;
@@ -124,13 +117,13 @@ export const updateChannel: AuthedRequestHandler<
     next(err);
     return;
   }
-};
+}
 
-export const deleteChannel: AuthedRequestHandler<ChannelIdParams> = async (
+export async function deleteChannel(
   req: AuthedRequest<ChannelIdParams>,
-  res,
-  next,
-) => {
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const ids = resolveUserAndTenant(req, res, { requireUser: false });
     if (!ids) return;
@@ -147,13 +140,13 @@ export const deleteChannel: AuthedRequestHandler<ChannelIdParams> = async (
     next(err);
     return;
   }
-};
+}
 
-export const getChannelMessages: AuthedRequestHandler<ChannelIdParams> = async (
+export async function getChannelMessages(
   req: AuthedRequest<ChannelIdParams>,
-  res,
-  next,
-) => {
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const ids = resolveUserAndTenant(req, res, { requireUser: false });
     if (!ids?.tenantId) return;
@@ -167,17 +160,13 @@ export const getChannelMessages: AuthedRequestHandler<ChannelIdParams> = async (
     next(err);
     return;
   }
-};
+}
 
-export const sendChannelMessage: AuthedRequestHandler<
-  ChannelIdParams,
-  unknown,
-  MessageBody
-> = async (
+export async function sendChannelMessage(
   req: AuthedRequest<ChannelIdParams, unknown, MessageBody>,
-  res,
-  next,
-) => {
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const ids = resolveUserAndTenant(req, res);
     if (!ids) return;
@@ -196,18 +185,14 @@ export const sendChannelMessage: AuthedRequestHandler<
     next(err);
     return;
   }
-};
+}
 
 // Message controllers shared between channel and direct messages
-export const updateMessage: AuthedRequestHandler<
-  MessageIdParams,
-  unknown,
-  MessageBody
-> = async (
+export async function updateMessage(
   req: AuthedRequest<MessageIdParams, unknown, MessageBody>,
-  res,
-  next,
-) => {
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const ids = resolveUserAndTenant(req, res, { requireTenant: false });
     if (!ids) return;
@@ -227,13 +212,13 @@ export const updateMessage: AuthedRequestHandler<
     next(err);
     return;
   }
-};
+}
 
-export const deleteMessage: AuthedRequestHandler<MessageIdParams> = async (
+export async function deleteMessage(
   req: AuthedRequest<MessageIdParams>,
-  res,
-  next,
-) => {
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const ids = resolveUserAndTenant(req, res, { requireTenant: false });
     if (!ids) return;
@@ -245,14 +230,14 @@ export const deleteMessage: AuthedRequestHandler<MessageIdParams> = async (
     next(err);
     return;
   }
-};
+}
 
 // Direct message controllers
-export const getDirectMessages: AuthedRequestHandler = async (
+export async function getDirectMessages(
   req: AuthedRequest,
-  res,
-  next,
-) => {
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const ids = resolveUserAndTenant(req, res);
     if (!ids) return;
@@ -268,17 +253,13 @@ export const getDirectMessages: AuthedRequestHandler = async (
     next(err);
     return;
   }
-};
+}
 
-export const createDirectMessage: AuthedRequestHandler<
-  ParamsDictionary,
-  unknown,
-  CreateDirectMessageBody
-> = async (
+export async function createDirectMessage(
   req: AuthedRequest<ParamsDictionary, unknown, CreateDirectMessageBody>,
-  res,
-  next,
-) => {
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const ids = resolveUserAndTenant(req, res);
     if (!ids) return;
@@ -307,15 +288,13 @@ export const createDirectMessage: AuthedRequestHandler<
     next(err);
     return;
   }
-};
+}
 
-export const deleteDirectMessage: AuthedRequestHandler<
-  ConversationIdParams
-> = async (
+export async function deleteDirectMessage(
   req: AuthedRequest<ConversationIdParams>,
-  res,
-  next,
-) => {
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const ids = resolveUserAndTenant(req, res);
     if (!ids) return;
@@ -333,15 +312,13 @@ export const deleteDirectMessage: AuthedRequestHandler<
     next(err);
     return;
   }
-};
+}
 
-export const getDirectMessagesForUser: AuthedRequestHandler<
-  ConversationIdParams
-> = async (
+export async function getDirectMessagesForUser(
   req: AuthedRequest<ConversationIdParams>,
-  res,
-  next,
-) => {
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const ids = resolveUserAndTenant(req, res);
     if (!ids) return;
@@ -363,17 +340,13 @@ export const getDirectMessagesForUser: AuthedRequestHandler<
     next(err);
     return;
   }
-};
+}
 
-export const sendDirectMessage: AuthedRequestHandler<
-  ConversationIdParams,
-  unknown,
-  MessageBody
-> = async (
+export async function sendDirectMessage(
   req: AuthedRequest<ConversationIdParams, unknown, MessageBody>,
-  res,
-  next,
-) => {
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const ids = resolveUserAndTenant(req, res);
     if (!ids) return;
@@ -401,4 +374,4 @@ export const sendDirectMessage: AuthedRequestHandler<
     next(err);
     return;
   }
-};
+}

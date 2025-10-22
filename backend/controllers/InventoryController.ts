@@ -89,11 +89,11 @@ const toPlainObject = (value: unknown): Record<string, unknown> => {
 };
 
 // —— GET /inventory/summary (name, stock, status) ————————————————————————
-export const getInventoryItems = async (
+export async function getInventoryItems(
   req: Request,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> {
   try {
     const query = scopedQuery(req);
     const summaryQuery = InventoryItem.find(query);
@@ -114,15 +114,16 @@ export const getInventoryItems = async (
     sendResponse(res, formatted);
   } catch (err) {
     next(err);
+    return;
   }
-};
+}
 
 // —— GET /inventory ————————————————————————————————————————————————
-export const getAllInventoryItems = async (
+export async function getAllInventoryItems(
   req: Request,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> {
   try {
     const query = scopedQuery(req);
     const itemsQuery = InventoryItem.find(query);
@@ -131,15 +132,16 @@ export const getAllInventoryItems = async (
     sendResponse(res, items);
   } catch (err) {
     next(err);
+    return;
   }
-};
+}
 
 // —— GET /inventory/low-stock ————————————————————————————————————————
-export const getLowStockItems = async (
+export async function getLowStockItems(
   req: Request,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> {
   try {
     const query = scopedQuery(req, {
       $expr: { $lte: ["$quantity", { $ifNull: ["$reorderThreshold", 0] }] },
@@ -151,15 +153,16 @@ export const getLowStockItems = async (
     sendResponse(res, items);
   } catch (err) {
     next(err);
+    return;
   }
-};
+}
 
 // —— GET /inventory/:id ———————————————————————————————————————————————
-export const getInventoryItemById = async (
+export async function getInventoryItemById(
   req: Request,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> {
   try {
     const { id } = req.params;
     if (!isValidObjectId(id)) {
@@ -180,15 +183,16 @@ export const getInventoryItemById = async (
     sendResponse(res, { ...plainItem, status: qty <= threshold ? "low" : "ok" });
   } catch (err) {
     next(err);
+    return;
   }
-};
+}
 
 // —— POST /inventory ————————————————————————————————————————————————
-export const createInventoryItem = async (
+export async function createInventoryItem(
   req: Request,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> {
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
@@ -215,15 +219,16 @@ export const createInventoryItem = async (
   } catch (err) {
     logger.error("Error creating inventory item", err);
     next(err);
+    return;
   }
-};
+}
 
 // —— PATCH /inventory/:id ———————————————————————————————————————————————
-export const updateInventoryItem = async (
+export async function updateInventoryItem(
   req: Request,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> {
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
@@ -275,15 +280,16 @@ export const updateInventoryItem = async (
   } catch (err) {
     logger.error("Error updating inventory item", err);
     next(err);
+    return;
   }
-};
+}
 
 // —— DELETE /inventory/:id ——————————————————————————————————————————————
-export const deleteInventoryItem = async (
+export async function deleteInventoryItem(
   req: Request,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> {
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
@@ -315,15 +321,16 @@ export const deleteInventoryItem = async (
     sendResponse(res, { message: "Deleted successfully" });
   } catch (err) {
     next(err);
+    return;
   }
-};
+}
 
 // —— POST /inventory/:id/use ————————————————————————————————————————————
-export const useInventoryItem = async (
+export async function useInventoryItem(
   req: Request,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> {
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
@@ -384,15 +391,16 @@ export const useInventoryItem = async (
     sendResponse(res, item);
   } catch (err) {
     next(err);
+    return;
   }
-};
+}
 
 // —— GET /inventory/search?q= ————————————————————————————————————————————
-export const searchInventoryItems = async (
+export async function searchInventoryItems(
   req: Request,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> {
   try {
     const q = String((req.query.q as string) ?? "").trim();
     if (!q) {
@@ -412,6 +420,7 @@ export const searchInventoryItems = async (
     sendResponse(res, items);
   } catch (err) {
     next(err);
+    return;
   }
-};
+}
 

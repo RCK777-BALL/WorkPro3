@@ -16,6 +16,7 @@ import { toEntityId } from '../utils/ids';
 import logger from '../utils/logger';
 import { enqueueEmailRetry } from '../utils/emailQueue';
 import type { HydratedDocument } from 'mongoose';
+import { Types } from 'mongoose';
 
 interface GoodsReceiptItemPayload {
   item: string;
@@ -50,7 +51,12 @@ const createGoodsReceipt = async (
     if (!db) throw new Error('Database connection not ready');
 
     for (const grItem of items) {
-      await addStock(grItem.item, grItem.quantity, grItem.uom);
+      const itemId = toEntityId(grItem.item as string | Types.ObjectId);
+      const uomId = toEntityId(grItem.uom as string | Types.ObjectId | undefined);
+      if (!itemId) {
+        throw new Error('Invalid inventory item identifier');
+      }
+      await addStock(itemId, grItem.quantity, uomId);
       const poItem = po.items?.find(
         (item: IPurchaseOrderItem) => item.item.toString() === grItem.item,
       );
@@ -82,16 +88,22 @@ const createGoodsReceipt = async (
       id?: string;
       toObject?: () => unknown;
     };
-    const entityId =
-      toEntityId((grAny?._id ?? grAny?.id) as HydratedDocument<IGoodsReceipt>['_id']) ??
-      gr._id;
+    const rawEntityId = (grAny?._id ?? grAny?.id) as
+      | HydratedDocument<IGoodsReceipt>['_id']
+      | string
+      | undefined;
+    const normalizedEntityId =
+      toEntityId(rawEntityId as Types.ObjectId | string | undefined) ??
+      (typeof rawEntityId === 'string'
+        ? rawEntityId
+        : (gr._id as unknown as Types.ObjectId | undefined)?.toString?.());
 
     await writeAuditLog({
       ...(tenantId ? { tenantId } : {}),
       userId,
       action: 'create',
       entityType: 'GoodsReceipt',
-      entityId,
+      ...(normalizedEntityId ? { entityId: normalizedEntityId } : {}),
       after: typeof grAny.toObject === 'function' ? grAny.toObject() : grAny,
     });
 

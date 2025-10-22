@@ -1,5 +1,4 @@
-import type { RequestHandler, Request } from 'express';
-import type { ParamsDictionary } from 'express-serve-static-core';
+import type { RequestHandler, Request, ParamsDictionary } from 'express-serve-static-core';
 import type { ParsedQs } from 'qs';
 
 export interface ApiResult<T> {

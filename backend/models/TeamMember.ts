@@ -2,10 +2,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-import mongoose, { Schema, Document, Model, Types } from 'mongoose';
+import mongoose, { Schema, Model, Types, type HydratedDocument } from 'mongoose';
 
- 
-export interface ITeamMember extends Document<ITeamMember> {
+export interface ITeamMember {
   _id: Types.ObjectId;
   name: string;
   email: string;
@@ -21,6 +20,8 @@ export interface ITeamMember extends Document<ITeamMember> {
   employeeId: string;
   tenantId: Types.ObjectId;
 }
+
+export type TeamMemberDocument = HydratedDocument<ITeamMember>;
 
 const teamMemberSchema = new Schema<ITeamMember>(
   {
@@ -47,6 +48,9 @@ const teamMemberSchema = new Schema<ITeamMember>(
   { timestamps: true }
 );
  
-const TeamMember: Model<ITeamMember> = mongoose.model<ITeamMember>('TeamMember', teamMemberSchema);
- 
+const TeamMember: Model<ITeamMember> = mongoose.model<ITeamMember>(
+  'TeamMember',
+  teamMemberSchema,
+);
+
 export default TeamMember;

@@ -21,6 +21,7 @@ interface AssetNode {
   status?: string;
   criticality?: string;
   notes?: string;
+  location?: string;
 }
 
 interface StationNode {
@@ -69,7 +70,7 @@ const buildDepartmentNodes = async (
   const departments = await Department.find(filter)
     .sort({ name: 1 })
     .select({ name: 1, notes: 1 })
-    .lean();
+    .exec();
 
   if (!includeLines) {
     return departments.map((dept) => ({
@@ -102,7 +103,7 @@ const buildDepartmentNodes = async (
     ];
   }
 
-  const lineDocs = await Line.find(lineFilter).sort({ name: 1 }).lean();
+  const lineDocs = await Line.find(lineFilter).sort({ name: 1 }).exec();
 
   const lineIds = lineDocs.map((line) => line._id);
 
@@ -119,7 +120,7 @@ const buildDepartmentNodes = async (
         { siteId: { $exists: false } },
       ];
     }
-    stationDocs = await Station.find(stationFilter).sort({ name: 1 }).lean();
+    stationDocs = await Station.find(stationFilter).sort({ name: 1 }).exec();
   }
 
   let assetDocs: AssetDoc[] = [];
@@ -139,7 +140,7 @@ const buildDepartmentNodes = async (
     assetDocs = await Asset.find(assetFilter)
       .select({ name: 1, type: 1, status: 1, criticality: 1, stationId: 1, notes: 1, location: 1 })
       .sort({ name: 1 })
-      .lean();
+      .exec();
   }
 
   const assetMap = new Map<string, AssetNode[]>();

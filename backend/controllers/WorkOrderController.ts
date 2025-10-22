@@ -224,7 +224,7 @@ async function ensurePermitReadiness(
   const ids = permitIds?.filter(Boolean) ?? [];
   const normalizedIds = ids.map((id) => toObjectId(id));
   const permits = normalizedIds.length
-    ? await Permit.find({ tenantId, _id: { $in: normalizedIds } })
+    ? ((await Permit.find({ tenantId, _id: { $in: normalizedIds } }).exec()) as PermitDocument[])
     : [];
 
   if (normalizedIds.length && permits.length !== normalizedIds.length) {
@@ -540,10 +540,10 @@ export const createWorkOrder: AuthedRequestHandler<
     if (permits && !validPermits) return;
     let permitDocs: PermitDocument[] = [];
     if (validPermits && validPermits.length) {
-      permitDocs = await Permit.find({
+      permitDocs = (await Permit.find({
         _id: { $in: validPermits.map((id) => new Types.ObjectId(id)) },
         tenantId,
-      });
+      }).exec()) as PermitDocument[];
       if (permitDocs.length !== validPermits.length) {
         sendResponse(res, null, 'One or more permits were not found', 404);
         return;
@@ -690,15 +690,15 @@ export const updateWorkOrder: AuthedRequestHandler = async (
         'permit'
       );
       if (!validPermits) return;
-      permitDocs = await Permit.find({
+      permitDocs = (await Permit.find({
         _id: { $in: validPermits.map((id) => new Types.ObjectId(id)) },
         tenantId,
-      });
+      }).exec()) as PermitDocument[];
       if (permitDocs.length !== validPermits.length) {
         sendResponse(res, null, 'One or more permits were not found', 404);
         return;
       }
-      update.permits = permitDocs.map((doc) => doc._id);
+      update.permits = permitDocs.map((doc) => doc._id as Types.ObjectId);
     }
     if (incomingRequiredPermitTypes) {
       update.requiredPermitTypes = Array.from(new Set(incomingRequiredPermitTypes));
@@ -971,9 +971,14 @@ export const assignWorkOrder: AuthedRequestHandler = async (
     const before = workOrder.toObject();
     workOrder.status = 'assigned';
     if (parsed.data.assignees) {
-      const validAssignees = validateItems(res, parsed.data.assignees, id => Types.ObjectId.isValid(id), 'assignee');
+      const validAssignees = validateItems<string>(
+        res,
+        parsed.data.assignees,
+        (id) => Types.ObjectId.isValid(id),
+        'assignee',
+      );
       if (!validAssignees) return;
-      workOrder.assignees = mapAssignees(validAssignees) || [];
+      workOrder.set('assignees', mapAssignees(validAssignees));
     }
     const saved = await workOrder.save();
     const auditUserId = resolveUserObjectId(req);
@@ -1100,22 +1105,37 @@ export const completeWorkOrder: AuthedRequestHandler = async (
     workOrder.status = 'completed';
     if (body.timeSpentMin !== undefined) workOrder.timeSpentMin = body.timeSpentMin;
     if (Array.isArray(body.partsUsed)) {
-      const validParts = validateItems(res, body.partsUsed, p => Types.ObjectId.isValid(p.partId), 'part');
+      const validParts = validateItems<RawPart>(
+        res,
+        body.partsUsed,
+        (p) => Types.ObjectId.isValid(p.partId),
+        'part',
+      );
       if (!validParts) return;
-      workOrder.partsUsed = mapPartsUsed(validParts) || [];
+      workOrder.set('partsUsed', mapPartsUsed(validParts));
     }
     if (Array.isArray(body.checklists)) {
-      const validChecklists = validateItems(res, body.checklists, c => typeof c.description === 'string', 'checklist');
+      const validChecklists = validateItems<RawChecklist>(
+        res,
+        body.checklists,
+        (c) => typeof c.description === 'string',
+        'checklist',
+      );
       if (!validChecklists) return;
-      workOrder.checklists = mapChecklists(validChecklists) || [];
+      workOrder.set('checklists', mapChecklists(validChecklists));
     }
     if (Array.isArray(body.signatures)) {
-      const validSignatures = validateItems(res, body.signatures, s => Types.ObjectId.isValid(s.userId), 'signature');
+      const validSignatures = validateItems<RawSignature>(
+        res,
+        body.signatures,
+        (s) => Types.ObjectId.isValid(s.userId),
+        'signature',
+      );
       if (!validSignatures) return;
-      workOrder.signatures = mapSignatures(validSignatures) || [];
+      workOrder.set('signatures', mapSignatures(validSignatures));
     }
 
-    if (Array.isArray(body.photos)) workOrder.photos = body.photos;
+    if (Array.isArray(body.photos)) workOrder.set('photos', body.photos);
     if (body.failureCode !== undefined) workOrder.failureCode = body.failureCode;
 
     const saved = await workOrder.save();

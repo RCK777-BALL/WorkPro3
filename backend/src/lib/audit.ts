@@ -1,10 +1,10 @@
-import type { Request, Response, NextFunction, RequestHandler } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import type { ParamsDictionary } from 'express-serve-static-core';
 import type { Types } from 'mongoose';
 import type { ParsedQs } from 'qs';
 import AuditLog from '../../models/AuditLog';
 import logger from '../../utils/logger';
-import { toEntityId } from '../utils/toEntityId';
+import { toEntityId, toObjectId } from '../../utils/ids';
 import type { AuthedRequest, AuthedRequestHandler } from '../../types/http';
 
 export type AuditValue = unknown;
@@ -46,36 +46,34 @@ type Loader<
   ResBody = unknown,
   ReqBody = unknown,
   ReqQuery extends ParsedQs = ParsedQs,
-  Locals extends Record<string, any> = Record<string, any>,
-> = (req: AuthedRequest<P, ResBody, ReqBody, ReqQuery, Locals>) => Promise<T | null>;
+> = (req: AuthedRequest<P, ResBody, ReqBody, ReqQuery>) => Promise<T | null>;
 
 export function withAudit<
   P extends ParamsDictionary = ParamsDictionary,
   ResBody = unknown,
   ReqBody = unknown,
   ReqQuery extends ParsedQs = ParsedQs,
-  Locals extends Record<string, any> = Record<string, any>,
   T = unknown,
 >(
   entityType: string,
   action: string,
-  load: Loader<T, P, ResBody, ReqBody, ReqQuery, Locals>,
-  handler: AuthedRequestHandler<P, ResBody, ReqBody, ReqQuery, Locals>,
-): RequestHandler<P, ResBody, ReqBody, ReqQuery, Locals> {
+  load: Loader<T, P, ResBody, ReqBody, ReqQuery>,
+  handler: AuthedRequestHandler<P, ResBody, ReqBody, ReqQuery>,
+): AuthedRequestHandler<P, ResBody, ReqBody, ReqQuery> {
   return async (req, res, next) => {
-    const authedReq = req as AuthedRequest<P, ResBody, ReqBody, ReqQuery, Locals> & {
+    const authedReq = req as AuthedRequest<P, ResBody, ReqBody, ReqQuery> & {
       auditId?: string;
     };
-    const authedRes = res as Response<ResBody, Locals>;
     const before = await load(authedReq);
-    await handler(authedReq, authedRes, next);
+    await handler(authedReq, res as Response<ResBody>, next as NextFunction);
     const after = await load(authedReq);
-    const id = (
+    const rawId =
       authedReq.auditId ??
-      ((authedReq.params as unknown as { id?: string })?.id ?? (after as any)?._id)
-    ) as string | Types.ObjectId | undefined;
-    if (id) {
-      await auditAction(authedReq, action, entityType, id, before ?? undefined, after ?? undefined);
+      (authedReq.params as { id?: string })?.id ??
+      (after as { _id?: Types.ObjectId | string })?._id;
+    const entityId = rawId ? toObjectId(rawId) ?? rawId : undefined;
+    if (entityId) {
+      await auditAction(authedReq, action, entityType, entityId, before ?? undefined, after ?? undefined);
     }
   };
 }

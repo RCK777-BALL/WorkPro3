@@ -5,7 +5,7 @@
 import mongoose, { Schema, Types, Model, Document } from 'mongoose';
 
 // Interface representing an inventory item document
-export interface IInventoryItem extends Document<IInventoryItem> {
+export interface IInventoryItem extends Document {
   _id: Types.ObjectId;                 // <- make required (not optional)
   tenantId: Types.ObjectId;
   name: string;

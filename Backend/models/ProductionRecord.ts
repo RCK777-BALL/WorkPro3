@@ -2,30 +2,23 @@
  * SPDX-License-Identifier: MIT
  */
 
-import mongoose, { Schema, Document, Model, Types } from 'mongoose';
+import mongoose, {
+  Schema,
+  type HydratedDocument,
+  type InferSchemaType,
+  type Model,
+} from 'mongoose';
 
-export interface ProductionRecordDocument extends Document {
-  _id: Types.ObjectId;
-  asset?: Types.ObjectId;
-  site?: Types.ObjectId;
-  tenantId: Types.ObjectId;
-  recordedAt: Date;
-  plannedUnits?: number;
-  actualUnits?: number;
-  goodUnits?: number;
-  idealCycleTimeSec?: number;
-  plannedTimeMinutes?: number;
-  runTimeMinutes?: number;
-  downtimeMinutes?: number;
-  downtimeReason?: string;
-  energyConsumedKwh?: number;
-}
-
-const productionRecordSchema = new Schema<ProductionRecordDocument>(
+const productionRecordSchema = new Schema(
   {
     asset: { type: Schema.Types.ObjectId, ref: 'Asset', index: true },
     site: { type: Schema.Types.ObjectId, ref: 'Site', index: true },
-    tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Tenant',
+      required: true,
+      index: true,
+    },
     recordedAt: { type: Date, default: Date.now, index: true },
     plannedUnits: { type: Number, default: 0 },
     actualUnits: { type: Number, default: 0 },
@@ -40,7 +33,11 @@ const productionRecordSchema = new Schema<ProductionRecordDocument>(
   { timestamps: true },
 );
 
-const ProductionRecord: Model<ProductionRecordDocument> = mongoose.model<ProductionRecordDocument>(
+export type ProductionRecord = InferSchemaType<typeof productionRecordSchema>;
+export type ProductionRecordDocument = HydratedDocument<ProductionRecord>;
+export type ProductionRecordModel = Model<ProductionRecordDocument>;
+
+const ProductionRecord = mongoose.model<ProductionRecord>(
   'ProductionRecord',
   productionRecordSchema,
 );

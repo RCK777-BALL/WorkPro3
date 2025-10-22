@@ -32,7 +32,12 @@ const productionRecordSchema = new Schema<ProductionRecord>(
   {
     asset: { type: Schema.Types.ObjectId, ref: 'Asset', index: true },
     site: { type: Schema.Types.ObjectId, ref: 'Site', index: true },
-    tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Tenant',
+      required: true,
+      index: true,
+    },
     recordedAt: { type: Date, default: Date.now, index: true },
     plannedUnits: { type: Number, default: 0 },
     actualUnits: { type: Number, default: 0 },

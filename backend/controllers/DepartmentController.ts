@@ -25,7 +25,7 @@ const normalizeSearchTerm = (value: unknown): string | undefined => {
 
 const buildDepartmentFilter = (
   tenantId: string,
-  options: { siteId?: string; search?: string },
+  options: { siteId?: string | undefined; search?: string | undefined },
 ): FilterQuery<DepartmentDoc> => {
   const filter: FilterQuery<DepartmentDoc> = { tenantId };
 

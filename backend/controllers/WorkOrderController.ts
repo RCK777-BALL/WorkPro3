@@ -169,7 +169,7 @@ interface WorkOrderQueryFilter {
 
 const buildWorkOrderListFilter = (
   tenantId: string,
-  filters: { type?: string },
+  filters: { type?: string | undefined },
 ): WorkOrderQueryFilter => {
   const query: WorkOrderQueryFilter = { tenantId };
 
@@ -183,11 +183,11 @@ const buildWorkOrderListFilter = (
 const buildWorkOrderSearchFilter = (
   tenantId: string,
   filters: {
-    status?: string;
-    priority?: string;
-    type?: string;
-    startDate?: Date;
-    endDate?: Date;
+    status?: string | undefined;
+    priority?: string | undefined;
+    type?: string | undefined;
+    startDate?: Date | undefined;
+    endDate?: Date | undefined;
   },
 ): WorkOrderQueryFilter => {
   const query = buildWorkOrderListFilter(tenantId, { type: filters.type });
@@ -719,7 +719,9 @@ export const updateWorkOrder: AuthedRequestHandler = async (
     }
     const userObjectId = resolveUserObjectId(req);
     if (permitDocs) {
-      const newIds = new Set(permitDocs.map((doc) => doc._id.toString()));
+      const newIds = new Set(
+        permitDocs.map((doc) => (doc._id as Types.ObjectId).toString()),
+      );
       const previousIds = (existing.permits ?? []).map((id) => id.toString());
       const removedIds = previousIds.filter((id) => !newIds.has(id));
       if (removedIds.length) {

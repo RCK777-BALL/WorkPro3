@@ -60,7 +60,7 @@ const parseInclude = (value: unknown): Set<string> => {
 };
 
 const buildDepartmentNodes = async (
-  req: AuthedRequest,
+  authedReq: AuthedRequest,
   filter: FilterQuery<DepartmentDoc>,
   include: Set<string>,
 ): Promise<DepartmentNode[]> => {
@@ -93,12 +93,12 @@ const buildDepartmentNodes = async (
   }
 
   const lineFilter: FilterQuery<LineDoc> = {
-    tenantId: req.tenantId,
+    tenantId: authedReq.tenantId,
     departmentId: { $in: deptIds },
   };
-  if (req.siteId) {
+  if (authedReq.siteId) {
     lineFilter.$or = [
-      { siteId: req.siteId },
+      { siteId: authedReq.siteId },
       { siteId: null },
       { siteId: { $exists: false } },
     ];
@@ -111,12 +111,12 @@ const buildDepartmentNodes = async (
   let stationDocs: StationDoc[] = [];
   if (includeStations && lineIds.length > 0) {
     const stationFilter: FilterQuery<StationDoc> = {
-      tenantId: req.tenantId,
+      tenantId: authedReq.tenantId,
       lineId: { $in: lineIds },
     };
-    if (req.siteId) {
+    if (authedReq.siteId) {
       stationFilter.$or = [
-        { siteId: req.siteId },
+        { siteId: authedReq.siteId },
         { siteId: null },
         { siteId: { $exists: false } },
       ];
@@ -128,12 +128,12 @@ const buildDepartmentNodes = async (
   if (includeAssets && stationDocs.length > 0) {
     const stationIds = stationDocs.map((station) => station._id);
     const assetFilter: FilterQuery<AssetDoc> = {
-      tenantId: req.tenantId,
+      tenantId: authedReq.tenantId,
       stationId: { $in: stationIds },
     };
-    if (req.siteId) {
+    if (authedReq.siteId) {
       assetFilter.$or = [
-        { siteId: req.siteId },
+        { siteId: authedReq.siteId },
         { siteId: null },
         { siteId: { $exists: false } },
       ];
@@ -149,15 +149,22 @@ const buildDepartmentNodes = async (
     if (!asset.stationId) return;
     const stationId = asset.stationId.toString();
     const list = assetMap.get(stationId) ?? [];
-    list.push({
+    const node: AssetNode = {
       _id: asset._id.toString(),
       name: asset.name,
       type: asset.type,
-      status: asset.status,
-      criticality: asset.criticality,
       notes: asset.notes ?? '',
-      location: asset.location,
-    });
+    };
+    if (asset.status !== undefined) {
+      node.status = asset.status;
+    }
+    if (asset.criticality !== undefined) {
+      node.criticality = asset.criticality;
+    }
+    if (asset.location !== undefined) {
+      node.location = asset.location;
+    }
+    list.push(node);
     assetMap.set(stationId, list);
   });
 
@@ -216,17 +223,18 @@ const listDepartments: AuthedRequestHandler<
   DepartmentNode[]
 > = async (req, res, next) => {
   try {
-    const filter: FilterQuery<DepartmentDoc> = { tenantId: req.tenantId };
-    if (req.siteId) {
+    const authedReq = req as AuthedRequest;
+    const filter: FilterQuery<DepartmentDoc> = { tenantId: authedReq.tenantId };
+    if (authedReq.siteId) {
       filter.$or = [
-        { siteId: req.siteId },
+        { siteId: authedReq.siteId },
         { siteId: null },
         { siteId: { $exists: false } },
       ];
     }
 
     const include = parseInclude(req.query.include);
-    const result = await buildDepartmentNodes(req, filter, include);
+    const result = await buildDepartmentNodes(authedReq, filter, include);
     sendResponse(res, result, null, 200, 'Departments retrieved');
   } catch (err) {
     next(err);
@@ -238,19 +246,20 @@ const getDepartment: AuthedRequestHandler<
   DepartmentNode | { message: string }
 > = async (req, res, next) => {
   try {
+    const authedReq = req as AuthedRequest;
     const include = parseInclude(req.query.include);
     const filter: FilterQuery<DepartmentDoc> = {
-      tenantId: req.tenantId,
+      tenantId: authedReq.tenantId,
     };
     filter._id = req.params.id as any;
-    if (req.siteId) {
+    if (authedReq.siteId) {
       filter.$or = [
-        { siteId: req.siteId },
+        { siteId: authedReq.siteId },
         { siteId: null },
         { siteId: { $exists: false } },
       ];
     }
-    const result = await buildDepartmentNodes(req, filter, include);
+    const result = await buildDepartmentNodes(authedReq, filter, include);
     if (result.length === 0) {
       sendResponse(res, null, 'Not found', 404);
       return;

@@ -34,7 +34,10 @@ describe('CMMS end-to-end workflows', () => {
 
   beforeAll(async () => {
     mongo = await MongoMemoryServer.create({
-      binary: { systemBinary: '/usr/bin/mongod' },
+      binary: {
+        systemBinary: '/usr/bin/mongod',
+        version: '6.0.26',
+      },
     });
     await mongoose.connect(mongo.getUri());
 

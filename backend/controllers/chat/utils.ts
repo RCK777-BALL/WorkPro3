@@ -14,8 +14,8 @@ interface ResolveOptions {
 }
 
 interface ResolveResult {
-  userId?: Types.ObjectId;
-  tenantId?: string;
+  userId?: Types.ObjectId | undefined;
+  tenantId?: string | undefined;
 }
 
 const DEFAULT_OPTIONS: ResolveOptions = {
@@ -45,7 +45,7 @@ export function resolveUserAndTenant(
   }
 
   return {
-    tenantId,
+    tenantId: tenantId ?? undefined,
     userId: userId ?? undefined,
   };
 }

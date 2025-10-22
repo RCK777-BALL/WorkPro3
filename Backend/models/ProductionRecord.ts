@@ -2,9 +2,14 @@
  * SPDX-License-Identifier: MIT
  */
 
-import mongoose, { Schema, Document, Model, Types } from 'mongoose';
+import mongoose, {
+  Schema,
+  type HydratedDocument,
+  type Model,
+  type Types,
+} from 'mongoose';
 
-export interface ProductionRecordDocument extends Document {
+export interface ProductionRecord {
   _id: Types.ObjectId;
   asset?: Types.ObjectId;
   site?: Types.ObjectId;
@@ -21,7 +26,9 @@ export interface ProductionRecordDocument extends Document {
   energyConsumedKwh?: number;
 }
 
-const productionRecordSchema = new Schema<ProductionRecordDocument>(
+export type ProductionRecordDocument = HydratedDocument<ProductionRecord>;
+
+const productionRecordSchema = new Schema<ProductionRecord>(
   {
     asset: { type: Schema.Types.ObjectId, ref: 'Asset', index: true },
     site: { type: Schema.Types.ObjectId, ref: 'Site', index: true },
@@ -40,9 +47,9 @@ const productionRecordSchema = new Schema<ProductionRecordDocument>(
   { timestamps: true },
 );
 
-const ProductionRecord: Model<ProductionRecordDocument> = mongoose.model<ProductionRecordDocument>(
+const ProductionRecordModel: Model<ProductionRecord> = mongoose.model<ProductionRecord>(
   'ProductionRecord',
   productionRecordSchema,
 );
 
-export default ProductionRecord;
+export default ProductionRecordModel;

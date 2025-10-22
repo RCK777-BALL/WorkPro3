@@ -3,7 +3,7 @@
  */
 
 import { Router } from 'express';
-import type { FilterQuery } from 'mongoose';
+import { type FilterQuery } from 'mongoose';
 
 import Department, { type DepartmentDoc } from '../models/Department';
 import Line, { type LineDoc } from '../models/Line';
@@ -23,12 +23,15 @@ interface AssetNode {
   criticality?: string;
   notes?: string;
   location?: string;
+  description?: string;
+  lastServiced?: string;
 }
 
 interface StationNode {
   _id: string;
   name: string;
   notes?: string;
+  description?: string;
   assets: AssetNode[];
 }
 
@@ -36,6 +39,7 @@ interface LineNode {
   _id: string;
   name: string;
   notes?: string;
+  description?: string;
   stations: StationNode[];
 }
 
@@ -43,6 +47,7 @@ interface DepartmentNode {
   _id: string;
   name: string;
   notes?: string;
+  description?: string;
   lines: LineNode[];
 }
 
@@ -78,6 +83,7 @@ const buildDepartmentNodes = async (
       _id: dept._id.toString(),
       name: dept.name,
       notes: dept.notes ?? '',
+      description: dept.notes ?? '',
       lines: [],
     }));
   }
@@ -88,6 +94,7 @@ const buildDepartmentNodes = async (
       _id: dept._id.toString(),
       name: dept.name,
       notes: dept.notes ?? '',
+      description: dept.notes ?? '',
       lines: [],
     }));
   }
@@ -164,6 +171,12 @@ const buildDepartmentNodes = async (
     if (asset.location !== undefined) {
       node.location = asset.location;
     }
+    if (asset.description !== undefined) {
+      node.description = asset.description;
+    }
+    if (asset.lastServiced instanceof Date && !Number.isNaN(asset.lastServiced.valueOf())) {
+      node.lastServiced = asset.lastServiced.toISOString();
+    }
     list.push(node);
     assetMap.set(stationId, list);
   });
@@ -184,6 +197,7 @@ const buildDepartmentNodes = async (
       _id: stationId,
       name: station.name,
       notes: station.notes ?? '',
+      description: station.notes ?? '',
       assets,
     });
     stationMap.set(lineId, nodes);
@@ -200,6 +214,7 @@ const buildDepartmentNodes = async (
       _id: lineId,
       name: line.name,
       notes: line.notes ?? '',
+      description: line.notes ?? '',
       stations,
     });
     lineMap.set(deptId, nodes);
@@ -213,9 +228,34 @@ const buildDepartmentNodes = async (
       _id: deptId,
       name: dept.name,
       notes: dept.notes ?? '',
+      description: dept.notes ?? '',
       lines,
     };
   });
+};
+
+const defaultInclude = (): Set<string> => new Set(['lines', 'stations', 'assets']);
+
+const fetchDepartmentNode = async (
+  authedReq: AuthedRequest,
+  departmentId: string,
+  include?: Set<string>,
+): Promise<DepartmentNode | null> => {
+  const filter: FilterQuery<DepartmentDoc> = {
+    tenantId: authedReq.tenantId,
+    _id: departmentId as any,
+  };
+
+  if (authedReq.siteId) {
+    filter.$or = [
+      { siteId: authedReq.siteId },
+      { siteId: null },
+      { siteId: { $exists: false } },
+    ];
+  }
+
+  const result = await buildDepartmentNodes(authedReq, filter, include ?? defaultInclude());
+  return result[0] ?? null;
 };
 
 const listDepartments: AuthedRequestHandler<
@@ -280,9 +320,15 @@ const createDepartment: AuthedRequestHandler<
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
+    const description =
+      typeof req.body?.description === 'string'
+        ? req.body.description
+        : typeof req.body?.notes === 'string'
+          ? req.body.notes
+          : '';
     const department = await Department.create({
       name: req.body.name,
-      notes: req.body.notes ?? '',
+      notes: description,
       tenantId: req.tenantId,
       siteId: req.siteId,
     });
@@ -290,6 +336,7 @@ const createDepartment: AuthedRequestHandler<
       _id: department._id.toString(),
       name: department.name,
       notes: department.notes ?? '',
+      description: department.notes ?? '',
       lines: [] as LineNode[],
     };
     sendResponse(res, payload, null, 201, 'Department created');
@@ -304,9 +351,18 @@ const updateDepartment: AuthedRequestHandler<
   { name?: string; notes?: string }
 > = async (req, res, next) => {
   try {
+    const updates: Record<string, unknown> = {};
+    if (typeof req.body?.name === 'string') {
+      updates.name = req.body.name;
+    }
+    if (typeof req.body?.description === 'string') {
+      updates.notes = req.body.description;
+    } else if (typeof req.body?.notes === 'string') {
+      updates.notes = req.body.notes;
+    }
     const department = await Department.findOneAndUpdate(
       { _id: req.params.id, tenantId: req.tenantId },
-      { $set: { name: req.body.name, notes: req.body.notes ?? '' } },
+      { $set: updates },
       { new: true },
     );
     if (!department) {
@@ -317,6 +373,7 @@ const updateDepartment: AuthedRequestHandler<
       _id: department._id.toString(),
       name: department.name,
       notes: department.notes ?? '',
+      description: department.notes ?? '',
       lines: [],
     };
     sendResponse(res, payload, null, 200, 'Department updated');
@@ -366,11 +423,663 @@ const deleteDepartment: AuthedRequestHandler<{ id: string }> = async (req, res, 
   }
 };
 
+const createLineForDepartment: AuthedRequestHandler<
+  { deptId: string },
+  DepartmentNode | { message: string },
+  { name?: string; notes?: string }
+> = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const rawName = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+    if (!rawName) {
+      sendResponse(res, null, 'Line name is required', 400);
+      return;
+    }
+
+    const department = await Department.findOne({ _id: req.params.deptId, tenantId });
+    if (!department) {
+      sendResponse(res, null, 'Department not found', 404);
+      return;
+    }
+
+    const line = await Line.create({
+      name: rawName,
+      notes: typeof req.body?.notes === 'string' ? req.body.notes : undefined,
+      departmentId: department._id,
+      tenantId,
+      siteId: department.siteId ?? req.siteId,
+    });
+
+    await Department.updateOne(
+      { _id: department._id, tenantId },
+      {
+        $push: {
+          lines: {
+            _id: line._id,
+            name: line.name,
+            notes: line.notes ?? '',
+            tenantId,
+            stations: [],
+          },
+        },
+      },
+    );
+
+    const node = await fetchDepartmentNode(req as AuthedRequest, department._id.toString());
+    if (!node) {
+      sendResponse(res, null, 'Failed to load department', 500);
+      return;
+    }
+
+    sendResponse(res, node, null, 201, 'Line created');
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updateLineForDepartment: AuthedRequestHandler<
+  { deptId: string; lineId: string },
+  DepartmentNode | { message: string },
+  { name?: string; notes?: string }
+> = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const updates: Record<string, unknown> = {};
+    if (typeof req.body?.name === 'string') {
+      const trimmed = req.body.name.trim();
+      if (!trimmed) {
+        sendResponse(res, null, 'Line name cannot be empty', 400);
+        return;
+      }
+      updates.name = trimmed;
+    }
+    if (typeof req.body?.notes === 'string') {
+      updates.notes = req.body.notes;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      sendResponse(res, null, 'No updates provided', 400);
+      return;
+    }
+
+    const line = await Line.findOneAndUpdate(
+      { _id: req.params.lineId, tenantId, departmentId: req.params.deptId },
+      { $set: updates },
+      { new: true },
+    );
+
+    if (!line) {
+      sendResponse(res, null, 'Line not found', 404);
+      return;
+    }
+
+    const setPayload: Record<string, unknown> = {};
+    if (updates.name) {
+      setPayload['lines.$[line].name'] = line.name;
+    }
+    if (Object.prototype.hasOwnProperty.call(updates, 'notes')) {
+      setPayload['lines.$[line].notes'] = line.notes ?? '';
+    }
+
+    if (Object.keys(setPayload).length > 0) {
+      await Department.updateOne(
+        { _id: req.params.deptId, tenantId },
+        { $set: setPayload },
+        {
+          arrayFilters: [{ 'line._id': line._id }],
+        },
+      );
+    }
+
+    const node = await fetchDepartmentNode(req as AuthedRequest, req.params.deptId);
+    if (!node) {
+      sendResponse(res, null, 'Failed to load department', 500);
+      return;
+    }
+
+    sendResponse(res, node, null, 200, 'Line updated');
+  } catch (err) {
+    next(err);
+  }
+};
+
+const deleteLineForDepartment: AuthedRequestHandler<
+  { deptId: string; lineId: string },
+  DepartmentNode | { message: string }
+> = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const line = await Line.findOne({
+      _id: req.params.lineId,
+      tenantId,
+      departmentId: req.params.deptId,
+    });
+
+    if (!line) {
+      sendResponse(res, null, 'Line not found', 404);
+      return;
+    }
+
+    const stations = await Station.find({
+      lineId: line._id,
+      tenantId,
+    }).select({ _id: 1 });
+
+    const stationIds = stations.map((station) => station._id);
+
+    if (stationIds.length > 0) {
+      await Station.deleteMany({ _id: { $in: stationIds } });
+      await Asset.deleteMany({ stationId: { $in: stationIds }, tenantId });
+    }
+
+    await Line.deleteOne({ _id: line._id });
+    await Department.updateOne(
+      { _id: req.params.deptId, tenantId },
+      { $pull: { lines: { _id: line._id } } },
+    );
+
+    const node = await fetchDepartmentNode(req as AuthedRequest, req.params.deptId);
+    if (!node) {
+      sendResponse(res, null, 'Failed to load department', 500);
+      return;
+    }
+
+    sendResponse(res, node, null, 200, 'Line deleted');
+  } catch (err) {
+    next(err);
+  }
+};
+
+const createStationForLine: AuthedRequestHandler<
+  { deptId: string; lineId: string },
+  DepartmentNode | { message: string },
+  { name?: string; notes?: string }
+> = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const rawName = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+    if (!rawName) {
+      sendResponse(res, null, 'Station name is required', 400);
+      return;
+    }
+
+    const department = await Department.findOne({ _id: req.params.deptId, tenantId });
+    if (!department) {
+      sendResponse(res, null, 'Department not found', 404);
+      return;
+    }
+
+    const line = await Line.findOne({
+      _id: req.params.lineId,
+      tenantId,
+      departmentId: department._id,
+    });
+
+    if (!line) {
+      sendResponse(res, null, 'Line not found', 404);
+      return;
+    }
+
+    const station = await Station.create({
+      name: rawName,
+      notes: typeof req.body?.notes === 'string' ? req.body.notes : undefined,
+      tenantId,
+      departmentId: department._id,
+      lineId: line._id,
+      siteId: department.siteId ?? req.siteId,
+    });
+
+    await Line.updateOne(
+      { _id: line._id },
+      { $push: { stations: station._id } },
+    );
+
+    await Department.updateOne(
+      { _id: department._id, tenantId },
+      {
+        $push: {
+          'lines.$[line].stations': {
+            _id: station._id,
+            name: station.name,
+            notes: station.notes ?? '',
+            assets: [],
+          },
+        },
+      },
+      {
+        arrayFilters: [{ 'line._id': line._id }],
+      },
+    );
+
+    const node = await fetchDepartmentNode(req as AuthedRequest, department._id.toString());
+    if (!node) {
+      sendResponse(res, null, 'Failed to load department', 500);
+      return;
+    }
+
+    sendResponse(res, node, null, 201, 'Station created');
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updateStationForLine: AuthedRequestHandler<
+  { deptId: string; lineId: string; stationId: string },
+  DepartmentNode | { message: string },
+  { name?: string; notes?: string }
+> = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const updates: Record<string, unknown> = {};
+    if (typeof req.body?.name === 'string') {
+      const trimmed = req.body.name.trim();
+      if (!trimmed) {
+        sendResponse(res, null, 'Station name cannot be empty', 400);
+        return;
+      }
+      updates.name = trimmed;
+    }
+    if (typeof req.body?.notes === 'string') {
+      updates.notes = req.body.notes;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      sendResponse(res, null, 'No updates provided', 400);
+      return;
+    }
+
+    const station = await Station.findOneAndUpdate(
+      {
+        _id: req.params.stationId,
+        tenantId,
+        lineId: req.params.lineId,
+        departmentId: req.params.deptId,
+      },
+      { $set: updates },
+      { new: true },
+    );
+
+    if (!station) {
+      sendResponse(res, null, 'Station not found', 404);
+      return;
+    }
+
+    const setPayload: Record<string, unknown> = {};
+    if (updates.name) {
+      setPayload['lines.$[line].stations.$[station].name'] = station.name;
+    }
+    if (Object.prototype.hasOwnProperty.call(updates, 'notes')) {
+      setPayload['lines.$[line].stations.$[station].notes'] = station.notes ?? '';
+    }
+
+    if (Object.keys(setPayload).length > 0) {
+      await Department.updateOne(
+        { _id: req.params.deptId, tenantId },
+        { $set: setPayload },
+        {
+          arrayFilters: [
+            { 'line._id': station.lineId },
+            { 'station._id': station._id },
+          ],
+        },
+      );
+    }
+
+    const node = await fetchDepartmentNode(req as AuthedRequest, req.params.deptId);
+    if (!node) {
+      sendResponse(res, null, 'Failed to load department', 500);
+      return;
+    }
+
+    sendResponse(res, node, null, 200, 'Station updated');
+  } catch (err) {
+    next(err);
+  }
+};
+
+const deleteStationForLine: AuthedRequestHandler<
+  { deptId: string; lineId: string; stationId: string },
+  DepartmentNode | { message: string }
+> = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const station = await Station.findOne({
+      _id: req.params.stationId,
+      tenantId,
+      lineId: req.params.lineId,
+      departmentId: req.params.deptId,
+    });
+
+    if (!station) {
+      sendResponse(res, null, 'Station not found', 404);
+      return;
+    }
+
+    await Asset.deleteMany({ stationId: station._id, tenantId });
+    await Station.deleteOne({ _id: station._id });
+    await Line.updateOne({ _id: station.lineId }, { $pull: { stations: station._id } });
+    await Department.updateOne(
+      { _id: req.params.deptId, tenantId },
+      { $pull: { 'lines.$[line].stations': { _id: station._id } } },
+      { arrayFilters: [{ 'line._id': station.lineId }] },
+    );
+
+    const node = await fetchDepartmentNode(req as AuthedRequest, req.params.deptId);
+    if (!node) {
+      sendResponse(res, null, 'Failed to load department', 500);
+      return;
+    }
+
+    sendResponse(res, node, null, 200, 'Station deleted');
+  } catch (err) {
+    next(err);
+  }
+};
+
+const allowedAssetTypes = new Set(['Electrical', 'Mechanical', 'Tooling', 'Interface']);
+
+const createAssetForStation: AuthedRequestHandler<
+  { deptId: string; lineId: string; stationId: string },
+  DepartmentNode | { message: string },
+  {
+    name?: string;
+    type?: string;
+    status?: string;
+    description?: string;
+    notes?: string;
+    location?: string;
+    lastServiced?: string;
+  }
+> = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+    if (!name) {
+      sendResponse(res, null, 'Asset name is required', 400);
+      return;
+    }
+
+    const type = typeof req.body?.type === 'string' ? req.body.type : '';
+    if (!allowedAssetTypes.has(type)) {
+      sendResponse(res, null, 'Invalid asset type', 400);
+      return;
+    }
+
+    const department = await Department.findOne({ _id: req.params.deptId, tenantId });
+    if (!department) {
+      sendResponse(res, null, 'Department not found', 404);
+      return;
+    }
+
+    const line = await Line.findOne({
+      _id: req.params.lineId,
+      tenantId,
+      departmentId: department._id,
+    });
+    if (!line) {
+      sendResponse(res, null, 'Line not found', 404);
+      return;
+    }
+
+    const station = await Station.findOne({
+      _id: req.params.stationId,
+      tenantId,
+      lineId: line._id,
+      departmentId: department._id,
+    });
+    if (!station) {
+      sendResponse(res, null, 'Station not found', 404);
+      return;
+    }
+
+    const payload: Partial<AssetDoc> = {
+      name,
+      type: type as AssetDoc['type'],
+      status: typeof req.body?.status === 'string' ? req.body.status : 'Active',
+      description: typeof req.body?.description === 'string' ? req.body.description : undefined,
+      notes: typeof req.body?.notes === 'string' ? req.body.notes : undefined,
+      location: typeof req.body?.location === 'string' ? req.body.location : undefined,
+      departmentId: department._id,
+      department: department.name,
+      line: line.name,
+      station: station.name,
+      lineId: line._id,
+      stationId: station._id,
+      tenantId,
+      siteId: department.siteId ?? req.siteId,
+    };
+
+    if (req.body?.lastServiced) {
+      const parsed = new Date(req.body.lastServiced);
+      if (!Number.isNaN(parsed.valueOf())) {
+        payload.lastServiced = parsed;
+      }
+    }
+
+    const asset = await Asset.create(payload);
+
+    await Department.updateOne(
+      { _id: department._id, tenantId },
+      {
+        $push: {
+          'lines.$[line].stations.$[station].assets': asset._id,
+        },
+      },
+      {
+        arrayFilters: [
+          { 'line._id': line._id },
+          { 'station._id': station._id },
+        ],
+      },
+    );
+
+    const node = await fetchDepartmentNode(req as AuthedRequest, department._id.toString());
+    if (!node) {
+      sendResponse(res, null, 'Failed to load department', 500);
+      return;
+    }
+
+    sendResponse(res, node, null, 201, 'Asset created');
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updateAssetForStation: AuthedRequestHandler<
+  { deptId: string; lineId: string; stationId: string; assetId: string },
+  DepartmentNode | { message: string },
+  {
+    name?: string;
+    type?: string;
+    status?: string;
+    description?: string;
+    notes?: string;
+    location?: string;
+    lastServiced?: string;
+  }
+> = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const asset = await Asset.findOne({
+      _id: req.params.assetId,
+      tenantId,
+      departmentId: req.params.deptId,
+      lineId: req.params.lineId,
+      stationId: req.params.stationId,
+    });
+
+    if (!asset) {
+      sendResponse(res, null, 'Asset not found', 404);
+      return;
+    }
+
+    if (typeof req.body?.name === 'string') {
+      const trimmed = req.body.name.trim();
+      if (!trimmed) {
+        sendResponse(res, null, 'Asset name cannot be empty', 400);
+        return;
+      }
+      asset.name = trimmed;
+    }
+
+    if (typeof req.body?.type === 'string') {
+      if (!allowedAssetTypes.has(req.body.type)) {
+        sendResponse(res, null, 'Invalid asset type', 400);
+        return;
+      }
+      asset.type = req.body.type as AssetDoc['type'];
+    }
+
+    if (typeof req.body?.status === 'string') {
+      asset.status = req.body.status;
+    }
+
+    if (typeof req.body?.description === 'string') {
+      asset.description = req.body.description;
+    }
+
+    if (typeof req.body?.notes === 'string') {
+      asset.notes = req.body.notes;
+    }
+
+    if (typeof req.body?.location === 'string') {
+      asset.location = req.body.location;
+    }
+
+    if (req.body?.lastServiced) {
+      const parsed = new Date(req.body.lastServiced);
+      asset.lastServiced = Number.isNaN(parsed.valueOf()) ? undefined : parsed;
+    }
+
+    await asset.save();
+
+    const node = await fetchDepartmentNode(req as AuthedRequest, req.params.deptId);
+    if (!node) {
+      sendResponse(res, null, 'Failed to load department', 500);
+      return;
+    }
+
+    sendResponse(res, node, null, 200, 'Asset updated');
+  } catch (err) {
+    next(err);
+  }
+};
+
+const deleteAssetForStation: AuthedRequestHandler<
+  { deptId: string; lineId: string; stationId: string; assetId: string },
+  DepartmentNode | { message: string }
+> = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const asset = await Asset.findOne({
+      _id: req.params.assetId,
+      tenantId,
+      departmentId: req.params.deptId,
+      lineId: req.params.lineId,
+      stationId: req.params.stationId,
+    });
+
+    if (!asset) {
+      sendResponse(res, null, 'Asset not found', 404);
+      return;
+    }
+
+    await Asset.deleteOne({ _id: asset._id });
+    await Department.updateOne(
+      { _id: req.params.deptId, tenantId },
+      {
+        $pull: {
+          'lines.$[line].stations.$[station].assets': asset._id,
+        },
+      },
+      {
+        arrayFilters: [
+          { 'line._id': asset.lineId },
+          { 'station._id': asset.stationId },
+        ],
+      },
+    );
+
+    const node = await fetchDepartmentNode(req as AuthedRequest, req.params.deptId);
+    if (!node) {
+      sendResponse(res, null, 'Failed to load department', 500);
+      return;
+    }
+
+    sendResponse(res, node, null, 200, 'Asset deleted');
+  } catch (err) {
+    next(err);
+  }
+};
+
 router.get('/', listDepartments);
 router.get('/:id', getDepartment);
 router.post('/', departmentValidators, validate, createDepartment);
 router.put('/:id', departmentValidators, validate, updateDepartment);
 router.delete('/:id', deleteDepartment);
+router.post('/:deptId/lines', createLineForDepartment);
+router.put('/:deptId/lines/:lineId', updateLineForDepartment);
+router.delete('/:deptId/lines/:lineId', deleteLineForDepartment);
+router.post('/:deptId/lines/:lineId/stations', createStationForLine);
+router.put('/:deptId/lines/:lineId/stations/:stationId', updateStationForLine);
+router.delete('/:deptId/lines/:lineId/stations/:stationId', deleteStationForLine);
+router.post(
+  '/:deptId/lines/:lineId/stations/:stationId/assets',
+  createAssetForStation,
+);
+router.put(
+  '/:deptId/lines/:lineId/stations/:stationId/assets/:assetId',
+  updateAssetForStation,
+);
+router.delete(
+  '/:deptId/lines/:lineId/stations/:stationId/assets/:assetId',
+  deleteAssetForStation,
+);
 
 export { listDepartments, getDepartment, createDepartment, updateDepartment, deleteDepartment };
 export default router;

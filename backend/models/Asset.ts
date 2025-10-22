@@ -25,6 +25,7 @@ export interface AssetDoc extends Document {
   manufacturer?: string;
   purchaseDate?: Date;
   installationDate?: Date;
+  lastServiced?: Date;
   criticality?: string;
   documents?: Types.Array<Types.ObjectId>;
 }
@@ -52,6 +53,7 @@ const assetSchema = new Schema<AssetDoc>(
     manufacturer: { type: String },
     purchaseDate: { type: Date },
     installationDate: { type: Date },
+    lastServiced: { type: Date },
     line: { type: String },
     station: { type: String },
     lineId: { type: Schema.Types.ObjectId, ref: 'Line', index: true },

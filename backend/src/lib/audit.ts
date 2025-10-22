@@ -1,4 +1,4 @@
-import type { Request, Response, RequestHandler } from 'express';
+import type { Request, Response, NextFunction, RequestHandler } from 'express';
 import type { ParamsDictionary } from 'express-serve-static-core';
 import type { Types } from 'mongoose';
 import type { ParsedQs } from 'qs';
@@ -46,25 +46,27 @@ type Loader<
   ResBody = unknown,
   ReqBody = unknown,
   ReqQuery extends ParsedQs = ParsedQs,
-> = (req: AuthedRequest<P, ResBody, ReqBody, ReqQuery>) => Promise<T | null>;
+  Locals extends Record<string, any> = Record<string, any>,
+> = (req: AuthedRequest<P, ResBody, ReqBody, ReqQuery, Locals>) => Promise<T | null>;
 
 export function withAudit<
   P extends ParamsDictionary = ParamsDictionary,
   ResBody = unknown,
   ReqBody = unknown,
   ReqQuery extends ParsedQs = ParsedQs,
+  Locals extends Record<string, any> = Record<string, any>,
   T = unknown,
 >(
   entityType: string,
   action: string,
-  load: Loader<T, P, ResBody, ReqBody, ReqQuery>,
-  handler: AuthedRequestHandler<P, ResBody, ReqBody, ReqQuery>,
-): RequestHandler<P, ResBody, ReqBody, ReqQuery> {
+  load: Loader<T, P, ResBody, ReqBody, ReqQuery, Locals>,
+  handler: AuthedRequestHandler<P, ResBody, ReqBody, ReqQuery, Locals>,
+): RequestHandler<P, ResBody, ReqBody, ReqQuery, Locals> {
   return async (req, res, next) => {
-    const authedReq = req as AuthedRequest<P, ResBody, ReqBody, ReqQuery> & {
+    const authedReq = req as AuthedRequest<P, ResBody, ReqBody, ReqQuery, Locals> & {
       auditId?: string;
     };
-    const authedRes = res as Response<ResBody>;
+    const authedRes = res as Response<ResBody, Locals>;
     const before = await load(authedReq);
     await handler(authedReq, authedRes, next);
     const after = await load(authedReq);

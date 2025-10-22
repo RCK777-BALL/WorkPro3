@@ -2,26 +2,46 @@
  * SPDX-License-Identifier: MIT
  */
 
-import mongoose from 'mongoose';
+import mongoose, {
+  Schema,
+  type HydratedDocument,
+  type Model,
+  type Types,
+} from 'mongoose';
 
-const meterReadingSchema = new mongoose.Schema(
+export interface MeterReading {
+  meter: Types.ObjectId;
+  value: number;
+  timestamp: Date;
+  tenantId: Types.ObjectId;
+  siteId?: Types.ObjectId;
+}
+
+export type MeterReadingDocument = HydratedDocument<MeterReading>;
+
+const meterReadingSchema = new Schema<MeterReading>(
   {
-    meter: { type: mongoose.Schema.Types.ObjectId, ref: 'Meter', required: true },
+    meter: { type: Schema.Types.ObjectId, ref: 'Meter', required: true },
     value: { type: Number, required: true },
     timestamp: { type: Date, default: Date.now },
     tenantId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'Tenant',
       required: true,
       index: true,
     },
     siteId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'Site',
       index: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-export default mongoose.model('MeterReading', meterReadingSchema);
+const MeterReadingModel: Model<MeterReading> = mongoose.model<MeterReading>(
+  'MeterReading',
+  meterReadingSchema,
+);
+
+export default MeterReadingModel;

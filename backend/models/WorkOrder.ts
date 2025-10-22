@@ -2,10 +2,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-import mongoose, { Schema, Document, Model, Types } from 'mongoose';
+import mongoose, { Schema, Model, Types, HydratedDocument } from 'mongoose';
 
 
-export interface WorkOrderDocument extends Document {
+export interface WorkOrder {
   _id: Types.ObjectId;
   title: string;
   assetId?: Types.ObjectId;
@@ -45,7 +45,9 @@ export interface WorkOrderDocument extends Document {
   updatedAt?: Date;
 }
 
-const workOrderSchema = new Schema<WorkOrderDocument>(
+export type WorkOrderDocument = HydratedDocument<WorkOrder>;
+
+const workOrderSchema = new Schema<WorkOrder>(
   {
     title: { type: String, required: true },
     assetId: { type: Schema.Types.ObjectId, ref: 'Asset', index: true },
@@ -125,7 +127,7 @@ const workOrderSchema = new Schema<WorkOrderDocument>(
   { timestamps: true }
 );
 
-const WorkOrder: Model<WorkOrderDocument> = mongoose.model<WorkOrderDocument>('WorkOrder', workOrderSchema);
+const WorkOrder: Model<WorkOrder> = mongoose.model<WorkOrder>('WorkOrder', workOrderSchema);
 
 export default WorkOrder;
 

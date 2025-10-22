@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "allowJs": true,
+    "types": ["jest"],
+    "baseUrl": ".",
+    "paths": {
+      "@backend/*": ["backend/*"],
+      "@frontend/*": ["frontend/*"]
+    }
+  },
+  "include": ["tests/**/*.ts"],
+  "exclude": ["node_modules"]
+}

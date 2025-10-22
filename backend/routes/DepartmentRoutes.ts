@@ -13,6 +13,7 @@ import { requireAuth } from '../middleware/authMiddleware';
 import { departmentValidators } from '../validators/departmentValidators';
 import { validate } from '../middleware/validationMiddleware';
 import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
+import sendResponse from '../utils/sendResponse';
 
 interface AssetNode {
   _id: string;
@@ -226,7 +227,7 @@ const listDepartments: AuthedRequestHandler<
 
     const include = parseInclude(req.query.include);
     const result = await buildDepartmentNodes(req, filter, include);
-    res.json(result);
+    sendResponse(res, result, null, 200, 'Departments retrieved');
   } catch (err) {
     next(err);
   }
@@ -251,10 +252,10 @@ const getDepartment: AuthedRequestHandler<
     }
     const result = await buildDepartmentNodes(req, filter, include);
     if (result.length === 0) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
-    res.json(result[0]);
+    sendResponse(res, result[0], null, 200, 'Department retrieved');
   } catch (err) {
     next(err);
   }
@@ -267,7 +268,7 @@ const createDepartment: AuthedRequestHandler<
 > = async (req, res, next) => {
   try {
     if (!req.tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const department = await Department.create({
@@ -276,12 +277,13 @@ const createDepartment: AuthedRequestHandler<
       tenantId: req.tenantId,
       siteId: req.siteId,
     });
-    res.status(201).json({
+    const payload: DepartmentNode = {
       _id: department._id.toString(),
       name: department.name,
       notes: department.notes ?? '',
       lines: [] as LineNode[],
-    });
+    };
+    sendResponse(res, payload, null, 201, 'Department created');
   } catch (err) {
     next(err);
   }
@@ -299,15 +301,16 @@ const updateDepartment: AuthedRequestHandler<
       { new: true },
     );
     if (!department) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
-    res.json({
+    const payload: DepartmentNode = {
       _id: department._id.toString(),
       name: department.name,
       notes: department.notes ?? '',
       lines: [],
-    });
+    };
+    sendResponse(res, payload, null, 200, 'Department updated');
   } catch (err) {
     next(err);
   }
@@ -320,7 +323,7 @@ const deleteDepartment: AuthedRequestHandler<{ id: string }> = async (req, res, 
       tenantId: req.tenantId,
     });
     if (!department) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     const lines = await Line.find({ departmentId: department._id, tenantId: req.tenantId }).select({ _id: 1 });
@@ -342,7 +345,13 @@ const deleteDepartment: AuthedRequestHandler<{ id: string }> = async (req, res, 
       );
     }
 
-    res.json({ message: 'Deleted' });
+    sendResponse(
+      res,
+      { id: department._id.toString() },
+      null,
+      200,
+      'Department deleted',
+    );
   } catch (err) {
     next(err);
   }

@@ -89,7 +89,11 @@ const toPlainObject = (value: unknown): Record<string, unknown> => {
 };
 
 // —— GET /inventory/summary (name, stock, status) ————————————————————————
-const getInventoryItems = async (req: Request, res: Response, next: NextFunction) => {
+export const getInventoryItems = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const query = scopedQuery(req);
     const summaryQuery = InventoryItem.find(query);
@@ -114,7 +118,11 @@ const getInventoryItems = async (req: Request, res: Response, next: NextFunction
 };
 
 // —— GET /inventory ————————————————————————————————————————————————
-const getAllInventoryItems = async (req: Request, res: Response, next: NextFunction) => {
+export const getAllInventoryItems = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const query = scopedQuery(req);
     const itemsQuery = InventoryItem.find(query);
@@ -127,7 +135,11 @@ const getAllInventoryItems = async (req: Request, res: Response, next: NextFunct
 };
 
 // —— GET /inventory/low-stock ————————————————————————————————————————
-const getLowStockItems = async (req: Request, res: Response, next: NextFunction) => {
+export const getLowStockItems = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const query = scopedQuery(req, {
       $expr: { $lte: ["$quantity", { $ifNull: ["$reorderThreshold", 0] }] },
@@ -143,7 +155,11 @@ const getLowStockItems = async (req: Request, res: Response, next: NextFunction)
 };
 
 // —— GET /inventory/:id ———————————————————————————————————————————————
-const getInventoryItemById = async (req: Request, res: Response, next: NextFunction) => {
+export const getInventoryItemById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { id } = req.params;
     if (!isValidObjectId(id)) {
@@ -168,7 +184,11 @@ const getInventoryItemById = async (req: Request, res: Response, next: NextFunct
 };
 
 // —— POST /inventory ————————————————————————————————————————————————
-const createInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
+export const createInventoryItem = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
@@ -199,7 +219,11 @@ const createInventoryItem = async (req: Request, res: Response, next: NextFuncti
 };
 
 // —— PATCH /inventory/:id ———————————————————————————————————————————————
-const updateInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
+export const updateInventoryItem = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
@@ -255,7 +279,11 @@ const updateInventoryItem = async (req: Request, res: Response, next: NextFuncti
 };
 
 // —— DELETE /inventory/:id ——————————————————————————————————————————————
-const deleteInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteInventoryItem = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
@@ -291,7 +319,11 @@ const deleteInventoryItem = async (req: Request, res: Response, next: NextFuncti
 };
 
 // —— POST /inventory/:id/use ————————————————————————————————————————————
-const useInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
+export const useInventoryItem = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
@@ -356,7 +388,11 @@ const useInventoryItem = async (req: Request, res: Response, next: NextFunction)
 };
 
 // —— GET /inventory/search?q= ————————————————————————————————————————————
-const searchInventoryItems = async (req: Request, res: Response, next: NextFunction) => {
+export const searchInventoryItems = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const q = String((req.query.q as string) ?? "").trim();
     if (!q) {
@@ -379,14 +415,3 @@ const searchInventoryItems = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-export {
-  getInventoryItems,
-  getAllInventoryItems,
-  getLowStockItems,
-  getInventoryItemById,
-  createInventoryItem,
-  updateInventoryItem,
-  deleteInventoryItem,
-  useInventoryItem,
-  searchInventoryItems,
-};

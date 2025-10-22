@@ -45,7 +45,8 @@ export const createTenant = async (
 ) => {
   try {
     const userId = (req.user as any)?._id || (req.user as any)?.id;
-    const tenant = (await Tenant.create(req.body as Partial<TenantDocument>)) as TenantDocument;
+    const tenantPayload = req.body as Partial<TenantDocument>;
+    const tenant = (await Tenant.create(tenantPayload)) as TenantDocument;
     await writeAuditLog({
       tenantId: tenant._id,
       userId,
@@ -67,20 +68,20 @@ export const updateTenant = async (
 ) => {
   try {
     const userId = (req.user as any)?._id || (req.user as any)?.id;
-    const existing = await Tenant.findById(req.params.id);
-    if (!existing) return sendResponse(res, null, 'Not found', 404);
-    const tenant = await Tenant.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const tenant = await Tenant.findById(req.params.id);
+    if (!tenant) return sendResponse(res, null, 'Not found', 404);
+
+    const before = tenant.toObject();
+    tenant.set(req.body as Partial<TenantDocument>);
+    await tenant.save();
     await writeAuditLog({
-      tenantId: existing._id,
+      tenantId: tenant._id,
       userId,
       action: 'update',
       entityType: 'Tenant',
       entityId: toEntityId(new Types.ObjectId(req.params.id)),
-      before: existing.toObject(),
-      after: tenant?.toObject(),
+      before,
+      after: tenant.toObject(),
     });
     sendResponse(res, tenant);
   } catch (err) {

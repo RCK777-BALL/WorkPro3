@@ -795,7 +795,7 @@ export const getDashboardExportPdf = async (req: Request, res: Response, next: N
     ]);
 
     const doc = new PDFDocument({ margin: 40, size: 'A4' });
-    (doc as any).on('error', (error) => {
+    (doc as any).on('error', (error: unknown) => {
       next(error);
     });
 

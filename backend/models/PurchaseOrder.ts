@@ -12,7 +12,7 @@ export interface IPurchaseOrderItem {
   received: number;
 }
 
-export interface IPurchaseOrder extends Document<IPurchaseOrder> {
+export interface IPurchaseOrder extends Document {
   _id: Types.ObjectId;
   tenantId: Types.ObjectId;
   vendor: Types.ObjectId;

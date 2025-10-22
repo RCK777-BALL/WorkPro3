@@ -5,11 +5,30 @@
 import mongoose, {
   Schema,
   type HydratedDocument,
-  type InferSchemaType,
   type Model,
+  type Types,
 } from 'mongoose';
 
-const productionRecordSchema = new Schema(
+export interface ProductionRecord {
+  _id: Types.ObjectId;
+  asset?: Types.ObjectId;
+  site?: Types.ObjectId;
+  tenantId: Types.ObjectId;
+  recordedAt: Date;
+  plannedUnits?: number;
+  actualUnits?: number;
+  goodUnits?: number;
+  idealCycleTimeSec?: number;
+  plannedTimeMinutes?: number;
+  runTimeMinutes?: number;
+  downtimeMinutes?: number;
+  downtimeReason?: string;
+  energyConsumedKwh?: number;
+}
+
+export type ProductionRecordDocument = HydratedDocument<ProductionRecord>;
+
+const productionRecordSchema = new Schema<ProductionRecord>(
   {
     asset: { type: Schema.Types.ObjectId, ref: 'Asset', index: true },
     site: { type: Schema.Types.ObjectId, ref: 'Site', index: true },
@@ -33,13 +52,9 @@ const productionRecordSchema = new Schema(
   { timestamps: true },
 );
 
-export type ProductionRecord = InferSchemaType<typeof productionRecordSchema>;
-export type ProductionRecordDocument = HydratedDocument<ProductionRecord>;
-export type ProductionRecordModel = Model<ProductionRecordDocument>;
-
-const ProductionRecord = mongoose.model<ProductionRecord>(
+const ProductionRecordModel: Model<ProductionRecord> = mongoose.model<ProductionRecord>(
   'ProductionRecord',
   productionRecordSchema,
 );
 
-export default ProductionRecord;
+export default ProductionRecordModel;

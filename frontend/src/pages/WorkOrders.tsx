@@ -3,6 +3,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import type { ChangeEvent, MouseEvent } from 'react';
 import http from '@/lib/http';
 import { addToQueue, onSyncConflict, type SyncConflict } from '@/utils/offlineQueue';
 import ConflictResolver from '@/components/offline/ConflictResolver';
@@ -42,6 +43,39 @@ const OPTIONAL_WORK_ORDER_KEYS: (keyof WorkOrder)[] = [
   'parts',
 ];
 
+type WorkOrderResponse = Partial<WorkOrder> & { _id?: string; id?: string };
+
+const normalizeWorkOrder = (
+  raw: WorkOrderResponse | null | undefined,
+  fallback?: WorkOrder,
+): WorkOrder | null => {
+  if (!raw && !fallback) {
+    return null;
+  }
+
+  const resolved = raw ?? {};
+  const id = resolved._id ?? resolved.id ?? fallback?.id;
+  if (!id) {
+    return null;
+  }
+
+  const normalized: WorkOrder = {
+    id,
+    title: resolved.title ?? fallback?.title ?? 'Untitled Work Order',
+    priority: resolved.priority ?? fallback?.priority ?? 'medium',
+    status: resolved.status ?? fallback?.status ?? 'requested',
+    type: resolved.type ?? fallback?.type ?? 'corrective',
+    department: resolved.department ?? fallback?.department ?? 'General',
+  };
+
+  OPTIONAL_WORK_ORDER_KEYS.forEach((key) => {
+    const value = resolved[key] ?? fallback?.[key];
+    assignIfDefined(normalized, key, value as WorkOrder[typeof key] | undefined);
+  });
+
+  return normalized;
+};
+
 function assignIfDefined<T, K extends keyof T>(target: T, key: K, value: T[K] | undefined) {
   if (value !== undefined) {
     target[key] = value;
@@ -56,7 +90,8 @@ export default function WorkOrders() {
   const [priorityFilter, setPriorityFilter] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<WorkOrder | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<WorkOrder | null>(null);
   const [conflict, setConflict] = useState<SyncConflict | null>(null);
@@ -104,32 +139,10 @@ export default function WorkOrders() {
       const url = params.toString()
         ? `/workorders/search?${params.toString()}`
         : '/workorders';
-      interface WorkOrderResponse extends Partial<WorkOrder> { _id?: string; id?: string }
-      const normalize = (
-        raw: WorkOrderResponse,
-      ): WorkOrder | null => {
-        const resolvedId = raw._id ?? raw.id;
-        if (!resolvedId) {
-          return null;
-        }
-        const normalized: WorkOrder = {
-          id: resolvedId,
-          title: raw.title ?? 'Untitled Work Order',
-          priority: raw.priority ?? 'medium',
-          status: raw.status ?? 'requested',
-          type: raw.type ?? 'corrective',
-          department: raw.department ?? 'General',
-        };
-        OPTIONAL_WORK_ORDER_KEYS.forEach((key) => {
-          const value = raw[key];
-          assignIfDefined(normalized, key, value);
-        });
-        return normalized;
-      };
       const res = await http.get<WorkOrderResponse[]>(url);
       const normalized: WorkOrder[] = Array.isArray(res.data)
         ? res.data.flatMap((item) => {
-            const workOrder = normalize(item);
+            const workOrder = normalizeWorkOrder(item);
             return workOrder ? [workOrder] : [];
           })
         : [];
@@ -180,24 +193,8 @@ export default function WorkOrders() {
 
   const openReview = async (order: WorkOrder) => {
     try {
-      interface WorkOrderResponse extends Partial<WorkOrder> { _id?: string; id?: string }
       const res = await http.get<WorkOrderResponse>(`/workorders/${order.id}`);
-      const normalized = ((): WorkOrder | null => {
-        const resolvedId = res.data._id ?? res.data.id ?? order.id;
-        const normalizedOrder: WorkOrder = {
-          id: resolvedId,
-          title: res.data.title ?? order.title,
-          priority: res.data.priority ?? order.priority,
-          status: res.data.status ?? order.status,
-          type: res.data.type ?? order.type,
-          department: res.data.department ?? order.department,
-        };
-        OPTIONAL_WORK_ORDER_KEYS.forEach((key) => {
-          const value = res.data[key];
-          assignIfDefined(normalizedOrder, key, value);
-        });
-        return normalizedOrder;
-      })();
+      const normalized = normalizeWorkOrder(res.data, order);
       if (normalized) {
         setSelectedOrder(normalized);
         setShowReviewModal(true);
@@ -207,21 +204,81 @@ export default function WorkOrders() {
     }
   };
 
-  const createWorkOrder = async (payload: FormData | Record<string, unknown>) => {
+  const saveWorkOrder = async (
+    payload: FormData | Record<string, unknown>,
+    existingId?: string,
+  ) => {
+    const isEdit = Boolean(existingId);
+
     if (!navigator.onLine) {
-      if (!(payload instanceof FormData)) {
-        addToQueue({ method: 'post', url: '/workorders', data: payload });
-        const temp = { ...payload, id: Date.now().toString() } as WorkOrder;
-        setWorkOrders((prev) => [...prev, temp]);
-        localStorage.setItem(LOCAL_KEY, JSON.stringify([...workOrders, temp]));
+      if (payload instanceof FormData) {
+        console.warn('Cannot queue multipart payloads while offline.');
+        return;
       }
+
+      addToQueue({
+        method: isEdit ? 'put' : 'post',
+        url: isEdit ? `/workorders/${existingId}` : '/workorders',
+        data: payload,
+      });
+
+      setWorkOrders((prev) => {
+        const recordPayload = payload as Record<string, unknown>;
+        if (isEdit && existingId) {
+          const updated = prev.map((wo) => {
+            if (wo.id !== existingId) {
+              return wo;
+            }
+            const departmentValue = (recordPayload.department as string)
+              ?? (recordPayload.departmentId as string)
+              ?? wo.department;
+            const merged: WorkOrder = {
+              ...wo,
+              ...recordPayload,
+              department: departmentValue,
+            } as WorkOrder;
+            delete (merged as Record<string, unknown>).departmentId;
+            return merged;
+          });
+          localStorage.setItem(LOCAL_KEY, JSON.stringify(updated));
+          return updated;
+        }
+
+        const departmentValue = (recordPayload.department as string)
+          ?? (recordPayload.departmentId as string)
+          ?? 'General';
+
+        const temp: WorkOrder = {
+          id: Date.now().toString(),
+          title: (recordPayload.title as string) ?? 'Untitled Work Order',
+          priority: (recordPayload.priority as WorkOrder['priority']) ?? 'medium',
+          status: (recordPayload.status as WorkOrder['status']) ?? 'requested',
+          type: (recordPayload.type as WorkOrder['type']) ?? 'corrective',
+          department: departmentValue,
+        } as WorkOrder;
+
+        OPTIONAL_WORK_ORDER_KEYS.forEach((key) => {
+          const value = recordPayload[key as string];
+          assignIfDefined(temp, key, value as WorkOrder[typeof key] | undefined);
+        });
+
+        const updated = [...prev, temp];
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(updated));
+        return updated;
+      });
       return;
     }
+
     try {
       if (payload instanceof FormData) {
-        await http.post('/workorders', payload, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        const config = { headers: { 'Content-Type': 'multipart/form-data' } } as const;
+        if (isEdit && existingId) {
+          await http.put(`/workorders/${existingId}`, payload, config);
+        } else {
+          await http.post('/workorders', payload, config);
+        }
+      } else if (isEdit && existingId) {
+        await http.put(`/workorders/${existingId}`, payload);
       } else {
         await http.post('/workorders', payload);
       }
@@ -231,15 +288,67 @@ export default function WorkOrders() {
     }
   };
 
+  const deleteWorkOrder = async (id: string) => {
+    if (!navigator.onLine) {
+      addToQueue({ method: 'delete', url: `/workorders/${id}` });
+      setWorkOrders((prev) => {
+        const updated = prev.filter((wo) => wo.id !== id);
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(updated));
+        return updated;
+      });
+      return;
+    }
+
+    try {
+      await http.delete(`/workorders/${id}`);
+      fetchWorkOrders();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const openCreateModal = () => {
+    setEditingOrder(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = async (order: WorkOrder) => {
+    if (!navigator.onLine) {
+      setEditingOrder(order);
+      setIsModalOpen(true);
+      return;
+    }
+
+    try {
+      const res = await http.get<WorkOrderResponse>(`/workorders/${order.id}`);
+      const normalized = normalizeWorkOrder(res.data, order);
+      setEditingOrder(normalized ?? order);
+      setIsModalOpen(true);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     fetchWorkOrders();
   }, []);
 
-  const filteredOrders = workOrders.filter((wo) =>
-    Object.values(wo).some((value) =>
-      String(value).toLowerCase().includes(search.toLowerCase())
-    )
-  );
+  const filteredOrders = workOrders.filter((wo) => {
+    const matchesSearch = Object.values(wo).some((value) =>
+      String(value).toLowerCase().includes(search.toLowerCase()),
+    );
+    const matchesStatus = !statusFilter || wo.status === statusFilter;
+    const matchesPriority = !priorityFilter || wo.priority === priorityFilter;
+
+    const compareDate = wo.dueDate ?? wo.scheduledDate ?? wo.createdAt;
+    const compareTime = compareDate ? new Date(compareDate).getTime() : null;
+    const startTime = startDate ? new Date(startDate).getTime() : null;
+    const endTime = endDate ? new Date(endDate).getTime() : null;
+    const matchesStart = startTime === null || (compareTime !== null && compareTime >= startTime);
+    const matchesEnd = endTime === null || (compareTime !== null && compareTime <= endTime);
+
+    return matchesSearch && matchesStatus && matchesPriority && matchesStart && matchesEnd;
+  });
 
   const columns = [
     { header: 'Title', accessor: 'title' as keyof WorkOrder },
@@ -267,32 +376,99 @@ export default function WorkOrders() {
     {
       header: 'Actions',
       accessor: (row: WorkOrder) => {
+        const handleTransition = (
+          event: MouseEvent<HTMLButtonElement>,
+          action: 'assign' | 'start' | 'complete' | 'cancel',
+        ) => {
+          event.stopPropagation();
+          transition(row.id, action);
+        };
+
+        const handleEdit = (event: MouseEvent<HTMLButtonElement>) => {
+          event.stopPropagation();
+          openEditModal(row);
+        };
+
+        const handleDelete = (event: MouseEvent<HTMLButtonElement>) => {
+          event.stopPropagation();
+          if (window.confirm('Are you sure you want to delete this work order?')) {
+            deleteWorkOrder(row.id);
+          }
+        };
+
         switch (row.status) {
           case 'requested':
             return (
-              <Button variant="ghost" size="sm" onClick={() => transition(row.id, 'assign')}>
-                Assign
-              </Button>
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" size="sm" onClick={handleEdit}>
+                  Edit
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(event) => handleTransition(event, 'assign')}
+                >
+                  Assign
+                </Button>
+                <Button variant="destructive" size="sm" onClick={handleDelete}>
+                  Delete
+                </Button>
+              </div>
             );
           case 'assigned':
             return (
-              <Button variant="ghost" size="sm" onClick={() => transition(row.id, 'start')}>
-                Start
-              </Button>
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" size="sm" onClick={handleEdit}>
+                  Edit
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(event) => handleTransition(event, 'start')}
+                >
+                  Start
+                </Button>
+                <Button variant="destructive" size="sm" onClick={handleDelete}>
+                  Delete
+                </Button>
+              </div>
             );
           case 'in_progress':
             return (
               <div className="flex justify-end gap-2">
-                <Button variant="ghost" size="sm" onClick={() => transition(row.id, 'complete')}>
+                <Button variant="ghost" size="sm" onClick={handleEdit}>
+                  Edit
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(event) => handleTransition(event, 'complete')}
+                >
                   Complete
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => transition(row.id, 'cancel')}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(event) => handleTransition(event, 'cancel')}
+                >
                   Cancel
+                </Button>
+                <Button variant="destructive" size="sm" onClick={handleDelete}>
+                  Delete
                 </Button>
               </div>
             );
           default:
-            return null;
+            return (
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" size="sm" onClick={handleEdit}>
+                  Edit
+                </Button>
+                <Button variant="destructive" size="sm" onClick={handleDelete}>
+                  Delete
+                </Button>
+              </div>
+            );
         }
       },
       className: 'text-right',
@@ -304,7 +480,7 @@ export default function WorkOrders() {
       <div className="space-y-6 p-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Work Orders</h1>
-          <Button variant="primary" onClick={() => setShowCreateModal(true)}>
+          <Button variant="primary" onClick={openCreateModal}>
             Create Work Order
           </Button>
         </div>
@@ -318,7 +494,7 @@ export default function WorkOrders() {
             placeholder="Search work orders..."
             className="flex-1 bg-transparent border-none outline-none text-neutral-900 placeholder-neutral-400"
             value={search}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
           />
         </div>
 
@@ -326,7 +502,7 @@ export default function WorkOrders() {
           <select
             className="border rounded p-2 flex-1"
             value={statusFilter}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value)}
           >
             <option value="">All Statuses</option>
             <option value="requested">Requested</option>
@@ -338,7 +514,7 @@ export default function WorkOrders() {
           <select
             className="border rounded p-2 flex-1"
             value={priorityFilter}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setPriorityFilter(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLSelectElement>) => setPriorityFilter(e.target.value)}
           >
             <option value="">All Priorities</option>
             <option value="low">Low</option>
@@ -350,13 +526,13 @@ export default function WorkOrders() {
             type="date"
             className="border rounded p-2"
             value={startDate}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStartDate(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setStartDate(e.target.value)}
           />
           <input
             type="date"
             className="border rounded p-2"
             value={endDate}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEndDate(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setEndDate(e.target.value)}
           />
           <Button
             variant="secondary"
@@ -381,17 +557,24 @@ export default function WorkOrders() {
           emptyMessage="No work orders available."
         />
         <NewWorkOrderModal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          workOrder={null}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingOrder(null);
+          }}
+          workOrder={editingOrder}
           onUpdate={async (payload) => {
-            await createWorkOrder(payload);
-            setShowCreateModal(false);
+            await saveWorkOrder(payload, editingOrder?.id);
+            setIsModalOpen(false);
+            setEditingOrder(null);
           }}
         />
         <WorkOrderReviewModal
           isOpen={showReviewModal}
-          onClose={() => setShowReviewModal(false)}
+          onClose={() => {
+            setShowReviewModal(false);
+            setSelectedOrder(null);
+          }}
           workOrder={selectedOrder}
           onUpdateStatus={async (status) => {
             if (selectedOrder) {
@@ -399,6 +582,7 @@ export default function WorkOrders() {
               fetchWorkOrders();
             }
             setShowReviewModal(false);
+            setSelectedOrder(null);
           }}
         />
       </div>

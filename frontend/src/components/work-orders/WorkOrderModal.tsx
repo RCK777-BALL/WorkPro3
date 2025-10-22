@@ -36,6 +36,8 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
     workOrder?.signatures || initialData?.signatures || []
   );
   const [newSignature, setNewSignature] = useState<{ by: string; ts: string }>({ by: '', ts: '' });
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const [docUrl, setDocUrl] = useState('');
 
   const departments = useDepartmentStore((s) => s.departments);
   const fetchDepartments = useDepartmentStore((s) => s.fetchDepartments);
@@ -57,20 +59,46 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
     setValue,
     watch,
     formState: { errors },
+    reset,
   } = useForm({
     defaultValues: {
-      departmentId: workOrder?.department || "",
-      title: workOrder?.title || "",
-      description: workOrder?.description || "",
-      priority: workOrder?.priority || "medium",
-      status: workOrder?.status || "requested",
-      type: workOrder?.type || "corrective",
+      departmentId: workOrder?.department || initialData?.department || "",
+      title: workOrder?.title || initialData?.title || "",
+      description: workOrder?.description || initialData?.description || "",
+      priority: workOrder?.priority || initialData?.priority || "medium",
+      status: workOrder?.status || initialData?.status || "requested",
+      type: workOrder?.type || initialData?.type || "corrective",
       scheduledDate:
-        workOrder?.scheduledDate || new Date().toISOString().split("T")[0],
+        workOrder?.scheduledDate ||
+        initialData?.scheduledDate ||
+        new Date().toISOString().split("T")[0],
       assetId: workOrder?.assetId || initialData?.assetId || "",
     },
   });
-  
+
+  useEffect(() => {
+    if (!isOpen) return;
+    reset({
+      departmentId: workOrder?.department || initialData?.department || "",
+      title: workOrder?.title || initialData?.title || "",
+      description: workOrder?.description || initialData?.description || "",
+      priority: workOrder?.priority || initialData?.priority || "medium",
+      status: workOrder?.status || initialData?.status || "requested",
+      type: workOrder?.type || initialData?.type || "corrective",
+      scheduledDate:
+        workOrder?.scheduledDate ||
+        initialData?.scheduledDate ||
+        new Date().toISOString().split("T")[0],
+      assetId: workOrder?.assetId || initialData?.assetId || "",
+    });
+    setFiles([]);
+    setSignatures(workOrder?.signatures || initialData?.signatures || []);
+    setParts(workOrder?.partsUsed || initialData?.partsUsed || []);
+    setChecklists(workOrder?.checklists || initialData?.checklists || []);
+    setDocFile(null);
+    setDocUrl('');
+  }, [initialData, isOpen, reset, workOrder]);
+
   const { getRootProps, getInputProps } = useDropzone({
     accept: {
       "image/*": [".png", ".jpg", ".jpeg"],
@@ -98,7 +126,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
 
   if (!isOpen) return null;
 
- 
+
   const onSubmit = async (data: any) => {
     const payload: Record<string, any> = {
       departmentId: data.departmentId,
@@ -125,9 +153,9 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
         }
       });
       files.forEach((f) => fd.append("files", f));
-      onUpdate(fd);
+      await onUpdate(fd);
     } else {
-      onUpdate(payload);
+      await onUpdate(payload);
     }
   };
 
@@ -171,10 +199,8 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
-
   return (
- 
+
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-neutral-200">

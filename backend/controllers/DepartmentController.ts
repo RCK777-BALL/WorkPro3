@@ -41,7 +41,7 @@ const buildDepartmentFilter = (
 };
 
 
-export const listDepartments: AuthedRequestHandler<
+const listDepartments: AuthedRequestHandler<
   ParamsDictionary,
   DepartmentListResponse,
   unknown,
@@ -69,3 +69,5 @@ export const listDepartments: AuthedRequestHandler<
     return;
   }
 };
+
+export { listDepartments };

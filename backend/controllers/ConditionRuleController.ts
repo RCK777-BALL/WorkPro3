@@ -11,7 +11,7 @@ import { toEntityId } from '../utils/ids';
 
 type ConditionRuleBody = Record<string, unknown>;
 
-export const getAllConditionRules: AuthedRequestHandler<ParamsDictionary> = async (
+const getAllConditionRules: AuthedRequestHandler<ParamsDictionary> = async (
   req,
   res,
   next,
@@ -24,7 +24,7 @@ export const getAllConditionRules: AuthedRequestHandler<ParamsDictionary> = asyn
   }
 };
 
-export const getConditionRuleById: AuthedRequestHandler<{ id: string }> = async (
+const getConditionRuleById: AuthedRequestHandler<{ id: string }> = async (
   req,
   res,
   next,
@@ -44,7 +44,7 @@ export const getConditionRuleById: AuthedRequestHandler<{ id: string }> = async 
   }
 };
 
-export const createConditionRule: AuthedRequestHandler<
+const createConditionRule: AuthedRequestHandler<
   ParamsDictionary,
   unknown,
   ConditionRuleBody
@@ -72,7 +72,7 @@ export const createConditionRule: AuthedRequestHandler<
   }
 };
 
-export const updateConditionRule: AuthedRequestHandler<
+const updateConditionRule: AuthedRequestHandler<
   { id: string },
   unknown,
   ConditionRuleBody
@@ -109,7 +109,7 @@ export const updateConditionRule: AuthedRequestHandler<
   }
 };
 
-export const deleteConditionRule: AuthedRequestHandler<{ id: string }> = async (
+const deleteConditionRule: AuthedRequestHandler<{ id: string }> = async (
   req,
   res,
   next,
@@ -141,4 +141,12 @@ export const deleteConditionRule: AuthedRequestHandler<{ id: string }> = async (
   } catch (err) {
     next(err);
   }
+};
+
+export {
+  getAllConditionRules,
+  getConditionRuleById,
+  createConditionRule,
+  updateConditionRule,
+  deleteConditionRule,
 };

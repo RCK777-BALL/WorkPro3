@@ -2,10 +2,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-import mongoose, { Schema, Document, Model, Types } from 'mongoose';
+import mongoose, { Schema, Model, Types, HydratedDocument } from 'mongoose';
 
 
-export interface WorkOrderDocument extends Document {
+export interface WorkOrder {
   _id: Types.ObjectId;
   title: string;
   assetId?: Types.ObjectId;
@@ -17,14 +17,14 @@ export interface WorkOrderDocument extends Document {
   approvalRequestedBy?: Types.ObjectId;
   approvedBy?: Types.ObjectId;
   assignedTo?: Types.ObjectId;
-  assignees: Types.ObjectId[];
-  checklists: { text: string; done: boolean }[];
-  partsUsed: { partId: Types.ObjectId; qty: number; cost: number }[];
-  signatures: { by: Types.ObjectId; ts: Date }[];
-  permits: Types.ObjectId[];
-  requiredPermitTypes: string[];
+  assignees: Types.Array<Types.ObjectId>;
+  checklists: Types.Array<{ text: string; done: boolean }>;
+  partsUsed: Types.Array<{ partId: Types.ObjectId; qty: number; cost: number }>;
+  signatures: Types.Array<{ by: Types.ObjectId; ts: Date }>;
+  permits: Types.Array<Types.ObjectId>;
+  requiredPermitTypes: Types.Array<string>;
   timeSpentMin?: number;
-  photos: string[];
+  photos: Types.Array<string>;
   failureCode?: string;
 
   /** Optional relationships */
@@ -45,7 +45,9 @@ export interface WorkOrderDocument extends Document {
   updatedAt?: Date;
 }
 
-const workOrderSchema = new Schema<WorkOrderDocument>(
+export type WorkOrderDocument = HydratedDocument<WorkOrder>;
+
+const workOrderSchema = new Schema<WorkOrder>(
   {
     title: { type: String, required: true },
     assetId: { type: Schema.Types.ObjectId, ref: 'Asset', index: true },
@@ -92,15 +94,8 @@ const workOrderSchema = new Schema<WorkOrderDocument>(
 
       },
     ],
-    permits: {
-      type: [Schema.Types.ObjectId],
-      ref: 'Permit',
-      default: [],
-    },
-    requiredPermitTypes: {
-      type: [String],
-      default: [],
-    },
+    permits: [{ type: Schema.Types.ObjectId, ref: 'Permit' }],
+    requiredPermitTypes: [{ type: String }],
     timeSpentMin: Number,
     photos: [String],
     failureCode: String,
@@ -119,7 +114,12 @@ const workOrderSchema = new Schema<WorkOrderDocument>(
     complianceProcedureId: String,
     calibrationIntervalDays: Number,
 
-    tenantId: { type: Schema.Types.ObjectId, required: true, index: true },
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Tenant',
+      required: true,
+      index: true,
+    },
 
     dueDate: { type: Date },
     completedAt: Date,
@@ -127,7 +127,7 @@ const workOrderSchema = new Schema<WorkOrderDocument>(
   { timestamps: true }
 );
 
-const WorkOrder: Model<WorkOrderDocument> = mongoose.model<WorkOrderDocument>('WorkOrder', workOrderSchema);
+const WorkOrder: Model<WorkOrder> = mongoose.model<WorkOrder>('WorkOrder', workOrderSchema);
 
 export default WorkOrder;
 

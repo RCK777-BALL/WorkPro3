@@ -871,13 +871,6 @@ const createAssetForStation: AuthedRequestHandler<
       name,
       type: type as AssetDoc['type'],
       status: typeof req.body?.status === 'string' ? req.body.status : 'Active',
-      ...(typeof req.body?.description === 'string'
-        ? { description: req.body.description }
-        : {}),
-      ...(typeof req.body?.notes === 'string' ? { notes: req.body.notes } : {}),
-      ...(typeof req.body?.location === 'string'
-        ? { location: req.body.location }
-        : {}),
       departmentId: department._id,
       department: department.name,
       line: line.name,
@@ -885,12 +878,25 @@ const createAssetForStation: AuthedRequestHandler<
       lineId: line._id,
       stationId: station._id,
       tenantId: new Types.ObjectId(tenantId),
-      ...(department.siteId
-        ? { siteId: department.siteId }
-        : req.siteId
-          ? { siteId: new Types.ObjectId(req.siteId) }
-          : {}),
     };
+
+    if (typeof req.body?.description === 'string') {
+      payload.description = req.body.description;
+    }
+
+    if (typeof req.body?.notes === 'string') {
+      payload.notes = req.body.notes;
+    }
+
+    if (typeof req.body?.location === 'string') {
+      payload.location = req.body.location;
+    }
+
+    if (department.siteId) {
+      payload.siteId = department.siteId;
+    } else if (req.siteId) {
+      payload.siteId = new Types.ObjectId(req.siteId);
+    }
 
     if (req.body?.lastServiced) {
       const parsed = new Date(req.body.lastServiced);

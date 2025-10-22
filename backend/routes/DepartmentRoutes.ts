@@ -871,9 +871,13 @@ const createAssetForStation: AuthedRequestHandler<
       name,
       type: type as AssetDoc['type'],
       status: typeof req.body?.status === 'string' ? req.body.status : 'Active',
-      description: typeof req.body?.description === 'string' ? req.body.description : undefined,
-      notes: typeof req.body?.notes === 'string' ? req.body.notes : undefined,
-      location: typeof req.body?.location === 'string' ? req.body.location : undefined,
+      ...(typeof req.body?.description === 'string'
+        ? { description: req.body.description }
+        : {}),
+      ...(typeof req.body?.notes === 'string' ? { notes: req.body.notes } : {}),
+      ...(typeof req.body?.location === 'string'
+        ? { location: req.body.location }
+        : {}),
       departmentId: department._id,
       department: department.name,
       line: line.name,
@@ -881,8 +885,11 @@ const createAssetForStation: AuthedRequestHandler<
       lineId: line._id,
       stationId: station._id,
       tenantId: new Types.ObjectId(tenantId),
-      siteId:
-        department.siteId ?? (req.siteId ? new Types.ObjectId(req.siteId) : undefined),
+      ...(department.siteId
+        ? { siteId: department.siteId }
+        : req.siteId
+          ? { siteId: new Types.ObjectId(req.siteId) }
+          : {}),
     };
 
     if (req.body?.lastServiced) {

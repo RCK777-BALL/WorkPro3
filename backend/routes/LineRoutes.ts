@@ -52,7 +52,7 @@ const listLines: AuthedRequestHandler<Record<string, string>, unknown> = async (
       ];
     }
     const lines = await Line.find(filter).sort({ name: 1 }).lean();
-    const payload = lines.map(toLinePayload);
+    const payload = lines.map((line) => toLinePayload(line as unknown as LineDoc));
     sendResponse(res, payload, null, 200, 'Lines retrieved');
   } catch (err) {
     next(err);

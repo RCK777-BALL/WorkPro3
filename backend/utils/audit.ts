@@ -97,28 +97,26 @@ type Loader<
   ResBody = unknown,
   ReqBody = unknown,
   ReqQuery extends ParsedQs = ParsedQs,
-  Locals extends Record<string, any> = Record<string, any>,
-> = (req: AuthedRequest<P, ResBody, ReqBody, ReqQuery, Locals>) => Promise<T | null>;
+> = (req: AuthedRequest<P, ResBody, ReqBody, ReqQuery>) => Promise<T | null>;
 
 export function withAudit<
   P extends ParamsDictionary = ParamsDictionary,
   ResBody = unknown,
   ReqBody = unknown,
   ReqQuery extends ParsedQs = ParsedQs,
-  Locals extends Record<string, any> = Record<string, any>,
   T = unknown,
 >(
   entityType: string,
   action: string,
-  load: Loader<T, P, ResBody, ReqBody, ReqQuery, Locals>,
-  handler: AuthedRequestHandler<P, ResBody, ReqBody, ReqQuery, Locals>,
-): RequestHandler<P, ResBody, ReqBody, ReqQuery, Locals> {
+  load: Loader<T, P, ResBody, ReqBody, ReqQuery>,
+  handler: AuthedRequestHandler<P, ResBody, ReqBody, ReqQuery>,
+): RequestHandler<P, ResBody, ReqBody, ReqQuery> {
   return async (req, res, next) => {
-    const authedReq = req as AuthedRequest<P, ResBody, ReqBody, ReqQuery, Locals> & {
+    const authedReq = req as AuthedRequest<P, ResBody, ReqBody, ReqQuery> & {
       auditId?: EntityIdLike;
       user?: { _id?: EntityIdLike; id?: EntityIdLike };
     };
-    const authedRes = res as Parameters<AuthedRequestHandler<P, ResBody, ReqBody, ReqQuery, Locals>>[1];
+    const authedRes = res as Parameters<AuthedRequestHandler<P, ResBody, ReqBody, ReqQuery>>[1];
 
     const before = await load(authedReq);
     await handler(authedReq, authedRes, next);

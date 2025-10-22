@@ -122,6 +122,10 @@ export const createDocument: AuthedRequestHandler<
     const saved = await newItem.save();
 
     const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
     const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
     const entityId = toEntityId(saved._id as Types.ObjectId);
     if (!entityId) {
@@ -211,6 +215,10 @@ export const updateDocument: AuthedRequestHandler<
       return;
     }
     const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
     const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
     if (tenantId) {
       await writeAuditLog({
@@ -246,6 +254,10 @@ export const deleteDocument: AuthedRequestHandler<{ id: string }> = async (
       return;
     }
     const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
     const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
     const entityId: Types.ObjectId = objectId;
     const deleted = await Document.findByIdAndDelete(objectId);

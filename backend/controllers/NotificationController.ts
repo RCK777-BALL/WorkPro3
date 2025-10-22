@@ -47,12 +47,16 @@ export const getAllNotifications: AuthedRequestHandler<
   ParamsDictionary,
   NotificationDocument[] | { message: string }
 > = async (
-  req: AuthedRequest<ParamsDictionary, NotificationDocument[] | { message: string }>,
+  req,
   res: Response,
   next: NextFunction,
 ) => {
+  const authedReq = req as AuthedRequest<
+    ParamsDictionary,
+    NotificationDocument[] | { message: string }
+  >;
   try {
-    const tenantId = req.tenantId;
+    const tenantId = authedReq.tenantId;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
@@ -75,13 +79,17 @@ export const getNotificationById: AuthedRequestHandler<
   IdParams,
   NotificationDocument | { message: string }
 > = async (
-  req: AuthedRequest<IdParams, NotificationDocument | { message: string }>,
+  req,
   res: Response,
   next: NextFunction,
 ) => {
+  const authedReq = req as AuthedRequest<
+    IdParams,
+    NotificationDocument | { message: string }
+  >;
 
   try {
-    const tenantId = req.tenantId;
+    const tenantId = authedReq.tenantId;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
@@ -91,7 +99,10 @@ export const getNotificationById: AuthedRequestHandler<
       return;
     }
     const tenantObjectId = new Types.ObjectId(tenantId);
-    const item = await Notification.findOne({ _id: req.params.id, tenantId: tenantObjectId });
+    const item = await Notification.findOne({
+      _id: authedReq.params.id,
+      tenantId: tenantObjectId,
+    });
     if (!item) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -109,13 +120,18 @@ export const createNotification: AuthedRequestHandler<
   NotificationDocument | { message: string },
   NotificationCreateBody
 > = async (
-  req: AuthedRequest<ParamsDictionary, NotificationDocument | { message: string }, NotificationCreateBody>,
+  req,
   res: Response,
   next: NextFunction,
 ) => {
+  const authedReq = req as AuthedRequest<
+    ParamsDictionary,
+    NotificationDocument | { message: string },
+    NotificationCreateBody
+  >;
 
   try {
-    const tenantId = req.tenantId;
+    const tenantId = authedReq.tenantId;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
@@ -125,7 +141,7 @@ export const createNotification: AuthedRequestHandler<
       return;
     }
     const tenantObjectId = new Types.ObjectId(tenantId);
-    const { title, message, type, assetId, user, read } = req.body;
+    const { title, message, type, assetId, user, read } = authedReq.body;
     const saved = (await Notification.create({
       title,
       message,
@@ -135,7 +151,7 @@ export const createNotification: AuthedRequestHandler<
       ...(user ? { user } : {}),
       ...(read !== undefined ? { read } : {}),
     })) as HydratedDocument<NotificationDocument>;
-    const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
+    const userId = toEntityId((authedReq.user as any)?._id ?? (authedReq.user as any)?.id);
     await writeAuditLog({
       tenantId: tenantObjectId,
       ...(userId ? { userId } : {}),
@@ -145,7 +161,7 @@ export const createNotification: AuthedRequestHandler<
       after: toPlainObject(saved),
     });
 
-    const io = req.app.get('io');
+    const io = authedReq.app.get('io');
     io?.emit('notification', saved);
 
     if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
@@ -190,18 +206,22 @@ export const markNotificationRead: AuthedRequestHandler<
   IdParams,
   NotificationDocument | { message: string }
 > = async (
-  req: AuthedRequest<IdParams, NotificationDocument | { message: string }>,
+  req,
   res: Response,
   next: NextFunction,
 ) => {
+  const authedReq = req as AuthedRequest<
+    IdParams,
+    NotificationDocument | { message: string }
+  >;
 
-  if (!Types.ObjectId.isValid(req.params.id)) {
+  if (!Types.ObjectId.isValid(authedReq.params.id)) {
     sendResponse(res, null, 'Invalid ID', 400);
     return;
   }
 
   try {
-    const tenantId = req.tenantId;
+    const tenantId = authedReq.tenantId;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
@@ -212,7 +232,7 @@ export const markNotificationRead: AuthedRequestHandler<
     }
     const tenantObjectId = new Types.ObjectId(tenantId);
     const updated = await Notification.findOneAndUpdate(
-      { _id: req.params.id, tenantId: tenantObjectId },
+      { _id: authedReq.params.id, tenantId: tenantObjectId },
       { read: true },
       { new: true },
     ).exec();
@@ -220,13 +240,13 @@ export const markNotificationRead: AuthedRequestHandler<
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
+    const userId = toEntityId((authedReq.user as any)?._id ?? (authedReq.user as any)?.id);
     await writeAuditLog({
       tenantId: tenantObjectId,
       ...(userId ? { userId } : {}),
       action: 'markRead',
       entityType: 'Notification',
-      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      entityId: toEntityId(new Types.ObjectId(authedReq.params.id)),
       before: null,
       after: toPlainObject(updated),
     });
@@ -243,17 +263,22 @@ export const updateNotification: AuthedRequestHandler<
   NotificationDocument | { message: string },
   NotificationUpdateBody
 > = async (
-  req: AuthedRequest<IdParams, NotificationDocument | { message: string }, NotificationUpdateBody>,
+  req,
   res: Response,
   next: NextFunction,
 ) => {
+  const authedReq = req as AuthedRequest<
+    IdParams,
+    NotificationDocument | { message: string },
+    NotificationUpdateBody
+  >;
 
-  if (!Types.ObjectId.isValid(req.params.id)) {
+  if (!Types.ObjectId.isValid(authedReq.params.id)) {
     sendResponse(res, null, 'Invalid ID', 400);
     return;
   }
   try {
-    const tenantId = req.tenantId;
+    const tenantId = authedReq.tenantId;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
@@ -263,15 +288,18 @@ export const updateNotification: AuthedRequestHandler<
       return;
     }
     const tenantObjectId = new Types.ObjectId(tenantId);
-    const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
-    const existing = await Notification.findOne({ _id: req.params.id, tenantId: tenantObjectId });
+    const userId = toEntityId((authedReq.user as any)?._id ?? (authedReq.user as any)?.id);
+    const existing = await Notification.findOne({
+      _id: authedReq.params.id,
+      tenantId: tenantObjectId,
+    });
     if (!existing) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
     const updated = await Notification.findOneAndUpdate(
-      { _id: req.params.id, tenantId: tenantObjectId },
-      req.body ?? {},
+      { _id: authedReq.params.id, tenantId: tenantObjectId },
+      authedReq.body ?? {},
       {
         new: true,
         runValidators: true,
@@ -284,7 +312,7 @@ export const updateNotification: AuthedRequestHandler<
       ...(userId ? { userId } : {}),
       action: 'update',
       entityType: 'Notification',
-      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      entityId: toEntityId(new Types.ObjectId(authedReq.params.id)),
       before,
       after,
     });
@@ -300,17 +328,18 @@ export const deleteNotification: AuthedRequestHandler<
   IdParams,
   { message: string }
 > = async (
-  req: AuthedRequest<IdParams, { message: string }>,
+  req,
   res: Response,
   next: NextFunction,
 ) => {
+  const authedReq = req as AuthedRequest<IdParams, { message: string }>;
 
-  if (!Types.ObjectId.isValid(req.params.id)) {
+  if (!Types.ObjectId.isValid(authedReq.params.id)) {
     sendResponse(res, null, 'Invalid ID', 400);
     return;
   }
   try {
-    const tenantId = req.tenantId;
+    const tenantId = authedReq.tenantId;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
@@ -320,8 +349,11 @@ export const deleteNotification: AuthedRequestHandler<
       return;
     }
     const tenantObjectId = new Types.ObjectId(tenantId);
-    const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
-    const deleted = await Notification.findOneAndDelete({ _id: req.params.id, tenantId: tenantObjectId });
+    const userId = toEntityId((authedReq.user as any)?._id ?? (authedReq.user as any)?.id);
+    const deleted = await Notification.findOneAndDelete({
+      _id: authedReq.params.id,
+      tenantId: tenantObjectId,
+    });
     if (!deleted) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -331,7 +363,7 @@ export const deleteNotification: AuthedRequestHandler<
       ...(userId ? { userId } : {}),
       action: 'delete',
       entityType: 'Notification',
-      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      entityId: toEntityId(new Types.ObjectId(authedReq.params.id)),
       before: toPlainObject(deleted),
     });
     sendResponse(res, { message: 'Deleted successfully' });

@@ -99,7 +99,7 @@ const createGoodsReceipt = async (
         : (gr._id as unknown as Types.ObjectId | undefined)?.toString?.());
 
     await writeAuditLog({
-      ...(tenantId ? { tenantId } : {}),
+      tenantId,
       userId,
       action: 'create',
       entityType: 'GoodsReceipt',

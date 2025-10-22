@@ -46,7 +46,9 @@ const listStations: AuthedRequestHandler<Record<string, string>, unknown> = asyn
       ];
     }
     const stations = await Station.find(filter).sort({ name: 1 }).lean();
-    const payload = stations.map(toStationPayload);
+    const payload = stations.map(
+      (station) => toStationPayload(station as unknown as StationDoc),
+    );
     sendResponse(res, payload, null, 200, 'Stations retrieved');
   } catch (err) {
     next(err);

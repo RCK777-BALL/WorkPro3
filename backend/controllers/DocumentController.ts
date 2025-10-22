@@ -122,13 +122,17 @@ export const createDocument: AuthedRequestHandler<
     const saved = await newItem.save();
 
     const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
     const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
     const entityId = toEntityId(saved._id as Types.ObjectId);
     if (!entityId) {
       throw new Error('Unable to resolve document identifier for auditing');
     }
     await writeAuditLog({
-      ...(tenantId ? { tenantId } : {}),
+      tenantId,
       ...(userId ? { userId } : {}),
       action: 'create',
       entityType: 'Document',
@@ -209,9 +213,13 @@ export const updateDocument: AuthedRequestHandler<
       return;
     }
     const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
     const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
     await writeAuditLog({
-      ...(tenantId ? { tenantId } : {}),
+      tenantId,
       ...(userId ? { userId } : {}),
       action: 'update',
       entityType: 'Document',
@@ -242,6 +250,10 @@ export const deleteDocument: AuthedRequestHandler<{ id: string }> = async (
       return;
     }
     const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
     const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
     const entityId: Types.ObjectId = objectId;
     const deleted = await Document.findByIdAndDelete(objectId);
@@ -263,7 +275,7 @@ export const deleteDocument: AuthedRequestHandler<{ id: string }> = async (
     }
 
     await writeAuditLog({
-      ...(tenantId ? { tenantId } : {}),
+      tenantId,
       ...(userId ? { userId } : {}),
       action: 'delete',
       entityType: 'Document',

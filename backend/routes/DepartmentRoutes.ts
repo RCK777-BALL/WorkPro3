@@ -49,6 +49,7 @@ interface DepartmentNode {
   notes?: string;
   description?: string;
   lines: LineNode[];
+  assetCount?: number;
 }
 
 const router = Router();
@@ -258,6 +259,16 @@ const fetchDepartmentNode = async (
   return result[0] ?? null;
 };
 
+const shouldIncludeAssetCount = (value: unknown): boolean => {
+  if (typeof value === 'string') {
+    return value.toLowerCase() === 'true';
+  }
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  return false;
+};
+
 const listDepartments: AuthedRequestHandler<
   Record<string, string>,
   DepartmentNode[]
@@ -274,8 +285,30 @@ const listDepartments: AuthedRequestHandler<
     }
 
     const include = parseInclude(req.query.include);
+    const includeAssetCount = shouldIncludeAssetCount(req.query.assetCount);
     const result = await buildDepartmentNodes(authedReq, filter, include);
-    sendResponse(res, result, null, 200, 'Departments retrieved');
+
+    if (!includeAssetCount || result.length === 0) {
+      sendResponse(res, result, null, 200, 'Departments retrieved');
+      return;
+    }
+
+    const deptIds = result.map((dept) => new Types.ObjectId(dept._id));
+    const counts = await Asset.aggregate<{ _id: Types.ObjectId; count: number }>([
+      { $match: { tenantId: authedReq.tenantId, departmentId: { $in: deptIds } } },
+      { $group: { _id: '$departmentId', count: { $sum: 1 } } },
+    ]);
+
+    const countMap = new Map<string, number>(
+      counts.map((entry) => [entry._id.toString(), entry.count] as const),
+    );
+
+    const payload = result.map((dept) => ({
+      ...dept,
+      assetCount: countMap.get(dept._id) ?? 0,
+    }));
+
+    sendResponse(res, payload, null, 200, 'Departments retrieved');
   } catch (err) {
     next(err);
   }
@@ -310,36 +343,142 @@ const getDepartment: AuthedRequestHandler<
   }
 };
 
+type NestedStationPayload = { name?: string; notes?: string | null } | null | undefined;
+type NestedLinePayload = {
+  name?: string;
+  notes?: string | null;
+  stations?: NestedStationPayload[] | null;
+} | null;
+
+const normalizeStationInput = (value: NestedStationPayload): { name: string; notes?: string } | null => {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+  const rawName = typeof value.name === 'string' ? value.name.trim() : '';
+  if (!rawName) {
+    return null;
+  }
+  const station: { name: string; notes?: string } = { name: rawName };
+  if (typeof value.notes === 'string' && value.notes.trim()) {
+    station.notes = value.notes;
+  }
+  return station;
+};
+
+const normalizeLineInput = (value: NestedLinePayload): { name: string; notes?: string; stations: { name: string; notes?: string }[] } | null => {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+  const rawName = typeof value.name === 'string' ? value.name.trim() : '';
+  if (!rawName) {
+    return null;
+  }
+  const line: { name: string; notes?: string; stations: { name: string; notes?: string }[] } = {
+    name: rawName,
+    stations: [],
+  };
+  if (typeof value.notes === 'string' && value.notes.trim()) {
+    line.notes = value.notes;
+  }
+  if (Array.isArray(value.stations)) {
+    line.stations = value.stations
+      .map((station) => normalizeStationInput(station))
+      .filter((station): station is { name: string; notes?: string } => Boolean(station));
+  }
+  return line;
+};
+
 const createDepartment: AuthedRequestHandler<
   Record<string, string>,
   unknown,
-  { name: string; notes?: string; description?: string }
+  { name: string; notes?: string; description?: string; lines?: NestedLinePayload[] }
 > = async (req, res, next) => {
   try {
     if (!req.tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
+
+    const rawName = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+    if (!rawName) {
+      sendResponse(res, null, 'Department name is required', 400);
+      return;
+    }
+
     const description =
       typeof req.body?.description === 'string'
         ? req.body.description
         : typeof req.body?.notes === 'string'
           ? req.body.notes
           : '';
+
     const department = await Department.create({
-      name: req.body.name,
+      name: rawName,
       notes: description,
       tenantId: req.tenantId,
       siteId: req.siteId,
     });
-    const payload: DepartmentNode = {
-      _id: department._id.toString(),
-      name: department.name,
-      notes: department.notes ?? '',
-      description: department.notes ?? '',
-      lines: [] as LineNode[],
-    };
-    sendResponse(res, payload, null, 201, 'Department created');
+
+    const linesInput = Array.isArray(req.body?.lines)
+      ? req.body.lines
+          .map((line) => normalizeLineInput(line))
+          .filter((line): line is { name: string; notes?: string; stations: { name: string; notes?: string }[] } => Boolean(line))
+      : [];
+
+    if (linesInput.length > 0) {
+      for (const lineInput of linesInput) {
+        const line = await Line.create({
+          name: lineInput.name,
+          notes: lineInput.notes,
+          departmentId: department._id,
+          tenantId: req.tenantId,
+          siteId: department.siteId ?? req.siteId,
+        });
+
+        const stationDocs = [] as StationDoc[];
+        if (lineInput.stations.length > 0) {
+          for (const stationInput of lineInput.stations) {
+            const station = await Station.create({
+              name: stationInput.name,
+              notes: stationInput.notes,
+              tenantId: req.tenantId,
+              departmentId: department._id,
+              lineId: line._id,
+              siteId: department.siteId ?? req.siteId,
+            });
+            stationDocs.push(station);
+          }
+        }
+
+        if (stationDocs.length > 0) {
+          line.stations = stationDocs.map((station) => station._id) as any;
+          await line.save();
+        }
+
+        department.lines.push({
+          _id: line._id,
+          name: line.name,
+          notes: line.notes ?? '',
+          tenantId: req.tenantId as any,
+          stations: stationDocs.map((station) => ({
+            _id: station._id,
+            name: station.name,
+            notes: station.notes ?? '',
+            assets: [],
+          })) as any,
+        } as any);
+      }
+
+      await department.save();
+    }
+
+    const node = await fetchDepartmentNode(req as AuthedRequest, department._id.toString());
+    if (!node) {
+      sendResponse(res, null, 'Failed to load department', 500);
+      return;
+    }
+
+    sendResponse(res, node, null, 201, 'Department created');
   } catch (err) {
     next(err);
   }
@@ -476,7 +615,7 @@ const createLineForDepartment: AuthedRequestHandler<
       return;
     }
 
-    sendResponse(res, node, null, 201, 'Line created');
+    sendResponse(res, node, null, 200, 'Line created');
   } catch (err) {
     next(err);
   }
@@ -677,7 +816,7 @@ const createStationForLine: AuthedRequestHandler<
       return;
     }
 
-    sendResponse(res, node, null, 201, 'Station created');
+    sendResponse(res, node, null, 200, 'Station created');
   } catch (err) {
     next(err);
   }

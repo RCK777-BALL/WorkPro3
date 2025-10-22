@@ -3,7 +3,7 @@
  */
 
 import { Router } from 'express';
-import type { FilterQuery } from 'mongoose';
+import type { FilterQuery, Types } from 'mongoose';
 
 import { requireAuth } from '../middleware/authMiddleware';
 import { validate } from '../middleware/validationMiddleware';
@@ -15,7 +15,17 @@ import type { AuthedRequestHandler } from '../types/http';
 import { stationUpdateValidators, stationValidators } from '../validators/stationValidators';
 import sendResponse from '../utils/sendResponse';
 
-const toStationPayload = (station: StationDoc) => ({
+type StationLike = {
+  _id: Types.ObjectId;
+  name: string;
+  notes?: string | null;
+  lineId: Types.ObjectId;
+  departmentId: Types.ObjectId;
+  tenantId: Types.ObjectId;
+  siteId?: Types.ObjectId | null;
+};
+
+const toStationPayload = (station: StationLike) => ({
   _id: station._id.toString(),
   name: station.name,
   notes: station.notes ?? '',

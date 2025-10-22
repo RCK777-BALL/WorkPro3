@@ -13,7 +13,8 @@ export type AuthedRequest<
   ResBody = unknown,
   ReqBody = unknown,
   ReqQuery extends ParsedQs = ParsedQs,
-> = Omit<Request<P, ResBody, ReqBody, ReqQuery>, 'user'> & {
+  Locals extends Record<string, any> = Record<string, any>,
+> = Omit<Request<P, ResBody, ReqBody, ReqQuery, Locals>, 'user'> & {
   user?: ExpressUser & { tenantId?: string; id?: string; _id?: string };
   tenantId?: string;
   siteId?: string;
@@ -24,9 +25,10 @@ type AuthedHandlerFn<
   ResBody,
   ReqBody,
   ReqQuery extends ParsedQs,
+  Locals extends Record<string, any>,
 > = (
-  req: AuthedRequest<P, ResBody, ReqBody, ReqQuery>,
-  res: Response<ResBody>,
+  req: AuthedRequest<P, ResBody, ReqBody, ReqQuery, Locals>,
+  res: Response<ResBody, Locals>,
   next: NextFunction,
 ) => void | Promise<void>;
 
@@ -35,4 +37,5 @@ export type AuthedRequestHandler<
   ResBody = unknown,
   ReqBody = unknown,
   ReqQuery extends ParsedQs = ParsedQs,
-> = AuthedHandlerFn<P, ResBody, ReqBody, ReqQuery>;
+  Locals extends Record<string, any> = Record<string, any>,
+> = AuthedHandlerFn<P, ResBody, ReqBody, ReqQuery, Locals>;

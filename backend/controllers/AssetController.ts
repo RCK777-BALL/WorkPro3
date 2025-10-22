@@ -169,7 +169,7 @@ const locationKey = ({ departmentId, lineId, stationId }: AssetHierarchyLocation
   return `${department}::${line}::${station}`;
 };
 
-const getAllAssets: AuthedRequestHandler = async (req, res, next) => {
+export const getAllAssets: AuthedRequestHandler = async (req, res, next) => {
   try {
     const filter: Record<string, unknown> = { tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
@@ -187,7 +187,7 @@ const getAllAssets: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-const getAssetById: AuthedRequestHandler<AssetParams> = async (
+export const getAssetById: AuthedRequestHandler<AssetParams> = async (
   req,
   res,
   next,
@@ -223,7 +223,7 @@ const getAssetById: AuthedRequestHandler<AssetParams> = async (
   }
 };
 
-const createAsset: AuthedRequestHandler<
+export const createAsset: AuthedRequestHandler<
   ParamsDictionary,
   unknown,
   AssetBody
@@ -347,7 +347,7 @@ const createAsset: AuthedRequestHandler<
   }
 };
 
-const updateAsset: AuthedRequestHandler<
+export const updateAsset: AuthedRequestHandler<
   AssetParams,
   unknown,
   AssetUpdateBody
@@ -525,7 +525,7 @@ const updateAsset: AuthedRequestHandler<
   }
 };
 
-const deleteAsset: AuthedRequestHandler<AssetParams> = async (
+export const deleteAsset: AuthedRequestHandler<AssetParams> = async (
   req,
   res,
   next,
@@ -583,7 +583,7 @@ const deleteAsset: AuthedRequestHandler<AssetParams> = async (
   }
 };
 
-const searchAssets: AuthedRequestHandler<
+export const searchAssets: AuthedRequestHandler<
   ParamsDictionary,
   unknown,
   unknown,
@@ -617,7 +617,7 @@ const searchAssets: AuthedRequestHandler<
   }
 };
 
-const getAssetTree: AuthedRequestHandler = async (req, res, next) => {
+export const getAssetTree: AuthedRequestHandler = async (req, res, next) => {
   try {
     const match: Record<string, unknown> = { tenantId: req.tenantId };
     if (req.siteId) match.siteId = req.siteId;
@@ -733,12 +733,3 @@ const getAssetTree: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export {
-  getAllAssets,
-  getAssetById,
-  createAsset,
-  updateAsset,
-  deleteAsset,
-  searchAssets,
-  getAssetTree,
-};

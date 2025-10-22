@@ -6,8 +6,8 @@
     "exactOptionalPropertyTypes": true,
     "paths": {
       "@/*": ["src/*"],
-      "@shared/*": ["../shared/types/*"],
-      "@radix-ui/react-slot": ["src/lib/radix-slot.tsx"]
+      "@common/*": ["src/components/common/*"],
+      "@shared/*": ["../shared/types/*"]
     }
   },
   "include": ["src"]

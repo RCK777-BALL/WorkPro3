@@ -98,14 +98,16 @@ const createGoodsReceipt = async (
         ? rawEntityId
         : (gr._id as unknown as Types.ObjectId | undefined)?.toString?.());
 
-    await writeAuditLog({
-      tenantId,
-      userId,
-      action: 'create',
-      entityType: 'GoodsReceipt',
-      ...(normalizedEntityId ? { entityId: normalizedEntityId } : {}),
-      after: typeof grAny.toObject === 'function' ? grAny.toObject() : grAny,
-    });
+    if (tenantId) {
+      await writeAuditLog({
+        tenantId,
+        ...(userId ? { userId } : {}),
+        action: 'create',
+        entityType: 'GoodsReceipt',
+        ...(normalizedEntityId ? { entityId: normalizedEntityId } : {}),
+        after: typeof grAny.toObject === 'function' ? grAny.toObject() : grAny,
+      });
+    }
 
     const vendor = await Vendor.findById(po.vendor).lean();
     if (vendor?.email) {

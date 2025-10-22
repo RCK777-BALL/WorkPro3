@@ -3,7 +3,7 @@
  */
 
 import { Router } from 'express';
-import type { FilterQuery } from 'mongoose';
+import type { FilterQuery, Types } from 'mongoose';
 
 import { requireAuth } from '../middleware/authMiddleware';
 import { validate } from '../middleware/validationMiddleware';
@@ -15,14 +15,24 @@ import type { AuthedRequestHandler } from '../types/http';
 import { lineUpdateValidators, lineValidators } from '../validators/lineValidators';
 import sendResponse from '../utils/sendResponse';
 
-const toLinePayload = (line: LineDoc) => ({
+type LineLike = {
+  _id: Types.ObjectId;
+  name: string;
+  departmentId: Types.ObjectId;
+  tenantId: Types.ObjectId;
+  siteId?: Types.ObjectId | null;
+  notes?: string | null;
+  stations: Types.ObjectId[] | Types.Array<Types.ObjectId>;
+};
+
+const toLinePayload = (line: LineLike) => ({
   _id: line._id.toString(),
   name: line.name,
   departmentId: line.departmentId.toString(),
   tenantId: line.tenantId.toString(),
   siteId: line.siteId ? line.siteId.toString() : undefined,
   notes: line.notes ?? '',
-  stations: line.stations.map((station) => station.toString()),
+  stations: Array.from(line.stations ?? []).map((station) => station.toString()),
 });
 
 const router = Router();

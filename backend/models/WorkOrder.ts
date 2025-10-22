@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import mongoose, { Schema, Model, Types, HydratedDocument } from 'mongoose';
+import mongoose, { Schema, Model, Types, HydratedDocument, SchemaDefinitionProperty } from 'mongoose';
 
 
 export interface WorkOrder {
@@ -46,6 +46,13 @@ export interface WorkOrder {
 }
 
 export type WorkOrderDocument = HydratedDocument<WorkOrder>;
+
+const tenantRef = {
+  type: Schema.Types.ObjectId,
+  ref: 'Tenant',
+  required: true,
+  index: true,
+} as SchemaDefinitionProperty<Types.ObjectId>;
 
 const workOrderSchema = new Schema<WorkOrder>(
   {
@@ -114,12 +121,7 @@ const workOrderSchema = new Schema<WorkOrder>(
     complianceProcedureId: String,
     calibrationIntervalDays: Number,
 
-    tenantId: {
-      type: Schema.Types.ObjectId,
-      ref: 'Tenant',
-      required: true,
-      index: true,
-    },
+    tenantId: tenantRef,
 
     dueDate: { type: Date },
     completedAt: Date,

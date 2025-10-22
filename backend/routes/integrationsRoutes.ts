@@ -32,12 +32,13 @@ const hookSchema = z.object({
 router.post('/hooks', async (req, res, next) => {
   try {
     const data: z.infer<typeof hookSchema> = hookSchema.parse(req.body);
-    const hook = await registerHook({
+    const hookPayload = {
       name: data.name,
       type: data.type,
-      url: data.url,
       events: data.events,
-    });
+      ...(data.url !== undefined ? { url: data.url } : {}),
+    };
+    const hook = await registerHook(hookPayload);
     res.status(201).json({ success: true, data: hook });
   } catch (err) {
     if (err instanceof ZodError) {

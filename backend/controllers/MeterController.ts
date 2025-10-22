@@ -4,12 +4,13 @@
 
 import type { ParamsDictionary } from 'express-serve-static-core';
 import type { AuthedRequestHandler } from '../types/http';
-import Meter from '../models/Meter';
-import MeterReading from '../models/MeterReading';
+import Meter, { type MeterDocument } from '../models/Meter';
+import MeterReading, { type MeterReadingDocument } from '../models/MeterReading';
 import { writeAuditLog } from '../utils/audit';
 import { toEntityId } from '../utils/ids';
-import { Types, UpdateQuery, Error as MongooseError } from 'mongoose';
+import { type UpdateQuery, type FilterQuery } from 'mongoose';
 import { sendResponse } from '../utils/sendResponse';
+import handleControllerError from '../utils/handleControllerError';
 
 interface MeterBody {
   asset: string;
@@ -28,32 +29,54 @@ interface MeterReadingBody {
 
 export const getMeters: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const filter: any = { tenantId: req.tenantId };
-    if (req.siteId) filter.siteId = req.siteId;
-    if (req.query.asset) filter.asset = req.query.asset;
-    const meters = await Meter.find(filter);
+    const tenantId = toEntityId(req.tenantId);
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const filter: FilterQuery<MeterDocument> = { tenantId };
+
+    const siteId = toEntityId(req.siteId);
+    if (siteId) {
+      filter.siteId = siteId;
+    }
+
+    const assetQuery = req.query.asset;
+    if (typeof assetQuery === 'string') {
+      const assetId = toEntityId(assetQuery);
+      if (assetId) {
+        filter.asset = assetId;
+      }
+    }
+
+    const meters = await Meter.find(filter).exec();
     sendResponse(res, meters);
     return;
   } catch (err) {
-    if (err instanceof MongooseError.ValidationError) {
-      const verr = err as MongooseError.ValidationError;
-      sendResponse(
-        res,
-        null,
-        { errors: Object.values(verr.errors).map((e) => e.message) },
-        400,
-      );
-      return;
-    }
-    return next(err);
+    handleControllerError(res, err, next);
+    return;
   }
 };
 
 export const getMeterById: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const filter: any = { _id: req.params.id, tenantId: req.tenantId };
-    if (req.siteId) filter.siteId = req.siteId;
-    const meter = await Meter.findOne(filter);
+    const tenantId = toEntityId(req.tenantId);
+    const meterId = toEntityId(req.params.id);
+
+    if (!tenantId || !meterId) {
+      sendResponse(res, null, 'Invalid identifier', 400);
+      return;
+    }
+
+    const filter: FilterQuery<MeterDocument> = { _id: meterId, tenantId };
+
+    const siteId = toEntityId(req.siteId);
+    if (siteId) {
+      filter.siteId = siteId;
+    }
+
+    const meter = (await Meter.findOne(filter).exec()) as MeterDocument | null;
     if (!meter) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -61,17 +84,8 @@ export const getMeterById: AuthedRequestHandler = async (req, res, next) => {
     sendResponse(res, meter);
     return;
   } catch (err) {
-    if (err instanceof MongooseError.ValidationError) {
-      const verr = err as MongooseError.ValidationError;
-      sendResponse(
-        res,
-        null,
-        { errors: Object.values(verr.errors).map((e) => e.message) },
-        400,
-      );
-      return;
-    }
-    return next(err);
+    handleControllerError(res, err, next);
+    return;
   }
 };
 
@@ -81,22 +95,29 @@ export const createMeter: AuthedRequestHandler<
   MeterBody
 > = async (req, res, next) => {
   try {
-    const tenantId = req.tenantId;
+    const tenantId = toEntityId(req.tenantId);
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const body = req.body;
-    const meter = await Meter.create({
-      asset: body.asset,
+    const assetId = toEntityId(body.asset);
+    if (!assetId) {
+      sendResponse(res, null, 'Asset ID required', 400);
+      return;
+    }
+    const siteId = toEntityId(req.siteId);
+
+    const meter = (await Meter.create({
+      asset: assetId,
       name: body.name,
       unit: body.unit,
       currentValue: body.currentValue ?? 0,
       pmInterval: body.pmInterval,
       lastWOValue: body.lastWOValue ?? 0,
       tenantId,
-      siteId: req.siteId,
-    });
+      ...(siteId ? { siteId } : {}),
+    })) as MeterDocument;
     const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
     await writeAuditLog({
       tenantId,
@@ -109,17 +130,8 @@ export const createMeter: AuthedRequestHandler<
     sendResponse(res, meter, null, 201);
     return;
   } catch (err) {
-    if (err instanceof MongooseError.ValidationError) {
-      const verr = err as MongooseError.ValidationError;
-      sendResponse(
-        res,
-        null,
-        { errors: Object.values(verr.errors).map((e) => e.message) },
-        400,
-      );
-      return;
-    }
-    return next(err);
+    handleControllerError(res, err, next);
+    return;
   }
 };
 
@@ -129,60 +141,73 @@ export const updateMeter: AuthedRequestHandler<
   MeterUpdateBody
 > = async (req, res, next) => {
   try {
-    const tenantId = req.tenantId;
+    const tenantId = toEntityId(req.tenantId);
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const filter: any = { _id: req.params.id, tenantId };
-    if (req.siteId) filter.siteId = req.siteId;
-    const existing = await Meter.findOne(filter);
+    const meterId = toEntityId(req.params.id);
+    if (!meterId) {
+      sendResponse(res, null, 'Invalid identifier', 400);
+      return;
+    }
+
+    const filter: FilterQuery<MeterDocument> = { _id: meterId, tenantId };
+
+    const siteId = toEntityId(req.siteId);
+    if (siteId) {
+      filter.siteId = siteId;
+    }
+
+    const existing = (await Meter.findOne(filter).exec()) as MeterDocument | null;
     if (!existing) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    const meter = await Meter.findOneAndUpdate(
+    const meter = (await Meter.findOneAndUpdate(
       filter,
       (req.body ?? {}) as UpdateQuery<MeterUpdateBody>,
       { new: true },
-    );
+    ).exec()) as MeterDocument | null;
     const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
     await writeAuditLog({
       tenantId,
       ...(userId ? { userId } : {}),
       action: 'update',
       entityType: 'Meter',
-      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      entityId: meterId,
       before: existing.toObject(),
       after: meter?.toObject(),
     });
     sendResponse(res, meter);
     return;
   } catch (err) {
-    if (err instanceof MongooseError.ValidationError) {
-      const verr = err as MongooseError.ValidationError;
-      sendResponse(
-        res,
-        null,
-        { errors: Object.values(verr.errors).map((e) => e.message) },
-        400,
-      );
-      return;
-    }
-    return next(err);
+    handleControllerError(res, err, next);
+    return;
   }
 };
 
 export const deleteMeter: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const tenantId = req.tenantId;
+    const tenantId = toEntityId(req.tenantId);
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const filter: any = { _id: req.params.id, tenantId };
-    if (req.siteId) filter.siteId = req.siteId;
-    const meter = await Meter.findOneAndDelete(filter);
+    const meterId = toEntityId(req.params.id);
+    if (!meterId) {
+      sendResponse(res, null, 'Invalid identifier', 400);
+      return;
+    }
+
+    const filter: FilterQuery<MeterDocument> = { _id: meterId, tenantId };
+
+    const siteId = toEntityId(req.siteId);
+    if (siteId) {
+      filter.siteId = siteId;
+    }
+
+    const meter = (await Meter.findOneAndDelete(filter).exec()) as MeterDocument | null;
     if (!meter) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -193,23 +218,14 @@ export const deleteMeter: AuthedRequestHandler = async (req, res, next) => {
       ...(userId ? { userId } : {}),
       action: 'delete',
       entityType: 'Meter',
-      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      entityId: meterId,
       before: meter.toObject(),
     });
     sendResponse(res, { message: 'Deleted successfully' });
     return;
   } catch (err) {
-    if (err instanceof MongooseError.ValidationError) {
-      const verr = err as MongooseError.ValidationError;
-      sendResponse(
-        res,
-        null,
-        { errors: Object.values(verr.errors).map((e) => e.message) },
-        400,
-      );
-      return;
-    }
-    return next(err);
+    handleControllerError(res, err, next);
+    return;
   }
 };
 
@@ -219,81 +235,93 @@ export const addMeterReading: AuthedRequestHandler<
   MeterReadingBody
 > = async (req, res, next) => {
   try {
-    const tenantId = req.tenantId;
+    const tenantId = toEntityId(req.tenantId);
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const filter: any = { _id: req.params.id, tenantId };
-    if (req.siteId) filter.siteId = req.siteId;
-    const meter = await Meter.findOne(filter);
+    const meterId = toEntityId(req.params.id);
+    if (!meterId) {
+      sendResponse(res, null, 'Invalid identifier', 400);
+      return;
+    }
+
+    const filter: FilterQuery<MeterDocument> = { _id: meterId, tenantId };
+
+    const siteId = toEntityId(req.siteId);
+    if (siteId) {
+      filter.siteId = siteId;
+    }
+
+    const meter = (await Meter.findOne(filter).exec()) as MeterDocument | null;
     if (!meter) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
 
-    const reading = await MeterReading.create({
+    const reading = (await MeterReading.create({
       meter: meter._id,
       value: req.body.value,
       tenantId,
-      siteId: req.siteId,
-    });
-      meter.currentValue = req.body.value;
-      await meter.save();
-      const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
-      await writeAuditLog({
-        tenantId,
-        ...(userId ? { userId } : {}),
-        action: 'addReading',
-        entityType: 'Meter',
+      ...(siteId ? { siteId } : {}),
+    })) as MeterReadingDocument;
+    meter.currentValue = req.body.value;
+    await meter.save();
+    const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
+    await writeAuditLog({
+      tenantId,
+      ...(userId ? { userId } : {}),
+      action: 'addReading',
+      entityType: 'Meter',
       entityId: toEntityId(meter._id),
       after: meter.toObject(),
     });
     sendResponse(res, reading, null, 201);
     return;
   } catch (err) {
-    if (err instanceof MongooseError.ValidationError) {
-      const verr = err as MongooseError.ValidationError;
-      sendResponse(
-        res,
-        null,
-        { errors: Object.values(verr.errors).map((e) => e.message) },
-        400,
-      );
-      return;
-    }
-    return next(err);
+    handleControllerError(res, err, next);
+    return;
   }
 };
 
 export const getMeterReadings: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const filter: any = { _id: req.params.id, tenantId: req.tenantId };
-    if (req.siteId) filter.siteId = req.siteId;
-    const meter = await Meter.findOne(filter);
+    const tenantId = toEntityId(req.tenantId);
+    const meterId = toEntityId(req.params.id);
+
+    if (!tenantId || !meterId) {
+      sendResponse(res, null, 'Invalid identifier', 400);
+      return;
+    }
+
+    const filter: FilterQuery<MeterDocument> = { _id: meterId, tenantId };
+
+    const siteId = toEntityId(req.siteId);
+    if (siteId) {
+      filter.siteId = siteId;
+    }
+
+    const meter = (await Meter.findOne(filter).exec()) as MeterDocument | null;
     if (!meter) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    const readingFilter: any = { meter: meter._id, tenantId: req.tenantId };
-    if (req.siteId) readingFilter.siteId = req.siteId;
+    const readingFilter: FilterQuery<MeterReadingDocument> = {
+      meter: meter._id,
+      tenantId,
+    };
+    if (siteId) {
+      readingFilter.siteId = siteId;
+    }
     const readings = await MeterReading.find(readingFilter)
       .sort({ timestamp: -1 })
-      .limit(100);
+      .limit(100)
+      .exec();
     sendResponse(res, readings);
     return;
   } catch (err) {
-    if (err instanceof MongooseError.ValidationError) {
-      const verr = err as MongooseError.ValidationError;
-      sendResponse(
-        res,
-        null,
-        { errors: Object.values(verr.errors).map((e) => e.message) },
-        400,
-      );
-      return;
-    }
-    return next(err);
+    handleControllerError(res, err, next);
+    return;
   }
 };
 

@@ -3,7 +3,7 @@
  */
 
 import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
-import { Building2, Filter } from 'lucide-react';
+import { Building2, Filter, Plus } from 'lucide-react';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import DepartmentTable from '@/components/departments/DepartmentTable';

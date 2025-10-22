@@ -31,8 +31,10 @@ const getRefreshSecret = (): Secret => {
   return process.env.JWT_REFRESH_SECRET ?? getAccessSecret();
 };
 
-const ACCESS_TTL = (process.env.JWT_ACCESS_EXPIRES_IN ?? '15m') as SignOptions['expiresIn'];
-const REFRESH_TTL = (process.env.JWT_REFRESH_EXPIRES_IN ?? '7d') as SignOptions['expiresIn'];
+type DefinedExpiresIn = Exclude<SignOptions['expiresIn'], undefined>;
+
+const ACCESS_TTL: DefinedExpiresIn = (process.env.JWT_ACCESS_EXPIRES_IN ?? '15m') as DefinedExpiresIn;
+const REFRESH_TTL: DefinedExpiresIn = (process.env.JWT_REFRESH_EXPIRES_IN ?? '7d') as DefinedExpiresIn;
 
 export const signAccess = (payload: JwtUser): string =>
   jwt.sign(payload, getAccessSecret(), { expiresIn: ACCESS_TTL });

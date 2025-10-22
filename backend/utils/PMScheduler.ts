@@ -1,5 +1,5 @@
 // utils/PMScheduler.ts
-import * as cron from 'node-cron';
+import cron from 'node-cron';
 import path from 'path';
 import logger from './logger';
 
@@ -8,7 +8,7 @@ interface StartOpts {
   taskModulePath?: string; // relative to backend root OR this file
 }
 
-const scheduled = new Map<string, cron.ScheduledTask>();
+const scheduled = new Map<string, ReturnType<typeof cron.schedule>>();
 
 export const startPMScheduler = (id: string, opts: StartOpts = {}) => {
   // default: every 5 minutes in dev; allow env overrides

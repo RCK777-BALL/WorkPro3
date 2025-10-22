@@ -2,15 +2,45 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Smile, Paperclip, Send, Image, AtSign, Hash } from 'lucide-react';
-import data from '@emoji-mart/data';
-
 import Picker from '@emoji-mart/react';
- import type { Emoji } from '@emoji-mart/react';
-import { getNotificationsSocket } from '@/utils/notificationsSocket';
+import type { Emoji } from '@emoji-mart/react';
+import { getChatSocket } from '@/utils/chatSocket';
 import { useToast } from '@/context/ToastContext';
- 
+
+
+type EmojiMartSkin = {
+  unified: string;
+  native: string;
+  x?: number;
+  y?: number;
+};
+
+type EmojiMartEmoji = {
+  id: string;
+  name: string;
+  keywords: string[];
+  skins: EmojiMartSkin[];
+  version: number;
+  emoticons?: string[];
+};
+
+type EmojiMartCategory = {
+  id: string;
+  emojis: string[];
+};
+
+type EmojiMartData = {
+  categories: EmojiMartCategory[];
+  emojis: Record<string, EmojiMartEmoji>;
+  aliases: Record<string, string>;
+  sheet: {
+    cols: number;
+    rows: number;
+  };
+};
+
  
 
 interface ChatInputProps {
@@ -28,6 +58,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
 }) => {
   const [message, setMessage] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [emojiData, setEmojiData] = useState<EmojiMartData | null>(null);
+  const [isLoadingEmojiData, setIsLoadingEmojiData] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { addToast } = useToast();
 
@@ -73,6 +105,48 @@ const ChatInput: React.FC<ChatInputProps> = ({
     setMessage((prev) => prev + emoji.native);
     setShowEmojiPicker(false);
   };
+
+  useEffect(() => {
+    if (!showEmojiPicker || emojiData || isLoadingEmojiData) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const loadEmojiData = async () => {
+      setIsLoadingEmojiData(true);
+      try {
+        const response = await fetch(
+          'https://cdn.jsdelivr.net/npm/@emoji-mart/data@1.2.1/sets/15/native.json',
+          { cache: 'force-cache' }
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to load emoji data');
+        }
+
+        const loadedData = (await response.json()) as EmojiMartData;
+        if (!isCancelled) {
+          setEmojiData(loadedData);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          addToast('Unable to load emoji picker', 'error');
+          setShowEmojiPicker(false);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingEmojiData(false);
+        }
+      }
+    };
+
+    void loadEmojiData();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [showEmojiPicker, emojiData, isLoadingEmojiData, addToast]);
 
   return (
     <div className="p-4 border-t border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800">
@@ -150,11 +224,13 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
         {showEmojiPicker && (
           <div className="absolute bottom-full right-0 mb-2">
-            <Picker
-              data={data}
-              onEmojiSelect={handleEmojiSelect}
-              theme="light"
-            />
+            {emojiData ? (
+              <Picker data={emojiData} onEmojiSelect={handleEmojiSelect} theme="light" />
+            ) : (
+              <div className="rounded-md bg-white dark:bg-neutral-800 p-4 shadow-lg text-sm text-neutral-500">
+                {isLoadingEmojiData ? 'Loading emojis…' : 'Emoji picker unavailable.'}
+              </div>
+            )}
           </div>
         )}
 

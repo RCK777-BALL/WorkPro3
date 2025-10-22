@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { Request, Response, NextFunction } from 'express';
+import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import type { ParamsDictionary, User as ExpressUser } from 'express-serve-static-core';
 import type { ParsedQs } from 'qs';
 
@@ -20,22 +20,16 @@ export type AuthedRequest<
   siteId?: string;
 };
 
-type AuthedHandlerFn<
-  P extends ParamsDictionary,
-  ResBody,
-  ReqBody,
-  ReqQuery extends ParsedQs,
-  Locals extends Record<string, any>,
-> = (
-  req: AuthedRequest<P, ResBody, ReqBody, ReqQuery, Locals>,
-  res: Response<ResBody, Locals>,
-  next: NextFunction,
-) => void | Promise<void>;
-
-export type AuthedRequestHandler<
+export interface AuthedRequestHandler<
   P extends ParamsDictionary = ParamsDictionary,
   ResBody = unknown,
   ReqBody = unknown,
   ReqQuery extends ParsedQs = ParsedQs,
   Locals extends Record<string, any> = Record<string, any>,
-> = AuthedHandlerFn<P, ResBody, ReqBody, ReqQuery, Locals>;
+> extends RequestHandler<P, ResBody, ReqBody, ReqQuery, Locals> {
+  (
+    req: AuthedRequest<P, ResBody, ReqBody, ReqQuery, Locals>,
+    res: Response<ResBody, Locals>,
+    next: NextFunction,
+  ): void | Promise<void>;
+}

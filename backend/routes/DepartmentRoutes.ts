@@ -3,7 +3,7 @@
  */
 
 import { Router } from 'express';
-import { type FilterQuery } from 'mongoose';
+import { Types, type FilterQuery } from 'mongoose';
 
 import Department, { type DepartmentDoc } from '../models/Department';
 import Line, { type LineDoc } from '../models/Line';
@@ -313,7 +313,7 @@ const getDepartment: AuthedRequestHandler<
 const createDepartment: AuthedRequestHandler<
   Record<string, string>,
   unknown,
-  { name: string; notes?: string }
+  { name: string; notes?: string; description?: string }
 > = async (req, res, next) => {
   try {
     if (!req.tenantId) {
@@ -348,7 +348,7 @@ const createDepartment: AuthedRequestHandler<
 const updateDepartment: AuthedRequestHandler<
   { id: string },
   DepartmentNode | { message: string },
-  { name?: string; notes?: string }
+  { name?: string; notes?: string; description?: string }
 > = async (req, res, next) => {
   try {
     const updates: Record<string, unknown> = {};
@@ -880,8 +880,9 @@ const createAssetForStation: AuthedRequestHandler<
       station: station.name,
       lineId: line._id,
       stationId: station._id,
-      tenantId,
-      siteId: department.siteId ?? req.siteId,
+      tenantId: new Types.ObjectId(tenantId),
+      siteId:
+        department.siteId ?? (req.siteId ? new Types.ObjectId(req.siteId) : undefined),
     };
 
     if (req.body?.lastServiced) {
@@ -988,7 +989,11 @@ const updateAssetForStation: AuthedRequestHandler<
 
     if (req.body?.lastServiced) {
       const parsed = new Date(req.body.lastServiced);
-      asset.lastServiced = Number.isNaN(parsed.valueOf()) ? undefined : parsed;
+      if (Number.isNaN(parsed.valueOf())) {
+        asset.set('lastServiced', undefined);
+      } else {
+        asset.lastServiced = parsed;
+      }
     }
 
     await asset.save();

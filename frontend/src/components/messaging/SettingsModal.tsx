@@ -3,7 +3,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import Modal from '@/modals/Modal';
+import Modal from '@/components/modals/Modal';
 import { getChannelMembers, addMembers, removeMember } from '@/api/channels';
 import type { Member } from '@/types';
 import { useToast } from '@/context/ToastContext';

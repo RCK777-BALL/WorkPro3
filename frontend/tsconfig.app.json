@@ -10,7 +10,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@radix-ui/react-slot": ["src/lib/radix-slot.tsx"]
+      "@common/*": ["src/components/common/*"]
     },
     "types": ["vite/client", "react", "react-dom"]
   },

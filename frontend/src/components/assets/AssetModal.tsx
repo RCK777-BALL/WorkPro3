@@ -12,7 +12,7 @@ import { useToast } from "@/context/ToastContext";
 import { useDepartmentStore } from "@/store/departmentStore";
 import { useAuthStore, type AuthState } from "@/store/authStore";
 import type { Asset, Department, Line, Station } from "@/types";
-import AssetQRCode from "@/qr/AssetQRCode";
+import AssetQRCode from "@/components/qr/AssetQRCode";
 
 const defaultAssetState = {
   name: "",

@@ -6,7 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import Avatar from '@common/Avatar';
+import Avatar from '@/components/common/Avatar';
 import NotificationMenu from './NotificationMenu';
 import { useAuthStore, type AuthState } from '@/store/authStore';
 import GlobalSearch from './GlobalSearch';

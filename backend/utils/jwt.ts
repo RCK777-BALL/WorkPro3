@@ -2,77 +2,68 @@
  * SPDX-License-Identifier: MIT
  */
 
-import jwt from 'jsonwebtoken';
 import type { Response } from 'express';
+import jwt, { type SignOptions, type Secret } from 'jsonwebtoken';
 
 export interface JwtUser {
   id: string;
-  email?: string;
+  email: string;
   tenantId?: string;
   role?: string;
   siteId?: string;
-  tokenVersion?: number;
 }
 
 interface CookieOptions {
   remember?: boolean;
 }
 
-const ACCESS_COOKIE = 'access_token';
-const REFRESH_COOKIE = 'refresh_token';
+const isProduction = () => process.env.NODE_ENV === 'production';
 
-const getAccessSecret = (): string => {
-  const secret = process.env.JWT_SECRET;
+const getAccessSecret = (): Secret => {
+  const secret = process.env.JWT_SECRET ?? process.env.JWT_ACCESS_SECRET;
   if (!secret) {
-    throw new Error('JWT_SECRET is not configured');
+    throw new Error('JWT secret is not configured');
   }
   return secret;
 };
 
-const getRefreshSecret = (): string =>
-  process.env.JWT_REFRESH_SECRET ?? `${getAccessSecret()}-refresh`;
+const getRefreshSecret = (): Secret => {
+  return process.env.JWT_REFRESH_SECRET ?? getAccessSecret();
+};
 
-const getRememberedTtl = (): number => 1000 * 60 * 60 * 24 * 30; // 30 days
-const getSessionTtl = (): number => 1000 * 60 * 60 * 8; // 8 hours
+const ACCESS_TTL = (process.env.JWT_ACCESS_EXPIRES_IN ?? '15m') as SignOptions['expiresIn'];
+const REFRESH_TTL = (process.env.JWT_REFRESH_EXPIRES_IN ?? '7d') as SignOptions['expiresIn'];
 
 export const signAccess = (payload: JwtUser): string =>
-  jwt.sign(payload, getAccessSecret(), { expiresIn: '15m' });
+  jwt.sign(payload, getAccessSecret(), { expiresIn: ACCESS_TTL });
 
 export const signRefresh = (payload: JwtUser): string =>
-  jwt.sign(payload, getRefreshSecret(), { expiresIn: '30d' });
+  jwt.sign(payload, getRefreshSecret(), { expiresIn: REFRESH_TTL });
 
-const isSecure = (): boolean => process.env.NODE_ENV === 'production';
+const buildCookieOptions = (maxAge: number) => ({
+  httpOnly: true as const,
+  sameSite: 'lax' as const,
+  secure: isProduction(),
+  maxAge,
+});
 
 export const setAuthCookies = (
   res: Response,
-  access: string,
-  refresh: string,
-  options?: CookieOptions,
+  accessToken: string,
+  refreshToken: string,
+  options: CookieOptions = {},
 ): void => {
-  const remember = Boolean(options?.remember);
-  const maxAge = remember ? getRememberedTtl() : getSessionTtl();
-  res.cookie(ACCESS_COOKIE, access, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: isSecure(),
-    maxAge,
-  });
-  res.cookie(REFRESH_COOKIE, refresh, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: isSecure(),
-    maxAge: remember ? getRememberedTtl() : getRememberedTtl(),
-  });
+  const remember = options.remember ?? false;
+  const accessMaxAge = remember ? 1000 * 60 * 60 * 24 : 1000 * 60 * 15;
+  const refreshMaxAge = remember ? 1000 * 60 * 60 * 24 * 30 : 1000 * 60 * 60 * 24 * 7;
+
+  res.cookie('access_token', accessToken, buildCookieOptions(accessMaxAge));
+  res.cookie('refresh_token', refreshToken, buildCookieOptions(refreshMaxAge));
 };
 
 export const clearAuthCookies = (res: Response): void => {
-  res.clearCookie(ACCESS_COOKIE, { httpOnly: true, sameSite: 'lax', secure: isSecure() });
-  res.clearCookie(REFRESH_COOKIE, { httpOnly: true, sameSite: 'lax', secure: isSecure() });
+  res.clearCookie('access_token');
+  res.clearCookie('refresh_token');
 };
 
-export default {
-  signAccess,
-  signRefresh,
-  setAuthCookies,
-  clearAuthCookies,
-};
+export { JwtUser as default };

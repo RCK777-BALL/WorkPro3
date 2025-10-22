@@ -2,20 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-export type UserRole =
-  | 'admin'
-  | 'supervisor'
-  | 'manager'
-  | 'planner'
-  | 'tech'
-  | 'technician'
-  | 'team_leader'
-  | 'team_member'
-  | 'area_leader'
-  | 'department_leader'
-  | 'viewer';
-
-export const ROLES: readonly UserRole[] = [
+export const ROLES = [
   'admin',
   'supervisor',
   'manager',
@@ -27,4 +14,6 @@ export const ROLES: readonly UserRole[] = [
   'area_leader',
   'department_leader',
   'viewer',
-];
+] as const;
+
+export type UserRole = (typeof ROLES)[number];

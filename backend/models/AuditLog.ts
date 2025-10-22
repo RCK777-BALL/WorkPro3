@@ -10,9 +10,9 @@ export interface AuditLogDocument extends Document {
   userId?: Types.ObjectId | null;
   action: string;
   entityType: string;
-  entityId: Types.ObjectId;
-  before?: unknown;
-  after?: unknown;
+  entityId?: string | null;
+  before?: Record<string, unknown> | null;
+  after?: Record<string, unknown> | null;
   ts: Date;
 }
 
@@ -23,14 +23,21 @@ const auditLogSchema = new Schema<AuditLogDocument>(
     userId: { type: Schema.Types.ObjectId, ref: 'User' },
     action: { type: String, required: true },
     entityType: { type: String, required: true },
-    entityId: { type: Schema.Types.ObjectId, required: true },
-    before: Schema.Types.Mixed,
-    after: Schema.Types.Mixed,
-    ts: { type: Date, default: Date.now },
+    entityId: { type: String },
+    before: { type: Schema.Types.Mixed },
+    after: { type: Schema.Types.Mixed },
+    ts: { type: Date, required: true, default: () => new Date(), index: true },
   },
-  { timestamps: false },
+  {
+    versionKey: false,
+  },
 );
 
-const AuditLog: Model<AuditLogDocument> = mongoose.model<AuditLogDocument>('AuditLog', auditLogSchema);
+auditLogSchema.index({ tenantId: 1, ts: -1 });
+
+type AuditLogModel = Model<AuditLogDocument>;
+
+const AuditLog: AuditLogModel =
+  (mongoose.models.AuditLog as AuditLogModel) || mongoose.model<AuditLogDocument>('AuditLog', auditLogSchema);
 
 export default AuditLog;

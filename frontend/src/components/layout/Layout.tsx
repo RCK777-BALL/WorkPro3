@@ -5,7 +5,7 @@
 import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 
-import AppHeader from './AppHeader';
+import Header from './Header';
 import Sidebar from './Sidebar';
 import RightPanel from './RightPanel';
 import CommandPalette from '@/components/global/CommandPalette';
@@ -40,7 +40,7 @@ export default function Layout() {
 
         <div className="flex flex-1 flex-col overflow-hidden">
           <CommandPalette />
-          <AppHeader />
+          <Header />
           <main className="flex-1 overflow-y-auto px-6 pb-10 pt-6 md:px-10">
             <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
               <Outlet />

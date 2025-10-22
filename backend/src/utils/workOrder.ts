@@ -5,7 +5,7 @@
 import { Types } from 'mongoose';
 
 export interface RawPart {
-  partId: string | Types.ObjectId;
+  partId: Types.ObjectId | string;
   qty?: number;
   cost?: number;
 }
@@ -16,21 +16,21 @@ export interface RawChecklist {
 }
 
 export interface RawSignature {
-  userId: string | Types.ObjectId;
+  userId: Types.ObjectId | string;
   signedAt?: string | Date;
+  name?: string;
 }
 
-const normalizeId = (value: string | Types.ObjectId): Types.ObjectId =>
-  value instanceof Types.ObjectId ? value : new Types.ObjectId(value);
-
-export const mapAssignees = (ids: (string | Types.ObjectId)[]): Types.ObjectId[] =>
-  ids.map((id) => normalizeId(id));
+export const mapAssignees = (values: (string | Types.ObjectId)[]): Types.ObjectId[] =>
+  values
+    .map((value) => (value instanceof Types.ObjectId ? value : new Types.ObjectId(value)))
+    .filter((value, index, self) => self.findIndex((other) => other.equals(value)) === index);
 
 export const mapPartsUsed = (
   parts: RawPart[],
 ): { partId: Types.ObjectId; qty: number; cost: number }[] =>
   parts.map((part) => ({
-    partId: normalizeId(part.partId),
+    partId: part.partId instanceof Types.ObjectId ? part.partId : new Types.ObjectId(part.partId),
     qty: part.qty ?? 1,
     cost: part.cost ?? 0,
   }));
@@ -40,33 +40,17 @@ export const mapChecklists = (
 ): { text: string; done: boolean }[] =>
   items.map((item) => ({
     text: item.description,
-    done: item.done ?? false,
+    done: Boolean(item.done),
   }));
-
-const toDate = (value?: string | Date): Date => {
-  if (value instanceof Date) {
-    return value;
-  }
-  if (typeof value === 'string') {
-    const parsed = new Date(value);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed;
-    }
-  }
-  return new Date();
-};
 
 export const mapSignatures = (
-  items: RawSignature[],
-): { by: Types.ObjectId; ts: Date }[] =>
-  items.map((item) => ({
-    by: normalizeId(item.userId),
-    ts: toDate(item.signedAt),
+  signatures: RawSignature[],
+): { by: Types.ObjectId; ts: Date; name?: string }[] =>
+  signatures.map((signature) => ({
+    by:
+      signature.userId instanceof Types.ObjectId
+        ? signature.userId
+        : new Types.ObjectId(signature.userId),
+    ts: signature.signedAt ? new Date(signature.signedAt) : new Date(),
+    ...(signature.name ? { name: signature.name } : {}),
   }));
-
-export default {
-  mapAssignees,
-  mapPartsUsed,
-  mapChecklists,
-  mapSignatures,
-};

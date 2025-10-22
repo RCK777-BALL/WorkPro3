@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import mongoose, { Schema, type Document, type Model, type Types } from 'mongoose';
+import { Schema, model, type Document, type Model, type Types } from 'mongoose';
 
 export interface PermitHistoryEntry {
   action: string;
@@ -12,54 +12,63 @@ export interface PermitHistoryEntry {
 }
 
 export interface IsolationStep {
-  name?: string;
+  description: string;
   completed: boolean;
+  completedAt?: Date;
 }
 
 export interface PermitDocument extends Document {
+  permitNumber: string;
   tenantId: Types.ObjectId;
-  status: string;
-  type?: string;
-  permitNumber?: string;
   workOrder?: Types.ObjectId;
-  requiredFor?: string[];
-  isolationSteps?: IsolationStep[];
+  type: string;
+  status: string;
+  validFrom?: Date;
+  validTo?: Date;
+  riskLevel?: string;
+  isolationSteps: IsolationStep[];
   history: PermitHistoryEntry[];
+  createdAt: Date;
+  updatedAt: Date;
 }
+
+const isolationStepSchema = new Schema<IsolationStep>({
+  description: { type: String, required: true },
+  completed: { type: Boolean, default: false },
+  completedAt: { type: Date },
+});
+
+const permitHistorySchema = new Schema<PermitHistoryEntry>({
+  action: { type: String, required: true },
+  by: { type: Schema.Types.ObjectId, ref: 'User' },
+  at: { type: Date, default: Date.now },
+  notes: String,
+});
 
 const permitSchema = new Schema<PermitDocument>(
   {
+    permitNumber: { type: String, required: true, index: true },
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
-    status: { type: String, default: 'pending' },
-    type: { type: String },
-    permitNumber: { type: String },
     workOrder: { type: Schema.Types.ObjectId, ref: 'WorkOrder' },
-    requiredFor: [{ type: String }],
-    isolationSteps: [
-      {
-        name: { type: String },
-        completed: { type: Boolean, default: false },
-      },
-    ],
-    history: [
-      {
-        action: { type: String, required: true },
-        by: { type: Schema.Types.ObjectId, ref: 'User' },
-        at: { type: Date, default: Date.now },
-        notes: { type: String },
-      },
-    ],
+    type: { type: String, required: true },
+    status: {
+      type: String,
+      enum: ['draft', 'pending', 'approved', 'active', 'closed', 'cancelled', 'escalated'],
+      default: 'pending',
+      index: true,
+    },
+    riskLevel: { type: String },
+    validFrom: Date,
+    validTo: Date,
+    isolationSteps: { type: [isolationStepSchema], default: [] },
+    history: { type: [permitHistorySchema], default: [] },
   },
   { timestamps: true },
 );
 
-permitSchema.pre('save', function ensureHistory(this: PermitDocument, next) {
-  if (!Array.isArray(this.history)) {
-    this.history = [];
-  }
-  next();
-});
+permitSchema.index({ tenantId: 1, status: 1 });
+permitSchema.index({ tenantId: 1, type: 1 });
 
-const Permit: Model<PermitDocument> = mongoose.model<PermitDocument>('Permit', permitSchema);
+const Permit: Model<PermitDocument> = model<PermitDocument>('Permit', permitSchema);
 
 export default Permit;

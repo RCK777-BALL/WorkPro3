@@ -4,15 +4,9 @@
 
 import rateLimit from 'express-rate-limit';
 
-const DEFAULT_WINDOW_MS = 60_000;
-
 export const authLimiter = rateLimit({
-  windowMs: DEFAULT_WINDOW_MS,
-  max: 30,
+  windowMs: 60_000,
+  max: 20,
   standardHeaders: true,
   legacyHeaders: false,
 });
-
-export default {
-  authLimiter,
-};

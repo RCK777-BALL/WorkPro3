@@ -4,13 +4,21 @@
 
 import { Types } from 'mongoose';
 
-export const toObjectId = (value: string | Types.ObjectId): Types.ObjectId =>
-  value instanceof Types.ObjectId ? value : new Types.ObjectId(value);
+export type EntityIdLike = Types.ObjectId | string | null | undefined;
 
-export const toEntityId = (value: string | Types.ObjectId): string =>
-  value instanceof Types.ObjectId ? value.toHexString() : String(value);
+export const toObjectId = (value: EntityIdLike): Types.ObjectId | undefined => {
+  if (!value) return undefined;
+  if (value instanceof Types.ObjectId) return value;
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return Types.ObjectId.isValid(trimmed) ? new Types.ObjectId(trimmed) : undefined;
+};
 
-export default {
-  toObjectId,
-  toEntityId,
+export const toEntityId = (value: EntityIdLike): string | undefined => {
+  if (!value) return undefined;
+  if (value instanceof Types.ObjectId) return value.toString();
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : undefined;
 };

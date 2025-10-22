@@ -7,23 +7,29 @@ import { sendResponse } from './sendResponse';
 
 export function validateItems<T>(
   res: Response,
-  items: T[] | undefined,
+  value: unknown,
   predicate: (item: T) => boolean,
   label: string,
-): T[] | undefined | null {
-  if (!items) {
+): T[] | undefined {
+  if (value == null) {
     return undefined;
   }
 
-  const invalid = items.filter((item) => !predicate(item));
-  if (invalid.length > 0) {
-    sendResponse(res, null, `${label} validation failed`, 400);
-    return null;
+  if (!Array.isArray(value)) {
+    sendResponse(res, null, `${label} must be an array`, 400);
+    return undefined;
   }
 
-  return items;
+  const normalized: T[] = [];
+  for (const item of value as T[]) {
+    if (!predicate(item)) {
+      sendResponse(res, null, `Invalid ${label}`, 400);
+      return undefined;
+    }
+    normalized.push(item);
+  }
+
+  return normalized;
 }
 
-export default {
-  validateItems,
-};
+export default validateItems;

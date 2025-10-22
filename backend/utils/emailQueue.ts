@@ -2,16 +2,15 @@
  * SPDX-License-Identifier: MIT
  */
 
+import logger from './logger';
+
 interface EmailJob {
   to: string;
   subject: string;
-  body: string;
+  text?: string;
+  html?: string;
 }
 
-export const enqueueEmailRetry = async (_job: EmailJob): Promise<void> => {
-  // no-op stub for integration tests
-};
-
-export default {
-  enqueueEmailRetry,
-};
+export async function enqueueEmailRetry(job: EmailJob): Promise<void> {
+  logger.warn('Email queued for retry', job);
+}

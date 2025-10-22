@@ -4,61 +4,50 @@
 
 import type { Response } from 'express';
 
-export interface ApiResponse<T> {
+type ErrorPayload = string | Record<string, unknown> | unknown[] | null | undefined;
+
+type ApiResponse<T> = {
   success: boolean;
   data: T | null;
   message?: string;
-  errors?: unknown;
+  error?: ErrorPayload;
+};
+
+function resolveMessage(error: ErrorPayload, message?: string): string | undefined {
+  if (message) {
+    return message;
+  }
+  if (typeof error === 'string' && error.trim().length > 0) {
+    return error;
+  }
+  if (Array.isArray(error) && error.length > 0) {
+    return 'Validation failed';
+  }
+  return undefined;
 }
 
-const isErrorStatus = (status: number): boolean => status >= 400;
-
-const toMessage = (value: unknown): string | undefined =>
-  typeof value === 'string' && value.length > 0 ? value : undefined;
-
-export function buildResponse<T>(
+export function sendResponse<T>(
+  res: Response,
   data: T | null,
-  status: number,
+  error: ErrorPayload = null,
+  status = 200,
   message?: string,
-  errors?: unknown,
-): ApiResponse<T> {
-  const success = !isErrorStatus(status) && errors == null;
+): void {
+  const success = error == null;
   const payload: ApiResponse<T> = {
     success,
     data,
   };
 
-  const normalizedMessage = toMessage(message);
-  if (normalizedMessage) {
-    payload.message = normalizedMessage;
+  const resolvedMessage = resolveMessage(error, message);
+  if (resolvedMessage) {
+    payload.message = resolvedMessage;
   }
 
-  if (errors != null) {
-    payload.errors = errors;
-    if (!payload.message && typeof errors === 'string') {
-      payload.message = errors;
-    }
+  if (!success) {
+    payload.error = error;
   }
 
-  return payload;
-}
-
-export function sendResponse<T>(
-  res: Response,
-  data: T | null = null,
-  errors?: unknown,
-  status = 200,
-  message?: string,
-): void {
-  let resolvedErrors = errors;
-  let resolvedMessage = message;
-
-  if (!resolvedMessage && typeof resolvedErrors === 'string') {
-    resolvedMessage = resolvedErrors;
-    resolvedErrors = undefined;
-  }
-
-  const payload = buildResponse(data, status, resolvedMessage, resolvedErrors);
   res.status(status).json(payload);
 }
 

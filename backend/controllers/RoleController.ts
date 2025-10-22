@@ -3,13 +3,17 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import { Types } from 'mongoose';
 
 import Role from '../models/Role';
+import { writeAuditLog } from '../utils/audit';
+import { sendResponse } from '../utils/sendResponse';
+import { toObjectId, toEntityId } from '../utils/ids';
 
 export const getAllRoles = async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const roles = await Role.find();
-    res.json(roles);
+    sendResponse(res, roles);
   } catch (err) {
     next(err);
   }
@@ -17,9 +21,14 @@ export const getAllRoles = async (_req: Request, res: Response, next: NextFuncti
 
 export const getRoleById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const role = await Role.findById(req.params.id);
-    if (!role) return res.status(404).json({ message: 'Not found' });
-    res.json(role);
+    const { id } = req.params;
+    const roleId = toObjectId(id);
+    if (!roleId) {
+      return sendResponse(res, null, 'Invalid id', 400);
+    }
+    const role = await Role.findById(roleId);
+    if (!role) return sendResponse(res, null, 'Not found', 404);
+    sendResponse(res, role);
   } catch (err) {
     next(err);
   }
@@ -27,8 +36,27 @@ export const getRoleById = async (req: Request, res: Response, next: NextFunctio
 
 export const createRole = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const role = await Role.create(req.body);
-    res.status(201).json(role);
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+    const rawUserId = (req.user as any)?._id ?? (req.user as any)?.id;
+    const auditUserId = rawUserId
+      ? toEntityId(rawUserId as string | Types.ObjectId)
+      : undefined;
+    const role = await Role.create({ ...req.body, tenantId });
+    const entityId = toEntityId(role._id as Types.ObjectId) ?? (role._id as Types.ObjectId);
+
+    await writeAuditLog({
+      tenantId,
+      ...(auditUserId ? { userId: auditUserId } : {}),
+      action: 'create',
+      entityType: 'Role',
+      entityId,
+      after: role.toObject(),
+    });
+    sendResponse(res, role, null, 201);
   } catch (err) {
     next(err);
   }
@@ -36,12 +64,38 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
 
 export const updateRole = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const role = await Role.findByIdAndUpdate(req.params.id, req.body, {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const rawUserId = (req.user as any)?._id ?? (req.user as any)?.id;
+    const auditUserId = rawUserId
+      ? toEntityId(rawUserId as string | Types.ObjectId)
+      : undefined;
+    const { id } = req.params;
+    const roleId = toObjectId(id);
+    if (!roleId) {
+      return sendResponse(res, null, 'Invalid id', 400);
+    }
+    const existing = await Role.findById(roleId);
+    if (!existing) return sendResponse(res, null, 'Not found', 404);
+    const role = await Role.findByIdAndUpdate(roleId, req.body, {
       new: true,
       runValidators: true,
     });
-    if (!role) return res.status(404).json({ message: 'Not found' });
-    res.json(role);
+    const entityId = toEntityId(roleId) ?? roleId;
+    await writeAuditLog({
+      tenantId,
+      ...(auditUserId ? { userId: auditUserId } : {}),
+      action: 'update',
+      entityType: 'Role',
+      entityId,
+      before: existing.toObject(),
+      after: role?.toObject(),
+    });
+    sendResponse(res, role);
   } catch (err) {
     next(err);
   }
@@ -49,9 +103,35 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
 
 export const deleteRole = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const role = await Role.findByIdAndDelete(req.params.id);
-    if (!role) return res.status(404).json({ message: 'Not found' });
-    res.json({ message: 'Deleted successfully' });
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const rawUserId = (req.user as any)?._id ?? (req.user as any)?.id;
+    const auditUserId = rawUserId
+      ? toEntityId(rawUserId as string | Types.ObjectId)
+      : undefined;
+    const { id } = req.params;
+    const roleId = toObjectId(id);
+    if (!roleId) {
+      return sendResponse(res, null, 'Invalid id', 400);
+    }
+    const role = await Role.findByIdAndDelete(roleId);
+    if (!role) {
+      return sendResponse(res, null, 'Not found', 404);
+    }
+    const entityId = toEntityId(roleId) ?? roleId;
+    await writeAuditLog({
+      tenantId,
+      ...(auditUserId ? { userId: auditUserId } : {}),
+      action: 'delete',
+      entityType: 'Role',
+      entityId,
+      before: role.toObject(),
+    });
+    sendResponse(res, { message: 'Deleted successfully' });
   } catch (err) {
     next(err);
   }

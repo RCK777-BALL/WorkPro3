@@ -1,5 +1,4 @@
 {
- 
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
@@ -10,9 +9,10 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@radix-ui/react-slot": ["src/lib/radix-slot.tsx"]
     },
-    "types": ["vite/client"]
+    "types": ["vite/client", "react", "react-dom"]
   },
   "include": ["src", "src/types/globals.d.ts"]
 }

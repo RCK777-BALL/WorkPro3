@@ -4,41 +4,45 @@
 
 import mongoose, { Document, Schema } from 'mongoose';
 
-export interface PmTaskDocument extends Document {
+interface Rule {
+  type: 'calendar' | 'meter';
+  cron?: string;
+  meterName?: string;
+  threshold?: number;
+}
+
+export interface PMTaskDocument extends Document {
   title: string;
-  isActive: boolean;
   tenantId: Schema.Types.ObjectId;
-  lastRun?: Date;
-  nextDue?: Date;
-  frequency:
-    | 'daily'
-    | 'weekly'
-    | 'monthly'
-    | 'quarterly'
-    | 'biannually'
-    | 'annually';
   notes?: string;
   asset?: mongoose.Schema.Types.ObjectId;
   department?: string; // optional, for summary use
+  rule: Rule;
+  lastGeneratedAt?: Date;
+  active: boolean;
 }
 
-const PmTaskSchema = new Schema<PmTaskDocument>(
+const PmTaskSchema = new Schema<PMTaskDocument>(
   {
     title: { type: String, required: true },
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
-    isActive: { type: Boolean, default: true },
-    lastRun: { type: Date },
-    nextDue: { type: Date },
-    frequency: {
-      type: String,
-      enum: ['daily', 'weekly', 'monthly', 'quarterly', 'biannually', 'annually'],
-      required: true,
-    },
     notes: String,
     asset: { type: mongoose.Schema.Types.ObjectId, ref: 'Asset' },
     department: String,
+    rule: {
+      type: {
+        type: String,
+        enum: ['calendar', 'meter'],
+        required: true,
+      },
+      cron: String,
+      meterName: String,
+      threshold: Number,
+    },
+    lastGeneratedAt: { type: Date },
+    active: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
 
-export default mongoose.model<PmTaskDocument>('PmTask', PmTaskSchema);
+export default mongoose.model<PMTaskDocument>('PmTask', PmTaskSchema);

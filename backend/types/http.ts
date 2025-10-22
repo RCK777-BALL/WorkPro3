@@ -2,21 +2,38 @@
  * SPDX-License-Identifier: MIT
  */
 
-// Backend/types/http.ts
-import type { RequestHandler, Request } from 'express';
+import type { Request, Response, NextFunction, RequestHandler } from 'express';
 import type { ParamsDictionary } from 'express-serve-static-core';
 import type { ParsedQs } from 'qs';
 
-export type AuthedRequestHandler<
-  P extends ParamsDictionary = ParamsDictionary,
-  ResBody = any,
-  ReqBody = any,
-  ReqQuery = ParsedQs,
-> = RequestHandler<P, ResBody, ReqBody, ReqQuery>;
+export type { ApiResult } from '@shared/http';
 
 export type AuthedRequest<
   P extends ParamsDictionary = ParamsDictionary,
-  ResBody = any,
-  ReqBody = any,
-  ReqQuery = ParsedQs,
-> = Request<P, ResBody, ReqBody, ReqQuery>;
+  ResBody = unknown,
+  ReqBody = unknown,
+  ReqQuery extends ParsedQs = ParsedQs,
+  Locals extends Record<string, any> = Record<string, any>,
+> = Omit<Request<P, ResBody, ReqBody, ReqQuery, Locals>, 'user'> & {
+  user?: Express.User;
+};
+
+type AuthedHandlerFn<
+  P extends ParamsDictionary,
+  ResBody,
+  ReqBody,
+  ReqQuery extends ParsedQs,
+  Locals extends Record<string, any>,
+> = (
+  req: AuthedRequest<P, ResBody, ReqBody, ReqQuery, Locals>,
+  res: Response<ResBody, Locals>,
+  next: NextFunction,
+) => void | Promise<void>;
+
+export type AuthedRequestHandler<
+  P extends ParamsDictionary = ParamsDictionary,
+  ResBody = unknown,
+  ReqBody = unknown,
+  ReqQuery extends ParsedQs = ParsedQs,
+  Locals extends Record<string, any> = Record<string, any>,
+> = AuthedHandlerFn<P, ResBody, ReqBody, ReqQuery, Locals>;

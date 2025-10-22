@@ -11,7 +11,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
-import WorkOrderRoutes from '../routes/WorkOrderRoutes';
+import WorkOrderRoutes from '../routes/workOrdersRoutes';
 import WorkOrder from '../models/WorkOrder';
 import { getWorkOrderAssistance } from '../services/aiCopilot';
 
@@ -43,7 +43,7 @@ beforeEach(async () => {
     name: 'Tester',
     email: 'tester@example.com',
     passwordHash: 'pass123',
-    roles: ['manager'],
+    roles: ['supervisor'],
     tenantId: new mongoose.Types.ObjectId(),
   });
   token = jwt.sign({ id: user._id.toString(), roles: user.roles }, process.env.JWT_SECRET!);

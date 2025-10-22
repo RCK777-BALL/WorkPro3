@@ -33,7 +33,8 @@ export const useThemeStore = create<ThemeState>()(
         }
       },
       updateTheme: async (data) => {
-        set(data as any);
+        type ThemeFields = Partial<Omit<ThemeState, 'fetchTheme' | 'updateTheme' | 'setTheme'>>;
+        set(data as ThemeFields);
         try {
           await http.put('/theme', { ...get(), ...data });
         } catch (err) {

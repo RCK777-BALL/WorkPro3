@@ -9,7 +9,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
-import AssetRoutes from '../routes/AssetRoutes';
+const AssetRoutes: any = require('../routes/AssetRoutes');
 
 const app = express();
 app.use(express.json());
@@ -17,7 +17,7 @@ app.use('/api/assets', AssetRoutes);
 
 let mongo: MongoMemoryServer;
 let token: string;
-let user: Awaited<ReturnType<typeof User.create>>;
+let user: any;
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'testsecret';
@@ -32,13 +32,16 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await mongoose.connection.db?.dropDatabase();
-  user = await User.create({
+  const createdUser = new User({
     name: 'Tester',
     email: 'tester@example.com',
     passwordHash: 'pass123',
-    roles: ['manager'],
+    roles: ['supervisor'],
     tenantId: new mongoose.Types.ObjectId(),
+    employeeId: 'EMP-1',
   });
+  await createdUser.save();
+  user = createdUser;
   token = jwt.sign({ id: user._id.toString(), roles: user.roles }, process.env.JWT_SECRET!);
 });
 

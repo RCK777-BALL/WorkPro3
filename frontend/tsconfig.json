@@ -1,4 +1,14 @@
 {
   "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "exactOptionalPropertyTypes": true,
+    "paths": {
+      "@/*": ["src/*"],
+      "@shared/*": ["../shared/types/*"],
+      "@radix-ui/react-slot": ["src/lib/radix-slot.tsx"]
+    }
+  },
   "include": ["src"]
 }

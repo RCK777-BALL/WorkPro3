@@ -7,7 +7,7 @@ The application uses the following environment variables. All names use `UPPER_S
 | Variable | Description | Default |
 | --- | --- | --- |
 | `JWT_SECRET` | Secret used to sign JWT tokens | required |
-| `MONGO_URI` | MongoDB connection string | `mongodb://localhost:27017/platinum_cmms` |
+| `MONGO_URI` | MongoDB connection string | `mongodb://localhost:27017/workpro` |
 | `CORS_ORIGIN` | Allowed CORS origin | `http://localhost:5173` |
 | `PORT` | Port the server listens on | `5010` |
 | `RATE_LIMIT_WINDOW_MS` | Rate limiter window in ms | `900000` |
@@ -16,6 +16,7 @@ The application uses the following environment variables. All names use `UPPER_S
 | `COOKIE_SECURE` | Enable secure cookies | optional |
 | `PM_SCHEDULER_CRON` | CRON schedule for PM tasks | `*/5 * * * *` |
 | `PM_SCHEDULER_TASK` | Path to PM scheduler task | `./tasks/PMSchedulerTask` |
+| `LABOR_RATE` | Hourly labor rate for cost calculations | `50` |
 | `DEFAULT_TENANT_ID` | Default tenant identifier | optional |
 
 ## Frontend

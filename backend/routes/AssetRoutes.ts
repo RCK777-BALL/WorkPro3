@@ -3,7 +3,8 @@
  */
 
 import express, { type RequestHandler } from 'express';
-import multer from 'multer';
+import multer, { MulterError } from 'multer';
+
 import {
   getAllAssets,
   getAssetById,
@@ -11,75 +12,80 @@ import {
   updateAsset,
   deleteAsset,
   searchAssets,
+  getAssetTree,
 } from '../controllers/AssetController';
-import { requireAuth } from '../middleware/requireAuth'; // <— align with your actual file
-import requireRoles from '../middleware/requireRoles';
-import { validate } from '../middleware/validationMiddleware';
-import { assetValidators } from '../validators/assetValidators';
-import siteScope from '../middleware/siteScope';
+import { requireAuth } from '../middleware/authMiddleware';
+import tenantScope from '../middleware/tenantScope';
 import validateObjectId from '../middleware/validateObjectId';
+import { validate } from '../middleware/validationMiddleware';
+import { assetUpdateValidators, assetValidators } from '../validators/assetValidators';
 
 const router = express.Router();
 
-const storage = multer.memoryStorage();
-const allowedMimeTypes = ['image/png', 'image/jpeg', 'application/pdf'];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'application/pdf',
+]);
 
 const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
-  fileFilter: (_req, file, cb: multer.FileFilterCallback) => {
-    if (allowedMimeTypes.includes(file.mimetype)) {
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: MAX_FILE_SIZE,
+  },
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_MIME_TYPES.has(file.mimetype)) {
       cb(null, true);
-    } else {
-      cb(new Error('Invalid file type'));
+      return;
     }
+    cb(new Error('Invalid file type'));
   },
 });
 
-// If you know your fields, prefer:
-// const uploadFields = upload.fields([{ name: 'files', maxCount: 5 }]);
-// and use `uploadFields` instead of `upload.any()`
-const handleUpload: RequestHandler = (req, res, next) => {
-  upload.any()(req, res, (err: unknown) => {
-    if (!err) return next();
+const handleUploads: RequestHandler = (req, res, next) => {
+  if (!req.is('multipart/form-data')) {
+    next();
+    return;
+  }
 
-    if (err instanceof multer.MulterError) {
-      // Multer-specific errors (e.g., LIMIT_FILE_SIZE)
-      return res.status(400).json({ message: err.message, code: err.code });
+  upload.any()(req, res, (err) => {
+    if (!err) {
+      next();
+      return;
     }
-    if (err instanceof Error) {
-      return res.status(400).json({ message: err.message });
+
+    if (err instanceof MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        res.status(400).json({ message: 'File too large' });
+        return;
+      }
+      res.status(400).json({ message: err.message });
+      return;
     }
-    return res.status(400).json({ message: 'Upload error' });
+
+    res.status(400).json({ message: err instanceof Error ? err.message : 'Invalid file upload' });
   });
 };
 
 router.use(requireAuth);
-router.use(siteScope);
+router.use(tenantScope);
 
 router.get('/', getAllAssets);
 router.get('/search', searchAssets);
- router.get('/:id', validateObjectId('id'), getAssetById);
- 
-router.post(
-  '/',
-  requireRoles(['admin', 'manager']),
-  handleUpload,
-  assetValidators,
-  validate,
-  createAsset
-);
+router.get('/tree', getAssetTree);
+router.get('/:id', validateObjectId('id'), getAssetById);
 
+router.post('/', handleUploads, assetValidators, validate, createAsset);
 router.put(
   '/:id',
   validateObjectId('id'),
-  requireRoles(['admin', 'manager']),
-  handleUpload,
-  assetValidators,
+  handleUploads,
+  assetUpdateValidators,
   validate,
-  updateAsset
+  updateAsset,
 );
-router.delete('/:id', validateObjectId('id'), requireRoles(['admin', 'manager']), deleteAsset);
- 
+router.delete('/:id', validateObjectId('id'), deleteAsset);
 
 export default router;

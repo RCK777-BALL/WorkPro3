@@ -5,12 +5,14 @@
 import React from 'react';
 import { useMQTTStore } from '@/store/mqttStore';
 
+type MQTTConfigFields = { url: string; username: string; password: string };
+
 const MQTTConfig: React.FC = () => {
   const { url, username, password, setConfig } = useMQTTStore();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setConfig({ [name]: value } as any);
+    setConfig({ [name]: value } as Partial<MQTTConfigFields>);
   };
 
   return (

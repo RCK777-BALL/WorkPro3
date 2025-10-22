@@ -1,6 +1,17 @@
-/*
- * SPDX-License-Identifier: MIT
- */
+export type { Asset as SharedAsset } from '@shared/asset';
+export type { WorkOrder as SharedWorkOrder } from '@shared/workOrder';
+export type { InventoryItem, InventoryUpdatePayload } from '@shared/inventory';
+export type { UploadedFile, UploadResponse } from '@shared/uploads';
+export type { ApiResult } from '@shared/http';
+export type {
+  Permit,
+  PermitHistoryEntry,
+  PermitApprovalStep,
+  PermitIsolationStep,
+  SafetyIncident,
+  SafetyKpiResponse,
+  PermitActivitySummary,
+} from '@shared/permit';
 
 /**
  * Defines the allowed maintenance categories for upcoming maintenance tasks.
@@ -12,6 +23,7 @@ export interface Asset {
   name: string;
   type?: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface';
   location?: string;
+  notes?: string;
   department?: string;
   category?: string;
   status?: 'Active' | 'Offline' | 'In Repair';
@@ -40,18 +52,21 @@ export type AssetStatusMap = Record<string, number>;
 export interface Department {
   id: string;
   name: string;
+  notes?: string;
 }
 
 export interface Line {
   id: string;
   name: string;
   department: string;
+  notes?: string;
 }
 
 export interface Station {
   id: string;
   name: string;
   line: string;
+  notes?: string;
 }
 
 export interface StationWithAssets extends Station {
@@ -85,15 +100,30 @@ export interface WorkOrder {
   /** Priority of the work order */
   priority: 'low' | 'medium' | 'high' | 'critical';
 
-  /** Current status (note: hyphenated strings) */
-  status: 'open' | 'in-progress' | 'on-hold' | 'completed';
+  /** Current status */
+  status: 'requested' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
 
   /** Type of work such as corrective or preventive */
   type: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
 
+  /** Optional compliance procedure identifier */
+  complianceProcedureId?: string;
+
+  /** Optional calibration interval in days */
+  calibrationIntervalDays?: number;
+
   /** User assigned to complete the work */
   assignedTo?: string;
   assignedToAvatar?: string;
+  assignees?: string[];
+  checklists?: { text: string; done: boolean }[];
+  partsUsed?: { partId: string; qty: number; cost: number }[];
+  signatures?: { by: string; ts: string }[];
+  timeSpentMin?: number;
+  photos?: string[];
+  failureCode?: string;
+  permits?: string[];
+  requiredPermitTypes?: string[];
 
   /** Department associated with the work order */
   department: string;
@@ -108,7 +138,7 @@ export interface WorkOrder {
   note?: string;
   completedBy?: string;
   attachments?: any[];
-  signature?: string;
+  parts?: { partId: string; qty: number; cost: number }[];
 }
 
 export interface NewWorkOrder {
@@ -227,11 +257,25 @@ export interface Message {
   reactions: Reaction[];
 }
 
+export type AuthRole =
+  | 'admin'
+  | 'supervisor'
+  | 'manager'
+  | 'planner'
+  | 'tech'
+  | 'technician'
+  | 'team_member'
+  | 'team_leader'
+  | 'area_leader'
+  | 'department_leader'
+  | 'viewer';
+
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'manager' | 'technician' | 'viewer';
+  role: AuthRole;
+  roles?: AuthRole[];
   department: string;
   avatar?: string;
 }
@@ -240,15 +284,7 @@ export interface TeamMember {
   id: string;
   name: string;
   email: string;
-  role:
-    | 'admin'
-    | 'manager'
-    | 'technician'
-    | 'viewer'
-    | 'team_member'
-    | 'team_leader'
-    | 'area_leader'
-    | 'department_leader';
+  role: AuthRole;
   department?: string;
   /** Unique employee identifier */
   employeeId?: string;
@@ -263,15 +299,7 @@ export interface TeamMemberResponse {
   id?: string;
   name: string;
   email: string;
-  role:
-    | 'admin'
-    | 'manager'
-    | 'technician'
-    | 'viewer'
-    | 'team_member'
-    | 'team_leader'
-    | 'area_leader'
-    | 'department_leader';
+  role: AuthRole;
   department?: string;
   employeeId?: string;
   managerId?: string | null;
@@ -284,22 +312,35 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  role:
-    | 'admin'
-    | 'manager'
-    | 'technician'
-    | 'viewer'
-    | 'team_member'
-    | 'team_leader'
-    | 'area_leader'
-    | 'department_leader';
+  role: AuthRole;
+  roles?: AuthRole[];
   /** Identifier for the user's tenant */
   tenantId?: string;
+  /** Optional site identifier associated with the user */
+  siteId?: string;
   /** Optional JWT token used for authenticated requests */
   token?: string;
   /** Optional URL for the user's avatar */
   avatar?: string;
 }
+
+export interface AuthSession {
+  user: AuthUser;
+  token?: string;
+}
+
+export interface AuthMeResponse {
+  user: AuthUser;
+}
+
+export interface AuthLoginMfaChallenge {
+  mfaRequired: true;
+  userId: string;
+}
+
+export type AuthLoginResponse = AuthSession | AuthLoginMfaChallenge;
+
+export type AuthMfaVerifyResponse = AuthSession;
 
 export interface Member {
   id: string;
@@ -329,13 +370,14 @@ export interface NotificationType {
 
 export interface WorkOrderUpdatePayload {
   _id: string;
+  tenantId?: string;
   title?: string;
+  status?: 'requested' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+  type?: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
+  complianceProcedureId?: string;
+  calibrationIntervalDays?: number;
+  assignees?: string[];
   deleted?: boolean;
-}
-
-export interface InventoryUpdatePayload {
-  _id: string;
-  name?: string;
 }
 
 export interface DashboardSummary {
@@ -374,7 +416,7 @@ export interface LowStockPart {
 export interface UpcomingMaintenanceResponse {
   _id?: string;
   id?: string;
-  asset?: { _id?: string; name?: string };
+  asset?: { _id?: string; id?: string; name?: string };
   nextDue: string;
   type?: MaintenanceType;
   assignedTo?: string;
@@ -482,3 +524,4 @@ export interface WorkHistory {
   metrics: WorkHistoryMetrics;
   recentWork: WorkHistoryEntry[];
 }
+

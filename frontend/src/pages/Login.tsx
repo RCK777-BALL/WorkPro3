@@ -2,202 +2,72 @@
  * SPDX-License-Identifier: MIT
  */
 
- 
-import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
- import { useAuth } from '../context/AuthContext';
-import { emitToast } from '../context/ToastContext';
-import http from '../lib/http';
- 
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
-};
+import { useAuth } from '@/context/AuthContext';
 
-const Login: React.FC = () => {
-  const { t } = useTranslation();
-
-  // Auth & MFA state
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [code, setCode] = useState('');
-  const [mfaUser, setMfaUser] = useState<string | null>(null);
+export default function Login() {
+  const [email, setEmail] = useState('admin@cmms.com');
+  const [password, setPassword] = useState('Password123!');
+  const [loading, setLoading] = useState(false);
+  const { login: authLogin } = useAuth();
   const navigate = useNavigate();
-  const { setUser } = useAuth();
 
-  // PWA install prompt state
-  const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
-  const [showInstall, setShowInstall] = useState(false);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-    const emailFromOauth = params.get('email');
-    if (token && emailFromOauth) {
-       const id =
-        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-          ? crypto.randomUUID()
-          : `${Date.now()}`;
-      setUser({
-        id,
-        name: emailFromOauth.split('@')[0],
-        role: 'viewer',
-        email: emailFromOauth,
- 
-        token,
-      });
-      navigate('/dashboard');
-    }
-
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setInstallEvent(e as BeforeInstallPromptEvent);
-      setShowInstall(true);
-    };
-    window.addEventListener('beforeinstallprompt', handler as EventListener);
-    return () => window.removeEventListener('beforeinstallprompt', handler as EventListener);
-  }, [navigate, setUser]);
-
-  const promptInstall = async () => {
-    if (!installEvent) return;
-    await installEvent.prompt();
-    await installEvent.userChoice;
-    setInstallEvent(null);
-    setShowInstall(false);
-  };
-
-  const handleLogin = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    setError('');
+  const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoading(true);
     try {
-      const { data } = await http.post('/auth/login', { email, password });
-      if (data.mfaRequired) {
-        setMfaUser(data.userId);
+      const result = await authLogin(email, password);
+
+      if ('mfaRequired' in result && result.mfaRequired) {
+        toast('Multi-factor authentication required. Please complete the MFA challenge.', {
+          icon: '🔐',
+        });
         return;
       }
-      setUser({ ...data.user, token: data.token });
-      localStorage.setItem('auth:token', data.token);
-      if (data.user?.tenantId) localStorage.setItem('auth:tenantId', data.user.tenantId);
-      if (data.user?.siteId) localStorage.setItem('auth:siteId', data.user.siteId);
-      navigate('/dashboard');
-    } catch (err: unknown) {
-      let isNetworkError = false;
-      if (err instanceof Error) {
-        const code = (err as { code?: string }).code;
-        const message = err.message.toLowerCase();
-        isNetworkError = code === 'ERR_NETWORK' || message.includes('network');
-      }
-      const errorMessage = isNetworkError
-        ? t('auth.networkError', 'Cannot connect to server')
-        : t('auth.loginFailed', 'Login failed');
-      emitToast(errorMessage, 'error');
-      setError(errorMessage);
-    }
-  };
 
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!mfaUser) return;
-    try {
-      const { data } = await http.post('/auth/mfa/verify', {
-        userId: mfaUser,
-        token: code,
-      });
-      setUser({ ...data.user, token: data.token });
-      localStorage.setItem('auth:token', data.token);
-      if (data.user?.tenantId) localStorage.setItem('auth:tenantId', data.user.tenantId);
-      if (data.user?.siteId) localStorage.setItem('auth:siteId', data.user.siteId);
+      toast.success('Login successful!');
       navigate('/dashboard');
-    } catch {
-      setError(t('auth.invalidCode', 'Invalid code'));
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { message?: string } } }).response?.data?.message ??
+        (err instanceof Error ? err.message : 'Login failed');
+      toast.error(message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <div className="space-y-4 w-full max-w-md">
-        {showInstall && (
-          <div className="flex justify-center">
-            <button
-              onClick={promptInstall}
-              className="mb-4 px-4 py-2 rounded bg-primary-600 text-white"
-            >
-              {t('app.install', 'Install App')}
-            </button>
-          </div>
-        )}
-
-        {!mfaUser ? (
-          <form onSubmit={handleLogin} className="space-y-4 bg-white p-6 rounded shadow">
-            <h2 className="text-xl font-bold">{t('auth.login', 'Login')}</h2>
-            <input
-              type="email"
-              placeholder={t('auth.email', 'Email')}
-              value={email}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-              className="w-full p-2 border rounded"
-              autoComplete="email"
-              required
-            />
-            <input
-              type="password"
-              placeholder={t('auth.password', 'Password')}
-              value={password}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-              className="w-full p-2 border rounded"
-              autoComplete="current-password"
-              required
-            />
-            {error && <div className="text-red-500">{error}</div>}
-            <button type="submit" className="bg-primary-600 text-white px-4 py-2 rounded w-full">
-              {t('auth.login', 'Login')}
-            </button>
-
-            {/* OAuth shortcuts */}
-            <div className="flex flex-col space-y-2 pt-2">
-              <a href="/api/auth/oauth/google" className="text-primary-600">
-                {t('auth.loginWithGoogle', 'Login with Google')}
-              </a>
-              <a href="/api/auth/oauth/github" className="text-primary-600">
-                {t('auth.loginWithGitHub', 'Login with GitHub')}
-              </a>
-            </div>
-          </form>
-        ) : (
-          <form onSubmit={handleVerify} className="space-y-4 bg-white p-6 rounded shadow">
-            <h2 className="text-xl font-bold">{t('auth.mfaVerification', 'MFA Verification')}</h2>
-            <input
-              type="text"
-              placeholder={t('auth.oneTimeCode', 'One-time code')}
-              value={code}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCode(e.target.value)}
-              className="w-full p-2 border rounded"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              required
-            />
-            {error && <div className="text-red-500">{error}</div>}
-            <button type="submit" className="bg-primary-600 text-white px-4 py-2 rounded w-full">
-              {t('auth.verify', 'Verify')}
-            </button>
-          </form>
-        )}
-
-        <div className="flex justify-between text-sm">
-          <Link to="/register" className="text-primary-600">
-            {t('auth.register', 'Register')}
-          </Link>
-          <Link to="/forgot-password" className="text-primary-600">
-            {t('auth.forgotPassword', 'Forgot Password?')}
-          </Link>
-        </div>
-      </div>
+    <div className="flex h-screen items-center justify-center bg-black">
+      <form onSubmit={handleLogin} className="w-80 space-y-4 rounded-lg bg-zinc-900 p-6">
+        <h2 className="text-center text-lg font-medium text-white">Access your command center</h2>
+        <input
+          className="w-full rounded bg-zinc-800 p-2 text-white"
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="Email"
+          autoComplete="email"
+        />
+        <input
+          className="w-full rounded bg-zinc-800 p-2 text-white"
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="Password"
+          autoComplete="current-password"
+        />
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded bg-indigo-600 p-2 text-white hover:bg-indigo-500 disabled:opacity-50"
+        >
+          {loading ? 'Signing in...' : 'Sign in'}
+        </button>
+      </form>
     </div>
   );
-};
-
-export default Login;
- 
+}

@@ -1,0 +1,15 @@
+exports[`KpiCard matches snapshot 1`] = `
+<div>
+  <div class="rounded border bg-card p-4 text-card-foreground shadow">
+    <div class="text-sm text-neutral-500">
+      Test
+    </div>
+    <div class="mt-1 text-2xl font-semibold">
+      100
+    </div>
+    <div class="text-xs text-green-600">
+      +5.0%
+    </div>
+  </div>
+</div>
+`;

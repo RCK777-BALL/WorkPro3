@@ -40,7 +40,7 @@ describe('MFA Routes', () => {
       name: 'Setup',
       email: 'setup@example.com',
       passwordHash: 'pass123',
-      roles: ['viewer'],
+      roles: ['planner'],
       tenantId: new mongoose.Types.ObjectId(),
       employeeId: 'EMP001',
     });
@@ -78,7 +78,7 @@ describe('MFA Routes', () => {
       name: 'Verify',
       email: 'verify@example.com',
       passwordHash: 'pass123',
-      roles: ['viewer'],
+      roles: ['planner'],
       tenantId: new mongoose.Types.ObjectId(),
       employeeId: 'EMP002',
     });
@@ -112,7 +112,7 @@ describe('MFA Routes', () => {
       name: 'Fail',
       email: 'fail@example.com',
       passwordHash: 'pass123',
-      roles: ['viewer'],
+      roles: ['planner'],
       tenantId: new mongoose.Types.ObjectId(),
       employeeId: 'EMP003',
     });

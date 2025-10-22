@@ -2,49 +2,44 @@
  * SPDX-License-Identifier: MIT
  */
 
-import express from 'express';
+import { Router } from "express";
+
+import legacyChatRoutes from "./ChatRoutesLegacy";
+import { requireAuth } from "../middleware/authMiddleware";
 import {
-  getChannels,
+  listChannels,
   createChannel,
   updateChannel,
-  deleteChannel,
-  getChannelMessages,
-  sendChannelMessage,
-  updateMessage,
-  deleteMessage,
-  getDirectMessages,
-  createDirectMessage,
-  deleteDirectMessage,
-  getDirectMessagesForUser,
-  sendDirectMessage,
-} from '../controllers/ChatController';
-import { requireAuth } from '../middleware/authMiddleware';
+  archiveChannel,
+  getChannel,
+} from "../controllers/chat/channelV2Controller";
+import {
+  listMessages,
+  createMessage,
+  reactToMessage,
+  removeReaction,
+  markMessageRead,
+} from "../controllers/chat/messageV2Controller";
+import { handleChatUpload } from "../controllers/chat/uploadController";
 
-const router = express.Router();
+const router = Router();
 
-// All chat routes require authentication
 router.use(requireAuth);
 
-// Channel management
-router.get('/channels', getChannels);
-router.post('/channels', createChannel);
-router.put('/channels/:channelId', updateChannel);
-router.delete('/channels/:channelId', deleteChannel);
+router.get("/channels", listChannels);
+router.post("/channels", createChannel);
+router.get("/channels/:channelId", getChannel);
+router.patch("/channels/:channelId", updateChannel);
+router.post("/channels/:channelId/archive", archiveChannel);
 
-// Channel messages
-router.get('/channels/:channelId/messages', getChannelMessages);
-router.post('/channels/:channelId/messages', sendChannelMessage);
-router.put('/channels/:channelId/messages/:messageId', updateMessage);
-router.delete('/channels/:channelId/messages/:messageId', deleteMessage);
+router.get("/messages", listMessages);
+router.post("/messages", createMessage);
+router.post("/messages/:messageId/reactions", reactToMessage);
+router.delete("/messages/:messageId/reactions", removeReaction);
+router.post("/messages/:messageId/read", markMessageRead);
 
-// Direct messages
-router.get('/dm', getDirectMessages);
-router.post('/dm', createDirectMessage);
-router.delete('/dm/:conversationId', deleteDirectMessage);
+router.post("/upload", handleChatUpload);
 
-router.get('/dm/:conversationId/messages', getDirectMessagesForUser);
-router.post('/dm/:conversationId/messages', sendDirectMessage);
-router.put('/dm/:conversationId/messages/:messageId', updateMessage);
-router.delete('/dm/:conversationId/messages/:messageId', deleteMessage);
+router.use("/legacy", legacyChatRoutes);
 
 export default router;

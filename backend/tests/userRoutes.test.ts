@@ -52,7 +52,7 @@ describe('User Routes', () => {
         name: 'User One',
         email: 'user1@example.com',
         password: 'pass123',
-        roles: ['viewer'],
+        roles: ['planner'],
         employeeId: 'EMP1',
       })
       .expect(201);

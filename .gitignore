@@ -1,8 +1,9 @@
 # Environment files
 **/.env
 **/.env.*
+!.env.sample
+!frontend/.env
 !backend/.env.example
- !dev-server/.env.example
  
 
 # Dependencies
@@ -17,6 +18,8 @@ backend/logs/
 
 # Compiled JavaScript from TypeScript
 backend/**/*.js
+Backend/**/*.js
+!backend/controllers/ReportsController.js
 
 # MongoDB playground files
 playground-*.mongodb.js

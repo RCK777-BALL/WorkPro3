@@ -20,7 +20,7 @@ interface TeamModalProps {
 
 type Role =
   | 'admin'
-  | 'manager'
+  | 'supervisor'
   | 'department_leader'
   | 'area_leader'
   | 'team_leader'
@@ -78,13 +78,13 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
       return members.filter((m) => m.role === 'area_leader');
     if (role === 'area_leader')
       return members.filter((m) =>
-        ['manager', 'department_leader'].includes(m.role)
+        ['supervisor', 'department_leader'].includes(m.role)
       );
     return [];
   }, [role, members]);
 
   useEffect(() => {
-    if (['admin', 'manager', 'department_leader'].includes(role))
+    if (['admin', 'supervisor', 'department_leader'].includes(role))
       setValue('managerId', '');
   }, [role, setValue]);
 
@@ -124,8 +124,10 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
       await fetchMembers();
       addToast('Team member saved', 'success');
       onClose();
-    } catch (e: any) {
-      const msg = e.response?.data?.message || 'Failed to save team member';
+    } catch (e) {
+      const msg =
+        (e as { response?: { data?: { message?: string } } }).response?.data?.message ||
+        'Failed to save team member';
       addToast(msg, 'error');
     } finally {
       setLoading(false);
@@ -195,7 +197,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
                 })}
               >
                 <option value="admin">Admin</option>
-                <option value="manager">Manager</option>
+                <option value="supervisor">Supervisor</option>
                 <option value="department_leader">Department Leader</option>
                 <option value="area_leader">Area Leader</option>
                 <option value="team_leader">Team Leader</option>
@@ -234,7 +236,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
                   className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                   {...register('managerId', {
                     validate: (value) => {
-                      if (['admin', 'manager', 'department_leader'].includes(role))
+                      if (['admin', 'supervisor', 'department_leader'].includes(role))
                         return true;
                       if (!value) return 'Reports To is required';
                       const mgr = members.find((m) => m.id === value);
@@ -244,9 +246,9 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
                         return 'Team leaders must report to an area leader';
                       if (
                         role === 'area_leader' &&
-                        !['manager', 'department_leader'].includes(mgr?.role ?? '')
+                        !['supervisor', 'department_leader'].includes(mgr?.role ?? '')
                       )
-                        return 'Area leaders must report to a manager or department leader';
+                        return 'Area leaders must report to a supervisor or department leader';
                       return true;
                     },
                   })}

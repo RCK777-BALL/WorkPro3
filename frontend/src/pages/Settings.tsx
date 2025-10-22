@@ -14,7 +14,7 @@ import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
 import DocumentUploader from '@/components/documentation/DocumentUploader';
 import DocumentViewer from '@/components/documentation/DocumentViewer';
-import { parseDocument } from '@/utils/documentation';
+import { parseDocument, type DocumentMetadata } from '@/utils/documentation';
 import { useThemeStore } from '@/store/themeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import type { ThemeSettings } from '@/store/settingsStore';
@@ -50,7 +50,7 @@ const Settings: React.FC = () => {
     },
   ] satisfies { label: string; description: string; key: ThemeOptionKey }[];
 
-  const [documents, setDocuments] = useState<Array<{ content: string; metadata: any }>>([]);
+  const [documents, setDocuments] = useState<Array<{ content: string; metadata: DocumentMetadata }>>([]);
 
   const handleDocumentUpload = async (files: File[]) => {
     try {
@@ -66,9 +66,10 @@ const Settings: React.FC = () => {
       const settings = useSettingsStore.getState();
       await http.post('/settings', settings);
       addToast('Settings saved', 'success');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving settings:', error);
-      if (error.response?.status === 401) {
+      const status = (error as { response?: { status?: number } }).response?.status;
+      if (status === 401) {
         addToast('Unauthorized', 'error');
       } else {
         addToast('Failed to save settings', 'error');

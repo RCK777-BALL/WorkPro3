@@ -4,7 +4,7 @@
 
 import { saveAs } from 'file-saver';
 
-export type CSVInput = Record<string, any>[] | Record<string, any>;
+export type CSVInput = Record<string, unknown>[] | Record<string, unknown>;
 
 /**
  * Generates a CSV file from an array of objects or a single object and triggers a download.
@@ -12,7 +12,7 @@ export type CSVInput = Record<string, any>[] | Record<string, any>;
  * - Plain objects are converted to a two-column key/value table.
  */
 const exportCsv = (data: CSVInput, filename = 'data') => {
-  let rows: Record<string, any>[] = [];
+  let rows: Record<string, unknown>[] = [];
 
   if (Array.isArray(data)) {
     rows = data;

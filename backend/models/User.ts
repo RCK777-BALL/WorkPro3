@@ -2,15 +2,15 @@
  * SPDX-License-Identifier: MIT
  */
 
-import mongoose, { Schema, Document, Model, Types } from 'mongoose';
+import mongoose, { Schema, Document, Model, Types, type SchemaDefinitionProperty } from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { ROLES, UserRole } from '../types/auth';
+export type { UserRole } from '../types/auth';
 
 // Number of bcrypt salt rounds. Increasing this value strengthens password hashes
 // but slows down hashing, impacting performance. Adjust here to change the
 // hashing cost globally.
 export const SALT_ROUNDS = 10;
-
-export type UserRole = 'admin' | 'manager' | 'technician' | 'viewer';
 
 // ✅ Interface for a user document
 export interface UserDocument extends Document {
@@ -19,7 +19,7 @@ export interface UserDocument extends Document {
   email: string;
   passwordHash: string;
   roles: UserRole[];
-  tenantId: mongoose.Schema.Types.ObjectId;
+  tenantId: Types.ObjectId;
   employeeId: string;
   managerId?: Types.ObjectId;
   theme?: 'light' | 'dark' | 'system';
@@ -29,6 +29,7 @@ export interface UserDocument extends Document {
   mfaEnabled: boolean;
   mfaSecret?: string;
   tokenVersion: number;
+  comparePassword(candidate: string): Promise<boolean>;
 }
 
 // ✅ Schema definition
@@ -43,15 +44,20 @@ const userSchema = new Schema<UserDocument>(
       index: true,
       lowercase: true,
     },
-    passwordHash: { type: String, required: true },
+    passwordHash: { type: String, required: true, select: false },
     roles: {
       type: [String],
-      enum: ['admin', 'manager', 'technician', 'viewer'],
-      default: ['viewer'],
-    },
-    tenantId: { type: mongoose.Schema.Types.ObjectId, required: true, index: true },
+      enum: ROLES,
+      default: ['tech'],
+    } as SchemaDefinitionProperty<UserRole[], UserDocument>,
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Tenant',
+      required: true,
+      index: true,
+    } as SchemaDefinitionProperty<Types.ObjectId, UserDocument>,
     employeeId: { type: String, required: true, unique: true },
-    managerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    managerId: { type: Schema.Types.ObjectId, ref: 'User' },
 
     passwordResetToken: { type: String },
     passwordResetExpires: { type: Date },
@@ -85,6 +91,13 @@ userSchema.pre<UserDocument>('save', async function (next) {
     next(err as Error);
   }
 });
+
+userSchema.methods.comparePassword = async function comparePassword(this: UserDocument, candidate: string) {
+  if (!this.passwordHash) {
+    return false;
+  }
+  return bcrypt.compare(candidate, this.passwordHash);
+};
 
 // ✅ Export model
 const User: Model<UserDocument> = mongoose.model<UserDocument>('User', userSchema);

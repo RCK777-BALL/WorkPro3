@@ -1,5 +1,5 @@
- import http from '@/lib/http';
- 
+import http from '@/lib/http';
+
 import type {
   DashboardSummary,
   StatusCountResponse,
@@ -9,7 +9,9 @@ import type {
 } from '@/types';
 
 export const fetchSummary = (params?: Record<string, unknown>) =>
-  http.get<DashboardSummary>('/summary', { params }).then((res) => res.data);
+  http
+    .get<{ data: DashboardSummary }>('/summary', { params })
+    .then((res) => res.data.data);
 
 export const fetchAssetSummary = (params?: Record<string, unknown>) =>
   http.get<StatusCountResponse[]>('/summary/assets', { params }).then((res) => res.data);

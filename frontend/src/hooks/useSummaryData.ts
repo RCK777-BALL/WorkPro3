@@ -3,6 +3,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { AxiosError } from 'axios';
 import http from '@/lib/http';
 
 type CacheEntry<T> = { promise?: Promise<T | undefined>; data?: T; ts?: number };
@@ -30,19 +31,21 @@ export function useSummary<T = unknown>(
     abortRef.current = controller;
 
       const p = http
-        .get<T>(path, { signal: controller.signal })
+        .get<{ data?: T } | T>(path, { signal: controller.signal })
         .then((res) => {
-          if (!mountedRef.current) return res.data;
-          c.data = res.data;
+          const response = res.data as { data?: T } | T;
+          const payload = (response as { data?: T }).data ?? (response as T);
+          if (!mountedRef.current) return payload;
+          c.data = payload;
           c.ts = Date.now();
           c.promise = undefined;
           backoffRef.current = 1000;
           setTick((t) => t + 1);
           return c.data;
         })
-        .catch(async (err) => {
+        .catch(async (err: AxiosError | unknown) => {
           c.promise = undefined;
-          if (err?.response?.status === 429) {
+          if (err instanceof AxiosError && err.response?.status === 429) {
             await new Promise((r) => setTimeout(r, backoffRef.current));
             backoffRef.current = Math.min(backoffRef.current * 2, 30_000);
           }

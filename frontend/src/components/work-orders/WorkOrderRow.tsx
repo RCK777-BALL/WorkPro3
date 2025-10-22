@@ -95,6 +95,15 @@ export const WorkOrderRow: React.FC<WorkOrderRowProps> = ({ workOrder, onClick }
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <span className="text-sm text-neutral-500">
+          {workOrder.complianceProcedureId
+            ? workOrder.complianceProcedureId
+            : workOrder.calibrationIntervalDays
+            ? `${workOrder.calibrationIntervalDays} days`
+            : '—'}
+        </span>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span className="text-sm text-neutral-500">
           {format(new Date(workOrder.scheduledDate || ''), 'MMM d, yyyy')}
         </span>
       </td>

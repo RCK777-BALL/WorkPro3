@@ -5,7 +5,7 @@
 import React, { useState } from 'react';
 
 interface Props {
-  onCreated: (hook: any) => void;
+  onCreated: (hook: unknown) => void;
 }
 
 export default function HookForm({ onCreated }: Props) {

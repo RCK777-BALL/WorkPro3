@@ -9,7 +9,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 
-import VendorRoutes from '../routes/VendorRoutes';
+import VendorRoutes from '../routes/vendorRoutes';
 import User from '../models/User';
 
 const app = express();
@@ -28,7 +28,7 @@ beforeAll(async () => {
     name: 'Tester',
     email: 'tester@example.com',
     passwordHash: 'pass123',
-    roles: ['manager'],
+    roles: ['supervisor'],
     tenantId: new mongoose.Types.ObjectId(),
   });
   token = jwt.sign({ id: user._id.toString(), roles: user.roles }, process.env.JWT_SECRET!);

@@ -7,6 +7,8 @@ import Notification from '../models/Notifications';
 import User from '../models/User';
 import nodemailer from 'nodemailer';
 import { assertEmail } from './assert';
+import logger from './logger';
+import { enqueueEmailRetry } from './emailQueue';
 
 export const notifyUser = async (userId: mongoose.Types.ObjectId, message: string) => {
   if (!userId) return;
@@ -28,12 +30,19 @@ export const notifyUser = async (userId: mongoose.Types.ObjectId, message: strin
         },
       });
 
-      await transporter.sendMail({
+      const mailOptions = {
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
         to: user.email,
         subject: 'WorkPro Notification',
         text: message,
-      });
+      };
+
+      try {
+        await transporter.sendMail(mailOptions);
+      } catch (err) {
+        logger.error('Failed to send notification email', err);
+        void enqueueEmailRetry(mailOptions);
+      }
     }
   }
 };

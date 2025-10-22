@@ -3,13 +3,14 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
+import type { UserRole } from '../types/auth';
 
 /**
  * Factory for role-based authorization middleware.
  * Ensures the authenticated user has one of the required roles
  * before allowing the request to proceed.
  */
-export const authorize = (...roles: string[]) => {
+export const authorize = (...roles: UserRole[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
       res.status(401).json({ message: 'Unauthorized' });

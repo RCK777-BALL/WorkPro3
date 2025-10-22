@@ -3,8 +3,22 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
- 
+import { Types, isValidObjectId } from 'mongoose';
+
 import PurchaseOrder from '../models/PurchaseOrder';
+import { writeAuditLog } from '../utils/audit';
+import { sendResponse } from '../utils/sendResponse';
+
+const toPlainObject = (value: unknown): Record<string, unknown> | undefined => {
+  if (!value) return undefined;
+  if (typeof value === 'object' && typeof (value as any).toObject === 'function') {
+    return (value as any).toObject();
+  }
+  if (typeof value === 'object') {
+    return value as Record<string, unknown>;
+  }
+  return undefined;
+};
 
 export const createPurchaseOrder = async (
   req: Request,
@@ -13,11 +27,23 @@ export const createPurchaseOrder = async (
 ): Promise<Response | void> => {
   try {
     const tenantId = req.tenantId;
+    if (!tenantId)
+      return sendResponse(res, null, 'Tenant ID required', 400);
     const po = await PurchaseOrder.create({
       ...req.body,
-      ...(tenantId ? { tenantId } : {}),
+      tenantId,
     });
-    res.status(201).json(po);
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const entityId = po._id as Types.ObjectId;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'create',
+      entityType: 'PurchaseOrder',
+      entityId,
+      after: toPlainObject(po),
+    });
+    sendResponse(res, po, null, 201);
     return;
   } catch (err) {
     next(err);
@@ -32,12 +58,17 @@ export const getPurchaseOrder = async (
 ): Promise<Response | void> => {
   try {
     const { id } = req.params;
-    const po = await PurchaseOrder.findById(id).lean();
-    if (!po) {
-      res.status(404).json({ message: 'Not found' });
+    if (!isValidObjectId(id)) {
+      sendResponse(res, null, 'Invalid id', 400);
       return;
     }
-    res.json(po);
+    const objectId = new Types.ObjectId(id);
+    const po = await PurchaseOrder.findOne({ _id: objectId, tenantId: req.tenantId }).lean();
+    if (!po) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
+    sendResponse(res, po);
     return;
   } catch (err) {
     next(err);
@@ -53,7 +84,7 @@ export const listVendorPurchaseOrders = async (
   try {
     const vendorId = req.vendorId;
     const pos = await PurchaseOrder.find({ vendor: vendorId }).lean();
-    res.json(pos);
+    sendResponse(res, pos);
     return;
   } catch (err) {
     next(err);
@@ -72,21 +103,38 @@ export const updateVendorPurchaseOrder = async (
     const { status } = req.body as { status: string };
     const allowed = ['acknowledged', 'shipped'];
     if (!allowed.includes(status)) {
-      res.status(400).json({ message: 'Invalid status' });
+      sendResponse(res, null, 'Invalid status', 400);
       return;
     }
-    const po = await PurchaseOrder.findById(id);
+    if (!isValidObjectId(id)) {
+      sendResponse(res, null, 'Invalid id', 400);
+      return;
+    }
+    const objectId = new Types.ObjectId(id);
+    const po = await PurchaseOrder.findById(objectId);
     if (!po) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
     if (po.vendor.toString() !== vendorId) {
-      res.status(403).json({ message: 'Forbidden' });
+      sendResponse(res, null, 'Forbidden', 403);
       return;
     }
+    const before = toPlainObject(po);
     po.status = status as any;
     await po.save();
-    res.json(po);
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const entityId = objectId;
+    await writeAuditLog({
+      tenantId: po.tenantId,
+      userId,
+      action: 'update',
+      entityType: 'PurchaseOrder',
+      entityId,
+      before,
+      after: toPlainObject(po),
+    });
+    sendResponse(res, po);
     return;
   } catch (err) {
     next(err);

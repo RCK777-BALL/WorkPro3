@@ -3,15 +3,32 @@
  */
 
 import TeamMember, { ITeamMember } from '../models/TeamMember';
-import type { AuthedRequestHandler } from '../types/http';
+import type { Request, Response, NextFunction } from 'express';
+import { Error as MongooseError, Types } from 'mongoose';
+import { writeAuditLog } from '../utils/audit';
+import { toEntityId } from '../utils/ids';
+import { sendResponse } from '../utils/sendResponse';
 
 const roleHierarchy: Record<ITeamMember['role'], ITeamMember['role'][] | null> = {
   admin: null,
-  manager: null,
+  supervisor: null,
   department_leader: null,
-  area_leader: ['manager', 'department_leader'],
+  area_leader: ['supervisor', 'department_leader'],
   team_leader: ['area_leader'],
   team_member: ['team_leader'],
+};
+
+const toPlainObject = (
+  value: unknown,
+): Record<string, unknown> | undefined => {
+  if (!value) return undefined;
+  if (typeof value === 'object' && typeof (value as any).toObject === 'function') {
+    return (value as any).toObject();
+  }
+  if (typeof value === 'object') {
+    return value as Record<string, unknown>;
+  }
+  return undefined;
 };
 
 async function validateHierarchy(
@@ -43,7 +60,11 @@ async function validateHierarchy(
   }
 }
 
-export const getTeamMembers: AuthedRequestHandler = async (req, res, next) => {
+export const getTeamMembers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
 
   try {
     // Only return basic information for each team member
@@ -58,42 +79,27 @@ export const getTeamMembers: AuthedRequestHandler = async (req, res, next) => {
       status: member.status,
     }));
 
-    res.json(formatted);
+    sendResponse(res, formatted);
     return;
   } catch (err) {
     return next(err);
   }
 };
 
-export const createTeamMember: AuthedRequestHandler = async (req, res, next) => {
+export const createTeamMember = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
 
   try {
-    const role = req.body.role;
-    if (['admin', 'manager', 'department_leader'].includes(role)) {
-      req.body.managerId = null;
-    } else {
-      if (!req.body.managerId) {
-        res
-          .status(400)
-          .json({ message: `managerId is required for role ${role}` });
-        return;
-      }
-      await validateHierarchy(role, req.body.managerId, req.tenantId as string);
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
     }
-    const member = new TeamMember({ ...req.body, tenantId: req.tenantId });
-    const saved = await member.save();
-    res.status(201).json(saved);
-    return;
-  } catch (err) {
-    return next(err);
-  }
-};
-
-export const updateTeamMember: AuthedRequestHandler = async (req, res) => {
-
-  try {
     const role = req.body.role;
-    if (['admin', 'manager', 'department_leader'].includes(role)) {
+    if (['admin', 'supervisor', 'department_leader'].includes(role)) {
       req.body.managerId = null;
     } else {
       if (!req.body.managerId) {
@@ -102,34 +108,118 @@ export const updateTeamMember: AuthedRequestHandler = async (req, res) => {
           .json({ message: `managerId is required for role ${role}` });
         return;
       }
-      await validateHierarchy(role, req.body.managerId, req.tenantId as string);
+      await validateHierarchy(role, req.body.managerId, tenantId as string);
+    }
+    const member = new TeamMember({ ...req.body, tenantId });
+    const saved = await member.save();
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'create',
+      entityType: 'TeamMember',
+      entityId: toEntityId(saved._id),
+      after: toPlainObject(saved),
+    });
+    sendResponse(res, saved, null, 201);
+    return;
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export const updateTeamMember = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+    const role = req.body.role;
+    if (['admin', 'supervisor', 'department_leader'].includes(role)) {
+      req.body.managerId = null;
+    } else {
+      if (!req.body.managerId) {
+        res
+          .status(400)
+          .json({ message: `managerId is required for role ${role}` });
+        return;
+      }
+      try {
+        await validateHierarchy(role, req.body.managerId, tenantId as string);
+      } catch (validationErr) {
+        const message =
+          validationErr instanceof Error
+            ? validationErr.message
+            : 'Invalid manager information';
+        res.status(400).json({ message });
+        return;
+      }
+    }
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const existing = await TeamMember.findById({ _id: req.params.id, tenantId });
+    if (!existing) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
     }
     const updated = await TeamMember.findByIdAndUpdate(
-      { _id: req.params.id, tenantId: req.tenantId },
+      { _id: req.params.id, tenantId },
       req.body,
       {
         new: true,
         runValidators: true,
       }
     );
-    if (!updated) {
-      res.status(404).json({ message: 'Not found' });
+    const before = toPlainObject(existing);
+    const after = toPlainObject(updated);
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'update',
+      entityType: 'TeamMember',
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      before,
+      after,
+    });
+    sendResponse(res, updated);
+    return;
+  } catch (err: unknown) {
+    if (err instanceof MongooseError.ValidationError) {
+      const errors = Object.values(err.errors).map((error) => error.message);
+      sendResponse(res, null, { errors }, 400);
       return;
     }
-    res.json(updated);
-    return;
-  } catch (err: any) {
-    res.status(400).json({ errors: err.errors ?? err });
-    return;
+    if (err instanceof MongooseError.CastError) {
+      sendResponse(res, null, { errors: [err.message] }, 400);
+      return;
+    }
+    if (!(err instanceof Error)) {
+      return next(new Error('Unknown error occurred while updating team member'));
+    }
+    return next(err);
   }
 };
 
-export const deleteTeamMember: AuthedRequestHandler = async (req, res, next) => {
+export const deleteTeamMember = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
 
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
     const hasDependents = await TeamMember.findOne({
       managerId: req.params.id,
-      tenantId: req.tenantId,
+      tenantId,
     });
     if (hasDependents) {
       res
@@ -137,15 +227,24 @@ export const deleteTeamMember: AuthedRequestHandler = async (req, res, next) => 
         .json({ message: 'Cannot delete: member manages others' });
       return;
     }
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
     const deleted = await TeamMember.findByIdAndDelete({
       _id: req.params.id,
-      tenantId: req.tenantId,
+      tenantId,
     });
     if (!deleted) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
-    res.json({ message: 'Deleted successfully' });
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'delete',
+      entityType: 'TeamMember',
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      before: toPlainObject(deleted),
+    });
+    sendResponse(res, { message: 'Deleted successfully' });
     return;
   } catch (err) {
     return next(err);

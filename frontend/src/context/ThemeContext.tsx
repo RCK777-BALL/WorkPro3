@@ -4,46 +4,164 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from 'react';
 
+type ThemeMode = 'light' | 'dark' | 'system';
+
+interface ThemeColors {
+  background: string;
+  text: string;
+}
+
+const THEME_STORAGE_KEY = 'theme';
+const BACKGROUND_STORAGE_KEY = 'theme.backgroundColor';
+const TEXT_STORAGE_KEY = 'theme.textColor';
+
+const DEFAULT_THEME_COLORS: Record<Exclude<ThemeMode, 'system'>, ThemeColors> = {
+  light: {
+    background: '#f8fafc',
+    text: '#0f172a',
+  },
+  dark: {
+    background: '#0f172a',
+    text: '#f8fafc',
+  },
+};
+
+const getSystemTheme = (): Exclude<ThemeMode, 'system'> =>
+  typeof window !== 'undefined' &&
+  window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light';
+
 export interface ThemeContextValue {
-  theme: 'light' | 'dark' | 'system';
-  setTheme: (theme: 'light' | 'dark' | 'system') => void;
+  theme: ThemeMode;
+  setTheme: (theme: ThemeMode) => void;
+  backgroundColor: string;
+  setBackgroundColor: (color: string) => void;
+  textColor: string;
+  setTextColor: (color: string) => void;
+  resetColors: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
+  const [theme, setThemeState] = useState<ThemeMode>(() => {
     if (typeof window === 'undefined') return 'system';
-    return (
-      (localStorage.getItem('theme') as 'light' | 'dark' | 'system') ||
-      'system'
-    );
+    const stored = window.localStorage.getItem(THEME_STORAGE_KEY) as ThemeMode | null;
+    return stored ?? 'system';
+  });
+
+  const [backgroundColor, setBackgroundColorState] = useState<string>(() => {
+    if (typeof window === 'undefined') return DEFAULT_THEME_COLORS.dark.background;
+    const stored = window.localStorage.getItem(BACKGROUND_STORAGE_KEY);
+    if (stored) return stored;
+    const storedTheme =
+      (window.localStorage.getItem(THEME_STORAGE_KEY) as ThemeMode | null) ?? 'system';
+    const resolvedTheme =
+      storedTheme === 'system' ? getSystemTheme() : (storedTheme as Exclude<ThemeMode, 'system'>);
+    return DEFAULT_THEME_COLORS[resolvedTheme].background;
+  });
+
+  const [textColor, setTextColorState] = useState<string>(() => {
+    if (typeof window === 'undefined') return DEFAULT_THEME_COLORS.dark.text;
+    const stored = window.localStorage.getItem(TEXT_STORAGE_KEY);
+    if (stored) return stored;
+    const storedTheme =
+      (window.localStorage.getItem(THEME_STORAGE_KEY) as ThemeMode | null) ?? 'system';
+    const resolvedTheme =
+      storedTheme === 'system' ? getSystemTheme() : (storedTheme as Exclude<ThemeMode, 'system'>);
+    return DEFAULT_THEME_COLORS[resolvedTheme].text;
   });
 
   useEffect(() => {
-    const root = window.document.documentElement;
-    const systemPrefersDark = window.matchMedia(
-      '(prefers-color-scheme: dark)'
-    ).matches
-      ? 'dark'
-      : 'light';
-    const appliedTheme = theme === 'system' ? systemPrefersDark : theme;
-    root.classList.remove('light', 'dark');
-    root.classList.add(appliedTheme);
-    localStorage.setItem('theme', theme);
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme]);
 
-  return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
-      {children}
-    </ThemeContext.Provider>
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(BACKGROUND_STORAGE_KEY, backgroundColor);
+  }, [backgroundColor]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(TEXT_STORAGE_KEY, textColor);
+  }, [textColor]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const root = window.document.documentElement;
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+
+    const apply = (value: Exclude<ThemeMode, 'system'>) => {
+      root.classList.remove('light', 'dark');
+      root.classList.add(value);
+      root.style.colorScheme = value;
+    };
+
+    const resolvedTheme = theme === 'system' ? (media.matches ? 'dark' : 'light') : theme;
+    apply(resolvedTheme);
+
+    if (theme !== 'system') return;
+
+    const handler = (event: MediaQueryListEvent) => {
+      apply(event.matches ? 'dark' : 'light');
+    };
+
+    media.addEventListener('change', handler);
+    return () => media.removeEventListener('change', handler);
+  }, [theme]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const root = window.document.documentElement;
+    root.style.setProperty('--app-background-color', backgroundColor);
+    root.style.setProperty('--app-text-color', textColor);
+    window.document.body.style.backgroundColor = backgroundColor;
+    window.document.body.style.color = textColor;
+  }, [backgroundColor, textColor]);
+
+  const setTheme = useCallback((nextTheme: ThemeMode) => {
+    setThemeState(nextTheme);
+  }, []);
+
+  const setBackgroundColor = useCallback((color: string) => {
+    setBackgroundColorState(color);
+  }, []);
+
+  const setTextColor = useCallback((color: string) => {
+    setTextColorState(color);
+  }, []);
+
+  const resetColors = useCallback(() => {
+    const appliedTheme = theme === 'system' ? getSystemTheme() : theme;
+    const defaults = DEFAULT_THEME_COLORS[appliedTheme];
+    setBackgroundColorState(defaults.background);
+    setTextColorState(defaults.text);
+  }, [theme]);
+
+  const value = useMemo(
+    () => ({
+      theme,
+      setTheme,
+      backgroundColor,
+      setBackgroundColor,
+      textColor,
+      setTextColor,
+      resetColors,
+    }),
+    [theme, setTheme, backgroundColor, setBackgroundColor, textColor, setTextColor, resetColors],
   );
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };
 
 export function useTheme() {

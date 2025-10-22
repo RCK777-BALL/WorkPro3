@@ -4,24 +4,61 @@
 
 import { z } from 'zod';
 
-const email = z.string().email();
+export const registerSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+});
 
-export const loginSchema = z
-  .object({
-    email,
-    password: z.string().min(1),
+const rememberField = z
+  .preprocess((input) => {
+    if (input == null || input === '') {
+      return undefined;
+    }
+
+    if (typeof input === 'string') {
+      const normalized = input.trim().toLowerCase();
+
+      if (['true', '1', 'on', 'yes'].includes(normalized)) {
+        return true;
+      }
+
+      if (['false', '0', 'off', 'no'].includes(normalized)) {
+        return false;
+      }
+    }
+
+    return input;
+  }, z.boolean())
+  .optional();
+
+const emailField = z
+  .string()
+  .trim()
+  .min(1, 'Email is required')
+  .email();
+
+const loginBaseSchema = z.object({
+  email: emailField.optional(),
+  username: emailField.optional(),
+  password: z.string().min(1),
+  remember: rememberField,
+});
+
+export const loginSchema = loginBaseSchema
+  .superRefine((data, ctx) => {
+    if (!data.email && !data.username) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Email is required',
+        path: ['email'],
+      });
+    }
   })
-  .strict();
+  .transform((data) => ({
+    email: (data.email ?? data.username ?? '').trim(),
+    password: data.password,
+    remember: data.remember,
+  }));
 
-export const registerSchema = z
-  .object({
-    name: z.string().min(1),
-    email,
-    password: z.string().min(1),
-    tenantId: z.string().min(1),
-    employeeId: z.string().min(1),
-  })
-  .strict();
-
-export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
+export type LoginInput = z.infer<typeof loginSchema>;

@@ -8,6 +8,7 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import bcrypt from 'bcryptjs';
 import User from '../models/User';
 import jwt from 'jsonwebtoken';
 import authRoutes from '../routes/AuthRoutes';
@@ -35,6 +36,30 @@ beforeEach(async () => {
 });
 
 describe('Auth Routes', () => {
+  it('registers a new user with hashed password', async () => {
+    const password = 'pass123';
+
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({
+        name: 'New User',
+        email: 'new@example.com',
+        password,
+        tenantId: new mongoose.Types.ObjectId().toString(),
+        employeeId: 'EMP1',
+      })
+      .expect(201);
+
+    expect(res.body.message).toBe('User registered successfully');
+
+    const user = await User.findOne({ email: 'new@example.com' }).lean();
+    expect(user).toBeTruthy();
+    expect(user?.passwordHash).toBeDefined();
+    expect(user?.passwordHash).not.toBe(password);
+    const match = await bcrypt.compare(password, user!.passwordHash);
+    expect(match).toBe(true);
+  });
+
   it('logs in and sets cookie', async () => {
     await User.create({
       name: 'Test',
@@ -51,15 +76,92 @@ describe('Auth Routes', () => {
 
     const cookies = res.headers['set-cookie'];
     expect(cookies).toBeDefined();
-    expect(cookies[0]).toMatch(/token=/);
-    expect(cookies[0]).toMatch(/SameSite=Strict/);
+    expect(cookies[0]).toMatch(/auth=/);
+    expect(cookies[0]).toMatch(/SameSite=Lax/);
 
-    expect(res.body.user.email).toBe('test@example.com');
-    expect(res.body.token).toBeUndefined();
+    const session = res.body as { user: any; token?: string };
+    expect(session.user.email).toBe('test@example.com');
+    expect(session.token).toBeUndefined();
 
     const token = cookies[0].split(';')[0].split('=')[1];
     const payload = jwt.verify(token, process.env.JWT_SECRET!) as jwt.JwtPayload;
-    expect(payload.tenantId).toBe(res.body.user.tenantId);
+    expect(payload.tenantId).toBe(session.user.tenantId);
+  });
+
+  it('allows login with uppercase email input', async () => {
+    await User.create({
+      name: 'Case',
+      email: 'case@example.com',
+      passwordHash: 'pass123',
+      roles: ['admin'],
+      tenantId: new mongoose.Types.ObjectId(),
+    });
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'CASE@EXAMPLE.COM', password: 'pass123' })
+      .expect(200);
+
+    const session = res.body as { user: any };
+    expect(session.user.email).toBe('case@example.com');
+  });
+
+  it('trims surrounding whitespace from login email input', async () => {
+    await User.create({
+      name: 'Spaced',
+      email: 'spaced@example.com',
+      passwordHash: 'pass123',
+      roles: ['admin'],
+      tenantId: new mongoose.Types.ObjectId(),
+    });
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: '  spaced@example.com  ', password: 'pass123' })
+      .expect(200);
+
+    const session = res.body as { user: any };
+    expect(session.user.email).toBe('spaced@example.com');
+  });
+
+  it('accepts username as an email alias when logging in', async () => {
+    await User.create({
+      name: 'Alias',
+      email: 'alias@example.com',
+      passwordHash: 'pass123',
+      roles: ['admin'],
+      tenantId: new mongoose.Types.ObjectId(),
+    });
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ username: 'alias@example.com', password: 'pass123' })
+      .expect(200);
+
+    const session = res.body as { user: any };
+    expect(session.user.email).toBe('alias@example.com');
+  });
+
+  it('indicates MFA is required and includes the user id', async () => {
+    const tenantId = new mongoose.Types.ObjectId();
+    const user = await User.create({
+      name: 'MFA User',
+      email: 'mfa-user@example.com',
+      passwordHash: 'pass123',
+      roles: ['admin'],
+      tenantId,
+      mfaEnabled: true,
+    });
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'mfa-user@example.com', password: 'pass123' })
+      .expect(200);
+
+    expect(res.body).toEqual({
+      mfaRequired: true,
+      userId: user._id.toString(),
+    });
   });
 
   it('optionally returns token in response when enabled', async () => {
@@ -77,9 +179,30 @@ describe('Auth Routes', () => {
       .send({ email: 'config@example.com', password: 'pass123' })
       .expect(200);
 
-    expect(res.body.token).toBeDefined();
+    const session = res.body as { token?: string };
+    expect(session.token).toBeDefined();
 
     delete process.env.INCLUDE_AUTH_TOKEN;
+  });
+
+  it('omits token from response when INCLUDE_AUTH_TOKEN is unset', async () => {
+
+    delete process.env.INCLUDE_AUTH_TOKEN;
+    await User.create({
+      name: 'NoToken',
+      email: 'notoken@example.com',
+      passwordHash: 'pass123',
+      roles: ['admin'],
+      tenantId: new mongoose.Types.ObjectId(),
+    });
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'notoken@example.com', password: 'pass123' })
+      .expect(200);
+
+    const session = res.body as { token?: string };
+    expect(session.token).toBeUndefined();
   });
 
   it('gets current user with cookie and logs out', async () => {
@@ -87,7 +210,7 @@ describe('Auth Routes', () => {
       name: 'Me',
       email: 'me@example.com',
       passwordHash: 'pass123',
-      roles: ['viewer'],
+      roles: ['planner'],
       tenantId: new mongoose.Types.ObjectId(),
     });
     // login
@@ -97,12 +220,15 @@ describe('Auth Routes', () => {
       .expect(200);
 
     const cookies = login.headers['set-cookie'];
+    const loginSession = login.body as { user: any };
 
     const meRes = await request(app)
       .get('/api/auth/me')
       .set('Cookie', cookies)
       .expect(200);
-    expect(meRes.body.email).toBe('me@example.com');
+    expect(loginSession.user.email).toBe('me@example.com');
+    const meSession = meRes.body as { user: any };
+    expect(meSession.user.email).toBe('me@example.com');
 
     await request(app)
       .post('/api/auth/logout')
@@ -121,7 +247,7 @@ describe('Auth Routes', () => {
       name: 'Secure',
       email: 'secure@example.com',
       passwordHash: 'pass123',
-      roles: ['viewer'],
+      roles: ['planner'],
       tenantId: new mongoose.Types.ObjectId(),
     });
 

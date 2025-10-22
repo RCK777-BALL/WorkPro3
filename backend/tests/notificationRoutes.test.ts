@@ -6,7 +6,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 
-import notificationRoutes from '../routes/NotificationsRoutes';
+import notificationRoutes from '../routes/notificationsRoutes';
 import Notification from '../models/Notifications';
 import User, { type UserDocument } from '../models/User';
 import type { MockIO } from './testUtils';
@@ -86,29 +86,32 @@ describe('Notification Routes', () => {
     const res = await request(app)
       .post('/api/notifications')
       .set('Authorization', `Bearer ${tokenA}`)
-      .send({ message: 'hello' })
+      .send({ title: 'hi', message: 'hello', type: 'info' })
       .expect(201);
 
-    expect(res.body.message).toBe('hello');
-    expect(res.body.tenantId).toBe(tenantA.toString());
-    expect(io.emit).toHaveBeenCalledWith('notification', expect.objectContaining({ _id: res.body._id }));
+    expect(res.body.data.message).toBe('hello');
+    expect(res.body.data.tenantId).toBe(tenantA.toString());
+    expect(io.emit).toHaveBeenCalledWith(
+      'notification',
+      expect.objectContaining({ _id: res.body.data._id }),
+    );
   });
 
   it('retrieves notifications scoped to tenant', async () => {
-    await Notification.create({ tenantId: tenantA, user: userA._id, message: 'A1' });
-    await Notification.create({ tenantId: tenantB, user: userB._id, message: 'B1' });
+    await Notification.create({ tenantId: tenantA, user: userA._id, message: 'A1', title: 't1', type: 'info' });
+    await Notification.create({ tenantId: tenantB, user: userB._id, message: 'B1', title: 't2', type: 'info' });
 
     const res = await request(app)
       .get('/api/notifications')
       .set('Authorization', `Bearer ${tokenA}`)
       .expect(200);
 
-    expect(res.body.length).toBe(1);
-    expect(res.body[0].message).toBe('A1');
+    expect(res.body.data.length).toBe(1);
+    expect(res.body.data[0].message).toBe('A1');
   });
 
   it('updates notification within tenant only', async () => {
-    const note = await Notification.create({ tenantId: tenantA, user: userA._id, message: 'A1' });
+    const note = await Notification.create({ tenantId: tenantA, user: userA._id, message: 'A1', title: 't1', type: 'info' });
 
     const res = await request(app)
       .put(`/api/notifications/${note._id}`)
@@ -116,7 +119,7 @@ describe('Notification Routes', () => {
       .send({ read: true })
       .expect(200);
 
-    expect(res.body.read).toBe(true);
+    expect(res.body.data.read).toBe(true);
 
     await request(app)
       .put(`/api/notifications/${note._id}`)

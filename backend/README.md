@@ -12,6 +12,14 @@ npm install
 npm run dev
 ```
 
+### Audit logging
+
+All controllers that modify data must record an entry using `writeAuditLog`.
+Provide `tenantId`, `userId`, `action`, `entityType`, and `entityId` along
+with optional `before` and `after` snapshots of the entity. These logs are
+stored in the `audit_logs` collection and enable traceability for create,
+update, and delete operations.
+
 ### Type definitions
 
 The project augments Express types to include a `tenantId` field and optional `siteId` on `Request`. The definitions live in `types/express/index.d.ts`. If you modify the TypeScript configuration, ensure
@@ -270,19 +278,20 @@ and stations. Only the following fields are validated:
 
 ## Environment variables
 
-Configuration is loaded from a `.env` file in this folder. The
-`.env.example` file shows all available variables. Each option is described
+Configuration is loaded from a `.env` file in this folder. The root
+`.env.sample` file shows all available variables. Each option is described
 below along with its default value if one exists.
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
-| `MONGO_URI` | MongoDB connection string. | `mongodb://localhost:27017/platinum_cmms` |
+| `MONGO_URI` | MongoDB connection string. | `mongodb://localhost:27017/workpro` |
 | `PORT` | HTTP port the server listens on. | `5010` |
 | `NODE_ENV` | Environment name controlling secure cookies when `COOKIE_SECURE` is unset. | `development` |
 | `JWT_SECRET` | Secret key used to sign JWT tokens. Required for authentication. | *(none)* |
 | `CORS_ORIGIN` | Allowed origins for CORS, comma separated. | `http://localhost:5173` |
 | `PM_SCHEDULER_CRON` | Cron expression controlling the PM scheduler. | `*/5 * * * *` |
 | `PM_SCHEDULER_TASK` | Path to the task module run on each scheduler tick. | `./tasks/PMSchedulerTask` |
+| `LABOR_RATE` | Hourly labor rate used for cost calculations. | `50` |
 | `SMTP_HOST` | SMTP server hostname for email notifications. | *(none)* |
 | `SMTP_PORT` | SMTP server port. | `587` |
 | `SMTP_USER` | Username for SMTP authentication. | *(none)* |

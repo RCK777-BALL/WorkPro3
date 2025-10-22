@@ -2,38 +2,43 @@
  * SPDX-License-Identifier: MIT
  */
 
-import express from 'express';
-import {
-  getInventoryItems,
-  getAllInventoryItems,
-  getInventoryItemById,
-  createInventoryItem,
-  updateInventoryItem,
-  deleteInventoryItem,
-  getLowStockItems,
-  searchInventoryItems,
-  useInventoryItem,
-} from '../controllers/InventoryController';
-import { requireAuth } from '../middleware/authMiddleware';
-import siteScope from '../middleware/siteScope';
+import { Router } from "express";
 
-const router = express.Router();
+import legacyInventoryRoutes from "./InventoryLegacyRoutes";
 
-router.use(requireAuth);
-router.use(siteScope);
+const router = Router();
 
-// Summary route retained for dashboards
-router.get('/summary', getInventoryItems);
+const summary = [
+  {
+    id: "INV-001",
+    item: "Hydraulic Hose 1in",
+    category: "Hydraulics",
+    onHand: 18,
+    reorderPoint: 10,
+    status: "Open",
+  },
+  {
+    id: "INV-014",
+    item: "Bearing 6203-ZZ",
+    category: "Mechanical",
+    onHand: 6,
+    reorderPoint: 12,
+    status: "On Hold",
+  },
+  {
+    id: "INV-020",
+    item: "Filter Cartridge 5μm",
+    category: "Consumables",
+    onHand: 42,
+    reorderPoint: 20,
+    status: "Completed",
+  },
+];
 
-// CRUD routes
-router.get('/low-stock', getLowStockItems);
-router.get('/search', searchInventoryItems);
-router.get('/', getAllInventoryItems);
-router.get('/:id', getInventoryItemById);
-router.post('/', createInventoryItem);
-router.put('/:id', updateInventoryItem);
-router.post('/:id/use', useInventoryItem);
-router.delete('/:id', deleteInventoryItem);
+router.get("/summary", (_req, res) => {
+  res.json({ success: true, data: summary, message: "Inventory summary" });
+});
+
+router.use("/", legacyInventoryRoutes);
 
 export default router;
-

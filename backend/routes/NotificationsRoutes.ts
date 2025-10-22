@@ -2,25 +2,40 @@
  * SPDX-License-Identifier: MIT
  */
 
-import express from 'express';
-import {
-  getAllNotifications,
-  createNotification,
-  updateNotification,
-  deleteNotification,
-  markNotificationRead,
-} from '../controllers/NotificationController';
-import { requireAuth } from '../middleware/authMiddleware';
+import { Router } from "express";
 
-const router = express.Router();
+import legacyNotificationsRoutes from "./NotificationsLegacyRoutes";
 
-router.use(requireAuth);
-router.get('/', getAllNotifications);
-router.post('/', createNotification);
- 
-router.patch('/:id/read', markNotificationRead);
-router.patch('/:id', updateNotification);
- 
-router.delete('/:id', deleteNotification);
+const router = Router();
+
+const summary = [
+  {
+    id: "notify-001",
+    message: "Work order WO-231 was completed.",
+    channel: "In-App",
+    createdAt: "2024-06-06T09:14:00Z",
+    status: "Completed",
+  },
+  {
+    id: "notify-002",
+    message: "Permit PR-88 awaiting approval.",
+    channel: "Email",
+    createdAt: "2024-06-05T17:24:00Z",
+    status: "Pending Approval",
+  },
+  {
+    id: "notify-003",
+    message: "Inventory low on Bearing 6203-ZZ.",
+    channel: "SMS",
+    createdAt: "2024-06-05T08:45:00Z",
+    status: "Open",
+  },
+];
+
+router.get("/summary", (_req, res) => {
+  res.json({ success: true, data: summary, message: "Notification summary" });
+});
+
+router.use("/", legacyNotificationsRoutes);
 
 export default router;

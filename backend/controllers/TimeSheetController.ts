@@ -3,8 +3,12 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import { Types } from 'mongoose';
+import { sendResponse } from '../utils/sendResponse';
 
 import TimeSheet from '../models/TimeSheet';
+import { writeAuditLog } from '../utils/audit';
+import { toEntityId } from '../utils/ids';
 
  export const getAllTimeSheets = async (
   req: Request,
@@ -14,7 +18,7 @@ import TimeSheet from '../models/TimeSheet';
  
   try {
     const items = await TimeSheet.find();
-    res.json(items);
+    sendResponse(res, items);
     return;
   } catch (err) {
     next(err);
@@ -30,10 +34,10 @@ export const getTimeSheetById = async (
   try {
     const item = await TimeSheet.findById(req.params.id);
     if (!item) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
-    res.json(item);
+    sendResponse(res, item);
     return;
   } catch (err) {
     next(err);
@@ -47,9 +51,23 @@ export const createTimeSheet = async (
   next: NextFunction,
 ): Promise<Response | void> => {
   try {
-    const newItem = new TimeSheet(req.body);
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const newItem = new TimeSheet({ ...req.body, tenantId });
     const saved = await newItem.save();
-    res.status(201).json(saved);
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'create',
+      entityType: 'TimeSheet',
+      entityId: toEntityId(saved._id),
+      after: saved.toObject(),
+    });
+    sendResponse(res, saved, null, 201);
     return;
   } catch (err) {
     next(err);
@@ -63,15 +81,31 @@ export const updateTimeSheet = async (
   next: NextFunction,
 ): Promise<Response | void> => {
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const existing = await TimeSheet.findById(req.params.id);
+    if (!existing) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
     const updated = await TimeSheet.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
     });
-    if (!updated) {
-      res.status(404).json({ message: 'Not found' });
-      return;
-    }
-    res.json(updated);
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'update',
+      entityType: 'TimeSheet',
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      before: existing.toObject(),
+      after: updated?.toObject(),
+    });
+    sendResponse(res, updated);
     return;
   } catch (err) {
     next(err);
@@ -85,12 +119,26 @@ export const deleteTimeSheet = async (
   next: NextFunction,
 ): Promise<Response | void> => {
   try {
-    const deleted = await TimeSheet.findByIdAndDelete(req.params.id);
-    if (!deleted) {
-      res.status(404).json({ message: 'Not found' });
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    res.json({ message: 'Deleted successfully' });
+    const userId = (req.user as any)?._id || (req.user as any)?.id;
+    const deleted = await TimeSheet.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
+    await writeAuditLog({
+      tenantId,
+      userId,
+      action: 'delete',
+      entityType: 'TimeSheet',
+      entityId: toEntityId(new Types.ObjectId(req.params.id)),
+      before: deleted.toObject(),
+    });
+    sendResponse(res, { message: 'Deleted successfully' });
     return;
   } catch (err) {
     next(err);

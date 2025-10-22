@@ -15,6 +15,38 @@ import WorkOrderReviewModal from '@/components/work-orders/WorkOrderReviewModal'
 import type { WorkOrder } from '@/types';
 
 const LOCAL_KEY = 'offline-workorders';
+const OPTIONAL_WORK_ORDER_KEYS: (keyof WorkOrder)[] = [
+  'description',
+  'assetId',
+  'asset',
+  'complianceProcedureId',
+  'calibrationIntervalDays',
+  'assignedTo',
+  'assignedToAvatar',
+  'assignees',
+  'checklists',
+  'partsUsed',
+  'signatures',
+  'timeSpentMin',
+  'photos',
+  'failureCode',
+  'permits',
+  'requiredPermitTypes',
+  'scheduledDate',
+  'dueDate',
+  'createdAt',
+  'completedAt',
+  'note',
+  'completedBy',
+  'attachments',
+  'parts',
+];
+
+function assignIfDefined<T, K extends keyof T>(target: T, key: K, value: T[K] | undefined) {
+  if (value !== undefined) {
+    target[key] = value;
+  }
+}
 
 export default function WorkOrders() {
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
@@ -72,10 +104,37 @@ export default function WorkOrders() {
       const url = params.toString()
         ? `/workorders/search?${params.toString()}`
         : '/workorders';
-      const res = await http.get(url);
-      const data = (res.data as any[]).map((w) => ({ ...w, id: w._id ?? w.id })) as WorkOrder[];
-      setWorkOrders(data);
-      localStorage.setItem(LOCAL_KEY, JSON.stringify(data));
+      interface WorkOrderResponse extends Partial<WorkOrder> { _id?: string; id?: string }
+      const normalize = (
+        raw: WorkOrderResponse,
+      ): WorkOrder | null => {
+        const resolvedId = raw._id ?? raw.id;
+        if (!resolvedId) {
+          return null;
+        }
+        const normalized: WorkOrder = {
+          id: resolvedId,
+          title: raw.title ?? 'Untitled Work Order',
+          priority: raw.priority ?? 'medium',
+          status: raw.status ?? 'requested',
+          type: raw.type ?? 'corrective',
+          department: raw.department ?? 'General',
+        };
+        OPTIONAL_WORK_ORDER_KEYS.forEach((key) => {
+          const value = raw[key];
+          assignIfDefined(normalized, key, value);
+        });
+        return normalized;
+      };
+      const res = await http.get<WorkOrderResponse[]>(url);
+      const normalized: WorkOrder[] = Array.isArray(res.data)
+        ? res.data.flatMap((item) => {
+            const workOrder = normalize(item);
+            return workOrder ? [workOrder] : [];
+          })
+        : [];
+      setWorkOrders(normalized);
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(normalized));
     } catch (err) {
       console.error(err);
       const cached = localStorage.getItem(LOCAL_KEY);
@@ -110,18 +169,45 @@ export default function WorkOrders() {
     }
   };
 
-  const openReview = async (order: WorkOrder) => {
+  const transition = async (id: string, action: 'assign' | 'start' | 'complete' | 'cancel') => {
     try {
-      const res = await http.get(`/workorders/${order.id}`);
-      const data = { ...res.data, id: res.data._id ?? res.data.id } as WorkOrder;
-      setSelectedOrder(data);
-      setShowReviewModal(true);
+      await http.post(`/workorders/${id}/${action}`);
+      fetchWorkOrders();
     } catch (err) {
       console.error(err);
     }
   };
 
-  const createWorkOrder = async (payload: FormData | Record<string, any>) => {
+  const openReview = async (order: WorkOrder) => {
+    try {
+      interface WorkOrderResponse extends Partial<WorkOrder> { _id?: string; id?: string }
+      const res = await http.get<WorkOrderResponse>(`/workorders/${order.id}`);
+      const normalized = ((): WorkOrder | null => {
+        const resolvedId = res.data._id ?? res.data.id ?? order.id;
+        const normalizedOrder: WorkOrder = {
+          id: resolvedId,
+          title: res.data.title ?? order.title,
+          priority: res.data.priority ?? order.priority,
+          status: res.data.status ?? order.status,
+          type: res.data.type ?? order.type,
+          department: res.data.department ?? order.department,
+        };
+        OPTIONAL_WORK_ORDER_KEYS.forEach((key) => {
+          const value = res.data[key];
+          assignIfDefined(normalizedOrder, key, value);
+        });
+        return normalizedOrder;
+      })();
+      if (normalized) {
+        setSelectedOrder(normalized);
+        setShowReviewModal(true);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const createWorkOrder = async (payload: FormData | Record<string, unknown>) => {
     if (!navigator.onLine) {
       if (!(payload instanceof FormData)) {
         addToQueue({ method: 'post', url: '/workorders', data: payload });
@@ -170,17 +256,45 @@ export default function WorkOrders() {
       ),
     },
     {
+      header: 'Assignees',
+      accessor: (row: WorkOrder) => row.assignees?.join(', ') || 'N/A',
+    },
+    {
       header: 'Due Date',
       accessor: (row: WorkOrder) =>
         row.dueDate ? new Date(row.dueDate).toLocaleDateString() : 'N/A',
     },
     {
       header: 'Actions',
-      accessor: (row: WorkOrder) => (
-        <Button variant="ghost" size="sm" onClick={() => updateStatus(row.id)}>
-          Mark Completed
-        </Button>
-      ),
+      accessor: (row: WorkOrder) => {
+        switch (row.status) {
+          case 'requested':
+            return (
+              <Button variant="ghost" size="sm" onClick={() => transition(row.id, 'assign')}>
+                Assign
+              </Button>
+            );
+          case 'assigned':
+            return (
+              <Button variant="ghost" size="sm" onClick={() => transition(row.id, 'start')}>
+                Start
+              </Button>
+            );
+          case 'in_progress':
+            return (
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" size="sm" onClick={() => transition(row.id, 'complete')}>
+                  Complete
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => transition(row.id, 'cancel')}>
+                  Cancel
+                </Button>
+              </div>
+            );
+          default:
+            return null;
+        }
+      },
       className: 'text-right',
     },
   ];
@@ -215,10 +329,11 @@ export default function WorkOrders() {
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value)}
           >
             <option value="">All Statuses</option>
-            <option value="open">Open</option>
-            <option value="in-progress">In Progress</option>
-            <option value="on-hold">On Hold</option>
+            <option value="requested">Requested</option>
+            <option value="assigned">Assigned</option>
+            <option value="in_progress">In Progress</option>
             <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
           </select>
           <select
             className="border rounded p-2 flex-1"

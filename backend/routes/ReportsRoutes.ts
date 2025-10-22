@@ -2,27 +2,37 @@
  * SPDX-License-Identifier: MIT
  */
 
-import express from 'express';
-import {
-  getAnalyticsReport,
-  downloadReport,
-  getTrendData,
-  exportTrendData,
-  getCostMetrics,
-  getDowntimeMetrics,
-} from '../controllers/ReportsController';
-import { requireAuth } from '../middleware/authMiddleware';
+import { Router } from "express";
 
-const router = express.Router();
+import legacyReportsRoutes from "./ReportsLegacyRoutes";
 
-router.use(requireAuth);
-// Optional query param ?role=ROLE filters user-based analytics metrics
-router.get('/analytics', getAnalyticsReport);
-// Supports ?format=csv|pdf and ?role=ROLE
-router.get('/download', downloadReport);
-router.get('/trends', getTrendData);
-router.get('/trends/export', exportTrendData);
-router.get('/costs', getCostMetrics);
-router.get('/downtime', getDowntimeMetrics);
+const router = Router();
+
+const summary = [
+  {
+    id: "report-001",
+    name: "Monthly Work Order Summary",
+    owner: "Operations",
+    lastRun: "2024-06-01",
+  },
+  {
+    id: "report-002",
+    name: "PM Compliance",
+    owner: "Maintenance",
+    lastRun: "2024-05-30",
+  },
+  {
+    id: "report-003",
+    name: "Inventory Reorder",
+    owner: "Supply Chain",
+    lastRun: "2024-06-04",
+  },
+];
+
+router.get("/summary", (_req, res) => {
+  res.json({ success: true, data: summary, message: "Reports summary" });
+});
+
+router.use("/", legacyReportsRoutes);
 
 export default router;

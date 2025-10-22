@@ -2,20 +2,67 @@
  * SPDX-License-Identifier: MIT
  */
 
-import Department from '../models/Department';
+import type { FilterQuery } from 'mongoose';
+import type { ParsedQs } from 'qs';
+import type { ParamsDictionary } from 'express-serve-static-core';
+
+import Department, { type DepartmentDoc } from '../models/Department';
 import type { AuthedRequestHandler } from '../types/http';
+import { sendResponse } from '../utils/sendResponse';
 
 
-export const listDepartments: AuthedRequestHandler = async (req, res, next) => {
+interface DepartmentListQuery extends ParsedQs {
+  q?: string;
+}
+
+type DepartmentListResponse = DepartmentDoc[];
+
+const normalizeSearchTerm = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : undefined;
+};
+
+const buildDepartmentFilter = (
+  tenantId: string,
+  options: { siteId?: string; search?: string },
+): FilterQuery<DepartmentDoc> => {
+  const filter: FilterQuery<DepartmentDoc> = { tenantId };
+
+  if (options.siteId) {
+    filter.siteId = options.siteId;
+  }
+
+  if (options.search) {
+    filter.name = { $regex: new RegExp(options.search, 'i') };
+  }
+
+  return filter;
+};
+
+
+export const listDepartments: AuthedRequestHandler<
+  ParamsDictionary,
+  DepartmentListResponse,
+  unknown,
+  DepartmentListQuery
+> = async (req, res, next) => {
   try {
-    const filter: any = { tenantId: req.tenantId };
-    if (req.siteId) filter.siteId = req.siteId;
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
 
-    const q = typeof req.query?.q === 'string' ? req.query.q.trim() : '';
-    if (q) filter.name = { $regex: new RegExp(q, 'i') };
+    const search = normalizeSearchTerm(req.query?.q);
+
+    const filter = buildDepartmentFilter(tenantId, {
+      siteId: req.siteId,
+      search,
+    });
 
     const items = await Department.find(filter).sort({ name: 1 });
-    res.json(items);
+    sendResponse(res, items);
     return;
   } catch (err) {
     next(err);

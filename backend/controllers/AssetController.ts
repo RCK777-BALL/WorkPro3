@@ -169,7 +169,7 @@ const locationKey = ({ departmentId, lineId, stationId }: AssetHierarchyLocation
   return `${department}::${line}::${station}`;
 };
 
-export const getAllAssets: AuthedRequestHandler = async (req, res, next) => {
+const getAllAssets: AuthedRequestHandler = async (req, res, next) => {
   try {
     const filter: Record<string, unknown> = { tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
@@ -187,7 +187,7 @@ export const getAllAssets: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
-export const getAssetById: AuthedRequestHandler<AssetParams> = async (
+const getAssetById: AuthedRequestHandler<AssetParams> = async (
   req,
   res,
   next,
@@ -223,7 +223,7 @@ export const getAssetById: AuthedRequestHandler<AssetParams> = async (
   }
 };
 
-export const createAsset: AuthedRequestHandler<
+const createAsset: AuthedRequestHandler<
   ParamsDictionary,
   unknown,
   AssetBody
@@ -347,7 +347,7 @@ export const createAsset: AuthedRequestHandler<
   }
 };
 
-export const updateAsset: AuthedRequestHandler<
+const updateAsset: AuthedRequestHandler<
   AssetParams,
   unknown,
   AssetUpdateBody
@@ -525,7 +525,7 @@ export const updateAsset: AuthedRequestHandler<
   }
 };
 
-export const deleteAsset: AuthedRequestHandler<AssetParams> = async (
+const deleteAsset: AuthedRequestHandler<AssetParams> = async (
   req,
   res,
   next,
@@ -583,7 +583,7 @@ export const deleteAsset: AuthedRequestHandler<AssetParams> = async (
   }
 };
 
-export const searchAssets: AuthedRequestHandler<
+const searchAssets: AuthedRequestHandler<
   ParamsDictionary,
   unknown,
   unknown,
@@ -617,7 +617,7 @@ export const searchAssets: AuthedRequestHandler<
   }
 };
 
-export const getAssetTree: AuthedRequestHandler = async (req, res, next) => {
+const getAssetTree: AuthedRequestHandler = async (req, res, next) => {
   try {
     const match: Record<string, unknown> = { tenantId: req.tenantId };
     if (req.siteId) match.siteId = req.siteId;
@@ -731,4 +731,14 @@ export const getAssetTree: AuthedRequestHandler = async (req, res, next) => {
     next(err);
     return;
   }
+};
+
+export {
+  getAllAssets,
+  getAssetById,
+  createAsset,
+  updateAsset,
+  deleteAsset,
+  searchAssets,
+  getAssetTree,
 };

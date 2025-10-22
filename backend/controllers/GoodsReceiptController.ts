@@ -28,7 +28,7 @@ interface CreateGoodsReceiptBody {
   items: GoodsReceiptItemPayload[];
 }
 
-export const createGoodsReceipt = async (
+const createGoodsReceipt = async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -121,3 +121,5 @@ export const createGoodsReceipt = async (
     return;
   }
 };
+
+export { createGoodsReceipt };

@@ -3,7 +3,7 @@
  */
 
 import React, { useState } from 'react';
-import Modal from '@/modals/Modal';
+import Modal from '@/components/modals/Modal';
 import { searchMessages } from '@/api/channels';
 import type { Message } from '@/types';
 import { useToast } from '@/context/ToastContext';

@@ -13,6 +13,17 @@ import Station from '../models/Station';
 import Asset from '../models/Asset';
 import type { AuthedRequestHandler } from '../types/http';
 import { lineUpdateValidators, lineValidators } from '../validators/lineValidators';
+import sendResponse from '../utils/sendResponse';
+
+const toLinePayload = (line: LineDoc) => ({
+  _id: line._id.toString(),
+  name: line.name,
+  departmentId: line.departmentId.toString(),
+  tenantId: line.tenantId.toString(),
+  siteId: line.siteId ? line.siteId.toString() : undefined,
+  notes: line.notes ?? '',
+  stations: line.stations.map((station) => station.toString()),
+});
 
 const router = Router();
 router.use(requireAuth);
@@ -31,17 +42,8 @@ const listLines: AuthedRequestHandler<Record<string, string>, unknown> = async (
       ];
     }
     const lines = await Line.find(filter).sort({ name: 1 }).lean();
-    res.json(
-      lines.map((line) => ({
-        _id: line._id.toString(),
-        name: line.name,
-        departmentId: line.departmentId.toString(),
-        tenantId: line.tenantId.toString(),
-        siteId: line.siteId ? line.siteId.toString() : undefined,
-        notes: line.notes ?? '',
-        stations: line.stations.map((station) => station.toString()),
-      })),
-    );
+    const payload = lines.map(toLinePayload);
+    sendResponse(res, payload, null, 200, 'Lines retrieved');
   } catch (err) {
     next(err);
   }
@@ -54,10 +56,10 @@ const getLine: AuthedRequestHandler<
   try {
     const line = await Line.findOne({ _id: req.params.id, tenantId: req.tenantId });
     if (!line) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
-    res.json(line);
+    sendResponse(res, toLinePayload(line), null, 200, 'Line retrieved');
   } catch (err) {
     next(err);
   }
@@ -70,7 +72,7 @@ const createLine: AuthedRequestHandler<
 > = async (req, res, next) => {
   try {
     if (!req.tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const department = await Department.findOne({
@@ -78,7 +80,7 @@ const createLine: AuthedRequestHandler<
       tenantId: req.tenantId,
     });
     if (!department) {
-      res.status(404).json({ message: 'Department not found' });
+      sendResponse(res, null, 'Department not found', 404);
       return;
     }
     const line = await Line.create({
@@ -104,7 +106,7 @@ const createLine: AuthedRequestHandler<
       },
     );
 
-    res.status(201).json(line);
+    sendResponse(res, toLinePayload(line), null, 201, 'Line created');
   } catch (err) {
     next(err);
   }
@@ -124,7 +126,7 @@ const updateLine: AuthedRequestHandler<
       update.notes = req.body.notes;
     }
     if (Object.keys(update).length === 0) {
-      res.status(400).json({ message: 'No updates provided' });
+      sendResponse(res, null, 'No updates provided', 400);
       return;
     }
     const line = await Line.findOneAndUpdate(
@@ -133,7 +135,7 @@ const updateLine: AuthedRequestHandler<
       { new: true },
     );
     if (!line) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
 
@@ -147,7 +149,7 @@ const updateLine: AuthedRequestHandler<
       },
     );
 
-    res.json(line);
+    sendResponse(res, toLinePayload(line), null, 200, 'Line updated');
   } catch (err) {
     next(err);
   }
@@ -157,7 +159,7 @@ const deleteLine: AuthedRequestHandler<{ id: string }> = async (req, res, next) 
   try {
     const line = await Line.findOne({ _id: req.params.id, tenantId: req.tenantId });
     if (!line) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
 
@@ -181,7 +183,7 @@ const deleteLine: AuthedRequestHandler<{ id: string }> = async (req, res, next) 
       { $pull: { lines: { _id: line._id } } },
     );
 
-    res.json({ message: 'Deleted' });
+    sendResponse(res, { id: line._id.toString() }, null, 200, 'Line deleted');
   } catch (err) {
     next(err);
   }

@@ -8,7 +8,7 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "fix:backend": "node fixWorkPro.js backend",
     "fix:frontend": "node fixWorkPro.js frontend",
     "fix:all": "node fixWorkPro.js all"
@@ -29,5 +29,13 @@
     "fs-extra": "^11.3.2",
     "glob": "^11.0.3",
     "ts-morph": "^27.0.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.2.0",
+    "mongodb-memory-server": "^10.2.3",
+    "supertest": "^7.1.4",
+    "ts-jest": "^29.4.5",
+    "typescript": "^5.9.3"
   }
 }

@@ -13,6 +13,17 @@ import Department from '../models/Department';
 import Asset from '../models/Asset';
 import type { AuthedRequestHandler } from '../types/http';
 import { stationUpdateValidators, stationValidators } from '../validators/stationValidators';
+import sendResponse from '../utils/sendResponse';
+
+const toStationPayload = (station: StationDoc) => ({
+  _id: station._id.toString(),
+  name: station.name,
+  notes: station.notes ?? '',
+  lineId: station.lineId.toString(),
+  departmentId: station.departmentId.toString(),
+  tenantId: station.tenantId.toString(),
+  siteId: station.siteId ? station.siteId.toString() : undefined,
+});
 
 const router = Router();
 router.use(requireAuth);
@@ -35,17 +46,8 @@ const listStations: AuthedRequestHandler<Record<string, string>, unknown> = asyn
       ];
     }
     const stations = await Station.find(filter).sort({ name: 1 }).lean();
-    res.json(
-      stations.map((station) => ({
-        _id: station._id.toString(),
-        name: station.name,
-        notes: station.notes ?? '',
-        lineId: station.lineId.toString(),
-        departmentId: station.departmentId.toString(),
-        tenantId: station.tenantId.toString(),
-        siteId: station.siteId ? station.siteId.toString() : undefined,
-      })),
-    );
+    const payload = stations.map(toStationPayload);
+    sendResponse(res, payload, null, 200, 'Stations retrieved');
   } catch (err) {
     next(err);
   }
@@ -58,10 +60,10 @@ const getStation: AuthedRequestHandler<
   try {
     const station = await Station.findOne({ _id: req.params.id, tenantId: req.tenantId });
     if (!station) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
-    res.json(station);
+    sendResponse(res, toStationPayload(station), null, 200, 'Station retrieved');
   } catch (err) {
     next(err);
   }
@@ -74,12 +76,12 @@ const createStation: AuthedRequestHandler<
 > = async (req, res, next) => {
   try {
     if (!req.tenantId) {
-      res.status(400).json({ message: 'Tenant ID required' });
+      sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
     const line = await Line.findOne({ _id: req.body.lineId, tenantId: req.tenantId });
     if (!line) {
-      res.status(404).json({ message: 'Line not found' });
+      sendResponse(res, null, 'Line not found', 404);
       return;
     }
     const station = await Station.create({
@@ -109,7 +111,7 @@ const createStation: AuthedRequestHandler<
       },
     );
 
-    res.status(201).json(station);
+    sendResponse(res, toStationPayload(station), null, 201, 'Station created');
   } catch (err) {
     next(err);
   }
@@ -129,7 +131,7 @@ const updateStation: AuthedRequestHandler<
       update.notes = req.body.notes;
     }
     if (Object.keys(update).length === 0) {
-      res.status(400).json({ message: 'No updates provided' });
+      sendResponse(res, null, 'No updates provided', 400);
       return;
     }
     const station = await Station.findOneAndUpdate(
@@ -138,7 +140,7 @@ const updateStation: AuthedRequestHandler<
       { new: true },
     );
     if (!station) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
 
@@ -162,7 +164,7 @@ const updateStation: AuthedRequestHandler<
       );
     }
 
-    res.json(station);
+    sendResponse(res, toStationPayload(station), null, 200, 'Station updated');
   } catch (err) {
     next(err);
   }
@@ -172,7 +174,7 @@ const deleteStation: AuthedRequestHandler<{ id: string }> = async (req, res, nex
   try {
     const station = await Station.findOne({ _id: req.params.id, tenantId: req.tenantId });
     if (!station) {
-      res.status(404).json({ message: 'Not found' });
+      sendResponse(res, null, 'Not found', 404);
       return;
     }
 
@@ -191,7 +193,7 @@ const deleteStation: AuthedRequestHandler<{ id: string }> = async (req, res, nex
       { $pull: { 'lines.$.stations': { _id: station._id } } },
     );
 
-    res.json({ message: 'Deleted' });
+    sendResponse(res, { id: station._id.toString() }, null, 200, 'Station deleted');
   } catch (err) {
     next(err);
   }

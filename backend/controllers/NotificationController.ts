@@ -43,7 +43,7 @@ const toPlainObject = (
   return undefined;
 };
 
-const getAllNotifications: AuthedRequestHandler<
+export const getAllNotifications: AuthedRequestHandler<
   ParamsDictionary,
   NotificationDocument[] | { message: string }
 > = async (
@@ -71,7 +71,7 @@ const getAllNotifications: AuthedRequestHandler<
   }
 };
 
-const getNotificationById: AuthedRequestHandler<
+export const getNotificationById: AuthedRequestHandler<
   IdParams,
   NotificationDocument | { message: string }
 > = async (
@@ -104,7 +104,7 @@ const getNotificationById: AuthedRequestHandler<
   }
 };
 
-const createNotification: AuthedRequestHandler<
+export const createNotification: AuthedRequestHandler<
   ParamsDictionary,
   NotificationDocument | { message: string },
   NotificationCreateBody
@@ -186,7 +186,7 @@ const createNotification: AuthedRequestHandler<
   }
 };
 
-const markNotificationRead: AuthedRequestHandler<
+export const markNotificationRead: AuthedRequestHandler<
   IdParams,
   NotificationDocument | { message: string }
 > = async (
@@ -238,7 +238,7 @@ const markNotificationRead: AuthedRequestHandler<
   }
 };
 
-const updateNotification: AuthedRequestHandler<
+export const updateNotification: AuthedRequestHandler<
   IdParams,
   NotificationDocument | { message: string },
   NotificationUpdateBody
@@ -296,7 +296,7 @@ const updateNotification: AuthedRequestHandler<
   }
 };
 
-const deleteNotification: AuthedRequestHandler<
+export const deleteNotification: AuthedRequestHandler<
   IdParams,
   { message: string }
 > = async (
@@ -340,14 +340,5 @@ const deleteNotification: AuthedRequestHandler<
     next(err);
     return;
   }
-};
-
-export {
-  getAllNotifications,
-  getNotificationById,
-  createNotification,
-  markNotificationRead,
-  updateNotification,
-  deleteNotification,
 };
 

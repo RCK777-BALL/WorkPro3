@@ -128,27 +128,82 @@ const Departments = () => {
     return filteredDepartments.slice(start, start + PAGE_SIZE);
   }, [filteredDepartments, currentPage]);
 
-  const handleDepartmentSave = async (values: { name: string; description?: string }) => {
+  const handleDepartmentSave = async (values: {
+    name: string;
+    description?: string;
+    lines: { id?: string; name: string }[];
+  }) => {
     setDepartmentSaving(true);
     try {
       if (departmentEditing) {
-        await updateDepartment(departmentEditing.id, values);
-        setDepartments((prev) =>
-          prev.map((department) =>
-            department.id === departmentEditing.id
-              ? {
-                  ...department,
-                  name: values.name,
-                  description: values.description,
-                  notes: values.description ?? department.notes,
-                }
-              : department,
-          ),
+        const departmentPayload: { name: string; description?: string } = { name: values.name };
+        if (values.description !== undefined) {
+          departmentPayload.description = values.description;
+        }
+        await updateDepartment(departmentEditing.id, departmentPayload);
+
+        const trimmedLines = values.lines.map((line) => ({ ...line, name: line.name.trim() }));
+
+        const existingLines = departmentEditing.lines;
+
+        const linesToDelete = existingLines.filter(
+          (line) => !trimmedLines.some((candidate) => candidate.id === line.id),
         );
+
+        const linesToUpdate = trimmedLines.filter((line) => {
+          if (!line.id) return false;
+          const existing = existingLines.find((candidate) => candidate.id === line.id);
+          return existing ? existing.name !== line.name : false;
+        });
+
+        const linesToCreate = trimmedLines.filter((line) => !line.id);
+
+        let latestDepartment: DepartmentHierarchy | null = null;
+
+        for (const line of linesToDelete) {
+          const updatedDepartment = await deleteLine(departmentEditing.id, line.id);
+          latestDepartment = updatedDepartment;
+          replaceDepartment(updatedDepartment);
+        }
+
+        for (const line of linesToUpdate) {
+          const updatedDepartment = await updateLine(departmentEditing.id, line.id!, { name: line.name });
+          latestDepartment = updatedDepartment;
+          replaceDepartment(updatedDepartment);
+        }
+
+        for (const line of linesToCreate) {
+          const updatedDepartment = await createLine(departmentEditing.id, { name: line.name });
+          latestDepartment = updatedDepartment;
+          replaceDepartment(updatedDepartment);
+        }
+
+        const baseDepartment = (latestDepartment ?? departmentEditing) as DepartmentHierarchy;
+        replaceDepartment({
+          ...baseDepartment,
+          name: values.name,
+          description: values.description ?? baseDepartment.description,
+          notes: values.description ?? baseDepartment.notes,
+        });
         addToast('Department updated', 'success');
       } else {
-        const created = await createDepartment(values);
-        setDepartments((prev) => [...prev, mapDepartmentResponse(created)]);
+        const departmentPayload: { name: string; description?: string } = { name: values.name };
+        if (values.description !== undefined) {
+          departmentPayload.description = values.description;
+        }
+
+        const created = await createDepartment(departmentPayload);
+        let currentDepartment = mapDepartmentResponse(created);
+
+        const trimmedLines = values.lines
+          .map((line) => line.name.trim())
+          .filter((lineName) => lineName.length > 0);
+
+        for (const lineName of trimmedLines) {
+          currentDepartment = await createLine(currentDepartment.id, { name: lineName });
+        }
+
+        setDepartments((prev) => [...prev, currentDepartment]);
         addToast('Department created', 'success');
       }
       setDepartmentModalOpen(false);

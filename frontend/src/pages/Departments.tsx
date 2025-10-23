@@ -11,7 +11,6 @@ import DepartmentModal, { type DepartmentFormValues } from '@/components/departm
 import LineModal from '@/components/departments/LineModal';
 import StationModal from '@/components/departments/StationModal';
 import AssetModal from '@/components/departments/AssetModal';
-import QuickAddDialog from '@/components/departments/QuickAddDialog';
 import {
   createAsset,
   createDepartment,
@@ -75,8 +74,6 @@ const Departments = () => {
     asset: Asset | null;
   } | null>(null);
   const [assetSaving, setAssetSaving] = useState(false);
-
-  const [quickAddState, setQuickAddState] = useState<{ mode: 'line' | 'station' } | null>(null);
 
   const replaceDepartment = useCallback((updated: DepartmentHierarchy) => {
     setDepartments((prev) =>
@@ -467,47 +464,6 @@ const Departments = () => {
     setDepartmentModalOpen(true);
   };
 
-  const openQuickAddLine = (): boolean => {
-    if (departments.length === 0) {
-      addToast('Create a department first before adding lines.', 'error');
-      return false;
-    }
-
-    if (departments.length === 1) {
-      setLineModalState({ department: departments[0], line: null });
-      return true;
-    }
-
-    setQuickAddState({ mode: 'line' });
-    return true;
-  };
-
-  const openQuickAddStation = (): boolean => {
-    const departmentsWithLines = departments.filter((department) => department.lines.length > 0);
-
-    if (departmentsWithLines.length === 0) {
-      addToast('Add a line before creating stations.', 'error');
-      return false;
-    }
-
-    if (departmentsWithLines.length === 1 && departmentsWithLines[0].lines.length === 1) {
-      const [line] = departmentsWithLines[0].lines;
-      setStationModalState({ department: departmentsWithLines[0], line, station: null });
-      return true;
-    }
-
-    setQuickAddState({ mode: 'station' });
-    return true;
-  };
-
-  const handleStartLineCreation = () => {
-    void openQuickAddLine();
-  };
-
-  const handleStartStationCreation = () => {
-    void openQuickAddStation();
-  };
-
   return (
     <div className="space-y-6">
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-900 via-indigo-800 to-blue-700 p-6 text-white shadow">
@@ -523,7 +479,7 @@ const Departments = () => {
               </p>
             </div>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <Button
               variant="secondary"
               onClick={startDepartmentCreation}
@@ -532,36 +488,6 @@ const Departments = () => {
               <Plus className="mr-2 h-4 w-4" />
               Department
             </Button>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-              <div className="flex flex-1 items-center justify-between gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm text-white/80 shadow-inner sm:flex-none sm:justify-start">
-                <div className="flex flex-col">
-                  <span className="text-xs uppercase tracking-wide text-white/60">Inside a department</span>
-                  <span className="text-sm font-medium text-white">Add new line</span>
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={handleStartLineCreation}
-                  className="whitespace-nowrap"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Line
-                </Button>
-              </div>
-              <div className="flex flex-1 items-center justify-between gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm text-white/80 shadow-inner sm:flex-none sm:justify-start">
-                <div className="flex flex-col">
-                  <span className="text-xs uppercase tracking-wide text-white/60">Inside a line</span>
-                  <span className="text-sm font-medium text-white">Add new station</span>
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={handleStartStationCreation}
-                  className="whitespace-nowrap"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Station
-                </Button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -716,31 +642,6 @@ const Departments = () => {
         }}
         onSave={handleAssetSave}
         onDelete={assetModalState?.asset ? handleAssetDelete : undefined}
-      />
-
-      <QuickAddDialog
-        open={Boolean(quickAddState)}
-        mode={quickAddState?.mode ?? 'line'}
-        departments={departments}
-        onCancel={() => setQuickAddState(null)}
-        onConfirm={(departmentId, lineId) => {
-          const department = departments.find((item) => item.id === departmentId);
-          if (!department) {
-            setQuickAddState(null);
-            return;
-          }
-
-          if (quickAddState?.mode === 'line') {
-            setLineModalState({ department, line: null });
-          } else if (quickAddState?.mode === 'station' && lineId) {
-            const line = department.lines.find((item) => item.id === lineId);
-            if (line) {
-              setStationModalState({ department, line, station: null });
-            }
-          }
-
-          setQuickAddState(null);
-        }}
       />
 
     </div>

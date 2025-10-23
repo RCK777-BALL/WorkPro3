@@ -357,20 +357,6 @@ const Departments = () => {
         </div>
 
         <div className="relative mt-6">
-          <div className="absolute right-4 -top-10 hidden sm:block">
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => {
-                setDepartmentEditing(null);
-                setDepartmentModalOpen(true);
-              }}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Department
-            </Button>
-          </div>
-
           {loading ? (
             <div className="flex justify-center py-16">
               <LoadingSpinner />

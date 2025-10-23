@@ -202,14 +202,14 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
   return (
 
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-neutral-200">
-          <h2 className="text-xl font-semibold text-neutral-900">
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-slate-700">
+          <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
             {workOrder ? "Edit Work Order" : "Create Work Order"}
           </h2>
           <button
             onClick={onClose}
-            className="text-neutral-500 hover:text-neutral-700"
+            className="text-neutral-500 hover:text-neutral-700 dark:text-neutral-300 dark:hover:text-neutral-100"
           >
             <X size={20} />
           </button>
@@ -218,13 +218,13 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
  
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
               Department
             </label>
             {loadingDeps ? (
               <div className="flex justify-center py-2">
                 <svg
-                  className="animate-spin h-5 w-5 text-neutral-500"
+                  className="animate-spin h-5 w-5 text-neutral-500 dark:text-neutral-400"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -247,7 +247,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
             ) : (
               <>
                 <select
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-neutral-900 dark:text-neutral-100"
                   value={watch("departmentId")}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setValue("departmentId", e.target.value)}
                   {...register("departmentId", {
@@ -271,12 +271,12 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
           </div>
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
                 Title
               </label>
               <input
                 type="text"
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-neutral-900 dark:text-neutral-100"
                 {...register("title", { required: "Title is required" })}
               />
               {errors.title && (
@@ -287,11 +287,11 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
                 Priority
               </label>
               <select
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-neutral-900 dark:text-neutral-100"
                 {...register("priority", { required: "Priority is required" })}
               >
                 <option value="low">Low</option>
@@ -316,14 +316,14 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
           />
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
               Checklists
             </label>
             {checklists.map((c, idx) => (
               <div key={idx} className="flex items-center space-x-2 mb-1">
                 <input
                   type="text"
-                  className="flex-1 px-2 py-1 border border-neutral-300 rounded-md"
+                  className="flex-1 px-2 py-1 border border-neutral-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-neutral-900 dark:text-neutral-100"
                   value={c.text}
                   onChange={(e) => {
                     const updated = [...checklists];
@@ -348,7 +348,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
             <div className="flex items-center space-x-2">
               <input
                 type="text"
-                className="flex-1 px-2 py-1 border border-neutral-300 rounded-md"
+                className="flex-1 px-2 py-1 border border-neutral-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-neutral-900 dark:text-neutral-100"
                 value={newChecklist}
                 onChange={(e) => setNewChecklist(e.target.value)}
               />
@@ -366,11 +366,11 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
               Parts
             </label>
             <select
-              className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+              className="w-full px-3 py-2 border border-neutral-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-neutral-900 dark:text-neutral-100"
               onChange={(e) => {
                 const id = e.target.value;
                 if (id && !parts.find((p) => p.partId === id)) {
@@ -394,7 +394,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                     <span className="flex-1">{p?.name || pt.partId}</span>
                     <input
                       type="number"
-                      className="w-16 px-1 py-0.5 border border-neutral-300 rounded"
+                      className="w-16 px-1 py-0.5 border border-neutral-300 dark:border-slate-700 rounded bg-white dark:bg-slate-800 text-neutral-900 dark:text-neutral-100"
                       value={pt.qty}
                       onChange={(e) => {
                         const updated = [...parts];
@@ -404,7 +404,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                     />
                     <input
                       type="number"
-                      className="w-20 px-1 py-0.5 border border-neutral-300 rounded"
+                      className="w-20 px-1 py-0.5 border border-neutral-300 dark:border-slate-700 rounded bg-white dark:bg-slate-800 text-neutral-900 dark:text-neutral-100"
                       value={pt.cost}
                       onChange={(e) => {
                         const updated = [...parts];
@@ -426,11 +426,11 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
               Description
             </label>
             <textarea
-              className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+              className="w-full px-3 py-2 border border-neutral-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-neutral-900 dark:text-neutral-100"
               rows={4}
               {...register("description")}
             />
@@ -438,11 +438,11 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
 
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
                 Status
               </label>
               <select
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-neutral-900 dark:text-neutral-100"
                 {...register("status", { required: "Status is required" })}
               >
                 <option value="requested">Requested</option>
@@ -459,12 +459,12 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
                 Scheduled Date
               </label>
               <input
                 type="date"
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-neutral-900 dark:text-neutral-100"
                 {...register("scheduledDate", { required: "Date is required" })}
               />
               {errors.scheduledDate && (
@@ -476,19 +476,19 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
               Attachments
             </label>
             <div
               {...getRootProps()}
-              className="border-2 border-dashed border-neutral-300 rounded-lg p-6 text-center cursor-pointer hover:border-primary-500 transition-colors"
+              className="border-2 border-dashed border-neutral-300 dark:border-slate-700 rounded-lg p-6 text-center cursor-pointer hover:border-primary-500 transition-colors"
             >
               <input {...getInputProps()} />
-              <Upload className="mx-auto h-12 w-12 text-neutral-400" />
-              <p className="mt-2 text-sm text-neutral-600">
+              <Upload className="mx-auto h-12 w-12 text-neutral-400 dark:text-neutral-500" />
+              <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">
                 Drag & drop files here, or click to select files
               </p>
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 Supports: Images, PDFs, and documents
               </p>
             </div>
@@ -497,31 +497,31 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
               {files.map((file, index) => (
                 <div
                   key={index}
-                    className="flex items-center justify-between p-2 bg-neutral-50 rounded-md"
-                  >
-                    <div className="flex items-center">
-                      <Download size={16} className="text-neutral-500 mr-2" />
-                      <span className="text-sm text-neutral-600">
-                        {file.name}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setFiles(files.filter((_, i) => i !== index))
-                      }
-                      className="text-neutral-400 hover:text-error-500"
-                    >
-                      <X size={16} />
-                    </button>
+                  className="flex items-center justify-between p-2 bg-neutral-50 dark:bg-slate-800 rounded-md"
+                >
+                  <div className="flex items-center">
+                    <Download size={16} className="text-neutral-500 dark:text-neutral-400 mr-2" />
+                    <span className="text-sm text-neutral-600 dark:text-neutral-300">
+                      {file.name}
+                    </span>
                   </div>
-                ))}
-              </div>
-            )}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFiles(files.filter((_, i) => i !== index))
+                    }
+                    className="text-neutral-400 hover:text-error-500 dark:text-neutral-500 dark:hover:text-error-400"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
               Document
             </label>
             <input
@@ -534,7 +534,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
               value={docUrl}
               onChange={(e) => setDocUrl(e.target.value)}
               placeholder="Or paste URL"
-              className="w-full px-3 py-2 border border-neutral-300 rounded-md mb-2"
+              className="w-full px-3 py-2 border border-neutral-300 dark:border-slate-700 rounded-md mb-2 bg-white dark:bg-slate-800 text-neutral-900 dark:text-neutral-100"
             />
             <Button type="button" variant="outline" className="w-full" onClick={uploadDocument}>
               Upload Document
@@ -542,7 +542,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
               Capture Image
             </label>
             <Button
@@ -557,14 +557,14 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
               Signatures
             </label>
             {signatures.map((s, idx) => (
               <div key={idx} className="flex items-center space-x-2 mb-1">
                 <input
                   type="text"
-                  className="px-2 py-1 border border-neutral-300 rounded-md"
+                  className="px-2 py-1 border border-neutral-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-neutral-900 dark:text-neutral-100"
                   value={s.by}
                   placeholder="User ID"
                   onChange={(e) => {
@@ -575,7 +575,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 />
                 <input
                   type="datetime-local"
-                  className="px-2 py-1 border border-neutral-300 rounded-md"
+                  className="px-2 py-1 border border-neutral-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-neutral-900 dark:text-neutral-100"
                   value={s.ts}
                   onChange={(e) => {
                     const updated = [...signatures];
@@ -594,14 +594,14 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
             <div className="flex items-center space-x-2">
               <input
                 type="text"
-                className="px-2 py-1 border border-neutral-300 rounded-md"
+                className="px-2 py-1 border border-neutral-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-neutral-900 dark:text-neutral-100"
                 value={newSignature.by}
                 placeholder="User ID"
                 onChange={(e) => setNewSignature((prev) => ({ ...prev, by: e.target.value }))}
               />
               <input
                 type="datetime-local"
-                className="px-2 py-1 border border-neutral-300 rounded-md"
+                className="px-2 py-1 border border-neutral-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-neutral-900 dark:text-neutral-100"
                 value={newSignature.ts}
                 onChange={(e) => setNewSignature((prev) => ({ ...prev, ts: e.target.value }))}
               />
@@ -619,7 +619,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
             </div>
           </div>
 
-          <div className="flex justify-end space-x-3 pt-6 border-t border-neutral-200">
+          <div className="flex justify-end space-x-3 pt-6 border-t border-neutral-200 dark:border-slate-700">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>

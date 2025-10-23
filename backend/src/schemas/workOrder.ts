@@ -40,6 +40,8 @@ const baseSchema = z.object({
   assetId: objectId.optional(),
   pmTask: objectId.optional(),
   department: objectId.optional(),
+  lineId: objectId.optional(),
+  stationId: objectId.optional(),
   line: objectId.optional(),
   station: objectId.optional(),
   teamMemberName: z.string().optional(),

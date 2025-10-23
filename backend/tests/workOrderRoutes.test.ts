@@ -98,9 +98,8 @@ describe('Work Order Routes', () => {
         complianceProcedureId: 'PROC-1',
         calibrationIntervalDays: 365,
         departmentId: department._id,
-        department: department._id,
-        line: lineId,
-        station: stationId,
+        lineId,
+        stationId,
         pmTask: pmTask._id,
         teamMemberName: 'Tester',
         importance: 'low',
@@ -118,6 +117,12 @@ describe('Work Order Routes', () => {
     expect(created.type).toBe('calibration');
     expect(created.complianceProcedureId).toBe('PROC-1');
     expect(created.calibrationIntervalDays).toBe(365);
+
+    const stored = await WorkOrder.findById(created._id).lean();
+    expect(stored).not.toBeNull();
+    expect(stored?.department?.toString()).toBe(String(department._id));
+    expect(stored?.line?.toString()).toBe(String(lineId));
+    expect(stored?.station?.toString()).toBe(String(stationId));
 
     const id = created._id;
 
@@ -186,9 +191,8 @@ describe('Work Order Routes', () => {
         priority: 'medium',
         status: 'requested',
         departmentId: department._id,
-        department: department._id,
-        line: lineId,
-        station: stationId,
+        lineId,
+        stationId,
         pmTask: pmTask._id,
         teamMemberName: 'Tester',
         importance: 'low',
@@ -243,9 +247,8 @@ describe('Work Order Routes', () => {
         priority: 'medium',
         status: 'requested',
         departmentId: department._id,
-        department: department._id,
-        line: lineId,
-        station: stationId,
+        lineId,
+        stationId,
         pmTask: pmTask._id,
         teamMemberName: 'Tester',
         importance: 'low',

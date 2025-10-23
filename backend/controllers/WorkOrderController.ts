@@ -492,8 +492,17 @@ export async function createWorkOrder(
       signatures,
       permits,
       requiredPermitTypes,
+      departmentId,
+      lineId,
+      stationId,
+      department,
+      line,
+      station,
       ...rest
     } = parsed.data;
+    const normalizedDepartment = toOptionalObjectId(department ?? departmentId);
+    const normalizedLine = toOptionalObjectId(line ?? lineId);
+    const normalizedStation = toOptionalObjectId(station ?? stationId);
     const normalizedRequiredPermitTypes = requiredPermitTypes
       ? Array.from(new Set(requiredPermitTypes))
       : [];
@@ -545,6 +554,9 @@ export async function createWorkOrder(
     }
     const newItem = new WorkOrder({
       ...rest,
+      ...(normalizedDepartment ? { department: normalizedDepartment } : {}),
+      ...(normalizedLine ? { line: normalizedLine } : {}),
+      ...(normalizedStation ? { station: normalizedStation } : {}),
       ...(validAssignees && { assignees: mapAssignees(validAssignees) }),
       ...(validChecklists && { checklists: mapChecklists(validChecklists) }),
       ...(validParts && { partsUsed: mapPartsUsed(validParts) }),
@@ -629,9 +641,30 @@ export async function updateWorkOrder(
       sendResponse(res, null, parsed.error.flatten(), 400);
       return;
     }
-    const incomingPermits = parsed.data?.permits;
-    const incomingRequiredPermitTypes = parsed.data?.requiredPermitTypes;
-    const update: UpdateWorkOrderBody = parsed.data as UpdateWorkOrderBody;
+    const {
+      permits: incomingPermits,
+      requiredPermitTypes: incomingRequiredPermitTypes,
+      departmentId,
+      lineId,
+      stationId,
+      department,
+      line,
+      station,
+      ...restUpdate
+    } = parsed.data;
+    const update: UpdateWorkOrderBody = restUpdate as UpdateWorkOrderBody;
+    const normalizedDepartment = toOptionalObjectId(department ?? departmentId);
+    const normalizedLine = toOptionalObjectId(line ?? lineId);
+    const normalizedStation = toOptionalObjectId(station ?? stationId);
+    if (departmentId !== undefined || department !== undefined) {
+      update.department = normalizedDepartment;
+    }
+    if (lineId !== undefined || line !== undefined) {
+      update.line = normalizedLine;
+    }
+    if (stationId !== undefined || station !== undefined) {
+      update.station = normalizedStation;
+    }
     let permitDocs: PermitDocument[] | undefined;
     if (update.partsUsed && isRawPartArray(update.partsUsed)) {
       const validParts = validateItems<RawPart>(

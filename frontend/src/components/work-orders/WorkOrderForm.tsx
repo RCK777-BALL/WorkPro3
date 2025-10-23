@@ -28,9 +28,12 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
   const fetchDepartments = useDepartmentStore((s) => s.fetchDepartments);
   const fetchLines = useDepartmentStore((s) => s.fetchLines);
   const fetchStations = useDepartmentStore((s) => s.fetchStations);
-  const [departmentId, setDepartmentId] = useState('');
-  const [lineId, setLineId] = useState('');
-  const [stationId, setStationId] = useState('');
+  const initialDepartmentId = workOrder?.department ?? '';
+  const initialLineId = workOrder?.lineId ?? workOrder?.line ?? '';
+  const initialStationId = workOrder?.stationId ?? workOrder?.station ?? '';
+  const [departmentId, setDepartmentId] = useState(initialDepartmentId);
+  const [lineId, setLineId] = useState(initialLineId);
+  const [stationId, setStationId] = useState(initialStationId);
   const lines = departmentId ? linesMap[departmentId] || [] : [];
   const stations = lineId ? stationsMap[lineId] || [] : [];
   const { addToast } = useToast();
@@ -109,6 +112,18 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
   }, [departmentId, lineId, fetchStations]);
 
   useEffect(() => {
+    if (workOrder) {
+      setDepartmentId(workOrder.department ?? '');
+      setLineId(workOrder.lineId ?? workOrder.line ?? '');
+      setStationId(workOrder.stationId ?? workOrder.station ?? '');
+    } else {
+      setDepartmentId('');
+      setLineId('');
+      setStationId('');
+    }
+  }, [workOrder]);
+
+  useEffect(() => {
     setFormData((prev) => {
       const updates: Partial<WorkOrder> = {};
       if (prev.type !== 'calibration' && prev.calibrationIntervalDays !== undefined) {
@@ -135,8 +150,8 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
       calibrationIntervalDays: formData.calibrationIntervalDays,
       dueDate: formData.dueDate,
       departmentId,
-      lineId,
-      stationId,
+      lineId: lineId || undefined,
+      stationId: stationId || undefined,
       checklists,
       partsUsed: parts,
       signatures,
@@ -167,7 +182,12 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
         <select
           className="w-full px-3 py-2 border border-neutral-300 rounded-md"
           value={departmentId}
-          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setDepartmentId(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+            const value = e.target.value;
+            setDepartmentId(value);
+            setLineId('');
+            setStationId('');
+          }}
         >
           <option value="">Select Department</option>
           {departments.map((d) => (
@@ -182,7 +202,11 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
         <select
           className="w-full px-3 py-2 border border-neutral-300 rounded-md"
           value={lineId}
-          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setLineId(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+            const value = e.target.value;
+            setLineId(value);
+            setStationId('');
+          }}
           disabled={!departmentId}
         >
           <option value="">Select Line</option>

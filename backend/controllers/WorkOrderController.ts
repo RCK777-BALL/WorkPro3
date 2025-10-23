@@ -1123,7 +1123,7 @@ export async function completeWorkOrder(
       tenantId,
       workOrder.permits,
       workOrder.requiredPermitTypes,
-      'start'
+      'complete'
     );
     if (!readiness.ok) {
       sendResponse(res, null, readiness.message ?? 'Permits are not approved for work start', 409);
@@ -1228,7 +1228,7 @@ export async function cancelWorkOrder(
       tenantId,
       workOrder.permits,
       workOrder.requiredPermitTypes,
-      'start'
+      'complete'
     );
     if (!readiness.ok) {
       sendResponse(res, null, readiness.message ?? 'Permits are not approved for work start', 409);

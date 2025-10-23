@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { X } from 'lucide-react';
 import Button from '@common/Button';
@@ -32,7 +32,6 @@ interface TeamFormData {
   role: Role;
   department: string;
   employeeId: string;
-  managerId: string;
 }
 
 const defaultValues: TeamFormData = {
@@ -41,11 +40,10 @@ const defaultValues: TeamFormData = {
   role: 'team_member',
   department: '',
   employeeId: '',
-  managerId: '',
 };
 
 const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
-  const { addMember, updateMember, fetchMembers, members } = useTeamMembers();
+  const { addMember, updateMember, fetchMembers } = useTeamMembers();
   const { fetchDepartments } = useDepartmentStore();
   const { addToast } = useToast();
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -55,7 +53,6 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
     register,
     handleSubmit,
     control,
-    watch,
     setValue,
     formState: { errors },
   } = useForm<TeamFormData>({ defaultValues });
@@ -66,32 +63,12 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
     setValue('role', member?.role ?? 'team_member');
     setValue('department', member?.department ?? '');
     setValue('employeeId', member?.employeeId ?? '');
-    setValue('managerId', member?.managerId ?? '');
   }, [member, setValue]);
-
-  const role = watch('role') as TeamMember['role'];
-
-  const reportOptions = useMemo(() => {
-    if (role === 'team_member')
-      return members.filter((m) => m.role === 'team_leader');
-    if (role === 'team_leader')
-      return members.filter((m) => m.role === 'area_leader');
-    if (role === 'area_leader')
-      return members.filter((m) =>
-        ['supervisor', 'department_leader'].includes(m.role)
-      );
-    return [];
-  }, [role, members]);
-
-  useEffect(() => {
-    if (['admin', 'supervisor', 'department_leader'].includes(role))
-      setValue('managerId', '');
-  }, [role, setValue]);
 
   const fetchDepartmentOptions = async (q: string) => {
     try {
       const list = await fetchDepartments();
-       return list.filter((d) =>
+      return list.filter((d) =>
         d.name.toLowerCase().includes(q.toLowerCase())
       );
     } catch (e) {
@@ -101,15 +78,10 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
     }
   };
 
-  const handleRoleChange = (value: Role) => {
-    setValue('role', value);
-  };
-
   const onSubmit = handleSubmit(async (data: TeamFormData) => {
     setLoading(true);
     try {
       const payload: Partial<TeamMember> = { ...data };
-      if (!payload.managerId) delete payload.managerId;
       let body: Partial<TeamMember> | FormData = payload;
       if (avatarFile) {
         const fd = new FormData();
@@ -191,10 +163,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
               <label className="block text-sm font-medium mb-1">Role</label>
               <select
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md"
-                {...register('role', {
-                  onChange: (e) =>
-                    handleRoleChange(e.target.value as Role),
-                })}
+                {...register('role')}
               >
                 <option value="admin">Admin</option>
                 <option value="supervisor">Supervisor</option>
@@ -202,8 +171,8 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
                 <option value="area_leader">Area Leader</option>
                 <option value="team_leader">Team Leader</option>
                 <option value="team_member">Team Member</option>
-            </select>
-          </div>
+              </select>
+            </div>
 
             <div>
               <AutoCompleteInput
@@ -228,43 +197,6 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
                 <p className="text-error-500 text-sm mt-1">{errors.employeeId.message as string}</p>
               )}
             </div>
-
-            {['team_member', 'team_leader', 'area_leader'].includes(role) && (
-              <div>
-                <label className="block text-sm font-medium mb-1">Reports To</label>
-                <select
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-md"
-                  {...register('managerId', {
-                    validate: (value) => {
-                      if (['admin', 'supervisor', 'department_leader'].includes(role))
-                        return true;
-                      if (!value) return 'Reports To is required';
-                      const mgr = members.find((m) => m.id === value);
-                      if (role === 'team_member' && mgr?.role !== 'team_leader')
-                        return 'Team members must report to a team leader';
-                      if (role === 'team_leader' && mgr?.role !== 'area_leader')
-                        return 'Team leaders must report to an area leader';
-                      if (
-                        role === 'area_leader' &&
-                        !['supervisor', 'department_leader'].includes(mgr?.role ?? '')
-                      )
-                        return 'Area leaders must report to a supervisor or department leader';
-                      return true;
-                    },
-                  })}
-                >
-                  <option value="">Select</option>
-                  {reportOptions.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-                {errors.managerId && (
-                  <p className="text-error-500 text-sm mt-1">{errors.managerId.message as string}</p>
-                )}
-              </div>
-            )}
           </div>
 
           <div className="flex justify-end space-x-3 pt-6 border-t border-neutral-200 dark:border-neutral-700">

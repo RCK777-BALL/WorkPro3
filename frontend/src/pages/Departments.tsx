@@ -7,7 +7,7 @@ import { Building2, Filter, Plus } from 'lucide-react';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import DepartmentTable from '@/components/departments/DepartmentTable';
-import DepartmentModal from '@/components/departments/DepartmentModal';
+import DepartmentModal, { type DepartmentFormValues } from '@/components/departments/DepartmentModal';
 import LineModal from '@/components/departments/LineModal';
 import StationModal from '@/components/departments/StationModal';
 import AssetModal from '@/components/departments/AssetModal';
@@ -128,11 +128,7 @@ const Departments = () => {
     return filteredDepartments.slice(start, start + PAGE_SIZE);
   }, [filteredDepartments, currentPage]);
 
-  const handleDepartmentSave = async (values: {
-    name: string;
-    description?: string;
-    lines: { id?: string; name: string }[];
-  }) => {
+  const handleDepartmentSave = async (values: DepartmentFormValues) => {
     setDepartmentSaving(true);
     try {
       if (departmentEditing) {
@@ -142,7 +138,14 @@ const Departments = () => {
         }
         await updateDepartment(departmentEditing.id, departmentPayload);
 
-        const trimmedLines = values.lines.map((line) => ({ ...line, name: line.name.trim() }));
+        const trimmedLines = values.lines.map((line) => ({
+          ...line,
+          name: line.name.trim(),
+          stations: line.stations.map((station) => ({
+            ...station,
+            name: station.name.trim(),
+          })),
+        }));
 
         const existingLines = departmentEditing.lines;
 
@@ -158,33 +161,95 @@ const Departments = () => {
 
         const linesToCreate = trimmedLines.filter((line) => !line.id);
 
-        let latestDepartment: DepartmentHierarchy | null = null;
+        let currentDepartment: DepartmentHierarchy = departmentEditing;
+        const lineIdByKey = new Map<string, string>();
+        existingLines.forEach((line) => {
+          lineIdByKey.set(line.id, line.id);
+        });
 
         for (const line of linesToDelete) {
-          const updatedDepartment = await deleteLine(departmentEditing.id, line.id);
-          latestDepartment = updatedDepartment;
+          const updatedDepartment = await deleteLine(currentDepartment.id, line.id);
+          currentDepartment = updatedDepartment;
+          lineIdByKey.delete(line.id);
           replaceDepartment(updatedDepartment);
         }
 
         for (const line of linesToUpdate) {
-          const updatedDepartment = await updateLine(departmentEditing.id, line.id!, { name: line.name });
-          latestDepartment = updatedDepartment;
+          const updatedDepartment = await updateLine(currentDepartment.id, line.id!, { name: line.name });
+          currentDepartment = updatedDepartment;
           replaceDepartment(updatedDepartment);
         }
 
         for (const line of linesToCreate) {
-          const updatedDepartment = await createLine(departmentEditing.id, { name: line.name });
-          latestDepartment = updatedDepartment;
+          const previousLineIds = new Set(currentDepartment.lines.map((candidate) => candidate.id));
+          const updatedDepartment = await createLine(currentDepartment.id, { name: line.name });
+          currentDepartment = updatedDepartment;
           replaceDepartment(updatedDepartment);
+          const createdLine = updatedDepartment.lines.find(
+            (candidate) => !previousLineIds.has(candidate.id) && candidate.name === line.name,
+          );
+          if (createdLine) {
+            lineIdByKey.set(line.key, createdLine.id);
+          }
         }
 
-        const baseDepartment = (latestDepartment ?? departmentEditing) as DepartmentHierarchy;
-        replaceDepartment({
-          ...baseDepartment,
-          name: values.name,
-          description: values.description ?? baseDepartment.description,
-          notes: values.description ?? baseDepartment.notes,
+        trimmedLines.forEach((line) => {
+          if (line.id) {
+            lineIdByKey.set(line.key, line.id);
+          }
         });
+
+        for (const line of trimmedLines) {
+          const lineId = line.id ?? lineIdByKey.get(line.key);
+          if (!lineId) continue;
+
+          let existingStations =
+            currentDepartment.lines.find((candidate) => candidate.id === lineId)?.stations ?? [];
+
+          const stationsToDelete = existingStations.filter(
+            (station) => !line.stations.some((candidate) => candidate.id === station.id),
+          );
+
+          for (const station of stationsToDelete) {
+            const updatedDepartment = await deleteStation(currentDepartment.id, lineId, station.id);
+            currentDepartment = updatedDepartment;
+            replaceDepartment(updatedDepartment);
+          }
+
+          existingStations =
+            currentDepartment.lines.find((candidate) => candidate.id === lineId)?.stations ?? [];
+
+          const stationsToUpdate = line.stations.filter((station) => {
+            if (!station.id) return false;
+            const existing = existingStations.find((candidate) => candidate.id === station.id);
+            return existing ? existing.name !== station.name : false;
+          });
+
+          for (const station of stationsToUpdate) {
+            const updatedDepartment = await updateStation(currentDepartment.id, lineId, station.id, {
+              name: station.name,
+            });
+            currentDepartment = updatedDepartment;
+            replaceDepartment(updatedDepartment);
+          }
+
+          const stationsToCreate = line.stations.filter((station) => !station.id);
+          for (const station of stationsToCreate) {
+            const updatedDepartment = await createStation(currentDepartment.id, lineId, {
+              name: station.name,
+            });
+            currentDepartment = updatedDepartment;
+            replaceDepartment(updatedDepartment);
+          }
+        }
+
+        currentDepartment = {
+          ...currentDepartment,
+          name: values.name,
+          description: values.description ?? currentDepartment.description,
+          notes: values.description ?? currentDepartment.notes,
+        };
+        replaceDepartment(currentDepartment);
         addToast('Department updated', 'success');
       } else {
         const departmentPayload: { name: string; description?: string } = { name: values.name };
@@ -195,12 +260,31 @@ const Departments = () => {
         const created = await createDepartment(departmentPayload);
         let currentDepartment = mapDepartmentResponse(created);
 
-        const trimmedLines = values.lines
-          .map((line) => line.name.trim())
-          .filter((lineName) => lineName.length > 0);
+        const trimmedLines = values.lines.map((line) => ({
+          ...line,
+          name: line.name.trim(),
+          stations: line.stations.map((station) => ({
+            ...station,
+            name: station.name.trim(),
+          })),
+        }));
 
-        for (const lineName of trimmedLines) {
-          currentDepartment = await createLine(currentDepartment.id, { name: lineName });
+        for (const line of trimmedLines) {
+          if (!line.name) continue;
+          const previousLineIds = new Set(currentDepartment.lines.map((candidate) => candidate.id));
+          currentDepartment = await createLine(currentDepartment.id, { name: line.name });
+          const createdLine = currentDepartment.lines.find(
+            (candidate) => !previousLineIds.has(candidate.id) && candidate.name === line.name,
+          );
+          if (!createdLine) {
+            continue;
+          }
+          for (const station of line.stations) {
+            if (!station.name) continue;
+            currentDepartment = await createStation(currentDepartment.id, createdLine.id, {
+              name: station.name,
+            });
+          }
         }
 
         setDepartments((prev) => [...prev, currentDepartment]);

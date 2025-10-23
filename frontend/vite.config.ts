@@ -13,6 +13,9 @@ export default defineConfig({
   css: {
     modules: false,
   },
+  test: {
+    environment: 'jsdom',
+  },
   server: {
     port: 5173,
     proxy: {

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 
 import Header from './Header';
@@ -10,10 +10,105 @@ import Sidebar from './Sidebar';
 import RightPanel from './RightPanel';
 import CommandPalette from '@/components/global/CommandPalette';
 import { useTheme } from '@/context/ThemeContext';
+import { useSettingsStore } from '@/store/settingsStore';
+import clsx from 'clsx';
+
+const COLOR_SCHEMES: Record<
+  string,
+  {
+    accent: string;
+    accentStrong: string;
+    accentLight: string;
+    glow: string;
+    glowStrong: string;
+    halo: string;
+  }
+> = {
+  default: {
+    accent: '#4f46e5',
+    accentStrong: '#4338ca',
+    accentLight: '#e0e7ff',
+    glow: 'rgba(99, 102, 241, 0.28)',
+    glowStrong: 'rgba(79, 70, 229, 0.22)',
+    halo: 'rgba(56, 189, 248, 0.14)',
+  },
+  teal: {
+    accent: '#0f766e',
+    accentStrong: '#0d9488',
+    accentLight: '#ccfbf1',
+    glow: 'rgba(20, 184, 166, 0.28)',
+    glowStrong: 'rgba(13, 148, 136, 0.22)',
+    halo: 'rgba(59, 130, 246, 0.12)',
+  },
+  purple: {
+    accent: '#7c3aed',
+    accentStrong: '#6d28d9',
+    accentLight: '#ede9fe',
+    glow: 'rgba(147, 51, 234, 0.28)',
+    glowStrong: 'rgba(109, 40, 217, 0.22)',
+    halo: 'rgba(168, 85, 247, 0.16)',
+  },
+};
+
+const hexToRgba = (hex: string, alpha: number) => {
+  let normalized = hex.replace('#', '');
+  if (normalized.length === 3) {
+    normalized = normalized
+      .split('')
+      .map((char) => char + char)
+      .join('');
+  }
+  const parsed = parseInt(normalized, 16);
+  const r = (parsed >> 16) & 255;
+  const g = (parsed >> 8) & 255;
+  const b = parsed & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 
 export default function Layout() {
   const { pathname } = useLocation();
   const { backgroundColor, textColor } = useTheme();
+  const { sidebarCollapsed, denseMode, highContrast, colorScheme = 'default' } = useSettingsStore(
+    (state) => state.theme,
+  );
+  const accent = useMemo(() => COLOR_SCHEMES[colorScheme] ?? COLOR_SCHEMES.default, [colorScheme]);
+  const accentBackground = useMemo(
+    () => ({
+      radial: `radial-gradient(circle at top, ${hexToRgba(accent.accent, 0.12)}, transparent 55%)`,
+    }),
+    [accent],
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const body = window.document.body;
+    body.classList.toggle('dense-mode', denseMode);
+    return () => {
+      body.classList.remove('dense-mode');
+    };
+  }, [denseMode]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const body = window.document.body;
+    body.classList.toggle('high-contrast', highContrast);
+    return () => {
+      body.classList.remove('high-contrast');
+    };
+  }, [highContrast]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const root = window.document.documentElement;
+    root.dataset.colorScheme = colorScheme;
+    root.style.setProperty('--accent-color', accent.accent);
+    root.style.setProperty('--accent-color-strong', accent.accentStrong);
+    root.style.setProperty('--accent-color-light', accent.accentLight);
+    root.style.setProperty('--accent-glow', accent.glow);
+    root.style.setProperty('--accent-glow-strong', accent.glowStrong);
+    root.style.setProperty('--accent-halo', accent.halo);
+  }, [accent, colorScheme]);
+
   const isAuthRoute =
     pathname.startsWith('/login') ||
     pathname.startsWith('/register') ||
@@ -29,19 +124,33 @@ export default function Layout() {
       style={{ backgroundColor, color: textColor }}
     >
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-primary-500/30 blur-3xl" />
-        <div className="absolute bottom-[-40%] left-1/2 h-80 w-[32rem] -translate-x-1/2 rounded-full bg-primary-700/20 blur-3xl" />
-        <div className="absolute top-1/2 right-[-25%] h-[28rem] w-[28rem] -translate-y-1/2 rounded-full bg-sky-500/10 blur-[140px]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.08),_transparent_55%)]" />
+        <div
+          className="absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl"
+          style={{ backgroundColor: accent.glow }}
+        />
+        <div
+          className="absolute bottom-[-40%] left-1/2 h-80 w-[32rem] -translate-x-1/2 rounded-full blur-3xl"
+          style={{ backgroundColor: accent.glowStrong }}
+        />
+        <div
+          className="absolute top-1/2 right-[-25%] h-[28rem] w-[28rem] -translate-y-1/2 rounded-full blur-[140px]"
+          style={{ backgroundColor: accent.halo }}
+        />
+        <div className="absolute inset-0" style={{ background: accentBackground.radial }} />
       </div>
 
-      <div className="relative z-10 flex min-h-screen">
-        <Sidebar />
+      <div className={clsx('relative z-10 flex min-h-screen', denseMode ? 'gap-4' : undefined)}>
+        <Sidebar collapsed={sidebarCollapsed} />
 
         <div className="flex flex-1 flex-col overflow-hidden">
           <CommandPalette />
           <Header />
-          <main className="flex-1 overflow-y-auto px-6 pb-10 pt-6 md:px-10">
+          <main
+            className={clsx(
+              'flex-1 overflow-y-auto',
+              denseMode ? 'px-4 pb-6 pt-4 md:px-6' : 'px-6 pb-10 pt-6 md:px-10',
+            )}
+          >
             <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
               <Outlet />
             </div>

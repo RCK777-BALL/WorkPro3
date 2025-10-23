@@ -366,7 +366,7 @@ const Departments = () => {
   return (
     <div className="space-y-6">
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-900 via-indigo-800 to-blue-700 p-6 text-white shadow">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-6">
           <div className="flex items-start gap-4">
             <span className="rounded-xl bg-white/20 p-3">
               <Building2 className="h-6 w-6" />
@@ -378,28 +378,45 @@ const Departments = () => {
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Button
               variant="secondary"
               onClick={startDepartmentCreation}
+              className="w-full sm:w-auto"
             >
               <Plus className="mr-2 h-4 w-4" />
               Department
             </Button>
-            <Button
-              variant="outline"
-              onClick={handleStartLineCreation}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Line
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleStartStationCreation}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Station
-            </Button>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+              <div className="flex flex-1 items-center justify-between gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm text-white/80 shadow-inner sm:flex-none sm:justify-start">
+                <div className="flex flex-col">
+                  <span className="text-xs uppercase tracking-wide text-white/60">Inside a department</span>
+                  <span className="text-sm font-medium text-white">Add new line</span>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={handleStartLineCreation}
+                  className="whitespace-nowrap"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Line
+                </Button>
+              </div>
+              <div className="flex flex-1 items-center justify-between gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm text-white/80 shadow-inner sm:flex-none sm:justify-start">
+                <div className="flex flex-col">
+                  <span className="text-xs uppercase tracking-wide text-white/60">Inside a line</span>
+                  <span className="text-sm font-medium text-white">Add new station</span>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={handleStartStationCreation}
+                  className="whitespace-nowrap"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Station
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

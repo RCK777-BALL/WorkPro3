@@ -10,6 +10,14 @@ export type DepartmentPayload = {
   description?: string;
 };
 
+export type DepartmentImportSummary = {
+  createdDepartments: number;
+  createdLines: number;
+  createdStations: number;
+  createdAssets: number;
+  warnings: string[];
+};
+
 type AssetResponse = {
   _id: string;
   name: string;
@@ -230,6 +238,24 @@ export const deleteAsset = (
       `/departments/${deptId}/lines/${lineId}/stations/${stationId}/assets/${assetId}`,
     )
     .then((res) => toDepartment(res.data));
+
+export const exportDepartmentsExcel = async (): Promise<Blob> => {
+  const response = await http.get<ArrayBuffer>('/departments/export', {
+    responseType: 'arraybuffer',
+  });
+  return new Blob([response.data], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+};
+
+export const importDepartmentsExcel = async (file: File): Promise<DepartmentImportSummary> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await http.post<DepartmentImportSummary>('/departments/import', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
 
 export const listLines = async (deptId: string): Promise<LineResponse[]> => {
   const department = await http.get<DepartmentResponse>(`/departments/${deptId}`, {

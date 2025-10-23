@@ -2,7 +2,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Router } from 'express';
+import { Router, type RequestHandler } from 'express';
+import multer, { MulterError } from 'multer';
+import ExcelJS from 'exceljs';
 import { Types, type FilterQuery } from 'mongoose';
 
 import Department, { type DepartmentDoc } from '../models/Department';
@@ -14,6 +16,46 @@ import { departmentValidators } from '../validators/departmentValidators';
 import { validate } from '../middleware/validationMiddleware';
 import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import sendResponse from '../utils/sendResponse';
+
+const excelMimeTypes = new Set<`application/${string}`>([
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+]);
+
+const excelUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+  fileFilter: (_req, file, cb) => {
+    if (excelMimeTypes.has(file.mimetype as `application/${string}`)) {
+      cb(null, true);
+      return;
+    }
+    cb(new Error('Invalid file type'));
+  },
+});
+
+const handleExcelUpload: RequestHandler = (req, res, next) => {
+  const upload = excelUpload.single('file');
+  upload(req, res, (err) => {
+    if (!err) {
+      next();
+      return;
+    }
+
+    if (err instanceof MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        sendResponse(res, null, 'File too large', 400);
+        return;
+      }
+      sendResponse(res, null, err.message, 400);
+      return;
+    }
+
+    sendResponse(res, null, err instanceof Error ? err.message : 'Invalid file upload', 400);
+  });
+};
 
 interface AssetNode {
   _id: string;
@@ -1214,9 +1256,605 @@ const deleteAssetForStation: AuthedRequestHandler<
   }
 };
 
+const formatDateValue = (value?: string | null): string => {
+  if (!value) {
+    return '';
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.valueOf())) {
+    return value;
+  }
+  return parsed.toISOString().split('T')[0];
+};
+
+const exportDepartmentsToExcel: AuthedRequestHandler = async (req, res, next) => {
+  try {
+    const authedReq = req as AuthedRequest;
+    const filter: FilterQuery<DepartmentDoc> = { tenantId: authedReq.tenantId };
+
+    if (authedReq.siteId) {
+      filter.$or = [
+        { siteId: authedReq.siteId },
+        { siteId: null },
+        { siteId: { $exists: false } },
+      ];
+    }
+
+    const departments = await buildDepartmentNodes(authedReq, filter, defaultInclude());
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.created = new Date();
+    workbook.modified = new Date();
+    const worksheet = workbook.addWorksheet('Departments');
+
+    worksheet.columns = [
+      { header: 'Department Name', key: 'departmentName', width: 28 },
+      { header: 'Department Notes', key: 'departmentNotes', width: 32 },
+      { header: 'Line Name', key: 'lineName', width: 26 },
+      { header: 'Line Notes', key: 'lineNotes', width: 32 },
+      { header: 'Station Name', key: 'stationName', width: 26 },
+      { header: 'Station Notes', key: 'stationNotes', width: 32 },
+      { header: 'Asset Name', key: 'assetName', width: 30 },
+      { header: 'Asset Type', key: 'assetType', width: 18 },
+      { header: 'Asset Status', key: 'assetStatus', width: 18 },
+      { header: 'Asset Description', key: 'assetDescription', width: 36 },
+      { header: 'Asset Notes', key: 'assetNotes', width: 32 },
+      { header: 'Asset Location', key: 'assetLocation', width: 24 },
+      { header: 'Asset Last Serviced', key: 'assetLastServiced', width: 22 },
+    ];
+
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.views = [{ state: 'frozen', ySplit: 1 }];
+
+    const addRow = (data: Record<string, string>) => {
+      worksheet.addRow(data);
+    };
+
+    if (departments.length === 0) {
+      addRow({});
+    } else {
+      departments.forEach((department) => {
+        if (department.lines.length === 0) {
+          addRow({
+            departmentName: department.name,
+            departmentNotes: department.notes ?? department.description ?? '',
+          });
+          return;
+        }
+
+        department.lines.forEach((line) => {
+          const lineNotes = line.notes ?? line.description ?? '';
+          if (line.stations.length === 0) {
+            addRow({
+              departmentName: department.name,
+              departmentNotes: department.notes ?? department.description ?? '',
+              lineName: line.name,
+              lineNotes,
+            });
+            return;
+          }
+
+          line.stations.forEach((station) => {
+            const stationNotes = station.notes ?? station.description ?? '';
+            if (station.assets.length === 0) {
+              addRow({
+                departmentName: department.name,
+                departmentNotes: department.notes ?? department.description ?? '',
+                lineName: line.name,
+                lineNotes,
+                stationName: station.name,
+                stationNotes,
+              });
+              return;
+            }
+
+            station.assets.forEach((asset) => {
+              addRow({
+                departmentName: department.name,
+                departmentNotes: department.notes ?? department.description ?? '',
+                lineName: line.name,
+                lineNotes,
+                stationName: station.name,
+                stationNotes,
+                assetName: asset.name,
+                assetType: asset.type,
+                assetStatus: asset.status ?? '',
+                assetDescription: asset.description ?? '',
+                assetNotes: asset.notes ?? '',
+                assetLocation: asset.location ?? '',
+                assetLastServiced: formatDateValue(asset.lastServiced ?? null),
+              });
+            });
+          });
+        });
+      });
+    }
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename="departments.xlsx"');
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    next(err);
+  }
+};
+
+type AssetImportPayload = {
+  name: string;
+  type: AssetDoc['type'];
+  status: 'Active' | 'Offline' | 'In Repair';
+  description?: string;
+  notes?: string;
+  location?: string;
+  lastServiced?: Date;
+};
+
+type StationImportPayload = {
+  name: string;
+  notes?: string;
+  assets: AssetImportPayload[];
+};
+
+type LineImportPayload = {
+  name: string;
+  notes?: string;
+  stations: Map<string, StationImportPayload>;
+};
+
+type DepartmentImportPayload = {
+  name: string;
+  notes?: string;
+  lines: Map<string, LineImportPayload>;
+};
+
+type ImportSummary = {
+  createdDepartments: number;
+  createdLines: number;
+  createdStations: number;
+  createdAssets: number;
+  warnings: string[];
+};
+
+const columnNames = {
+  departmentName: 'department name',
+  departmentNotes: 'department notes',
+  lineName: 'line name',
+  lineNotes: 'line notes',
+  stationName: 'station name',
+  stationNotes: 'station notes',
+  assetName: 'asset name',
+  assetType: 'asset type',
+  assetStatus: 'asset status',
+  assetDescription: 'asset description',
+  assetNotes: 'asset notes',
+  assetLocation: 'asset location',
+  assetLastServiced: 'asset last serviced',
+} as const;
+
+const normalizeAssetType = (value: string): AssetDoc['type'] | null => {
+  const normalized = value.trim().toLowerCase();
+  switch (normalized) {
+    case 'electrical':
+      return 'Electrical';
+    case 'mechanical':
+      return 'Mechanical';
+    case 'tooling':
+      return 'Tooling';
+    case 'interface':
+      return 'Interface';
+    default:
+      return null;
+  }
+};
+
+const normalizeAssetStatus = (value: string): 'Active' | 'Offline' | 'In Repair' => {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'offline') {
+    return 'Offline';
+  }
+  if (normalized === 'in repair' || normalized === 'inrepair') {
+    return 'In Repair';
+  }
+  return 'Active';
+};
+
+const convertExcelSerialDate = (value: number): Date | undefined => {
+  if (!Number.isFinite(value)) {
+    return undefined;
+  }
+  const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+  const milliseconds = Math.round(value * 24 * 60 * 60 * 1000);
+  const date = new Date(excelEpoch.getTime() + milliseconds);
+  if (Number.isNaN(date.valueOf())) {
+    return undefined;
+  }
+  return date;
+};
+
+const getCellText = (
+  row: ExcelJS.Row,
+  columns: Map<string, number>,
+  key: keyof typeof columnNames,
+): string => {
+  const columnIndex = columns.get(columnNames[key]);
+  if (!columnIndex) {
+    return '';
+  }
+  const cell = row.getCell(columnIndex);
+  const rawText = typeof cell.text === 'string' ? cell.text.trim() : '';
+  if (rawText) {
+    return rawText;
+  }
+  const { value } = cell;
+  if (value == null) {
+    return '';
+  }
+  if (value instanceof Date) {
+    return value.toISOString().split('T')[0];
+  }
+  if (typeof value === 'number') {
+    return value.toString();
+  }
+  if (typeof value === 'object' && 'text' in value && typeof value.text === 'string') {
+    return value.text.trim();
+  }
+  return String(value).trim();
+};
+
+const getCellDate = (
+  row: ExcelJS.Row,
+  columns: Map<string, number>,
+  key: keyof typeof columnNames,
+): Date | undefined => {
+  const columnIndex = columns.get(columnNames[key]);
+  if (!columnIndex) {
+    return undefined;
+  }
+  const cell = row.getCell(columnIndex);
+  const { value } = cell;
+  if (value instanceof Date) {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return convertExcelSerialDate(value);
+  }
+  const text = getCellText(row, columns, key);
+  if (!text) {
+    return undefined;
+  }
+  const parsed = new Date(text);
+  if (Number.isNaN(parsed.valueOf())) {
+    return undefined;
+  }
+  return parsed;
+};
+
+const importDepartmentsFromExcel: AuthedRequestHandler<Record<string, string>, ImportSummary> = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const file = (req as AuthedRequest & { file?: Express.Multer.File }).file;
+    if (!file?.buffer) {
+      sendResponse(res, null, 'No file uploaded', 400);
+      return;
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(file.buffer as any);
+    const worksheet = workbook.worksheets[0];
+    if (!worksheet) {
+      sendResponse(res, null, 'Workbook is empty', 400);
+      return;
+    }
+
+    const headerRow = worksheet.getRow(1);
+    const columnIndexMap = new Map<string, number>();
+    headerRow.eachCell((cell, colNumber) => {
+      const header = typeof cell.text === 'string' ? cell.text.trim().toLowerCase() : '';
+      if (header) {
+        columnIndexMap.set(header, colNumber);
+      }
+    });
+
+    if (!columnIndexMap.has(columnNames.departmentName)) {
+      sendResponse(res, null, 'Department Name column is required', 400);
+      return;
+    }
+
+    const departments = new Map<string, DepartmentImportPayload>();
+    const warnings: string[] = [];
+
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) {
+        return;
+      }
+
+      const values = Array.isArray(row.values) ? row.values : [];
+      const hasContent = values.some((value, index) => {
+        if (index === 0) {
+          return false;
+        }
+        if (value == null) {
+          return false;
+        }
+        if (typeof value === 'string') {
+          return value.trim().length > 0;
+        }
+        return true;
+      });
+
+      if (!hasContent) {
+        return;
+      }
+
+      const departmentName = getCellText(row, columnIndexMap, 'departmentName');
+      const lineName = getCellText(row, columnIndexMap, 'lineName');
+      const stationName = getCellText(row, columnIndexMap, 'stationName');
+      const assetName = getCellText(row, columnIndexMap, 'assetName');
+
+      if (!departmentName) {
+        if (lineName || stationName || assetName) {
+          warnings.push(`Row ${rowNumber}: Department name is required.`);
+        }
+        return;
+      }
+
+      const departmentKey = departmentName.toLowerCase();
+      let department = departments.get(departmentKey);
+      if (!department) {
+        department = {
+          name: departmentName,
+          notes: undefined,
+          lines: new Map(),
+        };
+        departments.set(departmentKey, department);
+      }
+
+      const departmentNotes = getCellText(row, columnIndexMap, 'departmentNotes');
+      if (departmentNotes && !department.notes) {
+        department.notes = departmentNotes;
+      }
+
+      if (!lineName) {
+        return;
+      }
+
+      const lineKey = `${departmentKey}::${lineName.toLowerCase()}`;
+      let line = department.lines.get(lineKey);
+      if (!line) {
+        line = {
+          name: lineName,
+          notes: undefined,
+          stations: new Map(),
+        };
+        department.lines.set(lineKey, line);
+      }
+
+      const lineNotes = getCellText(row, columnIndexMap, 'lineNotes');
+      if (lineNotes && !line.notes) {
+        line.notes = lineNotes;
+      }
+
+      if (!stationName) {
+        return;
+      }
+
+      const stationKey = `${lineKey}::${stationName.toLowerCase()}`;
+      let station = line.stations.get(stationKey);
+      if (!station) {
+        station = {
+          name: stationName,
+          notes: undefined,
+          assets: [],
+        };
+        line.stations.set(stationKey, station);
+      }
+
+      const stationNotes = getCellText(row, columnIndexMap, 'stationNotes');
+      if (stationNotes && !station.notes) {
+        station.notes = stationNotes;
+      }
+
+      if (!assetName) {
+        return;
+      }
+
+      const rawType = getCellText(row, columnIndexMap, 'assetType');
+      const normalizedType = normalizeAssetType(rawType);
+      if (!normalizedType) {
+        warnings.push(
+          `Row ${rowNumber}: Invalid asset type "${rawType}". Asset for station "${station.name}" skipped.`,
+        );
+        return;
+      }
+
+      const rawStatus = getCellText(row, columnIndexMap, 'assetStatus');
+      const asset: AssetImportPayload = {
+        name: assetName,
+        type: normalizedType,
+        status: normalizeAssetStatus(rawStatus),
+      };
+
+      const assetDescription = getCellText(row, columnIndexMap, 'assetDescription');
+      if (assetDescription) {
+        asset.description = assetDescription;
+      }
+
+      const assetNotes = getCellText(row, columnIndexMap, 'assetNotes');
+      if (assetNotes) {
+        asset.notes = assetNotes;
+      }
+
+      const assetLocation = getCellText(row, columnIndexMap, 'assetLocation');
+      if (assetLocation) {
+        asset.location = assetLocation;
+      }
+
+      const lastServiced = getCellDate(row, columnIndexMap, 'assetLastServiced');
+      if (lastServiced) {
+        asset.lastServiced = lastServiced;
+      }
+
+      station.assets.push(asset);
+    });
+
+    if (departments.size === 0) {
+      const summary: ImportSummary = {
+        createdDepartments: 0,
+        createdLines: 0,
+        createdStations: 0,
+        createdAssets: 0,
+        warnings,
+      };
+      sendResponse(res, summary, null, 200, 'No departments found in spreadsheet');
+      return;
+    }
+
+    let createdDepartments = 0;
+    let createdLines = 0;
+    let createdStations = 0;
+    let createdAssets = 0;
+
+    for (const departmentEntry of departments.values()) {
+      const department = await Department.create({
+        name: departmentEntry.name,
+        notes: departmentEntry.notes ?? '',
+        tenantId,
+        siteId: req.siteId ?? undefined,
+      });
+      createdDepartments += 1;
+
+      for (const lineEntry of departmentEntry.lines.values()) {
+        const siteId = department.siteId ?? (req.siteId ? new Types.ObjectId(req.siteId) : undefined);
+        const line = await Line.create({
+          name: lineEntry.name,
+          notes: lineEntry.notes,
+          departmentId: department._id,
+          tenantId,
+          siteId,
+        });
+        createdLines += 1;
+
+        const stationDocs: { doc: StationDoc; entry: StationImportPayload }[] = [];
+
+        for (const stationEntry of lineEntry.stations.values()) {
+          const station = await Station.create({
+            name: stationEntry.name,
+            notes: stationEntry.notes,
+            tenantId,
+            departmentId: department._id,
+            lineId: line._id,
+            siteId,
+          });
+          createdStations += 1;
+          stationDocs.push({ doc: station, entry: stationEntry });
+        }
+
+        if (stationDocs.length > 0) {
+          line.stations = stationDocs.map(({ doc }) => doc._id) as any;
+          await line.save();
+        }
+
+        await Department.updateOne(
+          { _id: department._id, tenantId },
+          {
+            $push: {
+              lines: {
+                _id: line._id,
+                name: line.name,
+                notes: line.notes ?? '',
+                tenantId: req.tenantId as any,
+                stations: stationDocs.map(({ doc }) => ({
+                  _id: doc._id,
+                  name: doc.name,
+                  notes: doc.notes ?? '',
+                  assets: [],
+                })),
+              },
+            },
+          },
+        );
+
+        for (const { doc: stationDoc, entry: stationEntry } of stationDocs) {
+          for (const assetEntry of stationEntry.assets) {
+            const assetPayload: Partial<AssetDoc> = {
+              name: assetEntry.name,
+              type: assetEntry.type,
+              status: assetEntry.status,
+              description: assetEntry.description,
+              notes: assetEntry.notes,
+              location: assetEntry.location,
+              departmentId: department._id,
+              department: department.name,
+              line: line.name,
+              station: stationDoc.name,
+              lineId: line._id,
+              stationId: stationDoc._id,
+              tenantId: new Types.ObjectId(tenantId),
+            };
+
+            if (assetEntry.lastServiced) {
+              assetPayload.lastServiced = assetEntry.lastServiced;
+            }
+
+            if (department.siteId) {
+              assetPayload.siteId = department.siteId;
+            } else if (req.siteId) {
+              assetPayload.siteId = new Types.ObjectId(req.siteId);
+            }
+
+            const asset = await Asset.create(assetPayload);
+            createdAssets += 1;
+
+            await Department.updateOne(
+              { _id: department._id, tenantId },
+              {
+                $push: {
+                  'lines.$[line].stations.$[station].assets': asset._id,
+                },
+              },
+              {
+                arrayFilters: [
+                  { 'line._id': line._id },
+                  { 'station._id': stationDoc._id },
+                ],
+              },
+            );
+          }
+        }
+      }
+    }
+
+    const summary: ImportSummary = {
+      createdDepartments,
+      createdLines,
+      createdStations,
+      createdAssets,
+      warnings,
+    };
+
+    sendResponse(res, summary, null, 201, 'Departments imported');
+  } catch (err) {
+    next(err);
+  }
+};
+
 router.get('/', listDepartments);
+router.get('/export', exportDepartmentsToExcel);
 router.get('/:id', getDepartment);
 router.post('/', departmentValidators, validate, createDepartment);
+router.post('/import', handleExcelUpload, importDepartmentsFromExcel);
 router.put('/:id', departmentValidators, validate, updateDepartment);
 router.delete('/:id', deleteDepartment);
 router.post('/:deptId/lines', createLineForDepartment);

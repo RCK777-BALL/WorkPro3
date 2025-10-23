@@ -2,8 +2,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
-import { Building2, Filter, Plus } from 'lucide-react';
+import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Building2, Download, Filter, Plus, Upload } from 'lucide-react';
+import { saveAs } from 'file-saver';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import DepartmentTable from '@/components/departments/DepartmentTable';
@@ -22,6 +23,8 @@ import {
   deleteStation,
   listDepartmentHierarchy,
   mapDepartmentResponse,
+  exportDepartmentsExcel,
+  importDepartmentsExcel,
   updateDepartment,
   updateAsset,
   updateLine,
@@ -49,6 +52,9 @@ const Departments = () => {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<AssetCategory>('All');
   const [page, setPage] = useState(1);
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [departmentModalOpen, setDepartmentModalOpen] = useState(false);
   const [departmentEditing, setDepartmentEditing] = useState<DepartmentHierarchy | null>(null);
@@ -464,6 +470,50 @@ const Departments = () => {
     setDepartmentModalOpen(true);
   };
 
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const blob = await exportDepartmentsExcel();
+      const timestamp = new Date().toISOString().split('T')[0];
+      saveAs(blob, `departments-${timestamp}.xlsx`);
+      addToast('Departments exported', 'success');
+    } catch (err) {
+      console.error('Failed to export departments', err);
+      addToast('Failed to export departments', 'error');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleImportClick = () => {
+    if (importing) return;
+    fileInputRef.current?.click();
+  };
+
+  const handleImportChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const [file] = event.target.files ?? [];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const summary = await importDepartmentsExcel(file);
+      addToast(
+        `Imported ${summary.createdDepartments} departments (${summary.createdLines} lines, ${summary.createdStations} stations, ${summary.createdAssets} assets)`,
+        'success',
+      );
+      if (summary.warnings.length > 0) {
+        console.warn('Department import warnings:', summary.warnings);
+        addToast(`${summary.warnings.length} rows skipped during import`, 'error');
+      }
+      await loadDepartments();
+    } catch (err) {
+      console.error('Failed to import departments', err);
+      addToast('Failed to import departments', 'error');
+    } finally {
+      setImporting(false);
+      event.target.value = '';
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-900 via-indigo-800 to-blue-700 p-6 text-white shadow">
@@ -480,14 +530,41 @@ const Departments = () => {
             </div>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Button
-              variant="secondary"
-              onClick={startDepartmentCreation}
-              className="w-full sm:w-auto"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Department
-            </Button>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Button
+                variant="secondary"
+                onClick={startDepartmentCreation}
+                className="w-full sm:w-auto"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Department
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleImportClick}
+                loading={importing}
+                className="w-full sm:w-auto"
+              >
+                {!importing && <Upload className="mr-2 h-4 w-4" />}
+                Import Excel
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleExport}
+                loading={exporting}
+                className="w-full sm:w-auto"
+              >
+                {!exporting && <Download className="mr-2 h-4 w-4" />}
+                Export Excel
+              </Button>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={handleImportChange}
+            />
           </div>
         </div>
       </div>

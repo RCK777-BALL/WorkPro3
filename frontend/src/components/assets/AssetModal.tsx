@@ -154,58 +154,58 @@ const AssetModal: React.FC<AssetModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-neutral-200">
-          <h2 className="text-xl font-semibold text-neutral-900">
+    <div className="fixed inset-0 bg-neutral-950/50 dark:bg-neutral-950/80 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-transparent dark:border-neutral-700/80">
+        <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-700">
+          <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
             {asset ? "Edit Asset" : "Create Asset"}
           </h2>
           <button
             onClick={onClose}
-            className="text-neutral-500 hover:text-neutral-700"
+            className="text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
           >
             <X size={20} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
-          {error && <p className="text-error-500">{error}</p>}
+          {error && <p className="text-error-500 dark:text-error-400">{error}</p>}
           <AssetQRCode value="ABC123" />
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-900 mb-1">
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
                 Name
               </label>
               <input
                 type="text"
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
                 {...register("name", { required: "Name is required" })}
               />
               {errors.name && (
-                <p className="text-error-500 text-sm mt-1">
+                <p className="text-error-500 dark:text-error-400 text-sm mt-1">
                   {errors.name.message as string}
                 </p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-900 mb-1">
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
                 Serial Number
               </label>
               <input
                 type="text"
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
                 {...register("serialNumber")}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-900 mb-1">
+            <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
               Description
             </label>
             <textarea
-              className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
+              className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
               rows={4}
               {...register("description")}
             />
@@ -213,23 +213,23 @@ const AssetModal: React.FC<AssetModalProps> = ({
 
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-900 mb-1">
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
                 Model
               </label>
               <input
                 type="text"
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
                 {...register("modelName")}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-900 mb-1">
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
                 Manufacturer
               </label>
               <input
                 type="text"
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
                 {...register("manufacturer")}
               />
             </div>
@@ -237,23 +237,23 @@ const AssetModal: React.FC<AssetModalProps> = ({
 
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-900 mb-1">
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
                 Purchase Date
               </label>
               <input
                 type="date"
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
                 {...register("purchaseDate")}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-900 mb-1">
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
                 Installation Date
               </label>
               <input
                 type="date"
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
                 {...register("installationDate")}
               />
             </div>
@@ -261,21 +261,21 @@ const AssetModal: React.FC<AssetModalProps> = ({
 
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-900 mb-1">
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
                 Location
               </label>
               <input
                 type="text"
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
                 {...register("location")}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-900 mb-1">
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
                 Type
               </label>
               <select
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
                 {...register("type")}
               >
                 <option value="Electrical">Electrical</option>
@@ -288,11 +288,11 @@ const AssetModal: React.FC<AssetModalProps> = ({
 
           <div className="grid grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-900 mb-1">
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
                 Department
               </label>
               <select
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
                 value={departmentId}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setDepartmentId(e.target.value)}
               >
@@ -305,11 +305,11 @@ const AssetModal: React.FC<AssetModalProps> = ({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-900 mb-1">
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
                 Line
               </label>
               <select
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
                 value={lineId}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setLineId(e.target.value)}
                 disabled={!departmentId}
@@ -323,11 +323,11 @@ const AssetModal: React.FC<AssetModalProps> = ({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-900 mb-1">
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
                 Station
               </label>
               <select
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
                 value={stationId}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStationId(e.target.value)}
                 disabled={!lineId}
@@ -344,11 +344,11 @@ const AssetModal: React.FC<AssetModalProps> = ({
 
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-900 mb-1">
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
                 Status
               </label>
               <select
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
                 {...register("status")}
               >
                 <option value="Active">Active</option>
@@ -358,11 +358,11 @@ const AssetModal: React.FC<AssetModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-900 mb-1">
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
                 Criticality
               </label>
               <select
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
                 {...register("criticality")}
               >
                 <option value="high">High</option>
@@ -373,19 +373,19 @@ const AssetModal: React.FC<AssetModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-900 mb-1">
+            <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
               Documents & Images
             </label>
             <div
               {...getRootProps()}
-              className="border-2 border-dashed border-neutral-300 rounded-lg p-6 text-center cursor-pointer hover:border-primary-500 transition-colors"
+              className="border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-lg p-6 text-center cursor-pointer hover:border-primary-500 dark:hover:border-primary-400 transition-colors bg-white/40 dark:bg-neutral-900/40"
             >
               <input {...getInputProps()} />
-              <Upload className="mx-auto h-12 w-12 text-neutral-400" />
-              <p className="mt-2 text-sm text-neutral-900">
+              <Upload className="mx-auto h-12 w-12 text-neutral-400 dark:text-neutral-500" />
+              <p className="mt-2 text-sm text-neutral-900 dark:text-neutral-100">
                 Drag & drop files here, or click to select files
               </p>
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 Supports: Images, PDFs, and documents
               </p>
             </div>
@@ -394,11 +394,11 @@ const AssetModal: React.FC<AssetModalProps> = ({
                 {files.map((file, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-2 bg-neutral-50 rounded-md"
+                    className="flex items-center justify-between p-2 bg-neutral-50 dark:bg-neutral-800 rounded-md"
                   >
                     <div className="flex items-center">
-                      <Download size={16} className="text-neutral-500 mr-2" />
-                      <span className="text-sm text-neutral-900">
+                      <Download size={16} className="text-neutral-500 dark:text-neutral-400 mr-2" />
+                      <span className="text-sm text-neutral-900 dark:text-neutral-100">
                         {file.name}
                       </span>
                     </div>
@@ -407,7 +407,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
                       onClick={() =>
                         setFiles(files.filter((_, i) => i !== index))
                       }
-                      className="text-neutral-400 hover:text-error-500"
+                      className="text-neutral-400 hover:text-error-500 dark:text-neutral-500 dark:hover:text-error-400"
                     >
                       <X size={16} />
                     </button>
@@ -417,7 +417,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
             )}
           </div>
 
-          <div className="flex justify-end space-x-3 pt-6 border-t border-neutral-200">
+          <div className="flex justify-end space-x-3 pt-6 border-t border-neutral-200 dark:border-neutral-700">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>

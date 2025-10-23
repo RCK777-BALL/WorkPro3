@@ -40,8 +40,14 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
   const [docUrl, setDocUrl] = useState('');
 
   const departments = useDepartmentStore((s) => s.departments);
+  const linesMap = useDepartmentStore((s) => s.linesByDepartment);
+  const stationsMap = useDepartmentStore((s) => s.stationsByLine);
   const fetchDepartments = useDepartmentStore((s) => s.fetchDepartments);
+  const fetchLines = useDepartmentStore((s) => s.fetchLines);
+  const fetchStations = useDepartmentStore((s) => s.fetchStations);
   const [loadingDeps, setLoadingDeps] = useState(true);
+  const [loadingLines, setLoadingLines] = useState(false);
+  const [loadingStations, setLoadingStations] = useState(false);
   const { addToast } = useToast();
   const [availableParts, setAvailableParts] = useState<Part[]>([]);
   const [parts, setParts] = useState<{ partId: string; qty: number; cost: number }[]>(
@@ -63,6 +69,18 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
   } = useForm({
     defaultValues: {
       departmentId: workOrder?.department || initialData?.department || "",
+      lineId:
+        workOrder?.lineId ||
+        workOrder?.line ||
+        initialData?.lineId ||
+        initialData?.line ||
+        "",
+      stationId:
+        workOrder?.stationId ||
+        workOrder?.station ||
+        initialData?.stationId ||
+        initialData?.station ||
+        "",
       title: workOrder?.title || initialData?.title || "",
       description: workOrder?.description || initialData?.description || "",
       priority: workOrder?.priority || initialData?.priority || "medium",
@@ -80,6 +98,18 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
     if (!isOpen) return;
     reset({
       departmentId: workOrder?.department || initialData?.department || "",
+      lineId:
+        workOrder?.lineId ||
+        workOrder?.line ||
+        initialData?.lineId ||
+        initialData?.line ||
+        "",
+      stationId:
+        workOrder?.stationId ||
+        workOrder?.station ||
+        initialData?.stationId ||
+        initialData?.station ||
+        "",
       title: workOrder?.title || initialData?.title || "",
       description: workOrder?.description || initialData?.description || "",
       priority: workOrder?.priority || initialData?.priority || "medium",
@@ -98,6 +128,13 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
     setDocFile(null);
     setDocUrl('');
   }, [initialData, isOpen, reset, workOrder]);
+
+  const departmentId = watch("departmentId");
+  const lineId = watch("lineId");
+  const stationId = watch("stationId");
+
+  const lines = departmentId ? linesMap[departmentId] || [] : [];
+  const stations = lineId ? stationsMap[lineId] || [] : [];
 
   const { getRootProps, getInputProps } = useDropzone({
     accept: {
@@ -118,6 +155,35 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
   }, [fetchDepartments, addToast]);
 
   useEffect(() => {
+    if (!departmentId) {
+      setValue("lineId", "");
+      setValue("stationId", "");
+      setLoadingLines(false);
+      return;
+    }
+    setLoadingLines(true);
+    fetchLines(departmentId)
+      .catch(() => {
+        addToast("Failed to load lines", "error");
+      })
+      .finally(() => setLoadingLines(false));
+  }, [departmentId, fetchLines, setValue, addToast]);
+
+  useEffect(() => {
+    if (!departmentId || !lineId) {
+      setValue("stationId", "");
+      setLoadingStations(false);
+      return;
+    }
+    setLoadingStations(true);
+    fetchStations(departmentId, lineId)
+      .catch(() => {
+        addToast("Failed to load stations", "error");
+      })
+      .finally(() => setLoadingStations(false));
+  }, [departmentId, lineId, fetchStations, setValue, addToast]);
+
+  useEffect(() => {
     http
       .get('/parts')
       .then((res) => setAvailableParts(res.data as Part[]))
@@ -130,6 +196,8 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
   const onSubmit = async (data: any) => {
     const payload: Record<string, any> = {
       departmentId: data.departmentId,
+      lineId: data.lineId || undefined,
+      stationId: data.stationId || undefined,
       title: data.title,
       priority: data.priority,
       description: data.description,
@@ -217,57 +285,112 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
 
         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
  
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
-              Department
-            </label>
-            {loadingDeps ? (
-              <div className="flex justify-center py-2">
-                <svg
-                  className="animate-spin h-5 w-5 text-neutral-500 dark:text-neutral-400"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-              </div>
-            ) : (
-              <>
-                <select
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-neutral-900 dark:text-neutral-100"
-                  value={watch("departmentId")}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setValue("departmentId", e.target.value)}
-                  {...register("departmentId", {
-                    required: "Department is required",
-                  })}
-                >
-                  <option value="">Select Department</option>
-                  {departments.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
-                {errors.departmentId && (
-                  <p className="text-error-500 text-sm mt-1">
-                    {errors.departmentId.message as string}
-                  </p>
-                )}
-              </>
-            )}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
+                Department
+              </label>
+              {loadingDeps ? (
+                <div className="flex justify-center py-2">
+                  <svg
+                    className="animate-spin h-5 w-5 text-neutral-500 dark:text-neutral-400"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                </div>
+              ) : (
+                <>
+                  <select
+                    className="w-full px-3 py-2 border border-neutral-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-neutral-900 dark:text-neutral-100"
+                    value={departmentId}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                      const value = e.target.value;
+                      setValue("departmentId", value, { shouldValidate: true });
+                      setValue("lineId", "");
+                      setValue("stationId", "");
+                    }}
+                    {...register("departmentId", {
+                      required: "Department is required",
+                    })}
+                  >
+                    <option value="">Select Department</option>
+                    {departments.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.departmentId && (
+                    <p className="text-error-500 text-sm mt-1">
+                      {errors.departmentId.message as string}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
+                Line
+              </label>
+              <select
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-neutral-900 dark:text-neutral-100"
+                value={lineId}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                  const value = e.target.value;
+                  setValue("lineId", value);
+                  setValue("stationId", "");
+                }}
+                disabled={!departmentId || loadingLines}
+              >
+                <option value="">Select Line</option>
+                {lines.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </select>
+              {loadingLines && (
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Loading lines...</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
+                Station
+              </label>
+              <select
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-neutral-900 dark:text-neutral-100"
+                value={stationId}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setValue("stationId", e.target.value)}
+                disabled={!lineId || loadingStations}
+              >
+                <option value="">Select Station</option>
+                {stations.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+              {loadingStations && (
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Loading stations...</p>
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-6">
             <div>

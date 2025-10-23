@@ -131,6 +131,14 @@ export interface WorkOrder {
   /** Department associated with the work order */
   department: string;
 
+  /** Optional production line associated with the work order */
+  lineId?: string;
+  line?: string;
+
+  /** Optional station associated with the work order */
+  stationId?: string;
+  station?: string;
+
   /** Date fields */
   scheduledDate?: string;
   dueDate?: string;

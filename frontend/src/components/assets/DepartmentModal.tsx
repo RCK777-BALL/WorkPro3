@@ -90,16 +90,50 @@ const DepartmentModal: React.FC<Props> = ({
     setFormData({ ...formData, lines });
   };
 
-  const addStation = (lineIndex: number) => {
+  const getNextStationNumber = (stations: { name: string }[]) => {
+    const numericNames = stations
+      .map((station) => {
+        const match = station.name.match(/St\.?\s*(\d+)/i);
+        return match ? Number.parseInt(match[1] ?? '0', 10) : null;
+      })
+      .filter((value): value is number => value !== null);
+
+    return numericNames.length > 0 ? Math.max(...numericNames) + 1 : 1;
+  };
+
+  const formatStationName = (number: number) => `St. ${number}`;
+
+  const addStation = (lineIndex: number, count = 1) => {
     const line = formData.lines[lineIndex];
-    const newStation = {
-      id: `${Date.now()}-${Math.random()}`,
-      name: '',
-      line: line.id,
-      assets: [],
-    };
+    const existingNames = new Set(
+      line.stations
+        .map((station) => station.name?.trim().toLowerCase())
+        .filter((name): name is string => Boolean(name))
+    );
+    let nextNumber = getNextStationNumber(line.stations);
+
+    const newStations = Array.from({ length: count }).map(() => {
+      let candidateNumber = nextNumber;
+      let candidateName = formatStationName(candidateNumber);
+
+      while (existingNames.has(candidateName.toLowerCase())) {
+        candidateNumber += 1;
+        candidateName = formatStationName(candidateNumber);
+      }
+
+      existingNames.add(candidateName.toLowerCase());
+      nextNumber = candidateNumber + 1;
+
+      return {
+        id: `${Date.now()}-${Math.random()}`,
+        name: candidateName,
+        line: line.id,
+        assets: [],
+      };
+    });
+
     const lines = [...formData.lines];
-    lines[lineIndex] = { ...line, stations: [...line.stations, newStation] };
+    lines[lineIndex] = { ...line, stations: [...line.stations, ...newStations] };
     setFormData({ ...formData, lines });
   };
 
@@ -224,16 +258,32 @@ const DepartmentModal: React.FC<Props> = ({
                 </div>
 
                 <div className="ml-4 space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-medium text-neutral-700">Stations</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      icon={<PlusCircle size={16} />}
-                      onClick={() => addStation(li)}
-                    >
-                      Add Station
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={<PlusCircle size={16} />}
+                        onClick={() => addStation(li)}
+                      >
+                        Add Station
+                      </Button>
+                      <div className="flex items-center gap-1">
+                        {[2, 3, 4, 5, 10].map((count) => (
+                          <Button
+                            key={count}
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addStation(li, count)}
+                            className="px-2"
+                          >
+                            +{count}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
 
                   {line.stations.map((st, si) => (
@@ -244,7 +294,7 @@ const DepartmentModal: React.FC<Props> = ({
                           className="flex-1 px-3 py-1.5 border border-neutral-300 rounded-md"
                           value={st.name}
                           onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateStation(li, si, e.target.value)}
-                          placeholder="Station name"
+                          placeholder="St. 1"
                         />
                         <button
                           type="button"

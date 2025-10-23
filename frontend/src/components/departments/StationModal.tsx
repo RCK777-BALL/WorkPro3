@@ -13,9 +13,18 @@ interface StationModalProps {
   onClose: () => void;
   onSave: (values: { name: string; notes?: string }) => void | Promise<void>;
   onDelete?: () => void | Promise<void>;
+  onAddLine?: () => void;
 }
 
-const StationModal = ({ open, initial, loading = false, onClose, onSave, onDelete }: StationModalProps) => {
+const StationModal = ({
+  open,
+  initial,
+  loading = false,
+  onClose,
+  onSave,
+  onDelete,
+  onAddLine,
+}: StationModalProps) => {
   const [name, setName] = useState('');
   const [notes, setNotes] = useState('');
   const [touched, setTouched] = useState(false);
@@ -75,6 +84,21 @@ const StationModal = ({ open, initial, loading = false, onClose, onSave, onDelet
       }
     >
       <form className="space-y-4" onSubmit={handleSubmit}>
+        {onAddLine && !initial && (
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                onAddLine();
+              }}
+              disabled={loading}
+            >
+              Add Line
+            </Button>
+          </div>
+        )}
         <div>
           <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">
             Station name

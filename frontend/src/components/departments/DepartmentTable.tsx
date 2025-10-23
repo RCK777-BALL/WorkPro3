@@ -140,9 +140,18 @@ const DepartmentTable = ({
                 {expanded && (
                   <div className="mt-4 space-y-4 sm:ml-9">
                     {department.lines.length === 0 ? (
-                      <p className="rounded-lg border border-dashed border-neutral-200 p-4 text-sm text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
-                        No lines added yet.
-                      </p>
+                      <div className="flex flex-col gap-3 rounded-lg border border-dashed border-neutral-200 p-4 text-sm text-neutral-500 dark:border-neutral-700 dark:text-neutral-400 sm:flex-row sm:items-center sm:justify-between">
+                        <span>No lines added yet.</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="sm:w-auto"
+                          fullWidth
+                          onClick={() => onAddLine(department)}
+                        >
+                          <Plus className="mr-2 h-4 w-4" />Add Line
+                        </Button>
+                      </div>
                     ) : (
                       department.lines.map((line) => {
                         const lineKey = `${department.id}-${line.id}`;
@@ -196,9 +205,18 @@ const DepartmentTable = ({
                             {lineExpanded && (
                               <div className="mt-4 space-y-3 sm:ml-9">
                                 {line.stations.length === 0 ? (
-                                  <p className="rounded-lg border border-dashed border-neutral-200 p-4 text-sm text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
-                                    No stations available.
-                                  </p>
+                                  <div className="flex flex-col gap-3 rounded-lg border border-dashed border-neutral-200 p-4 text-sm text-neutral-500 dark:border-neutral-700 dark:text-neutral-400 sm:flex-row sm:items-center sm:justify-between">
+                                    <span>No stations available.</span>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="sm:w-auto"
+                                      fullWidth
+                                      onClick={() => onAddStation(department, line)}
+                                    >
+                                      <Plus className="mr-2 h-4 w-4" />Add Station
+                                    </Button>
+                                  </div>
                                 ) : (
                                   line.stations.map((station) => {
                                     const stationKey = `${lineKey}-${station.id}`;

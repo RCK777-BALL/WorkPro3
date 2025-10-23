@@ -83,7 +83,7 @@ const LineModal = ({ open, initial, loading = false, onClose, onSave, onDelete }
             value={name}
             onChange={(event: ChangeEvent<HTMLInputElement>) => setName(event.target.value)}
             onBlur={() => setTouched(true)}
-            className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-neutral-700 dark:bg-neutral-900"
+            className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
             placeholder="Packaging Line"
           />
           {error && <p className="mt-1 text-sm text-error-600">{error}</p>}
@@ -95,7 +95,7 @@ const LineModal = ({ open, initial, loading = false, onClose, onSave, onDelete }
           <textarea
             value={notes}
             onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setNotes(event.target.value)}
-            className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-neutral-700 dark:bg-neutral-900"
+            className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
             rows={3}
             placeholder="Optional context for the line"
           />

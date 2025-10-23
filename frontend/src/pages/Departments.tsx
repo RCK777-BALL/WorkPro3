@@ -123,6 +123,12 @@ const Departments = () => {
 
   const totalPages = Math.max(1, Math.ceil(filteredDepartments.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
   const paginatedDepartments = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
     return filteredDepartments.slice(start, start + PAGE_SIZE);

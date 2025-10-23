@@ -129,9 +129,6 @@ const DepartmentTable = ({
                     </span>
                   </button>
                   <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => onAddLine(department)}>
-                      <Plus className="mr-2 h-4 w-4" />Line
-                    </Button>
                     <Button variant="ghost" size="sm" onClick={() => onEditDepartment(department)}>
                       Edit
                     </Button>
@@ -139,18 +136,19 @@ const DepartmentTable = ({
                 </div>
                 {expanded && (
                   <div className="mt-4 space-y-4 sm:ml-9">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Lines</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onAddLine(department)}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />Add Line
+                      </Button>
+                    </div>
                     {department.lines.length === 0 ? (
-                      <div className="flex flex-col gap-3 rounded-lg border border-dashed border-neutral-200 p-4 text-sm text-neutral-500 dark:border-neutral-700 dark:text-neutral-400 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="rounded-lg border border-dashed border-neutral-200 p-4 text-sm text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
                         <span>No lines added yet.</span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="sm:w-auto"
-                          fullWidth
-                          onClick={() => onAddLine(department)}
-                        >
-                          <Plus className="mr-2 h-4 w-4" />Add Line
-                        </Button>
                       </div>
                     ) : (
                       department.lines.map((line) => {
@@ -183,9 +181,6 @@ const DepartmentTable = ({
                                 </span>
                               </button>
                               <div className="flex items-center gap-2">
-                                <Button variant="ghost" size="sm" onClick={() => onAddStation(department, line)}>
-                                  <Plus className="mr-2 h-4 w-4" />Station
-                                </Button>
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -204,18 +199,19 @@ const DepartmentTable = ({
                             </div>
                             {lineExpanded && (
                               <div className="mt-4 space-y-3 sm:ml-9">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                  <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Stations</p>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => onAddStation(department, line)}
+                                  >
+                                    <Plus className="mr-2 h-4 w-4" />Add Station
+                                  </Button>
+                                </div>
                                 {line.stations.length === 0 ? (
-                                  <div className="flex flex-col gap-3 rounded-lg border border-dashed border-neutral-200 p-4 text-sm text-neutral-500 dark:border-neutral-700 dark:text-neutral-400 sm:flex-row sm:items-center sm:justify-between">
+                                  <div className="rounded-lg border border-dashed border-neutral-200 p-4 text-sm text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
                                     <span>No stations available.</span>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="sm:w-auto"
-                                      fullWidth
-                                      onClick={() => onAddStation(department, line)}
-                                    >
-                                      <Plus className="mr-2 h-4 w-4" />Add Station
-                                    </Button>
                                   </div>
                                 ) : (
                                   line.stations.map((station) => {
@@ -251,13 +247,6 @@ const DepartmentTable = ({
                                             <Button
                                               variant="ghost"
                                               size="sm"
-                                              onClick={() => onAddAsset(department, line, station)}
-                                            >
-                                              <Plus className="mr-2 h-4 w-4" />Asset
-                                            </Button>
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
                                               onClick={() => onEditStation(department, line, station)}
                                             >
                                               Edit
@@ -273,6 +262,16 @@ const DepartmentTable = ({
                                         </div>
                                         {stationExpanded && (
                                           <div className="mt-4 space-y-3 sm:ml-9">
+                                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                              <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Assets</p>
+                                              <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => onAddAsset(department, line, station)}
+                                              >
+                                                <Plus className="mr-2 h-4 w-4" />Add Asset
+                                              </Button>
+                                            </div>
                                             {station.assets.length === 0 ? (
                                               <p className="rounded-lg border border-dashed border-neutral-200 p-4 text-sm text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
                                                 No assets in this station.

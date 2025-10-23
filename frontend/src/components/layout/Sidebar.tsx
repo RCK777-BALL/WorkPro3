@@ -2,8 +2,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useMemo } from "react";
-import { NavLink } from "react-router-dom";
+import { useCallback, useMemo } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   Activity,
   BarChart3,
@@ -14,6 +14,8 @@ import {
   FileStack,
   FolderKanban,
   LayoutDashboard,
+  LogIn,
+  LogOut,
   MapPin,
   MessageSquare,
   Settings,
@@ -23,6 +25,8 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import clsx from "clsx";
+
+import { useAuth } from "@/context/AuthContext";
 
 type SidebarProps = {
   collapsed?: boolean;
@@ -52,6 +56,10 @@ const navigation: NavItem[] = [
 ];
 
 export default function Sidebar({ collapsed = false }: SidebarProps) {
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const isAuthenticated = Boolean(user);
+
   const groups = useMemo(() => {
     return [
       {
@@ -71,6 +79,16 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
     "hidden shrink-0 border-r border-neutral-200 bg-white/60 backdrop-blur-lg transition-all duration-300 dark:border-neutral-800 dark:bg-neutral-900/60 lg:flex",
     collapsed ? "w-20" : "w-64",
   );
+
+  const handleAuthAction = useCallback(async () => {
+    if (isAuthenticated) {
+      await logout();
+    }
+    navigate("/login");
+  }, [isAuthenticated, logout, navigate]);
+
+  const AuthIcon = isAuthenticated ? LogOut : LogIn;
+  const authLabel = isAuthenticated ? "Log out" : "Log in";
 
   return (
     <aside className={containerClasses}>
@@ -128,14 +146,35 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
           ))}
         </nav>
 
-        {!collapsed && (
-          <div className="rounded-2xl border border-neutral-200 bg-white p-4 text-sm shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
-            <p className="font-medium text-neutral-900 dark:text-neutral-100">Need help?</p>
-            <p className="mt-1 text-neutral-500 dark:text-neutral-400">
-              Visit the documentation or contact support to keep the operation running smoothly.
-            </p>
-          </div>
-        )}
+        <div className="flex flex-col gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              void handleAuthAction();
+            }}
+            className={clsx(
+              "flex w-full items-center rounded-xl px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500",
+              collapsed ? "justify-center" : "gap-3",
+              isAuthenticated
+                ? "bg-neutral-100 text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
+                : "bg-primary-600 text-white hover:bg-primary-700",
+            )}
+            aria-label={authLabel}
+            title={authLabel}
+          >
+            <AuthIcon className="h-5 w-5" />
+            {!collapsed && <span>{authLabel}</span>}
+          </button>
+
+          {!collapsed && (
+            <div className="rounded-2xl border border-neutral-200 bg-white p-4 text-sm shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+              <p className="font-medium text-neutral-900 dark:text-neutral-100">Need help?</p>
+              <p className="mt-1 text-neutral-500 dark:text-neutral-400">
+                Visit the documentation or contact support to keep the operation running smoothly.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </aside>
   );

@@ -13,9 +13,18 @@ interface LineModalProps {
   onClose: () => void;
   onSave: (values: { name: string; notes?: string }) => void | Promise<void>;
   onDelete?: () => void | Promise<void>;
+  onAddStation?: () => void;
 }
 
-const LineModal = ({ open, initial, loading = false, onClose, onSave, onDelete }: LineModalProps) => {
+const LineModal = ({
+  open,
+  initial,
+  loading = false,
+  onClose,
+  onSave,
+  onDelete,
+  onAddStation,
+}: LineModalProps) => {
   const [name, setName] = useState('');
   const [notes, setNotes] = useState('');
   const [touched, setTouched] = useState(false);
@@ -75,6 +84,21 @@ const LineModal = ({ open, initial, loading = false, onClose, onSave, onDelete }
       }
     >
       <form className="space-y-4" onSubmit={handleSubmit}>
+        {onAddStation && (
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                onAddStation();
+              }}
+              disabled={loading}
+            >
+              Add Station
+            </Button>
+          </div>
+        )}
         <div>
           <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">
             Line name

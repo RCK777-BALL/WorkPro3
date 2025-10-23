@@ -256,6 +256,20 @@ const Departments = () => {
     }
   };
 
+  const handleSwitchToAddLine = () => {
+    if (!stationModalState || stationSaving) return;
+    const { department } = stationModalState;
+    setStationModalState(null);
+    setLineModalState({ department, line: null });
+  };
+
+  const handleSwitchToAddStation = () => {
+    if (!lineModalState?.line || lineSaving) return;
+    const { department, line } = lineModalState;
+    setLineModalState(null);
+    setStationModalState({ department, line, station: null });
+  };
+
   const handleAssetSave = async (values: {
     name: string;
     type: Asset['type'];
@@ -450,6 +464,7 @@ const Departments = () => {
         }}
         onSave={handleLineSave}
         onDelete={lineModalState?.line ? handleLineDelete : undefined}
+        onAddStation={lineModalState?.line ? handleSwitchToAddStation : undefined}
       />
 
       <StationModal
@@ -462,6 +477,9 @@ const Departments = () => {
         }}
         onSave={handleStationSave}
         onDelete={stationModalState?.station ? handleStationDelete : undefined}
+        onAddLine={
+          stationModalState && !stationModalState.station ? handleSwitchToAddLine : undefined
+        }
       />
 
       <AssetModal

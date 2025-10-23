@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { X } from 'lucide-react';
 import Button from '@common/Button';
@@ -32,6 +32,7 @@ interface TeamFormData {
   role: Role;
   department: string;
   employeeId: string;
+  managerId: string;
 }
 
 const defaultValues: TeamFormData = {
@@ -40,10 +41,11 @@ const defaultValues: TeamFormData = {
   role: 'team_member',
   department: '',
   employeeId: '',
+  managerId: '',
 };
 
 const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
-  const { addMember, updateMember, fetchMembers } = useTeamMembers();
+  const { addMember, updateMember, fetchMembers, members } = useTeamMembers();
   const { fetchDepartments } = useDepartmentStore();
   const { addToast } = useToast();
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -54,6 +56,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
     handleSubmit,
     control,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<TeamFormData>({ defaultValues });
 
@@ -63,7 +66,34 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
     setValue('role', member?.role ?? 'team_member');
     setValue('department', member?.department ?? '');
     setValue('employeeId', member?.employeeId ?? '');
+    setValue('managerId', member?.managerId ?? '');
   }, [member, setValue]);
+
+  const selectedRole = watch('role');
+
+  const managerRoleMap: Record<Role, Role[] | null> = useMemo(
+    () => ({
+      admin: null,
+      supervisor: null,
+      department_leader: null,
+      area_leader: ['supervisor', 'department_leader'],
+      team_leader: ['area_leader'],
+      team_member: ['team_leader'],
+    }),
+    [],
+  );
+
+  useEffect(() => {
+    if (!managerRoleMap[selectedRole]) {
+      setValue('managerId', '');
+    }
+  }, [managerRoleMap, selectedRole, setValue]);
+
+  const managerOptions = useMemo(() => {
+    const allowedRoles = managerRoleMap[selectedRole];
+    if (!allowedRoles) return [];
+    return members.filter((m) => allowedRoles.includes(m.role));
+  }, [managerRoleMap, members, selectedRole]);
 
   const fetchDepartmentOptions = async (q: string) => {
     try {
@@ -81,7 +111,11 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
   const onSubmit = handleSubmit(async (data: TeamFormData) => {
     setLoading(true);
     try {
-      const payload: Partial<TeamMember> = { ...data };
+      const requiresManager = Boolean(managerRoleMap[data.role]);
+      const payload: Partial<TeamMember> = {
+        ...data,
+        managerId: requiresManager ? data.managerId || null : null,
+      };
       let body: Partial<TeamMember> | FormData = payload;
       if (avatarFile) {
         const fd = new FormData();
@@ -185,6 +219,32 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
               />
             </div>
           </div>
+
+          {managerRoleMap[selectedRole] && (
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium mb-1">Manager</label>
+                <select
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+                  {...register('managerId', {
+                    required: 'Manager is required',
+                  })}
+                >
+                  <option value="">Select manager</option>
+                  {managerOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.managerId && (
+                  <p className="text-error-500 text-sm mt-1">
+                    {errors.managerId.message as string}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-6">
             <div>

@@ -389,6 +389,11 @@ export default function WorkOrders() {
           openEditModal(row);
         };
 
+        const handleView = (event: MouseEvent<HTMLButtonElement>) => {
+          event.stopPropagation();
+          openReview(row);
+        };
+
         const handleDelete = (event: MouseEvent<HTMLButtonElement>) => {
           event.stopPropagation();
           if (window.confirm('Are you sure you want to delete this work order?')) {
@@ -400,6 +405,9 @@ export default function WorkOrders() {
           case 'requested':
             return (
               <div className="flex justify-end gap-2">
+                <Button variant="ghost" size="sm" onClick={handleView}>
+                  View
+                </Button>
                 <Button variant="ghost" size="sm" onClick={handleEdit}>
                   Edit
                 </Button>
@@ -418,6 +426,9 @@ export default function WorkOrders() {
           case 'assigned':
             return (
               <div className="flex justify-end gap-2">
+                <Button variant="ghost" size="sm" onClick={handleView}>
+                  View
+                </Button>
                 <Button variant="ghost" size="sm" onClick={handleEdit}>
                   Edit
                 </Button>
@@ -436,6 +447,9 @@ export default function WorkOrders() {
           case 'in_progress':
             return (
               <div className="flex justify-end gap-2">
+                <Button variant="ghost" size="sm" onClick={handleView}>
+                  View
+                </Button>
                 <Button variant="ghost" size="sm" onClick={handleEdit}>
                   Edit
                 </Button>
@@ -461,6 +475,9 @@ export default function WorkOrders() {
           default:
             return (
               <div className="flex justify-end gap-2">
+                <Button variant="ghost" size="sm" onClick={handleView}>
+                  View
+                </Button>
                 <Button variant="ghost" size="sm" onClick={handleEdit}>
                   Edit
                 </Button>

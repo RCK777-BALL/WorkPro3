@@ -3,7 +3,7 @@
  */
 
 import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
-import { Building2, Filter, Plus } from 'lucide-react';
+import { Building2, Filter, GitBranch, Milestone, Plus } from 'lucide-react';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import DepartmentTable from '@/components/departments/DepartmentTable';
@@ -11,6 +11,7 @@ import DepartmentModal from '@/components/departments/DepartmentModal';
 import LineModal from '@/components/departments/LineModal';
 import StationModal from '@/components/departments/StationModal';
 import AssetModal from '@/components/departments/AssetModal';
+import QuickAddDialog from '@/components/departments/QuickAddDialog';
 import {
   createAsset,
   createDepartment,
@@ -74,6 +75,8 @@ const Departments = () => {
     asset: Asset | null;
   } | null>(null);
   const [assetSaving, setAssetSaving] = useState(false);
+
+  const [quickAddState, setQuickAddState] = useState<{ mode: 'line' | 'station' } | null>(null);
 
   const replaceDepartment = useCallback((updated: DepartmentHierarchy) => {
     setDepartments((prev) =>
@@ -314,6 +317,37 @@ const Departments = () => {
     }
   };
 
+  const openQuickAddLine = () => {
+    if (departments.length === 0) {
+      addToast('Create a department first before adding lines.', 'error');
+      return;
+    }
+
+    if (departments.length === 1) {
+      setLineModalState({ department: departments[0], line: null });
+      return;
+    }
+
+    setQuickAddState({ mode: 'line' });
+  };
+
+  const openQuickAddStation = () => {
+    const departmentsWithLines = departments.filter((department) => department.lines.length > 0);
+
+    if (departmentsWithLines.length === 0) {
+      addToast('Add a line before creating stations.', 'error');
+      return;
+    }
+
+    if (departmentsWithLines.length === 1 && departmentsWithLines[0].lines.length === 1) {
+      const [line] = departmentsWithLines[0].lines;
+      setStationModalState({ department: departmentsWithLines[0], line, station: null });
+      return;
+    }
+
+    setQuickAddState({ mode: 'station' });
+  };
+
   return (
     <div className="space-y-6">
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-900 via-indigo-800 to-blue-700 p-6 text-white shadow">
@@ -329,16 +363,34 @@ const Departments = () => {
               </p>
             </div>
           </div>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setDepartmentEditing(null);
-              setDepartmentModalOpen(true);
-            }}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Department
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setDepartmentEditing(null);
+                setDepartmentModalOpen(true);
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Department
+            </Button>
+            <Button
+              variant="ghost"
+              className="border border-white/30 bg-white/10 text-white transition hover:bg-white/20"
+              onClick={openQuickAddLine}
+            >
+              <GitBranch className="mr-2 h-4 w-4" />
+              Add Line
+            </Button>
+            <Button
+              variant="ghost"
+              className="border border-white/30 bg-white/10 text-white transition hover:bg-white/20"
+              onClick={openQuickAddStation}
+            >
+              <Milestone className="mr-2 h-4 w-4" />
+              Add Station
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -492,6 +544,31 @@ const Departments = () => {
         }}
         onSave={handleAssetSave}
         onDelete={assetModalState?.asset ? handleAssetDelete : undefined}
+      />
+
+      <QuickAddDialog
+        open={Boolean(quickAddState)}
+        mode={quickAddState?.mode ?? 'line'}
+        departments={departments}
+        onCancel={() => setQuickAddState(null)}
+        onConfirm={(departmentId, lineId) => {
+          const department = departments.find((item) => item.id === departmentId);
+          if (!department) {
+            setQuickAddState(null);
+            return;
+          }
+
+          if (quickAddState?.mode === 'line') {
+            setLineModalState({ department, line: null });
+          } else if (quickAddState?.mode === 'station' && lineId) {
+            const line = department.lines.find((item) => item.id === lineId);
+            if (line) {
+              setStationModalState({ department, line, station: null });
+            }
+          }
+
+          setQuickAddState(null);
+        }}
       />
     </div>
   );

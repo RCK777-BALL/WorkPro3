@@ -2,8 +2,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { ChangeEvent, MouseEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import http from '@/lib/http';
 import { addToQueue, onSyncConflict, type SyncConflict } from '@/utils/offlineQueue';
 import ConflictResolver from '@/components/offline/ConflictResolver';
@@ -83,13 +84,16 @@ function assignIfDefined<T, K extends keyof T>(target: T, key: K, value: T[K] | 
 }
 
 export default function WorkOrders() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchKey = searchParams.toString();
+
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [statusFilter, setStatusFilter] = useState(() => searchParams.get('status') ?? '');
+  const [priorityFilter, setPriorityFilter] = useState(() => searchParams.get('priority') ?? '');
+  const [startDate, setStartDate] = useState(() => searchParams.get('startDate') ?? '');
+  const [endDate, setEndDate] = useState(() => searchParams.get('endDate') ?? '');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<WorkOrder | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -115,50 +119,54 @@ export default function WorkOrders() {
     setConflict(null);
   };
 
-  const fetchWorkOrders = async (
-    filters?: { status?: string; priority?: string; startDate?: string; endDate?: string }
-  ) => {
-    if (!navigator.onLine) {
-      const cached = localStorage.getItem(LOCAL_KEY);
-      if (cached) {
-        setWorkOrders(JSON.parse(cached));
-        setError('You are offline. Showing cached work orders.');
-      } else {
-        setError('You are offline. No cached work orders available.');
+  const fetchWorkOrders = useCallback(
+    async (
+      filters?: { status?: string; priority?: string; startDate?: string; endDate?: string },
+    ) => {
+      if (!navigator.onLine) {
+        const cached = localStorage.getItem(LOCAL_KEY);
+        if (cached) {
+          setWorkOrders(JSON.parse(cached));
+          setError('You are offline. Showing cached work orders.');
+        } else {
+          setError('You are offline. No cached work orders available.');
+        }
+        return;
       }
-      return;
-    }
-    try {
-      const params = new URLSearchParams();
-      if (filters) {
-        if (filters.status) params.append('status', filters.status);
-        if (filters.priority) params.append('priority', filters.priority);
-        if (filters.startDate) params.append('startDate', filters.startDate);
-        if (filters.endDate) params.append('endDate', filters.endDate);
+      try {
+        const params = new URLSearchParams();
+        if (filters) {
+          if (filters.status) params.append('status', filters.status);
+          if (filters.priority) params.append('priority', filters.priority);
+          if (filters.startDate) params.append('startDate', filters.startDate);
+          if (filters.endDate) params.append('endDate', filters.endDate);
+        }
+        const url = params.toString()
+          ? `/workorders/search?${params.toString()}`
+          : '/workorders';
+        const res = await http.get<WorkOrderResponse[]>(url);
+        const normalized: WorkOrder[] = Array.isArray(res.data)
+          ? res.data.flatMap((item) => {
+              const workOrder = normalizeWorkOrder(item);
+              return workOrder ? [workOrder] : [];
+            })
+          : [];
+        setWorkOrders(normalized);
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(normalized));
+        setError(null);
+      } catch (err) {
+        console.error(err);
+        const cached = localStorage.getItem(LOCAL_KEY);
+        if (cached) {
+          setWorkOrders(JSON.parse(cached));
+          setError('Unable to fetch latest work orders. Showing cached data.');
+        } else {
+          setError('Failed to load work orders.');
+        }
       }
-      const url = params.toString()
-        ? `/workorders/search?${params.toString()}`
-        : '/workorders';
-      const res = await http.get<WorkOrderResponse[]>(url);
-      const normalized: WorkOrder[] = Array.isArray(res.data)
-        ? res.data.flatMap((item) => {
-            const workOrder = normalizeWorkOrder(item);
-            return workOrder ? [workOrder] : [];
-          })
-        : [];
-      setWorkOrders(normalized);
-      localStorage.setItem(LOCAL_KEY, JSON.stringify(normalized));
-    } catch (err) {
-      console.error(err);
-      const cached = localStorage.getItem(LOCAL_KEY);
-      if (cached) {
-        setWorkOrders(JSON.parse(cached));
-        setError('Unable to fetch latest work orders. Showing cached data.');
-      } else {
-        setError('Failed to load work orders.');
-      }
-    }
-  };
+    },
+    [],
+  );
 
   const updateStatus = async (
     id: string,
@@ -330,8 +338,24 @@ export default function WorkOrders() {
   };
 
   useEffect(() => {
-    fetchWorkOrders();
-  }, []);
+    const params = new URLSearchParams(searchKey);
+    const statusParam = params.get('status') ?? '';
+    const priorityParam = params.get('priority') ?? '';
+    const startParam = params.get('startDate') ?? '';
+    const endParam = params.get('endDate') ?? '';
+
+    setStatusFilter((prev) => (prev === statusParam ? prev : statusParam));
+    setPriorityFilter((prev) => (prev === priorityParam ? prev : priorityParam));
+    setStartDate((prev) => (prev === startParam ? prev : startParam));
+    setEndDate((prev) => (prev === endParam ? prev : endParam));
+
+    fetchWorkOrders({
+      status: statusParam || undefined,
+      priority: priorityParam || undefined,
+      startDate: startParam || undefined,
+      endDate: endParam || undefined,
+    });
+  }, [fetchWorkOrders, searchKey]);
 
   const filteredOrders = workOrders.filter((wo) => {
     const matchesSearch = Object.values(wo).some((value) =>
@@ -349,6 +373,26 @@ export default function WorkOrders() {
 
     return matchesSearch && matchesStatus && matchesPriority && matchesStart && matchesEnd;
   });
+
+  const applyFilters = () => {
+    const params = new URLSearchParams();
+    if (statusFilter) params.set('status', statusFilter);
+    if (priorityFilter) params.set('priority', priorityFilter);
+    if (startDate) params.set('startDate', startDate);
+    if (endDate) params.set('endDate', endDate);
+
+    const next = params.toString();
+    if (next === searchKey) {
+      fetchWorkOrders({
+        status: statusFilter || undefined,
+        priority: priorityFilter || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+      });
+    } else {
+      setSearchParams(params);
+    }
+  };
 
   const columns = [
     { header: 'Title', accessor: 'title' as keyof WorkOrder },
@@ -553,14 +597,7 @@ export default function WorkOrders() {
           />
           <Button
             variant="secondary"
-            onClick={() =>
-              fetchWorkOrders({
-                status: statusFilter,
-                priority: priorityFilter,
-                startDate,
-                endDate,
-              })
-            }
+            onClick={applyFilters}
           >
             Filter
           </Button>

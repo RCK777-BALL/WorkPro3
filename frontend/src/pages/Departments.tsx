@@ -3,7 +3,7 @@
  */
 
 import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
-import { Building2, Filter, GitBranch, Milestone, Plus, X } from 'lucide-react';
+import { Building2, Filter, Plus } from 'lucide-react';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import DepartmentTable from '@/components/departments/DepartmentTable';
@@ -51,7 +51,6 @@ const Departments = () => {
   const [categoryFilter, setCategoryFilter] = useState<AssetCategory>('All');
   const [page, setPage] = useState(1);
 
-  const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [departmentModalOpen, setDepartmentModalOpen] = useState(false);
   const [departmentEditing, setDepartmentEditing] = useState<DepartmentHierarchy | null>(null);
   const [departmentSaving, setDepartmentSaving] = useState(false);
@@ -357,17 +356,11 @@ const Departments = () => {
   };
 
   const handleStartLineCreation = () => {
-    const opened = openQuickAddLine();
-    if (opened) {
-      setCreateMenuOpen(false);
-    }
+    void openQuickAddLine();
   };
 
   const handleStartStationCreation = () => {
-    const opened = openQuickAddStation();
-    if (opened) {
-      setCreateMenuOpen(false);
-    }
+    void openQuickAddStation();
   };
 
   return (
@@ -388,10 +381,24 @@ const Departments = () => {
           <div className="flex flex-wrap gap-2">
             <Button
               variant="secondary"
-              onClick={() => setCreateMenuOpen(true)}
+              onClick={startDepartmentCreation}
             >
               <Plus className="mr-2 h-4 w-4" />
-              New
+              Department
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleStartLineCreation}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Line
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleStartStationCreation}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Station
             </Button>
           </div>
         </div>
@@ -574,74 +581,6 @@ const Departments = () => {
         }}
       />
 
-      {createMenuOpen && (
-        <div className="fixed inset-0 z-[65] flex items-center justify-center bg-black/60 px-4">
-          <div className="dark relative w-full max-w-lg rounded-2xl border border-neutral-800 bg-neutral-950 p-6 text-white shadow-2xl">
-            <button
-              type="button"
-              className="absolute right-4 top-4 rounded-full border border-white/10 bg-white/5 p-1 text-white transition hover:border-white/20 hover:bg-white/10"
-              onClick={() => setCreateMenuOpen(false)}
-              aria-label="Close"
-            >
-              <X className="h-4 w-4" />
-            </button>
-
-            <div>
-              <h2 className="text-lg font-semibold text-white">Create new</h2>
-              <p className="mt-2 text-sm text-white/70">
-                Choose what you want to add to your production hierarchy.
-              </p>
-            </div>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <button
-                type="button"
-                className="group flex flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-4 text-left transition hover:border-primary-500/60 hover:bg-primary-500/10"
-                onClick={() => {
-                  setCreateMenuOpen(false);
-                  startDepartmentCreation();
-                }}
-              >
-                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-500/20 text-primary-200 transition group-hover:bg-primary-500/30">
-                  <Building2 className="h-5 w-5" />
-                </span>
-                <div>
-                  <p className="font-medium text-white">Department</p>
-                  <p className="mt-1 text-xs text-white/70">Create a new department to group your operations.</p>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                className="group flex flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-4 text-left transition hover:border-primary-500/60 hover:bg-primary-500/10"
-                onClick={handleStartLineCreation}
-              >
-                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-500/20 text-primary-200 transition group-hover:bg-primary-500/30">
-                  <GitBranch className="h-5 w-5" />
-                </span>
-                <div>
-                  <p className="font-medium text-white">Line</p>
-                  <p className="mt-1 text-xs text-white/70">Add a production line inside an existing department.</p>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                className="group flex flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-4 text-left transition hover:border-primary-500/60 hover:bg-primary-500/10"
-                onClick={handleStartStationCreation}
-              >
-                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-500/20 text-primary-200 transition group-hover:bg-primary-500/30">
-                  <Milestone className="h-5 w-5" />
-                </span>
-                <div>
-                  <p className="font-medium text-white">Station</p>
-                  <p className="mt-1 text-xs text-white/70">Create a station within one of your production lines.</p>
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

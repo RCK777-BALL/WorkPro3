@@ -15,6 +15,7 @@ import { Search } from 'lucide-react';
 import NewWorkOrderModal from '@/components/work-orders/NewWorkOrderModal';
 import WorkOrderReviewModal from '@/components/work-orders/WorkOrderReviewModal';
 import type { WorkOrder } from '@/types';
+import { mapChecklistsFromApi, mapSignaturesFromApi } from '@/utils/workOrderTransforms';
 
 const LOCAL_KEY = 'offline-workorders';
 const OPTIONAL_WORK_ORDER_KEYS: (keyof WorkOrder)[] = [
@@ -240,12 +241,20 @@ export default function WorkOrders() {
             const departmentValue = (recordPayload.department as string)
               ?? (recordPayload.departmentId as string)
               ?? wo.department;
+            const rawChecklists = (recordPayload as { checklists?: unknown }).checklists;
+            const rawSignatures = (recordPayload as { signatures?: unknown }).signatures;
             const merged: WorkOrder = {
               ...wo,
               ...recordPayload,
               department: departmentValue,
             } as WorkOrder;
             delete (merged as Record<string, unknown>).departmentId;
+            if (rawChecklists !== undefined) {
+              merged.checklists = mapChecklistsFromApi(rawChecklists);
+            }
+            if (rawSignatures !== undefined) {
+              merged.signatures = mapSignaturesFromApi(rawSignatures);
+            }
             return merged;
           });
           localStorage.setItem(LOCAL_KEY, JSON.stringify(updated));
@@ -269,6 +278,12 @@ export default function WorkOrders() {
           const value = recordPayload[key as string];
           assignIfDefined(temp, key, value as WorkOrder[typeof key] | undefined);
         });
+        if (recordPayload.checklists !== undefined) {
+          temp.checklists = mapChecklistsFromApi(recordPayload.checklists);
+        }
+        if (recordPayload.signatures !== undefined) {
+          temp.signatures = mapSignaturesFromApi(recordPayload.signatures);
+        }
 
         const updated = [...prev, temp];
         localStorage.setItem(LOCAL_KEY, JSON.stringify(updated));

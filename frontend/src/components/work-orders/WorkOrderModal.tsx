@@ -14,6 +14,14 @@ import { searchAssets } from "@/api/search";
 import http from "@/lib/http";
 import { useDepartmentStore } from "@/store/departmentStore";
 import { useToast } from "@/context/ToastContext";
+import {
+  mapChecklistsFromApi,
+  mapChecklistsToApi,
+  mapSignaturesFromApi,
+  mapSignaturesToApi,
+  type ChecklistFormValue,
+  type SignatureFormValue,
+} from "@/utils/workOrderTransforms";
    
 
 interface WorkOrderModalProps {
@@ -32,10 +40,10 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
   onUpdate,
 }) => {
   const [files, setFiles] = useState<File[]>([]);
-  const [signatures, setSignatures] = useState<{ by: string; ts: string }[]>(
-    workOrder?.signatures || initialData?.signatures || []
+  const [signatures, setSignatures] = useState<SignatureFormValue[]>(
+    mapSignaturesFromApi(workOrder?.signatures || initialData?.signatures)
   );
-  const [newSignature, setNewSignature] = useState<{ by: string; ts: string }>({ by: '', ts: '' });
+  const [newSignature, setNewSignature] = useState<SignatureFormValue>({ by: '', ts: '' });
   const [docFile, setDocFile] = useState<File | null>(null);
   const [docUrl, setDocUrl] = useState('');
 
@@ -53,8 +61,8 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
   const [parts, setParts] = useState<{ partId: string; qty: number; cost: number }[]>(
     workOrder?.partsUsed || initialData?.partsUsed || []
   );
-  const [checklists, setChecklists] = useState<{ text: string; done: boolean }[]>(
-    workOrder?.checklists || initialData?.checklists || []
+  const [checklists, setChecklists] = useState<ChecklistFormValue[]>(
+    mapChecklistsFromApi(workOrder?.checklists || initialData?.checklists)
   );
   const [newChecklist, setNewChecklist] = useState('');
   
@@ -122,9 +130,9 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
       assetId: workOrder?.assetId || initialData?.assetId || "",
     });
     setFiles([]);
-    setSignatures(workOrder?.signatures || initialData?.signatures || []);
+    setChecklists(mapChecklistsFromApi(workOrder?.checklists || initialData?.checklists));
     setParts(workOrder?.partsUsed || initialData?.partsUsed || []);
-    setChecklists(workOrder?.checklists || initialData?.checklists || []);
+    setSignatures(mapSignaturesFromApi(workOrder?.signatures || initialData?.signatures));
     setDocFile(null);
     setDocUrl('');
   }, [initialData, isOpen, reset, workOrder]);
@@ -194,6 +202,8 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
 
 
   const onSubmit = async (data: any) => {
+    const checklistPayload = mapChecklistsToApi(checklists);
+    const signaturePayload = mapSignaturesToApi(signatures);
     const payload: Record<string, any> = {
       departmentId: data.departmentId,
       lineId: data.lineId || undefined,
@@ -205,20 +215,19 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
       scheduledDate: data.scheduledDate,
       assetId: data.assetId,
       partsUsed: parts,
-      signatures,
-      checklists,
+      signatures: signaturePayload,
+      checklists: checklistPayload,
     };
 
     if (files.length > 0) {
       const fd = new FormData();
       Object.entries(payload).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          if (Array.isArray(value)) {
-            value.forEach((v) => fd.append(`${key}[]`, v as any));
-          } else {
-            fd.append(key, value as any);
-          }
+        if (value === undefined || value === null) return;
+        if (typeof value === 'object') {
+          fd.append(key, JSON.stringify(value));
+          return;
         }
+        fd.append(key, value as any);
       });
       files.forEach((f) => fd.append("files", f));
       await onUpdate(fd);

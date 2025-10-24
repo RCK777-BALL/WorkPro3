@@ -10,6 +10,7 @@ import {
   BookOpen,
   Briefcase,
   Building2,
+  CheckCircle2,
   ClipboardList,
   FileStack,
   FolderKanban,
@@ -41,6 +42,7 @@ type NavItem = {
 const navigation: NavItem[] = [
   { label: "Overview", to: "/dashboard", icon: LayoutDashboard },
   { label: "Work Orders", to: "/work-orders", icon: ClipboardList },
+  { label: "Permits", to: "/permits", icon: CheckCircle2 },
   { label: "Maintenance", to: "/maintenance", icon: FolderKanban },
   { label: "Assets", to: "/assets", icon: Warehouse },
   { label: "Departments", to: "/departments", icon: Building2 },
@@ -65,12 +67,12 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
       {
         id: "primary",
         title: "Operations",
-        items: navigation.slice(0, 7),
+        items: navigation.slice(0, 8),
       },
       {
         id: "secondary",
         title: "Management",
-        items: navigation.slice(7),
+        items: navigation.slice(8),
       },
     ];
   }, []);

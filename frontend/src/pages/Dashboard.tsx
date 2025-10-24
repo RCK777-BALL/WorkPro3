@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import type { ComponentType, KeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -265,9 +265,10 @@ type LivePulseProps = {
   loading: boolean;
   error: string | null;
   onRefresh: () => void;
+  onNavigate?: (path: string) => void;
 };
 
-function LivePulseSection({ metrics, loading, error, onRefresh }: LivePulseProps) {
+function LivePulseSection({ metrics, loading, error, onRefresh, onNavigate }: LivePulseProps) {
   const cards = [
     {
       key: "critical",
@@ -280,6 +281,7 @@ function LivePulseSection({ metrics, loading, error, onRefresh }: LivePulseProps
           ? "Escalations require immediate action"
           : "No active escalations",
       decimals: 0,
+      link: "/workorders?priority=critical",
     },
     {
       key: "maintenance",
@@ -292,6 +294,7 @@ function LivePulseSection({ metrics, loading, error, onRefresh }: LivePulseProps
           ? "Scheduled within the next 7 days"
           : "All maintenance on schedule",
       decimals: 0,
+      link: "/workorders?status=assigned",
     },
     {
       key: "compliance",
@@ -305,6 +308,7 @@ function LivePulseSection({ metrics, loading, error, onRefresh }: LivePulseProps
           ? "Excellent adherence this week"
           : "Monitor preventive compliance",
       decimals: 1,
+      link: "/analytics?tab=pm",
     },
     {
       key: "technicians",
@@ -314,6 +318,7 @@ function LivePulseSection({ metrics, loading, error, onRefresh }: LivePulseProps
       icon: Wrench,
       detail: "Active technicians on assignments",
       decimals: 0,
+      link: "/teams",
     },
     {
       key: "permits",
@@ -323,12 +328,21 @@ function LivePulseSection({ metrics, loading, error, onRefresh }: LivePulseProps
       icon: CheckCircle2,
       detail: "Awaiting management review",
       decimals: 0,
+      link: "/permits?status=pending",
     },
   ];
 
   const updatedLabel = metrics?.updatedAt
     ? formatDistanceToNow(new Date(metrics.updatedAt), { addSuffix: true })
     : "moments ago";
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>, link?: string) => {
+    if (!link || !onNavigate) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onNavigate(link);
+    }
+  };
 
   return (
     <section className="rounded-3xl bg-gradient-to-br from-purple-800 via-indigo-700 to-blue-700 p-6 text-white shadow-xl">
@@ -358,32 +372,53 @@ function LivePulseSection({ metrics, loading, error, onRefresh }: LivePulseProps
         </div>
       ) : null}
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {cards.map(({ key, title, value, suffix, tone, icon: Icon, detail, decimals }) => (
-          <div
-            key={key}
-            className={clsx(
-              "relative overflow-hidden rounded-2xl border p-4 shadow-lg backdrop-blur",
-              tone,
-              loading && "animate-pulse",
-            )}
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-widest text-white/70">{title}</p>
-                <div className="mt-2 flex items-baseline gap-1 text-2xl font-semibold">
-                  {loading ? "–" : <AnimatedNumber value={value} decimals={decimals ?? 0} />}
-                  {suffix ? <span className="text-sm font-medium">{suffix}</span> : null}
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {cards.map(({ key, title, value, suffix, tone, icon: Icon, detail, decimals, link }) => {
+            const isInteractive = Boolean(link && onNavigate);
+            const navigateToLink = () => {
+              if (link && onNavigate) {
+                onNavigate(link);
+              }
+            };
+            return (
+              <div
+                key={key}
+                className={clsx(
+                  "relative overflow-hidden rounded-2xl border p-4 shadow-lg backdrop-blur transition",
+                  tone,
+                  loading && "animate-pulse",
+                  isInteractive &&
+                    "cursor-pointer hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-white/80 focus:ring-offset-2 focus:ring-offset-indigo-700/60",
+                )}
+                role={isInteractive ? "button" : undefined}
+                tabIndex={isInteractive ? 0 : undefined}
+                aria-label={isInteractive ? `${title} – view details` : undefined}
+                onClick={isInteractive ? navigateToLink : undefined}
+                onKeyDown={isInteractive ? (event) => handleKeyDown(event, link) : undefined}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-widest text-white/70">{title}</p>
+                    <div className="mt-2 flex items-baseline gap-1 text-2xl font-semibold">
+                      {loading ? "–" : <AnimatedNumber value={value} decimals={decimals ?? 0} />}
+                      {suffix ? <span className="text-sm font-medium">{suffix}</span> : null}
+                    </div>
+                    <p className="mt-1 text-xs text-white/75">{detail}</p>
+                  </div>
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15">
+                    <Icon className="h-5 w-5" />
+                  </span>
                 </div>
-                <p className="mt-1 text-xs text-white/75">{detail}</p>
+                {isInteractive ? (
+                  <span className="mt-4 inline-flex items-center text-xs font-semibold text-white/80">
+                    View details
+                    <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+                  </span>
+                ) : null}
               </div>
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15">
-                <Icon className="h-5 w-5" />
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
+            );
+          })}
+        </div>
     </section>
   );
 }
@@ -1005,6 +1040,7 @@ export default function Dashboard() {
           loading={livePulseLoading}
           error={livePulseError}
           onRefresh={fetchLivePulse}
+          onNavigate={navigateTo}
         />
 
         <div className="grid gap-4 lg:grid-cols-2">

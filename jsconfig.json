@@ -3,6 +3,8 @@
     "checkJs": false
   },
   "exclude": [
-    "Backend"
+    "Backend",
+    "backend/dist",
+    "backend/**/*.js"
   ]
 }

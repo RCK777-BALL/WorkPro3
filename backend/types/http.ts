@@ -2,9 +2,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { Request, Response, NextFunction } from 'express';
+import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import type { ParamsDictionary, User as ExpressUser } from 'express-serve-static-core';
 import type { ParsedQs } from 'qs';
+import type { Types } from 'mongoose';
 
 export type { ApiResult } from '@shared/http';
 
@@ -13,26 +14,29 @@ export type AuthedRequest<
   ResBody = unknown,
   ReqBody = unknown,
   ReqQuery extends ParsedQs = ParsedQs,
-> = Omit<Request<P, ResBody, ReqBody, ReqQuery>, 'user'> & {
-  user?: ExpressUser & { tenantId?: string; id?: string; _id?: string };
-  tenantId?: string;
-  siteId?: string;
+  Locals extends Record<string, any> = Record<string, any>,
+> = Omit<Request<P, ResBody, ReqBody, ReqQuery, Locals>, 'user'> & {
+  user?:
+    | (ExpressUser & {
+        tenantId?: string | undefined;
+        id?: string | Types.ObjectId | undefined;
+        _id?: string | Types.ObjectId | undefined;
+      })
+    | undefined;
+  tenantId?: string | undefined;
+  siteId?: string | undefined;
 };
 
-type AuthedHandlerFn<
-  P extends ParamsDictionary,
-  ResBody,
-  ReqBody,
-  ReqQuery extends ParsedQs,
-> = (
-  req: AuthedRequest<P, ResBody, ReqBody, ReqQuery>,
-  res: Response<ResBody>,
-  next: NextFunction,
-) => void | Promise<void>;
-
-export type AuthedRequestHandler<
+export interface AuthedRequestHandler<
   P extends ParamsDictionary = ParamsDictionary,
   ResBody = unknown,
   ReqBody = unknown,
   ReqQuery extends ParsedQs = ParsedQs,
-> = AuthedHandlerFn<P, ResBody, ReqBody, ReqQuery>;
+  Locals extends Record<string, any> = Record<string, any>,
+> extends RequestHandler<P, ResBody, ReqBody, ReqQuery, Locals> {
+  (
+    req: AuthedRequest<P, ResBody, ReqBody, ReqQuery, Locals>,
+    res: Response<ResBody, Locals>,
+    next: NextFunction,
+  ): void | Promise<void>;
+}

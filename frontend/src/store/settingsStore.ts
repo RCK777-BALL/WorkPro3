@@ -5,14 +5,14 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-interface GeneralSettings {
+export interface GeneralSettings {
   companyName: string;
   timezone: string;
   dateFormat: string;
   language: string;
 }
 
-interface NotificationSettings {
+export interface NotificationSettings {
   emailNotifications: boolean;
   pushNotifications: boolean;
   workOrderUpdates: boolean;
@@ -21,7 +21,7 @@ interface NotificationSettings {
   systemUpdates: boolean;
 }
 
-interface EmailSettings {
+export interface EmailSettings {
   dailyDigest: boolean;
   weeklyReport: boolean;
   criticalAlerts: boolean;

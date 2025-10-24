@@ -6,7 +6,7 @@ import type { ParamsDictionary } from 'express-serve-static-core';
 import type { Response, NextFunction } from 'express';
 import type { ParsedQs } from 'qs';
 
-import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
+import type { AuthedRequest } from '../types/http';
 
 import WorkOrder, { WorkOrderDocument } from '../models/WorkOrder';
 import Permit, { type PermitDocument } from '../models/Permit';
@@ -169,7 +169,7 @@ interface WorkOrderQueryFilter {
 
 const buildWorkOrderListFilter = (
   tenantId: string,
-  filters: { type?: string },
+  filters: { type?: string | undefined },
 ): WorkOrderQueryFilter => {
   const query: WorkOrderQueryFilter = { tenantId };
 
@@ -183,11 +183,11 @@ const buildWorkOrderListFilter = (
 const buildWorkOrderSearchFilter = (
   tenantId: string,
   filters: {
-    status?: string;
-    priority?: string;
-    type?: string;
-    startDate?: Date;
-    endDate?: Date;
+    status?: string | undefined;
+    priority?: string | undefined;
+    type?: string | undefined;
+    startDate?: Date | undefined;
+    endDate?: Date | undefined;
   },
 ): WorkOrderQueryFilter => {
   const query = buildWorkOrderListFilter(tenantId, { type: filters.type });
@@ -302,12 +302,11 @@ function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
  *       200:
  *         description: List of work orders
  */
-export const getAllWorkOrders: AuthedRequestHandler<
-  ParamsDictionary,
-  WorkOrderCollectionResponse,
-  unknown,
-  WorkOrderListQuery
-> = async (req, res, next) => {
+export async function getAllWorkOrders(
+  req: AuthedRequest<ParamsDictionary, WorkOrderCollectionResponse, unknown, WorkOrderListQuery>,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -324,7 +323,7 @@ export const getAllWorkOrders: AuthedRequestHandler<
     next(err);
     return;
   }
-};
+}
 
 /**
  * @openapi
@@ -356,12 +355,11 @@ export const getAllWorkOrders: AuthedRequestHandler<
  *       200:
  *         description: Filtered work orders
  */
-export const searchWorkOrders: AuthedRequestHandler<
-  ParamsDictionary,
-  WorkOrderCollectionResponse,
-  unknown,
-  WorkOrderSearchQuery
-> = async (req, res, next) => {
+export async function searchWorkOrders(
+  req: AuthedRequest<ParamsDictionary, WorkOrderCollectionResponse, unknown, WorkOrderSearchQuery>,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -401,7 +399,7 @@ export const searchWorkOrders: AuthedRequestHandler<
     next(err);
     return;
   }
-};
+}
 
 /**
  * @openapi
@@ -422,11 +420,11 @@ export const searchWorkOrders: AuthedRequestHandler<
  *       404:
  *         description: Work order not found
  */
-export const getWorkOrderById: AuthedRequestHandler = async (
-  req,
+export async function getWorkOrderById(
+  req: AuthedRequest,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -446,7 +444,7 @@ export const getWorkOrderById: AuthedRequestHandler = async (
     next(err);
     return;
   }
-};
+}
 
 /**
  * @openapi
@@ -468,15 +466,11 @@ export const getWorkOrderById: AuthedRequestHandler = async (
  *         description: Validation error
  */
 
-export const createWorkOrder: AuthedRequestHandler<
-  ParamsDictionary,
-  WorkOrderType,
-  WorkOrderInput
-> = async (
-  req,
+export async function createWorkOrder(
+  req: AuthedRequest<ParamsDictionary, WorkOrderType, WorkOrderInput>,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> {
 
   try {
 
@@ -498,8 +492,17 @@ export const createWorkOrder: AuthedRequestHandler<
       signatures,
       permits,
       requiredPermitTypes,
+      departmentId,
+      lineId,
+      stationId,
+      department,
+      line,
+      station,
       ...rest
     } = parsed.data;
+    const normalizedDepartment = toOptionalObjectId(department ?? departmentId);
+    const normalizedLine = toOptionalObjectId(line ?? lineId);
+    const normalizedStation = toOptionalObjectId(station ?? stationId);
     const normalizedRequiredPermitTypes = requiredPermitTypes
       ? Array.from(new Set(requiredPermitTypes))
       : [];
@@ -551,6 +554,9 @@ export const createWorkOrder: AuthedRequestHandler<
     }
     const newItem = new WorkOrder({
       ...rest,
+      ...(normalizedDepartment ? { department: normalizedDepartment } : {}),
+      ...(normalizedLine ? { line: normalizedLine } : {}),
+      ...(normalizedStation ? { station: normalizedStation } : {}),
       ...(validAssignees && { assignees: mapAssignees(validAssignees) }),
       ...(validChecklists && { checklists: mapChecklists(validChecklists) }),
       ...(validParts && { partsUsed: mapPartsUsed(validParts) }),
@@ -592,7 +598,7 @@ export const createWorkOrder: AuthedRequestHandler<
     next(err);
     return;
   }
-};
+}
 
 /**
  * @openapi
@@ -619,11 +625,11 @@ export const createWorkOrder: AuthedRequestHandler<
  *       404:
  *         description: Work order not found
  */
-export const updateWorkOrder: AuthedRequestHandler = async (
-  req,
+export async function updateWorkOrder(
+  req: AuthedRequest<ParamsDictionary, WorkOrderType, UpdateWorkOrderBody>,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -635,9 +641,30 @@ export const updateWorkOrder: AuthedRequestHandler = async (
       sendResponse(res, null, parsed.error.flatten(), 400);
       return;
     }
-    const incomingPermits = parsed.data?.permits;
-    const incomingRequiredPermitTypes = parsed.data?.requiredPermitTypes;
-    const update: UpdateWorkOrderBody = parsed.data as UpdateWorkOrderBody;
+    const {
+      permits: incomingPermits,
+      requiredPermitTypes: incomingRequiredPermitTypes,
+      departmentId,
+      lineId,
+      stationId,
+      department,
+      line,
+      station,
+      ...restUpdate
+    } = parsed.data;
+    const update: UpdateWorkOrderBody = restUpdate as UpdateWorkOrderBody;
+    const normalizedDepartment = toOptionalObjectId(department ?? departmentId);
+    const normalizedLine = toOptionalObjectId(line ?? lineId);
+    const normalizedStation = toOptionalObjectId(station ?? stationId);
+    if (departmentId !== undefined || department !== undefined) {
+      update.department = normalizedDepartment;
+    }
+    if (lineId !== undefined || line !== undefined) {
+      update.line = normalizedLine;
+    }
+    if (stationId !== undefined || station !== undefined) {
+      update.station = normalizedStation;
+    }
     let permitDocs: PermitDocument[] | undefined;
     if (update.partsUsed && isRawPartArray(update.partsUsed)) {
       const validParts = validateItems<RawPart>(
@@ -719,7 +746,9 @@ export const updateWorkOrder: AuthedRequestHandler = async (
     }
     const userObjectId = resolveUserObjectId(req);
     if (permitDocs) {
-      const newIds = new Set(permitDocs.map((doc) => doc._id.toString()));
+      const newIds = new Set(
+        permitDocs.map((doc) => (doc._id as Types.ObjectId).toString()),
+      );
       const previousIds = (existing.permits ?? []).map((id) => id.toString());
       const removedIds = previousIds.filter((id) => !newIds.has(id));
       if (removedIds.length) {
@@ -754,7 +783,7 @@ export const updateWorkOrder: AuthedRequestHandler = async (
     next(err);
     return;
   }
-};
+}
 
 /**
  * @openapi
@@ -775,11 +804,11 @@ export const updateWorkOrder: AuthedRequestHandler = async (
  *       404:
  *         description: Work order not found
  */
-export const deleteWorkOrder: AuthedRequestHandler = async (
-  req,
+export async function deleteWorkOrder(
+  req: AuthedRequest,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -807,7 +836,7 @@ export const deleteWorkOrder: AuthedRequestHandler = async (
     next(err);
     return;
   }
-};
+}
 
 /**
  * @openapi
@@ -840,11 +869,11 @@ export const deleteWorkOrder: AuthedRequestHandler = async (
  *         description: Work order not found
  */
  
-export const approveWorkOrder: AuthedRequestHandler = async (
-  req,
+export async function approveWorkOrder(
+  req: AuthedRequest,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -915,13 +944,13 @@ export const approveWorkOrder: AuthedRequestHandler = async (
     next(err);
     return;
   }
-};
+}
  
-export const assignWorkOrder: AuthedRequestHandler = async (
-  req,
+export async function assignWorkOrder(
+  req: AuthedRequest,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -998,13 +1027,13 @@ export const assignWorkOrder: AuthedRequestHandler = async (
     next(err);
     return;
   }
-};
+}
 
-export const startWorkOrder: AuthedRequestHandler = async (
-  req,
+export async function startWorkOrder(
+  req: AuthedRequest,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -1067,13 +1096,13 @@ export const startWorkOrder: AuthedRequestHandler = async (
     next(err);
     return;
   }
-};
+}
 
-export const completeWorkOrder: AuthedRequestHandler = async (
-  req,
+export async function completeWorkOrder(
+  req: AuthedRequest,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -1094,7 +1123,7 @@ export const completeWorkOrder: AuthedRequestHandler = async (
       tenantId,
       workOrder.permits,
       workOrder.requiredPermitTypes,
-      'start'
+      'complete'
     );
     if (!readiness.ok) {
       sendResponse(res, null, readiness.message ?? 'Permits are not approved for work start', 409);
@@ -1172,13 +1201,13 @@ export const completeWorkOrder: AuthedRequestHandler = async (
     next(err);
     return;
   }
-};
+}
 
-export const cancelWorkOrder: AuthedRequestHandler = async (
-  req,
+export async function cancelWorkOrder(
+  req: AuthedRequest,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -1199,7 +1228,7 @@ export const cancelWorkOrder: AuthedRequestHandler = async (
       tenantId,
       workOrder.permits,
       workOrder.requiredPermitTypes,
-      'start'
+      'complete'
     );
     if (!readiness.ok) {
       sendResponse(res, null, readiness.message ?? 'Permits are not approved for work start', 409);
@@ -1225,7 +1254,7 @@ export const cancelWorkOrder: AuthedRequestHandler = async (
     next(err);
     return;
   }
-};
+}
 
 
 /**
@@ -1248,11 +1277,11 @@ export const cancelWorkOrder: AuthedRequestHandler = async (
  *         description: Work order not found
 */
 
-export const assistWorkOrder: AuthedRequestHandler = async (
-  req,
+export async function assistWorkOrder(
+  req: AuthedRequest,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -1279,4 +1308,4 @@ export const assistWorkOrder: AuthedRequestHandler = async (
     next(err);
     return;
   }
-};
+}

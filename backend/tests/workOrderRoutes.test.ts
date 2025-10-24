@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { describe, it, beforeAll, afterAll, beforeEach, expect } from "vitest";
+import { describe, it, beforeAll, afterAll, beforeEach, expect, vi } from "vitest";
 import request from 'supertest';
 import express from 'express';
 import mongoose from 'mongoose';
@@ -16,7 +16,12 @@ import Line from '../models/Line';
 import Station from '../models/Station';
 import PMTask from '../models/PMTask';
 import WorkOrder from '../models/WorkOrder';
+import Permit from '../models/Permit';
 import AuditLog from '../models/AuditLog';
+
+vi.mock('../server', () => ({
+  emitWorkOrderUpdate: vi.fn(),
+}));
 
 
 const app = express();
@@ -52,6 +57,7 @@ beforeEach(async () => {
     passwordHash: 'pass123',
     roles: ['supervisor'],
     tenantId: new mongoose.Types.ObjectId(),
+    employeeId: 'EMP-1',
   });
   token = jwt.sign({ id: user._id.toString(), roles: user.roles }, process.env.JWT_SECRET!);
 
@@ -98,9 +104,8 @@ describe('Work Order Routes', () => {
         complianceProcedureId: 'PROC-1',
         calibrationIntervalDays: 365,
         departmentId: department._id,
-        department: department._id,
-        line: lineId,
-        station: stationId,
+        lineId,
+        stationId,
         pmTask: pmTask._id,
         teamMemberName: 'Tester',
         importance: 'low',
@@ -118,6 +123,12 @@ describe('Work Order Routes', () => {
     expect(created.type).toBe('calibration');
     expect(created.complianceProcedureId).toBe('PROC-1');
     expect(created.calibrationIntervalDays).toBe(365);
+
+    const stored = await WorkOrder.findById(created._id).lean();
+    expect(stored).not.toBeNull();
+    expect(stored?.department?.toString()).toBe(String(department._id));
+    expect(stored?.line?.toString()).toBe(String(lineId));
+    expect(stored?.station?.toString()).toBe(String(stationId));
 
     const id = created._id;
 
@@ -186,9 +197,8 @@ describe('Work Order Routes', () => {
         priority: 'medium',
         status: 'requested',
         departmentId: department._id,
-        department: department._id,
-        line: lineId,
-        station: stationId,
+        lineId,
+        stationId,
         pmTask: pmTask._id,
         teamMemberName: 'Tester',
         importance: 'low',
@@ -243,9 +253,8 @@ describe('Work Order Routes', () => {
         priority: 'medium',
         status: 'requested',
         departmentId: department._id,
-        department: department._id,
-        line: lineId,
-        station: stationId,
+        lineId,
+        stationId,
         pmTask: pmTask._id,
         teamMemberName: 'Tester',
         importance: 'low',
@@ -285,6 +294,46 @@ describe('Work Order Routes', () => {
       .expect(200);
     expect(cancelRes.body.success).toBe(true);
     expect(cancelRes.body.data.status).toBe('cancelled');
+  });
+
+  it('rejects completing a work order when linked permit is not ready for completion', async () => {
+    const workOrder = await WorkOrder.create({
+      title: 'WO with Permit',
+      description: 'desc',
+      priority: 'medium',
+      status: 'in_progress',
+      type: 'corrective',
+      tenantId: user.tenantId,
+      department: department._id,
+      line: lineId,
+      station: stationId,
+      pmTask: pmTask._id,
+    });
+
+    const permit = await Permit.create({
+      permitNumber: 'PERM-123',
+      tenantId: user.tenantId,
+      workOrder: workOrder._id,
+      type: 'hot-work',
+      status: 'active',
+      isolationSteps: [
+        {
+          description: 'Lockout procedure',
+          completed: false,
+        },
+      ],
+    });
+
+    workOrder.permits.push(permit._id);
+    await workOrder.save();
+
+    const res = await request(app)
+      .post(`/api/workorders/${workOrder._id}/complete`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(409);
+
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toContain('Isolation steps remain open');
   });
 
   it('searches work orders by status', async () => {

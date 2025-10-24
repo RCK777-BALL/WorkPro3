@@ -2,11 +2,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Request, Response, NextFunction } from 'express';
 import { sendResponse } from '../utils/sendResponse';
 
 import GoodsReceipt, { type IGoodsReceipt } from '../models/GoodsReceipt';
-import PurchaseOrder, { type IPurchaseOrderItem } from '../models/PurchaseOrder';
+import PurchaseOrder, {
+  type IPurchaseOrder,
+  type IPurchaseOrderItem,
+} from '../models/PurchaseOrder';
 import Vendor from '../models/Vendor';
 import { addStock } from '../services/inventory';
 import nodemailer from 'nodemailer';
@@ -17,6 +19,8 @@ import logger from '../utils/logger';
 import { enqueueEmailRetry } from '../utils/emailQueue';
 import type { HydratedDocument } from 'mongoose';
 import { Types } from 'mongoose';
+import type { AuthedRequestHandler } from '../types/http';
+import type { ParamsDictionary } from 'express-serve-static-core';
 
 interface GoodsReceiptItemPayload {
   item: string;
@@ -29,22 +33,37 @@ interface CreateGoodsReceiptBody {
   items: GoodsReceiptItemPayload[];
 }
 
-const createGoodsReceipt = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+type CreateGoodsReceiptParams = ParamsDictionary;
+type CreateGoodsReceiptResponse = HydratedDocument<IGoodsReceipt>;
+
+const createGoodsReceipt: AuthedRequestHandler<
+  CreateGoodsReceiptParams,
+  CreateGoodsReceiptResponse | null,
+  CreateGoodsReceiptBody
+> = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
       return sendResponse(res, null, 'Tenant ID required', 400);
-    const { purchaseOrder: poId, items } = req.body as CreateGoodsReceiptBody;
+    const { purchaseOrder: poId, items: rawItems } =
+      (req.body as Partial<CreateGoodsReceiptBody>) ?? {};
+
+    if (!poId) {
+      sendResponse(res, null, 'Purchase order required', 400);
+      return;
+    }
+
+    const items: GoodsReceiptItemPayload[] = Array.isArray(rawItems)
+      ? rawItems
+      : [];
 
     const po = await PurchaseOrder.findById(poId);
     if (!po) {
       sendResponse(res, null, 'PO not found', 404);
       return;
     }
+
+    const purchaseOrder = po as HydratedDocument<IPurchaseOrder>;
 
     const mongoose = (await import('mongoose')).default;
     const db = mongoose.connection.db;
@@ -57,7 +76,7 @@ const createGoodsReceipt = async (
         throw new Error('Invalid inventory item identifier');
       }
       await addStock(itemId, grItem.quantity, uomId);
-      const poItem = po.items?.find(
+      const poItem = purchaseOrder.items?.find(
         (item: IPurchaseOrderItem) => item.item.toString() === grItem.item,
       );
       let qty = grItem.quantity;
@@ -72,14 +91,18 @@ const createGoodsReceipt = async (
       }
     }
 
-    if (po.items?.every((item: IPurchaseOrderItem) => item.received >= item.quantity)) {
-      po.status = 'closed';
+    if (
+      purchaseOrder.items?.every(
+        (item: IPurchaseOrderItem) => item.received >= item.quantity,
+      )
+    ) {
+      purchaseOrder.status = 'closed';
     }
 
-    await po.save();
+    await purchaseOrder.save();
 
     const gr = (await GoodsReceipt.create({
-      purchaseOrder: po._id,
+      purchaseOrder: purchaseOrder._id,
       items,
       tenantId,
     })) as HydratedDocument<IGoodsReceipt>;
@@ -98,23 +121,25 @@ const createGoodsReceipt = async (
         ? rawEntityId
         : (gr._id as unknown as Types.ObjectId | undefined)?.toString?.());
 
-    await writeAuditLog({
-      ...(tenantId ? { tenantId } : {}),
-      userId,
-      action: 'create',
-      entityType: 'GoodsReceipt',
-      ...(normalizedEntityId ? { entityId: normalizedEntityId } : {}),
-      after: typeof grAny.toObject === 'function' ? grAny.toObject() : grAny,
-    });
+    if (tenantId) {
+      await writeAuditLog({
+        tenantId,
+        ...(userId ? { userId } : {}),
+        action: 'create',
+        entityType: 'GoodsReceipt',
+        ...(normalizedEntityId ? { entityId: normalizedEntityId } : {}),
+        after: typeof grAny.toObject === 'function' ? grAny.toObject() : grAny,
+      });
+    }
 
-    const vendor = await Vendor.findById(po.vendor).lean();
+    const vendor = await Vendor.findById(purchaseOrder.vendor).lean();
     if (vendor?.email) {
       assertEmail(vendor.email);
       const transporter = nodemailer.createTransport({ jsonTransport: true });
       const mailOptions = {
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
         to: vendor.email,
-        subject: `Goods received for PO ${po._id}`,
+        subject: `Goods received for PO ${purchaseOrder._id}`,
         text: 'Items received',
       };
 

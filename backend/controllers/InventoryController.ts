@@ -89,7 +89,11 @@ const toPlainObject = (value: unknown): Record<string, unknown> => {
 };
 
 // —— GET /inventory/summary (name, stock, status) ————————————————————————
-const getInventoryItems = async (req: Request, res: Response, next: NextFunction) => {
+export async function getInventoryItems(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const query = scopedQuery(req);
     const summaryQuery = InventoryItem.find(query);
@@ -110,11 +114,16 @@ const getInventoryItems = async (req: Request, res: Response, next: NextFunction
     sendResponse(res, formatted);
   } catch (err) {
     next(err);
+    return;
   }
-};
+}
 
 // —— GET /inventory ————————————————————————————————————————————————
-const getAllInventoryItems = async (req: Request, res: Response, next: NextFunction) => {
+export async function getAllInventoryItems(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const query = scopedQuery(req);
     const itemsQuery = InventoryItem.find(query);
@@ -123,11 +132,16 @@ const getAllInventoryItems = async (req: Request, res: Response, next: NextFunct
     sendResponse(res, items);
   } catch (err) {
     next(err);
+    return;
   }
-};
+}
 
 // —— GET /inventory/low-stock ————————————————————————————————————————
-const getLowStockItems = async (req: Request, res: Response, next: NextFunction) => {
+export async function getLowStockItems(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const query = scopedQuery(req, {
       $expr: { $lte: ["$quantity", { $ifNull: ["$reorderThreshold", 0] }] },
@@ -139,11 +153,16 @@ const getLowStockItems = async (req: Request, res: Response, next: NextFunction)
     sendResponse(res, items);
   } catch (err) {
     next(err);
+    return;
   }
-};
+}
 
 // —— GET /inventory/:id ———————————————————————————————————————————————
-const getInventoryItemById = async (req: Request, res: Response, next: NextFunction) => {
+export async function getInventoryItemById(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const { id } = req.params;
     if (!isValidObjectId(id)) {
@@ -164,11 +183,16 @@ const getInventoryItemById = async (req: Request, res: Response, next: NextFunct
     sendResponse(res, { ...plainItem, status: qty <= threshold ? "low" : "ok" });
   } catch (err) {
     next(err);
+    return;
   }
-};
+}
 
 // —— POST /inventory ————————————————————————————————————————————————
-const createInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
+export async function createInventoryItem(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
@@ -195,11 +219,16 @@ const createInventoryItem = async (req: Request, res: Response, next: NextFuncti
   } catch (err) {
     logger.error("Error creating inventory item", err);
     next(err);
+    return;
   }
-};
+}
 
 // —— PATCH /inventory/:id ———————————————————————————————————————————————
-const updateInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
+export async function updateInventoryItem(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
@@ -251,11 +280,16 @@ const updateInventoryItem = async (req: Request, res: Response, next: NextFuncti
   } catch (err) {
     logger.error("Error updating inventory item", err);
     next(err);
+    return;
   }
-};
+}
 
 // —— DELETE /inventory/:id ——————————————————————————————————————————————
-const deleteInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
+export async function deleteInventoryItem(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
@@ -287,11 +321,16 @@ const deleteInventoryItem = async (req: Request, res: Response, next: NextFuncti
     sendResponse(res, { message: "Deleted successfully" });
   } catch (err) {
     next(err);
+    return;
   }
-};
+}
 
 // —— POST /inventory/:id/use ————————————————————————————————————————————
-const useInventoryItem = async (req: Request, res: Response, next: NextFunction) => {
+export async function useInventoryItem(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const tenantId = req.tenantId;
     if (!tenantId)
@@ -352,11 +391,16 @@ const useInventoryItem = async (req: Request, res: Response, next: NextFunction)
     sendResponse(res, item);
   } catch (err) {
     next(err);
+    return;
   }
-};
+}
 
 // —— GET /inventory/search?q= ————————————————————————————————————————————
-const searchInventoryItems = async (req: Request, res: Response, next: NextFunction) => {
+export async function searchInventoryItems(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const q = String((req.query.q as string) ?? "").trim();
     if (!q) {
@@ -376,17 +420,7 @@ const searchInventoryItems = async (req: Request, res: Response, next: NextFunct
     sendResponse(res, items);
   } catch (err) {
     next(err);
+    return;
   }
-};
+}
 
-export {
-  getInventoryItems,
-  getAllInventoryItems,
-  getLowStockItems,
-  getInventoryItemById,
-  createInventoryItem,
-  updateInventoryItem,
-  deleteInventoryItem,
-  useInventoryItem,
-  searchInventoryItems,
-};

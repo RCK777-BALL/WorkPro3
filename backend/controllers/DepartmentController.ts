@@ -25,7 +25,7 @@ const normalizeSearchTerm = (value: unknown): string | undefined => {
 
 const buildDepartmentFilter = (
   tenantId: string,
-  options: { siteId?: string; search?: string },
+  options: { siteId?: string | undefined; search?: string | undefined },
 ): FilterQuery<DepartmentDoc> => {
   const filter: FilterQuery<DepartmentDoc> = { tenantId };
 
@@ -41,7 +41,7 @@ const buildDepartmentFilter = (
 };
 
 
-const listDepartments: AuthedRequestHandler<
+export const listDepartments: AuthedRequestHandler<
   ParamsDictionary,
   DepartmentListResponse,
   unknown,
@@ -70,4 +70,3 @@ const listDepartments: AuthedRequestHandler<
   }
 };
 
-export { listDepartments };

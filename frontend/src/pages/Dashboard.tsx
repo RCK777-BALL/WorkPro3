@@ -21,7 +21,7 @@ import clsx from "clsx";
 import http from "@/lib/http";
 import Sparkline from "@/components/charts/Sparkline";
 import StatusBadge from "@/components/common/StatusBadge";
-import { Button } from "@/components/ui/button";
+import Button from "@common/Button";
 
 type SummaryResponse = {
   openWorkOrders: number;

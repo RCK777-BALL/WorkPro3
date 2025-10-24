@@ -13,6 +13,14 @@ import type {
   User,
   WorkOrderUpdatePayload,
 } from '@/types';
+import {
+  mapChecklistsFromApi,
+  mapChecklistsToApi,
+  mapSignaturesFromApi,
+  mapSignaturesToApi,
+  type ChecklistFormValue,
+  type SignatureFormValue,
+} from '@/utils/workOrderTransforms';
 
 interface WorkOrderFormProps {
   workOrder?: WorkOrder;
@@ -28,9 +36,12 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
   const fetchDepartments = useDepartmentStore((s) => s.fetchDepartments);
   const fetchLines = useDepartmentStore((s) => s.fetchLines);
   const fetchStations = useDepartmentStore((s) => s.fetchStations);
-  const [departmentId, setDepartmentId] = useState('');
-  const [lineId, setLineId] = useState('');
-  const [stationId, setStationId] = useState('');
+  const initialDepartmentId = workOrder?.department ?? '';
+  const initialLineId = workOrder?.lineId ?? workOrder?.line ?? '';
+  const initialStationId = workOrder?.stationId ?? workOrder?.station ?? '';
+  const [departmentId, setDepartmentId] = useState(initialDepartmentId);
+  const [lineId, setLineId] = useState(initialLineId);
+  const [stationId, setStationId] = useState(initialStationId);
   const lines = departmentId ? linesMap[departmentId] || [] : [];
   const stations = lineId ? stationsMap[lineId] || [] : [];
   const { addToast } = useToast();
@@ -46,12 +57,12 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
     calibrationIntervalDays: workOrder?.calibrationIntervalDays,
     dueDate: workOrder?.dueDate || new Date().toISOString().split('T')[0],
   });
-  const [checklists, setChecklists] = useState<{ text: string; done: boolean }[]>(workOrder?.checklists || []);
+  const [checklists, setChecklists] = useState<ChecklistFormValue[]>(mapChecklistsFromApi(workOrder?.checklists));
   const [newChecklist, setNewChecklist] = useState('');
   const [parts, setParts] = useState<{ partId: string; qty: number; cost: number }[]>(workOrder?.partsUsed || []);
   const [newPart, setNewPart] = useState<{ partId: string; qty: number; cost: number }>({ partId: '', qty: 1, cost: 0 });
-  const [signatures, setSignatures] = useState<{ by: string; ts: string }[]>(workOrder?.signatures || []);
-  const [newSignature, setNewSignature] = useState<{ by: string; ts: string }>({ by: '', ts: '' });
+  const [signatures, setSignatures] = useState<SignatureFormValue[]>(mapSignaturesFromApi(workOrder?.signatures));
+  const [newSignature, setNewSignature] = useState<SignatureFormValue>({ by: '', ts: '' });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -109,6 +120,24 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
   }, [departmentId, lineId, fetchStations]);
 
   useEffect(() => {
+    if (workOrder) {
+      setDepartmentId(workOrder.department ?? '');
+      setLineId(workOrder.lineId ?? workOrder.line ?? '');
+      setStationId(workOrder.stationId ?? workOrder.station ?? '');
+      setChecklists(mapChecklistsFromApi(workOrder.checklists));
+      setParts(workOrder.partsUsed || []);
+      setSignatures(mapSignaturesFromApi(workOrder.signatures));
+    } else {
+      setDepartmentId('');
+      setLineId('');
+      setStationId('');
+      setChecklists([]);
+      setParts([]);
+      setSignatures([]);
+    }
+  }, [workOrder]);
+
+  useEffect(() => {
     setFormData((prev) => {
       const updates: Partial<WorkOrder> = {};
       if (prev.type !== 'calibration' && prev.calibrationIntervalDays !== undefined) {
@@ -123,6 +152,8 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const checklistPayload = mapChecklistsToApi(checklists);
+    const signaturePayload = mapSignaturesToApi(signatures);
     const payload = {
       title: formData.title,
       description: formData.description,
@@ -135,11 +166,11 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
       calibrationIntervalDays: formData.calibrationIntervalDays,
       dueDate: formData.dueDate,
       departmentId,
-      lineId,
-      stationId,
-      checklists,
+      lineId: lineId || undefined,
+      stationId: stationId || undefined,
+      checklists: checklistPayload,
       partsUsed: parts,
-      signatures,
+      signatures: signaturePayload,
     };
     try {
       let res;
@@ -149,7 +180,13 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
         res = await http.post('/workorders', payload);
       }
       const data = res.data as WorkOrderUpdatePayload;
-      if (onSuccess) onSuccess({ ...(data as Partial<WorkOrder>), id: data._id } as WorkOrder);
+      if (onSuccess)
+        onSuccess({
+          ...(data as Partial<WorkOrder>),
+          id: data._id,
+          checklists: mapChecklistsFromApi((data as Partial<WorkOrder>).checklists),
+          signatures: mapSignaturesFromApi((data as Partial<WorkOrder>).signatures),
+        } as WorkOrder);
       addToast(workOrder ? 'Work Order updated' : 'Work Order created', 'success');
     } catch {
       addToast('Failed to submit work order', 'error');
@@ -167,7 +204,12 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
         <select
           className="w-full px-3 py-2 border border-neutral-300 rounded-md"
           value={departmentId}
-          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setDepartmentId(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+            const value = e.target.value;
+            setDepartmentId(value);
+            setLineId('');
+            setStationId('');
+          }}
         >
           <option value="">Select Department</option>
           {departments.map((d) => (
@@ -182,7 +224,11 @@ const WorkOrderForm: React.FC<WorkOrderFormProps> = ({ workOrder, onSuccess }) =
         <select
           className="w-full px-3 py-2 border border-neutral-300 rounded-md"
           value={lineId}
-          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setLineId(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+            const value = e.target.value;
+            setLineId(value);
+            setStationId('');
+          }}
           disabled={!departmentId}
         >
           <option value="">Select Line</option>

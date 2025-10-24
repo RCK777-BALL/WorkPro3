@@ -13,6 +13,9 @@ export default defineConfig({
   css: {
     modules: false,
   },
+  test: {
+    environment: 'jsdom',
+  },
   server: {
     port: 5173,
     proxy: {
@@ -28,7 +31,6 @@ export default defineConfig({
       { find: '@common', replacement: fileURLToPath(new URL('./src/components/common', import.meta.url)) },
       { find: '@shared', replacement: fileURLToPath(new URL('../shared/types', import.meta.url)) },
       { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
-      { find: '@radix-ui/react-slot', replacement: fileURLToPath(new URL('./src/lib/radix-slot.tsx', import.meta.url)) },
     ],
   },
 })

@@ -260,8 +260,9 @@ export const generatePMWorkOrders: AuthedRequestHandler<ParamsDictionary, PMTask
           await WorkOrder.create({
             title: `PM: ${task.title}`,
             description: task.notes || '',
-            status: 'open',
-            asset: task.asset,
+            status: 'requested',
+            type: 'preventive',
+            ...(task.asset ? { assetId: task.asset } : {}),
             pmTask: task._id,
             department: task.department,
             dueDate: next,
@@ -283,8 +284,9 @@ export const generatePMWorkOrders: AuthedRequestHandler<ParamsDictionary, PMTask
           await WorkOrder.create({
             title: `Meter PM: ${task.title}`,
             description: task.notes || '',
-            status: 'open',
-            asset: meter.asset,
+            status: 'requested',
+            type: 'preventive',
+            assetId: meter.asset,
             pmTask: task._id,
             department: task.department,
             dueDate: now,

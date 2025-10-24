@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { format, formatDistanceToNow } from "date-fns";
 import {
@@ -191,6 +191,7 @@ type SummaryCardProps = {
   gradient: string;
   trend?: number[];
   loading: boolean;
+  href?: string;
   onViewAll?: () => void;
   decimals?: number;
 };
@@ -204,18 +205,22 @@ function SummaryCard({
   gradient,
   trend,
   loading,
+  href,
   onViewAll,
   decimals = 0,
 }: SummaryCardProps) {
-  return (
-    <div
-      className={clsx(
-        "relative overflow-hidden rounded-3xl border border-white/10 p-5 shadow-xl transition",
-        "hover:shadow-2xl hover:border-white/20",
-        "bg-gradient-to-br text-white",
-        gradient,
-      )}
-    >
+  const cardClasses = clsx(
+    "relative block overflow-hidden rounded-3xl border border-white/10 p-5 text-white shadow-xl transition",
+    "hover:shadow-2xl hover:border-white/20",
+    "bg-gradient-to-br",
+    href
+      ? "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+      : undefined,
+    gradient,
+  );
+
+  const content = (
+    <>
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-white/70">{title}</p>
@@ -243,7 +248,12 @@ function SummaryCard({
         ) : (
           <div className="h-12 w-32 rounded-lg border border-white/10" />
         )}
-        {onViewAll ? (
+        {href ? (
+          <span className="inline-flex items-center text-sm font-semibold text-white/90 transition group-hover:translate-x-0.5">
+            View all
+            <ArrowUpRight className="ml-1 h-4 w-4" />
+          </span>
+        ) : onViewAll ? (
           <Button
             type="button"
             size="sm"
@@ -256,8 +266,18 @@ function SummaryCard({
           </Button>
         ) : null}
       </div>
-    </div>
+    </>
   );
+
+  if (href) {
+    return (
+      <Link to={href} className={clsx(cardClasses, "group")} aria-label={`View details for ${title}`}>
+        {content}
+      </Link>
+    );
+  }
+
+  return <div className={cardClasses}>{content}</div>;
 }
 
 type LivePulseProps = {
@@ -888,7 +908,7 @@ export default function Dashboard() {
         icon: ClipboardList,
         gradient: "from-indigo-900 via-indigo-800 to-indigo-600",
         trend: trends.woBacklog,
-        onView: () => navigateTo("/workorders?status=open"),
+        href: "/workorders?status=open",
       },
       {
         key: "overdue",
@@ -898,7 +918,7 @@ export default function Dashboard() {
         icon: AlertTriangle,
         gradient: "from-rose-900 via-rose-800 to-rose-600",
         trend: trends.woBacklog,
-        onView: () => navigateTo("/workorders?status=overdue"),
+        href: "/workorders?status=overdue",
       },
       {
         key: "pmDue",
@@ -908,7 +928,7 @@ export default function Dashboard() {
         icon: CalendarClock,
         gradient: "from-amber-900 via-amber-700 to-amber-500",
         trend: trends.pmCompliance,
-        onView: () => navigateTo("/pm?filter=upcoming"),
+        href: "/pm?filter=upcoming",
       },
       {
         key: "compliance",
@@ -920,7 +940,7 @@ export default function Dashboard() {
         gradient: "from-emerald-900 via-emerald-700 to-emerald-500",
         trend: trends.pmCompliance.map((value) => Number((value * 100).toFixed(1))),
         decimals: 1,
-        onView: () => navigateTo("/analytics/compliance"),
+        href: "/analytics/compliance",
       },
       {
         key: "mttr",
@@ -932,7 +952,7 @@ export default function Dashboard() {
         gradient: "from-cyan-900 via-cyan-700 to-cyan-500",
         trend: trends.mttr,
         decimals: 1,
-        onView: () => navigateTo("/analytics/maintenance?metric=mttr"),
+        href: "/analytics/maintenance?metric=mttr",
       },
       {
         key: "asset",
@@ -944,7 +964,7 @@ export default function Dashboard() {
         gradient: "from-blue-900 via-blue-700 to-cyan-500",
         trend: trends.wrenchTimePct,
         decimals: 1,
-        onView: () => navigateTo("/assets"),
+        href: "/assets",
       },
       {
         key: "permits",
@@ -954,10 +974,10 @@ export default function Dashboard() {
         icon: Activity,
         gradient: "from-purple-900 via-purple-700 to-fuchsia-600",
         trend: trends.costMTD,
-        onView: () => navigateTo("/permits"),
+        href: "/permits",
       },
     ];
-  }, [navigate, summary, summaryTrends]);
+  }, [summary, summaryTrends]);
   return (
     <div className="min-h-screen bg-slate-950 p-6 text-white">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
@@ -995,7 +1015,7 @@ export default function Dashboard() {
               trend={card.trend}
               loading={summaryLoading}
               decimals={card.decimals ?? 0}
-              onViewAll={card.onView}
+              href={card.href}
             />
           ))}
         </section>

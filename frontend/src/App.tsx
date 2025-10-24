@@ -30,6 +30,7 @@ import Messages from "@/pages/Messages";
 import Documentation from "@/pages/Documentation";
 import Departments from "@/pages/Departments";
 import Teams from "@/pages/Teams";
+import PermitsPage from "@/pages/PermitsPage";
 import TeamMemberProfile from "@/pages/TeamMemberProfile";
 import Settings from "@/pages/Settings";
 import TimeSheets from "@/pages/TimeSheets";
@@ -81,6 +82,7 @@ export default function App() {
           <Route path="/work-orders" element={<WorkOrders />} />
           <Route path="/workorders" element={<WorkOrders />} />
           <Route path="/maintenance" element={<Maintenance />} />
+          <Route path="/permits" element={<PermitsPage />} />
           <Route path="/assets" element={<AssetsPage />} />
           <Route path="/assets/:assetId" element={<AssetDetails />} />
           <Route path="/inventory" element={<Inventory />} />

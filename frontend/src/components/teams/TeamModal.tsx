@@ -74,17 +74,15 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
   const selectedRole = watch('role') ?? 'team_member';
 
   const requiresManagerSelection = useMemo(() => {
-    if (selectedRole === 'team_member') {
-      return false;
-    }
-    return Boolean(TEAM_ROLE_MANAGER_MAP[selectedRole]);
+    const allowedManagers = TEAM_ROLE_MANAGER_MAP[selectedRole];
+    return Array.isArray(allowedManagers) && allowedManagers.length > 0;
   }, [selectedRole]);
 
   useEffect(() => {
-    if (!TEAM_ROLE_MANAGER_MAP[selectedRole]) {
+    if (!requiresManagerSelection) {
       setValue('managerId', '');
     }
-  }, [selectedRole, setValue]);
+  }, [requiresManagerSelection, setValue]);
 
   const managerOptions = useMemo(() => {
     const allowedRoles = TEAM_ROLE_MANAGER_MAP[selectedRole];
@@ -111,7 +109,8 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
   const onSubmit = handleSubmit(async (data: TeamFormData) => {
     setLoading(true);
     try {
-      const requiresManager = data.role !== 'team_member' && Boolean(TEAM_ROLE_MANAGER_MAP[data.role]);
+      const allowedManagers = TEAM_ROLE_MANAGER_MAP[data.role];
+      const requiresManager = Array.isArray(allowedManagers) && allowedManagers.length > 0;
       const payload: Partial<TeamMember> = {
         ...data,
         managerId: requiresManager ? data.managerId || null : null,

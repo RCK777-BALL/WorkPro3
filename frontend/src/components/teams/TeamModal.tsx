@@ -136,15 +136,14 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
   if (!isOpen) return null;
 
   const isEditMode = Boolean(member);
-  const isManagerFlow = !isEditMode && defaultRole === 'operations_manager';
+  const modalTitle = isEditMode ? 'Edit Team Member' : 'Add Associate';
+  const submitLabel = isEditMode ? 'Update Member' : 'Add Associate';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-neutral-200">
-          <h2 className="text-xl font-semibold text-neutral-900">
-            {isEditMode ? 'Edit Team Member' : isManagerFlow ? 'Add Manager' : 'Add Team Member'}
-          </h2>
+          <h2 className="text-xl font-semibold text-neutral-900">{modalTitle}</h2>
           <button
             onClick={onClose}
             className="text-neutral-500 hover:text-neutral-700"
@@ -259,7 +258,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
               Cancel
             </Button>
             <Button type="submit" variant="primary" loading={loading}>
-              {isEditMode ? 'Update Member' : isManagerFlow ? 'Add Manager' : 'Add Member'}
+              {submitLabel}
             </Button>
           </div>
         </form>

@@ -28,6 +28,7 @@ import {
   authRoutes,
   calendarRoutes,
   chatRoutes,
+  partsRoutes,
   complianceRoutes,
   conditionRuleRoutes,
   dashboardRoutes,
@@ -208,6 +209,7 @@ app.use("/api/reports", reportsRoutes);
 app.use("/api/lines", LineRoutes);
 app.use("/api/stations", StationRoutes);
 app.use("/api/inventory", inventoryRoutes);
+app.use("/api/parts", partsRoutes);
 app.use("/api/import", importRoutes);
 app.use("/api/vendors", vendorRoutes);
 app.use("/api/labor", laborRoutes);
@@ -284,3 +286,7 @@ export const emitNotification = (notification: NotificationPayload) => {
 };
 
 export default app;
+import healthRouter from './src/routes/health';
+app.use('/api/health', healthRouter);
+import summaryRouter from './src/routes/summary';
+app.use('/api/summary', summaryRouter);

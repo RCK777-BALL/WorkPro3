@@ -19,7 +19,7 @@ import { tenantValidators } from '../validators/tenantValidators';
 const router = express.Router();
 
 router.use(requireAuth);
-router.use(requireRoles(['admin']));
+router.use(requireRoles(['general_manager', 'admin']));
 
 router.get('/', getAllTenants);
 router.get('/:id', validateObjectId('id'), getTenantById);

@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { useDashboardStore, Timeframe } from '@/store/dashboardStore';
 import type { Department } from '@/types';
+import { TEAM_ROLES, TEAM_ROLE_LABELS } from '@/constants/teamRoles';
 
 interface Props {
   departments: Department[];
@@ -96,8 +97,11 @@ const FiltersBar: React.FC<Props> = ({ departments }) => {
         className="border border-neutral-300 rounded-md px-2 py-1 text-sm"
       >
         <option value="all">All Roles</option>
-        <option value="admin">Admin</option>
-        <option value="supervisor">Supervisor</option>
+        {TEAM_ROLES.map((role) => (
+          <option key={role} value={role}>
+            {TEAM_ROLE_LABELS[role]}
+          </option>
+        ))}
         <option value="planner">Planner</option>
         <option value="tech">Tech</option>
       </select>

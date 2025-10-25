@@ -25,9 +25,9 @@ interface OIDCProfile {
 export type Provider = 'okta' | 'azure';
 
 export const mapRoles = (groups: string[] = []): string => {
-  if (groups.includes('Admin')) return 'admin';
-  if (groups.includes('Manager')) return 'supervisor';
-  if (groups.includes('Technician')) return 'tech';
+  if (groups.includes('Admin')) return 'general_manager';
+  if (groups.includes('Manager')) return 'assistant_general_manager';
+  if (groups.includes('Technician')) return 'technical_team_member';
   return 'planner';
 };
 

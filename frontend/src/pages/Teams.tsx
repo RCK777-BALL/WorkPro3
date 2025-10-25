@@ -7,7 +7,11 @@ import { useEffect, useState } from 'react';
 
 import Button from '@/components/common/Button';
 import TeamTable from '@/components/teams/TeamTable';
-import TeamModal, { type TeamRole, isTeamRole } from '@/components/teams/TeamModal';
+import TeamModal from '@/components/teams/TeamModal';
+import {
+  normalizeTeamRole,
+  type TeamRole,
+} from '@/constants/teamRoles';
 
 import { useTeamMembers } from '@/store/useTeamMembers';
 import { useAuthStore, isAdmin as selectIsAdmin, isManager as selectIsManager } from '@/store/authStore';
@@ -30,7 +34,7 @@ const Teams = () => {
   const handleRowClick = (member: TeamMember) => {
     if (!canManageMembers) return;
     setSelected(member);
-    setDefaultRole(isTeamRole(member.role) ? member.role : 'team_member');
+    setDefaultRole(normalizeTeamRole(member.role) ?? 'team_member');
     setOpen(true);
   };
 
@@ -51,7 +55,7 @@ const Teams = () => {
             variant="secondary"
             onClick={() => {
               setSelected(null);
-              setDefaultRole('manager');
+              setDefaultRole('operations_manager');
               setOpen(true);
             }}
           >

@@ -33,21 +33,26 @@ type RawAuthUser = {
 };
 
 const allowedRoles: AuthUser['role'][] = [
+  'general_manager',
+  'assistant_general_manager',
+  'operations_manager',
+  'department_leader',
+  'assistant_department_leader',
+  'area_leader',
+  'team_leader',
+  'team_member',
+  'technical_team_member',
   'admin',
   'supervisor',
   'planner',
   'tech',
-  'team_member',
-  'team_leader',
-  'area_leader',
-  'department_leader',
 ];
 
 const mapRole = (role?: string): AuthUser['role'] => {
   if (role && allowedRoles.includes(role as AuthUser['role'])) {
     return role as AuthUser['role'];
   }
-  return 'admin';
+  return 'general_manager';
 };
 
 const toAuthUser = (payload: RawAuthUser): AuthUser => {
@@ -80,16 +85,21 @@ type AuthUserInput =
   | (Omit<AuthUser, 'role'> & { role?: unknown; roles?: unknown });
 
 const ROLE_PRIORITY: AuthRole[] = [
+  'general_manager',
+  'assistant_general_manager',
+  'operations_manager',
+  'department_leader',
+  'assistant_department_leader',
+  'area_leader',
+  'team_leader',
+  'team_member',
+  'technical_team_member',
   'admin',
   'supervisor',
   'manager',
   'planner',
   'tech',
   'technician',
-  'team_leader',
-  'team_member',
-  'area_leader',
-  'department_leader',
   'viewer',
 ];
 

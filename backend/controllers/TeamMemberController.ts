@@ -9,13 +9,47 @@ import { writeAuditLog } from '../utils/audit';
 import { toEntityId } from '../utils/ids';
 import { sendResponse } from '../utils/sendResponse';
 
-const roleHierarchy: Record<ITeamMember['role'], ITeamMember['role'][] | null> = {
-  admin: null,
-  supervisor: null,
-  department_leader: null,
-  area_leader: ['supervisor', 'department_leader'],
-  team_leader: ['area_leader'],
+type TeamRole =
+  | 'general_manager'
+  | 'assistant_general_manager'
+  | 'operations_manager'
+  | 'department_leader'
+  | 'assistant_department_leader'
+  | 'area_leader'
+  | 'team_leader'
+  | 'team_member'
+  | 'technical_team_member';
+
+type LegacyRole = 'admin' | 'supervisor' | 'manager';
+
+const TEAM_ROLE_HIERARCHY: Record<TeamRole, TeamRole[] | null> = {
+  general_manager: null,
+  assistant_general_manager: ['general_manager'],
+  operations_manager: ['general_manager', 'assistant_general_manager'],
+  department_leader: ['general_manager', 'assistant_general_manager', 'operations_manager'],
+  assistant_department_leader: ['department_leader'],
+  area_leader: ['department_leader', 'assistant_department_leader'],
+  team_leader: ['area_leader', 'assistant_department_leader'],
   team_member: ['team_leader'],
+  technical_team_member: ['team_leader'],
+};
+
+const LEGACY_ROLE_MAP: Record<LegacyRole, TeamRole> = {
+  admin: 'general_manager',
+  supervisor: 'assistant_general_manager',
+  manager: 'operations_manager',
+};
+
+const isTeamRole = (role: unknown): role is TeamRole =>
+  typeof role === 'string' && role in TEAM_ROLE_HIERARCHY;
+
+const normalizeRole = (role: ITeamMember['role'] | undefined): TeamRole | null => {
+  if (!role) return null;
+  if (isTeamRole(role)) return role;
+  if (role in LEGACY_ROLE_MAP) {
+    return LEGACY_ROLE_MAP[role as LegacyRole];
+  }
+  return null;
 };
 
 const toPlainObject = (
@@ -36,16 +70,20 @@ async function validateHierarchy(
   managerId: string | null | undefined,
   tenantId: string
 ) {
-  const allowedManagerRoles = roleHierarchy[role];
+  const normalizedRole = normalizeRole(role);
+  if (!normalizedRole) {
+    throw new Error(`Unsupported role ${role}`);
+  }
+  const allowedManagerRoles = TEAM_ROLE_HIERARCHY[normalizedRole];
   if (!allowedManagerRoles) {
     if (managerId) {
-      throw new Error(`${role} cannot have a manager`);
+      throw new Error(`${normalizedRole} cannot have a manager`);
     }
     return;
   }
 
   if (!managerId) {
-    throw new Error(`managerId is required for role ${role}`);
+    throw new Error(`managerId is required for role ${normalizedRole}`);
   }
 
   const manager = await TeamMember.findOne({ _id: managerId, tenantId });
@@ -53,7 +91,8 @@ async function validateHierarchy(
     throw new Error('Manager not found');
   }
 
-  if (!allowedManagerRoles.includes(manager.role)) {
+  const managerRole = normalizeRole(manager.role);
+  if (!managerRole || !allowedManagerRoles.includes(managerRole)) {
     throw new Error(
       `Manager must have role ${allowedManagerRoles.join(' or ')}`
     );
@@ -74,7 +113,7 @@ export const getTeamMembers = async (
 
     const formatted = members.map((member: any) => ({
       name: member.name,
-      role: member.role,
+      role: normalizeRole(member.role) ?? member.role,
       department: member.department,
       status: member.status,
     }));
@@ -98,17 +137,22 @@ export const createTeamMember = async (
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const role = req.body.role;
-    if (['admin', 'supervisor', 'department_leader'].includes(role)) {
+    const normalizedRole = normalizeRole(req.body.role);
+    if (!normalizedRole) {
+      res.status(400).json({ message: `Unsupported role ${req.body.role}` });
+      return;
+    }
+    req.body.role = normalizedRole;
+    if (!TEAM_ROLE_HIERARCHY[normalizedRole]) {
       req.body.managerId = null;
     } else {
       if (!req.body.managerId) {
         res
           .status(400)
-          .json({ message: `managerId is required for role ${role}` });
+          .json({ message: `managerId is required for role ${normalizedRole}` });
         return;
       }
-      await validateHierarchy(role, req.body.managerId, tenantId as string);
+      await validateHierarchy(normalizedRole, req.body.managerId, tenantId as string);
     }
     const member = new TeamMember({ ...req.body, tenantId });
     const saved = await member.save();
@@ -140,18 +184,23 @@ export const updateTeamMember = async (
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const role = req.body.role;
-    if (['admin', 'supervisor', 'department_leader'].includes(role)) {
+    const normalizedRole = normalizeRole(req.body.role);
+    if (!normalizedRole) {
+      res.status(400).json({ message: `Unsupported role ${req.body.role}` });
+      return;
+    }
+    req.body.role = normalizedRole;
+    if (!TEAM_ROLE_HIERARCHY[normalizedRole]) {
       req.body.managerId = null;
     } else {
       if (!req.body.managerId) {
         res
           .status(400)
-          .json({ message: `managerId is required for role ${role}` });
+          .json({ message: `managerId is required for role ${normalizedRole}` });
         return;
       }
       try {
-        await validateHierarchy(role, req.body.managerId, tenantId as string);
+        await validateHierarchy(normalizedRole, req.body.managerId, tenantId as string);
       } catch (validationErr) {
         const message =
           validationErr instanceof Error

@@ -22,7 +22,7 @@ router.use(requireAuth);
  
 router.get('/:id/theme', validateObjectId('id'), getUserTheme);
 router.put('/:id/theme', validateObjectId('id'), updateUserTheme);
-router.use(requireRoles(['admin']));
+router.use(requireRoles(['general_manager', 'admin']));
  
 router.get('/', getAllUsers);
 router.get('/:id', validateObjectId('id'), getUserById);

@@ -20,6 +20,7 @@ app.get('/protected', requireAuth, requireRoles(['admin']), (_req, res) => {
 
 let mongo: MongoMemoryServer;
 let tokenAdmin: string;
+let tokenGeneralManager: string;
 let tokenPlanner: string;
 
 beforeAll(async () => {
@@ -45,6 +46,15 @@ beforeEach(async () => {
   });
   tokenAdmin = jwt.sign({ id: admin._id.toString() }, process.env.JWT_SECRET!);
 
+  const generalManager = await User.create({
+    name: 'GM',
+    email: 'gm@example.com',
+    passwordHash: 'pass123',
+    roles: ['general_manager'],
+    tenantId: new mongoose.Types.ObjectId(),
+  });
+  tokenGeneralManager = jwt.sign({ id: generalManager._id.toString() }, process.env.JWT_SECRET!);
+
   const planner = await User.create({
     name: 'Planner',
     email: 'planner@example.com',
@@ -60,6 +70,14 @@ describe('requireRoles middleware', () => {
     const res = await request(app)
       .get('/protected')
       .set('Authorization', `Bearer ${tokenAdmin}`)
+      .expect(200);
+    expect(res.body.ok).toBe(true);
+  });
+
+  it('allows access when user has equivalent role', async () => {
+    const res = await request(app)
+      .get('/protected')
+      .set('Authorization', `Bearer ${tokenGeneralManager}`)
       .expect(200);
     expect(res.body.ok).toBe(true);
   });

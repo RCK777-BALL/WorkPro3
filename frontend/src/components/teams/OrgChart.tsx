@@ -6,6 +6,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import Tree, { RawNodeDatum, RenderCustomNodeElementFn } from 'react-d3-tree';
 import { useTeamMembers } from '@/store/useTeamMembers';
 import type { TeamMember } from '@/types';
+import { getTeamRoleLabel } from '@/constants/teamRoles';
 import useResizeObserver from '@/hooks/useResizeObserver';
 
 interface OrgChartProps {
@@ -22,7 +23,7 @@ const buildTree = (members: TeamMember[]): TreeNode => {
   members.forEach((m) => {
     nodeMap.set(m.id, {
       name: m.name,
-      attributes: { role: m.role },
+      attributes: { role: getTeamRoleLabel(m.role) },
       member: m,
       children: [],
     });
@@ -45,7 +46,7 @@ const buildTree = (members: TeamMember[]): TreeNode => {
       id: 'root',
       name: 'Organization',
       email: '',
-      role: 'admin',
+      role: 'general_manager',
     },
     children: roots,
   } as TreeNode;
@@ -75,7 +76,7 @@ const OrgChart: React.FC<OrgChartProps> = ({ onSelect }) => {
           {nodeDatum.member.name}
         </text>
         <text x={20} dy={15} fill={textColor} fontSize={10}>
-          {nodeDatum.member.role}
+          {getTeamRoleLabel(nodeDatum.member.role)}
         </text>
       </g>
     );

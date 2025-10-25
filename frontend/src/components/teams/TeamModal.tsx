@@ -11,29 +11,14 @@ import { useDepartmentStore } from '@/store/departmentStore';
 import { useTeamMembers } from '@/store/useTeamMembers';
 import type { TeamMember } from '@/types';
 import { useToast } from '@/context/ToastContext';
-
-export type TeamRole =
-  | 'admin'
-  | 'supervisor'
-  | 'manager'
-  | 'department_leader'
-  | 'area_leader'
-  | 'team_leader'
-  | 'team_member';
-
-export const TEAM_ROLES: TeamRole[] = [
-  'admin',
-  'supervisor',
-  'manager',
-  'department_leader',
-  'area_leader',
-  'team_leader',
-  'team_member',
-];
-
-export const isTeamRole = (
-  role: TeamMember['role'] | null | undefined,
-): role is TeamRole => role != null && TEAM_ROLES.includes(role as TeamRole);
+import {
+  TEAM_ROLES,
+  TEAM_ROLE_LABELS,
+  TEAM_ROLE_MANAGER_MAP,
+  getTeamRoleLabel,
+  normalizeTeamRole,
+  type TeamRole,
+} from '@/constants/teamRoles';
 
 interface TeamModalProps {
   isOpen: boolean;
@@ -79,39 +64,29 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
   useEffect(() => {
     setValue('name', member?.name ?? '');
     setValue('email', member?.email ?? '');
-    const resolvedRole = isTeamRole(member?.role) ? member.role : defaultRole;
+    const resolvedRole = normalizeTeamRole(member?.role) ?? defaultRole;
     setValue('role', resolvedRole);
     setValue('department', member?.department ?? '');
     setValue('employeeId', member?.employeeId ?? '');
     setValue('managerId', member?.managerId ?? '');
   }, [defaultRole, member, setValue]);
 
-  const selectedRole = watch('role');
-
-  const managerRoleMap: Record<TeamRole, TeamRole[] | null> = useMemo(
-    () => ({
-      admin: null,
-      supervisor: null,
-      manager: ['admin', 'supervisor'],
-      department_leader: null,
-      area_leader: ['supervisor', 'department_leader', 'manager'],
-      team_leader: ['area_leader'],
-      team_member: ['team_leader'],
-    }),
-    [],
-  );
+  const selectedRole = watch('role') ?? 'team_member';
 
   useEffect(() => {
-    if (!managerRoleMap[selectedRole]) {
+    if (!TEAM_ROLE_MANAGER_MAP[selectedRole]) {
       setValue('managerId', '');
     }
-  }, [managerRoleMap, selectedRole, setValue]);
+  }, [selectedRole, setValue]);
 
   const managerOptions = useMemo(() => {
-    const allowedRoles = managerRoleMap[selectedRole];
+    const allowedRoles = TEAM_ROLE_MANAGER_MAP[selectedRole];
     if (!allowedRoles) return [];
-    return members.filter((m) => isTeamRole(m.role) && allowedRoles.includes(m.role));
-  }, [managerRoleMap, members, selectedRole]);
+    return members.filter((m) => {
+      const normalized = normalizeTeamRole(m.role);
+      return normalized && allowedRoles.includes(normalized);
+    });
+  }, [members, selectedRole]);
 
   const fetchDepartmentOptions = async (q: string) => {
     try {
@@ -129,7 +104,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
   const onSubmit = handleSubmit(async (data: TeamFormData) => {
     setLoading(true);
     try {
-      const requiresManager = Boolean(managerRoleMap[data.role]);
+      const requiresManager = Boolean(TEAM_ROLE_MANAGER_MAP[data.role]);
       const payload: Partial<TeamMember> = {
         ...data,
         managerId: requiresManager ? data.managerId || null : null,
@@ -161,7 +136,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
   if (!isOpen) return null;
 
   const isEditMode = Boolean(member);
-  const isManagerFlow = !isEditMode && defaultRole === 'manager';
+  const isManagerFlow = !isEditMode && defaultRole === 'operations_manager';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -220,13 +195,11 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
                 className="w-full px-3 py-2 border border-neutral-300 rounded-md bg-white text-neutral-900"
                 {...register('role')}
               >
-                <option value="admin">Admin</option>
-                <option value="supervisor">Supervisor</option>
-                <option value="manager">Manager</option>
-                <option value="department_leader">Department Leader</option>
-                <option value="area_leader">Area Leader</option>
-                <option value="team_leader">Team Leader</option>
-                <option value="team_member">Team Member</option>
+                {TEAM_ROLES.map((role) => (
+                  <option key={role} value={role}>
+                    {TEAM_ROLE_LABELS[role]}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -242,7 +215,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
             </div>
           </div>
 
-          {managerRoleMap[selectedRole] && (
+            {TEAM_ROLE_MANAGER_MAP[selectedRole] && (
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-neutral-900 mb-1">Manager</label>
@@ -255,7 +228,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
                   <option value="">Select manager</option>
                   {managerOptions.map((option) => (
                     <option key={option.id} value={option.id}>
-                      {option.name}
+                      {`${option.name} — ${getTeamRoleLabel(option.role)}`}
                     </option>
                   ))}
                 </select>

@@ -5,6 +5,7 @@
 import { create } from 'zustand';
 import http from '@/lib/http';
 import type { TeamMember, TeamMemberResponse } from '@/types';
+import { normalizeTeamRole } from '@/constants/teamRoles';
 
 interface TeamMemberState {
   members: TeamMember[];
@@ -57,7 +58,7 @@ function mapMember(data: TeamMemberResponse): TeamMember {
     id: data._id ?? data.id ?? '',
     name: data.name,
     email: data.email,
-    role: data.role,
+    role: normalizeTeamRole(data.role) ?? data.role,
     department: data.department,
     employeeId: data.employeeId,
     managerId: data.managerId ?? data.reportsTo ?? null,

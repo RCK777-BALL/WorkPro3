@@ -5,8 +5,8 @@
 /* your custom vars/utilities can go here */
 
 :root {
-  --app-background-color: #0f172a;
-  --app-text-color: #f8fafc;
+  --app-background-color: #ffffff;
+  --app-text-color: #000000;
   --accent-color: #4f46e5;
   --accent-color-strong: #4338ca;
   --accent-color-light: #e0e7ff;

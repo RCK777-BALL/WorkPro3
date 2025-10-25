@@ -12,24 +12,40 @@ import { useTeamMembers } from '@/store/useTeamMembers';
 import type { TeamMember } from '@/types';
 import { useToast } from '@/context/ToastContext';
 
-interface TeamModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  member: TeamMember | null;
-}
-
-type Role =
+export type TeamRole =
   | 'admin'
   | 'supervisor'
+  | 'manager'
   | 'department_leader'
   | 'area_leader'
   | 'team_leader'
   | 'team_member';
 
+export const TEAM_ROLES: TeamRole[] = [
+  'admin',
+  'supervisor',
+  'manager',
+  'department_leader',
+  'area_leader',
+  'team_leader',
+  'team_member',
+];
+
+export const isTeamRole = (
+  role: TeamMember['role'] | null | undefined,
+): role is TeamRole => role != null && TEAM_ROLES.includes(role as TeamRole);
+
+interface TeamModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  member: TeamMember | null;
+  defaultRole: TeamRole;
+}
+
 interface TeamFormData {
   name: string;
   email: string;
-  role: Role;
+  role: TeamRole;
   department: string;
   employeeId: string;
   managerId: string;
@@ -44,7 +60,7 @@ const defaultValues: TeamFormData = {
   managerId: '',
 };
 
-const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
+const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultRole }) => {
   const { addMember, updateMember, fetchMembers, members } = useTeamMembers();
   const { fetchDepartments } = useDepartmentStore();
   const { addToast } = useToast();
@@ -63,20 +79,22 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
   useEffect(() => {
     setValue('name', member?.name ?? '');
     setValue('email', member?.email ?? '');
-    setValue('role', member?.role ?? 'team_member');
+    const resolvedRole = isTeamRole(member?.role) ? member.role : defaultRole;
+    setValue('role', resolvedRole);
     setValue('department', member?.department ?? '');
     setValue('employeeId', member?.employeeId ?? '');
     setValue('managerId', member?.managerId ?? '');
-  }, [member, setValue]);
+  }, [defaultRole, member, setValue]);
 
   const selectedRole = watch('role');
 
-  const managerRoleMap: Record<Role, Role[] | null> = useMemo(
+  const managerRoleMap: Record<TeamRole, TeamRole[] | null> = useMemo(
     () => ({
       admin: null,
       supervisor: null,
+      manager: ['admin', 'supervisor'],
       department_leader: null,
-      area_leader: ['supervisor', 'department_leader'],
+      area_leader: ['supervisor', 'department_leader', 'manager'],
       team_leader: ['area_leader'],
       team_member: ['team_leader'],
     }),
@@ -92,7 +110,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
   const managerOptions = useMemo(() => {
     const allowedRoles = managerRoleMap[selectedRole];
     if (!allowedRoles) return [];
-    return members.filter((m) => allowedRoles.includes(m.role));
+    return members.filter((m) => isTeamRole(m.role) && allowedRoles.includes(m.role));
   }, [managerRoleMap, members, selectedRole]);
 
   const fetchDepartmentOptions = async (q: string) => {
@@ -142,12 +160,15 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
 
   if (!isOpen) return null;
 
+  const isEditMode = Boolean(member);
+  const isManagerFlow = !isEditMode && defaultRole === 'manager';
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-700">
           <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
-            {member ? 'Edit Team Member' : 'Add Team Member'}
+            {isEditMode ? 'Edit Team Member' : isManagerFlow ? 'Add Manager' : 'Add Team Member'}
           </h2>
           <button
             onClick={onClose}
@@ -201,6 +222,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
               >
                 <option value="admin">Admin</option>
                 <option value="supervisor">Supervisor</option>
+                <option value="manager">Manager</option>
                 <option value="department_leader">Department Leader</option>
                 <option value="area_leader">Area Leader</option>
                 <option value="team_leader">Team Leader</option>
@@ -264,7 +286,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member }) => {
               Cancel
             </Button>
             <Button type="submit" variant="primary" loading={loading}>
-              {member ? 'Update Member' : 'Add Member'}
+              {isEditMode ? 'Update Member' : isManagerFlow ? 'Add Manager' : 'Add Member'}
             </Button>
           </div>
         </form>

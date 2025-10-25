@@ -49,7 +49,7 @@ const Teams = () => {
               setOpen(true);
             }}
           >
-            Add Associate
+            Add Team Member
           </Button>
         </div>
       )}

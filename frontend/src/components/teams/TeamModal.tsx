@@ -143,8 +143,8 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
   if (!isOpen) return null;
 
   const isEditMode = Boolean(member);
-  const modalTitle = isEditMode ? 'Edit Team Member' : 'Add Associate';
-  const submitLabel = isEditMode ? 'Update Member' : 'Add Associate';
+  const modalTitle = isEditMode ? 'Edit Team Member' : 'Add Team Member';
+  const submitLabel = isEditMode ? 'Update Member' : 'Add Team Member';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

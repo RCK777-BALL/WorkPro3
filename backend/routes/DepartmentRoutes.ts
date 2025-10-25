@@ -1611,15 +1611,16 @@ const importDepartmentsFromExcel: AuthedRequestHandler<Record<string, string>, I
       }
 
       const departmentKey = departmentName.toLowerCase();
-      let department = departments.get(departmentKey);
-      if (!department) {
-        department = {
-          name: departmentName,
-          notes: undefined,
-          lines: new Map(),
-        };
-        departments.set(departmentKey, department);
-      }
+      const department =
+        departments.get(departmentKey) ??
+        (() => {
+          const created: DepartmentImportPayload = {
+            name: departmentName,
+            lines: new Map(),
+          };
+          departments.set(departmentKey, created);
+          return created;
+        })();
 
       const departmentNotes = getCellText(row, columnIndexMap, 'departmentNotes');
       if (departmentNotes && !department.notes) {
@@ -1631,15 +1632,16 @@ const importDepartmentsFromExcel: AuthedRequestHandler<Record<string, string>, I
       }
 
       const lineKey = `${departmentKey}::${lineName.toLowerCase()}`;
-      let line = department.lines.get(lineKey);
-      if (!line) {
-        line = {
-          name: lineName,
-          notes: undefined,
-          stations: new Map(),
-        };
-        department.lines.set(lineKey, line);
-      }
+      const line =
+        department.lines.get(lineKey) ??
+        (() => {
+          const created: LineImportPayload = {
+            name: lineName,
+            stations: new Map(),
+          };
+          department.lines.set(lineKey, created);
+          return created;
+        })();
 
       const lineNotes = getCellText(row, columnIndexMap, 'lineNotes');
       if (lineNotes && !line.notes) {
@@ -1651,15 +1653,16 @@ const importDepartmentsFromExcel: AuthedRequestHandler<Record<string, string>, I
       }
 
       const stationKey = `${lineKey}::${stationName.toLowerCase()}`;
-      let station = line.stations.get(stationKey);
-      if (!station) {
-        station = {
-          name: stationName,
-          notes: undefined,
-          assets: [],
-        };
-        line.stations.set(stationKey, station);
-      }
+      const station =
+        line.stations.get(stationKey) ??
+        (() => {
+          const created: StationImportPayload = {
+            name: stationName,
+            assets: [],
+          };
+          line.stations.set(stationKey, created);
+          return created;
+        })();
 
       const stationNotes = getCellText(row, columnIndexMap, 'stationNotes');
       if (stationNotes && !station.notes) {
@@ -1792,9 +1795,6 @@ const importDepartmentsFromExcel: AuthedRequestHandler<Record<string, string>, I
               name: assetEntry.name,
               type: assetEntry.type,
               status: assetEntry.status,
-              description: assetEntry.description,
-              notes: assetEntry.notes,
-              location: assetEntry.location,
               departmentId: department._id,
               department: department.name,
               line: line.name,
@@ -1803,6 +1803,18 @@ const importDepartmentsFromExcel: AuthedRequestHandler<Record<string, string>, I
               stationId: stationDoc._id,
               tenantId: new Types.ObjectId(tenantId),
             };
+
+            if (assetEntry.description) {
+              assetPayload.description = assetEntry.description;
+            }
+
+            if (assetEntry.notes) {
+              assetPayload.notes = assetEntry.notes;
+            }
+
+            if (assetEntry.location) {
+              assetPayload.location = assetEntry.location;
+            }
 
             if (assetEntry.lastServiced) {
               assetPayload.lastServiced = assetEntry.lastServiced;

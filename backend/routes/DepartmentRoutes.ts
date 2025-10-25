@@ -1418,6 +1418,15 @@ type ImportSummary = {
   warnings: string[];
 };
 
+const getOrCreate = <K, V>(map: Map<K, V>, key: K, create: () => V): V => {
+  let value = map.get(key);
+  if (!value) {
+    value = create();
+    map.set(key, value);
+  }
+  return value;
+};
+
 const columnNames = {
   departmentName: 'department name',
   departmentNotes: 'department notes',
@@ -1611,16 +1620,14 @@ const importDepartmentsFromExcel: AuthedRequestHandler<Record<string, string>, I
       }
 
       const departmentKey = departmentName.toLowerCase();
-      const department =
-        departments.get(departmentKey) ??
-        (() => {
-          const created: DepartmentImportPayload = {
-            name: departmentName,
-            lines: new Map(),
-          };
-          departments.set(departmentKey, created);
-          return created;
-        })();
+      const department = getOrCreate<string, DepartmentImportPayload>(
+        departments,
+        departmentKey,
+        () => ({
+          name: departmentName,
+          lines: new Map<string, LineImportPayload>(),
+        }),
+      );
 
       const departmentNotes = getCellText(row, columnIndexMap, 'departmentNotes');
       if (departmentNotes && !department.notes) {
@@ -1632,16 +1639,14 @@ const importDepartmentsFromExcel: AuthedRequestHandler<Record<string, string>, I
       }
 
       const lineKey = `${departmentKey}::${lineName.toLowerCase()}`;
-      const line =
-        department.lines.get(lineKey) ??
-        (() => {
-          const created: LineImportPayload = {
-            name: lineName,
-            stations: new Map(),
-          };
-          department.lines.set(lineKey, created);
-          return created;
-        })();
+      const line = getOrCreate<string, LineImportPayload>(
+        department.lines,
+        lineKey,
+        () => ({
+          name: lineName,
+          stations: new Map<string, StationImportPayload>(),
+        }),
+      );
 
       const lineNotes = getCellText(row, columnIndexMap, 'lineNotes');
       if (lineNotes && !line.notes) {
@@ -1653,16 +1658,14 @@ const importDepartmentsFromExcel: AuthedRequestHandler<Record<string, string>, I
       }
 
       const stationKey = `${lineKey}::${stationName.toLowerCase()}`;
-      const station =
-        line.stations.get(stationKey) ??
-        (() => {
-          const created: StationImportPayload = {
-            name: stationName,
-            assets: [],
-          };
-          line.stations.set(stationKey, created);
-          return created;
-        })();
+      const station = getOrCreate<string, StationImportPayload>(
+        line.stations,
+        stationKey,
+        () => ({
+          name: stationName,
+          assets: [],
+        }),
+      );
 
       const stationNotes = getCellText(row, columnIndexMap, 'stationNotes');
       if (stationNotes && !station.notes) {

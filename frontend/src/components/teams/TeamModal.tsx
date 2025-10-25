@@ -141,12 +141,12 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-neutral-200">
-          <h2 className="text-xl font-semibold text-neutral-900">{modalTitle}</h2>
+      <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-transparent dark:border-neutral-700/70">
+        <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-700">
+          <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">{modalTitle}</h2>
           <button
             onClick={onClose}
-            className="text-neutral-500 hover:text-neutral-700"
+            className="text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
           >
             <X size={20} />
           </button>
@@ -154,44 +154,45 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
 
         <form onSubmit={onSubmit} className="p-6 space-y-6">
           <div>
-            <label className="block text-sm font-medium text-neutral-900 mb-1">Avatar</label>
+            <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">Avatar</label>
             <input
               type="file"
               accept="image/*"
+              className="text-neutral-900 dark:text-neutral-100"
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAvatarFile(e.target.files?.[0] || null)}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-900 mb-1">Name</label>
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">Name</label>
               <input
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-100"
                 {...register('name', { required: 'Name is required' })}
               />
               {errors.name && (
-                <p className="text-error-500 text-sm mt-1">{errors.name.message as string}</p>
+                <p className="text-error-500 dark:text-error-400 text-sm mt-1">{errors.name.message as string}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-900 mb-1">Email</label>
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">Email</label>
               <input
                 type="email"
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-100"
                 {...register('email', { required: 'Email is required' })}
               />
               {errors.email && (
-                <p className="text-error-500 text-sm mt-1">{errors.email.message as string}</p>
+                <p className="text-error-500 dark:text-error-400 text-sm mt-1">{errors.email.message as string}</p>
               )}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-900 mb-1">Role</label>
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">Role</label>
               <select
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md bg-white text-neutral-900"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-md bg-white text-neutral-900 dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-100"
                 {...register('role')}
               >
                 {TEAM_ROLES.map((role) => (
@@ -214,12 +215,12 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
             </div>
           </div>
 
-            {TEAM_ROLE_MANAGER_MAP[selectedRole] && (
+          {TEAM_ROLE_MANAGER_MAP[selectedRole] && (
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-neutral-900 mb-1">Manager</label>
+                <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">Manager</label>
                 <select
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-md bg-white text-neutral-900"
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-md bg-white text-neutral-900 dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-100"
                   {...register('managerId', {
                     required: 'Manager is required',
                   })}
@@ -232,7 +233,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
                   ))}
                 </select>
                 {errors.managerId && (
-                  <p className="text-error-500 text-sm mt-1">
+                  <p className="text-error-500 dark:text-error-400 text-sm mt-1">
                     {errors.managerId.message as string}
                   </p>
                 )}
@@ -242,18 +243,18 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
 
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-900 mb-1">Employee ID</label>
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">Employee ID</label>
               <input
-                className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-md text-neutral-900 bg-white dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-100"
                 {...register('employeeId', { required: 'Employee ID is required' })}
               />
               {errors.employeeId && (
-                <p className="text-error-500 text-sm mt-1">{errors.employeeId.message as string}</p>
+                <p className="text-error-500 dark:text-error-400 text-sm mt-1">{errors.employeeId.message as string}</p>
               )}
             </div>
           </div>
 
-          <div className="flex justify-end space-x-3 pt-6 border-t border-neutral-200">
+          <div className="flex justify-end space-x-3 pt-6 border-t border-neutral-200 dark:border-neutral-700">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>

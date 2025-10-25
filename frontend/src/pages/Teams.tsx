@@ -41,7 +41,7 @@ const Teams = () => {
   return (
     <div className="space-y-6">
       {canManageMembers && (
-        <div className="flex justify-end gap-3">
+        <div className="flex justify-end">
           <Button
             onClick={() => {
               setSelected(null);
@@ -49,17 +49,7 @@ const Teams = () => {
               setOpen(true);
             }}
           >
-            Add Member
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setSelected(null);
-              setDefaultRole('operations_manager');
-              setOpen(true);
-            }}
-          >
-            Add Manager
+            Add Associate
           </Button>
         </div>
       )}

@@ -102,9 +102,9 @@ type UpdateWorkOrderBody = Partial<
   checklists?: RawChecklist[] | ReturnType<typeof mapChecklists>;
   signatures?: RawSignature[] | ReturnType<typeof mapSignatures>;
   pmTask?: Types.ObjectId | string;
-  department?: Types.ObjectId | string;
-  line?: Types.ObjectId | string;
-  station?: Types.ObjectId | string;
+  department?: Types.ObjectId | string | undefined;
+  line?: Types.ObjectId | string | undefined;
+  station?: Types.ObjectId | string | undefined;
   permits?: (Types.ObjectId | string)[];
   requiredPermitTypes?: string[];
 };

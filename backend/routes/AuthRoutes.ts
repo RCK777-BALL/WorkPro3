@@ -28,16 +28,21 @@ import { me, refresh, logout } from '../controllers/authController';
 import sendResponse from '../utils/sendResponse';
 
 const ROLE_PRIORITY = [
+  'general_manager',
+  'assistant_general_manager',
+  'operations_manager',
+  'department_leader',
+  'assistant_department_leader',
+  'area_leader',
+  'team_leader',
+  'team_member',
+  'technical_team_member',
   'admin',
   'supervisor',
   'manager',
   'planner',
   'tech',
   'technician',
-  'team_leader',
-  'team_member',
-  'area_leader',
-  'department_leader',
   'viewer',
 ];
 

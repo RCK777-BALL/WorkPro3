@@ -18,8 +18,38 @@ const router = express.Router();
 router.use(requireAuth);
 
 router.get('/', getTeamMembers);
-router.post('/', requireRoles(['admin', 'manager']), createTeamMember);
-router.put('/:id', requireRoles(['admin', 'manager']), updateTeamMember);
-router.delete('/:id', requireRoles(['admin', 'manager']), deleteTeamMember);
+router.post(
+  '/',
+  requireRoles([
+    'general_manager',
+    'assistant_general_manager',
+    'operations_manager',
+    'admin',
+    'manager',
+  ]),
+  createTeamMember,
+);
+router.put(
+  '/:id',
+  requireRoles([
+    'general_manager',
+    'assistant_general_manager',
+    'operations_manager',
+    'admin',
+    'manager',
+  ]),
+  updateTeamMember,
+);
+router.delete(
+  '/:id',
+  requireRoles([
+    'general_manager',
+    'assistant_general_manager',
+    'operations_manager',
+    'admin',
+    'manager',
+  ]),
+  deleteTeamMember,
+);
 
 export default router;

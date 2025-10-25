@@ -6,6 +6,25 @@ import type { Request, Response, NextFunction } from 'express';
 import type { UserRole } from '../types/auth';
 
 // Middleware to ensure the authenticated user has one of the required roles
+const ROLE_EQUIVALENTS: Partial<Record<UserRole, UserRole[]>> = {
+  admin: ['general_manager'],
+  general_manager: ['admin'],
+  supervisor: ['assistant_general_manager'],
+  assistant_general_manager: ['supervisor'],
+  manager: ['operations_manager'],
+  operations_manager: ['manager'],
+};
+
+const expandRoles = (roles: UserRole[]): UserRole[] => {
+  const expanded = new Set<UserRole>();
+  roles.forEach((role) => {
+    expanded.add(role);
+    const equivalents = ROLE_EQUIVALENTS[role];
+    equivalents?.forEach((eq) => expanded.add(eq));
+  });
+  return Array.from(expanded);
+};
+
 const requireRoles =
   (roles: UserRole[]) =>
   (req: Request, res: Response, next: NextFunction): void => {
@@ -15,7 +34,8 @@ const requireRoles =
     }
 
     const userRoles: UserRole[] = req.user.roles ?? [];
-    if (roles.length > 0 && !roles.some((role) => userRoles.includes(role))) {
+    const allowedRoles = expandRoles(roles);
+    if (allowedRoles.length > 0 && !allowedRoles.some((role) => userRoles.includes(role))) {
       res.status(403).json({ message: 'Forbidden' });
       return;
     }

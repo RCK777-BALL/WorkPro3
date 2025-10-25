@@ -8,9 +8,9 @@ import { oidcVerify, mapRoles } from '../auth/oidc';
 // Test role mapping
 describe('OIDC role mapping', () => {
   it('maps provider groups to internal roles', () => {
-    expect(mapRoles(['Admin'])).toBe('admin');
-    expect(mapRoles(['Manager'])).toBe('supervisor');
-    expect(mapRoles(['Technician'])).toBe('tech');
+    expect(mapRoles(['Admin'])).toBe('general_manager');
+    expect(mapRoles(['Manager'])).toBe('assistant_general_manager');
+    expect(mapRoles(['Technician'])).toBe('technical_team_member');
     expect(mapRoles([])).toBe('planner');
   });
 });
@@ -21,6 +21,6 @@ describe('OIDC verify callback', () => {
     const profile = { emails: [{ value: 'user@example.com' }], _json: { groups: ['Admin'] } };
     const done = vi.fn();
     await oidcVerify('issuer', 'sub', profile, {}, '', '', {}, done);
-    expect(done).toHaveBeenCalledWith(null, { email: 'user@example.com', roles: ['admin'] });
+    expect(done).toHaveBeenCalledWith(null, { email: 'user@example.com', roles: ['general_manager'] });
   });
 });

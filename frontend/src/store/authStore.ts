@@ -43,8 +43,11 @@ export const hasAuthRole = (user: AuthUser | null | undefined, role: AuthRole | 
   return user.roles?.some((r) => r.toLowerCase() === target) ?? false;
 };
 
-export const isAdmin = (state: AuthState) => hasRole(state.user, 'admin');
-export const isSupervisor = (state: AuthState) => hasRole(state.user, 'supervisor');
-export const isManager = (state: AuthState) => hasRole(state.user, 'manager');
+export const isAdmin = (state: AuthState) =>
+  hasRole(state.user, 'general_manager') || hasRole(state.user, 'admin');
+export const isSupervisor = (state: AuthState) =>
+  hasRole(state.user, 'assistant_general_manager') || hasRole(state.user, 'supervisor');
+export const isManager = (state: AuthState) =>
+  hasRole(state.user, 'operations_manager') || hasRole(state.user, 'manager');
 export const isPlanner = (state: AuthState) => hasRole(state.user, 'planner');
 export const isTech = (state: AuthState) => hasRole(state.user, 'tech');

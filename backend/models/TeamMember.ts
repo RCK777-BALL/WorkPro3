@@ -9,12 +9,18 @@ export interface ITeamMember {
   name: string;
   email: string;
   role:
-    | 'admin'
-    | 'supervisor'
+    | 'general_manager'
+    | 'assistant_general_manager'
+    | 'operations_manager'
     | 'department_leader'
+    | 'assistant_department_leader'
     | 'area_leader'
     | 'team_leader'
-    | 'team_member';
+    | 'team_member'
+    | 'technical_team_member'
+    | 'admin'
+    | 'supervisor'
+    | 'manager';
   department: Types.ObjectId;
   managerId?: Types.ObjectId;
   employeeId: string;
@@ -30,12 +36,18 @@ const teamMemberSchema = new Schema<ITeamMember>(
     role: {
       type: String,
       enum: [
-        'admin',
-        'supervisor',
+        'general_manager',
+        'assistant_general_manager',
+        'operations_manager',
         'department_leader',
+        'assistant_department_leader',
         'area_leader',
         'team_leader',
         'team_member',
+        'technical_team_member',
+        'admin',
+        'supervisor',
+        'manager',
       ],
       required: true,
     },

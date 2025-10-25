@@ -16,7 +16,7 @@ import {
 const router = express.Router();
 
 router.use(requireAuth);
-router.use(requireRoles(['admin']));
+router.use(requireRoles(['general_manager', 'admin']));
 
 router.get('/', getAllRoles);
 router.get('/:id', getRoleById);

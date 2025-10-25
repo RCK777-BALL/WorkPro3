@@ -10,6 +10,7 @@ import Button from '@common/Button';
 import WorkHistoryCard from './WorkHistoryCard';
 import { Users } from 'lucide-react';
 import type { TeamMember, WorkHistory, WorkHistoryEntry } from '@/types';
+import { getTeamRoleLabel, normalizeTeamRole } from '@/constants/teamRoles';
 
 interface TeamTableProps {
   teamMembers: TeamMember[];
@@ -31,16 +32,21 @@ const TeamTable: React.FC<TeamTableProps> = ({
   );
 
   const getRoleBadgeColor = (role: TeamMember['role']) => {
-    switch (role) {
-      case 'admin':
+    const normalized = normalizeTeamRole(role);
+    switch (normalized) {
+      case 'general_manager':
         return 'bg-primary-100 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300';
-      case 'supervisor':
+      case 'assistant_general_manager':
       case 'department_leader':
+      case 'assistant_department_leader':
         return 'bg-success-100 text-success-700 dark:bg-success-900/20 dark:text-success-300';
-      case 'tech':
+      case 'operations_manager':
       case 'area_leader':
       case 'team_leader':
         return 'bg-accent-100 text-accent-700 dark:bg-accent-900/20 dark:text-accent-300';
+      case 'team_member':
+      case 'technical_team_member':
+        return 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-200';
       default:
         return 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/20 dark:text-neutral-300';
     }
@@ -160,7 +166,7 @@ const TeamTable: React.FC<TeamTableProps> = ({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Badge
-                        text={member.role}
+                        text={getTeamRoleLabel(member.role)}
                         className={getRoleBadgeColor(member.role)}
                       />
                     </td>

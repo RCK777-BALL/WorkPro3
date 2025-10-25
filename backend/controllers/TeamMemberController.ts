@@ -106,16 +106,23 @@ export const getTeamMembers = async (
 ) => {
 
   try {
-    // Only return basic information for each team member
     const members = await TeamMember.find({ tenantId: req.tenantId })
-      .select('name role department status')
+      .select(
+        '_id name email role department status employeeId managerId reportsTo avatar',
+      )
       .lean();
 
     const formatted = members.map((member: any) => ({
+      _id: toEntityId(member._id),
+      id: toEntityId(member._id),
       name: member.name,
+      email: member.email,
       role: normalizeRole(member.role) ?? member.role,
       department: member.department,
       status: member.status,
+      employeeId: member.employeeId,
+      managerId: toEntityId(member.managerId ?? member.reportsTo) ?? null,
+      avatar: member.avatar,
     }));
 
     sendResponse(res, formatted);

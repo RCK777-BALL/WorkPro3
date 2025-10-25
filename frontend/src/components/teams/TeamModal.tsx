@@ -73,6 +73,13 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
 
   const selectedRole = watch('role') ?? 'team_member';
 
+  const requiresManagerSelection = useMemo(() => {
+    if (selectedRole === 'team_member') {
+      return false;
+    }
+    return Boolean(TEAM_ROLE_MANAGER_MAP[selectedRole]);
+  }, [selectedRole]);
+
   useEffect(() => {
     if (!TEAM_ROLE_MANAGER_MAP[selectedRole]) {
       setValue('managerId', '');
@@ -104,7 +111,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
   const onSubmit = handleSubmit(async (data: TeamFormData) => {
     setLoading(true);
     try {
-      const requiresManager = Boolean(TEAM_ROLE_MANAGER_MAP[data.role]);
+      const requiresManager = data.role !== 'team_member' && Boolean(TEAM_ROLE_MANAGER_MAP[data.role]);
       const payload: Partial<TeamMember> = {
         ...data,
         managerId: requiresManager ? data.managerId || null : null,
@@ -221,7 +228,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
                 <select
                   className="w-full px-3 py-2 border border-neutral-300 rounded-md bg-white text-neutral-900"
                   {...register('managerId', {
-                    required: 'Manager is required',
+                    required: requiresManagerSelection ? 'Manager is required' : false,
                   })}
                 >
                   <option value="">Select manager</option>

@@ -102,9 +102,9 @@ const AutoCompleteField: React.FC<AutoCompleteFieldProps> = ({
 
   return (
     <div className="relative">
-      <label className="block text-sm font-medium text-neutral-900 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">{label}</label>
       <input
-        className="w-full px-3 py-2 border border-neutral-300 rounded-md bg-white text-neutral-900"
+        className="w-full px-3 py-2 border border-neutral-300 rounded-md bg-white text-neutral-900 dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-100"
         value={inputValue}
         placeholder={placeholder}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
@@ -130,14 +130,14 @@ const AutoCompleteField: React.FC<AutoCompleteFieldProps> = ({
         }}
       />
       {fieldState.error && (
-        <p className="text-error-500 text-sm mt-1">{fieldState.error.message}</p>
+        <p className="text-error-500 dark:text-error-400 text-sm mt-1">{fieldState.error.message}</p>
       )}
       {show && options.length > 0 && (
-        <ul className="absolute z-10 bg-white border border-neutral-300 mt-1 rounded-md shadow max-h-40 overflow-auto w-full">
+        <ul className="absolute z-10 bg-white border border-neutral-300 mt-1 rounded-md shadow max-h-40 overflow-auto w-full dark:bg-neutral-800 dark:border-neutral-600">
           {options.map((opt) => (
             <li
               key={opt.id}
-              className="px-2 py-1 cursor-pointer text-neutral-900 hover:bg-neutral-100"
+              className="px-2 py-1 cursor-pointer text-neutral-900 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-700"
               onMouseDown={() => {
                 setIsManualInput(false);
                 field.onChange(opt.id);

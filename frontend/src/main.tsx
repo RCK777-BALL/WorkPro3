@@ -40,8 +40,13 @@ const router = createBrowserRouter(
   },
 );
 
+const routerFutureConfig = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true,
+} as const;
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <RouterProvider router={router} future={routerFutureConfig} />
   </React.StrictMode>,
 );

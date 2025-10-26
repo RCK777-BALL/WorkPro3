@@ -8,35 +8,37 @@ import { arrayMove } from '@dnd-kit/sortable';
 
 export type NavItemId =
   | 'dashboard'
-  | 'assets'
   | 'work-orders'
+  | 'permits'
   | 'maintenance'
-  | 'pm-tasks'
+  | 'assets'
+  | 'departments'
   | 'inventory'
+  | 'teams'
+  | 'analytics'
+  | 'reports'
   | 'vendors'
   | 'messages'
-  | 'departments'
-  | 'analytics'
-  | 'teams'
-  | 'settings'
   | 'documentation'
-  | 'timesheets';
+  | 'settings'
+  | 'imports';
 
 const defaultOrder: NavItemId[] = [
   'dashboard',
-  'assets',
   'work-orders',
+  'permits',
   'maintenance',
-  'pm-tasks',
+  'assets',
+  'departments',
   'inventory',
+  'teams',
+  'analytics',
+  'reports',
   'vendors',
   'messages',
-  'departments',
-  'analytics',
-  'teams',
-  'settings',
   'documentation',
-  'timesheets',
+  'settings',
+  'imports',
 ];
 
 interface NavigationState {

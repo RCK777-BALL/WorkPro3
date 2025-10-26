@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState, type CSSProperties } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   Activity,
@@ -28,54 +28,190 @@ import type { LucideIcon } from "lucide-react";
 import clsx from "clsx";
 
 import { useAuth } from "@/context/AuthContext";
+import {
+  defaultOrder,
+  useNavigationStore,
+  type NavItemId,
+} from "@/store/navigationStore";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  type DragEndEvent,
+  type DragStartEvent,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { restrictToParentElement, restrictToVerticalAxis } from "@dnd-kit/modifiers";
 
 type SidebarProps = {
   collapsed?: boolean;
 };
 
+type NavSection = "operations" | "management";
+
 type NavItem = {
+  id: NavItemId;
   label: string;
   to: string;
   icon: LucideIcon;
+  section: NavSection;
 };
 
-const navigation: NavItem[] = [
-  { label: "Overview", to: "/dashboard", icon: LayoutDashboard },
-  { label: "Work Orders", to: "/work-orders", icon: ClipboardList },
-  { label: "Permits", to: "/permits", icon: CheckCircle2 },
-  { label: "Maintenance", to: "/maintenance", icon: FolderKanban },
-  { label: "Assets", to: "/assets", icon: Warehouse },
-  { label: "Departments", to: "/departments", icon: Building2 },
-  { label: "Inventory", to: "/inventory", icon: MapPin },
-  { label: "Teams", to: "/teams", icon: Users },
-  { label: "Analytics", to: "/analytics", icon: BarChart3 },
-  { label: "Reports", to: "/reports", icon: FileStack },
-  { label: "Vendors", to: "/vendors", icon: Briefcase },
-  { label: "Messages", to: "/messages", icon: MessageSquare },
-  { label: "Documentation", to: "/documentation", icon: BookOpen },
-  { label: "Settings", to: "/settings", icon: Settings },
-  { label: "Imports", to: "/imports", icon: Activity },
+const sections: { id: NavSection; title: string }[] = [
+  { id: "operations", title: "Operations" },
+  { id: "management", title: "Management" },
 ];
+
+const navItems: Record<NavItemId, NavItem> = {
+  dashboard: {
+    id: "dashboard",
+    label: "Overview",
+    to: "/dashboard",
+    icon: LayoutDashboard,
+    section: "operations",
+  },
+  "work-orders": {
+    id: "work-orders",
+    label: "Work Orders",
+    to: "/work-orders",
+    icon: ClipboardList,
+    section: "operations",
+  },
+  permits: {
+    id: "permits",
+    label: "Permits",
+    to: "/permits",
+    icon: CheckCircle2,
+    section: "operations",
+  },
+  maintenance: {
+    id: "maintenance",
+    label: "Maintenance",
+    to: "/maintenance",
+    icon: FolderKanban,
+    section: "operations",
+  },
+  assets: {
+    id: "assets",
+    label: "Assets",
+    to: "/assets",
+    icon: Warehouse,
+    section: "operations",
+  },
+  departments: {
+    id: "departments",
+    label: "Departments",
+    to: "/departments",
+    icon: Building2,
+    section: "operations",
+  },
+  inventory: {
+    id: "inventory",
+    label: "Inventory",
+    to: "/inventory",
+    icon: MapPin,
+    section: "operations",
+  },
+  teams: {
+    id: "teams",
+    label: "Teams",
+    to: "/teams",
+    icon: Users,
+    section: "operations",
+  },
+  analytics: {
+    id: "analytics",
+    label: "Analytics",
+    to: "/analytics",
+    icon: BarChart3,
+    section: "management",
+  },
+  reports: {
+    id: "reports",
+    label: "Reports",
+    to: "/reports",
+    icon: FileStack,
+    section: "management",
+  },
+  vendors: {
+    id: "vendors",
+    label: "Vendors",
+    to: "/vendors",
+    icon: Briefcase,
+    section: "management",
+  },
+  messages: {
+    id: "messages",
+    label: "Messages",
+    to: "/messages",
+    icon: MessageSquare,
+    section: "management",
+  },
+  documentation: {
+    id: "documentation",
+    label: "Documentation",
+    to: "/documentation",
+    icon: BookOpen,
+    section: "management",
+  },
+  settings: {
+    id: "settings",
+    label: "Settings",
+    to: "/settings",
+    icon: Settings,
+    section: "management",
+  },
+  imports: {
+    id: "imports",
+    label: "Imports",
+    to: "/imports",
+    icon: Activity,
+    section: "management",
+  },
+};
 
 export default function Sidebar({ collapsed = false }: SidebarProps) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const isAuthenticated = Boolean(user);
+  const { sidebarOrder, moveSidebarItem } = useNavigationStore();
+
+  const [activeId, setActiveId] = useState<NavItemId | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
 
   const groups = useMemo(() => {
-    return [
-      {
-        id: "primary",
-        title: "Operations",
-        items: navigation.slice(0, 8),
-      },
-      {
-        id: "secondary",
-        title: "Management",
-        items: navigation.slice(8),
-      },
+    const order = sidebarOrder.filter((id): id is NavItemId => Boolean(navItems[id]));
+    const resolvedOrder = order.length > 0 ? order : defaultOrder;
+    const uniqueOrder = Array.from(new Set(resolvedOrder));
+    const completedOrder = [
+      ...uniqueOrder,
+      ...defaultOrder.filter((id) => !uniqueOrder.includes(id)),
     ];
-  }, []);
+
+    return sections.map((section) => ({
+      ...section,
+      items: completedOrder
+        .map((id) => navItems[id])
+        .filter((item) => item && item.section === section.id),
+    }));
+  }, [sidebarOrder]);
 
   const containerClasses = clsx(
     "hidden shrink-0 border-r border-neutral-200 bg-white/60 backdrop-blur-lg transition-all duration-300 dark:border-neutral-800 dark:bg-neutral-900/60 lg:flex",
@@ -91,6 +227,34 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
 
   const AuthIcon = isAuthenticated ? LogOut : LogIn;
   const authLabel = isAuthenticated ? "Log out" : "Log in";
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const id = event.active?.id;
+    if (typeof id === "string") {
+      setActiveId(id as NavItemId);
+    }
+  }, []);
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      setActiveId(null);
+      if (!over || active.id === over.id) return;
+
+      const activeId = active.id as NavItemId;
+      const overId = over.id as NavItemId;
+
+      if (!navItems[activeId] || !navItems[overId]) return;
+      if (navItems[activeId].section !== navItems[overId].section) return;
+
+      moveSidebarItem(activeId, overId);
+    },
+    [moveSidebarItem],
+  );
+
+  const handleDragCancel = useCallback(() => {
+    setActiveId(null);
+  }, []);
 
   return (
     <aside className={containerClasses}>
@@ -113,39 +277,36 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
         </div>
 
         <nav className={clsx("flex-1 text-sm", collapsed ? "space-y-6" : "space-y-8")}>
-          {groups.map((group) => (
-            <div key={group.id} className={clsx("space-y-3", collapsed && "space-y-2")}>
-              {!collapsed && (
-                <p className="px-2 text-xs font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-                  {group.title}
-                </p>
-              )}
-              <ul className={clsx("space-y-1", collapsed && "space-y-1.5")}>
-                {group.items.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <li key={item.to}>
-                      <NavLink
-                        to={item.to}
-                        className={({ isActive }) =>
-                          clsx(
-                            "flex items-center rounded-xl px-3 py-2 transition",
-                            collapsed ? "justify-center" : "gap-3",
-                            isActive
-                              ? "bg-primary-600 text-white shadow"
-                              : "text-neutral-600 hover:bg-primary-50 hover:text-primary-700 dark:text-neutral-300 dark:hover:bg-primary-500/10 dark:hover:text-primary-100",
-                          )
-                        }
-                      >
-                        <Icon className="h-5 w-5" />
-                        {!collapsed && <span className="font-medium">{item.label}</span>}
-                      </NavLink>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+            modifiers={[restrictToParentElement, restrictToVerticalAxis]}
+          >
+            {groups.map((group) => (
+              <div key={group.id} className={clsx("space-y-3", collapsed && "space-y-2")}>
+                {!collapsed && (
+                  <p className="px-2 text-xs font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+                    {group.title}
+                  </p>
+                )}
+                <SortableContext items={group.items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
+                  <ul className={clsx("space-y-1", collapsed && "space-y-1.5")}>
+                    {group.items.map((item) => (
+                      <SortableSidebarItem
+                        key={item.id}
+                        item={item}
+                        collapsed={collapsed}
+                        isActive={activeId === item.id}
+                      />
+                    ))}
+                  </ul>
+                </SortableContext>
+              </div>
+            ))}
+          </DndContext>
         </nav>
 
         <div className="flex flex-col gap-3">
@@ -179,5 +340,45 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
         </div>
       </div>
     </aside>
+  );
+}
+
+type SortableSidebarItemProps = {
+  item: NavItem;
+  collapsed: boolean;
+  isActive: boolean;
+};
+
+function SortableSidebarItem({ item, collapsed, isActive }: SortableSidebarItemProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+  const style: CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  if (isDragging) {
+    style.zIndex = 10;
+  }
+
+  return (
+    <li ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <NavLink
+        to={item.to}
+        title={collapsed ? item.label : undefined}
+        className={({ isActive: linkActive }) =>
+          clsx(
+            "flex items-center rounded-xl px-3 py-2 transition cursor-grab active:cursor-grabbing touch-manipulation",
+            collapsed ? "justify-center" : "gap-3",
+            linkActive
+              ? "bg-primary-600 text-white shadow"
+              : "text-neutral-600 hover:bg-primary-50 hover:text-primary-700 dark:text-neutral-300 dark:hover:bg-primary-500/10 dark:hover:text-primary-100",
+            (isDragging || isActive) && "ring-2 ring-primary-400 dark:ring-primary-500",
+          )
+        }
+      >
+        <item.icon className="h-5 w-5" />
+        {!collapsed && <span className="font-medium">{item.label}</span>}
+      </NavLink>
+    </li>
   );
 }

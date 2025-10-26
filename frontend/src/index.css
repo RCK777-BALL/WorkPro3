@@ -21,6 +21,16 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+.dark {
+  --app-background-color: #000000;
+  --app-text-color: #ffffff;
+}
+
+.dark body {
+  background-color: var(--app-background-color);
+  color: var(--app-text-color);
+}
+
 body.dense-mode {
   font-size: 0.95rem;
 }

@@ -2,11 +2,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Download, Trash2, Tag, Share } from 'lucide-react';
 import Button from '@common/Button';
 import Badge from '@common/Badge';
 import type { DocumentMetadata } from '@/utils/documentation';
+import { useToast } from '@/context/ToastContext';
 
 interface DocumentViewerProps {
   content: string;
@@ -21,6 +22,54 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
   onDownload,
   onDelete
 }) => {
+  const { addToast } = useToast();
+
+  const handleShare = useCallback(async () => {
+    try {
+      const isBrowser = typeof window !== 'undefined';
+      const shareUrl = isBrowser
+        ? `${window.location.origin}/documentation`
+        : '/documentation';
+      const shareText = `Check out "${metadata.title}" in the WorkPro documentation library.`;
+
+      if (typeof navigator !== 'undefined' && 'share' in navigator && typeof navigator.share === 'function') {
+        await navigator.share({
+          title: metadata.title,
+          text: shareText,
+          url: shareUrl,
+        });
+        addToast('Share dialog opened', 'success');
+        return;
+      }
+
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        addToast('Share link copied to clipboard', 'success');
+        return;
+      }
+
+      if (!isBrowser || typeof document === 'undefined') {
+        throw new Error('Share is not supported in this environment');
+      }
+
+      const textarea = document.createElement('textarea');
+      textarea.value = shareUrl;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'absolute';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      addToast('Share link copied to clipboard', 'success');
+    } catch (error) {
+      const isAbortError = error instanceof DOMException && error.name === 'AbortError';
+      if (!isAbortError) {
+        addToast('Unable to share document', 'error');
+      }
+    }
+  }, [addToast, metadata.title]);
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-neutral-200">
       <div className="p-4 border-b border-neutral-200">
@@ -37,6 +86,7 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
               size="sm"
               icon={<Share size={16} />}
               aria-label="Share document"
+              onClick={handleShare}
             >
               Share
             </Button>

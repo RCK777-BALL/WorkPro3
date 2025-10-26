@@ -18,6 +18,8 @@ vi.mock('../components/documentation/DocumentViewer', () => ({
 vi.mock('../utils/documentation', () => ({
   parseDocument: vi.fn(),
   downloadDocument: vi.fn(),
+  normalizeMimeType: vi.fn(() => 'application/pdf'),
+  inferDocumentType: vi.fn(() => 'pdf'),
 }));
 
 const mockAddToast = vi.fn();
@@ -26,7 +28,12 @@ vi.mock('../context/ToastContext', () => ({
 }));
 
 vi.mock('../lib/http', () => ({
-  default: { post: vi.fn(), get: vi.fn() },
+  default: {
+    post: vi.fn(),
+    get: vi.fn(),
+    delete: vi.fn(),
+    defaults: { baseURL: 'http://localhost:5010/api' },
+  },
 }));
 
 import http from '@/lib/http';
@@ -36,16 +43,27 @@ describe('Settings page', () => {
   beforeEach(() => {
     (http.post as any).mockReset();
     (http.get as any).mockReset();
+    (http.delete as any).mockReset?.();
     mockAddToast.mockReset();
-    (http.get as any).mockResolvedValue({
-      data: {
-        general: {
-          companyName: 'Acme Industries',
-        },
-        notifications: {},
-        email: {},
-        theme: { mode: 'light', colorScheme: 'default' },
-      },
+    (http.get as any).mockImplementation((url: string) => {
+      if (url === '/settings') {
+        return Promise.resolve({
+          data: {
+            general: {
+              companyName: 'Acme Industries',
+            },
+            notifications: {},
+            email: {},
+            theme: { mode: 'light', colorScheme: 'default' },
+          },
+        });
+      }
+
+      if (url === '/documents') {
+        return Promise.resolve({ data: [] });
+      }
+
+      return Promise.resolve({ data: [] });
     });
   });
 

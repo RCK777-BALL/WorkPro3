@@ -9,17 +9,42 @@ import Badge from '@common/Badge';
 import type { DocumentMetadata } from '@/utils/documentation';
 
 interface DocumentViewerProps {
-  content: string;
+  content?: string;
   metadata: DocumentMetadata;
   onDownload: () => void;
   onDelete: () => void;
 }
 
+const formatFileSize = (size?: number) => {
+  if (typeof size !== 'number' || Number.isNaN(size) || size <= 0) {
+    return 'Unknown size';
+  }
+  if (size < 1024) {
+    return `${size} B`;
+  }
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(2)} KB`;
+  }
+  return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+};
+
+const formatLastModified = (value?: Date) => {
+  if (!value) {
+    return 'Unknown date';
+  }
+
+  try {
+    return value.toLocaleDateString();
+  } catch {
+    return 'Unknown date';
+  }
+};
+
 const DocumentViewer: React.FC<DocumentViewerProps> = ({
   content,
   metadata,
   onDownload,
-  onDelete
+  onDelete,
 }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-neutral-200">
@@ -28,8 +53,9 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
           <div>
             <h3 className="text-lg font-semibold text-neutral-900">{metadata.title}</h3>
             <p className="text-sm text-neutral-500">
-              {new Date(metadata.lastModified).toLocaleDateString()} · {(metadata.size / 1024).toFixed(2)} KB
+              {formatLastModified(metadata.lastModified)} · {formatFileSize(metadata.size)}
             </p>
+            <p className="text-xs text-neutral-400">{metadata.mimeType}</p>
           </div>
           <div className="flex items-center space-x-2">
             <Button
@@ -70,7 +96,11 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
         )}
       </div>
       <div className="p-4 max-h-[600px] overflow-y-auto">
-        <pre className="whitespace-pre-wrap font-mono text-sm">{content}</pre>
+        {content ? (
+          <pre className="whitespace-pre-wrap font-mono text-sm">{content}</pre>
+        ) : (
+          <p className="text-sm text-neutral-500">Preview not available for this document.</p>
+        )}
       </div>
     </div>
   );

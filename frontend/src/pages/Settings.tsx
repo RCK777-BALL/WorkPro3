@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Bell,
   Book,
@@ -16,7 +16,13 @@ import Card from '@/components/common/Card';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import DocumentUploader from '@/components/documentation/DocumentUploader';
 import DocumentViewer from '@/components/documentation/DocumentViewer';
-import { downloadDocument, parseDocument, type DocumentMetadata } from '@/utils/documentation';
+import {
+  downloadDocument,
+  inferDocumentType,
+  normalizeMimeType,
+  parseDocument,
+  type DocumentMetadata,
+} from '@/utils/documentation';
 import { useThemeStore } from '@/store/themeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import type {
@@ -26,6 +32,21 @@ import type {
 } from '@/store/settingsStore';
 import { useToast } from '@/context/ToastContext';
 import http from '@/lib/http';
+
+type ManagedDocument = {
+  id: string;
+  content?: string;
+  metadata: DocumentMetadata;
+};
+
+type ApiDocument = {
+  _id: string;
+  name?: string;
+  title?: string;
+  url: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
 
 const Settings: React.FC = () => {
   const themeMode = useThemeStore((state) => state.theme);
@@ -125,35 +146,136 @@ const Settings: React.FC = () => {
     },
   ] satisfies { label: string; description: string; key: EmailPreferenceKey }[];
 
-  const [documents, setDocuments] = useState<Array<{ content: string; metadata: DocumentMetadata }>>([]);
+  const [documents, setDocuments] = useState<ManagedDocument[]>([]);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
+  const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
+
+  const downloadBaseUrl = useMemo(() => {
+    const base = http.defaults.baseURL ?? '';
+    if (!base) {
+      return typeof window !== 'undefined' ? window.location.origin : '';
+    }
+    return base.replace(/\/?api\/?$/, '');
+  }, []);
+
+  const fileToBase64 = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        resolve(result.split(',')[1] ?? '');
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+
+  const createMetadataFromApi = useCallback((doc: ApiDocument): DocumentMetadata => {
+    const baseTitle = doc.name ?? doc.title ?? 'Document';
+    const extension = baseTitle.split('.').pop()?.toLowerCase();
+    let mimeType = 'application/octet-stream';
+    let type: DocumentMetadata['type'] = 'pdf';
+
+    try {
+      mimeType = normalizeMimeType(undefined, extension);
+      type = inferDocumentType(mimeType, extension);
+    } catch {
+      // Fallback to PDF-like defaults if the document type cannot be determined.
+      mimeType = 'application/octet-stream';
+      type = 'pdf';
+    }
+
+    return {
+      id: doc._id,
+      title: baseTitle,
+      type,
+      mimeType,
+      lastModified: doc.updatedAt
+        ? new Date(doc.updatedAt)
+        : doc.createdAt
+          ? new Date(doc.createdAt)
+          : undefined,
+      downloadUrl: doc.url,
+    };
+  }, []);
 
   const handleDocumentUpload = async (files: File[]) => {
+    if (!files.length) {
+      return;
+    }
+
+    setIsUploadingDocuments(true);
+    const uploaded: ManagedDocument[] = [];
+    const failed: string[] = [];
+
+    for (const file of files) {
+      try {
+        const parsed = await parseDocument(file);
+        const base64 = await fileToBase64(file);
+        const response = await http.post<ApiDocument>('/documents', { name: file.name, base64 });
+        const saved = response.data as ApiDocument;
+        const metadata: DocumentMetadata = {
+          ...parsed.metadata,
+          id: saved._id,
+          title: saved.name ?? saved.title ?? parsed.metadata.title,
+          downloadUrl: saved.url,
+          lastModified:
+            parsed.metadata.lastModified ??
+            (saved.updatedAt ? new Date(saved.updatedAt) : saved.createdAt ? new Date(saved.createdAt) : undefined),
+        };
+
+        uploaded.push({ id: saved._id, content: parsed.content, metadata });
+      } catch (error) {
+        console.error('Error uploading document:', error);
+        failed.push(file.name);
+      }
+    }
+
+    if (uploaded.length > 0) {
+      setDocuments((prev) => [...prev, ...uploaded]);
+      addToast(uploaded.length > 1 ? 'Documents uploaded' : 'Document uploaded', 'success');
+    }
+
+    if (failed.length > 0) {
+      addToast(`Failed to upload: ${failed.join(', ')}`, 'error');
+    }
+
+    setIsUploadingDocuments(false);
+  };
+
+  const handleDocumentDownload = async (doc: ManagedDocument) => {
     try {
-      const newDocs = await Promise.all(files.map(parseDocument));
-      setDocuments([...documents, ...newDocs]);
+      if (doc.metadata.downloadUrl) {
+        const url = doc.metadata.downloadUrl;
+        const isAbsolute = /^https?:\/\//i.test(url);
+        const response = await http.get<ArrayBuffer>(url, {
+          responseType: 'arraybuffer',
+          ...(isAbsolute ? {} : { baseURL: downloadBaseUrl }),
+        });
+        downloadDocument(response.data, doc.metadata.title, doc.metadata.mimeType);
+        return;
+      }
+
+      if (doc.content) {
+        downloadDocument(doc.content, doc.metadata.title, doc.metadata.mimeType);
+        return;
+      }
+
+      addToast('Document cannot be downloaded', 'error');
     } catch (error) {
-      console.error('Error uploading documents:', error);
+      console.error('Error downloading document:', error);
+      addToast('Failed to download document', 'error');
     }
   };
 
-  const handleDocumentDownload = (doc: { content: string; metadata: DocumentMetadata }) => {
-    const mimeType = (() => {
-      switch (doc.metadata.type) {
-        case 'pdf':
-          return 'application/pdf';
-        case 'excel':
-          return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-        case 'word':
-          return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-        default:
-          return 'text/plain';
-      }
-    })();
-    downloadDocument(doc.content, doc.metadata.title, mimeType);
-  };
-
-  const handleRemoveDocument = (index: number) => {
-    setDocuments((prev) => prev.filter((_, idx) => idx !== index));
+  const handleRemoveDocument = async (id: string) => {
+    try {
+      await http.delete(`/documents/${id}`);
+      setDocuments((prev) => prev.filter((doc) => doc.id !== id));
+      addToast('Document deleted', 'success');
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      addToast('Failed to delete document', 'error');
+    }
   };
 
   useEffect(() => {
@@ -216,6 +338,37 @@ const Settings: React.FC = () => {
       isMounted = false;
     };
   }, [addToast, setEmail, setGeneral, setNotifications]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadDocuments = async () => {
+      try {
+        setIsLoadingDocuments(true);
+        const response = await http.get<ApiDocument[]>('/documents');
+        if (!isMounted) {
+          return;
+        }
+        const payload = response.data ?? [];
+        setDocuments(payload.map((doc) => ({ id: doc._id, metadata: createMetadataFromApi(doc) })));
+      } catch (error) {
+        console.error('Error loading documents:', error);
+        if (isMounted) {
+          addToast('Failed to load documents', 'error');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingDocuments(false);
+        }
+      }
+    };
+
+    void loadDocuments();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [addToast, createMetadataFromApi]);
 
   const handleSaveSettings = async () => {
     try {
@@ -495,21 +648,33 @@ const Settings: React.FC = () => {
                   Upload PDF, Word, or Excel documents to add to the documentation library
                 </p>
                 <DocumentUploader onUpload={handleDocumentUpload} />
+                {(isUploadingDocuments || isLoadingDocuments) && (
+                  <div className="flex items-center gap-2 mt-3 text-sm text-neutral-500 dark:text-neutral-400">
+                    <LoadingSpinner fullscreen={false} size="sm" />
+                    <span>{isUploadingDocuments ? 'Uploading documents…' : 'Loading documents…'}</span>
+                  </div>
+                )}
               </div>
 
-              {documents.length > 0 && (
+              {documents.length > 0 ? (
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium text-neutral-900 dark:text-white">Uploaded Documents</h3>
-                  {documents.map((doc, index) => (
+                  {documents.map((doc) => (
                     <DocumentViewer
-                      key={index}
+                      key={doc.id}
                       content={doc.content}
                       metadata={doc.metadata}
-                      onDownload={() => handleDocumentDownload(doc)}
-                      onDelete={() => handleRemoveDocument(index)}
+                      onDownload={() => void handleDocumentDownload(doc)}
+                      onDelete={() => void handleRemoveDocument(doc.id)}
                     />
                   ))}
                 </div>
+              ) : (
+                !isLoadingDocuments && !isUploadingDocuments && (
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                    No documents uploaded yet.
+                  </p>
+                )
               )}
             </div>
           </Card>

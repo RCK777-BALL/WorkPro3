@@ -15,13 +15,16 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onUpload }) => {
     onUpload(acceptedFiles);
   }, [onUpload]);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, fileRejections } = useDropzone({
     onDrop,
+    multiple: true,
     accept: {
       'application/pdf': ['.pdf'],
+      'application/msword': ['.doc'],
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
-    }
+      'application/vnd.ms-excel': ['.xls'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+    },
   });
 
   return (
@@ -40,6 +43,11 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onUpload }) => {
       <p className="text-xs text-neutral-500 mt-1">
         Supports PDF, Word, and Excel documents
       </p>
+      {fileRejections.length > 0 && (
+        <p className="mt-2 text-xs text-red-600">
+          Some files were rejected. Please upload PDF, Word, or Excel documents only.
+        </p>
+      )}
     </div>
   );
 };

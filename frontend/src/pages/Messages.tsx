@@ -3,10 +3,20 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import {
+  CalendarClock,
+  LayoutGrid,
+  MessageCircle,
+  Phone,
+  Users,
+  MoreHorizontal,
+  BellRing,
+} from 'lucide-react';
 import ChatSidebar from '@/components/messaging/ChatSidebar';
 import ChatHeader from '@/components/messaging/ChatHeader';
 import MessageList from '@/components/messaging/MessageList';
 import ChatInput from '@/components/messaging/ChatInput';
+import Avatar from '@common/Avatar';
 import { v4 as uuidv4 } from 'uuid';
 
 import type { Member, Message, Channel, DirectMessage } from '@/types';
@@ -251,57 +261,114 @@ const Messages: React.FC = () => {
     }
   };
 
+  const quickNav = [
+    { icon: LayoutGrid, label: 'Activity' },
+    { icon: MessageCircle, label: 'Chat', active: true },
+    { icon: Users, label: 'Teams' },
+    { icon: CalendarClock, label: 'Calendar' },
+    { icon: Phone, label: 'Calls' },
+    { icon: BellRing, label: 'Alerts' },
+  ];
+
   return (
     <>
-      <div className="flex h-[calc(100vh-4rem)]">
-        <ChatSidebar
-          channels={channels}
-          directMessages={directMessages}
-          {...(activeDM
-            ? { activeChannelId: activeDM.id }
-            : activeChannel
-              ? { activeChannelId: activeChannel.id }
-              : {})}
-          onChannelSelect={(channelId) => {
-            const channel = channels.find((c) => c.id === channelId);
-            if (channel) {
-              setActiveChannel(channel);
-              setActiveDM(null);
-            }
-          }}
-          onDirectMessageSelect={handleDirectMessage}
-          onNewChannel={() => {}}
-          onNewDirectMessage={() => {}}
-          onDeleteChat={handleDeleteChat}
-        />
-
-        <div className="flex-1 flex flex-col">
-          {channels.length === 0 && !activeDM ? (
-            <div className="flex-1 flex items-center justify-center text-neutral-500">
-              No channels available
+      <div className="flex h-[calc(100vh-4rem)] bg-[#f3f2f1]">
+        <aside className="flex w-20 flex-col items-center justify-between bg-[#2b2b40] py-6 text-white">
+          <div className="space-y-6">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-xl font-semibold">
+              WP
             </div>
-          ) : (
-            <>
-              {activeDM ? null : activeChannel && (
-                <ChatHeader
-                  channel={activeChannel ?? FALLBACK_CHANNEL}
-                  onToggleMembers={() => setMembersOpen(true)}
-                  onToggleSettings={() => setSettingsOpen(true)}
-                  onSearch={() => setSearchOpen(true)}
-                  members={channelMembers}
+            <nav className="flex flex-col items-center space-y-4">
+              {quickNav.map(({ icon: Icon, label, active }) => (
+                <button
+                  key={label}
+                  className={`flex h-12 w-12 items-center justify-center rounded-2xl transition hover:bg-white/15 ${
+                    active ? 'bg-white text-[#2b2b40]' : 'bg-white/5 text-white'
+                  }`}
+                  title={label}
+                  type="button"
+                >
+                  <Icon size={20} />
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          <div className="flex flex-col items-center space-y-4">
+            <button
+              type="button"
+              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-white transition hover:bg-white/20"
+              title="More apps"
+            >
+              <MoreHorizontal size={20} />
+            </button>
+            <Avatar
+              name="John Doe"
+              src="https://i.pravatar.cc/100?img=64"
+              size="md"
+              className="ring-2 ring-white/40"
+            />
+          </div>
+        </aside>
+
+        <div className="flex w-80 flex-col border-r border-neutral-200 bg-white">
+          <ChatSidebar
+            channels={channels}
+            directMessages={directMessages}
+            {...(activeDM
+              ? { activeChannelId: activeDM.id }
+              : activeChannel
+                ? { activeChannelId: activeChannel.id }
+                : {})}
+            onChannelSelect={(channelId) => {
+              const channel = channels.find((c) => c.id === channelId);
+              if (channel) {
+                setActiveChannel(channel);
+                setActiveDM(null);
+              }
+            }}
+            onDirectMessageSelect={handleDirectMessage}
+            onNewChannel={() => {}}
+            onNewDirectMessage={() => {}}
+            onDeleteChat={handleDeleteChat}
+          />
+        </div>
+
+        <div className="flex flex-1 flex-col overflow-hidden px-8 py-6">
+          <div className="relative flex h-full flex-col rounded-3xl border border-neutral-200 bg-white shadow-sm">
+            {channels.length === 0 && !activeDM ? (
+              <div className="flex flex-1 items-center justify-center text-neutral-500">
+                No channels available
+              </div>
+            ) : (
+              <>
+                {activeDM ? null : activeChannel && (
+                  <div className="border-b border-neutral-200">
+                    <ChatHeader
+                      channel={activeChannel ?? FALLBACK_CHANNEL}
+                      onToggleMembers={() => setMembersOpen(true)}
+                      onToggleSettings={() => setSettingsOpen(true)}
+                      onSearch={() => setSearchOpen(true)}
+                      members={channelMembers}
+                    />
+                  </div>
+                )}
+
+                <MessageList
+                  messages={messages}
+                  currentUserId="currentUser"
+                  isTyping={typingUser}
                 />
-              )}
 
-              <MessageList messages={messages} currentUserId="currentUser" />
-
-              <ChatInput
-                onSendMessage={handleSendMessage}
-                onUploadFiles={handleUploadFiles}
-                onTyping={handleTyping}
-                isTyping={Boolean(typingUser)}
-              />
-            </>
-          )}
+                <ChatInput
+                  onSendMessage={handleSendMessage}
+                  onUploadFiles={handleUploadFiles}
+                  onTyping={handleTyping}
+                  isTyping={Boolean(typingUser)}
+                />
+              </>
+            )}
+          </div>
         </div>
       </div>
 

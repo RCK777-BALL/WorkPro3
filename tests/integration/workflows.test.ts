@@ -40,6 +40,7 @@ describe('CMMS end-to-end workflows', () => {
       },
     });
     await mongoose.connect(mongo.getUri());
+    await mongoose.connection.asPromise();
 
     app = express();
     app.use(cookieParser());
@@ -62,7 +63,6 @@ describe('CMMS end-to-end workflows', () => {
 
   beforeEach(async () => {
     await mongoose.connection.db?.dropDatabase();
-
     const tenant = await Tenant.create({ name: 'Integration Tenant' });
     tenantId = tenant._id.toString();
 
@@ -217,10 +217,23 @@ describe('CMMS end-to-end workflows', () => {
         role: 'supervisor',
         department: departmentId,
         employeeId: 'TEAM-100',
+        managerId: teamMemberId,
       })
       .expect(200);
     expect(teamUpdate.body.success).toBe(true);
-    expect(teamUpdate.body.data.role).toBe('supervisor');
+    expect(teamUpdate.body.data.role).toBe('assistant_general_manager');
+
+    await request(app)
+      .put(`/api/team/${teamMemberId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        name: 'Alice Maintainer',
+        email: 'alice@example.com',
+        role: 'admin',
+        department: departmentId,
+        employeeId: 'TEAM-100',
+      })
+      .expect(200);
 
     // Work order creation
     const workOrderRes = await request(app)

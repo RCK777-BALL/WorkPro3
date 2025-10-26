@@ -7,7 +7,6 @@ import ExcelJS from 'exceljs';
 import * as mammoth from 'mammoth';
 import * as PDFJS from 'pdfjs-dist';
 import type { TextItem } from 'pdfjs-dist/types/src/display/api';
-import http from '@/lib/http';
 
 export type DocumentType = 'pdf' | 'excel' | 'word';
 
@@ -27,15 +26,17 @@ const EXTENSION_TO_TYPE: Record<string, DocumentType> = {
   xlsx: 'excel',
 };
 
-const DEFAULT_MIME_BY_TYPE: Record<DocumentType, string> = {
+const CANONICAL_MIME: Record<DocumentType, string> = {
   pdf: 'application/pdf',
   word: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   excel: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 };
 
-export const getDefaultMimeForType = (type: DocumentType) => DEFAULT_MIME_BY_TYPE[type];
+export const DOCUMENT_MIME_TYPES = CANONICAL_MIME;
 
-export type DocumentType = 'pdf' | 'excel' | 'word';
+export const getMimeTypeForType = (type: DocumentType): string => CANONICAL_MIME[type];
+
+export const getDefaultMimeForType = getMimeTypeForType;
 
 export interface DocumentMetadata {
   id?: string;
@@ -44,23 +45,18 @@ export interface DocumentMetadata {
   mimeType: string;
   size: number;
   lastModified: Date | string;
-  mimeType: string;
   url?: string;
   tags?: string[];
   category?: string;
   downloadUrl?: string;
 }
 
-export const DOCUMENT_MIME_TYPES: Record<DocumentType, string> = {
-  pdf: 'application/pdf',
-  excel: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  word: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-};
+const toDate = (value: number | string | Date): Date => {
+  if (value instanceof Date) {
+    return value;
+  }
 
-const EXTENSION_TO_TYPE: Record<string, DocumentType> = {
-  pdf: 'pdf',
-  xlsx: 'excel',
-  docx: 'word',
+  return new Date(value);
 };
 
 export const inferDocumentTypeFromFilename = (filename: string): DocumentType => {
@@ -77,19 +73,56 @@ export const inferDocumentTypeFromFilename = (filename: string): DocumentType =>
   return type;
 };
 
-export const getMimeTypeForType = (type: DocumentType): string => DOCUMENT_MIME_TYPES[type];
+export const inferDocumentType = (
+  mimeType?: string,
+  extension?: string,
+): DocumentMetadata['type'] => {
+  const normalizedMime = mimeType?.toLowerCase();
+  if (normalizedMime && normalizedMime in MIME_TYPE_TO_TYPE) {
+    return MIME_TYPE_TO_TYPE[normalizedMime];
+  }
+
+  if (extension) {
+    const normalizedExt = extension.toLowerCase();
+    const type = EXTENSION_TO_TYPE[normalizedExt];
+    if (type) {
+      return type;
+    }
+  }
+
+  throw new Error('Unsupported file type');
+};
+
+export const normalizeMimeType = (mimeType?: string, extension?: string): string => {
+  const normalizedMime = mimeType?.toLowerCase();
+  if (normalizedMime && normalizedMime in MIME_TYPE_TO_TYPE) {
+    const type = MIME_TYPE_TO_TYPE[normalizedMime];
+    return CANONICAL_MIME[type];
+  }
+
+  if (extension) {
+    const normalizedExt = extension.toLowerCase();
+    const type = EXTENSION_TO_TYPE[normalizedExt];
+    if (type) {
+      return CANONICAL_MIME[type];
+    }
+  }
+
+  return mimeType ?? 'application/octet-stream';
+};
 
 export const parseDocument = async (
   file: File,
 ): Promise<{ content: string; metadata: DocumentMetadata }> => {
   const type = inferDocumentTypeFromFilename(file.name);
+  const mimeType = getMimeTypeForType(type);
+
   const metadata: DocumentMetadata = {
     title: file.name,
     type,
-    mimeType: getMimeTypeForType(type),
+    mimeType,
     size: file.size,
     lastModified: toDate(file.lastModified),
-    mimeType,
   };
 
   let content = '';
@@ -166,71 +199,14 @@ export const fileToBase64 = (file: File) =>
     reader.readAsDataURL(file);
   });
 
-export const searchDocuments = (documents: { content?: string; metadata: DocumentMetadata }[], query: string) => {
+export const searchDocuments = (
+  documents: { content?: string; metadata: DocumentMetadata }[],
+  query: string,
+) => {
   const normalizedQuery = query.toLowerCase();
-  return documents.filter(doc =>
+  return documents.filter((doc) =>
     (doc.content?.toLowerCase().includes(normalizedQuery) ?? false) ||
     doc.metadata.title.toLowerCase().includes(normalizedQuery) ||
-    doc.metadata.tags?.some(tag => tag.toLowerCase().includes(normalizedQuery))
+    doc.metadata.tags?.some((tag) => tag.toLowerCase().includes(normalizedQuery)),
   );
-};
-
-const MIME_TYPE_MAP: Record<string, DocumentMetadata['type']> = {
-  'application/pdf': 'pdf',
-  'application/msword': 'word',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'word',
-  'application/vnd.ms-excel': 'excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'excel',
-};
-
-const EXTENSION_TYPE_MAP: Record<string, DocumentMetadata['type']> = {
-  pdf: 'pdf',
-  doc: 'word',
-  docx: 'word',
-  xls: 'excel',
-  xlsx: 'excel',
-};
-
-const CANONICAL_MIME: Record<DocumentMetadata['type'], string> = {
-  pdf: 'application/pdf',
-  word: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  excel: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-};
-
-export const inferDocumentType = (
-  mimeType?: string,
-  extension?: string,
-): DocumentMetadata['type'] => {
-  const normalizedMime = mimeType?.toLowerCase();
-  if (normalizedMime && normalizedMime in MIME_TYPE_MAP) {
-    return MIME_TYPE_MAP[normalizedMime];
-  }
-
-  if (extension) {
-    const normalizedExt = extension.toLowerCase();
-    const type = EXTENSION_TYPE_MAP[normalizedExt];
-    if (type) {
-      return type;
-    }
-  }
-
-  throw new Error('Unsupported file type');
-};
-
-export const normalizeMimeType = (mimeType?: string, extension?: string): string => {
-  const normalizedMime = mimeType?.toLowerCase();
-  if (normalizedMime && normalizedMime in MIME_TYPE_MAP) {
-    const type = MIME_TYPE_MAP[normalizedMime];
-    return CANONICAL_MIME[type];
-  }
-
-  if (extension) {
-    const normalizedExt = extension.toLowerCase();
-    const type = EXTENSION_TYPE_MAP[normalizedExt];
-    if (type) {
-      return CANONICAL_MIME[type];
-    }
-  }
-
-  return mimeType ?? 'application/octet-stream';
 };

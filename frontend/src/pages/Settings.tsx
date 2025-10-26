@@ -3,12 +3,13 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Bell, Book, Mail, Save, Sliders } from 'lucide-react';
+import { Bell, Book, Mail, Palette, Sliders } from 'lucide-react';
 import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import DocumentUploader from '@/components/documentation/DocumentUploader';
 import DocumentViewer from '@/components/documentation/DocumentViewer';
+import GeneralSettingsCard from '@/components/settings/GeneralSettingsCard';
 import { downloadDocument, parseDocument, type DocumentMetadata } from '@/utils/documentation';
 import { useThemeStore } from '@/store/themeStore';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -19,7 +20,7 @@ import type {
 } from '@/store/settingsStore';
 import { useToast } from '@/context/ToastContext';
 import http from '@/lib/http';
-import ThemePreferencesCard from '@/pages/settings/ThemePreferencesCard';
+import SettingsLayout from '@/components/settings/SettingsLayout';
 
 const Settings: React.FC = () => {
   const general = useSettingsStore((state) => state.general);
@@ -28,10 +29,9 @@ const Settings: React.FC = () => {
   const setGeneral = useSettingsStore((state) => state.setGeneral);
   const setNotifications = useSettingsStore((state) => state.setNotifications);
   const setEmail = useSettingsStore((state) => state.setEmail);
-  const setThemeSettings = useSettingsStore((state) => state.setTheme);
+  const applyThemeSettings = useSettingsStore((state) => state.setTheme);
   const { addToast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
 
   type NotificationOptionKey = {
     [K in keyof NotificationSettings]: NotificationSettings[K] extends boolean ? K : never;
@@ -154,15 +154,18 @@ const Settings: React.FC = () => {
         }
 
         if (payload.theme) {
-          const { mode, ...restTheme } = payload.theme;
-          setThemeSettings({ ...restTheme, ...(mode ? { mode } : {}) });
+          const { mode, colorScheme, ...restTheme } = payload.theme;
 
-          if (mode) {
-            useThemeStore.setState({ theme: mode });
+          if (Object.keys(restTheme).length > 0 || colorScheme) {
+            applyThemeSettings({ ...restTheme, ...(colorScheme ? { colorScheme } : {}) });
           }
 
-          if (payload.theme.colorScheme) {
-            useThemeStore.setState({ colorScheme: payload.theme.colorScheme });
+          if (mode || colorScheme) {
+            useThemeStore.setState((state) => ({
+              ...state,
+              ...(mode ? { theme: mode } : {}),
+              ...(colorScheme ? { colorScheme } : {}),
+            }));
           }
         }
       } catch (error) {
@@ -180,70 +183,18 @@ const Settings: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [addToast, setEmail, setGeneral, setNotifications]);
-
-  const handleSaveSettings = async () => {
-    try {
-      setIsSaving(true);
-      const {
-        general: currentGeneral,
-        notifications: currentNotifications,
-        email: currentEmail,
-        theme: currentTheme,
-      } = useSettingsStore.getState();
-      const { theme: currentThemeMode, colorScheme: currentColorScheme } = useThemeStore.getState();
-      const themePayload = {
-        ...currentTheme,
-        mode: currentTheme.mode ?? currentThemeMode,
-        colorScheme: currentTheme.colorScheme ?? currentColorScheme,
-      };
-
-      await http.post('/settings', {
-        general: currentGeneral,
-        notifications: currentNotifications,
-        email: currentEmail,
-        theme: themePayload,
-      });
-      addToast('Settings saved', 'success');
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      const status = (error as { response?: { status?: number } }).response?.status;
-      if (status === 401) {
-        addToast('Unauthorized', 'error');
-      } else {
-        addToast('Failed to save settings', 'error');
-      }
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  }, [addToast, applyThemeSettings, setEmail, setGeneral, setNotifications]);
 
   return (
-    <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Settings</h2>
-            <p className="text-neutral-500 dark:text-neutral-400">Manage your application preferences</p>
-          </div>
-          <Button
-            variant="primary"
-            icon={<Save size={16} />}
-            onClick={handleSaveSettings}
-            loading={isSaving}
-            disabled={isSaving || isLoading}
-          >
-            {isSaving ? 'Saving…' : 'Save Changes'}
-          </Button>
+    <SettingsLayout isLoading={isLoading}>
+      {isLoading && (
+        <div className="flex items-center gap-3 rounded-lg border border-dashed border-neutral-300 bg-white/50 p-4 text-sm text-neutral-600 dark:border-neutral-700 dark:bg-neutral-900/40 dark:text-neutral-300">
+          <LoadingSpinner fullscreen={false} size="sm" />
+          <span>Loading your saved settings…</span>
         </div>
+      )}
 
-        {isLoading && (
-          <div className="flex items-center gap-3 rounded-lg border border-dashed border-neutral-300 bg-white/50 p-4 text-sm text-neutral-600 dark:border-neutral-700 dark:bg-neutral-900/40 dark:text-neutral-300">
-            <LoadingSpinner fullscreen={false} size="sm" />
-            <span>Loading your saved settings…</span>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* General Settings */}
           <Card title="General Settings" icon={<Sliders className="h-5 w-5 text-neutral-500" />}>
             <div className="space-y-4">
@@ -309,7 +260,66 @@ const Settings: React.FC = () => {
           </Card>
 
           {/* Theme Settings */}
-          <ThemePreferencesCard />
+          <Card title="Theme Settings" icon={<Palette className="h-5 w-5 text-neutral-500" />}>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
+                  Theme
+                </label>
+                <select
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                  value={themeMode}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                    const value = e.target.value as 'light' | 'dark' | 'system';
+                    void setThemeMode(value);
+                  }}
+                >
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                  <option value="system">System</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
+                  Color Scheme
+                </label>
+                <select
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                  value={themeSettings.colorScheme ?? 'default'}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                    const value = e.target.value;
+                    applyThemeSettings({ colorScheme: value });
+                    updateTheme({ colorScheme: value });
+                  }}
+                >
+                  <option value="default">Default</option>
+                  <option value="teal">Teal</option>
+                  <option value="purple">Purple</option>
+                </select>
+              </div>
+
+              {themeOptions.map(({ label, description, key }) => (
+                <div className="flex items-center justify-between" key={key}>
+                  <div>
+                    <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">{label}</p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">{description}</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={themeSettings[key]}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        applyThemeSettings({ [key]: e.target.checked })
+                      }
+                    />
+                    <div className="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                  </label>
+                </div>
+              ))}
+            </div>
+          </Card>
 
           {/* Notification Settings */}
           <Card title="Notification Settings" icon={<Bell className="h-5 w-5 text-neutral-500" />}>
@@ -418,8 +428,8 @@ const Settings: React.FC = () => {
               )}
             </div>
           </Card>
-        </div>
       </div>
+    </SettingsLayout>
   );
 };
 

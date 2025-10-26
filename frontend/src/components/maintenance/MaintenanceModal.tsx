@@ -118,7 +118,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-neutral-900 dark:text-white mb-1">
                 Title
@@ -157,7 +157,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-neutral-900 dark:text-white mb-1">
                 Type
@@ -202,7 +202,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-neutral-900 dark:text-white mb-1">
                 Start Date
@@ -242,7 +242,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
 
             {showAdvancedOptions && (
               <div className="space-y-4 p-4 bg-neutral-50 dark:bg-neutral-900 rounded-lg">
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-neutral-900 dark:text-white mb-1">
                       Repeat Every

@@ -171,7 +171,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
           {error && <p className="text-error-500 dark:text-error-400">{error}</p>}
           <AssetQRCode value="ABC123" />
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
                 Name
@@ -211,7 +211,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
                 Model
@@ -235,7 +235,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
                 Purchase Date
@@ -259,7 +259,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
                 Location
@@ -286,7 +286,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
                 Department
@@ -342,7 +342,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
                 Status

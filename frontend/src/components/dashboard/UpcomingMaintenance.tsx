@@ -81,7 +81,7 @@ const UpcomingMaintenance: React.FC<UpcomingMaintenanceProps> = ({ maintenanceIt
               />
             </div>
 
-            <div className="mt-3 grid grid-cols-2 gap-3">
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex items-center text-sm">
                 <Calendar size={16} className="mr-2 text-neutral-500" />
                 <span className={isToday(item.date) ? 'text-error-600 font-medium' : ''}>

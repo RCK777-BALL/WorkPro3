@@ -156,7 +156,7 @@ const TeamMemberProfile = () => {
             {activityError && <p className="text-sm text-error-600">{activityError}</p>}
             {permitActivity && !loadingActivity && !activityError && (
               <div className="space-y-4 text-sm text-neutral-700">
-                <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
                   <div className="rounded border bg-neutral-50 p-3">
                     <div className="text-xs text-neutral-500">Permits Involved</div>
                     <div className="text-lg font-semibold text-neutral-900">{permitActivity.totalInvolved}</div>

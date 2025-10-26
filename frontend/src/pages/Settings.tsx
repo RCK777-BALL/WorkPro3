@@ -16,7 +16,14 @@ import Card from '@/components/common/Card';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import DocumentUploader from '@/components/documentation/DocumentUploader';
 import DocumentViewer from '@/components/documentation/DocumentViewer';
-import { downloadDocument, parseDocument, type DocumentMetadata } from '@/utils/documentation';
+import {
+  downloadDocument,
+  fileToBase64,
+  getDocumentTypeFromExtension,
+  getMimeTypeFromExtension,
+  parseDocument,
+  type DocumentMetadata,
+} from '@/utils/documentation';
 import { useThemeStore } from '@/store/themeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import type {
@@ -26,6 +33,20 @@ import type {
 } from '@/store/settingsStore';
 import { useToast } from '@/context/ToastContext';
 import http from '@/lib/http';
+
+type DocumentEntry = {
+  content?: string;
+  metadata: DocumentMetadata;
+};
+
+interface ApiDocumentResponse {
+  _id?: string;
+  id?: string;
+  name?: string;
+  url: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 const Settings: React.FC = () => {
   const themeMode = useThemeStore((state) => state.theme);
@@ -125,36 +146,157 @@ const Settings: React.FC = () => {
     },
   ] satisfies { label: string; description: string; key: EmailPreferenceKey }[];
 
-  const [documents, setDocuments] = useState<Array<{ content: string; metadata: DocumentMetadata }>>([]);
+  const [documents, setDocuments] = useState<DocumentEntry[]>([]);
 
   const handleDocumentUpload = async (files: File[]) => {
+    if (!files.length) {
+      return;
+    }
+
     try {
-      const newDocs = await Promise.all(files.map(parseDocument));
-      setDocuments([...documents, ...newDocs]);
+      const uploadedDocs = await Promise.all(
+        files.map(async (file) => {
+          const [{ content, metadata }, base64] = await Promise.all([
+            parseDocument(file),
+            fileToBase64(file),
+          ]);
+
+          const response = await http.post<ApiDocumentResponse>('/documents', {
+            name: file.name,
+            base64,
+          });
+
+          const saved = response.data;
+          const timestamp = saved?.updatedAt ?? saved?.createdAt;
+          const metadataWithServerFields: DocumentMetadata = {
+            ...metadata,
+            id: saved?._id ?? saved?.id ?? metadata.id,
+            url: saved?.url ?? metadata.url,
+            lastModified: timestamp ? new Date(timestamp) : metadata.lastModified,
+          };
+
+          return { content, metadata: metadataWithServerFields } satisfies DocumentEntry;
+        }),
+      );
+
+      setDocuments((prev) => [...prev, ...uploadedDocs]);
+      addToast('Document uploaded', 'success');
     } catch (error) {
       console.error('Error uploading documents:', error);
+      addToast('Failed to upload documents', 'error');
     }
   };
 
-  const handleDocumentDownload = (doc: { content: string; metadata: DocumentMetadata }) => {
-    const mimeType = (() => {
-      switch (doc.metadata.type) {
-        case 'pdf':
-          return 'application/pdf';
-        case 'excel':
-          return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-        case 'word':
-          return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-        default:
-          return 'text/plain';
-      }
-    })();
-    downloadDocument(doc.content, doc.metadata.title, mimeType);
+  const resolveDocumentUrl = (path: string) => {
+    if (!path) {
+      return path;
+    }
+    if (/^https?:\/\//i.test(path)) {
+      return path;
+    }
+    const base = http.defaults?.baseURL ?? '';
+    const sanitizedBase = base.replace(/\/?api\/?$/, '');
+    const normalizedBase = sanitizedBase.replace(/\/$/, '');
+    if (!normalizedBase) {
+      return path;
+    }
+    if (path.startsWith('/')) {
+      return `${normalizedBase}${path}`;
+    }
+    return `${normalizedBase}/${path}`;
   };
 
-  const handleRemoveDocument = (index: number) => {
-    setDocuments((prev) => prev.filter((_, idx) => idx !== index));
+  const handleDocumentDownload = async (doc: DocumentEntry) => {
+    try {
+      const mimeType = doc.metadata.mimeType ?? 'application/octet-stream';
+      if (doc.content) {
+        downloadDocument(doc.content, doc.metadata.title, mimeType);
+        return;
+      }
+
+      if (doc.metadata.url) {
+        const response = await fetch(resolveDocumentUrl(doc.metadata.url), {
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to download document');
+        }
+
+        const buffer = await response.arrayBuffer();
+        downloadDocument(buffer, doc.metadata.title, mimeType);
+        return;
+      }
+
+      addToast('Document content unavailable', 'error');
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      addToast('Failed to download document', 'error');
+    }
   };
+
+  const handleRemoveDocument = async (index: number) => {
+    const doc = documents[index];
+    if (!doc) {
+      return;
+    }
+
+    try {
+      if (doc.metadata.id) {
+        await http.delete(`/documents/${doc.metadata.id}`);
+      }
+      setDocuments((prev) => prev.filter((_, idx) => idx !== index));
+      addToast('Document deleted', 'success');
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      addToast('Failed to delete document', 'error');
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadDocuments = async () => {
+      try {
+        const response = await http.get<ApiDocumentResponse[]>('/documents');
+        if (!isMounted) {
+          return;
+        }
+
+        const fetched = (response.data ?? []).map((item) => {
+          const rawUrl = item.url ?? '';
+          const title = item.name ?? rawUrl.split('/').pop() ?? 'Document';
+          const extension = title.split('.').pop()?.toLowerCase() ?? '';
+          const type = getDocumentTypeFromExtension(extension);
+          const mimeType = getMimeTypeFromExtension(extension);
+          const lastModifiedSource = item.updatedAt ?? item.createdAt;
+          const lastModified = lastModifiedSource ? new Date(lastModifiedSource) : new Date();
+
+          const metadata: DocumentMetadata = {
+            id: item._id ?? item.id,
+            title,
+            type,
+            size: 0,
+            lastModified,
+            mimeType,
+            url: rawUrl || undefined,
+          };
+
+          return { metadata } satisfies DocumentEntry;
+        });
+
+        setDocuments(fetched);
+      } catch (error) {
+        console.error('Error loading documents:', error);
+      }
+    };
+
+    void loadDocuments();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;

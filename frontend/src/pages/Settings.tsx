@@ -3,14 +3,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import {
-  Bell,
-  Book,
-  Mail,
-  Palette,
-  Save,
-  Sliders,
-} from 'lucide-react';
+import { Bell, Book, Mail, Save, Sliders } from 'lucide-react';
 import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -26,27 +19,19 @@ import type {
 } from '@/store/settingsStore';
 import { useToast } from '@/context/ToastContext';
 import http from '@/lib/http';
+import ThemePreferencesCard from '@/pages/settings/ThemePreferencesCard';
 
 const Settings: React.FC = () => {
-  const themeMode = useThemeStore((state) => state.theme);
-  const setThemeMode = useThemeStore((state) => state.setTheme);
-  const updateTheme = useThemeStore((state) => state.updateTheme);
   const general = useSettingsStore((state) => state.general);
   const notifications = useSettingsStore((state) => state.notifications);
   const email = useSettingsStore((state) => state.email);
-  const themeSettings = useSettingsStore((state) => state.theme);
   const setGeneral = useSettingsStore((state) => state.setGeneral);
   const setNotifications = useSettingsStore((state) => state.setNotifications);
   const setEmail = useSettingsStore((state) => state.setEmail);
-  const setThemeSettings = (updater: (prev: ThemeSettings) => ThemeSettings) =>
-    useSettingsStore.setState((state) => ({ theme: updater(state.theme) }));
+  const setThemeSettings = useSettingsStore((state) => state.setTheme);
   const { addToast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-
-  type ThemeOptionKey = {
-    [K in keyof ThemeSettings]: ThemeSettings[K] extends boolean ? K : never;
-  }[keyof ThemeSettings & string];
 
   type NotificationOptionKey = {
     [K in keyof NotificationSettings]: NotificationSettings[K] extends boolean ? K : never;
@@ -55,24 +40,6 @@ const Settings: React.FC = () => {
   type EmailPreferenceKey = {
     [K in keyof EmailSettings]: EmailSettings[K] extends boolean ? K : never;
   }[keyof EmailSettings & string];
-
-  const themeOptions = [
-    {
-      label: 'Collapsed Sidebar',
-      description: 'Use a compact sidebar layout',
-      key: 'sidebarCollapsed',
-    },
-    {
-      label: 'Dense Mode',
-      description: 'Compact spacing for all elements',
-      key: 'denseMode',
-    },
-    {
-      label: 'High Contrast',
-      description: 'Increase contrast for better visibility',
-      key: 'highContrast',
-    },
-  ] satisfies { label: string; description: string; key: ThemeOptionKey }[];
 
   const notificationOptions = [
     {
@@ -188,9 +155,7 @@ const Settings: React.FC = () => {
 
         if (payload.theme) {
           const { mode, ...restTheme } = payload.theme;
-          useSettingsStore.setState((state) => ({
-            theme: { ...state.theme, ...restTheme },
-          }));
+          setThemeSettings({ ...restTheme, ...(mode ? { mode } : {}) });
 
           if (mode) {
             useThemeStore.setState({ theme: mode });
@@ -227,15 +192,17 @@ const Settings: React.FC = () => {
         theme: currentTheme,
       } = useSettingsStore.getState();
       const { theme: currentThemeMode, colorScheme: currentColorScheme } = useThemeStore.getState();
+      const themePayload = {
+        ...currentTheme,
+        mode: currentTheme.mode ?? currentThemeMode,
+        colorScheme: currentTheme.colorScheme ?? currentColorScheme,
+      };
+
       await http.post('/settings', {
         general: currentGeneral,
         notifications: currentNotifications,
         email: currentEmail,
-        theme: {
-          ...currentTheme,
-          mode: currentThemeMode,
-          colorScheme: currentTheme.colorScheme ?? currentColorScheme,
-        },
+        theme: themePayload,
       });
       addToast('Settings saved', 'success');
     } catch (error) {
@@ -342,69 +309,7 @@ const Settings: React.FC = () => {
           </Card>
 
           {/* Theme Settings */}
-          <Card title="Theme Settings" icon={<Palette className="h-5 w-5 text-neutral-500" />}>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
-                  Theme
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
-                  value={themeMode}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                    const value = e.target.value as 'light' | 'dark' | 'system';
-                    void setThemeMode(value);
-                  }}
-                >
-                  <option value="light">Light</option>
-                  <option value="dark">Dark</option>
-                  <option value="system">System</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
-                  Color Scheme
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
-                  value={themeSettings.colorScheme ?? 'default'}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                    const value = e.target.value;
-                    setThemeSettings((prev) => ({ ...prev, colorScheme: value }));
-                    updateTheme({ colorScheme: value });
-                  }}
-                >
-                  <option value="default">Default</option>
-                  <option value="teal">Teal</option>
-                  <option value="purple">Purple</option>
-                </select>
-              </div>
-
-              {themeOptions.map(({ label, description, key }) => (
-                <div className="flex items-center justify-between" key={key}>
-                  <div>
-                    <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">{label}</p>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400">{description}</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="sr-only peer"
-                      checked={themeSettings[key]}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setThemeSettings((prev) => ({
-                          ...prev,
-                          [key]: e.target.checked,
-                        }))
-                      }
-                    />
-                    <div className="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
-                  </label>
-                </div>
-              ))}
-            </div>
-          </Card>
+          <ThemePreferencesCard />
 
           {/* Notification Settings */}
           <Card title="Notification Settings" icon={<Bell className="h-5 w-5 text-neutral-500" />}>

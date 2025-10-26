@@ -4,7 +4,7 @@
 
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 
 vi.mock('../components/documentation/DocumentUploader', () => ({
@@ -31,6 +31,32 @@ vi.mock('../lib/http', () => ({
 
 import http from '@/lib/http';
 import Settings from '@/pages/Settings';
+import { ThemeProvider } from '@/context/ThemeContext';
+
+const renderSettings = () =>
+  render(
+    <ThemeProvider>
+      <Settings />
+    </ThemeProvider>,
+  );
+
+beforeAll(() => {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi
+      .fn()
+      .mockImplementation((query) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+  });
+});
 
 describe('Settings page', () => {
   beforeEach(() => {
@@ -51,7 +77,7 @@ describe('Settings page', () => {
 
   it('saves settings successfully', async () => {
     (http.post as any).mockResolvedValueOnce({ data: {} });
-    render(<Settings />);
+    renderSettings();
     await waitFor(() => expect(http.get).toHaveBeenCalled());
     const [saveButton] = screen.getAllByRole('button', { name: /save changes/i });
     await userEvent.click(saveButton);
@@ -69,7 +95,7 @@ describe('Settings page', () => {
 
   it('handles unauthorized errors', async () => {
     (http.post as any).mockRejectedValueOnce({ response: { status: 401 } });
-    render(<Settings />);
+    renderSettings();
     await waitFor(() => expect(http.get).toHaveBeenCalled());
     const [saveButton] = screen.getAllByRole('button', { name: /save changes/i });
     await userEvent.click(saveButton);

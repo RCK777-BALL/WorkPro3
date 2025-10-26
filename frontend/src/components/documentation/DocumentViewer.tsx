@@ -2,73 +2,34 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useCallback } from 'react';
-import { Download, Trash2, Tag, Share } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Download, Trash2, Tag, Share, FileText } from 'lucide-react';
 import Button from '@common/Button';
 import Badge from '@common/Badge';
 import type { DocumentMetadata } from '@/utils/documentation';
 import { useToast } from '@/context/ToastContext';
 
 interface DocumentViewerProps {
-  content: string;
+  content?: string;
   metadata: DocumentMetadata;
-  onDownload: () => void;
-  onDelete: () => void;
+  onDownload: () => void | Promise<void>;
+  onDelete: () => void | Promise<void>;
 }
 
 const DocumentViewer: React.FC<DocumentViewerProps> = ({
-  content,
   metadata,
+  preview,
   onDownload,
-  onDelete
+  onDelete,
+  onShare
 }) => {
-  const { addToast } = useToast();
-
-  const handleShare = useCallback(async () => {
-    try {
-      const isBrowser = typeof window !== 'undefined';
-      const shareUrl = isBrowser
-        ? `${window.location.origin}/documentation`
-        : '/documentation';
-      const shareText = `Check out "${metadata.title}" in the WorkPro documentation library.`;
-
-      if (typeof navigator !== 'undefined' && 'share' in navigator && typeof navigator.share === 'function') {
-        await navigator.share({
-          title: metadata.title,
-          text: shareText,
-          url: shareUrl,
-        });
-        addToast('Share dialog opened', 'success');
-        return;
-      }
-
-      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(shareUrl);
-        addToast('Share link copied to clipboard', 'success');
-        return;
-      }
-
-      if (!isBrowser || typeof document === 'undefined') {
-        throw new Error('Share is not supported in this environment');
-      }
-
-      const textarea = document.createElement('textarea');
-      textarea.value = shareUrl;
-      textarea.setAttribute('readonly', '');
-      textarea.style.position = 'absolute';
-      textarea.style.left = '-9999px';
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-      addToast('Share link copied to clipboard', 'success');
-    } catch (error) {
-      const isAbortError = error instanceof DOMException && error.name === 'AbortError';
-      if (!isAbortError) {
-        addToast('Unable to share document', 'error');
-      }
-    }
-  }, [addToast, metadata.title]);
+  const lastModified = metadata.lastModified instanceof Date
+    ? metadata.lastModified
+    : new Date(metadata.lastModified);
+  const hasValidDate = !Number.isNaN(lastModified.getTime());
+  const sizeDisplay = metadata.size > 0
+    ? `${(metadata.size / 1024).toFixed(2)} KB`
+    : 'Size unknown';
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-neutral-200">
@@ -77,7 +38,7 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
           <div>
             <h3 className="text-lg font-semibold text-neutral-900">{metadata.title}</h3>
             <p className="text-sm text-neutral-500">
-              {new Date(metadata.lastModified).toLocaleDateString()} · {(metadata.size / 1024).toFixed(2)} KB
+              {hasValidDate ? lastModified.toLocaleDateString() : 'Unknown date'} · {sizeDisplay}
             </p>
           </div>
           <div className="flex items-center space-x-2">
@@ -85,6 +46,8 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
               variant="outline"
               size="sm"
               icon={<Share size={16} />}
+              onClick={() => onShare?.({ content, metadata })}
+              disabled={!onShare}
               aria-label="Share document"
               onClick={handleShare}
             >
@@ -94,7 +57,7 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
               variant="outline"
               size="sm"
               icon={<Download size={16} />}
-              onClick={onDownload}
+              onClick={() => void onDownload()}
               aria-label="Download document"
             >
               Download
@@ -103,7 +66,7 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
               variant="outline"
               size="sm"
               icon={<Trash2 size={16} />}
-              onClick={onDelete}
+              onClick={() => void onDelete()}
               aria-label="Delete document"
             >
               Delete
@@ -120,7 +83,11 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
         )}
       </div>
       <div className="p-4 max-h-[600px] overflow-y-auto">
-        <pre className="whitespace-pre-wrap font-mono text-sm">{content}</pre>
+        {content && content.trim().length > 0 ? (
+          <pre className="whitespace-pre-wrap font-mono text-sm">{content}</pre>
+        ) : (
+          <p className="text-sm text-neutral-500 italic">No preview available for this document.</p>
+        )}
       </div>
     </div>
   );

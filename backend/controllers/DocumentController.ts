@@ -8,17 +8,60 @@ import { randomUUID } from 'crypto';
 import { Types } from 'mongoose';
 
 import type { ParamsDictionary } from 'express-serve-static-core';
-import Document from '../models/Document';
+import Document, { type StoredDocumentMetadata } from '../models/Document';
 import type { AuthedRequestHandler } from '../types/http';
 import { sendResponse } from '../utils/sendResponse';
 import { writeAuditLog } from '../utils/audit';
 import { toObjectId, toEntityId } from '../utils/ids';
 
+interface DocumentMetadataPayload {
+  mimeType?: string;
+  size?: number;
+  lastModified?: string;
+}
+
 interface DocumentPayload {
   base64?: string;
   url?: string;
   name?: string;
+  metadata?: {
+    size?: number;
+    mimeType?: string;
+    lastModified?: string;
+    type?: string;
+  };
 }
+
+const parseMetadataPayload = (
+  input?: DocumentPayload['metadata'],
+): StoredDocumentMetadata | undefined => {
+  if (!input || typeof input !== 'object') {
+    return undefined;
+  }
+
+  const metadata: StoredDocumentMetadata = {};
+
+  if (typeof input.size === 'number' && Number.isFinite(input.size) && input.size >= 0) {
+    metadata.size = input.size;
+  }
+
+  if (typeof input.mimeType === 'string' && input.mimeType.trim().length > 0) {
+    metadata.mimeType = input.mimeType.trim();
+  }
+
+  if (typeof input.type === 'string' && input.type.trim().length > 0) {
+    metadata.type = input.type.trim();
+  }
+
+  if (input.lastModified) {
+    const parsedDate = new Date(input.lastModified);
+    if (!Number.isNaN(parsedDate.getTime())) {
+      metadata.lastModified = parsedDate;
+    }
+  }
+
+  return Object.keys(metadata).length > 0 ? metadata : undefined;
+};
 
 export const getAllDocuments: AuthedRequestHandler = async (_req, res, next) => {
 
@@ -58,7 +101,26 @@ export const getDocumentById: AuthedRequestHandler<{ id: string }> = async (
   }
 };
 
-const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.txt', '.png', '.jpg', '.jpeg'];
+const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.txt', '.png', '.jpg', '.jpeg', '.xlsx', '.xls'];
+
+const ALLOWED_MIME_TYPES = new Set([
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+]);
+
+const parseLastModified = (input?: string): Date | undefined => {
+  if (!input) {
+    return undefined;
+  }
+  const value = new Date(input);
+  if (Number.isNaN(value.getTime())) {
+    return undefined;
+  }
+  return value;
+};
 
 const validateFileName = (input: string): { base: string; ext: string } => {
   const base = path.basename(input);
@@ -79,16 +141,49 @@ export const createDocument: AuthedRequestHandler<
 > = async (req, res, next) => {
 
   try {
-    const { base64, url, name } = req.body ?? {};
+    const { base64, url, name, metadata: metadataPayload } = req.body ?? {};
 
     let displayName = name ?? `document_${Date.now()}`;
     let finalUrl = url;
+    const metadata = parseMetadataPayload(metadataPayload);
 
-    if (base64) {
-      if (!name) {
-        sendResponse(res, null, 'Name is required for file uploads', 400);
+    const sanitizedMetadata: {
+      mimeType?: string;
+      size?: number;
+      lastModified?: Date;
+    } = {};
+
+    if (metadata?.mimeType) {
+      if (!ALLOWED_MIME_TYPES.has(metadata.mimeType)) {
+        sendResponse(res, null, 'Invalid mime type', 400);
         return;
       }
+      sanitizedMetadata.mimeType = metadata.mimeType;
+    }
+
+    if (metadata?.size !== undefined) {
+      const parsedSize = Number(metadata.size);
+      if (!Number.isFinite(parsedSize) || parsedSize < 0) {
+        sendResponse(res, null, 'Invalid size', 400);
+        return;
+      }
+      sanitizedMetadata.size = parsedSize;
+    }
+
+    if (metadata?.lastModified) {
+      const parsedDate = parseLastModified(metadata.lastModified);
+      if (!parsedDate) {
+        sendResponse(res, null, 'Invalid last modified date', 400);
+        return;
+      }
+      sanitizedMetadata.lastModified = parsedDate;
+    }
+
+      if (base64) {
+        if (!name) {
+          sendResponse(res, null, 'Name is required for file uploads', 400);
+          return;
+        }
       let safeName;
       try {
         safeName = validateFileName(name);
@@ -118,7 +213,11 @@ export const createDocument: AuthedRequestHandler<
       return;
     }
 
-    const newItem = new Document({ name: displayName, url: finalUrl });
+    const newItem = new Document({
+      name: displayName,
+      url: finalUrl,
+      ...(metadata ? { metadata } : {}),
+    });
     const saved = await newItem.save();
 
     const tenantId = req.tenantId;
@@ -165,10 +264,10 @@ export const updateDocument: AuthedRequestHandler<
       return;
     }
 
-    const { base64, url, name } = req.body ?? {};
+    const { base64, url, name, metadata: metadataPayload } = req.body ?? {};
 
     const entityId: Types.ObjectId = objectId;
-    const updateData: { name?: string; url?: string } = {};
+    const updateData: { name?: string; url?: string; metadata?: StoredDocumentMetadata } = {};
 
     if (base64) {
       if (!name) {
@@ -189,6 +288,7 @@ export const updateDocument: AuthedRequestHandler<
       await fs.writeFile(path.join(uploadDir, uniqueName), buffer);
       updateData.url = `/uploads/documents/${uniqueName}`;
       updateData.name = safeName.base;
+      hasFileUpdate = true;
     } else if (url) {
       updateData.url = url;
       if (name) {
@@ -200,10 +300,17 @@ export const updateDocument: AuthedRequestHandler<
           return;
         }
       }
-    } else {
-      // Should not happen due to validators, but handle gracefully
+      hasFileUpdate = true;
+    }
+
+    if (!hasFileUpdate && Object.keys(updateData).length === 0) {
       sendResponse(res, null, 'No document provided', 400);
       return;
+    }
+
+    const metadata = parseMetadataPayload(metadataPayload);
+    if (metadata) {
+      updateData.metadata = metadata;
     }
 
     const updated = await Document.findByIdAndUpdate(objectId, updateData, {

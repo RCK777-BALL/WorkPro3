@@ -41,7 +41,6 @@ import Imports from "@/pages/Imports";
 import Login from "@/pages/Login";
 import RegisterPage from "@/pages/RegisterPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
-import NotFound from "@/pages/NotFound";
 
 export default function App() {
   const navigate = useNavigate();
@@ -100,7 +99,7 @@ export default function App() {
           <Route path="/admin/tenants" element={<AdminTenants />} />
           <Route path="/imports" element={<Imports />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="*" element={<NotFound />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>
     </ErrorBoundary>

@@ -4,7 +4,12 @@
 
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
+import {
+  Route,
+  RouterProvider,
+  createBrowserRouter,
+  createRoutesFromElements,
+} from "react-router-dom";
 import { QueryClientProvider } from "react-query";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/context/AuthContext";
@@ -14,17 +19,29 @@ import "./i18n";
 import "./index.css";
 import App from "./App";
 
+const AppProviders = () => (
+  <QueryClientProvider client={queryClient}>
+    <ThemeProvider>
+      <AuthProvider>
+        <App />
+        <Toaster position="top-right" />
+      </AuthProvider>
+    </ThemeProvider>
+  </QueryClientProvider>
+);
+
+const router = createBrowserRouter(
+  createRoutesFromElements(<Route path="/*" element={<AppProviders />} />),
+  {
+    future: {
+      v7_startTransition: true,
+      v7_relativeSplatPath: true,
+    },
+  },
+);
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <AuthProvider>
-            <App />
-            <Toaster position="top-right" />
-          </AuthProvider>
-        </ThemeProvider>
-      </QueryClientProvider>
-    </BrowserRouter>
+    <RouterProvider router={router} />
   </React.StrictMode>,
 );

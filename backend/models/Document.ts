@@ -11,6 +11,9 @@ export interface DocumentDoc extends Document {
   name?: string;
   url: string;
   uploadedBy?: Types.ObjectId;
+  mimeType?: string;
+  size?: number;
+  lastModified?: Date;
 }
 
 const documentSchema = new Schema<DocumentDoc>({
@@ -20,6 +23,9 @@ const documentSchema = new Schema<DocumentDoc>({
   name: String,
   url: String,
   uploadedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+  mimeType: String,
+  size: Number,
+  lastModified: Date,
 }, { timestamps: true });
 
 const DocumentModel: Model<DocumentDoc> = mongoose.model<DocumentDoc>('Document', documentSchema);

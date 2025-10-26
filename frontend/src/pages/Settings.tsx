@@ -16,7 +16,13 @@ import Card from '@/components/common/Card';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import DocumentUploader from '@/components/documentation/DocumentUploader';
 import DocumentViewer from '@/components/documentation/DocumentViewer';
-import { downloadDocument, parseDocument, type DocumentMetadata } from '@/utils/documentation';
+import {
+  downloadDocument,
+  getDefaultMimeForType,
+  inferDocumentType,
+  parseDocument,
+  type DocumentMetadata,
+} from '@/utils/documentation';
 import { useThemeStore } from '@/store/themeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import type {
@@ -26,6 +32,24 @@ import type {
 } from '@/store/settingsStore';
 import { useToast } from '@/context/ToastContext';
 import http from '@/lib/http';
+
+interface ApiDocument {
+  _id: string;
+  name?: string;
+  url: string;
+  mimeType?: string;
+  size?: number;
+  lastModified?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface StoredDocument {
+  id: string;
+  url: string;
+  metadata: DocumentMetadata;
+  preview?: string;
+}
 
 const Settings: React.FC = () => {
   const themeMode = useThemeStore((state) => state.theme);
@@ -125,84 +149,190 @@ const Settings: React.FC = () => {
     },
   ] satisfies { label: string; description: string; key: EmailPreferenceKey }[];
 
-  const [documents, setDocuments] = useState<Array<{ content: string; metadata: DocumentMetadata }>>([]);
+  const [documents, setDocuments] = useState<StoredDocument[]>([]);
+
+  const fileToBase64 = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result;
+        if (typeof result !== 'string') {
+          reject(new Error('Unable to read file contents'));
+          return;
+        }
+        const base64 = result.includes(',') ? result.split(',')[1] ?? '' : result;
+        resolve(base64);
+      };
+      reader.onerror = () => {
+        reject(reader.error ?? new Error('Failed to read file'));
+      };
+      reader.readAsDataURL(file);
+    });
+
+  const mapApiDocuments = (items: ApiDocument[]): StoredDocument[] =>
+    items.reduce<StoredDocument[]>((acc, item) => {
+      try {
+        const type = inferDocumentType(item.mimeType, item.name);
+        const metadata: DocumentMetadata = {
+          title: item.name ?? 'Untitled Document',
+          type,
+          mimeType: item.mimeType ?? getDefaultMimeForType(type),
+          size: item.size ?? 0,
+          lastModified: item.lastModified
+            ? new Date(item.lastModified)
+            : item.updatedAt
+              ? new Date(item.updatedAt)
+              : new Date(),
+        };
+
+        acc.push({
+          id: item._id,
+          url: item.url,
+          metadata,
+        });
+      } catch (error) {
+        console.warn('Skipping unsupported document', error);
+      }
+      return acc;
+    }, []);
 
   const handleDocumentUpload = async (files: File[]) => {
     try {
-      const newDocs = await Promise.all(files.map(parseDocument));
-      setDocuments([...documents, ...newDocs]);
+      const uploadedDocuments = await Promise.all(
+        files.map(async (file) => {
+          const [{ content, metadata }, base64] = await Promise.all([
+            parseDocument(file),
+            fileToBase64(file),
+          ]);
+
+          const { data: savedDoc } = await http.post<ApiDocument>('/documents', {
+            base64,
+            name: file.name,
+            metadata: {
+              mimeType: metadata.mimeType,
+              size: metadata.size,
+              lastModified: metadata.lastModified.toISOString(),
+            },
+          });
+
+          const normalizedMetadata: DocumentMetadata = {
+            ...metadata,
+            title: savedDoc.name ?? metadata.title,
+            mimeType: savedDoc.mimeType ?? metadata.mimeType,
+            size: savedDoc.size ?? metadata.size,
+            lastModified: savedDoc.lastModified
+              ? new Date(savedDoc.lastModified)
+              : metadata.lastModified,
+          };
+
+          return {
+            id: savedDoc._id,
+            url: savedDoc.url,
+            metadata: normalizedMetadata,
+            preview: content,
+          } satisfies StoredDocument;
+        }),
+      );
+
+      setDocuments((prev) => [...prev, ...uploadedDocuments]);
+      addToast('Documents uploaded', 'success');
     } catch (error) {
       console.error('Error uploading documents:', error);
+      addToast('Failed to upload documents', 'error');
     }
   };
 
-  const handleDocumentDownload = (doc: { content: string; metadata: DocumentMetadata }) => {
-    const mimeType = (() => {
-      switch (doc.metadata.type) {
-        case 'pdf':
-          return 'application/pdf';
-        case 'excel':
-          return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-        case 'word':
-          return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-        default:
-          return 'text/plain';
-      }
-    })();
-    downloadDocument(doc.content, doc.metadata.title, mimeType);
+  const handleDocumentDownload = async (doc: StoredDocument) => {
+    try {
+      await downloadDocument(doc.url, doc.metadata.title, doc.metadata.mimeType);
+      addToast('Download started', 'success');
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      addToast('Failed to download document', 'error');
+    }
   };
 
-  const handleRemoveDocument = (index: number) => {
-    setDocuments((prev) => prev.filter((_, idx) => idx !== index));
+  const handleRemoveDocument = async (id: string) => {
+    try {
+      await http.delete(`/documents/${id}`);
+      setDocuments((prev) => prev.filter((doc) => doc.id !== id));
+      addToast('Document deleted', 'success');
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      addToast('Failed to delete document', 'error');
+    }
   };
 
   useEffect(() => {
     let isMounted = true;
 
     const loadSettings = async () => {
+      setIsLoading(true);
       try {
-        setIsLoading(true);
-        const response = await http.get('/settings');
-        const payload = response.data as Partial<{
-          general: Partial<typeof general>;
-          notifications: Partial<typeof notifications>;
-          email: Partial<typeof email>;
-          theme: Partial<ThemeSettings> & { mode?: 'light' | 'dark' | 'system' };
-        }>;
+        const [settingsResult, documentsResult] = await Promise.allSettled([
+          http.get('/settings'),
+          http.get<ApiDocument[]>('/documents'),
+        ]);
 
-        if (!isMounted || !payload) {
+        if (!isMounted) {
           return;
         }
 
-        if (payload.general) {
-          setGeneral(payload.general);
-        }
+        if (settingsResult.status === 'fulfilled') {
+          const payload = settingsResult.value.data as Partial<{
+            general: Partial<typeof general>;
+            notifications: Partial<typeof notifications>;
+            email: Partial<typeof email>;
+            theme: Partial<ThemeSettings> & { mode?: 'light' | 'dark' | 'system' };
+          }>;
 
-        if (payload.notifications) {
-          setNotifications(payload.notifications);
-        }
-
-        if (payload.email) {
-          setEmail(payload.email);
-        }
-
-        if (payload.theme) {
-          const { mode, ...restTheme } = payload.theme;
-          useSettingsStore.setState((state) => ({
-            theme: { ...state.theme, ...restTheme },
-          }));
-
-          if (mode) {
-            useThemeStore.setState({ theme: mode });
+          if (payload?.general) {
+            setGeneral(payload.general);
           }
 
-          if (payload.theme.colorScheme) {
-            useThemeStore.setState({ colorScheme: payload.theme.colorScheme });
+          if (payload?.notifications) {
+            setNotifications(payload.notifications);
           }
+
+          if (payload?.email) {
+            setEmail(payload.email);
+          }
+
+          if (payload?.theme) {
+            const { mode, ...restTheme } = payload.theme;
+            useSettingsStore.setState((state) => ({
+              theme: { ...state.theme, ...restTheme },
+            }));
+
+            if (mode) {
+              useThemeStore.setState({ theme: mode });
+            }
+
+            if (payload.theme.colorScheme) {
+              useThemeStore.setState({ colorScheme: payload.theme.colorScheme });
+            }
+          }
+        } else {
+          console.error('Error loading settings:', settingsResult.reason);
+          addToast('Failed to load settings', 'error');
+        }
+
+        if (documentsResult.status === 'fulfilled') {
+          const payload = documentsResult.value.data;
+          if (Array.isArray(payload)) {
+            setDocuments(mapApiDocuments(payload));
+          } else {
+            setDocuments([]);
+          }
+        } else {
+          console.error('Error loading documents:', documentsResult.reason);
+          addToast('Failed to load documents', 'error');
         }
       } catch (error) {
         console.error('Error loading settings:', error);
-        addToast('Failed to load settings', 'error');
+        if (isMounted) {
+          addToast('Failed to load settings', 'error');
+        }
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -210,7 +340,7 @@ const Settings: React.FC = () => {
       }
     };
 
-    loadSettings();
+    void loadSettings();
 
     return () => {
       isMounted = false;
@@ -500,13 +630,13 @@ const Settings: React.FC = () => {
               {documents.length > 0 && (
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium text-neutral-900 dark:text-white">Uploaded Documents</h3>
-                  {documents.map((doc, index) => (
+                  {documents.map((doc) => (
                     <DocumentViewer
-                      key={index}
-                      content={doc.content}
+                      key={doc.id}
                       metadata={doc.metadata}
-                      onDownload={() => handleDocumentDownload(doc)}
-                      onDelete={() => handleRemoveDocument(index)}
+                      preview={doc.preview}
+                      onDownload={() => void handleDocumentDownload(doc)}
+                      onDelete={() => void handleRemoveDocument(doc.id)}
                     />
                   ))}
                 </div>

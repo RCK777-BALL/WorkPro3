@@ -37,15 +37,25 @@ describe('Settings page', () => {
     (http.post as any).mockReset();
     (http.get as any).mockReset();
     mockAddToast.mockReset();
-    (http.get as any).mockResolvedValue({
-      data: {
-        general: {
-          companyName: 'Acme Industries',
-        },
-        notifications: {},
-        email: {},
-        theme: { mode: 'light', colorScheme: 'default' },
-      },
+    (http.get as any).mockImplementation((path: string) => {
+      if (path === '/settings') {
+        return Promise.resolve({
+          data: {
+            general: {
+              companyName: 'Acme Industries',
+            },
+            notifications: {},
+            email: {},
+            theme: { mode: 'light', colorScheme: 'default' },
+          },
+        });
+      }
+
+      if (path === '/documents') {
+        return Promise.resolve({ data: [] });
+      }
+
+      return Promise.reject(new Error(`Unexpected path ${path}`));
     });
   });
 

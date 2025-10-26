@@ -2,34 +2,79 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React from 'react';
-import { Download, Trash2, Tag, Share } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Download, Trash2, Tag, Share, FileText } from 'lucide-react';
 import Button from '@common/Button';
 import Badge from '@common/Badge';
 import type { DocumentMetadata } from '@/utils/documentation';
 
 interface DocumentViewerProps {
-  content: string;
   metadata: DocumentMetadata;
+  preview?: string;
   onDownload: () => void;
   onDelete: () => void;
 }
 
 const DocumentViewer: React.FC<DocumentViewerProps> = ({
-  content,
   metadata,
+  preview,
   onDownload,
   onDelete
 }) => {
+  const formattedSize = useMemo(() => {
+    if (!metadata.size && metadata.size !== 0) {
+      return 'Unknown size';
+    }
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let size = metadata.size;
+    let unitIndex = 0;
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex += 1;
+    }
+    return `${size.toFixed(unitIndex === 0 ? 0 : 2)} ${units[unitIndex]}`;
+  }, [metadata.size]);
+
+  const formattedDate = useMemo(() => {
+    const value = metadata.lastModified instanceof Date ? metadata.lastModified : new Date(metadata.lastModified);
+    if (Number.isNaN(value.getTime())) {
+      return 'Unknown date';
+    }
+    return value.toLocaleString();
+  }, [metadata.lastModified]);
+
+  const typeLabel = useMemo(() => {
+    switch (metadata.type) {
+      case 'pdf':
+        return 'PDF';
+      case 'excel':
+        return 'Excel';
+      case 'word':
+        return 'Word';
+      default:
+        return metadata.type;
+    }
+  }, [metadata.type]);
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-neutral-200">
       <div className="p-4 border-b border-neutral-200">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-neutral-900">{metadata.title}</h3>
-            <p className="text-sm text-neutral-500">
-              {new Date(metadata.lastModified).toLocaleDateString()} · {(metadata.size / 1024).toFixed(2)} KB
-            </p>
+            <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-500">
+              <span className="inline-flex items-center gap-1">
+                <FileText size={16} className="text-neutral-400" />
+                {typeLabel}
+              </span>
+              <span aria-hidden="true">•</span>
+              <span>{formattedSize}</span>
+              <span aria-hidden="true">•</span>
+              <span>{formattedDate}</span>
+            </div>
+            {metadata.mimeType && (
+              <p className="text-xs text-neutral-400 mt-1">{metadata.mimeType}</p>
+            )}
           </div>
           <div className="flex items-center space-x-2">
             <Button
@@ -69,9 +114,11 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
           </div>
         )}
       </div>
-      <div className="p-4 max-h-[600px] overflow-y-auto">
-        <pre className="whitespace-pre-wrap font-mono text-sm">{content}</pre>
-      </div>
+      {preview && (
+        <div className="p-4 max-h-[600px] overflow-y-auto">
+          <pre className="whitespace-pre-wrap font-mono text-sm">{preview}</pre>
+        </div>
+      )}
     </div>
   );
 };

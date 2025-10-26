@@ -2,8 +2,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React from 'react';
-import { Download, Trash2, Tag, Share } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Download, Trash2, Tag, Share, FileText } from 'lucide-react';
 import Button from '@common/Button';
 import Badge from '@common/Badge';
 import type { DocumentMetadata } from '@/utils/documentation';
@@ -16,8 +16,8 @@ interface DocumentViewerProps {
 }
 
 const DocumentViewer: React.FC<DocumentViewerProps> = ({
-  content,
   metadata,
+  preview,
   onDownload,
   onDelete
 }) => {

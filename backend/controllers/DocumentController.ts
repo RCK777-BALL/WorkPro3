@@ -14,6 +14,12 @@ import { sendResponse } from '../utils/sendResponse';
 import { writeAuditLog } from '../utils/audit';
 import { toObjectId, toEntityId } from '../utils/ids';
 
+interface DocumentMetadataPayload {
+  mimeType?: string;
+  size?: number;
+  lastModified?: string;
+}
+
 interface DocumentPayload {
   base64?: string;
   url?: string;
@@ -95,7 +101,26 @@ export const getDocumentById: AuthedRequestHandler<{ id: string }> = async (
   }
 };
 
-const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.txt', '.png', '.jpg', '.jpeg'];
+const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.txt', '.png', '.jpg', '.jpeg', '.xlsx', '.xls'];
+
+const ALLOWED_MIME_TYPES = new Set([
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+]);
+
+const parseLastModified = (input?: string): Date | undefined => {
+  if (!input) {
+    return undefined;
+  }
+  const value = new Date(input);
+  if (Number.isNaN(value.getTime())) {
+    return undefined;
+  }
+  return value;
+};
 
 const validateFileName = (input: string): { base: string; ext: string } => {
   const base = path.basename(input);
@@ -122,11 +147,43 @@ export const createDocument: AuthedRequestHandler<
     let finalUrl = url;
     const metadata = parseMetadataPayload(metadataPayload);
 
-    if (base64) {
-      if (!name) {
-        sendResponse(res, null, 'Name is required for file uploads', 400);
+    const sanitizedMetadata: {
+      mimeType?: string;
+      size?: number;
+      lastModified?: Date;
+    } = {};
+
+    if (metadata?.mimeType) {
+      if (!ALLOWED_MIME_TYPES.has(metadata.mimeType)) {
+        sendResponse(res, null, 'Invalid mime type', 400);
         return;
       }
+      sanitizedMetadata.mimeType = metadata.mimeType;
+    }
+
+    if (metadata?.size !== undefined) {
+      const parsedSize = Number(metadata.size);
+      if (!Number.isFinite(parsedSize) || parsedSize < 0) {
+        sendResponse(res, null, 'Invalid size', 400);
+        return;
+      }
+      sanitizedMetadata.size = parsedSize;
+    }
+
+    if (metadata?.lastModified) {
+      const parsedDate = parseLastModified(metadata.lastModified);
+      if (!parsedDate) {
+        sendResponse(res, null, 'Invalid last modified date', 400);
+        return;
+      }
+      sanitizedMetadata.lastModified = parsedDate;
+    }
+
+      if (base64) {
+        if (!name) {
+          sendResponse(res, null, 'Name is required for file uploads', 400);
+          return;
+        }
       let safeName;
       try {
         safeName = validateFileName(name);
@@ -231,6 +288,7 @@ export const updateDocument: AuthedRequestHandler<
       await fs.writeFile(path.join(uploadDir, uniqueName), buffer);
       updateData.url = `/uploads/documents/${uniqueName}`;
       updateData.name = safeName.base;
+      hasFileUpdate = true;
     } else if (url) {
       updateData.url = url;
       if (name) {
@@ -242,8 +300,10 @@ export const updateDocument: AuthedRequestHandler<
           return;
         }
       }
-    } else {
-      // Should not happen due to validators, but handle gracefully
+      hasFileUpdate = true;
+    }
+
+    if (!hasFileUpdate && Object.keys(updateData).length === 0) {
       sendResponse(res, null, 'No document provided', 400);
       return;
     }

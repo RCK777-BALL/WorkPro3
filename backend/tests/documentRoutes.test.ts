@@ -131,4 +131,34 @@ describe('Document Routes', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
   });
+
+  it('stores metadata when provided', async () => {
+    const base64 = Buffer.from('pdf-data').toString('base64');
+    const lastModified = new Date().toISOString();
+    const res = await request(app)
+      .post('/api/documents')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        base64,
+        name: 'report.pdf',
+        metadata: {
+          mimeType: 'application/pdf',
+          size: 1024,
+          lastModified,
+        },
+      })
+      .expect(201);
+
+    expect(res.body.mimeType).toBe('application/pdf');
+    expect(res.body.size).toBe(1024);
+    expect(new Date(res.body.lastModified).toISOString()).toBe(new Date(lastModified).toISOString());
+
+    const fetchRes = await request(app)
+      .get(`/api/documents/${res.body._id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(fetchRes.body.mimeType).toBe('application/pdf');
+    expect(fetchRes.body.size).toBe(1024);
+  });
 });

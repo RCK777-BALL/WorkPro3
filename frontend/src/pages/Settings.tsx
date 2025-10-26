@@ -36,6 +36,24 @@ interface ApiDocumentResponse {
   updatedAt?: string;
 }
 
+interface ApiDocument {
+  _id: string;
+  name?: string;
+  url: string;
+  mimeType?: string;
+  size?: number;
+  lastModified?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface StoredDocument {
+  id: string;
+  url: string;
+  metadata: DocumentMetadata;
+  preview?: string;
+}
+
 const Settings: React.FC = () => {
   const general = useSettingsStore((state) => state.general);
   const notifications = useSettingsStore((state) => state.notifications);
@@ -213,31 +231,32 @@ const Settings: React.FC = () => {
     let isMounted = true;
 
     const loadSettings = async () => {
+      setIsLoading(true);
       try {
-        setIsLoading(true);
-        const response = await http.get('/settings');
-        const payload = response.data as Partial<{
-          general: Partial<typeof general>;
-          notifications: Partial<typeof notifications>;
-          email: Partial<typeof email>;
-          theme: Partial<ThemeSettings> & { mode?: 'light' | 'dark' | 'system' };
-        }>;
+        const [settingsResult, documentsResult] = await Promise.allSettled([
+          http.get('/settings'),
+          http.get<ApiDocument[]>('/documents'),
+        ]);
 
-        if (!isMounted || !payload) {
+        if (!isMounted) {
           return;
         }
 
-        if (payload.general) {
-          setGeneral(payload.general);
-        }
+        if (settingsResult.status === 'fulfilled') {
+          const payload = settingsResult.value.data as Partial<{
+            general: Partial<typeof general>;
+            notifications: Partial<typeof notifications>;
+            email: Partial<typeof email>;
+            theme: Partial<ThemeSettings> & { mode?: 'light' | 'dark' | 'system' };
+          }>;
 
-        if (payload.notifications) {
-          setNotifications(payload.notifications);
-        }
+          if (payload?.general) {
+            setGeneral(payload.general);
+          }
 
-        if (payload.email) {
-          setEmail(payload.email);
-        }
+          if (payload?.notifications) {
+            setNotifications(payload.notifications);
+          }
 
         if (payload.theme) {
           const { mode, colorScheme, ...restTheme } = payload.theme;
@@ -245,6 +264,10 @@ const Settings: React.FC = () => {
           if (Object.keys(restTheme).length > 0 || colorScheme) {
             applyThemeSettings({ ...restTheme, ...(colorScheme ? { colorScheme } : {}) });
           }
+        } else {
+          console.error('Error loading settings:', settingsResult.reason);
+          addToast('Failed to load settings', 'error');
+        }
 
           if (mode || colorScheme) {
             useThemeStore.setState((state) => ({
@@ -253,10 +276,15 @@ const Settings: React.FC = () => {
               ...(colorScheme ? { colorScheme } : {}),
             }));
           }
+        } else {
+          console.error('Error loading documents:', documentsResult.reason);
+          addToast('Failed to load documents', 'error');
         }
       } catch (error) {
         console.error('Error loading settings:', error);
-        addToast('Failed to load settings', 'error');
+        if (isMounted) {
+          addToast('Failed to load settings', 'error');
+        }
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -264,7 +292,7 @@ const Settings: React.FC = () => {
       }
     };
 
-    loadSettings();
+    void loadSettings();
 
     return () => {
       isMounted = false;
@@ -564,13 +592,13 @@ const Settings: React.FC = () => {
               {documents.length > 0 && (
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium text-neutral-900 dark:text-white">Uploaded Documents</h3>
-                  {documents.map((doc, index) => (
+                  {documents.map((doc) => (
                     <DocumentViewer
-                      key={index}
-                      content={doc.content}
+                      key={doc.id}
                       metadata={doc.metadata}
-                      onDownload={() => handleDocumentDownload(doc)}
-                      onDelete={() => handleRemoveDocument(index)}
+                      preview={doc.preview}
+                      onDownload={() => void handleDocumentDownload(doc)}
+                      onDelete={() => void handleRemoveDocument(doc.id)}
                     />
                   ))}
                 </div>

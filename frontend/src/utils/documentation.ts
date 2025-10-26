@@ -7,6 +7,33 @@ import ExcelJS from 'exceljs';
 import * as mammoth from 'mammoth';
 import * as PDFJS from 'pdfjs-dist';
 import type { TextItem } from 'pdfjs-dist/types/src/display/api';
+import http from '@/lib/http';
+
+export type DocumentType = 'pdf' | 'excel' | 'word';
+
+const MIME_TYPE_TO_TYPE: Record<string, DocumentType> = {
+  'application/pdf': 'pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'word',
+  'application/msword': 'word',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'excel',
+  'application/vnd.ms-excel': 'excel',
+};
+
+const EXTENSION_TO_TYPE: Record<string, DocumentType> = {
+  pdf: 'pdf',
+  doc: 'word',
+  docx: 'word',
+  xls: 'excel',
+  xlsx: 'excel',
+};
+
+const DEFAULT_MIME_BY_TYPE: Record<DocumentType, string> = {
+  pdf: 'application/pdf',
+  word: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  excel: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+};
+
+export const getDefaultMimeForType = (type: DocumentType) => DEFAULT_MIME_BY_TYPE[type];
 
 export type DocumentType = 'pdf' | 'excel' | 'word';
 

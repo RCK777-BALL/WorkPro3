@@ -13,13 +13,15 @@ interface DocumentViewerProps {
   metadata: DocumentMetadata;
   onDownload: () => void;
   onDelete: () => void;
+  onShare?: (document: { content: string; metadata: DocumentMetadata }) => void;
 }
 
 const DocumentViewer: React.FC<DocumentViewerProps> = ({
   content,
   metadata,
   onDownload,
-  onDelete
+  onDelete,
+  onShare
 }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-neutral-200">
@@ -36,6 +38,8 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
               variant="outline"
               size="sm"
               icon={<Share size={16} />}
+              onClick={() => onShare?.({ content, metadata })}
+              disabled={!onShare}
               aria-label="Share document"
             >
               Share

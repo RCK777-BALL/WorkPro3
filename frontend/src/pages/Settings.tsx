@@ -16,6 +16,7 @@ import Card from '@/components/common/Card';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import DocumentUploader from '@/components/documentation/DocumentUploader';
 import DocumentViewer from '@/components/documentation/DocumentViewer';
+import DocumentShareModal from '@/components/documentation/DocumentShareModal';
 import { downloadDocument, parseDocument, type DocumentMetadata } from '@/utils/documentation';
 import { useThemeStore } from '@/store/themeStore';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -126,6 +127,7 @@ const Settings: React.FC = () => {
   ] satisfies { label: string; description: string; key: EmailPreferenceKey }[];
 
   const [documents, setDocuments] = useState<Array<{ content: string; metadata: DocumentMetadata }>>([]);
+  const [shareTarget, setShareTarget] = useState<{ content: string; metadata: DocumentMetadata } | null>(null);
 
   const handleDocumentUpload = async (files: File[]) => {
     try {
@@ -154,6 +156,10 @@ const Settings: React.FC = () => {
 
   const handleRemoveDocument = (index: number) => {
     setDocuments((prev) => prev.filter((_, idx) => idx !== index));
+  };
+
+  const handleShareDocument = (doc: { content: string; metadata: DocumentMetadata }) => {
+    setShareTarget(doc);
   };
 
   useEffect(() => {
@@ -507,6 +513,7 @@ const Settings: React.FC = () => {
                       metadata={doc.metadata}
                       onDownload={() => handleDocumentDownload(doc)}
                       onDelete={() => handleRemoveDocument(index)}
+                      onShare={handleShareDocument}
                     />
                   ))}
                 </div>
@@ -514,6 +521,11 @@ const Settings: React.FC = () => {
             </div>
           </Card>
         </div>
+        <DocumentShareModal
+          isOpen={shareTarget !== null}
+          document={shareTarget}
+          onClose={() => setShareTarget(null)}
+        />
       </div>
   );
 };

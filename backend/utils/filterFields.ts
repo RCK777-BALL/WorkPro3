@@ -15,3 +15,5 @@ export const filterFields = <T extends Record<string, unknown>>(source: T, allow
   return result;
 };
 
+export default filterFields;
+

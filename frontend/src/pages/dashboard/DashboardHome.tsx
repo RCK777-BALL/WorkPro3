@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import http from "@/lib/http";
 import { useToast } from "@/context/ToastContext";
 import RecentActivity, { AuditLog } from "@/components/dashboard/RecentActivity";
+import EmailPreferencesCard from "@/components/dashboard/EmailPreferencesCard";
 import { Sparkline } from "@/components/charts/Sparkline";
 import {
   ClipboardList,
@@ -223,6 +224,7 @@ export default function DashboardHome() {
         </div>
 
         <div className="space-y-6 mt-6 lg:mt-0">
+          <EmailPreferencesCard />
           <RecentActivity
             logs={activityLogs}
             loading={activityLoading}

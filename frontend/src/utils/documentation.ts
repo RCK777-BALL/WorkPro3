@@ -35,40 +35,60 @@ const DEFAULT_MIME_BY_TYPE: Record<DocumentType, string> = {
 
 export const getDefaultMimeForType = (type: DocumentType) => DEFAULT_MIME_BY_TYPE[type];
 
+export type DocumentType = 'pdf' | 'excel' | 'word';
+
 export interface DocumentMetadata {
+  id?: string;
   title: string;
   type: DocumentType;
   mimeType: string;
   size: number;
-  lastModified: Date;
+  lastModified: Date | string;
+  mimeType: string;
+  url?: string;
   tags?: string[];
   category?: string;
 }
 
-export const inferDocumentType = (mimeType?: string, filename?: string): DocumentType => {
-  const normalizedMime = mimeType?.toLowerCase();
-  if (normalizedMime && normalizedMime in MIME_TYPE_TO_TYPE) {
-    return MIME_TYPE_TO_TYPE[normalizedMime];
-  }
-  const extension = filename?.split('.').pop()?.toLowerCase();
-  if (extension && extension in EXTENSION_TO_TYPE) {
-    return EXTENSION_TO_TYPE[extension];
-  }
-  throw new Error('Unsupported file type');
+export const DOCUMENT_MIME_TYPES: Record<DocumentType, string> = {
+  pdf: 'application/pdf',
+  excel: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  word: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 };
+
+const EXTENSION_TO_TYPE: Record<string, DocumentType> = {
+  pdf: 'pdf',
+  xlsx: 'excel',
+  docx: 'word',
+};
+
+export const inferDocumentTypeFromFilename = (filename: string): DocumentType => {
+  const extension = filename.split('.').pop()?.toLowerCase();
+  if (!extension) {
+    throw new Error('Unsupported file type');
+  }
+
+  const type = EXTENSION_TO_TYPE[extension];
+  if (!type) {
+    throw new Error('Unsupported file type');
+  }
+
+  return type;
+};
+
+export const getMimeTypeForType = (type: DocumentType): string => DOCUMENT_MIME_TYPES[type];
 
 export const parseDocument = async (
   file: File,
 ): Promise<{ content: string; metadata: DocumentMetadata }> => {
-  const type = inferDocumentType(file.type, file.name);
-  const mimeType = file.type || DEFAULT_MIME_BY_TYPE[type];
-
+  const type = inferDocumentTypeFromFilename(file.name);
   const metadata: DocumentMetadata = {
     title: file.name,
     type,
-    mimeType,
+    mimeType: getMimeTypeForType(type),
     size: file.size,
-    lastModified: new Date(file.lastModified),
+    lastModified: toDate(file.lastModified),
+    mimeType,
   };
 
   let content = '';
@@ -110,54 +130,45 @@ export const parseDocument = async (
       break;
     }
 
-    default:
-      throw new Error('Unsupported file type');
+    default: {
+      const arrayBuffer = await file.arrayBuffer();
+      content = new TextDecoder().decode(arrayBuffer);
+      break;
+    }
   }
 
   return { content, metadata };
 };
 
-const resolveDocumentUrl = (url: string) => {
-  if (/^https?:\/\//i.test(url)) {
-    return url;
-  }
-  const baseURL = http.defaults.baseURL ?? '';
-  if (!baseURL) {
-    return url;
-  }
-  const root = baseURL.replace(/\/+$/, '').replace(/\/api$/, '');
-  const normalizedPath = url.startsWith('/') ? url : `/${url}`;
-  return `${root}${normalizedPath}`;
+export const downloadDocument = (
+  content: string | ArrayBuffer | Blob,
+  filename: string,
+  type: string,
+) => {
+  const blob =
+    content instanceof Blob
+      ? content.type && content.type !== type
+        ? new Blob([content], { type })
+        : content
+      : new Blob([content], { type });
+  saveAs(blob, filename);
 };
 
-export const downloadDocument = async (url: string, filename: string, mimeType?: string) => {
-  const absoluteUrl = resolveDocumentUrl(url);
-  const response = await http.get<Blob>(absoluteUrl, { responseType: 'blob' });
-  const blob = response.data;
+export const fileToBase64 = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.split(',')[1] ?? '');
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 
-  if (!(blob instanceof Blob)) {
-    throw new Error('Invalid document response');
-  }
-
-  if (!mimeType && blob.type) {
-    mimeType = blob.type;
-  }
-
-  if (mimeType && blob.type === mimeType) {
-    saveAs(blob, filename);
-    return;
-  }
-
-  const buffer = await blob.arrayBuffer();
-  const normalizedMime = mimeType ?? 'application/octet-stream';
-  const normalizedBlob = new Blob([buffer], { type: normalizedMime });
-  saveAs(normalizedBlob, filename);
-};
-
-export const searchDocuments = (documents: { content: string; metadata: DocumentMetadata }[], query: string) => {
+export const searchDocuments = (documents: { content?: string; metadata: DocumentMetadata }[], query: string) => {
   const normalizedQuery = query.toLowerCase();
-  return documents.filter(doc => 
-    doc.content.toLowerCase().includes(normalizedQuery) ||
+  return documents.filter(doc =>
+    (doc.content?.toLowerCase().includes(normalizedQuery) ?? false) ||
     doc.metadata.title.toLowerCase().includes(normalizedQuery) ||
     doc.metadata.tags?.some(tag => tag.toLowerCase().includes(normalizedQuery))
   );

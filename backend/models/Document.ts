@@ -4,6 +4,13 @@
 
 import mongoose, { Schema, Document, Types, Model } from 'mongoose';
 
+export interface StoredDocumentMetadata {
+  size?: number;
+  mimeType?: string;
+  lastModified?: Date;
+  type?: string;
+}
+
 export interface DocumentDoc extends Document {
   title?: string;
   asset?: Types.ObjectId;
@@ -11,6 +18,7 @@ export interface DocumentDoc extends Document {
   name?: string;
   url: string;
   uploadedBy?: Types.ObjectId;
+  metadata?: StoredDocumentMetadata;
 }
 
 const documentSchema = new Schema<DocumentDoc>({
@@ -20,6 +28,12 @@ const documentSchema = new Schema<DocumentDoc>({
   name: String,
   url: String,
   uploadedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+  metadata: {
+    size: Number,
+    mimeType: String,
+    lastModified: Date,
+    type: String,
+  },
 }, { timestamps: true });
 
 const DocumentModel: Model<DocumentDoc> = mongoose.model<DocumentDoc>('Document', documentSchema);

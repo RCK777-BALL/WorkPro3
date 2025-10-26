@@ -8,7 +8,7 @@ import { randomUUID } from 'crypto';
 import { Types } from 'mongoose';
 
 import type { ParamsDictionary } from 'express-serve-static-core';
-import Document from '../models/Document';
+import Document, { type StoredDocumentMetadata } from '../models/Document';
 import type { AuthedRequestHandler } from '../types/http';
 import { sendResponse } from '../utils/sendResponse';
 import { writeAuditLog } from '../utils/audit';
@@ -18,7 +18,44 @@ interface DocumentPayload {
   base64?: string;
   url?: string;
   name?: string;
+  metadata?: {
+    size?: number;
+    mimeType?: string;
+    lastModified?: string;
+    type?: string;
+  };
 }
+
+const parseMetadataPayload = (
+  input?: DocumentPayload['metadata'],
+): StoredDocumentMetadata | undefined => {
+  if (!input || typeof input !== 'object') {
+    return undefined;
+  }
+
+  const metadata: StoredDocumentMetadata = {};
+
+  if (typeof input.size === 'number' && Number.isFinite(input.size) && input.size >= 0) {
+    metadata.size = input.size;
+  }
+
+  if (typeof input.mimeType === 'string' && input.mimeType.trim().length > 0) {
+    metadata.mimeType = input.mimeType.trim();
+  }
+
+  if (typeof input.type === 'string' && input.type.trim().length > 0) {
+    metadata.type = input.type.trim();
+  }
+
+  if (input.lastModified) {
+    const parsedDate = new Date(input.lastModified);
+    if (!Number.isNaN(parsedDate.getTime())) {
+      metadata.lastModified = parsedDate;
+    }
+  }
+
+  return Object.keys(metadata).length > 0 ? metadata : undefined;
+};
 
 export const getAllDocuments: AuthedRequestHandler = async (_req, res, next) => {
 
@@ -79,10 +116,11 @@ export const createDocument: AuthedRequestHandler<
 > = async (req, res, next) => {
 
   try {
-    const { base64, url, name } = req.body ?? {};
+    const { base64, url, name, metadata: metadataPayload } = req.body ?? {};
 
     let displayName = name ?? `document_${Date.now()}`;
     let finalUrl = url;
+    const metadata = parseMetadataPayload(metadataPayload);
 
     if (base64) {
       if (!name) {
@@ -118,7 +156,11 @@ export const createDocument: AuthedRequestHandler<
       return;
     }
 
-    const newItem = new Document({ name: displayName, url: finalUrl });
+    const newItem = new Document({
+      name: displayName,
+      url: finalUrl,
+      ...(metadata ? { metadata } : {}),
+    });
     const saved = await newItem.save();
 
     const tenantId = req.tenantId;
@@ -165,10 +207,10 @@ export const updateDocument: AuthedRequestHandler<
       return;
     }
 
-    const { base64, url, name } = req.body ?? {};
+    const { base64, url, name, metadata: metadataPayload } = req.body ?? {};
 
     const entityId: Types.ObjectId = objectId;
-    const updateData: { name?: string; url?: string } = {};
+    const updateData: { name?: string; url?: string; metadata?: StoredDocumentMetadata } = {};
 
     if (base64) {
       if (!name) {
@@ -204,6 +246,11 @@ export const updateDocument: AuthedRequestHandler<
       // Should not happen due to validators, but handle gracefully
       sendResponse(res, null, 'No document provided', 400);
       return;
+    }
+
+    const metadata = parseMetadataPayload(metadataPayload);
+    if (metadata) {
+      updateData.metadata = metadata;
     }
 
     const updated = await Document.findByIdAndUpdate(objectId, updateData, {

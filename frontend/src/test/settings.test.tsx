@@ -18,6 +18,7 @@ vi.mock('../components/documentation/DocumentViewer', () => ({
 vi.mock('../utils/documentation', () => ({
   parseDocument: vi.fn(),
   downloadDocument: vi.fn(),
+  getMimeTypeForType: vi.fn(() => 'application/pdf'),
 }));
 
 const mockAddToast = vi.fn();

@@ -771,7 +771,7 @@ export default function Dashboard() {
     setActivityError(null);
     try {
       const params = getQueryParams();
-      const { data } = await http.get<RecentActivityItem[]>("/dashboard/recent-activity", { params });
+      const { data } = await http.get<RecentActivityItem[]>("/dashboard/activity", { params });
       if (!mountedRef.current) return;
       setRecentActivity(data);
     } catch (error) {

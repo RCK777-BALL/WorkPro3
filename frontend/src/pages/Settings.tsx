@@ -23,23 +23,15 @@ import http from '@/lib/http';
 import SettingsLayout from '@/components/settings/SettingsLayout';
 
 const Settings: React.FC = () => {
-  const themeMode = useThemeStore((state) => state.theme);
-  const setThemeMode = useThemeStore((state) => state.setTheme);
-  const updateTheme = useThemeStore((state) => state.updateTheme);
   const general = useSettingsStore((state) => state.general);
   const notifications = useSettingsStore((state) => state.notifications);
   const email = useSettingsStore((state) => state.email);
-  const themeSettings = useSettingsStore((state) => state.theme);
   const setGeneral = useSettingsStore((state) => state.setGeneral);
   const setNotifications = useSettingsStore((state) => state.setNotifications);
   const setEmail = useSettingsStore((state) => state.setEmail);
   const applyThemeSettings = useSettingsStore((state) => state.setTheme);
   const { addToast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
-
-  type ThemeOptionKey = {
-    [K in keyof ThemeSettings]: ThemeSettings[K] extends boolean ? K : never;
-  }[keyof ThemeSettings & string];
 
   type NotificationOptionKey = {
     [K in keyof NotificationSettings]: NotificationSettings[K] extends boolean ? K : never;
@@ -48,24 +40,6 @@ const Settings: React.FC = () => {
   type EmailPreferenceKey = {
     [K in keyof EmailSettings]: EmailSettings[K] extends boolean ? K : never;
   }[keyof EmailSettings & string];
-
-  const themeOptions = [
-    {
-      label: 'Collapsed Sidebar',
-      description: 'Use a compact sidebar layout',
-      key: 'sidebarCollapsed',
-    },
-    {
-      label: 'Dense Mode',
-      description: 'Compact spacing for all elements',
-      key: 'denseMode',
-    },
-    {
-      label: 'High Contrast',
-      description: 'Increase contrast for better visibility',
-      key: 'highContrast',
-    },
-  ] satisfies { label: string; description: string; key: ThemeOptionKey }[];
 
   const notificationOptions = [
     {

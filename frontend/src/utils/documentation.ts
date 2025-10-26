@@ -48,6 +48,7 @@ export interface DocumentMetadata {
   url?: string;
   tags?: string[];
   category?: string;
+  downloadUrl?: string;
 }
 
 export const DOCUMENT_MIME_TYPES: Record<DocumentType, string> = {
@@ -172,4 +173,64 @@ export const searchDocuments = (documents: { content?: string; metadata: Documen
     doc.metadata.title.toLowerCase().includes(normalizedQuery) ||
     doc.metadata.tags?.some(tag => tag.toLowerCase().includes(normalizedQuery))
   );
+};
+
+const MIME_TYPE_MAP: Record<string, DocumentMetadata['type']> = {
+  'application/pdf': 'pdf',
+  'application/msword': 'word',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'word',
+  'application/vnd.ms-excel': 'excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'excel',
+};
+
+const EXTENSION_TYPE_MAP: Record<string, DocumentMetadata['type']> = {
+  pdf: 'pdf',
+  doc: 'word',
+  docx: 'word',
+  xls: 'excel',
+  xlsx: 'excel',
+};
+
+const CANONICAL_MIME: Record<DocumentMetadata['type'], string> = {
+  pdf: 'application/pdf',
+  word: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  excel: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+};
+
+export const inferDocumentType = (
+  mimeType?: string,
+  extension?: string,
+): DocumentMetadata['type'] => {
+  const normalizedMime = mimeType?.toLowerCase();
+  if (normalizedMime && normalizedMime in MIME_TYPE_MAP) {
+    return MIME_TYPE_MAP[normalizedMime];
+  }
+
+  if (extension) {
+    const normalizedExt = extension.toLowerCase();
+    const type = EXTENSION_TYPE_MAP[normalizedExt];
+    if (type) {
+      return type;
+    }
+  }
+
+  throw new Error('Unsupported file type');
+};
+
+export const normalizeMimeType = (mimeType?: string, extension?: string): string => {
+  const normalizedMime = mimeType?.toLowerCase();
+  if (normalizedMime && normalizedMime in MIME_TYPE_MAP) {
+    const type = MIME_TYPE_MAP[normalizedMime];
+    return CANONICAL_MIME[type];
+  }
+
+  if (extension) {
+    const normalizedExt = extension.toLowerCase();
+    const type = EXTENSION_TYPE_MAP[normalizedExt];
+    if (type) {
+      return CANONICAL_MIME[type];
+    }
+  }
+
+  return mimeType ?? 'application/octet-stream';
 };

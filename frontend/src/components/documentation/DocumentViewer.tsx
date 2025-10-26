@@ -16,6 +16,31 @@ interface DocumentViewerProps {
   onDelete: () => void | Promise<void>;
 }
 
+const formatFileSize = (size?: number) => {
+  if (typeof size !== 'number' || Number.isNaN(size) || size <= 0) {
+    return 'Unknown size';
+  }
+  if (size < 1024) {
+    return `${size} B`;
+  }
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(2)} KB`;
+  }
+  return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+};
+
+const formatLastModified = (value?: Date) => {
+  if (!value) {
+    return 'Unknown date';
+  }
+
+  try {
+    return value.toLocaleDateString();
+  } catch {
+    return 'Unknown date';
+  }
+};
+
 const DocumentViewer: React.FC<DocumentViewerProps> = ({
   metadata,
   preview,
@@ -40,6 +65,7 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
             <p className="text-sm text-neutral-500">
               {hasValidDate ? lastModified.toLocaleDateString() : 'Unknown date'} · {sizeDisplay}
             </p>
+            <p className="text-xs text-neutral-400">{metadata.mimeType}</p>
           </div>
           <div className="flex items-center space-x-2">
             <Button

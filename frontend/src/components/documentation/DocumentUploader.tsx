@@ -15,7 +15,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onUpload }) => {
     void onUpload(acceptedFiles);
   }, [onUpload]);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, fileRejections } = useDropzone({
     onDrop,
     multiple: true,
     accept: {
@@ -42,6 +42,11 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onUpload }) => {
       <p className="text-xs text-neutral-500 mt-1">
         Supports PDF, Word, and Excel documents
       </p>
+      {fileRejections.length > 0 && (
+        <p className="mt-2 text-xs text-red-600">
+          Some files were rejected. Please upload PDF, Word, or Excel documents only.
+        </p>
+      )}
     </div>
   );
 };

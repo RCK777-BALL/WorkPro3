@@ -54,6 +54,21 @@ interface StoredDocument {
   preview?: string;
 }
 
+type ManagedDocument = {
+  id: string;
+  content?: string;
+  metadata: DocumentMetadata;
+};
+
+type ApiDocument = {
+  _id: string;
+  name?: string;
+  title?: string;
+  url: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 const Settings: React.FC = () => {
   const general = useSettingsStore((state) => state.general);
   const notifications = useSettingsStore((state) => state.notifications);
@@ -591,9 +606,15 @@ const Settings: React.FC = () => {
                   Upload PDF, Word, or Excel documents to add to the documentation library
                 </p>
                 <DocumentUploader onUpload={handleDocumentUpload} />
+                {(isUploadingDocuments || isLoadingDocuments) && (
+                  <div className="flex items-center gap-2 mt-3 text-sm text-neutral-500 dark:text-neutral-400">
+                    <LoadingSpinner fullscreen={false} size="sm" />
+                    <span>{isUploadingDocuments ? 'Uploading documents…' : 'Loading documents…'}</span>
+                  </div>
+                )}
               </div>
 
-              {documents.length > 0 && (
+              {documents.length > 0 ? (
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium text-neutral-900 dark:text-white">Uploaded Documents</h3>
                   {documents.map((doc) => (
@@ -606,6 +627,12 @@ const Settings: React.FC = () => {
                     />
                   ))}
                 </div>
+              ) : (
+                !isLoadingDocuments && !isUploadingDocuments && (
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                    No documents uploaded yet.
+                  </p>
+                )
               )}
             </div>
           </Card>

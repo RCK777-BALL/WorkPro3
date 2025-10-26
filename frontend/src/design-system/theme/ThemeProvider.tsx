@@ -14,7 +14,7 @@ type Props = { children: ReactNode };
  * and toggles the `dark` class on the document root accordingly.
  */
 export default function ThemeProvider({ children }: Props) {
-  const { theme } = useThemeStore();
+  const { theme, colorScheme } = useThemeStore();
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -28,7 +28,18 @@ export default function ThemeProvider({ children }: Props) {
     } else {
       root.classList.remove('dark');
     }
+    root.style.colorScheme = resolvedTheme;
   }, [theme]);
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (!colorScheme) {
+      root.removeAttribute('data-color-scheme');
+      return;
+    }
+
+    root.dataset.colorScheme = colorScheme;
+  }, [colorScheme]);
 
   return <>{children}</>;
 }

@@ -16,7 +16,7 @@ import Card from '@/components/common/Card';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import DocumentUploader from '@/components/documentation/DocumentUploader';
 import DocumentViewer from '@/components/documentation/DocumentViewer';
-import { downloadDocument, parseDocument, type DocumentMetadata } from '@/utils/documentation';
+import { downloadDocument, parseDocument, getMimeTypeForType, type DocumentMetadata } from '@/utils/documentation';
 import { useThemeStore } from '@/store/themeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import type {
@@ -130,25 +130,14 @@ const Settings: React.FC = () => {
   const handleDocumentUpload = async (files: File[]) => {
     try {
       const newDocs = await Promise.all(files.map(parseDocument));
-      setDocuments([...documents, ...newDocs]);
+      setDocuments((prev) => [...prev, ...newDocs]);
     } catch (error) {
       console.error('Error uploading documents:', error);
     }
   };
 
   const handleDocumentDownload = (doc: { content: string; metadata: DocumentMetadata }) => {
-    const mimeType = (() => {
-      switch (doc.metadata.type) {
-        case 'pdf':
-          return 'application/pdf';
-        case 'excel':
-          return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-        case 'word':
-          return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-        default:
-          return 'text/plain';
-      }
-    })();
+    const mimeType = doc.metadata.mimeType ?? getMimeTypeForType(doc.metadata.type);
     downloadDocument(doc.content, doc.metadata.title, mimeType);
   };
 

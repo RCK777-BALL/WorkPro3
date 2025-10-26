@@ -8,21 +8,54 @@ import * as mammoth from 'mammoth';
 import * as PDFJS from 'pdfjs-dist';
 import type { TextItem } from 'pdfjs-dist/types/src/display/api';
 
+export type DocumentType = 'pdf' | 'excel' | 'word';
+
 export interface DocumentMetadata {
   title: string;
-  type: 'pdf' | 'excel' | 'word';
+  type: DocumentType;
+  mimeType: string;
   size: number;
   lastModified: Date;
   tags?: string[];
   category?: string;
 }
 
+export const DOCUMENT_MIME_TYPES: Record<DocumentType, string> = {
+  pdf: 'application/pdf',
+  excel: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  word: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+};
+
+const EXTENSION_TO_TYPE: Record<string, DocumentType> = {
+  pdf: 'pdf',
+  xlsx: 'excel',
+  docx: 'word',
+};
+
+export const inferDocumentTypeFromFilename = (filename: string): DocumentType => {
+  const extension = filename.split('.').pop()?.toLowerCase();
+  if (!extension) {
+    throw new Error('Unsupported file type');
+  }
+
+  const type = EXTENSION_TO_TYPE[extension];
+  if (!type) {
+    throw new Error('Unsupported file type');
+  }
+
+  return type;
+};
+
+export const getMimeTypeForType = (type: DocumentType): string => DOCUMENT_MIME_TYPES[type];
+
 export const parseDocument = async (
   file: File,
 ): Promise<{ content: string; metadata: DocumentMetadata }> => {
+  const type = inferDocumentTypeFromFilename(file.name);
   const metadata: DocumentMetadata = {
     title: file.name,
-    type: file.name.split('.').pop()?.toLowerCase() as 'pdf' | 'excel' | 'word',
+    type,
+    mimeType: getMimeTypeForType(type),
     size: file.size,
     lastModified: new Date(file.lastModified)
   };
@@ -68,8 +101,17 @@ export const parseDocument = async (
   return { content, metadata };
 };
 
-export const downloadDocument = (content: string, filename: string, type: string) => {
-  const blob = new Blob([content], { type });
+export const downloadDocument = (
+  content: string | ArrayBuffer | Blob,
+  filename: string,
+  type: string,
+) => {
+  const blob =
+    content instanceof Blob
+      ? content.type && content.type !== type
+        ? new Blob([content], { type })
+        : content
+      : new Blob([content], { type });
   saveAs(blob, filename);
 };
 

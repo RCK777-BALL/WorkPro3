@@ -19,7 +19,8 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
   metadata,
   preview,
   onDownload,
-  onDelete
+  onDelete,
+  onShare
 }) => {
   const lastModified = metadata.lastModified instanceof Date
     ? metadata.lastModified
@@ -44,6 +45,8 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
               variant="outline"
               size="sm"
               icon={<Share size={16} />}
+              onClick={() => onShare?.({ content, metadata })}
+              disabled={!onShare}
               aria-label="Share document"
             >
               Share

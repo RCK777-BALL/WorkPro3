@@ -182,6 +182,10 @@ const Settings: React.FC = () => {
     }
   };
 
+  const handleShareDocument = (doc: { content: string; metadata: DocumentMetadata }) => {
+    setShareTarget(doc);
+  };
+
   useEffect(() => {
     let isMounted = true;
 

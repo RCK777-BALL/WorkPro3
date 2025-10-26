@@ -41,7 +41,7 @@ const Settings: React.FC = () => {
   const setThemeSettings = (updater: (prev: ThemeSettings) => ThemeSettings) =>
     useSettingsStore.setState((state) => ({ theme: updater(state.theme) }));
   const { addToast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   type ThemeOptionKey = {
@@ -252,7 +252,18 @@ const Settings: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="relative" aria-busy={isLoading} aria-live="polite">
+      {isLoading && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-lg bg-white/80 p-6 text-sm text-neutral-700 shadow-sm backdrop-blur-sm dark:bg-neutral-900/80 dark:text-neutral-200">
+          <LoadingSpinner fullscreen={false} size="md" />
+          <span className="text-center font-medium">Loading your saved settings…</span>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            Please wait while we sync your latest configuration.
+          </p>
+        </div>
+      )}
+
+      <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="space-y-1">
             <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Settings</h2>
@@ -268,13 +279,6 @@ const Settings: React.FC = () => {
             {isSaving ? 'Saving…' : 'Save Changes'}
           </Button>
         </div>
-
-        {isLoading && (
-          <div className="flex items-center gap-3 rounded-lg border border-dashed border-neutral-300 bg-white/50 p-4 text-sm text-neutral-600 dark:border-neutral-700 dark:bg-neutral-900/40 dark:text-neutral-300">
-            <LoadingSpinner fullscreen={false} size="sm" />
-            <span>Loading your saved settings…</span>
-          </div>
-        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* General Settings */}
@@ -515,6 +519,7 @@ const Settings: React.FC = () => {
           </Card>
         </div>
       </div>
+    </div>
   );
 };
 

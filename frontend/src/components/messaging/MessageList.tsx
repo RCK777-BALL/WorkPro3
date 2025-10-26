@@ -47,15 +47,14 @@ const MessageList: React.FC<MessageListProps> = ({
   const messageGroups = groupMessagesByDate(messages);
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-6">
-      {Object.entries(messageGroups).map(([date, messages]) => (
-        <div key={date} className="space-y-4">
-          <div className="flex items-center">
-            <div className="flex-1 border-t border-neutral-200"></div>
-            <span className="px-4 text-sm text-neutral-500">
-              {format(new Date(date), 'MMMM d, yyyy')}
-            </span>
-            <div className="flex-1 border-t border-neutral-200"></div>
+    <div className="flex-1 overflow-y-auto bg-[#f7f7fb] px-8 py-6">
+      <div className="mx-auto flex max-w-3xl flex-col space-y-8">
+        {Object.entries(messageGroups).map(([date, messages]) => (
+          <div key={date} className="space-y-4">
+            <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-neutral-400">
+              <div className="h-px flex-1 bg-neutral-200" />
+              <span>{format(new Date(date), 'MMMM d, yyyy')}</span>
+              <div className="h-px flex-1 bg-neutral-200" />
           </div>
 
           {messages.map((message, index) => {
@@ -68,38 +67,38 @@ const MessageList: React.FC<MessageListProps> = ({
                 id={`message-${message.id}`}
                 className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
               >
-                <div className={`flex ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'} max-w-2xl`}>
+                <div className={`flex max-w-xl ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'} gap-3`}>
                   {showAvatar && (
                     <Avatar
                       name={message.userName}
                       src={message.userAvatar}
                       size="sm"
-                      className={isCurrentUser ? 'ml-2' : 'mr-2'}
                     />
                   )}
-                  <div>
+                  <div className={`flex flex-col space-y-1 ${isCurrentUser ? 'items-end text-right' : ''}`}>
                     {showAvatar && (
-                      <div className={`flex items-center ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-1`}>
-                        <span className="text-sm font-medium">{message.userName}</span>
-                        <span className="text-xs text-neutral-500 ml-2">
-                          {format(new Date(message.timestamp), 'h:mm a')}
+                      <div className="flex items-center gap-2 text-xs text-neutral-400">
+                        <span className="text-sm font-semibold text-neutral-700">
+                          {message.userName}
                         </span>
+                        <span>{format(new Date(message.timestamp), 'h:mm a')}</span>
                       </div>
                     )}
                     <div
-                      className={`
-                        px-4 py-2 rounded-lg
-                        ${isCurrentUser
-                          ? 'bg-primary-600 text-white'
-                          : 'bg-neutral-100 text-neutral-900'
-                        }
-                      `}
+                      className={`rounded-3xl px-5 py-3 text-sm shadow-sm ${
+                        isCurrentUser
+                          ? 'bg-[#4b53bc] text-white'
+                          : 'bg-white text-neutral-900 ring-1 ring-neutral-200'
+                      }`}
                     >
-                      {message.content}
+                      <p className="whitespace-pre-line leading-relaxed">{message.content}</p>
                       {message.reactions && message.reactions.length > 0 && (
-                        <div className="mt-1 flex space-x-1">
+                        <div className="mt-2 flex gap-1 text-xs">
                           {message.reactions.map((reaction) => (
-                            <span key={reaction.emoji} className="text-sm">
+                            <span
+                              key={reaction.emoji}
+                              className="inline-flex items-center gap-1 rounded-full bg-white/30 px-2 py-0.5 text-neutral-700"
+                            >
                               {reaction.emoji} {reaction.count}
                             </span>
                           ))}
@@ -108,7 +107,9 @@ const MessageList: React.FC<MessageListProps> = ({
                       {onReaction && (
                         <button
                           onClick={() => onReaction(message.id, '👍')}
-                          className="ml-2 text-xs text-neutral-500 hover:text-neutral-700"
+                          className={`mt-2 text-xs ${
+                            isCurrentUser ? 'text-white/70 hover:text-white' : 'text-neutral-500 hover:text-neutral-700'
+                          }`}
                         >
                           👍
                         </button>
@@ -121,12 +122,13 @@ const MessageList: React.FC<MessageListProps> = ({
           })}
         </div>
       ))}
-      {isTyping && (
-        <div className="px-4 py-2 text-sm text-neutral-500">
-          {isTyping.userName} is typing...
-        </div>
-      )}
-      <div ref={messagesEndRef} />
+        {isTyping && (
+          <div className="px-3 py-2 text-sm text-neutral-500">
+            {isTyping.userName} is typing...
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
     </div>
   );
 };

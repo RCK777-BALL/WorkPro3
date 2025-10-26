@@ -149,50 +149,38 @@ const ChatInput: React.FC<ChatInputProps> = ({
   }, [showEmojiPicker, emojiData, isLoadingEmojiData, addToast]);
 
   return (
-    <div className="p-4 border-t border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800">
-      <form onSubmit={handleSubmit} className="relative">
-        <div className="flex items-center space-x-2 mb-2">
+    <div className="border-t border-neutral-200 bg-[#f7f7fb] px-8 py-4">
+      <form onSubmit={handleSubmit} className="relative mx-auto max-w-3xl space-y-3">
+        {isTyping && (
+          <div className="text-sm text-neutral-500">Someone is typing...</div>
+        )}
+
+        <div className="flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm ring-1 ring-neutral-200">
           <button
             type="button"
-            className="p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-md focus-visible:ring-2 focus-visible:ring-primary-500 dark:focus-visible:ring-primary-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900"
+            className="rounded-full p-2 text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-700"
             onClick={() => fileInputRef.current?.click()}
             aria-label="Attach file"
           >
-            <Paperclip size={20} className="text-neutral-500 dark:text-neutral-400" />
+            <Paperclip size={18} />
           </button>
           <button
             type="button"
-            className="p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-md focus-visible:ring-2 focus-visible:ring-primary-500 dark:focus-visible:ring-primary-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900"
+            className="rounded-full p-2 text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-700"
             onClick={() => fileInputRef.current?.click()}
             aria-label="Upload image"
           >
-            <Image size={20} className="text-neutral-500 dark:text-neutral-400" />
+            <Image size={18} />
           </button>
           <button
             type="button"
-            className="p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-md focus-visible:ring-2 focus-visible:ring-primary-500 dark:focus-visible:ring-primary-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900"
+            className={`rounded-full p-2 transition hover:bg-neutral-100 ${showEmojiPicker ? 'bg-neutral-100 text-neutral-700' : 'text-neutral-500 hover:text-neutral-700'}`}
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
             aria-label="Insert emoji"
           >
-            <Smile size={20} className="text-neutral-500 dark:text-neutral-400" />
+            <Smile size={18} />
           </button>
-          <button
-            type="button"
-            className="p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-md focus-visible:ring-2 focus-visible:ring-primary-500 dark:focus-visible:ring-primary-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900"
-            aria-label="Mention user"
-          >
-            <AtSign size={20} className="text-neutral-500 dark:text-neutral-400" />
-          </button>
-          <button
-            type="button"
-            className="p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-md focus-visible:ring-2 focus-visible:ring-primary-500 dark:focus-visible:ring-primary-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900"
-            aria-label="Add channel"
-          >
-            <Hash size={20} className="text-neutral-500 dark:text-neutral-400" />
-          </button>
-        </div>
-
-        <div className="flex items-center space-x-2">
+          <span className="h-6 w-px bg-neutral-200" aria-hidden />
           <input
             type="text"
             value={message}
@@ -200,16 +188,30 @@ const ChatInput: React.FC<ChatInputProps> = ({
               setMessage(e.target.value);
               onTyping?.(e.target.value.length > 0);
             }}
-            placeholder="Type a message..."
-            className="flex-1 px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500"
+            placeholder="Type a message"
+            className="flex-1 bg-transparent text-sm text-neutral-700 placeholder-neutral-400 outline-none"
           />
           <button
+            type="button"
+            className="rounded-full p-2 text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-700"
+            aria-label="Mention user"
+          >
+            <AtSign size={18} />
+          </button>
+          <button
+            type="button"
+            className="rounded-full p-2 text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-700"
+            aria-label="Add channel"
+          >
+            <Hash size={18} />
+          </button>
+          <button
             type="submit"
-            className="p-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary-500 dark:focus-visible:ring-primary-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900"
+            className="ml-2 inline-flex items-center justify-center rounded-full bg-[#464775] p-2 text-white transition hover:bg-[#3a3f94] disabled:opacity-50"
             disabled={!message.trim()}
             aria-label="Send message"
           >
-            <Send size={20} />
+            <Send size={18} />
           </button>
         </div>
 
@@ -223,20 +225,14 @@ const ChatInput: React.FC<ChatInputProps> = ({
         />
 
         {showEmojiPicker && (
-          <div className="absolute bottom-full right-0 mb-2">
+          <div className="absolute bottom-full right-0 mb-3">
             {emojiData ? (
               <Picker data={emojiData} onEmojiSelect={handleEmojiSelect} theme="light" />
             ) : (
-              <div className="rounded-md bg-white dark:bg-neutral-800 p-4 shadow-lg text-sm text-neutral-500">
+              <div className="rounded-md bg-white p-4 text-sm text-neutral-500 shadow-lg">
                 {isLoadingEmojiData ? 'Loading emojis…' : 'Emoji picker unavailable.'}
               </div>
             )}
-          </div>
-        )}
-
-        {isTyping && (
-          <div className="absolute -top-6 left-4 text-sm text-neutral-500 dark:text-neutral-400">
-            Someone is typing...
           </div>
         )}
       </form>

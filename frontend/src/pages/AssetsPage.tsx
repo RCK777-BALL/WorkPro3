@@ -144,7 +144,7 @@ const AssetsPage = () => {
           <input
             type="text"
             placeholder="Search assets..."
-            className="flex-1 bg-transparent border-none outline-none"
+            className="flex-1 bg-transparent border-none outline-none text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 dark:placeholder:text-neutral-400"
             value={search}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
           />

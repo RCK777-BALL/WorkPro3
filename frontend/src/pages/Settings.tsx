@@ -38,8 +38,7 @@ const Settings: React.FC = () => {
   const setGeneral = useSettingsStore((state) => state.setGeneral);
   const setNotifications = useSettingsStore((state) => state.setNotifications);
   const setEmail = useSettingsStore((state) => state.setEmail);
-  const setThemeSettings = (updater: (prev: ThemeSettings) => ThemeSettings) =>
-    useSettingsStore.setState((state) => ({ theme: updater(state.theme) }));
+  const applyThemeSettings = useSettingsStore((state) => state.setTheme);
   const { addToast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -187,17 +186,18 @@ const Settings: React.FC = () => {
         }
 
         if (payload.theme) {
-          const { mode, ...restTheme } = payload.theme;
-          useSettingsStore.setState((state) => ({
-            theme: { ...state.theme, ...restTheme },
-          }));
+          const { mode, colorScheme, ...restTheme } = payload.theme;
 
-          if (mode) {
-            useThemeStore.setState({ theme: mode });
+          if (Object.keys(restTheme).length > 0 || colorScheme) {
+            applyThemeSettings({ ...restTheme, ...(colorScheme ? { colorScheme } : {}) });
           }
 
-          if (payload.theme.colorScheme) {
-            useThemeStore.setState({ colorScheme: payload.theme.colorScheme });
+          if (mode || colorScheme) {
+            useThemeStore.setState((state) => ({
+              ...state,
+              ...(mode ? { theme: mode } : {}),
+              ...(colorScheme ? { colorScheme } : {}),
+            }));
           }
         }
       } catch (error) {
@@ -215,7 +215,7 @@ const Settings: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [addToast, setEmail, setGeneral, setNotifications]);
+  }, [addToast, applyThemeSettings, setEmail, setGeneral, setNotifications]);
 
   const handleSaveSettings = async () => {
     try {
@@ -371,7 +371,7 @@ const Settings: React.FC = () => {
                   value={themeSettings.colorScheme ?? 'default'}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                     const value = e.target.value;
-                    setThemeSettings((prev) => ({ ...prev, colorScheme: value }));
+                    applyThemeSettings({ colorScheme: value });
                     updateTheme({ colorScheme: value });
                   }}
                 >
@@ -393,10 +393,7 @@ const Settings: React.FC = () => {
                       className="sr-only peer"
                       checked={themeSettings[key]}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setThemeSettings((prev) => ({
-                          ...prev,
-                          [key]: e.target.checked,
-                        }))
+                        applyThemeSettings({ [key]: e.target.checked })
                       }
                     />
                     <div className="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>

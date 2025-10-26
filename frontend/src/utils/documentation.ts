@@ -8,12 +8,13 @@ import * as mammoth from 'mammoth';
 import * as PDFJS from 'pdfjs-dist';
 import type { TextItem } from 'pdfjs-dist/types/src/display/api';
 
-export type DocumentType = 'pdf' | 'excel' | 'word' | 'other';
+export type DocumentType = 'pdf' | 'excel' | 'word';
 
 export interface DocumentMetadata {
   id?: string;
   title: string;
   type: DocumentType;
+  mimeType: string;
   size: number;
   lastModified: Date | string;
   mimeType: string;
@@ -22,52 +23,42 @@ export interface DocumentMetadata {
   category?: string;
 }
 
-const extensionTypeMap: Record<string, DocumentType> = {
-  pdf: 'pdf',
-  doc: 'word',
-  docx: 'word',
-  xls: 'excel',
-  xlsx: 'excel',
-};
-
-const extensionMimeMap: Record<string, string> = {
+export const DOCUMENT_MIME_TYPES: Record<DocumentType, string> = {
   pdf: 'application/pdf',
-  doc: 'application/msword',
-  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  xls: 'application/vnd.ms-excel',
-  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  excel: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  word: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 };
 
-export const getDocumentTypeFromExtension = (extension: string): DocumentType =>
-  extensionTypeMap[extension] ?? 'other';
-
-export const getMimeTypeFromExtension = (
-  extension: string,
-  fallback = 'application/octet-stream',
-) => extensionMimeMap[extension] ?? fallback;
-
-const toDate = (value: Date | string | number | undefined): Date => {
-  if (value instanceof Date) {
-    return value;
-  }
-  if (typeof value === 'string' || typeof value === 'number') {
-    const parsed = new Date(value);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed;
-    }
-  }
-  return new Date();
+const EXTENSION_TO_TYPE: Record<string, DocumentType> = {
+  pdf: 'pdf',
+  xlsx: 'excel',
+  docx: 'word',
 };
+
+export const inferDocumentTypeFromFilename = (filename: string): DocumentType => {
+  const extension = filename.split('.').pop()?.toLowerCase();
+  if (!extension) {
+    throw new Error('Unsupported file type');
+  }
+
+  const type = EXTENSION_TO_TYPE[extension];
+  if (!type) {
+    throw new Error('Unsupported file type');
+  }
+
+  return type;
+};
+
+export const getMimeTypeForType = (type: DocumentType): string => DOCUMENT_MIME_TYPES[type];
 
 export const parseDocument = async (
   file: File,
 ): Promise<{ content: string; metadata: DocumentMetadata }> => {
-  const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
-  const type = getDocumentTypeFromExtension(extension);
-  const mimeType = getMimeTypeFromExtension(extension, file.type);
+  const type = inferDocumentTypeFromFilename(file.name);
   const metadata: DocumentMetadata = {
     title: file.name,
     type,
+    mimeType: getMimeTypeForType(type),
     size: file.size,
     lastModified: toDate(file.lastModified),
     mimeType,
@@ -127,12 +118,12 @@ export const downloadDocument = (
   filename: string,
   type: string,
 ) => {
-  let blob: Blob;
-  if (content instanceof Blob) {
-    blob = content.type ? content : new Blob([content], { type });
-  } else {
-    blob = new Blob([content], { type });
-  }
+  const blob =
+    content instanceof Blob
+      ? content.type && content.type !== type
+        ? new Blob([content], { type })
+        : content
+      : new Blob([content], { type });
   saveAs(blob, filename);
 };
 

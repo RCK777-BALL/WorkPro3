@@ -146,57 +146,65 @@ export const diffObjects = (
 let isFlushing = false;
 
 export const flushQueue = async (useBackoff = true) => {
-   const queue = loadQueue();
-  if (queue.length === 0) return;
+  if (isFlushing) return;
+  isFlushing = true;
 
-  const now = Date.now();
-  const remaining: QueuedRequest[] = [];
+  try {
+    const queue = loadQueue();
+    if (queue.length === 0) return;
 
-  for (const req of queue) {
-    if (useBackoff && req.nextAttempt && req.nextAttempt > now) {
-      remaining.push(req);
-      continue;
-    }
-    try {
-      await httpClient({ method: req.method, url: req.url, data: req.data });
-    } catch (err: unknown) {
-      if ((err as { response?: { status?: number } })?.response?.status === 409) {
-        try {
-          const serverRes = await httpClient({ method: 'get', url: req.url });
-          const serverData = serverRes.data as Record<string, unknown>;
-          const diffs = diffObjects(
-            req.data as Record<string, unknown>,
-            serverData
-          );
-          conflictListeners.forEach((cb) =>
-            cb({ method: req.method, url: req.url, local: req.data, server: serverData, diffs })
-          );
-        } catch {
-          emitToast('Failed to fetch server data for conflict', 'error');
+    const now = Date.now();
+    const remaining: QueuedRequest[] = [];
 
-        }
+    for (let i = 0; i < queue.length; i += 1) {
+      const req = queue[i];
+      if (useBackoff && req.nextAttempt && req.nextAttempt > now) {
+        remaining.push(req);
+        continue;
       }
-      emitToast('Failed to flush queued request', 'error');
+      try {
+        await httpClient({ method: req.method, url: req.url, data: req.data });
+      } catch (err: unknown) {
+        if ((err as { response?: { status?: number } })?.response?.status === 409) {
+          try {
+            const serverRes = await httpClient({ method: 'get', url: req.url });
+            const serverData = serverRes.data as Record<string, unknown>;
+            const diffs = diffObjects(
+              req.data as Record<string, unknown>,
+              serverData
+            );
+            conflictListeners.forEach((cb) =>
+              cb({ method: req.method, url: req.url, local: req.data, server: serverData, diffs })
+            );
+          } catch {
+            emitToast('Failed to fetch server data for conflict', 'error');
 
-      const retries = (req.retries ?? 0) + 1;
-      const backoff = Math.min(1000 * 2 ** (retries - 1), 30000);
-      remaining.push({
-        ...req,
-        retries,
-        error: String(err),
-        nextAttempt: useBackoff ? now + backoff : undefined,
-      });
-      continue; // continue processing remaining requests
- 
-    }
+          }
+        }
+        emitToast('Failed to flush queued request', 'error');
 
-    const toPersist = [...remaining, ...queue.slice(i + 1)];
-    if (toPersist.length > 0) {
-      saveQueue(toPersist);
-    } else {
-      clearQueue();
+        const retries = (req.retries ?? 0) + 1;
+        const backoff = Math.min(1000 * 2 ** (retries - 1), 30000);
+        remaining.push({
+          ...req,
+          retries,
+          error: String(err),
+          nextAttempt: useBackoff ? now + backoff : undefined,
+        });
+        continue; // continue processing remaining requests
+
+      }
+
+      const toPersist = [...remaining, ...queue.slice(i + 1)];
+      if (toPersist.length > 0) {
+        saveQueue(toPersist);
+      } else {
+        clearQueue();
+      }
+
     }
- 
+  } finally {
+    isFlushing = false;
   }
 };
 

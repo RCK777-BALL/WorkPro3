@@ -7,6 +7,7 @@ import { Download, Trash2, Tag, Share, FileText } from 'lucide-react';
 import Button from '@common/Button';
 import Badge from '@common/Badge';
 import type { DocumentMetadata } from '@/utils/documentation';
+import { useToast } from '@/context/ToastContext';
 
 interface DocumentViewerProps {
   content?: string;
@@ -48,6 +49,7 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
               onClick={() => onShare?.({ content, metadata })}
               disabled={!onShare}
               aria-label="Share document"
+              onClick={handleShare}
             >
               Share
             </Button>

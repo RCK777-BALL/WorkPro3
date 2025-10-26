@@ -7,12 +7,12 @@ import { useDropzone } from 'react-dropzone';
 import { Upload } from 'lucide-react';
 
 interface DocumentUploaderProps {
-  onUpload: (files: File[]) => void;
+  onUpload: (files: File[]) => void | Promise<void>;
 }
 
 const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onUpload }) => {
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    onUpload(acceptedFiles);
+    void onUpload(acceptedFiles);
   }, [onUpload]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -20,6 +20,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onUpload }) => {
     multiple: true,
     accept: {
       'application/pdf': ['.pdf'],
+      'application/msword': ['.doc'],
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
     },

@@ -22,6 +22,20 @@ import { useToast } from '@/context/ToastContext';
 import http from '@/lib/http';
 import SettingsLayout from '@/components/settings/SettingsLayout';
 
+type DocumentEntry = {
+  content?: string;
+  metadata: DocumentMetadata;
+};
+
+interface ApiDocumentResponse {
+  _id?: string;
+  id?: string;
+  name?: string;
+  url: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 const Settings: React.FC = () => {
   const general = useSettingsStore((state) => state.general);
   const notifications = useSettingsStore((state) => state.notifications);
@@ -92,15 +106,39 @@ const Settings: React.FC = () => {
     },
   ] satisfies { label: string; description: string; key: EmailPreferenceKey }[];
 
-  const [documents, setDocuments] = useState<Array<{ content: string; metadata: DocumentMetadata }>>([]);
+  const [documents, setDocuments] = useState<DocumentEntry[]>([]);
 
   const handleDocumentUpload = async (files: File[]) => {
+    if (!files.length) {
+      return;
+    }
+
     try {
       const newDocs = await Promise.all(files.map(parseDocument));
       setDocuments((prev) => [...prev, ...newDocs]);
     } catch (error) {
       console.error('Error uploading documents:', error);
+      addToast('Failed to upload documents', 'error');
     }
+  };
+
+  const resolveDocumentUrl = (path: string) => {
+    if (!path) {
+      return path;
+    }
+    if (/^https?:\/\//i.test(path)) {
+      return path;
+    }
+    const base = http.defaults?.baseURL ?? '';
+    const sanitizedBase = base.replace(/\/?api\/?$/, '');
+    const normalizedBase = sanitizedBase.replace(/\/$/, '');
+    if (!normalizedBase) {
+      return path;
+    }
+    if (path.startsWith('/')) {
+      return `${normalizedBase}${path}`;
+    }
+    return `${normalizedBase}/${path}`;
   };
 
   const handleDocumentDownload = (doc: { content: string; metadata: DocumentMetadata }) => {
@@ -108,9 +146,68 @@ const Settings: React.FC = () => {
     downloadDocument(doc.content, doc.metadata.title, mimeType);
   };
 
-  const handleRemoveDocument = (index: number) => {
-    setDocuments((prev) => prev.filter((_, idx) => idx !== index));
+  const handleRemoveDocument = async (index: number) => {
+    const doc = documents[index];
+    if (!doc) {
+      return;
+    }
+
+    try {
+      if (doc.metadata.id) {
+        await http.delete(`/documents/${doc.metadata.id}`);
+      }
+      setDocuments((prev) => prev.filter((_, idx) => idx !== index));
+      addToast('Document deleted', 'success');
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      addToast('Failed to delete document', 'error');
+    }
   };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadDocuments = async () => {
+      try {
+        const response = await http.get<ApiDocumentResponse[]>('/documents');
+        if (!isMounted) {
+          return;
+        }
+
+        const fetched = (response.data ?? []).map((item) => {
+          const rawUrl = item.url ?? '';
+          const title = item.name ?? rawUrl.split('/').pop() ?? 'Document';
+          const extension = title.split('.').pop()?.toLowerCase() ?? '';
+          const type = getDocumentTypeFromExtension(extension);
+          const mimeType = getMimeTypeFromExtension(extension);
+          const lastModifiedSource = item.updatedAt ?? item.createdAt;
+          const lastModified = lastModifiedSource ? new Date(lastModifiedSource) : new Date();
+
+          const metadata: DocumentMetadata = {
+            id: item._id ?? item.id,
+            title,
+            type,
+            size: 0,
+            lastModified,
+            mimeType,
+            url: rawUrl || undefined,
+          };
+
+          return { metadata } satisfies DocumentEntry;
+        });
+
+        setDocuments(fetched);
+      } catch (error) {
+        console.error('Error loading documents:', error);
+      }
+    };
+
+    void loadDocuments();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;

@@ -11,11 +11,14 @@ import type { TextItem } from 'pdfjs-dist/types/src/display/api';
 export type DocumentType = 'pdf' | 'excel' | 'word';
 
 export interface DocumentMetadata {
+  id?: string;
   title: string;
   type: DocumentType;
   mimeType: string;
   size: number;
-  lastModified: Date;
+  lastModified: Date | string;
+  mimeType: string;
+  url?: string;
   tags?: string[];
   category?: string;
 }
@@ -57,45 +60,54 @@ export const parseDocument = async (
     type,
     mimeType: getMimeTypeForType(type),
     size: file.size,
-    lastModified: new Date(file.lastModified)
+    lastModified: toDate(file.lastModified),
+    mimeType,
   };
 
   let content = '';
 
   switch (metadata.type) {
-    case 'pdf':
+    case 'pdf': {
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await PDFJS.getDocument({ data: arrayBuffer }).promise;
       const pages = await Promise.all(
-        Array.from({ length: pdf.numPages }, (_, i) => 
-          pdf.getPage(i + 1).then(page => page.getTextContent())
-        )
+        Array.from({ length: pdf.numPages }, (_, i) =>
+          pdf.getPage(i + 1).then((page) => page.getTextContent()),
+        ),
       );
       content = pages
         .map((page) => page.items.map((item) => (item as TextItem).str).join(' '))
         .join('\n');
       break;
+    }
 
-    case 'excel':
+    case 'excel': {
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(await file.arrayBuffer());
-      content = workbook.worksheets.map(worksheet => {
-        const rows: string[] = [];
-        worksheet.eachRow({ includeEmpty: true }, row => {
-          const values = row.values as unknown[];
-          rows.push(values.slice(1).map((v) => (v ?? '').toString()).join(','));
-        });
-        return rows.join('\n');
-      }).join('\n');
+      content = workbook.worksheets
+        .map((worksheet) => {
+          const rows: string[] = [];
+          worksheet.eachRow({ includeEmpty: true }, (row) => {
+            const values = row.values as unknown[];
+            rows.push(values.slice(1).map((v) => (v ?? '').toString()).join(','));
+          });
+          return rows.join('\n');
+        })
+        .join('\n');
       break;
+    }
 
-    case 'word':
+    case 'word': {
       const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
       content = result.value;
       break;
+    }
 
-    default:
-      throw new Error('Unsupported file type');
+    default: {
+      const arrayBuffer = await file.arrayBuffer();
+      content = new TextDecoder().decode(arrayBuffer);
+      break;
+    }
   }
 
   return { content, metadata };
@@ -115,10 +127,21 @@ export const downloadDocument = (
   saveAs(blob, filename);
 };
 
-export const searchDocuments = (documents: { content: string; metadata: DocumentMetadata }[], query: string) => {
+export const fileToBase64 = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.split(',')[1] ?? '');
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+export const searchDocuments = (documents: { content?: string; metadata: DocumentMetadata }[], query: string) => {
   const normalizedQuery = query.toLowerCase();
-  return documents.filter(doc => 
-    doc.content.toLowerCase().includes(normalizedQuery) ||
+  return documents.filter(doc =>
+    (doc.content?.toLowerCase().includes(normalizedQuery) ?? false) ||
     doc.metadata.title.toLowerCase().includes(normalizedQuery) ||
     doc.metadata.tags?.some(tag => tag.toLowerCase().includes(normalizedQuery))
   );

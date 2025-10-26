@@ -3,6 +3,7 @@ module.exports = {
   testEnvironment: 'node',
   testMatch: ['<rootDir>/tests/integration/**/*.test.ts'],
   moduleDirectories: ['node_modules', '<rootDir>/backend/node_modules'],
+  modulePathIgnorePatterns: ['<rootDir>/WorkPro3/'],
   setupFilesAfterEnv: ['<rootDir>/tests/integration/setupEnv.ts'],
   globalSetup: '<rootDir>/tests/integration/globalSetup.ts',
   globalTeardown: '<rootDir>/tests/integration/globalTeardown.ts',

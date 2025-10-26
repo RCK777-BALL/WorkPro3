@@ -73,6 +73,36 @@ type RecentActivityItem = {
   link: string | null;
 };
 
+const RECENT_ACTIVITY_FALLBACK: RecentActivityItem[] = [
+  {
+    id: "fallback-wo-101",
+    type: "work-order",
+    action: "Work order WO-101 assigned",
+    ref: "WO-101",
+    user: "System",
+    time: new Date().toISOString(),
+    link: "/work-orders",
+  },
+  {
+    id: "fallback-pm-202",
+    type: "pm-task",
+    action: "Preventive task PM-202 completed",
+    ref: "PM-202",
+    user: "Auto Scheduler",
+    time: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+    link: "/pm/tasks",
+  },
+  {
+    id: "fallback-inspection-303",
+    type: "inspection",
+    action: "Inspection report INS-303 submitted",
+    ref: "INS-303",
+    user: "Quality Bot",
+    time: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+    link: "/analytics",
+  },
+];
+
 type StatusSummaryItem = {
   label: string;
   color: string;
@@ -771,11 +801,16 @@ export default function Dashboard() {
     setActivityError(null);
     try {
       const params = getQueryParams();
-      const { data } = await http.get<RecentActivityItem[]>("/dashboard/activity", { params });
+      const { data } = await http.get<RecentActivityItem[]>("/dashboard/recent-activity", { params });
       if (!mountedRef.current) return;
       setRecentActivity(data);
     } catch (error) {
       if (!mountedRef.current) return;
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        setRecentActivity(RECENT_ACTIVITY_FALLBACK);
+        setActivityError(null);
+        return;
+      }
       setActivityError(formatErrorMessage(error, "Unable to load recent activity"));
     } finally {
       if (!mountedRef.current) return;

@@ -101,7 +101,7 @@ const WorkHistoryCard: React.FC<WorkHistoryCardProps> = ({
             <Shield className="h-5 w-5 text-error-600 mr-2" />
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">Safety</h3>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <AlertTriangle className="text-error-500" size={20} />
@@ -142,7 +142,7 @@ const WorkHistoryCard: React.FC<WorkHistoryCardProps> = ({
             <Users className="h-5 w-5 text-primary-600 mr-2" />
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">People</h3>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <Clock className="text-primary-500" size={20} />
@@ -183,7 +183,7 @@ const WorkHistoryCard: React.FC<WorkHistoryCardProps> = ({
             <Zap className="h-5 w-5 text-success-600 mr-2" />
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">Productivity</h3>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <CheckCircle className="text-success-500" size={20} />
@@ -224,7 +224,7 @@ const WorkHistoryCard: React.FC<WorkHistoryCardProps> = ({
             <TrendingUp className="h-5 w-5 text-accent-600 mr-2" />
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">Continuous Improvement</h3>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <BarChart2 className="text-primary-500" size={20} />

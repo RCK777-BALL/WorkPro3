@@ -90,7 +90,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
       title={part ? 'Edit Part' : 'Add New Part'}
     >
       <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">
                 Name
@@ -130,7 +130,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">
                 Category
@@ -156,7 +156,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">
                 Quantity
@@ -221,7 +221,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">
                 Vendor

@@ -337,7 +337,7 @@ const DepartmentModal: React.FC<Props> = ({
                                 <Trash size={16} />
                               </button>
                             </div>
-                            <div className="grid grid-cols-3 gap-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                               <select
                                 className="px-3 py-1.5 border border-neutral-300 rounded-md"
                                 value={a.type}

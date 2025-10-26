@@ -401,7 +401,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
               )}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
                 Title
@@ -568,7 +568,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
                 Status

@@ -169,7 +169,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">Name</label>
               <input
@@ -194,7 +194,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">Role</label>
               <select
@@ -222,7 +222,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
           </div>
 
           {TEAM_ROLE_MANAGER_MAP[selectedRole] && (
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">Manager</label>
                 <select
@@ -247,7 +247,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">Employee ID</label>
               <input

@@ -1,4 +1,4 @@
- import { emitToast } from '../context/ToastContext';
+import { emitToast } from '../context/ToastContext';
 import { logError } from './logger';
  
 
@@ -124,11 +124,85 @@ export const onSyncConflict = (
   };
 };
 
+const isObjectLike = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const deepEqualInternal = (
+  a: unknown,
+  b: unknown,
+  visited: WeakMap<object, WeakSet<object>>
+): boolean => {
+  if (Object.is(a, b)) {
+    return true;
+  }
+
+  if (!isObjectLike(a) || !isObjectLike(b)) {
+    return false;
+  }
+
+  const objectA = a as object;
+  const objectB = b as object;
+
+  const seenB = visited.get(objectA);
+  if (seenB?.has(objectB)) {
+    return true;
+  }
+
+  const updated = seenB ?? new WeakSet<object>();
+  if (!seenB) {
+    visited.set(objectA, updated);
+  }
+  updated.add(objectB);
+
+  if (a instanceof Date && b instanceof Date) {
+    return a.getTime() === b.getTime();
+  }
+
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) {
+      return false;
+    }
+
+    for (let i = 0; i < a.length; i += 1) {
+      if (!deepEqualInternal(a[i], b[i], visited)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  const recordA = a as Record<string, unknown>;
+  const recordB = b as Record<string, unknown>;
+
+  const keysA = Object.keys(recordA);
+  const keysB = Object.keys(recordB);
+
+  if (keysA.length !== keysB.length) {
+    return false;
+  }
+
+  for (const key of keysA) {
+    if (!Object.prototype.hasOwnProperty.call(recordB, key)) {
+      return false;
+    }
+    if (!deepEqualInternal(recordA[key], recordB[key], visited)) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const deepEqual = (
+  a: unknown,
+  b: unknown,
+  visited: WeakMap<object, WeakSet<object>> = new WeakMap<object, WeakSet<object>>()
+): boolean => deepEqualInternal(a, b, visited);
+
 export const diffObjects = (
   local: Record<string, unknown>,
   server: Record<string, unknown>
 ): DiffEntry[] => {
- 
   const keys = new Set([
     ...Object.keys(local ?? {}),
     ...Object.keys(server ?? {}),
@@ -137,7 +211,17 @@ export const diffObjects = (
   keys.forEach((k) => {
     const l = local?.[k];
     const s = server?.[k];
-    if (!deepEqual(l, s)) {
+    const initialVisited =
+      isObjectLike(local) && isObjectLike(server)
+        ? (() => {
+            const map = new WeakMap<object, WeakSet<object>>();
+            const set = new WeakSet<object>();
+            set.add(server as object);
+            map.set(local as object, set);
+            return map;
+          })()
+        : new WeakMap<object, WeakSet<object>>();
+    if (!deepEqual(l, s, initialVisited)) {
       diffs.push({ field: k, local: l, server: s });
     }
   });

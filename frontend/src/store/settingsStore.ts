@@ -28,7 +28,6 @@ export interface EmailSettings {
 }
 
 export interface ThemeSettings {
-  mode?: 'light' | 'dark' | 'system';
   sidebarCollapsed: boolean;
   denseMode: boolean;
   highContrast: boolean;
@@ -75,7 +74,6 @@ export const useSettingsStore = create<SettingsState>()(
         denseMode: false,
         highContrast: false,
         colorScheme: 'default',
-        mode: 'system',
       },
       setGeneral: (settings) =>
         set((state) => ({

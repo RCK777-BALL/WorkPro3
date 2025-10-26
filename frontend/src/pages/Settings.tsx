@@ -3,14 +3,20 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Bell, Book, Mail, Palette, Sliders } from 'lucide-react';
+import { Bell, Book, Mail, Monitor, Moon, Palette, Sliders, Sun } from 'lucide-react';
 import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import DocumentUploader from '@/components/documentation/DocumentUploader';
 import DocumentViewer from '@/components/documentation/DocumentViewer';
-import GeneralSettingsCard from '@/components/settings/GeneralSettingsCard';
-import { downloadDocument, parseDocument, type DocumentMetadata } from '@/utils/documentation';
+import {
+  downloadDocument,
+  getMimeTypeForType,
+  inferDocumentType,
+  normalizeMimeType,
+  parseDocument,
+  type DocumentMetadata,
+} from '@/utils/documentation';
 import { useThemeStore } from '@/store/themeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import type {
@@ -23,8 +29,10 @@ import http from '@/lib/http';
 import SettingsLayout from '@/components/settings/SettingsLayout';
 
 type DocumentEntry = {
+  id?: string;
   content?: string;
   metadata: DocumentMetadata;
+  preview?: string;
 };
 
 interface ApiDocumentResponse {
@@ -46,28 +54,6 @@ interface ApiDocument {
   createdAt?: string;
   updatedAt?: string;
 }
-
-interface StoredDocument {
-  id: string;
-  url: string;
-  metadata: DocumentMetadata;
-  preview?: string;
-}
-
-type ManagedDocument = {
-  id: string;
-  content?: string;
-  metadata: DocumentMetadata;
-};
-
-type ApiDocument = {
-  _id: string;
-  name?: string;
-  title?: string;
-  url: string;
-  createdAt?: string;
-  updatedAt?: string;
-};
 
 const Settings: React.FC = () => {
   const general = useSettingsStore((state) => state.general);
@@ -197,10 +183,6 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleShareDocument = (doc: { content: string; metadata: DocumentMetadata }) => {
-    setShareTarget(doc);
-  };
-
   useEffect(() => {
     let isMounted = true;
 
@@ -214,23 +196,31 @@ const Settings: React.FC = () => {
         const fetched = (response.data ?? []).map((item) => {
           const rawUrl = item.url ?? '';
           const title = item.name ?? rawUrl.split('/').pop() ?? 'Document';
-          const extension = title.split('.').pop()?.toLowerCase() ?? '';
-          const type = getDocumentTypeFromExtension(extension);
-          const mimeType = getMimeTypeFromExtension(extension);
+          const extension = title.split('.').pop()?.toLowerCase();
+          const resolvedType = (() => {
+            try {
+              return inferDocumentType(item.mimeType, extension);
+            } catch {
+              return 'pdf' as DocumentMetadata['type'];
+            }
+          })();
+          const mimeType = item.mimeType
+            ? normalizeMimeType(item.mimeType, extension)
+            : getMimeTypeForType(resolvedType);
           const lastModifiedSource = item.updatedAt ?? item.createdAt;
           const lastModified = lastModifiedSource ? new Date(lastModifiedSource) : new Date();
 
           const metadata: DocumentMetadata = {
             id: item._id ?? item.id,
             title,
-            type,
-            size: 0,
+            type: resolvedType,
+            size: item.size ?? 0,
             lastModified,
             mimeType,
             url: rawUrl || undefined,
           };
 
-          return { metadata } satisfies DocumentEntry;
+          return { id: metadata.id, metadata } satisfies DocumentEntry;
         });
 
         setDocuments(fetched);

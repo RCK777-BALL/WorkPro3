@@ -2,17 +2,18 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React from 'react';
-import { Download, Trash2, Tag, Share } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Download, Trash2, Tag, Share, FileText } from 'lucide-react';
 import Button from '@common/Button';
 import Badge from '@common/Badge';
 import type { DocumentMetadata } from '@/utils/documentation';
+import { useToast } from '@/context/ToastContext';
 
 interface DocumentViewerProps {
   content?: string;
   metadata: DocumentMetadata;
-  onDownload: () => void;
-  onDelete: () => void;
+  onDownload: () => void | Promise<void>;
+  onDelete: () => void | Promise<void>;
 }
 
 const formatFileSize = (size?: number) => {
@@ -41,11 +42,20 @@ const formatLastModified = (value?: Date) => {
 };
 
 const DocumentViewer: React.FC<DocumentViewerProps> = ({
-  content,
   metadata,
+  preview,
   onDownload,
   onDelete,
+  onShare
 }) => {
+  const lastModified = metadata.lastModified instanceof Date
+    ? metadata.lastModified
+    : new Date(metadata.lastModified);
+  const hasValidDate = !Number.isNaN(lastModified.getTime());
+  const sizeDisplay = metadata.size > 0
+    ? `${(metadata.size / 1024).toFixed(2)} KB`
+    : 'Size unknown';
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-neutral-200">
       <div className="p-4 border-b border-neutral-200">
@@ -53,7 +63,7 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
           <div>
             <h3 className="text-lg font-semibold text-neutral-900">{metadata.title}</h3>
             <p className="text-sm text-neutral-500">
-              {formatLastModified(metadata.lastModified)} · {formatFileSize(metadata.size)}
+              {hasValidDate ? lastModified.toLocaleDateString() : 'Unknown date'} · {sizeDisplay}
             </p>
             <p className="text-xs text-neutral-400">{metadata.mimeType}</p>
           </div>
@@ -62,7 +72,10 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
               variant="outline"
               size="sm"
               icon={<Share size={16} />}
+              onClick={() => onShare?.({ content, metadata })}
+              disabled={!onShare}
               aria-label="Share document"
+              onClick={handleShare}
             >
               Share
             </Button>
@@ -70,7 +83,7 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
               variant="outline"
               size="sm"
               icon={<Download size={16} />}
-              onClick={onDownload}
+              onClick={() => void onDownload()}
               aria-label="Download document"
             >
               Download
@@ -79,7 +92,7 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
               variant="outline"
               size="sm"
               icon={<Trash2 size={16} />}
-              onClick={onDelete}
+              onClick={() => void onDelete()}
               aria-label="Delete document"
             >
               Delete
@@ -96,10 +109,10 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
         )}
       </div>
       <div className="p-4 max-h-[600px] overflow-y-auto">
-        {content ? (
+        {content && content.trim().length > 0 ? (
           <pre className="whitespace-pre-wrap font-mono text-sm">{content}</pre>
         ) : (
-          <p className="text-sm text-neutral-500">Preview not available for this document.</p>
+          <p className="text-sm text-neutral-500 italic">No preview available for this document.</p>
         )}
       </div>
     </div>

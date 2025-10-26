@@ -2,27 +2,15 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Bell,
-  Book,
-  Mail,
-  Palette,
-  Save,
-  Sliders,
-} from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Bell, Book, Mail, Palette, Sliders } from 'lucide-react';
 import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import DocumentUploader from '@/components/documentation/DocumentUploader';
 import DocumentViewer from '@/components/documentation/DocumentViewer';
-import {
-  downloadDocument,
-  inferDocumentType,
-  normalizeMimeType,
-  parseDocument,
-  type DocumentMetadata,
-} from '@/utils/documentation';
+import GeneralSettingsCard from '@/components/settings/GeneralSettingsCard';
+import { downloadDocument, parseDocument, type DocumentMetadata } from '@/utils/documentation';
 import { useThemeStore } from '@/store/themeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import type {
@@ -32,6 +20,39 @@ import type {
 } from '@/store/settingsStore';
 import { useToast } from '@/context/ToastContext';
 import http from '@/lib/http';
+import SettingsLayout from '@/components/settings/SettingsLayout';
+
+type DocumentEntry = {
+  content?: string;
+  metadata: DocumentMetadata;
+};
+
+interface ApiDocumentResponse {
+  _id?: string;
+  id?: string;
+  name?: string;
+  url: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface ApiDocument {
+  _id: string;
+  name?: string;
+  url: string;
+  mimeType?: string;
+  size?: number;
+  lastModified?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface StoredDocument {
+  id: string;
+  url: string;
+  metadata: DocumentMetadata;
+  preview?: string;
+}
 
 type ManagedDocument = {
   id: string;
@@ -49,25 +70,15 @@ type ApiDocument = {
 };
 
 const Settings: React.FC = () => {
-  const themeMode = useThemeStore((state) => state.theme);
-  const setThemeMode = useThemeStore((state) => state.setTheme);
-  const updateTheme = useThemeStore((state) => state.updateTheme);
   const general = useSettingsStore((state) => state.general);
   const notifications = useSettingsStore((state) => state.notifications);
   const email = useSettingsStore((state) => state.email);
-  const themeSettings = useSettingsStore((state) => state.theme);
   const setGeneral = useSettingsStore((state) => state.setGeneral);
   const setNotifications = useSettingsStore((state) => state.setNotifications);
   const setEmail = useSettingsStore((state) => state.setEmail);
-  const setThemeSettings = (updater: (prev: ThemeSettings) => ThemeSettings) =>
-    useSettingsStore.setState((state) => ({ theme: updater(state.theme) }));
+  const applyThemeSettings = useSettingsStore((state) => state.setTheme);
   const { addToast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-
-  type ThemeOptionKey = {
-    [K in keyof ThemeSettings]: ThemeSettings[K] extends boolean ? K : never;
-  }[keyof ThemeSettings & string];
 
   type NotificationOptionKey = {
     [K in keyof NotificationSettings]: NotificationSettings[K] extends boolean ? K : never;
@@ -76,24 +87,6 @@ const Settings: React.FC = () => {
   type EmailPreferenceKey = {
     [K in keyof EmailSettings]: EmailSettings[K] extends boolean ? K : never;
   }[keyof EmailSettings & string];
-
-  const themeOptions = [
-    {
-      label: 'Collapsed Sidebar',
-      description: 'Use a compact sidebar layout',
-      key: 'sidebarCollapsed',
-    },
-    {
-      label: 'Dense Mode',
-      description: 'Compact spacing for all elements',
-      key: 'denseMode',
-    },
-    {
-      label: 'High Contrast',
-      description: 'Increase contrast for better visibility',
-      key: 'highContrast',
-    },
-  ] satisfies { label: string; description: string; key: ThemeOptionKey }[];
 
   const notificationOptions = [
     {
@@ -146,131 +139,57 @@ const Settings: React.FC = () => {
     },
   ] satisfies { label: string; description: string; key: EmailPreferenceKey }[];
 
-  const [documents, setDocuments] = useState<ManagedDocument[]>([]);
-  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
-  const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
-
-  const downloadBaseUrl = useMemo(() => {
-    const base = http.defaults.baseURL ?? '';
-    if (!base) {
-      return typeof window !== 'undefined' ? window.location.origin : '';
-    }
-    return base.replace(/\/?api\/?$/, '');
-  }, []);
-
-  const fileToBase64 = (file: File) =>
-    new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        resolve(result.split(',')[1] ?? '');
-      };
-      reader.onerror = () => reject(new Error('Failed to read file'));
-      reader.readAsDataURL(file);
-    });
-
-  const createMetadataFromApi = useCallback((doc: ApiDocument): DocumentMetadata => {
-    const baseTitle = doc.name ?? doc.title ?? 'Document';
-    const extension = baseTitle.split('.').pop()?.toLowerCase();
-    let mimeType = 'application/octet-stream';
-    let type: DocumentMetadata['type'] = 'pdf';
-
-    try {
-      mimeType = normalizeMimeType(undefined, extension);
-      type = inferDocumentType(mimeType, extension);
-    } catch {
-      // Fallback to PDF-like defaults if the document type cannot be determined.
-      mimeType = 'application/octet-stream';
-      type = 'pdf';
-    }
-
-    return {
-      id: doc._id,
-      title: baseTitle,
-      type,
-      mimeType,
-      lastModified: doc.updatedAt
-        ? new Date(doc.updatedAt)
-        : doc.createdAt
-          ? new Date(doc.createdAt)
-          : undefined,
-      downloadUrl: doc.url,
-    };
-  }, []);
+  const [documents, setDocuments] = useState<DocumentEntry[]>([]);
 
   const handleDocumentUpload = async (files: File[]) => {
     if (!files.length) {
       return;
     }
 
-    setIsUploadingDocuments(true);
-    const uploaded: ManagedDocument[] = [];
-    const failed: string[] = [];
-
-    for (const file of files) {
-      try {
-        const parsed = await parseDocument(file);
-        const base64 = await fileToBase64(file);
-        const response = await http.post<ApiDocument>('/documents', { name: file.name, base64 });
-        const saved = response.data as ApiDocument;
-        const metadata: DocumentMetadata = {
-          ...parsed.metadata,
-          id: saved._id,
-          title: saved.name ?? saved.title ?? parsed.metadata.title,
-          downloadUrl: saved.url,
-          lastModified:
-            parsed.metadata.lastModified ??
-            (saved.updatedAt ? new Date(saved.updatedAt) : saved.createdAt ? new Date(saved.createdAt) : undefined),
-        };
-
-        uploaded.push({ id: saved._id, content: parsed.content, metadata });
-      } catch (error) {
-        console.error('Error uploading document:', error);
-        failed.push(file.name);
-      }
-    }
-
-    if (uploaded.length > 0) {
-      setDocuments((prev) => [...prev, ...uploaded]);
-      addToast(uploaded.length > 1 ? 'Documents uploaded' : 'Document uploaded', 'success');
-    }
-
-    if (failed.length > 0) {
-      addToast(`Failed to upload: ${failed.join(', ')}`, 'error');
-    }
-
-    setIsUploadingDocuments(false);
-  };
-
-  const handleDocumentDownload = async (doc: ManagedDocument) => {
     try {
-      if (doc.metadata.downloadUrl) {
-        const url = doc.metadata.downloadUrl;
-        const isAbsolute = /^https?:\/\//i.test(url);
-        const response = await http.get<ArrayBuffer>(url, {
-          responseType: 'arraybuffer',
-          ...(isAbsolute ? {} : { baseURL: downloadBaseUrl }),
-        });
-        downloadDocument(response.data, doc.metadata.title, doc.metadata.mimeType);
-        return;
-      }
-
-      if (doc.content) {
-        downloadDocument(doc.content, doc.metadata.title, doc.metadata.mimeType);
-        return;
-      }
-
-      addToast('Document cannot be downloaded', 'error');
+      const newDocs = await Promise.all(files.map(parseDocument));
+      setDocuments((prev) => [...prev, ...newDocs]);
     } catch (error) {
-      console.error('Error downloading document:', error);
-      addToast('Failed to download document', 'error');
+      console.error('Error uploading documents:', error);
+      addToast('Failed to upload documents', 'error');
     }
   };
 
-  const handleRemoveDocument = async (id: string) => {
+  const resolveDocumentUrl = (path: string) => {
+    if (!path) {
+      return path;
+    }
+    if (/^https?:\/\//i.test(path)) {
+      return path;
+    }
+    const base = http.defaults?.baseURL ?? '';
+    const sanitizedBase = base.replace(/\/?api\/?$/, '');
+    const normalizedBase = sanitizedBase.replace(/\/$/, '');
+    if (!normalizedBase) {
+      return path;
+    }
+    if (path.startsWith('/')) {
+      return `${normalizedBase}${path}`;
+    }
+    return `${normalizedBase}/${path}`;
+  };
+
+  const handleDocumentDownload = (doc: { content: string; metadata: DocumentMetadata }) => {
+    const mimeType = doc.metadata.mimeType ?? getMimeTypeForType(doc.metadata.type);
+    downloadDocument(doc.content, doc.metadata.title, mimeType);
+  };
+
+  const handleRemoveDocument = async (index: number) => {
+    const doc = documents[index];
+    if (!doc) {
+      return;
+    }
+
     try {
-      await http.delete(`/documents/${id}`);
-      setDocuments((prev) => prev.filter((doc) => doc.id !== id));
+      if (doc.metadata.id) {
+        await http.delete(`/documents/${doc.metadata.id}`);
+      }
+      setDocuments((prev) => prev.filter((_, idx) => idx !== index));
       addToast('Document deleted', 'success');
     } catch (error) {
       console.error('Error deleting document:', error);
@@ -278,88 +197,45 @@ const Settings: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadSettings = async () => {
-      try {
-        setIsLoading(true);
-        const response = await http.get('/settings');
-        const payload = response.data as Partial<{
-          general: Partial<typeof general>;
-          notifications: Partial<typeof notifications>;
-          email: Partial<typeof email>;
-          theme: Partial<ThemeSettings> & { mode?: 'light' | 'dark' | 'system' };
-        }>;
-
-        if (!isMounted || !payload) {
-          return;
-        }
-
-        if (payload.general) {
-          setGeneral(payload.general);
-        }
-
-        if (payload.notifications) {
-          setNotifications(payload.notifications);
-        }
-
-        if (payload.email) {
-          setEmail(payload.email);
-        }
-
-        if (payload.theme) {
-          const { mode, ...restTheme } = payload.theme;
-          useSettingsStore.setState((state) => ({
-            theme: { ...state.theme, ...restTheme },
-          }));
-
-          if (mode) {
-            useThemeStore.setState({ theme: mode });
-          }
-
-          if (payload.theme.colorScheme) {
-            useThemeStore.setState({ colorScheme: payload.theme.colorScheme });
-          }
-        }
-      } catch (error) {
-        console.error('Error loading settings:', error);
-        addToast('Failed to load settings', 'error');
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadSettings();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [addToast, setEmail, setGeneral, setNotifications]);
+  const handleShareDocument = (doc: { content: string; metadata: DocumentMetadata }) => {
+    setShareTarget(doc);
+  };
 
   useEffect(() => {
     let isMounted = true;
 
     const loadDocuments = async () => {
       try {
-        setIsLoadingDocuments(true);
-        const response = await http.get<ApiDocument[]>('/documents');
+        const response = await http.get<ApiDocumentResponse[]>('/documents');
         if (!isMounted) {
           return;
         }
-        const payload = response.data ?? [];
-        setDocuments(payload.map((doc) => ({ id: doc._id, metadata: createMetadataFromApi(doc) })));
+
+        const fetched = (response.data ?? []).map((item) => {
+          const rawUrl = item.url ?? '';
+          const title = item.name ?? rawUrl.split('/').pop() ?? 'Document';
+          const extension = title.split('.').pop()?.toLowerCase() ?? '';
+          const type = getDocumentTypeFromExtension(extension);
+          const mimeType = getMimeTypeFromExtension(extension);
+          const lastModifiedSource = item.updatedAt ?? item.createdAt;
+          const lastModified = lastModifiedSource ? new Date(lastModifiedSource) : new Date();
+
+          const metadata: DocumentMetadata = {
+            id: item._id ?? item.id,
+            title,
+            type,
+            size: 0,
+            lastModified,
+            mimeType,
+            url: rawUrl || undefined,
+          };
+
+          return { metadata } satisfies DocumentEntry;
+        });
+
+        setDocuments(fetched);
       } catch (error) {
         console.error('Error loading documents:', error);
-        if (isMounted) {
-          addToast('Failed to load documents', 'error');
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingDocuments(false);
-        }
       }
     };
 
@@ -368,68 +244,121 @@ const Settings: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [addToast, createMetadataFromApi]);
+  }, []);
 
-  const handleSaveSettings = async () => {
-    try {
-      setIsSaving(true);
-      const {
-        general: currentGeneral,
-        notifications: currentNotifications,
-        email: currentEmail,
-        theme: currentTheme,
-      } = useSettingsStore.getState();
-      const { theme: currentThemeMode, colorScheme: currentColorScheme } = useThemeStore.getState();
-      await http.post('/settings', {
-        general: currentGeneral,
-        notifications: currentNotifications,
-        email: currentEmail,
-        theme: {
-          ...currentTheme,
-          mode: currentThemeMode,
-          colorScheme: currentTheme.colorScheme ?? currentColorScheme,
-        },
-      });
-      addToast('Settings saved', 'success');
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      const status = (error as { response?: { status?: number } }).response?.status;
-      if (status === 401) {
-        addToast('Unauthorized', 'error');
-      } else {
-        addToast('Failed to save settings', 'error');
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSettings = async () => {
+      setIsLoading(true);
+      try {
+        const [settingsResult, documentsResult] = await Promise.allSettled([
+          http.get('/settings'),
+          http.get<ApiDocument[]>('/documents'),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (settingsResult.status === 'fulfilled') {
+          const payload = settingsResult.value.data as Partial<{
+            general: Partial<typeof general>;
+            notifications: Partial<typeof notifications>;
+            email: Partial<typeof email>;
+            theme: Partial<ThemeSettings> & { mode?: 'light' | 'dark' | 'system' };
+          }>;
+
+          if (payload?.general) {
+            setGeneral(payload.general);
+          }
+
+          if (payload?.notifications) {
+            setNotifications(payload.notifications);
+          }
+
+        if (payload.theme) {
+          const { mode, colorScheme, ...restTheme } = payload.theme;
+
+          if (Object.keys(restTheme).length > 0 || colorScheme) {
+            applyThemeSettings({ ...restTheme, ...(colorScheme ? { colorScheme } : {}) });
+          }
+        } else {
+          console.error('Error loading settings:', settingsResult.reason);
+          addToast('Failed to load settings', 'error');
+        }
+
+          if (mode || colorScheme) {
+            useThemeStore.setState((state) => ({
+              ...state,
+              ...(mode ? { theme: mode } : {}),
+              ...(colorScheme ? { colorScheme } : {}),
+            }));
+          }
+        } else {
+          console.error('Error loading documents:', documentsResult.reason);
+          addToast('Failed to load documents', 'error');
+        }
+      } catch (error) {
+        console.error('Error loading settings:', error);
+        if (isMounted) {
+          addToast('Failed to load settings', 'error');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
-    } finally {
-      setIsSaving(false);
-    }
+    };
+
+    void loadSettings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [addToast, applyThemeSettings, setEmail, setGeneral, setNotifications]);
+
+  const handleThemeModeChange = (mode: 'light' | 'dark' | 'system') => {
+    setThemeSettings((prev) => ({ ...prev, mode }));
+    void setThemeMode(mode);
   };
 
+  const themePresets: Array<{
+    mode: 'light' | 'dark' | 'system';
+    label: string;
+    description: string;
+    icon: React.ReactNode;
+  }> = [
+    {
+      mode: 'light',
+      label: 'Light',
+      description: 'Bright interface for well-lit environments',
+      icon: <Sun className="h-5 w-5" />,
+    },
+    {
+      mode: 'dark',
+      label: 'Dark',
+      description: 'Dimmed palette for low-light conditions',
+      icon: <Moon className="h-5 w-5" />,
+    },
+    {
+      mode: 'system',
+      label: 'System',
+      description: 'Follow your operating system preference',
+      icon: <Monitor className="h-5 w-5" />,
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Settings</h2>
-            <p className="text-neutral-500 dark:text-neutral-400">Manage your application preferences</p>
-          </div>
-          <Button
-            variant="primary"
-            icon={<Save size={16} />}
-            onClick={handleSaveSettings}
-            loading={isSaving}
-            disabled={isSaving || isLoading}
-          >
-            {isSaving ? 'Saving…' : 'Save Changes'}
-          </Button>
+    <SettingsLayout isLoading={isLoading}>
+      {isLoading && (
+        <div className="flex items-center gap-3 rounded-lg border border-dashed border-neutral-300 bg-white/50 p-4 text-sm text-neutral-600 dark:border-neutral-700 dark:bg-neutral-900/40 dark:text-neutral-300">
+          <LoadingSpinner fullscreen={false} size="sm" />
+          <span>Loading your saved settings…</span>
         </div>
+      )}
 
-        {isLoading && (
-          <div className="flex items-center gap-3 rounded-lg border border-dashed border-neutral-300 bg-white/50 p-4 text-sm text-neutral-600 dark:border-neutral-700 dark:bg-neutral-900/40 dark:text-neutral-300">
-            <LoadingSpinner fullscreen={false} size="sm" />
-            <span>Loading your saved settings…</span>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* General Settings */}
           <Card title="General Settings" icon={<Sliders className="h-5 w-5 text-neutral-500" />}>
             <div className="space-y-4">
@@ -494,6 +423,38 @@ const Settings: React.FC = () => {
             </div>
           </Card>
 
+          <Card title="Theme Presets" icon={<Palette className="h-5 w-5 text-neutral-500" />}>
+            <div className="space-y-4">
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                Quickly switch between theme modes across the application.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {themePresets.map(({ mode, label, description, icon }) => {
+                  const isActive = themeMode === mode;
+                  return (
+                    <Button
+                      key={mode}
+                      variant="outline"
+                      className={`flex h-full flex-col items-start gap-2 border-2 px-4 py-3 text-left transition-colors ${
+                        isActive
+                          ? 'border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-400 dark:bg-primary-900/20 dark:text-primary-200'
+                          : 'border-neutral-200 text-neutral-700 hover:border-primary-200 hover:text-primary-700 dark:border-neutral-700 dark:text-neutral-100 dark:hover:border-primary-400 dark:hover:text-primary-200'
+                      }`}
+                      onClick={() => handleThemeModeChange(mode)}
+                      disabled={isActive}
+                    >
+                      <span className="flex items-center gap-2 text-sm font-semibold">
+                        {icon}
+                        {label}
+                      </span>
+                      <span className="text-xs text-neutral-500 dark:text-neutral-400">{description}</span>
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+          </Card>
+
           {/* Theme Settings */}
           <Card title="Theme Settings" icon={<Palette className="h-5 w-5 text-neutral-500" />}>
             <div className="space-y-4">
@@ -506,7 +467,7 @@ const Settings: React.FC = () => {
                   value={themeMode}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                     const value = e.target.value as 'light' | 'dark' | 'system';
-                    void setThemeMode(value);
+                    handleThemeModeChange(value);
                   }}
                 >
                   <option value="light">Light</option>
@@ -524,7 +485,7 @@ const Settings: React.FC = () => {
                   value={themeSettings.colorScheme ?? 'default'}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                     const value = e.target.value;
-                    setThemeSettings((prev) => ({ ...prev, colorScheme: value }));
+                    applyThemeSettings({ colorScheme: value });
                     updateTheme({ colorScheme: value });
                   }}
                 >
@@ -546,10 +507,7 @@ const Settings: React.FC = () => {
                       className="sr-only peer"
                       checked={themeSettings[key]}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setThemeSettings((prev) => ({
-                          ...prev,
-                          [key]: e.target.checked,
-                        }))
+                        applyThemeSettings({ [key]: e.target.checked })
                       }
                     />
                     <div className="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
@@ -617,21 +575,21 @@ const Settings: React.FC = () => {
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                onClick={() => void setThemeMode('light')}
+                onClick={() => handleThemeModeChange('light')}
                 disabled={themeMode === 'light'}
               >
                 Light
               </Button>
               <Button
                 variant="outline"
-                onClick={() => void setThemeMode('dark')}
+                onClick={() => handleThemeModeChange('dark')}
                 disabled={themeMode === 'dark'}
               >
                 Dark
               </Button>
               <Button
                 variant="outline"
-                onClick={() => void setThemeMode('system')}
+                onClick={() => handleThemeModeChange('system')}
                 disabled={themeMode === 'system'}
               >
                 System
@@ -662,8 +620,8 @@ const Settings: React.FC = () => {
                   {documents.map((doc) => (
                     <DocumentViewer
                       key={doc.id}
-                      content={doc.content}
                       metadata={doc.metadata}
+                      preview={doc.preview}
                       onDownload={() => void handleDocumentDownload(doc)}
                       onDelete={() => void handleRemoveDocument(doc.id)}
                     />
@@ -678,8 +636,8 @@ const Settings: React.FC = () => {
               )}
             </div>
           </Card>
-        </div>
       </div>
+    </SettingsLayout>
   );
 };
 

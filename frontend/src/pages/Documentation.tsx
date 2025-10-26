@@ -2,11 +2,33 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useState } from 'react';
-import { Search, Book, Video, FileText, MessageCircle, ChevronRight, Plus, Trash2, FolderPlus, Edit2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import {
+  Search,
+  Book,
+  Video,
+  FileText,
+  MessageCircle,
+  ChevronRight,
+  Plus,
+  Trash2,
+  FolderPlus,
+  Edit2,
+  Download,
+} from 'lucide-react';
 import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import DocumentUploader from '@/components/documentation/DocumentUploader';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { useToast } from '@/context/ToastContext';
+import http, { FALLBACK_TOKEN_KEY, SITE_KEY, TENANT_KEY, TOKEN_KEY } from '@/lib/http';
+import {
+  downloadDocument,
+  getMimeTypeForType,
+  inferDocumentTypeFromFilename,
+  parseDocument,
+  type DocumentMetadata,
+} from '@/utils/documentation';
 
 interface Category {
   id: string;
@@ -19,7 +41,109 @@ interface Category {
   }>;
 }
 
+interface ApiDocument {
+  _id: string;
+  name?: string;
+  title?: string;
+  url: string;
+  metadata?: {
+    size?: number;
+    mimeType?: string;
+    lastModified?: string;
+    type?: string;
+  };
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface StoredDocument {
+  id: string;
+  url: string;
+  metadata: DocumentMetadata;
+}
+
+const resolveApiOrigin = (): string => {
+  const baseUrl = http.defaults.baseURL ?? '';
+  if (!baseUrl) {
+    return '';
+  }
+  return baseUrl.replace(/\/?api\/?$/, '');
+};
+
+const resolveAbsoluteUrl = (url: string): string => {
+  if (/^https?:\/\//i.test(url)) {
+    return url;
+  }
+  const origin = resolveApiOrigin();
+  const normalizedOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+  const normalizedUrl = url.startsWith('/') ? url : `/${url}`;
+  return `${normalizedOrigin}${normalizedUrl}`;
+};
+
+const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== 'string') {
+        reject(new Error('Unable to read file'));
+        return;
+      }
+      const base64 = result.includes(',') ? result.split(',').pop() : result;
+      if (!base64) {
+        reject(new Error('Unable to encode file'));
+        return;
+      }
+      resolve(base64);
+    };
+    reader.onerror = () => {
+      reject(reader.error ?? new Error('File reading failed'));
+    };
+    reader.readAsDataURL(file);
+  });
+
+const isSupportedDocumentType = (
+  value: string | undefined,
+): value is DocumentMetadata['type'] =>
+  value === 'pdf' || value === 'excel' || value === 'word';
+
+const normaliseDocument = (doc: ApiDocument): StoredDocument => {
+  const fallbackTitle = doc.name ?? doc.title ?? 'Untitled Document';
+
+  let type: DocumentMetadata['type'];
+  if (isSupportedDocumentType(doc.metadata?.type)) {
+    type = doc.metadata.type;
+  } else {
+    try {
+      type = inferDocumentTypeFromFilename(fallbackTitle);
+    } catch {
+      type = 'pdf';
+    }
+  }
+
+  const mimeType = doc.metadata?.mimeType?.trim() || getMimeTypeForType(type);
+  const lastModifiedSource = doc.metadata?.lastModified ?? doc.updatedAt ?? doc.createdAt;
+  const lastModifiedCandidate = lastModifiedSource ? new Date(lastModifiedSource) : new Date();
+  const lastModified = Number.isNaN(lastModifiedCandidate.getTime())
+    ? new Date()
+    : lastModifiedCandidate;
+  const size = typeof doc.metadata?.size === 'number' ? doc.metadata.size : 0;
+
+  return {
+    id: doc._id,
+    url: doc.url,
+    metadata: {
+      title: fallbackTitle,
+      type,
+      mimeType,
+      size,
+      lastModified,
+    },
+  };
+};
+
 const Documentation: React.FC = () => {
+  const { addToast } = useToast();
   const [showUploader, setShowUploader] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [categories, setCategories] = useState<Category[]>([
@@ -73,13 +197,125 @@ const Documentation: React.FC = () => {
     }
   ]);
 
+  const [documents, setDocuments] = useState<StoredDocument[]>([]);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const [activeDownloadId, setActiveDownloadId] = useState<string | null>(null);
+  const [activeDeleteId, setActiveDeleteId] = useState<string | null>(null);
   const [newCategory, setNewCategory] = useState({
     title: '',
     description: '',
   });
 
-  const handleDocumentUpload = (_files: File[]) => {
-    setShowUploader(false);
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchDocuments = async () => {
+      try {
+        setIsLoadingDocuments(true);
+        const response = await http.get<ApiDocument[]>('/documents');
+        const items = Array.isArray(response.data) ? response.data : [];
+        if (isMounted) {
+          setDocuments(items.filter((item): item is ApiDocument => Boolean(item && item.url)).map(normaliseDocument));
+        }
+      } catch (error) {
+        console.error('Error loading documents:', error);
+        if (isMounted) {
+          addToast('Failed to load documents', 'error');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingDocuments(false);
+        }
+      }
+    };
+
+    void fetchDocuments();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [addToast]);
+
+  const handleDocumentUpload = async (files: File[]) => {
+    if (!files.length) {
+      setShowUploader(false);
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const uploads = await Promise.all(
+        files.map(async (file) => {
+          const [parsed, base64] = await Promise.all([parseDocument(file), fileToBase64(file)]);
+          const response = await http.post<ApiDocument>('/documents', {
+            base64,
+            name: file.name,
+            metadata: {
+              size: parsed.metadata.size,
+              mimeType: parsed.metadata.mimeType,
+              lastModified: parsed.metadata.lastModified.toISOString(),
+              type: parsed.metadata.type,
+            },
+          });
+          const saved = response.data;
+          return normaliseDocument(saved);
+        }),
+      );
+
+      setDocuments((prev) => [...uploads, ...prev]);
+      addToast('Document uploaded', 'success');
+      setShowUploader(false);
+    } catch (error) {
+      console.error('Error uploading documents:', error);
+      addToast('Failed to upload document', 'error');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDownloadDocument = async (doc: StoredDocument) => {
+    try {
+      setActiveDownloadId(doc.id);
+      const token = localStorage.getItem(TOKEN_KEY) ?? localStorage.getItem(FALLBACK_TOKEN_KEY);
+      const tenantId = localStorage.getItem(TENANT_KEY);
+      const siteId = localStorage.getItem(SITE_KEY);
+      const resolvedUrl = resolveAbsoluteUrl(doc.url);
+      const response = await fetch(resolvedUrl, {
+        credentials: 'include',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(tenantId ? { 'x-tenant-id': tenantId } : {}),
+          ...(siteId ? { 'x-site-id': siteId } : {}),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to download document: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      downloadDocument(blob, doc.metadata.title, doc.metadata.mimeType);
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      addToast('Failed to download document', 'error');
+    } finally {
+      setActiveDownloadId(null);
+    }
+  };
+
+  const handleDeleteDocument = async (docId: string) => {
+    try {
+      setActiveDeleteId(docId);
+      await http.delete(`/documents/${docId}`);
+      setDocuments((prev) => prev.filter((doc) => doc.id !== docId));
+      addToast('Document deleted', 'success');
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      addToast('Failed to delete document', 'error');
+    } finally {
+      setActiveDeleteId(null);
+    }
   };
 
   const handleDeleteArticle = (categoryIndex: number, articleIndex: number) => {
@@ -181,8 +417,68 @@ const Documentation: React.FC = () => {
         {showUploader && (
           <Card>
             <DocumentUploader onUpload={handleDocumentUpload} />
+            {isUploading && (
+              <div className="mt-3 text-sm text-neutral-500">Uploading documents…</div>
+            )}
           </Card>
         )}
+
+        <Card>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-neutral-900">Uploaded Documents</h3>
+              <span className="text-sm text-neutral-500">
+                {documents.length} document{documents.length === 1 ? '' : 's'}
+              </span>
+            </div>
+
+            {isLoadingDocuments ? (
+              <div className="flex items-center gap-3 text-sm text-neutral-500">
+                <LoadingSpinner fullscreen={false} size="sm" />
+                <span>Loading documents…</span>
+              </div>
+            ) : documents.length === 0 ? (
+              <p className="text-sm text-neutral-500">No documents uploaded yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {documents.map((doc) => (
+                  <div
+                    key={doc.id}
+                    className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div>
+                      <p className="font-medium text-neutral-900">{doc.metadata.title}</p>
+                      <p className="text-sm text-neutral-500">
+                        {doc.metadata.type.toUpperCase()} · {(doc.metadata.size / 1024).toFixed(1)} KB ·{' '}
+                        {doc.metadata.lastModified.toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        icon={<Download size={16} />}
+                        onClick={() => handleDownloadDocument(doc)}
+                        loading={activeDownloadId === doc.id}
+                      >
+                        Download
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        icon={<Trash2 size={16} />}
+                        onClick={() => handleDeleteDocument(doc.id)}
+                        loading={activeDeleteId === doc.id}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Card>
 
         {/* Search Bar */}
         <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 bg-white p-4 rounded-lg shadow-sm border border-neutral-200">

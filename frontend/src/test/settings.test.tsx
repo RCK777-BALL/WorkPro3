@@ -4,7 +4,7 @@
 
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 
 vi.mock('../components/documentation/DocumentUploader', () => ({
@@ -15,11 +15,12 @@ vi.mock('../components/documentation/DocumentViewer', () => ({
   default: () => <div />,
 }));
 
+const mockParseDocument = vi.fn();
+
 vi.mock('../utils/documentation', () => ({
-  parseDocument: vi.fn(),
+  parseDocument: mockParseDocument,
   downloadDocument: vi.fn(),
-  normalizeMimeType: vi.fn(() => 'application/pdf'),
-  inferDocumentType: vi.fn(() => 'pdf'),
+  getMimeTypeForType: vi.fn(() => 'application/pdf'),
 }));
 
 const mockAddToast = vi.fn();
@@ -38,38 +39,60 @@ vi.mock('../lib/http', () => ({
 
 import http from '@/lib/http';
 import Settings from '@/pages/Settings';
+import { ThemeProvider } from '@/context/ThemeContext';
+
+const renderSettings = () =>
+  render(
+    <ThemeProvider>
+      <Settings />
+    </ThemeProvider>,
+  );
+
+beforeAll(() => {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi
+      .fn()
+      .mockImplementation((query) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+  });
+});
 
 describe('Settings page', () => {
   beforeEach(() => {
     (http.post as any).mockReset();
     (http.get as any).mockReset();
-    (http.delete as any).mockReset?.();
+    (http.delete as any).mockReset();
     mockAddToast.mockReset();
-    (http.get as any).mockImplementation((url: string) => {
-      if (url === '/settings') {
-        return Promise.resolve({
-          data: {
-            general: {
-              companyName: 'Acme Industries',
-            },
-            notifications: {},
-            email: {},
-            theme: { mode: 'light', colorScheme: 'default' },
-          },
-        });
-      }
-
+    (http.get as any).mockImplementation(async (url: string) => {
       if (url === '/documents') {
-        return Promise.resolve({ data: [] });
+        return { data: [] };
       }
 
-      return Promise.resolve({ data: [] });
+      return {
+        data: {
+          general: {
+            companyName: 'Acme Industries',
+          },
+          notifications: {},
+          email: {},
+          theme: { mode: 'light', colorScheme: 'default' },
+        },
+      };
     });
   });
 
   it('saves settings successfully', async () => {
     (http.post as any).mockResolvedValueOnce({ data: {} });
-    render(<Settings />);
+    renderSettings();
     await waitFor(() => expect(http.get).toHaveBeenCalled());
     const [saveButton] = screen.getAllByRole('button', { name: /save changes/i });
     await userEvent.click(saveButton);
@@ -87,7 +110,7 @@ describe('Settings page', () => {
 
   it('handles unauthorized errors', async () => {
     (http.post as any).mockRejectedValueOnce({ response: { status: 401 } });
-    render(<Settings />);
+    renderSettings();
     await waitFor(() => expect(http.get).toHaveBeenCalled());
     const [saveButton] = screen.getAllByRole('button', { name: /save changes/i });
     await userEvent.click(saveButton);

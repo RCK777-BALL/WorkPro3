@@ -3,14 +3,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import {
-  Bell,
-  Book,
-  Mail,
-  Palette,
-  Save,
-  Sliders,
-} from 'lucide-react';
+import { Bell, Book, Mail, Palette, Sliders } from 'lucide-react';
 import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -26,6 +19,7 @@ import type {
 } from '@/store/settingsStore';
 import { useToast } from '@/context/ToastContext';
 import http from '@/lib/http';
+import SettingsLayout from '@/components/settings/SettingsLayout';
 
 const Settings: React.FC = () => {
   const themeMode = useThemeStore((state) => state.theme);
@@ -42,7 +36,6 @@ const Settings: React.FC = () => {
     useSettingsStore.setState((state) => ({ theme: updater(state.theme) }));
   const { addToast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
 
   type ThemeOptionKey = {
     [K in keyof ThemeSettings]: ThemeSettings[K] extends boolean ? K : never;
@@ -217,66 +210,16 @@ const Settings: React.FC = () => {
     };
   }, [addToast, setEmail, setGeneral, setNotifications]);
 
-  const handleSaveSettings = async () => {
-    try {
-      setIsSaving(true);
-      const {
-        general: currentGeneral,
-        notifications: currentNotifications,
-        email: currentEmail,
-        theme: currentTheme,
-      } = useSettingsStore.getState();
-      const { theme: currentThemeMode, colorScheme: currentColorScheme } = useThemeStore.getState();
-      await http.post('/settings', {
-        general: currentGeneral,
-        notifications: currentNotifications,
-        email: currentEmail,
-        theme: {
-          ...currentTheme,
-          mode: currentThemeMode,
-          colorScheme: currentTheme.colorScheme ?? currentColorScheme,
-        },
-      });
-      addToast('Settings saved', 'success');
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      const status = (error as { response?: { status?: number } }).response?.status;
-      if (status === 401) {
-        addToast('Unauthorized', 'error');
-      } else {
-        addToast('Failed to save settings', 'error');
-      }
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   return (
-    <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Settings</h2>
-            <p className="text-neutral-500 dark:text-neutral-400">Manage your application preferences</p>
-          </div>
-          <Button
-            variant="primary"
-            icon={<Save size={16} />}
-            onClick={handleSaveSettings}
-            loading={isSaving}
-            disabled={isSaving || isLoading}
-          >
-            {isSaving ? 'Saving…' : 'Save Changes'}
-          </Button>
+    <SettingsLayout isLoading={isLoading}>
+      {isLoading && (
+        <div className="flex items-center gap-3 rounded-lg border border-dashed border-neutral-300 bg-white/50 p-4 text-sm text-neutral-600 dark:border-neutral-700 dark:bg-neutral-900/40 dark:text-neutral-300">
+          <LoadingSpinner fullscreen={false} size="sm" />
+          <span>Loading your saved settings…</span>
         </div>
+      )}
 
-        {isLoading && (
-          <div className="flex items-center gap-3 rounded-lg border border-dashed border-neutral-300 bg-white/50 p-4 text-sm text-neutral-600 dark:border-neutral-700 dark:bg-neutral-900/40 dark:text-neutral-300">
-            <LoadingSpinner fullscreen={false} size="sm" />
-            <span>Loading your saved settings…</span>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* General Settings */}
           <Card title="General Settings" icon={<Sliders className="h-5 w-5 text-neutral-500" />}>
             <div className="space-y-4">
@@ -513,8 +456,8 @@ const Settings: React.FC = () => {
               )}
             </div>
           </Card>
-        </div>
       </div>
+    </SettingsLayout>
   );
 };
 

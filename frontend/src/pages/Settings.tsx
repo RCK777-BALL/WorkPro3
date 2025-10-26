@@ -3,20 +3,14 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import {
-  Bell,
-  Book,
-  Mail,
-  Palette,
-  Save,
-  Sliders,
-} from 'lucide-react';
+import { Bell, Book, Mail, Palette, Sliders } from 'lucide-react';
 import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import DocumentUploader from '@/components/documentation/DocumentUploader';
 import DocumentViewer from '@/components/documentation/DocumentViewer';
-import { downloadDocument, parseDocument, getMimeTypeForType, type DocumentMetadata } from '@/utils/documentation';
+import GeneralSettingsCard from '@/components/settings/GeneralSettingsCard';
+import { downloadDocument, parseDocument, type DocumentMetadata } from '@/utils/documentation';
 import { useThemeStore } from '@/store/themeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import type {
@@ -26,27 +20,18 @@ import type {
 } from '@/store/settingsStore';
 import { useToast } from '@/context/ToastContext';
 import http from '@/lib/http';
+import SettingsLayout from '@/components/settings/SettingsLayout';
 
 const Settings: React.FC = () => {
-  const themeMode = useThemeStore((state) => state.theme);
-  const setThemeMode = useThemeStore((state) => state.setTheme);
-  const updateTheme = useThemeStore((state) => state.updateTheme);
   const general = useSettingsStore((state) => state.general);
   const notifications = useSettingsStore((state) => state.notifications);
   const email = useSettingsStore((state) => state.email);
-  const themeSettings = useSettingsStore((state) => state.theme);
   const setGeneral = useSettingsStore((state) => state.setGeneral);
   const setNotifications = useSettingsStore((state) => state.setNotifications);
   const setEmail = useSettingsStore((state) => state.setEmail);
-  const setThemeSettings = (updater: (prev: ThemeSettings) => ThemeSettings) =>
-    useSettingsStore.setState((state) => ({ theme: updater(state.theme) }));
+  const applyThemeSettings = useSettingsStore((state) => state.setTheme);
   const { addToast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-
-  type ThemeOptionKey = {
-    [K in keyof ThemeSettings]: ThemeSettings[K] extends boolean ? K : never;
-  }[keyof ThemeSettings & string];
 
   type NotificationOptionKey = {
     [K in keyof NotificationSettings]: NotificationSettings[K] extends boolean ? K : never;
@@ -55,24 +40,6 @@ const Settings: React.FC = () => {
   type EmailPreferenceKey = {
     [K in keyof EmailSettings]: EmailSettings[K] extends boolean ? K : never;
   }[keyof EmailSettings & string];
-
-  const themeOptions = [
-    {
-      label: 'Collapsed Sidebar',
-      description: 'Use a compact sidebar layout',
-      key: 'sidebarCollapsed',
-    },
-    {
-      label: 'Dense Mode',
-      description: 'Compact spacing for all elements',
-      key: 'denseMode',
-    },
-    {
-      label: 'High Contrast',
-      description: 'Increase contrast for better visibility',
-      key: 'highContrast',
-    },
-  ] satisfies { label: string; description: string; key: ThemeOptionKey }[];
 
   const notificationOptions = [
     {
@@ -176,17 +143,18 @@ const Settings: React.FC = () => {
         }
 
         if (payload.theme) {
-          const { mode, ...restTheme } = payload.theme;
-          useSettingsStore.setState((state) => ({
-            theme: { ...state.theme, ...restTheme },
-          }));
+          const { mode, colorScheme, ...restTheme } = payload.theme;
 
-          if (mode) {
-            useThemeStore.setState({ theme: mode });
+          if (Object.keys(restTheme).length > 0 || colorScheme) {
+            applyThemeSettings({ ...restTheme, ...(colorScheme ? { colorScheme } : {}) });
           }
 
-          if (payload.theme.colorScheme) {
-            useThemeStore.setState({ colorScheme: payload.theme.colorScheme });
+          if (mode || colorScheme) {
+            useThemeStore.setState((state) => ({
+              ...state,
+              ...(mode ? { theme: mode } : {}),
+              ...(colorScheme ? { colorScheme } : {}),
+            }));
           }
         }
       } catch (error) {
@@ -204,68 +172,49 @@ const Settings: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [addToast, setEmail, setGeneral, setNotifications]);
+  }, [addToast, applyThemeSettings, setEmail, setGeneral, setNotifications]);
 
-  const handleSaveSettings = async () => {
-    try {
-      setIsSaving(true);
-      const {
-        general: currentGeneral,
-        notifications: currentNotifications,
-        email: currentEmail,
-        theme: currentTheme,
-      } = useSettingsStore.getState();
-      const { theme: currentThemeMode, colorScheme: currentColorScheme } = useThemeStore.getState();
-      await http.post('/settings', {
-        general: currentGeneral,
-        notifications: currentNotifications,
-        email: currentEmail,
-        theme: {
-          ...currentTheme,
-          mode: currentThemeMode,
-          colorScheme: currentTheme.colorScheme ?? currentColorScheme,
-        },
-      });
-      addToast('Settings saved', 'success');
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      const status = (error as { response?: { status?: number } }).response?.status;
-      if (status === 401) {
-        addToast('Unauthorized', 'error');
-      } else {
-        addToast('Failed to save settings', 'error');
-      }
-    } finally {
-      setIsSaving(false);
-    }
+  const handleThemeModeChange = (mode: 'light' | 'dark' | 'system') => {
+    setThemeSettings((prev) => ({ ...prev, mode }));
+    void setThemeMode(mode);
   };
 
+  const themePresets: Array<{
+    mode: 'light' | 'dark' | 'system';
+    label: string;
+    description: string;
+    icon: React.ReactNode;
+  }> = [
+    {
+      mode: 'light',
+      label: 'Light',
+      description: 'Bright interface for well-lit environments',
+      icon: <Sun className="h-5 w-5" />,
+    },
+    {
+      mode: 'dark',
+      label: 'Dark',
+      description: 'Dimmed palette for low-light conditions',
+      icon: <Moon className="h-5 w-5" />,
+    },
+    {
+      mode: 'system',
+      label: 'System',
+      description: 'Follow your operating system preference',
+      icon: <Monitor className="h-5 w-5" />,
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Settings</h2>
-            <p className="text-neutral-500 dark:text-neutral-400">Manage your application preferences</p>
-          </div>
-          <Button
-            variant="primary"
-            icon={<Save size={16} />}
-            onClick={handleSaveSettings}
-            loading={isSaving}
-            disabled={isSaving || isLoading}
-          >
-            {isSaving ? 'Saving…' : 'Save Changes'}
-          </Button>
+    <SettingsLayout isLoading={isLoading}>
+      {isLoading && (
+        <div className="flex items-center gap-3 rounded-lg border border-dashed border-neutral-300 bg-white/50 p-4 text-sm text-neutral-600 dark:border-neutral-700 dark:bg-neutral-900/40 dark:text-neutral-300">
+          <LoadingSpinner fullscreen={false} size="sm" />
+          <span>Loading your saved settings…</span>
         </div>
+      )}
 
-        {isLoading && (
-          <div className="flex items-center gap-3 rounded-lg border border-dashed border-neutral-300 bg-white/50 p-4 text-sm text-neutral-600 dark:border-neutral-700 dark:bg-neutral-900/40 dark:text-neutral-300">
-            <LoadingSpinner fullscreen={false} size="sm" />
-            <span>Loading your saved settings…</span>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* General Settings */}
           <Card title="General Settings" icon={<Sliders className="h-5 w-5 text-neutral-500" />}>
             <div className="space-y-4">
@@ -330,6 +279,38 @@ const Settings: React.FC = () => {
             </div>
           </Card>
 
+          <Card title="Theme Presets" icon={<Palette className="h-5 w-5 text-neutral-500" />}>
+            <div className="space-y-4">
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                Quickly switch between theme modes across the application.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {themePresets.map(({ mode, label, description, icon }) => {
+                  const isActive = themeMode === mode;
+                  return (
+                    <Button
+                      key={mode}
+                      variant="outline"
+                      className={`flex h-full flex-col items-start gap-2 border-2 px-4 py-3 text-left transition-colors ${
+                        isActive
+                          ? 'border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-400 dark:bg-primary-900/20 dark:text-primary-200'
+                          : 'border-neutral-200 text-neutral-700 hover:border-primary-200 hover:text-primary-700 dark:border-neutral-700 dark:text-neutral-100 dark:hover:border-primary-400 dark:hover:text-primary-200'
+                      }`}
+                      onClick={() => handleThemeModeChange(mode)}
+                      disabled={isActive}
+                    >
+                      <span className="flex items-center gap-2 text-sm font-semibold">
+                        {icon}
+                        {label}
+                      </span>
+                      <span className="text-xs text-neutral-500 dark:text-neutral-400">{description}</span>
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+          </Card>
+
           {/* Theme Settings */}
           <Card title="Theme Settings" icon={<Palette className="h-5 w-5 text-neutral-500" />}>
             <div className="space-y-4">
@@ -342,7 +323,7 @@ const Settings: React.FC = () => {
                   value={themeMode}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                     const value = e.target.value as 'light' | 'dark' | 'system';
-                    void setThemeMode(value);
+                    handleThemeModeChange(value);
                   }}
                 >
                   <option value="light">Light</option>
@@ -360,7 +341,7 @@ const Settings: React.FC = () => {
                   value={themeSettings.colorScheme ?? 'default'}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                     const value = e.target.value;
-                    setThemeSettings((prev) => ({ ...prev, colorScheme: value }));
+                    applyThemeSettings({ colorScheme: value });
                     updateTheme({ colorScheme: value });
                   }}
                 >
@@ -382,10 +363,7 @@ const Settings: React.FC = () => {
                       className="sr-only peer"
                       checked={themeSettings[key]}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setThemeSettings((prev) => ({
-                          ...prev,
-                          [key]: e.target.checked,
-                        }))
+                        applyThemeSettings({ [key]: e.target.checked })
                       }
                     />
                     <div className="w-11 h-6 bg-neutral-200 dark:bg-neutral-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
@@ -453,21 +431,21 @@ const Settings: React.FC = () => {
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                onClick={() => void setThemeMode('light')}
+                onClick={() => handleThemeModeChange('light')}
                 disabled={themeMode === 'light'}
               >
                 Light
               </Button>
               <Button
                 variant="outline"
-                onClick={() => void setThemeMode('dark')}
+                onClick={() => handleThemeModeChange('dark')}
                 disabled={themeMode === 'dark'}
               >
                 Dark
               </Button>
               <Button
                 variant="outline"
-                onClick={() => void setThemeMode('system')}
+                onClick={() => handleThemeModeChange('system')}
                 disabled={themeMode === 'system'}
               >
                 System
@@ -502,8 +480,8 @@ const Settings: React.FC = () => {
               )}
             </div>
           </Card>
-        </div>
       </div>
+    </SettingsLayout>
   );
 };
 

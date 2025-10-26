@@ -45,7 +45,7 @@ const TeamMemberProfile = () => {
     }
   }, [member.id]);
 
-  const sampleWorkHistory: WorkHistory = {
+  const [workHistory, setWorkHistory] = useState<WorkHistory>(() => ({
     metrics: {
       safety: {
         incidentRate: 0.5,
@@ -102,7 +102,7 @@ const TeamMemberProfile = () => {
         duration: 4,
       },
     ] as WorkHistoryEntry[],
-  };
+  }));
 
   return (
     <div className="space-y-6">
@@ -192,7 +192,11 @@ const TeamMemberProfile = () => {
               </div>
             )}
           </div>
-          <WorkHistoryCard metrics={sampleWorkHistory.metrics} recentWork={sampleWorkHistory.recentWork} />
+          <WorkHistoryCard
+            metrics={workHistory.metrics}
+            recentWork={workHistory.recentWork}
+            onSave={setWorkHistory}
+          />
         </div>
       </div>
   );

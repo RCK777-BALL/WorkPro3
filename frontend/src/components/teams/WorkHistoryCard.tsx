@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useLayoutEffect, useRef } from 'react';
 import {
   Calendar,
   Clock,
@@ -41,6 +41,38 @@ const WorkHistoryCard: React.FC<WorkHistoryCardProps> = ({
   );
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  const certificationTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const noteTextareaRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
+
+  const autoResizeTextarea = (element: HTMLTextAreaElement | null) => {
+    if (!element) {
+      return;
+    }
+
+    element.style.height = 'auto';
+    element.style.height = `${element.scrollHeight}px`;
+  };
+
+  useLayoutEffect(() => {
+    if (!isEditing) {
+      return;
+    }
+
+    autoResizeTextarea(certificationTextareaRef.current);
+    noteTextareaRefs.current.forEach((textarea) => {
+      autoResizeTextarea(textarea);
+    });
+  }, [isEditing, certificationInput, draftRecentWork]);
+
+  const createNoteTextareaRef = (id: string) => (element: HTMLTextAreaElement | null) => {
+    if (element) {
+      noteTextareaRefs.current.set(id, element);
+      autoResizeTextarea(element);
+    } else {
+      noteTextareaRefs.current.delete(id);
+    }
+  };
 
   useEffect(() => {
     if (!isEditing) {
@@ -298,8 +330,12 @@ const WorkHistoryCard: React.FC<WorkHistoryCardProps> = ({
               <label className={labelClasses}>
                 Certifications (comma separated)
                 <textarea
+                  ref={certificationTextareaRef}
                   value={certificationInput}
-                  onChange={(event) => setCertificationInput(event.target.value)}
+                  onChange={(event) => {
+                    setCertificationInput(event.target.value);
+                    autoResizeTextarea(event.target);
+                  }}
                   className={`${inputClasses} min-h-[80px]`}
                 />
               </label>
@@ -554,10 +590,12 @@ const WorkHistoryCard: React.FC<WorkHistoryCardProps> = ({
                   <label className={labelClasses}>
                     Notes
                     <textarea
+                      ref={createNoteTextareaRef(entry.id)}
                       value={entry.notes ?? ''}
-                      onChange={(event) =>
-                        handleWorkChange(index, 'notes', event.target.value || undefined)
-                      }
+                      onChange={(event) => {
+                        autoResizeTextarea(event.target);
+                        handleWorkChange(index, 'notes', event.target.value || undefined);
+                      }}
                       className={`${inputClasses} min-h-[80px]`}
                     />
                   </label>

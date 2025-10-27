@@ -45,6 +45,7 @@ import {
   pmRoutes,
   pmTasksRoutes,
   publicRequestRoutes,
+  settingsRoutes,
   reportsRoutes,
   requestPortalRoutes,
   statusRoutes,
@@ -219,6 +220,7 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
 app.use("/api/team", teamRoutes);
 app.use("/api/theme", ThemeRoutes);
+app.use("/api/settings", settingsRoutes);
 app.use("/api/request-portal", requestPortalRoutes);
 
 // Vendor portal routes

@@ -116,4 +116,29 @@ describe('Settings page', () => {
     await userEvent.click(saveButton);
     expect(mockAddToast).toHaveBeenCalledWith('Unauthorized', 'error');
   });
+
+  it('falls back to defaults when the settings endpoint is missing', async () => {
+    (http.get as any).mockImplementation((url: string) => {
+      if (url === '/documents') {
+        return Promise.resolve({ data: [] });
+      }
+
+      const error = new Error('Not Found') as Error & { response?: { status?: number } };
+      error.response = { status: 404 };
+      return Promise.reject(error);
+    });
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    renderSettings();
+
+    await waitFor(() => {
+      expect(screen.queryByText(/loading your saved settings/i)).not.toBeInTheDocument();
+    });
+
+    expect(mockAddToast).not.toHaveBeenCalledWith('Failed to load settings', 'error');
+    expect(warnSpy).toHaveBeenCalled();
+
+    warnSpy.mockRestore();
+  });
 });

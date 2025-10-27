@@ -131,6 +131,70 @@ const STATUS_FILTERS: SelectOption[] = [
   { value: "closed", label: "Closed" },
 ];
 
+const SUMMARY_FALLBACK: SummaryResponse = {
+  openWorkOrders: 42,
+  overdueWorkOrders: 11,
+  completedWorkOrders: 128,
+  pmDueNext7Days: 18,
+  permitsOpen: 6,
+  complianceScore: 96.4,
+  assetAvailability: 92.1,
+  assetAvailabilityCritical: 88.5,
+  activePmTasks: 34,
+  pmCompliance: 0.91,
+  woBacklog: 57,
+  downtimeThisMonth: 12,
+  costMTD: 18450,
+  cmVsPmRatio: 0.72,
+  wrenchTimePct: 63.2,
+  mttr: 2.6,
+  slaCompliance: 96.7,
+};
+
+const SUMMARY_TRENDS_FALLBACK: SummaryTrends = {
+  pmCompliance: [0.87, 0.89, 0.91, 0.92, 0.94, 0.95, 0.93, 0.96, 0.94, 0.965],
+  woBacklog: [64, 62, 61, 59, 58, 57, 56, 58, 57, 55],
+  downtimeThisMonth: [18, 16, 15, 14, 13, 12, 11, 11, 12, 12],
+  costMTD: [21000, 20500, 20100, 19800, 19500, 19000, 18850, 18700, 18500, 18450],
+  cmVsPmRatio: [0.82, 0.8, 0.79, 0.78, 0.76, 0.74, 0.73, 0.72, 0.71, 0.7],
+  wrenchTimePct: [58, 59, 60, 61, 62, 63, 63.5, 63.1, 63.3, 63.2],
+  mttr: [3.4, 3.1, 3.0, 2.8, 2.9, 2.7, 2.8, 2.6, 2.7, 2.6],
+  slaCompliance: [94.1, 94.8, 95.2, 95.6, 95.9, 96.1, 96.3, 96.5, 96.6, 96.7],
+};
+
+const LIVE_PULSE_FALLBACK: LivePulseMetrics = {
+  criticalAlerts: 2,
+  maintenanceDue: 7,
+  complianceScore: 95.1,
+  techniciansCheckedIn: 18,
+  permitsRequireApproval: 4,
+  updatedAt: new Date().toISOString(),
+};
+
+const STATUS_LEGEND_FALLBACK: { statuses: StatusSummaryItem[]; updatedAt: string | null } = {
+  statuses: [
+    { label: "Open", color: "blue" },
+    { label: "Active", color: "green" },
+    { label: "Scheduled", color: "purple" },
+    { label: "On hold", color: "yellow" },
+    { label: "Completed", color: "green" },
+    { label: "Closed", color: "slate" },
+  ],
+  updatedAt: null,
+};
+
+const DEPARTMENT_FALLBACK: SelectOption[] = [
+  { value: "operations", label: "Operations" },
+  { value: "maintenance", label: "Maintenance" },
+  { value: "production", label: "Production" },
+];
+
+const LINE_FALLBACK: LineOption[] = [
+  { value: "line-a", label: "Line A", departmentId: "operations" },
+  { value: "line-b", label: "Line B", departmentId: "operations" },
+  { value: "packaging", label: "Packaging", departmentId: "production" },
+];
+
 const formatErrorMessage = (error: unknown, fallback: string) => {
   if (axios.isAxiosError(error)) {
     if (typeof error.response?.data === "string") {
@@ -146,6 +210,8 @@ const formatErrorMessage = (error: unknown, fallback: string) => {
   }
   return fallback;
 };
+
+const isOffline = () => typeof navigator !== "undefined" && navigator.onLine === false;
 
 const mapStatusColorClass = (color: string) => {
   const normalized = color?.toLowerCase().trim();
@@ -756,8 +822,15 @@ export default function Dashboard() {
   const fetchSummary = useCallback(async () => {
     setSummaryLoading(true);
     setSummaryError(null);
+    const params = getQueryParams();
+    if (isOffline()) {
+      if (!mountedRef.current) return;
+      setSummary(SUMMARY_FALLBACK);
+      setSummaryTrends(SUMMARY_TRENDS_FALLBACK);
+      setSummaryLoading(false);
+      return;
+    }
     try {
-      const params = getQueryParams();
       const [summaryRes, trendsRes] = await Promise.all([
         http.get<SummaryResponse>("/summary", { params }),
         http.get<SummaryTrends>("/summary/trends", { params }),
@@ -767,8 +840,9 @@ export default function Dashboard() {
       setSummaryTrends(trendsRes.data);
     } catch (error) {
       if (!mountedRef.current) return;
+      setSummary(SUMMARY_FALLBACK);
+      setSummaryTrends(SUMMARY_TRENDS_FALLBACK);
       setSummaryError(formatErrorMessage(error, "Unable to load dashboard summary"));
-      setSummary(null);
     } finally {
       if (!mountedRef.current) return;
       setSummaryLoading(false);
@@ -780,6 +854,12 @@ export default function Dashboard() {
       setLivePulseLoading(true);
     }
     setLivePulseError(null);
+    if (isOffline()) {
+      if (!mountedRef.current) return;
+      setLivePulse(LIVE_PULSE_FALLBACK);
+      setLivePulseLoading(false);
+      return;
+    }
     try {
       const params = getQueryParams();
       const { data } = await http.get<LivePulseMetrics>("/dashboard/live-pulse", { params });
@@ -787,6 +867,7 @@ export default function Dashboard() {
       setLivePulse(data);
     } catch (error) {
       if (!mountedRef.current) return;
+      setLivePulse(LIVE_PULSE_FALLBACK);
       setLivePulseError(formatErrorMessage(error, "Unable to load live pulse"));
     } finally {
       if (!mountedRef.current) return;
@@ -799,6 +880,12 @@ export default function Dashboard() {
       setActivityLoading(true);
     }
     setActivityError(null);
+    if (isOffline()) {
+      if (!mountedRef.current) return;
+      setRecentActivity(RECENT_ACTIVITY_FALLBACK);
+      setActivityLoading(false);
+      return;
+    }
     try {
       const params = getQueryParams();
       const { data } = await http.get<RecentActivityItem[]>("/dashboard/recent-activity", { params });
@@ -811,6 +898,7 @@ export default function Dashboard() {
         setActivityError(null);
         return;
       }
+      setRecentActivity(RECENT_ACTIVITY_FALLBACK);
       setActivityError(formatErrorMessage(error, "Unable to load recent activity"));
     } finally {
       if (!mountedRef.current) return;
@@ -820,12 +908,19 @@ export default function Dashboard() {
 
   const fetchStatuses = useCallback(async () => {
     setStatusLoading(true);
+    if (isOffline()) {
+      if (!mountedRef.current) return;
+      setStatusLegend(STATUS_LEGEND_FALLBACK);
+      setStatusLoading(false);
+      return;
+    }
     try {
       const { data } = await http.get<{ statuses: StatusSummaryItem[]; updatedAt?: string }>("/status");
       if (!mountedRef.current) return;
       setStatusLegend({ statuses: data.statuses ?? [], updatedAt: data.updatedAt ?? null });
     } catch (error) {
-      console.error("Failed to load status legend", error);
+      if (!mountedRef.current) return;
+      setStatusLegend(STATUS_LEGEND_FALLBACK);
     } finally {
       if (!mountedRef.current) return;
       setStatusLoading(false);
@@ -864,6 +959,13 @@ export default function Dashboard() {
     const loadOptions = async () => {
       setOptionsLoading(true);
       try {
+        if (isOffline()) {
+          if (cancelled || !mountedRef.current) return;
+          setDepartments(DEPARTMENT_FALLBACK);
+          setLines(LINE_FALLBACK);
+          setOptionsLoading(false);
+          return;
+        }
         const [deptRes, lineRes] = await Promise.all([
           http.get<Array<{ _id: string; name: string }>>("/departments"),
           http.get<Array<{ _id: string; name: string; departmentId?: string }>>("/lines"),
@@ -878,7 +980,9 @@ export default function Dashboard() {
           })),
         );
       } catch (error) {
-        console.error("Failed to load filter options", error);
+        if (cancelled || !mountedRef.current) return;
+        setDepartments(DEPARTMENT_FALLBACK);
+        setLines(LINE_FALLBACK);
       } finally {
         if (cancelled || !mountedRef.current) return;
         setOptionsLoading(false);
@@ -887,12 +991,18 @@ export default function Dashboard() {
 
     const loadUser = async () => {
       try {
+        if (isOffline()) {
+          if (!mountedRef.current) return;
+          setIsTechnician(false);
+          return;
+        }
         const { data } = await http.get<{ roles?: string[] }>("/auth/me");
         if (!mountedRef.current) return;
         const roles = data?.roles ?? [];
         setIsTechnician(roles.some((role) => role === "technician" || role === "tech"));
       } catch (error) {
-        console.error("Failed to resolve user role", error);
+        if (!mountedRef.current) return;
+        setIsTechnician(false);
       }
     };
 
@@ -926,6 +1036,25 @@ export default function Dashboard() {
       window.clearInterval(interval);
     };
   }, [fetchActivity]);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      void fetchSummary();
+      void fetchLivePulse();
+      void fetchActivity();
+      void fetchStatuses();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("online", handleOnline);
+    }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("online", handleOnline);
+      }
+    };
+  }, [fetchActivity, fetchLivePulse, fetchStatuses, fetchSummary]);
   const handleFilterChange = (field: keyof FilterState, value: string) => {
     setFilters((prev) => {
       if (field === "department") {

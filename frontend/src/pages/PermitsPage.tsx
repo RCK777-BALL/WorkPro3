@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { AlertCircle, CheckCircle2, RefreshCcw } from "lucide-react";
+import { AlertCircle, CheckCircle2, Eye, Pencil, Plus, RefreshCcw } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
 import Card from "@/components/common/Card";
@@ -70,6 +70,24 @@ const normalizePermit = (permit: Permit): PermitRow | null => {
     updatedAt: permit.updatedAt ?? permit.createdAt ?? null,
   };
 };
+
+const PRECONFIGURED_PERMITS = [
+  {
+    id: "hot-work",
+    name: "Hot Work Permit",
+    description: "Manage welding, cutting, or any activity involving open flames and sparks.",
+  },
+  {
+    id: "aerial-platform",
+    name: "Aerial Platform Permit",
+    description: "Ensure safe operation of scissor lifts, boom lifts, and elevated work platforms.",
+  },
+  {
+    id: "crane-usage",
+    name: "Crane Usage Permit",
+    description: "Coordinate crane lifts, rigging plans, and ground crew communication checks.",
+  },
+];
 
 export default function PermitsPage() {
   const [permits, setPermits] = useState<PermitRow[]>([]);
@@ -171,6 +189,51 @@ export default function PermitsPage() {
           </Button>
         </div>
       </header>
+
+      <Card
+        title="Pre-created permits"
+        subtitle="Quickly launch or review commonly used permit templates"
+      >
+        <div className="space-y-4">
+          {PRECONFIGURED_PERMITS.map((preset) => (
+            <div
+              key={preset.id}
+              className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-700 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div>
+                <p className="text-base font-medium text-neutral-900 dark:text-neutral-100">
+                  {preset.name}
+                </p>
+                <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
+                  {preset.description}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button size="sm" className="inline-flex items-center gap-2">
+                  <Plus aria-hidden className="h-4 w-4" />
+                  Add
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="inline-flex items-center gap-2"
+                >
+                  <Pencil aria-hidden className="h-4 w-4" />
+                  Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="inline-flex items-center gap-2"
+                >
+                  <Eye aria-hidden className="h-4 w-4" />
+                  View
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white">

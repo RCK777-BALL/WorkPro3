@@ -15,6 +15,7 @@
 # Logs
 npm-debug.log*
 backend/logs/
+logs/
 
 # Compiled JavaScript from TypeScript
 backend/**/*.js

@@ -63,7 +63,7 @@ const Settings: React.FC = () => {
     setTheme: state.setTheme,
     updateTheme: state.updateTheme,
   }));
-  const resolvedThemeMode = themeSettings.mode ?? activeThemeMode ?? 'system';
+  const themeMode = themeSettings.mode ?? activeThemeMode ?? 'system';
 
   type NotificationOptionKey = {
     [K in keyof NotificationSettings]: NotificationSettings[K] extends boolean ? K : never;
@@ -455,7 +455,7 @@ const Settings: React.FC = () => {
               </p>
               <div className="grid gap-3 sm:grid-cols-3">
                 {themePresets.map(({ mode, label, description, icon }) => {
-                  const isActive = resolvedThemeMode === mode;
+                  const isActive = themeMode === mode;
                   return (
                     <Button
                       key={mode}
@@ -489,7 +489,7 @@ const Settings: React.FC = () => {
                 </label>
                 <select
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
-                  value={resolvedThemeMode}
+                  value={themeMode}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                     const value = e.target.value as 'light' | 'dark' | 'system';
                     handleThemeModeChange(value);
@@ -601,21 +601,21 @@ const Settings: React.FC = () => {
               <Button
                 variant="outline"
                 onClick={() => handleThemeModeChange('light')}
-                disabled={resolvedThemeMode === 'light'}
+                disabled={themeMode === 'light'}
               >
                 Light
               </Button>
               <Button
                 variant="outline"
                 onClick={() => handleThemeModeChange('dark')}
-                disabled={resolvedThemeMode === 'dark'}
+                disabled={themeMode === 'dark'}
               >
                 Dark
               </Button>
               <Button
                 variant="outline"
                 onClick={() => handleThemeModeChange('system')}
-                disabled={resolvedThemeMode === 'system'}
+                disabled={themeMode === 'system'}
               >
                 System
               </Button>

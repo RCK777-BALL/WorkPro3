@@ -2,8 +2,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Bell, Book, Mail, Monitor, Moon, Palette, Sliders, Sun } from 'lucide-react';
+import { isAxiosError } from 'axios';
 import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -57,6 +58,7 @@ const Settings: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
+  const hasFetchedSettingsRef = useRef(false);
 
   const { theme: activeThemeMode, setTheme: setThemeMode, updateTheme } = useThemeStore((state) => ({
     theme: state.theme,
@@ -277,7 +279,49 @@ const Settings: React.FC = () => {
   }, [addToast]);
 
   useEffect(() => {
+    if (hasFetchedSettingsRef.current) {
+      return;
+    }
+
+    hasFetchedSettingsRef.current = true;
+
     let isMounted = true;
+
+    const {
+      general: currentGeneral,
+      notifications: currentNotifications,
+      email: currentEmail,
+      theme: currentTheme,
+      setGeneral: setGeneralState,
+      setNotifications: setNotificationsState,
+      setEmail: setEmailState,
+      setTheme: setThemeState,
+    } = useSettingsStore.getState();
+
+    const applyPartialUpdate = <T extends Record<string, unknown>>(
+      current: T,
+      updates: Partial<T> | undefined,
+      setter: (value: Partial<T>) => void,
+    ) => {
+      if (!updates) {
+        return;
+      }
+
+      const next: Partial<T> = {};
+      let hasChanges = false;
+
+      (Object.keys(updates) as Array<keyof T>).forEach((key) => {
+        const value = updates[key];
+        if (value !== undefined && current[key] !== value) {
+          next[key] = value;
+          hasChanges = true;
+        }
+      });
+
+      if (hasChanges) {
+        setter(next);
+      }
+    };
 
     const loadSettings = async () => {
       setIsLoading(true);
@@ -289,44 +333,74 @@ const Settings: React.FC = () => {
         }
 
         const payload = response.data as Partial<{
-            general: Partial<typeof general>;
-            notifications: Partial<typeof notifications>;
-            email: Partial<typeof email>;
-            theme: Partial<ThemeSettings> & { mode?: 'light' | 'dark' | 'system' };
-          }>;
+          general: Partial<typeof currentGeneral>;
+          notifications: Partial<typeof currentNotifications>;
+          email: Partial<typeof currentEmail>;
+          theme: Partial<ThemeSettings> & { mode?: 'light' | 'dark' | 'system' };
+        }>;
 
-        if (payload?.general) {
-          setGeneral(payload.general);
-        }
-
-        if (payload?.notifications) {
-          setNotifications(payload.notifications);
-        }
-
-        if (payload?.email) {
-          setEmail(payload.email);
-        }
+        applyPartialUpdate(currentGeneral, payload?.general, setGeneralState);
+        applyPartialUpdate(currentNotifications, payload?.notifications, setNotificationsState);
+        applyPartialUpdate(currentEmail, payload?.email, setEmailState);
 
         if (payload?.theme) {
           const { mode, colorScheme, ...restTheme } = payload.theme;
+          const themePatch: Partial<ThemeSettings> = {};
 
-          applyThemeSettings({
-            ...restTheme,
-            ...(mode ? { mode } : {}),
-            ...(colorScheme ? { colorScheme } : {}),
+          (Object.keys(restTheme) as Array<keyof typeof restTheme>).forEach((key) => {
+            const value = restTheme[key];
+            if (value !== undefined && currentTheme[key as keyof ThemeSettings] !== value) {
+              themePatch[key as keyof ThemeSettings] = value as ThemeSettings[keyof ThemeSettings];
+            }
           });
 
+          if (mode && currentTheme.mode !== mode) {
+            themePatch.mode = mode;
+          }
+
+          if (colorScheme && currentTheme.colorScheme !== colorScheme) {
+            themePatch.colorScheme = colorScheme;
+          }
+
+          if (Object.keys(themePatch).length > 0) {
+            setThemeState(themePatch);
+          }
+
           if (mode || colorScheme) {
-            useThemeStore.setState((state) => ({
-              ...state,
-              ...(mode ? { theme: mode } : {}),
-              ...(colorScheme ? { colorScheme } : {}),
-            }));
+            useThemeStore.setState((state) => {
+              const next: Partial<typeof state> = {};
+              if (mode && state.theme !== mode) {
+                next.theme = mode;
+              }
+              if (colorScheme && state.colorScheme !== colorScheme) {
+                next.colorScheme = colorScheme;
+              }
+
+              return Object.keys(next).length > 0 ? { ...state, ...next } : state;
+            });
           }
         }
       } catch (error) {
-        console.error('Error loading settings:', error);
-        if (isMounted) {
+        if (!isMounted) {
+          return;
+        }
+
+        if (isAxiosError(error) && error.response?.status === 404) {
+          console.warn('Settings API not found. Falling back to defaults.');
+          const fallbackTheme = useSettingsStore.getState().theme;
+          useThemeStore.setState((state) => {
+            const next: Partial<typeof state> = {};
+            if (fallbackTheme.mode && state.theme !== fallbackTheme.mode) {
+              next.theme = fallbackTheme.mode;
+            }
+            if (fallbackTheme.colorScheme && state.colorScheme !== fallbackTheme.colorScheme) {
+              next.colorScheme = fallbackTheme.colorScheme;
+            }
+
+            return Object.keys(next).length > 0 ? { ...state, ...next } : state;
+          });
+        } else {
+          console.error('Error loading settings:', error);
           addToast('Failed to load settings', 'error');
         }
       } finally {
@@ -341,7 +415,7 @@ const Settings: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [addToast, applyThemeSettings, setEmail, setGeneral, setNotifications]);
+  }, [addToast]);
 
   const handleThemeModeChange = (mode: 'light' | 'dark' | 'system') => {
     applyThemeSettings({ mode });

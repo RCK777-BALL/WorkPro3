@@ -44,17 +44,6 @@ interface ApiDocumentResponse {
   updatedAt?: string;
 }
 
-interface ApiDocument {
-  _id: string;
-  name?: string;
-  url: string;
-  mimeType?: string;
-  size?: number;
-  lastModified?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
 const Settings: React.FC = () => {
   const general = useSettingsStore((state) => state.general);
   const notifications = useSettingsStore((state) => state.notifications);
@@ -63,8 +52,18 @@ const Settings: React.FC = () => {
   const setNotifications = useSettingsStore((state) => state.setNotifications);
   const setEmail = useSettingsStore((state) => state.setEmail);
   const applyThemeSettings = useSettingsStore((state) => state.setTheme);
+  const themeSettings = useSettingsStore((state) => state.theme);
   const { addToast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
+  const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
+
+  const { theme: activeThemeMode, setTheme: setThemeMode, updateTheme } = useThemeStore((state) => ({
+    theme: state.theme,
+    setTheme: state.setTheme,
+    updateTheme: state.updateTheme,
+  }));
+  const themeMode = themeSettings.mode ?? activeThemeMode ?? 'system';
 
   type NotificationOptionKey = {
     [K in keyof NotificationSettings]: NotificationSettings[K] extends boolean ? K : never;
@@ -127,17 +126,42 @@ const Settings: React.FC = () => {
 
   const [documents, setDocuments] = useState<DocumentEntry[]>([]);
 
+  type ThemeOptionKey = {
+    [K in keyof ThemeSettings]: ThemeSettings[K] extends boolean ? K : never;
+  }[keyof ThemeSettings & string];
+
+  const themeOptions = [
+    {
+      key: 'sidebarCollapsed',
+      label: 'Compact navigation',
+      description: 'Reduce sidebar width to maximize workspace area',
+    },
+    {
+      key: 'denseMode',
+      label: 'Dense layout',
+      description: 'Tighten spacing to view more information at once',
+    },
+    {
+      key: 'highContrast',
+      label: 'High contrast',
+      description: 'Improve readability with stronger contrast and separators',
+    },
+  ] satisfies { label: string; description: string; key: ThemeOptionKey }[];
+
   const handleDocumentUpload = async (files: File[]) => {
     if (!files.length) {
       return;
     }
 
     try {
+      setIsUploadingDocuments(true);
       const newDocs = await Promise.all(files.map(parseDocument));
       setDocuments((prev) => [...prev, ...newDocs]);
     } catch (error) {
       console.error('Error uploading documents:', error);
       addToast('Failed to upload documents', 'error');
+    } finally {
+      setIsUploadingDocuments(false);
     }
   };
 
@@ -165,17 +189,25 @@ const Settings: React.FC = () => {
     downloadDocument(doc.content, doc.metadata.title, mimeType);
   };
 
-  const handleRemoveDocument = async (index: number) => {
-    const doc = documents[index];
-    if (!doc) {
+  const handleRemoveDocument = async (documentId?: string) => {
+    if (!documentId) {
       return;
     }
+
+    const docIndex = documents.findIndex(
+      (entry) => entry.id === documentId || entry.metadata.id === documentId,
+    );
+    if (docIndex === -1) {
+      return;
+    }
+
+    const doc = documents[docIndex];
 
     try {
       if (doc.metadata.id) {
         await http.delete(`/documents/${doc.metadata.id}`);
       }
-      setDocuments((prev) => prev.filter((_, idx) => idx !== index));
+      setDocuments((prev) => prev.filter((_, idx) => idx !== docIndex));
       addToast('Document deleted', 'success');
     } catch (error) {
       console.error('Error deleting document:', error);
@@ -187,6 +219,7 @@ const Settings: React.FC = () => {
     let isMounted = true;
 
     const loadDocuments = async () => {
+      setIsLoadingDocuments(true);
       try {
         const response = await http.get<ApiDocumentResponse[]>('/documents');
         if (!isMounted) {
@@ -226,6 +259,13 @@ const Settings: React.FC = () => {
         setDocuments(fetched);
       } catch (error) {
         console.error('Error loading documents:', error);
+        if (isMounted) {
+          addToast('Failed to load documents', 'error');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingDocuments(false);
+        }
       }
     };
 
@@ -234,7 +274,7 @@ const Settings: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [addToast]);
 
   useEffect(() => {
     let isMounted = true;
@@ -242,41 +282,39 @@ const Settings: React.FC = () => {
     const loadSettings = async () => {
       setIsLoading(true);
       try {
-        const [settingsResult, documentsResult] = await Promise.allSettled([
-          http.get('/settings'),
-          http.get<ApiDocument[]>('/documents'),
-        ]);
+        const response = await http.get('/settings');
 
         if (!isMounted) {
           return;
         }
 
-        if (settingsResult.status === 'fulfilled') {
-          const payload = settingsResult.value.data as Partial<{
+        const payload = response.data as Partial<{
             general: Partial<typeof general>;
             notifications: Partial<typeof notifications>;
             email: Partial<typeof email>;
             theme: Partial<ThemeSettings> & { mode?: 'light' | 'dark' | 'system' };
           }>;
 
-          if (payload?.general) {
-            setGeneral(payload.general);
-          }
+        if (payload?.general) {
+          setGeneral(payload.general);
+        }
 
-          if (payload?.notifications) {
-            setNotifications(payload.notifications);
-          }
+        if (payload?.notifications) {
+          setNotifications(payload.notifications);
+        }
 
-        if (payload.theme) {
+        if (payload?.email) {
+          setEmail(payload.email);
+        }
+
+        if (payload?.theme) {
           const { mode, colorScheme, ...restTheme } = payload.theme;
 
-          if (Object.keys(restTheme).length > 0 || colorScheme) {
-            applyThemeSettings({ ...restTheme, ...(colorScheme ? { colorScheme } : {}) });
-          }
-        } else {
-          console.error('Error loading settings:', settingsResult.reason);
-          addToast('Failed to load settings', 'error');
-        }
+          applyThemeSettings({
+            ...restTheme,
+            ...(mode ? { mode } : {}),
+            ...(colorScheme ? { colorScheme } : {}),
+          });
 
           if (mode || colorScheme) {
             useThemeStore.setState((state) => ({
@@ -285,9 +323,6 @@ const Settings: React.FC = () => {
               ...(colorScheme ? { colorScheme } : {}),
             }));
           }
-        } else {
-          console.error('Error loading documents:', documentsResult.reason);
-          addToast('Failed to load documents', 'error');
         }
       } catch (error) {
         console.error('Error loading settings:', error);
@@ -309,7 +344,7 @@ const Settings: React.FC = () => {
   }, [addToast, applyThemeSettings, setEmail, setGeneral, setNotifications]);
 
   const handleThemeModeChange = (mode: 'light' | 'dark' | 'system') => {
-    setThemeSettings((prev) => ({ ...prev, mode }));
+    applyThemeSettings({ mode });
     void setThemeMode(mode);
   };
 
@@ -609,11 +644,11 @@ const Settings: React.FC = () => {
                   <h3 className="text-lg font-medium text-neutral-900 dark:text-white">Uploaded Documents</h3>
                   {documents.map((doc) => (
                     <DocumentViewer
-                      key={doc.id}
+                      key={doc.id ?? doc.metadata.id ?? doc.metadata.title}
                       metadata={doc.metadata}
                       preview={doc.preview}
                       onDownload={() => void handleDocumentDownload(doc)}
-                      onDelete={() => void handleRemoveDocument(doc.id)}
+                      onDelete={() => void handleRemoveDocument(doc.id ?? doc.metadata.id)}
                     />
                   ))}
                 </div>

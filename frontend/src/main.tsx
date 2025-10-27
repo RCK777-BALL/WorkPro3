@@ -15,6 +15,7 @@ import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { queryClient } from "@/lib/queryClient";
+import '@mantine/core/styles.css';
 import "./i18n";
 import "./index.css";
 import App from "./App";

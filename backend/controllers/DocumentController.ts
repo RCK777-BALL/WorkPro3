@@ -111,9 +111,12 @@ const ALLOWED_MIME_TYPES = new Set([
   'application/vnd.ms-excel',
 ]);
 
-const parseLastModified = (input?: string): Date | undefined => {
+const parseLastModified = (input?: string | Date): Date | undefined => {
   if (!input) {
     return undefined;
+  }
+  if (input instanceof Date) {
+    return Number.isNaN(input.getTime()) ? undefined : input;
   }
   const value = new Date(input);
   if (Number.isNaN(value.getTime())) {
@@ -268,6 +271,7 @@ export const updateDocument: AuthedRequestHandler<
 
     const entityId: Types.ObjectId = objectId;
     const updateData: { name?: string; url?: string; metadata?: StoredDocumentMetadata } = {};
+    let hasFileUpdate = false;
 
     if (base64) {
       if (!name) {

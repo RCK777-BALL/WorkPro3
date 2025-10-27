@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { AlertCircle, CheckCircle2, Eye, Pencil, Plus, RefreshCcw } from "lucide-react";
+import { AlertCircle, CheckCircle2, Eye, FileText, Pencil, RefreshCcw } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
 import Card from "@/components/common/Card";
@@ -210,8 +210,8 @@ export default function PermitsPage() {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Button size="sm" className="inline-flex items-center gap-2">
-                  <Plus aria-hidden className="h-4 w-4" />
-                  Add
+                  <FileText aria-hidden className="h-4 w-4" />
+                  Apply for permit
                 </Button>
                 <Button
                   variant="secondary"

@@ -14,7 +14,8 @@ interface ChatSidebarProps {
   activeChannelId?: string;
   onChannelSelect: (channelId: string) => void;
   onDirectMessageSelect: (userId: string) => void;
-  onNewChannel: () => void;
+  onCreateChannel: () => void;
+  onStartMeeting: () => void;
   onNewDirectMessage: () => void;
   onDeleteChat?: (type: 'channel' | 'dm', id: string) => void;
 }
@@ -25,7 +26,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   activeChannelId,
   onChannelSelect,
   onDirectMessageSelect,
-  onNewChannel,
+  onCreateChannel,
+  onStartMeeting,
   onNewDirectMessage,
   onDeleteChat,
 }) => {
@@ -66,7 +68,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={onNewChannel}
+              onClick={onStartMeeting}
               className="inline-flex items-center gap-2 rounded-full bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-200"
             >
               <Video size={16} /> Meet
@@ -108,7 +110,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             <div className="mb-3 flex items-center justify-between px-3 text-xs font-semibold uppercase tracking-wide text-neutral-400">
               <span>Pinned channels</span>
               <button
-                onClick={onNewChannel}
+                onClick={onCreateChannel}
                 className="text-xs font-medium text-[#464775] hover:underline"
               >
                 Add

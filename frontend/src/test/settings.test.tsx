@@ -15,7 +15,10 @@ vi.mock('../components/documentation/DocumentViewer', () => ({
   default: () => <div />,
 }));
 
-const mockParseDocument = vi.fn();
+const { mockParseDocument, mockAddToast } = vi.hoisted(() => ({
+  mockParseDocument: vi.fn(),
+  mockAddToast: vi.fn(),
+}));
 
 vi.mock('../utils/documentation', () => ({
   parseDocument: mockParseDocument,
@@ -23,7 +26,6 @@ vi.mock('../utils/documentation', () => ({
   getMimeTypeForType: vi.fn(() => 'application/pdf'),
 }));
 
-const mockAddToast = vi.fn();
 vi.mock('../context/ToastContext', () => ({
   useToast: () => ({ addToast: mockAddToast }),
 }));

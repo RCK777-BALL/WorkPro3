@@ -36,7 +36,7 @@ interface CreateGoodsReceiptBody {
 type CreateGoodsReceiptParams = ParamsDictionary;
 type CreateGoodsReceiptResponse = HydratedDocument<IGoodsReceipt>;
 
-export const createGoodsReceipt: AuthedRequestHandler<
+const createGoodsReceiptHandler: AuthedRequestHandler<
   CreateGoodsReceiptParams,
   CreateGoodsReceiptResponse | null,
   CreateGoodsReceiptBody
@@ -158,3 +158,5 @@ export const createGoodsReceipt: AuthedRequestHandler<
     return;
   }
 };
+
+export { createGoodsReceiptHandler as createGoodsReceipt };

@@ -212,6 +212,7 @@ const formatErrorMessage = (error: unknown, fallback: string) => {
 };
 
 const isOffline = () => typeof navigator !== "undefined" && navigator.onLine === false;
+const isNetworkError = (error: unknown) => axios.isAxiosError(error) && !error.response;
 
 const mapStatusColorClass = (color: string) => {
   const normalized = color?.toLowerCase().trim();
@@ -800,6 +801,7 @@ export default function Dashboard() {
 
   const mountedRef = useRef(true);
   const livePulseRef = useRef<LivePulseMetrics | null>(null);
+  const apiUnavailableRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -823,7 +825,7 @@ export default function Dashboard() {
     setSummaryLoading(true);
     setSummaryError(null);
     const params = getQueryParams();
-    if (isOffline()) {
+    if (isOffline() || apiUnavailableRef.current) {
       if (!mountedRef.current) return;
       setSummary(SUMMARY_FALLBACK);
       setSummaryTrends(SUMMARY_TRENDS_FALLBACK);
@@ -836,12 +838,16 @@ export default function Dashboard() {
         http.get<SummaryTrends>("/summary/trends", { params }),
       ]);
       if (!mountedRef.current) return;
+      apiUnavailableRef.current = false;
       setSummary(summaryRes.data);
       setSummaryTrends(trendsRes.data);
     } catch (error) {
       if (!mountedRef.current) return;
       setSummary(SUMMARY_FALLBACK);
       setSummaryTrends(SUMMARY_TRENDS_FALLBACK);
+      if (isNetworkError(error)) {
+        apiUnavailableRef.current = true;
+      }
       setSummaryError(formatErrorMessage(error, "Unable to load dashboard summary"));
     } finally {
       if (!mountedRef.current) return;
@@ -854,7 +860,7 @@ export default function Dashboard() {
       setLivePulseLoading(true);
     }
     setLivePulseError(null);
-    if (isOffline()) {
+    if (isOffline() || apiUnavailableRef.current) {
       if (!mountedRef.current) return;
       setLivePulse(LIVE_PULSE_FALLBACK);
       setLivePulseLoading(false);
@@ -864,10 +870,14 @@ export default function Dashboard() {
       const params = getQueryParams();
       const { data } = await http.get<LivePulseMetrics>("/dashboard/live-pulse", { params });
       if (!mountedRef.current) return;
+      apiUnavailableRef.current = false;
       setLivePulse(data);
     } catch (error) {
       if (!mountedRef.current) return;
       setLivePulse(LIVE_PULSE_FALLBACK);
+      if (isNetworkError(error)) {
+        apiUnavailableRef.current = true;
+      }
       setLivePulseError(formatErrorMessage(error, "Unable to load live pulse"));
     } finally {
       if (!mountedRef.current) return;
@@ -880,7 +890,7 @@ export default function Dashboard() {
       setActivityLoading(true);
     }
     setActivityError(null);
-    if (isOffline()) {
+    if (isOffline() || apiUnavailableRef.current) {
       if (!mountedRef.current) return;
       setRecentActivity(RECENT_ACTIVITY_FALLBACK);
       setActivityLoading(false);
@@ -890,6 +900,7 @@ export default function Dashboard() {
       const params = getQueryParams();
       const { data } = await http.get<RecentActivityItem[]>("/dashboard/recent-activity", { params });
       if (!mountedRef.current) return;
+      apiUnavailableRef.current = false;
       setRecentActivity(data);
     } catch (error) {
       if (!mountedRef.current) return;
@@ -899,6 +910,9 @@ export default function Dashboard() {
         return;
       }
       setRecentActivity(RECENT_ACTIVITY_FALLBACK);
+      if (isNetworkError(error)) {
+        apiUnavailableRef.current = true;
+      }
       setActivityError(formatErrorMessage(error, "Unable to load recent activity"));
     } finally {
       if (!mountedRef.current) return;
@@ -908,7 +922,7 @@ export default function Dashboard() {
 
   const fetchStatuses = useCallback(async () => {
     setStatusLoading(true);
-    if (isOffline()) {
+    if (isOffline() || apiUnavailableRef.current) {
       if (!mountedRef.current) return;
       setStatusLegend(STATUS_LEGEND_FALLBACK);
       setStatusLoading(false);
@@ -917,10 +931,14 @@ export default function Dashboard() {
     try {
       const { data } = await http.get<{ statuses: StatusSummaryItem[]; updatedAt?: string }>("/status");
       if (!mountedRef.current) return;
+      apiUnavailableRef.current = false;
       setStatusLegend({ statuses: data.statuses ?? [], updatedAt: data.updatedAt ?? null });
     } catch (error) {
       if (!mountedRef.current) return;
       setStatusLegend(STATUS_LEGEND_FALLBACK);
+      if (isNetworkError(error)) {
+        apiUnavailableRef.current = true;
+      }
     } finally {
       if (!mountedRef.current) return;
       setStatusLoading(false);
@@ -959,7 +977,7 @@ export default function Dashboard() {
     const loadOptions = async () => {
       setOptionsLoading(true);
       try {
-        if (isOffline()) {
+        if (isOffline() || apiUnavailableRef.current) {
           if (cancelled || !mountedRef.current) return;
           setDepartments(DEPARTMENT_FALLBACK);
           setLines(LINE_FALLBACK);
@@ -971,6 +989,7 @@ export default function Dashboard() {
           http.get<Array<{ _id: string; name: string; departmentId?: string }>>("/lines"),
         ]);
         if (cancelled || !mountedRef.current) return;
+        apiUnavailableRef.current = false;
         setDepartments(deptRes.data.map((item) => ({ value: item._id, label: item.name })));
         setLines(
           lineRes.data.map((line) => ({
@@ -983,6 +1002,9 @@ export default function Dashboard() {
         if (cancelled || !mountedRef.current) return;
         setDepartments(DEPARTMENT_FALLBACK);
         setLines(LINE_FALLBACK);
+        if (isNetworkError(error)) {
+          apiUnavailableRef.current = true;
+        }
       } finally {
         if (cancelled || !mountedRef.current) return;
         setOptionsLoading(false);
@@ -991,18 +1013,22 @@ export default function Dashboard() {
 
     const loadUser = async () => {
       try {
-        if (isOffline()) {
+        if (isOffline() || apiUnavailableRef.current) {
           if (!mountedRef.current) return;
           setIsTechnician(false);
           return;
         }
         const { data } = await http.get<{ roles?: string[] }>("/auth/me");
         if (!mountedRef.current) return;
+        apiUnavailableRef.current = false;
         const roles = data?.roles ?? [];
         setIsTechnician(roles.some((role) => role === "technician" || role === "tech"));
       } catch (error) {
         if (!mountedRef.current) return;
         setIsTechnician(false);
+        if (isNetworkError(error)) {
+          apiUnavailableRef.current = true;
+        }
       }
     };
 
@@ -1039,6 +1065,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     const handleOnline = () => {
+      apiUnavailableRef.current = false;
       void fetchSummary();
       void fetchLivePulse();
       void fetchActivity();

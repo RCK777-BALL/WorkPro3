@@ -13,6 +13,8 @@ export interface ChatAttachment {
   uploadedBy: Types.ObjectId;
 }
 
+export type ChatAttachmentInput = Omit<ChatAttachment, '_id'> & { _id?: Types.ObjectId };
+
 export interface ChatReaction {
   emoji: string;
   users: Types.ObjectId[];

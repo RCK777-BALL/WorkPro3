@@ -37,22 +37,22 @@ const AssetTable: React.FC<AssetTableProps> = ({
         <table className="min-w-full divide-y divide-neutral-200">
           <thead className="bg-neutral-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 dark:text-neutral-200 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-900 dark:text-neutral-100 uppercase tracking-wider">
                 Asset
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 dark:text-neutral-200 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-900 dark:text-neutral-100 uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 dark:text-neutral-200 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-900 dark:text-neutral-100 uppercase tracking-wider">
                 Location
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 dark:text-neutral-200 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-900 dark:text-neutral-100 uppercase tracking-wider">
                 Department
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 dark:text-neutral-200 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-900 dark:text-neutral-100 uppercase tracking-wider">
                 Last Serviced
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 dark:text-neutral-200 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-900 dark:text-neutral-100 uppercase tracking-wider">
                 Warranty Expiry
               </th>
             </tr>

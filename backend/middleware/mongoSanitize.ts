@@ -28,4 +28,5 @@ const mongoSanitize = (replaceWith = "_") => {
   };
 };
 
-export = mongoSanitize;
+export { mongoSanitize };
+export default mongoSanitize;

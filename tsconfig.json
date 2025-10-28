@@ -27,5 +27,8 @@
     "dev-server",
     "frontend",
     "node_modules"
-  ]
+  ],
+  "ts-node": {
+    "preferTsExts": true
+  }
 }

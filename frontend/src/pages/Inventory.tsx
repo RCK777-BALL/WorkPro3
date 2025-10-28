@@ -165,6 +165,7 @@ const Inventory: React.FC = () => {
             </Button>
             <Button
               variant="primary"
+              className="border border-neutral-300"
               icon={<Plus size={16} />}
               onClick={() => handleOpenModal(null)}
             >

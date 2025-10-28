@@ -1,25 +1,32 @@
 import type { Request, Response, NextFunction } from "express";
 
-const sanitize = (obj: Record<string, any>, replaceWith = "_") => {
+type PlainObject = Record<string, unknown>;
+
+const sanitize = (obj: PlainObject, replaceWith = "_") => {
   if (typeof obj !== "object" || obj === null) return;
+
   for (const key of Object.keys(obj)) {
     const sanitizedKey = key.replace(/\$/g, replaceWith).replace(/\./g, replaceWith);
+
     if (sanitizedKey !== key) {
-      obj[sanitizedKey] = obj[key];
-      delete obj[key];
+      (obj as Record<string, unknown>)[sanitizedKey] = (obj as Record<string, unknown>)[key];
+      delete (obj as Record<string, unknown>)[key];
     }
-    sanitize(obj[sanitizedKey], replaceWith);
+
+    sanitize((obj as Record<string, unknown>)[sanitizedKey] as PlainObject, replaceWith);
   }
 };
 
 const mongoSanitize = (replaceWith = "_") => {
   return (req: Request, _res: Response, next: NextFunction) => {
-    ["body", "query", "params"].forEach((key) => {
-      const value = (req as Record<string, any>)[key];
-      sanitize(value, replaceWith);
+    (["body", "query", "params"] as const).forEach((key) => {
+      const value = req[key];
+      sanitize(value as PlainObject, replaceWith);
     });
+
     next();
   };
 };
 
+export { mongoSanitize };
 export default mongoSanitize;

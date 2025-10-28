@@ -15,10 +15,11 @@
 # Logs
 npm-debug.log*
 backend/logs/
+logs/
 
 # Compiled JavaScript from TypeScript
 backend/**/*.js
-Backend/**/*.js
+backend-legacy/**/*.js
 !backend/controllers/ReportsController.js
 
 # MongoDB playground files

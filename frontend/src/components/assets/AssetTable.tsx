@@ -37,22 +37,22 @@ const AssetTable: React.FC<AssetTableProps> = ({
         <table className="min-w-full divide-y divide-neutral-200">
           <thead className="bg-neutral-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 dark:text-neutral-200 uppercase tracking-wider">
                 Asset
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 dark:text-neutral-200 uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 dark:text-neutral-200 uppercase tracking-wider">
                 Location
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 dark:text-neutral-200 uppercase tracking-wider">
                 Department
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 dark:text-neutral-200 uppercase tracking-wider">
                 Last Serviced
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 dark:text-neutral-200 uppercase tracking-wider">
                 Warranty Expiry
               </th>
             </tr>
@@ -74,17 +74,17 @@ const AssetTable: React.FC<AssetTableProps> = ({
                         />
                       ) : (
                         <div className="h-10 w-10 rounded-lg bg-neutral-100 flex items-center justify-center">
-                          <span className="text-neutral-500 text-sm font-medium">
+                          <span className="text-neutral-600 text-sm font-medium dark:text-neutral-300">
                             {asset.name.substring(0, 2).toUpperCase()}
                           </span>
                         </div>
                       )}
                     </div>
                     <div className="ml-4">
-                      <div className="text-sm font-medium text-neutral-900">
+                      <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
                         {asset.name}
                       </div>
-                      <div className="text-sm text-neutral-500">
+                      <div className="text-sm text-neutral-600 dark:text-neutral-400">
                         {asset.serialNumber}
                       </div>
                     </div>
@@ -97,16 +97,16 @@ const AssetTable: React.FC<AssetTableProps> = ({
                     size="sm"
                   />
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-700 dark:text-neutral-300">
                   {asset.location}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-700 dark:text-neutral-300">
                   {asset.department}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-700 dark:text-neutral-300">
                   {asset.lastServiced || 'N/A'}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-700 dark:text-neutral-300">
                   {asset.warrantyExpiry || 'N/A'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right">

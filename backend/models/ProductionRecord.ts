@@ -2,45 +2,35 @@
  * SPDX-License-Identifier: MIT
  */
 
-import mongoose, {
-  Schema,
-  type HydratedDocument,
-  type Model,
-  type SchemaDefinitionProperty,
-  type Types,
-} from 'mongoose';
+import mongoose, { Schema, type Document, type Types } from 'mongoose';
 
-export interface ProductionRecord {
+export interface ProductionRecordDoc extends Document {
   _id: Types.ObjectId;
-  asset?: Types.ObjectId;
-  site?: Types.ObjectId;
+  asset?: Types.ObjectId | null;
+  site?: Types.ObjectId | null;
   tenantId: Types.ObjectId;
   recordedAt: Date;
-  plannedUnits?: number;
-  actualUnits?: number;
-  goodUnits?: number;
-  idealCycleTimeSec?: number;
-  plannedTimeMinutes?: number;
-  runTimeMinutes?: number;
-  downtimeMinutes?: number;
-  downtimeReason?: string;
-  energyConsumedKwh?: number;
+  plannedUnits?: number | null;
+  actualUnits?: number | null;
+  goodUnits?: number | null;
+  idealCycleTimeSec?: number | null;
+  plannedTimeMinutes?: number | null;
+  runTimeMinutes?: number | null;
+  downtimeMinutes?: number | null;
+  downtimeReason?: string | null;
+  energyConsumedKwh?: number | null;
 }
 
-export type ProductionRecordDocument = HydratedDocument<ProductionRecord>;
-
-const tenantRef = {
-  type: Schema.Types.ObjectId,
-  ref: 'Tenant',
-  required: true,
-  index: true,
-} as SchemaDefinitionProperty<Types.ObjectId>;
-
-const productionRecordSchema = new Schema<ProductionRecord>(
+const productionRecordSchema = new Schema<ProductionRecordDoc>(
   {
     asset: { type: Schema.Types.ObjectId, ref: 'Asset', index: true },
     site: { type: Schema.Types.ObjectId, ref: 'Site', index: true },
-    tenantId: tenantRef,
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Tenant',
+      required: true,
+      index: true,
+    },
     recordedAt: { type: Date, default: Date.now, index: true },
     plannedUnits: { type: Number, default: 0 },
     actualUnits: { type: Number, default: 0 },
@@ -55,9 +45,4 @@ const productionRecordSchema = new Schema<ProductionRecord>(
   { timestamps: true },
 );
 
-const ProductionRecordModel: Model<ProductionRecord> = mongoose.model<ProductionRecord>(
-  'ProductionRecord',
-  productionRecordSchema,
-);
-
-export default ProductionRecordModel;
+export default mongoose.model<ProductionRecordDoc>('ProductionRecord', productionRecordSchema);

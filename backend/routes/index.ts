@@ -50,3 +50,4 @@ export { default as complianceRoutes } from './complianceRoutes';
 export { default as adminRoutes } from './adminRoutes';
 export { default as dashboardRoutes } from './DashboardRoutes';
 export { default as statusRoutes } from './StatusRoutes';
+export { default as settingsRoutes } from './settingsRoutes';

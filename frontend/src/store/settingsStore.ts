@@ -32,6 +32,7 @@ export interface ThemeSettings {
   denseMode: boolean;
   highContrast: boolean;
   colorScheme?: string;
+  mode?: 'light' | 'dark' | 'system';
 }
 
 interface SettingsState {
@@ -68,6 +69,7 @@ export const useSettingsStore = create<SettingsState>()(
         criticalAlerts: true,
       },
       theme: {
+        mode: 'system',
         sidebarCollapsed: false,
         denseMode: false,
         highContrast: false,

@@ -4,6 +4,79 @@ import dotenv from 'dotenv';
 import logger from './logger';
 import { connectDB } from '../backend/config/db';
 
+interface GeneralSettings {
+  companyName: string;
+  timezone: string;
+  dateFormat: string;
+  language: string;
+}
+
+interface NotificationSettings {
+  emailNotifications: boolean;
+  pushNotifications: boolean;
+  workOrderUpdates: boolean;
+  maintenanceReminders: boolean;
+  inventoryAlerts: boolean;
+  systemUpdates: boolean;
+}
+
+interface EmailSettings {
+  dailyDigest: boolean;
+  weeklyReport: boolean;
+  criticalAlerts: boolean;
+}
+
+interface ThemeSettings {
+  sidebarCollapsed: boolean;
+  denseMode: boolean;
+  highContrast: boolean;
+  colorScheme: string;
+  mode: 'light' | 'dark' | 'system';
+}
+
+interface SettingsState {
+  general: GeneralSettings;
+  notifications: NotificationSettings;
+  email: EmailSettings;
+  theme: ThemeSettings;
+}
+
+const defaultSettings: SettingsState = {
+  general: {
+    companyName: 'Acme Industries',
+    timezone: 'America/New_York',
+    dateFormat: 'MM/DD/YYYY',
+    language: 'en-US',
+  },
+  notifications: {
+    emailNotifications: true,
+    pushNotifications: true,
+    workOrderUpdates: true,
+    maintenanceReminders: true,
+    inventoryAlerts: true,
+    systemUpdates: false,
+  },
+  email: {
+    dailyDigest: true,
+    weeklyReport: true,
+    criticalAlerts: true,
+  },
+  theme: {
+    sidebarCollapsed: false,
+    denseMode: false,
+    highContrast: false,
+    colorScheme: 'default',
+    mode: 'system',
+  },
+};
+
+let settingsState: SettingsState = {
+  general: { ...defaultSettings.general },
+  notifications: { ...defaultSettings.notifications },
+  email: { ...defaultSettings.email },
+  theme: { ...defaultSettings.theme },
+};
+
 // Load environment variables
 dotenv.config();
 
@@ -30,6 +103,23 @@ app.use(express.json());
 // Routes
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
+});
+
+app.get('/api/settings', (_req, res) => {
+  res.json({ data: settingsState });
+});
+
+app.post('/api/settings', (req, res) => {
+  const payload = (req.body ?? {}) as Partial<SettingsState>;
+
+  settingsState = {
+    general: { ...settingsState.general, ...(payload.general ?? {}) },
+    notifications: { ...settingsState.notifications, ...(payload.notifications ?? {}) },
+    email: { ...settingsState.email, ...(payload.email ?? {}) },
+    theme: { ...settingsState.theme, ...(payload.theme ?? {}) },
+  };
+
+  res.json({ message: 'Settings updated', data: settingsState });
 });
 
 // 404 handler

@@ -8,7 +8,7 @@ import { randomUUID } from 'crypto';
 import { Types } from 'mongoose';
 
 import type { ParamsDictionary } from 'express-serve-static-core';
-import Document from '../models/Document';
+import Document, { type StoredDocumentMetadata } from '../models/Document';
 import type { AuthedRequestHandler } from '../types/http';
 import { sendResponse } from '../utils/sendResponse';
 import { writeAuditLog } from '../utils/audit';
@@ -18,7 +18,90 @@ interface DocumentPayload {
   base64?: string;
   url?: string;
   name?: string;
+  metadata?: {
+    size?: number;
+    mimeType?: string;
+    lastModified?: string;
+    type?: string;
+  };
 }
+
+const parseMetadataPayload = (
+  input?: DocumentPayload['metadata'],
+): StoredDocumentMetadata | undefined => {
+  if (!input || typeof input !== 'object') {
+    return undefined;
+  }
+
+  const metadata: StoredDocumentMetadata = {};
+
+  if (typeof input.size === 'number' && Number.isFinite(input.size) && input.size >= 0) {
+    metadata.size = input.size;
+  }
+
+  if (typeof input.mimeType === 'string' && input.mimeType.trim().length > 0) {
+    metadata.mimeType = input.mimeType.trim();
+  }
+
+  if (typeof input.type === 'string' && input.type.trim().length > 0) {
+    metadata.type = input.type.trim();
+  }
+
+  if (input.lastModified) {
+    const parsedDate = new Date(input.lastModified);
+    if (!Number.isNaN(parsedDate.getTime())) {
+      metadata.lastModified = parsedDate;
+    }
+  }
+
+  return Object.keys(metadata).length > 0 ? metadata : undefined;
+};
+
+class DocumentValidationError extends Error {
+  constructor(
+    message: string,
+    readonly statusCode: number = 400,
+  ) {
+    super(message);
+    this.name = 'DocumentValidationError';
+  }
+}
+
+const normalizeMetadata = (
+  metadataPayload?: DocumentPayload['metadata'],
+): StoredDocumentMetadata | undefined => {
+  const parsed = parseMetadataPayload(metadataPayload);
+  if (!parsed) {
+    return undefined;
+  }
+
+  if (parsed.mimeType && !ALLOWED_MIME_TYPES.has(parsed.mimeType)) {
+    throw new DocumentValidationError('Invalid mime type');
+  }
+
+  const normalized: StoredDocumentMetadata = {};
+
+  if (parsed.mimeType) {
+    normalized.mimeType = parsed.mimeType;
+  }
+
+  if (parsed.size !== undefined) {
+    if (!Number.isFinite(parsed.size) || parsed.size < 0) {
+      throw new DocumentValidationError('Invalid size');
+    }
+    normalized.size = parsed.size;
+  }
+
+  if (parsed.lastModified) {
+    normalized.lastModified = parsed.lastModified;
+  }
+
+  if (parsed.type) {
+    normalized.type = parsed.type;
+  }
+
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
+};
 
 export const getAllDocuments: AuthedRequestHandler = async (_req, res, next) => {
 
@@ -58,7 +141,29 @@ export const getDocumentById: AuthedRequestHandler<{ id: string }> = async (
   }
 };
 
-const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.txt', '.png', '.jpg', '.jpeg'];
+const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.txt', '.png', '.jpg', '.jpeg', '.xlsx', '.xls'];
+
+const ALLOWED_MIME_TYPES = new Set([
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+]);
+
+const parseLastModified = (input?: string | Date): Date | undefined => {
+  if (!input) {
+    return undefined;
+  }
+  if (input instanceof Date) {
+    return Number.isNaN(input.getTime()) ? undefined : input;
+  }
+  const value = new Date(input);
+  if (Number.isNaN(value.getTime())) {
+    return undefined;
+  }
+  return value;
+};
 
 const validateFileName = (input: string): { base: string; ext: string } => {
   const base = path.basename(input);
@@ -79,10 +184,30 @@ export const createDocument: AuthedRequestHandler<
 > = async (req, res, next) => {
 
   try {
-    const { base64, url, name } = req.body ?? {};
+    const { base64, url, name, metadata: metadataPayload } = req.body ?? {};
 
     let displayName = name ?? `document_${Date.now()}`;
     let finalUrl = url;
+
+    let metadata: StoredDocumentMetadata | undefined;
+    try {
+      metadata = normalizeMetadata(metadataPayload);
+    } catch (err) {
+      if (err instanceof DocumentValidationError) {
+        sendResponse(res, null, err.message, err.statusCode);
+        return;
+      }
+      throw err;
+    }
+
+    if (metadata?.lastModified) {
+      const parsedDate = parseLastModified(metadata.lastModified);
+      if (!parsedDate) {
+        sendResponse(res, null, 'Invalid last modified date', 400);
+        return;
+      }
+      metadata.lastModified = parsedDate;
+    }
 
     if (base64) {
       if (!name) {
@@ -118,7 +243,11 @@ export const createDocument: AuthedRequestHandler<
       return;
     }
 
-    const newItem = new Document({ name: displayName, url: finalUrl });
+    const newItem = new Document({
+      name: displayName,
+      url: finalUrl,
+      ...(metadata ? { metadata } : {}),
+    });
     const saved = await newItem.save();
 
     const tenantId = req.tenantId;
@@ -131,16 +260,15 @@ export const createDocument: AuthedRequestHandler<
     if (!entityId) {
       throw new Error('Unable to resolve document identifier for auditing');
     }
-    if (tenantId) {
-      await writeAuditLog({
-        tenantId,
-        ...(userId ? { userId } : {}),
-        action: 'create',
-        entityType: 'Document',
-        entityId,
-        after: saved.toObject(),
-      });
-    }
+
+    await writeAuditLog({
+      tenantId,
+      ...(userId ? { userId } : {}),
+      action: 'create',
+      entityType: 'Document',
+      entityId,
+      after: saved.toObject(),
+    });
 
     sendResponse(res, saved, null, 201);
 
@@ -165,10 +293,15 @@ export const updateDocument: AuthedRequestHandler<
       return;
     }
 
-    const { base64, url, name } = req.body ?? {};
+    const { base64, url, name, metadata: metadataPayload } = req.body ?? {};
 
     const entityId: Types.ObjectId = objectId;
-    const updateData: { name?: string; url?: string } = {};
+    const updateData: {
+      name?: string;
+      url?: string;
+      metadata?: StoredDocumentMetadata;
+    } = {};
+    let hasUpdates = false;
 
     if (base64) {
       if (!name) {
@@ -189,6 +322,7 @@ export const updateDocument: AuthedRequestHandler<
       await fs.writeFile(path.join(uploadDir, uniqueName), buffer);
       updateData.url = `/uploads/documents/${uniqueName}`;
       updateData.name = safeName.base;
+      hasUpdates = true;
     } else if (url) {
       updateData.url = url;
       if (name) {
@@ -200,9 +334,42 @@ export const updateDocument: AuthedRequestHandler<
           return;
         }
       }
-    } else {
-      // Should not happen due to validators, but handle gracefully
-      sendResponse(res, null, 'No document provided', 400);
+      hasUpdates = true;
+    } else if (name) {
+      try {
+        const safeName = validateFileName(name);
+        updateData.name = safeName.base;
+        hasUpdates = true;
+      } catch {
+        sendResponse(res, null, 'Invalid file name', 400);
+        return;
+      }
+    }
+
+    try {
+      const metadata = normalizeMetadata(metadataPayload);
+      if (metadata) {
+        if (metadata.lastModified) {
+          const parsedDate = parseLastModified(metadata.lastModified);
+          if (!parsedDate) {
+            sendResponse(res, null, 'Invalid last modified date', 400);
+            return;
+          }
+          metadata.lastModified = parsedDate;
+        }
+        updateData.metadata = metadata;
+        hasUpdates = true;
+      }
+    } catch (err) {
+      if (err instanceof DocumentValidationError) {
+        sendResponse(res, null, err.message, err.statusCode);
+        return;
+      }
+      throw err;
+    }
+
+    if (!hasUpdates) {
+      sendResponse(res, null, 'No updates provided', 400);
       return;
     }
 
@@ -220,16 +387,15 @@ export const updateDocument: AuthedRequestHandler<
       return;
     }
     const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
-    if (tenantId) {
-      await writeAuditLog({
-        tenantId,
-        ...(userId ? { userId } : {}),
-        action: 'update',
-        entityType: 'Document',
-        entityId,
-        after: updated.toObject(),
-      });
-    }
+
+    await writeAuditLog({
+      tenantId,
+      ...(userId ? { userId } : {}),
+      action: 'update',
+      entityType: 'Document',
+      entityId,
+      after: updated.toObject(),
+    });
 
     sendResponse(res, updated);
 

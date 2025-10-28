@@ -99,6 +99,32 @@ describe('offline queue helpers', () => {
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('offline-queue');
   });
 
+  it('persists remaining items as each queued request completes', async () => {
+    const apiMock = http as unknown as ReturnType<typeof vi.fn>;
+    (apiMock as any).mockResolvedValue({});
+    const queue = [
+      { method: 'post' as const, url: '/a', data: { a: 1 } },
+      { method: 'put' as const, url: '/b', data: { b: 2 } },
+      { method: 'post' as const, url: '/c', data: { c: 3 } },
+    ];
+    localStorageMock.store['offline-queue'] = JSON.stringify(queue);
+
+    await flushQueue();
+
+    expect(apiMock).toHaveBeenCalledTimes(3);
+    expect(localStorageMock.setItem).toHaveBeenCalledTimes(2);
+
+    const firstPersist = JSON.parse(localStorageMock.setItem.mock.calls[0][1]) as QueuedRequest[];
+    expect(firstPersist).toEqual([
+      { method: 'put', url: '/b', data: { b: 2 } },
+      { method: 'post', url: '/c', data: { c: 3 } },
+    ]);
+
+    const secondPersist = JSON.parse(localStorageMock.setItem.mock.calls[1][1]) as QueuedRequest[];
+    expect(secondPersist).toEqual([{ method: 'post', url: '/c', data: { c: 3 } }]);
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('offline-queue');
+  });
+
   it('enqueues asset requests', () => {
     const asset = { id: '1', name: 'A' } as any;
     enqueueAssetRequest('put', asset);

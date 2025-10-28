@@ -6,6 +6,9 @@ import { Router } from 'express';
 import { requireAuth } from '../middleware/authMiddleware';
 import tenantScope from '../middleware/tenantScope';
 import validateObjectId from '../middleware/validateObjectId';
+import multer from 'multer';
+import path from 'path';
+import { mkdirSync } from 'fs';
 import {
   getChannels,
   createChannel,
@@ -20,9 +23,29 @@ import {
   deleteDirectMessage,
   getDirectMessagesForUser,
   sendDirectMessage,
+  markChannelRead,
+  markDirectConversationRead,
+  uploadChatAttachment,
 } from '../controllers/ChatController';
 
 const router = Router();
+
+const uploadDir = path.join(process.cwd(), 'uploads', 'chat');
+mkdirSync(uploadDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadDir),
+  filename: (_req, file, cb) => {
+    const timestamp = Date.now();
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+    cb(null, `${timestamp}-${safeName}`);
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 25 * 1024 * 1024 },
+});
 
 router.use(requireAuth);
 router.use(tenantScope);
@@ -33,6 +56,7 @@ router.patch('/channels/:channelId', validateObjectId('channelId'), updateChanne
 router.delete('/channels/:channelId', validateObjectId('channelId'), deleteChannel);
 router.get('/channels/:channelId/messages', validateObjectId('channelId'), getChannelMessages);
 router.post('/channels/:channelId/messages', validateObjectId('channelId'), sendChannelMessage);
+router.post('/channels/:channelId/read', validateObjectId('channelId'), markChannelRead);
 
 router.patch('/messages/:messageId', validateObjectId('messageId'), updateMessage);
 router.delete('/messages/:messageId', validateObjectId('messageId'), deleteMessage);
@@ -50,5 +74,12 @@ router.post(
   validateObjectId('conversationId'),
   sendDirectMessage,
 );
+router.post(
+  '/direct/:conversationId/read',
+  validateObjectId('conversationId'),
+  markDirectConversationRead,
+);
+
+router.post('/upload', upload.single('file'), uploadChatAttachment);
 
 export default router;

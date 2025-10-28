@@ -2,322 +2,438 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import ChatSidebar from '@/components/messaging/ChatSidebar';
-import ChatHeader from '@/components/messaging/ChatHeader';
-import MessageList from '@/components/messaging/MessageList';
-import ChatInput from '@/components/messaging/ChatInput';
-import { v4 as uuidv4 } from 'uuid';
-
-import type { Member, Message, Channel, DirectMessage } from '@/types';
-import MessageSearchModal from '@/components/messaging/MessageSearchModal';
-import MembersSheet from '@/components/messaging/MembersSheet';
-import SettingsModal from '@/components/messaging/SettingsModal';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ScrollArea, Stack, Text, Group, Badge, Avatar, Loader } from '@mantine/core';
+import { motion } from 'framer-motion';
+import ChatSidebar from '@/components/messages/ChatSidebar';
+import ChatHeader from '@/components/messages/ChatHeader';
+import MessageList from '@/components/messages/MessageList';
+import MessageInput from '@/components/messages/MessageInput';
+import type { ChatMessage, ChatParticipant, ChatPreview } from '@/types/messages';
+import {
+  fetchChannelPreviews,
+  fetchDirectPreviews,
+  fetchChannelMessages,
+  fetchDirectMessages,
+  sendChannelMessage,
+  sendDirectMessage,
+  markChannelRead,
+  markDirectRead,
+  uploadChatFile,
+} from '@/api/chat';
+import { useAuthStore } from '@/store/authStore';
 import { getNotificationsSocket } from '@/utils/notificationsSocket';
 
-const FALLBACK_CHANNEL: Channel = {
-  id: 'fallback',
-  name: 'general',
-  description: '',
-  memberCount: 0,
-  unreadCount: 0,
-  lastMessage: '',
-  lastMessageTime: '',
-};
+type SidebarTab = 'channels' | 'direct' | 'search';
 
-const Messages: React.FC = () => {
-  const [channels, setChannels] = useState<Channel[]>([
-    // ... (unchanged seed data)
-  ]);
+interface SocketMessagePayload {
+  channelId: string;
+  message: ChatMessage;
+}
 
-  const [directMessages, setDirectMessages] = useState<DirectMessage[]>([
-    // ... (unchanged seed data)
-  ]);
+interface SocketTypingPayload {
+  channelId: string;
+  userId: string;
+}
 
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [activeChannel, setActiveChannel] = useState<Channel | null>(channels[0] ?? null);
-  const [activeDM, setActiveDM] = useState<DirectMessage | null>(null);
+interface SocketPresencePayload {
+  channelId: string;
+  userId: string;
+  users?: string[];
+}
 
-  // ✅ keep value + setter
-  const [typingUser, setTypingUser] = useState<{ userId: string; userName: string } | null>(null);
+const MotionDiv = motion.div;
 
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [membersOpen, setMembersOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+const Messages = () => {
+  const user = useAuthStore((state) => state.user);
+  const currentUserId = user?.id;
 
-  const scrollToMessage = useCallback((id: string) => {
-    const el = document.getElementById(`message-${id}`);
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
-  }, []);
+  const [sidebarTab, setSidebarTab] = useState<SidebarTab>('channels');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [channels, setChannels] = useState<ChatPreview[]>([]);
+  const [directs, setDirects] = useState<ChatPreview[]>([]);
+  const [activeConversation, setActiveConversation] = useState<ChatPreview | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [presenceState, setPresenceState] = useState<Record<string, Set<string>>>({});
+  const [typingState, setTypingState] = useState<Record<string, Record<string, number>>>({});
 
-  const [channelMembers] = useState<Member[]>([
-    // ... (unchanged)
-  ]);
+  const activeConversationRef = useRef<ChatPreview | null>(null);
+  const socketRef = useRef(getNotificationsSocket());
 
   useEffect(() => {
-    if (channels.length === 0) {
-      setActiveChannel(null);
-      return;
-    }
+    activeConversationRef.current = activeConversation;
+  }, [activeConversation]);
 
-    setActiveChannel((prev) => {
-      if (!prev) return channels[0];
-      const exists = channels.find((c) => c.id === prev.id);
-      return exists ?? channels[0];
-    });
-  }, [channels]);
+  const ensureDirectNames = useCallback(
+    (items: ChatPreview[]) =>
+      items.map((conversation) => {
+        if (!conversation.isDirect) return conversation;
+        const other = conversation.members.find((member) => member.id !== currentUserId);
+        return {
+          ...conversation,
+          name: other?.name ?? conversation.name ?? 'Direct chat',
+        };
+      }),
+    [currentUserId],
+  );
 
-  useEffect(() => {
-    // Load messages for active channel or DM
-    const mockMessages: Message[] = [
-      // ... (unchanged)
-    ];
-    setMessages(mockMessages);
-  }, [activeChannel, activeDM]);
-
-  useEffect(() => {
-    const s = getNotificationsSocket();
-
-    const handleIncomingMessage = (message: Message) => {
-      setMessages((prev) => [...prev, message]);
-    };
-
-    const handleReaction = (data: { messageId: string; emoji: string; userId: string }) => {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === data.messageId
-            ? {
-                ...m,
-                reactions: [...m.reactions, { emoji: data.emoji, count: 1, users: [data.userId] }],
-              }
-            : m,
-        ),
-      );
-    };
-
-    // ✅ use setter instead of calling the state value
-    const handleTypingEvent = (data: { typing: boolean; userId: string; userName: string }) => {
-      if (data.typing) {
-        setTypingUser({ userId: data.userId, userName: data.userName });
-      } else {
-        setTypingUser(null);
-      }
-    };
-
-    const handleRead = (data: { chatId: string; type: 'channel' | 'dm' }) => {
-      if (data.type === 'channel') {
-        setChannels((prev) => prev.map((c) => (c.id === data.chatId ? { ...c, unreadCount: 0 } : c)));
-      } else {
-        setDirectMessages((prev) => prev.map((dm) => (dm.id === data.chatId ? { ...dm, unreadCount: 0 } : dm)));
-      }
-    };
-
-    const handlePresence = (data: { userId: string; status: 'online' | 'offline' | 'away' }) => {
-      setDirectMessages((prev) => prev.map((dm) => (dm.userId === data.userId ? { ...dm, status: data.status } : dm)));
-    };
-
-    s.on('chat:message', handleIncomingMessage);
-    s.on('chat:reaction', handleReaction);
-    s.on('chat:typing', handleTypingEvent);
-    s.on('chat:read', handleRead);
-    s.on('presence:online', handlePresence);
-    s.on('presence:offline', handlePresence);
-    s.on('presence:away', handlePresence);
-
-    return () => {
-      s.off('chat:message', handleIncomingMessage);
-      s.off('chat:reaction', handleReaction);
-      s.off('chat:typing', handleTypingEvent);
-      s.off('chat:read', handleRead);
-      s.off('presence:online', handlePresence);
-      s.off('presence:offline', handlePresence);
-      s.off('presence:away', handlePresence);
-    };
-  }, []);
-
-  useEffect(() => {
-    const chatId = activeDM ? activeDM.id : activeChannel?.id;
-    if (!chatId) return;
-
+  const loadPreviews = useCallback(async () => {
     try {
-      const s = getNotificationsSocket();
-      const type = activeDM ? 'dm' : 'channel';
-      if (s.connected) {
-        s.emit('chat:read', { chatId, type });
+      const [channelData, directData] = await Promise.all([fetchChannelPreviews(), fetchDirectPreviews()]);
+      setChannels(channelData);
+      setDirects(ensureDirectNames(directData));
+      if (!activeConversationRef.current) {
+        const firstConversation = channelData[0] ?? ensureDirectNames(directData)[0] ?? null;
+        if (firstConversation) {
+          setActiveConversation(firstConversation);
+        }
       }
-    } catch (err) {
-      console.error('Failed to emit chat:read', err);
+    } catch (error) {
+      console.error('Failed to load chat previews', error);
     }
+  }, [ensureDirectNames]);
 
-    if (activeDM) {
-      setDirectMessages((prev) => prev.map((dm) => (dm.id === activeDM.id ? { ...dm, unreadCount: 0 } : dm)));
-    } else if (activeChannel) {
-      setChannels((prev) => prev.map((c) => (c.id === activeChannel.id ? { ...c, unreadCount: 0 } : c)));
-    }
-  }, [activeChannel, activeDM]);
+  useEffect(() => {
+    void loadPreviews();
+  }, [loadPreviews]);
 
-  const handleSendMessage = (content: string) => {
-    const newMessage: Message = {
-      id: uuidv4(),
-      content,
-      userId: 'currentUser',
-      userName: 'John Doe',
-      userAvatar: 'https://i.pravatar.cc/150?u=john',
-      timestamp: new Date().toISOString(),
-      attachments: [],
-      reactions: [],
-    };
+  const loadMessages = useCallback(
+    async (conversation: ChatPreview | null) => {
+      if (!conversation) {
+        setMessages([]);
+        return;
+      }
+      setLoadingMessages(true);
+      try {
+        const data = conversation.isDirect
+          ? await fetchDirectMessages(conversation.id)
+          : await fetchChannelMessages(conversation.id);
+        setMessages(data);
+        if (conversation.isDirect) {
+          void markDirectRead(conversation.id);
+          setDirects((prev) =>
+            prev.map((item) => (item.id === conversation.id ? { ...item, unreadCount: 0 } : item)),
+          );
+        } else {
+          void markChannelRead(conversation.id);
+          setChannels((prev) =>
+            prev.map((item) => (item.id === conversation.id ? { ...item, unreadCount: 0 } : item)),
+          );
+        }
+      } catch (error) {
+        console.error('Failed to load messages', error);
+      } finally {
+        setLoadingMessages(false);
+      }
+    },
+    [],
+  );
 
-    setMessages((prev) => [...prev, newMessage]);
-    try {
-      const s = getNotificationsSocket();
-      if (s.connected) s.emit('chat:message', newMessage);
-    } catch (err) {
-      console.error('Failed to emit chat:message', err);
-    }
+  useEffect(() => {
+    void loadMessages(activeConversation);
+  }, [activeConversation, loadMessages]);
 
-    if (activeDM) {
-      setDirectMessages((prev) =>
-        prev.map((dm) => (dm.id === activeDM.id ? { ...dm, lastMessage: content, lastMessageTime: new Date().toISOString() } : dm)),
-      );
-    } else if (activeChannel) {
+  useEffect(() => {
+    const socket = socketRef.current;
+    const handleMessage = ({ channelId, message }: SocketMessagePayload) => {
       setChannels((prev) =>
         prev.map((channel) =>
-          channel.id === activeChannel.id ? { ...channel, lastMessage: content, lastMessageTime: new Date().toISOString() } : channel,
+          channel.id === channelId
+            ? {
+                ...channel,
+                lastMessage: message,
+                lastMessageAt: message.createdAt,
+                unreadCount:
+                  activeConversationRef.current?.id === channelId && !activeConversationRef.current?.isDirect
+                    ? 0
+                    : channel.unreadCount + 1,
+              }
+            : channel,
         ),
       );
-    }
-  };
+      setDirects((prev) =>
+        prev.map((conversation) =>
+          conversation.id === channelId
+            ? {
+                ...conversation,
+                lastMessage: message,
+                lastMessageAt: message.createdAt,
+                unreadCount:
+                  activeConversationRef.current?.id === channelId && activeConversationRef.current?.isDirect
+                    ? 0
+                    : conversation.unreadCount + 1,
+              }
+            : conversation,
+        ),
+      );
 
-  const handleTyping = (typing: boolean) => {
-    try {
-      const s = getNotificationsSocket();
-      if (s.connected) {
-        s.emit('chat:typing', { typing, userId: 'currentUser', userName: 'John Doe' });
+      if (activeConversationRef.current?.id === channelId) {
+        setMessages((prev) => (prev.some((item) => item.id === message.id) ? prev : [...prev, message]));
+        setTypingState((prev) => {
+          const current = prev[channelId];
+          if (!current) return prev;
+          const next = { ...prev, [channelId]: { ...current } };
+          delete next[channelId][message.sender?.id ?? ''];
+          return next;
+        });
+        if (activeConversationRef.current?.isDirect) void markDirectRead(channelId);
+        else void markChannelRead(channelId);
       }
-    } catch (err) {
-      console.error('Failed to emit chat:typing', err);
-    }
-  };
-
-  const handleUploadFiles = (files: File[]) => {
-    const attachments = files.map((file) => ({
-      id: uuidv4(),
-      type: file.type.startsWith('image/') ? ('image' as const) : ('file' as const),
-      url: URL.createObjectURL(file),
-      name: file.name,
-    }));
-
-    const newMessage: Message = {
-      id: uuidv4(),
-      content: `Uploaded ${files.length} file${files.length > 1 ? 's' : ''}`,
-      userId: 'currentUser',
-      userName: 'John Doe',
-      userAvatar: 'https://i.pravatar.cc/150?u=john',
-      timestamp: new Date().toISOString(),
-      attachments,
-      reactions: [],
     };
 
-    setMessages((prev) => [...prev, newMessage]);
-    try {
-      const s = getNotificationsSocket();
-      if (s.connected) s.emit('chat:message', newMessage);
-    } catch (err) {
-      console.error('Failed to emit chat:message', err);
-    }
-  };
+    const handleTyping = ({ channelId, userId }: SocketTypingPayload) => {
+      if (userId === currentUserId) return;
+      setTypingState((prev) => {
+        const current = prev[channelId] ?? {};
+        return {
+          ...prev,
+          [channelId]: {
+            ...current,
+            [userId]: Date.now() + 3500,
+          },
+        };
+      });
+    };
 
-  const handleDeleteChat = (type: 'channel' | 'dm', id: string) => {
-    if (type === 'channel') {
-      setChannels((prev) => {
-        const next = prev.filter((channel) => channel.id !== id);
-        setActiveChannel((curr) => (curr && curr.id === id ? next[0] ?? null : curr));
+    const handlePresenceOnline = ({ channelId, userId, users }: SocketPresencePayload) => {
+      setPresenceState((prev) => {
+        const existing = new Set(prev[channelId] ?? []);
+        if (users) {
+          return { ...prev, [channelId]: new Set(users) };
+        }
+        existing.add(userId);
+        return { ...prev, [channelId]: existing };
+      });
+    };
+
+    const handlePresenceOffline = ({ channelId, userId }: SocketPresencePayload) => {
+      setPresenceState((prev) => {
+        const existing = new Set(prev[channelId] ?? []);
+        existing.delete(userId);
+        return { ...prev, [channelId]: existing };
+      });
+    };
+
+    socket.on('chat:message', handleMessage);
+    socket.on('chat:typing', handleTyping);
+    socket.on('presence:online', handlePresenceOnline);
+    socket.on('presence:offline', handlePresenceOffline);
+    socket.on('presence:state', handlePresenceOnline);
+
+    return () => {
+      socket.off('chat:message', handleMessage);
+      socket.off('chat:typing', handleTyping);
+      socket.off('presence:online', handlePresenceOnline);
+      socket.off('presence:offline', handlePresenceOffline);
+      socket.off('presence:state', handlePresenceOnline);
+    };
+  }, [currentUserId]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTypingState((prev) => {
+        const now = Date.now();
+        const next: Record<string, Record<string, number>> = {};
+        Object.entries(prev).forEach(([channelId, users]) => {
+          const filteredEntries = Object.entries(users).filter(([, expiry]) => expiry > now);
+          if (filteredEntries.length) {
+            next[channelId] = Object.fromEntries(filteredEntries);
+          }
+        });
         return next;
       });
-    } else {
-      setDirectMessages((prev) => prev.filter((dm) => dm.id !== id));
-      if (activeDM?.id === id) {
-        setActiveDM(null);
-        setActiveChannel((curr) => curr ?? (channels[0] ?? null));
-      }
-    }
+    }, 1500);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const socket = socketRef.current;
+    const channelId = activeConversation?.id;
+    if (!channelId) return undefined;
+    socket.emit('chat:join', { channelId });
+    socket.emit('presence:ping', { channelId });
+    return () => {
+      socket.emit('chat:leave', { channelId });
+    };
+  }, [activeConversation?.id]);
+
+  const handleSelectConversation = (conversation: ChatPreview) => {
+    setActiveConversation(conversation);
   };
 
-  const handleDirectMessage = (userId: string) => {
-    const dm = directMessages.find((dm) => dm.userId === userId);
-    if (dm) {
-      setActiveDM(dm);
-    }
-  };
+  const handleSendMessage = useCallback(
+    async ({ content, attachments }: { content: string; attachments: File[] }) => {
+      if (!activeConversationRef.current) return;
+      const conversation = activeConversationRef.current;
+      try {
+        const uploads = await Promise.all(attachments.map((file) => uploadChatFile(file)));
+        const payload = { content, attachments: uploads };
+        const sentMessage = conversation.isDirect
+          ? await sendDirectMessage(conversation.id, payload)
+          : await sendChannelMessage(conversation.id, payload);
+        setMessages((prev) => (prev.some((item) => item.id === sentMessage.id) ? prev : [...prev, sentMessage]));
+        setChannels((prev) =>
+          prev.map((item) =>
+            item.id === conversation.id
+              ? { ...item, lastMessage: sentMessage, lastMessageAt: sentMessage.createdAt, unreadCount: 0 }
+              : item,
+          ),
+        );
+        setDirects((prev) =>
+          prev.map((item) =>
+            item.id === conversation.id
+              ? { ...item, lastMessage: sentMessage, lastMessageAt: sentMessage.createdAt, unreadCount: 0 }
+              : item,
+          ),
+        );
+      } catch (error) {
+        console.error('Failed to send message', error);
+      }
+    },
+    [],
+  );
+
+  const typingUsers = useMemo(() => {
+    const channelId = activeConversation?.id;
+    if (!channelId) return [] as string[];
+    const users = typingState[channelId] ?? {};
+    const now = Date.now();
+    const memberLookup = new Map<string, ChatParticipant>();
+    activeConversation?.members.forEach((member) => {
+      memberLookup.set(member.id, member);
+    });
+    return Object.entries(users)
+      .filter(([userId, expiry]) => expiry > now && userId !== currentUserId)
+      .map(([userId]) => memberLookup.get(userId)?.name ?? 'Someone');
+  }, [activeConversation, typingState, currentUserId]);
+
+  const presenceForActive = useMemo(() => {
+    const channelId = activeConversation?.id;
+    if (!channelId) return [] as string[];
+    const set = presenceState[channelId] ?? new Set<string>();
+    return Array.from(set).filter((id) => id !== currentUserId);
+  }, [activeConversation?.id, presenceState, currentUserId]);
+
+  const presenceDetails = useMemo(() => {
+    if (!activeConversation)
+      return [] as Array<{ member: ChatParticipant; online: boolean }>;
+    const onlineIds = new Set(presenceForActive);
+    return activeConversation.members.map((member) => ({
+      member,
+      online: onlineIds.has(member.id),
+    }));
+  }, [activeConversation, presenceForActive]);
+
+  const readReceiptLabel = useCallback(
+    (message: ChatMessage) => {
+      if (!currentUserId) return null;
+      if (message.sender?.id !== currentUserId) return null;
+      const readCount = message.readBy?.length ?? 0;
+      if (readCount <= 1) return 'Sent';
+      return `${readCount - 1} read`;
+    },
+    [currentUserId],
+  );
 
   return (
-    <>
-      <div className="flex h-[calc(100vh-4rem)]">
-        <ChatSidebar
-          channels={channels}
-          directMessages={directMessages}
-          {...(activeDM
-            ? { activeChannelId: activeDM.id }
-            : activeChannel
-              ? { activeChannelId: activeChannel.id }
-              : {})}
-          onChannelSelect={(channelId) => {
-            const channel = channels.find((c) => c.id === channelId);
-            if (channel) {
-              setActiveChannel(channel);
-              setActiveDM(null);
-            }
-          }}
-          onDirectMessageSelect={handleDirectMessage}
-          onNewChannel={() => {}}
-          onNewDirectMessage={() => {}}
-          onDeleteChat={handleDeleteChat}
+    <div className="flex h-full min-h-screen bg-gradient-to-br from-gray-950 via-gray-950/80 to-gray-900">
+      <ChatSidebar
+        activeTab={sidebarTab}
+        onTabChange={setSidebarTab}
+        channels={channels}
+        directs={directs}
+        searchTerm={searchTerm}
+        onSearchTermChange={setSearchTerm}
+        onSelectConversation={handleSelectConversation}
+        activeConversationId={activeConversation?.id}
+        currentUserId={currentUserId}
+        onNewChat={() => console.log('New chat coming soon')}
+      />
+      <div className="flex min-h-screen flex-1 flex-col">
+        <ChatHeader
+          conversation={activeConversation}
+          presence={presenceForActive}
+          currentUserId={currentUserId}
+          onOpenDetails={() => console.log('Open details drawer')}
+          onTogglePin={(conversation) =>
+            setChannels((prev) =>
+              prev.map((item) =>
+                item.id === conversation.id ? { ...item, pinned: !item.pinned } : item,
+              ),
+            )
+          }
         />
-
-        <div className="flex-1 flex flex-col">
-          {channels.length === 0 && !activeDM ? (
-            <div className="flex-1 flex items-center justify-center text-neutral-500">
-              No channels available
-            </div>
-          ) : (
-            <>
-              {activeDM ? null : activeChannel && (
-                <ChatHeader
-                  channel={activeChannel ?? FALLBACK_CHANNEL}
-                  onToggleMembers={() => setMembersOpen(true)}
-                  onToggleSettings={() => setSettingsOpen(true)}
-                  onSearch={() => setSearchOpen(true)}
-                  members={channelMembers}
-                />
-              )}
-
-              <MessageList messages={messages} currentUserId="currentUser" />
-
-              <ChatInput
-                onSendMessage={handleSendMessage}
-                onUploadFiles={handleUploadFiles}
-                onTyping={handleTyping}
-                isTyping={Boolean(typingUser)}
+        <div className="flex flex-1 overflow-hidden">
+          <div className="flex min-h-0 flex-1 flex-col">
+            {loadingMessages ? (
+              <div className="flex flex-1 items-center justify-center">
+                <Loader color="indigo" />
+              </div>
+            ) : (
+              <MessageList
+                messages={messages}
+                typingUsers={typingUsers}
+                currentUserId={currentUserId}
+                readReceiptLabel={readReceiptLabel}
               />
-            </>
-          )}
+            )}
+            <MessageInput
+              onSend={handleSendMessage}
+              onTyping={() => {
+                if (!activeConversationRef.current) return;
+                socketRef.current.emit('chat:typing', { channelId: activeConversationRef.current.id });
+              }}
+              disabled={!activeConversation}
+            />
+          </div>
+          <div className="hidden w-80 border-l border-gray-900 bg-gray-950/40 lg:flex lg:flex-col">
+            <div className="border-b border-gray-900 px-5 py-4">
+              <Text className="text-sm font-semibold text-white">Participants</Text>
+              <Text size="xs" className="text-gray-400">
+                Presence updates in real-time
+              </Text>
+            </div>
+            <ScrollArea className="flex-1 px-4 py-4">
+              <Stack gap="sm">
+                {presenceDetails.map(({ member, online }) => (
+                  <MotionDiv
+                    key={member.id}
+                    whileHover={{ scale: 1.01 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                    className="rounded-xl border border-gray-900 bg-gray-900/60 px-3 py-2"
+                  >
+                    <Group gap="sm">
+                      <Avatar radius="xl" color={online ? 'green' : 'gray'} variant="filled">
+                        {member.name.charAt(0).toUpperCase()}
+                      </Avatar>
+                      <div className="flex flex-1 flex-col">
+                        <Text className="text-sm font-semibold text-white">{member.name}</Text>
+                        <Group gap="xs">
+                          <Badge color={online ? 'green' : 'gray'} variant="light" size="sm">
+                            {online ? 'Online' : 'Offline'}
+                          </Badge>
+                          {member.email && (
+                            <Text size="xs" className="text-gray-400">
+                              {member.email}
+                            </Text>
+                          )}
+                        </Group>
+                      </div>
+                    </Group>
+                  </MotionDiv>
+                ))}
+                {!presenceDetails.length && (
+                  <Text size="sm" className="text-gray-500">
+                    No participants available.
+                  </Text>
+                )}
+              </Stack>
+            </ScrollArea>
+          </div>
         </div>
       </div>
-
-      {activeChannel && (
-        <>
-          <MessageSearchModal
-            isOpen={searchOpen}
-            channelId={activeChannel.id}
-            onClose={() => setSearchOpen(false)}
-            onSelect={scrollToMessage}
-          />
-          <MembersSheet isOpen={membersOpen} channelId={activeChannel.id} onClose={() => setMembersOpen(false)} />
-          <SettingsModal isOpen={settingsOpen} channelId={activeChannel.id} onClose={() => setSettingsOpen(false)} />
-        </>
-      )}
-    </>
+    </div>
   );
 };
 

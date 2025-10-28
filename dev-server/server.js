@@ -8,6 +8,40 @@ const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const logger_1 = __importDefault(require("./logger"));
 const db_1 = require("../backend/config/db");
+const defaultSettings = {
+    general: {
+        companyName: 'Acme Industries',
+        timezone: 'America/New_York',
+        dateFormat: 'MM/DD/YYYY',
+        language: 'en-US',
+    },
+    notifications: {
+        emailNotifications: true,
+        pushNotifications: true,
+        workOrderUpdates: true,
+        maintenanceReminders: true,
+        inventoryAlerts: true,
+        systemUpdates: false,
+    },
+    email: {
+        dailyDigest: true,
+        weeklyReport: true,
+        criticalAlerts: true,
+    },
+    theme: {
+        sidebarCollapsed: false,
+        denseMode: false,
+        highContrast: false,
+        colorScheme: 'default',
+        mode: 'system',
+    },
+};
+let settingsState = {
+    general: Object.assign({}, defaultSettings.general),
+    notifications: Object.assign({}, defaultSettings.notifications),
+    email: Object.assign({}, defaultSettings.email),
+    theme: Object.assign({}, defaultSettings.theme),
+};
 // Load environment variables
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -30,6 +64,19 @@ app.use(express_1.default.json());
 // Routes
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'Server is running' });
+});
+app.get('/api/settings', (_req, res) => {
+    res.json({ data: settingsState });
+});
+app.post('/api/settings', (req, res) => {
+    const payload = (req.body ?? {});
+    settingsState = {
+        general: Object.assign(Object.assign({}, settingsState.general), (payload.general ?? {})),
+        notifications: Object.assign(Object.assign({}, settingsState.notifications), (payload.notifications ?? {})),
+        email: Object.assign(Object.assign({}, settingsState.email), (payload.email ?? {})),
+        theme: Object.assign(Object.assign({}, settingsState.theme), (payload.theme ?? {})),
+    };
+    res.json({ message: 'Settings updated', data: settingsState });
 });
 // 404 handler
 app.use('*', (_req, res) => {

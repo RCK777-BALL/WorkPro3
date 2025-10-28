@@ -11,7 +11,7 @@ import Tenant, { type TenantDocument } from '../models/Tenant';
 import { writeAuditLog } from '../utils/audit';
 import { toEntityId } from '../utils/ids';
 
-export const getAllTenants = async (
+const getAllTenants = async (
   _req: AuthedRequest,
   res: Response,
   next: NextFunction,
@@ -24,7 +24,7 @@ export const getAllTenants = async (
   }
 };
 
-export const getTenantById = async (
+const getTenantById = async (
   req: AuthedRequest,
   res: Response,
   next: NextFunction,
@@ -38,7 +38,7 @@ export const getTenantById = async (
   }
 };
 
-export const createTenant = async (
+const createTenant = async (
   req: AuthedRequest,
   res: Response,
   next: NextFunction,
@@ -61,7 +61,7 @@ export const createTenant = async (
   }
 };
 
-export const updateTenant = async (
+const updateTenant = async (
   req: AuthedRequest,
   res: Response,
   next: NextFunction,
@@ -89,7 +89,7 @@ export const updateTenant = async (
   }
 };
 
-export const deleteTenant = async (
+const deleteTenant = async (
   req: AuthedRequest,
   res: Response,
   next: NextFunction,
@@ -110,4 +110,12 @@ export const deleteTenant = async (
   } catch (err) {
     next(err);
   }
+};
+
+export {
+  getAllTenants,
+  getTenantById,
+  createTenant,
+  updateTenant,
+  deleteTenant,
 };

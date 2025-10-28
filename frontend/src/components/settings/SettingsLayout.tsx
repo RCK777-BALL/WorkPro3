@@ -59,6 +59,18 @@ const SettingsLayout: React.FC<SettingsLayoutProps> = ({
     }
   };
 
+  const renderSaveButton = () => (
+    <Button
+      variant="primary"
+      icon={<Save size={16} />}
+      onClick={handleSaveSettings}
+      loading={isSaving}
+      disabled={isSaving || isLoading}
+    >
+      {isSaving ? 'Saving…' : 'Save Changes'}
+    </Button>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
@@ -68,18 +80,16 @@ const SettingsLayout: React.FC<SettingsLayoutProps> = ({
             <p className="text-neutral-500 dark:text-neutral-400">{description}</p>
           ) : null}
         </div>
-        <Button
-          variant="primary"
-          icon={<Save size={16} />}
-          onClick={handleSaveSettings}
-          loading={isSaving}
-          disabled={isSaving || isLoading}
-        >
-          {isSaving ? 'Saving…' : 'Save Changes'}
-        </Button>
+        {renderSaveButton()}
       </div>
 
       {children}
+
+      <div className="sticky bottom-0 left-0 right-0 z-10 mt-6">
+        <div className="flex justify-end rounded-lg border border-neutral-200 bg-white/80 p-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:border-neutral-700 dark:bg-neutral-900/80 dark:supports-[backdrop-filter]:bg-neutral-900/60">
+          {renderSaveButton()}
+        </div>
+      </div>
     </div>
   );
 };

@@ -5,6 +5,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Bell, Book, Mail, Monitor, Moon, Palette, Sliders, Sun } from 'lucide-react';
 import { isAxiosError } from 'axios';
+import { useShallow } from 'zustand/react/shallow';
 import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -46,25 +47,40 @@ interface ApiDocumentResponse {
 }
 
 const Settings: React.FC = () => {
-  const general = useSettingsStore((state) => state.general);
-  const notifications = useSettingsStore((state) => state.notifications);
-  const email = useSettingsStore((state) => state.email);
-  const setGeneral = useSettingsStore((state) => state.setGeneral);
-  const setNotifications = useSettingsStore((state) => state.setNotifications);
-  const setEmail = useSettingsStore((state) => state.setEmail);
-  const applyThemeSettings = useSettingsStore((state) => state.setTheme);
-  const themeSettings = useSettingsStore((state) => state.theme);
+  const {
+    general,
+    notifications,
+    email,
+    setGeneral,
+    setNotifications,
+    setEmail,
+    setTheme: applyThemeSettings,
+    theme: themeSettings,
+  } = useSettingsStore(
+    useShallow((state) => ({
+      general: state.general,
+      notifications: state.notifications,
+      email: state.email,
+      setGeneral: state.setGeneral,
+      setNotifications: state.setNotifications,
+      setEmail: state.setEmail,
+      setTheme: state.setTheme,
+      theme: state.theme,
+    })),
+  );
   const { addToast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
   const hasFetchedSettingsRef = useRef(false);
 
-  const { theme: activeThemeMode, setTheme: setThemeMode, updateTheme } = useThemeStore((state) => ({
-    theme: state.theme,
-    setTheme: state.setTheme,
-    updateTheme: state.updateTheme,
-  }));
+  const { theme: activeThemeMode, setTheme: setThemeMode, updateTheme } = useThemeStore(
+    useShallow((state) => ({
+      theme: state.theme,
+      setTheme: state.setTheme,
+      updateTheme: state.updateTheme,
+    })),
+  );
   const themeMode = themeSettings.mode ?? activeThemeMode ?? 'system';
 
   type NotificationOptionKey = {
@@ -385,7 +401,9 @@ const Settings: React.FC = () => {
           return;
         }
 
-        if (isAxiosError(error) && error.response?.status === 404) {
+        const status = (error as { response?: { status?: number } }).response?.status;
+
+        if (status === 404) {
           console.warn('Settings API not found. Falling back to defaults.');
           const fallbackTheme = useSettingsStore.getState().theme;
           useThemeStore.setState((state) => {

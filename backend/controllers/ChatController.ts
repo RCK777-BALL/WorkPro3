@@ -5,7 +5,11 @@
 import type { Express, NextFunction, Response } from 'express';
 import type { ParamsDictionary } from 'express-serve-static-core';
 import Channel, { ChannelDocument } from '../models/Channel';
-import ChatMessage, { ChatAttachment, ChatMessageDocument } from '../models/ChatMessage';
+import ChatMessage, {
+  ChatAttachment,
+  ChatAttachmentInput,
+  ChatMessageDocument,
+} from '../models/ChatMessage';
 import type { AuthedRequest } from '../types/http';
 import { resolveUserAndTenant } from './chat/utils';
 import { sendResponse } from '../utils/sendResponse';
@@ -73,17 +77,22 @@ const isUserDocument = (value: unknown): value is UserDocument =>
   Boolean(value) && typeof value === 'object' && 'name' in (value as Record<string, unknown>);
 
 const normalizeMessage = (message: ChatMessageDocument): ChatMessageResponse => {
-  const sender = isUserDocument(message.sender)
-    ? {
-        id: String(message.sender._id),
-        name: message.sender.name,
-        email: message.sender.email,
-      }
-    : {
-        id: message.sender ? String(message.sender) : '',
-        name: 'Unknown',
-        email: undefined,
-      };
+  let sender: ChatMessageResponse['sender'];
+
+  if (isUserDocument(message.sender)) {
+    sender = {
+      id: String(message.sender._id),
+      name: message.sender.name,
+      email: message.sender.email ?? undefined,
+    };
+  } else if (message.sender) {
+    sender = {
+      id: String(message.sender),
+      name: 'Unknown',
+    };
+  } else {
+    sender = null;
+  }
 
   return {
     id: String(message._id),
@@ -92,7 +101,7 @@ const normalizeMessage = (message: ChatMessageDocument): ChatMessageResponse => 
     plainText: message.plainText,
     attachments: message.attachments ?? [],
     readBy: (message.readBy ?? []).map((id) => String(id)),
-    sender: sender.id ? sender : null,
+    sender,
     createdAt: message.createdAt,
     updatedAt: message.updatedAt,
   };
@@ -136,12 +145,16 @@ const markConversationRead = async (
     { $addToSet: { readBy: userId } },
   );
 
-  if ('modifiedCount' in result) {
-    return result.modifiedCount;
+  const modifiedCount = (result as { modifiedCount?: number }).modifiedCount;
+  if (typeof modifiedCount === 'number') {
+    return modifiedCount;
   }
-  if ('nModified' in result) {
-    return result.nModified ?? 0;
+
+  const legacyModified = (result as { nModified?: number }).nModified;
+  if (typeof legacyModified === 'number') {
+    return legacyModified;
   }
+
   return 0;
 };
 
@@ -387,7 +400,7 @@ export async function sendChannelMessage(
       return;
     }
 
-    const attachments: ChatAttachment[] = Array.isArray(attachmentPayload)
+    const attachments: ChatAttachmentInput[] = Array.isArray(attachmentPayload)
       ? attachmentPayload
           .filter((attachment) => typeof attachment?.url === 'string')
           .map((attachment) => {

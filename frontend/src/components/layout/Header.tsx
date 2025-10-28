@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -16,6 +16,7 @@ const Header: React.FC = () => {
   const user = useAuthStore((s: AuthState) => s.user);
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -27,6 +28,26 @@ const Header: React.FC = () => {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, []);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const formattedDateTime = useMemo(
+    () =>
+      currentTime.toLocaleString(undefined, {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      }),
+    [currentTime],
+  );
 
   return (
     <header className="flex h-16 items-center justify-between border-b bg-gradient-to-r from-white to-neutral-100 px-4 dark:from-neutral-900 dark:to-neutral-800">
@@ -43,6 +64,9 @@ const Header: React.FC = () => {
         </kbd>
       </button>
       <div className="ml-4 flex items-center gap-4">
+        <span className="hidden text-sm font-medium text-neutral-600 md:block dark:text-neutral-300">
+          {formattedDateTime}
+        </span>
         <NotificationMenu open={showNotifications} onOpenChange={setShowNotifications} />
         <Avatar name={user?.name || ''} size="sm" />
       </div>

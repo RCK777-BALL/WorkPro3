@@ -13,6 +13,7 @@ import DocumentUploader from '@/components/documentation/DocumentUploader';
 import DocumentViewer from '@/components/documentation/DocumentViewer';
 import {
   downloadDocument,
+  fileToBase64,
   getMimeTypeForType,
   inferDocumentType,
   normalizeMimeType,
@@ -41,7 +42,13 @@ interface ApiDocumentResponse {
   _id?: string;
   id?: string;
   name?: string;
-  url: string;
+  url?: string;
+  metadata?: {
+    size?: number;
+    mimeType?: string;
+    lastModified?: string;
+    type?: string;
+  };
   createdAt?: string;
   updatedAt?: string;
 }
@@ -173,8 +180,94 @@ const Settings: React.FC = () => {
 
     try {
       setIsUploadingDocuments(true);
-      const newDocs = await Promise.all(files.map(parseDocument));
-      setDocuments((prev) => [...prev, ...newDocs]);
+      const uploadedDocuments: DocumentEntry[] = [];
+
+      for (const file of files) {
+        try {
+          const [{ content, metadata: parsedMetadata }, base64] = await Promise.all([
+            parseDocument(file),
+            fileToBase64(file),
+          ]);
+
+          const metadataPayload: ApiDocumentResponse['metadata'] = {};
+          const resolvedSize = parsedMetadata.size ?? file.size;
+          if (typeof resolvedSize === 'number' && !Number.isNaN(resolvedSize)) {
+            metadataPayload.size = resolvedSize;
+          }
+          if (parsedMetadata.mimeType) {
+            metadataPayload.mimeType = parsedMetadata.mimeType;
+          }
+          if (parsedMetadata.type) {
+            metadataPayload.type = parsedMetadata.type;
+          }
+          const lastModifiedValue =
+            parsedMetadata.lastModified instanceof Date
+              ? parsedMetadata.lastModified
+              : parsedMetadata.lastModified
+                ? new Date(parsedMetadata.lastModified)
+                : new Date(file.lastModified);
+          if (!Number.isNaN(lastModifiedValue.getTime())) {
+            metadataPayload.lastModified = lastModifiedValue.toISOString();
+          }
+
+          const { data: savedDocument } = await http.post<ApiDocumentResponse>('/documents', {
+            base64,
+            name: file.name,
+            ...(Object.keys(metadataPayload).length > 0 ? { metadata: metadataPayload } : {}),
+          });
+
+          const resolvedUrl = resolveDocumentUrl(savedDocument.url ?? '');
+          const documentId =
+            savedDocument._id ??
+            savedDocument.id ??
+            `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+          const mimeType =
+            parsedMetadata.mimeType ??
+            savedDocument.metadata?.mimeType ??
+            getMimeTypeForType(parsedMetadata.type ?? 'pdf');
+          const lastModified = (() => {
+            const serverValue = savedDocument.metadata?.lastModified;
+            if (serverValue) {
+              const parsed = new Date(serverValue);
+              if (!Number.isNaN(parsed.getTime())) {
+                return parsed;
+              }
+            }
+            return lastModifiedValue;
+          })();
+
+          uploadedDocuments.push({
+            id: documentId,
+            content,
+            preview: content,
+            metadata: {
+              id: documentId,
+              title: savedDocument.name ?? parsedMetadata.title ?? file.name,
+              type: (parsedMetadata.type ?? savedDocument.metadata?.type ?? 'pdf') as DocumentMetadata['type'],
+              mimeType,
+              size:
+                savedDocument.metadata?.size ??
+                metadataPayload.size ??
+                parsedMetadata.size ??
+                file.size,
+              lastModified,
+              url: resolvedUrl || undefined,
+              downloadUrl: resolvedUrl || undefined,
+            },
+          });
+        } catch (error) {
+          console.error('Error uploading document:', error);
+          addToast(`Failed to upload ${file.name}`, 'error');
+        }
+      }
+
+      if (uploadedDocuments.length > 0) {
+        setDocuments((prev) => [...prev, ...uploadedDocuments]);
+        addToast(
+          uploadedDocuments.length === 1 ? 'Document uploaded' : 'Documents uploaded',
+          'success',
+        );
+      }
     } catch (error) {
       console.error('Error uploading documents:', error);
       addToast('Failed to upload documents', 'error');
@@ -202,9 +295,36 @@ const Settings: React.FC = () => {
     return `${normalizedBase}/${path}`;
   };
 
-  const handleDocumentDownload = (doc: { content: string; metadata: DocumentMetadata }) => {
+  const handleDocumentDownload = async (doc: DocumentEntry) => {
     const mimeType = doc.metadata.mimeType ?? getMimeTypeForType(doc.metadata.type);
-    downloadDocument(doc.content, doc.metadata.title, mimeType);
+
+    if (doc.content) {
+      downloadDocument(doc.content, doc.metadata.title, mimeType);
+      return;
+    }
+
+    const downloadSource = doc.metadata.downloadUrl ?? doc.metadata.url;
+    if (!downloadSource) {
+      addToast('Document content is not available for download', 'error');
+      return;
+    }
+
+    try {
+      const response = await fetch(resolveDocumentUrl(downloadSource), {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to download document: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const blobMimeType = blob.type || mimeType;
+      downloadDocument(blob, doc.metadata.title, blobMimeType);
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      addToast('Failed to download document', 'error');
+    }
   };
 
   const handleRemoveDocument = async (documentId?: string) => {
@@ -248,27 +368,34 @@ const Settings: React.FC = () => {
           const rawUrl = item.url ?? '';
           const title = item.name ?? rawUrl.split('/').pop() ?? 'Document';
           const extension = title.split('.').pop()?.toLowerCase();
+          const metadataType = item.metadata?.type as DocumentMetadata['type'] | undefined;
           const resolvedType = (() => {
+            if (metadataType) {
+              return metadataType;
+            }
             try {
-              return inferDocumentType(item.mimeType, extension);
+              return inferDocumentType(item.metadata?.mimeType, extension);
             } catch {
               return 'pdf' as DocumentMetadata['type'];
             }
           })();
-          const mimeType = item.mimeType
-            ? normalizeMimeType(item.mimeType, extension)
+          const mimeType = item.metadata?.mimeType
+            ? normalizeMimeType(item.metadata.mimeType, extension)
             : getMimeTypeForType(resolvedType);
-          const lastModifiedSource = item.updatedAt ?? item.createdAt;
+          const lastModifiedSource =
+            item.metadata?.lastModified ?? item.updatedAt ?? item.createdAt;
           const lastModified = lastModifiedSource ? new Date(lastModifiedSource) : new Date();
+          const resolvedUrl = resolveDocumentUrl(rawUrl);
 
           const metadata: DocumentMetadata = {
             id: item._id ?? item.id,
             title,
             type: resolvedType,
-            size: item.size ?? 0,
+            size: item.metadata?.size ?? 0,
             lastModified,
             mimeType,
-            url: rawUrl || undefined,
+            url: rawUrl ? resolvedUrl : undefined,
+            downloadUrl: rawUrl ? resolvedUrl : undefined,
           };
 
           return { id: metadata.id, metadata } satisfies DocumentEntry;

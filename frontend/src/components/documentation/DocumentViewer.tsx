@@ -63,11 +63,11 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
   }, [content, preview]);
 
   const shareUrl = useMemo(() => {
-    if (metadata.url) {
-      return metadata.url;
-    }
     if (metadata.downloadUrl) {
       return metadata.downloadUrl;
+    }
+    if (metadata.url) {
+      return metadata.url;
     }
     if (typeof window !== 'undefined' && window.location) {
       return `${window.location.origin}/documentation`;

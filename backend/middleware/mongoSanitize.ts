@@ -19,8 +19,8 @@ const sanitize = (obj: PlainObject, replaceWith = "_") => {
 
 const mongoSanitize = (replaceWith = "_") => {
   return (req: Request, _res: Response, next: NextFunction) => {
-    ["body", "query", "params"].forEach((key) => {
-      const value = (req as Record<string, unknown>)[key];
+    (["body", "query", "params"] as const).forEach((key) => {
+      const value = req[key];
       sanitize(value as PlainObject, replaceWith);
     });
 

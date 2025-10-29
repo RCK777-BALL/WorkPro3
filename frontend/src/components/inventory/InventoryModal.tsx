@@ -89,10 +89,10 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
       onClose={onClose}
       title={part ? 'Edit Part' : 'Add New Part'}
     >
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6 text-white">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label className="block text-sm font-medium text-white mb-1">
                 Name
               </label>
               <input
@@ -105,7 +105,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label className="block text-sm font-medium text-white mb-1">
                 SKU
               </label>
               <input
@@ -119,7 +119,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
+            <label className="block text-sm font-medium text-white mb-1">
               Description
             </label>
             <textarea
@@ -132,7 +132,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label className="block text-sm font-medium text-white mb-1">
                 Category
               </label>
               <input
@@ -144,7 +144,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label className="block text-sm font-medium text-white mb-1">
                 Location
               </label>
               <input
@@ -158,7 +158,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label className="block text-sm font-medium text-white mb-1">
                 Quantity
               </label>
               <input
@@ -171,7 +171,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label className="block text-sm font-medium text-white mb-1">
                 Unit Cost
               </label>
               <input
@@ -185,7 +185,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label className="block text-sm font-medium text-white mb-1">
                 Reorder Point
               </label>
               <input
@@ -197,7 +197,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label className="block text-sm font-medium text-white mb-1">
                 Reorder Threshold
               </label>
               <input
@@ -209,7 +209,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label className="block text-sm font-medium text-white mb-1">
                 Last Restock Date
               </label>
               <input
@@ -223,7 +223,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label className="block text-sm font-medium text-white mb-1">
                 Vendor
               </label>
               <input
@@ -235,7 +235,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label className="block text-sm font-medium text-white mb-1">
                 Last Order Date
               </label>
               <input
@@ -248,16 +248,16 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
+            <label className="block text-sm font-medium text-white mb-1">
               Part Image
             </label>
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-neutral-300 border-dashed rounded-md">
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-neutral-300 border-dashed rounded-md text-white">
               <div className="space-y-1 text-center">
-                <Upload className="mx-auto h-12 w-12 text-neutral-400" />
-                <div className="flex text-sm text-neutral-600">
+                <Upload className="mx-auto h-12 w-12 text-white" />
+                <div className="flex text-sm text-white">
                   <label
                     htmlFor="file-upload"
-                    className="relative cursor-pointer rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
+                    className="relative cursor-pointer rounded-md font-medium text-white hover:text-white/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-white"
                   >
                     <span>Upload a file</span>
                     <input
@@ -270,7 +270,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
                   </label>
                   <p className="pl-1">or drag and drop</p>
                 </div>
-                <p className="text-xs text-neutral-500">
+                <p className="text-xs text-white">
                   PNG, JPG, GIF up to 10MB
                 </p>
               </div>
@@ -278,7 +278,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
           </div>
 
           {error && (
-            <p className="text-red-600" role="alert">
+            <p className="text-white" role="alert">
               {error}
             </p>
           )}

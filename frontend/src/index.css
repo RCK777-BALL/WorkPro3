@@ -5,10 +5,10 @@
 /* your custom vars/utilities can go here */
 
 :root {
-  --app-background-color: #050a1a;
-  --app-surface-color: #0f172a;
-  --app-border-color: #1e293b;
-  --app-text-color: #e2e8f0;
+  --app-background-color: #f8fafc;
+  --app-surface-color: #ffffff;
+  --app-border-color: #e2e8f0;
+  --app-text-color: #0f172a;
   --accent-color: #4f46e5;
   --accent-color-strong: #4338ca;
   --accent-color-light: #e0e7ff;

@@ -35,13 +35,13 @@ export const WorkOrderRow: React.FC<WorkOrderRowProps> = ({ workOrder, onClick }
     <tr
       ref={setNodeRef}
       style={style}
-      className="hover:bg-neutral-50 transition-colors duration-150"
+      className="transition-colors duration-150 hover:bg-slate-800/60"
       {...attributes}
     >
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center">
           <button
-            className="mr-3 text-neutral-400 hover:text-neutral-600 cursor-grab active:cursor-grabbing"
+            className="mr-3 cursor-grab text-slate-500 transition hover:text-slate-300 active:cursor-grabbing"
             {...listeners}
           >
             <GripVertical size={16} />
@@ -54,7 +54,7 @@ export const WorkOrderRow: React.FC<WorkOrderRowProps> = ({ workOrder, onClick }
         </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <span className="text-sm font-medium text-neutral-900">{workOrder.id}</span>
+        <span className="text-sm font-medium text-slate-100">{workOrder.id}</span>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center">
@@ -66,18 +66,18 @@ export const WorkOrderRow: React.FC<WorkOrderRowProps> = ({ workOrder, onClick }
                 alt={workOrder.asset?.name || 'Asset'}
               />
             ) : (
-              <div className="h-10 w-10 rounded-lg bg-neutral-100 flex items-center justify-center">
-                <span className="text-neutral-500 text-sm font-medium">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-800">
+                <span className="text-sm font-medium text-slate-200">
                   {workOrder.asset?.name ? workOrder.asset.name.substring(0, 2).toUpperCase() : <Box size={20} />}
                 </span>
               </div>
             )}
           </div>
           <div className="ml-4">
-            <div className="text-sm font-medium text-neutral-900">
+            <div className="text-sm font-medium text-slate-100">
               {workOrder.asset?.name || 'Unknown Asset'}
             </div>
-            <div className="text-sm text-neutral-500">
+            <div className="text-sm text-slate-400">
               {workOrder.asset?.location || 'No location'}
             </div>
           </div>
@@ -91,10 +91,10 @@ export const WorkOrderRow: React.FC<WorkOrderRowProps> = ({ workOrder, onClick }
         />
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <span className="text-sm text-neutral-500">{workOrder.type}</span>
+        <span className="text-sm text-slate-400">{workOrder.type}</span>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <span className="text-sm text-neutral-500">
+        <span className="text-sm text-slate-400">
           {workOrder.complianceProcedureId
             ? workOrder.complianceProcedureId
             : workOrder.calibrationIntervalDays
@@ -103,7 +103,7 @@ export const WorkOrderRow: React.FC<WorkOrderRowProps> = ({ workOrder, onClick }
         </span>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <span className="text-sm text-neutral-500">
+        <span className="text-sm text-slate-400">
           {format(new Date(workOrder.scheduledDate || ''), 'MMM d, yyyy')}
         </span>
       </td>
@@ -115,12 +115,12 @@ export const WorkOrderRow: React.FC<WorkOrderRowProps> = ({ workOrder, onClick }
               size="sm"
               src={workOrder.assignedToAvatar}
             />
-            <span className="ml-2 text-sm text-neutral-900">
+            <span className="ml-2 text-sm text-slate-200">
               {workOrder.assignedTo}
             </span>
           </div>
         ) : (
-          <span className="text-sm text-neutral-500">Unassigned</span>
+          <span className="text-sm text-slate-400">Unassigned</span>
         )}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

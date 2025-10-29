@@ -50,21 +50,21 @@ const Header: React.FC = () => {
   );
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-gradient-to-r from-white to-neutral-100 px-4 dark:from-neutral-900 dark:to-neutral-800">
+    <header className="flex h-16 items-center justify-between border-b border-slate-800 bg-slate-950/80 px-4 text-slate-100 backdrop-blur supports-[backdrop-filter]:bg-slate-950/70">
       <button
         onClick={() => setSearchOpen(true)}
-        className="flex max-w-md flex-1 items-center rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-600 shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
+        className="flex max-w-md flex-1 items-center rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200 shadow-sm transition hover:border-slate-600 hover:bg-slate-900/80"
       >
-        <Search size={18} className="text-neutral-500 dark:text-neutral-400" />
-        <span className="ml-2 hidden flex-1 text-left md:block">
+        <Search size={18} className="text-slate-400" />
+        <span className="ml-2 hidden flex-1 text-left md:block text-slate-300">
           {t('header.searchPlaceholder')}
         </span>
-        <kbd className="ml-auto hidden rounded bg-neutral-200 px-1 text-xs md:inline dark:bg-neutral-700">
+        <kbd className="ml-auto hidden rounded border border-slate-700 bg-slate-800 px-1 text-xs text-slate-200 md:inline">
           ⌘K
         </kbd>
       </button>
       <div className="ml-4 flex items-center gap-4">
-        <span className="hidden text-sm font-medium text-neutral-600 md:block dark:text-neutral-300">
+        <span className="hidden text-sm font-medium text-slate-300 md:block">
           {formattedDateTime}
         </span>
         <NotificationMenu open={showNotifications} onOpenChange={setShowNotifications} />

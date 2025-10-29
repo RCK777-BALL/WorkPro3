@@ -32,36 +32,36 @@ const AssetTable: React.FC<AssetTableProps> = ({
   );
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
+    <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900/80 text-slate-100 shadow-sm backdrop-blur">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-neutral-200">
-          <thead className="bg-neutral-50">
+        <table className="min-w-full divide-y divide-slate-800">
+          <thead className="bg-slate-900/80">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-900 dark:text-neutral-100 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
                 Asset
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-900 dark:text-neutral-100 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-900 dark:text-neutral-100 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
                 Location
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-900 dark:text-neutral-100 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
                 Department
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-900 dark:text-neutral-100 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
                 Last Serviced
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-neutral-900 dark:text-neutral-100 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
                 Warranty Expiry
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-neutral-200">
+          <tbody className="divide-y divide-slate-800 bg-slate-900/60">
             {filteredAssets.map((asset) => (
               <tr
                 key={asset.id}
-                className="hover:bg-neutral-50 cursor-pointer transition-colors duration-150"
+                className="cursor-pointer transition-colors duration-150 hover:bg-slate-800/70"
               >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
@@ -73,18 +73,18 @@ const AssetTable: React.FC<AssetTableProps> = ({
                           alt={asset.name}
                         />
                       ) : (
-                        <div className="h-10 w-10 rounded-lg bg-neutral-100 flex items-center justify-center">
-                          <span className="text-neutral-600 text-sm font-medium dark:text-neutral-300">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-800">
+                          <span className="text-sm font-medium text-slate-200">
                             {asset.name.substring(0, 2).toUpperCase()}
                           </span>
                         </div>
                       )}
                     </div>
                     <div className="ml-4">
-                      <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                      <div className="text-sm font-medium text-slate-100">
                         {asset.name}
                       </div>
-                      <div className="text-sm text-neutral-600 dark:text-neutral-400">
+                      <div className="text-sm text-slate-400">
                         {asset.serialNumber}
                       </div>
                     </div>
@@ -97,16 +97,16 @@ const AssetTable: React.FC<AssetTableProps> = ({
                     size="sm"
                   />
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-700 dark:text-neutral-300">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                   {asset.location}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-700 dark:text-neutral-300">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                   {asset.department}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-700 dark:text-neutral-300">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                   {asset.lastServiced || 'N/A'}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-700 dark:text-neutral-300">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                   {asset.warrantyExpiry || 'N/A'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right">
@@ -155,13 +155,13 @@ const AssetTable: React.FC<AssetTableProps> = ({
       </div>
       
       {filteredAssets.length === 0 && (
-        <div className="text-center py-12">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-neutral-100 mb-4">
-            <svg className="h-8 w-8 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="py-12 text-center">
+          <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-slate-800">
+            <svg className="h-8 w-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
           </div>
-          <p className="text-neutral-500">No assets found</p>
+          <p className="text-slate-400">No assets found</p>
         </div>
       )}
     </div>

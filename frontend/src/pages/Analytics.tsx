@@ -17,11 +17,42 @@ type DowntimeRecord = { period: string; downtime: number };
 type CostRecord = { asset: string; cost: number };
 type TabKey = 'pm' | 'downtime' | 'cost';
 
+let hasLoggedSearchParamsFallback = false;
+
+const getInitialSearch = () => {
+  if (typeof window !== 'undefined' && window.location) {
+    return window.location.search ?? '';
+  }
+  return '';
+};
+
+const useSafeSearchParams = (): ReturnType<typeof useSearchParams> => {
+  try {
+    return useSearchParams();
+  } catch (error) {
+    if (process.env.NODE_ENV !== 'production' && !hasLoggedSearchParamsFallback) {
+      // eslint-disable-next-line no-console -- surfaced only in non-production environments for debugging
+      console.warn(
+        'Analytics page is rendering outside of a Router context. Falling back to in-memory search params.',
+        error,
+      );
+      hasLoggedSearchParamsFallback = true;
+    }
+    const [params, setParams] = useState(() => new URLSearchParams(getInitialSearch()));
+    const setFallback: ReturnType<typeof useSearchParams>[1] = (nextInit) => {
+      const nextValue =
+        typeof nextInit === 'function' ? nextInit(new URLSearchParams(params)) : nextInit;
+      setParams(new URLSearchParams(nextValue));
+    };
+    return [params, setFallback];
+  }
+};
+
 export default function Analytics() {
   const [pm, setPm] = useState<PmRecord[]>([]);
   const [downtime, setDowntime] = useState<DowntimeRecord[]>([]);
   const [cost, setCost] = useState<CostRecord[]>([]);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSafeSearchParams();
   const [tab, setTab] = useState<TabKey>(() => {
     const param = searchParams.get('tab');
     return param === 'downtime' || param === 'cost' ? param : 'pm';

@@ -32,6 +32,8 @@ type RawAuthUser = {
   role?: string;
 };
 
+const AUTH_ROUTE_PREFIXES = ['/login', '/register', '/forgot'];
+
 const allowedRoles: AuthUser['role'][] = [
   'general_manager',
   'assistant_general_manager',
@@ -53,6 +55,31 @@ const mapRole = (role?: string): AuthUser['role'] => {
     return role as AuthUser['role'];
   }
   return 'general_manager';
+};
+
+const getWindowPathname = (): string => {
+  if (typeof window !== 'undefined' && window.location) {
+    return window.location.pathname ?? '/';
+  }
+  return '/';
+};
+
+let hasLoggedRouterFallback = false;
+
+const useSafeLocation = (): ReturnType<typeof useLocation> | null => {
+  try {
+    return useLocation();
+  } catch (error) {
+    if (process.env.NODE_ENV !== 'production' && !hasLoggedRouterFallback) {
+      // eslint-disable-next-line no-console -- surfaced only in non-production environments for debugging
+      console.warn(
+        'AuthProvider is rendering outside of a Router context. Falling back to window.location.',
+        error,
+      );
+      hasLoggedRouterFallback = true;
+    }
+    return null;
+  }
 };
 
 const toAuthUser = (payload: RawAuthUser): AuthUser => {
@@ -202,7 +229,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const location = useLocation();
+  const location = useSafeLocation();
 
   const setStoreUser = useAuthStore((state: AuthState) => state.setUser);
   const storeLogout = useAuthStore((state: AuthState) => state.logout);
@@ -216,11 +243,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     [setStoreUser]
   );
 
-  const { pathname } = location;
-  const isAuthRoute =
-    pathname.startsWith('/login') ||
-    pathname.startsWith('/register') ||
-    pathname.startsWith('/forgot');
+  const pathname = location?.pathname ?? getWindowPathname();
+  const isAuthRoute = AUTH_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
   useEffect(() => {
     let cancelled = false;
@@ -270,7 +294,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       cancelled = true;
     };
-  }, [handleSetUser, isAuthRoute]);
+  }, [handleSetUser, isAuthRoute, pathname]);
 
   const login = useCallback(
     async (email: string, password: string, remember = false) => {

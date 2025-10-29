@@ -5,6 +5,27 @@
 /* your custom vars/utilities can go here */
 
 :root {
+  color-scheme: dark;
+  --app-background-color: #050a1a;
+  --app-surface-color: #0f172a;
+  --app-border-color: #1e293b;
+  --app-text-color: #e2e8f0;
+  --accent-color: #4f46e5;
+  --accent-color-strong: #4338ca;
+  --accent-color-light: #3730a3;
+  --accent-glow: rgba(99, 102, 241, 0.12);
+  --accent-glow-strong: rgba(79, 70, 229, 0.16);
+  --accent-halo: rgba(56, 189, 248, 0.08);
+}
+
+body {
+  background-color: var(--app-background-color);
+  color: var(--app-text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.light {
+  color-scheme: light;
   --app-background-color: #f8fafc;
   --app-surface-color: #ffffff;
   --app-border-color: #e2e8f0;
@@ -17,20 +38,16 @@
   --accent-halo: rgba(56, 189, 248, 0.08);
 }
 
-body {
-  background-color: var(--app-background-color);
-  color: var(--app-text-color);
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
 .dark {
+  color-scheme: dark;
   --app-background-color: #050a1a;
   --app-surface-color: #0f172a;
   --app-border-color: #1e293b;
   --app-text-color: #e2e8f0;
 }
 
-.dark body {
+.dark body,
+.light body {
   background-color: var(--app-background-color);
   color: var(--app-text-color);
 }

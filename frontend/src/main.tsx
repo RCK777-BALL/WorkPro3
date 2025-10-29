@@ -23,7 +23,7 @@ import App from "./App";
 
 const AppProviders = () => (
   <QueryClientProvider client={queryClient}>
-    <MantineProvider defaultColorScheme="light">
+    <MantineProvider defaultColorScheme="dark">
       <ThemeProvider>
         <AuthProvider>
           <App />

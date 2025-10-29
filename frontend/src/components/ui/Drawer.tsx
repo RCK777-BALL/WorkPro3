@@ -56,17 +56,17 @@ export default function Drawer({ open, onClose, title, children, widthClass = 'm
         onClick={onClose}
       />
       <aside
-        className={`absolute right-0 top-0 h-full bg-white shadow-xl transform transition-transform ${widthClass} ${open ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`absolute right-0 top-0 h-full border-l border-slate-800 bg-slate-900 text-slate-100 shadow-xl transition-transform ${widthClass} ${open ? 'translate-x-0' : 'translate-x-full'}`}
         role="dialog"
         aria-modal="true"
       >
-        <header className="px-4 py-3 border-b flex items-center justify-between">
-          {title && <h3 className="font-semibold">{title}</h3>}
-          <button aria-label="Close" onClick={onClose} className="text-neutral-500 hover:text-neutral-700">
+        <header className="flex items-center justify-between border-b border-slate-800 bg-slate-900 px-4 py-3">
+          {title && <h3 className="font-semibold text-slate-100">{title}</h3>}
+          <button aria-label="Close" onClick={onClose} className="text-slate-400 transition hover:text-slate-200">
             ✕
           </button>
         </header>
-        <div className="p-4 overflow-auto h-[calc(100%-3.5rem)]">{children}</div>
+        <div className="h-[calc(100%-3.5rem)] overflow-auto p-4">{children}</div>
       </aside>
     </div>
   );

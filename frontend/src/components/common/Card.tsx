@@ -28,15 +28,15 @@ const Card: React.FC<CardProps> = ({
   return (
     <div
       {...rest}
-      className={`bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-sm ${noPadding ? 'p-0' : 'p-6'} ${className}`}
+      className={`rounded-lg border border-slate-800 bg-slate-900 text-slate-100 shadow-sm ${noPadding ? 'p-0' : 'p-6'} ${className}`}
     >
       {(title || subtitle || headerActions || icon) && (
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-start">
             {icon && <span className="mr-2 mt-0.5">{icon}</span>}
             <div>
-              {title && <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">{title}</h3>}
-              {subtitle && <p className="text-sm text-neutral-700 dark:text-neutral-300">{subtitle}</p>}
+              {title && <h3 className="text-lg font-semibold text-slate-100">{title}</h3>}
+              {subtitle && <p className="text-sm text-slate-300">{subtitle}</p>}
             </div>
           </div>
           {headerActions && <div>{headerActions}</div>}

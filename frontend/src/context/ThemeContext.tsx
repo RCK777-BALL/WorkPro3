@@ -25,12 +25,12 @@ const TEXT_STORAGE_KEY = 'theme.textColor';
 
 const DEFAULT_THEME_COLORS: Record<Exclude<ThemeMode, 'system'>, ThemeColors> = {
   light: {
-    background: '#f8fafc',
-    text: '#0f172a',
+    background: '#050a1a',
+    text: '#e2e8f0',
   },
   dark: {
-    background: '#0f172a',
-    text: '#f8fafc',
+    background: '#050a1a',
+    text: '#e2e8f0',
   },
 };
 
@@ -54,9 +54,9 @@ const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setThemeState] = useState<ThemeMode>(() => {
-    if (typeof window === 'undefined') return 'system';
+    if (typeof window === 'undefined') return 'dark';
     const stored = window.localStorage.getItem(THEME_STORAGE_KEY) as ThemeMode | null;
-    return stored ?? 'system';
+    return stored ?? 'dark';
   });
 
   const [backgroundColor, setBackgroundColorState] = useState<string>(() => {

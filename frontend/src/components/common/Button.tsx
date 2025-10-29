@@ -32,7 +32,7 @@ const Button: React.FC<ButtonProps> = ({
   onClick,
   className = '',
 }) => {
-  const baseClasses = 'inline-flex items-center justify-center font-medium rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-neutral-900';
+  const baseClasses = 'inline-flex items-center justify-center font-medium rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 focus:ring-offset-slate-950';
   
   const variantClasses = {
     primary: 'bg-primary-950 text-white hover:bg-primary-800 focus:ring-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600',
@@ -41,8 +41,8 @@ const Button: React.FC<ButtonProps> = ({
     danger: 'bg-error-600 text-white hover:bg-error-700 focus:ring-error-500 dark:bg-error-700 dark:hover:bg-error-600',
     destructive: 'bg-error-600 text-white hover:bg-error-700 focus:ring-error-500 dark:bg-error-700 dark:hover:bg-error-600',
     warning: 'bg-warning-500 text-white hover:bg-warning-600 focus:ring-warning-400 dark:bg-warning-600 dark:hover:bg-warning-500',
-    outline: 'bg-transparent border border-neutral-300 text-neutral-700 hover:bg-neutral-50 focus:ring-neutral-500 dark:border-neutral-600 dark:text-neutral-200 dark:hover:bg-neutral-700',
-    ghost: 'bg-transparent text-neutral-700 hover:bg-neutral-100 focus:ring-neutral-500 dark:text-neutral-200 dark:hover:bg-neutral-800',
+    outline: 'border border-slate-600 bg-transparent text-slate-200 hover:bg-slate-800',
+    ghost: 'bg-transparent text-slate-300 hover:bg-slate-800',
   };
   
   const sizeClasses = {

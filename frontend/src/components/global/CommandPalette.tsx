@@ -57,24 +57,24 @@ export default function CommandPalette() {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center bg-black/40 px-4 py-12" role="dialog" aria-modal>
-      <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-xl dark:border-neutral-700 dark:bg-neutral-900">
-        <header className="flex items-center gap-2 border-b border-neutral-200 px-4 py-3 text-sm font-medium text-neutral-600 dark:border-neutral-800 dark:text-neutral-300">
+    <div className="fixed inset-0 z-[60] flex items-start justify-center bg-slate-950/80 px-4 py-12 backdrop-blur" role="dialog" aria-modal>
+      <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 text-slate-100 shadow-xl">
+        <header className="flex items-center gap-2 border-b border-slate-800 bg-slate-900 px-4 py-3 text-sm font-medium text-slate-200">
           <Command className="h-4 w-4" />
           Quick command palette
         </header>
-        <div className="border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
+        <div className="border-b border-slate-800 px-4 py-3">
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Type to filter commands"
-            className="w-full border-none bg-transparent text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none dark:text-neutral-100"
+            className="w-full border-none bg-transparent text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none"
             autoFocus
           />
         </div>
         <div className="max-h-72 overflow-y-auto px-2 py-3 text-sm">
           {filtered.length === 0 ? (
-            <p className="px-3 py-6 text-center text-neutral-500">No commands match that search.</p>
+            <p className="px-3 py-6 text-center text-slate-400">No commands match that search.</p>
           ) : (
             <ul className="space-y-1">
               {filtered.map((command) => (
@@ -85,10 +85,10 @@ export default function CommandPalette() {
                       setOpen(false);
                       navigate(command.href);
                     }}
-                    className="w-full rounded-xl px-3 py-2 text-left transition hover:bg-primary-50 hover:text-primary-700 focus:bg-primary-50 focus:outline-none dark:hover:bg-primary-500/10 dark:hover:text-primary-100"
+                    className="w-full rounded-xl px-3 py-2 text-left text-slate-200 transition hover:bg-slate-800 hover:text-slate-50 focus:bg-slate-800 focus:outline-none"
                   >
-                    <span className="block font-medium">{command.label}</span>
-                    <span className="mt-0.5 block text-xs text-neutral-500 dark:text-neutral-400">
+                    <span className="block font-medium text-slate-100">{command.label}</span>
+                    <span className="mt-0.5 block text-xs text-slate-400">
                       {command.description}
                     </span>
                   </button>

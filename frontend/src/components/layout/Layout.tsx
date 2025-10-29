@@ -74,7 +74,7 @@ export default function Layout() {
   const accent = useMemo(() => COLOR_SCHEMES[colorScheme] ?? COLOR_SCHEMES.default, [colorScheme]);
   const accentBackground = useMemo(
     () => ({
-      radial: `radial-gradient(circle at top, ${hexToRgba(accent.accent, 0.12)}, transparent 55%)`,
+      radial: `radial-gradient(circle at top, ${hexToRgba(accent.accent, 0.08)}, transparent 50%)`,
     }),
     [accent],
   );
@@ -120,24 +120,13 @@ export default function Layout() {
 
   return (
     <div
-      className="relative min-h-screen transition-colors duration-300"
+      className="relative min-h-screen bg-slate-950 text-slate-100 transition-colors duration-300"
       style={{ backgroundColor, color: textColor }}
     >
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div
-          className="absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl"
-          style={{ backgroundColor: accent.glow }}
-        />
-        <div
-          className="absolute bottom-[-40%] left-1/2 h-80 w-[32rem] -translate-x-1/2 rounded-full blur-3xl"
-          style={{ backgroundColor: accent.glowStrong }}
-        />
-        <div
-          className="absolute top-1/2 right-[-25%] h-[28rem] w-[28rem] -translate-y-1/2 rounded-full blur-[140px]"
-          style={{ backgroundColor: accent.halo }}
-        />
-        <div className="absolute inset-0" style={{ background: accentBackground.radial }} />
-      </div>
+      <div
+        className="pointer-events-none absolute inset-0 bg-slate-950"
+        style={{ background: accentBackground.radial }}
+      />
 
       <div className={clsx('relative z-10 flex min-h-screen', denseMode ? 'gap-4' : undefined)}>
         <Sidebar collapsed={sidebarCollapsed} />

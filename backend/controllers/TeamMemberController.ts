@@ -218,12 +218,12 @@ export const updateTeamMember = async (
       }
     }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
-    const existing = await TeamMember.findById({ _id: req.params.id, tenantId });
+    const existing = await TeamMember.findOne({ _id: req.params.id, tenantId });
     if (!existing) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    const updated = await TeamMember.findByIdAndUpdate(
+    const updated = await TeamMember.findOneAndUpdate(
       { _id: req.params.id, tenantId },
       req.body,
       {
@@ -284,7 +284,7 @@ export const deleteTeamMember = async (
       return;
     }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
-    const deleted = await TeamMember.findByIdAndDelete({
+    const deleted = await TeamMember.findOneAndDelete({
       _id: req.params.id,
       tenantId,
     });

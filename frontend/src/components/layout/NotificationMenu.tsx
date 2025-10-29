@@ -89,9 +89,8 @@ export default function NotificationMenu({ open, onOpenChange }: NotificationMen
         onClick={() => onOpenChange(!open)}
         className={clsx(
           "relative flex h-10 w-10 items-center justify-center rounded-full",
-          "border border-neutral-300 bg-white text-neutral-600 transition",
-          "hover:bg-neutral-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500",
-          "dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700",
+          "border border-slate-700 bg-slate-900 text-slate-200 transition",
+          "hover:border-slate-600 hover:bg-slate-900/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500",
         )}
         aria-haspopup="dialog"
         aria-expanded={open}
@@ -110,19 +109,19 @@ export default function NotificationMenu({ open, onOpenChange }: NotificationMen
           ref={panelRef}
           role="dialog"
           aria-label="Notifications"
-          className="absolute right-0 mt-3 w-80 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xl dark:border-neutral-700 dark:bg-neutral-900"
+          className="absolute right-0 mt-3 w-80 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/95 text-slate-100 shadow-2xl backdrop-blur"
         >
-          <header className="flex items-center justify-between border-b border-neutral-200 px-4 py-3 text-sm font-medium dark:border-neutral-700">
+          <header className="flex items-center justify-between border-b border-slate-800 bg-slate-900 px-4 py-3 text-sm font-medium text-slate-200">
             <span>Notifications</span>
             <button
               type="button"
-              className="text-xs text-primary-600 hover:underline focus:outline-none"
+              className="text-xs text-primary-300 transition hover:text-primary-200 focus:outline-none"
               onClick={() => onOpenChange(false)}
             >
               Mark all as read
             </button>
           </header>
-          <div className="divide-y divide-neutral-200 dark:divide-neutral-800">
+          <div className="divide-y divide-slate-800 bg-slate-900/70">
             {NOTIFICATIONS.map((notification) => (
               <Fragment key={notification.id}>
                 <article className="flex items-start gap-3 px-4 py-3">
@@ -141,10 +140,10 @@ export default function NotificationMenu({ open, onOpenChange }: NotificationMen
                       <Clock className="h-4 w-4" />
                     )}
                   </span>
-                  <div className="flex-1 text-sm">
-                    <p className="font-medium text-neutral-900 dark:text-neutral-100">{notification.title}</p>
-                    <p className="mt-1 text-neutral-600 dark:text-neutral-300">{notification.description}</p>
-                    <p className="mt-2 text-xs text-neutral-400">{notification.timeAgo}</p>
+                  <div className="flex-1 text-sm text-slate-200">
+                    <p className="font-medium text-slate-100">{notification.title}</p>
+                    <p className="mt-1 text-slate-300">{notification.description}</p>
+                    <p className="mt-2 text-xs text-slate-500">{notification.timeAgo}</p>
                   </div>
                 </article>
               </Fragment>

@@ -96,22 +96,22 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-6" role="dialog" aria-modal>
-      <div className="w-full max-w-xl rounded-2xl border border-neutral-200 bg-white shadow-2xl dark:border-neutral-700 dark:bg-neutral-900">
-        <div className="flex items-center gap-2 border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
-          <Search className="h-4 w-4 text-neutral-400" />
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/80 p-6 backdrop-blur" role="dialog" aria-modal>
+      <div className="w-full max-w-xl rounded-2xl border border-slate-800 bg-slate-900 text-slate-100 shadow-2xl">
+        <div className="flex items-center gap-2 border-b border-slate-800 px-4 py-3">
+          <Search className="h-4 w-4 text-slate-400" />
           <input
             ref={inputRef}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search destinations, commands, or modules"
-            className="flex-1 border-none bg-transparent text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none dark:text-neutral-100"
+            className="flex-1 border-none bg-transparent text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none"
             autoComplete="off"
           />
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="text-xs text-neutral-500 transition hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+            className="text-xs text-slate-400 transition hover:text-slate-200"
           >
             Esc
           </button>
@@ -119,7 +119,7 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
 
         <ul className="max-h-80 overflow-y-auto p-2">
           {results.length === 0 ? (
-            <li className="px-3 py-6 text-center text-sm text-neutral-500">No results. Try a different keyword.</li>
+            <li className="px-3 py-6 text-center text-sm text-slate-400">No results. Try a different keyword.</li>
           ) : (
             results.map((action) => (
               <li key={action.id}>
@@ -127,18 +127,18 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
                   to={action.href}
                   onClick={() => onOpenChange(false)}
                   className={clsx(
-                    "flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm",
-                    "hover:bg-primary-50 hover:text-primary-700 focus:bg-primary-50 focus:outline-none dark:hover:bg-primary-500/10 dark:hover:text-primary-200",
+                    "flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm text-slate-200",
+                    "hover:bg-slate-800 hover:text-slate-50 focus:bg-slate-800 focus:outline-none",
                   )}
                 >
                   <span>
-                    <span className="block font-medium">{action.label}</span>
-                    <span className="mt-0.5 block text-xs text-neutral-500 dark:text-neutral-400">
+                    <span className="block font-medium text-slate-100">{action.label}</span>
+                    <span className="mt-0.5 block text-xs text-slate-400">
                       {action.description}
                     </span>
                   </span>
                   {action.shortcut ? (
-                    <kbd className="inline-flex items-center gap-1 rounded-md border border-neutral-300 px-2 py-1 text-[10px] uppercase text-neutral-500 dark:border-neutral-700 dark:text-neutral-300">
+                    <kbd className="inline-flex items-center gap-1 rounded-md border border-slate-700 px-2 py-1 text-[10px] uppercase text-slate-300">
                       <Command className="h-3 w-3" />
                       {action.shortcut}
                     </kbd>

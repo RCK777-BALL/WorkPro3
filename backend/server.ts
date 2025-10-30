@@ -42,7 +42,6 @@ import {
   maintenanceScheduleRoutes,
   meterRoutes,
   notificationsRoutes,
-  maintenanceScheduleRoutes,
   permitRoutes,
   pmRoutes,
   pmTasksRoutes,
@@ -62,6 +61,8 @@ import {
   workOrdersRoutes,
 } from "./routes";
 import uiRoutes from "./routes/uiRoutes";
+import healthRouter from "./src/routes/health";
+import systemSummaryRouter from "./src/routes/summary";
 
 import { startPMScheduler } from "./utils/PMScheduler";
 import { setupSwagger } from "./utils/swagger";
@@ -188,6 +189,7 @@ if (env.NODE_ENV === "test") {
 
 app.use("/api/public", publicRequestRoutes);
 app.use("/api", uiRoutes);
+app.use("/api/health", healthRouter);
 
 // --- Routes (order matters for the limiter) ---
 app.use("/api/auth", authRoutes);
@@ -218,7 +220,6 @@ app.use("/api/maintenance-schedules", maintenanceScheduleRoutes);
 app.use("/api/vendors", vendorRoutes);
 app.use("/api/labor", laborRoutes);
 app.use("/api/knowledge-base", kbRoutes);
-app.use("/api/maintenance-schedules", maintenanceScheduleRoutes);
 
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
@@ -242,6 +243,7 @@ app.use("/api/summary", summaryRoutes);
 app.use("/api/status", statusRoutes);
 app.use("/api/audit", auditRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/system/summary", systemSummaryRouter);
 
 
 // 404 + error handler

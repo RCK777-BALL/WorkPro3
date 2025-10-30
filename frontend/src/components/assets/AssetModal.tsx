@@ -142,6 +142,16 @@ const AssetModal: React.FC<AssetModalProps> = ({
     },
   });
 
+  const normalizeAssetResponse = (
+    data: Record<string, any> | undefined,
+    fallbackId?: string,
+  ): Asset => {
+    const payload = data ?? {};
+    const { _id, id, ...rest } = payload;
+    const resolvedId = (_id ?? id ?? fallbackId ?? "") as string;
+    return { ...(rest as Omit<Asset, "id">), id: resolvedId } as Asset;
+  };
+
   const onSubmit = async (data: any) => {
     setError(null);
 

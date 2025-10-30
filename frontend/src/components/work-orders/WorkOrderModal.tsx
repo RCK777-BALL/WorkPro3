@@ -12,6 +12,7 @@ import AutoCompleteInput from "@/components/common/AutoCompleteInput";
 import type { WorkOrder, Part } from "@/types";
 import { searchAssets } from "@/api/search";
 import http from "@/lib/http";
+import { normalizeInventoryCollection } from "@/utils/parts";
 import { useDepartmentStore } from "@/store/departmentStore";
 import { useToast } from "@/context/ToastContext";
 import {
@@ -193,8 +194,8 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
 
   useEffect(() => {
     http
-      .get('/parts')
-      .then((res) => setAvailableParts(res.data as Part[]))
+      .get("/inventory")
+      .then((res) => setAvailableParts(normalizeInventoryCollection(res.data)))
       .catch(() => {});
   }, []);
 

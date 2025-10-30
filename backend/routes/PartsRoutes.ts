@@ -5,7 +5,7 @@
 import type { Request, Response, NextFunction, RequestHandler } from 'express';
 import { Router } from 'express';
 import multer, { MulterError } from 'multer';
-import { Types, isValidObjectId } from 'mongoose';
+import { Types, isValidObjectId, type FlattenMaps } from 'mongoose';
 
 import { requireAuth } from '../middleware/authMiddleware';
 import tenantScope from '../middleware/tenantScope';
@@ -91,7 +91,7 @@ const handleFormData: RequestHandler = (req, res, next) => {
   });
 };
 
-type LeanInventoryItem = Omit<IInventoryItem, '_id'> & {
+type LeanInventoryItem = FlattenMaps<IInventoryItem> & {
   _id: Types.ObjectId;
   tenantId: Types.ObjectId;
   vendor?: Types.ObjectId | string;
@@ -192,9 +192,7 @@ router.use(tenantScope);
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const query = applyTenantScope(req, {} as Record<string, unknown>);
-    const items: LeanInventoryItem[] = await InventoryItem.find(query)
-      .lean<LeanInventoryItem>()
-      .exec();
+    const items = (await InventoryItem.find(query).lean().exec()) as LeanInventoryItem[];
     const parts = items.map(mapToPart);
     sendResponse(res, parts);
   } catch (err) {
@@ -254,19 +252,17 @@ router.put('/:id', handleFormData, async (req: Request, res: Response, next: Nex
     }
 
     const filter = applyTenantScope(req, { _id: id });
-    const existing = await InventoryItem.findOne(filter)
-      .lean<LeanInventoryItem>()
-      .exec();
+    const existing = (await InventoryItem.findOne(filter).lean().exec()) as LeanInventoryItem | null;
     if (!existing) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
 
-    const updated = await InventoryItem.findOneAndUpdate(filter, data, {
+    const updated = (await InventoryItem.findOneAndUpdate(filter, data, {
       new: true,
       runValidators: true,
       lean: true,
-    }).exec();
+    }).exec()) as LeanInventoryItem | null;
     if (!updated) {
       sendResponse(res, null, 'Not found', 404);
       return;

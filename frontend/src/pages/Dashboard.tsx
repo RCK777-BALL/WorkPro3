@@ -114,6 +114,31 @@ type FilterState = {
   status: string;
 };
 
+const DEFAULT_FILTERS: FilterState = { department: "all", line: "all", status: "all" };
+
+const FILTER_STORAGE_KEY = "operations-dashboard-filters";
+
+const loadSavedFilters = (): FilterState => {
+  if (typeof window === "undefined") {
+    return DEFAULT_FILTERS;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(FILTER_STORAGE_KEY);
+    if (!raw) {
+      return DEFAULT_FILTERS;
+    }
+    const parsed = JSON.parse(raw) as Partial<FilterState> | null;
+    const department = typeof parsed?.department === "string" ? parsed.department : "all";
+    const line = typeof parsed?.line === "string" ? parsed.line : "all";
+    const status = typeof parsed?.status === "string" ? parsed.status : "all";
+
+    return { department, line, status };
+  } catch (error) {
+    return DEFAULT_FILTERS;
+  }
+};
+
 type SelectOption = {
   value: string;
   label: string;
@@ -772,7 +797,7 @@ function DashboardFilters({ filters, departments, lines, loading, onChange }: Fi
 }
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [filters, setFilters] = useState<FilterState>({ department: "all", line: "all", status: "all" });
+  const [filters, setFilters] = useState<FilterState>(() => loadSavedFilters());
   const [departments, setDepartments] = useState<SelectOption[]>([]);
   const [lines, setLines] = useState<LineOption[]>([]);
   const [optionsLoading, setOptionsLoading] = useState(true);
@@ -808,6 +833,13 @@ export default function Dashboard() {
       mountedRef.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    window.localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filters));
+  }, [filters]);
 
   useEffect(() => {
     livePulseRef.current = livePulse;
@@ -1038,6 +1070,37 @@ export default function Dashboard() {
       cancelled = true;
     };
   }, [fetchStatuses]);
+
+  useEffect(() => {
+    if (departments.length === 0 && lines.length === 0) {
+      return;
+    }
+
+    setFilters((prev) => {
+      let nextDepartment = prev.department;
+      let nextLine = prev.line;
+      let changed = false;
+
+      if (nextDepartment !== "all" && !departments.some((option) => option.value === nextDepartment)) {
+        nextDepartment = "all";
+        changed = true;
+      }
+
+      const availableLines =
+        nextDepartment === "all" ? lines : lines.filter((line) => line.departmentId === nextDepartment);
+
+      if (nextLine !== "all" && !availableLines.some((option) => option.value === nextLine)) {
+        nextLine = "all";
+        changed = true;
+      }
+
+      if (!changed) {
+        return prev;
+      }
+
+      return { ...prev, department: nextDepartment, line: nextLine };
+    });
+  }, [departments, lines]);
 
   useEffect(() => {
     void fetchSummary();

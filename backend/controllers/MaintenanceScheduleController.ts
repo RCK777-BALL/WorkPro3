@@ -7,53 +7,63 @@ import { validationResult } from 'express-validator';
 import MaintenanceSchedule from '../models/MaintenanceSchedule';
 import type { AuthedRequestHandler } from '../types/http';
 import { sendResponse } from '../utils/sendResponse';
-import { writeAuditLog } from '../utils/audit';
-import { toEntityId } from '../utils/ids';
+import type {
+  MaintenanceScheduleParams,
+  MaintenanceScheduleBody,
+  MaintenanceSchedulesResponse,
+  MaintenanceScheduleResponse,
+  MaintenanceScheduleDeleteResponse,
+} from '../types/maintenanceSchedule';
 
-const extractPayload = (body: Record<string, unknown>) => {
-  const {
-    title,
-    description,
-    assetId,
-    frequency,
-    nextDue,
-    estimatedDuration,
-    instructions,
-    type,
-    repeatConfig,
-    parts,
-    lastCompleted,
-    lastCompletedBy,
-    assignedTo,
-  } = body as Record<string, unknown>;
-
-  const repeat = repeatConfig && typeof repeatConfig === 'object'
-    ? {
-        interval: (repeatConfig as Record<string, unknown>).interval,
-        unit: (repeatConfig as Record<string, unknown>).unit,
-        endDate: (repeatConfig as Record<string, unknown>).endDate,
-        occurrences: (repeatConfig as Record<string, unknown>).occurrences,
-      }
-    : undefined;
-
-  return {
-    title,
-    description,
-    assetId,
-    frequency,
-    nextDue,
-    estimatedDuration,
-    instructions,
-    type,
-    repeatConfig: repeat,
-    parts,
-    lastCompleted,
-    lastCompletedBy,
-    assignedTo,
-  };
+const toDateOrUndefined = (value?: string | Date) => {
+  if (!value) {
+    return undefined;
+  }
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return undefined;
+  }
+  return date;
 };
 
-export const listMaintenanceSchedules: AuthedRequestHandler = async (req, res, next) => {
+const toUpdatePayload = (body: MaintenanceScheduleBody) => {
+  const payload: Record<string, unknown> = {
+    title: body.title,
+    description: body.description,
+    assetId: body.assetId,
+    frequency: body.frequency,
+    nextDue: toDateOrUndefined(body.nextDue),
+    estimatedDuration: body.estimatedDuration,
+    instructions: body.instructions,
+    type: body.type,
+    repeatConfig: {
+      interval: body.repeatConfig.interval,
+      unit: body.repeatConfig.unit,
+      ...(toDateOrUndefined(body.repeatConfig.endDate)
+        ? { endDate: toDateOrUndefined(body.repeatConfig.endDate) }
+        : {}),
+      ...(body.repeatConfig.occurrences && body.repeatConfig.occurrences > 0
+        ? { occurrences: body.repeatConfig.occurrences }
+        : {}),
+    },
+    parts: body.parts,
+  };
+
+  payload.lastCompleted = toDateOrUndefined(body.lastCompleted);
+  payload.lastCompletedBy = body.lastCompletedBy?.trim()
+    ? body.lastCompletedBy.trim()
+    : undefined;
+  payload.assignedTo = body.assignedTo?.trim()
+    ? body.assignedTo.trim()
+    : undefined;
+
+  return payload;
+};
+
+export const listMaintenanceSchedules: AuthedRequestHandler<
+  MaintenanceScheduleParams,
+  MaintenanceSchedulesResponse
+> = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -61,21 +71,23 @@ export const listMaintenanceSchedules: AuthedRequestHandler = async (req, res, n
       return;
     }
 
-    const schedules = await MaintenanceSchedule.find({ tenantId })
-      .sort({ nextDue: 1, createdAt: -1 })
-      .lean();
+    const filter: Record<string, unknown> = { tenantId };
+    if (req.siteId) {
+      filter.siteId = req.siteId;
+    }
 
+    const schedules = await MaintenanceSchedule.find(filter).sort({ nextDue: 1 });
     sendResponse(res, schedules);
   } catch (err) {
     next(err);
   }
 };
 
-export const getMaintenanceSchedule: AuthedRequestHandler<{ id: string }> = async (
-  req,
-  res,
-  next,
-) => {
+export const createMaintenanceSchedule: AuthedRequestHandler<
+  MaintenanceScheduleParams,
+  MaintenanceScheduleResponse,
+  MaintenanceScheduleBody
+> = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -83,13 +95,54 @@ export const getMaintenanceSchedule: AuthedRequestHandler<{ id: string }> = asyn
       return;
     }
 
-    const { id } = req.params;
-    if (!Types.ObjectId.isValid(id)) {
-      sendResponse(res, null, 'Invalid id', 400);
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendResponse(res, null, { errors: errors.array() }, 400);
       return;
     }
 
-    const schedule = await MaintenanceSchedule.findOne({ _id: id, tenantId }).lean();
+    const payload = {
+      ...toUpdatePayload(req.body),
+      tenantId: new Types.ObjectId(tenantId),
+      siteId: req.siteId ? new Types.ObjectId(req.siteId) : undefined,
+    };
+
+    const schedule = await MaintenanceSchedule.create(payload);
+    sendResponse(res, schedule, null, 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateMaintenanceSchedule: AuthedRequestHandler<
+  MaintenanceScheduleParams,
+  MaintenanceScheduleResponse,
+  MaintenanceScheduleBody
+> = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    if (!Types.ObjectId.isValid(req.params.id)) {
+      sendResponse(res, null, 'Invalid ID', 400);
+      return;
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendResponse(res, null, { errors: errors.array() }, 400);
+      return;
+    }
+
+    const schedule = await MaintenanceSchedule.findOneAndUpdate(
+      { _id: req.params.id, tenantId },
+      toUpdatePayload(req.body),
+      { new: true },
+    );
+
     if (!schedule) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -101,7 +154,10 @@ export const getMaintenanceSchedule: AuthedRequestHandler<{ id: string }> = asyn
   }
 };
 
-export const createMaintenanceSchedule: AuthedRequestHandler = async (req, res, next) => {
+export const deleteMaintenanceSchedule: AuthedRequestHandler<
+  MaintenanceScheduleParams,
+  MaintenanceScheduleDeleteResponse
+> = async (req, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -109,128 +165,22 @@ export const createMaintenanceSchedule: AuthedRequestHandler = async (req, res, 
       return;
     }
 
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendResponse(res, null, { errors: errors.array() }, 400);
+    if (!Types.ObjectId.isValid(req.params.id)) {
+      sendResponse(res, null, 'Invalid ID', 400);
       return;
     }
 
-    const payload = extractPayload(req.body);
-    const schedule = await MaintenanceSchedule.create({
-      ...payload,
+    const deleted = await MaintenanceSchedule.findOneAndDelete({
+      _id: req.params.id,
       tenantId,
     });
 
-    const userId = (req.user as any)?._id ?? (req.user as any)?.id;
-    await writeAuditLog({
-      tenantId,
-      userId: userId ? toEntityId(userId as string | Types.ObjectId) : undefined,
-      action: 'create',
-      entityType: 'MaintenanceSchedule',
-      entityId: toEntityId(schedule._id as Types.ObjectId),
-      after: schedule.toObject(),
-    });
-
-    sendResponse(res, schedule.toObject(), null, 201);
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const updateMaintenanceSchedule: AuthedRequestHandler<{ id: string }> = async (
-  req,
-  res,
-  next,
-) => {
-  try {
-    const tenantId = req.tenantId;
-    if (!tenantId) {
-      sendResponse(res, null, 'Tenant ID required', 400);
-      return;
-    }
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendResponse(res, null, { errors: errors.array() }, 400);
-      return;
-    }
-
-    const { id } = req.params;
-    if (!Types.ObjectId.isValid(id)) {
-      sendResponse(res, null, 'Invalid id', 400);
-      return;
-    }
-
-    const existing = await MaintenanceSchedule.findOne({ _id: id, tenantId });
-    if (!existing) {
+    if (!deleted) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
 
-    const payload = extractPayload(req.body);
-    const updated = await MaintenanceSchedule.findOneAndUpdate(
-      { _id: id, tenantId },
-      payload,
-      { new: true, runValidators: true },
-    );
-
-    if (!updated) {
-      sendResponse(res, null, 'Not found', 404);
-      return;
-    }
-
-    const userId = (req.user as any)?._id ?? (req.user as any)?.id;
-    await writeAuditLog({
-      tenantId,
-      userId: userId ? toEntityId(userId as string | Types.ObjectId) : undefined,
-      action: 'update',
-      entityType: 'MaintenanceSchedule',
-      entityId: toEntityId(updated._id as Types.ObjectId),
-      before: existing.toObject(),
-      after: updated.toObject(),
-    });
-
-    sendResponse(res, updated.toObject());
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const deleteMaintenanceSchedule: AuthedRequestHandler<{ id: string }> = async (
-  req,
-  res,
-  next,
-) => {
-  try {
-    const tenantId = req.tenantId;
-    if (!tenantId) {
-      sendResponse(res, null, 'Tenant ID required', 400);
-      return;
-    }
-
-    const { id } = req.params;
-    if (!Types.ObjectId.isValid(id)) {
-      sendResponse(res, null, 'Invalid id', 400);
-      return;
-    }
-
-    const existing = await MaintenanceSchedule.findOneAndDelete({ _id: id, tenantId });
-    if (!existing) {
-      sendResponse(res, null, 'Not found', 404);
-      return;
-    }
-
-    const userId = (req.user as any)?._id ?? (req.user as any)?.id;
-    await writeAuditLog({
-      tenantId,
-      userId: userId ? toEntityId(userId as string | Types.ObjectId) : undefined,
-      action: 'delete',
-      entityType: 'MaintenanceSchedule',
-      entityId: toEntityId(existing._id as Types.ObjectId),
-      before: existing.toObject(),
-    });
-
-    sendResponse(res, { success: true });
+    sendResponse(res, null, null, 204);
   } catch (err) {
     next(err);
   }

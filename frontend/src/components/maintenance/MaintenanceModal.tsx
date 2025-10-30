@@ -3,11 +3,16 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, AlertTriangle } from 'lucide-react';
+import { X, AlertTriangle, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '@common/Button';
 import type { MaintenanceSchedule } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
+import {
+  createMaintenanceSchedule,
+  updateMaintenanceSchedule,
+  deleteMaintenanceSchedule,
+} from '@/api/maintenanceSchedules';
 
 const createDefaultSchedule = (): MaintenanceSchedule => ({
   id: uuidv4(),
@@ -30,8 +35,12 @@ interface MaintenanceModalProps {
   isOpen: boolean;
   onClose: () => void;
   schedule: MaintenanceSchedule | null;
-  onSubmit: (schedule: MaintenanceSchedule) => Promise<void>;
-  onDelete?: (schedule: MaintenanceSchedule) => Promise<void>;
+  onOptimisticSave: (
+    schedule: MaintenanceSchedule,
+    mode: 'create' | 'update',
+  ) => () => void;
+  onFinalizeSave: (optimisticId: string, saved: MaintenanceSchedule) => void;
+  onOptimisticDelete: (id: string) => () => void;
 }
 
 const getErrorMessage = (error: unknown, fallback: string) => {
@@ -48,8 +57,9 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
   isOpen,
   onClose,
   schedule,
-  onSubmit,
-  onDelete,
+  onOptimisticSave,
+  onFinalizeSave,
+  onOptimisticDelete,
 }) => {
   const [formData, setFormData] = useState<MaintenanceSchedule>(
     schedule ?? createDefaultSchedule()
@@ -86,28 +96,64 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
     setIsDeleting(false);
   }, [schedule, isOpen]);
 
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const mode = schedule ? 'update' : 'create';
+    const optimisticSchedule = { ...formData };
+    const rollback = onOptimisticSave(optimisticSchedule, mode);
+
     setIsSaving(true);
     try {
-      await onSubmit(formData);
+      const payload = {
+        ...optimisticSchedule,
+        repeatConfig: {
+          ...optimisticSchedule.repeatConfig,
+          endDate: optimisticSchedule.repeatConfig.endDate || undefined,
+          occurrences: optimisticSchedule.repeatConfig.occurrences || undefined,
+        },
+        parts: optimisticSchedule.parts ?? [],
+        lastCompleted: optimisticSchedule.lastCompleted || undefined,
+        lastCompletedBy: optimisticSchedule.lastCompletedBy?.trim() || undefined,
+        assignedTo: optimisticSchedule.assignedTo?.trim() || undefined,
+      };
+
+      const saved = schedule
+        ? await updateMaintenanceSchedule(optimisticSchedule.id, payload)
+        : await createMaintenanceSchedule(payload);
+
+      onFinalizeSave(optimisticSchedule.id, saved);
+      toast.success(
+        schedule
+          ? 'Maintenance schedule updated successfully.'
+          : 'Maintenance schedule created successfully.',
+      );
       onClose();
-    } catch (error) {
-      toast.error(getErrorMessage(error, 'Unable to save maintenance schedule'));
+    } catch (err) {
+      console.error('Failed to save maintenance schedule', err);
+      rollback();
+      toast.error('Failed to save maintenance schedule. Please try again.');
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!schedule || !onDelete) return;
+    if (!schedule) return;
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this maintenance schedule?',
+    );
+    if (!confirmed) return;
+
+    const rollback = onOptimisticDelete(schedule.id);
     setIsDeleting(true);
     try {
-      await onDelete(schedule);
+      await deleteMaintenanceSchedule(schedule.id);
+      toast.success('Maintenance schedule deleted successfully.');
       onClose();
-    } catch (error) {
-      toast.error(getErrorMessage(error, 'Unable to delete maintenance schedule'));
+    } catch (err) {
+      console.error('Failed to delete maintenance schedule', err);
+      rollback();
+      toast.error('Failed to delete maintenance schedule. Please try again.');
     } finally {
       setIsDeleting(false);
     }
@@ -436,13 +482,13 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
           </div>
 
           <div className="flex justify-end space-x-3 pt-6 border-t border-neutral-200 dark:border-neutral-700">
-            {schedule && onDelete && (
+            {schedule && (
               <Button
                 type="button"
-                variant="danger"
+                variant="destructive"
                 onClick={handleDelete}
-                disabled={isSaving}
-                loading={isDeleting}
+                disabled={isSaving || isDeleting}
+                icon={<Trash2 size={16} />}
               >
                 Delete
               </Button>
@@ -458,10 +504,13 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
             <Button
               type="submit"
               variant="primary"
-              loading={isSaving}
-              disabled={isDeleting}
+              disabled={isSaving || isDeleting}
             >
-              {schedule ? 'Update Schedule' : 'Create Schedule'}
+              {isSaving
+                ? 'Saving...'
+                : schedule
+                  ? 'Update Schedule'
+                  : 'Create Schedule'}
             </Button>
           </div>
         </form>

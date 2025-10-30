@@ -2,19 +2,62 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { isAxiosError } from 'axios';
 import Avatar from '@/components/common/Avatar';
 import WorkHistoryCard from '@/components/teams/WorkHistoryCard';
 import { teamMembers } from '@/utils/data';
 import http from '@/lib/http';
-import type { WorkHistory, WorkHistoryEntry, PermitActivitySummary } from '@/types';
+import type { WorkHistory, PermitActivitySummary } from '@/types';
+import {
+  createWorkHistory,
+  fetchWorkHistoryByMember,
+  updateWorkHistory,
+} from '@/api/workHistory';
+
+const EMPTY_WORK_HISTORY: WorkHistory = {
+  metrics: {
+    safety: {
+      incidentRate: 0,
+      lastIncidentDate: '1970-01-01',
+      safetyCompliance: 0,
+      nearMisses: 0,
+      safetyMeetingsAttended: 0,
+    },
+    people: {
+      attendanceRate: 0,
+      teamCollaboration: 0,
+      trainingHours: 0,
+      certifications: [],
+      mentorshipHours: 0,
+    },
+    productivity: {
+      completedTasks: 0,
+      onTimeCompletion: 0,
+      averageResponseTime: '0h',
+      overtimeHours: 0,
+      taskEfficiencyRate: 0,
+    },
+    improvement: {
+      costSavings: 0,
+      suggestionsSubmitted: 0,
+      suggestionsImplemented: 0,
+      processImprovements: 0,
+    },
+  },
+  recentWork: [],
+};
 const TeamMemberProfile = () => {
   const { id } = useParams<{ id: string }>();
   const member = teamMembers.find(m => m.id === id);
   const [permitActivity, setPermitActivity] = useState<PermitActivitySummary | null>(null);
   const [activityError, setActivityError] = useState<string | null>(null);
   const [loadingActivity, setLoadingActivity] = useState(false);
+  const [workHistory, setWorkHistory] = useState<WorkHistory>(EMPTY_WORK_HISTORY);
+  const [workHistoryId, setWorkHistoryId] = useState<string | null>(null);
+  const [loadingWorkHistory, setLoadingWorkHistory] = useState(true);
+  const [workHistoryError, setWorkHistoryError] = useState<string | null>(null);
 
   if (!member) {
     return (
@@ -45,64 +88,60 @@ const TeamMemberProfile = () => {
     }
   }, [member.id]);
 
-  const [workHistory, setWorkHistory] = useState<WorkHistory>(() => ({
-    metrics: {
-      safety: {
-        incidentRate: 0.5,
-        lastIncidentDate: '2024-01-15',
-        safetyCompliance: 98,
-        nearMisses: 3,
-        safetyMeetingsAttended: 12,
-      },
-      people: {
-        attendanceRate: 97,
-        teamCollaboration: 4.5,
-        trainingHours: 24,
-        certifications: ['Safety Protocol', 'Equipment Operation'],
-        mentorshipHours: 8,
-      },
-      productivity: {
-        completedTasks: 45,
-        onTimeCompletion: 92,
-        averageResponseTime: '1.8h',
-        overtimeHours: 12,
-        taskEfficiencyRate: 95,
-      },
-      improvement: {
-        costSavings: 15000,
-        suggestionsSubmitted: 4,
-        suggestionsImplemented: 3,
-        processImprovements: 2,
-      },
-    },
-    recentWork: [
-      {
-        id: '1',
-        date: '2024-03-15',
-        type: 'work_order',
-        title: 'HVAC System Maintenance',
-        status: 'completed',
-        duration: 3,
-        notes: 'Completed ahead of schedule',
-      },
-      {
-        id: '2',
-        date: '2024-03-14',
-        type: 'maintenance',
-        title: 'Conveyor Belt Inspection',
-        status: 'completed',
-        duration: 2,
-      },
-      {
-        id: '3',
-        date: '2024-03-13',
-        type: 'training',
-        title: 'Safety Protocol Training',
-        status: 'completed',
-        duration: 4,
-      },
-    ] as WorkHistoryEntry[],
-  }));
+  const loadWorkHistory = useCallback(async () => {
+    if (!member?.id) {
+      return;
+    }
+
+    try {
+      setLoadingWorkHistory(true);
+      const result = await fetchWorkHistoryByMember(member.id);
+      if (result) {
+        setWorkHistoryId(result._id);
+        setWorkHistory({
+          metrics: result.metrics ?? EMPTY_WORK_HISTORY.metrics,
+          recentWork: Array.isArray(result.recentWork) ? result.recentWork : [],
+        });
+        setWorkHistoryError(null);
+      } else {
+        setWorkHistoryId(null);
+        setWorkHistory(EMPTY_WORK_HISTORY);
+        setWorkHistoryError(null);
+      }
+    } catch (error) {
+      if (isAxiosError(error) && error.response?.status === 404) {
+        setWorkHistoryId(null);
+        setWorkHistory(EMPTY_WORK_HISTORY);
+        setWorkHistoryError(null);
+      } else {
+        setWorkHistoryError('Unable to load work history.');
+      }
+    } finally {
+      setLoadingWorkHistory(false);
+    }
+  }, [member?.id]);
+
+  useEffect(() => {
+    void loadWorkHistory();
+  }, [loadWorkHistory]);
+
+  const handleSaveWorkHistory = useCallback(async (updated: WorkHistory) => {
+    if (!member?.id) {
+      return;
+    }
+
+    const payload = { ...updated, memberId: member.id };
+    const saved = workHistoryId
+      ? await updateWorkHistory(workHistoryId, payload)
+      : await createWorkHistory(payload);
+
+    setWorkHistoryId(saved._id);
+    setWorkHistory({
+      metrics: saved.metrics ?? EMPTY_WORK_HISTORY.metrics,
+      recentWork: Array.isArray(saved.recentWork) ? saved.recentWork : [],
+    });
+    setWorkHistoryError(null);
+  }, [member?.id, workHistoryId]);
 
   return (
     <div className="space-y-6">
@@ -192,11 +231,30 @@ const TeamMemberProfile = () => {
               </div>
             )}
           </div>
-          <WorkHistoryCard
-            metrics={workHistory.metrics}
-            recentWork={workHistory.recentWork}
-            onSave={setWorkHistory}
-          />
+          {loadingWorkHistory ? (
+            <div className="rounded-lg border border-neutral-200 bg-white p-6 text-sm text-neutral-500 shadow-sm">
+              Loading work history…
+            </div>
+          ) : workHistoryError ? (
+            <div className="space-y-4 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+              <p className="text-sm text-error-600">{workHistoryError}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  void loadWorkHistory();
+                }}
+                className="inline-flex items-center justify-center rounded-md border border-primary-200 bg-white px-4 py-2 text-sm font-medium text-primary-600 transition hover:border-primary-300 hover:text-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              >
+                Retry
+              </button>
+            </div>
+          ) : (
+            <WorkHistoryCard
+              metrics={workHistory.metrics}
+              recentWork={workHistory.recentWork}
+              onSave={handleSaveWorkHistory}
+            />
+          )}
         </div>
       </div>
   );

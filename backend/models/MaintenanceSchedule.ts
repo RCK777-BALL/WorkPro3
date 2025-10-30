@@ -4,46 +4,52 @@
 
 import mongoose, { Schema, type Document } from 'mongoose';
 
-export type RepeatUnit = 'day' | 'week' | 'month';
+export type MaintenanceScheduleRepeatUnit = 'day' | 'week' | 'month';
+
+export interface MaintenanceScheduleRepeatConfig {
+  interval: number;
+  unit: MaintenanceScheduleRepeatUnit;
+  endDate?: Date;
+  occurrences?: number;
+}
 
 export interface MaintenanceScheduleDocument extends Document {
   tenantId: Schema.Types.ObjectId;
+  siteId?: Schema.Types.ObjectId;
   title: string;
   description?: string;
   assetId?: string;
   frequency: string;
   nextDue: Date;
-  estimatedDuration?: number;
+  estimatedDuration: number;
   instructions?: string;
-  type?: string;
-  repeatConfig: {
-    interval: number;
-    unit: RepeatUnit;
-    endDate?: Date | null;
-    occurrences?: number | null;
-  };
+  type: string;
+  repeatConfig: MaintenanceScheduleRepeatConfig;
   parts: string[];
-  lastCompleted?: Date | null;
+  lastCompleted?: Date;
   lastCompletedBy?: string;
   assignedTo?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const MaintenanceScheduleSchema = new Schema<MaintenanceScheduleDocument>(
   {
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
+    siteId: { type: Schema.Types.ObjectId, ref: 'Site', index: true },
     title: { type: String, required: true },
     description: { type: String },
     assetId: { type: String },
     frequency: { type: String, required: true },
     nextDue: { type: Date, required: true },
-    estimatedDuration: { type: Number },
+    estimatedDuration: { type: Number, required: true, min: 0 },
     instructions: { type: String },
-    type: { type: String },
+    type: { type: String, required: true },
     repeatConfig: {
-      interval: { type: Number, default: 1 },
-      unit: { type: String, enum: ['day', 'week', 'month'], default: 'month' },
+      interval: { type: Number, required: true, min: 1 },
+      unit: { type: String, enum: ['day', 'week', 'month'], required: true },
       endDate: { type: Date },
-      occurrences: { type: Number },
+      occurrences: { type: Number, min: 1 },
     },
     parts: { type: [String], default: [] },
     lastCompleted: { type: Date },
@@ -54,42 +60,38 @@ const MaintenanceScheduleSchema = new Schema<MaintenanceScheduleDocument>(
     timestamps: true,
     toJSON: {
       virtuals: true,
+      versionKey: false,
       transform: (_doc, ret) => {
-        ret.id = ret._id.toString();
-        delete ret._id;
-        delete ret.__v;
-        if (ret.nextDue instanceof Date) {
-          ret.nextDue = ret.nextDue.toISOString();
+        if (ret._id) {
+          ret.id = ret._id.toString();
+          delete ret._id;
         }
-        if (ret.lastCompleted instanceof Date) {
-          ret.lastCompleted = ret.lastCompleted.toISOString();
+        if (ret.tenantId) {
+          ret.tenantId = ret.tenantId.toString();
         }
-        if (ret.repeatConfig?.endDate instanceof Date) {
-          ret.repeatConfig.endDate = ret.repeatConfig.endDate.toISOString();
+        if (ret.siteId) {
+          ret.siteId = ret.siteId.toString();
         }
+        return ret;
       },
     },
     toObject: {
       virtuals: true,
+      versionKey: false,
       transform: (_doc, ret) => {
-        ret.id = ret._id.toString();
-        delete ret._id;
-        delete ret.__v;
-        if (ret.nextDue instanceof Date) {
-          ret.nextDue = ret.nextDue.toISOString();
+        if (ret._id) {
+          ret.id = ret._id.toString();
+          delete ret._id;
         }
-        if (ret.lastCompleted instanceof Date) {
-          ret.lastCompleted = ret.lastCompleted.toISOString();
-        }
-        if (ret.repeatConfig?.endDate instanceof Date) {
-          ret.repeatConfig.endDate = ret.repeatConfig.endDate.toISOString();
-        }
+        return ret;
       },
     },
   },
 );
 
-export default mongoose.model<MaintenanceScheduleDocument>(
+const MaintenanceSchedule = mongoose.model<MaintenanceScheduleDocument>(
   'MaintenanceSchedule',
   MaintenanceScheduleSchema,
 );
+
+export default MaintenanceSchedule;

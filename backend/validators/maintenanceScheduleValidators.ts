@@ -4,28 +4,42 @@
 
 import { body } from 'express-validator';
 
-export const maintenanceScheduleValidators = [
-  body('title').isString().withMessage('Title is required').notEmpty(),
-  body('frequency').isString().withMessage('Frequency is required').notEmpty(),
-  body('nextDue').optional().isISO8601().withMessage('nextDue must be a valid date'),
-  body('estimatedDuration').optional().isNumeric(),
-  body('parts').optional().isArray(),
-  body('parts.*').optional().isString(),
-  body('repeatConfig').optional().isObject(),
-  body('repeatConfig.interval').optional().isInt({ min: 1 }),
+const repeatConfigValidators = [
+  body('repeatConfig.interval')
+    .isInt({ min: 1 })
+    .withMessage('repeatConfig.interval must be at least 1')
+    .toInt(),
   body('repeatConfig.unit')
-    .optional()
     .isIn(['day', 'week', 'month'])
     .withMessage('repeatConfig.unit must be day, week, or month'),
-  body('repeatConfig.occurrences').optional().isInt({ min: 1 }),
-  body('repeatConfig.endDate').optional({ checkFalsy: true }).isISO8601().withMessage('endDate must be a valid date'),
-  body('assignedTo').optional().isString(),
-  body('description').optional().isString(),
-  body('instructions').optional().isString(),
-  body('type').optional().isString(),
-  body('assetId').optional().isString(),
-  body('lastCompleted').optional({ checkFalsy: true }).isISO8601().withMessage('lastCompleted must be a valid date'),
-  body('lastCompletedBy').optional().isString(),
+  body('repeatConfig.endDate')
+    .optional()
+    .notEmpty()
+    .withMessage('repeatConfig.endDate cannot be empty')
+    .isISO8601()
+    .toDate(),
+  body('repeatConfig.occurrences')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('repeatConfig.occurrences must be at least 1')
+    .toInt(),
 ];
 
-export default maintenanceScheduleValidators;
+export const maintenanceScheduleValidators = [
+  body('title').isString().notEmpty().withMessage('title is required'),
+  body('description').optional().isString(),
+  body('assetId').optional().isString(),
+  body('frequency').isString().notEmpty(),
+  body('nextDue').isISO8601().toDate(),
+  body('estimatedDuration').isFloat({ min: 0 }).toFloat(),
+  body('instructions').optional().isString(),
+  body('type').isString().notEmpty(),
+  ...repeatConfigValidators,
+  body('parts').isArray(),
+  body('parts.*').isString(),
+  body('lastCompleted').optional().isISO8601().toDate(),
+  body('lastCompletedBy').optional().isString(),
+  body('assignedTo').optional().isString(),
+];
+
+export const maintenanceScheduleUpdateValidators = maintenanceScheduleValidators;

@@ -69,6 +69,14 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const labelClass = 'block text-sm font-medium text-white mb-1';
+  const inputClass =
+    'w-full px-3 py-2 border border-slate-700 rounded-md bg-slate-900 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500/40';
+  const selectClass = inputClass;
+  const textareaClass =
+    'w-full px-3 py-2 border border-slate-700 rounded-md bg-slate-900 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500/40';
+  const mutedTextClass = 'text-sm text-white/70';
+
   useEffect(() => {
     if (schedule) {
 
@@ -188,14 +196,14 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-700">
-          <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
+      <div className="bg-slate-900 text-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-slate-700">
+        <div className="flex items-center justify-between p-6 border-b border-slate-700">
+          <h2 className="text-xl font-semibold text-white">
             {schedule ? 'Edit Maintenance Schedule' : 'Create Maintenance Schedule'}
           </h2>
           <button
             onClick={onClose}
-            className="text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
+            className="text-white/70 hover:text-white"
             disabled={isSaving || isDeleting}
             aria-disabled={isSaving || isDeleting}
           >
@@ -206,12 +214,12 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-white mb-1">
+              <label className={labelClass}>
                 Title
               </label>
               <input
                 type="text"
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
+                className={inputClass}
                 value={formData.title}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, title: e.target.value })}
                 required
@@ -219,12 +227,12 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-white mb-1">
+              <label className={labelClass}>
                 Asset ID
               </label>
               <input
                 type="text"
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
+                className={inputClass}
                 value={formData.assetId}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, assetId: e.target.value })}
               />
@@ -232,11 +240,11 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-900 dark:text-white mb-1">
+            <label className={labelClass}>
               Description
             </label>
             <textarea
-              className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
+              className={textareaClass}
               rows={4}
               value={formData.description}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, description: e.target.value })}
@@ -245,11 +253,11 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-white mb-1">
+              <label className={labelClass}>
                 Type
               </label>
               <select
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
+                className={selectClass}
                 value={formData.type}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData({ ...formData, type: e.target.value })}
               >
@@ -262,11 +270,11 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-white mb-1">
+              <label className={labelClass}>
                 Frequency
               </label>
               <select
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
+                className={selectClass}
                 value={formData.frequency}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                   const newFrequency = e.target.value;
@@ -290,24 +298,24 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-white mb-1">
+              <label className={labelClass}>
                 Start Date
               </label>
               <input
                 type="date"
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
+                className={inputClass}
                 value={formData.nextDue}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, nextDue: e.target.value })}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-white mb-1">
+              <label className={labelClass}>
                 Estimated Duration (hours)
               </label>
               <input
                 type="number"
-                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
+                className={inputClass}
                 value={formData.estimatedDuration}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, estimatedDuration: parseInt(e.target.value) })}
                 min="0"
@@ -327,16 +335,16 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
             </Button>
 
             {showAdvancedOptions && (
-              <div className="space-y-4 p-4 bg-neutral-50 dark:bg-neutral-900 rounded-lg">
+              <div className="space-y-4 p-4 bg-slate-800 rounded-lg">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-neutral-900 dark:text-white mb-1">
+                    <label className={labelClass}>
                       Repeat Every
                     </label>
                     <div className="flex space-x-2">
                       <input
                         type="number"
-                        className="w-20 px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
+                        className={`${inputClass} w-20`}
                         value={formData.repeatConfig.interval}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({
                           ...formData,
@@ -348,7 +356,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                         min="1"
                       />
                       <select
-                        className="flex-1 px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
+                        className={`${selectClass} flex-1`}
                         value={formData.repeatConfig.unit}
                         onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                           setFormData({
@@ -368,7 +376,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-neutral-900 dark:text-white mb-1">
+                    <label className={labelClass}>
                       End
                     </label>
                     <div className="space-y-2">
@@ -386,7 +394,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                             }
                           })}
                         />
-                        <span className="text-sm text-neutral-900 dark:text-white">Never</span>
+                        <span className={mutedTextClass}>Never</span>
                       </div>
 
                       <div className="flex items-center space-x-2">
@@ -403,10 +411,10 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                             }
                           })}
                         />
-                        <span className="text-sm text-neutral-900 dark:text-white">On</span>
+                        <span className={mutedTextClass}>On</span>
                         <input
                           type="date"
-                          className="flex-1 px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
+                          className={`${inputClass} flex-1`}
                           value={formData.repeatConfig.endDate}
                           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({
                             ...formData,
@@ -434,10 +442,10 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                             }
                           })}
                         />
-                        <span className="text-sm text-neutral-900 dark:text-white">After</span>
+                        <span className={mutedTextClass}>After</span>
                         <input
                           type="number"
-                          className="w-20 px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
+                          className={`${inputClass} w-20`}
                           value={formData.repeatConfig.occurrences || ''}
                           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({
                             ...formData,
@@ -450,15 +458,15 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
                           min="1"
                           disabled={!formData.repeatConfig.occurrences}
                         />
-                        <span className="text-sm text-neutral-900 dark:text-white">occurrences</span>
+                        <span className={mutedTextClass}>occurrences</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="mt-4">
-                  <div className="flex items-center space-x-2 text-warning-600 dark:text-warning-400">
-                    <AlertTriangle size={16} />
+                  <div className="flex items-center space-x-2 text-white">
+                    <AlertTriangle size={16} className="text-warning-400" />
                     <span className="text-sm">
                       Changes to the schedule will affect all future occurrences
                     </span>
@@ -469,11 +477,11 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-900 dark:text-white mb-1">
+            <label className={labelClass}>
               Instructions
             </label>
             <textarea
-              className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white"
+              className={textareaClass}
               rows={6}
               value={formData.instructions}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, instructions: e.target.value })}
@@ -481,7 +489,7 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
             />
           </div>
 
-          <div className="flex justify-end space-x-3 pt-6 border-t border-neutral-200 dark:border-neutral-700">
+          <div className="flex justify-end space-x-3 pt-6 border-t border-slate-700">
             {schedule && (
               <Button
                 type="button"

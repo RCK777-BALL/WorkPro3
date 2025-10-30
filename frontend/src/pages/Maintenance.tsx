@@ -114,73 +114,73 @@ const Maintenance: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-white">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-neutral-900">Maintenance</h2>
-          <p className="text-neutral-500">Schedule and track preventive maintenance</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 sm:space-x-3">
-            <Button
-              variant="outline"
-              icon={<Calendar size={16} />}
-              onClick={() => {}}
-            >
-              Calendar View
-            </Button>
-            <Button
-              variant="outline"
-              icon={<Download size={16} />}
-              onClick={handleExportExcel}
-            >
-              Export Excel
-            </Button>
-            <Button
-              variant="outline"
-              icon={<Upload size={16} />}
-              onClick={handleExportPDF}
-            >
-              Export PDF
-            </Button>
-            <Button
-              variant="primary"
-              icon={<Plus size={16} />}
-              onClick={() => handleOpenModal(null)}
-            >
-              New Schedule
-            </Button>
-          </div>
+          <h2 className="text-2xl font-bold text-white">Maintenance</h2>
+          <p className="text-slate-300">Schedule and track preventive maintenance</p>
         </div>
-
-        <MaintenanceMetrics />
-
-        <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 bg-white p-4 rounded-lg shadow-sm border border-neutral-200">
-          <Search className="text-neutral-500" size={20} />
-          <input
-            type="text"
-            placeholder="Search maintenance schedules..."
-            className="flex-1 bg-transparent border-none outline-none text-neutral-900 placeholder-neutral-400"
-            value={search}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-          />
+        <div className="flex flex-wrap items-center gap-2 sm:space-x-3">
+          <Button
+            variant="outline"
+            icon={<Calendar size={16} />}
+            onClick={() => {}}
+          >
+            Calendar View
+          </Button>
+          <Button
+            variant="outline"
+            icon={<Download size={16} />}
+            onClick={handleExportExcel}
+          >
+            Export Excel
+          </Button>
+          <Button
+            variant="outline"
+            icon={<Upload size={16} />}
+            onClick={handleExportPDF}
+          >
+            Export PDF
+          </Button>
+          <Button
+            variant="primary"
+            icon={<Plus size={16} />}
+            onClick={() => handleOpenModal(null)}
+          >
+            New Schedule
+          </Button>
         </div>
+      </div>
 
-        <MaintenanceScheduleTable
-          schedules={schedules}
-          search={search}
-          onRowClick={handleOpenModal}
-          isLoading={isLoading}
-        />
+      <MaintenanceMetrics />
 
-        <MaintenanceModal
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-          schedule={selectedSchedule}
-          onOptimisticSave={applyOptimisticSave}
-          onFinalizeSave={finalizeSave}
-          onOptimisticDelete={applyOptimisticDelete}
+      <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 bg-slate-900 p-4 rounded-lg shadow-sm border border-slate-700">
+        <Search className="text-slate-400" size={20} />
+        <input
+          type="text"
+          placeholder="Search maintenance schedules..."
+          className="flex-1 bg-transparent border-none outline-none text-white placeholder-slate-500"
+          value={search}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
         />
       </div>
+
+      <MaintenanceScheduleTable
+        schedules={schedules}
+        search={search}
+        onRowClick={handleOpenModal}
+        isLoading={isLoading}
+      />
+
+      <MaintenanceModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        schedule={selectedSchedule}
+        onOptimisticSave={applyOptimisticSave}
+        onFinalizeSave={finalizeSave}
+        onOptimisticDelete={applyOptimisticDelete}
+      />
+    </div>
   );
 };
 

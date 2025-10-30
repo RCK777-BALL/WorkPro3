@@ -13,6 +13,10 @@ import { useDepartmentStore } from "@/store/departmentStore";
 import { useAuthStore, type AuthState } from "@/store/authStore";
 import type { Asset, Department, Line, Station } from "@/types";
 import AssetQRCode from "@/components/qr/AssetQRCode";
+import {
+  submitAssetRequest,
+  normalizeAssetData,
+} from "@/utils/assetSubmission";
 
 const defaultAssetState = {
   name: "",
@@ -122,30 +126,28 @@ const AssetModal: React.FC<AssetModalProps> = ({
     };
 
     try {
-      let res;
-      if (files.length > 0) {
-        const fd = new FormData();
-        Object.entries(payload).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            fd.append(key, value as any);
-          }
-        });
-        files.forEach((f) => fd.append("files", f));
-        res = await http.post("/assets", fd, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-      } else {
-        res = await http.post("/assets", payload);
-      }
+      const raw = await submitAssetRequest({
+        asset,
+        files,
+        payload,
+        httpClient: http,
+      });
 
-      onUpdate({ ...(res.data as any), id: res.data._id } as Asset);
+      const fallback: Partial<Asset> = {
+        ...(asset ?? {}),
+        ...(data as Partial<Asset>),
+      };
+
+      const normalized = normalizeAssetData(raw, fallback);
+      onUpdate(normalized);
       onClose();
     } catch (err: any) {
+      const defaultMessage = asset ? "Failed to update asset" : "Failed to create asset";
       const message =
         err.response?.data?.message ||
         (Array.isArray(err.response?.data?.errors)
           ? err.response.data.errors.map((e: any) => e.msg).join(", ")
-          : "Failed to create asset");
+          : defaultMessage);
       setError(message);
       addToast(message, "error");
     }

@@ -12,6 +12,7 @@ import InventoryScanModal from '@/components/inventory/InventoryScanModal';
 import { exportToExcel, exportToPDF } from '@/utils/export';
 import http from '@/lib/http';
 import type { Part } from '@/types';
+import { normalizeInventoryCollection } from '@/utils/parts';
 
 const Inventory: React.FC = () => {
   const [search, setSearch] = useState('');
@@ -28,8 +29,8 @@ const Inventory: React.FC = () => {
 
   const fetchParts = useCallback(async () => {
     try {
-      const res = await http.get('/parts');
-      setParts(res.data as Part[]);
+      const res = await http.get('/inventory');
+      setParts(normalizeInventoryCollection(res.data));
       setError(null);
     } catch (err) {
       console.error('Error fetching inventory:', err);
@@ -127,9 +128,8 @@ const Inventory: React.FC = () => {
     if (!deltaStr) return;
     const delta = Number(deltaStr);
     if (Number.isNaN(delta) || delta === 0) return;
-    const reason = window.prompt('Reason for adjustment') || '';
     try {
-      await http.post(`/parts/${part.id}/adjust`, { delta, reason });
+      await http.patch(`/inventory/${part.id}`, { quantity: part.quantity + delta });
       await fetchParts();
     } catch (err) {
       console.error('Error adjusting part:', err);
@@ -238,24 +238,15 @@ const Inventory: React.FC = () => {
           part={selectedPart}
           {...(initialData ? { initialData } : {})}
           error={modalError}
-          onUpdate={async ({ data, isMultipart }: InventorySubmission) => {
+          onUpdate={async ({ data }: InventorySubmission) => {
             try {
               if (selectedPart) {
-                if (isMultipart) {
-                  await http.put(`/parts/${selectedPart.id}`, data, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
-                  });
-                } else {
-                  await http.put(`/parts/${selectedPart.id}`, data);
-                }
+                await http.patch(`/inventory/${selectedPart.id}`, data);
               } else {
-                if (isMultipart) {
-                  await http.post('/parts', data, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
-                  });
-                } else {
-                  await http.post('/parts', data);
-                }
+                await http.post('/inventory', {
+                  ...data,
+                  quantity: (data.quantity as number | undefined) ?? 0,
+                });
               }
               await fetchParts();
               setModalOpen(false);
@@ -266,6 +257,8 @@ const Inventory: React.FC = () => {
               if (response?.data?.errors) {
                 const messages = Object.values(response.data.errors).join(' ');
                 setModalError(messages);
+              } else if (typeof response?.data?.message === 'string') {
+                setModalError(response.data.message);
               } else {
                 setError('Failed to save part');
               }

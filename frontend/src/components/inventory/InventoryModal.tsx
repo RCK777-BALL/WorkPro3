@@ -9,8 +9,7 @@ import Modal from '@/components/modals/Modal';
 import type { Part } from '@/types';
 
 export interface InventorySubmission {
-  data: FormData | Record<string, unknown>;
-  isMultipart: boolean;
+  data: Record<string, unknown>;
 }
 
 interface InventoryModalProps {
@@ -50,6 +49,23 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
   );
   const [partImage, setPartImage] = useState<File | null>(null);
 
+  const fileToDataUrl = async (file: File): Promise<string> =>
+    await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result;
+        if (typeof result === 'string') {
+          resolve(result);
+        } else {
+          reject(new Error('Unable to read file contents'));
+        }
+      };
+      reader.onerror = () => {
+        reject(reader.error ?? new Error('Failed to read file'));
+      };
+      reader.readAsDataURL(file);
+    });
+
   useEffect(() => {
     setFormData(
       part ? { ...defaultPartState, ...part } : { ...defaultPartState, ...initialData }
@@ -81,19 +97,23 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
       delete payload.vendor;
     }
 
-    if (partImage) {
-      const data = new FormData();
-      Object.entries(payload).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          data.append(key, String(value));
-        }
-      });
-      data.append('partImage', partImage);
-      await onUpdate({ data, isMultipart: true });
-      return;
+    if (!payload.lastRestockDate || (typeof payload.lastRestockDate === 'string' && payload.lastRestockDate.trim() === '')) {
+      delete payload.lastRestockDate;
     }
 
-    await onUpdate({ data: payload, isMultipart: false });
+    if (!payload.lastOrderDate || (typeof payload.lastOrderDate === 'string' && payload.lastOrderDate.trim() === '')) {
+      delete payload.lastOrderDate;
+    }
+
+    if (partImage) {
+      try {
+        payload.image = await fileToDataUrl(partImage);
+      } catch (err) {
+        console.error('Failed to read part image', err);
+      }
+    }
+
+    await onUpdate({ data: payload });
   };
 
   return (

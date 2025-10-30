@@ -36,7 +36,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
     <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-neutral-200">
-          <thead className="bg-neutral-50">
+          <thead className="bg-shadow-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                 Part

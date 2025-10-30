@@ -66,6 +66,18 @@ const Inventory: React.FC = () => {
     []
   );
 
+  const handleDuplicate = useCallback(
+    (part: Part) => {
+      const { id: _id, ...rest } = part;
+      handleOpenModal(null, {
+        ...rest,
+        name: part.name ? `${part.name} Copy` : part.name,
+        sku: '',
+      });
+    },
+    [handleOpenModal]
+  );
+
   const partMapper = (part: Part) => ({
     ID: part.id,
     Name: part.name,
@@ -212,6 +224,8 @@ const Inventory: React.FC = () => {
           parts={filteredParts}
           onRowClick={handleOpenModal}
           onAdjust={handleAdjust}
+          onEdit={handleOpenModal}
+          onDuplicate={handleDuplicate}
         />
 
         <InventoryModal

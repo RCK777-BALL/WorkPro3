@@ -146,6 +146,7 @@ const Maintenance: React.FC = () => {
             variant="primary"
             icon={<Plus size={16} />}
             onClick={() => handleOpenModal(null)}
+            className="border border-primary-500"
           >
             New Schedule
           </Button>

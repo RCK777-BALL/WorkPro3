@@ -809,6 +809,7 @@ export default function Dashboard() {
   const [summaryTrends, setSummaryTrends] = useState<SummaryTrends | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [filtersHydrated, setFiltersHydrated] = useState(false);
 
   const [livePulse, setLivePulse] = useState<LivePulseMetrics | null>(null);
   const [livePulseLoading, setLivePulseLoading] = useState(false);
@@ -1020,12 +1021,13 @@ export default function Dashboard() {
     let cancelled = false;
     const loadOptions = async () => {
       setOptionsLoading(true);
+      setFiltersHydrated(false);
       try {
         if (isOffline() || apiUnavailableRef.current) {
           if (cancelled || !mountedRef.current) return;
           setDepartments(DEPARTMENT_FALLBACK);
           setLines(LINE_FALLBACK);
-          setOptionsLoading(false);
+          setFiltersHydrated(true);
           return;
         }
         const [deptRes, lineRes] = await Promise.all([
@@ -1042,6 +1044,7 @@ export default function Dashboard() {
             departmentId: line.departmentId,
           })),
         );
+        setFiltersHydrated(true);
       } catch (error) {
         if (cancelled || !mountedRef.current) return;
         setDepartments(DEPARTMENT_FALLBACK);
@@ -1049,6 +1052,7 @@ export default function Dashboard() {
         if (isNetworkError(error)) {
           apiUnavailableRef.current = true;
         }
+        setFiltersHydrated(true);
       } finally {
         if (cancelled || !mountedRef.current) return;
         setOptionsLoading(false);

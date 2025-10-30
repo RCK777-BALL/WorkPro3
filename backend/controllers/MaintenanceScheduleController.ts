@@ -170,8 +170,17 @@ export const updateMaintenanceSchedule: AuthedRequestHandler<
       return;
     }
 
+    const filter: Record<string, unknown> = {
+      _id: req.params.id,
+      tenantId: new Types.ObjectId(tenantId),
+    };
+
+    if (req.siteId) {
+      filter.siteId = new Types.ObjectId(req.siteId);
+    }
+
     const schedule = await MaintenanceSchedule.findOneAndUpdate(
-      { _id: req.params.id, tenantId },
+      filter,
       toUpdatePayload(req.body),
       { new: true },
     );
@@ -203,10 +212,16 @@ export const deleteMaintenanceSchedule: AuthedRequestHandler<
       return;
     }
 
-    const deleted = await MaintenanceSchedule.findOneAndDelete({
+    const filter: Record<string, unknown> = {
       _id: req.params.id,
-      tenantId,
-    });
+      tenantId: new Types.ObjectId(tenantId),
+    };
+
+    if (req.siteId) {
+      filter.siteId = new Types.ObjectId(req.siteId);
+    }
+
+    const deleted = await MaintenanceSchedule.findOneAndDelete(filter);
 
     if (!deleted) {
       sendResponse(res, null, 'Not found', 404);

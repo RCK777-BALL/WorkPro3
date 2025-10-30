@@ -36,6 +36,34 @@ interface AssetModalProps {
   onUpdate: (asset: Asset) => void;
 }
 
+interface AssetResponse extends Partial<Asset> {
+  _id?: string;
+  id?: string;
+}
+
+const normalizeAssetResponse = (
+  raw: AssetResponse | undefined,
+  fallback: Asset | null
+): Asset => {
+  const base: AssetResponse = {
+    ...(fallback ?? {}),
+    ...(raw ?? {}),
+  };
+  const { _id, id: providedId, name: providedName, ...rest } = base;
+  const resolvedId = _id ?? providedId ?? fallback?.id ?? "";
+  const resolvedName = providedName ?? fallback?.name ?? "Unnamed Asset";
+
+  if (!resolvedId) {
+    throw new Error("Asset response missing identifier");
+  }
+
+  return {
+    id: resolvedId,
+    name: resolvedName,
+    ...(rest as Omit<Asset, "id" | "name">),
+  };
+};
+
 const AssetModal: React.FC<AssetModalProps> = ({
   isOpen,
   onClose,
@@ -122,6 +150,10 @@ const AssetModal: React.FC<AssetModalProps> = ({
     };
 
     try {
+      const isEdit = Boolean(asset?.id);
+      const endpoint = isEdit && asset?.id ? `/assets/${asset.id}` : "/assets";
+      const requestHeaders = { headers: { "Content-Type": "multipart/form-data" } } as const;
+
       let res;
       if (files.length > 0) {
         const fd = new FormData();
@@ -131,21 +163,27 @@ const AssetModal: React.FC<AssetModalProps> = ({
           }
         });
         files.forEach((f) => fd.append("files", f));
-        res = await http.post("/assets", fd, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+
+        res = isEdit
+          ? await http.put(endpoint, fd, requestHeaders)
+          : await http.post("/assets", fd, requestHeaders);
       } else {
-        res = await http.post("/assets", payload);
+        res = isEdit ? await http.put(endpoint, payload) : await http.post("/assets", payload);
       }
 
-      onUpdate({ ...(res.data as any), id: res.data._id } as Asset);
+      const persisted = normalizeAssetResponse(res.data as AssetResponse, asset);
+      onUpdate(persisted);
       onClose();
     } catch (err: any) {
+      const fallbackMessage =
+        typeof err?.message === "string" && err.message.length > 0
+          ? err.message
+          : "Failed to save asset";
       const message =
         err.response?.data?.message ||
         (Array.isArray(err.response?.data?.errors)
           ? err.response.data.errors.map((e: any) => e.msg).join(", ")
-          : "Failed to create asset");
+          : fallbackMessage);
       setError(message);
       addToast(message, "error");
     }

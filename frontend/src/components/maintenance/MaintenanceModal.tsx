@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
+import toast from 'react-hot-toast';
 import Button from '@common/Button';
 import type { MaintenanceSchedule } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
@@ -29,24 +30,38 @@ interface MaintenanceModalProps {
   isOpen: boolean;
   onClose: () => void;
   schedule: MaintenanceSchedule | null;
-  onUpdate: (schedule: MaintenanceSchedule) => void;
+  onSubmit: (schedule: MaintenanceSchedule) => Promise<void>;
+  onDelete?: (schedule: MaintenanceSchedule) => Promise<void>;
 }
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  if (typeof error === 'string' && error.trim().length > 0) {
+    return error;
+  }
+  return fallback;
+};
 
 const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
   isOpen,
   onClose,
   schedule,
-  onUpdate,
+  onSubmit,
+  onDelete,
 }) => {
   const [formData, setFormData] = useState<MaintenanceSchedule>(
     schedule ?? createDefaultSchedule()
   );
 
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (schedule) {
- 
+
       setFormData(schedule);
     } else {
       setFormData({
@@ -67,12 +82,35 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
       });
     }
     setShowAdvancedOptions(false);
+    setIsSaving(false);
+    setIsDeleting(false);
   }, [schedule, isOpen]);
- 
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdate(formData);
+    setIsSaving(true);
+    try {
+      await onSubmit(formData);
+      onClose();
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Unable to save maintenance schedule'));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!schedule || !onDelete) return;
+    setIsDeleting(true);
+    try {
+      await onDelete(schedule);
+      onClose();
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Unable to delete maintenance schedule'));
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const calculateNextDueDate = (date: string, frequency: string) => {
@@ -112,6 +150,8 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
           <button
             onClick={onClose}
             className="text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
+            disabled={isSaving || isDeleting}
+            aria-disabled={isSaving || isDeleting}
           >
             <X size={20} />
           </button>
@@ -396,16 +436,30 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
           </div>
 
           <div className="flex justify-end space-x-3 pt-6 border-t border-neutral-200 dark:border-neutral-700">
+            {schedule && onDelete && (
+              <Button
+                type="button"
+                variant="danger"
+                onClick={handleDelete}
+                disabled={isSaving}
+                loading={isDeleting}
+              >
+                Delete
+              </Button>
+            )}
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
+              disabled={isSaving || isDeleting}
             >
               Cancel
             </Button>
             <Button
               type="submit"
               variant="primary"
+              loading={isSaving}
+              disabled={isDeleting}
             >
               {schedule ? 'Update Schedule' : 'Create Schedule'}
             </Button>

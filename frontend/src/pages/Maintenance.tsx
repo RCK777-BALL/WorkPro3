@@ -2,68 +2,154 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Plus, Search, Calendar, Download, Upload } from 'lucide-react';
+import toast from 'react-hot-toast';
 import Button from '@/components/common/Button';
 import MaintenanceScheduleTable from '@/components/maintenance/MaintenanceSchedule';
 import MaintenanceModal from '@/components/maintenance/MaintenanceModal';
 import MaintenanceMetrics from '@/components/maintenance/MaintenanceMetrics';
 import { exportToExcel, exportToPDF } from '@/utils/export';
 import type { MaintenanceSchedule } from '@/types';
+import {
+  fetchMaintenanceSchedules,
+  createMaintenanceSchedule,
+  updateMaintenanceSchedule,
+  deleteMaintenanceSchedule,
+} from '@/api/maintenanceSchedules';
 
-const sampleSchedules: MaintenanceSchedule[] = [
-  {
-    id: 'MS-2024-001',
-    assetId: 'CVB-A1',
-    title: 'Monthly Belt Inspection',
-    description: 'Inspect belt tension, wear, and alignment. Lubricate bearings.',
-    frequency: 'monthly',
-    lastCompleted: '2024-02-15',
-    nextDue: '2024-03-15',
-    assignedTo: 'Mike Johnson',
-    instructions: '1. Check belt tension\n2. Inspect for wear\n3. Verify alignment\n4. Lubricate bearings',
-    type: 'preventive',
-    estimatedDuration: 2,
-    repeatConfig: { interval: 1, unit: 'month' },
-    parts: []
-  },
-  {
-    id: 'MS-2024-002',
-    assetId: 'HVAC-01',
-    title: 'Quarterly HVAC Maintenance',
-    description: 'Full system inspection and filter replacement',
-    frequency: 'quarterly',
-    lastCompleted: '2024-01-01',
-    nextDue: '2024-04-01',
-    assignedTo: 'Sarah Wilson',
-    instructions: '1. Replace filters\n2. Clean coils\n3. Check refrigerant levels\n4. Test operation',
-    type: 'preventive',
-    estimatedDuration: 4,
-    repeatConfig: { interval: 3, unit: 'month' },
-    parts: []
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error && error.message) {
+    return error.message;
   }
-];
-
-const LOCAL_KEY = 'maintenance-schedules';
+  if (typeof error === 'string' && error.trim().length > 0) {
+    return error;
+  }
+  return fallback;
+};
 
 const Maintenance: React.FC = () => {
   const [search, setSearch] = useState('');
   const [selectedSchedule, setSelectedSchedule] = useState<MaintenanceSchedule | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
-  const [schedules, setSchedules] = useState<MaintenanceSchedule[]>(() => {
-    if (typeof window === 'undefined') return sampleSchedules;
-    const stored = localStorage.getItem(LOCAL_KEY);
-    return stored ? JSON.parse(stored) : sampleSchedules;
-  });
+  const [schedules, setSchedules] = useState<MaintenanceSchedule[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    localStorage.setItem(LOCAL_KEY, JSON.stringify(schedules));
-  }, [schedules]);
+    let isMounted = true;
+
+    const loadSchedules = async () => {
+      try {
+        const data = await fetchMaintenanceSchedules();
+        if (isMounted) {
+          setSchedules(data);
+        }
+      } catch (error) {
+        if (isMounted) {
+          toast.error(getErrorMessage(error, 'Failed to load maintenance schedules'));
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadSchedules();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleOpenModal = (schedule: MaintenanceSchedule | null) => {
     setSelectedSchedule(schedule);
     setModalOpen(true);
   };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setSelectedSchedule(null);
+  };
+
+  const handleCreateSchedule = useCallback(
+    async (schedule: MaintenanceSchedule) => {
+      const optimisticId = schedule.id;
+      setSchedules((prev) => [...prev, schedule]);
+
+      try {
+        const saved = await createMaintenanceSchedule(schedule);
+        setSchedules((prev) =>
+          prev.map((item) => (item.id === optimisticId ? saved : item)),
+        );
+        toast.success('Maintenance schedule created');
+      } catch (error) {
+        setSchedules((prev) => prev.filter((item) => item.id !== optimisticId));
+        throw new Error(getErrorMessage(error, 'Failed to create maintenance schedule'));
+      }
+    },
+    [],
+  );
+
+  const handleUpdateSchedule = useCallback(
+    async (schedule: MaintenanceSchedule) => {
+      const previous = schedules.find((item) => item.id === schedule.id);
+      if (!previous) {
+        return;
+      }
+
+      setSchedules((prev) =>
+        prev.map((item) => (item.id === schedule.id ? schedule : item)),
+      );
+
+      try {
+        const saved = await updateMaintenanceSchedule(schedule.id, schedule);
+        setSchedules((prev) =>
+          prev.map((item) => (item.id === schedule.id ? saved : item)),
+        );
+        toast.success('Maintenance schedule updated');
+      } catch (error) {
+        setSchedules((prev) =>
+          prev.map((item) => (item.id === schedule.id ? previous : item)),
+        );
+        throw new Error(getErrorMessage(error, 'Failed to update maintenance schedule'));
+      }
+    },
+    [schedules],
+  );
+
+  const handleDeleteSchedule = useCallback(
+    async (schedule: MaintenanceSchedule) => {
+      const index = schedules.findIndex((item) => item.id === schedule.id);
+      setSchedules((prev) => prev.filter((item) => item.id !== schedule.id));
+
+      try {
+        await deleteMaintenanceSchedule(schedule.id);
+        toast.success('Maintenance schedule deleted');
+      } catch (error) {
+        setSchedules((prev) => {
+          const next = [...prev];
+          const targetIndex = index < 0 ? next.length : Math.min(index, next.length);
+          next.splice(targetIndex, 0, schedule);
+          return next;
+        });
+        throw new Error(getErrorMessage(error, 'Failed to delete maintenance schedule'));
+      }
+    },
+    [schedules],
+  );
+
+  const handleSubmit = useCallback(
+    async (schedule: MaintenanceSchedule) => {
+      const exists = schedules.some((item) => item.id === schedule.id);
+      if (exists) {
+        await handleUpdateSchedule(schedule);
+      } else {
+        await handleCreateSchedule(schedule);
+      }
+    },
+    [handleCreateSchedule, handleUpdateSchedule, schedules],
+  );
 
   const scheduleMapper = (schedule: MaintenanceSchedule) => ({
     ID: schedule.id,
@@ -85,11 +171,11 @@ const Maintenance: React.FC = () => {
   };
 
   return (
-          <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-bold text-neutral-900">Maintenance</h2>
-            <p className="text-neutral-500">Schedule and track preventive maintenance</p>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold text-neutral-900">Maintenance</h2>
+          <p className="text-neutral-500">Schedule and track preventive maintenance</p>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:space-x-3">
             <Button
@@ -136,30 +222,24 @@ const Maintenance: React.FC = () => {
           />
         </div>
 
-        <MaintenanceScheduleTable
-          schedules={schedules}
-          search={search}
-          onRowClick={handleOpenModal}
-        />
+        {isLoading ? (
+          <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-8 text-center text-neutral-500">
+            Loading maintenance schedules...
+          </div>
+        ) : (
+          <MaintenanceScheduleTable
+            schedules={schedules}
+            search={search}
+            onRowClick={handleOpenModal}
+          />
+        )}
 
         <MaintenanceModal
           isOpen={isModalOpen}
-          onClose={() => setModalOpen(false)}
+          onClose={handleCloseModal}
           schedule={selectedSchedule}
-          onUpdate={(updatedSchedule) => {
-            setSchedules(prevSchedules => {
-              const index = prevSchedules.findIndex(
-                schedule => schedule.id === updatedSchedule.id
-              );
-              if (index === -1) {
-                return [...prevSchedules, updatedSchedule];
-              }
-              return prevSchedules.map(schedule =>
-                schedule.id === updatedSchedule.id ? updatedSchedule : schedule
-              );
-            });
-            setModalOpen(false);
-          }}
+          onSubmit={handleSubmit}
+          onDelete={selectedSchedule ? handleDeleteSchedule : undefined}
         />
       </div>
   );

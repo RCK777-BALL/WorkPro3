@@ -39,6 +39,7 @@ import {
   kbRoutes,
   laborRoutes,
   LineRoutes,
+  maintenanceScheduleRoutes,
   meterRoutes,
   notificationsRoutes,
   permitRoutes,
@@ -212,6 +213,7 @@ app.use("/api/stations", StationRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/parts", partsRoutes);
 app.use("/api/import", importRoutes);
+app.use("/api/maintenance-schedules", maintenanceScheduleRoutes);
 app.use("/api/vendors", vendorRoutes);
 app.use("/api/labor", laborRoutes);
 app.use("/api/knowledge-base", kbRoutes);

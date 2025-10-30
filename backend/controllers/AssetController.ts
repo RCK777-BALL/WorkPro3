@@ -6,7 +6,7 @@ import type { NextFunction, Response } from 'express';
 import type { AuthedRequest } from '../types/http';
 import type { ParsedQs } from 'qs';
 import mongoose, { Error as MongooseError, Types } from 'mongoose';
-import Asset from '../models/Asset';
+import Asset, { type AssetDoc } from '../models/Asset';
 import Site from '../models/Site';
 import Department from '../models/Department';
 import Line from '../models/Line';
@@ -67,6 +67,42 @@ const normalizeId = (value?: MaybeObjectId): Types.ObjectId | undefined => {
   if (value instanceof Types.ObjectId) return value;
   if (typeof value === 'string') return toObjectId(value);
   return undefined;
+};
+
+type AssetLike = Record<string, unknown>;
+const isAssetLike = (value: AssetLike | null): value is AssetLike => value !== null;
+
+const toAssetResponse = (asset: unknown): AssetLike | null => {
+  if (!asset || typeof asset !== 'object') return null;
+
+  const base: AssetLike =
+    typeof (asset as AssetDoc)?.toObject === 'function'
+      ? ((asset as AssetDoc).toObject() as AssetLike)
+      : { ...(asset as AssetLike) };
+
+  const response: AssetLike = { ...base };
+
+  const rawId = response._id as unknown;
+  const stringId =
+    rawId instanceof Types.ObjectId
+      ? rawId.toString()
+      : typeof rawId === 'string' && rawId.trim().length > 0
+        ? rawId
+        : undefined;
+
+  if (stringId) {
+    response._id = stringId;
+    if (typeof response.id !== 'string' || response.id.trim().length === 0) {
+      response.id = stringId;
+    }
+  }
+
+  const rawTenant = response.tenantId as unknown;
+  if (rawTenant instanceof Types.ObjectId) {
+    response.tenantId = rawTenant.toString();
+  }
+
+  return response;
 };
 
 const addAssetToHierarchy = async ({
@@ -178,8 +214,9 @@ export async function getAllAssets(
   try {
     const filter: Record<string, unknown> = { tenantId: req.tenantId };
     if (req.siteId) filter.siteId = req.siteId;
-    const assets = await Asset.find(filter);
-    sendResponse(res, assets);
+    const assets = await Asset.find(filter).lean();
+    const payload = assets.map((asset) => toAssetResponse(asset)).filter(isAssetLike);
+    sendResponse(res, payload);
     return;
   } catch (err) {
     if (err instanceof MongooseError.ValidationError) {
@@ -216,7 +253,7 @@ export async function getAssetById(
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    sendResponse(res, asset);
+    sendResponse(res, toAssetResponse(asset));
     return;
   } catch (err) {
     if (err instanceof MongooseError.ValidationError) {
@@ -315,6 +352,11 @@ export async function createAsset(
       assetId: newAsset._id,
     });
     const assetObj = newAsset.toObject();
+    const response = toAssetResponse(assetObj);
+    if (!response) {
+      sendResponse(res, null, 'Failed to create asset', 500);
+      return;
+    }
     if (stationForAsset) {
       await Department.updateOne(
         { _id: stationForAsset.departmentId, tenantId },
@@ -331,7 +373,6 @@ export async function createAsset(
         },
       );
     }
-    const response = { ...assetObj, tenantId: assetObj.tenantId.toString() };
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     await writeAuditLog({
       tenantId,
@@ -519,7 +560,7 @@ export async function updateAsset(
       );
     }
 
-    sendResponse(res, asset);
+    sendResponse(res, asset ? toAssetResponse(asset) : null);
     return;
 
   } catch (err) {
@@ -612,8 +653,9 @@ export async function searchAssets(
     };
     if (req.siteId) filter.siteId = req.siteId;
 
-    const assets = await Asset.find(filter).limit(10);
-    sendResponse(res, assets);
+    const assets = await Asset.find(filter).limit(10).lean();
+    const payload = assets.map((asset) => toAssetResponse(asset)).filter(isAssetLike);
+    sendResponse(res, payload);
     return;
   } catch (err) {
     if (err instanceof MongooseError.ValidationError) {

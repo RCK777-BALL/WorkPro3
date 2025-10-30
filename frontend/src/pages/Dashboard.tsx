@@ -156,6 +156,34 @@ const STATUS_FILTERS: SelectOption[] = [
   { value: "closed", label: "Closed" },
 ];
 
+const DEFAULT_FILTERS: FilterState = { department: "all", line: "all", status: "all" };
+
+const FILTER_STORAGE_KEY = "operations-dashboard-filters";
+
+const VALID_STATUS_VALUES = new Set(STATUS_FILTERS.map((option) => option.value));
+
+const loadSavedFilters = (): FilterState => {
+  if (typeof window === "undefined") {
+    return DEFAULT_FILTERS;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(FILTER_STORAGE_KEY);
+    if (!raw) {
+      return DEFAULT_FILTERS;
+    }
+    const parsed = JSON.parse(raw) as Partial<FilterState> | null;
+    const department = typeof parsed?.department === "string" ? parsed.department : "all";
+    const line = typeof parsed?.line === "string" ? parsed.line : "all";
+    const rawStatus = typeof parsed?.status === "string" ? parsed.status : "all";
+    const status = VALID_STATUS_VALUES.has(rawStatus) ? rawStatus : "all";
+
+    return { department, line, status };
+  } catch (error) {
+    return DEFAULT_FILTERS;
+  }
+};
+
 const SUMMARY_FALLBACK: SummaryResponse = {
   openWorkOrders: 42,
   overdueWorkOrders: 11,
@@ -854,6 +882,9 @@ export default function Dashboard() {
   }, [filters, isTechnician]);
 
   const fetchSummary = useCallback(async () => {
+    if (!filtersHydrated || optionsLoading) {
+      return;
+    }
     setSummaryLoading(true);
     setSummaryError(null);
     const params = getQueryParams();
@@ -885,9 +916,12 @@ export default function Dashboard() {
       if (!mountedRef.current) return;
       setSummaryLoading(false);
     }
-  }, [getQueryParams]);
+  }, [filtersHydrated, getQueryParams, optionsLoading]);
 
   const fetchLivePulse = useCallback(async () => {
+    if (!filtersHydrated || optionsLoading) {
+      return;
+    }
     if (!livePulseRef.current) {
       setLivePulseLoading(true);
     }
@@ -915,9 +949,12 @@ export default function Dashboard() {
       if (!mountedRef.current) return;
       setLivePulseLoading(false);
     }
-  }, [getQueryParams]);
+  }, [filtersHydrated, getQueryParams, optionsLoading]);
 
   const fetchActivity = useCallback(async () => {
+    if (!filtersHydrated || optionsLoading) {
+      return;
+    }
     if (recentActivity.length === 0) {
       setActivityLoading(true);
     }
@@ -950,7 +987,7 @@ export default function Dashboard() {
       if (!mountedRef.current) return;
       setActivityLoading(false);
     }
-  }, [getQueryParams, recentActivity.length]);
+  }, [filtersHydrated, getQueryParams, optionsLoading, recentActivity.length]);
 
   const fetchStatuses = useCallback(async () => {
     setStatusLoading(true);

@@ -100,7 +100,7 @@ export const createWorkHistory = async (
       userId,
       action: 'create',
       entityType: 'WorkHistory',
-      entityId: toEntityId(saved._id),
+      entityId: toEntityId(saved._id as Types.ObjectId),
       after: saved.toObject(),
     });
     sendResponse(res, saved, null, 201);

@@ -2,20 +2,62 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { isAxiosError } from 'axios';
 import Avatar from '@/components/common/Avatar';
 import WorkHistoryCard from '@/components/teams/WorkHistoryCard';
 import { teamMembers } from '@/utils/data';
 import http from '@/lib/http';
-import { createEmptyWorkHistory, fetchWorkHistoryForMember, createWorkHistoryRecord, updateWorkHistoryRecord } from '@/api/workHistory';
 import type { WorkHistory, PermitActivitySummary } from '@/types';
+import {
+  createWorkHistory,
+  fetchWorkHistoryByMember,
+  updateWorkHistory,
+} from '@/api/workHistory';
+
+const EMPTY_WORK_HISTORY: WorkHistory = {
+  metrics: {
+    safety: {
+      incidentRate: 0,
+      lastIncidentDate: '1970-01-01',
+      safetyCompliance: 0,
+      nearMisses: 0,
+      safetyMeetingsAttended: 0,
+    },
+    people: {
+      attendanceRate: 0,
+      teamCollaboration: 0,
+      trainingHours: 0,
+      certifications: [],
+      mentorshipHours: 0,
+    },
+    productivity: {
+      completedTasks: 0,
+      onTimeCompletion: 0,
+      averageResponseTime: '0h',
+      overtimeHours: 0,
+      taskEfficiencyRate: 0,
+    },
+    improvement: {
+      costSavings: 0,
+      suggestionsSubmitted: 0,
+      suggestionsImplemented: 0,
+      processImprovements: 0,
+    },
+  },
+  recentWork: [],
+};
 const TeamMemberProfile = () => {
   const { id } = useParams<{ id: string }>();
   const member = teamMembers.find(m => m.id === id);
   const [permitActivity, setPermitActivity] = useState<PermitActivitySummary | null>(null);
   const [activityError, setActivityError] = useState<string | null>(null);
   const [loadingActivity, setLoadingActivity] = useState(false);
+  const [workHistory, setWorkHistory] = useState<WorkHistory>(EMPTY_WORK_HISTORY);
+  const [workHistoryId, setWorkHistoryId] = useState<string | null>(null);
+  const [loadingWorkHistory, setLoadingWorkHistory] = useState(true);
+  const [workHistoryError, setWorkHistoryError] = useState<string | null>(null);
 
   if (!member) {
     return (
@@ -46,67 +88,60 @@ const TeamMemberProfile = () => {
     }
   }, [member.id]);
 
-  const [workHistory, setWorkHistory] = useState<WorkHistory>(() => createEmptyWorkHistory());
-  const [workHistoryId, setWorkHistoryId] = useState<string | null>(null);
-  const [loadingWorkHistory, setLoadingWorkHistory] = useState(false);
-  const [workHistoryError, setWorkHistoryError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadWorkHistory = async () => {
-      try {
-        setLoadingWorkHistory(true);
-        const record = await fetchWorkHistoryForMember(member.id);
-        if (!isMounted) {
-          return;
-        }
-        if (record) {
-          setWorkHistory({ metrics: record.metrics, recentWork: record.recentWork });
-          setWorkHistoryId(record._id && record._id.length > 0 ? record._id : null);
-        } else {
-          setWorkHistory(createEmptyWorkHistory());
-          setWorkHistoryId(null);
-        }
-        setWorkHistoryError(null);
-      } catch (error) {
-        if (!isMounted) {
-          return;
-        }
-        setWorkHistory(createEmptyWorkHistory());
-        setWorkHistoryId(null);
-        setWorkHistoryError('Unable to load work history');
-      } finally {
-        if (isMounted) {
-          setLoadingWorkHistory(false);
-        }
-      }
-    };
-
-    loadWorkHistory();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [member.id]);
-
-  const handleWorkHistorySave = async (updated: WorkHistory) => {
-    const payload = {
-      ...updated,
-      performedBy: member.id,
-    };
-
-    setWorkHistoryError(null);
-    let saved;
-    if (workHistoryId) {
-      saved = await updateWorkHistoryRecord(workHistoryId, payload);
-    } else {
-      saved = await createWorkHistoryRecord(payload);
+  const loadWorkHistory = useCallback(async () => {
+    if (!member?.id) {
+      return;
     }
 
-    setWorkHistory({ metrics: saved.metrics, recentWork: saved.recentWork });
-    setWorkHistoryId(saved._id && saved._id.length > 0 ? saved._id : workHistoryId);
-  };
+    try {
+      setLoadingWorkHistory(true);
+      const result = await fetchWorkHistoryByMember(member.id);
+      if (result) {
+        setWorkHistoryId(result._id);
+        setWorkHistory({
+          metrics: result.metrics ?? EMPTY_WORK_HISTORY.metrics,
+          recentWork: Array.isArray(result.recentWork) ? result.recentWork : [],
+        });
+        setWorkHistoryError(null);
+      } else {
+        setWorkHistoryId(null);
+        setWorkHistory(EMPTY_WORK_HISTORY);
+        setWorkHistoryError(null);
+      }
+    } catch (error) {
+      if (isAxiosError(error) && error.response?.status === 404) {
+        setWorkHistoryId(null);
+        setWorkHistory(EMPTY_WORK_HISTORY);
+        setWorkHistoryError(null);
+      } else {
+        setWorkHistoryError('Unable to load work history.');
+      }
+    } finally {
+      setLoadingWorkHistory(false);
+    }
+  }, [member?.id]);
+
+  useEffect(() => {
+    void loadWorkHistory();
+  }, [loadWorkHistory]);
+
+  const handleSaveWorkHistory = useCallback(async (updated: WorkHistory) => {
+    if (!member?.id) {
+      return;
+    }
+
+    const payload = { ...updated, memberId: member.id };
+    const saved = workHistoryId
+      ? await updateWorkHistory(workHistoryId, payload)
+      : await createWorkHistory(payload);
+
+    setWorkHistoryId(saved._id);
+    setWorkHistory({
+      metrics: saved.metrics ?? EMPTY_WORK_HISTORY.metrics,
+      recentWork: Array.isArray(saved.recentWork) ? saved.recentWork : [],
+    });
+    setWorkHistoryError(null);
+  }, [member?.id, workHistoryId]);
 
   return (
     <div className="space-y-6">
@@ -197,22 +232,28 @@ const TeamMemberProfile = () => {
             )}
           </div>
           {loadingWorkHistory ? (
-            <div className="rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-500 shadow-sm">
+            <div className="rounded-lg border border-neutral-200 bg-white p-6 text-sm text-neutral-500 shadow-sm">
               Loading work history…
             </div>
+          ) : workHistoryError ? (
+            <div className="space-y-4 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+              <p className="text-sm text-error-600">{workHistoryError}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  void loadWorkHistory();
+                }}
+                className="inline-flex items-center justify-center rounded-md border border-primary-200 bg-white px-4 py-2 text-sm font-medium text-primary-600 transition hover:border-primary-300 hover:text-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              >
+                Retry
+              </button>
+            </div>
           ) : (
-            <>
-              {workHistoryError && (
-                <p className="mb-2 text-sm text-error-600" role="alert">
-                  {workHistoryError}
-                </p>
-              )}
-              <WorkHistoryCard
-                metrics={workHistory.metrics}
-                recentWork={workHistory.recentWork}
-                onSave={handleWorkHistorySave}
-              />
-            </>
+            <WorkHistoryCard
+              metrics={workHistory.metrics}
+              recentWork={workHistory.recentWork}
+              onSave={handleSaveWorkHistory}
+            />
           )}
         </div>
       </div>

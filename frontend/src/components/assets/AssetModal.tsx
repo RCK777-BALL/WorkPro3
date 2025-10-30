@@ -13,6 +13,10 @@ import { useDepartmentStore } from "@/store/departmentStore";
 import { useAuthStore, type AuthState } from "@/store/authStore";
 import type { Asset, Department, Line, Station } from "@/types";
 import AssetQRCode from "@/components/qr/AssetQRCode";
+import {
+  submitAssetRequest,
+  normalizeAssetData,
+} from "@/utils/assetSubmission";
 
 const defaultAssetState = {
   name: "",
@@ -35,6 +39,34 @@ interface AssetModalProps {
   asset: Asset | null;
   onUpdate: (asset: Asset) => void;
 }
+
+interface AssetResponse extends Partial<Asset> {
+  _id?: string;
+  id?: string;
+}
+
+const normalizeAssetResponse = (
+  raw: AssetResponse | undefined,
+  fallback: Asset | null
+): Asset => {
+  const base: AssetResponse = {
+    ...(fallback ?? {}),
+    ...(raw ?? {}),
+  };
+  const { _id, id: providedId, name: providedName, ...rest } = base;
+  const resolvedId = _id ?? providedId ?? fallback?.id ?? "";
+  const resolvedName = providedName ?? fallback?.name ?? "Unnamed Asset";
+
+  if (!resolvedId) {
+    throw new Error("Asset response missing identifier");
+  }
+
+  return {
+    id: resolvedId,
+    name: resolvedName,
+    ...(rest as Omit<Asset, "id" | "name">),
+  };
+};
 
 const AssetModal: React.FC<AssetModalProps> = ({
   isOpen,
@@ -132,41 +164,28 @@ const AssetModal: React.FC<AssetModalProps> = ({
     };
 
     try {
-      let res;
-      const isEditing = Boolean(asset?.id);
-      const url = isEditing && asset?.id ? `/assets/${asset.id}` : "/assets";
+      const raw = await submitAssetRequest({
+        asset,
+        files,
+        payload,
+        httpClient: http,
+      });
 
-      if (files.length > 0) {
-        const fd = new FormData();
-        Object.entries(payload).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            fd.append(key, value as any);
-          }
-        });
-        files.forEach((f) => fd.append("files", f));
-        if (isEditing) {
-          res = await http.put(url, fd, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
-        } else {
-          res = await http.post(url, fd, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
-        }
-      } else if (isEditing) {
-        res = await http.put(url, payload);
-      } else {
-        res = await http.post(url, payload);
-      }
+      const fallback: Partial<Asset> = {
+        ...(asset ?? {}),
+        ...(data as Partial<Asset>),
+      };
 
-      onUpdate(normalizeAssetResponse(res.data as Record<string, any>, asset?.id));
+      const normalized = normalizeAssetData(raw, fallback);
+      onUpdate(normalized);
       onClose();
     } catch (err: any) {
+      const defaultMessage = asset ? "Failed to update asset" : "Failed to create asset";
       const message =
         err.response?.data?.message ||
         (Array.isArray(err.response?.data?.errors)
           ? err.response.data.errors.map((e: any) => e.msg).join(", ")
-          : `Failed to ${asset ? "update" : "create"} asset`);
+          : defaultMessage);
       setError(message);
       addToast(message, "error");
     }

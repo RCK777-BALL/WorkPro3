@@ -11,18 +11,22 @@ interface MaintenanceScheduleProps {
   schedules: MaintenanceSchedule[];
   search: string;
   onRowClick: (schedule: MaintenanceSchedule) => void;
+  isLoading?: boolean;
 }
 
 const MaintenanceSchedule: React.FC<MaintenanceScheduleProps> = ({
   schedules,
   search,
   onRowClick,
+  isLoading = false,
 }) => {
   const filteredSchedules = schedules.filter((schedule) =>
     Object.values(schedule).some((value) =>
       String(value).toLowerCase().includes(search.toLowerCase())
     )
   );
+
+  const showLoading = isLoading && schedules.length === 0;
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -59,7 +63,14 @@ const MaintenanceSchedule: React.FC<MaintenanceScheduleProps> = ({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-neutral-200">
-            {filteredSchedules.map((schedule) => (
+            {showLoading && (
+              <tr>
+                <td colSpan={6} className="px-6 py-8 text-center text-sm text-neutral-500">
+                  Loading maintenance schedules...
+                </td>
+              </tr>
+            )}
+            {!showLoading && filteredSchedules.map((schedule) => (
               <tr
                 key={schedule.id}
                 className="hover:bg-neutral-50 cursor-pointer transition-colors duration-150"
@@ -103,11 +114,18 @@ const MaintenanceSchedule: React.FC<MaintenanceScheduleProps> = ({
                 </td>
               </tr>
             ))}
+            {!showLoading && filteredSchedules.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-6 py-12 text-center text-neutral-500">
+                  No maintenance schedules match your search
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
-      
-      {filteredSchedules.length === 0 && (
+
+      {!showLoading && filteredSchedules.length === 0 && (
         <div className="text-center py-12">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-neutral-100 mb-4">
             <Calendar size={24} className="text-neutral-500" />

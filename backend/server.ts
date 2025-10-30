@@ -41,6 +41,7 @@ import {
   LineRoutes,
   meterRoutes,
   notificationsRoutes,
+  maintenanceScheduleRoutes,
   permitRoutes,
   pmRoutes,
   pmTasksRoutes,
@@ -215,6 +216,7 @@ app.use("/api/import", importRoutes);
 app.use("/api/vendors", vendorRoutes);
 app.use("/api/labor", laborRoutes);
 app.use("/api/knowledge-base", kbRoutes);
+app.use("/api/maintenance-schedules", maintenanceScheduleRoutes);
 
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);

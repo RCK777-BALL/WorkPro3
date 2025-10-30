@@ -61,7 +61,7 @@ const MaintenanceScheduleSchema = new Schema<MaintenanceScheduleDocument>(
     toJSON: {
       virtuals: true,
       versionKey: false,
-      transform: (_doc, ret) => {
+      transform: (_doc, ret: Record<string, any>) => {
         if (ret._id) {
           ret.id = ret._id.toString();
           delete ret._id;
@@ -78,7 +78,7 @@ const MaintenanceScheduleSchema = new Schema<MaintenanceScheduleDocument>(
     toObject: {
       virtuals: true,
       versionKey: false,
-      transform: (_doc, ret) => {
+      transform: (_doc, ret: Record<string, any>) => {
         if (ret._id) {
           ret.id = ret._id.toString();
           delete ret._id;

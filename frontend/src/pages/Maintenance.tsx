@@ -4,65 +4,94 @@
 
 import React, { useEffect, useState } from 'react';
 import { Plus, Search, Calendar, Download, Upload } from 'lucide-react';
+import toast from 'react-hot-toast';
 import Button from '@/components/common/Button';
 import MaintenanceScheduleTable from '@/components/maintenance/MaintenanceSchedule';
 import MaintenanceModal from '@/components/maintenance/MaintenanceModal';
 import MaintenanceMetrics from '@/components/maintenance/MaintenanceMetrics';
 import { exportToExcel, exportToPDF } from '@/utils/export';
 import type { MaintenanceSchedule } from '@/types';
-
-const sampleSchedules: MaintenanceSchedule[] = [
-  {
-    id: 'MS-2024-001',
-    assetId: 'CVB-A1',
-    title: 'Monthly Belt Inspection',
-    description: 'Inspect belt tension, wear, and alignment. Lubricate bearings.',
-    frequency: 'monthly',
-    lastCompleted: '2024-02-15',
-    nextDue: '2024-03-15',
-    assignedTo: 'Mike Johnson',
-    instructions: '1. Check belt tension\n2. Inspect for wear\n3. Verify alignment\n4. Lubricate bearings',
-    type: 'preventive',
-    estimatedDuration: 2,
-    repeatConfig: { interval: 1, unit: 'month' },
-    parts: []
-  },
-  {
-    id: 'MS-2024-002',
-    assetId: 'HVAC-01',
-    title: 'Quarterly HVAC Maintenance',
-    description: 'Full system inspection and filter replacement',
-    frequency: 'quarterly',
-    lastCompleted: '2024-01-01',
-    nextDue: '2024-04-01',
-    assignedTo: 'Sarah Wilson',
-    instructions: '1. Replace filters\n2. Clean coils\n3. Check refrigerant levels\n4. Test operation',
-    type: 'preventive',
-    estimatedDuration: 4,
-    repeatConfig: { interval: 3, unit: 'month' },
-    parts: []
-  }
-];
-
-const LOCAL_KEY = 'maintenance-schedules';
+import { getMaintenanceSchedules } from '@/api/maintenanceSchedules';
 
 const Maintenance: React.FC = () => {
   const [search, setSearch] = useState('');
   const [selectedSchedule, setSelectedSchedule] = useState<MaintenanceSchedule | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
-  const [schedules, setSchedules] = useState<MaintenanceSchedule[]>(() => {
-    if (typeof window === 'undefined') return sampleSchedules;
-    const stored = localStorage.getItem(LOCAL_KEY);
-    return stored ? JSON.parse(stored) : sampleSchedules;
-  });
+  const [schedules, setSchedules] = useState<MaintenanceSchedule[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem(LOCAL_KEY, JSON.stringify(schedules));
-  }, [schedules]);
+    let isMounted = true;
+    setIsLoading(true);
+    getMaintenanceSchedules()
+      .then((data) => {
+        if (!isMounted) return;
+        setSchedules(data);
+      })
+      .catch((err: unknown) => {
+        console.error('Failed to load maintenance schedules', err);
+        toast.error('Failed to load maintenance schedules. Please try again.');
+      })
+      .finally(() => {
+        if (!isMounted) return;
+        setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleOpenModal = (schedule: MaintenanceSchedule | null) => {
     setSelectedSchedule(schedule);
     setModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setSelectedSchedule(null);
+  };
+
+  const applyOptimisticSave = (
+    schedule: MaintenanceSchedule,
+    mode: 'create' | 'update',
+  ) => {
+    let previous: MaintenanceSchedule[] = [];
+    setSchedules((current) => {
+      previous = current;
+      if (mode === 'create') {
+        return [...current, schedule];
+      }
+      return current.map((item) => (item.id === schedule.id ? schedule : item));
+    });
+
+    return () => {
+      setSchedules(previous);
+    };
+  };
+
+  const finalizeSave = (
+    optimisticId: string,
+    saved: MaintenanceSchedule,
+  ) => {
+    setSchedules((current) =>
+      current.map((item) => (item.id === optimisticId ? saved : item)),
+    );
+    setSelectedSchedule((current) =>
+      current && current.id === optimisticId ? saved : current,
+    );
+  };
+
+  const applyOptimisticDelete = (id: string) => {
+    let previous: MaintenanceSchedule[] = [];
+    setSchedules((current) => {
+      previous = current;
+      return current.filter((item) => item.id !== id);
+    });
+
+    return () => {
+      setSchedules(previous);
+    };
   };
 
   const scheduleMapper = (schedule: MaintenanceSchedule) => ({
@@ -140,26 +169,16 @@ const Maintenance: React.FC = () => {
           schedules={schedules}
           search={search}
           onRowClick={handleOpenModal}
+          isLoading={isLoading}
         />
 
         <MaintenanceModal
           isOpen={isModalOpen}
-          onClose={() => setModalOpen(false)}
+          onClose={handleCloseModal}
           schedule={selectedSchedule}
-          onUpdate={(updatedSchedule) => {
-            setSchedules(prevSchedules => {
-              const index = prevSchedules.findIndex(
-                schedule => schedule.id === updatedSchedule.id
-              );
-              if (index === -1) {
-                return [...prevSchedules, updatedSchedule];
-              }
-              return prevSchedules.map(schedule =>
-                schedule.id === updatedSchedule.id ? updatedSchedule : schedule
-              );
-            });
-            setModalOpen(false);
-          }}
+          onOptimisticSave={applyOptimisticSave}
+          onFinalizeSave={finalizeSave}
+          onOptimisticDelete={applyOptimisticDelete}
         />
       </div>
   );

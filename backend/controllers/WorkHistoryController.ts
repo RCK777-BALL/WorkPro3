@@ -4,20 +4,31 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
+import type { FilterQuery } from 'mongoose';
 import { sendResponse } from '../utils/sendResponse';
 
 import WorkHistory from '../models/WorkHistory';
 import { writeAuditLog } from '../utils/audit';
 import { toEntityId } from '../utils/ids';
  
- export const getAllWorkHistories = async (
+export const getAllWorkHistories = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<Response | void> => {
- 
   try {
-    const items = await WorkHistory.find().lean().exec();
+    const query: FilterQuery<Record<string, unknown>> = {};
+    const tenantId = req.tenantId;
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
+
+    const { performedBy } = req.query;
+    if (typeof performedBy === 'string' && performedBy.trim().length > 0) {
+      query.performedBy = performedBy.trim();
+    }
+
+    const items = await WorkHistory.find(query).lean().exec();
     sendResponse(res, items);
     return;
   } catch (err) {
@@ -32,7 +43,12 @@ export const getWorkHistoryById = async (
   next: NextFunction,
 ): Promise<Response | void> => {
   try {
-    const item = await WorkHistory.findById(req.params.id).lean().exec();
+    const query: FilterQuery<Record<string, unknown>> = { _id: req.params.id };
+    if (req.tenantId) {
+      query.tenantId = req.tenantId;
+    }
+
+    const item = await WorkHistory.findOne(query).lean().exec();
     if (!item) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -54,6 +70,11 @@ export const createWorkHistory = async (
     const tenantId = req.tenantId;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    if (!req.body?.performedBy) {
+      sendResponse(res, null, 'performedBy is required', 400);
       return;
     }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
@@ -87,7 +108,10 @@ export const updateWorkHistory = async (
       return;
     }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
-    const existing = await WorkHistory.findById(req.params.id);
+    const existing = await WorkHistory.findOne({
+      _id: req.params.id,
+      tenantId,
+    });
     if (!existing) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -125,7 +149,10 @@ export const deleteWorkHistory = async (
       return;
     }
     const userId = (req.user as any)?._id || (req.user as any)?.id;
-    const deleted = await WorkHistory.findByIdAndDelete(req.params.id);
+    const deleted = await WorkHistory.findOneAndDelete({
+      _id: req.params.id,
+      tenantId,
+    });
     if (!deleted) {
       sendResponse(res, null, 'Not found', 404);
       return;

@@ -8,7 +8,8 @@ import Avatar from '@/components/common/Avatar';
 import WorkHistoryCard from '@/components/teams/WorkHistoryCard';
 import { teamMembers } from '@/utils/data';
 import http from '@/lib/http';
-import type { WorkHistory, WorkHistoryEntry, PermitActivitySummary } from '@/types';
+import { createEmptyWorkHistory, fetchWorkHistoryForMember, createWorkHistoryRecord, updateWorkHistoryRecord } from '@/api/workHistory';
+import type { WorkHistory, PermitActivitySummary } from '@/types';
 const TeamMemberProfile = () => {
   const { id } = useParams<{ id: string }>();
   const member = teamMembers.find(m => m.id === id);
@@ -45,64 +46,67 @@ const TeamMemberProfile = () => {
     }
   }, [member.id]);
 
-  const [workHistory, setWorkHistory] = useState<WorkHistory>(() => ({
-    metrics: {
-      safety: {
-        incidentRate: 0.5,
-        lastIncidentDate: '2024-01-15',
-        safetyCompliance: 98,
-        nearMisses: 3,
-        safetyMeetingsAttended: 12,
-      },
-      people: {
-        attendanceRate: 97,
-        teamCollaboration: 4.5,
-        trainingHours: 24,
-        certifications: ['Safety Protocol', 'Equipment Operation'],
-        mentorshipHours: 8,
-      },
-      productivity: {
-        completedTasks: 45,
-        onTimeCompletion: 92,
-        averageResponseTime: '1.8h',
-        overtimeHours: 12,
-        taskEfficiencyRate: 95,
-      },
-      improvement: {
-        costSavings: 15000,
-        suggestionsSubmitted: 4,
-        suggestionsImplemented: 3,
-        processImprovements: 2,
-      },
-    },
-    recentWork: [
-      {
-        id: '1',
-        date: '2024-03-15',
-        type: 'work_order',
-        title: 'HVAC System Maintenance',
-        status: 'completed',
-        duration: 3,
-        notes: 'Completed ahead of schedule',
-      },
-      {
-        id: '2',
-        date: '2024-03-14',
-        type: 'maintenance',
-        title: 'Conveyor Belt Inspection',
-        status: 'completed',
-        duration: 2,
-      },
-      {
-        id: '3',
-        date: '2024-03-13',
-        type: 'training',
-        title: 'Safety Protocol Training',
-        status: 'completed',
-        duration: 4,
-      },
-    ] as WorkHistoryEntry[],
-  }));
+  const [workHistory, setWorkHistory] = useState<WorkHistory>(() => createEmptyWorkHistory());
+  const [workHistoryId, setWorkHistoryId] = useState<string | null>(null);
+  const [loadingWorkHistory, setLoadingWorkHistory] = useState(false);
+  const [workHistoryError, setWorkHistoryError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadWorkHistory = async () => {
+      try {
+        setLoadingWorkHistory(true);
+        const record = await fetchWorkHistoryForMember(member.id);
+        if (!isMounted) {
+          return;
+        }
+        if (record) {
+          setWorkHistory({ metrics: record.metrics, recentWork: record.recentWork });
+          setWorkHistoryId(record._id && record._id.length > 0 ? record._id : null);
+        } else {
+          setWorkHistory(createEmptyWorkHistory());
+          setWorkHistoryId(null);
+        }
+        setWorkHistoryError(null);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+        setWorkHistory(createEmptyWorkHistory());
+        setWorkHistoryId(null);
+        setWorkHistoryError('Unable to load work history');
+      } finally {
+        if (isMounted) {
+          setLoadingWorkHistory(false);
+        }
+      }
+    };
+
+    loadWorkHistory();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [member.id]);
+
+  const handleWorkHistorySave = async (updated: WorkHistory) => {
+    const payload = {
+      ...updated,
+      performedBy: member.id,
+    };
+
+    setWorkHistoryError(null);
+    let saved;
+    if (workHistoryId) {
+      saved = await updateWorkHistoryRecord(workHistoryId, payload);
+    } else {
+      saved = await createWorkHistoryRecord(payload);
+    }
+
+    setWorkHistory({ metrics: saved.metrics, recentWork: saved.recentWork });
+    setWorkHistoryId(saved._id && saved._id.length > 0 ? saved._id : workHistoryId);
+  };
 
   return (
     <div className="space-y-6">
@@ -192,11 +196,24 @@ const TeamMemberProfile = () => {
               </div>
             )}
           </div>
-          <WorkHistoryCard
-            metrics={workHistory.metrics}
-            recentWork={workHistory.recentWork}
-            onSave={setWorkHistory}
-          />
+          {loadingWorkHistory ? (
+            <div className="rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-500 shadow-sm">
+              Loading work history…
+            </div>
+          ) : (
+            <>
+              {workHistoryError && (
+                <p className="mb-2 text-sm text-error-600" role="alert">
+                  {workHistoryError}
+                </p>
+              )}
+              <WorkHistoryCard
+                metrics={workHistory.metrics}
+                recentWork={workHistory.recentWork}
+                onSave={handleWorkHistorySave}
+              />
+            </>
+          )}
         </div>
       </div>
   );

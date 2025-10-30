@@ -8,11 +8,16 @@ import Button from '@/components/common/Button';
 import Modal from '@/components/modals/Modal';
 import type { Part } from '@/types';
 
+export interface InventorySubmission {
+  data: FormData | Record<string, unknown>;
+  isMultipart: boolean;
+}
+
 interface InventoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   part: Part | null;
-  onUpdate: (data: FormData) => void;
+  onUpdate: (submission: InventorySubmission) => Promise<void>;
   error?: string | null;
   initialData?: Partial<Part>;
 }
@@ -40,7 +45,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
   error,
   initialData,
 }) => {
-  const [formData, setFormData] = useState(
+  const [formData, setFormData] = useState(() =>
     part ? { ...defaultPartState, ...part } : { ...defaultPartState, ...initialData }
   );
   const [partImage, setPartImage] = useState<File | null>(null);
@@ -50,13 +55,13 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
       part ? { ...defaultPartState, ...part } : { ...defaultPartState, ...initialData }
     );
     setPartImage(null);
-  }, [part, isOpen]);
+  }, [part, isOpen, initialData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload: Record<string, unknown> = { ...formData };
+    const { id: _id, image: _image, ...rest } = formData as Partial<Part> & typeof defaultPartState;
+    const payload: Record<string, unknown> = { ...rest };
 
-    // Convert numeric strings to numbers if necessary
     payload.quantity = typeof payload.quantity === 'string' ? Number(payload.quantity) : payload.quantity;
     payload.unitCost = typeof payload.unitCost === 'string' ? Number(payload.unitCost) : payload.unitCost;
     payload.reorderPoint = typeof payload.reorderPoint === 'string' ? Number(payload.reorderPoint) : payload.reorderPoint;
@@ -65,22 +70,30 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
         ? Number(payload.reorderThreshold)
         : payload.reorderThreshold;
 
-    // Omit vendor when empty so validation can treat it as optional
-    if (!payload.vendor || payload.vendor.trim() === '') {
+    if (typeof payload.quantity !== 'number' || Number.isNaN(payload.quantity)) payload.quantity = 0;
+    if (typeof payload.unitCost !== 'number' || Number.isNaN(payload.unitCost)) payload.unitCost = 0;
+    if (typeof payload.reorderPoint !== 'number' || Number.isNaN(payload.reorderPoint)) payload.reorderPoint = 0;
+    if (typeof payload.reorderThreshold === 'number' && Number.isNaN(payload.reorderThreshold)) {
+      delete payload.reorderThreshold;
+    }
+
+    if (!payload.vendor || (typeof payload.vendor === 'string' && payload.vendor.trim() === '')) {
       delete payload.vendor;
     }
 
-    const data = new FormData();
-    Object.entries(payload).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        data.append(key, String(value));
-      }
-    });
     if (partImage) {
+      const data = new FormData();
+      Object.entries(payload).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          data.append(key, String(value));
+        }
+      });
       data.append('partImage', partImage);
+      await onUpdate({ data, isMultipart: true });
+      return;
     }
 
-    onUpdate(data);
+    await onUpdate({ data: payload, isMultipart: false });
   };
 
   return (

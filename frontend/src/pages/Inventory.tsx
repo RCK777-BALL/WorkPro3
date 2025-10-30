@@ -6,7 +6,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Plus, Search, Download, Upload, AlertTriangle, QrCode } from 'lucide-react';
 import Button from '@/components/common/Button';
 import InventoryTable from '@/components/inventory/InventoryTable';
-import InventoryModal from '@/components/inventory/InventoryModal';
+import InventoryModal, { type InventorySubmission } from '@/components/inventory/InventoryModal';
 import InventoryMetrics from '@/components/inventory/InventoryMetrics';
 import InventoryScanModal from '@/components/inventory/InventoryScanModal';
 import { exportToExcel, exportToPDF } from '@/utils/export';
@@ -30,6 +30,7 @@ const Inventory: React.FC = () => {
     try {
       const res = await http.get('/parts');
       setParts(res.data as Part[]);
+      setError(null);
     } catch (err) {
       console.error('Error fetching inventory:', err);
       setError('Failed to load inventory');
@@ -237,16 +238,24 @@ const Inventory: React.FC = () => {
           part={selectedPart}
           {...(initialData ? { initialData } : {})}
           error={modalError}
-          onUpdate={async (data: FormData) => {
+          onUpdate={async ({ data, isMultipart }: InventorySubmission) => {
             try {
               if (selectedPart) {
-                await http.put(`/parts/${selectedPart.id}`, data, {
-                  headers: { 'Content-Type': 'multipart/form-data' },
-                });
+                if (isMultipart) {
+                  await http.put(`/parts/${selectedPart.id}`, data, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                  });
+                } else {
+                  await http.put(`/parts/${selectedPart.id}`, data);
+                }
               } else {
-                await http.post('/parts', data, {
-                  headers: { 'Content-Type': 'multipart/form-data' },
-                });
+                if (isMultipart) {
+                  await http.post('/parts', data, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                  });
+                } else {
+                  await http.post('/parts', data);
+                }
               }
               await fetchParts();
               setModalOpen(false);

@@ -4,7 +4,7 @@
 
 import { randomUUID } from "crypto";
 import { Router } from "express";
-import type { Request } from "express";
+import type { NextFunction, Request, Response } from "express";
 import multer from "multer";
 
 import { requireAuth } from "../middleware/authMiddleware";
@@ -36,6 +36,15 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: MAX_UPLOAD_SIZE_BYTES },
 });
+
+const maybeUpload = (req: Request, res: Response, next: NextFunction) => {
+  if (req.is("multipart/form-data")) {
+    const handler = upload.single("partImage");
+    handler(req, res, next);
+    return;
+  }
+  next();
+};
 
 const partsStore = new Map<string, StoredPart[]>();
 
@@ -126,7 +135,7 @@ router.get("/", (req, res) => {
   res.json({ success: true, data: parts });
 });
 
-router.post("/", upload.single("partImage"), (req, res) => {
+router.post("/", maybeUpload, (req, res) => {
   const result = ensureTenant(req);
   if (result.error) {
     res.status(400).json({ message: "Tenant ID required" });
@@ -170,7 +179,7 @@ router.post("/", upload.single("partImage"), (req, res) => {
   res.status(201).json({ success: true, data: newPart });
 });
 
-router.put("/:id", upload.single("partImage"), (req, res) => {
+router.put("/:id", maybeUpload, (req, res) => {
   const result = ensureTenant(req);
   if (result.error) {
     res.status(400).json({ message: "Tenant ID required" });

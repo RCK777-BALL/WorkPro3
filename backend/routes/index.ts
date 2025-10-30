@@ -23,7 +23,6 @@ export { default as notificationsRoutes } from './notificationsRoutes';
 export { default as chatRoutes } from './chatRoutes';
 export { default as LineRoutes } from './LineRoutes';
 export { default as StationRoutes } from './StationRoutes';
-export { default as maintenanceScheduleRoutes } from './MaintenanceScheduleRoutes';
 export { default as vendorRoutes } from './vendorRoutes';
 export { default as requestPortalRoutes } from './RequestPortalRoutes';
 export { default as conditionRuleRoutes } from './ConditionRuleRoutes';

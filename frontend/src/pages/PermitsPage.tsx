@@ -306,7 +306,7 @@ export default function PermitsPage() {
 
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full divide-y divide-neutral-200 text-sm">
-            <thead className="bg-neutral-50 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
+            <thead className="bg-shadow-50 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
               <tr>
                 <th className="px-4 py-3">Permit #</th>
                 <th className="px-4 py-3">Type</th>

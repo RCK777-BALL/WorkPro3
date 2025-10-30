@@ -131,6 +131,34 @@ const STATUS_FILTERS: SelectOption[] = [
   { value: "closed", label: "Closed" },
 ];
 
+const DEFAULT_FILTERS: FilterState = { department: "all", line: "all", status: "all" };
+
+const FILTER_STORAGE_KEY = "operations-dashboard-filters";
+
+const VALID_STATUS_VALUES = new Set(STATUS_FILTERS.map((option) => option.value));
+
+const loadSavedFilters = (): FilterState => {
+  if (typeof window === "undefined") {
+    return DEFAULT_FILTERS;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(FILTER_STORAGE_KEY);
+    if (!raw) {
+      return DEFAULT_FILTERS;
+    }
+    const parsed = JSON.parse(raw) as Partial<FilterState> | null;
+    const department = typeof parsed?.department === "string" ? parsed.department : "all";
+    const line = typeof parsed?.line === "string" ? parsed.line : "all";
+    const rawStatus = typeof parsed?.status === "string" ? parsed.status : "all";
+    const status = VALID_STATUS_VALUES.has(rawStatus) ? rawStatus : "all";
+
+    return { department, line, status };
+  } catch (error) {
+    return DEFAULT_FILTERS;
+  }
+};
+
 const SUMMARY_FALLBACK: SummaryResponse = {
   openWorkOrders: 42,
   overdueWorkOrders: 11,
@@ -772,7 +800,8 @@ function DashboardFilters({ filters, departments, lines, loading, onChange }: Fi
 }
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [filters, setFilters] = useState<FilterState>({ department: "all", line: "all", status: "all" });
+  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const [filtersHydrated, setFiltersHydrated] = useState(false);
   const [departments, setDepartments] = useState<SelectOption[]>([]);
   const [lines, setLines] = useState<LineOption[]>([]);
   const [optionsLoading, setOptionsLoading] = useState(true);
@@ -810,6 +839,32 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
+    const savedFilters = loadSavedFilters();
+    setFilters((prev) => {
+      if (
+        prev.department === savedFilters.department &&
+        prev.line === savedFilters.line &&
+        prev.status === savedFilters.status
+      ) {
+        return prev;
+      }
+      return savedFilters;
+    });
+    setFiltersHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!filtersHydrated || typeof window === "undefined") {
+      return;
+    }
+    try {
+      window.localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filters));
+    } catch (error) {
+      // Ignore storage write failures so filters continue to work in-memory.
+    }
+  }, [filters, filtersHydrated]);
+
+  useEffect(() => {
     livePulseRef.current = livePulse;
   }, [livePulse]);
   const getQueryParams = useCallback(() => {
@@ -822,6 +877,9 @@ export default function Dashboard() {
   }, [filters, isTechnician]);
 
   const fetchSummary = useCallback(async () => {
+    if (!filtersHydrated || optionsLoading) {
+      return;
+    }
     setSummaryLoading(true);
     setSummaryError(null);
     const params = getQueryParams();
@@ -853,9 +911,12 @@ export default function Dashboard() {
       if (!mountedRef.current) return;
       setSummaryLoading(false);
     }
-  }, [getQueryParams]);
+  }, [filtersHydrated, getQueryParams, optionsLoading]);
 
   const fetchLivePulse = useCallback(async () => {
+    if (!filtersHydrated || optionsLoading) {
+      return;
+    }
     if (!livePulseRef.current) {
       setLivePulseLoading(true);
     }
@@ -883,9 +944,12 @@ export default function Dashboard() {
       if (!mountedRef.current) return;
       setLivePulseLoading(false);
     }
-  }, [getQueryParams]);
+  }, [filtersHydrated, getQueryParams, optionsLoading]);
 
   const fetchActivity = useCallback(async () => {
+    if (!filtersHydrated || optionsLoading) {
+      return;
+    }
     if (recentActivity.length === 0) {
       setActivityLoading(true);
     }
@@ -918,7 +982,7 @@ export default function Dashboard() {
       if (!mountedRef.current) return;
       setActivityLoading(false);
     }
-  }, [getQueryParams, recentActivity.length]);
+  }, [filtersHydrated, getQueryParams, optionsLoading, recentActivity.length]);
 
   const fetchStatuses = useCallback(async () => {
     setStatusLoading(true);
@@ -1038,6 +1102,41 @@ export default function Dashboard() {
       cancelled = true;
     };
   }, [fetchStatuses]);
+
+  useEffect(() => {
+    if (!filtersHydrated) {
+      return;
+    }
+
+    if (departments.length === 0 && lines.length === 0) {
+      return;
+    }
+
+    setFilters((prev) => {
+      let nextDepartment = prev.department;
+      let nextLine = prev.line;
+      let changed = false;
+
+      if (nextDepartment !== "all" && !departments.some((option) => option.value === nextDepartment)) {
+        nextDepartment = "all";
+        changed = true;
+      }
+
+      const availableLines =
+        nextDepartment === "all" ? lines : lines.filter((line) => line.departmentId === nextDepartment);
+
+      if (nextLine !== "all" && !availableLines.some((option) => option.value === nextLine)) {
+        nextLine = "all";
+        changed = true;
+      }
+
+      if (!changed) {
+        return prev;
+      }
+
+      return { ...prev, department: nextDepartment, line: nextLine };
+    });
+  }, [departments, lines, filtersHydrated]);
 
   useEffect(() => {
     void fetchSummary();

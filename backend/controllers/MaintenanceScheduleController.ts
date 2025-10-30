@@ -83,6 +83,39 @@ export const listMaintenanceSchedules: AuthedRequestHandler<
   }
 };
 
+export const getMaintenanceSchedule: AuthedRequestHandler<
+  MaintenanceScheduleParams,
+  MaintenanceScheduleResponse
+> = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const filter: Record<string, unknown> = {
+      _id: req.params.id,
+      tenantId,
+    };
+
+    if (req.siteId) {
+      filter.siteId = req.siteId;
+    }
+
+    const schedule = await MaintenanceSchedule.findOne(filter);
+
+    if (!schedule) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
+
+    sendResponse(res, schedule);
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const createMaintenanceSchedule: AuthedRequestHandler<
   MaintenanceScheduleParams,
   MaintenanceScheduleResponse,

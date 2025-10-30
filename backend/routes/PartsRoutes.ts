@@ -2,275 +2,358 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { randomUUID } from "crypto";
-import { Router } from "express";
-import type { NextFunction, Request, Response } from "express";
-import multer from "multer";
+import type { Request, Response, NextFunction, RequestHandler } from 'express';
+import { Router } from 'express';
+import multer, { MulterError } from 'multer';
+import { Types, isValidObjectId } from 'mongoose';
 
-import { requireAuth } from "../middleware/authMiddleware";
-import tenantScope from "../middleware/tenantScope";
+import { requireAuth } from '../middleware/authMiddleware';
+import tenantScope from '../middleware/tenantScope';
+import InventoryItem, { type IInventoryItem } from '../models/InventoryItem';
+import logger from '../utils/logger';
+import { writeAuditLog } from '../utils/audit';
+import { toEntityId, toObjectId } from '../utils/ids';
+import sendResponse from '../utils/sendResponse';
 
-interface StoredPart {
-  id: string;
-  tenantId: string;
-  name: string;
-  description?: string;
-  category?: string;
-  sku: string;
-  location?: string;
-  quantity: number;
-  unitCost: number;
-  reorderPoint: number;
-  reorderThreshold?: number;
-  lastRestockDate?: string;
-  vendor?: string;
-  lastOrderDate: string;
-  image?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+const router = Router();
 
-const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
+const ALLOWED_FIELD_LIST = [
+  'name',
+  'description',
+  'partNumber',
+  'sku',
+  'category',
+  'quantity',
+  'unitCost',
+  'unit',
+  'uom',
+  'location',
+  'minThreshold',
+  'reorderThreshold',
+  'reorderPoint',
+  'lastRestockDate',
+  'lastOrderDate',
+  'vendor',
+  'asset',
+  'image',
+  'siteId',
+  'sharedPartId',
+] as const;
+
+type AllowedField = (typeof ALLOWED_FIELD_LIST)[number];
+
+const ALLOWED_FIELDS = new Set<AllowedField>(ALLOWED_FIELD_LIST);
+
+const NUMERIC_FIELDS = new Set<AllowedField>([
+  'quantity',
+  'unitCost',
+  'minThreshold',
+  'reorderThreshold',
+  'reorderPoint',
+]);
+
+const DATE_FIELDS = new Set<AllowedField>(['lastRestockDate', 'lastOrderDate']);
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif']);
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_UPLOAD_SIZE_BYTES },
+  limits: { fileSize: MAX_FILE_SIZE },
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_MIME_TYPES.has(file.mimetype)) {
+      cb(null, true);
+      return;
+    }
+    cb(new Error('Unsupported file type'));
+  },
 });
 
-const maybeUpload = (req: Request, res: Response, next: NextFunction) => {
-  if (req.is("multipart/form-data")) {
-    const handler = upload.single("partImage");
-    handler(req, res, next);
+const handleFormData: RequestHandler = (req, res, next) => {
+  if (!req.is('multipart/form-data')) {
+    next();
     return;
   }
-  next();
+
+  upload.single('partImage')(req, res, (err) => {
+    if (!err) {
+      next();
+      return;
+    }
+
+    if (err instanceof MulterError && err.code === 'LIMIT_FILE_SIZE') {
+      sendResponse(res, null, 'File too large', 400);
+      return;
+    }
+
+    const message = err instanceof Error ? err.message : 'Invalid file upload';
+    sendResponse(res, null, message, 400);
+  });
 };
 
-const partsStore = new Map<string, StoredPart[]>();
+type LeanInventoryItem = Omit<IInventoryItem, '_id'> & {
+  _id: Types.ObjectId;
+  tenantId: Types.ObjectId;
+  vendor?: Types.ObjectId | string;
+  siteId?: Types.ObjectId | string;
+};
 
-const sampleParts: Omit<StoredPart, "tenantId" | "createdAt" | "updatedAt">[] = [
-  {
-    id: "PART-001",
-    name: "Universal Bearing",
-    description: "High durability bearing for general purpose machinery",
-    category: "Mechanical",
-    sku: "BRG-UNIV-001",
-    location: "Aisle 3, Bin 4",
-    quantity: 42,
-    unitCost: 18.5,
-    reorderPoint: 15,
-    reorderThreshold: 10,
-    lastRestockDate: new Date().toISOString().split("T")[0],
-    vendor: "VEN-001",
-    lastOrderDate: new Date().toISOString().split("T")[0],
-    image: undefined,
-  },
-];
+type PartPayloadResult = {
+  data: Partial<IInventoryItem>;
+  invalid?: string[];
+};
 
-const router = Router();
+function normalizeValue(key: string, value: unknown): unknown {
+  if (key === 'tenantId') {
+    return undefined;
+  }
+  if (value == null || (typeof value === 'string' && value.trim() === '')) {
+    return undefined;
+  }
+
+  if (NUMERIC_FIELDS.has(key as AllowedField)) {
+    const numeric = typeof value === 'number' ? value : Number(value);
+    return Number.isFinite(numeric) ? numeric : undefined;
+  }
+
+  if (DATE_FIELDS.has(key as AllowedField)) {
+    const date = value instanceof Date ? value : new Date(String(value));
+    return Number.isNaN(date.valueOf()) ? undefined : date;
+  }
+
+  if (key === 'vendor' || key === 'asset' || key === 'siteId' || key === 'sharedPartId' || key === 'uom') {
+    return toObjectId(value as any);
+  }
+
+  return value;
+}
+
+function buildPartPayload(body: Record<string, unknown>): PartPayloadResult {
+  const invalid = Object.keys(body).filter((key) => !ALLOWED_FIELDS.has(key as AllowedField));
+  if (invalid.length) {
+    return { data: {}, invalid };
+  }
+
+  const data: Partial<IInventoryItem> = {};
+  for (const [key, raw] of Object.entries(body)) {
+    const normalized = normalizeValue(key, raw);
+    if (normalized === undefined) continue;
+    (data as Record<string, unknown>)[key] = normalized;
+  }
+  return { data };
+}
+
+const formatDate = (value?: unknown): string | undefined => {
+  if (!value) return undefined;
+  const date = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(date.valueOf())) return undefined;
+  return date.toISOString().split('T')[0];
+};
+
+function mapToPart(item: LeanInventoryItem) {
+  const id = toEntityId(item._id) ?? item._id.toString();
+  return {
+    id,
+    name: item.name,
+    description: item.description ?? undefined,
+    category: item.category ?? undefined,
+    sku: item.sku ?? '',
+    location: item.location ?? undefined,
+    quantity: Number(item.quantity ?? 0),
+    unitCost: Number(item.unitCost ?? 0),
+    reorderPoint: Number(item.reorderPoint ?? 0),
+    reorderThreshold:
+      item.reorderThreshold === undefined ? undefined : Number(item.reorderThreshold ?? 0),
+    lastRestockDate: formatDate(item.lastRestockDate),
+    vendor: toEntityId(item.vendor),
+    lastOrderDate: formatDate(item.lastOrderDate),
+    image: item.image ?? undefined,
+  };
+}
+
+function applyTenantScope<T extends Record<string, unknown>>(req: Request, base: T = {} as T): T {
+  const scoped = { ...base } as Record<string, unknown>;
+  if (req.tenantId) scoped.tenantId = req.tenantId;
+  if (req.siteId) scoped.siteId = req.siteId;
+  return scoped as T;
+}
+
+async function ensureTenant(req: Request, res: Response): Promise<boolean> {
+  if (!req.tenantId) {
+    sendResponse(res, null, 'Tenant ID required', 400);
+    return false;
+  }
+  return true;
+}
 
 router.use(requireAuth);
 router.use(tenantScope);
 
-const todayString = () => new Date().toISOString().split("T")[0];
-
-const ensureTenant = (req: Request) =>
-  req.tenantId ? { tenantId: req.tenantId } : { error: true as const };
-
-const getTenantParts = (tenantId: string) => {
-  const existing = partsStore.get(tenantId);
-  if (existing) return existing;
-  const seeded = sampleParts.map((part) => ({
-    ...part,
-    tenantId,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  }));
-  partsStore.set(tenantId, seeded);
-  return seeded;
-};
-
-const toOptionalString = (value: unknown): string | undefined => {
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
-};
-
-const toNumber = (value: unknown, fallback = 0): number => {
-  const numeric = typeof value === "number" ? value : Number(value);
-  return Number.isFinite(numeric) ? numeric : fallback;
-};
-
-const toDateString = (value: unknown): string | undefined => {
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
-  if (!trimmed) return undefined;
-  const parsed = new Date(trimmed);
-  if (Number.isNaN(parsed.valueOf())) return undefined;
-  return parsed.toISOString().split("T")[0];
-};
-
-const fileToDataUrl = (file?: Express.Multer.File | null) => {
-  if (!file || !file.buffer?.length) return undefined;
-  const base64 = file.buffer.toString("base64");
-  return `data:${file.mimetype};base64,${base64}`;
-};
-
-const hasBodyField = (body: Record<string, unknown> | undefined, key: string) =>
-  Boolean(body && Object.prototype.hasOwnProperty.call(body, key));
-
-const getBodyValue = <T = unknown>(
-  body: Record<string, unknown> | undefined,
-  key: string,
-): T | undefined => (body && key in body ? (body[key] as T) : undefined);
-
-router.get("/", (req, res) => {
-  const result = ensureTenant(req);
-  if (result.error) {
-    res.status(400).json({ message: "Tenant ID required" });
-    return;
+router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const query = applyTenantScope(req, {} as Record<string, unknown>);
+    const items: LeanInventoryItem[] = await InventoryItem.find(query)
+      .lean<LeanInventoryItem>()
+      .exec();
+    const parts = items.map(mapToPart);
+    sendResponse(res, parts);
+  } catch (err) {
+    next(err);
   }
-
-  const parts = getTenantParts(result.tenantId);
-  res.json({ success: true, data: parts });
 });
 
-router.post("/", maybeUpload, (req, res) => {
-  const result = ensureTenant(req);
-  if (result.error) {
-    res.status(400).json({ message: "Tenant ID required" });
-    return;
+router.post('/', handleFormData, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!(await ensureTenant(req, res))) return;
+
+    const { data, invalid } = buildPartPayload(req.body as Record<string, unknown>);
+    if (invalid && invalid.length) {
+      sendResponse(res, null, `Invalid fields: ${invalid.join(', ')}`, 400);
+      return;
+    }
+
+    const payload = applyTenantScope(req, data);
+    const saved = await new InventoryItem(payload).save();
+    const plain = saved.toObject() as LeanInventoryItem;
+
+    try {
+      const userId = (req.user as any)?._id || (req.user as any)?.id;
+      await writeAuditLog({
+        tenantId: req.tenantId,
+        userId,
+        action: 'create',
+        entityType: 'InventoryItem',
+        entityId: toEntityId(saved._id),
+        after: plain,
+      });
+    } catch (logErr) {
+      logger.warn('Failed to write audit log for part creation', logErr);
+    }
+
+    sendResponse(res, mapToPart(plain), null, 201);
+  } catch (err) {
+    logger.error('Error creating part', err);
+    next(err);
   }
-
-  const name = toOptionalString(req.body?.name);
-  const sku = toOptionalString(req.body?.sku);
-
-  if (!name || !sku) {
-    res.status(400).json({ message: "Name and SKU are required" });
-    return;
-  }
-
-  const now = new Date().toISOString();
-  const newPart: StoredPart = {
-    id: randomUUID(),
-    tenantId: result.tenantId,
-    name,
-    description: toOptionalString(req.body?.description),
-    category: toOptionalString(req.body?.category),
-    sku,
-    location: toOptionalString(req.body?.location),
-    quantity: toNumber(req.body?.quantity),
-    unitCost: toNumber(req.body?.unitCost),
-    reorderPoint: toNumber(req.body?.reorderPoint),
-    reorderThreshold: req.body?.reorderThreshold !== undefined
-      ? toNumber(req.body?.reorderThreshold)
-      : undefined,
-    lastRestockDate: toDateString(req.body?.lastRestockDate) ?? todayString(),
-    vendor: toOptionalString(req.body?.vendor),
-    lastOrderDate: toDateString(req.body?.lastOrderDate) ?? todayString(),
-    image: fileToDataUrl(req.file),
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  const parts = getTenantParts(result.tenantId);
-  parts.push(newPart);
-
-  res.status(201).json({ success: true, data: newPart });
 });
 
-router.put("/:id", maybeUpload, (req, res) => {
-  const result = ensureTenant(req);
-  if (result.error) {
-    res.status(400).json({ message: "Tenant ID required" });
-    return;
+router.put('/:id', handleFormData, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!(await ensureTenant(req, res))) return;
+
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      sendResponse(res, null, 'Invalid id', 400);
+      return;
+    }
+
+    const { data, invalid } = buildPartPayload(req.body as Record<string, unknown>);
+    if (invalid && invalid.length) {
+      sendResponse(res, null, `Invalid fields: ${invalid.join(', ')}`, 400);
+      return;
+    }
+
+    const filter = applyTenantScope(req, { _id: id });
+    const existing = await InventoryItem.findOne(filter)
+      .lean<LeanInventoryItem>()
+      .exec();
+    if (!existing) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
+
+    const updated = await InventoryItem.findOneAndUpdate(filter, data, {
+      new: true,
+      runValidators: true,
+      lean: true,
+    }).exec();
+    if (!updated) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
+
+    try {
+      const userId = (req.user as any)?._id || (req.user as any)?.id;
+      await writeAuditLog({
+        tenantId: req.tenantId,
+        userId,
+        action: 'update',
+        entityType: 'InventoryItem',
+        entityId: toEntityId(id),
+        before: existing,
+        after: updated,
+      });
+    } catch (logErr) {
+      logger.warn('Failed to write audit log for part update', logErr);
+    }
+
+    sendResponse(res, mapToPart(updated));
+  } catch (err) {
+    logger.error('Error updating part', err);
+    next(err);
   }
-
-  const parts = getTenantParts(result.tenantId);
-  const partIndex = parts.findIndex((p) => p.id === req.params.id);
-
-  if (partIndex === -1) {
-    res.status(404).json({ message: "Part not found" });
-    return;
-  }
-
-  const existing = parts[partIndex];
-  const updatedAt = new Date().toISOString();
-
-  const body = req.body as Record<string, unknown> | undefined;
-
-  const updated: StoredPart = {
-    ...existing,
-    name: hasBodyField(body, "name")
-      ? toOptionalString(getBodyValue(body, "name")) ?? existing.name
-      : existing.name,
-    description: hasBodyField(body, "description")
-      ? toOptionalString(getBodyValue(body, "description"))
-      : existing.description,
-    category: hasBodyField(body, "category")
-      ? toOptionalString(getBodyValue(body, "category"))
-      : existing.category,
-    sku: hasBodyField(body, "sku")
-      ? toOptionalString(getBodyValue(body, "sku")) ?? existing.sku
-      : existing.sku,
-    location: hasBodyField(body, "location")
-      ? toOptionalString(getBodyValue(body, "location"))
-      : existing.location,
-    quantity: hasBodyField(body, "quantity")
-      ? toNumber(getBodyValue(body, "quantity"), existing.quantity)
-      : existing.quantity,
-    unitCost: hasBodyField(body, "unitCost")
-      ? toNumber(getBodyValue(body, "unitCost"), existing.unitCost)
-      : existing.unitCost,
-    reorderPoint: hasBodyField(body, "reorderPoint")
-      ? toNumber(getBodyValue(body, "reorderPoint"), existing.reorderPoint)
-      : existing.reorderPoint,
-    reorderThreshold: hasBodyField(body, "reorderThreshold")
-      ? toNumber(getBodyValue(body, "reorderThreshold"), existing.reorderThreshold ?? 0)
-      : existing.reorderThreshold,
-    lastRestockDate: hasBodyField(body, "lastRestockDate")
-      ? toDateString(getBodyValue(body, "lastRestockDate")) ?? existing.lastRestockDate
-      : existing.lastRestockDate,
-    vendor: hasBodyField(body, "vendor")
-      ? toOptionalString(getBodyValue(body, "vendor"))
-      : existing.vendor,
-    lastOrderDate: hasBodyField(body, "lastOrderDate")
-      ? toDateString(getBodyValue(body, "lastOrderDate")) ?? existing.lastOrderDate
-      : existing.lastOrderDate,
-    image: req.file ? fileToDataUrl(req.file) : existing.image,
-    updatedAt,
-  };
-
-  parts[partIndex] = updated;
-
-  res.json({ success: true, data: updated });
 });
 
-router.post("/:id/adjust", (req, res) => {
-  const result = ensureTenant(req);
-  if (result.error) {
-    res.status(400).json({ message: "Tenant ID required" });
-    return;
+router.post('/:id/adjust', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!(await ensureTenant(req, res))) return;
+
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      sendResponse(res, null, 'Invalid id', 400);
+      return;
+    }
+
+    const delta = Number((req.body as Record<string, unknown>).delta);
+    if (!Number.isFinite(delta) || delta === 0) {
+      sendResponse(res, null, 'delta must be a non-zero number', 400);
+      return;
+    }
+
+    const reasonRaw = (req.body as Record<string, unknown>).reason;
+    const reason = typeof reasonRaw === 'string' ? reasonRaw.trim() : undefined;
+
+    const filter = applyTenantScope(req, { _id: id });
+    const existingDoc = await InventoryItem.findOne(filter);
+    if (!existingDoc) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
+
+    const before = existingDoc.toObject() as LeanInventoryItem;
+    const nextQuantity = Math.max(0, Number(existingDoc.quantity ?? 0) + delta);
+    existingDoc.quantity = nextQuantity;
+    await existingDoc.save();
+
+    const afterObject = existingDoc.toObject() as LeanInventoryItem & {
+      _adjustment?: { delta: number; reason?: string };
+    };
+    if (reason) {
+      afterObject._adjustment = { delta, reason };
+    } else {
+      afterObject._adjustment = { delta };
+    }
+
+    try {
+      const userId = (req.user as any)?._id || (req.user as any)?.id;
+      await writeAuditLog({
+        tenantId: req.tenantId,
+        userId,
+        action: 'adjust',
+        entityType: 'InventoryItem',
+        entityId: toEntityId(id),
+        before,
+        after: afterObject,
+      });
+    } catch (logErr) {
+      logger.warn('Failed to write audit log for part adjustment', logErr);
+    }
+
+    sendResponse(res, mapToPart(afterObject));
+  } catch (err) {
+    logger.error('Error adjusting part', err);
+    next(err);
   }
-
-  const parts = getTenantParts(result.tenantId);
-  const part = parts.find((p) => p.id === req.params.id);
-
-  if (!part) {
-    res.status(404).json({ message: "Part not found" });
-    return;
-  }
-
-  const delta = toNumber(req.body?.delta);
-  if (!Number.isFinite(delta) || delta === 0) {
-    res.status(400).json({ message: "delta must be a non-zero number" });
-    return;
-  }
-
-  part.quantity += delta;
-  part.updatedAt = new Date().toISOString();
-
-  res.json({ success: true, data: part });
 });
 
 export default router;

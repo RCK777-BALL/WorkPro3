@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Bell, Book, Mail, Monitor, Moon, Palette, Sliders, Sun } from 'lucide-react';
 import { isAxiosError } from 'axios';
 import { useShallow } from 'zustand/react/shallow';
@@ -79,6 +79,10 @@ const Settings: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
+  const [emailPreview, setEmailPreview] = useState({
+    firstName: 'Ricardo',
+    lastName: 'Edwards',
+  });
   const hasFetchedSettingsRef = useRef(false);
 
   const { theme: activeThemeMode, setTheme: setThemeMode, updateTheme } = useThemeStore(
@@ -150,6 +154,33 @@ const Settings: React.FC = () => {
   ] satisfies { label: string; description: string; key: EmailPreferenceKey }[];
 
   const [documents, setDocuments] = useState<DocumentEntry[]>([]);
+
+  const normalizedEmailDomain = useMemo(() => {
+    const trimmed = general.emailDomain.trim();
+    if (!trimmed) {
+      return '';
+    }
+
+    return trimmed.replace(/^@+/, '');
+  }, [general.emailDomain]);
+
+  const generatedEmailPreview = useMemo(() => {
+    const sanitize = (value: string) =>
+      value
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '.');
+
+    const first = sanitize(emailPreview.firstName);
+    const last = sanitize(emailPreview.lastName);
+    const localPart = [first, last].filter(Boolean).join('.').replace(/\.{2,}/g, '.');
+
+    if (!localPart) {
+      return normalizedEmailDomain ? `@${normalizedEmailDomain}` : '';
+    }
+
+    return normalizedEmailDomain ? `${localPart}@${normalizedEmailDomain}` : localPart;
+  }, [emailPreview.firstName, emailPreview.lastName, normalizedEmailDomain]);
 
   type ThemeOptionKey = {
     [K in keyof ThemeSettings]: ThemeSettings[K] extends boolean ? K : never;
@@ -663,6 +694,66 @@ const Settings: React.FC = () => {
                   <option value="fr-FR">Français</option>
                   <option value="de-DE">Deutsch</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
+                  Company Email Domain
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                  value={general.emailDomain}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setGeneral({ emailDomain: e.target.value })
+                  }
+                  placeholder="Enter your company email domain (e.g., cmms.com)"
+                />
+                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                  Use this domain to automatically create employee email addresses.
+                </p>
+              </div>
+
+              <div className="space-y-3 rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-900/30">
+                <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
+                  Email structure preview
+                </p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  Enter a first and last name to preview the generated address.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1" htmlFor="preview-first-name">
+                      First name
+                    </label>
+                    <input
+                      id="preview-first-name"
+                      type="text"
+                      className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                      value={emailPreview.firstName}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setEmailPreview((prev) => ({ ...prev, firstName: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1" htmlFor="preview-last-name">
+                      Last name
+                    </label>
+                    <input
+                      id="preview-last-name"
+                      type="text"
+                      className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                      value={emailPreview.lastName}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setEmailPreview((prev) => ({ ...prev, lastName: e.target.value }))
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="rounded-md bg-white px-3 py-2 text-sm font-mono text-neutral-800 shadow-sm dark:bg-neutral-800 dark:text-neutral-100">
+                  {generatedEmailPreview || 'Enter a name to preview the email address'}
+                </div>
               </div>
             </div>
           </Card>

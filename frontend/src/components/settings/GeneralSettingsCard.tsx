@@ -44,6 +44,7 @@ const defaultTouchedState: Record<GeneralSettingsField, boolean> = {
   timezone: false,
   dateFormat: false,
   language: false,
+  emailDomain: false,
 };
 
 const GeneralSettingsCard: React.FC = () => {
@@ -64,12 +65,16 @@ const GeneralSettingsCard: React.FC = () => {
       timezone: general.timezone ? '' : copyTokens.validation.timezoneRequired,
       dateFormat: general.dateFormat ? '' : copyTokens.validation.dateFormatRequired,
       language: general.language ? '' : copyTokens.validation.languageRequired,
+      emailDomain: general.emailDomain.trim().length
+        ? ''
+        : copyTokens.validation.emailDomainRequired,
     } satisfies Record<GeneralSettingsField, string>;
   }, [
     general.companyName,
     general.dateFormat,
     general.language,
     general.timezone,
+    general.emailDomain,
   ]);
 
   const handleBlur = (field: GeneralSettingsField) => () => {
@@ -82,7 +87,40 @@ const GeneralSettingsCard: React.FC = () => {
     timezone: 'timezone',
     dateFormat: 'date-format',
     language: 'language',
+    emailDomain: 'email-domain',
   };
+
+  const [emailPreview, setEmailPreview] = useState({
+    firstName: 'Ricardo',
+    lastName: 'Edwards',
+  });
+
+  const normalizedDomain = useMemo(() => {
+    const trimmed = general.emailDomain.trim();
+    if (!trimmed) {
+      return '';
+    }
+
+    return trimmed.replace(/^@+/, '');
+  }, [general.emailDomain]);
+
+  const generatedEmail = useMemo(() => {
+    const sanitize = (value: string) =>
+      value
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '.');
+
+    const first = sanitize(emailPreview.firstName);
+    const last = sanitize(emailPreview.lastName);
+    const localPart = [first, last].filter(Boolean).join('.').replace(/\.{2,}/g, '.');
+
+    if (!localPart) {
+      return normalizedDomain ? `@${normalizedDomain}` : '';
+    }
+
+    return normalizedDomain ? `${localPart}@${normalizedDomain}` : localPart;
+  }, [emailPreview.firstName, emailPreview.lastName, normalizedDomain]);
 
   const getDescribedBy = (field: GeneralSettingsField) => {
     const helperId = `${fieldIdMap[field]}-helper`;
@@ -120,6 +158,74 @@ const GeneralSettingsCard: React.FC = () => {
               {errors.companyName}
             </p>
           )}
+        </div>
+
+        <div className="space-y-1">
+          <label className={labelClassName} htmlFor="email-domain">
+            Company Email Domain
+          </label>
+          <input
+            id="email-domain"
+            type="text"
+            className={inputClassName}
+            placeholder={copyTokens.placeholders.emailDomain}
+            value={general.emailDomain}
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+              setGeneral({ emailDomain: event.target.value })
+            }
+            onBlur={handleBlur('emailDomain')}
+            aria-describedby={getDescribedBy('emailDomain')}
+            aria-invalid={Boolean(showError('emailDomain'))}
+            required
+          />
+          <p id="email-domain-helper" className={helperTextClassName}>
+            {copyTokens.placeholders.emailDomain}
+          </p>
+          {showError('emailDomain') && (
+            <p id="email-domain-error" className={errorTextClassName}>
+              {errors.emailDomain}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-3 rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-4 dark:border-neutral-600 dark:bg-neutral-900/30">
+          <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
+            Email structure preview
+          </p>
+          <p className={helperTextClassName}>{copyTokens.placeholders.emailPreviewHelper}</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
+              <label className={labelClassName} htmlFor="email-first-name">
+                First name
+              </label>
+              <input
+                id="email-first-name"
+                type="text"
+                className={inputClassName}
+                value={emailPreview.firstName}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                  setEmailPreview((prev) => ({ ...prev, firstName: event.target.value }))
+                }
+              />
+            </div>
+            <div className="space-y-1">
+              <label className={labelClassName} htmlFor="email-last-name">
+                Last name
+              </label>
+              <input
+                id="email-last-name"
+                type="text"
+                className={inputClassName}
+                value={emailPreview.lastName}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                  setEmailPreview((prev) => ({ ...prev, lastName: event.target.value }))
+                }
+              />
+            </div>
+          </div>
+          <div className="rounded-md bg-white px-3 py-2 text-sm font-mono text-neutral-800 shadow-sm dark:bg-neutral-800 dark:text-neutral-100">
+            {generatedEmail || 'Enter a name to preview the email address'}
+          </div>
         </div>
 
         <div className="space-y-1">

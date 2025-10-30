@@ -10,6 +10,7 @@ export interface GeneralSettings {
   timezone: string;
   dateFormat: string;
   language: string;
+  emailDomain: string;
 }
 
 export interface NotificationSettings {
@@ -54,6 +55,7 @@ export const useSettingsStore = create<SettingsState>()(
         timezone: 'America/New_York',
         dateFormat: 'MM/DD/YYYY',
         language: 'en-US',
+        emailDomain: 'cmms.com',
       },
       notifications: {
         emailNotifications: true,

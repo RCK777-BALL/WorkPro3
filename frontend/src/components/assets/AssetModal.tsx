@@ -13,6 +13,10 @@ import { useDepartmentStore } from "@/store/departmentStore";
 import { useAuthStore, type AuthState } from "@/store/authStore";
 import type { Asset, Department, Line, Station } from "@/types";
 import AssetQRCode from "@/components/qr/AssetQRCode";
+import {
+  submitAssetRequest,
+  normalizeAssetData,
+} from "@/utils/assetSubmission";
 
 const defaultAssetState = {
   name: "",
@@ -150,40 +154,28 @@ const AssetModal: React.FC<AssetModalProps> = ({
     };
 
     try {
-      const isEdit = Boolean(asset?.id);
-      const endpoint = isEdit && asset?.id ? `/assets/${asset.id}` : "/assets";
-      const requestHeaders = { headers: { "Content-Type": "multipart/form-data" } } as const;
+      const raw = await submitAssetRequest({
+        asset,
+        files,
+        payload,
+        httpClient: http,
+      });
 
-      let res;
-      if (files.length > 0) {
-        const fd = new FormData();
-        Object.entries(payload).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            fd.append(key, value as any);
-          }
-        });
-        files.forEach((f) => fd.append("files", f));
+      const fallback: Partial<Asset> = {
+        ...(asset ?? {}),
+        ...(data as Partial<Asset>),
+      };
 
-        res = isEdit
-          ? await http.put(endpoint, fd, requestHeaders)
-          : await http.post("/assets", fd, requestHeaders);
-      } else {
-        res = isEdit ? await http.put(endpoint, payload) : await http.post("/assets", payload);
-      }
-
-      const persisted = normalizeAssetResponse(res.data as AssetResponse, asset);
-      onUpdate(persisted);
+      const normalized = normalizeAssetData(raw, fallback);
+      onUpdate(normalized);
       onClose();
     } catch (err: any) {
-      const fallbackMessage =
-        typeof err?.message === "string" && err.message.length > 0
-          ? err.message
-          : "Failed to save asset";
+      const defaultMessage = asset ? "Failed to update asset" : "Failed to create asset";
       const message =
         err.response?.data?.message ||
         (Array.isArray(err.response?.data?.errors)
           ? err.response.data.errors.map((e: any) => e.msg).join(", ")
-          : fallbackMessage);
+          : defaultMessage);
       setError(message);
       addToast(message, "error");
     }

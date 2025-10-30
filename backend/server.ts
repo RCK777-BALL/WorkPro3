@@ -294,7 +294,3 @@ export const emitNotification = (notification: NotificationPayload) => {
 };
 
 export default app;
-import healthRouter from './src/routes/health';
-app.use('/api/health', healthRouter);
-import summaryRouter from './src/routes/summary';
-app.use('/api/summary', summaryRouter);

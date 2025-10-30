@@ -110,6 +110,16 @@ const AssetModal: React.FC<AssetModalProps> = ({
     },
   });
 
+  const normalizeAssetResponse = (
+    data: Record<string, any> | undefined,
+    fallbackId?: string,
+  ): Asset => {
+    const payload = data ?? {};
+    const { _id, id, ...rest } = payload;
+    const resolvedId = (_id ?? id ?? fallbackId ?? "") as string;
+    return { ...(rest as Omit<Asset, "id">), id: resolvedId } as Asset;
+  };
+
   const onSubmit = async (data: any) => {
     setError(null);
 
@@ -123,6 +133,9 @@ const AssetModal: React.FC<AssetModalProps> = ({
 
     try {
       let res;
+      const isEditing = Boolean(asset?.id);
+      const url = isEditing && asset?.id ? `/assets/${asset.id}` : "/assets";
+
       if (files.length > 0) {
         const fd = new FormData();
         Object.entries(payload).forEach(([key, value]) => {
@@ -131,21 +144,29 @@ const AssetModal: React.FC<AssetModalProps> = ({
           }
         });
         files.forEach((f) => fd.append("files", f));
-        res = await http.post("/assets", fd, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        if (isEditing) {
+          res = await http.put(url, fd, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+        } else {
+          res = await http.post(url, fd, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+        }
+      } else if (isEditing) {
+        res = await http.put(url, payload);
       } else {
-        res = await http.post("/assets", payload);
+        res = await http.post(url, payload);
       }
 
-      onUpdate({ ...(res.data as any), id: res.data._id } as Asset);
+      onUpdate(normalizeAssetResponse(res.data as Record<string, any>, asset?.id));
       onClose();
     } catch (err: any) {
       const message =
         err.response?.data?.message ||
         (Array.isArray(err.response?.data?.errors)
           ? err.response.data.errors.map((e: any) => e.msg).join(", ")
-          : "Failed to create asset");
+          : `Failed to ${asset ? "update" : "create"} asset`);
       setError(message);
       addToast(message, "error");
     }

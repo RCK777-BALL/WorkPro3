@@ -114,31 +114,6 @@ type FilterState = {
   status: string;
 };
 
-const DEFAULT_FILTERS: FilterState = { department: "all", line: "all", status: "all" };
-
-const FILTER_STORAGE_KEY = "operations-dashboard-filters";
-
-const loadSavedFilters = (): FilterState => {
-  if (typeof window === "undefined") {
-    return DEFAULT_FILTERS;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(FILTER_STORAGE_KEY);
-    if (!raw) {
-      return DEFAULT_FILTERS;
-    }
-    const parsed = JSON.parse(raw) as Partial<FilterState> | null;
-    const department = typeof parsed?.department === "string" ? parsed.department : "all";
-    const line = typeof parsed?.line === "string" ? parsed.line : "all";
-    const status = typeof parsed?.status === "string" ? parsed.status : "all";
-
-    return { department, line, status };
-  } catch (error) {
-    return DEFAULT_FILTERS;
-  }
-};
-
 type SelectOption = {
   value: string;
   label: string;

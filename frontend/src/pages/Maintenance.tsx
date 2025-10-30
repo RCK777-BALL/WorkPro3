@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Plus, Search, Calendar, Download, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '@/components/common/Button';
@@ -114,11 +114,11 @@ const Maintenance: React.FC = () => {
   };
 
   return (
-          <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-bold text-neutral-900">Maintenance</h2>
-            <p className="text-neutral-500">Schedule and track preventive maintenance</p>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold text-neutral-900">Maintenance</h2>
+          <p className="text-neutral-500">Schedule and track preventive maintenance</p>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:space-x-3">
             <Button

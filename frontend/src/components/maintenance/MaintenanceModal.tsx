@@ -43,6 +43,16 @@ interface MaintenanceModalProps {
   onOptimisticDelete: (id: string) => () => void;
 }
 
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  if (typeof error === 'string' && error.trim().length > 0) {
+    return error;
+  }
+  return fallback;
+};
+
 const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
   isOpen,
   onClose,
@@ -82,6 +92,8 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
       });
     }
     setShowAdvancedOptions(false);
+    setIsSaving(false);
+    setIsDeleting(false);
   }, [schedule, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -184,6 +196,8 @@ const MaintenanceModal: React.FC<MaintenanceModalProps> = ({
           <button
             onClick={onClose}
             className="text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
+            disabled={isSaving || isDeleting}
+            aria-disabled={isSaving || isDeleting}
           >
             <X size={20} />
           </button>

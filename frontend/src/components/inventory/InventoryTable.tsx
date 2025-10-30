@@ -11,12 +11,16 @@ interface InventoryTableProps {
   parts: Part[];
   onRowClick: (part: Part) => void;
   onAdjust: (part: Part) => void;
+  onEdit: (part: Part) => void;
+  onDuplicate: (part: Part) => void;
 }
 
 const InventoryTable: React.FC<InventoryTableProps> = ({
   parts,
   onRowClick,
   onAdjust,
+  onEdit,
+  onDuplicate,
 }) => {
 
   const formatCurrency = (amount: number) => {
@@ -60,7 +64,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                 Last Ordered
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                Adjust
+                Actions
               </th>
             </tr>
           </thead>
@@ -134,15 +138,35 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                   {part.lastOrderDate ? new Date(part.lastOrderDate).toLocaleDateString() : 'Never'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
-                  <button
-                    className="text-primary-600 hover:underline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAdjust(part);
-                    }}
-                  >
-                    Adjust
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      className="text-primary-600 hover:underline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(part);
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="text-primary-600 hover:underline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDuplicate(part);
+                      }}
+                    >
+                      Duplicate
+                    </button>
+                    <button
+                      className="text-primary-600 hover:underline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAdjust(part);
+                      }}
+                    >
+                      Adjust
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

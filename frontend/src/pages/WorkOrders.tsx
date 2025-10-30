@@ -556,7 +556,11 @@ export default function WorkOrders() {
       <div className="space-y-6 p-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Work Orders</h1>
-          <Button variant="primary" onClick={openCreateModal}>
+          <Button
+            variant="primary"
+            onClick={openCreateModal}
+            className="border border-primary-700"
+          >
             Create Work Order
           </Button>
         </div>

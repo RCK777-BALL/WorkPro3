@@ -85,5 +85,28 @@ body.high-contrast a {
   color: #38bdf8;
 }
 
+/* Ensure native select elements honor the active theme */
+select,
+select.bg-transparent {
+  background-color: var(--app-surface-color);
+  color: var(--app-text-color);
+}
+
+select option {
+  background-color: var(--app-surface-color);
+  color: var(--app-text-color);
+}
+
+body.high-contrast select,
+body.high-contrast select.bg-transparent {
+  background-color: var(--app-background-color) !important;
+  color: var(--app-text-color) !important;
+}
+
+body.high-contrast select option {
+  background-color: var(--app-background-color) !important;
+  color: var(--app-text-color) !important;
+}
+
 /* (optional) theme tokens – remove if not using */
 /* @theme inline; */

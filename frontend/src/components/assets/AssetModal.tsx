@@ -40,6 +40,34 @@ interface AssetModalProps {
   onUpdate: (asset: Asset) => void;
 }
 
+interface AssetResponse extends Partial<Asset> {
+  _id?: string;
+  id?: string;
+}
+
+const normalizeAssetResponse = (
+  raw: AssetResponse | undefined,
+  fallback: Asset | null
+): Asset => {
+  const base: AssetResponse = {
+    ...(fallback ?? {}),
+    ...(raw ?? {}),
+  };
+  const { _id, id: providedId, name: providedName, ...rest } = base;
+  const resolvedId = _id ?? providedId ?? fallback?.id ?? "";
+  const resolvedName = providedName ?? fallback?.name ?? "Unnamed Asset";
+
+  if (!resolvedId) {
+    throw new Error("Asset response missing identifier");
+  }
+
+  return {
+    id: resolvedId,
+    name: resolvedName,
+    ...(rest as Omit<Asset, "id" | "name">),
+  };
+};
+
 const AssetModal: React.FC<AssetModalProps> = ({
   isOpen,
   onClose,

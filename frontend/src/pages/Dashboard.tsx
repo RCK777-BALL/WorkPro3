@@ -114,6 +114,31 @@ type FilterState = {
   status: string;
 };
 
+const DEFAULT_FILTERS: FilterState = { department: "all", line: "all", status: "all" };
+
+const FILTER_STORAGE_KEY = "operations-dashboard-filters";
+
+const loadSavedFilters = (): FilterState => {
+  if (typeof window === "undefined") {
+    return DEFAULT_FILTERS;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(FILTER_STORAGE_KEY);
+    if (!raw) {
+      return DEFAULT_FILTERS;
+    }
+    const parsed = JSON.parse(raw) as Partial<FilterState> | null;
+    const department = typeof parsed?.department === "string" ? parsed.department : "all";
+    const line = typeof parsed?.line === "string" ? parsed.line : "all";
+    const status = typeof parsed?.status === "string" ? parsed.status : "all";
+
+    return { department, line, status };
+  } catch (error) {
+    return DEFAULT_FILTERS;
+  }
+};
+
 type SelectOption = {
   value: string;
   label: string;
@@ -800,8 +825,7 @@ function DashboardFilters({ filters, departments, lines, loading, onChange }: Fi
 }
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
-  const [filtersHydrated, setFiltersHydrated] = useState(false);
+  const [filters, setFilters] = useState<FilterState>(() => loadSavedFilters());
   const [departments, setDepartments] = useState<SelectOption[]>([]);
   const [lines, setLines] = useState<LineOption[]>([]);
   const [optionsLoading, setOptionsLoading] = useState(true);
@@ -839,30 +863,11 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    const savedFilters = loadSavedFilters();
-    setFilters((prev) => {
-      if (
-        prev.department === savedFilters.department &&
-        prev.line === savedFilters.line &&
-        prev.status === savedFilters.status
-      ) {
-        return prev;
-      }
-      return savedFilters;
-    });
-    setFiltersHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!filtersHydrated || typeof window === "undefined") {
+    if (typeof window === "undefined") {
       return;
     }
-    try {
-      window.localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filters));
-    } catch (error) {
-      // Ignore storage write failures so filters continue to work in-memory.
-    }
-  }, [filters, filtersHydrated]);
+    window.localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filters));
+  }, [filters]);
 
   useEffect(() => {
     livePulseRef.current = livePulse;
@@ -1104,10 +1109,6 @@ export default function Dashboard() {
   }, [fetchStatuses]);
 
   useEffect(() => {
-    if (!filtersHydrated) {
-      return;
-    }
-
     if (departments.length === 0 && lines.length === 0) {
       return;
     }
@@ -1136,7 +1137,7 @@ export default function Dashboard() {
 
       return { ...prev, department: nextDepartment, line: nextLine };
     });
-  }, [departments, lines, filtersHydrated]);
+  }, [departments, lines]);
 
   useEffect(() => {
     void fetchSummary();

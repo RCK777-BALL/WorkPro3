@@ -12,13 +12,16 @@ import {
   Building2,
   CheckCircle2,
   ClipboardList,
+  Factory,
   FileStack,
   FolderKanban,
+  Globe2,
   LayoutDashboard,
   LogIn,
   LogOut,
   MapPin,
   MessageSquare,
+  Cpu,
   Settings,
   Users,
   Warehouse,
@@ -56,7 +59,7 @@ type SidebarProps = {
   collapsed?: boolean;
 };
 
-type NavSection = "operations" | "management";
+type NavSection = "plant" | "operations" | "analytics" | "management";
 
 type NavItem = {
   id: NavItemId;
@@ -67,8 +70,10 @@ type NavItem = {
 };
 
 const sections: { id: NavSection; title: string }[] = [
+  { id: "plant", title: "Plant Management" },
   { id: "operations", title: "Operations" },
-  { id: "management", title: "Management" },
+  { id: "analytics", title: "Analytics" },
+  { id: "management", title: "Administration" },
 ];
 
 const navItems: Record<NavItemId, NavItem> = {
@@ -77,7 +82,42 @@ const navItems: Record<NavItemId, NavItem> = {
     label: "Overview",
     to: "/dashboard",
     icon: LayoutDashboard,
-    section: "operations",
+    section: "plant",
+  },
+  plants: {
+    id: "plants",
+    label: "Plants",
+    to: "/plants",
+    icon: Factory,
+    section: "plant",
+  },
+  departments: {
+    id: "departments",
+    label: "Departments",
+    to: "/departments",
+    icon: Building2,
+    section: "plant",
+  },
+  assets: {
+    id: "assets",
+    label: "Assets",
+    to: "/assets",
+    icon: Warehouse,
+    section: "plant",
+  },
+  teams: {
+    id: "teams",
+    label: "Teams",
+    to: "/teams",
+    icon: Users,
+    section: "plant",
+  },
+  reports: {
+    id: "reports",
+    label: "Reports",
+    to: "/reports",
+    icon: FileStack,
+    section: "plant",
   },
   "work-orders": {
     id: "work-orders",
@@ -100,20 +140,6 @@ const navItems: Record<NavItemId, NavItem> = {
     icon: FolderKanban,
     section: "operations",
   },
-  assets: {
-    id: "assets",
-    label: "Assets",
-    to: "/assets",
-    icon: Warehouse,
-    section: "operations",
-  },
-  departments: {
-    id: "departments",
-    label: "Departments",
-    to: "/departments",
-    icon: Building2,
-    section: "operations",
-  },
   inventory: {
     id: "inventory",
     label: "Inventory",
@@ -121,26 +147,33 @@ const navItems: Record<NavItemId, NavItem> = {
     icon: MapPin,
     section: "operations",
   },
-  teams: {
-    id: "teams",
-    label: "Teams",
-    to: "/teams",
-    icon: Users,
-    section: "operations",
-  },
   analytics: {
     id: "analytics",
-    label: "Analytics",
+    label: "Plant Analytics",
     to: "/analytics",
     icon: BarChart3,
-    section: "management",
+    section: "analytics",
+  },
+  "analytics-global": {
+    id: "analytics-global",
+    label: "Global Analytics",
+    to: "/analytics/global",
+    icon: Globe2,
+    section: "analytics",
+  },
+  "analytics-ai": {
+    id: "analytics-ai",
+    label: "AI Insights",
+    to: "/analytics/ai",
+    icon: Cpu,
+    section: "analytics",
   },
   reports: {
     id: "reports",
     label: "Reports",
     to: "/reports",
     icon: FileStack,
-    section: "management",
+    section: "plant",
   },
   vendors: {
     id: "vendors",

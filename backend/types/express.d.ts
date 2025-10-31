@@ -10,6 +10,7 @@ declare module 'express-serve-static-core' {
     role?: string;
     tenantId?: string;
     siteId?: string;
+    plantId?: string;
     vendorId?: string;
     roles?: UserRole[];
     theme?: 'light' | 'dark' | 'system';
@@ -21,6 +22,7 @@ declare module 'express-serve-static-core' {
     user?: User;
     tenantId?: string;
     siteId?: string;
+    plantId?: string;
     vendorId?: string;
     vendor?: Record<string, unknown>;
     thirdParty?: any;

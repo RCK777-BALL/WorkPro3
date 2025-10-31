@@ -41,8 +41,19 @@ const tenantScope = (req: Request, res: Response, next: NextFunction): void => {
   req.tenantId = resolvedTenant;
   res.setHeader("x-tenant-id", resolvedTenant);
 
-  const headerSiteId = req.header("x-site-id");
-  if (!req.siteId && headerSiteId) {
+  const headerSiteId = toStringOrUndefined(req.header("x-site-id"));
+  const headerPlantId = toStringOrUndefined(req.header("x-plant-id"));
+  const userPlantId = toStringOrUndefined(req.user?.plantId);
+  const existingPlantId = toStringOrUndefined(req.plantId);
+
+  const resolvedPlantId = existingPlantId || headerPlantId || headerSiteId || userPlantId;
+
+  if (resolvedPlantId) {
+    req.plantId = resolvedPlantId;
+    if (!req.siteId) {
+      req.siteId = resolvedPlantId;
+    }
+  } else if (headerSiteId && !req.siteId) {
     req.siteId = headerSiteId;
   }
 

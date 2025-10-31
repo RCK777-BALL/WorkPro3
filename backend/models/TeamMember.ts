@@ -9,14 +9,16 @@ export interface ITeamMember {
   name: string;
   email: string;
   role:
-    | 'general_manager'
-    | 'assistant_general_manager'
-    | 'operations_manager'
+    | 'global_admin'
+    | 'plant_admin'
     | 'department_leader'
-    | 'assistant_department_leader'
     | 'area_leader'
     | 'team_leader'
     | 'team_member'
+    | 'general_manager'
+    | 'assistant_general_manager'
+    | 'operations_manager'
+    | 'assistant_department_leader'
     | 'technical_team_member'
     | 'admin'
     | 'supervisor'
@@ -25,6 +27,8 @@ export interface ITeamMember {
   managerId?: Types.ObjectId;
   employeeId: string;
   tenantId: Types.ObjectId;
+  plant?: Types.ObjectId;
+  status?: string;
 }
 
 export type TeamMemberDocument = HydratedDocument<ITeamMember>;
@@ -36,26 +40,30 @@ const teamMemberSchema = new Schema<ITeamMember>(
     role: {
       type: String,
       enum: [
-        'general_manager',
-        'assistant_general_manager',
-        'operations_manager',
+        'global_admin',
+        'plant_admin',
         'department_leader',
-        'assistant_department_leader',
         'area_leader',
         'team_leader',
         'team_member',
+        'general_manager',
+        'assistant_general_manager',
+        'operations_manager',
+        'assistant_department_leader',
         'technical_team_member',
         'admin',
         'supervisor',
         'manager',
       ],
       required: true,
+      default: 'team_member',
     },
     department: { type: Schema.Types.ObjectId, ref: 'Department' },
     managerId: { type: Schema.Types.ObjectId, ref: 'TeamMember' },
     employeeId: { type: String, required: true, unique: true },
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true },
- 
+    plant: { type: Schema.Types.ObjectId, ref: 'Plant', index: true },
+    status: { type: String, default: 'Active' },
   },
   { timestamps: true }
 );

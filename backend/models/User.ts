@@ -20,6 +20,7 @@ export interface UserDocument extends Document {
   passwordHash: string;
   roles: UserRole[];
   tenantId: Types.ObjectId;
+  plant?: Types.ObjectId;
   employeeId: string;
   managerId?: Types.ObjectId;
   theme?: 'light' | 'dark' | 'system';
@@ -56,6 +57,7 @@ const userSchema = new Schema<UserDocument>(
       required: true,
       index: true,
     } as SchemaDefinitionProperty<Types.ObjectId, UserDocument>,
+    plant: { type: Schema.Types.ObjectId, ref: 'Plant', index: true },
     employeeId: { type: String, required: true, unique: true },
     managerId: { type: Schema.Types.ObjectId, ref: 'User' },
 

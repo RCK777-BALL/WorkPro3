@@ -22,6 +22,7 @@ type StationLike = {
   lineId: Types.ObjectId;
   departmentId: Types.ObjectId;
   tenantId: Types.ObjectId;
+  plant?: Types.ObjectId | null;
   siteId?: Types.ObjectId | null;
 };
 
@@ -32,11 +33,15 @@ const toStationPayload = (station: StationLike) => ({
   lineId: station.lineId.toString(),
   departmentId: station.departmentId.toString(),
   tenantId: station.tenantId.toString(),
+  plant: station.plant ? station.plant.toString() : undefined,
   siteId: station.siteId ? station.siteId.toString() : undefined,
 });
 
 const router = Router();
 router.use(requireAuth);
+
+const resolvePlantId = (req: { plantId?: string; siteId?: string }): string | undefined =>
+  req.plantId ?? req.siteId ?? undefined;
 
 const listStations: AuthedRequestHandler<Record<string, string>, unknown> = async (
   req,
@@ -47,6 +52,10 @@ const listStations: AuthedRequestHandler<Record<string, string>, unknown> = asyn
     const filter: FilterQuery<StationDoc> = { tenantId: req.tenantId };
     if (req.query.lineId) {
       filter.lineId = req.query.lineId as any;
+    }
+    const plantId = resolvePlantId(req);
+    if (plantId) {
+      filter.plant = plantId as any;
     }
     if (req.siteId) {
       filter.$or = [
@@ -70,7 +79,12 @@ const getStation: AuthedRequestHandler<
   StationDoc | { message: string }
 > = async (req, res, next) => {
   try {
-    const station = await Station.findOne({ _id: req.params.id, tenantId: req.tenantId });
+    const plantId = resolvePlantId(req);
+    const query: FilterQuery<StationDoc> = { _id: req.params.id, tenantId: req.tenantId };
+    if (plantId) {
+      query.plant = plantId as any;
+    }
+    const station = await Station.findOne(query);
     if (!station) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -91,7 +105,12 @@ const createStation: AuthedRequestHandler<
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const line = await Line.findOne({ _id: req.body.lineId, tenantId: req.tenantId });
+    const plantId = resolvePlantId(req);
+    if (!plantId) {
+      sendResponse(res, null, 'Active plant context required', 400);
+      return;
+    }
+    const line = await Line.findOne({ _id: req.body.lineId, tenantId: req.tenantId, plant: plantId as any });
     if (!line) {
       sendResponse(res, null, 'Line not found', 404);
       return;
@@ -103,6 +122,7 @@ const createStation: AuthedRequestHandler<
       departmentId: line.departmentId,
       tenantId: req.tenantId,
       siteId: line.siteId ?? req.siteId,
+      plant: plantId as any,
     });
 
     await Line.updateOne(
@@ -146,8 +166,13 @@ const updateStation: AuthedRequestHandler<
       sendResponse(res, null, 'No updates provided', 400);
       return;
     }
+    const plantId = resolvePlantId(req);
+    const query: FilterQuery<StationDoc> = { _id: req.params.id, tenantId: req.tenantId };
+    if (plantId) {
+      query.plant = plantId as any;
+    }
     const station = await Station.findOneAndUpdate(
-      { _id: req.params.id, tenantId: req.tenantId },
+      query,
       { $set: update },
       { new: true },
     );
@@ -184,7 +209,12 @@ const updateStation: AuthedRequestHandler<
 
 const deleteStation: AuthedRequestHandler<{ id: string }> = async (req, res, next) => {
   try {
-    const station = await Station.findOne({ _id: req.params.id, tenantId: req.tenantId });
+    const plantId = resolvePlantId(req);
+    const query: FilterQuery<StationDoc> = { _id: req.params.id, tenantId: req.tenantId };
+    if (plantId) {
+      query.plant = plantId as any;
+    }
+    const station = await Station.findOne(query);
     if (!station) {
       sendResponse(res, null, 'Not found', 404);
       return;

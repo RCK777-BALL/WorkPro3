@@ -8,6 +8,7 @@ import {
   USER_STORAGE_KEY,
   triggerUnauthorized,
 } from "./http";
+import { safeLocalStorage } from "@/utils/safeLocalStorage";
 
 const DEFAULT_API_BASE_URL = "http://localhost:5010/api";
 
@@ -26,13 +27,13 @@ const baseURL = resolveBaseUrl(import.meta.env.VITE_API_BASE_URL);
 const clearAuthStorage = () => {
   [TOKEN_KEY, TENANT_KEY, SITE_KEY, FALLBACK_TOKEN_KEY, USER_STORAGE_KEY].forEach((key) => {
     if (key) {
-      localStorage.removeItem(key);
+      safeLocalStorage.removeItem(key);
     }
   });
 };
 
 const resolveToken = () =>
-  localStorage.getItem(TOKEN_KEY) ?? localStorage.getItem(FALLBACK_TOKEN_KEY) ?? undefined;
+  safeLocalStorage.getItem(TOKEN_KEY) ?? safeLocalStorage.getItem(FALLBACK_TOKEN_KEY) ?? undefined;
 
 export const api = axios.create({
   baseURL,
@@ -54,8 +55,8 @@ api.interceptors.request.use((config) => {
   const headers =
     config.headers instanceof AxiosHeaders ? config.headers : new AxiosHeaders(config.headers);
 
-  const tenantId = localStorage.getItem(TENANT_KEY);
-  const siteId = localStorage.getItem(SITE_KEY);
+  const tenantId = safeLocalStorage.getItem(TENANT_KEY);
+  const siteId = safeLocalStorage.getItem(SITE_KEY);
   const token = resolveToken();
 
   if (tenantId) {

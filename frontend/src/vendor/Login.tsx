@@ -6,6 +6,8 @@ import React from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { safeLocalStorage } from '@/utils/safeLocalStorage';
+
 export default function VendorLogin() {
   const [token, setToken] = useState('');
   const navigate = useNavigate();
@@ -13,7 +15,7 @@ export default function VendorLogin() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!token.trim()) return;
-    localStorage.setItem('vendorToken', token.trim());
+    safeLocalStorage.setItem('vendorToken', token.trim());
     navigate('/vendor/pos');
   };
 

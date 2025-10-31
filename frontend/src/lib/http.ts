@@ -10,6 +10,8 @@ import type {
 } from 'axios';
 import type { ApiResult } from '@shared/http';
 
+import { safeLocalStorage } from '@/utils/safeLocalStorage';
+
 const DEFAULT_API_BASE_URL = 'http://localhost:5010/api';
 
 const resolveBaseUrl = (value?: string) => {
@@ -57,9 +59,10 @@ http.interceptors.request.use((config) => {
   }
 
   const headers: AxiosRequestHeaders = config.headers ?? {};
-  const tenantId = localStorage.getItem(TENANT_KEY);
-  const siteId = localStorage.getItem(SITE_KEY);
-  const token = localStorage.getItem(TOKEN_KEY) ?? localStorage.getItem(FALLBACK_TOKEN_KEY);
+  const tenantId = safeLocalStorage.getItem(TENANT_KEY);
+  const siteId = safeLocalStorage.getItem(SITE_KEY);
+  const token =
+    safeLocalStorage.getItem(TOKEN_KEY) ?? safeLocalStorage.getItem(FALLBACK_TOKEN_KEY);
   if (tenantId) headers['x-tenant-id'] = tenantId;
   if (siteId) headers['x-site-id'] = siteId;
   if (token) headers['Authorization'] = `Bearer ${token}`;

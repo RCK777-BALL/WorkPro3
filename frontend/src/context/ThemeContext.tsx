@@ -12,6 +12,8 @@ import {
   type ReactNode,
 } from 'react';
 
+import { safeLocalStorage } from '@/utils/safeLocalStorage';
+
 type ThemeMode = 'light' | 'dark' | 'system';
 
 interface ThemeColors {
@@ -55,16 +57,16 @@ const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setThemeState] = useState<ThemeMode>(() => {
     if (typeof window === 'undefined') return 'dark';
-    const stored = window.localStorage.getItem(THEME_STORAGE_KEY) as ThemeMode | null;
+    const stored = safeLocalStorage.getItem(THEME_STORAGE_KEY) as ThemeMode | null;
     return stored ?? 'dark';
   });
 
   const [backgroundColor, setBackgroundColorState] = useState<string>(() => {
     if (typeof window === 'undefined') return DEFAULT_THEME_COLORS.dark.background;
-    const stored = window.localStorage.getItem(BACKGROUND_STORAGE_KEY);
+    const stored = safeLocalStorage.getItem(BACKGROUND_STORAGE_KEY);
     if (stored) return stored;
     const storedTheme =
-      (window.localStorage.getItem(THEME_STORAGE_KEY) as ThemeMode | null) ?? 'system';
+      (safeLocalStorage.getItem(THEME_STORAGE_KEY) as ThemeMode | null) ?? 'system';
     const resolvedTheme =
       storedTheme === 'system' ? getSystemTheme() : (storedTheme as Exclude<ThemeMode, 'system'>);
     return DEFAULT_THEME_COLORS[resolvedTheme].background;
@@ -72,10 +74,10 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
   const [textColor, setTextColorState] = useState<string>(() => {
     if (typeof window === 'undefined') return DEFAULT_THEME_COLORS.dark.text;
-    const stored = window.localStorage.getItem(TEXT_STORAGE_KEY);
+    const stored = safeLocalStorage.getItem(TEXT_STORAGE_KEY);
     if (stored) return stored;
     const storedTheme =
-      (window.localStorage.getItem(THEME_STORAGE_KEY) as ThemeMode | null) ?? 'system';
+      (safeLocalStorage.getItem(THEME_STORAGE_KEY) as ThemeMode | null) ?? 'system';
     const resolvedTheme =
       storedTheme === 'system' ? getSystemTheme() : (storedTheme as Exclude<ThemeMode, 'system'>);
     return DEFAULT_THEME_COLORS[resolvedTheme].text;
@@ -83,17 +85,17 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+    safeLocalStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    window.localStorage.setItem(BACKGROUND_STORAGE_KEY, backgroundColor);
+    safeLocalStorage.setItem(BACKGROUND_STORAGE_KEY, backgroundColor);
   }, [backgroundColor]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    window.localStorage.setItem(TEXT_STORAGE_KEY, textColor);
+    safeLocalStorage.setItem(TEXT_STORAGE_KEY, textColor);
   }, [textColor]);
 
   useEffect(() => {

@@ -14,6 +14,7 @@ import type { Asset } from '@/types';
 import { duplicateAsset } from '@/utils/duplicate';
 import { useToast } from '@/context/ToastContext';
 import ConflictResolver from '@/components/offline/ConflictResolver';
+import { safeLocalStorage } from '@/utils/safeLocalStorage';
 
 const ASSET_CACHE_KEY = 'offline-assets';
 
@@ -51,7 +52,7 @@ const AssetsPage = () => {
 
   const fetchAssets = async () => {
     const loadCached = () => {
-      const cached = localStorage.getItem(ASSET_CACHE_KEY);
+      const cached = safeLocalStorage.getItem(ASSET_CACHE_KEY);
       if (cached) {
         setAssets(JSON.parse(cached));
         addToast('Showing cached assets', 'error');
@@ -87,7 +88,7 @@ const AssetsPage = () => {
           })
         : [];
       setAssets(normalized);
-      localStorage.setItem(ASSET_CACHE_KEY, JSON.stringify(normalized));
+      safeLocalStorage.setItem(ASSET_CACHE_KEY, JSON.stringify(normalized));
     } catch (err) {
       console.error('Error fetching assets:', err);
       if (!loadCached()) {

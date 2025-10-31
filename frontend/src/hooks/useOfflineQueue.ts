@@ -4,6 +4,8 @@
 
 import { useEffect, useRef } from 'react';
 
+import { safeLocalStorage } from '@/utils/safeLocalStorage';
+
 interface QueueItem {
   url: string;
   options?: RequestInit;
@@ -26,7 +28,7 @@ export function useOfflineQueue() {
         break; // stop processing if a request fails
       }
     }
-    localStorage.setItem('offline-queue', JSON.stringify(queue.current));
+    safeLocalStorage.setItem('offline-queue', JSON.stringify(queue.current));
     if (navigator.serviceWorker.controller && queue.current.length === 0) {
       navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_QUEUE' });
     }
@@ -37,11 +39,11 @@ export function useOfflineQueue() {
     if (navigator.onLine) {
       fetch(url, options).catch(() => {
         queue.current.push(item);
-        localStorage.setItem('offline-queue', JSON.stringify(queue.current));
+        safeLocalStorage.setItem('offline-queue', JSON.stringify(queue.current));
       });
     } else {
       queue.current.push(item);
-      localStorage.setItem('offline-queue', JSON.stringify(queue.current));
+      safeLocalStorage.setItem('offline-queue', JSON.stringify(queue.current));
 
       if ('serviceWorker' in navigator) {
         const reg = await navigator.serviceWorker.ready;
@@ -56,7 +58,7 @@ export function useOfflineQueue() {
   };
 
   useEffect(() => {
-    const stored = localStorage.getItem('offline-queue');
+    const stored = safeLocalStorage.getItem('offline-queue');
     if (stored) {
       queue.current = JSON.parse(stored);
       processQueue();

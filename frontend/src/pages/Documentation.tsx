@@ -29,6 +29,7 @@ import {
   parseDocument,
   type DocumentMetadata,
 } from '@/utils/documentation';
+import { safeLocalStorage } from '@/utils/safeLocalStorage';
 
 interface Category {
   id: string;
@@ -277,9 +278,10 @@ const Documentation: React.FC = () => {
   const handleDownloadDocument = async (doc: StoredDocument) => {
     try {
       setActiveDownloadId(doc.id);
-      const token = localStorage.getItem(TOKEN_KEY) ?? localStorage.getItem(FALLBACK_TOKEN_KEY);
-      const tenantId = localStorage.getItem(TENANT_KEY);
-      const siteId = localStorage.getItem(SITE_KEY);
+      const token =
+        safeLocalStorage.getItem(TOKEN_KEY) ?? safeLocalStorage.getItem(FALLBACK_TOKEN_KEY);
+      const tenantId = safeLocalStorage.getItem(TENANT_KEY);
+      const siteId = safeLocalStorage.getItem(SITE_KEY);
       const resolvedUrl = resolveAbsoluteUrl(doc.url);
       const response = await fetch(resolvedUrl, {
         credentials: 'include',

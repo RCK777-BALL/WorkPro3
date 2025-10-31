@@ -1,5 +1,6 @@
 import { emitToast } from '../context/ToastContext';
 import { logError } from './logger';
+import { safeLocalStorage } from '@/utils/safeLocalStorage';
  
 
 export interface QueuedRequest<T = unknown> {
@@ -19,7 +20,7 @@ export const MAX_QUEUE_RETRIES = 5;
 
 export const loadQueue = <T = unknown>(): QueuedRequest<T>[] => {
   try {
-    const raw = localStorage.getItem(QUEUE_KEY);
+    const raw = safeLocalStorage.getItem(QUEUE_KEY);
     return raw ? (JSON.parse(raw) as QueuedRequest<T>[]) : [];
   } catch {
     return [];
@@ -28,7 +29,7 @@ export const loadQueue = <T = unknown>(): QueuedRequest<T>[] => {
 
 const saveQueue = <T = unknown>(queue: QueuedRequest<T>[]) => {
   try {
-    localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+    safeLocalStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
   } catch (err: unknown) {
     if (
       err instanceof DOMException &&
@@ -42,7 +43,7 @@ const saveQueue = <T = unknown>(queue: QueuedRequest<T>[]) => {
       while (trimmed.length > 0) {
         trimmed.shift();
         try {
-          localStorage.setItem(QUEUE_KEY, JSON.stringify(trimmed));
+          safeLocalStorage.setItem(QUEUE_KEY, JSON.stringify(trimmed));
           return;
         } catch (e: unknown) {
           if (
@@ -90,7 +91,7 @@ export const enqueueDepartmentRequest = (
   addToQueue({ method, url, data: department });
 };
 
-export const clearQueue = () => localStorage.removeItem(QUEUE_KEY);
+export const clearQueue = () => safeLocalStorage.removeItem(QUEUE_KEY);
 
 import http from '@/lib/http';
 

@@ -2,54 +2,48 @@
  * SPDX-License-Identifier: MIT
  */
 
-import express from 'express';
-import type { FilterQuery } from 'mongoose';
-
+import { Router } from 'express';
 import { requireAuth } from '../middleware/authMiddleware';
-import Plant, { type PlantDoc } from '../models/Plant';
-import Site from '../models/Site';
-import sendResponse from '../utils/sendResponse';
+import Plant from '../models/Plant';
+import type { AuthedRequest } from '../types/http';
 
-const router = express.Router();
-
+const router = Router();
 router.use(requireAuth);
 
-router.get('/', async (req, res, next) => {
+router.get('/', async (req: AuthedRequest, res, next) => {
   try {
-    const filter: FilterQuery<PlantDoc> = {};
-    if (req.tenantId) {
-      filter.tenantId = req.tenantId as any;
+    const tenantId = req.tenantId;
+    const filter = tenantId ? { tenantId } : {};
+    const plants = await Plant.find(filter).sort({ name: 1 }).lean();
+    res.json(plants.map((plant) => ({ ...plant, _id: plant._id.toString() })));
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/', async (req: AuthedRequest, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      res.status(400).json({ error: 'Tenant ID required' });
+      return;
     }
-
-    let plants = await Plant.find(filter).sort({ name: 1 }).lean();
-
-    if (plants.length === 0 && req.tenantId) {
-      const sites = await Site.find({ tenantId: req.tenantId }).sort({ name: 1 }).lean();
-      if (sites.length > 0) {
-        const seedDocs = sites.map((site) => ({
-          _id: site._id,
-          name: site.name,
-          tenantId: site.tenantId,
-          isActive: true,
-          organization: 'WorkPro CMMS Enterprise',
-        }));
-        if (seedDocs.length > 0) {
-          await Plant.insertMany(seedDocs, { ordered: false }).catch(() => undefined);
-          plants = await Plant.find(filter).sort({ name: 1 }).lean();
-        }
-      }
+    const { name, location, description } = req.body as {
+      name?: string;
+      location?: string;
+      description?: string;
+    };
+    if (!name || !name.trim()) {
+      res.status(400).json({ error: 'Plant name is required' });
+      return;
     }
-
-    const payload = plants.map((plant) => ({
-      _id: plant._id.toString(),
-      name: plant.name,
-      location: plant.location ?? '',
-      description: plant.description ?? '',
-      isActive: plant.isActive,
-      organization: plant.organization,
-    }));
-
-    sendResponse(res, payload, null, 200, 'Plants retrieved');
+    const plant = await Plant.create({
+      name: name.trim(),
+      location,
+      description,
+      tenantId,
+    });
+    res.status(201).json({ ...plant.toObject(), _id: plant._id.toString() });
   } catch (err) {
     next(err);
   }

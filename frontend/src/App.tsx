@@ -40,6 +40,9 @@ import PMScheduler from "@/pages/PMScheduler";
 import PMTasksPage from "@/pages/PMTasksPage";
 import AdminTenants from "@/pages/AdminTenants";
 import Imports from "@/pages/Imports";
+import Plants from "@/pages/Plants";
+import GlobalAnalyticsDashboard from "@/pages/GlobalAnalyticsDashboard";
+import AIDashboard from "@/pages/AIDashboard";
 import Login from "@/pages/Login";
 import RegisterPage from "@/pages/RegisterPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
@@ -81,6 +84,8 @@ export default function App() {
           <Route index element={<Navigate to="/dashboard" />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/analytics/global" element={<GlobalAnalyticsDashboard />} />
+          <Route path="/analytics/ai" element={<AIDashboard />} />
           <Route path="/work-orders" element={<WorkOrders />} />
           <Route path="/workorders" element={<WorkOrders />} />
           <Route path="/maintenance" element={<Maintenance />} />
@@ -97,6 +102,7 @@ export default function App() {
           <Route path="/lines" element={<Lines />} />
           <Route path="/stations" element={<Stations />} />
           <Route path="/teams" element={<Teams />} />
+          <Route path="/plants" element={<Plants />} />
           <Route path="/team-members/:teamMemberId" element={<TeamMemberProfile />} />
           <Route path="/pm/scheduler" element={<PMScheduler />} />
           <Route path="/pm/tasks" element={<PMTasksPage />} />

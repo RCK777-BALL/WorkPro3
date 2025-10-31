@@ -38,11 +38,14 @@ export interface WorkOrder {
   complianceProcedureId?: string;
   calibrationIntervalDays?: number;
   tenantId: Types.ObjectId;
+  plant?: Types.ObjectId;
 
   dueDate?: Date;
   completedAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;
+  downtime?: number;
+  wrenchTime?: number;
 }
 
 export type WorkOrderDocument = HydratedDocument<WorkOrder>;
@@ -122,6 +125,9 @@ const workOrderSchema = new Schema<WorkOrder>(
     calibrationIntervalDays: Number,
 
     tenantId: tenantRef,
+    plant: { type: Schema.Types.ObjectId, ref: 'Plant', index: true },
+    downtime: { type: Number },
+    wrenchTime: { type: Number },
 
     dueDate: { type: Date },
     completedAt: Date,

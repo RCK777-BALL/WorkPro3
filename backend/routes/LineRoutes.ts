@@ -20,6 +20,7 @@ type LineLike = {
   name: string;
   departmentId: Types.ObjectId;
   tenantId: Types.ObjectId;
+  plant?: Types.ObjectId | null;
   siteId?: Types.ObjectId | null;
   notes?: string | null;
   stations: Types.ObjectId[] | Types.Array<Types.ObjectId>;
@@ -30,6 +31,7 @@ const toLinePayload = (line: LineLike) => ({
   name: line.name,
   departmentId: line.departmentId.toString(),
   tenantId: line.tenantId.toString(),
+  plant: line.plant ? line.plant.toString() : undefined,
   siteId: line.siteId ? line.siteId.toString() : undefined,
   notes: line.notes ?? '',
   stations: Array.from(line.stations ?? []).map((station) => station.toString()),
@@ -38,11 +40,18 @@ const toLinePayload = (line: LineLike) => ({
 const router = Router();
 router.use(requireAuth);
 
+const resolvePlantId = (req: { plantId?: string; siteId?: string }): string | undefined =>
+  req.plantId ?? req.siteId ?? undefined;
+
 const listLines: AuthedRequestHandler<Record<string, string>, unknown> = async (req, res, next) => {
   try {
     const filter: FilterQuery<LineDoc> = { tenantId: req.tenantId };
     if (req.query.departmentId) {
       filter.departmentId = req.query.departmentId as any;
+    }
+    const plantId = resolvePlantId(req);
+    if (plantId) {
+      filter.plant = plantId as any;
     }
     if (req.siteId) {
       filter.$or = [
@@ -64,7 +73,12 @@ const getLine: AuthedRequestHandler<
   LineDoc | { message: string }
 > = async (req, res, next) => {
   try {
-    const line = await Line.findOne({ _id: req.params.id, tenantId: req.tenantId });
+    const query: FilterQuery<LineDoc> = { _id: req.params.id, tenantId: req.tenantId };
+    const plantId = resolvePlantId(req);
+    if (plantId) {
+      query.plant = plantId as any;
+    }
+    const line = await Line.findOne(query);
     if (!line) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -93,12 +107,22 @@ const createLine: AuthedRequestHandler<
       sendResponse(res, null, 'Department not found', 404);
       return;
     }
+    const plantId = resolvePlantId(req);
+    if (!plantId) {
+      sendResponse(res, null, 'Active plant context required', 400);
+      return;
+    }
+    if (department.plant && department.plant.toString() !== plantId) {
+      sendResponse(res, null, 'Department belongs to a different plant', 403);
+      return;
+    }
     const line = await Line.create({
       name: req.body.name,
       notes: req.body.notes ?? '',
       departmentId: department._id,
       tenantId: req.tenantId,
       siteId: department.siteId ?? req.siteId,
+      plant: plantId as any,
     });
 
     await Department.updateOne(
@@ -139,8 +163,13 @@ const updateLine: AuthedRequestHandler<
       sendResponse(res, null, 'No updates provided', 400);
       return;
     }
+    const plantId = resolvePlantId(req);
+    const query: FilterQuery<LineDoc> = { _id: req.params.id, tenantId: req.tenantId };
+    if (plantId) {
+      query.plant = plantId as any;
+    }
     const line = await Line.findOneAndUpdate(
-      { _id: req.params.id, tenantId: req.tenantId },
+      query,
       { $set: update },
       { new: true },
     );
@@ -167,7 +196,12 @@ const updateLine: AuthedRequestHandler<
 
 const deleteLine: AuthedRequestHandler<{ id: string }> = async (req, res, next) => {
   try {
-    const line = await Line.findOne({ _id: req.params.id, tenantId: req.tenantId });
+    const plantId = resolvePlantId(req);
+    const query: FilterQuery<LineDoc> = { _id: req.params.id, tenantId: req.tenantId };
+    if (plantId) {
+      query.plant = plantId as any;
+    }
+    const line = await Line.findOne(query);
     if (!line) {
       sendResponse(res, null, 'Not found', 404);
       return;

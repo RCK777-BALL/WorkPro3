@@ -22,6 +22,8 @@ import requestLog from "./middleware/requestLog";
 import {
   adminRoutes,
   analyticsRoutes,
+  analyticsAIRoutes,
+  alertRoutes,
   assetsRoutes,
   attachmentRoutes,
   auditRoutes,
@@ -39,6 +41,7 @@ import {
   kbRoutes,
   laborRoutes,
   LineRoutes,
+  plantRoutes,
   maintenanceScheduleRoutes,
   meterRoutes,
   notificationsRoutes,
@@ -50,6 +53,7 @@ import {
   settingsRoutes,
   reportsRoutes,
   requestPortalRoutes,
+  globalRoutes,
   statusRoutes,
   StationRoutes,
   summaryRoutes,
@@ -226,6 +230,7 @@ app.use("/api/plants", plantRoutes);
 
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
+app.use("/api/ai", analyticsAIRoutes);
 app.use("/api/team", teamRoutes);
 app.use("/api/theme", ThemeRoutes);
 app.use("/api/settings", settingsRoutes);

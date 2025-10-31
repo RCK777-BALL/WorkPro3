@@ -97,6 +97,8 @@ interface DepartmentNode {
 const router = Router();
 router.use(requireAuth);
 
+const resolvePlantId = (req: AuthedRequest): string | undefined => req.plantId ?? req.siteId ?? undefined;
+
 const parseInclude = (value: unknown): Set<string> => {
   if (typeof value !== 'string') return new Set();
   return new Set(
@@ -112,11 +114,16 @@ const buildDepartmentNodes = async (
   filter: FilterQuery<DepartmentDoc>,
   include: Set<string>,
 ): Promise<DepartmentNode[]> => {
+  const plantId = resolvePlantId(authedReq);
+  const scopedFilter: FilterQuery<DepartmentDoc> = { ...filter };
+  if (plantId) {
+    scopedFilter.plant = plantId as any;
+  }
   const includeLines = include.has('lines') || include.has('stations') || include.has('assets');
   const includeStations = include.has('stations') || include.has('assets');
   const includeAssets = include.has('assets');
 
-  const departments = await Department.find(filter)
+  const departments = await Department.find(scopedFilter)
     .sort({ name: 1 })
     .select({ name: 1, notes: 1 })
     .exec();
@@ -146,6 +153,9 @@ const buildDepartmentNodes = async (
     tenantId: authedReq.tenantId,
     departmentId: { $in: deptIds },
   };
+  if (plantId) {
+    lineFilter.plant = plantId as any;
+  }
   if (authedReq.siteId) {
     lineFilter.$or = [
       { siteId: authedReq.siteId },
@@ -164,6 +174,9 @@ const buildDepartmentNodes = async (
       tenantId: authedReq.tenantId,
       lineId: { $in: lineIds },
     };
+    if (plantId) {
+      stationFilter.plant = plantId as any;
+    }
     if (authedReq.siteId) {
       stationFilter.$or = [
         { siteId: authedReq.siteId },
@@ -181,6 +194,9 @@ const buildDepartmentNodes = async (
       tenantId: authedReq.tenantId,
       stationId: { $in: stationIds },
     };
+    if (plantId) {
+      assetFilter.plant = plantId as any;
+    }
     if (authedReq.siteId) {
       assetFilter.$or = [
         { siteId: authedReq.siteId },
@@ -288,6 +304,10 @@ const fetchDepartmentNode = async (
     tenantId: authedReq.tenantId,
     _id: departmentId as any,
   };
+  const plantId = resolvePlantId(authedReq);
+  if (plantId) {
+    filter.plant = plantId as any;
+  }
 
   if (authedReq.siteId) {
     filter.$or = [
@@ -318,6 +338,10 @@ const listDepartments: AuthedRequestHandler<
   try {
     const authedReq = req as AuthedRequest;
     const filter: FilterQuery<DepartmentDoc> = { tenantId: authedReq.tenantId };
+    const plantId = resolvePlantId(authedReq);
+    if (plantId) {
+      filter.plant = plantId as any;
+    }
     if (authedReq.siteId) {
       filter.$or = [
         { siteId: authedReq.siteId },
@@ -337,7 +361,13 @@ const listDepartments: AuthedRequestHandler<
 
     const deptIds = result.map((dept) => new Types.ObjectId(dept._id));
     const counts = await Asset.aggregate<{ _id: Types.ObjectId; count: number }>([
-      { $match: { tenantId: authedReq.tenantId, departmentId: { $in: deptIds } } },
+      {
+        $match: {
+          tenantId: authedReq.tenantId,
+          departmentId: { $in: deptIds },
+          ...(plantId ? { plant: new Types.ObjectId(plantId) } : {}),
+        },
+      },
       { $group: { _id: '$departmentId', count: { $sum: 1 } } },
     ]);
 
@@ -470,6 +500,12 @@ const createDepartment: AuthedRequestHandler<
       return;
     }
 
+    const plantId = resolvePlantId(req as AuthedRequest);
+    if (!plantId) {
+      sendResponse(res, null, 'Active plant context required', 400);
+      return;
+    }
+
     const rawName = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
     if (!rawName) {
       sendResponse(res, null, 'Department name is required', 400);
@@ -488,6 +524,7 @@ const createDepartment: AuthedRequestHandler<
       notes: description,
       tenantId: req.tenantId,
       siteId: req.siteId,
+      plant: plantId as any,
     });
 
     const linesInput = Array.isArray(req.body?.lines)
@@ -504,6 +541,7 @@ const createDepartment: AuthedRequestHandler<
           departmentId: department._id,
           tenantId: req.tenantId,
           siteId: department.siteId ?? req.siteId,
+          plant: plantId as any,
         });
 
         const stationDocs = [] as StationDoc[];
@@ -516,6 +554,7 @@ const createDepartment: AuthedRequestHandler<
               departmentId: department._id,
               lineId: line._id,
               siteId: department.siteId ?? req.siteId,
+              plant: plantId as any,
             });
             stationDocs.push(station);
           }

@@ -25,6 +25,7 @@ export type AuthedRequest<
     | undefined;
   tenantId?: string | undefined;
   siteId?: string | undefined;
+  plantId?: string | undefined;
 };
 
 export interface AuthedRequestHandler<

@@ -12,6 +12,7 @@ import {
   Building2,
   CheckCircle2,
   ClipboardList,
+  Factory,
   FileStack,
   FolderKanban,
   GitBranch,
@@ -71,7 +72,8 @@ type NavItem = {
 const sections: { id: NavSection; title: string }[] = [
   { id: "plant", title: "Plant Management" },
   { id: "operations", title: "Operations" },
-  { id: "management", title: "Management" },
+  { id: "analytics", title: "Analytics" },
+  { id: "management", title: "Administration" },
 ];
 
 const navItems: Record<NavItemId, NavItem> = {
@@ -147,10 +149,24 @@ const navItems: Record<NavItemId, NavItem> = {
   },
   analytics: {
     id: "analytics",
-    label: "Analytics",
+    label: "Plant Analytics",
     to: "/analytics",
     icon: BarChart3,
-    section: "management",
+    section: "analytics",
+  },
+  "analytics-global": {
+    id: "analytics-global",
+    label: "Global Analytics",
+    to: "/analytics/global",
+    icon: Globe2,
+    section: "analytics",
+  },
+  "analytics-ai": {
+    id: "analytics-ai",
+    label: "AI Insights",
+    to: "/analytics/ai",
+    icon: Cpu,
+    section: "analytics",
   },
   reports: {
     id: "reports",

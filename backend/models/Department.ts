@@ -23,6 +23,7 @@ export interface DepartmentDoc extends Document {
   _id: Types.ObjectId;
   name: string;
   tenantId: Types.ObjectId;
+  plant: Types.ObjectId;
   lines: Types.DocumentArray<LineSubdoc>;
   notes?: string;
   siteId?: Types.ObjectId;
@@ -54,6 +55,7 @@ const DepartmentSchema = new Schema<DepartmentDoc>(
   {
     name: { type: String, required: true },
     tenantId: { type: Schema.Types.ObjectId, required: true, index: true },
+    plant: { type: Schema.Types.ObjectId, ref: 'Plant', required: true, index: true },
     notes: { type: String, default: '' },
     siteId: { type: Schema.Types.ObjectId, ref: 'Site', required: false, index: true },
     plant: { type: Schema.Types.ObjectId, ref: 'Plant', required: false, index: true },

@@ -9,14 +9,16 @@ export interface ITeamMember {
   name: string;
   email: string;
   role:
-    | 'general_manager'
-    | 'assistant_general_manager'
-    | 'operations_manager'
+    | 'global_admin'
+    | 'plant_admin'
     | 'department_leader'
-    | 'assistant_department_leader'
     | 'area_leader'
     | 'team_leader'
     | 'team_member'
+    | 'general_manager'
+    | 'assistant_general_manager'
+    | 'operations_manager'
+    | 'assistant_department_leader'
     | 'technical_team_member'
     | 'admin'
     | 'supervisor'
@@ -44,14 +46,16 @@ const teamMemberSchema = new Schema<ITeamMember>(
     role: {
       type: String,
       enum: [
-        'general_manager',
-        'assistant_general_manager',
-        'operations_manager',
+        'global_admin',
+        'plant_admin',
         'department_leader',
-        'assistant_department_leader',
         'area_leader',
         'team_leader',
         'team_member',
+        'general_manager',
+        'assistant_general_manager',
+        'operations_manager',
+        'assistant_department_leader',
         'technical_team_member',
         'admin',
         'supervisor',

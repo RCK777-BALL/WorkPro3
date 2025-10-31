@@ -213,6 +213,8 @@ export async function getAllAssets(
 ): Promise<void> {
   try {
     const filter: Record<string, unknown> = { tenantId: req.tenantId };
+    const plantId = req.plantId ?? req.siteId;
+    if (plantId) filter.plant = plantId;
     if (req.siteId) filter.siteId = req.siteId;
     const assets = await Asset.find(filter).lean();
     const payload = assets.map((asset) => toAssetResponse(asset)).filter(isAssetLike);
@@ -246,6 +248,8 @@ export async function getAssetById(
       return;
     }
     const filter: any = { _id: id, tenantId: req.tenantId };
+    const plantId = req.plantId ?? req.siteId;
+    if (plantId) filter.plant = plantId;
     if (req.siteId) filter.siteId = req.siteId;
 
     const asset = await Asset.findOne(filter);
@@ -289,6 +293,18 @@ export async function createAsset(
     return;
   }
 
+  const plantId = req.plantId ?? req.siteId;
+  if (!plantId) {
+    sendResponse(res, null, 'Active plant context required', 400);
+    return;
+  }
+
+  const plantId = req.plantId ?? req.siteId;
+  if (!plantId) {
+    sendResponse(res, null, 'Active plant context required', 400);
+    return;
+  }
+
   if (!req.body.name) {
     sendResponse(res, null, 'name is required', 400);
     return;
@@ -312,7 +328,7 @@ export async function createAsset(
         sendResponse(res, null, 'Invalid stationId', 400);
         return;
       }
-      stationForAsset = await Station.findOne({ _id: stationId, tenantId });
+      stationForAsset = await Station.findOne({ _id: stationId, tenantId, plant: plantId });
       if (!stationForAsset) {
         sendResponse(res, null, 'Station not found', 400);
         return;
@@ -326,7 +342,7 @@ export async function createAsset(
         sendResponse(res, null, 'Invalid lineId', 400);
         return;
       }
-      const lineDoc = await Line.findOne({ _id: lineId, tenantId });
+      const lineDoc = await Line.findOne({ _id: lineId, tenantId, plant: plantId });
       if (!lineDoc) {
         sendResponse(res, null, 'Line not found', 400);
         return;
@@ -339,8 +355,15 @@ export async function createAsset(
         sendResponse(res, null, 'Invalid departmentId', 400);
         return;
       }
+      const departmentDoc = await Department.findOne({ _id: departmentId, tenantId, plant: plantId });
+      if (!departmentDoc) {
+        sendResponse(res, null, 'Department not found for plant', 400);
+        return;
+      }
+      payload.departmentId = departmentDoc._id;
     }
     payload.tenantId = tenantId;
+    payload.plant = plantId;
     if (req.siteId && !payload.siteId) payload.siteId = req.siteId;
 
     const newAsset = await Asset.create(payload);
@@ -435,7 +458,7 @@ export async function updateAsset(
       return;
     }
 
-    const filter: Record<string, unknown> = { _id: id, tenantId };
+    const filter: Record<string, unknown> = { _id: id, tenantId, plant: plantId };
     if (req.siteId) filter.siteId = req.siteId;
     const update = filterFields(req.body, assetUpdateFields);
     let stationForAsset: StationDoc | null = null;
@@ -445,7 +468,7 @@ export async function updateAsset(
         sendResponse(res, null, 'Invalid stationId', 400);
         return;
       }
-      stationForAsset = await Station.findOne({ _id: stationId, tenantId });
+      stationForAsset = await Station.findOne({ _id: stationId, tenantId, plant: plantId });
       if (!stationForAsset) {
         sendResponse(res, null, 'Station not found', 400);
         return;
@@ -459,7 +482,7 @@ export async function updateAsset(
         sendResponse(res, null, 'Invalid lineId', 400);
         return;
       }
-      const lineDoc = await Line.findOne({ _id: lineId, tenantId });
+      const lineDoc = await Line.findOne({ _id: lineId, tenantId, plant: plantId });
       if (!lineDoc) {
         sendResponse(res, null, 'Line not found', 400);
         return;
@@ -472,12 +495,19 @@ export async function updateAsset(
         sendResponse(res, null, 'Invalid departmentId', 400);
         return;
       }
+      const departmentDoc = await Department.findOne({ _id: departmentId, tenantId, plant: plantId });
+      if (!departmentDoc) {
+        sendResponse(res, null, 'Department not found for plant', 400);
+        return;
+      }
+      update.departmentId = departmentDoc._id;
     }
     const existing = await Asset.findOne(filter);
     if (!existing) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
+    update.plant = plantId;
     const asset = await Asset.findOneAndUpdate(filter, update, {
       new: true,
       runValidators: true,
@@ -596,7 +626,9 @@ export async function deleteAsset(
       sendResponse(res, null, 'Invalid ID', 400);
       return;
     }
+    const plantId = req.plantId ?? req.siteId;
     const filter: Record<string, unknown> = { _id: id, tenantId };
+    if (plantId) filter.plant = plantId;
     if (req.siteId) filter.siteId = req.siteId;
 
     const asset = await Asset.findOneAndDelete(filter);
@@ -651,6 +683,8 @@ export async function searchAssets(
         { location: { $regex: regex } },
       ],
     };
+    const plantId = req.plantId ?? req.siteId;
+    if (plantId) filter.plant = plantId;
     if (req.siteId) filter.siteId = req.siteId;
 
     const assets = await Asset.find(filter).limit(10).lean();
@@ -675,7 +709,9 @@ export async function getAssetTree(
   next: NextFunction,
 ): Promise<void> {
   try {
+    const plantId = req.plantId ?? req.siteId;
     const match: Record<string, unknown> = { tenantId: req.tenantId };
+    if (plantId) match.plant = plantId;
     if (req.siteId) match.siteId = req.siteId;
 
     const assets = await Asset.find(match).lean();

@@ -35,6 +35,15 @@ const DEFAULT_BORDER_PREFERENCES: BorderPreferences = {
 
 const STORAGE_KEY = 'ui.preferences.teamTableBorder';
 
+const noop = () => {};
+
+const defaultContextValue: BorderPreferencesContextValue = {
+  borderConfig: Object.freeze({ ...DEFAULT_BORDER_PREFERENCES }),
+  setBorderConfig: noop,
+  updateBorderConfig: noop,
+  resetBorderConfig: noop,
+};
+
 const BorderPreferencesContext =
   createContext<BorderPreferencesContextValue | undefined>(undefined);
 
@@ -138,9 +147,17 @@ export const BorderPreferencesProvider = ({
 
 export const useBorderPreferences = () => {
   const context = useContext(BorderPreferencesContext);
+
   if (!context) {
-    throw new Error('useBorderPreferences must be used within BorderPreferencesProvider');
+    if (import.meta.env?.DEV) {
+      console.warn(
+        'useBorderPreferences called outside of BorderPreferencesProvider. Using default border preferences.',
+      );
+    }
+
+    return defaultContextValue;
   }
+
   return context;
 };
 

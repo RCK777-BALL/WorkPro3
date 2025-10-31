@@ -3,6 +3,10 @@
  */
 
 import express from 'express';
+import { Types } from 'mongoose';
+
+import { requireAuth } from '../middleware/authMiddleware';
+import Settings from '../models/Settings';
 
 interface GeneralSettings {
   companyName: string;
@@ -79,24 +83,88 @@ let settingsState: SettingsState = {
 
 const router = express.Router();
 
-router.get('/', (_req, res) => {
-  res.json(settingsState);
+router.use(requireAuth);
+
+router.get('/', async (req, res, next) => {
+  try {
+    const query = req.tenantId ? { tenantId: req.tenantId } : {};
+    const doc = await Settings.findOne(query).lean();
+    const activePlant = doc?.activePlant ? (doc.activePlant as Types.ObjectId).toString() : undefined;
+    const resolvedTheme =
+      doc?.defaultTheme === 'light'
+        ? 'light'
+        : doc?.defaultTheme === 'dark'
+          ? 'dark'
+          : settingsState.theme.mode;
+
+    const response = {
+      ...settingsState,
+      general: {
+        ...settingsState.general,
+        language: doc?.language ?? settingsState.general.language,
+      },
+      theme: {
+        ...settingsState.theme,
+        mode: resolvedTheme,
+      },
+      activePlant,
+    };
+
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
 });
 
-router.post('/', (req, res) => {
-  const payload = (req.body ?? {}) as Partial<SettingsState>;
+router.post('/', async (req, res, next) => {
+  try {
+    const payload = (req.body ?? {}) as Partial<SettingsState & { activePlant?: string }>;
 
-  settingsState = {
-    general: { ...settingsState.general, ...(payload.general ?? {}) },
-    notifications: { ...settingsState.notifications, ...(payload.notifications ?? {}) },
-    email: { ...settingsState.email, ...(payload.email ?? {}) },
-    theme: { ...settingsState.theme, ...(payload.theme ?? {}) },
-  };
+    settingsState = {
+      general: { ...settingsState.general, ...(payload.general ?? {}) },
+      notifications: { ...settingsState.notifications, ...(payload.notifications ?? {}) },
+      email: { ...settingsState.email, ...(payload.email ?? {}) },
+      theme: { ...settingsState.theme, ...(payload.theme ?? {}) },
+    };
 
-  res.json({
-    message: 'Settings updated',
-    data: settingsState,
-  });
+    const query = req.tenantId ? { tenantId: req.tenantId } : {};
+    const update: Record<string, unknown> = {};
+
+    const language = payload.general?.language ?? settingsState.general.language;
+    if (language) {
+      update.language = language;
+    }
+
+    const themeMode = payload.theme?.mode ?? settingsState.theme.mode;
+    if (themeMode) {
+      update.defaultTheme = themeMode;
+    }
+
+    const plantId = payload.activePlant;
+    if (plantId && Types.ObjectId.isValid(plantId)) {
+      update.activePlant = new Types.ObjectId(plantId);
+    }
+
+    if (req.tenantId) {
+      update.tenantId = req.tenantId;
+    }
+
+    const settings = await Settings.findOneAndUpdate(query, update, {
+      new: true,
+      upsert: true,
+      setDefaultsOnInsert: true,
+    });
+
+    res.json({
+      message: 'Settings updated',
+      data: {
+        ...settingsState,
+        activePlant: settings?.activePlant ? settings.activePlant.toString() : plantId,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;

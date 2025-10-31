@@ -40,6 +40,15 @@ const LEGACY_ROLE_MAP: Record<LegacyRole, TeamRole> = {
   manager: 'operations_manager',
 };
 
+const ENTERPRISE_ROLE_MAP: Record<string, TeamRole> = {
+  'Global Admin': 'general_manager',
+  'Plant Admin': 'operations_manager',
+  'Department Leader': 'department_leader',
+  'Area Leader': 'area_leader',
+  'Team Leader': 'team_leader',
+  'Team Member': 'team_member',
+};
+
 const isTeamRole = (role: unknown): role is TeamRole =>
   typeof role === 'string' && role in TEAM_ROLE_HIERARCHY;
 
@@ -48,6 +57,9 @@ const normalizeRole = (role: ITeamMember['role'] | undefined): TeamRole | null =
   if (isTeamRole(role)) return role;
   if (role in LEGACY_ROLE_MAP) {
     return LEGACY_ROLE_MAP[role as LegacyRole];
+  }
+  if (typeof role === 'string' && role in ENTERPRISE_ROLE_MAP) {
+    return ENTERPRISE_ROLE_MAP[role];
   }
   return null;
 };
@@ -108,7 +120,7 @@ export const getTeamMembers = async (
   try {
     const members = await TeamMember.find({ tenantId: req.tenantId })
       .select(
-        '_id name email role department status employeeId managerId reportsTo avatar',
+        '_id name email role department status employeeId managerId reportsTo avatar plant',
       )
       .lean();
 
@@ -122,6 +134,7 @@ export const getTeamMembers = async (
       status: member.status,
       employeeId: member.employeeId,
       managerId: toEntityId(member.managerId ?? member.reportsTo) ?? null,
+      plant: toEntityId(member.plant) ?? null,
       avatar: member.avatar,
     }));
 
@@ -161,7 +174,20 @@ export const createTeamMember = async (
       }
       await validateHierarchy(normalizedRole, req.body.managerId, tenantId as string);
     }
-    const member = new TeamMember({ ...req.body, tenantId });
+    const requestedPlant = typeof req.body.plant === 'string' ? req.body.plant : undefined;
+    const resolvedPlant =
+      (requestedPlant && Types.ObjectId.isValid(requestedPlant)
+        ? new Types.ObjectId(requestedPlant)
+        : undefined) ??
+      (req.siteId && Types.ObjectId.isValid(req.siteId)
+        ? new Types.ObjectId(req.siteId)
+        : undefined);
+
+    const member = new TeamMember({
+      ...req.body,
+      tenantId,
+      plant: resolvedPlant,
+    });
     const saved = await member.save();
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     await writeAuditLog({
@@ -223,9 +249,17 @@ export const updateTeamMember = async (
       sendResponse(res, null, 'Not found', 404);
       return;
     }
+    const payload: Record<string, unknown> = { ...req.body };
+    const requestedPlant = typeof req.body.plant === 'string' ? req.body.plant : undefined;
+    if (requestedPlant && Types.ObjectId.isValid(requestedPlant)) {
+      payload.plant = new Types.ObjectId(requestedPlant);
+    } else if (!requestedPlant && req.siteId && Types.ObjectId.isValid(req.siteId)) {
+      payload.plant = new Types.ObjectId(req.siteId);
+    }
+
     const updated = await TeamMember.findOneAndUpdate(
       { _id: req.params.id, tenantId },
-      req.body,
+      payload,
       {
         new: true,
         runValidators: true,

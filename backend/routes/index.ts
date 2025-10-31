@@ -28,6 +28,8 @@ export { default as requestPortalRoutes } from './RequestPortalRoutes';
 export { default as conditionRuleRoutes } from './ConditionRuleRoutes';
 export { default as meterRoutes } from './meterRoutes';
 export { default as teamMemberRoutes } from './TeamMemberRoutes';
+export { default as plantRoutes } from './PlantRoutes';
+export { default as globalRoutes } from './globalRoutes';
 export { default as videoRoutes } from './VideoRoutes';
 export { default as maintenanceScheduleRoutes } from './maintenanceScheduleRoutes';
 export { default as summaryRoutes } from './SummaryRoutes';

@@ -222,7 +222,6 @@ const TeamTable: React.FC<TeamTableProps> = ({
                 size="sm"
                 onChange={(value) => updateBorderConfig({ color: value })}
                 swatches={['#2b2d42', '#6366f1', '#22c55e', '#f97316', '#ec4899']}
-                withinPortal
               />
             </Stack>
             <Stack gap={6} style={{ minWidth: 140 }}>

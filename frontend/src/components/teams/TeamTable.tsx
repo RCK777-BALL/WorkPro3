@@ -30,6 +30,29 @@ interface TeamTableProps {
   onRowClick: (member: TeamMember) => void;
 }
 
+const toRgba = (color: string | undefined, alpha: number, fallback: string) => {
+  const hexColor = color?.trim() || fallback;
+
+  if (!hexColor.startsWith('#')) {
+    return hexColor;
+  }
+
+  const normalized = hexColor.replace('#', '');
+  const expanded =
+    normalized.length === 3
+      ? normalized
+          .split('')
+          .map((char) => char.repeat(2))
+          .join('')
+      : normalized.padEnd(6, '0');
+
+  const red = Number.parseInt(expanded.substring(0, 2), 16);
+  const green = Number.parseInt(expanded.substring(2, 4), 16);
+  const blue = Number.parseInt(expanded.substring(4, 6), 16);
+
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+};
+
 const TeamTable: React.FC<TeamTableProps> = ({
   teamMembers,
   departments,
@@ -58,21 +81,15 @@ const TeamTable: React.FC<TeamTableProps> = ({
   const borderRadius = Number.isFinite(borderConfig.radius) ? borderConfig.radius : 12;
 
   const containerBackground = useMemo(() => {
-    const baseColor =
-      colorScheme === 'dark'
-        ? theme.colors.dark?.[6] ?? '#1a1b1e'
-        : theme.colors.gray?.[0] ?? '#ffffff';
+    const baseColor = colorScheme === 'dark' ? theme.colors.dark?.[6] : theme.colors.gray?.[0];
     const alpha = colorScheme === 'dark' ? 0.55 : 0.9;
-    return theme.fn.rgba(baseColor, alpha);
+    return toRgba(baseColor, alpha, colorScheme === 'dark' ? '#1a1b1e' : '#ffffff');
   }, [colorScheme, theme]);
 
   const headerBackground = useMemo(() => {
-    const baseColor =
-      colorScheme === 'dark'
-        ? theme.colors.dark?.[5] ?? '#25262b'
-        : theme.colors.gray?.[1] ?? '#f1f3f5';
+    const baseColor = colorScheme === 'dark' ? theme.colors.dark?.[5] : theme.colors.gray?.[1];
     const alpha = colorScheme === 'dark' ? 0.75 : 0.8;
-    return theme.fn.rgba(baseColor, alpha);
+    return toRgba(baseColor, alpha, colorScheme === 'dark' ? '#25262b' : '#f1f3f5');
   }, [colorScheme, theme]);
 
   const borderStyles = useMemo(() => {

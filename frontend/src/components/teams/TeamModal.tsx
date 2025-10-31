@@ -147,7 +147,7 @@ const TeamModal: React.FC<TeamModalProps> = ({ isOpen, onClose, member, defaultR
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-transparent dark:border-neutral-700/70">
+      <div className="bg-white dark:bg-neutral-900 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border-2 border-neutral-200 dark:border-neutral-700/80">
         <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-700">
           <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">{modalTitle}</h2>
           <button

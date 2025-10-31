@@ -29,6 +29,8 @@ import Notifications from "@/pages/Notifications";
 import Messages from "@/pages/Messages";
 import Documentation from "@/pages/Documentation";
 import Departments from "@/pages/Departments";
+import Lines from "@/pages/Lines";
+import Stations from "@/pages/Stations";
 import Teams from "@/pages/Teams";
 import PermitsPage from "@/pages/PermitsPage";
 import TeamMemberProfile from "@/pages/TeamMemberProfile";
@@ -97,6 +99,8 @@ export default function App() {
           <Route path="/messages" element={<Messages />} />
           <Route path="/documentation" element={<Documentation />} />
           <Route path="/departments" element={<Departments />} />
+          <Route path="/lines" element={<Lines />} />
+          <Route path="/stations" element={<Stations />} />
           <Route path="/teams" element={<Teams />} />
           <Route path="/plants" element={<Plants />} />
           <Route path="/team-members/:teamMemberId" element={<TeamMemberProfile />} />

@@ -3,105 +3,93 @@
  */
 
 import { useEffect, useState } from 'react';
-import { ChevronsUpDown } from 'lucide-react';
-import clsx from 'clsx';
+import { Select } from '@mantine/core';
 
-import http from '@/lib/http';
+import http, { SITE_KEY } from '@/lib/http';
 import { safeLocalStorage } from '@/utils/safeLocalStorage';
-import { SITE_KEY } from '@/lib/http';
 
 interface PlantOption {
-  _id: string;
-  name: string;
+  value: string;
+  label: string;
 }
 
-export default function PlantSwitcher() {
-  const [plants, setPlants] = useState<PlantOption[]>([]);
-  const [open, setOpen] = useState(false);
+interface SettingsResponse {
+  activePlant?: string;
+}
+
+const PlantSwitcher: React.FC = () => {
+  const [options, setOptions] = useState<PlantOption[]>([]);
   const [activePlant, setActivePlant] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
+    let mounted = true;
+    const loadPlants = async () => {
       try {
-        const [plantRes, settingsRes] = await Promise.all([
-          http.get<PlantOption[]>('/plants'),
-          http.get<{ activePlant?: string | null }>('/settings'),
+        const [plantsRes, settingsRes] = await Promise.all([
+          http.get<Array<{ _id: string; name: string }>>('/plants'),
+          http.get<SettingsResponse>('/settings'),
         ]);
-        if (cancelled) return;
-        setPlants(plantRes.data ?? []);
-        const active =
-          settingsRes.data?.activePlant ?? safeLocalStorage.getItem(SITE_KEY);
-        setActivePlant(active && active !== 'null' ? active : null);
-      } catch (err) {
-        console.error('Failed to load plants', err);
+        if (!mounted) return;
+        const plantOptions = plantsRes.data.map((plant) => ({
+          value: plant._id,
+          label: plant.name,
+        }));
+        setOptions(plantOptions);
+
+        const resolvedActive = settingsRes.data.activePlant ?? safeLocalStorage.getItem(SITE_KEY);
+        if (resolvedActive) {
+          setActivePlant(resolvedActive);
+          safeLocalStorage.setItem(SITE_KEY, resolvedActive);
+        } else if (plantOptions.length > 0) {
+          const fallback = plantOptions[0].value;
+          setActivePlant(fallback);
+          safeLocalStorage.setItem(SITE_KEY, fallback);
+        }
+      } catch (error) {
+        console.error('Failed to load plant settings', error);
       }
-    })();
+    };
+
+    loadPlants();
     return () => {
-      cancelled = true;
+      mounted = false;
     };
   }, []);
 
-  const handleSelect = async (plantId: string) => {
+  const handleChange = async (value: string | null) => {
+    if (!value || value === activePlant) {
+      return;
+    }
+    setActivePlant(value);
+    safeLocalStorage.setItem(SITE_KEY, value);
     setLoading(true);
     try {
-      setActivePlant(plantId);
-      safeLocalStorage.setItem(SITE_KEY, plantId);
-      await http.post('/global/switch-plant', { plantId });
+      await http.post('/global/switch-plant', { plantId: value });
       window.location.reload();
-    } catch (err) {
-      console.error('Failed to switch plant', err);
+    } catch (error) {
+      console.error('Failed to switch plant', error);
       setLoading(false);
     }
   };
 
-  if (!plants.length) {
-    return null;
-  }
-
-  const activeName = plants.find((p) => p._id === activePlant)?.name ?? 'Select Plant';
-
   return (
-    <div className="relative">
-      <button
-        type="button"
-        className={clsx(
-          'flex items-center gap-2 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200 shadow-sm',
-          'transition-colors hover:border-slate-600 hover:bg-slate-900/80',
-        )}
-        onClick={() => setOpen((prev) => !prev)}
-        disabled={loading}
-      >
-        <span className="truncate max-w-[160px]">{activeName}</span>
-        <ChevronsUpDown size={16} className="text-slate-400" />
-      </button>
-      {open && (
-        <div className="absolute right-0 z-20 mt-2 w-56 rounded-md border border-slate-700 bg-slate-900 shadow-lg">
-          <ul className="max-h-64 overflow-y-auto py-1 text-sm text-slate-200">
-            {plants.map((plant) => (
-              <li key={plant._id}>
-                <button
-                  type="button"
-                  className={clsx(
-                    'flex w-full items-center justify-between px-3 py-2 text-left hover:bg-slate-800',
-                    plant._id === activePlant && 'bg-slate-800',
-                  )}
-                  onClick={() => {
-                    setOpen(false);
-                    if (plant._id !== activePlant) {
-                      void handleSelect(plant._id);
-                    }
-                  }}
-                >
-                  <span>{plant.name}</span>
-                  {plant._id === activePlant && <span className="text-xs text-emerald-400">Active</span>}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
+    <Select
+      placeholder={options.length ? 'Select plant' : 'No plants available'}
+      data={options}
+      value={activePlant}
+      onChange={handleChange}
+      size="xs"
+      radius="sm"
+      allowDeselect={false}
+      disabled={options.length === 0 || loading}
+      styles={{
+        input: {
+          minWidth: 160,
+        },
+      }}
+    />
   );
-}
+};
+
+export default PlantSwitcher;

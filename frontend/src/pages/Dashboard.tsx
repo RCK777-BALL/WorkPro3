@@ -25,6 +25,7 @@ import Button from "@common/Button";
 import AlertBanner from "@/components/layout/AlertBanner";
 import MultiSiteSummary from "@/components/dashboard/MultiSiteSummary";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
+import MultiSiteSummary from "@/components/dashboard/MultiSiteSummary";
 
 type SummaryResponse = {
   openWorkOrders: number;
@@ -1305,6 +1306,10 @@ export default function Dashboard() {
           loading={optionsLoading}
           onChange={handleFilterChange}
         />
+
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <MultiSiteSummary />
+        </section>
 
         {summaryError ? (
           <div className="rounded-3xl border border-red-400/60 bg-red-500/20 p-4 text-sm text-red-100">

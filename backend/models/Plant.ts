@@ -4,7 +4,7 @@
 
 import mongoose, { Schema, type Document, type Types } from 'mongoose';
 
-export interface PlantDocument extends Document {
+export interface PlantDoc extends Document {
   _id: Types.ObjectId;
   name: string;
   location?: string;
@@ -14,11 +14,11 @@ export interface PlantDocument extends Document {
   tenantId?: Types.ObjectId;
 }
 
-const plantSchema = new Schema<PlantDocument>(
+const plantSchema = new Schema<PlantDoc>(
   {
-    name: { type: String, required: true },
-    location: { type: String },
-    description: { type: String },
+    name: { type: String, required: true, unique: true, trim: true },
+    location: { type: String, trim: true },
+    description: { type: String, trim: true },
     isActive: { type: Boolean, default: true },
     organization: { type: String, default: 'WorkPro CMMS Enterprise' },
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', index: true },
@@ -26,6 +26,4 @@ const plantSchema = new Schema<PlantDocument>(
   { timestamps: true },
 );
 
-plantSchema.index({ tenantId: 1, name: 1 }, { unique: true });
-
-export default mongoose.model<PlantDocument>('Plant', plantSchema);
+export default mongoose.model<PlantDoc>('Plant', plantSchema);

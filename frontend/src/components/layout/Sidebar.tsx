@@ -15,13 +15,13 @@ import {
   Factory,
   FileStack,
   FolderKanban,
-  Globe2,
+  GitBranch,
   LayoutDashboard,
   LogIn,
   LogOut,
   MapPin,
   MessageSquare,
-  Cpu,
+  Scan,
   Settings,
   Users,
   Warehouse,
@@ -59,7 +59,7 @@ type SidebarProps = {
   collapsed?: boolean;
 };
 
-type NavSection = "plant" | "operations" | "analytics" | "management";
+type NavSection = "plant" | "operations" | "management";
 
 type NavItem = {
   id: NavItemId;
@@ -84,41 +84,6 @@ const navItems: Record<NavItemId, NavItem> = {
     icon: LayoutDashboard,
     section: "plant",
   },
-  plants: {
-    id: "plants",
-    label: "Plants",
-    to: "/plants",
-    icon: Factory,
-    section: "plant",
-  },
-  departments: {
-    id: "departments",
-    label: "Departments",
-    to: "/departments",
-    icon: Building2,
-    section: "plant",
-  },
-  assets: {
-    id: "assets",
-    label: "Assets",
-    to: "/assets",
-    icon: Warehouse,
-    section: "plant",
-  },
-  teams: {
-    id: "teams",
-    label: "Teams",
-    to: "/teams",
-    icon: Users,
-    section: "plant",
-  },
-  reports: {
-    id: "reports",
-    label: "Reports",
-    to: "/reports",
-    icon: FileStack,
-    section: "plant",
-  },
   "work-orders": {
     id: "work-orders",
     label: "Work Orders",
@@ -140,12 +105,47 @@ const navItems: Record<NavItemId, NavItem> = {
     icon: FolderKanban,
     section: "operations",
   },
+  assets: {
+    id: "assets",
+    label: "Assets",
+    to: "/assets",
+    icon: Warehouse,
+    section: "plant",
+  },
+  departments: {
+    id: "departments",
+    label: "Departments",
+    to: "/departments",
+    icon: Building2,
+    section: "plant",
+  },
+  lines: {
+    id: "lines",
+    label: "Lines",
+    to: "/lines",
+    icon: GitBranch,
+    section: "plant",
+  },
+  stations: {
+    id: "stations",
+    label: "Stations",
+    to: "/stations",
+    icon: Scan,
+    section: "plant",
+  },
   inventory: {
     id: "inventory",
     label: "Inventory",
     to: "/inventory",
     icon: MapPin,
     section: "operations",
+  },
+  teams: {
+    id: "teams",
+    label: "Teams",
+    to: "/teams",
+    icon: Users,
+    section: "plant",
   },
   analytics: {
     id: "analytics",

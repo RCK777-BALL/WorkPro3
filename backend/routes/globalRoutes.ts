@@ -2,59 +2,61 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Router } from 'express';
+import express from 'express';
+import { Types } from 'mongoose';
+
 import { requireAuth } from '../middleware/authMiddleware';
 import Plant from '../models/Plant';
 import Department from '../models/Department';
 import Settings from '../models/Settings';
-import type { AuthedRequest } from '../types/http';
+import sendResponse from '../utils/sendResponse';
 
-const router = Router();
+const router = express.Router();
+
 router.use(requireAuth);
 
-router.get('/summary', async (req: AuthedRequest, res, next) => {
+router.get('/summary', async (req, res, next) => {
   try {
-    const tenantId = req.tenantId;
-    const plantFilter = tenantId ? { tenantId } : {};
-    const departmentFilter = tenantId ? { tenantId } : {};
-    const totalPlants = await Plant.countDocuments(plantFilter);
-    const totalDepartments = await Department.countDocuments(departmentFilter);
-    res.json({ totalPlants, totalDepartments });
+    const tenantFilter = req.tenantId ? { tenantId: req.tenantId } : {};
+    const [totalPlants, totalDepartments] = await Promise.all([
+      Plant.countDocuments(tenantFilter),
+      Department.countDocuments(tenantFilter),
+    ]);
+
+    sendResponse(res, { totalPlants, totalDepartments }, null, 200, 'Global summary retrieved');
   } catch (err) {
     next(err);
   }
 });
 
-router.post('/switch-plant', async (req: AuthedRequest, res, next) => {
+router.post('/switch-plant', async (req, res, next) => {
   try {
-    const tenantId = req.tenantId;
-    if (!tenantId) {
-      res.status(400).json({ error: 'Tenant context required' });
+    const plantId = typeof req.body?.plantId === 'string' ? req.body.plantId : '';
+    if (!plantId || !Types.ObjectId.isValid(plantId)) {
+      sendResponse(res, null, 'Valid plantId is required', 400);
       return;
     }
-    const { plantId } = req.body as { plantId?: string };
-    if (!plantId) {
-      res.status(400).json({ error: 'plantId is required' });
-      return;
-    }
-    const plant = await Plant.findOne({ _id: plantId, tenantId });
+
+    const plant = await Plant.findOne({ _id: plantId, ...(req.tenantId ? { tenantId: req.tenantId } : {}) });
     if (!plant) {
-      res.status(404).json({ error: 'Plant not found' });
+      sendResponse(res, null, 'Plant not found', 404);
       return;
     }
-    const userId = (req.user?._id ?? req.user?.id) as string | undefined;
-    const query: Record<string, unknown> = { tenantId };
-    if (userId) {
-      query.userId = userId;
+
+    const update: { activePlant: Types.ObjectId; tenantId?: Types.ObjectId } = { activePlant: plant._id };
+    if (req.tenantId && Types.ObjectId.isValid(req.tenantId)) {
+      update.tenantId = new Types.ObjectId(req.tenantId);
     }
+    const query = req.tenantId ? { tenantId: req.tenantId } : {};
     const settings = await Settings.findOneAndUpdate(
       query,
-      { activePlant: plant._id },
+      update,
       { new: true, upsert: true, setDefaultsOnInsert: true },
     );
-    res.json({
+
+    sendResponse(res, {
       message: 'Active plant switched',
-      activePlant: settings?.activePlant?.toString() ?? plant._id.toString(),
+      activePlant: settings?.activePlant ? settings.activePlant.toString() : plant._id.toString(),
     });
   } catch (err) {
     next(err);

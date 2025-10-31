@@ -4,8 +4,9 @@
 
 import express from 'express';
 import { Types } from 'mongoose';
+
+import { requireAuth } from '../middleware/authMiddleware';
 import Settings from '../models/Settings';
-import type { AuthedRequest } from '../types/http';
 
 interface GeneralSettings {
   companyName: string;
@@ -82,44 +83,42 @@ let settingsState: SettingsState = {
 
 const router = express.Router();
 
-const resolveSettingsQuery = (req: AuthedRequest) => {
-  const tenantId = req.tenantId;
-  const userId = (req.user?._id ?? req.user?.id) as string | undefined;
-  const query: Record<string, unknown> = {};
-  if (tenantId) {
-    query.tenantId = tenantId;
-  }
-  if (userId) {
-    query.userId = userId;
-  }
-  return query;
-};
+router.use(requireAuth);
 
-router.get('/', async (req: AuthedRequest, res, next) => {
+router.get('/', async (req, res, next) => {
   try {
-    const query = resolveSettingsQuery(req);
-    let doc: Awaited<ReturnType<typeof Settings.findOne>> | null = null;
-    if (Object.keys(query).length > 0) {
-      doc = await Settings.findOne(query).lean();
-    }
-    res.json({
+    const query = req.tenantId ? { tenantId: req.tenantId } : {};
+    const doc = await Settings.findOne(query).lean();
+    const activePlant = doc?.activePlant ? (doc.activePlant as Types.ObjectId).toString() : undefined;
+    const resolvedTheme =
+      doc?.defaultTheme === 'light'
+        ? 'light'
+        : doc?.defaultTheme === 'dark'
+          ? 'dark'
+          : settingsState.theme.mode;
+
+    const response = {
       ...settingsState,
-      activePlant: doc?.activePlant ? doc.activePlant.toString() : null,
-      defaultTheme: doc?.defaultTheme ?? settingsState.theme.mode,
-      language: doc?.language ?? settingsState.general.language,
-    });
+      general: {
+        ...settingsState.general,
+        language: doc?.language ?? settingsState.general.language,
+      },
+      theme: {
+        ...settingsState.theme,
+        mode: resolvedTheme,
+      },
+      activePlant,
+    };
+
+    res.json(response);
   } catch (err) {
     next(err);
   }
 });
 
-router.post('/', async (req: AuthedRequest, res, next) => {
+router.post('/', async (req, res, next) => {
   try {
-    const payload = (req.body ?? {}) as Partial<SettingsState> & {
-      activePlant?: string | null;
-      defaultTheme?: string;
-      language?: string;
-    };
+    const payload = (req.body ?? {}) as Partial<SettingsState & { activePlant?: string }>;
 
     settingsState = {
       general: { ...settingsState.general, ...(payload.general ?? {}) },
@@ -128,36 +127,39 @@ router.post('/', async (req: AuthedRequest, res, next) => {
       theme: { ...settingsState.theme, ...(payload.theme ?? {}) },
     };
 
-    const query = resolveSettingsQuery(req);
-    let updatedDoc: Awaited<ReturnType<typeof Settings.findOneAndUpdate>> | null = null;
-    if (Object.keys(query).length > 0) {
-      const update: Record<string, unknown> = {};
-      const activePlant = payload.activePlant;
-      if (activePlant && Types.ObjectId.isValid(activePlant)) {
-        update.activePlant = new Types.ObjectId(activePlant);
-      }
-      if (payload.defaultTheme || payload.theme?.mode) {
-        update.defaultTheme = payload.defaultTheme ?? payload.theme?.mode ?? 'dark';
-      }
-      if (payload.language || payload.general?.language) {
-        update.language = payload.language ?? payload.general?.language ?? 'en';
-      }
-      if (Object.keys(update).length > 0) {
-        updatedDoc = await Settings.findOneAndUpdate(query, update, {
-          new: true,
-          upsert: true,
-          setDefaultsOnInsert: true,
-        });
-      }
+    const query = req.tenantId ? { tenantId: req.tenantId } : {};
+    const update: Record<string, unknown> = {};
+
+    const language = payload.general?.language ?? settingsState.general.language;
+    if (language) {
+      update.language = language;
     }
+
+    const themeMode = payload.theme?.mode ?? settingsState.theme.mode;
+    if (themeMode) {
+      update.defaultTheme = themeMode;
+    }
+
+    const plantId = payload.activePlant;
+    if (plantId && Types.ObjectId.isValid(plantId)) {
+      update.activePlant = new Types.ObjectId(plantId);
+    }
+
+    if (req.tenantId) {
+      update.tenantId = req.tenantId;
+    }
+
+    const settings = await Settings.findOneAndUpdate(query, update, {
+      new: true,
+      upsert: true,
+      setDefaultsOnInsert: true,
+    });
 
     res.json({
       message: 'Settings updated',
       data: {
         ...settingsState,
-        activePlant: updatedDoc?.activePlant
-          ? updatedDoc.activePlant.toString()
-          : payload.activePlant ?? null,
+        activePlant: settings?.activePlant ? settings.activePlant.toString() : plantId,
       },
     });
   } catch (err) {

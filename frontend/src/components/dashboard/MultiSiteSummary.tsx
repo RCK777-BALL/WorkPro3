@@ -3,6 +3,8 @@
  */
 
 import { useEffect, useState } from 'react';
+
+import Card from '@/components/common/Card';
 import http from '@/lib/http';
 
 interface SummaryResponse {
@@ -10,41 +12,59 @@ interface SummaryResponse {
   totalDepartments: number;
 }
 
-export default function MultiSiteSummary() {
-  const [summary, setSummary] = useState<SummaryResponse | null>(null);
+const MultiSiteSummary: React.FC = () => {
+  const [summary, setSummary] = useState<SummaryResponse>({ totalPlants: 0, totalDepartments: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
+    let mounted = true;
+    const fetchSummary = async () => {
+      setLoading(true);
       try {
         const response = await http.get<SummaryResponse>('/global/summary');
-        if (!cancelled) {
-          setSummary(response.data);
-        }
+        if (!mounted) return;
+        setSummary(response.data);
+        setError(null);
       } catch (err) {
-        console.error('Failed to load multi-site summary', err);
+        if (!mounted) return;
+        console.error('Failed to load global summary', err);
+        setError('Unable to load multi-site overview');
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
       }
-    })();
+    };
+
+    fetchSummary();
     return () => {
-      cancelled = true;
+      mounted = false;
     };
   }, []);
 
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 text-slate-100">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-        Global Overview
-      </h3>
-      <div className="mt-3 flex items-center gap-6 text-sm">
-        <div>
-          <p className="text-xs uppercase text-slate-500">Plants</p>
-          <p className="text-lg font-semibold">{summary?.totalPlants ?? '—'}</p>
+    <Card title="Global Overview" subtitle="Multi-site footprint">
+      {error ? (
+        <p className="text-sm text-red-400">{error}</p>
+      ) : (
+        <div className="space-y-2 text-sm text-neutral-200">
+          <div className="flex items-center justify-between">
+            <span>Total Plants</span>
+            <span className="font-semibold text-white">
+              {loading ? '…' : summary.totalPlants}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Total Departments</span>
+            <span className="font-semibold text-white">
+              {loading ? '…' : summary.totalDepartments}
+            </span>
+          </div>
         </div>
-        <div>
-          <p className="text-xs uppercase text-slate-500">Departments</p>
-          <p className="text-lg font-semibold">{summary?.totalDepartments ?? '—'}</p>
-        </div>
-      </div>
-    </div>
+      )}
+    </Card>
   );
-}
+};
+
+export default MultiSiteSummary;

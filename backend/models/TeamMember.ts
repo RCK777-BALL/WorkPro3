@@ -22,7 +22,13 @@ export interface ITeamMember {
     | 'technical_team_member'
     | 'admin'
     | 'supervisor'
-    | 'manager';
+    | 'manager'
+    | 'Global Admin'
+    | 'Plant Admin'
+    | 'Department Leader'
+    | 'Area Leader'
+    | 'Team Leader'
+    | 'Team Member';
   department: Types.ObjectId;
   managerId?: Types.ObjectId;
   employeeId: string;
@@ -54,6 +60,12 @@ const teamMemberSchema = new Schema<ITeamMember>(
         'admin',
         'supervisor',
         'manager',
+        'Global Admin',
+        'Plant Admin',
+        'Department Leader',
+        'Area Leader',
+        'Team Leader',
+        'Team Member',
       ],
       required: true,
       default: 'team_member',
@@ -62,7 +74,7 @@ const teamMemberSchema = new Schema<ITeamMember>(
     managerId: { type: Schema.Types.ObjectId, ref: 'TeamMember' },
     employeeId: { type: String, required: true, unique: true },
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true },
-    plant: { type: Schema.Types.ObjectId, ref: 'Plant', index: true },
+    plant: { type: Schema.Types.ObjectId, ref: 'Plant' },
     status: { type: String, default: 'Active' },
   },
   { timestamps: true }

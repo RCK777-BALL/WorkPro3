@@ -84,6 +84,7 @@ const Settings: React.FC = () => {
     lastName: 'Edwards',
   });
   const hasFetchedSettingsRef = useRef(false);
+  const settingsEffectActiveRef = useRef(false);
 
   const { theme: activeThemeMode, setTheme: setThemeMode, updateTheme } = useThemeStore(
     useShallow((state) => ({
@@ -453,13 +454,17 @@ const Settings: React.FC = () => {
   }, [addToast]);
 
   useEffect(() => {
+    settingsEffectActiveRef.current = true;
+    let isMounted = true;
+
     if (hasFetchedSettingsRef.current) {
-      return;
+      return () => {
+        isMounted = false;
+        settingsEffectActiveRef.current = false;
+      };
     }
 
     hasFetchedSettingsRef.current = true;
-
-    let isMounted = true;
 
     const {
       general: currentGeneral,
@@ -580,7 +585,7 @@ const Settings: React.FC = () => {
           addToast('Failed to load settings', 'error');
         }
       } finally {
-        if (isMounted) {
+        if (settingsEffectActiveRef.current) {
           setIsLoading(false);
         }
       }
@@ -590,6 +595,7 @@ const Settings: React.FC = () => {
 
     return () => {
       isMounted = false;
+      settingsEffectActiveRef.current = false;
     };
   }, [addToast]);
 

@@ -143,4 +143,25 @@ describe('Settings page', () => {
 
     warnSpy.mockRestore();
   });
+
+  it('clears the loading state when the settings request fails', async () => {
+    (http.get as any).mockImplementation((url: string) => {
+      if (url === '/documents') {
+        return Promise.resolve({ data: [] });
+      }
+
+      const error = new Error('Internal Server Error') as Error & {
+        response?: { status?: number };
+      };
+      error.response = { status: 500 };
+      return Promise.reject(error);
+    });
+
+    renderSettings();
+
+    await waitFor(() => {
+      expect(mockAddToast).toHaveBeenCalledWith('Failed to load settings', 'error');
+      expect(screen.queryByText(/loading your saved settings/i)).not.toBeInTheDocument();
+    });
+  });
 });

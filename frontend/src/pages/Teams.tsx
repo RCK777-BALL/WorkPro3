@@ -15,10 +15,13 @@ import {
 
 import { useTeamMembers } from '@/store/useTeamMembers';
 import { useAuthStore, isAdmin as selectIsAdmin, isManager as selectIsManager } from '@/store/authStore';
+import { useDepartmentStore } from '@/store/departmentStore';
 import type { TeamMember } from '@/types';
 
 const Teams = () => {
   const { members, fetchMembers } = useTeamMembers();
+  const departments = useDepartmentStore((state) => state.departments);
+  const fetchDepartments = useDepartmentStore((state) => state.fetchDepartments);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<TeamMember | null>(null);
   const [defaultRole, setDefaultRole] = useState<TeamRole>('team_member');
@@ -28,8 +31,9 @@ const Teams = () => {
   const canManageMembers = isAdmin || isManager;
 
   useEffect(() => {
-    fetchMembers();
-  }, [fetchMembers]);
+    void fetchMembers();
+    void fetchDepartments();
+  }, [fetchMembers, fetchDepartments]);
 
   const handleRowClick = (member: TeamMember) => {
     if (!canManageMembers) return;
@@ -53,7 +57,12 @@ const Teams = () => {
           </Button>
         </div>
       )}
-      <TeamTable teamMembers={members} search={search} onRowClick={handleRowClick} />
+      <TeamTable
+        teamMembers={members}
+        departments={departments}
+        search={search}
+        onRowClick={handleRowClick}
+      />
       {canManageMembers && (
         <TeamModal
           isOpen={open}

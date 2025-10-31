@@ -140,7 +140,7 @@ export default function Layout() {
               denseMode ? 'px-4 pb-6 pt-4 md:px-6' : 'px-6 pb-10 pt-6 md:px-10',
             )}
           >
-            <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+            <div className="mx-auto flex w-full flex-col gap-6">
               <Outlet />
             </div>
           </main>

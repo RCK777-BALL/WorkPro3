@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   useComputedColorScheme,
@@ -13,23 +13,32 @@ import Avatar from '@common/Avatar';
 import Button from '@common/Button';
 import WorkHistoryCard from './WorkHistoryCard';
 import { Users } from 'lucide-react';
-import type { TeamMember, WorkHistory, WorkHistoryEntry } from '@/types';
+import type { Department, TeamMember, WorkHistory, WorkHistoryEntry } from '@/types';
 import { getTeamRoleLabel, normalizeTeamRole } from '@/constants/teamRoles';
 
 interface TeamTableProps {
   teamMembers: TeamMember[];
+  departments: Department[];
   search: string;
   onRowClick: (member: TeamMember) => void;
 }
 
 const TeamTable: React.FC<TeamTableProps> = ({
   teamMembers,
+  departments,
   search,
   onRowClick,
 }) => {
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const theme = useMantineTheme();
   const colorScheme = useComputedColorScheme('dark');
+
+  const departmentNameById = useMemo(() => {
+    return departments.reduce<Record<string, string>>((acc, department) => {
+      acc[department.id] = department.name;
+      return acc;
+    }, {});
+  }, [departments]);
 
   const defaultBorderColor =
     colorScheme === 'dark'
@@ -230,7 +239,9 @@ const TeamTable: React.FC<TeamTableProps> = ({
                       className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500 dark:text-neutral-400"
                       style={borderStyles.bodyCell}
                     >
-                      {member.department ?? ''}
+                      {member.department
+                        ? departmentNameById[member.department] ?? member.department
+                        : ''}
                     </td>
                     <td
                       className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500 dark:text-neutral-400"

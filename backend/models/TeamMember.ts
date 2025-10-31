@@ -20,11 +20,19 @@ export interface ITeamMember {
     | 'technical_team_member'
     | 'admin'
     | 'supervisor'
-    | 'manager';
+    | 'manager'
+    | 'Global Admin'
+    | 'Plant Admin'
+    | 'Department Leader'
+    | 'Area Leader'
+    | 'Team Leader'
+    | 'Team Member';
   department: Types.ObjectId;
   managerId?: Types.ObjectId;
   employeeId: string;
   tenantId: Types.ObjectId;
+  plant?: Types.ObjectId;
+  status?: string;
 }
 
 export type TeamMemberDocument = HydratedDocument<ITeamMember>;
@@ -48,14 +56,22 @@ const teamMemberSchema = new Schema<ITeamMember>(
         'admin',
         'supervisor',
         'manager',
+        'Global Admin',
+        'Plant Admin',
+        'Department Leader',
+        'Area Leader',
+        'Team Leader',
+        'Team Member',
       ],
       required: true,
+      default: 'team_member',
     },
     department: { type: Schema.Types.ObjectId, ref: 'Department' },
     managerId: { type: Schema.Types.ObjectId, ref: 'TeamMember' },
     employeeId: { type: String, required: true, unique: true },
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true },
- 
+    plant: { type: Schema.Types.ObjectId, ref: 'Plant' },
+    status: { type: String, default: 'Active' },
   },
   { timestamps: true }
 );

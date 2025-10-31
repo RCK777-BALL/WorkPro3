@@ -17,6 +17,7 @@ export interface AssetDoc extends Document {
   stationId?: Types.ObjectId;
   tenantId: Types.ObjectId;
   siteId?: Types.ObjectId;
+  plant?: Types.ObjectId;
   notes?: string;
   status?: string;
   serialNumber?: string;
@@ -69,6 +70,11 @@ const assetSchema = new Schema<AssetDoc>(
       ref: 'Site',
       index: true,
     },
+    plant: {
+      type: Schema.Types.ObjectId,
+      ref: 'Plant',
+      index: true,
+    },
     criticality: {
       type: String,
       enum: ['high', 'medium', 'low'],
@@ -78,5 +84,12 @@ const assetSchema = new Schema<AssetDoc>(
   },
   { timestamps: true }
 );
+
+assetSchema.pre('validate', function (next) {
+  if (!this.plant && this.siteId) {
+    this.plant = this.siteId as Types.ObjectId;
+  }
+  next();
+});
 
 export default mongoose.model<AssetDoc>('Asset', assetSchema);

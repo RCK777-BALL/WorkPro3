@@ -10,6 +10,7 @@ import Avatar from '@/components/common/Avatar';
 import NotificationMenu from './NotificationMenu';
 import { useAuthStore, type AuthState } from '@/store/authStore';
 import GlobalSearch from './GlobalSearch';
+import PlantSwitcher from './PlantSwitcher';
 
 const Header: React.FC = () => {
   const { t } = useTranslation();
@@ -64,6 +65,7 @@ const Header: React.FC = () => {
         </kbd>
       </button>
       <div className="ml-4 flex items-center gap-4">
+        <PlantSwitcher />
         <span className="hidden text-sm font-medium text-slate-300 md:block">
           {formattedDateTime}
         </span>

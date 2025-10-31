@@ -42,6 +42,7 @@ import {
   maintenanceScheduleRoutes,
   meterRoutes,
   notificationsRoutes,
+  plantRoutes,
   permitRoutes,
   pmRoutes,
   pmTasksRoutes,
@@ -55,6 +56,7 @@ import {
   teamRoutes,
   TenantRoutes,
   ThemeRoutes,
+  globalRoutes,
   vendorPortalRoutes,
   vendorRoutes,
   webhooksRoutes,
@@ -220,12 +222,14 @@ app.use("/api/maintenance-schedules", maintenanceScheduleRoutes);
 app.use("/api/vendors", vendorRoutes);
 app.use("/api/labor", laborRoutes);
 app.use("/api/knowledge-base", kbRoutes);
+app.use("/api/plants", plantRoutes);
 
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
 app.use("/api/team", teamRoutes);
 app.use("/api/theme", ThemeRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/global", globalRoutes);
 app.use("/api/request-portal", requestPortalRoutes);
 
 // Vendor portal routes

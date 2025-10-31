@@ -356,6 +356,35 @@ const listDepartments: AuthedRequestHandler<
   }
 };
 
+const listDepartmentsByPlant: AuthedRequestHandler<
+  { plantId: string },
+  DepartmentNode[]
+> = async (req, res, next) => {
+  try {
+    const plantId = req.params.plantId;
+    if (!plantId || !Types.ObjectId.isValid(plantId)) {
+      sendResponse(res, null, 'Invalid plant identifier', 400);
+      return;
+    }
+
+    const authedReq = req as AuthedRequest;
+    const include = parseInclude(req.query.include);
+    const filter: FilterQuery<DepartmentDoc> = {
+      tenantId: authedReq.tenantId,
+      $or: [
+        { plant: new Types.ObjectId(plantId) },
+        { siteId: plantId as any },
+        { siteId: new Types.ObjectId(plantId) },
+      ],
+    };
+
+    const result = await buildDepartmentNodes(authedReq, filter, include);
+    sendResponse(res, result, null, 200, 'Departments retrieved');
+  } catch (err) {
+    next(err);
+  }
+};
+
 const getDepartment: AuthedRequestHandler<
   { id: string },
   DepartmentNode | { message: string }
@@ -1867,6 +1896,7 @@ const importDepartmentsFromExcel: AuthedRequestHandler<Record<string, string>, I
 
 router.get('/', listDepartments);
 router.get('/export', exportDepartmentsToExcel);
+router.get('/plant/:plantId', listDepartmentsByPlant);
 router.get('/:id', getDepartment);
 router.post('/', departmentValidators, validate, createDepartment);
 router.post('/import', handleExcelUpload, importDepartmentsFromExcel);

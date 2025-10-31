@@ -14,11 +14,13 @@ import {
   ClipboardList,
   FileStack,
   FolderKanban,
+  GitBranch,
   LayoutDashboard,
   LogIn,
   LogOut,
   MapPin,
   MessageSquare,
+  Scan,
   Settings,
   Users,
   Warehouse,
@@ -56,7 +58,7 @@ type SidebarProps = {
   collapsed?: boolean;
 };
 
-type NavSection = "operations" | "management";
+type NavSection = "plant" | "operations" | "management";
 
 type NavItem = {
   id: NavItemId;
@@ -67,6 +69,7 @@ type NavItem = {
 };
 
 const sections: { id: NavSection; title: string }[] = [
+  { id: "plant", title: "Plant Management" },
   { id: "operations", title: "Operations" },
   { id: "management", title: "Management" },
 ];
@@ -77,7 +80,7 @@ const navItems: Record<NavItemId, NavItem> = {
     label: "Overview",
     to: "/dashboard",
     icon: LayoutDashboard,
-    section: "operations",
+    section: "plant",
   },
   "work-orders": {
     id: "work-orders",
@@ -105,14 +108,28 @@ const navItems: Record<NavItemId, NavItem> = {
     label: "Assets",
     to: "/assets",
     icon: Warehouse,
-    section: "operations",
+    section: "plant",
   },
   departments: {
     id: "departments",
     label: "Departments",
     to: "/departments",
     icon: Building2,
-    section: "operations",
+    section: "plant",
+  },
+  lines: {
+    id: "lines",
+    label: "Lines",
+    to: "/lines",
+    icon: GitBranch,
+    section: "plant",
+  },
+  stations: {
+    id: "stations",
+    label: "Stations",
+    to: "/stations",
+    icon: Scan,
+    section: "plant",
   },
   inventory: {
     id: "inventory",
@@ -126,7 +143,7 @@ const navItems: Record<NavItemId, NavItem> = {
     label: "Teams",
     to: "/teams",
     icon: Users,
-    section: "operations",
+    section: "plant",
   },
   analytics: {
     id: "analytics",
@@ -140,7 +157,7 @@ const navItems: Record<NavItemId, NavItem> = {
     label: "Reports",
     to: "/reports",
     icon: FileStack,
-    section: "management",
+    section: "plant",
   },
   vendors: {
     id: "vendors",

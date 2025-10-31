@@ -2,14 +2,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ColorInput,
-  Group,
-  NumberInput,
-  Slider,
-  Text,
   useComputedColorScheme,
   useMantineTheme,
 } from '@mantine/core';
@@ -41,31 +36,23 @@ const TeamTable: React.FC<TeamTableProps> = ({
       ? theme.colors.dark?.[4] ?? theme.colors.gray?.[7] ?? '#2b2d42'
       : theme.colors.gray?.[4] ?? theme.colors.dark?.[4] ?? '#2b2d42';
 
-  const [borderColor, setBorderColor] = useState<string>(defaultBorderColor);
-  const [borderWidth, setBorderWidth] = useState<number>(1);
-  const [borderRadius, setBorderRadius] = useState<number>(12);
-
-  const borderStyles = useMemo(() => {
-    const width = Math.max(borderWidth, 0);
-    return {
-      container: {
-        border: width > 0 ? `${width}px solid ${borderColor}` : '1px solid transparent',
-        borderRadius: `${borderRadius}px`,
-        overflow: 'hidden',
-        transition: 'border-color 150ms ease, border-width 150ms ease, border-radius 150ms ease',
-      },
-      table: {
-        borderColor,
-      },
-      headerCell: {
-        borderBottom: width > 0 ? `${Math.max(1, Math.round(width))}px solid ${borderColor}` : '1px solid transparent',
-      },
-      bodyCell: {
-        borderBottom:
-          width > 0 ? `${Math.max(1, Math.round(width / 1.5))}px solid ${borderColor}` : '1px solid transparent',
-      },
-    } as const;
-  }, [borderColor, borderRadius, borderWidth]);
+  const borderStyles = {
+    container: {
+      border: `1px solid ${defaultBorderColor}`,
+      borderRadius: '12px',
+      overflow: 'hidden',
+      transition: 'border-color 150ms ease, border-width 150ms ease, border-radius 150ms ease',
+    },
+    table: {
+      borderColor: defaultBorderColor,
+    },
+    headerCell: {
+      borderBottom: `1px solid ${defaultBorderColor}`,
+    },
+    bodyCell: {
+      borderBottom: `1px solid ${defaultBorderColor}`,
+    },
+  } as const;
 
   const filteredMembers = teamMembers.filter((member) =>
     Object.values(member).some((value) =>
@@ -156,62 +143,6 @@ const TeamTable: React.FC<TeamTableProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-700 p-4">
-        <Group gap="lg" wrap="wrap" align="flex-end">
-          <div className="flex flex-col gap-1">
-            <Text size="sm" className="text-neutral-600 dark:text-neutral-300">
-              Border color
-            </Text>
-            <ColorInput
-              value={borderColor}
-              onChange={setBorderColor}
-              format="hex"
-              swatches={[
-                '#1f2937',
-                '#3b82f6',
-                '#06b6d4',
-                '#f59e0b',
-                '#10b981',
-                '#ef4444',
-                '#8b5cf6',
-                '#f472b6',
-              ]}
-            />
-          </div>
-          <div className="flex flex-col gap-1 max-w-[120px]">
-            <Text size="sm" className="text-neutral-600 dark:text-neutral-300">
-              Border width
-            </Text>
-            <NumberInput
-              min={0}
-              max={10}
-              step={1}
-              value={borderWidth}
-              onChange={(value) => setBorderWidth(typeof value === 'number' ? value : Number(value) || 0)}
-              suffix=" px"
-            />
-          </div>
-          <div className="flex flex-col gap-1 min-w-[200px] flex-1">
-            <Text size="sm" className="text-neutral-600 dark:text-neutral-300">
-              Border radius
-            </Text>
-            <Slider
-              min={0}
-              max={32}
-              value={borderRadius}
-              onChange={setBorderRadius}
-              label={(value) => `${value}px`}
-              marks={[
-                { value: 0, label: '0' },
-                { value: 8, label: '8' },
-                { value: 16, label: '16' },
-                { value: 24, label: '24' },
-                { value: 32, label: '32' },
-              ]}
-            />
-          </div>
-        </Group>
-      </div>
       <div
         className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm"
         style={borderStyles.container}

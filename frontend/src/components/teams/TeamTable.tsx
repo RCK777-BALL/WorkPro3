@@ -5,6 +5,12 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  ColorInput,
+  Group,
+  NumberInput,
+  Slider,
+  Stack,
+  Text,
   useComputedColorScheme,
   useMantineTheme,
 } from '@mantine/core';
@@ -15,6 +21,7 @@ import WorkHistoryCard from './WorkHistoryCard';
 import { Users } from 'lucide-react';
 import type { Department, TeamMember, WorkHistory, WorkHistoryEntry } from '@/types';
 import { getTeamRoleLabel, normalizeTeamRole } from '@/constants/teamRoles';
+import { useBorderPreferences } from '@/context/BorderPreferencesContext';
 
 interface TeamTableProps {
   teamMembers: TeamMember[];
@@ -32,6 +39,7 @@ const TeamTable: React.FC<TeamTableProps> = ({
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const theme = useMantineTheme();
   const colorScheme = useComputedColorScheme('dark');
+  const { borderConfig, updateBorderConfig, resetBorderConfig } = useBorderPreferences();
 
   const departmentNameById = useMemo(() => {
     return departments.reduce<Record<string, string>>((acc, department) => {
@@ -45,23 +53,55 @@ const TeamTable: React.FC<TeamTableProps> = ({
       ? theme.colors.dark?.[4] ?? theme.colors.gray?.[7] ?? '#2b2d42'
       : theme.colors.gray?.[4] ?? theme.colors.dark?.[4] ?? '#2b2d42';
 
-  const borderStyles = {
-    container: {
-      border: `1px solid ${defaultBorderColor}`,
-      borderRadius: '12px',
-      overflow: 'hidden',
-      transition: 'border-color 150ms ease, border-width 150ms ease, border-radius 150ms ease',
-    },
-    table: {
-      borderColor: defaultBorderColor,
-    },
-    headerCell: {
-      borderBottom: `1px solid ${defaultBorderColor}`,
-    },
-    bodyCell: {
-      borderBottom: `1px solid ${defaultBorderColor}`,
-    },
-  } as const;
+  const borderColor = borderConfig.color?.trim() ? borderConfig.color : defaultBorderColor;
+  const borderWidth = Number.isFinite(borderConfig.width) ? borderConfig.width : 1;
+  const borderRadius = Number.isFinite(borderConfig.radius) ? borderConfig.radius : 12;
+
+  const containerBackground = useMemo(() => {
+    const baseColor =
+      colorScheme === 'dark'
+        ? theme.colors.dark?.[6] ?? '#1a1b1e'
+        : theme.colors.gray?.[0] ?? '#ffffff';
+    const alpha = colorScheme === 'dark' ? 0.55 : 0.9;
+    return theme.fn.rgba(baseColor, alpha);
+  }, [colorScheme, theme]);
+
+  const headerBackground = useMemo(() => {
+    const baseColor =
+      colorScheme === 'dark'
+        ? theme.colors.dark?.[5] ?? '#25262b'
+        : theme.colors.gray?.[1] ?? '#f1f3f5';
+    const alpha = colorScheme === 'dark' ? 0.75 : 0.8;
+    return theme.fn.rgba(baseColor, alpha);
+  }, [colorScheme, theme]);
+
+  const borderStyles = useMemo(() => {
+    const hasBorder = borderWidth > 0;
+    const containerBorder = hasBorder ? `${borderWidth}px solid ${borderColor}` : undefined;
+    const cellBorder = hasBorder ? `${Math.max(1, borderWidth)}px solid ${borderColor}` : undefined;
+
+    return {
+      container: {
+        border: containerBorder,
+        borderRadius: `${borderRadius}px`,
+        overflow: 'hidden',
+        background: containerBackground,
+        backdropFilter: 'blur(6px)',
+        transition:
+          'border-color 150ms ease, border-width 150ms ease, border-radius 150ms ease, background-color 150ms ease',
+      },
+      table: {
+        borderColor,
+      },
+      headerCell: {
+        borderBottom: cellBorder,
+        backgroundColor: headerBackground,
+      },
+      bodyCell: {
+        borderBottom: cellBorder,
+      },
+    } as const;
+  }, [borderColor, borderWidth, borderRadius, containerBackground, headerBackground]);
 
   const filteredMembers = teamMembers.filter((member) =>
     Object.values(member).some((value) =>
@@ -152,6 +192,69 @@ const TeamTable: React.FC<TeamTableProps> = ({
 
   return (
     <div className="space-y-6">
+      <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm border border-dashed border-neutral-200 dark:border-neutral-700">
+        <div className="p-4">
+          <Group align="flex-end" gap="lg" wrap="wrap">
+            <Stack gap={6} style={{ minWidth: 200 }}>
+              <Text size="sm" fw={600} c="dimmed">
+                Border color
+              </Text>
+              <ColorInput
+                format="hex"
+                value={borderColor}
+                size="sm"
+                onChange={(value) => updateBorderConfig({ color: value })}
+                swatches={['#2b2d42', '#6366f1', '#22c55e', '#f97316', '#ec4899']}
+                withinPortal
+              />
+            </Stack>
+            <Stack gap={6} style={{ minWidth: 140 }}>
+              <Text size="sm" fw={600} c="dimmed">
+                Border width (px)
+              </Text>
+              <NumberInput
+                value={borderWidth}
+                min={0}
+                max={12}
+                step={0.5}
+                size="sm"
+                hideControls
+                onChange={(value) =>
+                  updateBorderConfig({
+                    width:
+                      typeof value === 'number'
+                        ? value
+                        : Number.parseFloat(value) || 0,
+                  })
+                }
+              />
+            </Stack>
+            <Stack gap={6} style={{ minWidth: 220 }}>
+              <Group justify="space-between" gap={4} wrap="nowrap">
+                <Text size="sm" fw={600} c="dimmed">
+                  Border radius
+                </Text>
+                <Text size="sm" c="dimmed">
+                  {Math.round(borderRadius)}px
+                </Text>
+              </Group>
+              <Slider
+                value={borderRadius}
+                min={0}
+                max={48}
+                step={1}
+                onChange={(value) => updateBorderConfig({ radius: value })}
+                label={(value) => `${Math.round(value)}px`}
+              />
+            </Stack>
+            <div className="ml-auto flex items-center">
+              <Button variant="outline" size="sm" onClick={resetBorderConfig}>
+                Reset
+              </Button>
+            </div>
+          </Group>
+        </div>
+      </div>
       <div
         className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm"
         style={borderStyles.container}

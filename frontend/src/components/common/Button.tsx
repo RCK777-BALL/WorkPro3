@@ -3,110 +3,134 @@
  */
 
 import React from 'react';
+
 import { cn } from '@/utils/cn';
 
-interface ButtonProps {
-  children?: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'outline' | 'ghost' | 'destructive';
-  size?: 'sm' | 'md' | 'lg';
+type ButtonVariant =
+  | 'primary'
+  | 'secondary'
+  | 'success'
+  | 'danger'
+  | 'warning'
+  | 'outline'
+  | 'ghost'
+  | 'destructive';
+
+type ButtonSize = 'sm' | 'md' | 'lg';
+
+type ButtonProps = {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
   fullWidth?: boolean;
   icon?: React.ReactNode;
   iconPosition?: 'left' | 'right';
-  disabled?: boolean;
   loading?: boolean;
-  type?: 'button' | 'submit' | 'reset';
-  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
-  className?: string;
-}
+} & React.ButtonHTMLAttributes<HTMLButtonElement>;
 
-const Button: React.FC<ButtonProps> = ({
-  children,
-  variant = 'primary',
-  size = 'md',
-  fullWidth = false,
-  icon,
-  iconPosition = 'left',
-  disabled = false,
-  loading = false,
-  type = 'button',
-  onClick,
-  className = '',
-}) => {
-  const baseClasses = 'inline-flex items-center justify-center font-medium rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 focus:ring-offset-slate-950';
-  
-  const variantClasses = {
-    primary: 'bg-primary-950 text-white hover:bg-primary-800 focus:ring-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600',
-    secondary: 'bg-teal-600 text-white hover:bg-teal-700 focus:ring-teal-500 dark:bg-teal-700 dark:hover:bg-teal-600',
-    success: 'bg-success-600 text-white hover:bg-success-700 focus:ring-success-500 dark:bg-success-700 dark:hover:bg-success-600',
-    danger: 'bg-error-600 text-white hover:bg-error-700 focus:ring-error-500 dark:bg-error-700 dark:hover:bg-error-600',
-    destructive: 'bg-error-600 text-white hover:bg-error-700 focus:ring-error-500 dark:bg-error-700 dark:hover:bg-error-600',
-    warning: 'bg-warning-500 text-white hover:bg-warning-600 focus:ring-warning-400 dark:bg-warning-600 dark:hover:bg-warning-500',
-    outline: 'border border-slate-600 bg-transparent text-slate-200 hover:bg-slate-800',
-    ghost: 'bg-transparent text-slate-300 hover:bg-slate-800',
-  };
-  
-  const sizeClasses = {
-    sm: 'text-sm px-3 py-1.5',
-    md: 'text-sm px-4 py-2',
-    lg: 'text-base px-5 py-2.5',
-  };
-  
-  const widthClass = fullWidth && 'w-full';
-  const disabledClass = disabled && 'opacity-50 cursor-not-allowed';
+const baseClasses =
+  'inline-flex items-center justify-center rounded-md font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-neutral-900';
 
-  return (
-    <button
-      type={type}
-      className={cn(
-        baseClasses,
-        variantClasses[variant],
-        sizeClasses[size],
-        widthClass,
-        disabledClass,
-        className,
-      )}
-      disabled={disabled || loading}
-      aria-disabled={disabled || loading}
-      aria-busy={loading}
-      onClick={onClick}
-    >
-      {loading && (
-        <span role="status" className="-ml-1 mr-2 inline-flex">
-          <svg
-            className="animate-spin h-4 w-4 text-current"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            ></circle>
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
-          <span className="sr-only">Loading...</span>
-        </span>
-      )}
-      
-      {icon && iconPosition === 'left' && !loading && (
-        <span className="mr-2">{icon}</span>
-      )}
-      
-      {children}
-      
-      {icon && iconPosition === 'right' && (
-        <span className="ml-2">{icon}</span>
-      )}
-    </button>
-  );
+const variantClasses: Record<ButtonVariant, string> = {
+  primary:
+    'bg-primary-600 text-white shadow-sm hover:bg-primary-700 focus-visible:ring-primary-500 dark:bg-primary-500 dark:hover:bg-primary-400',
+  secondary:
+    'bg-neutral-100 text-neutral-900 shadow-sm hover:bg-neutral-200 focus-visible:ring-neutral-400 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-neutral-700',
+  success:
+    'bg-success-600 text-white shadow-sm hover:bg-success-700 focus-visible:ring-success-500 dark:bg-success-600 dark:hover:bg-success-500',
+  danger:
+    'bg-error-600 text-white shadow-sm hover:bg-error-700 focus-visible:ring-error-500 dark:bg-error-600 dark:hover:bg-error-500',
+  destructive:
+    'bg-error-600 text-white shadow-sm hover:bg-error-700 focus-visible:ring-error-500 dark:bg-error-600 dark:hover:bg-error-500',
+  warning:
+    'bg-warning-500 text-white shadow-sm hover:bg-warning-600 focus-visible:ring-warning-400 dark:bg-warning-500 dark:hover:bg-warning-400',
+  outline:
+    'border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50 focus-visible:ring-neutral-400 dark:border-neutral-700 dark:bg-transparent dark:text-neutral-100 dark:hover:bg-neutral-800/60',
+  ghost:
+    'bg-transparent text-neutral-700 hover:bg-neutral-100 focus-visible:ring-neutral-400 dark:text-neutral-200 dark:hover:bg-neutral-800/60',
 };
+
+const sizeClasses: Record<ButtonSize, string> = {
+  sm: 'px-3 py-1.5 text-sm',
+  md: 'px-4 py-2 text-sm',
+  lg: 'px-5 py-2.5 text-base',
+};
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      children,
+      className,
+      variant = 'primary',
+      size = 'md',
+      fullWidth = false,
+      icon,
+      iconPosition = 'left',
+      loading = false,
+      disabled,
+      type = 'button',
+      ...rest
+    },
+    ref,
+  ) => {
+    const isDisabled = Boolean(disabled || loading);
+
+    return (
+      <button
+        ref={ref}
+        type={type}
+        className={cn(
+          baseClasses,
+          variantClasses[variant],
+          sizeClasses[size],
+          fullWidth && 'w-full',
+          isDisabled && 'cursor-not-allowed opacity-60',
+          className,
+        )}
+        disabled={isDisabled}
+        aria-disabled={isDisabled}
+        aria-busy={loading}
+        {...rest}
+      >
+        {loading && (
+          <span role="status" className="mr-2 inline-flex items-center">
+            <svg
+              className="h-4 w-4 animate-spin text-current"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+            <span className="sr-only">Loading...</span>
+          </span>
+        )}
+
+        {icon && iconPosition === 'left' && !loading ? (
+          <span className="mr-2 flex items-center">{icon}</span>
+        ) : null}
+
+        {children}
+
+        {icon && iconPosition === 'right' ? (
+          <span className="ml-2 flex items-center">{icon}</span>
+        ) : null}
+      </button>
+    );
+  },
+);
+
+Button.displayName = 'Button';
 
 export default Button;

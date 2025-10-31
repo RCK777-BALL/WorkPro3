@@ -16,6 +16,7 @@ import NewWorkOrderModal from '@/components/work-orders/NewWorkOrderModal';
 import WorkOrderReviewModal from '@/components/work-orders/WorkOrderReviewModal';
 import type { WorkOrder } from '@/types';
 import { mapChecklistsFromApi, mapSignaturesFromApi } from '@/utils/workOrderTransforms';
+import { safeLocalStorage } from '@/utils/safeLocalStorage';
 
 const LOCAL_KEY = 'offline-workorders';
 const OPTIONAL_WORK_ORDER_KEYS: (keyof WorkOrder)[] = [
@@ -125,7 +126,7 @@ export default function WorkOrders() {
       filters?: { status?: string; priority?: string; startDate?: string; endDate?: string },
     ) => {
       if (!navigator.onLine) {
-        const cached = localStorage.getItem(LOCAL_KEY);
+        const cached = safeLocalStorage.getItem(LOCAL_KEY);
         if (cached) {
           setWorkOrders(JSON.parse(cached));
           setError('You are offline. Showing cached work orders.');
@@ -153,11 +154,11 @@ export default function WorkOrders() {
             })
           : [];
         setWorkOrders(normalized);
-        localStorage.setItem(LOCAL_KEY, JSON.stringify(normalized));
+        safeLocalStorage.setItem(LOCAL_KEY, JSON.stringify(normalized));
         setError(null);
       } catch (err) {
         console.error(err);
-        const cached = localStorage.getItem(LOCAL_KEY);
+        const cached = safeLocalStorage.getItem(LOCAL_KEY);
         if (cached) {
           setWorkOrders(JSON.parse(cached));
           setError('Unable to fetch latest work orders. Showing cached data.');
@@ -180,7 +181,7 @@ export default function WorkOrders() {
         wo.id === id ? { ...wo, status } : wo
       );
       setWorkOrders(updated);
-      localStorage.setItem(LOCAL_KEY, JSON.stringify(updated));
+      safeLocalStorage.setItem(LOCAL_KEY, JSON.stringify(updated));
       return;
     }
     try {
@@ -257,7 +258,7 @@ export default function WorkOrders() {
             }
             return merged;
           });
-          localStorage.setItem(LOCAL_KEY, JSON.stringify(updated));
+          safeLocalStorage.setItem(LOCAL_KEY, JSON.stringify(updated));
           return updated;
         }
 
@@ -286,7 +287,7 @@ export default function WorkOrders() {
         }
 
         const updated = [...prev, temp];
-        localStorage.setItem(LOCAL_KEY, JSON.stringify(updated));
+        safeLocalStorage.setItem(LOCAL_KEY, JSON.stringify(updated));
         return updated;
       });
       return;
@@ -316,7 +317,7 @@ export default function WorkOrders() {
       addToQueue({ method: 'delete', url: `/workorders/${id}` });
       setWorkOrders((prev) => {
         const updated = prev.filter((wo) => wo.id !== id);
-        localStorage.setItem(LOCAL_KEY, JSON.stringify(updated));
+        safeLocalStorage.setItem(LOCAL_KEY, JSON.stringify(updated));
         return updated;
       });
       return;

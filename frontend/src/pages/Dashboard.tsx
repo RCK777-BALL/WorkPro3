@@ -22,6 +22,7 @@ import http from "@/lib/http";
 import Sparkline from "@/components/charts/Sparkline";
 import StatusBadge from "@/components/common/StatusBadge";
 import Button from "@common/Button";
+import { safeLocalStorage } from "@/utils/safeLocalStorage";
 
 type SummaryResponse = {
   openWorkOrders: number;
@@ -143,7 +144,7 @@ const loadSavedFilters = (): FilterState => {
   }
 
   try {
-    const raw = window.localStorage.getItem(FILTER_STORAGE_KEY);
+    const raw = safeLocalStorage.getItem(FILTER_STORAGE_KEY);
     if (!raw) {
       return DEFAULT_FILTERS;
     }
@@ -842,7 +843,7 @@ export default function Dashboard() {
     if (typeof window === "undefined") {
       return;
     }
-    window.localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filters));
+    safeLocalStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filters));
   }, [filters]);
 
   useEffect(() => {

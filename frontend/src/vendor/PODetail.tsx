@@ -4,7 +4,9 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+
 import { getVendorPurchaseOrder, updateVendorPurchaseOrder } from '@/api/vendorPurchaseOrders';
+import { safeLocalStorage } from '@/utils/safeLocalStorage';
 
 interface PurchaseOrder {
   id: string;
@@ -18,7 +20,7 @@ export default function VendorPODetail() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem('vendorToken');
+    const token = safeLocalStorage.getItem('vendorToken');
     if (!token) {
       navigate('/vendor/login');
       return;
@@ -34,7 +36,7 @@ export default function VendorPODetail() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = localStorage.getItem('vendorToken');
+    const token = safeLocalStorage.getItem('vendorToken');
     if (!token || !id) return;
     await updateVendorPurchaseOrder(id, { status }, token);
     navigate('/vendor/pos');

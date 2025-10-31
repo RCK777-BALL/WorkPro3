@@ -4,7 +4,9 @@
 
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+
 import { listVendorPurchaseOrders } from '@/api/vendorPurchaseOrders';
+import { safeLocalStorage } from '@/utils/safeLocalStorage';
 
 interface PurchaseOrder {
   id: string;
@@ -16,7 +18,7 @@ export default function VendorPOList() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem('vendorToken');
+    const token = safeLocalStorage.getItem('vendorToken');
     if (!token) {
       navigate('/vendor/login');
       return;

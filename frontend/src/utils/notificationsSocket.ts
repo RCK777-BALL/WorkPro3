@@ -6,13 +6,15 @@ import { io, type Socket } from 'socket.io-client';
 import { useSocketStore } from '@/store/socketStore';
 import { endpoints } from './env';
 import { FALLBACK_TOKEN_KEY, TENANT_KEY, TOKEN_KEY } from '@/lib/http';
+import { safeLocalStorage } from '@/utils/safeLocalStorage';
 
 let socket: Socket | null = null;
 let poll: ReturnType<typeof setInterval> | null = null;
 
 function resolveAuth() {
-  const token = localStorage.getItem(TOKEN_KEY) ?? localStorage.getItem(FALLBACK_TOKEN_KEY) ?? undefined;
-  const tenantId = localStorage.getItem(TENANT_KEY) ?? undefined;
+  const token =
+    safeLocalStorage.getItem(TOKEN_KEY) ?? safeLocalStorage.getItem(FALLBACK_TOKEN_KEY) ?? undefined;
+  const tenantId = safeLocalStorage.getItem(TENANT_KEY) ?? undefined;
   return { token, tenantId };
 }
 

@@ -41,6 +41,7 @@ import Imports from "@/pages/Imports";
 import Login from "@/pages/Login";
 import RegisterPage from "@/pages/RegisterPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import { safeLocalStorage } from "@/utils/safeLocalStorage";
 
 export default function App() {
   const navigate = useNavigate();
@@ -50,11 +51,11 @@ export default function App() {
 
   React.useEffect(() => {
     setUnauthorizedCallback(() => {
-      localStorage.removeItem(FALLBACK_TOKEN_KEY);
-      localStorage.removeItem(USER_STORAGE_KEY);
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(TENANT_KEY);
-      localStorage.removeItem(SITE_KEY);
+      safeLocalStorage.removeItem(FALLBACK_TOKEN_KEY);
+      safeLocalStorage.removeItem(USER_STORAGE_KEY);
+      safeLocalStorage.removeItem(TOKEN_KEY);
+      safeLocalStorage.removeItem(TENANT_KEY);
+      safeLocalStorage.removeItem(SITE_KEY);
       resetAuthState();
       navigate("/login");
     });

@@ -21,6 +21,7 @@ import {
   TOKEN_KEY,
   USER_STORAGE_KEY,
 } from '@/lib/http';
+import { safeLocalStorage } from '@/utils/safeLocalStorage';
 import { emitToast } from './ToastContext';
 import { api, getErrorMessage } from '@/lib/api';
 
@@ -172,35 +173,35 @@ const normalizeAuthUser = (user: AuthUserInput): AuthUser => {
 
 const persistAuthStorage = (user: AuthUser | null, token?: string) => {
   if (!user) {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(FALLBACK_TOKEN_KEY);
-    localStorage.removeItem(TENANT_KEY);
-    localStorage.removeItem(SITE_KEY);
-    localStorage.removeItem(USER_STORAGE_KEY);
+    safeLocalStorage.removeItem(TOKEN_KEY);
+    safeLocalStorage.removeItem(FALLBACK_TOKEN_KEY);
+    safeLocalStorage.removeItem(TENANT_KEY);
+    safeLocalStorage.removeItem(SITE_KEY);
+    safeLocalStorage.removeItem(USER_STORAGE_KEY);
     return;
   }
 
   if (token) {
-    localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(FALLBACK_TOKEN_KEY, token);
+    safeLocalStorage.setItem(TOKEN_KEY, token);
+    safeLocalStorage.setItem(FALLBACK_TOKEN_KEY, token);
   } else {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(FALLBACK_TOKEN_KEY);
+    safeLocalStorage.removeItem(TOKEN_KEY);
+    safeLocalStorage.removeItem(FALLBACK_TOKEN_KEY);
   }
 
   if (user.tenantId) {
-    localStorage.setItem(TENANT_KEY, user.tenantId);
+    safeLocalStorage.setItem(TENANT_KEY, user.tenantId);
   } else {
-    localStorage.removeItem(TENANT_KEY);
+    safeLocalStorage.removeItem(TENANT_KEY);
   }
 
   if (user.siteId) {
-    localStorage.setItem(SITE_KEY, user.siteId);
+    safeLocalStorage.setItem(SITE_KEY, user.siteId);
   } else {
-    localStorage.removeItem(SITE_KEY);
+    safeLocalStorage.removeItem(SITE_KEY);
   }
 
-  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+  safeLocalStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
 };
 
 const clearAuthStorage = () => persistAuthStorage(null);
@@ -259,7 +260,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       const storedToken =
-        localStorage.getItem(TOKEN_KEY) ?? localStorage.getItem(FALLBACK_TOKEN_KEY);
+        safeLocalStorage.getItem(TOKEN_KEY) ?? safeLocalStorage.getItem(FALLBACK_TOKEN_KEY);
       if (!storedToken) {
         if (!cancelled) {
           handleSetUser(null);

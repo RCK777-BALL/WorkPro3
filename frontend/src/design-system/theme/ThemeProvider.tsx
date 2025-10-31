@@ -5,6 +5,7 @@
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { useThemeStore } from '@/store/themeStore';
+import { safeLocalStorage } from '@/utils/safeLocalStorage';
 
 type Props = { children: ReactNode };
 
@@ -21,7 +22,7 @@ export default function ThemeProvider({ children }: Props) {
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const resolvedTheme = theme === 'system' ? (prefersDark ? 'dark' : 'light') : theme;
 
-    localStorage.setItem('color-scheme', resolvedTheme);
+    safeLocalStorage.setItem('color-scheme', resolvedTheme);
 
     if (resolvedTheme === 'dark') {
       root.classList.add('dark');

@@ -299,12 +299,6 @@ export async function createAsset(
     return;
   }
 
-  const plantId = req.plantId ?? req.siteId;
-  if (!plantId) {
-    sendResponse(res, null, 'Active plant context required', 400);
-    return;
-  }
-
   if (!req.body.name) {
     sendResponse(res, null, 'name is required', 400);
     return;
@@ -438,6 +432,12 @@ export async function updateAsset(
   const tenantId = req.tenantId;
   if (!tenantId) {
     sendResponse(res, null, 'Tenant ID required', 400);
+    return;
+  }
+
+  const plantId = req.plantId ?? req.siteId;
+  if (!plantId) {
+    sendResponse(res, null, 'Active plant context required', 400);
     return;
   }
 

@@ -18,7 +18,6 @@ export interface AssetDoc extends Document {
   tenantId: Types.ObjectId;
   plant: Types.ObjectId;
   siteId?: Types.ObjectId;
-  plant?: Types.ObjectId;
   notes?: string;
   status?: string;
   serialNumber?: string;
@@ -75,11 +74,6 @@ const assetSchema = new Schema<AssetDoc>(
     siteId: {
       type: Schema.Types.ObjectId,
       ref: 'Site',
-      index: true,
-    },
-    plant: {
-      type: Schema.Types.ObjectId,
-      ref: 'Plant',
       index: true,
     },
     criticality: {

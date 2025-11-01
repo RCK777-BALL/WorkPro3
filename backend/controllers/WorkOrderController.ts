@@ -107,6 +107,7 @@ type UpdateWorkOrderBody = Partial<
   station?: Types.ObjectId | string | undefined;
   permits?: (Types.ObjectId | string)[];
   requiredPermitTypes?: string[];
+  plant?: Types.ObjectId | string;
 };
 
 interface CompleteWorkOrderBody extends WorkOrderComplete {
@@ -217,7 +218,8 @@ const buildWorkOrderSearchFilter = (
   return query;
 };
 
-const resolvePlantId = (req: AuthedRequest): string | undefined => req.plantId ?? req.siteId ?? undefined;
+const resolvePlantId = (req: { plantId?: string; siteId?: string }): string | undefined =>
+  req.plantId ?? req.siteId ?? undefined;
 
 const withPlantScope = <T extends Record<string, unknown>>(filter: T, plantId?: string): T => {
   if (plantId) {
@@ -591,11 +593,6 @@ export async function createWorkOrder(
       plant: plantId,
     });
     const saved = await newItem.save();
-    const plantId = resolvePlantId(req);
-    if (!plantId) {
-      sendResponse(res, null, 'Active plant context required', 400);
-      return;
-    }
     const userObjectId = resolveUserObjectId(req);
     if (permitDocs.length) {
       await Promise.all(
@@ -931,6 +928,12 @@ export async function approveWorkOrder(
 
     if (!status || !APPROVAL_STATUS_VALUES.includes(status)) {
       sendResponse(res, null, 'Invalid status', 400);
+      return;
+    }
+
+    const plantId = resolvePlantId(req);
+    if (!plantId) {
+      sendResponse(res, null, 'Active plant context required', 400);
       return;
     }
 

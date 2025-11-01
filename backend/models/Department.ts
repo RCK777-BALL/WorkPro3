@@ -27,7 +27,6 @@ export interface DepartmentDoc extends Document {
   lines: Types.DocumentArray<LineSubdoc>;
   notes?: string;
   siteId?: Types.ObjectId;
-  plant?: Types.ObjectId;
 }
 
 const StationSchema = new Schema<StationSubdoc>({
@@ -58,7 +57,6 @@ const DepartmentSchema = new Schema<DepartmentDoc>(
     plant: { type: Schema.Types.ObjectId, ref: 'Plant', required: true, index: true },
     notes: { type: String, default: '' },
     siteId: { type: Schema.Types.ObjectId, ref: 'Site', required: false, index: true },
-    plant: { type: Schema.Types.ObjectId, ref: 'Plant', required: false, index: true },
     lines: { type: [LineSchema], default: [] },
   },
   { timestamps: true }

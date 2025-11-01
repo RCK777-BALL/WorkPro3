@@ -23,3 +23,11 @@ interface SyncManager {
 interface ServiceWorkerRegistration {
   sync?: SyncManager;
 }
+
+declare global {
+  interface Window {
+    Globalize?: unknown;
+  }
+}
+
+export {};

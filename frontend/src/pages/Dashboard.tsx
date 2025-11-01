@@ -25,7 +25,6 @@ import Button from "@common/Button";
 import AlertBanner from "@/components/layout/AlertBanner";
 import MultiSiteSummary from "@/components/dashboard/MultiSiteSummary";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
-import MultiSiteSummary from "@/components/dashboard/MultiSiteSummary";
 
 type SummaryResponse = {
   openWorkOrders: number;

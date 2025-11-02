@@ -178,8 +178,12 @@ const Departments = () => {
   const handleDepartmentSave = async (values: DepartmentFormValues) => {
     setDepartmentSaving(true);
     try {
+      const { plantId } = values;
       if (departmentEditing) {
-        const departmentPayload: { name: string; description?: string } = { name: values.name };
+        const departmentPayload: { name: string; description?: string; plantId?: string } = {
+          name: values.name,
+          plantId,
+        };
         if (values.description !== undefined) {
           departmentPayload.description = values.description;
         }
@@ -215,21 +219,26 @@ const Departments = () => {
         });
 
         for (const line of linesToDelete) {
-          const updatedDepartment = await deleteLine(currentDepartment.id, line.id);
+          const updatedDepartment = await deleteLine(currentDepartment.id, line.id, { plantId });
           currentDepartment = updatedDepartment;
           lineIdByKey.delete(line.id);
           replaceDepartment(updatedDepartment);
         }
 
         for (const line of linesToUpdate) {
-          const updatedDepartment = await updateLine(currentDepartment.id, line.id!, { name: line.name });
+          const updatedDepartment = await updateLine(
+            currentDepartment.id,
+            line.id!,
+            { name: line.name },
+            { plantId },
+          );
           currentDepartment = updatedDepartment;
           replaceDepartment(updatedDepartment);
         }
 
         for (const line of linesToCreate) {
           const previousLineIds = new Set(currentDepartment.lines.map((candidate) => candidate.id));
-          const updatedDepartment = await createLine(currentDepartment.id, { name: line.name });
+          const updatedDepartment = await createLine(currentDepartment.id, { name: line.name }, { plantId });
           currentDepartment = updatedDepartment;
           replaceDepartment(updatedDepartment);
           const createdLine = updatedDepartment.lines.find(
@@ -258,7 +267,9 @@ const Departments = () => {
           );
 
           for (const station of stationsToDelete) {
-            const updatedDepartment = await deleteStation(currentDepartment.id, lineId, station.id);
+            const updatedDepartment = await deleteStation(currentDepartment.id, lineId, station.id, {
+              plantId,
+            });
             currentDepartment = updatedDepartment;
             replaceDepartment(updatedDepartment);
           }
@@ -273,18 +284,29 @@ const Departments = () => {
           });
 
           for (const station of stationsToUpdate) {
-            const updatedDepartment = await updateStation(currentDepartment.id, lineId, station.id, {
-              name: station.name,
-            });
+            const updatedDepartment = await updateStation(
+              currentDepartment.id,
+              lineId,
+              station.id,
+              {
+                name: station.name,
+              },
+              { plantId },
+            );
             currentDepartment = updatedDepartment;
             replaceDepartment(updatedDepartment);
           }
 
           const stationsToCreate = line.stations.filter((station) => !station.id);
           for (const station of stationsToCreate) {
-            const updatedDepartment = await createStation(currentDepartment.id, lineId, {
-              name: station.name,
-            });
+            const updatedDepartment = await createStation(
+              currentDepartment.id,
+              lineId,
+              {
+                name: station.name,
+              },
+              { plantId },
+            );
             currentDepartment = updatedDepartment;
             replaceDepartment(updatedDepartment);
           }
@@ -299,7 +321,10 @@ const Departments = () => {
         replaceDepartment(currentDepartment);
         addToast('Department updated', 'success');
       } else {
-        const departmentPayload: { name: string; description?: string } = { name: values.name };
+        const departmentPayload: { name: string; description?: string; plantId?: string } = {
+          name: values.name,
+          plantId,
+        };
         if (values.description !== undefined) {
           departmentPayload.description = values.description;
         }
@@ -319,7 +344,7 @@ const Departments = () => {
         for (const line of trimmedLines) {
           if (!line.name) continue;
           const previousLineIds = new Set(currentDepartment.lines.map((candidate) => candidate.id));
-          currentDepartment = await createLine(currentDepartment.id, { name: line.name });
+          currentDepartment = await createLine(currentDepartment.id, { name: line.name }, { plantId });
           const createdLine = currentDepartment.lines.find(
             (candidate) => !previousLineIds.has(candidate.id) && candidate.name === line.name,
           );
@@ -330,7 +355,7 @@ const Departments = () => {
             if (!station.name) continue;
             currentDepartment = await createStation(currentDepartment.id, createdLine.id, {
               name: station.name,
-            });
+            }, { plantId });
           }
         }
 
@@ -368,9 +393,15 @@ const Departments = () => {
     if (!lineModalState) return;
     setLineSaving(true);
     try {
+      const plantId = lineModalState.department.plant.id;
       const updated = lineModalState.line
-        ? await updateLine(lineModalState.department.id, lineModalState.line.id, values)
-        : await createLine(lineModalState.department.id, values);
+        ? await updateLine(
+            lineModalState.department.id,
+            lineModalState.line.id,
+            values,
+            { plantId },
+          )
+        : await createLine(lineModalState.department.id, values, { plantId });
       replaceDepartment(updated);
       addToast(lineModalState.line ? 'Line updated' : 'Line created', 'success');
       setLineModalState(null);
@@ -386,7 +417,8 @@ const Departments = () => {
     if (!lineModalState?.line) return;
     setLineSaving(true);
     try {
-      const updated = await deleteLine(lineModalState.department.id, lineModalState.line.id);
+      const plantId = lineModalState.department.plant.id;
+      const updated = await deleteLine(lineModalState.department.id, lineModalState.line.id, { plantId });
       replaceDepartment(updated);
       addToast('Line deleted', 'success');
       setLineModalState(null);
@@ -402,17 +434,20 @@ const Departments = () => {
     if (!stationModalState) return;
     setStationSaving(true);
     try {
+      const plantId = stationModalState.department.plant.id;
       const updated = stationModalState.station
         ? await updateStation(
             stationModalState.department.id,
             stationModalState.line.id,
             stationModalState.station.id,
             values,
+            { plantId },
           )
         : await createStation(
             stationModalState.department.id,
             stationModalState.line.id,
             values,
+            { plantId },
           );
       replaceDepartment(updated);
       addToast(stationModalState.station ? 'Station updated' : 'Station created', 'success');
@@ -429,10 +464,12 @@ const Departments = () => {
     if (!stationModalState?.station) return;
     setStationSaving(true);
     try {
+      const plantId = stationModalState.department.plant.id;
       const updated = await deleteStation(
         stationModalState.department.id,
         stationModalState.line.id,
         stationModalState.station.id,
+        { plantId },
       );
       replaceDepartment(updated);
       addToast('Station deleted', 'success');
@@ -472,9 +509,10 @@ const Departments = () => {
     setAssetSaving(true);
     try {
       const { department, line, station, asset } = assetModalState;
+      const plantId = department.plant.id;
       const updated = asset
-        ? await updateAsset(department.id, line.id, station.id, asset.id, values)
-        : await createAsset(department.id, line.id, station.id, values);
+        ? await updateAsset(department.id, line.id, station.id, asset.id, values, { plantId })
+        : await createAsset(department.id, line.id, station.id, values, { plantId });
       replaceDepartment(updated);
       addToast(asset ? 'Asset updated' : 'Asset created', 'success');
       setAssetModalState(null);
@@ -491,7 +529,8 @@ const Departments = () => {
     setAssetSaving(true);
     try {
       const { department, line, station, asset } = assetModalState;
-      const updated = await deleteAsset(department.id, line.id, station.id, asset.id);
+      const plantId = department.plant.id;
+      const updated = await deleteAsset(department.id, line.id, station.id, asset.id, { plantId });
       replaceDepartment(updated);
       addToast('Asset deleted', 'success');
       setAssetModalState(null);

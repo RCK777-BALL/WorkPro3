@@ -6,6 +6,7 @@ import { type ChangeEvent, type FormEvent, useEffect, useState } from 'react';
 import SlideOver from '@/components/common/SlideOver';
 import Button from '@/components/common/Button';
 import type { DepartmentHierarchy } from '@/types';
+import http from '@/lib/http';
 
 export type DepartmentFormStation = {
   id?: string;
@@ -23,6 +24,7 @@ export type DepartmentFormLine = {
 export type DepartmentFormValues = {
   name: string;
   description?: string;
+  plantId: string;
   lines: DepartmentFormLine[];
 };
 
@@ -49,6 +51,11 @@ const DepartmentModal = ({
   const [lines, setLines] = useState<DepartmentFormLine[]>([]);
   const [lineErrors, setLineErrors] = useState<string[]>([]);
   const [stationErrors, setStationErrors] = useState<string[][]>([]);
+  const [plantId, setPlantId] = useState('');
+  const [plants, setPlants] = useState<Array<{ id: string; name: string }>>([]);
+  const [plantsLoading, setPlantsLoading] = useState(false);
+  const [plantTouched, setPlantTouched] = useState(false);
+  const [plantLoadError, setPlantLoadError] = useState<string | null>(null);
 
   const generateKey = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
@@ -56,6 +63,7 @@ const DepartmentModal = ({
     setName(initial?.name ?? '');
     setDescription(initial?.description ?? '');
     setTouched(false);
+    setPlantTouched(false);
     const mappedLines = (initial?.lines ?? []).map((line) => ({
       id: line.id,
       name: line.name,
@@ -69,12 +77,59 @@ const DepartmentModal = ({
     setLines(mappedLines);
     setLineErrors(mappedLines.map(() => ''));
     setStationErrors(mappedLines.map((line) => line.stations.map(() => '')));
+    setPlantId(initial?.plant?.id ?? '');
+  }, [initial, open]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    let active = true;
+    setPlantsLoading(true);
+    setPlantLoadError(null);
+    void http
+      .get<Array<{ _id: string; name: string }>>('/plants')
+      .then((response) => {
+        if (!active) return;
+        const options = response.data.map((plant) => ({ id: plant._id, name: plant.name }));
+        const currentPlantId = initial?.plant?.id ?? '';
+        if (currentPlantId && !options.some((option) => option.id === currentPlantId)) {
+          options.unshift({ id: currentPlantId, name: initial?.plant?.name ?? 'Current Plant' });
+        }
+        setPlants(options);
+        if (currentPlantId) {
+          setPlantId(currentPlantId);
+        } else if (options.length > 0) {
+          setPlantId(options[0].id);
+        } else {
+          setPlantId('');
+        }
+      })
+      .catch(() => {
+        if (!active) return;
+        setPlantLoadError('Unable to load plants');
+        setPlants([]);
+        setPlantId('');
+      })
+      .finally(() => {
+        if (!active) return;
+        setPlantsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, [initial, open]);
 
   const handleSubmit = (event?: FormEvent) => {
     event?.preventDefault();
     if (!name.trim()) {
       setTouched(true);
+      return;
+    }
+    if (!plantId) {
+      setPlantTouched(true);
       return;
     }
     const trimmedLines = lines.map((line) => ({
@@ -101,6 +156,7 @@ const DepartmentModal = ({
     void onSave({
       name: name.trim(),
       description: description.trim() || undefined,
+      plantId,
       lines: trimmedLines.map(({ id, key, name, stations }) => ({
         id,
         key,
@@ -115,6 +171,7 @@ const DepartmentModal = ({
   };
 
   const error = touched && !name.trim() ? 'Name is required' : null;
+  const plantError = (plantTouched || touched) && !plantId ? 'Plant is required' : null;
 
   const handleLineChange = (index: number, value: string) => {
     setLines((prev) => prev.map((line, lineIndex) => (lineIndex === index ? { ...line, name: value } : line)));
@@ -253,6 +310,35 @@ const DepartmentModal = ({
       }
     >
       <form className="space-y-4" onSubmit={handleSubmit}>
+        <div>
+          <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">
+            Plant<span className="text-error-500">*</span>
+          </label>
+          <select
+            value={plantId}
+            onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+              setPlantId(event.target.value);
+              setPlantTouched(true);
+            }}
+            className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+            disabled={plantsLoading || plants.length === 0}
+          >
+            <option value="" disabled>
+              {plantsLoading ? 'Loading plants…' : 'Select plant'}
+            </option>
+            {plants.map((plant) => (
+              <option key={plant.id} value={plant.id}>
+                {plant.name}
+              </option>
+            ))}
+          </select>
+          {plantLoadError && (
+            <p className="mt-1 text-sm text-error-600">{plantLoadError}</p>
+          )}
+          {!plantLoadError && plantError && (
+            <p className="mt-1 text-sm text-error-600">{plantError}</p>
+          )}
+        </div>
         <div>
           <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">
             Name

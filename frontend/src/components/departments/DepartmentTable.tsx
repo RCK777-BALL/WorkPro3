@@ -13,6 +13,7 @@ type AssetCategory = Asset['type'] | 'All';
 interface DepartmentTableProps {
   departments: DepartmentHierarchy[];
   categoryFilter: AssetCategory;
+  onEditPlant?: (plant: DepartmentHierarchy['plant']) => void;
   onEditDepartment: (department: DepartmentHierarchy) => void;
   onAddLine: (department: DepartmentHierarchy) => void;
   onEditLine: (department: DepartmentHierarchy, line: LineWithStations) => void;
@@ -57,6 +58,7 @@ const typeBadges: Record<Asset['type'], string> = {
 const DepartmentTable = ({
   departments,
   categoryFilter,
+  onEditPlant,
   onEditDepartment,
   onAddLine,
   onEditLine,
@@ -159,6 +161,13 @@ const DepartmentTable = ({
                       )}
                     </span>
                   </button>
+                  {onEditPlant && plant?.id && plant.id !== 'unassigned' && (
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => onEditPlant(plant)}>
+                        Edit plant
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 {expandedPlant && (
                   <div className="mt-4 rounded-2xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900">

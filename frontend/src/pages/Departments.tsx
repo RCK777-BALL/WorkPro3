@@ -116,8 +116,33 @@ const Departments = () => {
 
   const filteredDepartments = useMemo(() => {
     return departments.filter((department) => {
+      const plantName = department.plant?.name?.toLowerCase() ?? '';
+      const plantLocation = department.plant?.location?.toLowerCase() ?? '';
+      const plantDescription = department.plant?.description?.toLowerCase() ?? '';
+
       const matchesSearch =
-        normalizedSearch.length === 0 || department.name.toLowerCase().includes(normalizedSearch);
+        normalizedSearch.length === 0 ||
+        department.name.toLowerCase().includes(normalizedSearch) ||
+        plantName.includes(normalizedSearch) ||
+        plantLocation.includes(normalizedSearch) ||
+        plantDescription.includes(normalizedSearch) ||
+        department.lines.some((line) => {
+          if (line.name.toLowerCase().includes(normalizedSearch)) {
+            return true;
+          }
+          return line.stations.some((station) => {
+            if (station.name.toLowerCase().includes(normalizedSearch)) {
+              return true;
+            }
+            return station.assets.some((asset) => {
+              const assetName = asset.name?.toLowerCase() ?? '';
+              if (assetName.includes(normalizedSearch)) {
+                return true;
+              }
+              return asset.type?.toLowerCase() === normalizedSearch;
+            });
+          });
+        });
       if (!matchesSearch) return false;
       if (categoryFilter === 'All') return true;
       return department.lines.some((line) =>

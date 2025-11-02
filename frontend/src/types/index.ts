@@ -56,6 +56,13 @@ export interface Department {
   description?: string;
 }
 
+export interface PlantSummary {
+  id: string;
+  name: string;
+  location?: string;
+  description?: string;
+}
+
 export interface Line {
   id: string;
   name: string;
@@ -81,6 +88,7 @@ export interface LineWithStations extends Line {
 }
 
 export interface DepartmentHierarchy extends Department {
+  plant: PlantSummary;
   lines: LineWithStations[];
 }
 

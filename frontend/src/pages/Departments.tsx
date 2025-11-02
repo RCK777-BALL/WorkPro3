@@ -3,7 +3,8 @@
  */
 
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Building2, Download, Filter, Plus, Upload } from 'lucide-react';
+import { Building2, Download, Factory, Filter, Plus, Upload } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { saveAs } from 'file-saver';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -44,6 +45,7 @@ const PAGE_SIZE = 5;
 
 const Departments = () => {
   const { addToast } = useToast();
+  const navigate = useNavigate();
 
   const [departments, setDepartments] = useState<DepartmentHierarchy[]>([]);
   const [loading, setLoading] = useState(false);
@@ -531,6 +533,14 @@ const Departments = () => {
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Button
+                variant="secondary"
+                onClick={() => navigate('/plants')}
+                className="w-full sm:w-auto"
+              >
+                <Factory className="mr-2 h-4 w-4" />
+                Plant
+              </Button>
               <Button
                 variant="secondary"
                 onClick={startDepartmentCreation}

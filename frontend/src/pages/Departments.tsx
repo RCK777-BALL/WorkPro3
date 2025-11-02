@@ -83,6 +83,17 @@ const Departments = () => {
   } | null>(null);
   const [assetSaving, setAssetSaving] = useState(false);
 
+  const handleEditPlant = useCallback(
+    (plant: DepartmentHierarchy['plant']) => {
+      if (!plant || !plant.id || plant.id === 'unassigned') {
+        navigate('/plants');
+        return;
+      }
+      navigate(`/plants?plantId=${plant.id}`);
+    },
+    [navigate],
+  );
+
   const replaceDepartment = useCallback((updated: DepartmentHierarchy) => {
     setDepartments((prev) =>
       prev.map((department) => (department.id === updated.id ? updated : department)),
@@ -645,6 +656,7 @@ const Departments = () => {
             <DepartmentTable
               departments={paginatedDepartments}
               categoryFilter={categoryFilter}
+              onEditPlant={handleEditPlant}
               onEditDepartment={(department) => {
                 setDepartmentEditing(department);
                 setDepartmentModalOpen(true);

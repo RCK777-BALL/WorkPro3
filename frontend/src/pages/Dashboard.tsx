@@ -772,7 +772,7 @@ function DashboardFilters({ filters, departments, lines, loading, onChange }: Fi
         value={value}
         onChange={(event) => onChange(field, event.target.value)}
         disabled={loading}
-        className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white shadow-sm focus:border-white/40 focus:outline-none"
+        className="w-full min-w-[10rem] rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white shadow-sm focus:border-white/40 focus:outline-none"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value} className="text-slate-900">

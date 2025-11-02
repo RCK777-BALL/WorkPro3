@@ -11,6 +11,10 @@ interface QueueItem {
   options?: RequestInit;
 }
 
+type SyncCapableRegistration = ServiceWorkerRegistration & {
+  sync?: { register(tag: string): Promise<void> };
+};
+
 /**
  * useOfflineQueue queues network requests made while offline and
  * retries them when connectivity is restored.
@@ -35,7 +39,7 @@ export function useOfflineQueue() {
   };
 
   const enqueue = async (url: string, options?: RequestInit) => {
-    const item = { url, options };
+    const item: QueueItem = options ? { url, options } : { url };
     if (navigator.onLine) {
       fetch(url, options).catch(() => {
         queue.current.push(item);
@@ -46,10 +50,10 @@ export function useOfflineQueue() {
       safeLocalStorage.setItem('offline-queue', JSON.stringify(queue.current));
 
       if ('serviceWorker' in navigator) {
-        const reg = await navigator.serviceWorker.ready;
-        const sync = (reg as ServiceWorkerRegistration).sync;
+        const reg = (await navigator.serviceWorker.ready) as SyncCapableRegistration;
+        const sync = reg.sync;
         if (sync && typeof sync.register === 'function') {
-          await sync.register('offline-wo-sync');
+          await sync.register('offline-queue');
         } else {
           // Fallback: queue locally and flush on focus/online
         }

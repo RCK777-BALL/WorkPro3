@@ -6,7 +6,7 @@
 import { saveAs } from 'file-saver';
 import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import type { Asset } from '@/types';
 
 export const exportToExcel = async <T>(
@@ -37,7 +37,8 @@ export const exportToPDF = <T>(
   const doc = new jsPDF();
   const rows = data.map(map);
   const headers = rows.length ? Object.keys(rows[0]) : [];
-  doc.autoTable({ head: [headers], body: rows.map(r => headers.map(h => r[h])) });
+  const body = rows.map((row) => headers.map((header) => String(row[header] ?? '')));
+  autoTable(doc, { head: [headers], body });
   doc.save(`${filename}.pdf`);
 };
 

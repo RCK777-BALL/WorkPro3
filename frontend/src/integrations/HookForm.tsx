@@ -3,9 +3,10 @@
  */
 
 import React, { useState } from 'react';
+import type { IntegrationHook } from './types';
 
 interface Props {
-  onCreated: (hook: unknown) => void;
+  onCreated: (hook: IntegrationHook) => void;
 }
 
 export default function HookForm({ onCreated }: Props) {
@@ -19,7 +20,7 @@ export default function HookForm({ onCreated }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, type: 'webhook', url, events: ['ping'] }),
     });
-    const data = await res.json();
+    const data = (await res.json()) as IntegrationHook;
     onCreated(data);
     setName('');
     setUrl('');

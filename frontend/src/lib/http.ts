@@ -88,7 +88,7 @@ http.interceptors.response.use(
 
     const { data, error } = payload as ApiResult<T>;
     if (error) {
-      return Promise.reject(error);
+      throw new Error(error);
     }
 
     const typedResponse = response as AxiosResponse<T>;

@@ -4,15 +4,10 @@
 
 import { useEffect, useState } from 'react';
 import HookForm from './HookForm';
-
-interface Hook {
-  _id: string;
-  name: string;
-  type: string;
-}
+import type { IntegrationHook } from './types';
 
 export default function Integrations() {
-  const [hooks, setHooks] = useState<Hook[]>([]);
+  const [hooks, setHooks] = useState<IntegrationHook[]>([]);
 
   useEffect(() => {
     fetch('/graphql', {
@@ -21,7 +16,7 @@ export default function Integrations() {
       body: JSON.stringify({ query: '{ integrationHooks { _id name type } }' }),
     })
       .then((res) => res.json())
-      .then((res) => setHooks(res.data.integrationHooks));
+      .then((res) => setHooks(res.data.integrationHooks as IntegrationHook[]));
   }, []);
 
   return (

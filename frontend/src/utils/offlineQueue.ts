@@ -95,8 +95,9 @@ export const clearQueue = () => safeLocalStorage.removeItem(QUEUE_KEY);
 
 import http from '@/lib/http';
 
+type HttpClientResponse = { data?: unknown } | void;
 // allow tests to inject a mock http client
-type HttpClient = (args: { method: string; url: string; data?: unknown }) => Promise<unknown>;
+type HttpClient = (args: { method: string; url: string; data?: unknown }) => Promise<HttpClientResponse>;
 let httpClient: HttpClient = http as unknown as HttpClient;
 export const setHttpClient = (client: HttpClient) => {
   httpClient = client;
@@ -253,7 +254,7 @@ export const flushQueue = async (useBackoff = true) => {
         if ((err as { response?: { status?: number } })?.response?.status === 409) {
           try {
             const serverRes = await httpClient({ method: 'get', url: req.url });
-            const serverData = serverRes.data as Record<string, unknown>;
+            const serverData = (serverRes?.data ?? {}) as Record<string, unknown>;
             const diffs = diffObjects(
               req.data as Record<string, unknown>,
               serverData
@@ -270,12 +271,16 @@ export const flushQueue = async (useBackoff = true) => {
 
         const retries = (req.retries ?? 0) + 1;
         const backoff = Math.min(1000 * 2 ** (retries - 1), 30000);
-        remaining.push({
-          ...req,
+        const { nextAttempt: _discardedNextAttempt, ...rest } = req;
+        const retryRequest: QueuedRequest = {
+          ...rest,
           retries,
           error: String(err),
-          nextAttempt: useBackoff ? now + backoff : undefined,
-        });
+        };
+        if (useBackoff) {
+          retryRequest.nextAttempt = now + backoff;
+        }
+        remaining.push(retryRequest);
         continue; // continue processing remaining requests
 
       }

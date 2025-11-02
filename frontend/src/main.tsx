@@ -42,7 +42,6 @@ const router = createBrowserRouter(
   createRoutesFromElements(<Route path="/*" element={<AppProviders />} />),
   {
     future: {
-      v7_startTransition: true,
       v7_relativeSplatPath: true,
     },
   },

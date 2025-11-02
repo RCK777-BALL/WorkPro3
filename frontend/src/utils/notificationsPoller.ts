@@ -1,7 +1,7 @@
 import { fetchNotifications } from '@/api/notifications';
 import type { NotificationType } from '@/types';
-import { useSocketStore, type SocketState } from '@/store/socketStore';
- 
+import { useSocketStore } from '@/store/socketStore';
+import { emitToast } from '@/context/ToastContext';
 
 let pollTimer: ReturnType<typeof setTimeout> | null = null;
 let startTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -77,10 +77,9 @@ export function startNotificationsPoll(
   };
 
   unsubscribe?.();
-  unsubscribe = useSocketStore.subscribe(
-    (s: SocketState) => s.connected,
-    handleConnectionChange,
-  );
+  unsubscribe = useSocketStore.subscribe((state) => {
+    handleConnectionChange(state.connected);
+  });
 
   handleConnectionChange(useSocketStore.getState().connected);
 }

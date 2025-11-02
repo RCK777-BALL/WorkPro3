@@ -166,7 +166,27 @@ async function processQueue() {
     }
   }
 }
-function notifyClients(arg0: string, err: any) {
-  throw new Error('Function not implemented.');
+
+async function notifyClients(type: string, payload: unknown): Promise<void> {
+  try {
+    const windowClients = await self.clients.matchAll({
+      includeUncontrolled: true,
+      type: 'window',
+    });
+
+    await Promise.all(
+      windowClients.map(async (client) => {
+        try {
+          client.postMessage({ type, payload });
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to notify client', err);
+        }
+      }),
+    );
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Failed to broadcast message to clients', err);
+  }
 }
 

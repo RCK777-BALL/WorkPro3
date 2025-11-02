@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card, Group, Title, Select, TextInput, Button, Text, Loader } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
-import { Search } from 'tabler-icons-react';
+import { Search } from 'lucide-react';
 
 import http, { SITE_KEY } from '@/lib/http';
 import { safeLocalStorage } from '@/utils/safeLocalStorage';

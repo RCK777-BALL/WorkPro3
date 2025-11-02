@@ -2,12 +2,15 @@
  * SPDX-License-Identifier: MIT
  */
 
+import type { AxiosRequestConfig } from 'axios';
+
 import http from '@/lib/http';
 import type { Asset, DepartmentHierarchy, LineWithStations, PlantSummary, StationWithAssets } from '@/types';
 
 export type DepartmentPayload = {
   name: string;
   description?: string;
+  plantId?: string;
 };
 
 export type DepartmentImportSummary = {
@@ -144,16 +147,27 @@ const toDepartment = (department: DepartmentResponse): DepartmentHierarchy => ({
   ),
 });
 
+type PlantRequestOptions = { plantId?: string };
+
+const withPlantHeader = (plantId?: string): AxiosRequestConfig | undefined =>
+  plantId ? { headers: { 'x-site-id': plantId } } : undefined;
+
 export const listDepartments = async (): Promise<DepartmentResponse[]> =>
   http.get<DepartmentResponse[]>('/departments').then((res) => res.data);
 
 export const deleteDepartment = (id: string) => http.delete(`/departments/${id}`);
 
-export const createDepartment = (payload: DepartmentPayload) =>
-  http.post<DepartmentResponse>('/departments', payload).then((res) => res.data);
+export const createDepartment = (payload: DepartmentPayload) => {
+  const { plantId, ...body } = payload;
+  const config = withPlantHeader(plantId);
+  return http.post<DepartmentResponse>('/departments', body, config).then((res) => res.data);
+};
 
-export const updateDepartment = (id: string, payload: DepartmentPayload) =>
-  http.put<DepartmentResponse>(`/departments/${id}`, payload).then((res) => res.data);
+export const updateDepartment = (id: string, payload: DepartmentPayload) => {
+  const { plantId, ...body } = payload;
+  const config = withPlantHeader(plantId);
+  return http.put<DepartmentResponse>(`/departments/${id}`, body, config).then((res) => res.data);
+};
 
 export const listDepartmentHierarchy = async (): Promise<DepartmentHierarchy[]> => {
   const data = await http.get<DepartmentResponse[]>('/departments', {
@@ -162,32 +176,49 @@ export const listDepartmentHierarchy = async (): Promise<DepartmentHierarchy[]> 
   return data.data.map(toDepartment);
 };
 
-export const createLine = (deptId: string, payload: { name: string; notes?: string }) =>
+export const createLine = (
+  deptId: string,
+  payload: { name: string; notes?: string },
+  options?: PlantRequestOptions,
+) =>
   http
-    .post<DepartmentResponse>(`/departments/${deptId}/lines`, payload)
+    .post<DepartmentResponse>(`/departments/${deptId}/lines`, payload, withPlantHeader(options?.plantId))
     .then((res) => toDepartment(res.data));
 
 export const updateLine = (
   deptId: string,
   lineId: string,
   payload: { name?: string; notes?: string },
+  options?: PlantRequestOptions,
 ) =>
   http
-    .put<DepartmentResponse>(`/departments/${deptId}/lines/${lineId}`, payload)
+    .put<DepartmentResponse>(
+      `/departments/${deptId}/lines/${lineId}`,
+      payload,
+      withPlantHeader(options?.plantId),
+    )
     .then((res) => toDepartment(res.data));
 
-export const deleteLine = (deptId: string, lineId: string) =>
+export const deleteLine = (deptId: string, lineId: string, options?: PlantRequestOptions) =>
   http
-    .delete<DepartmentResponse>(`/departments/${deptId}/lines/${lineId}`)
+    .delete<DepartmentResponse>(
+      `/departments/${deptId}/lines/${lineId}`,
+      withPlantHeader(options?.plantId),
+    )
     .then((res) => toDepartment(res.data));
 
 export const createStation = (
   deptId: string,
   lineId: string,
   payload: { name: string; notes?: string },
+  options?: PlantRequestOptions,
 ) =>
   http
-    .post<DepartmentResponse>(`/departments/${deptId}/lines/${lineId}/stations`, payload)
+    .post<DepartmentResponse>(
+      `/departments/${deptId}/lines/${lineId}/stations`,
+      payload,
+      withPlantHeader(options?.plantId),
+    )
     .then((res) => toDepartment(res.data));
 
 export const updateStation = (
@@ -195,18 +226,26 @@ export const updateStation = (
   lineId: string,
   stationId: string,
   payload: { name?: string; notes?: string },
+  options?: PlantRequestOptions,
 ) =>
   http
     .put<DepartmentResponse>(
       `/departments/${deptId}/lines/${lineId}/stations/${stationId}`,
       payload,
+      withPlantHeader(options?.plantId),
     )
     .then((res) => toDepartment(res.data));
 
-export const deleteStation = (deptId: string, lineId: string, stationId: string) =>
+export const deleteStation = (
+  deptId: string,
+  lineId: string,
+  stationId: string,
+  options?: PlantRequestOptions,
+) =>
   http
     .delete<DepartmentResponse>(
       `/departments/${deptId}/lines/${lineId}/stations/${stationId}`,
+      withPlantHeader(options?.plantId),
     )
     .then((res) => toDepartment(res.data));
 
@@ -223,11 +262,13 @@ export const createAsset = (
     location?: string;
     lastServiced?: string;
   },
+  options?: PlantRequestOptions,
 ) =>
   http
     .post<DepartmentResponse>(
       `/departments/${deptId}/lines/${lineId}/stations/${stationId}/assets`,
       payload,
+      withPlantHeader(options?.plantId),
     )
     .then((res) => toDepartment(res.data));
 
@@ -245,11 +286,13 @@ export const updateAsset = (
     location: string;
     lastServiced: string;
   }>,
+  options?: PlantRequestOptions,
 ) =>
   http
     .put<DepartmentResponse>(
       `/departments/${deptId}/lines/${lineId}/stations/${stationId}/assets/${assetId}`,
       payload,
+      withPlantHeader(options?.plantId),
     )
     .then((res) => toDepartment(res.data));
 
@@ -258,10 +301,12 @@ export const deleteAsset = (
   lineId: string,
   stationId: string,
   assetId: string,
+  options?: PlantRequestOptions,
 ) =>
   http
     .delete<DepartmentResponse>(
       `/departments/${deptId}/lines/${lineId}/stations/${stationId}/assets/${assetId}`,
+      withPlantHeader(options?.plantId),
     )
     .then((res) => toDepartment(res.data));
 

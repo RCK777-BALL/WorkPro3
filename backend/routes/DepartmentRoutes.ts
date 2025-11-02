@@ -11,6 +11,7 @@ import Department, { type DepartmentDoc } from '../models/Department';
 import Line, { type LineDoc } from '../models/Line';
 import Station, { type StationDoc } from '../models/Station';
 import Asset, { type AssetDoc } from '../models/Asset';
+import type { PlantDoc } from '../models/Plant';
 import { requireAuth } from '../middleware/authMiddleware';
 import { departmentValidators } from '../validators/departmentValidators';
 import { validate } from '../middleware/validationMiddleware';
@@ -85,11 +86,19 @@ interface LineNode {
   stations: StationNode[];
 }
 
+type PlantNode = {
+  _id: string;
+  name?: string;
+  location?: string;
+  description?: string;
+};
+
 interface DepartmentNode {
   _id: string;
   name: string;
   notes?: string;
   description?: string;
+  plant?: PlantNode;
   lines: LineNode[];
   assetCount?: number;
 }
@@ -109,6 +118,36 @@ const parseInclude = (value: unknown): Set<string> => {
   );
 };
 
+const extractPlantNode = (plant: unknown): PlantNode | undefined => {
+  if (!plant) {
+    return undefined;
+  }
+
+  if (typeof plant === 'string') {
+    return { _id: plant };
+  }
+
+  if (plant instanceof Types.ObjectId) {
+    return { _id: plant.toString() };
+  }
+
+  if (typeof plant === 'object') {
+    const candidate = plant as Partial<PlantDoc> & { _id?: Types.ObjectId | string };
+    if (!candidate._id) {
+      return undefined;
+    }
+    const id = candidate._id instanceof Types.ObjectId ? candidate._id.toString() : String(candidate._id);
+    return {
+      _id: id,
+      name: candidate.name ?? undefined,
+      location: candidate.location ?? undefined,
+      description: candidate.description ?? undefined,
+    };
+  }
+
+  return undefined;
+};
+
 const buildDepartmentNodes = async (
   authedReq: AuthedRequest,
   filter: FilterQuery<DepartmentDoc>,
@@ -125,7 +164,8 @@ const buildDepartmentNodes = async (
 
   const departments = await Department.find(scopedFilter)
     .sort({ name: 1 })
-    .select({ name: 1, notes: 1 })
+    .select({ name: 1, notes: 1, plant: 1 })
+    .populate('plant', 'name location description')
     .exec();
 
   if (!includeLines) {
@@ -134,6 +174,7 @@ const buildDepartmentNodes = async (
       name: dept.name,
       notes: dept.notes ?? '',
       description: dept.notes ?? '',
+      plant: extractPlantNode(dept.plant),
       lines: [],
     }));
   }
@@ -145,6 +186,7 @@ const buildDepartmentNodes = async (
       name: dept.name,
       notes: dept.notes ?? '',
       description: dept.notes ?? '',
+      plant: extractPlantNode(dept.plant),
       lines: [],
     }));
   }
@@ -288,6 +330,7 @@ const buildDepartmentNodes = async (
       name: dept.name,
       notes: dept.notes ?? '',
       description: dept.notes ?? '',
+      plant: extractPlantNode(dept.plant),
       lines,
     };
   });

@@ -37,6 +37,7 @@ import { useToast } from '@/context/ToastContext';
 const defaultDepartment: DepartmentHierarchy = {
   id: '',
   name: '',
+  plant: { id: '', name: '' },
   lines: [],
 };
 

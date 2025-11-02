@@ -12,6 +12,7 @@ describe('DepartmentHierarchyGrid', () => {
   const department: DepartmentHierarchy = {
     id: 'd1',
     name: 'Dept',
+    plant: { id: 'p1', name: 'Plant 1' },
     lines: [
       {
         id: 'l1',

@@ -3,7 +3,7 @@
  */
 
 import http from '@/lib/http';
-import type { Asset, DepartmentHierarchy, LineWithStations, StationWithAssets } from '@/types';
+import type { Asset, DepartmentHierarchy, LineWithStations, PlantSummary, StationWithAssets } from '@/types';
 
 export type DepartmentPayload = {
   name: string;
@@ -52,6 +52,31 @@ export type DepartmentResponse = {
   description?: string;
   notes?: string;
   lines?: LineResponse[];
+  plant?: PlantSummaryResponse | string;
+};
+
+type PlantSummaryResponse = {
+  _id: string;
+  name?: string;
+  location?: string;
+  description?: string;
+};
+
+const toPlantSummary = (plant?: PlantSummaryResponse | string): PlantSummary => {
+  if (!plant) {
+    return { id: 'unassigned', name: 'Unassigned Plant' };
+  }
+
+  if (typeof plant === 'string') {
+    return { id: plant || 'unassigned', name: 'Unassigned Plant' };
+  }
+
+  return {
+    id: plant._id || 'unassigned',
+    name: plant.name ?? 'Unnamed Plant',
+    location: plant.location,
+    description: plant.description,
+  };
 };
 
 const toAsset = (
@@ -113,6 +138,7 @@ const toDepartment = (department: DepartmentResponse): DepartmentHierarchy => ({
   name: department.name,
   notes: department.description ?? department.notes,
   description: department.description ?? department.notes,
+  plant: toPlantSummary(department.plant),
   lines: (department.lines ?? []).map((line) =>
     toLine(line, { departmentId: department._id, departmentName: department.name }),
   ),

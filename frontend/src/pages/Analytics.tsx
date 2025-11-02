@@ -3,7 +3,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, type URLSearchParamsInit } from 'react-router-dom';
 import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import http from '@/lib/http';
@@ -26,6 +26,27 @@ const getInitialSearch = () => {
   return '';
 };
 
+const toSearchParamsInit = (value: unknown): URLSearchParamsInit => {
+  if (value instanceof URLSearchParams || typeof value === 'string') {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value as string[][];
+  }
+  if (value && typeof value === 'object') {
+    const entries: string[][] = [];
+    Object.entries(value as Record<string, unknown>).forEach(([key, entryValue]) => {
+      if (Array.isArray(entryValue)) {
+        entryValue.forEach((item) => entries.push([key, String(item)]));
+      } else if (entryValue != null) {
+        entries.push([key, String(entryValue)]);
+      }
+    });
+    return entries;
+  }
+  return new URLSearchParams();
+};
+
 const useSafeSearchParams = (): ReturnType<typeof useSearchParams> => {
   try {
     return useSearchParams();
@@ -39,10 +60,19 @@ const useSafeSearchParams = (): ReturnType<typeof useSearchParams> => {
       hasLoggedSearchParamsFallback = true;
     }
     const [params, setParams] = useState(() => new URLSearchParams(getInitialSearch()));
-    const setFallback: ReturnType<typeof useSearchParams>[1] = (nextInit) => {
+    const setFallback: ReturnType<typeof useSearchParams>[1] = (
+      nextInit,
+      navigateOptions,
+    ) => {
       const nextValue =
-        typeof nextInit === 'function' ? nextInit(new URLSearchParams(params)) : nextInit;
-      setParams(new URLSearchParams(nextValue));
+        typeof nextInit === 'function'
+          ? nextInit(new URLSearchParams(params))
+          : nextInit;
+      const init = toSearchParamsInit(nextValue);
+      setParams(new URLSearchParams(init));
+      if (navigateOptions?.replace) {
+        // no-op in fallback; included to satisfy signature and future extensibility
+      }
     };
     return [params, setFallback];
   }

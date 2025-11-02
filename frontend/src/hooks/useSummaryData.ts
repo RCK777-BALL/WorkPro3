@@ -38,13 +38,13 @@ export function useSummary<T = unknown>(
           if (!mountedRef.current) return payload;
           c.data = payload;
           c.ts = Date.now();
-          c.promise = undefined;
+          delete c.promise;
           backoffRef.current = 1000;
           setTick((t) => t + 1);
           return c.data;
         })
         .catch(async (err: AxiosError | unknown) => {
-          c.promise = undefined;
+          delete c.promise;
           if (err instanceof AxiosError && err.response?.status === 429) {
             await new Promise((r) => setTimeout(r, backoffRef.current));
             backoffRef.current = Math.min(backoffRef.current * 2, 30_000);

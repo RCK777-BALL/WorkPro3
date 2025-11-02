@@ -51,12 +51,13 @@ const MultiSiteSummary: React.FC = () => {
         <div className="space-y-2 text-sm text-neutral-200">
           <div className="flex items-center justify-between">
             <span>Total Plants</span>
+            
             <span className="font-semibold text-white">
               {loading ? '…' : summary.totalPlants}
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span>Total Departments</span>
+            
             <span className="font-semibold text-white">
               {loading ? '…' : summary.totalDepartments}
             </span>

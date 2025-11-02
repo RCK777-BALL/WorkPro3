@@ -23,7 +23,6 @@ import Sparkline from "@/components/charts/Sparkline";
 import StatusBadge from "@/components/common/StatusBadge";
 import Button from "@common/Button";
 import AlertBanner from "@/components/layout/AlertBanner";
-import MultiSiteSummary from "@/components/dashboard/MultiSiteSummary";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
 
 type SummaryResponse = {
@@ -771,7 +770,7 @@ function DashboardFilters({ filters, departments, lines, loading, onChange }: Fi
       <select
         value={value}
         onChange={(event) => onChange(field, event.target.value)}
-        disabled={loading}
+        disabled={loading && options.length === 0}
         className="w-full min-w-[10rem] rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white shadow-sm focus:border-white/40 focus:outline-none"
       >
         {options.map((option) => (
@@ -1306,10 +1305,6 @@ export default function Dashboard() {
           onChange={handleFilterChange}
         />
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <MultiSiteSummary />
-        </section>
-
         {summaryError ? (
           <div className="rounded-3xl border border-red-400/60 bg-red-500/20 p-4 text-sm text-red-100">
             {summaryError}
@@ -1317,9 +1312,6 @@ export default function Dashboard() {
         ) : null}
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <div className="md:col-span-2 xl:col-span-3">
-            <MultiSiteSummary />
-          </div>
           {summaryCards.map((card) => (
             <SummaryCard
               key={card.key}

@@ -233,11 +233,52 @@ const deleteLine: AuthedRequestHandler<{ id: string }> = async (req, res, next) 
   }
 };
 
+const listLinesByDepartment: AuthedRequestHandler<{ departmentId: string }, unknown> = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const { departmentId } = req.params;
+    if (!Types.ObjectId.isValid(departmentId)) {
+      sendResponse(res, null, 'Invalid department identifier', 400);
+      return;
+    }
+
+    const plantId = resolvePlantId(req);
+    const filter: FilterQuery<LineDoc> = {
+      tenantId: req.tenantId,
+      departmentId: new Types.ObjectId(departmentId),
+    };
+    if (plantId) {
+      if (Types.ObjectId.isValid(plantId)) {
+        filter.plant = new Types.ObjectId(plantId);
+      } else {
+        filter.plant = plantId as any;
+      }
+    }
+    if (req.siteId) {
+      filter.$or = [
+        { siteId: req.siteId },
+        { siteId: null },
+        { siteId: { $exists: false } },
+      ];
+    }
+
+    const lines = await Line.find(filter).sort({ name: 1 }).lean();
+    const payload = lines.map((line) => toLinePayload(line as unknown as LineDoc));
+    sendResponse(res, payload, null, 200, 'Lines retrieved');
+  } catch (err) {
+    next(err);
+  }
+};
+
 router.get('/', listLines);
+router.get('/department/:departmentId', listLinesByDepartment);
 router.get('/:id', getLine);
 router.post('/', lineValidators, validate, createLine);
 router.put('/:id', lineUpdateValidators, validate, updateLine);
 router.delete('/:id', deleteLine);
 
-export { listLines, getLine, createLine, updateLine, deleteLine };
+export { listLines, listLinesByDepartment, getLine, createLine, updateLine, deleteLine };
 export default router;

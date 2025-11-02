@@ -12,6 +12,7 @@ import TimeSheet from '../models/TimeSheet';
 import Asset from '../models/Asset';
 import Permit from '../models/Permit';
 import PmTask from '../models/PMTask';
+import TeamMember from '../models/TeamMember';
 import { sendResponse } from '../utils/sendResponse';
 import { LABOR_RATE } from '../config/env';
 
@@ -295,6 +296,21 @@ export const getSummary: AuthedRequestHandler = async (
     const completedStatuses = pickStatuses(filters, ['completed']);
     const pmDueStatuses = pickStatuses(filters, ['requested', 'assigned', 'in_progress']);
 
+    const teamFilter: Record<string, unknown> = { status: { $in: ['Active', 'active'] } };
+    if (tenantId) {
+      teamFilter.tenantId = tenantId;
+    }
+    if (siteId) {
+      if (Types.ObjectId.isValid(siteId)) {
+        teamFilter.plant = new Types.ObjectId(siteId);
+      } else {
+        teamFilter.plant = siteId;
+      }
+    }
+    if (departmentId) {
+      teamFilter.department = departmentId;
+    }
+
     const [
       openWorkOrders,
       overdueWorkOrders,
@@ -306,6 +322,9 @@ export const getSummary: AuthedRequestHandler = async (
       activePmTasks,
       criticalActiveAssets,
       criticalTotalAssets,
+      totalWorkOrders,
+      pmWorkOrderCount,
+      activeTeamMembers,
     ] = await Promise.all([
       openStatuses.length
         ? WorkOrder.countDocuments({
@@ -347,6 +366,9 @@ export const getSummary: AuthedRequestHandler = async (
       })(),
       Asset.countDocuments({ ...match, status: 'Active', criticality: 'high' }),
       Asset.countDocuments({ ...match, criticality: 'high' }),
+      WorkOrder.countDocuments(workOrderMatch),
+      WorkOrder.countDocuments({ ...workOrderMatch, pmTask: { $exists: true } }),
+      TeamMember.countDocuments(teamFilter),
     ]);
 
     const assetAvailability = totalAssets
@@ -370,6 +392,10 @@ export const getSummary: AuthedRequestHandler = async (
       assetAvailability,
       assetAvailabilityCritical,
       activePmTasks,
+      totalWorkOrders,
+      pmCount: pmWorkOrderCount,
+      assetCount: totalAssets,
+      teamCount: activeTeamMembers,
     };
 
     sendResponse(res, payload);

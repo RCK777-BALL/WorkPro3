@@ -2,8 +2,15 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
-import { Button } from '../ui/button';
+import Button from './Button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 type Props = {
   open: boolean;
@@ -23,7 +30,9 @@ export default function ConfirmDialog({
   onConfirm,
 }: Props) {
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+    <Dialog open={open} onOpenChange={(nextOpen: boolean) => {
+      if (!nextOpen) onClose();
+    }}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>

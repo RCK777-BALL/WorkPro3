@@ -58,11 +58,14 @@ const AssetTable: React.FC<AssetTableProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800 bg-slate-900/60">
-            {filteredAssets.map((asset) => (
-              <tr
-                key={asset.id}
-                className="cursor-pointer transition-colors duration-150 hover:bg-slate-800/70"
-              >
+            {filteredAssets.map((asset) => {
+              const statusText = asset.status?.trim() || 'Unknown';
+
+              return (
+                <tr
+                  key={asset.id}
+                  className="cursor-pointer transition-colors duration-150 hover:bg-slate-800/70"
+                >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <div className="flex-shrink-0 h-10 w-10">
@@ -91,11 +94,7 @@ const AssetTable: React.FC<AssetTableProps> = ({
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <Badge
-                    text={asset.status}
-                    type="status"
-                    size="sm"
-                  />
+                  <Badge text={statusText} type="status" size="sm" />
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                   {asset.location}
@@ -123,12 +122,7 @@ const AssetTable: React.FC<AssetTableProps> = ({
                         New WO
                       </Button>
                     )}
-                    <DuplicateButton
-                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                        e.stopPropagation();
-                        onDuplicate(asset);
-                      }}
-                    />
+                    <DuplicateButton onClick={() => onDuplicate(asset)} />
                     <Button
                       variant="ghost"
                       size="sm"
@@ -148,8 +142,9 @@ const AssetTable: React.FC<AssetTableProps> = ({
                     </Button>
                   </div>
                 </td>
-              </tr>
-            ))}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

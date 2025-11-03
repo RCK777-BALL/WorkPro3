@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { useDropzone } from "react-dropzone";
 import { X, Upload, Download } from "lucide-react";
@@ -16,9 +16,32 @@ import AssetQRCode from "@/components/qr/AssetQRCode";
 import {
   submitAssetRequest,
   normalizeAssetData,
+  type AssetRequestClient,
 } from "@/utils/assetSubmission";
 
-const defaultAssetState = {
+type AssetTypeValue = NonNullable<Asset["type"]>;
+type AssetStatusValue = NonNullable<Asset["status"]>;
+type AssetCriticalityValue = NonNullable<Asset["criticality"]>;
+
+export interface AssetFormValues {
+  name: string;
+  description: string;
+  serialNumber: string;
+  modelName: string;
+  manufacturer: string;
+  purchaseDate: string;
+  installationDate: string;
+  location: string;
+  department: string;
+  type: AssetTypeValue;
+  status: AssetStatusValue;
+  criticality: AssetCriticalityValue;
+  departmentId: string;
+  lineId: string;
+  stationId: string;
+}
+
+const defaultAssetState: AssetFormValues = {
   name: "",
   description: "",
   serialNumber: "",
@@ -31,6 +54,42 @@ const defaultAssetState = {
   type: "Electrical",
   status: "Active",
   criticality: "medium",
+  departmentId: "",
+  lineId: "",
+  stationId: "",
+};
+
+type AssetWithHierarchy = Asset & {
+  departmentId?: string;
+  lineId?: string;
+  stationId?: string;
+};
+
+const toFormValues = (source: Asset | null): AssetFormValues => {
+  if (!source) {
+    return { ...defaultAssetState };
+  }
+
+  const assetWithHierarchy = source as AssetWithHierarchy;
+
+  return {
+    ...defaultAssetState,
+    name: source.name ?? defaultAssetState.name,
+    description: source.description ?? defaultAssetState.description,
+    serialNumber: source.serialNumber ?? defaultAssetState.serialNumber,
+    modelName: source.modelName ?? defaultAssetState.modelName,
+    manufacturer: source.manufacturer ?? defaultAssetState.manufacturer,
+    purchaseDate: source.purchaseDate ?? defaultAssetState.purchaseDate,
+    installationDate: source.installationDate ?? defaultAssetState.installationDate,
+    location: source.location ?? defaultAssetState.location,
+    department: source.department ?? defaultAssetState.department,
+    type: source.type ?? defaultAssetState.type,
+    status: source.status ?? defaultAssetState.status,
+    criticality: source.criticality ?? defaultAssetState.criticality,
+    departmentId: assetWithHierarchy.departmentId ?? defaultAssetState.departmentId,
+    lineId: assetWithHierarchy.lineId ?? defaultAssetState.lineId,
+    stationId: assetWithHierarchy.stationId ?? defaultAssetState.stationId,
+  };
 };
 
 interface AssetModalProps {
@@ -39,34 +98,6 @@ interface AssetModalProps {
   asset: Asset | null;
   onUpdate: (asset: Asset) => void;
 }
-
-interface AssetResponse extends Partial<Asset> {
-  _id?: string;
-  id?: string;
-}
-
-const normalizeAssetResponse = (
-  raw: AssetResponse | undefined,
-  fallback: Asset | null
-): Asset => {
-  const base: AssetResponse = {
-    ...(fallback ?? {}),
-    ...(raw ?? {}),
-  };
-  const { _id, id: providedId, name: providedName, ...rest } = base;
-  const resolvedId = _id ?? providedId ?? fallback?.id ?? "";
-  const resolvedName = providedName ?? fallback?.name ?? "Unnamed Asset";
-
-  if (!resolvedId) {
-    throw new Error("Asset response missing identifier");
-  }
-
-  return {
-    id: resolvedId,
-    name: resolvedName,
-    ...(rest as Omit<Asset, "id" | "name">),
-  };
-};
 
 const AssetModal: React.FC<AssetModalProps> = ({
   isOpen,
@@ -80,8 +111,11 @@ const AssetModal: React.FC<AssetModalProps> = ({
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors },
-  } = useForm({ defaultValues: asset || defaultAssetState });
+  } = useForm<AssetFormValues>({
+    defaultValues: toFormValues(asset),
+  });
   const departments = useDepartmentStore((s) => s.departments);
   const linesMap = useDepartmentStore((s) => s.linesByDepartment);
   const stationsMap = useDepartmentStore((s) => s.stationsByLine);
@@ -89,20 +123,17 @@ const AssetModal: React.FC<AssetModalProps> = ({
   const fetchLines = useDepartmentStore((s) => s.fetchLines);
   const fetchStations = useDepartmentStore((s) => s.fetchStations);
   const tenantId = useAuthStore((s: AuthState) => s.user?.tenantId);
-  const [departmentId, setDepartmentId] = useState("");
-  const [lineId, setLineId] = useState("");
-  const [stationId, setStationId] = useState("");
+  const departmentId = watch("departmentId");
+  const lineId = watch("lineId");
+  const stationId = watch("stationId");
   const lines = departmentId ? linesMap[departmentId] || [] : [];
   const stations = lineId ? stationsMap[lineId] || [] : [];
   const [error, setError] = useState<string | null>(null);
   const { addToast } = useToast();
 
   useEffect(() => {
-    reset(asset || defaultAssetState);
+    reset(toFormValues(asset));
     setFiles([]);
-    setDepartmentId(asset?.departmentId ?? "");
-    setLineId(asset?.lineId ?? "");
-    setStationId(asset?.stationId ?? "");
   }, [asset, reset]);
 
   useEffect(() => {
@@ -113,24 +144,24 @@ const AssetModal: React.FC<AssetModalProps> = ({
 
   useEffect(() => {
     if (!departmentId) {
-      setLineId("");
-      setStationId("");
+      setValue("lineId", "");
+      setValue("stationId", "");
       return;
     }
     fetchLines(departmentId).catch(() => {
       addToast("Failed to load lines", "error");
     });
-  }, [departmentId, fetchLines, addToast]);
+  }, [departmentId, fetchLines, setValue, addToast]);
 
   useEffect(() => {
     if (!departmentId || !lineId) {
-      setStationId("");
+      setValue("stationId", "");
       return;
     }
     fetchStations(departmentId, lineId).catch(() => {
       addToast("Failed to load stations", "error");
     });
-  }, [departmentId, lineId, fetchStations, addToast]);
+  }, [departmentId, lineId, fetchStations, setValue, addToast]);
 
   const { getRootProps, getInputProps } = useDropzone({
     accept: {
@@ -142,25 +173,28 @@ const AssetModal: React.FC<AssetModalProps> = ({
     },
   });
 
-  const normalizeAssetResponse = (
-    data: Record<string, any> | undefined,
-    fallbackId?: string,
-  ): Asset => {
-    const payload = data ?? {};
-    const { _id, id, ...rest } = payload;
-    const resolvedId = (_id ?? id ?? fallbackId ?? "") as string;
-    return { ...(rest as Omit<Asset, "id">), id: resolvedId } as Asset;
-  };
+  const assetHttpClient = useMemo<AssetRequestClient>(() => ({
+    post: (url, data, config) =>
+      http.post(url, data, config).then((response) => ({ data: response.data })),
+    put: (url, data, config) =>
+      http.put(url, data, config).then((response) => ({ data: response.data })),
+  }), []);
 
-  const onSubmit = async (data: any) => {
+  const departmentField = register("departmentId");
+  const lineField = register("lineId");
+  const stationField = register("stationId");
+
+  const onSubmit = async (data: AssetFormValues) => {
     setError(null);
 
+    const { departmentId: formDepartmentId, lineId: formLineId, stationId: formStationId, ...rest } = data;
+
     const payload: Record<string, any> = {
-      ...data,
-      departmentId,
-      lineId,
-      stationId,
-      tenantId,
+      ...rest,
+      departmentId: formDepartmentId || undefined,
+      lineId: formLineId || undefined,
+      stationId: formStationId || undefined,
+      ...(tenantId ? { tenantId } : {}),
     };
 
     try {
@@ -168,7 +202,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
         asset,
         files,
         payload,
-        httpClient: http,
+        httpClient: assetHttpClient,
       });
 
       const fallback: Partial<Asset> = {
@@ -334,7 +368,14 @@ const AssetModal: React.FC<AssetModalProps> = ({
               <select
                 className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
                 value={departmentId}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setDepartmentId(e.target.value)}
+                onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
+                  departmentField.onChange(event);
+                  setValue("lineId", "", { shouldDirty: true, shouldValidate: true });
+                  setValue("stationId", "", { shouldDirty: true, shouldValidate: true });
+                }}
+                onBlur={departmentField.onBlur}
+                name={departmentField.name}
+                ref={departmentField.ref}
               >
                 <option value="">Select Department</option>
                 {departments.map((d) => (
@@ -351,7 +392,13 @@ const AssetModal: React.FC<AssetModalProps> = ({
               <select
                 className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
                 value={lineId}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setLineId(e.target.value)}
+                onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
+                  lineField.onChange(event);
+                  setValue("stationId", "", { shouldDirty: true, shouldValidate: true });
+                }}
+                onBlur={lineField.onBlur}
+                name={lineField.name}
+                ref={lineField.ref}
                 disabled={!departmentId}
               >
                 <option value="">Select Line</option>
@@ -369,7 +416,12 @@ const AssetModal: React.FC<AssetModalProps> = ({
               <select
                 className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
                 value={stationId}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStationId(e.target.value)}
+                onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
+                  stationField.onChange(event);
+                }}
+                onBlur={stationField.onBlur}
+                name={stationField.name}
+                ref={stationField.ref}
                 disabled={!lineId}
               >
                 <option value="">Select Station</option>

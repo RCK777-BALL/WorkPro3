@@ -27,7 +27,7 @@ interface Props {
 
 interface AutoCompleteFieldProps {
   label: string;
-  placeholder?: string;
+  placeholder: string;
   fetchOptions: (q: string) => Promise<Option[]>;
   field: ControllerRenderProps;
   fieldState: ControllerFieldState;
@@ -161,21 +161,25 @@ const AutoCompleteInput: React.FC<Props> = ({
   fetchOptions,
   rules,
   placeholder,
-}) => (
-  <Controller
-    name={name}
-    control={control}
-    rules={rules}
-    render={({ field, fieldState }) => (
-      <AutoCompleteField
-        label={label}
-        placeholder={placeholder}
-        fetchOptions={fetchOptions}
-        field={field}
-        fieldState={fieldState}
-      />
-    )}
-  />
-);
+}) => {
+  const controllerRules = rules ? (rules as RegisterOptions) : undefined;
+
+  return (
+    <Controller
+      name={name}
+      control={control}
+      {...(controllerRules ? { rules: controllerRules } : {})}
+      render={({ field, fieldState }) => (
+        <AutoCompleteField
+          label={label}
+          placeholder={placeholder ?? ""}
+          fetchOptions={fetchOptions}
+          field={field}
+          fieldState={fieldState}
+        />
+      )}
+    />
+  );
+};
 
 export default AutoCompleteInput;

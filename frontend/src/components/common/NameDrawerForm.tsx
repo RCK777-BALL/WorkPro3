@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import Button from './Button';
-import Drawer from '@/ui/Drawer';
+import Drawer from '../ui/Drawer';
 
 interface Props {
   open: boolean;
@@ -53,10 +53,15 @@ export default function NameDrawerForm({
     setBusy(true);
     setErr('');
     try {
-      await onSubmit({
+      const submissionValues: { name: string; assets?: number } = {
         name: trimmedName,
-        assets: showAssetInput ? assets : undefined,
-      });
+      };
+
+      if (showAssetInput && Number.isFinite(assets)) {
+        submissionValues.assets = assets;
+      }
+
+      await onSubmit(submissionValues);
       onClose();
     } catch (error: any) {
       setErr(error?.message || 'Something went wrong');

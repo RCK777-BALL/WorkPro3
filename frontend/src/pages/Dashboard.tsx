@@ -3,18 +3,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { format, formatDistanceToNow } from "date-fns";
+import type { LucideIcon } from "lucide-react";
 import {
-  Activity,
-  AlertTriangle,
+  Activity as ActivityLucide,
+  AlertTriangle as AlertTriangleLucide,
   ArrowUpRight,
-  CalendarClock,
-  CheckCircle2,
-  ClipboardList,
+  CalendarClock as CalendarClockLucide,
+  CheckCircle2 as CheckCircle2Lucide,
+  ClipboardList as ClipboardListLucide,
   FileDown,
-  GaugeCircle,
-  ShieldCheck,
-  Timer,
-  Wrench,
+  GaugeCircle as GaugeCircleLucide,
+  ShieldCheck as ShieldCheckLucide,
+  Timer as TimerLucide,
+  Wrench as WrenchLucide,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -124,6 +125,24 @@ type SelectOption = {
 type LineOption = SelectOption & {
   departmentId?: string;
 };
+
+type IconComponent = ComponentType<{ className?: string }>;
+
+const createIconAdapter = (Icon: LucideIcon): IconComponent => {
+  const Adapter: IconComponent = ({ className }) => <Icon className={className} />;
+  Adapter.displayName = `${Icon.displayName ?? "Lucide"}Adapter`;
+  return Adapter;
+};
+
+const ActivityIcon = createIconAdapter(ActivityLucide);
+const AlertTriangleIcon = createIconAdapter(AlertTriangleLucide);
+const CalendarClockIcon = createIconAdapter(CalendarClockLucide);
+const CheckCircle2Icon = createIconAdapter(CheckCircle2Lucide);
+const ClipboardListIcon = createIconAdapter(ClipboardListLucide);
+const GaugeCircleIcon = createIconAdapter(GaugeCircleLucide);
+const ShieldCheckIcon = createIconAdapter(ShieldCheckLucide);
+const TimerIcon = createIconAdapter(TimerLucide);
+const WrenchIcon = createIconAdapter(WrenchLucide);
 
 const STATUS_FILTERS: SelectOption[] = [
   { value: "all", label: "All statuses" },
@@ -422,7 +441,7 @@ function LivePulseSection({ metrics, loading, error, onRefresh, onNavigate }: Li
       title: "Critical alerts",
       value: metrics?.criticalAlerts ?? 0,
       tone: "border-red-400/50 bg-red-500/10",
-      icon: AlertTriangle,
+      icon: AlertTriangleIcon,
       detail:
         metrics && metrics.criticalAlerts > 0
           ? "Escalations require immediate action"
@@ -435,7 +454,7 @@ function LivePulseSection({ metrics, loading, error, onRefresh, onNavigate }: Li
       title: "Maintenance due",
       value: metrics?.maintenanceDue ?? 0,
       tone: "border-amber-300/50 bg-amber-400/10",
-      icon: CalendarClock,
+      icon: CalendarClockIcon,
       detail:
         metrics && metrics.maintenanceDue > 0
           ? "Scheduled within the next 7 days"
@@ -449,7 +468,7 @@ function LivePulseSection({ metrics, loading, error, onRefresh, onNavigate }: Li
       value: metrics?.complianceScore ?? 0,
       suffix: "%",
       tone: "border-emerald-300/50 bg-emerald-400/10",
-      icon: ShieldCheck,
+      icon: ShieldCheckIcon,
       detail:
         metrics && metrics.complianceScore >= 95
           ? "Excellent adherence this week"
@@ -462,7 +481,7 @@ function LivePulseSection({ metrics, loading, error, onRefresh, onNavigate }: Li
       title: "Technicians checked in",
       value: metrics?.techniciansCheckedIn ?? 0,
       tone: "border-sky-300/50 bg-sky-400/10",
-      icon: Wrench,
+      icon: WrenchIcon,
       detail: "Active technicians on assignments",
       decimals: 0,
       link: "/teams",
@@ -472,7 +491,7 @@ function LivePulseSection({ metrics, loading, error, onRefresh, onNavigate }: Li
       title: "Permits pending approval",
       value: metrics?.permitsRequireApproval ?? 0,
       tone: "border-indigo-300/50 bg-indigo-400/10",
-      icon: CheckCircle2,
+      icon: CheckCircle2Icon,
       detail: "Awaiting management review",
       decimals: 0,
       link: "/permits?status=pending",
@@ -578,14 +597,14 @@ type RecentActivityProps = {
 };
 
 function RecentActivitySection({ items, loading, error, onRefresh, onNavigate }: RecentActivityProps) {
-  const resolveIcon = (type: string) => {
+  const resolveIcon = (type: string): IconComponent => {
     const normalized = type.toLowerCase();
-    if (normalized.includes("work")) return ClipboardList;
-    if (normalized.includes("permit")) return CheckCircle2;
-    if (normalized.includes("pm")) return CalendarClock;
-    if (normalized.includes("compliance")) return ShieldCheck;
-    if (normalized.includes("asset")) return GaugeCircle;
-    return Activity;
+    if (normalized.includes("work")) return ClipboardListIcon;
+    if (normalized.includes("permit")) return CheckCircle2Icon;
+    if (normalized.includes("pm")) return CalendarClockIcon;
+    if (normalized.includes("compliance")) return ShieldCheckIcon;
+    if (normalized.includes("asset")) return GaugeCircleIcon;
+    return ActivityIcon;
   };
 
   return (
@@ -1040,11 +1059,18 @@ export default function Dashboard() {
         apiUnavailableRef.current = false;
         setDepartments(deptRes.data.map((item) => ({ value: item._id, label: item.name })));
         setLines(
-          lineRes.data.map((line) => ({
-            value: line._id,
-            label: line.name,
-            departmentId: line.departmentId,
-          })),
+          lineRes.data.map((line) => {
+            const option: LineOption = {
+              value: line._id,
+              label: line.name,
+            };
+
+            if (line.departmentId) {
+              option.departmentId = line.departmentId;
+            }
+
+            return option;
+          }),
         );
         setFiltersHydrated(true);
       } catch (error) {
@@ -1212,7 +1238,7 @@ export default function Dashboard() {
         title: "Open work orders",
         description: "Currently active tasks awaiting completion",
         value: data.openWorkOrders,
-        icon: ClipboardList,
+        icon: ClipboardListIcon,
         gradient: "from-indigo-900 via-indigo-800 to-indigo-600",
         trend: trends.woBacklog,
         href: "/workorders?status=open",
@@ -1222,7 +1248,7 @@ export default function Dashboard() {
         title: "Overdue work orders",
         description: "Items past their due dates",
         value: data.overdueWorkOrders,
-        icon: AlertTriangle,
+        icon: AlertTriangleIcon,
         gradient: "from-rose-900 via-rose-800 to-rose-600",
         trend: trends.woBacklog,
         href: "/workorders?status=overdue",
@@ -1232,7 +1258,7 @@ export default function Dashboard() {
         title: "PM due in 7 days",
         description: "Preventive tasks scheduled this week",
         value: data.pmDueNext7Days,
-        icon: CalendarClock,
+        icon: CalendarClockIcon,
         gradient: "from-amber-900 via-amber-700 to-amber-500",
         trend: trends.pmCompliance,
         href: "/pm?filter=upcoming",
@@ -1243,7 +1269,7 @@ export default function Dashboard() {
         description: "Preventive maintenance adherence",
         value: data.complianceScore,
         suffix: "%",
-        icon: ShieldCheck,
+        icon: ShieldCheckIcon,
         gradient: "from-emerald-900 via-emerald-700 to-emerald-500",
         trend: trends.pmCompliance.map((value) => Number((value * 100).toFixed(1))),
         decimals: 1,
@@ -1255,7 +1281,7 @@ export default function Dashboard() {
         description: "Average resolution time for corrective work",
         value: data.mttr,
         suffix: "h",
-        icon: Timer,
+        icon: TimerIcon,
         gradient: "from-cyan-900 via-cyan-700 to-cyan-500",
         trend: trends.mttr,
         decimals: 1,
@@ -1267,7 +1293,7 @@ export default function Dashboard() {
         description: `Overall uptime • Critical: ${data.assetAvailabilityCritical}%`,
         value: data.assetAvailability,
         suffix: "%",
-        icon: GaugeCircle,
+        icon: GaugeCircleIcon,
         gradient: "from-blue-900 via-blue-700 to-cyan-500",
         trend: trends.wrenchTimePct,
         decimals: 1,
@@ -1278,7 +1304,7 @@ export default function Dashboard() {
         title: "Open permits",
         description: "Permits awaiting approval or closure",
         value: data.permitsOpen,
-        icon: Activity,
+        icon: ActivityIcon,
         gradient: "from-purple-900 via-purple-700 to-fuchsia-600",
         trend: trends.costMTD,
         href: "/permits",

@@ -137,12 +137,17 @@ const extractPlantNode = (plant: unknown): PlantNode | undefined => {
       return undefined;
     }
     const id = candidate._id instanceof Types.ObjectId ? candidate._id.toString() : String(candidate._id);
-    return {
-      _id: id,
-      name: candidate.name ?? undefined,
-      location: candidate.location ?? undefined,
-      description: candidate.description ?? undefined,
-    };
+    const node: PlantNode = { _id: id };
+    if (typeof candidate.name === 'string') {
+      node.name = candidate.name;
+    }
+    if (typeof candidate.location === 'string') {
+      node.location = candidate.location;
+    }
+    if (typeof candidate.description === 'string') {
+      node.description = candidate.description;
+    }
+    return node;
   }
 
   return undefined;
@@ -169,26 +174,32 @@ const buildDepartmentNodes = async (
     .exec();
 
   if (!includeLines) {
-    return departments.map((dept) => ({
-      _id: dept._id.toString(),
-      name: dept.name,
-      notes: dept.notes ?? '',
-      description: dept.notes ?? '',
-      plant: extractPlantNode(dept.plant),
-      lines: [],
-    }));
+    return departments.map((dept) => {
+      const plantNode = extractPlantNode(dept.plant);
+      return {
+        _id: dept._id.toString(),
+        name: dept.name,
+        notes: dept.notes ?? '',
+        description: dept.notes ?? '',
+        ...(plantNode ? { plant: plantNode } : {}),
+        lines: [],
+      };
+    });
   }
 
   const deptIds = departments.map((dept) => dept._id);
   if (deptIds.length === 0) {
-    return departments.map((dept) => ({
-      _id: dept._id.toString(),
-      name: dept.name,
-      notes: dept.notes ?? '',
-      description: dept.notes ?? '',
-      plant: extractPlantNode(dept.plant),
-      lines: [],
-    }));
+    return departments.map((dept) => {
+      const plantNode = extractPlantNode(dept.plant);
+      return {
+        _id: dept._id.toString(),
+        name: dept.name,
+        notes: dept.notes ?? '',
+        description: dept.notes ?? '',
+        ...(plantNode ? { plant: plantNode } : {}),
+        lines: [],
+      };
+    });
   }
 
   const lineFilter: FilterQuery<LineDoc> = {
@@ -325,12 +336,13 @@ const buildDepartmentNodes = async (
     const deptId = dept._id.toString();
     const lines = lineMap.get(deptId) ?? [];
     lines.sort((a, b) => a.name.localeCompare(b.name));
+    const plantNode = extractPlantNode(dept.plant);
     return {
       _id: deptId,
       name: dept.name,
       notes: dept.notes ?? '',
       description: dept.notes ?? '',
-      plant: extractPlantNode(dept.plant),
+      ...(plantNode ? { plant: plantNode } : {}),
       lines,
     };
   });

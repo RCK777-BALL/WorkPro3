@@ -2,11 +2,13 @@
  * SPDX-License-Identifier: MIT
  */
 
+import type { AxiosRequestConfig } from 'axios';
+
 import type { Asset } from '../types';
 
 export interface AssetRequestClient {
-  post: (url: string, data?: unknown, config?: unknown) => Promise<{ data: any }>;
-  put: (url: string, data?: unknown, config?: unknown) => Promise<{ data: any }>;
+  post: (url: string, data?: unknown, config?: AxiosRequestConfig) => Promise<{ data: any }>;
+  put: (url: string, data?: unknown, config?: AxiosRequestConfig) => Promise<{ data: any }>;
 }
 
 export interface SubmitAssetRequestOptions {

@@ -241,7 +241,7 @@ const Departments = () => {
   const handleDepartmentSave = async (values: DepartmentFormValues) => {
     setDepartmentSaving(true);
     try {
-      const { plantId } = values;
+      const { plantId, plant } = values;
       if (departmentEditing) {
         const departmentPayload: { name: string; description?: string; plantId?: string } = {
           name: values.name,
@@ -380,6 +380,7 @@ const Departments = () => {
           name: values.name,
           description: values.description ?? currentDepartment.description,
           notes: values.description ?? currentDepartment.notes,
+          plant: plant ?? currentDepartment.plant,
         };
         replaceDepartment(currentDepartment);
         addToast('Department updated', 'success');

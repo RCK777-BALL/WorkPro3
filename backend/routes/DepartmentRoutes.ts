@@ -11,7 +11,7 @@ import Department, { type DepartmentDoc } from '../models/Department';
 import Line, { type LineDoc } from '../models/Line';
 import Station, { type StationDoc } from '../models/Station';
 import Asset, { type AssetDoc } from '../models/Asset';
-import type { PlantDoc } from '../models/Plant';
+import Plant, { type PlantDoc } from '../models/Plant';
 import { requireAuth } from '../middleware/authMiddleware';
 import { departmentValidators } from '../validators/departmentValidators';
 import { validate } from '../middleware/validationMiddleware';
@@ -655,32 +655,75 @@ const updateDepartment: AuthedRequestHandler<
   { name?: string; notes?: string; description?: string }
 > = async (req, res, next) => {
   try {
-    const updates: Record<string, unknown> = {};
-    if (typeof req.body?.name === 'string') {
-      updates.name = req.body.name;
-    }
-    if (typeof req.body?.description === 'string') {
-      updates.notes = req.body.description;
-    } else if (typeof req.body?.notes === 'string') {
-      updates.notes = req.body.notes;
-    }
-    const department = await Department.findOneAndUpdate(
-      { _id: req.params.id, tenantId: req.tenantId },
-      { $set: updates },
-      { new: true },
-    );
+    const authedReq = req as AuthedRequest;
+    const department = await Department.findOne({
+      _id: req.params.id,
+      tenantId: authedReq.tenantId,
+    });
+
     if (!department) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    const payload: DepartmentNode = {
-      _id: department._id.toString(),
-      name: department.name,
-      notes: department.notes ?? '',
-      description: department.notes ?? '',
-      lines: [],
-    };
-    sendResponse(res, payload, null, 200, 'Department updated');
+
+    if (typeof req.body?.name === 'string') {
+      department.name = req.body.name;
+    }
+
+    if (typeof req.body?.description === 'string') {
+      department.notes = req.body.description;
+    } else if (typeof req.body?.notes === 'string') {
+      department.notes = req.body.notes;
+    }
+
+    const targetPlantId = resolvePlantId(authedReq);
+    const currentPlantId = department.plant?.toString();
+    let updatedPlant: PlantDoc | null = null;
+
+    if (targetPlantId && targetPlantId !== currentPlantId) {
+      updatedPlant = await Plant.findOne({
+        _id: targetPlantId,
+        ...(authedReq.tenantId ? { tenantId: authedReq.tenantId } : {}),
+      });
+
+      if (!updatedPlant) {
+        sendResponse(res, null, 'Plant not found', 404);
+        return;
+      }
+
+      department.plant = updatedPlant._id;
+      if (authedReq.siteId) {
+        department.siteId = authedReq.siteId as any;
+      }
+    }
+
+    await department.save();
+
+    if (updatedPlant) {
+      const siteUpdate = authedReq.siteId ? { siteId: authedReq.siteId as any } : {};
+      await Promise.all([
+        Line.updateMany(
+          { departmentId: department._id, tenantId: authedReq.tenantId },
+          { $set: { plant: updatedPlant._id, ...siteUpdate } },
+        ),
+        Station.updateMany(
+          { departmentId: department._id, tenantId: authedReq.tenantId },
+          { $set: { plant: updatedPlant._id, ...siteUpdate } },
+        ),
+        Asset.updateMany(
+          { departmentId: department._id, tenantId: authedReq.tenantId },
+          { $set: { plant: updatedPlant._id, ...siteUpdate } },
+        ),
+      ]);
+    }
+
+    const node = await fetchDepartmentNode(authedReq, department._id.toString());
+    if (!node) {
+      sendResponse(res, null, 'Failed to load department', 500);
+      return;
+    }
+
+    sendResponse(res, node, null, 200, 'Department updated');
   } catch (err) {
     next(err);
   }

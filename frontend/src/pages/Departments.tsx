@@ -3,7 +3,20 @@
  */
 
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Building2, Download, Factory, Filter, Plus, Upload } from 'lucide-react';
+import {
+  AlertTriangle,
+  Boxes,
+  Building2,
+  Download,
+  Factory,
+  Filter,
+  GitBranch,
+  Layers,
+  Plus,
+  RefreshCcw,
+  Search,
+  Upload,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { saveAs } from 'file-saver';
 import Button from '@/components/common/Button';
@@ -38,10 +51,18 @@ import type {
   StationWithAssets,
 } from '@/types';
 import { useToast } from '@/context/ToastContext';
+import { cn } from '@/utils/cn';
 
 type AssetCategory = Asset['type'] | 'All';
 
 const PAGE_SIZE = 5;
+const ASSET_TYPE_OPTIONS: Array<{ value: AssetCategory; label: string }> = [
+  { value: 'All', label: 'All assets' },
+  { value: 'Electrical', label: 'Electrical' },
+  { value: 'Mechanical', label: 'Mechanical' },
+  { value: 'Tooling', label: 'Tooling' },
+  { value: 'Interface', label: 'Interface' },
+];
 
 const Departments = () => {
   const { addToast } = useToast();
@@ -125,6 +146,36 @@ const Departments = () => {
 
   const normalizedSearch = search.trim().toLowerCase();
 
+  const hierarchyStats = useMemo(() => {
+    const plantIds = new Set<string>();
+    let lines = 0;
+    let stations = 0;
+    let assets = 0;
+
+    departments.forEach((department) => {
+      const plantId = department.plant?.id;
+      if (plantId && plantId !== 'unassigned') {
+        plantIds.add(plantId);
+      }
+
+      department.lines.forEach((line) => {
+        lines += 1;
+        line.stations.forEach((station) => {
+          stations += 1;
+          assets += station.assets.length;
+        });
+      });
+    });
+
+    return {
+      plants: plantIds.size,
+      departments: departments.length,
+      lines,
+      stations,
+      assets,
+    };
+  }, [departments]);
+
   const filteredDepartments = useMemo(() => {
     return departments.filter((department) => {
       const plantName = department.plant?.name?.toLowerCase() ?? '';
@@ -174,6 +225,18 @@ const Departments = () => {
     const start = (currentPage - 1) * PAGE_SIZE;
     return filteredDepartments.slice(start, start + PAGE_SIZE);
   }, [filteredDepartments, currentPage]);
+
+  const hasActiveFilters = normalizedSearch.length > 0 || categoryFilter !== 'All';
+  const hasDepartments = departments.length > 0;
+  const hasUnassignedDepartments = useMemo(
+    () => departments.some((department) => !department.plant || department.plant.id === 'unassigned'),
+    [departments],
+  );
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setCategoryFilter('All');
+  };
 
   const handleDepartmentSave = async (values: DepartmentFormValues) => {
     setDepartmentSaving(true);
@@ -593,51 +656,66 @@ const Departments = () => {
 
   return (
     <div className="space-y-6">
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-900 via-indigo-800 to-blue-700 p-6 text-white shadow">
-        <div className="flex flex-col gap-6">
-          <div className="flex items-start gap-4">
-            <span className="rounded-xl bg-white/20 p-3">
-              <Building2 className="h-6 w-6" />
-            </span>
-            <div>
-              <h1 className="text-2xl font-semibold">Departments</h1>
-              <p className="mt-1 max-w-2xl text-sm text-white/80">
-                Organize your production hierarchy across departments, lines, stations, and their assets.
-              </p>
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary-900 via-indigo-800 to-blue-700 p-6 text-white shadow">
+        <div className="absolute -right-24 top-1/2 hidden h-48 w-48 -translate-y-1/2 rounded-full bg-white/10 blur-3xl md:block" />
+        <div className="relative z-10 flex flex-col gap-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex items-start gap-4">
+              <span className="rounded-xl bg-white/20 p-3">
+                <Building2 className="h-6 w-6" />
+              </span>
+              <div className="space-y-2">
+                <div>
+                  <h1 className="text-2xl font-semibold">Departments</h1>
+                  <p className="mt-1 max-w-2xl text-sm text-white/80">
+                    Audit, enrich, and maintain the full production hierarchy so frontline teams always know where work lives.
+                  </p>
+                </div>
+                {hasUnassignedDepartments && (
+                  <div className="flex items-start gap-2 rounded-xl border border-white/30 bg-white/10 p-3 text-sm backdrop-blur">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-300" />
+                    <p className="text-white/90">
+                      Some departments are not linked to a plant. Assign them to keep planning, maintenance, and reporting aligned.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant="secondary"
+                size="sm"
                 onClick={() => navigate('/plants')}
-                className="w-full sm:w-auto"
+                className="backdrop-blur-sm bg-white/15 text-white hover:bg-white/20"
               >
                 <Factory className="mr-2 h-4 w-4" />
-                Plant
+                Manage plants
               </Button>
               <Button
-                variant="secondary"
+                variant="primary"
+                size="sm"
                 onClick={startDepartmentCreation}
-                className="w-full sm:w-auto"
+                className="bg-white text-primary-700 hover:bg-white/90"
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Department
+                New department
               </Button>
               <Button
                 variant="outline"
+                size="sm"
                 onClick={handleImportClick}
                 loading={importing}
-                className="w-full sm:w-auto"
+                className="border-white/40 bg-white/10 text-white hover:bg-white/20"
               >
                 {!importing && <Upload className="mr-2 h-4 w-4" />}
                 Import Excel
               </Button>
               <Button
                 variant="outline"
+                size="sm"
                 onClick={handleExport}
                 loading={exporting}
-                className="w-full sm:w-auto"
+                className="border-white/40 bg-white/10 text-white hover:bg-white/20"
               >
                 {!exporting && <Download className="mr-2 h-4 w-4" />}
                 Export Excel
@@ -651,45 +729,164 @@ const Departments = () => {
               onChange={handleImportChange}
             />
           </div>
+
+          {hasDepartments && (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              {[{
+                label: 'Plants represented',
+                value: hierarchyStats.plants,
+                icon: <Factory className="h-4 w-4" />,
+              },
+              {
+                label: 'Departments',
+                value: hierarchyStats.departments,
+                icon: <Building2 className="h-4 w-4" />,
+              },
+              {
+                label: 'Lines',
+                value: hierarchyStats.lines,
+                icon: <GitBranch className="h-4 w-4" />,
+              },
+              {
+                label: 'Stations',
+                value: hierarchyStats.stations,
+                icon: <Layers className="h-4 w-4" />,
+              },
+              {
+                label: 'Assets tracked',
+                value: hierarchyStats.assets,
+                icon: <Boxes className="h-4 w-4" />,
+              }].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="flex items-center justify-between rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm backdrop-blur"
+                >
+                  <div className="space-y-1">
+                    <span className="text-xs uppercase tracking-wide text-white/70">{stat.label}</span>
+                    <p className="text-lg font-semibold">{stat.value.toLocaleString()}</p>
+                  </div>
+                  <span className="rounded-full bg-white/20 p-2 text-white">{stat.icon}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-1 items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800">
+      <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex flex-1 items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
+            <Search className="h-4 w-4 text-neutral-500" />
             <input
               value={search}
               onChange={(event: ChangeEvent<HTMLInputElement>) => setSearch(event.target.value)}
-              placeholder="Search departments"
+              placeholder="Search departments, lines, stations, or assets"
               className="w-full border-none bg-transparent text-sm outline-none placeholder:text-neutral-400 dark:text-neutral-100"
             />
           </div>
-          <div className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800">
-            <Filter className="h-4 w-4 text-neutral-500" />
-            <select
-              value={categoryFilter}
-              onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-                setCategoryFilter(event.target.value as AssetCategory)
-              }
-              className="bg-transparent text-sm outline-none dark:text-neutral-100"
-            >
-              <option value="All">All asset types</option>
-              <option value="Electrical">Electrical</option>
-              <option value="Mechanical">Mechanical</option>
-              <option value="Tooling">Tooling</option>
-              <option value="Interface">Interface</option>
-            </select>
+          <div className="flex w-full flex-col gap-3 lg:w-auto">
+            <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+              <Filter className="h-4 w-4" /> Asset type focus
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {ASSET_TYPE_OPTIONS.map((option) => {
+                const isActive = option.value === categoryFilter;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setCategoryFilter(option.value)}
+                    className={cn(
+                      'rounded-full border px-3 py-1.5 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-neutral-900',
+                      isActive
+                        ? 'border-primary-500 bg-primary-600 text-white shadow-sm'
+                        : 'border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700',
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
+        </div>
+
+        <div className="mt-6 flex flex-col gap-3 border-t border-neutral-200 pt-4 text-sm text-neutral-500 dark:border-neutral-800 dark:text-neutral-400 sm:flex-row sm:items-center sm:justify-between">
+          <span>
+            {loading
+              ? 'Loading hierarchy…'
+              : filteredDepartments.length === 0
+              ? 'No departments match the current view.'
+              : `Showing ${(currentPage - 1) * PAGE_SIZE + 1}–${Math.min(
+                  currentPage * PAGE_SIZE,
+                  filteredDepartments.length,
+                )} of ${filteredDepartments.length} departments`}
+          </span>
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={handleResetFilters}>
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              Reset filters
+            </Button>
+          )}
         </div>
 
         <div className="relative mt-6">
           {loading ? (
-            <div className="flex justify-center py-16">
-              <LoadingSpinner />
+            <div className="space-y-4">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="animate-pulse rounded-2xl border border-neutral-200 bg-neutral-50 p-6 dark:border-neutral-800 dark:bg-neutral-800/60"
+                >
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="space-y-2">
+                      <div className="h-4 w-40 rounded bg-neutral-200 dark:bg-neutral-700" />
+                      <div className="h-3 w-64 rounded bg-neutral-200 dark:bg-neutral-700" />
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="h-8 w-20 rounded bg-neutral-200 dark:bg-neutral-700" />
+                      <div className="h-8 w-20 rounded bg-neutral-200 dark:bg-neutral-700" />
+                    </div>
+                  </div>
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {Array.from({ length: 3 }).map((__, idx) => (
+                      <div
+                        // eslint-disable-next-line react/no-array-index-key
+                        key={idx}
+                        className="h-20 rounded-lg border border-dashed border-neutral-200 bg-white/60 dark:border-neutral-700 dark:bg-neutral-900/40"
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           ) : error ? (
-            <div className="rounded-lg border border-error-200 bg-error-50 p-4 text-sm text-error-700 dark:border-error-800 dark:bg-error-950/40 dark:text-error-200">
-              {error}
+            <div className="flex flex-col items-start gap-3 rounded-2xl border border-error-200 bg-error-50 p-6 text-sm text-error-700 dark:border-error-800 dark:bg-error-950/40 dark:text-error-200">
+              <p>{error}</p>
+              <Button variant="outline" size="sm" onClick={() => void loadDepartments()}>
+                <RefreshCcw className="mr-2 h-4 w-4" />
+                Try again
+              </Button>
+            </div>
+          ) : !hasDepartments ? (
+            <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 p-12 text-center dark:border-neutral-700 dark:bg-neutral-900/60">
+              <Building2 className="h-10 w-10 text-neutral-400" />
+              <div className="space-y-2">
+                <h2 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100">Start mapping your production network</h2>
+                <p className="max-w-md text-sm text-neutral-500 dark:text-neutral-400">
+                  Import from Excel or build departments manually to give technicians a dependable source of truth for every asset location.
+                </p>
+              </div>
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button variant="primary" onClick={startDepartmentCreation}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create first department
+                </Button>
+                <Button variant="outline" onClick={handleImportClick}>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Import from Excel
+                </Button>
+              </div>
             </div>
           ) : (
             <DepartmentTable
@@ -725,7 +922,7 @@ const Departments = () => {
           )}
         </div>
 
-        {!loading && !error && filteredDepartments.length > PAGE_SIZE && (
+        {!loading && !error && hasDepartments && filteredDepartments.length > PAGE_SIZE && (
           <div className="mt-6 flex items-center justify-between border-t border-neutral-200 pt-4 text-sm text-neutral-500 dark:border-neutral-800 dark:text-neutral-400">
             <span>
               Showing {(currentPage - 1) * PAGE_SIZE + 1}–

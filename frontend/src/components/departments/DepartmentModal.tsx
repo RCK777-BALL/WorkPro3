@@ -5,7 +5,7 @@
 import { type ChangeEvent, type FormEvent, useEffect, useState } from 'react';
 import SlideOver from '@/components/common/SlideOver';
 import Button from '@/components/common/Button';
-import type { DepartmentHierarchy } from '@/types';
+import type { DepartmentHierarchy, PlantSummary } from '@/types';
 import http from '@/lib/http';
 
 export type DepartmentFormStation = {
@@ -25,6 +25,7 @@ export type DepartmentFormValues = {
   name: string;
   description?: string;
   plantId: string;
+  plant?: PlantSummary;
   lines: DepartmentFormLine[];
 };
 
@@ -52,7 +53,9 @@ const DepartmentModal = ({
   const [lineErrors, setLineErrors] = useState<string[]>([]);
   const [stationErrors, setStationErrors] = useState<string[][]>([]);
   const [plantId, setPlantId] = useState('');
-  const [plants, setPlants] = useState<Array<{ id: string; name: string }>>([]);
+  const [plants, setPlants] = useState<
+    Array<{ id: string; name: string; location?: string; description?: string }>
+  >([]);
   const [plantsLoading, setPlantsLoading] = useState(false);
   const [plantTouched, setPlantTouched] = useState(false);
   const [plantLoadError, setPlantLoadError] = useState<string | null>(null);
@@ -89,13 +92,23 @@ const DepartmentModal = ({
     setPlantsLoading(true);
     setPlantLoadError(null);
     void http
-      .get<Array<{ _id: string; name: string }>>('/plants')
+      .get<Array<{ _id: string; name: string; location?: string; description?: string }>>('/plants')
       .then((response) => {
         if (!active) return;
-        const options = response.data.map((plant) => ({ id: plant._id, name: plant.name }));
+        const options = response.data.map((plant) => ({
+          id: plant._id,
+          name: plant.name,
+          location: plant.location,
+          description: plant.description,
+        }));
         const currentPlantId = initial?.plant?.id ?? '';
         if (currentPlantId && !options.some((option) => option.id === currentPlantId)) {
-          options.unshift({ id: currentPlantId, name: initial?.plant?.name ?? 'Current Plant' });
+          options.unshift({
+            id: currentPlantId,
+            name: initial?.plant?.name ?? 'Current Plant',
+            location: initial?.plant?.location,
+            description: initial?.plant?.description,
+          });
         }
         setPlants(options);
         if (currentPlantId) {
@@ -153,10 +166,20 @@ const DepartmentModal = ({
       return;
     }
 
+    const selectedPlant = plants.find((plant) => plant.id === plantId);
+
     void onSave({
       name: name.trim(),
       description: description.trim() || undefined,
       plantId,
+      plant: selectedPlant
+        ? {
+            id: selectedPlant.id,
+            name: selectedPlant.name,
+            location: selectedPlant.location,
+            description: selectedPlant.description,
+          }
+        : undefined,
       lines: trimmedLines.map(({ id, key, name, stations }) => ({
         id,
         key,

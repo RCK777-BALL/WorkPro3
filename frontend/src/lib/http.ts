@@ -46,6 +46,15 @@ const http = axios.create({
   withCredentials: true,
 });
 
+const hasHeader = (headers: AxiosRequestHeaders, name: string): boolean => {
+  const normalized = name.toLowerCase();
+  const headerBag = headers as { has?: (header: string) => boolean };
+  if (typeof headerBag.has === 'function') {
+    return Boolean(headerBag.has(name) || headerBag.has(normalized));
+  }
+  return Object.keys(headers).some((key) => key.toLowerCase() === normalized);
+};
+
 http.interceptors.request.use((config) => {
   if (config.baseURL && typeof config.url === 'string' && !/^https?:\/\//i.test(config.url)) {
     const baseHasTrailingSlash = config.baseURL.endsWith('/');
@@ -64,7 +73,9 @@ http.interceptors.request.use((config) => {
   const token =
     safeLocalStorage.getItem(TOKEN_KEY) ?? safeLocalStorage.getItem(FALLBACK_TOKEN_KEY);
   if (tenantId) headers['x-tenant-id'] = tenantId;
-  if (siteId) headers['x-site-id'] = siteId;
+  if (siteId && !hasHeader(headers, 'x-site-id')) {
+    headers['x-site-id'] = siteId;
+  }
   if (token) headers['Authorization'] = `Bearer ${token}`;
   config.headers = headers;
 

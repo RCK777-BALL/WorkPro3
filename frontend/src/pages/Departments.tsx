@@ -243,7 +243,7 @@ const Departments = () => {
     try {
       const { plantId, plant } = values;
       if (departmentEditing) {
-        const departmentPayload: { name: string; description?: string; plantId?: string } = {
+        const departmentPayload: { name: string; description?: string | null; plantId?: string } = {
           name: values.name,
           plantId,
         };
@@ -375,17 +375,22 @@ const Departments = () => {
           }
         }
 
+        const descriptionProvided = values.description !== undefined;
+        const nextDescription =
+          values.description === null
+            ? ''
+            : values.description ?? currentDepartment.description ?? '';
+
         currentDepartment = {
           ...currentDepartment,
           name: values.name,
-          description: values.description ?? currentDepartment.description,
-          notes: values.description ?? currentDepartment.notes,
+          ...(descriptionProvided ? { description: nextDescription, notes: nextDescription } : {}),
           plant: plant ?? currentDepartment.plant,
         };
         replaceDepartment(currentDepartment);
         addToast('Department updated', 'success');
       } else {
-        const departmentPayload: { name: string; description?: string; plantId?: string } = {
+        const departmentPayload: { name: string; description?: string | null; plantId?: string } = {
           name: values.name,
           plantId,
         };

@@ -23,7 +23,7 @@ export type DepartmentFormLine = {
 
 export type DepartmentFormValues = {
   name: string;
-  description?: string;
+  description?: string | null;
   plantId: string;
   plant?: PlantSummary;
   lines: DepartmentFormLine[];
@@ -168,9 +168,12 @@ const DepartmentModal = ({
 
     const selectedPlant = plants.find((plant) => plant.id === plantId);
 
+    const trimmedDescription = description.trim();
+    const normalizedDescription = trimmedDescription.length > 0 ? trimmedDescription : null;
+
     void onSave({
       name: name.trim(),
-      description: description.trim() || undefined,
+      description: normalizedDescription,
       plantId,
       plant: selectedPlant
         ? {

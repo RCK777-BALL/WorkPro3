@@ -30,17 +30,23 @@ router.post('/', async (req: AuthedRequest, res, next) => {
     }
     const { name, location, description } = req.body as {
       name?: string;
-      location?: string;
-      description?: string;
+      location?: string | null;
+      description?: string | null;
     };
     if (!name || !name.trim()) {
       res.status(400).json({ error: 'Plant name is required' });
       return;
     }
+    const trimmedName = name.trim();
+    const normalizedLocation =
+      typeof location === 'string' ? location.trim() || undefined : undefined;
+    const normalizedDescription =
+      typeof description === 'string' ? description.trim() || undefined : undefined;
+
     const plant = await Plant.create({
-      name: name.trim(),
-      location,
-      description,
+      name: trimmedName,
+      location: normalizedLocation,
+      description: normalizedDescription,
       tenantId,
     });
     res.status(201).json({ ...plant.toObject(), _id: plant._id.toString() });
@@ -57,13 +63,14 @@ router.put('/:id', async (req: AuthedRequest, res, next) => {
       return;
     }
 
-    const { name, location, description } = req.body as {
+  const { name, location, description } = req.body as {
       name?: string;
-      location?: string;
-      description?: string;
+      location?: string | null;
+      description?: string | null;
     };
 
-    const updates: Record<string, unknown> = {};
+    const setOperations: Record<string, unknown> = {};
+    const unsetOperations: Record<string, 1> = {};
 
     if (typeof name === 'string') {
       const trimmedName = name.trim();
@@ -71,25 +78,51 @@ router.put('/:id', async (req: AuthedRequest, res, next) => {
         res.status(400).json({ error: 'Plant name is required' });
         return;
       }
-      updates.name = trimmedName;
+      setOperations.name = trimmedName;
     }
 
-    if (typeof location === 'string') {
-      updates.location = location.trim();
+    if (Object.prototype.hasOwnProperty.call(req.body, 'location')) {
+      if (typeof location === 'string') {
+        const trimmedLocation = location.trim();
+        if (trimmedLocation) {
+          setOperations.location = trimmedLocation;
+        } else {
+          unsetOperations.location = 1;
+        }
+      } else if (location === null) {
+        unsetOperations.location = 1;
+      }
     }
 
-    if (typeof description === 'string') {
-      updates.description = description.trim();
+    if (Object.prototype.hasOwnProperty.call(req.body, 'description')) {
+      if (typeof description === 'string') {
+        const trimmedDescription = description.trim();
+        if (trimmedDescription) {
+          setOperations.description = trimmedDescription;
+        } else {
+          unsetOperations.description = 1;
+        }
+      } else if (description === null) {
+        unsetOperations.description = 1;
+      }
     }
 
-    if (Object.keys(updates).length === 0) {
+    if (Object.keys(setOperations).length === 0 && Object.keys(unsetOperations).length === 0) {
       res.status(400).json({ error: 'No updates provided' });
       return;
     }
 
+    const updateOps: Record<string, Record<string, unknown>> = {};
+    if (Object.keys(setOperations).length > 0) {
+      updateOps.$set = setOperations;
+    }
+    if (Object.keys(unsetOperations).length > 0) {
+      updateOps.$unset = unsetOperations;
+    }
+
     const plant = await Plant.findOneAndUpdate(
       { _id: req.params.id, tenantId },
-      { $set: updates },
+      updateOps,
       { new: true },
     );
 

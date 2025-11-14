@@ -1,6 +1,16 @@
 export type { Asset as SharedAsset } from '@shared/asset';
 export type { WorkOrder as SharedWorkOrder } from '@shared/workOrder';
-export type { InventoryItem, InventoryUpdatePayload } from '@shared/inventory';
+export type {
+  InventoryItem,
+  InventoryUpdatePayload,
+  Part,
+  VendorSummary,
+  PurchaseOrder,
+  PurchaseOrderPayload,
+  InventoryAlert,
+} from '@shared/inventory';
+
+export type Vendor = VendorSummary;
 export type { UploadedFile, UploadResponse } from '@shared/uploads';
 export type { ApiResult } from '@shared/http';
 export type {
@@ -168,29 +178,6 @@ export interface NewWorkOrder {
   department: string;
   importance: 'low' | 'medium' | 'high' | 'severe';
   dateCreated: string;
-}
-
-export interface Part {
-  id: string;
-  name: string;
-  description?: string;
-  category?: string;
-  sku: string;
-  location?: string;
-  quantity: number;
-  unitCost: number;
-  reorderPoint: number;
-  reorderThreshold?: number;
-  lastRestockDate?: string;
-  vendor?: string;
-  lastOrderDate: string;
-  image?: string;
-}
-
-export interface Vendor {
-  id: string;
-  name: string;
-  contact?: string;
 }
 
 export type RepeatConfig = {

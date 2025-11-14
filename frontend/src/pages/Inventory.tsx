@@ -2,275 +2,65 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Plus, Search, Download, Upload, AlertTriangle, QrCode } from 'lucide-react';
-import Button from '@/components/common/Button';
-import InventoryTable from '@/components/inventory/InventoryTable';
-import InventoryModal, { type InventorySubmission } from '@/components/inventory/InventoryModal';
-import InventoryMetrics from '@/components/inventory/InventoryMetrics';
-import InventoryScanModal from '@/components/inventory/InventoryScanModal';
-import { exportToExcel, exportToPDF } from '@/utils/export';
-import http from '@/lib/http';
-import type { Part } from '@/types';
-import { normalizeInventoryCollection } from '@/utils/parts';
+import { ClipboardList, Package2, ShieldAlert } from 'lucide-react';
 
-const Inventory: React.FC = () => {
-  const [search, setSearch] = useState('');
-  const [selectedPart, setSelectedPart] = useState<Part | null>(null);
-  const [isModalOpen, setModalOpen] = useState(false);
-  const [isScanOpen, setScanOpen] = useState(false);
-  const [initialData, setInitialData] = useState<Partial<Part> | undefined>();
-  const [parts, setParts] = useState<Part[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [modalError, setModalError] = useState<string | null>(null);
-  const [vendors, setVendors] = useState<{ id: string; name: string }[]>([]);
-  const [vendorFilter, setVendorFilter] = useState('');
-  const [belowMinOnly, setBelowMinOnly] = useState(false);
+import {
+  AlertsPanel,
+  PartsTableView,
+  PdfExportPanel,
+  PurchaseOrderBuilder,
+  VendorListPanel,
+  useAlertsQuery,
+  usePartsQuery,
+} from '@/features/inventory';
 
-  const fetchParts = useCallback(async () => {
-    try {
-      const res = await http.get('/inventory');
-      setParts(normalizeInventoryCollection(res.data));
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching inventory:', err);
-      setError('Failed to load inventory');
-    }
-  }, []);
+const StatCard = ({ label, value, icon: Icon }: { label: string; value: string; icon: typeof Package2 }) => (
+  <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
+    <div className="rounded-full bg-neutral-100 p-2 text-neutral-600">
+      <Icon size={20} />
+    </div>
+    <div>
+      <p className="text-xs uppercase text-neutral-500">{label}</p>
+      <p className="text-xl font-semibold text-neutral-900">{value}</p>
+    </div>
+  </div>
+);
 
-  const fetchVendors = useCallback(async () => {
-    try {
-      const res = await http.get('/vendors');
-      const list = Array.isArray(res.data)
-        ? (res.data as Array<Record<string, unknown>>).map((v) => ({
-            id: String(v.id ?? v._id ?? ''),
-            name: String(v.name ?? ''),
-          }))
-        : [];
-      setVendors(list);
-    } catch (err) {
-      console.error('Error fetching vendors:', err);
-    }
-  }, []);
+const Inventory = () => {
+  const partsQuery = usePartsQuery();
+  const alertsQuery = useAlertsQuery();
 
-  useEffect(() => {
-    fetchParts();
-    fetchVendors();
-  }, [fetchParts, fetchVendors]);
-
-  const handleOpenModal = useCallback(
-    (part: Part | null, init?: Partial<Part>) => {
-      setSelectedPart(part);
-      setInitialData(init);
-      setModalError(null);
-      setModalOpen(true);
-    },
-    []
-  );
-
-  const handleDuplicate = useCallback(
-    (part: Part) => {
-      const { id: _id, ...rest } = part;
-      handleOpenModal(null, {
-        ...rest,
-        name: part.name ? `${part.name} Copy` : part.name,
-        sku: '',
-      });
-    },
-    [handleOpenModal]
-  );
-
-  const partMapper = (part: Part) => ({
-    ID: part.id,
-    Name: part.name,
-    Category: part.category ?? '',
-    SKU: part.sku,
-    Location: part.location ?? '',
-    Quantity: part.quantity,
-    'Unit Cost': part.unitCost,
-    'Reorder Point': part.reorderPoint,
-    'Reorder Threshold': part.reorderThreshold,
-    'Last Restock Date': part.lastRestockDate ?? '',
-    Vendor: part.vendor ?? '',
-    'Last Order Date': part.lastOrderDate
-  });
-
-  const handleExportExcel = async () => {
-    await exportToExcel<Part>(parts, 'inventory', partMapper);
-  };
-
-  const handleExportPDF = () => {
-    exportToPDF<Part>(parts, 'inventory', partMapper);
-  };
-
-  const lowStockParts = parts.filter(
-    (part) => part.quantity <= (part.reorderThreshold ?? part.reorderPoint)
-  );
-
-  const filteredParts = useMemo(() =>
-    parts.filter((part) => {
-      if (search && !Object.values(part).some((v) => String(v).toLowerCase().includes(search.toLowerCase()))) {
-        return false;
-      }
-      if (belowMinOnly && part.quantity > part.reorderPoint) {
-        return false;
-      }
-      if (vendorFilter && part.vendor !== vendorFilter) {
-        return false;
-      }
-      return true;
-    }),
-    [parts, search, belowMinOnly, vendorFilter]
-  );
-
-  const handleAdjust = async (part: Part) => {
-    const deltaStr = window.prompt('Adjustment amount');
-    if (!deltaStr) return;
-    const delta = Number(deltaStr);
-    if (Number.isNaN(delta) || delta === 0) return;
-    try {
-      await http.patch(`/inventory/${part.id}`, { quantity: part.quantity + delta });
-      await fetchParts();
-    } catch (err) {
-      console.error('Error adjusting part:', err);
-    }
-  };
+  const partsCount = partsQuery.data?.length ?? 0;
+  const lowStockCount = alertsQuery.data?.length ?? 0;
+  const linkedAssets = (partsQuery.data ?? []).reduce((sum, part) => sum + (part.assets?.length ?? 0), 0);
 
   return (
-          <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-bold text-neutral-900">Inventory</h2>
-            <p className="text-neutral-500">Manage parts, supplies, and stock levels</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 sm:space-x-3">
-            {lowStockParts.length > 0 && (
-              <Button
-                variant="warning"
-                icon={<AlertTriangle size={16} />}
-                onClick={() =>
-                  alert(`Order needed for ${lowStockParts.length} item(s) from vendors`)
-                }
-              >
-                {lowStockParts.length} Low Stock
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              icon={<Download size={16} />}
-              onClick={handleExportExcel}
-            >
-              Export Excel
-            </Button>
-            <Button
-              variant="outline"
-              icon={<Upload size={16} />}
-              onClick={handleExportPDF}
-            >
-              Export PDF
-            </Button>
-            <Button
-              variant="outline"
-              icon={<QrCode size={16} />}
-              onClick={() => setScanOpen(true)}
-            >
-              Scan QR
-            </Button>
-            <Button
-              variant="primary"
-              className="border border-neutral-300"
-              icon={<Plus size={16} />}
-              onClick={() => handleOpenModal(null)}
-            >
-              Add Part
-            </Button>
-          </div>
+    <div className="space-y-6">
+      <header className="space-y-3">
+        <div>
+          <h1 className="text-2xl font-semibold text-neutral-900">Inventory intelligence</h1>
+          <p className="text-sm text-neutral-500">
+            Track parts, see which assets rely on them, and generate purchase orders without leaving this page.
+          </p>
         </div>
-
-        <InventoryMetrics parts={parts} />
-        {error && <p className="text-red-600">{error}</p>}
-
-        <div className="flex flex-col sm:flex-row flex-wrap items-center space-y-2 sm:space-y-0 sm:space-x-4 bg-white p-4 rounded-lg shadow-sm border border-neutral-200">
-          <div className="flex items-center flex-1">
-            <Search className="text-neutral-500" size={20} />
-            <input
-              type="text"
-              placeholder="Search parts by name, SKU, category..."
-              className="flex-1 bg-transparent border-none outline-none text-neutral-900 placeholder-neutral-400"
-              value={search}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-            />
-          </div>
-          <select
-            className="border border-neutral-300 rounded-md px-2 py-1"
-            value={vendorFilter}
-            onChange={(e) => setVendorFilter(e.target.value)}
-          >
-            <option value="">All Vendors</option>
-            {vendors.map((v) => (
-              <option key={v.id} value={v.id}>{v.name}</option>
-            ))}
-          </select>
-          <label className="flex items-center space-x-1">
-            <input
-              type="checkbox"
-              checked={belowMinOnly}
-              onChange={(e) => setBelowMinOnly(e.target.checked)}
-            />
-            <span className="text-sm text-neutral-700">Below Min</span>
-          </label>
+        <div className="grid gap-3 md:grid-cols-3">
+          <StatCard label="Active parts" value={partsCount.toString()} icon={Package2} />
+          <StatCard label="Linked assets" value={linkedAssets.toString()} icon={ClipboardList} />
+          <StatCard label="Alerts" value={lowStockCount.toString()} icon={ShieldAlert} />
         </div>
+      </header>
 
-        <InventoryTable
-          parts={filteredParts}
-          onRowClick={handleOpenModal}
-          onAdjust={handleAdjust}
-          onEdit={handleOpenModal}
-          onDuplicate={handleDuplicate}
-        />
+      <AlertsPanel />
 
-        <InventoryModal
-          isOpen={isModalOpen}
-          onClose={() => {
-            setModalOpen(false);
-            setInitialData(undefined);
-          }}
-          part={selectedPart}
-          {...(initialData ? { initialData } : {})}
-          error={modalError}
-          onUpdate={async ({ data }: InventorySubmission) => {
-            try {
-              if (selectedPart) {
-                await http.patch(`/inventory/${selectedPart.id}`, data);
-              } else {
-                await http.post('/inventory', {
-                  ...data,
-                  quantity: (data.quantity as number | undefined) ?? 0,
-                });
-              }
-              await fetchParts();
-              setModalOpen(false);
-              setError(null);
-            } catch (error) {
-              console.error('Error saving part:', error);
-              const response = (error as { response?: { data?: { errors?: Record<string, string> } } }).response;
-              if (response?.data?.errors) {
-                const messages = Object.values(response.data.errors).join(' ');
-                setModalError(messages);
-              } else if (typeof response?.data?.message === 'string') {
-                setModalError(response.data.message);
-              } else {
-                setError('Failed to save part');
-              }
-            }
-          }}
-        />
-        <InventoryScanModal
-          isOpen={isScanOpen}
-          onClose={() => setScanOpen(false)}
-          onScanComplete={handleOpenModal}
-        />
+      <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
+        <PartsTableView />
+        <div className="space-y-6">
+          <VendorListPanel />
+          <PurchaseOrderBuilder />
+          <PdfExportPanel />
+        </div>
       </div>
+    </div>
   );
 };
 

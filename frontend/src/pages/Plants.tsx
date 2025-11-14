@@ -37,10 +37,14 @@ export default function Plants() {
     event.preventDefault();
     if (!name.trim()) return;
     setLoading(true);
+    const trimmedName = name.trim();
+    const trimmedLocation = location.trim();
+    const trimmedDescription = description.trim();
+
     const payload = {
-      name: name.trim(),
-      location: location.trim() || undefined,
-      description: description.trim() || undefined,
+      name: trimmedName,
+      location: trimmedLocation.length > 0 ? trimmedLocation : null,
+      description: trimmedDescription.length > 0 ? trimmedDescription : null,
     };
 
     try {

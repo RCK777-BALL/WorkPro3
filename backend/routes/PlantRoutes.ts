@@ -83,27 +83,17 @@ router.put('/:id', async (req: AuthedRequest, res, next) => {
 
     if (Object.prototype.hasOwnProperty.call(req.body, 'location')) {
       if (typeof location === 'string') {
-        const trimmedLocation = location.trim();
-        if (trimmedLocation) {
-          setOperations.location = trimmedLocation;
-        } else {
-          unsetOperations.location = 1;
-        }
+        updates.location = location.trim();
       } else if (location === null) {
-        unsetOperations.location = 1;
+        updates.location = undefined;
       }
     }
 
     if (Object.prototype.hasOwnProperty.call(req.body, 'description')) {
       if (typeof description === 'string') {
-        const trimmedDescription = description.trim();
-        if (trimmedDescription) {
-          setOperations.description = trimmedDescription;
-        } else {
-          unsetOperations.description = 1;
-        }
+        updates.description = description.trim();
       } else if (description === null) {
-        unsetOperations.description = 1;
+        updates.description = undefined;
       }
     }
 

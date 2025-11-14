@@ -93,4 +93,10 @@ assetSchema.pre('validate', function (next) {
   next();
 });
 
+assetSchema.index({ tenantId: 1, plant: 1, name: 1 });
+assetSchema.index({ tenantId: 1, departmentId: 1 });
+assetSchema.index({ tenantId: 1, lineId: 1 });
+assetSchema.index({ tenantId: 1, stationId: 1 });
+assetSchema.index({ tenantId: 1, siteId: 1 });
+
 export default mongoose.model<AssetDoc>('Asset', assetSchema);

@@ -652,7 +652,7 @@ const createDepartment: AuthedRequestHandler<
 const updateDepartment: AuthedRequestHandler<
   { id: string },
   DepartmentNode | { message: string },
-  { name?: string; notes?: string; description?: string }
+  { name?: string; notes?: string | null; description?: string | null }
 > = async (req, res, next) => {
   try {
     const authedReq = req as AuthedRequest;
@@ -667,13 +667,24 @@ const updateDepartment: AuthedRequestHandler<
     }
 
     if (typeof req.body?.name === 'string') {
-      department.name = req.body.name;
+      department.name = req.body.name.trim();
     }
 
-    if (typeof req.body?.description === 'string') {
-      department.notes = req.body.description;
-    } else if (typeof req.body?.notes === 'string') {
-      department.notes = req.body.notes;
+    const bodyHasDescription = Object.prototype.hasOwnProperty.call(req.body ?? {}, 'description');
+    if (bodyHasDescription) {
+      const rawDescription = req.body?.description;
+      if (typeof rawDescription === 'string') {
+        department.notes = rawDescription.trim();
+      } else if (rawDescription === null) {
+        department.notes = '';
+      }
+    } else if (Object.prototype.hasOwnProperty.call(req.body ?? {}, 'notes')) {
+      const rawNotes = req.body?.notes;
+      if (typeof rawNotes === 'string') {
+        department.notes = rawNotes.trim();
+      } else if (rawNotes === null) {
+        department.notes = '';
+      }
     }
 
     const targetPlantId = resolvePlantId(authedReq);

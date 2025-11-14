@@ -24,6 +24,7 @@ import Sparkline from "@/components/charts/Sparkline";
 import StatusBadge from "@/components/common/StatusBadge";
 import Button from "@common/Button";
 import AlertBanner from "@/components/layout/AlertBanner";
+import { DashboardAnalyticsPanel } from "@/features/dashboards";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
 
 type SummaryResponse = {
@@ -1336,6 +1337,8 @@ export default function Dashboard() {
             {summaryError}
           </div>
         ) : null}
+
+        <DashboardAnalyticsPanel />
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {summaryCards.map((card) => (

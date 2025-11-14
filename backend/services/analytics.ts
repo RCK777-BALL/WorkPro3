@@ -116,6 +116,16 @@ interface AnalyticsSources {
   }>;
 }
 
+export interface DashboardKpiResult {
+  statuses: { status: string; count: number }[];
+  overdue: number;
+  pmCompliance: { total: number; completed: number; percentage: number };
+  downtimeHours: number;
+  maintenanceCost: number;
+  mttr: number;
+  mtbf: number;
+}
+
 const ENERGY_METRIC = 'energy_kwh';
 const DEFAULT_THRESHOLDS: Thresholds = {
   availability: 0.85,
@@ -123,6 +133,14 @@ const DEFAULT_THRESHOLDS: Thresholds = {
   quality: 0.95,
   oee: 0.8,
 };
+
+const WORK_ORDER_STATUS_ORDER: WorkOrder['status'][] = [
+  'requested',
+  'assigned',
+  'in_progress',
+  'completed',
+  'cancelled',
+];
 
 function toObjectId(id: string): Types.ObjectId | string {
   return Types.ObjectId.isValid(id) ? new Types.ObjectId(id) : id;
@@ -566,7 +584,125 @@ export async function getTrendDatasets(tenantId: string, filters: AnalyticsFilte
   };
 }
 
+function createEmptyDashboardKpiResult(): DashboardKpiResult {
+  return {
+    statuses: WORK_ORDER_STATUS_ORDER.map((status) => ({ status, count: 0 })),
+    overdue: 0,
+    pmCompliance: { total: 0, completed: 0, percentage: 0 },
+    downtimeHours: 0,
+    maintenanceCost: 0,
+    mttr: 0,
+    mtbf: 0,
+  };
+}
+
+export async function getDashboardKpiSummary(
+  tenantId: string,
+  filters: AnalyticsFilters = {},
+): Promise<DashboardKpiResult> {
+  const tenantFilter = toObjectId(tenantId);
+  const dateRange = buildDateRange(filters);
+  let assetFilter = normalizeIdList(filters.assetIds);
+  const siteFilter = normalizeIdList(filters.siteIds);
+
+  if (siteFilter && siteFilter.length) {
+    const assetsForSites: Array<{ _id: Types.ObjectId }> = await Asset.find({
+      tenantId: tenantFilter,
+      siteId: { $in: siteFilter },
+    })
+      .select('_id')
+      .lean();
+    if (!assetsForSites.length) {
+      return createEmptyDashboardKpiResult();
+    }
+    const siteAssetIds = assetsForSites.map((doc) => doc._id);
+    if (assetFilter && assetFilter.length) {
+      const allowed = new Set(siteAssetIds.map((id) => id.toString()));
+      assetFilter = assetFilter.filter((id) => allowed.has(id.toString()));
+      if (!assetFilter.length) {
+        return createEmptyDashboardKpiResult();
+      }
+    } else {
+      assetFilter = siteAssetIds;
+    }
+  }
+
+  const workOrderMatch: Record<string, unknown> = { tenantId: tenantFilter };
+  if (assetFilter && assetFilter.length) {
+    workOrderMatch.assetId = { $in: assetFilter };
+  }
+  if (dateRange) {
+    workOrderMatch.$or = [
+      { createdAt: dateRange },
+      { completedAt: dateRange },
+      { dueDate: dateRange },
+    ];
+  }
+
+  const workOrders: Array<{
+    status: WorkOrder['status'];
+    dueDate?: Date | null;
+    pmTask?: Types.ObjectId | null;
+    completedAt?: Date | null;
+    createdAt?: Date;
+    downtime?: number | null;
+    partsUsed?: Array<{ cost?: number | null; qty?: number | null }>;
+  }> = await WorkOrder.find(workOrderMatch)
+    .select('status dueDate pmTask completedAt createdAt downtime partsUsed')
+    .lean();
+
+  if (!workOrders.length) {
+    return createEmptyDashboardKpiResult();
+  }
+
+  const statusTotals = new Map<WorkOrder['status'], number>();
+  workOrders.forEach((workOrder) => {
+    statusTotals.set(workOrder.status, (statusTotals.get(workOrder.status) ?? 0) + 1);
+  });
+
+  const now = filters.endDate ?? new Date();
+  const overdue = workOrders.filter((wo) => {
+    if (!wo.dueDate) return false;
+    const dueTime = wo.dueDate.getTime();
+    return dueTime < now.getTime() && wo.status !== 'completed' && wo.status !== 'cancelled';
+  }).length;
+
+  let maintenanceCost = 0;
+  let downtimeHours = 0;
+  let pmTotal = 0;
+  let pmCompleted = 0;
+
+  workOrders.forEach((wo) => {
+    if (wo.pmTask) {
+      pmTotal += 1;
+      if (wo.status === 'completed') {
+        pmCompleted += 1;
+      }
+    }
+    downtimeHours += wo.downtime ?? 0;
+    const partsCost = (wo.partsUsed ?? []).reduce((sum, part) => {
+      const qty = typeof part.qty === 'number' ? part.qty : 1;
+      const cost = typeof part.cost === 'number' ? part.cost : 0;
+      return sum + cost * qty;
+    }, 0);
+    maintenanceCost += partsCost;
+  });
+
+  const pmPercentage = pmTotal ? (pmCompleted / pmTotal) * 100 : 0;
+
+  return {
+    statuses: WORK_ORDER_STATUS_ORDER.map((status) => ({ status, count: statusTotals.get(status) ?? 0 })),
+    overdue,
+    pmCompliance: { total: pmTotal, completed: pmCompleted, percentage: pmPercentage },
+    downtimeHours,
+    maintenanceCost,
+    mttr: calculateMTTR(workOrders),
+    mtbf: calculateMTBF(workOrders),
+  };
+}
+
 export default {
   getKPIs,
   getTrendDatasets,
+  getDashboardKpiSummary,
 };

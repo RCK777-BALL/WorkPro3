@@ -13,6 +13,10 @@ import {
   trendJson,
   trendCsv,
   trendPdf,
+  dashboardKpiJson,
+  dashboardKpiCsv,
+  dashboardKpiXlsx,
+  dashboardKpiPdf,
 } from '../controllers/AnalyticsController';
 import Plant from '../models/Plant';
 import WorkOrder from '../models/WorkOrder';
@@ -32,6 +36,11 @@ router.get('/kpis.pdf', kpiPdf);
 router.get('/trends', trendJson);
 router.get('/trends.csv', trendCsv);
 router.get('/trends.pdf', trendPdf);
+
+router.get('/dashboard/kpis', dashboardKpiJson);
+router.get('/dashboard/kpis.csv', dashboardKpiCsv);
+router.get('/dashboard/kpis.xlsx', dashboardKpiXlsx);
+router.get('/dashboard/kpis.pdf', dashboardKpiPdf);
 
 router.get('/global', async (req: AuthedRequest, res, next) => {
   try {

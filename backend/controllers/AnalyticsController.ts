@@ -9,9 +9,11 @@ import type { Readable } from 'stream';
 import {
   getKPIs,
   getTrendDatasets,
+  getDashboardKpiSummary,
   type AnalyticsFilters,
   type KPIResult,
   type TrendResult,
+  type DashboardKpiResult,
 } from '../services/analytics';
 import { escapeXml } from '../utils/escapeXml';
 import { sendResponse } from '../utils/sendResponse';
@@ -70,6 +72,24 @@ function flattenKpiForExport(data: KPIResult) {
     benchmarksSites: JSON.stringify(data.benchmarks.sites),
     rangeStart: data.range.start ?? null,
     rangeEnd: data.range.end ?? null,
+  };
+}
+
+function flattenDashboardKpiForExport(data: DashboardKpiResult) {
+  const statusEntries = data.statuses.reduce<Record<string, number>>((acc, entry) => {
+    acc[`status_${entry.status}`] = entry.count;
+    return acc;
+  }, {});
+  return {
+    ...statusEntries,
+    overdue: data.overdue,
+    pmCompliancePercentage: data.pmCompliance.percentage,
+    pmComplianceCompleted: data.pmCompliance.completed,
+    pmComplianceTotal: data.pmCompliance.total,
+    downtimeHours: data.downtimeHours,
+    maintenanceCost: data.maintenanceCost,
+    mttr: data.mttr,
+    mtbf: data.mtbf,
   };
 }
 
@@ -170,6 +190,95 @@ export const kpiPdf = async (req: Request, res: Response, next: NextFunction): P
     doc.text('Downtime reasons:');
     data.downtime.reasons.slice(0, 10).forEach((item) => {
       doc.text(` • ${item.reason}: ${item.minutes.toFixed(1)} min`);
+    });
+    doc.end();
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const dashboardKpiJson = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const filters = parseFilters(req);
+    const data = await getDashboardKpiSummary(req.tenantId!, filters);
+    sendResponse(res, data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const dashboardKpiCsv = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const filters = parseFilters(req);
+    const data = await getDashboardKpiSummary(req.tenantId!, filters);
+    const parser = new Json2csvParser();
+    const csv = parser.parse([flattenDashboardKpiForExport(data)]);
+    res.header('Content-Type', 'text/csv');
+    res.attachment('dashboard-kpis.csv');
+    res.send(csv);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const dashboardKpiXlsx = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const filters = parseFilters(req);
+    const data = await getDashboardKpiSummary(req.tenantId!, filters);
+    const flat = flattenDashboardKpiForExport(data);
+    const rows = Object.entries(flat)
+      .map(
+        ([k, v]) =>
+          `<Row><Cell><Data ss:Type="String">${escapeXml(k)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(String(v))}</Data></Cell></Row>`,
+      )
+      .join('');
+    const xml = `<?xml version="1.0"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Dashboard KPIs"><Table><Row><Cell><Data ss:Type="String">Metric</Data></Cell><Cell><Data ss:Type="String">Value</Data></Cell></Row>${rows}</Table></Worksheet></Workbook>`;
+    res.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.attachment('dashboard-kpis.xlsx');
+    res.send(xml);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const dashboardKpiPdf = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const filters = parseFilters(req);
+    const data = await getDashboardKpiSummary(req.tenantId!, filters);
+    const doc = createPdfDocument();
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=dashboard-kpis.pdf');
+    doc.pipe(res);
+    doc.fontSize(18).text('Maintenance Dashboard KPIs', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(12).text(`Overdue work orders: ${data.overdue}`);
+    doc.text(
+      `PM compliance: ${data.pmCompliance.completed}/${data.pmCompliance.total} (${data.pmCompliance.percentage.toFixed(1)}%)`,
+    );
+    doc.text(`Downtime hours: ${data.downtimeHours.toFixed(1)}`);
+    doc.text(`Maintenance cost: $${data.maintenanceCost.toFixed(2)}`);
+    doc.text(`MTTR: ${data.mttr.toFixed(2)} h`);
+    doc.text(`MTBF: ${data.mtbf.toFixed(2)} h`);
+    doc.moveDown();
+    doc.text('Status distribution:');
+    data.statuses.forEach((entry) => {
+      doc.text(` • ${entry.status}: ${entry.count}`);
     });
     doc.end();
   } catch (err) {

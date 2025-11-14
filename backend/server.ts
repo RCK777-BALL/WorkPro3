@@ -70,6 +70,7 @@ import systemSummaryRouter from "./src/routes/summary";
 import hierarchyRouter from "./src/modules/hierarchy";
 import importExportRouter from "./src/modules/importExport";
 import inventoryModuleRouter from "./src/modules/inventory";
+import workRequestsRouter from "./src/modules/work-requests";
 
 import { startPMScheduler } from "./utils/PMScheduler";
 import { setupSwagger } from "./utils/swagger";
@@ -198,6 +199,7 @@ app.use("/api/public", publicRequestRoutes);
 app.use("/api", uiRoutes);
 app.use("/api/health", healthRouter);
 app.use("/api/hierarchy", hierarchyRouter);
+app.use("/api", workRequestsRouter);
 app.use("/api/import-export", importExportRouter);
 app.use("/api/inventory/v2", inventoryModuleRouter);
 

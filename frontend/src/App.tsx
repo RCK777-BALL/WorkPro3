@@ -19,6 +19,7 @@ import {
 import Dashboard from "@/pages/Dashboard";
 import Analytics from "@/pages/Analytics";
 import WorkOrders from "@/pages/WorkOrders";
+import WorkRequestDashboard from "@/pages/WorkRequestDashboard";
 import Maintenance from "@/pages/Maintenance";
 import AssetsPage from "@/pages/AssetsPage";
 import AssetDetails from "@/pages/AssetDetails";
@@ -48,6 +49,7 @@ import Login from "@/pages/Login";
 import RegisterPage from "@/pages/RegisterPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
+import PublicRequestPage from "@/public/request";
 
 export default function App() {
   const navigate = useNavigate();
@@ -81,6 +83,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot" element={<ForgotPasswordPage />} />
+        <Route path="/public/request/:slug?" element={<PublicRequestPage />} />
         <Route element={<Layout />}>
           <Route index element={<Navigate to="/dashboard" />} />
           <Route path="/dashboard" element={<Dashboard />} />
@@ -89,6 +92,7 @@ export default function App() {
           <Route path="/analytics/ai" element={<AIDashboard />} />
           <Route path="/work-orders" element={<WorkOrders />} />
           <Route path="/workorders" element={<WorkOrders />} />
+          <Route path="/work-requests" element={<WorkRequestDashboard />} />
           <Route path="/maintenance" element={<Maintenance />} />
           <Route path="/permits" element={<PermitsPage />} />
           <Route path="/assets" element={<AssetsPage />} />

@@ -18,6 +18,7 @@ import {
   FolderKanban,
   GitBranch,
   Globe2,
+  Inbox,
   LayoutDashboard,
   LogIn,
   LogOut,
@@ -91,6 +92,13 @@ const navItems: Record<NavItemId, NavItem> = {
     label: "Work Orders",
     to: "/work-orders",
     icon: ClipboardList,
+    section: "operations",
+  },
+  "work-requests": {
+    id: "work-requests",
+    label: "Work Requests",
+    to: "/work-requests",
+    icon: Inbox,
     section: "operations",
   },
   permits: {

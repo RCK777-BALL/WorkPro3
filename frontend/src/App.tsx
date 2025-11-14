@@ -32,6 +32,7 @@ import Departments from "@/pages/Departments";
 import Lines from "@/pages/Lines";
 import Stations from "@/pages/Stations";
 import Teams from "@/pages/Teams";
+import { AssetExplorerPage } from "@/features/assets";
 import PermitsPage from "@/pages/PermitsPage";
 import TeamMemberProfile from "@/pages/TeamMemberProfile";
 import Settings from "@/pages/Settings";
@@ -91,6 +92,7 @@ export default function App() {
           <Route path="/maintenance" element={<Maintenance />} />
           <Route path="/permits" element={<PermitsPage />} />
           <Route path="/assets" element={<AssetsPage />} />
+          <Route path="/assets/explorer" element={<AssetExplorerPage />} />
           <Route path="/assets/:assetId" element={<AssetDetails />} />
           <Route path="/inventory" element={<Inventory />} />
           <Route path="/vendors" element={<VendorsPage />} />

@@ -9,6 +9,9 @@ export interface StationSubdoc {
   name: string;
   assets: Types.Array<Types.ObjectId>;
   notes?: string;
+  tenantId?: Types.ObjectId;
+  siteId?: Types.ObjectId;
+  lineId?: Types.ObjectId;
 }
 
 export interface LineSubdoc {
@@ -16,6 +19,7 @@ export interface LineSubdoc {
   name: string;
   stations: Types.DocumentArray<StationSubdoc>;
   tenantId?: Types.ObjectId;
+  siteId?: Types.ObjectId;
   notes?: string;
 }
 
@@ -32,6 +36,9 @@ export interface DepartmentDoc extends Document {
 const StationSchema = new Schema<StationSubdoc>({
   name: { type: String, required: true },
   notes: { type: String, default: '' },
+  tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant' },
+  siteId: { type: Schema.Types.ObjectId, ref: 'Site', index: true },
+  lineId: { type: Schema.Types.ObjectId, ref: 'Line' },
   assets: {
     type: [
       {
@@ -46,6 +53,7 @@ const StationSchema = new Schema<StationSubdoc>({
 const LineSchema = new Schema<LineSubdoc>({
   name: { type: String, required: true },
   tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: false },
+  siteId: { type: Schema.Types.ObjectId, ref: 'Site', required: false },
   notes: { type: String, default: '' },
   stations: { type: [StationSchema], default: [] },
 });
@@ -61,6 +69,9 @@ const DepartmentSchema = new Schema<DepartmentDoc>(
   },
   { timestamps: true }
 );
+
+DepartmentSchema.index({ tenantId: 1, plant: 1, name: 1 });
+DepartmentSchema.index({ tenantId: 1, siteId: 1 });
 
 DepartmentSchema.pre('validate', function (next) {
   if (!this.plant && this.siteId) {

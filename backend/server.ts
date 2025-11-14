@@ -67,6 +67,7 @@ import {
 import uiRoutes from "./routes/uiRoutes";
 import healthRouter from "./src/routes/health";
 import systemSummaryRouter from "./src/routes/summary";
+import hierarchyRouter from "./src/modules/hierarchy";
 
 import { startPMScheduler } from "./utils/PMScheduler";
 import { setupSwagger } from "./utils/swagger";
@@ -194,6 +195,7 @@ if (env.NODE_ENV === "test") {
 app.use("/api/public", publicRequestRoutes);
 app.use("/api", uiRoutes);
 app.use("/api/health", healthRouter);
+app.use("/api/hierarchy", hierarchyRouter);
 
 // --- Routes (order matters for the limiter) ---
 app.use("/api/auth", authRoutes);

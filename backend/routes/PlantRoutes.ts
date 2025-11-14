@@ -30,17 +30,23 @@ router.post('/', async (req: AuthedRequest, res, next) => {
     }
     const { name, location, description } = req.body as {
       name?: string;
-      location?: string;
-      description?: string;
+      location?: string | null;
+      description?: string | null;
     };
     if (!name || !name.trim()) {
       res.status(400).json({ error: 'Plant name is required' });
       return;
     }
+    const trimmedName = name.trim();
+    const normalizedLocation =
+      typeof location === 'string' ? location.trim() || undefined : undefined;
+    const normalizedDescription =
+      typeof description === 'string' ? description.trim() || undefined : undefined;
+
     const plant = await Plant.create({
-      name: name.trim(),
-      location,
-      description,
+      name: trimmedName,
+      location: normalizedLocation,
+      description: normalizedDescription,
       tenantId,
     });
     res.status(201).json({ ...plant.toObject(), _id: plant._id.toString() });
@@ -59,8 +65,8 @@ router.put('/:id', async (req: AuthedRequest, res, next) => {
 
     const { name, location, description } = req.body as {
       name?: string;
-      location?: string;
-      description?: string;
+      location?: string | null;
+      description?: string | null;
     };
 
     const updates: Record<string, unknown> = {};
@@ -74,12 +80,20 @@ router.put('/:id', async (req: AuthedRequest, res, next) => {
       updates.name = trimmedName;
     }
 
-    if (typeof location === 'string') {
-      updates.location = location.trim();
+    if (Object.prototype.hasOwnProperty.call(req.body, 'location')) {
+      if (typeof location === 'string') {
+        updates.location = location.trim();
+      } else if (location === null) {
+        updates.location = undefined;
+      }
     }
 
-    if (typeof description === 'string') {
-      updates.description = description.trim();
+    if (Object.prototype.hasOwnProperty.call(req.body, 'description')) {
+      if (typeof description === 'string') {
+        updates.description = description.trim();
+      } else if (description === null) {
+        updates.description = undefined;
+      }
     }
 
     if (Object.keys(updates).length === 0) {

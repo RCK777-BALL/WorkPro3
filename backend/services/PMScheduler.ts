@@ -61,6 +61,49 @@ export async function runPMScheduler(): Promise<void> {
   const tasks = await PMTask.find({ active: true });
   for (const task of tasks) {
     try {
+      if (Array.isArray(task.assignments) && task.assignments.length > 0) {
+        let touched = false;
+        for (const assignment of task.assignments) {
+          const interval = assignment.interval;
+          if (!interval) {
+            continue;
+          }
+          if (!assignment.nextDue) {
+            assignment.nextDue = calcNextDue(now, interval);
+            touched = true;
+          }
+          if (assignment.nextDue && assignment.nextDue <= now) {
+            await WorkOrder.create({
+              title: `PM: ${task.title}`,
+              description: task.notes || '',
+              status: 'open',
+              asset: assignment.asset,
+              pmTask: task._id,
+              department: task.department,
+              dueDate: assignment.nextDue,
+              priority: 'medium',
+              tenantId: task.tenantId,
+              checklists: assignment.checklist?.map((item) => ({
+                description: item.description,
+                done: false,
+              })),
+              partsUsed: assignment.requiredParts?.map((part) => ({
+                partId: part.partId,
+                qty: part.quantity,
+              })),
+            });
+            assignment.lastGeneratedAt = now;
+            assignment.nextDue = calcNextDue(now, interval);
+            task.lastGeneratedAt = now;
+            touched = true;
+          }
+        }
+        if (touched) {
+          await task.save();
+        }
+        continue;
+      }
+
       if (task.rule?.type === 'calendar' && task.rule.cron) {
         const next = nextCronOccurrenceWithin(task.rule.cron, now, 7);
         if (next) {

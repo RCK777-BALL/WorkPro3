@@ -229,6 +229,37 @@ export interface PMTask {
   department?: string;
 }
 
+export interface PMTemplateChecklistItem {
+  id: string;
+  description: string;
+  required?: boolean;
+}
+
+export interface PMTemplateRequiredPart {
+  id: string;
+  partId: string;
+  partName?: string;
+  quantity?: number;
+}
+
+export interface PMTemplateAssignment {
+  id: string;
+  assetId: string;
+  assetName?: string;
+  interval: string;
+  nextDue?: string;
+  checklist: PMTemplateChecklistItem[];
+  requiredParts: PMTemplateRequiredPart[];
+}
+
+export interface PMTemplate {
+  id: string;
+  title: string;
+  notes?: string;
+  active: boolean;
+  assignments: PMTemplateAssignment[];
+}
+
 export interface Channel {
   id: string;
   name: string;

@@ -126,6 +126,37 @@ export interface DashboardKpiResult {
   mtbf: number;
 }
 
+export interface PmOptimizationAssetInsight {
+  assetId: string;
+  assetName?: string;
+  usage: {
+    runHoursPerDay: number;
+    cyclesPerDay: number;
+  };
+  failureProbability: number;
+  compliance: {
+    total: number;
+    completed: number;
+    overdue: number;
+    percentage: number;
+    impactScore: number;
+  };
+}
+
+export interface PmOptimizationScenario {
+  label: string;
+  description: string;
+  intervalDelta: number;
+  failureProbability: number;
+  compliancePercentage: number;
+}
+
+export interface PmOptimizationWhatIfResponse {
+  updatedAt: string;
+  assets: PmOptimizationAssetInsight[];
+  scenarios: PmOptimizationScenario[];
+}
+
 const ENERGY_METRIC = 'energy_kwh';
 const DEFAULT_THRESHOLDS: Thresholds = {
   availability: 0.85,
@@ -141,6 +172,10 @@ const WORK_ORDER_STATUS_ORDER: WorkOrder['status'][] = [
   'completed',
   'cancelled',
 ];
+
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const PRODUCTION_LOOKBACK_DAYS = 30;
+const WORKORDER_LOOKBACK_DAYS = 180;
 
 function toObjectId(id: string): Types.ObjectId | string {
   return Types.ObjectId.isValid(id) ? new Types.ObjectId(id) : id;
@@ -165,6 +200,10 @@ function buildDateRange(filters: AnalyticsFilters): { $gte?: Date; $lte?: Date }
 function safeDivide(numerator: number, denominator: number): number {
   if (!denominator) return 0;
   return numerator / denominator;
+}
+
+function clampValue(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
 }
 
 function calculateMTTR(workOrders: { createdAt?: Date; completedAt?: Date | null }[]): number {
@@ -701,8 +740,222 @@ export async function getDashboardKpiSummary(
   };
 }
 
+interface AssetOptimizationStats {
+  assetId: string;
+  runMinutes: number;
+  cycles: number;
+  hasUsage: boolean;
+  pmTotal: number;
+  pmCompleted: number;
+  pmOverdue: number;
+  failureEvents: number;
+}
+
+export async function getPmWhatIfSimulations(
+  tenantId: string,
+): Promise<PmOptimizationWhatIfResponse> {
+  const now = new Date();
+  const productionLookbackStart = new Date(now.getTime() - PRODUCTION_LOOKBACK_DAYS * DAY_IN_MS);
+  const workOrderLookbackStart = new Date(now.getTime() - WORKORDER_LOOKBACK_DAYS * DAY_IN_MS);
+
+  const [productionRecords, workOrders] = await Promise.all([
+    ProductionRecord.find({ tenantId, recordedAt: { $gte: productionLookbackStart } })
+      .select('asset recordedAt runTimeMinutes actualUnits')
+      .lean(),
+    WorkOrder.find({ tenantId, createdAt: { $gte: workOrderLookbackStart } })
+      .select('asset assetId type status pmTask dueDate completedAt')
+      .lean(),
+  ]);
+
+  const statsMap = new Map<string, AssetOptimizationStats>();
+  const ensureStats = (assetId: string): AssetOptimizationStats => {
+    let stats = statsMap.get(assetId);
+    if (!stats) {
+      stats = {
+        assetId,
+        runMinutes: 0,
+        cycles: 0,
+        hasUsage: false,
+        pmTotal: 0,
+        pmCompleted: 0,
+        pmOverdue: 0,
+        failureEvents: 0,
+      };
+      statsMap.set(assetId, stats);
+    }
+    return stats;
+  };
+
+  productionRecords.forEach((record) => {
+    const assetId = record.asset ? record.asset.toString() : undefined;
+    if (!assetId) return;
+    const stats = ensureStats(assetId);
+    stats.runMinutes += record.runTimeMinutes ?? 0;
+    stats.cycles += record.actualUnits ?? 0;
+    stats.hasUsage = true;
+  });
+
+  workOrders.forEach((wo) => {
+    const rawAsset = (wo as unknown as { asset?: unknown }).asset ?? wo.assetId;
+    if (!rawAsset) return;
+    const assetId = rawAsset instanceof Types.ObjectId ? rawAsset.toString() : String(rawAsset);
+    const stats = ensureStats(assetId);
+    const isPreventive = Boolean(wo.pmTask) || wo.type === 'preventive';
+    if (isPreventive) {
+      stats.pmTotal += 1;
+      if (wo.status === 'completed') {
+        stats.pmCompleted += 1;
+      } else if (wo.dueDate && wo.dueDate < now) {
+        stats.pmOverdue += 1;
+      }
+    }
+    if (wo.type === 'corrective' && wo.status === 'completed') {
+      stats.failureEvents += 1;
+    }
+  });
+
+  const assetIds = Array.from(statsMap.keys());
+  if (!assetIds.length) {
+    return {
+      updatedAt: now.toISOString(),
+      assets: [],
+      scenarios: [
+        {
+          label: 'Baseline',
+          description: 'No PM activity has been recorded for this tenant yet.',
+          intervalDelta: 0,
+          failureProbability: 0,
+          compliancePercentage: 0,
+        },
+      ],
+    };
+  }
+
+  const assetDocs = await Asset.find({ _id: { $in: assetIds } })
+    .select('name')
+    .lean();
+  const assetNames = new Map(assetDocs.map((asset) => [asset._id.toString(), asset.name]));
+
+  const productionWindowDays = Math.max(
+    1,
+    Math.round((now.getTime() - productionLookbackStart.getTime()) / DAY_IN_MS),
+  );
+
+  const baseMetrics = assetIds.map((assetId) => {
+    const stats = statsMap.get(assetId)!;
+    const usageDays = stats.hasUsage ? productionWindowDays : 0;
+    const runHoursPerDay = usageDays ? (stats.runMinutes / 60) / usageDays : 0;
+    const cyclesPerDay = usageDays ? stats.cycles / usageDays : 0;
+    const compliancePercentage = stats.pmTotal
+      ? (stats.pmCompleted / stats.pmTotal) * 100
+      : 100;
+    return { stats, runHoursPerDay, cyclesPerDay, compliancePercentage };
+  });
+
+  const usageAverages = baseMetrics
+    .filter((entry) => entry.runHoursPerDay > 0)
+    .map((entry) => entry.runHoursPerDay);
+  const cycleAverages = baseMetrics
+    .filter((entry) => entry.cyclesPerDay > 0)
+    .map((entry) => entry.cyclesPerDay);
+  const complianceAverages = baseMetrics.map((entry) => entry.compliancePercentage);
+
+  const averageRunHours = usageAverages.length
+    ? usageAverages.reduce((sum, value) => sum + value, 0) / usageAverages.length
+    : 1;
+  const averageCycles = cycleAverages.length
+    ? cycleAverages.reduce((sum, value) => sum + value, 0) / cycleAverages.length
+    : 1;
+  const averageCompliance = complianceAverages.length
+    ? complianceAverages.reduce((sum, value) => sum + value, 0) / complianceAverages.length
+    : 100;
+
+  const assets: PmOptimizationAssetInsight[] = baseMetrics.map((entry) => {
+    const { stats, runHoursPerDay, cyclesPerDay, compliancePercentage } = entry;
+    const usageFactor = clampValue(
+      0.5 * (runHoursPerDay / (averageRunHours || 1)) +
+        0.5 * (cyclesPerDay / (averageCycles || 1)),
+      0,
+      1.5,
+    );
+    const normalizedFailure = clampValue(
+      stats.failureEvents / Math.max(stats.pmCompleted + stats.failureEvents + 1, 1),
+      0,
+      1,
+    );
+    const compliancePenalty = clampValue(1 - compliancePercentage / 100, 0, 1);
+    const failureProbability = clampValue(
+      normalizedFailure * 0.6 + compliancePenalty * 0.3 + usageFactor * 0.1,
+      0,
+      1,
+    );
+    const impactScore = clampValue(
+      compliancePenalty * (1 + stats.pmOverdue / Math.max(stats.pmTotal || 1, 1)),
+      0,
+      1,
+    );
+    return {
+      assetId: stats.assetId,
+      assetName: assetNames.get(stats.assetId),
+      usage: {
+        runHoursPerDay,
+        cyclesPerDay,
+      },
+      failureProbability,
+      compliance: {
+        total: stats.pmTotal,
+        completed: stats.pmCompleted,
+        overdue: stats.pmOverdue,
+        percentage: compliancePercentage,
+        impactScore,
+      },
+    };
+  });
+
+  const avgFailureProbability = assets.length
+    ? assets.reduce((sum, asset) => sum + asset.failureProbability, 0) / assets.length
+    : 0;
+
+  const scenarioTemplates: Array<Omit<PmOptimizationScenario, 'failureProbability' | 'compliancePercentage'>> = [
+    {
+      label: 'Accelerate PM (-20%)',
+      description: 'Shorter intervals reduce risk on high-utilization assets.',
+      intervalDelta: -0.2,
+    },
+    {
+      label: 'Baseline',
+      description: 'Current cadence and compliance mix.',
+      intervalDelta: 0,
+    },
+    {
+      label: 'Defer PM (+20%)',
+      description: 'Fewer PMs save time but raise failure probability.',
+      intervalDelta: 0.2,
+    },
+  ];
+
+  const scenarios: PmOptimizationScenario[] = scenarioTemplates.map((template) => {
+    const failureFactor = template.intervalDelta < 0
+      ? 1 + template.intervalDelta * 0.8
+      : 1 + template.intervalDelta * 1.2;
+    const complianceFactor = 1 - template.intervalDelta * 0.9;
+    return {
+      ...template,
+      failureProbability: clampValue(avgFailureProbability * failureFactor, 0, 1),
+      compliancePercentage: clampValue(averageCompliance * complianceFactor, 0, 100),
+    };
+  });
+
+  return {
+    updatedAt: now.toISOString(),
+    assets,
+    scenarios,
+  };
+}
+
 export default {
   getKPIs,
   getTrendDatasets,
   getDashboardKpiSummary,
+  getPmWhatIfSimulations,
 };

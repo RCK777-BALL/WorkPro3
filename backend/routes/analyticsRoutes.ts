@@ -17,6 +17,7 @@ import {
   dashboardKpiCsv,
   dashboardKpiXlsx,
   dashboardKpiPdf,
+  pmWhatIfSimulationsJson,
 } from '../controllers/AnalyticsController';
 import Plant from '../models/Plant';
 import WorkOrder from '../models/WorkOrder';
@@ -41,6 +42,7 @@ router.get('/dashboard/kpis', dashboardKpiJson);
 router.get('/dashboard/kpis.csv', dashboardKpiCsv);
 router.get('/dashboard/kpis.xlsx', dashboardKpiXlsx);
 router.get('/dashboard/kpis.pdf', dashboardKpiPdf);
+router.get('/pm-optimization/what-if', pmWhatIfSimulationsJson);
 
 router.get('/global', async (req: AuthedRequest, res, next) => {
   try {

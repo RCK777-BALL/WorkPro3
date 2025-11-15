@@ -34,6 +34,7 @@ import Lines from "@/pages/Lines";
 import Stations from "@/pages/Stations";
 import Teams from "@/pages/Teams";
 import { AssetExplorerPage } from "@/features/assets";
+import { WhatIfSimulationsPage } from "@/features/pm-optimization";
 import PermitsPage from "@/pages/PermitsPage";
 import TeamMemberProfile from "@/pages/TeamMemberProfile";
 import Settings from "@/pages/Settings";
@@ -112,6 +113,7 @@ export default function App() {
           <Route path="/team-members/:teamMemberId" element={<TeamMemberProfile />} />
           <Route path="/pm/scheduler" element={<PMScheduler />} />
           <Route path="/pm/tasks" element={<PMTasksPage />} />
+          <Route path="/pm/optimization" element={<WhatIfSimulationsPage />} />
           <Route path="/timesheets" element={<TimeSheets />} />
           <Route path="/admin/tenants" element={<AdminTenants />} />
           <Route path="/imports" element={<Imports />} />

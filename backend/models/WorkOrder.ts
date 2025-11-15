@@ -10,6 +10,8 @@ export interface WorkOrder {
   title: string;
   assetId?: Types.ObjectId;
   description?: string;
+  copilotSummary?: string;
+  copilotSummaryUpdatedAt?: Date;
   priority: 'low' | 'medium' | 'high' | 'critical';
   status: 'requested' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
   type: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
@@ -26,6 +28,7 @@ export interface WorkOrder {
   timeSpentMin?: number;
   photos: Types.Array<string>;
   failureCode?: string;
+  failureModeTags?: Types.Array<string>;
 
   /** Optional relationships */
   pmTask?: Types.ObjectId;
@@ -109,6 +112,9 @@ const workOrderSchema = new Schema<WorkOrder>(
     timeSpentMin: Number,
     photos: [String],
     failureCode: String,
+    failureModeTags: [{ type: String }],
+    copilotSummary: { type: String },
+    copilotSummaryUpdatedAt: { type: Date },
 
     /** Optional relationships */
     pmTask: { type: Schema.Types.ObjectId, ref: 'PMTask' },

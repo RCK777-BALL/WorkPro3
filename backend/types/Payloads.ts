@@ -13,6 +13,8 @@ export interface WorkOrderUpdatePayload {
   complianceProcedureId?: string;
   calibrationIntervalDays?: number;
   assignees?: string[];
+  failureModeTags?: string[];
+  copilotSummary?: string;
   deleted?: boolean;
 }
 

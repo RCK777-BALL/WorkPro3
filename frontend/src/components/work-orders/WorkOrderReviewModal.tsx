@@ -7,13 +7,15 @@ import { X } from 'lucide-react';
 import Button from '@common/Button';
 import type { WorkOrder } from '@/types';
 import { useAuthStore, isAdmin as selectIsAdmin, isSupervisor as selectIsSupervisor } from '@/store/authStore';
-import AICopilot from '@/workorders/AICopilot';
+import CopilotPanel, { type CopilotSuggestion } from '@/workorders/CopilotPanel';
+import http from '@/lib/http';
 
 interface Props {
   isOpen: boolean;
   workOrder: WorkOrder | null;
   onClose: () => void;
   onUpdateStatus: (status: WorkOrder['status']) => void;
+  onWorkOrderChange?: (workOrder: WorkOrder) => void;
 }
 
 const statusOptions: WorkOrder['status'][] = [
@@ -29,17 +31,68 @@ const WorkOrderReviewModal: React.FC<Props> = ({
   workOrder,
   onClose,
   onUpdateStatus,
+  onWorkOrderChange,
 }) => {
   const isAdmin = useAuthStore(selectIsAdmin);
   const isSupervisor = useAuthStore(selectIsSupervisor);
   const [status, setStatus] = useState<WorkOrder['status']>('requested');
+  const [currentOrder, setCurrentOrder] = useState<WorkOrder | null>(workOrder);
 
 
   useEffect(() => {
-    setStatus(workOrder?.status || 'requested');
+    setCurrentOrder(workOrder);
   }, [workOrder]);
 
-  if (!isOpen || !workOrder) return null;
+  useEffect(() => {
+    setStatus(currentOrder?.status || 'requested');
+  }, [currentOrder]);
+
+  if (!isOpen || !currentOrder) return null;
+
+  const mergeFailureModes = (existing: string[] = [], incoming: string[] = []): string[] => {
+    const seen = new Map(existing.map((tag) => [tag.toLowerCase(), tag]));
+    const result = [...existing];
+    incoming.forEach((tag) => {
+      const slug = tag.toLowerCase();
+      if (!seen.has(slug)) {
+        seen.set(slug, tag);
+        result.push(tag);
+      }
+    });
+    return result;
+  };
+
+  const handleApplySuggestion = async (suggestion: CopilotSuggestion): Promise<void> => {
+    if (!currentOrder) return;
+    const nextDescription = [currentOrder.description ?? '', suggestion.detail]
+      .filter((text) => Boolean(text && text.trim().length))
+      .join('\n\n')
+      .trim();
+    const mergedTags = suggestion.failureModes?.length
+      ? mergeFailureModes(currentOrder.failureModeTags ?? [], suggestion.failureModes)
+      : currentOrder.failureModeTags ?? [];
+    const payload: Record<string, unknown> = {};
+    if (nextDescription && nextDescription !== currentOrder.description) {
+      payload.description = nextDescription;
+    }
+    if (
+      suggestion.failureModes?.length &&
+      mergedTags.length !== (currentOrder.failureModeTags ?? []).length
+    ) {
+      payload.failureModeTags = mergedTags;
+    }
+    if (!Object.keys(payload).length) {
+      return;
+    }
+    await http.put(`/workorders/${currentOrder.id}`, payload);
+    const updated: WorkOrder = {
+      ...currentOrder,
+      ...(payload.description ? { description: payload.description as string } : {}),
+      ...(payload.failureModeTags ? { failureModeTags: payload.failureModeTags as string[] } : {}),
+    };
+    setCurrentOrder(updated);
+    onWorkOrderChange?.(updated);
+  };
 
   return (
     <div
@@ -64,41 +117,41 @@ const WorkOrderReviewModal: React.FC<Props> = ({
         <div className="p-6 space-y-4">
           <div>
             <span className="font-medium">Department:</span>{' '}
-            {workOrder.department || 'N/A'}
+            {currentOrder.department || 'N/A'}
           </div>
           <div>
-            <span className="font-medium">Title:</span> {workOrder.title}
+            <span className="font-medium">Title:</span> {currentOrder.title}
           </div>
           <div>
-            <span className="font-medium">Priority:</span> {workOrder.priority}
+            <span className="font-medium">Priority:</span> {currentOrder.priority}
           </div>
           <div>
-            <span className="font-medium">Type:</span> {workOrder.type}
+            <span className="font-medium">Type:</span> {currentOrder.type}
           </div>
-          {(workOrder.complianceProcedureId || workOrder.calibrationIntervalDays) && (
+          {(currentOrder.complianceProcedureId || currentOrder.calibrationIntervalDays) && (
             <div className="space-y-1">
-              {workOrder.complianceProcedureId && (
+              {currentOrder.complianceProcedureId && (
                 <div>
                   <span className="font-medium">Procedure ID:</span>{' '}
-                  {workOrder.complianceProcedureId}
+                  {currentOrder.complianceProcedureId}
                 </div>
               )}
-              {workOrder.calibrationIntervalDays && (
+              {currentOrder.calibrationIntervalDays && (
                 <div>
                   <span className="font-medium">Calibration Interval:</span>{' '}
-                  {workOrder.calibrationIntervalDays} days
+                  {currentOrder.calibrationIntervalDays} days
                 </div>
               )}
             </div>
           )}
           <div>
             <span className="font-medium">Description:</span>{' '}
-            {workOrder.description || 'N/A'}
+            {currentOrder.description || 'N/A'}
           </div>
           <div>
             <span className="font-medium">Scheduled Date:</span>{' '}
-            {workOrder.scheduledDate
-              ? new Date(workOrder.scheduledDate).toLocaleDateString()
+            {currentOrder.scheduledDate
+              ? new Date(currentOrder.scheduledDate).toLocaleDateString()
               : 'N/A'}
           </div>
           <div>
@@ -116,30 +169,42 @@ const WorkOrderReviewModal: React.FC<Props> = ({
                 ))}
               </select>
             ) : (
-              <span className="ml-1">{workOrder.status}</span>
+              <span className="ml-1">{currentOrder.status}</span>
             )}
           </div>
           <div>
             <span className="font-medium">Assignees:</span>{' '}
-            {workOrder.assignees && workOrder.assignees.length > 0
-              ? workOrder.assignees.join(', ')
+            {currentOrder.assignees && currentOrder.assignees.length > 0
+              ? currentOrder.assignees.join(', ')
               : 'N/A'}
           </div>
-          {workOrder.timeSpentMin !== undefined && (
+          {currentOrder.timeSpentMin !== undefined && (
             <div>
-              <span className="font-medium">Time Spent (min):</span> {workOrder.timeSpentMin}
+              <span className="font-medium">Time Spent (min):</span> {currentOrder.timeSpentMin}
             </div>
           )}
-          {workOrder.failureCode && (
+          {currentOrder.failureCode && (
             <div>
-              <span className="font-medium">Failure Code:</span> {workOrder.failureCode}
+              <span className="font-medium">Failure Code:</span> {currentOrder.failureCode}
             </div>
           )}
-          {workOrder.checklists && workOrder.checklists.length > 0 && (
+          {currentOrder.failureModeTags && currentOrder.failureModeTags.length > 0 && (
+            <div>
+              <span className="font-medium">Failure Modes:</span>
+              <div className="mt-1 flex flex-wrap gap-2">
+                {currentOrder.failureModeTags.map((tag) => (
+                  <span key={tag} className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-700">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {currentOrder.checklists && currentOrder.checklists.length > 0 && (
             <div>
               <div className="font-medium mb-1">Checklists</div>
               <ul className="list-disc list-inside space-y-1">
-                {workOrder.checklists.map((c, idx) => (
+                {currentOrder.checklists?.map((c, idx) => (
                   <li key={idx}>
                     {c.text} {c.done ? '✔' : ''}
                   </li>
@@ -147,11 +212,11 @@ const WorkOrderReviewModal: React.FC<Props> = ({
               </ul>
             </div>
           )}
-          {workOrder.partsUsed && workOrder.partsUsed.length > 0 && (
+          {currentOrder.partsUsed && currentOrder.partsUsed.length > 0 && (
             <div>
               <div className="font-medium mb-1">Parts Used</div>
               <ul className="list-disc list-inside space-y-1">
-                {workOrder.partsUsed.map((p, idx) => (
+                {currentOrder.partsUsed.map((p, idx) => (
                   <li key={idx}>
                     {p.partId} x{p.qty} (${p.cost})
                   </li>
@@ -159,11 +224,11 @@ const WorkOrderReviewModal: React.FC<Props> = ({
               </ul>
             </div>
           )}
-          {workOrder.photos && workOrder.photos.length > 0 && (
+          {currentOrder.photos && currentOrder.photos.length > 0 && (
             <div>
               <div className="font-medium mb-1">Photos</div>
               <div className="flex flex-wrap gap-2">
-                {workOrder.photos.map((p, idx) => (
+                {currentOrder.photos.map((p, idx) => (
                   <img
                     key={idx}
                     src={p}
@@ -174,11 +239,11 @@ const WorkOrderReviewModal: React.FC<Props> = ({
               </div>
             </div>
           )}
-          {workOrder.attachments && workOrder.attachments.length > 0 && (
+          {currentOrder.attachments && currentOrder.attachments.length > 0 && (
             <div>
               <div className="font-medium mb-1">Attachments</div>
               <ul className="list-disc list-inside space-y-1">
-                {workOrder.attachments.map((att: any, idx: number) => (
+                {currentOrder.attachments.map((att: any, idx: number) => (
                   <li key={att.id || idx}>
                     {att.url ? (
                       <a
@@ -197,11 +262,11 @@ const WorkOrderReviewModal: React.FC<Props> = ({
               </ul>
             </div>
           )}
-          {workOrder.signatures && workOrder.signatures.length > 0 && (
+          {currentOrder.signatures && currentOrder.signatures.length > 0 && (
             <div>
               <div className="font-medium mb-1">Signatures</div>
               <ul className="list-disc list-inside space-y-1">
-                {workOrder.signatures.map((s, idx) => (
+                {currentOrder.signatures.map((s, idx) => (
                   <li key={idx}>
                     {s.by} - {new Date(s.ts).toLocaleString()}
                   </li>
@@ -209,7 +274,13 @@ const WorkOrderReviewModal: React.FC<Props> = ({
               </ul>
             </div>
           )}
-          <AICopilot workOrderId={workOrder.id} />
+          <CopilotPanel
+            workOrderId={currentOrder.id}
+            assetId={currentOrder.assetId}
+            initialSummary={currentOrder.copilotSummary}
+            initialTags={currentOrder.failureModeTags}
+            onApplySuggestion={handleApplySuggestion}
+          />
         </div>
         {(isAdmin || isSupervisor) && (
           <div className="flex justify-end space-x-3 p-4 border-t border-neutral-200">

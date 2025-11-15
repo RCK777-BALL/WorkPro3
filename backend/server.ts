@@ -23,6 +23,7 @@ import {
   adminRoutes,
   analyticsRoutes,
   analyticsAIRoutes,
+  copilotRoutes,
   alertRoutes,
   assetsRoutes,
   attachmentRoutes,
@@ -73,6 +74,7 @@ import inventoryModuleRouter from "./src/modules/inventory";
 import workRequestsRouter from "./src/modules/work-requests";
 
 import { startPMScheduler } from "./utils/PMScheduler";
+import { startCopilotSummaryJob } from "./tasks/copilotSummaries";
 import { setupSwagger } from "./utils/swagger";
 import mongoose from "mongoose";
 import errorHandler from "./middleware/errorHandler";
@@ -237,6 +239,7 @@ app.use("/api/plants", plantRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
 app.use("/api/ai", analyticsAIRoutes);
+app.use("/api/ai", copilotRoutes);
 app.use("/api/team", teamRoutes);
 app.use("/api/theme", ThemeRoutes);
 app.use("/api/settings", settingsRoutes);
@@ -289,6 +292,7 @@ if (env.NODE_ENV !== "test") {
         cronExpr: env.PM_SCHEDULER_CRON,
         taskModulePath: env.PM_SCHEDULER_TASK,
       });
+      startCopilotSummaryJob();
     })
     .catch((err) => {
       logger.error("MongoDB connection error:", err);

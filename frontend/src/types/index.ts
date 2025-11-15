@@ -13,6 +13,7 @@ export type {
 export type Vendor = VendorSummary;
 export type { UploadedFile, UploadResponse } from '@shared/uploads';
 export type { ApiResult } from '@shared/http';
+export type { OnboardingState, OnboardingStep, OnboardingStepKey, PMTemplateLibraryItem } from '@shared/onboarding';
 export type {
   Permit,
   PermitHistoryEntry,

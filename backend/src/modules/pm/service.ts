@@ -11,6 +11,7 @@ import Notification from '../../../models/Notifications';
 import { calcNextDue } from '../../../services/PMScheduler';
 
 import type { AssignmentInput } from './schemas';
+import { pmTemplateLibrary, type PMTemplateLibraryItem } from './library';
 
 export interface PMContext {
   tenantId: string;
@@ -176,6 +177,8 @@ export interface PMTemplateResponse {
   assignments: ReturnType<typeof serializeAssignment>[];
 }
 
+export interface PMTemplateLibraryResponse extends PMTemplateLibraryItem {}
+
 export const listTemplates = async (context: PMContext): Promise<PMTemplateResponse[]> => {
   const tasks = await PMTask.find({ tenantId: context.tenantId })
     .select('title notes active assignments')
@@ -188,6 +191,38 @@ export const listTemplates = async (context: PMContext): Promise<PMTemplateRespo
     active: task.active,
     assignments: (task.assignments ?? []).map((assignment) => serializeAssignment(assignment as any, refs)),
   }));
+};
+
+export const listTemplateLibrary = (): PMTemplateLibraryResponse[] => pmTemplateLibrary;
+
+const formatChecklistNote = (checklist: string[]) =>
+  checklist.length ? `\n\nChecklist:\n${checklist.map((item) => `• ${item}`).join('\n')}` : '';
+
+export const cloneTemplateFromLibrary = async (
+  context: PMContext,
+  templateId: string,
+): Promise<PMTemplateResponse> => {
+  const template = pmTemplateLibrary.find((item) => item.id === templateId);
+  if (!template) {
+    throw new PMTemplateError('Template not found', 404);
+  }
+
+  const tenantId = toObjectId(context.tenantId, 'tenant id');
+  const doc = await PMTask.create({
+    title: template.title,
+    notes: `${template.description}\n${template.impact}${formatChecklistNote(template.checklist)}`.trim(),
+    tenantId,
+    rule: template.rule,
+    assignments: [],
+  });
+
+  return {
+    id: doc._id.toString(),
+    title: doc.title,
+    notes: doc.notes ?? undefined,
+    active: doc.active,
+    assignments: [],
+  };
 };
 
 const normalizeChecklist = (input?: AssignmentInput['checklist']) =>

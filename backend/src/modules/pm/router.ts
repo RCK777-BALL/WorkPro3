@@ -11,6 +11,8 @@ import {
   listTemplatesHandler,
   upsertAssignmentHandler,
   deleteAssignmentHandler,
+  listTemplateLibraryHandler,
+  cloneTemplateHandler,
 } from './controller';
 
 const router = Router();

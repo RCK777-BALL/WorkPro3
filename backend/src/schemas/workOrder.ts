@@ -35,6 +35,8 @@ const baseSchema = z.object({
   priority: priorityEnum,
   status: statusEnum,
   type: typeEnum.optional().default('corrective'),
+  copilotSummary: z.string().optional(),
+  failureModeTags: z.array(z.string().min(1)).optional(),
   departmentId: objectId,
   asset: objectId.optional(),
   assetId: objectId.optional(),

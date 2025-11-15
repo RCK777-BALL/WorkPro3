@@ -26,7 +26,8 @@ export type NavItemId =
   | 'messages'
   | 'documentation'
   | 'settings'
-  | 'imports';
+  | 'imports'
+  | 'audit';
 
 const defaultOrder: NavItemId[] = [
   'dashboard',
@@ -46,6 +47,7 @@ const defaultOrder: NavItemId[] = [
   'messages',
   'documentation',
   'settings',
+  'audit',
   'imports',
 ];
 

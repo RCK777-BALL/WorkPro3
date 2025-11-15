@@ -7,6 +7,7 @@ import { Types } from 'mongoose';
 
 import { requireAuth } from '../middleware/authMiddleware';
 import Settings from '../models/Settings';
+import { auditAction } from '../utils/audit';
 
 interface GeneralSettings {
   companyName: string;
@@ -118,6 +119,7 @@ router.get('/', async (req, res, next) => {
 
 router.post('/', async (req, res, next) => {
   try {
+    const previousState = JSON.parse(JSON.stringify(settingsState));
     const payload = (req.body ?? {}) as Partial<SettingsState & { activePlant?: string }>;
 
     settingsState = {
@@ -154,6 +156,8 @@ router.post('/', async (req, res, next) => {
       upsert: true,
       setDefaultsOnInsert: true,
     });
+
+    await auditAction(req, 'update', 'Settings', req.tenantId ?? 'global', previousState, settingsState);
 
     res.json({
       message: 'Settings updated',

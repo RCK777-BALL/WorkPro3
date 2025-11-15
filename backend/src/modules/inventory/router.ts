@@ -14,6 +14,8 @@ import {
   saveVendorHandler,
   listAlertsHandler,
   createPurchaseOrderHandler,
+  listPurchaseOrdersHandler,
+  exportPurchaseOrdersHandler,
 } from './controller';
 
 const router = Router();

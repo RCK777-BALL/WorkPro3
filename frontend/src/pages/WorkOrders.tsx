@@ -23,6 +23,9 @@ const OPTIONAL_WORK_ORDER_KEYS: (keyof WorkOrder)[] = [
   'description',
   'assetId',
   'asset',
+  'copilotSummary',
+  'copilotSummaryUpdatedAt',
+  'failureModeTags',
   'complianceProcedureId',
   'calibrationIntervalDays',
   'assignedTo',
@@ -200,6 +203,13 @@ export default function WorkOrders() {
       console.error(err);
     }
   };
+
+  const handleWorkOrderChange = useCallback((updated: WorkOrder) => {
+    setSelectedOrder(updated);
+    setWorkOrders((prev) =>
+      prev.map((wo) => (wo.id === updated.id ? { ...wo, ...updated } : wo)),
+    );
+  }, []);
 
   const openReview = async (order: WorkOrder) => {
     try {
@@ -693,6 +703,7 @@ export default function WorkOrders() {
             setShowReviewModal(false);
             setSelectedOrder(null);
           }}
+          onWorkOrderChange={handleWorkOrderChange}
         />
       </div>
       <ConflictResolver

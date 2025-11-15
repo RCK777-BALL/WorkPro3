@@ -15,6 +15,22 @@ type DecodedToken = {
   tenantId?: string;
   role?: string;
   siteId?: string;
+  scopes?: unknown;
+  client?: string;
+};
+
+const normalizeScopes = (input: unknown): string[] => {
+  if (!Array.isArray(input)) {
+    return [];
+  }
+
+  const unique = new Set<string>();
+  for (const scope of input) {
+    if (typeof scope === 'string' && scope.trim()) {
+      unique.add(scope.trim());
+    }
+  }
+  return Array.from(unique.values());
 };
 
 const getJwtSecret = (): string => {
@@ -45,6 +61,8 @@ const toPlainUser = (user: HydratedDocument<UserDocument>, decoded: DecodedToken
     siteId,
     role: role ? String(role) : undefined,
     roles: rolesFromDoc.length > 0 ? rolesFromDoc : role ? [String(role)] : undefined,
+    scopes: normalizeScopes(decoded.scopes),
+    client: decoded.client,
   };
 };
 
@@ -106,7 +124,23 @@ export const requireRole = (...allowed: UserRole[]) =>
     next();
   };
 
+export const requireScopes = (...required: string[]) =>
+  (req: Request, res: Response, next: NextFunction): void => {
+    if (required.length === 0) {
+      next();
+      return;
+    }
+
+    const scopes = ((req as AuthedRequest).user as any)?.scopes as string[] | undefined;
+    if (!Array.isArray(scopes) || !required.every((scope) => scopes.includes(scope))) {
+      res.status(403).json({ message: 'Forbidden: missing scope' });
+      return;
+    }
+    next();
+  };
+
 export default {
   requireAuth,
   requireRole,
+  requireScopes,
 };

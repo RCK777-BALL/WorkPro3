@@ -39,6 +39,7 @@ export interface WorkOrder {
   calibrationIntervalDays?: number;
   tenantId: Types.ObjectId;
   plant?: Types.ObjectId;
+  siteId?: Types.ObjectId;
 
   dueDate?: Date;
   completedAt?: Date;
@@ -126,6 +127,7 @@ const workOrderSchema = new Schema<WorkOrder>(
 
     tenantId: tenantRef,
     plant: { type: Schema.Types.ObjectId, ref: 'Plant', index: true },
+    siteId: { type: Schema.Types.ObjectId, ref: 'Site', index: true },
     downtime: { type: Number },
     wrenchTime: { type: Number },
 

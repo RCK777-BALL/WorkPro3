@@ -7,6 +7,8 @@ import type { InventoryUpdatePayload } from '@shared/inventory';
 export interface WorkOrderUpdatePayload {
   _id: string;
   tenantId: string;
+  siteId?: string;
+  plantId?: string;
   title: string;
   status: 'requested' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
   type?: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';

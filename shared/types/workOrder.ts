@@ -27,6 +27,8 @@ export type WorkOrderStatus =
 export interface WorkOrder {
   _id: string;
   tenantId: string;
+  siteId?: string;
+  plantId?: string;
   title: string;
   assetId?: string;
   description?: string;

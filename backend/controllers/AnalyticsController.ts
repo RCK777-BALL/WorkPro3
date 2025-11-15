@@ -10,6 +10,8 @@ import {
   getKPIs,
   getTrendDatasets,
   getDashboardKpiSummary,
+  getCorporateSiteSummaries,
+  getCorporateOverview,
   type AnalyticsFilters,
   type KPIResult,
   type TrendResult,
@@ -205,6 +207,34 @@ export const dashboardKpiJson = async (
   try {
     const filters = parseFilters(req);
     const data = await getDashboardKpiSummary(req.tenantId!, filters);
+    sendResponse(res, data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const corporateSitesJson = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const filters = parseFilters(req);
+    const data = await getCorporateSiteSummaries(req.tenantId!, filters);
+    sendResponse(res, data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const corporateOverviewJson = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const filters = parseFilters(req);
+    const data = await getCorporateOverview(req.tenantId!, filters);
     sendResponse(res, data);
   } catch (err) {
     next(err);

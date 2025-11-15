@@ -126,6 +126,32 @@ export interface DashboardKpiResult {
   mtbf: number;
 }
 
+export interface CorporateSiteSummary {
+  siteId: string;
+  siteName?: string;
+  tenantId: string;
+  totalWorkOrders: number;
+  openWorkOrders: number;
+  completedWorkOrders: number;
+  backlog: number;
+  mttrHours: number;
+  mtbfHours: number;
+  pmCompliance: { total: number; completed: number; percentage: number };
+}
+
+export interface CorporateOverview {
+  totals: {
+    totalWorkOrders: number;
+    openWorkOrders: number;
+    completedWorkOrders: number;
+    backlog: number;
+    pmCompliance: number;
+    averageMttr: number;
+    averageMtbf: number;
+  };
+  perSite: CorporateSiteSummary[];
+}
+
 const ENERGY_METRIC = 'energy_kwh';
 const DEFAULT_THRESHOLDS: Thresholds = {
   availability: 0.85,
@@ -701,8 +727,142 @@ export async function getDashboardKpiSummary(
   };
 }
 
+export async function getCorporateSiteSummaries(
+  tenantId: string,
+  filters: AnalyticsFilters = {},
+): Promise<CorporateSiteSummary[]> {
+  const tenantFilter = toObjectId(tenantId);
+  const siteFilter = normalizeIdList(filters.siteIds);
+  const dateRange = buildDateRange(filters);
+
+  const siteQuery: Record<string, unknown> = { tenantId: tenantFilter };
+  if (siteFilter && siteFilter.length) {
+    siteQuery._id = { $in: siteFilter };
+  }
+  const siteDocs = await Site.find(siteQuery).select('name tenantId').lean();
+  const siteNames = new Map(siteDocs.map((site) => [site._id.toString(), site.name]));
+
+  const workOrderMatch: Record<string, unknown> = { tenantId: tenantFilter };
+  if (siteFilter && siteFilter.length) {
+    workOrderMatch.siteId = { $in: siteFilter };
+  }
+  if (dateRange) {
+    workOrderMatch.$or = [
+      { createdAt: dateRange },
+      { completedAt: dateRange },
+      { dueDate: dateRange },
+    ];
+  }
+
+  const workOrders: Array<{
+    siteId?: Types.ObjectId | null;
+    status: WorkOrder['status'];
+    completedAt?: Date | null;
+    createdAt?: Date;
+    pmTask?: Types.ObjectId | null;
+  }> = await WorkOrder.find(workOrderMatch)
+    .select('siteId status completedAt createdAt pmTask')
+    .lean();
+
+  const grouped = new Map<string, typeof workOrders>();
+  workOrders.forEach((order) => {
+    const key = order.siteId ? order.siteId.toString() : 'unassigned';
+    if (!grouped.has(key)) {
+      grouped.set(key, []);
+    }
+    grouped.get(key)!.push(order);
+  });
+
+  siteDocs.forEach((site) => {
+    const id = site._id.toString();
+    if (!grouped.has(id)) {
+      grouped.set(id, []);
+    }
+  });
+
+  const summaries: CorporateSiteSummary[] = [];
+  grouped.forEach((orders, siteId) => {
+    const total = orders.length;
+    const completed = orders.filter((order) => order.status === 'completed').length;
+    const open = orders.filter((order) => order.status !== 'completed' && order.status !== 'cancelled').length;
+    const backlog = calculateBacklog(orders);
+    const pmTotal = orders.filter((order) => Boolean(order.pmTask)).length;
+    const pmCompleted = orders.filter((order) => order.pmTask && order.status === 'completed').length;
+    const pmPercentage = pmTotal ? (pmCompleted / pmTotal) * 100 : 0;
+    summaries.push({
+      siteId,
+      siteName: siteNames.get(siteId) ?? (siteId === 'unassigned' ? 'Unassigned' : undefined),
+      tenantId,
+      totalWorkOrders: total,
+      openWorkOrders: open,
+      completedWorkOrders: completed,
+      backlog,
+      mttrHours: calculateMTTR(orders),
+      mtbfHours: calculateMTBF(orders),
+      pmCompliance: { total: pmTotal, completed: pmCompleted, percentage: pmPercentage },
+    });
+  });
+
+  return summaries.sort((a, b) => {
+    const nameA = a.siteName ?? a.siteId;
+    const nameB = b.siteName ?? b.siteId;
+    return nameA.localeCompare(nameB);
+  });
+}
+
+export async function getCorporateOverview(
+  tenantId: string,
+  filters: AnalyticsFilters = {},
+): Promise<CorporateOverview> {
+  const perSite = await getCorporateSiteSummaries(tenantId, filters);
+  const aggregate = perSite.reduce(
+    (acc, site) => {
+      acc.totalWorkOrders += site.totalWorkOrders;
+      acc.openWorkOrders += site.openWorkOrders;
+      acc.completedWorkOrders += site.completedWorkOrders;
+      acc.backlog += site.backlog;
+      acc.pmTotal += site.pmCompliance.total;
+      acc.pmCompleted += site.pmCompliance.completed;
+      acc.mttrSum += site.mttrHours;
+      acc.mtbfSum += site.mtbfHours;
+      return acc;
+    },
+    {
+      totalWorkOrders: 0,
+      openWorkOrders: 0,
+      completedWorkOrders: 0,
+      backlog: 0,
+      pmTotal: 0,
+      pmCompleted: 0,
+      mttrSum: 0,
+      mtbfSum: 0,
+    },
+  );
+
+  const averageMttr = perSite.length ? aggregate.mttrSum / perSite.length : 0;
+  const averageMtbf = perSite.length ? aggregate.mtbfSum / perSite.length : 0;
+  const pmCompliance = aggregate.pmTotal
+    ? (aggregate.pmCompleted / aggregate.pmTotal) * 100
+    : 0;
+
+  return {
+    totals: {
+      totalWorkOrders: aggregate.totalWorkOrders,
+      openWorkOrders: aggregate.openWorkOrders,
+      completedWorkOrders: aggregate.completedWorkOrders,
+      backlog: aggregate.backlog,
+      pmCompliance,
+      averageMttr,
+      averageMtbf,
+    },
+    perSite,
+  };
+}
+
 export default {
   getKPIs,
   getTrendDatasets,
   getDashboardKpiSummary,
+  getCorporateSiteSummaries,
+  getCorporateOverview,
 };

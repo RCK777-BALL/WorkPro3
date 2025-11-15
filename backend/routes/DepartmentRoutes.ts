@@ -13,6 +13,7 @@ import Station, { type StationDoc } from '../models/Station';
 import Asset, { type AssetDoc } from '../models/Asset';
 import Plant, { type PlantDoc } from '../models/Plant';
 import { requireAuth } from '../middleware/authMiddleware';
+import tenantScope from '../middleware/tenantScope';
 import { departmentValidators } from '../validators/departmentValidators';
 import { validate } from '../middleware/validationMiddleware';
 import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
@@ -105,6 +106,7 @@ interface DepartmentNode {
 
 const router = Router();
 router.use(requireAuth);
+router.use(tenantScope);
 
 const resolvePlantId = (req: AuthedRequest): string | undefined => req.plantId ?? req.siteId ?? undefined;
 

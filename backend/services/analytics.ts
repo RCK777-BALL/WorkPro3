@@ -126,6 +126,37 @@ export interface DashboardKpiResult {
   mtbf: number;
 }
 
+export interface PmOptimizationAssetInsight {
+  assetId: string;
+  assetName?: string;
+  usage: {
+    runHoursPerDay: number;
+    cyclesPerDay: number;
+  };
+  failureProbability: number;
+  compliance: {
+    total: number;
+    completed: number;
+    overdue: number;
+    percentage: number;
+    impactScore: number;
+  };
+}
+
+export interface PmOptimizationScenario {
+  label: string;
+  description: string;
+  intervalDelta: number;
+  failureProbability: number;
+  compliancePercentage: number;
+}
+
+export interface PmOptimizationWhatIfResponse {
+  updatedAt: string;
+  assets: PmOptimizationAssetInsight[];
+  scenarios: PmOptimizationScenario[];
+}
+
 export interface CorporateSiteSummary {
   siteId: string;
   siteName?: string;
@@ -868,10 +899,214 @@ export async function getCorporateOverview(
   };
 }
 
+function formatUsage(value: number): number {
+  return Number.isFinite(value) ? Number(value.toFixed(2)) : 0;
+}
+
+function formatProbability(value: number): number {
+  return Number.isFinite(value) ? Number(value.toFixed(3)) : 0;
+}
+
+export async function getPmWhatIfSimulations(tenantId: string): Promise<PmOptimizationWhatIfResponse> {
+  const tenantFilter = toObjectId(tenantId);
+  const now = new Date();
+  const productionCutoff = new Date(now.getTime() - PRODUCTION_LOOKBACK_DAYS * DAY_IN_MS);
+  const workOrderCutoff = new Date(now.getTime() - WORKORDER_LOOKBACK_DAYS * DAY_IN_MS);
+
+  const [assetDocs, usageAgg, pmAgg] = await Promise.all([
+    Asset.find({ tenantId: tenantFilter }).select('_id name').lean(),
+    ProductionRecord.aggregate<{
+      _id: Types.ObjectId | null;
+      totalRunTimeMinutes: number;
+      totalCycles: number;
+    }>([
+      {
+        $match: {
+          tenantId: tenantFilter,
+          recordedAt: { $gte: productionCutoff },
+          asset: { $exists: true, $ne: null },
+        },
+      },
+      {
+        $group: {
+          _id: '$asset',
+          totalRunTimeMinutes: { $sum: { $ifNull: ['$runTimeMinutes', 0] } },
+          totalCycles: { $sum: { $ifNull: ['$actualUnits', 0] } },
+        },
+      },
+    ]),
+    WorkOrder.aggregate<{
+      _id: Types.ObjectId | null;
+      preventive: number;
+      completedPreventive: number;
+      overdue: number;
+      corrective: number;
+      total: number;
+    }>([
+      {
+        $match: {
+          tenantId: tenantFilter,
+          createdAt: { $gte: workOrderCutoff },
+          assetId: { $exists: true, $ne: null },
+        },
+      },
+      {
+        $group: {
+          _id: '$assetId',
+          preventive: { $sum: { $cond: [{ $eq: ['$type', 'preventive'] }, 1, 0] } },
+          completedPreventive: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$type', 'preventive'] },
+                    { $eq: ['$status', 'completed'] },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+          overdue: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$type', 'preventive'] },
+                    { $ne: ['$status', 'completed'] },
+                    { $lt: ['$dueDate', now] },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+          corrective: { $sum: { $cond: [{ $eq: ['$type', 'corrective'] }, 1, 0] } },
+          total: { $sum: 1 },
+        },
+      },
+    ]),
+  ]);
+
+  const assetNames = new Map(assetDocs.map((asset) => [asset._id.toString(), asset.name]));
+
+  const usageMap = new Map<string, { runHoursPerDay: number; cyclesPerDay: number }>();
+  usageAgg.forEach((entry) => {
+    if (!entry._id) return;
+    const runHoursPerDay = formatUsage(entry.totalRunTimeMinutes / 60 / PRODUCTION_LOOKBACK_DAYS);
+    const cyclesPerDay = formatUsage(entry.totalCycles / PRODUCTION_LOOKBACK_DAYS);
+    usageMap.set(entry._id.toString(), { runHoursPerDay, cyclesPerDay });
+  });
+
+  type PmAggEntry = {
+    preventive: number;
+    completedPreventive: number;
+    overdue: number;
+    corrective: number;
+    total: number;
+  };
+
+  const pmMap = new Map<string, PmAggEntry>();
+  pmAgg.forEach((entry) => {
+    if (!entry._id) return;
+    pmMap.set(entry._id.toString(), {
+      preventive: entry.preventive ?? 0,
+      completedPreventive: entry.completedPreventive ?? 0,
+      overdue: entry.overdue ?? 0,
+      corrective: entry.corrective ?? 0,
+      total: entry.total ?? 0,
+    });
+  });
+
+  const assetIds = new Set<string>([
+    ...assetNames.keys(),
+    ...usageMap.keys(),
+    ...pmMap.keys(),
+  ]);
+
+  const insights: PmOptimizationAssetInsight[] = Array.from(assetIds).map((assetId) => {
+    const usage = usageMap.get(assetId) ?? { runHoursPerDay: 0, cyclesPerDay: 0 };
+    const pmStats = pmMap.get(assetId) ?? {
+      preventive: 0,
+      completedPreventive: 0,
+      overdue: 0,
+      corrective: 0,
+      total: 0,
+    };
+    const compliancePercentage = pmStats.preventive
+      ? (pmStats.completedPreventive / pmStats.preventive) * 100
+      : 0;
+    const failureProbability = pmStats.total ? pmStats.corrective / pmStats.total : 0;
+    const impactScore = Math.min(
+      100,
+      pmStats.overdue * 10 + (1 - compliancePercentage / 100) * 40 + failureProbability * 50,
+    );
+    return {
+      assetId,
+      assetName: assetNames.get(assetId),
+      usage,
+      failureProbability: formatProbability(failureProbability),
+      compliance: {
+        total: pmStats.preventive,
+        completed: pmStats.completedPreventive,
+        overdue: pmStats.overdue,
+        percentage: formatUsage(compliancePercentage),
+        impactScore: formatUsage(impactScore),
+      },
+    };
+  });
+
+  const rankedInsights = insights
+    .sort((a, b) => b.compliance.impactScore - a.compliance.impactScore)
+    .slice(0, 12);
+
+  const averageFailure = rankedInsights.length
+    ? rankedInsights.reduce((sum, insight) => sum + insight.failureProbability, 0) /
+      rankedInsights.length
+    : 0;
+  const averageCompliance = rankedInsights.length
+    ? rankedInsights.reduce((sum, insight) => sum + insight.compliance.percentage, 0) /
+      rankedInsights.length
+    : 0;
+
+  const scenarios: PmOptimizationScenario[] = [
+    {
+      label: 'Current plan',
+      description: 'Existing preventive maintenance cadence.',
+      intervalDelta: 0,
+      failureProbability: formatProbability(averageFailure),
+      compliancePercentage: formatUsage(averageCompliance),
+    },
+    {
+      label: 'Accelerate PM',
+      description: 'Reduce PM intervals by 20% to target high-risk assets.',
+      intervalDelta: -20,
+      failureProbability: formatProbability(Math.max(averageFailure - 0.12, 0)),
+      compliancePercentage: formatUsage(Math.min(averageCompliance + 8, 100)),
+    },
+    {
+      label: 'Defer PM',
+      description: 'Extend PM intervals by 15% and accept higher risk.',
+      intervalDelta: 15,
+      failureProbability: formatProbability(Math.min(averageFailure + 0.1, 1)),
+      compliancePercentage: formatUsage(Math.max(averageCompliance - 6, 0)),
+    },
+  ];
+
+  return {
+    updatedAt: now.toISOString(),
+    assets: rankedInsights,
+    scenarios,
+  };
+}
+
 export default {
   getKPIs,
   getTrendDatasets,
   getDashboardKpiSummary,
   getCorporateSiteSummaries,
   getCorporateOverview,
+  getPmWhatIfSimulations,
 };

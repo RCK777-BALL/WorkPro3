@@ -14,6 +14,16 @@ const ACTIVE_WORK_ORDER_STATUSES = ['requested', 'assigned', 'in_progress'];
 const ANOMALY_LOOKBACK = 20;
 const ANOMALY_COOLDOWN_MINUTES = 15;
 
+type ConditionRuleLean = {
+  _id?: Types.ObjectId;
+  asset?: Types.ObjectId;
+  metric?: string;
+  operator?: '>' | '<' | '>=' | '<=' | '==';
+  threshold?: number;
+  workOrderTitle?: string;
+  workOrderDescription?: string;
+};
+
 export type IoTReadingInput = {
   assetId?: string;
   asset?: string;
@@ -76,7 +86,7 @@ const matchesRule = (value: number, operator: string, threshold: number): boolea
 };
 
 const createWorkOrderFromRule = async (
-  rule: Awaited<ReturnType<typeof ConditionRule.findOne>>,
+  rule: ConditionRuleLean | null,
   tenantId: string,
   assetId: string,
   metric: string,
@@ -243,7 +253,7 @@ export async function ingestTelemetryBatch({
   const triggeredRules: RuleTriggerResult[] = [];
   const anomalies: AnomalyResult[] = [];
 
-  const ruleCache = new Map<string, Awaited<ReturnType<typeof ConditionRule.find>>>();
+  const ruleCache = new Map<string, ConditionRuleLean[]>();
 
   for (const doc of docs) {
     const assetId = (doc.asset as Types.ObjectId | undefined)?.toString();
@@ -257,7 +267,10 @@ export async function ingestTelemetryBatch({
         metric,
         active: true,
       };
-      ruleCache.set(cacheKey, await ConditionRule.find(query).lean());
+      ruleCache.set(
+        cacheKey,
+        (await ConditionRule.find(query).lean()) as ConditionRuleLean[],
+      );
     }
     const rules = ruleCache.get(cacheKey) ?? [];
     for (const rule of rules) {
@@ -268,7 +281,7 @@ export async function ingestTelemetryBatch({
         continue;
       }
       const result = await createWorkOrderFromRule(
-        rule as Awaited<ReturnType<typeof ConditionRule.findOne>>,
+        rule,
         tenantId,
         assetId,
         metric,

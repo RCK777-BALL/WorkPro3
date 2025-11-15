@@ -22,6 +22,7 @@ const envSchema = z.object({
   PM_SCHEDULER_CRON: z.string().default('*/5 * * * *'),
   PM_SCHEDULER_TASK: z.string().default('./tasks/PMSchedulerTask'),
   DEFAULT_TENANT_ID: z.string().optional(),
+  EXECUTIVE_REPORT_CRON: z.string().default('0 * * * *'),
 });
 
 export type EnvVars = z.infer<typeof envSchema>;

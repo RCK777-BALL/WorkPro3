@@ -196,6 +196,14 @@ const navItems: Record<NavItemId, NavItem> = {
     icon: Cpu,
     section: "analytics",
   },
+  executive: {
+    id: "executive",
+    label: "Executive Insights",
+    to: "/executive",
+    icon: Factory,
+    section: "analytics",
+    permission: { scope: "executive", action: "read" },
+  },
   reports: {
     id: "reports",
     label: "Reports",

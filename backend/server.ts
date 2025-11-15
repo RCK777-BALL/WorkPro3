@@ -83,6 +83,7 @@ import assetInsightsRouter from "./src/modules/assets";
 
 import { startPMScheduler } from "./utils/PMScheduler";
 import { startCopilotSummaryJob } from "./tasks/copilotSummaries";
+import { startExecutiveReportScheduler } from "./tasks/executiveReports";
 import { setupSwagger } from "./utils/swagger";
 import mongoose from "mongoose";
 import errorHandler from "./middleware/errorHandler";
@@ -239,6 +240,7 @@ app.use(/^\/api(?!\/(auth|public))/, generalLimiter);
 
 app.use("/api/pm/templates", pmTemplatesRouter);
 app.use("/api/onboarding", onboardingRouter);
+app.use("/api/executive", executiveRouter);
 
 app.use("/api/departments", departmentRoutes);
 app.use("/api/workorders", workOrdersRoutes);
@@ -322,6 +324,7 @@ if (env.NODE_ENV !== "test") {
         taskModulePath: env.PM_SCHEDULER_TASK,
       });
       startCopilotSummaryJob();
+      startExecutiveReportScheduler(env.EXECUTIVE_REPORT_CRON);
     })
     .catch((err) => {
       logger.error("MongoDB connection error:", err);

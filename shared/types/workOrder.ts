@@ -33,9 +33,12 @@ export interface WorkOrder {
   title: string;
   assetId?: string;
   description?: string;
+  copilotSummary?: string;
+  copilotSummaryUpdatedAt?: string;
   priority: 'low' | 'medium' | 'high' | 'critical';
   status: WorkOrderStatus;
   type: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
+  failureModeTags?: string[];
   assignees?: string[];
   checklists?: ChecklistItem[];
   partsUsed?: WorkOrderPartLine[];

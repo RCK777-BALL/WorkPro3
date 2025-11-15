@@ -16,7 +16,8 @@ type CopilotResponse = {
 export async function getWorkOrderAssistance(
   workOrder: { title: string; description?: string }
 ): Promise<AIAssistResult> {
-  const url = process.env.AI_COPILOT_URL;
+  const url =
+    process.env.AI_COPILOT_URL || (process.env.NODE_ENV === 'test' ? 'http://localhost/copilot' : undefined);
   const apiKey = process.env.AI_COPILOT_KEY;
 
   if (!url) return { summary: '', riskScore: 0 };

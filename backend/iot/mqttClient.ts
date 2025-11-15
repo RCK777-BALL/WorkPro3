@@ -20,12 +20,23 @@ async function processMessage(payload: Buffer) {
     const decoded = JSON.parse(payload.toString());
     const readings = toArray<IoTReadingInput | (IoTReadingInput & { tenantId?: string })>(
       Array.isArray(decoded?.readings) ? decoded.readings : decoded,
-    ).map((reading) => ({
-      assetId: reading.assetId ?? reading.asset,
-      metric: reading.metric,
-      value: reading.value,
-      timestamp: reading.timestamp,
-    }));
+    ).map((reading): IoTReadingInput => {
+      const entry: IoTReadingInput = {};
+      const assetId = reading.assetId ?? reading.asset;
+      if (typeof assetId === "string" && assetId.trim()) {
+        entry.assetId = assetId;
+      }
+      if (typeof reading.metric === "string" && reading.metric.trim()) {
+        entry.metric = reading.metric;
+      }
+      if (typeof reading.value === "number" || typeof reading.value === "string") {
+        entry.value = reading.value;
+      }
+      if (reading.timestamp instanceof Date || typeof reading.timestamp === "string") {
+        entry.timestamp = reading.timestamp;
+      }
+      return entry;
+    });
     const tenantId =
       (typeof decoded?.tenantId === "string" && decoded.tenantId) ||
       (typeof decoded?.tenant === "string" && decoded.tenant) ||

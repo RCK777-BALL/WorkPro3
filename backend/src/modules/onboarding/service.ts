@@ -1,0 +1,163 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
+import { Types } from 'mongoose';
+
+import Tenant, {
+  type TenantDocument,
+  type TenantOnboardingState,
+  type OnboardingStepKey,
+} from '../../../models/Tenant';
+import Site from '../../../models/Site';
+import Asset from '../../../models/Asset';
+import PMTask from '../../../models/PMTask';
+import User from '../../../models/User';
+
+const REMINDER_COOLDOWN_MS = 1000 * 60 * 60 * 12; // 12 hours
+
+export interface OnboardingStepDefinition {
+  key: OnboardingStepKey;
+  title: string;
+  description: string;
+  href: string;
+}
+
+const STEP_DEFINITIONS: OnboardingStepDefinition[] = [
+  {
+    key: 'site',
+    title: 'Add your first site',
+    description: 'Create a plant or site to anchor assets and PM schedules.',
+    href: '/plants',
+  },
+  {
+    key: 'assets',
+    title: 'Import assets',
+    description: 'Upload asset data or add equipment manually to build your registry.',
+    href: '/imports',
+  },
+  {
+    key: 'pmTemplates',
+    title: 'Pick PM templates',
+    description: 'Start from curated PM templates and adapt them to your equipment.',
+    href: '/pm/tasks',
+  },
+  {
+    key: 'team',
+    title: 'Invite your team',
+    description: 'Add technicians and supervisors so work can be assigned.',
+    href: '/teams',
+  },
+];
+
+const ensureTenant = async (tenantId: string): Promise<TenantDocument> => {
+  const tenant = await Tenant.findById(tenantId);
+  if (!tenant) {
+    throw new Error('Tenant not found');
+  }
+  return tenant;
+};
+
+const ensureState = (state?: TenantOnboardingState): TenantOnboardingState => ({
+  steps: {
+    site: state?.steps?.site ?? { completed: false },
+    assets: state?.steps?.assets ?? { completed: false },
+    pmTemplates: state?.steps?.pmTemplates ?? { completed: false },
+    team: state?.steps?.team ?? { completed: false },
+  },
+  lastReminderAt: state?.lastReminderAt,
+  reminderDismissedAt: state?.reminderDismissedAt,
+});
+
+const collectSignals = async (tenantId: Types.ObjectId) => {
+  const [hasSite, hasAsset, hasPmTask, userCount] = await Promise.all([
+    Site.exists({ tenantId }),
+    Asset.exists({ tenantId }),
+    PMTask.exists({ tenantId }),
+    User.countDocuments({ tenantId }),
+  ]);
+  return {
+    site: Boolean(hasSite),
+    assets: Boolean(hasAsset),
+    pmTemplates: Boolean(hasPmTask),
+    team: (userCount ?? 0) > 1,
+  } satisfies Record<OnboardingStepKey, boolean>;
+};
+
+const refreshState = async (tenant: TenantDocument): Promise<TenantOnboardingState> => {
+  const tenantId = tenant._id instanceof Types.ObjectId ? tenant._id : new Types.ObjectId(tenant._id);
+  const completion = await collectSignals(tenantId);
+  const nextState = ensureState(tenant.onboarding);
+  let changed = false;
+
+  for (const [key, done] of Object.entries(completion) as Array<[OnboardingStepKey, boolean]>) {
+    const stepState = nextState.steps[key];
+    if (done && !stepState.completed) {
+      stepState.completed = true;
+      stepState.completedAt = new Date();
+      changed = true;
+    }
+  }
+
+  if (!tenant.onboarding || changed) {
+    tenant.onboarding = nextState;
+    await tenant.save();
+  }
+  return nextState;
+};
+
+export interface OnboardingStepResponse extends OnboardingStepDefinition {
+  completed: boolean;
+  completedAt?: string;
+}
+
+export interface OnboardingStateResponse {
+  steps: OnboardingStepResponse[];
+  pendingReminder: boolean;
+  reminderMessage?: string;
+  lastReminderAt?: string;
+  nextStepKey?: OnboardingStepKey | null;
+}
+
+const shouldShowReminder = (state: TenantOnboardingState, hasIncomplete: boolean) => {
+  if (!hasIncomplete) return false;
+  if (!state.lastReminderAt) return true;
+  return Date.now() - state.lastReminderAt.getTime() > REMINDER_COOLDOWN_MS;
+};
+
+export const getOnboardingState = async (tenantId: string): Promise<OnboardingStateResponse> => {
+  const tenant = await ensureTenant(tenantId);
+  const state = await refreshState(tenant);
+  const steps: OnboardingStepResponse[] = STEP_DEFINITIONS.map((step) => ({
+    ...step,
+    completed: state.steps[step.key]?.completed ?? false,
+    completedAt: state.steps[step.key]?.completedAt?.toISOString(),
+  }));
+  const incomplete = steps.filter((step) => !step.completed);
+  const nextStep = incomplete[0]?.key ?? null;
+  const pendingReminder = shouldShowReminder(state, incomplete.length > 0);
+  const reminderMessage = pendingReminder
+    ? `Complete ${incomplete.length === 1 ? 'this step' : 'these steps'} to finish setup. Next up: ${
+        incomplete[0]?.title ?? 'onboarding'
+      }.`
+    : undefined;
+
+  return {
+    steps,
+    pendingReminder,
+    reminderMessage,
+    lastReminderAt: state.lastReminderAt?.toISOString(),
+    nextStepKey: nextStep,
+  };
+};
+
+export const dismissOnboardingReminder = async (tenantId: string) => {
+  const tenant = await ensureTenant(tenantId);
+  const state = ensureState(tenant.onboarding);
+  const now = new Date();
+  state.lastReminderAt = now;
+  state.reminderDismissedAt = now;
+  tenant.onboarding = state;
+  await tenant.save();
+  return { lastReminderAt: now.toISOString() };
+};

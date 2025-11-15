@@ -71,6 +71,8 @@ import hierarchyRouter from "./src/modules/hierarchy";
 import importExportRouter from "./src/modules/importExport";
 import inventoryModuleRouter from "./src/modules/inventory";
 import workRequestsRouter from "./src/modules/work-requests";
+import pmTemplatesRouter from "./src/modules/pm";
+import onboardingRouter from "./src/modules/onboarding";
 
 import { startPMScheduler } from "./utils/PMScheduler";
 import { setupSwagger } from "./utils/swagger";
@@ -212,6 +214,9 @@ app.use(/^\/api(?!\/(auth|public))/, requireAuth, tenantScope);
 app.use("/api/notifications", burstFriendly, notificationsRoutes);
 // Apply limiter to the rest of protected /api routes
 app.use(/^\/api(?!\/(auth|public))/, generalLimiter);
+
+app.use("/api/pm/templates", pmTemplatesRouter);
+app.use("/api/onboarding", onboardingRouter);
 
 app.use("/api/departments", departmentRoutes);
 app.use("/api/workorders", workOrdersRoutes);

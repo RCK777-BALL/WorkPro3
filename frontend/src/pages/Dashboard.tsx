@@ -25,6 +25,7 @@ import StatusBadge from "@/components/common/StatusBadge";
 import Button from "@common/Button";
 import AlertBanner from "@/components/layout/AlertBanner";
 import { DashboardAnalyticsPanel } from "@/features/dashboards";
+import { OnboardingWizard } from "@/modules/onboarding";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
 
 type SummaryResponse = {
@@ -1323,6 +1324,8 @@ export default function Dashboard() {
         </header>
 
         <AlertBanner />
+
+        <OnboardingWizard />
 
         <DashboardFilters
           filters={filters}

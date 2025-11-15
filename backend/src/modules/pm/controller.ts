@@ -13,6 +13,8 @@ import {
   removeAssignment,
   PMTemplateError,
   type PMContext,
+  listTemplateLibrary,
+  cloneTemplateFromLibrary,
 } from './service';
 
 const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
@@ -49,6 +51,20 @@ export const listTemplatesHandler: AuthedRequestHandler = async (req, res, next)
   try {
     const data = await listTemplates(buildContext(req));
     send(res, data);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const listTemplateLibraryHandler: AuthedRequestHandler = (_req, res) => {
+  send(res, listTemplateLibrary());
+};
+
+export const cloneTemplateHandler: AuthedRequestHandler<{ templateId: string }> = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    const data = await cloneTemplateFromLibrary(buildContext(req), req.params.templateId);
+    send(res, data, 201);
   } catch (err) {
     handleError(err, res, next);
   }

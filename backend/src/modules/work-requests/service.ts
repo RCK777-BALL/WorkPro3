@@ -68,8 +68,9 @@ const createUniqueToken = async (): Promise<string> => {
   throw new WorkRequestError('Unable to assign a request token. Please retry.', 500);
 };
 
-const resolveFormContext = async (slug: string): Promise<{ siteId: Types.ObjectId; tenantId: Types.ObjectId; requestFormId: Types.ObjectId }>
-=> {
+const resolveFormContext = async (
+  slug: string,
+): Promise<{ siteId: Types.ObjectId; tenantId: Types.ObjectId; requestFormId: Types.ObjectId }> => {
   const form = await RequestForm.findOne({ slug }).lean<{ _id: Types.ObjectId; siteId?: Types.ObjectId }>();
   if (!form) {
     throw new WorkRequestError('Request form not found', 404);
@@ -120,11 +121,82 @@ export const submitPublicRequest = async (
   return { requestId: request._id.toString(), token: request.token, status: request.status };
 };
 
+const humanize = (value: string) =>
+  value
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+
+const describeRequestStatus = (status: WorkRequestStatus) => {
+  switch (status) {
+    case 'new':
+      return 'Submitted and awaiting review';
+    case 'reviewing':
+      return 'Under review by the maintenance team';
+    case 'converted':
+      return 'Converted to a work order for technicians to handle';
+    case 'closed':
+    default:
+      return 'Closed';
+  }
+};
+
 export const getPublicRequestStatus = async (token: string) => {
   const request = await WorkRequest.findOne({ token }).lean<WorkRequestDocument>();
   if (!request) {
     throw new WorkRequestError('Request not found', 404);
   }
+
+  const workOrder = request.workOrder
+    ? await WorkOrder.findById(request.workOrder)
+        .select('title status copilotSummary copilotSummaryUpdatedAt createdAt updatedAt')
+        .lean<{
+          _id: Types.ObjectId;
+          title: string;
+          status: string;
+          copilotSummary?: string;
+          copilotSummaryUpdatedAt?: Date;
+          createdAt?: Date;
+          updatedAt?: Date;
+        } | null>()
+    : null;
+
+  const updates: Array<{ label: string; description?: string; timestamp?: Date }> = [
+    {
+      label: 'Request submitted',
+      description: request.description ?? 'Request received by the maintenance team.',
+      timestamp: request.createdAt,
+    },
+    {
+      label: 'Current status',
+      description: describeRequestStatus(request.status),
+      timestamp: request.updatedAt ?? request.createdAt,
+    },
+  ];
+
+  if (workOrder) {
+    updates.push({
+      label: 'Work order created',
+      description: `Work order ${workOrder._id.toString()} opened to address this request.`,
+      timestamp: workOrder.createdAt,
+    });
+    updates.push({
+      label: 'Technician progress',
+      description: `Technicians report the work order is currently ${humanize(workOrder.status)}.`,
+      timestamp: workOrder.updatedAt,
+    });
+  }
+
+  const technicianResponses = workOrder?.copilotSummary
+    ? [
+        {
+          message: workOrder.copilotSummary,
+          timestamp: workOrder.copilotSummaryUpdatedAt ?? workOrder.updatedAt ?? workOrder.createdAt,
+        },
+      ]
+    : [];
+
   return {
     token: request.token,
     status: request.status,
@@ -133,6 +205,8 @@ export const getPublicRequestStatus = async (token: string) => {
     createdAt: request.createdAt,
     workOrderId: request.workOrder?.toString(),
     photos: request.photos ?? [],
+    updates,
+    technicianResponses,
   };
 };
 

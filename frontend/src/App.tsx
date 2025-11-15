@@ -56,6 +56,7 @@ import RegisterPage from "@/pages/RegisterPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
 import PublicRequestPage from "@/public/request";
+import RequestStatus from "@/pages/RequestStatus";
 
 export default function App() {
   const navigate = useNavigate();
@@ -90,6 +91,7 @@ export default function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot" element={<ForgotPasswordPage />} />
         <Route path="/public/request/:slug?" element={<PublicRequestPage />} />
+        <Route path="/request/:token" element={<RequestStatus />} />
         <Route element={<RequireAuth><Layout /></RequireAuth>}>
           <Route index element={<Navigate to="/dashboard" />} />
           <Route path="/dashboard" element={<Dashboard />} />

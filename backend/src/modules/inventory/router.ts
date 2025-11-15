@@ -13,6 +13,8 @@ import {
   saveVendorHandler,
   listAlertsHandler,
   createPurchaseOrderHandler,
+  listPurchaseOrdersHandler,
+  exportPurchaseOrdersHandler,
 } from './controller';
 
 const router = Router();
@@ -30,5 +32,7 @@ router.put('/vendors/:vendorId', saveVendorHandler);
 
 router.get('/alerts', listAlertsHandler);
 router.post('/purchase-orders', createPurchaseOrderHandler);
+router.get('/purchase-orders', listPurchaseOrdersHandler);
+router.get('/purchase-orders/export', exportPurchaseOrdersHandler);
 
 export default router;

@@ -11,7 +11,9 @@ import crypto from 'crypto';
 
 import webhooksRoutes from '../routes/WebhooksRoutes';
 import Webhook from '../models/Webhook';
-import { dispatchEvent, RETRY_DELAY_MS } from '../utils/webhookDispatcher';
+import * as dispatcher from '../utils/webhookDispatcher';
+
+const { dispatchEvent, RETRY_DELAY_MS } = dispatcher;
 
 const app = express();
 app.use(express.json());
@@ -36,7 +38,7 @@ beforeEach(async () => {
 describe('Webhook subscription', () => {
   it('creates a subscription', async () => {
     const res = await request(app)
-      .post('/api/webhooks/subscribe')
+      .post('/api/webhooks/register')
       .send({ url: 'http://example.com', event: 'WO.created' })
       .expect(201);
 
@@ -48,16 +50,32 @@ describe('Webhook subscription', () => {
   it('prevents duplicate subscriptions via Idempotency-Key', async () => {
     const key = 'abc123';
     await request(app)
-      .post('/api/webhooks/subscribe')
+      .post('/api/webhooks/register')
       .set('Idempotency-Key', key)
       .send({ url: 'http://example.com', event: 'WO.created' })
       .expect(201);
 
     await request(app)
-      .post('/api/webhooks/subscribe')
+      .post('/api/webhooks/register')
       .set('Idempotency-Key', key)
       .send({ url: 'http://example.com', event: 'WO.created' })
       .expect(409);
+  });
+});
+
+describe('Webhook event endpoint', () => {
+  it('validates event payloads', async () => {
+    await request(app).post('/api/webhooks/event').send({}).expect(400);
+  });
+
+  it('dispatches events via dispatcher', async () => {
+    const spy = vi.spyOn(dispatcher, 'dispatchEvent').mockResolvedValue();
+    await request(app)
+      .post('/api/webhooks/event')
+      .send({ event: 'WO.created', payload: { id: 1 } })
+      .expect(202);
+    expect(spy).toHaveBeenCalledWith('WO.created', { id: 1 });
+    spy.mockRestore();
   });
 });
 

@@ -3,7 +3,13 @@
  */
 
 import http from '@/lib/http';
-import type { InventoryAlert, Part, PurchaseOrder, PurchaseOrderPayload, VendorSummary } from '@/types';
+import type {
+  InventoryAlert,
+  Part,
+  PurchaseOrder,
+  PurchaseOrderPayload,
+  VendorSummary,
+} from '@/types';
 
 const BASE_PATH = '/inventory/v2';
 
@@ -34,4 +40,40 @@ export const fetchInventoryAlerts = async (): Promise<InventoryAlert[]> => {
 export const createPurchaseOrder = async (payload: PurchaseOrderPayload): Promise<PurchaseOrder> => {
   const res = await http.post<PurchaseOrder>(`${BASE_PATH}/purchase-orders`, payload);
   return res.data;
+};
+
+export const fetchPurchaseOrders = async (): Promise<PurchaseOrder[]> => {
+  const res = await http.get<PurchaseOrder[]>(`${BASE_PATH}/purchase-orders`);
+  return res.data;
+};
+
+const extractFileName = (value?: string): string | undefined => {
+  if (!value) return undefined;
+  const match = /filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i.exec(value);
+  if (!match) return undefined;
+  return decodeURIComponent(match[1] ?? match[2] ?? '').replace(/\/+/, '');
+};
+
+export type PurchaseOrderExportFormat = 'csv' | 'pdf';
+
+export interface PurchaseOrderExportDownload {
+  data: ArrayBuffer;
+  fileName: string;
+  mimeType: string;
+}
+
+export const downloadPurchaseOrderExport = async (
+  format: PurchaseOrderExportFormat,
+  purchaseOrderId?: string,
+): Promise<PurchaseOrderExportDownload> => {
+  const res = await http.get<ArrayBuffer>(`${BASE_PATH}/purchase-orders/export`, {
+    params: { format, purchaseOrderId },
+    responseType: 'arraybuffer',
+  });
+  const fileName =
+    extractFileName((res.headers['content-disposition'] as string | undefined) ?? undefined) ??
+    `purchase-orders.${format === 'pdf' ? 'pdf' : 'csv'}`;
+  const mimeType = (res.headers['content-type'] as string | undefined) ??
+    (format === 'pdf' ? 'application/pdf' : 'text/csv');
+  return { data: res.data, fileName, mimeType };
 };

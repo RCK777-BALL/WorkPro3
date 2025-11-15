@@ -70,6 +70,7 @@ import systemSummaryRouter from "./src/routes/summary";
 import hierarchyRouter from "./src/modules/hierarchy";
 import importExportRouter from "./src/modules/importExport";
 import inventoryModuleRouter from "./src/modules/inventory";
+import integrationsModuleRouter from "./src/modules/integrations";
 import workRequestsRouter from "./src/modules/work-requests";
 
 import { startPMScheduler } from "./utils/PMScheduler";
@@ -202,6 +203,7 @@ app.use("/api/hierarchy", hierarchyRouter);
 app.use("/api", workRequestsRouter);
 app.use("/api/import-export", importExportRouter);
 app.use("/api/inventory/v2", inventoryModuleRouter);
+app.use("/api/integrations/v2", integrationsModuleRouter);
 
 // --- Routes (order matters for the limiter) ---
 app.use("/api/auth", authRoutes);

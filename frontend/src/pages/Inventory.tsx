@@ -9,6 +9,7 @@ import {
   PartsTableView,
   PdfExportPanel,
   PurchaseOrderBuilder,
+  PurchaseOrderExportPanel,
   VendorListPanel,
   useAlertsQuery,
   usePartsQuery,
@@ -57,6 +58,7 @@ const Inventory = () => {
         <div className="space-y-6">
           <VendorListPanel />
           <PurchaseOrderBuilder />
+          <PurchaseOrderExportPanel />
           <PdfExportPanel />
         </div>
       </div>

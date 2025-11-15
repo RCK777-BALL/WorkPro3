@@ -13,8 +13,11 @@ import {
   saveVendor,
   listAlerts,
   createPurchaseOrder,
+  listPurchaseOrders,
+  exportPurchaseOrders,
   InventoryError,
   type InventoryContext,
+  type PurchaseOrderExportFormat,
 } from './service';
 import { partInputSchema, purchaseOrderInputSchema, vendorInputSchema } from './schemas';
 
@@ -34,6 +37,23 @@ const buildContext = (req: AuthedRequest): InventoryContext => ({
 
 const send = (res: Response, data: unknown, status = 200) => {
   res.status(status).json({ success: true, data });
+};
+
+const normalizeFormat = (value: unknown): PurchaseOrderExportFormat | null => {
+  if (typeof value !== 'string') return null;
+  if (value.toLowerCase() === 'pdf') return 'pdf';
+  if (value.toLowerCase() === 'csv') return 'csv';
+  return null;
+};
+
+const toIdArray = (value: unknown): string[] | undefined => {
+  if (!value) return undefined;
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => (typeof entry === 'string' ? entry : undefined))
+      .filter((entry): entry is string => Boolean(entry));
+  }
+  return typeof value === 'string' ? [value] : undefined;
 };
 
 const handleError = (err: unknown, res: Response, next: NextFunction) => {
@@ -114,6 +134,38 @@ export const createPurchaseOrderHandler: AuthedRequestHandler = async (req, res,
   try {
     const data = await createPurchaseOrder(buildContext(req), parse.data);
     send(res, data, 201);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const listPurchaseOrdersHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    const data = await listPurchaseOrders(buildContext(req));
+    send(res, data);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const exportPurchaseOrdersHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  const formatInput = req.query.format;
+  const normalized = formatInput ? normalizeFormat(formatInput) : 'csv';
+  if (!normalized) {
+    fail(res, 'format must be csv or pdf', 400);
+    return;
+  }
+  try {
+    const { buffer, filename, mimeType } = await exportPurchaseOrders(
+      buildContext(req),
+      normalized,
+      toIdArray(req.query.purchaseOrderId ?? req.query.purchaseOrderIds),
+    );
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(buffer);
   } catch (err) {
     handleError(err, res, next);
   }

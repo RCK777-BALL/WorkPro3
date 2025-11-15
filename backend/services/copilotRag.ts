@@ -129,22 +129,25 @@ export async function runCopilotRag(options: CopilotRequestOptions): Promise<Cop
   );
   const failureModes = mergeFailureModes(workOrder?.failureModeTags ?? [], detectedFailureModes);
 
-  return {
+  const response: CopilotResponsePayload = {
     summary,
     failureModes,
     suggestions,
     context,
     generatedAt: new Date().toISOString(),
-    workOrder: workOrder
-      ? {
-          id: workOrder._id.toString(),
-          title: workOrder.title,
-          status: workOrder.status,
-          failureModeTags: workOrder.failureModeTags?.map((tag) => tag.toString()),
-          copilotSummary: workOrder.copilotSummary,
-        }
-      : undefined,
   };
+
+  if (workOrder) {
+    response.workOrder = {
+      id: workOrder._id.toString(),
+      title: workOrder.title,
+      status: workOrder.status,
+      failureModeTags: workOrder.failureModeTags?.map((tag) => tag.toString()),
+      copilotSummary: workOrder.copilotSummary,
+    };
+  }
+
+  return response;
 }
 
 async function findWorkOrder(

@@ -20,13 +20,15 @@ export type NavItemId =
   | 'maintenance'
   | 'inventory'
   | 'analytics'
+  | 'iot-monitoring'
   | 'analytics-global'
   | 'analytics-ai'
   | 'vendors'
   | 'messages'
   | 'documentation'
   | 'settings'
-  | 'imports';
+  | 'imports'
+  | 'audit';
 
 const defaultOrder: NavItemId[] = [
   'dashboard',
@@ -42,10 +44,12 @@ const defaultOrder: NavItemId[] = [
   'maintenance',
   'inventory',
   'analytics',
+  'iot-monitoring',
   'vendors',
   'messages',
   'documentation',
   'settings',
+  'audit',
   'imports',
 ];
 

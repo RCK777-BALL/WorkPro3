@@ -3,7 +3,7 @@
  */
 
 import { Router } from 'express';
-import { requireAuth } from '../middleware/authMiddleware';
+import { requireAuth, requireRole } from '../middleware/authMiddleware';
 import tenantScope from '../middleware/tenantScope';
 import {
   kpiJson,
@@ -17,13 +17,18 @@ import {
   dashboardKpiCsv,
   dashboardKpiXlsx,
   dashboardKpiPdf,
+  corporateSitesJson,
+  corporateOverviewJson,
 } from '../controllers/AnalyticsController';
-import Plant from '../models/Plant';
+import Site from '../models/Site';
 import WorkOrder from '../models/WorkOrder';
 import type { AuthedRequest } from '../types/http';
 import { Types } from 'mongoose';
+import type { UserRole } from '../models/User';
 
 const router = Router();
+
+const CORPORATE_ROLES: UserRole[] = ['global_admin', 'general_manager', 'operations_manager'];
 
 router.use(requireAuth);
 router.use(tenantScope);
@@ -41,6 +46,7 @@ router.get('/dashboard/kpis', dashboardKpiJson);
 router.get('/dashboard/kpis.csv', dashboardKpiCsv);
 router.get('/dashboard/kpis.xlsx', dashboardKpiXlsx);
 router.get('/dashboard/kpis.pdf', dashboardKpiPdf);
+router.get('/pm-optimization/what-if', pmWhatIfSimulationsJson);
 
 router.get('/global', async (req: AuthedRequest, res, next) => {
   try {
@@ -49,11 +55,11 @@ router.get('/global', async (req: AuthedRequest, res, next) => {
       res.status(400).json({ error: 'Tenant context required' });
       return;
     }
-    const plants = await Plant.find({ tenantId }).lean();
+    const sites = await Site.find({ tenantId }).lean();
     const analytics = await Promise.all(
-      plants.map(async (plant) => {
-        const plantId = plant._id;
-        const baseFilter = { tenantId, plant: plantId };
+      sites.map(async (site) => {
+        const siteId = site._id;
+        const baseFilter = { tenantId, siteId };
         const totalWorkOrders = await WorkOrder.countDocuments(baseFilter);
         const completedWorkOrders = await WorkOrder.countDocuments({
           ...baseFilter,
@@ -67,18 +73,21 @@ router.get('/global', async (req: AuthedRequest, res, next) => {
           _id: Types.ObjectId | null;
           totalDowntime: number;
         }>([
-          { $match: { tenantId, plant: plantId, downtime: { $exists: true } } },
+          { $match: { tenantId, siteId, downtime: { $exists: true } } },
           { $group: { _id: null, totalDowntime: { $sum: '$downtime' } } },
         ]);
         const wrenchTime = await WorkOrder.aggregate<{
           _id: Types.ObjectId | null;
           avgWrenchTime: number;
         }>([
-          { $match: { tenantId, plant: plantId, wrenchTime: { $exists: true } } },
+          { $match: { tenantId, siteId, wrenchTime: { $exists: true } } },
           { $group: { _id: null, avgWrenchTime: { $avg: '$wrenchTime' } } },
         ]);
         return {
-          plant: plant.name,
+          plant: site.name,
+          siteId: site._id.toString(),
+          siteName: site.name,
+          tenantId,
           totalWorkOrders,
           completedWorkOrders,
           pmCompliance:
@@ -95,5 +104,17 @@ router.get('/global', async (req: AuthedRequest, res, next) => {
     next(err);
   }
 });
+
+router.get(
+  '/corporate/sites',
+  requireRole(...CORPORATE_ROLES),
+  corporateSitesJson,
+);
+
+router.get(
+  '/corporate/overview',
+  requireRole(...CORPORATE_ROLES),
+  corporateOverviewJson,
+);
 
 export default router;

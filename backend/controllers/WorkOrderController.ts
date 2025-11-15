@@ -15,7 +15,7 @@ import notifyUser from '../utils/notify';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
-import { writeAuditLog } from '../utils/audit';
+import { auditAction } from '../utils/audit';
 
 import type { WorkOrderType, WorkOrderInput } from '../types/workOrder';
 
@@ -172,19 +172,14 @@ interface WorkOrderQueryFilter {
 const buildWorkOrderListFilter = (
   tenantId: string,
   filters: { type?: string | undefined },
-  plantId?: string,
+  scope?: LocationScope,
 ): WorkOrderQueryFilter => {
   const query: WorkOrderQueryFilter = { tenantId };
-
-  if (plantId) {
-    query.plant = plantId;
-  }
 
   if (filters.type) {
     query.type = filters.type;
   }
-
-  return query;
+  return scope ? withLocationScope(query, scope) : query;
 };
 
 const buildWorkOrderSearchFilter = (
@@ -196,9 +191,9 @@ const buildWorkOrderSearchFilter = (
     startDate?: Date | undefined;
     endDate?: Date | undefined;
   },
-  plantId?: string,
+  scope?: LocationScope,
 ): WorkOrderQueryFilter => {
-  const query = buildWorkOrderListFilter(tenantId, { type: filters.type }, plantId);
+  const query = buildWorkOrderListFilter(tenantId, { type: filters.type }, scope);
 
   if (filters.status) {
     query.status = filters.status;
@@ -218,12 +213,22 @@ const buildWorkOrderSearchFilter = (
   return query;
 };
 
-const resolvePlantId = (req: { plantId?: string; siteId?: string }): string | undefined =>
-  req.plantId ?? req.siteId ?? undefined;
+interface LocationScope {
+  plantId?: string;
+  siteId?: string;
+}
 
-const withPlantScope = <T extends Record<string, unknown>>(filter: T, plantId?: string): T => {
-  if (plantId) {
-    (filter as Record<string, unknown>).plant = plantId;
+const resolveLocationScope = (req: { plantId?: string; siteId?: string }): LocationScope => ({
+  plantId: req.plantId ?? req.siteId ?? undefined,
+  siteId: req.siteId ?? req.plantId ?? undefined,
+});
+
+const withLocationScope = <T extends Record<string, unknown>>(filter: T, scope: LocationScope): T => {
+  if (scope.plantId) {
+    (filter as Record<string, unknown>).plant = scope.plantId;
+  }
+  if (scope.siteId) {
+    (filter as Record<string, unknown>).siteId = scope.siteId;
   }
   return filter;
 };
@@ -306,6 +311,8 @@ function toWorkOrderUpdatePayload(doc: any): WorkOrderUpdatePayload {
     ...plain,
     _id: (plain._id as Types.ObjectId | string)?.toString(),
     tenantId: (plain.tenantId as Types.ObjectId | string)?.toString(),
+    plantId: (plain.plant as Types.ObjectId | string | undefined)?.toString(),
+    siteId: (plain.siteId as Types.ObjectId | string | undefined)?.toString(),
   } as WorkOrderUpdatePayload;
 }
 
@@ -332,9 +339,9 @@ export async function getAllWorkOrders(
       return;
     }
     const typeFilter = getQueryString(req.query.type);
-    const plantId = req.plantId ?? req.siteId;
+    const scope = resolveLocationScope(req);
     const items = await WorkOrder.find(
-      buildWorkOrderListFilter(tenantId, { type: typeFilter }, plantId),
+      buildWorkOrderListFilter(tenantId, { type: typeFilter }, scope),
     );
     sendResponse(res, items);
     return;
@@ -403,15 +410,19 @@ export async function searchWorkOrders(
       sendResponse(res, null, 'Invalid endDate', 400);
       return;
     }
-    const plantId = req.plantId ?? req.siteId;
+    const scope = resolveLocationScope(req);
     const items = await WorkOrder.find(
-      buildWorkOrderSearchFilter(tenantId, {
-        status,
-        priority,
-        type: typeFilter,
-        startDate: start,
-        endDate: end,
-      }, plantId),
+      buildWorkOrderSearchFilter(
+        tenantId,
+        {
+          status,
+          priority,
+          type: typeFilter,
+          startDate: start,
+          endDate: end,
+        },
+        scope,
+      ),
     );
     sendResponse(res, items);
     return;
@@ -451,8 +462,10 @@ export async function getWorkOrderById(
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const plantId = resolvePlantId(req);
-    const item = await WorkOrder.findOne(withPlantScope({ _id: req.params.id, tenantId }, plantId))
+    const scope = resolveLocationScope(req);
+    const item = await WorkOrder.findOne(
+      withLocationScope({ _id: req.params.id, tenantId }, scope),
+    )
       .lean()
       .exec();
     if (!item) {
@@ -500,7 +513,8 @@ export async function createWorkOrder(
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const plantId = resolvePlantId(req);
+    const scope = resolveLocationScope(req);
+    const plantId = scope.plantId;
     if (!plantId) {
       sendResponse(res, null, 'Active plant context required', 400);
       return;
@@ -591,6 +605,7 @@ export async function createWorkOrder(
       requiredPermitTypes: normalizedRequiredPermitTypes,
       tenantId,
       plant: plantId,
+      siteId: scope.siteId ?? plantId,
     });
     const saved = await newItem.save();
     const userObjectId = resolveUserObjectId(req);
@@ -610,14 +625,7 @@ export async function createWorkOrder(
         }),
       );
     }
-    await writeAuditLog({
-      tenantId,
-      ...(userObjectId ? { userId: userObjectId } : {}),
-      action: 'create',
-      entityType: 'WorkOrder',
-      entityId: saved._id,
-      after: saved.toObject(),
-    });
+    await auditAction(req, 'create', 'WorkOrder', saved._id, undefined, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved, null, 201);
     return;
@@ -663,7 +671,8 @@ export async function updateWorkOrder(
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const plantId = resolvePlantId(req);
+    const scope = resolveLocationScope(req);
+    const plantId = scope.plantId;
     if (!plantId) {
       sendResponse(res, null, 'Active plant context required', 400);
       return;
@@ -762,13 +771,16 @@ export async function updateWorkOrder(
     if (incomingRequiredPermitTypes) {
       update.requiredPermitTypes = Array.from(new Set(incomingRequiredPermitTypes));
     }
-    const filter = withPlantScope({ _id: req.params.id, tenantId }, plantId);
+    const filter = withLocationScope({ _id: req.params.id, tenantId }, scope);
     const existing = await WorkOrder.findOne(filter) as WorkOrderDocument | null;
     if (!existing) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
     update.plant = plantId;
+    if (scope.siteId) {
+      update.siteId = scope.siteId;
+    }
     const updated = await WorkOrder.findOneAndUpdate(
       filter,
       update,
@@ -801,15 +813,7 @@ export async function updateWorkOrder(
         }),
       );
     }
-    await writeAuditLog({
-      tenantId,
-      ...(userObjectId ? { userId: userObjectId } : {}),
-      action: 'update',
-      entityType: 'WorkOrder',
-      entityId: new Types.ObjectId(req.params.id),
-      before: existing.toObject(),
-      after: updated.toObject(),
-    });
+    await auditAction(req, 'update', 'WorkOrder', new Types.ObjectId(req.params.id), existing.toObject(), updated.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(updated));
     sendResponse(res, updated);
     return;
@@ -849,25 +853,19 @@ export async function deleteWorkOrder(
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const plantId = resolvePlantId(req);
-    if (!plantId) {
+    const scope = resolveLocationScope(req);
+    if (!scope.plantId) {
       sendResponse(res, null, 'Active plant context required', 400);
       return;
     }
-    const deleted = await WorkOrder.findOneAndDelete(withPlantScope({ _id: req.params.id, tenantId }, plantId));
+    const deleted = await WorkOrder.findOneAndDelete(
+      withLocationScope({ _id: req.params.id, tenantId }, scope),
+    );
     if (!deleted) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    const auditUserId = resolveUserObjectId(req);
-    await writeAuditLog({
-      tenantId,
-      ...(auditUserId ? { userId: auditUserId } : {}),
-      action: 'delete',
-      entityType: 'WorkOrder',
-      entityId: new Types.ObjectId(req.params.id),
-      before: deleted.toObject(),
-    });
+    await auditAction(req, 'delete', 'WorkOrder', new Types.ObjectId(req.params.id), deleted.toObject(), undefined);
     emitWorkOrderUpdate(toWorkOrderUpdatePayload({ _id: req.params.id, deleted: true }));
     sendResponse(res, { message: 'Deleted successfully' });
     return;
@@ -931,13 +929,15 @@ export async function approveWorkOrder(
       return;
     }
 
-    const plantId = resolvePlantId(req);
-    if (!plantId) {
+    const scope = resolveLocationScope(req);
+    if (!scope.plantId) {
       sendResponse(res, null, 'Active plant context required', 400);
       return;
     }
 
-    const workOrder = await WorkOrder.findOne(withPlantScope({ _id: req.params.id, tenantId }, plantId));
+    const workOrder = await WorkOrder.findOne(
+      withLocationScope({ _id: req.params.id, tenantId }, scope),
+    );
     if (!workOrder) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -963,15 +963,7 @@ export async function approveWorkOrder(
     }
 
     const saved = await workOrder.save();
-    await writeAuditLog({
-      tenantId,
-      userId: userObjectId,
-      action: 'approve',
-      entityType: 'WorkOrder',
-      entityId: new Types.ObjectId(req.params.id),
-      before,
-      after: saved.toObject(),
-    });
+    await auditAction(req, 'approve', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
 
     const message =
@@ -1002,12 +994,14 @@ export async function assignWorkOrder(
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const plantId = resolvePlantId(req);
-    if (!plantId) {
+    const scope = resolveLocationScope(req);
+    if (!scope.plantId) {
       sendResponse(res, null, 'Active plant context required', 400);
       return;
     }
-    const workOrder = await WorkOrder.findOne(withPlantScope({ _id: req.params.id, tenantId }, plantId));
+    const workOrder = await WorkOrder.findOne(
+      withLocationScope({ _id: req.params.id, tenantId }, scope),
+    );
     if (!workOrder) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -1060,16 +1054,7 @@ export async function assignWorkOrder(
       workOrder.set('assignees', mapAssignees(validAssignees));
     }
     const saved = await workOrder.save();
-    const auditUserId = resolveUserObjectId(req);
-    await writeAuditLog({
-      tenantId,
-      ...(auditUserId ? { userId: auditUserId } : {}),
-      action: 'assign',
-      entityType: 'WorkOrder',
-      entityId: new Types.ObjectId(req.params.id),
-      before,
-      after: saved.toObject(),
-    });
+    await auditAction(req, 'assign', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved);
     return;
@@ -1095,12 +1080,14 @@ export async function startWorkOrder(
       sendResponse(res, null, parsed.error.flatten(), 400);
       return;
     }
-    const plantId = resolvePlantId(req);
-    if (!plantId) {
+    const scope = resolveLocationScope(req);
+    if (!scope.plantId) {
       sendResponse(res, null, 'Active plant context required', 400);
       return;
     }
-    const workOrder = await WorkOrder.findOne(withPlantScope({ _id: req.params.id, tenantId }, plantId));
+    const workOrder = await WorkOrder.findOne(
+      withLocationScope({ _id: req.params.id, tenantId }, scope),
+    );
     if (!workOrder) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -1135,15 +1122,7 @@ export async function startWorkOrder(
         }),
       );
     }
-    await writeAuditLog({
-      tenantId,
-      ...(userObjectId ? { userId: userObjectId } : {}),
-      action: 'start',
-      entityType: 'WorkOrder',
-      entityId: new Types.ObjectId(req.params.id),
-      before,
-      after: saved.toObject(),
-    });
+    await auditAction(req, 'start', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved);
     return;
@@ -1169,12 +1148,14 @@ export async function completeWorkOrder(
       sendResponse(res, null, parsed.error.flatten(), 400);
       return;
     }
-    const plantId = resolvePlantId(req);
-    if (!plantId) {
+    const scope = resolveLocationScope(req);
+    if (!scope.plantId) {
       sendResponse(res, null, 'Active plant context required', 400);
       return;
     }
-    const workOrder = await WorkOrder.findOne(withPlantScope({ _id: req.params.id, tenantId }, plantId));
+    const workOrder = await WorkOrder.findOne(
+      withLocationScope({ _id: req.params.id, tenantId }, scope),
+    );
     if (!workOrder) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -1245,15 +1226,7 @@ export async function completeWorkOrder(
         }),
       );
     }
-    await writeAuditLog({
-      tenantId,
-      ...(userObjectId ? { userId: userObjectId } : {}),
-      action: 'complete',
-      entityType: 'WorkOrder',
-      entityId: new Types.ObjectId(req.params.id),
-      before,
-      after: saved.toObject(),
-    });
+    await auditAction(req, 'complete', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved);
     return;
@@ -1279,12 +1252,14 @@ export async function cancelWorkOrder(
       sendResponse(res, null, parsed.error.flatten(), 400);
       return;
     }
-    const plantId = resolvePlantId(req);
-    if (!plantId) {
+    const scope = resolveLocationScope(req);
+    if (!scope.plantId) {
       sendResponse(res, null, 'Active plant context required', 400);
       return;
     }
-    const workOrder = await WorkOrder.findOne(withPlantScope({ _id: req.params.id, tenantId }, plantId));
+    const workOrder = await WorkOrder.findOne(
+      withLocationScope({ _id: req.params.id, tenantId }, scope),
+    );
     if (!workOrder) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -1302,16 +1277,7 @@ export async function cancelWorkOrder(
     const before = workOrder.toObject();
     workOrder.status = 'cancelled';
     const saved = await workOrder.save();
-    const auditUserId = resolveUserObjectId(req);
-    await writeAuditLog({
-      tenantId,
-      ...(auditUserId ? { userId: auditUserId } : {}),
-      action: 'cancel',
-      entityType: 'WorkOrder',
-      entityId: new Types.ObjectId(req.params.id),
-      before,
-      after: saved.toObject(),
-    });
+    await auditAction(req, 'cancel', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved);
     return;
@@ -1353,18 +1319,18 @@ export async function assistWorkOrder(
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const plantId = resolvePlantId(req);
-    if (!plantId) {
+    const scope = resolveLocationScope(req);
+    if (!scope.plantId) {
       sendResponse(res, null, 'Active plant context required', 400);
       return;
     }
     const workOrder = await WorkOrder.findOne(
-      withPlantScope(
+      withLocationScope(
         {
           _id: req.params.id,
           tenantId,
         },
-        plantId,
+        scope,
       ),
     )
       .lean()

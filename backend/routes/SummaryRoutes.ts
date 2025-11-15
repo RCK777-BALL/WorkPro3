@@ -5,6 +5,7 @@
 import express from 'express';
 
 import { requireAuth } from '../middleware/authMiddleware';
+import tenantScope from '../middleware/tenantScope';
 import {
   getSummary,
   getSummaryTrends,
@@ -16,13 +17,15 @@ import {
 
 const router = express.Router();
 
-// GET /api/summary
-router.get('/', requireAuth, getSummary);
-router.get('/trends', requireAuth, getSummaryTrends);
-router.get('/assets', requireAuth, getAssetSummary);
-router.get('/workorders', requireAuth, getWorkOrderSummary);
-router.get('/upcoming-maintenance', requireAuth, getUpcomingMaintenance);
-router.get('/critical-alerts', requireAuth, getCriticalAlerts);
+router.use(requireAuth);
+router.use(tenantScope);
+
+router.get('/', getSummary);
+router.get('/trends', getSummaryTrends);
+router.get('/assets', getAssetSummary);
+router.get('/workorders', getWorkOrderSummary);
+router.get('/upcoming-maintenance', getUpcomingMaintenance);
+router.get('/critical-alerts', getCriticalAlerts);
 
 export default router;
 

@@ -10,10 +10,13 @@ import {
   getKPIs,
   getTrendDatasets,
   getDashboardKpiSummary,
+  getCorporateSiteSummaries,
+  getCorporateOverview,
   type AnalyticsFilters,
   type KPIResult,
   type TrendResult,
   type DashboardKpiResult,
+  type PmOptimizationWhatIfResponse,
 } from '../services/analytics';
 import { escapeXml } from '../utils/escapeXml';
 import { sendResponse } from '../utils/sendResponse';
@@ -211,6 +214,34 @@ export const dashboardKpiJson = async (
   }
 };
 
+export const corporateSitesJson = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const filters = parseFilters(req);
+    const data = await getCorporateSiteSummaries(req.tenantId!, filters);
+    sendResponse(res, data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const corporateOverviewJson = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const filters = parseFilters(req);
+    const data = await getCorporateOverview(req.tenantId!, filters);
+    sendResponse(res, data);
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const dashboardKpiCsv = async (
   req: Request,
   res: Response,
@@ -281,6 +312,19 @@ export const dashboardKpiPdf = async (
       doc.text(` • ${entry.status}: ${entry.count}`);
     });
     doc.end();
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const pmWhatIfSimulationsJson = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const data: PmOptimizationWhatIfResponse = await getPmWhatIfSimulations(req.tenantId!);
+    sendResponse(res, data);
   } catch (err) {
     next(err);
   }

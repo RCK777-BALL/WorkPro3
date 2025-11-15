@@ -6,6 +6,7 @@ import { Router } from 'express';
 
 import { requireAuth } from '../../../middleware/authMiddleware';
 import tenantScope from '../../../middleware/tenantScope';
+import { requirePermission } from '../../auth/permissions';
 import {
   getHierarchy,
   getAssetDetails,
@@ -28,23 +29,27 @@ const router = Router();
 router.use(requireAuth);
 router.use(tenantScope);
 
-router.get('/', getHierarchy);
-router.get('/assets/:assetId', getAssetDetails);
+router.get('/', requirePermission('hierarchy', 'read'), getHierarchy);
+router.get('/assets/:assetId', requirePermission('hierarchy', 'read'), getAssetDetails);
 
-router.post('/departments', createDepartmentHandler);
-router.put('/departments/:departmentId', updateDepartmentHandler);
-router.delete('/departments/:departmentId', deleteDepartmentHandler);
+router.post('/departments', requirePermission('hierarchy', 'write'), createDepartmentHandler);
+router.put('/departments/:departmentId', requirePermission('hierarchy', 'write'), updateDepartmentHandler);
+router.delete(
+  '/departments/:departmentId',
+  requirePermission('hierarchy', 'delete'),
+  deleteDepartmentHandler,
+);
 
-router.post('/lines', createLineHandler);
-router.put('/lines/:lineId', updateLineHandler);
-router.delete('/lines/:lineId', deleteLineHandler);
+router.post('/lines', requirePermission('hierarchy', 'write'), createLineHandler);
+router.put('/lines/:lineId', requirePermission('hierarchy', 'write'), updateLineHandler);
+router.delete('/lines/:lineId', requirePermission('hierarchy', 'delete'), deleteLineHandler);
 
-router.post('/stations', createStationHandler);
-router.put('/stations/:stationId', updateStationHandler);
-router.delete('/stations/:stationId', deleteStationHandler);
+router.post('/stations', requirePermission('hierarchy', 'write'), createStationHandler);
+router.put('/stations/:stationId', requirePermission('hierarchy', 'write'), updateStationHandler);
+router.delete('/stations/:stationId', requirePermission('hierarchy', 'delete'), deleteStationHandler);
 
-router.post('/assets', createAssetHandler);
-router.put('/assets/:assetId', updateAssetHandler);
-router.delete('/assets/:assetId', deleteAssetHandler);
+router.post('/assets', requirePermission('hierarchy', 'write'), createAssetHandler);
+router.put('/assets/:assetId', requirePermission('hierarchy', 'write'), updateAssetHandler);
+router.delete('/assets/:assetId', requirePermission('hierarchy', 'delete'), deleteAssetHandler);
 
 export default router;

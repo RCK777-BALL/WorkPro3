@@ -23,7 +23,7 @@ const signatureItem = z.object({
   name: z.string().optional(),
 });
 
-const statusEnum = z.enum(['requested', 'assigned', 'in_progress', 'completed', 'cancelled']);
+const statusEnum = z.enum(['requested', 'assigned', 'in_progress', 'paused', 'completed', 'cancelled']);
 const priorityEnum = z.enum(['low', 'medium', 'high', 'critical']);
 const typeEnum = z.enum(['corrective', 'preventive', 'inspection', 'calibration', 'safety']);
 const importanceEnum = z.enum(['low', 'medium', 'high', 'severe']);
@@ -35,6 +35,8 @@ const baseSchema = z.object({
   priority: priorityEnum,
   status: statusEnum,
   type: typeEnum.optional().default('corrective'),
+  copilotSummary: z.string().optional(),
+  failureModeTags: z.array(z.string().min(1)).optional(),
   departmentId: objectId,
   asset: objectId.optional(),
   assetId: objectId.optional(),
@@ -44,6 +46,8 @@ const baseSchema = z.object({
   stationId: objectId.optional(),
   line: objectId.optional(),
   station: objectId.optional(),
+  siteId: objectId.optional(),
+  plant: objectId.optional(),
   teamMemberName: z.string().optional(),
   importance: importanceEnum.optional(),
   complianceProcedureId: z.string().optional(),

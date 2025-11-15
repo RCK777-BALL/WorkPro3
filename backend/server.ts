@@ -23,6 +23,7 @@ import {
   adminRoutes,
   analyticsRoutes,
   analyticsAIRoutes,
+  copilotRoutes,
   alertRoutes,
   assetsRoutes,
   attachmentRoutes,
@@ -38,6 +39,7 @@ import {
   importRoutes,
   integrationsRoutes,
   inventoryRoutes,
+  iotRoutes,
   kbRoutes,
   laborRoutes,
   LineRoutes,
@@ -50,6 +52,7 @@ import {
   pmTasksRoutes,
   publicRequestRoutes,
   settingsRoutes,
+  alertRoutes,
   reportsRoutes,
   requestPortalRoutes,
   globalRoutes,
@@ -57,6 +60,7 @@ import {
   StationRoutes,
   summaryRoutes,
   teamRoutes,
+  technicianRoutes,
   TenantRoutes,
   ThemeRoutes,
   vendorPortalRoutes,
@@ -64,17 +68,20 @@ import {
   webhooksRoutes,
   workOrdersRoutes,
 } from "./routes";
+import mobileRoutes from "./routes/mobileRoutes";
 import uiRoutes from "./routes/uiRoutes";
 import healthRouter from "./src/routes/health";
 import systemSummaryRouter from "./src/routes/summary";
 import hierarchyRouter from "./src/modules/hierarchy";
 import importExportRouter from "./src/modules/importExport";
 import inventoryModuleRouter from "./src/modules/inventory";
+import integrationsModuleRouter from "./src/modules/integrations";
 import workRequestsRouter from "./src/modules/work-requests";
 import pmTemplatesRouter from "./src/modules/pm";
 import onboardingRouter from "./src/modules/onboarding";
 
 import { startPMScheduler } from "./utils/PMScheduler";
+import { startCopilotSummaryJob } from "./tasks/copilotSummaries";
 import { setupSwagger } from "./utils/swagger";
 import mongoose from "mongoose";
 import errorHandler from "./middleware/errorHandler";
@@ -154,12 +161,23 @@ setupSwagger(app);
 
 const dev = env.NODE_ENV !== "production";
 
+const mobileRateLimitWindow = parseInt(env.MOBILE_RATE_LIMIT_WINDOW_MS ?? "60000", 10);
+const mobileRateLimitMax = parseInt(env.MOBILE_RATE_LIMIT_MAX ?? "120", 10);
+
 const generalLimiter = rateLimit({
   windowMs: RATE_LIMIT_WINDOW_MS,
   max: dev ? 600 : RATE_LIMIT_MAX,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req: Request) => dev || req.ip === "::1" || req.ip === "127.0.0.1",
+  skip: (req: Request) =>
+    dev || req.ip === "::1" || req.ip === "127.0.0.1" || req.path.startsWith("/api/mobile"),
+});
+
+const mobileLimiter = rateLimit({
+  windowMs: mobileRateLimitWindow,
+  max: dev ? 400 : mobileRateLimitMax,
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 const burstFriendly = rateLimit({
@@ -204,12 +222,15 @@ app.use("/api/hierarchy", hierarchyRouter);
 app.use("/api", workRequestsRouter);
 app.use("/api/import-export", importExportRouter);
 app.use("/api/inventory/v2", inventoryModuleRouter);
+app.use("/api/integrations/v2", integrationsModuleRouter);
 
 // --- Routes (order matters for the limiter) ---
 app.use("/api/auth", authRoutes);
 
 // Protect all remaining /api routes except /api/auth and /api/public
 app.use(/^\/api(?!\/(auth|public))/, requireAuth, tenantScope);
+
+app.use("/api/mobile", mobileLimiter, mobileRoutes);
 
 app.use("/api/notifications", burstFriendly, notificationsRoutes);
 // Apply limiter to the rest of protected /api routes
@@ -231,6 +252,7 @@ app.use("/api/reports", reportsRoutes);
 app.use("/api/lines", LineRoutes);
 app.use("/api/stations", StationRoutes);
 app.use("/api/inventory", inventoryRoutes);
+app.use("/api/iot", iotRoutes);
 app.use("/api/parts", partsRoutes);
 app.use("/api/import", importRoutes);
 app.use("/api/maintenance-schedules", maintenanceScheduleRoutes);
@@ -242,10 +264,13 @@ app.use("/api/plants", plantRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
 app.use("/api/ai", analyticsAIRoutes);
+app.use("/api/ai", copilotRoutes);
 app.use("/api/team", teamRoutes);
 app.use("/api/theme", ThemeRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/alerts", alertRoutes);
 app.use("/api/global", globalRoutes);
+app.use("/api/technician", technicianRoutes);
 app.use("/api/request-portal", requestPortalRoutes);
 
 // Vendor portal routes
@@ -294,6 +319,7 @@ if (env.NODE_ENV !== "test") {
         cronExpr: env.PM_SCHEDULER_CRON,
         taskModulePath: env.PM_SCHEDULER_TASK,
       });
+      startCopilotSummaryJob();
     })
     .catch((err) => {
       logger.error("MongoDB connection error:", err);

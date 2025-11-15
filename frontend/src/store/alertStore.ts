@@ -9,12 +9,15 @@ export type AlertLevel = 'info' | 'warning' | 'critical' | 'success';
 export interface Alert {
   _id: string;
   plant: string;
-  type: 'downtime' | 'wrenchTime' | 'pmCompliance';
+  type: 'downtime' | 'wrenchTime' | 'pmCompliance' | 'iot';
   level: AlertLevel;
   message: string;
   resolved?: boolean;
   timestamp?: string;
   createdAt?: string;
+  asset?: string;
+  assetName?: string;
+  metric?: string;
 }
 
 interface AlertState {

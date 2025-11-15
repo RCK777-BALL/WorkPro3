@@ -27,6 +27,9 @@ export interface PMTaskAssignmentDocument extends Document {
   _id: Types.ObjectId;
   asset: Types.ObjectId;
   interval: string;
+  usageMetric?: 'runHours' | 'cycles';
+  usageTarget?: number;
+  usageLookbackDays?: number;
   checklist: Types.DocumentArray<PMTaskChecklistItem>;
   requiredParts: Types.DocumentArray<PMTaskRequiredPart>;
   nextDue?: Date;
@@ -65,6 +68,9 @@ const assignmentSchema = new Schema<PMTaskAssignmentDocument>(
   {
     asset: { type: Schema.Types.ObjectId, ref: 'Asset', required: true },
     interval: { type: String, required: true },
+    usageMetric: { type: String, enum: ['runHours', 'cycles'], default: null },
+    usageTarget: { type: Number },
+    usageLookbackDays: { type: Number, default: 30 },
     checklist: { type: [checklistSchema], default: [] },
     requiredParts: { type: [requiredPartSchema], default: [] },
     nextDue: { type: Date },

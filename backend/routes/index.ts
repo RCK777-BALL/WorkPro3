@@ -4,6 +4,7 @@
 
 export { default as analyticsRoutes } from './analyticsRoutes';
 export { default as analyticsAIRoutes } from './analyticsAI';
+export { default as copilotRoutes } from './copilotRoutes';
 export { default as goodsReceiptRoutes } from './GoodsReceiptRoutes';
 export { default as purchaseOrderRoutes } from './PurchaseOrderRoutes';
 export { default as ThemeRoutes } from './ThemeRoutes';
@@ -13,6 +14,7 @@ export { default as assetsRoutes } from './AssetRoutes';
 export { default as integrationsRoutes } from './integrationsRoutes';
 export { default as reportsRoutes } from './reportsRoutes';
 export { default as importRoutes } from './ImportRoutes';
+export { default as iotRoutes } from './iotRoutes';
 export { default as timeSheetRoutes } from './TimeSheetRoutes';
 export { default as calendarRoutes } from './CalendarRoutes';
 export { default as inventoryRoutes } from './inventoryRoutes';
@@ -56,3 +58,4 @@ export { default as dashboardRoutes } from './DashboardRoutes';
 export { default as statusRoutes } from './StatusRoutes';
 export { default as settingsRoutes } from './settingsRoutes';
 export { default as alertRoutes } from './alertRoutes';
+export { default as technicianRoutes } from './technicianRoutes';

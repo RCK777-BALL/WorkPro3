@@ -10,8 +10,10 @@ export interface WorkOrder {
   title: string;
   assetId?: Types.ObjectId;
   description?: string;
+  copilotSummary?: string;
+  copilotSummaryUpdatedAt?: Date;
   priority: 'low' | 'medium' | 'high' | 'critical';
-  status: 'requested' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'requested' | 'assigned' | 'in_progress' | 'paused' | 'completed' | 'cancelled';
   type: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
   approvalStatus: 'not-required' | 'pending' | 'approved' | 'rejected';
   approvalRequestedBy?: Types.ObjectId;
@@ -26,6 +28,7 @@ export interface WorkOrder {
   timeSpentMin?: number;
   photos: Types.Array<string>;
   failureCode?: string;
+  failureModeTags?: Types.Array<string>;
 
   /** Optional relationships */
   pmTask?: Types.ObjectId;
@@ -39,6 +42,7 @@ export interface WorkOrder {
   calibrationIntervalDays?: number;
   tenantId: Types.ObjectId;
   plant?: Types.ObjectId;
+  siteId?: Types.ObjectId;
 
   dueDate?: Date;
   completedAt?: Date;
@@ -69,7 +73,7 @@ const workOrderSchema = new Schema<WorkOrder>(
     },
     status: {
       type: String,
-      enum: ['requested', 'assigned', 'in_progress', 'completed', 'cancelled'],
+      enum: ['requested', 'assigned', 'in_progress', 'paused', 'completed', 'cancelled'],
       default: 'requested',
       index: true,
     },
@@ -109,6 +113,9 @@ const workOrderSchema = new Schema<WorkOrder>(
     timeSpentMin: Number,
     photos: [String],
     failureCode: String,
+    failureModeTags: [{ type: String }],
+    copilotSummary: { type: String },
+    copilotSummaryUpdatedAt: { type: Date },
 
     /** Optional relationships */
     pmTask: { type: Schema.Types.ObjectId, ref: 'PMTask' },
@@ -126,6 +133,7 @@ const workOrderSchema = new Schema<WorkOrder>(
 
     tenantId: tenantRef,
     plant: { type: Schema.Types.ObjectId, ref: 'Plant', index: true },
+    siteId: { type: Schema.Types.ObjectId, ref: 'Site', index: true },
     downtime: { type: Number },
     wrenchTime: { type: Number },
 

@@ -114,6 +114,9 @@ const serializeAssignment = (
   assetId: assignment.asset?.toString() ?? '',
   assetName: assignment.asset ? refs.assetNames.get(assignment.asset.toString()) : undefined,
   interval: assignment.interval,
+  usageMetric: assignment.usageMetric ?? undefined,
+  usageTarget: assignment.usageTarget ?? undefined,
+  usageLookbackDays: assignment.usageLookbackDays ?? undefined,
   nextDue: assignment.nextDue?.toISOString(),
   checklist: (assignment.checklist ?? []).map((item) => ({
     id: item._id?.toString() ?? '',
@@ -253,22 +256,29 @@ export const upsertAssignment = async (
     normalizedParts.map((part) => part.partId),
   );
 
-  const now = new Date();
-  const baseAssignment = {
-    asset: asset._id,
-    interval: payload.interval,
-    checklist: normalizedChecklist,
-    requiredParts: normalizedParts,
-    nextDue: calcNextDue(now, payload.interval),
-    lastGeneratedAt: now,
-  };
-
   let assignment = assignmentId
     ? task.assignments.id(toObjectId(assignmentId, 'assignment id'))
     : undefined;
   if (assignmentId && !assignment) {
     throw new PMTemplateError('Assignment not found', 404);
   }
+
+  const now = new Date();
+  const resolvedUsageMetric = payload.usageMetric ?? assignment?.usageMetric;
+  const baseAssignment = {
+    asset: asset._id,
+    interval: payload.interval,
+    usageMetric: resolvedUsageMetric,
+    usageTarget: payload.usageTarget ?? assignment?.usageTarget,
+    usageLookbackDays:
+      payload.usageLookbackDays ??
+      assignment?.usageLookbackDays ??
+      (resolvedUsageMetric ? 30 : undefined),
+    checklist: normalizedChecklist,
+    requiredParts: normalizedParts,
+    nextDue: calcNextDue(now, payload.interval),
+    lastGeneratedAt: now,
+  };
   if (assignment) {
     assignment.set(baseAssignment);
   } else {

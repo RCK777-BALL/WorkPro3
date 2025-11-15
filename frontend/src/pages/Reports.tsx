@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Card from '@/components/common/Card';
 import KpiWidget from '@/components/kpi/KpiWidget';
 import KpiExportButtons from '@/components/kpi/KpiExportButtons';
@@ -16,6 +16,7 @@ import {
   BarElement,
   Tooltip,
   Legend,
+  type ChartOptions,
 } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
 
@@ -83,11 +84,60 @@ type MergedTrend = {
   downtime?: number;
 };
 
+type LongTermTrendPoint = {
+  period: string;
+  downtimeHours: number;
+  compliance: number;
+  maintenanceCost: number;
+  reliability: number;
+};
+
+type AiSummary = {
+  summary: string;
+  highlights: string[];
+  latestPeriod: string | null;
+  confidence: number;
+};
+
+type ReportSchedule = {
+  frequency: 'monthly';
+  dayOfMonth: number;
+  hourUtc: string;
+  recipients: string[];
+  sendEmail: boolean;
+  sendDownloadLink: boolean;
+  format: 'pdf' | 'csv';
+  timezone: string;
+  nextRun: string;
+};
+
+type ScheduleFormState = {
+  dayOfMonth: number;
+  hourUtc: string;
+  recipients: string;
+  sendEmail: boolean;
+  sendDownloadLink: boolean;
+  format: 'pdf' | 'csv';
+  timezone: string;
+};
+
 const ranges = [
   { label: 'Last 7 days', value: 7 },
   { label: 'Last 30 days', value: 30 },
   { label: 'Last 90 days', value: 90 },
 ];
+
+const scheduleDays = Array.from({ length: 28 }, (_, index) => index + 1);
+
+const defaultScheduleForm: ScheduleFormState = {
+  dayOfMonth: 1,
+  hourUtc: '08:00',
+  recipients: '',
+  sendEmail: true,
+  sendDownloadLink: false,
+  format: 'pdf',
+  timezone: 'UTC',
+};
 
 function determineStatus(value: number, threshold: number): 'good' | 'warning' | 'critical' {
   if (value >= threshold) return 'good';
@@ -123,6 +173,22 @@ export default function Reports() {
   const [selectedAsset, setSelectedAsset] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [longTermTrends, setLongTermTrends] = useState<LongTermTrendPoint[]>([]);
+  const [aiSummary, setAiSummary] = useState<AiSummary | null>(null);
+  const [schedule, setSchedule] = useState<ReportSchedule | null>(null);
+  const [scheduleForm, setScheduleForm] = useState<ScheduleFormState>(defaultScheduleForm);
+  const [scheduleSaving, setScheduleSaving] = useState(false);
+  const [scheduleMessage, setScheduleMessage] = useState<string | null>(null);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+
+  const handleScheduleChange = <K extends keyof ScheduleFormState>(
+    key: K,
+    value: ScheduleFormState[K],
+  ) => {
+    setScheduleForm((prev) => ({ ...prev, [key]: value }));
+    setScheduleMessage(null);
+    setScheduleError(null);
+  };
 
   const { params, query } = useMemo(() => {
     const end = new Date();
@@ -159,6 +225,33 @@ export default function Reports() {
     };
     fetchData();
   }, [params]);
+
+  useEffect(() => {
+    const fetchNarrativeData = async () => {
+      try {
+        const [trendRes, summaryRes, scheduleRes] = await Promise.all([
+          http.get<LongTermTrendPoint[]>('/reports/long-term-trends', { params: { months: 12 } }),
+          http.get<AiSummary>('/reports/summary/ai', { params: { months: 12 } }),
+          http.get<ReportSchedule>('/reports/schedule'),
+        ]);
+        setLongTermTrends(trendRes.data);
+        setAiSummary(summaryRes.data);
+        setSchedule(scheduleRes.data);
+        setScheduleForm({
+          dayOfMonth: scheduleRes.data.dayOfMonth,
+          hourUtc: scheduleRes.data.hourUtc,
+          recipients: scheduleRes.data.recipients.join(', '),
+          sendEmail: scheduleRes.data.sendEmail,
+          sendDownloadLink: scheduleRes.data.sendDownloadLink,
+          format: scheduleRes.data.format,
+          timezone: scheduleRes.data.timezone ?? 'UTC',
+        });
+      } catch (err) {
+        console.error('Failed to load long-term trend data', err);
+      }
+    };
+    fetchNarrativeData();
+  }, []);
 
   const mergedTrends = useMemo(() => mergeTrends(trends), [trends]);
   const labels = mergedTrends.map((point) => point.period);
@@ -242,6 +335,106 @@ export default function Reports() {
       ],
     };
   }, [kpis?.downtime.reasons]);
+
+  const longTermLineData = useMemo(
+    () => ({
+      labels: longTermTrends.map((point) => point.period),
+      datasets: [
+        {
+          label: 'Downtime (hrs)',
+          data: longTermTrends.map((point) => point.downtimeHours),
+          borderColor: '#dc2626',
+          backgroundColor: 'rgba(220,38,38,0.2)',
+          tension: 0.3,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Compliance (%)',
+          data: longTermTrends.map((point) => point.compliance),
+          borderColor: '#2563eb',
+          backgroundColor: 'rgba(37,99,235,0.2)',
+          tension: 0.3,
+          yAxisID: 'y1',
+        },
+        {
+          label: 'Reliability (%)',
+          data: longTermTrends.map((point) => point.reliability),
+          borderColor: '#16a34a',
+          backgroundColor: 'rgba(22,163,74,0.2)',
+          tension: 0.3,
+          yAxisID: 'y1',
+        },
+      ],
+    }),
+    [longTermTrends],
+  );
+
+  const longTermLineOptions = useMemo<ChartOptions<'line'>>(
+    () => ({
+      responsive: true,
+      scales: {
+        y: {
+          position: 'left',
+          title: { display: true, text: 'Downtime (hrs)' },
+        },
+        y1: {
+          position: 'right',
+          grid: { drawOnChartArea: false },
+          min: 0,
+          max: 100,
+          title: { display: true, text: 'Percent' },
+        },
+      },
+    }),
+    [],
+  );
+
+  const longTermCostData = useMemo(
+    () => ({
+      labels: longTermTrends.map((point) => point.period),
+      datasets: [
+        {
+          label: 'Maintenance cost (USD)',
+          data: longTermTrends.map((point) => Number(point.maintenanceCost.toFixed(2))),
+          backgroundColor: '#a855f7',
+        },
+      ],
+    }),
+    [longTermTrends],
+  );
+
+  const handleScheduleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setScheduleSaving(true);
+    setScheduleMessage(null);
+    setScheduleError(null);
+    try {
+      const payload = {
+        dayOfMonth: scheduleForm.dayOfMonth,
+        hourUtc: scheduleForm.hourUtc,
+        recipients: scheduleForm.recipients
+          .split(',')
+          .map((email) => email.trim())
+          .filter(Boolean),
+        sendEmail: scheduleForm.sendEmail,
+        sendDownloadLink: scheduleForm.sendDownloadLink,
+        format: scheduleForm.format,
+        timezone: scheduleForm.timezone,
+      };
+      const response = await http.post<ReportSchedule>('/reports/schedule', payload);
+      setSchedule(response.data);
+      setScheduleForm((prev) => ({
+        ...prev,
+        recipients: response.data.recipients.join(', '),
+      }));
+      setScheduleMessage('Schedule saved');
+    } catch (err) {
+      console.error('Failed to save schedule', err);
+      setScheduleError('Unable to update schedule. Please try again.');
+    } finally {
+      setScheduleSaving(false);
+    }
+  };
 
   if (loading) return <p>Loading...</p>;
   if (error || !kpis || !trends) return <p className="text-red-600">{error || 'No data available'}</p>;
@@ -390,6 +583,150 @@ export default function Reports() {
         </Card>
         <Card title="Downtime Reasons">
           <Bar data={downtimeReasonData} data-testid="downtime-reasons" />
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card
+          title="AI-generated summary"
+          subtitle={aiSummary?.latestPeriod ? `Latest period: ${aiSummary.latestPeriod}` : undefined}
+        >
+          {aiSummary ? (
+            <div className="space-y-3">
+              <p className="text-sm text-slate-100 whitespace-pre-line">{aiSummary.summary}</p>
+              {aiSummary.highlights.length > 0 && (
+                <ul className="list-disc pl-5 text-sm text-slate-100">
+                  {aiSummary.highlights.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              )}
+              <p className="text-xs text-slate-400">
+                Confidence {Math.round(aiSummary.confidence * 100)}%
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm text-slate-300">Summary will appear when enough data is available.</p>
+          )}
+        </Card>
+        <Card title="Long-term KPI trends">
+          <Line data={longTermLineData} options={longTermLineOptions} />
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card title="Maintenance cost outlook">
+          <Bar data={longTermCostData} />
+        </Card>
+        <Card
+          title="Monthly report schedule"
+          subtitle={
+            schedule?.nextRun
+              ? `Next delivery: ${new Date(schedule.nextRun).toLocaleString()}`
+              : 'No delivery scheduled'
+          }
+        >
+          <form className="space-y-4" onSubmit={handleScheduleSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col">
+                <label htmlFor="schedule-day" className="text-sm font-medium text-slate-200">
+                  Day of month
+                </label>
+                <select
+                  id="schedule-day"
+                  className="mt-1 border border-slate-700 bg-slate-800 text-slate-100 rounded-md px-2 py-1 text-sm"
+                  value={scheduleForm.dayOfMonth}
+                  onChange={(event) => handleScheduleChange('dayOfMonth', Number(event.target.value))}
+                >
+                  {scheduleDays.map((day) => (
+                    <option key={day} value={day}>
+                      {day}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="schedule-time" className="text-sm font-medium text-slate-200">
+                  Delivery time (UTC)
+                </label>
+                <input
+                  id="schedule-time"
+                  type="time"
+                  className="mt-1 border border-slate-700 bg-slate-800 text-slate-100 rounded-md px-2 py-1 text-sm"
+                  value={scheduleForm.hourUtc}
+                  onChange={(event) => handleScheduleChange('hourUtc', event.target.value)}
+                />
+              </div>
+            </div>
+            <div className="flex flex-col">
+              <label htmlFor="schedule-recipients" className="text-sm font-medium text-slate-200">
+                Recipients (comma separated)
+              </label>
+              <input
+                id="schedule-recipients"
+                type="text"
+                className="mt-1 border border-slate-700 bg-slate-800 text-slate-100 rounded-md px-3 py-2 text-sm placeholder:text-slate-400"
+                placeholder="ops@example.com, finance@example.com"
+                value={scheduleForm.recipients}
+                onChange={(event) => handleScheduleChange('recipients', event.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="flex items-center gap-2 text-sm text-slate-100">
+                <input
+                  type="checkbox"
+                  checked={scheduleForm.sendEmail}
+                  onChange={(event) => handleScheduleChange('sendEmail', event.target.checked)}
+                />
+                Send monthly email
+              </label>
+              <label className="flex items-center gap-2 text-sm text-slate-100">
+                <input
+                  type="checkbox"
+                  checked={scheduleForm.sendDownloadLink}
+                  onChange={(event) => handleScheduleChange('sendDownloadLink', event.target.checked)}
+                />
+                Include download link
+              </label>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col">
+                <label htmlFor="schedule-format" className="text-sm font-medium text-slate-200">
+                  Format
+                </label>
+                <select
+                  id="schedule-format"
+                  className="mt-1 border border-slate-700 bg-slate-800 text-slate-100 rounded-md px-2 py-1 text-sm"
+                  value={scheduleForm.format}
+                  onChange={(event) => handleScheduleChange('format', event.target.value as 'pdf' | 'csv')}
+                >
+                  <option value="pdf">PDF</option>
+                  <option value="csv">CSV</option>
+                </select>
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="schedule-timezone" className="text-sm font-medium text-slate-200">
+                  Timezone label
+                </label>
+                <input
+                  id="schedule-timezone"
+                  type="text"
+                  className="mt-1 border border-slate-700 bg-slate-800 text-slate-100 rounded-md px-2 py-1 text-sm"
+                  value={scheduleForm.timezone}
+                  onChange={(event) => handleScheduleChange('timezone', event.target.value)}
+                />
+              </div>
+            </div>
+            {scheduleMessage && <p className="text-sm text-emerald-600">{scheduleMessage}</p>}
+            {scheduleError && <p className="text-sm text-red-600">{scheduleError}</p>}
+            <button
+              type="submit"
+              className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+              disabled={scheduleSaving}
+            >
+              {scheduleSaving ? 'Saving…' : 'Save schedule'}
+            </button>
+          </form>
         </Card>
       </div>
 

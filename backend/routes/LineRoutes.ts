@@ -6,6 +6,7 @@ import { Router } from 'express';
 import type { FilterQuery, Types } from 'mongoose';
 
 import { requireAuth } from '../middleware/authMiddleware';
+import tenantScope from '../middleware/tenantScope';
 import { validate } from '../middleware/validationMiddleware';
 import Line, { type LineDoc } from '../models/Line';
 import Department from '../models/Department';
@@ -39,6 +40,7 @@ const toLinePayload = (line: LineLike) => ({
 
 const router = Router();
 router.use(requireAuth);
+router.use(tenantScope);
 
 const resolvePlantId = (req: { plantId?: string; siteId?: string }): string | undefined =>
   req.plantId ?? req.siteId ?? undefined;

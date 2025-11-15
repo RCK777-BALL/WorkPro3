@@ -76,10 +76,12 @@ export const RequestPortal: React.FC = () => {
 };
 
 const RequestWork = lazy(() => import('../pages/RequestWork'));
+const RequestStatus = lazy(() => import('../pages/RequestStatus'));
 
 const routes: RouteObject[] = [
   { path: '/portal/:slug', element: <RequestPortal /> },
   { path: '/request', element: <RequestWork /> },
+  { path: '/request/:token', element: <RequestStatus /> },
 ];
 
 export default routes;

@@ -5,6 +5,7 @@
 import express, { type Request, type Response, type NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
 import RequestForm from '../models/RequestForm';
+import { WorkRequestError, getPublicRequestStatus } from '../src/modules/work-requests/service';
 
 const router = express.Router();
 
@@ -19,6 +20,24 @@ async function verifyCaptcha(token: string): Promise<boolean> {
   // Placeholder verification for tests
   return token === 'valid-captcha';
 }
+
+router.get('/status/:token', async (req: Request, res: Response, next: NextFunction) => {
+  const token = (req.params.token ?? '').trim();
+  if (!token) {
+    res.status(400).json({ success: false, error: 'A request token is required.' });
+    return;
+  }
+  try {
+    const data = await getPublicRequestStatus(token);
+    res.json({ success: true, data });
+  } catch (err) {
+    if (err instanceof WorkRequestError) {
+      res.status(err.status).json({ success: false, error: err.message });
+      return;
+    }
+    next(err);
+  }
+});
 
 router.get('/:slug', async (req: Request, res: Response, next: NextFunction) => {
   try {

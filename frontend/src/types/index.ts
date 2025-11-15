@@ -295,6 +295,8 @@ export interface Message {
 }
 
 export type AuthRole =
+  | 'global_admin'
+  | 'plant_admin'
   | 'general_manager'
   | 'assistant_general_manager'
   | 'operations_manager'

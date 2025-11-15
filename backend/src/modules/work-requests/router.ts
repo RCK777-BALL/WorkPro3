@@ -10,6 +10,7 @@ import { mkdirSync } from 'fs';
 import { requireAuth } from '../../../middleware/authMiddleware';
 import tenantScope from '../../../middleware/tenantScope';
 import validateObjectId from '../../../middleware/validateObjectId';
+import { requirePermission } from '../../auth/permissions';
 import {
   submitPublicRequestHandler,
   getPublicStatusHandler,
@@ -45,11 +46,17 @@ publicRouter.get('/:token', getPublicStatusHandler);
 const adminRouter = Router();
 adminRouter.use(requireAuth);
 adminRouter.use(tenantScope);
-adminRouter.get('/', listWorkRequestsHandler);
-adminRouter.get('/summary', getWorkRequestSummaryHandler);
-adminRouter.get('/:requestId', validateObjectId('requestId'), getWorkRequestHandler);
+adminRouter.get('/', requirePermission('workRequests', 'read'), listWorkRequestsHandler);
+adminRouter.get('/summary', requirePermission('workRequests', 'read'), getWorkRequestSummaryHandler);
+adminRouter.get(
+  '/:requestId',
+  requirePermission('workRequests', 'read'),
+  validateObjectId('requestId'),
+  getWorkRequestHandler,
+);
 adminRouter.post(
   '/:requestId/convert',
+  requirePermission('workRequests', 'convert'),
   validateObjectId('requestId'),
   convertWorkRequestHandler,
 );

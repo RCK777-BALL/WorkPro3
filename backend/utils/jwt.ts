@@ -11,6 +11,8 @@ export interface JwtUser {
   tenantId?: string;
   role?: string;
   siteId?: string;
+  scopes?: string[];
+  client?: string;
 }
 
 interface CookieOptions {

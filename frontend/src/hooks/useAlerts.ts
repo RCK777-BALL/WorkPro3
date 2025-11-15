@@ -7,11 +7,24 @@ import http from '@/lib/http';
 import { socket } from '@/utils/socket';
 import { useAlertStore, type Alert } from '@/store/alertStore';
 
-const normalizeAlert = (alert: Alert | (Alert & { _id?: string })) => ({
-  ...alert,
-  _id: (alert._id ?? (alert as any)._id)?.toString?.() ?? String(alert._id),
-  plant: alert.plant?.toString?.() ?? alert.plant,
-});
+const normalizeAlert = (alert: Alert | (Alert & { _id?: string; asset?: unknown })) => {
+  const assetField = (alert as any).asset;
+  const asset =
+    typeof assetField === 'string'
+      ? assetField
+      : assetField?.toString?.() ?? alert.asset;
+  const assetName =
+    typeof assetField === 'object' && assetField && 'name' in assetField
+      ? (assetField as { name?: string }).name
+      : alert.assetName;
+  return {
+    ...alert,
+    asset,
+    assetName,
+    _id: (alert._id ?? (alert as any)._id)?.toString?.() ?? String(alert._id),
+    plant: alert.plant?.toString?.() ?? alert.plant,
+  };
+};
 
 export function useAlerts() {
   const alerts = useAlertStore((state) => state.alerts);

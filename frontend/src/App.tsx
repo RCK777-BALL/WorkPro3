@@ -26,6 +26,7 @@ import Maintenance from "@/pages/Maintenance";
 import AssetsPage from "@/pages/AssetsPage";
 import AssetDetails from "@/pages/AssetDetails";
 import Inventory from "@/pages/Inventory";
+import IotMonitoring from "@/pages/IotMonitoring";
 import VendorsPage from "@/pages/VendorsPage";
 import Reports from "@/pages/Reports";
 import Notifications from "@/pages/Notifications";
@@ -94,6 +95,7 @@ export default function App() {
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/analytics/global" element={<GlobalAnalyticsDashboard />} />
           <Route path="/analytics/ai" element={<AIDashboard />} />
+          <Route path="/iot" element={<IotMonitoring />} />
           <Route path="/work-orders" element={<WorkOrders />} />
           <Route path="/workorders" element={<WorkOrders />} />
           <Route

@@ -14,6 +14,7 @@ export { default as assetsRoutes } from './AssetRoutes';
 export { default as integrationsRoutes } from './integrationsRoutes';
 export { default as reportsRoutes } from './reportsRoutes';
 export { default as importRoutes } from './ImportRoutes';
+export { default as iotRoutes } from './iotRoutes';
 export { default as timeSheetRoutes } from './TimeSheetRoutes';
 export { default as calendarRoutes } from './CalendarRoutes';
 export { default as inventoryRoutes } from './inventoryRoutes';

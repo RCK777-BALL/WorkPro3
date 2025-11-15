@@ -10,6 +10,7 @@ import { requireAuth } from '../../../middleware/authMiddleware';
 import tenantScope from '../../../middleware/tenantScope';
 import { exportAssets, importAssets } from './controller';
 import { ImportExportError } from './service';
+import { requirePermission } from '../../auth/permissions';
 
 const router = Router();
 
@@ -33,7 +34,12 @@ const upload = multer({
 router.use(requireAuth);
 router.use(tenantScope);
 
-router.get('/assets/export', exportAssets);
-router.post('/assets/import', upload.single('file'), importAssets);
+router.get('/assets/export', requirePermission('importExport', 'export'), exportAssets);
+router.post(
+  '/assets/import',
+  requirePermission('importExport', 'import'),
+  upload.single('file'),
+  importAssets,
+);
 
 export default router;

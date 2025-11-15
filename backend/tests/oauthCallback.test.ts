@@ -28,7 +28,13 @@ afterEach(() => {
 
 describe('OAuth callback', () => {
   it('redirects with token and email on success', async () => {
-    const user = { email: 'user@example.com' } as Express.User;
+    const user = {
+      email: 'user@example.com',
+      tenantId: 'tenant-123',
+      siteId: 'site-456',
+      roles: ['tech'],
+      id: 'user-1',
+    } as Express.User;
     vi.spyOn(passport, 'authenticate').mockImplementation(
       (_provider, _options, callback) => {
         return (_req, _res, _next) => {
@@ -50,9 +56,21 @@ describe('OAuth callback', () => {
     const url = new URL(redirect);
     const token = url.searchParams.get('token');
     const email = url.searchParams.get('email');
+    const tenantId = url.searchParams.get('tenantId');
+    const siteId = url.searchParams.get('siteId');
+    const roles = url.searchParams.get('roles');
+    const userId = url.searchParams.get('userId');
     expect(email).toBe('user@example.com');
+    expect(tenantId).toBe('tenant-123');
+    expect(siteId).toBe('site-456');
+    expect(roles).toBe('tech');
+    expect(userId).toBe('user-1');
     const payload = jwt.verify(token!, 'testsecret') as jwt.JwtPayload;
     expect(payload.email).toBe('user@example.com');
+    expect(payload.tenantId).toBe('tenant-123');
+    expect(payload.siteId).toBe('site-456');
+    expect(payload.roles).toEqual(['tech']);
+    expect(payload.id).toBe('user-1');
   });
 
   it('returns 400 when authentication fails', async () => {

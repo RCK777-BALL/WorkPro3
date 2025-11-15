@@ -52,7 +52,6 @@ import {
   pmTasksRoutes,
   publicRequestRoutes,
   settingsRoutes,
-  alertRoutes,
   reportsRoutes,
   requestPortalRoutes,
   globalRoutes,

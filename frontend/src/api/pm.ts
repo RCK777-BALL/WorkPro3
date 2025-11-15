@@ -8,7 +8,6 @@ import type {
   PMTemplateAssignment,
   PMTemplateChecklistItem,
   PMTemplateRequiredPart,
-  PMTemplateLibraryItem,
 } from '@/types';
 
 export interface AssignmentPayload {
@@ -47,12 +46,3 @@ export const deletePmAssignment = async (templateId: string, assignmentId: strin
   return res.data;
 };
 
-export const fetchPmTemplateLibrary = async (): Promise<PMTemplateLibraryItem[]> => {
-  const res = await http.get<PMTemplateLibraryItem[]>('/pm/templates/library');
-  return res.data;
-};
-
-export const clonePmTemplate = async (templateId: string): Promise<PMTemplate> => {
-  const res = await http.post<PMTemplate>(`/pm/templates/library/${templateId}/clone`);
-  return res.data;
-};

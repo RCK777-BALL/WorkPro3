@@ -7,13 +7,7 @@ import { Router } from 'express';
 import { requireAuth } from '../../../middleware/authMiddleware';
 import tenantScope from '../../../middleware/tenantScope';
 import { requirePermission } from '../../auth/permissions';
-import {
-  listTemplatesHandler,
-  upsertAssignmentHandler,
-  deleteAssignmentHandler,
-  listTemplateLibraryHandler,
-  cloneTemplateHandler,
-} from './controller';
+import { listTemplatesHandler, upsertAssignmentHandler, deleteAssignmentHandler } from './controller';
 
 const router = Router();
 

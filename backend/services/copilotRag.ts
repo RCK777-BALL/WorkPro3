@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Types, type FilterQuery, type LeanDocument } from 'mongoose';
+import { Types, type FilterQuery } from 'mongoose';
 import WorkOrder, { type WorkOrder as WorkOrderModel } from '../models/WorkOrder';
 import WorkHistory, { type WorkHistoryDocument } from '../models/WorkHistory';
 import Asset, { type AssetDoc } from '../models/Asset';
@@ -285,7 +285,9 @@ function buildWorkOrderText(order: WorkOrderModel & { _id: Types.ObjectId }): st
   return parts.filter(Boolean).join('\n');
 }
 
-function buildHistoryText(history: WorkHistoryDocument | LeanDocument<WorkHistoryDocument>): string {
+type HistoryLike = Pick<WorkHistoryDocument, 'actions' | 'recentWork' | 'workOrder' | 'asset' | 'updatedAt'>;
+
+function buildHistoryText(history: HistoryLike | WorkHistoryDocument): string {
   const notes: string[] = [];
   if (history.actions) {
     notes.push(history.actions);

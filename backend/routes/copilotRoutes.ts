@@ -3,6 +3,7 @@
  */
 
 import { Router } from 'express';
+import type { ParamsDictionary } from 'express-serve-static-core';
 import { requireAuth } from '../middleware/authMiddleware';
 import type { AuthedRequest } from '../types/http';
 import sendResponse from '../utils/sendResponse';
@@ -12,7 +13,13 @@ const router = Router();
 
 router.use(requireAuth);
 
-router.post('/copilot', async (req: AuthedRequest, res, next) => {
+interface CopilotRequestBody {
+  query?: string;
+  workOrderId?: string;
+  assetId?: string;
+}
+
+router.post('/copilot', async (req: AuthedRequest<ParamsDictionary, unknown, CopilotRequestBody>, res, next) => {
   try {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -33,9 +40,9 @@ router.post('/copilot', async (req: AuthedRequest, res, next) => {
     const plantId = req.plantId ?? req.siteId;
     const result = await runCopilotRag({
       tenantId,
-      plantId,
-      workOrderId,
-      assetId,
+      ...(plantId ? { plantId } : {}),
+      ...(workOrderId ? { workOrderId } : {}),
+      ...(assetId ? { assetId } : {}),
       query,
     });
     sendResponse(res, result);

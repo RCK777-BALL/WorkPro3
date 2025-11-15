@@ -43,6 +43,24 @@ async function verifyCaptcha(token: string): Promise<boolean> {
   return token === 'valid-captcha';
 }
 
+router.get('/status/:token', async (req: Request, res: Response, next: NextFunction) => {
+  const token = (req.params.token ?? '').trim();
+  if (!token) {
+    res.status(400).json({ success: false, error: 'A request token is required.' });
+    return;
+  }
+  try {
+    const data = await getPublicRequestStatus(token);
+    res.json({ success: true, data });
+  } catch (err) {
+    if (err instanceof WorkRequestError) {
+      res.status(err.status).json({ success: false, error: err.message });
+      return;
+    }
+    next(err);
+  }
+});
+
 router.get('/:slug', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const form = await RequestForm.findOne({ slug: req.params.slug }).lean();

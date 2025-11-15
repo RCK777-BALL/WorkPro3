@@ -230,9 +230,14 @@ export default function PublicRequestPage() {
               {submitting ? 'Submitting…' : 'Submit request'}
             </button>
             {submissionResult && (
-              <p className="text-sm text-emerald-600">
-                Thank you! Save this token to check status later: <strong>{submissionResult.token}</strong>
-              </p>
+              <div className="space-y-2 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">
+                <p>
+                  Thank you! Save this token to check status later: <strong>{submissionResult.token}</strong>
+                </p>
+                <p>
+                  You can always open <a className="font-semibold underline" href={`/request/${submissionResult.token}`}>work request status</a> to see technician updates.
+                </p>
+              </div>
             )}
           </form>
         </section>
@@ -268,6 +273,12 @@ export default function PublicRequestPage() {
               {statusResult.workOrderId && (
                 <p className="mt-2 text-sm text-neutral-500">Linked work order: {statusResult.workOrderId}</p>
               )}
+              <a
+                href={`/request/${statusResult.token}`}
+                className="mt-3 inline-flex text-sm font-semibold text-primary-600 hover:underline"
+              >
+                View detailed timeline
+              </a>
               {statusResult.photos && statusResult.photos.length > 0 && (
                 <div className="mt-3 space-y-2">
                   <p className="text-xs font-semibold text-neutral-500">Photos</p>

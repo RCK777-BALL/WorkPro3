@@ -178,11 +178,13 @@ const RequestConfirmation: React.FC = () => {
 };
 
 const RequestWork = lazy(() => import('../pages/RequestWork'));
+const RequestStatus = lazy(() => import('../pages/RequestStatus'));
 
 const routes: RouteObject[] = [
   { path: '/portal/:slug', element: <RequestPortal /> },
   { path: '/portal/:slug/confirmation/:token?', element: <RequestConfirmation /> },
   { path: '/request', element: <RequestWork /> },
+  { path: '/request/:token', element: <RequestStatus /> },
 ];
 
 export default routes;

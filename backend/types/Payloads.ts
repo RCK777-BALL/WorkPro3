@@ -8,7 +8,7 @@ export interface WorkOrderUpdatePayload {
   _id: string;
   tenantId: string;
   title: string;
-  status: 'requested' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'requested' | 'assigned' | 'in_progress' | 'paused' | 'completed' | 'cancelled';
   type?: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
   complianceProcedureId?: string;
   calibrationIntervalDays?: number;

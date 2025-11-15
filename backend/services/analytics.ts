@@ -138,6 +138,7 @@ const WORK_ORDER_STATUS_ORDER: WorkOrder['status'][] = [
   'requested',
   'assigned',
   'in_progress',
+  'paused',
   'completed',
   'cancelled',
 ];

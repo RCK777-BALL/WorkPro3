@@ -78,6 +78,7 @@ import inventoryModuleRouter from "./src/modules/inventory";
 import integrationsModuleRouter from "./src/modules/integrations";
 import workRequestsRouter from "./src/modules/work-requests";
 import pmTemplatesRouter from "./src/modules/pm";
+import templatesRouter from "./src/modules/templates";
 import onboardingRouter from "./src/modules/onboarding";
 
 import { startPMScheduler } from "./utils/PMScheduler";
@@ -237,6 +238,7 @@ app.use("/api/notifications", burstFriendly, notificationsRoutes);
 app.use(/^\/api(?!\/(auth|public))/, generalLimiter);
 
 app.use("/api/pm/templates", pmTemplatesRouter);
+app.use("/api/templates", templatesRouter);
 app.use("/api/onboarding", onboardingRouter);
 
 app.use("/api/departments", departmentRoutes);

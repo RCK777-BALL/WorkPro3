@@ -21,6 +21,13 @@ export interface OnboardingReminderResponse {
   lastReminderAt: string;
 }
 
+export interface PMTemplateLibraryRule {
+  type: 'calendar' | 'meter';
+  cron?: string;
+  meterName?: string;
+  threshold?: number;
+}
+
 export interface PMTemplateLibraryItem {
   id: string;
   title: string;
@@ -29,4 +36,5 @@ export interface PMTemplateLibraryItem {
   interval: string;
   checklist: string[];
   impact: string;
+  rule: PMTemplateLibraryRule;
 }

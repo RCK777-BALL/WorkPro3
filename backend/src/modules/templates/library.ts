@@ -2,21 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-export interface PMTemplateLibraryItem {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  interval: string;
-  checklist: string[];
-  impact: string;
-  rule: {
-    type: 'calendar' | 'meter';
-    cron?: string;
-    meterName?: string;
-    threshold?: number;
-  };
-}
+import type { PMTemplateLibraryItem } from '@shared/onboarding';
 
 export const pmTemplateLibrary: PMTemplateLibraryItem[] = [
   {

@@ -6,6 +6,8 @@ import http from '@/lib/http';
 
 export type HierarchyAsset = {
   id: string;
+  tenantId: string;
+  siteId?: string;
   name: string;
   status?: string;
   type?: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface';
@@ -17,6 +19,7 @@ export type HierarchyAsset = {
 
 export type HierarchyStation = {
   id: string;
+  tenantId: string;
   name: string;
   notes?: string;
   siteId?: string;
@@ -28,6 +31,7 @@ export type HierarchyStation = {
 
 export type HierarchyLine = {
   id: string;
+  tenantId: string;
   name: string;
   notes?: string;
   departmentId: string;
@@ -39,6 +43,7 @@ export type HierarchyLine = {
 
 export type HierarchyDepartment = {
   id: string;
+  tenantId: string;
   name: string;
   notes?: string;
   plantId?: string;
@@ -55,6 +60,7 @@ export type HierarchyResponse = {
 export type AssetDetailResponse = {
   asset: {
     id: string;
+    tenantId: string;
     name: string;
     description?: string;
     status?: string;
@@ -62,6 +68,8 @@ export type AssetDetailResponse = {
     criticality?: string;
     location?: string;
     serialNumber?: string;
+    siteId?: string;
+    plantId?: string;
     lineId?: string;
     stationId?: string;
     departmentId?: string;

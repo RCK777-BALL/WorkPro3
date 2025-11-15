@@ -4,6 +4,31 @@
 
 import type { NextFunction, Request, Response } from "express";
 import logger from "../utils/logger";
+import Site from "../models/Site";
+import Tenant from "../models/Tenant";
+
+const tenantSiteCache = new Map<string, string>();
+
+const ensureTenantSite = async (tenantId: string): Promise<string> => {
+  const cached = tenantSiteCache.get(tenantId);
+  if (cached) {
+    return cached;
+  }
+
+  const existing = await Site.findOne({ tenantId }).select("_id name").lean();
+  if (existing?._id) {
+    const resolved = existing._id.toString();
+    tenantSiteCache.set(tenantId, resolved);
+    return resolved;
+  }
+
+  const tenant = await Tenant.findById(tenantId).select("name").lean();
+  const siteName = tenant?.name ? `${tenant.name} Site` : "Primary Site";
+  const site = await Site.create({ tenantId, name: siteName });
+  const resolved = site._id.toString();
+  tenantSiteCache.set(tenantId, resolved);
+  return resolved;
+};
 
 type MaybeString = string | undefined;
 
@@ -17,7 +42,7 @@ const toStringOrUndefined = (value: unknown): MaybeString => {
   return undefined;
 };
 
-const tenantScope = (req: Request, res: Response, next: NextFunction): void => {
+const tenantScope = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const headerTenant = req.header("x-tenant-id");
   const userTenant = toStringOrUndefined(req.user?.tenantId);
   const existingTenant = toStringOrUndefined(req.tenantId);
@@ -41,20 +66,57 @@ const tenantScope = (req: Request, res: Response, next: NextFunction): void => {
   req.tenantId = resolvedTenant;
   res.setHeader("x-tenant-id", resolvedTenant);
 
+  const queryTenant = toStringOrUndefined((req.query as Record<string, unknown> & { tenantId?: unknown }).tenantId);
+  if (queryTenant && queryTenant !== resolvedTenant) {
+    res.status(403).json({ message: "Cross-tenant access denied" });
+    return;
+  }
+  if (req.query && typeof req.query === "object") {
+    (req.query as Record<string, unknown>).tenantId = resolvedTenant;
+  }
+
+  if (req.body && typeof req.body === "object" && !Array.isArray(req.body)) {
+    const bodyTenant = toStringOrUndefined((req.body as Record<string, unknown> & { tenantId?: unknown }).tenantId);
+    if (bodyTenant && bodyTenant !== resolvedTenant) {
+      res.status(403).json({ message: "Cross-tenant access denied" });
+      return;
+    }
+    (req.body as Record<string, unknown>).tenantId = resolvedTenant;
+  }
+
   const headerSiteId = toStringOrUndefined(req.header("x-site-id"));
   const headerPlantId = toStringOrUndefined(req.header("x-plant-id"));
   const userPlantId = toStringOrUndefined(req.user?.plantId);
+  const userSiteId = toStringOrUndefined((req.user as { siteId?: unknown } | undefined)?.siteId);
   const existingPlantId = toStringOrUndefined(req.plantId);
+  const existingSiteId = toStringOrUndefined(req.siteId);
 
-  const resolvedPlantId = existingPlantId || headerPlantId || headerSiteId || userPlantId;
+  let resolvedPlantId = existingPlantId || headerPlantId || headerSiteId || userPlantId;
+  let resolvedSiteId = existingSiteId || headerSiteId || userSiteId;
+
+  if (!resolvedSiteId) {
+    try {
+      resolvedSiteId = await ensureTenantSite(resolvedTenant);
+    } catch (error) {
+      logger.error("tenantScope: unable to resolve site context", {
+        tenantId: resolvedTenant,
+        error,
+      });
+      res.status(500).json({ message: "Unable to resolve site context" });
+      return;
+    }
+  }
+
+  if (!resolvedPlantId && resolvedSiteId) {
+    resolvedPlantId = resolvedSiteId;
+  }
 
   if (resolvedPlantId) {
     req.plantId = resolvedPlantId;
-    if (!req.siteId) {
-      req.siteId = resolvedPlantId;
-    }
-  } else if (headerSiteId && !req.siteId) {
-    req.siteId = headerSiteId;
+  }
+
+  if (resolvedSiteId) {
+    req.siteId = resolvedSiteId;
   }
 
   next();

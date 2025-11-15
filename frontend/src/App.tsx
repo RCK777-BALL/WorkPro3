@@ -47,6 +47,7 @@ import Imports from "@/pages/Imports";
 import Plants from "@/pages/Plants";
 import GlobalAnalyticsDashboard from "@/pages/GlobalAnalyticsDashboard";
 import AIDashboard from "@/pages/AIDashboard";
+import TechnicianConsole from "@/pages/TechnicianConsole";
 import Login from "@/pages/Login";
 import RegisterPage from "@/pages/RegisterPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
@@ -148,46 +149,12 @@ export default function App() {
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/documentation" element={<Documentation />} />
-          <Route
-            path="/departments"
-            element={
-              <RequirePermission scope="hierarchy" action="read">
-                <Departments />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="/lines"
-            element={
-              <RequirePermission scope="hierarchy" action="read">
-                <Lines />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="/stations"
-            element={
-              <RequirePermission scope="hierarchy" action="read">
-                <Stations />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="/teams"
-            element={
-              <RequirePermission scope="hierarchy" action="read">
-                <Teams />
-              </RequirePermission>
-            }
-          />
-          <Route
-            path="/plants"
-            element={
-              <RequirePermission scope="hierarchy" action="read">
-                <Plants />
-              </RequirePermission>
-            }
-          />
+          <Route path="/departments" element={<Departments />} />
+          <Route path="/lines" element={<Lines />} />
+          <Route path="/stations" element={<Stations />} />
+          <Route path="/teams" element={<Teams />} />
+          <Route path="/plants" element={<Plants />} />
+          <Route path="/technician" element={<TechnicianConsole />} />
           <Route path="/team-members/:teamMemberId" element={<TeamMemberProfile />} />
           <Route
             path="/pm/scheduler"

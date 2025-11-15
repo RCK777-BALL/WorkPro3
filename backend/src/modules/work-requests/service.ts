@@ -68,8 +68,9 @@ const createUniqueToken = async (): Promise<string> => {
   throw new WorkRequestError('Unable to assign a request token. Please retry.', 500);
 };
 
-const resolveFormContext = async (slug: string): Promise<{ siteId: Types.ObjectId; tenantId: Types.ObjectId; requestFormId: Types.ObjectId }>
-=> {
+const resolveFormContext = async (
+  slug: string,
+): Promise<{ siteId: Types.ObjectId; tenantId: Types.ObjectId; requestFormId: Types.ObjectId }> => {
   const form = await RequestForm.findOne({ slug }).lean<{ _id: Types.ObjectId; siteId?: Types.ObjectId }>();
   if (!form) {
     throw new WorkRequestError('Request form not found', 404);

@@ -1,6 +1,7 @@
 import { emitToast } from '../context/ToastContext';
 import { logError } from './logger';
 import { safeLocalStorage } from '@/utils/safeLocalStorage';
+import type { TechnicianPartUsagePayload, TechnicianStatePayload } from '@/api/technician';
  
 
 export interface QueuedRequest<T = unknown> {
@@ -89,6 +90,20 @@ export const enqueueDepartmentRequest = (
 ) => {
   const url = method === 'post' ? '/departments' : `/departments/${department.id}`;
   addToQueue({ method, url, data: department });
+};
+
+export const enqueueTechnicianStateRequest = (
+  workOrderId: string,
+  payload: TechnicianStatePayload,
+) => {
+  addToQueue({ method: 'post', url: `/technician/work-orders/${workOrderId}/state`, data: payload });
+};
+
+export const enqueueTechnicianPartUsageRequest = (
+  workOrderId: string,
+  payload: TechnicianPartUsagePayload,
+) => {
+  addToQueue({ method: 'post', url: `/technician/work-orders/${workOrderId}/parts`, data: payload });
 };
 
 export const clearQueue = () => safeLocalStorage.removeItem(QUEUE_KEY);

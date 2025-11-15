@@ -57,6 +57,7 @@ import {
   StationRoutes,
   summaryRoutes,
   teamRoutes,
+  technicianRoutes,
   TenantRoutes,
   ThemeRoutes,
   vendorPortalRoutes,
@@ -241,6 +242,7 @@ app.use("/api/team", teamRoutes);
 app.use("/api/theme", ThemeRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/global", globalRoutes);
+app.use("/api/technician", technicianRoutes);
 app.use("/api/request-portal", requestPortalRoutes);
 
 // Vendor portal routes

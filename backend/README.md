@@ -160,6 +160,11 @@ The callback issues a JWT and redirects the user back to the frontend with the t
 http://localhost:5173/login?token=<JWT>&email=user%40example.com
 ```
 
+> **Tip:** Azure AD and Google Workspace users can be automatically mapped to
+> tenants and sites by configuring `AZURE_AD_TENANT_MAP` and
+> `GOOGLE_WORKSPACE_DOMAIN_MAP`. Each entry uses the format
+> `<externalId>=<tenantId>[:siteId]` and multiple entries are separated by commas.
+
 ### OIDC login
 
 `GET /api/auth/oidc/:provider`

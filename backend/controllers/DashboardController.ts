@@ -44,8 +44,8 @@ type DashboardFilters = {
 };
 
 const STATUS_ALIASES: Record<string, string[]> = {
-  open: ['requested', 'assigned', 'in_progress'],
-  active: ['assigned', 'in_progress'],
+  open: ['requested', 'assigned', 'in_progress', 'paused'],
+  active: ['assigned', 'in_progress', 'paused'],
   pending: ['requested'],
   completed: ['completed'],
   closed: ['completed', 'cancelled'],
@@ -55,6 +55,7 @@ const ALL_WORK_ORDER_STATUSES = [
   'requested',
   'assigned',
   'in_progress',
+  'paused',
   'completed',
   'cancelled',
 ] as const;
@@ -132,7 +133,7 @@ const computeLivePulse = async (
   nextWeek.setDate(now.getDate() + 7);
 
   const workOrderMatch = buildWorkOrderMatch(tenantMatch, filters);
-  const activeStatuses = pickStatuses(filters, ['requested', 'assigned', 'in_progress']);
+  const activeStatuses = pickStatuses(filters, ['requested', 'assigned', 'in_progress', 'paused']);
   const pmStatuses = pickStatuses(filters, [
     'requested',
     'assigned',
@@ -235,8 +236,8 @@ const computeCommandCenter = async (
 ) => {
   const now = new Date();
   const workOrderMatch = buildWorkOrderMatch(tenantMatch, filters);
-  const openStatuses = pickStatuses(filters, ['requested', 'assigned', 'in_progress']);
-  const activeStatuses = pickStatuses(filters, ['assigned', 'in_progress']);
+  const openStatuses = pickStatuses(filters, ['requested', 'assigned', 'in_progress', 'paused']);
+  const activeStatuses = pickStatuses(filters, ['assigned', 'in_progress', 'paused']);
 
   const [activeWorkOrders, overdueWorkOrders, activePermits, activeAssignments] = await Promise.all([
     openStatuses.length
@@ -285,11 +286,12 @@ const computeAnalyticsHighlights = async (
     'requested',
     'assigned',
     'in_progress',
+    'paused',
     'completed',
     'cancelled',
   ]);
   const completedStatuses = pickStatuses(filters, ['completed']);
-  const backlogStatuses = pickStatuses(filters, ['requested', 'assigned', 'in_progress']);
+  const backlogStatuses = pickStatuses(filters, ['requested', 'assigned', 'in_progress', 'paused']);
 
   const latestMatch: Record<string, unknown> = { ...workOrderMatch };
   if (allStatuses.length) {
@@ -404,7 +406,7 @@ const computeWorkOrderSummary = async (
   startOfDay.setHours(0, 0, 0, 0);
 
   const workOrderMatch = buildWorkOrderMatch(tenantMatch, filters);
-  const activeStatuses = pickStatuses(filters, ['requested', 'assigned', 'in_progress']);
+  const activeStatuses = pickStatuses(filters, ['requested', 'assigned', 'in_progress', 'paused']);
   const completedStatuses = pickStatuses(filters, ['completed']);
 
   const [active, completedToday, onTimeAgg] = await Promise.all([
@@ -465,9 +467,9 @@ const computeSummarySnapshot = async (
   nextWeek.setDate(now.getDate() + 7);
 
   const workOrderMatch = buildWorkOrderMatch(tenantMatch, filters);
-  const openStatuses = pickStatuses(filters, ['requested', 'assigned', 'in_progress']);
+  const openStatuses = pickStatuses(filters, ['requested', 'assigned', 'in_progress', 'paused']);
   const completedStatuses = pickStatuses(filters, ['completed']);
-  const pmDueStatuses = pickStatuses(filters, ['requested', 'assigned', 'in_progress']);
+  const pmDueStatuses = pickStatuses(filters, ['requested', 'assigned', 'in_progress', 'paused']);
 
   const [
     openWorkOrders,

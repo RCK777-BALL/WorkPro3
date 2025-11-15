@@ -52,14 +52,15 @@ const ALL_WORK_ORDER_STATUSES = [
   'requested',
   'assigned',
   'in_progress',
+  'paused',
   'completed',
   'cancelled',
 ] as const;
 const ALL_STATUS_SET = new Set<string>(ALL_WORK_ORDER_STATUSES);
 
 const STATUS_ALIASES: Record<string, string[]> = {
-  open: ['requested', 'assigned', 'in_progress'],
-  active: ['assigned', 'in_progress'],
+  open: ['requested', 'assigned', 'in_progress', 'paused'],
+  active: ['assigned', 'in_progress', 'paused'],
   pending: ['requested'],
   completed: ['completed'],
   closed: ['completed', 'cancelled'],
@@ -129,15 +130,17 @@ export const calculateSummary = async (
     'requested',
     'assigned',
     'in_progress',
+    'paused',
     'completed',
   ]);
   const pmCompletedStatuses = pickStatuses(filters, ['completed']);
-  const backlogStatuses = pickStatuses(filters, ['requested', 'assigned', 'in_progress']);
+  const backlogStatuses = pickStatuses(filters, ['requested', 'assigned', 'in_progress', 'paused']);
 
   const cmStatuses = pickStatuses(filters, [
     'requested',
     'assigned',
     'in_progress',
+    'paused',
     'completed',
     'cancelled',
   ]);
@@ -291,9 +294,9 @@ export const getSummary: AuthedRequestHandler = async (
     const now = new Date();
     const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-    const openStatuses = pickStatuses(filters, ['requested', 'assigned', 'in_progress']);
+    const openStatuses = pickStatuses(filters, ['requested', 'assigned', 'in_progress', 'paused']);
     const completedStatuses = pickStatuses(filters, ['completed']);
-    const pmDueStatuses = pickStatuses(filters, ['requested', 'assigned', 'in_progress']);
+    const pmDueStatuses = pickStatuses(filters, ['requested', 'assigned', 'in_progress', 'paused']);
 
     const [
       openWorkOrders,

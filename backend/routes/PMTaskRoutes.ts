@@ -12,12 +12,14 @@ import {
   generatePMWorkOrders,
 } from '../controllers/PMTaskController';
 import { requireAuth } from '../middleware/authMiddleware';
+import tenantScope from '../middleware/tenantScope';
 import { validate } from '../middleware/validationMiddleware';
 import { pmTaskValidators } from '../validators/pmTaskValidators';
 
 const router = express.Router();
 
 router.use(requireAuth);
+router.use(tenantScope);
 router.get('/', getAllPMTasks);
 router.get('/:id', getPMTaskById);
 router.post('/', pmTaskValidators, validate, createPMTask);

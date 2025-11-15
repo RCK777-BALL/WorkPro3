@@ -35,6 +35,8 @@ import type { LucideIcon } from "lucide-react";
 import clsx from "clsx";
 
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/auth/usePermissions";
+import type { PermissionScope, PermissionAction } from "@/auth/permissions";
 import {
   defaultOrder,
   useNavigationStore,
@@ -71,6 +73,7 @@ type NavItem = {
   to: string;
   icon: LucideIcon;
   section: NavSection;
+  permission?: { scope: PermissionScope; action: PermissionAction };
 };
 
 const sections: { id: NavSection; title: string }[] = [
@@ -101,6 +104,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/work-requests",
     icon: Inbox,
     section: "operations",
+    permission: { scope: "workRequests", action: "read" },
   },
   permits: {
     id: "permits",
@@ -122,6 +126,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/assets",
     icon: Warehouse,
     section: "plant",
+    permission: { scope: "hierarchy", action: "read" },
   },
   departments: {
     id: "departments",
@@ -129,6 +134,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/departments",
     icon: Building2,
     section: "plant",
+    permission: { scope: "hierarchy", action: "read" },
   },
   lines: {
     id: "lines",
@@ -136,6 +142,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/lines",
     icon: GitBranch,
     section: "plant",
+    permission: { scope: "hierarchy", action: "read" },
   },
   stations: {
     id: "stations",
@@ -143,6 +150,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/stations",
     icon: Scan,
     section: "plant",
+    permission: { scope: "hierarchy", action: "read" },
   },
   inventory: {
     id: "inventory",
@@ -150,6 +158,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/inventory",
     icon: MapPin,
     section: "operations",
+    permission: { scope: "inventory", action: "read" },
   },
   teams: {
     id: "teams",
@@ -157,6 +166,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/teams",
     icon: Users,
     section: "plant",
+    permission: { scope: "hierarchy", action: "read" },
   },
   analytics: {
     id: "analytics",
@@ -192,6 +202,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/vendors",
     icon: Briefcase,
     section: "management",
+    permission: { scope: "inventory", action: "read" },
   },
   messages: {
     id: "messages",
@@ -220,6 +231,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/imports",
     icon: Activity,
     section: "management",
+    permission: { scope: "importExport", action: "import" },
   },
   audit: {
     id: "audit",
@@ -235,6 +247,7 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
   const { user, logout } = useAuth();
   const isAuthenticated = Boolean(user);
   const { sidebarOrder, moveSidebarItem } = useNavigationStore();
+  const { can } = usePermissions();
 
   const [activeId, setActiveId] = useState<NavItemId | null>(null);
 
@@ -260,9 +273,12 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
       ...section,
       items: completedOrder
         .map((id) => navItems[id])
-        .filter((item) => item && item.section === section.id),
+        .filter((item) => item && item.section === section.id)
+        .filter((item): item is NavItem =>
+          Boolean(item) && (!item.permission || can(item.permission.scope, item.permission.action)),
+        ),
     }));
-  }, [sidebarOrder]);
+  }, [sidebarOrder, can]);
 
   const containerClasses = clsx(
     "hidden shrink-0 border-r border-neutral-200 bg-white/60 backdrop-blur-lg transition-all duration-300 dark:border-neutral-800 dark:bg-neutral-900/60 lg:flex",

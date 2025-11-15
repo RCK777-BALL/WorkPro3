@@ -122,7 +122,7 @@ export interface WorkOrder {
   priority: 'low' | 'medium' | 'high' | 'critical';
 
   /** Current status */
-  status: 'requested' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'requested' | 'assigned' | 'in_progress' | 'paused' | 'completed' | 'cancelled';
 
   /** Type of work such as corrective or preventive */
   type: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
@@ -295,6 +295,8 @@ export interface Message {
 }
 
 export type AuthRole =
+  | 'global_admin'
+  | 'plant_admin'
   | 'general_manager'
   | 'assistant_general_manager'
   | 'operations_manager'
@@ -414,7 +416,7 @@ export interface WorkOrderUpdatePayload {
   _id: string;
   tenantId?: string;
   title?: string;
-  status?: 'requested' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+  status?: 'requested' | 'assigned' | 'in_progress' | 'paused' | 'completed' | 'cancelled';
   type?: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
   complianceProcedureId?: string;
   calibrationIntervalDays?: number;

@@ -21,12 +21,15 @@ export type WorkOrderStatus =
   | 'requested'
   | 'assigned'
   | 'in_progress'
+  | 'paused'
   | 'completed'
   | 'cancelled';
 
 export interface WorkOrder {
   _id: string;
   tenantId: string;
+  siteId?: string;
+  plantId?: string;
   title: string;
   assetId?: string;
   description?: string;

@@ -532,6 +532,41 @@ export default function WorkOrders() {
                 </Button>
               </div>
             );
+          case 'paused':
+            return (
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" size="sm" onClick={handleView}>
+                  View
+                </Button>
+                <Button variant="ghost" size="sm" onClick={handleEdit}>
+                  Edit
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(event) => handleTransition(event, 'start')}
+                >
+                  Resume
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(event) => handleTransition(event, 'complete')}
+                >
+                  Complete
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(event) => handleTransition(event, 'cancel')}
+                >
+                  Cancel
+                </Button>
+                <Button variant="destructive" size="sm" onClick={handleDelete}>
+                  Delete
+                </Button>
+              </div>
+            );
           default:
             return (
               <div className="flex justify-end gap-2">

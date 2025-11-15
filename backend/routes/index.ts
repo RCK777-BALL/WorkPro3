@@ -56,3 +56,4 @@ export { default as dashboardRoutes } from './DashboardRoutes';
 export { default as statusRoutes } from './StatusRoutes';
 export { default as settingsRoutes } from './settingsRoutes';
 export { default as alertRoutes } from './alertRoutes';
+export { default as technicianRoutes } from './technicianRoutes';

@@ -45,6 +45,7 @@ import Imports from "@/pages/Imports";
 import Plants from "@/pages/Plants";
 import GlobalAnalyticsDashboard from "@/pages/GlobalAnalyticsDashboard";
 import AIDashboard from "@/pages/AIDashboard";
+import TechnicianConsole from "@/pages/TechnicianConsole";
 import Login from "@/pages/Login";
 import RegisterPage from "@/pages/RegisterPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
@@ -109,6 +110,7 @@ export default function App() {
           <Route path="/stations" element={<Stations />} />
           <Route path="/teams" element={<Teams />} />
           <Route path="/plants" element={<Plants />} />
+          <Route path="/technician" element={<TechnicianConsole />} />
           <Route path="/team-members/:teamMemberId" element={<TeamMemberProfile />} />
           <Route path="/pm/scheduler" element={<PMScheduler />} />
           <Route path="/pm/tasks" element={<PMTasksPage />} />

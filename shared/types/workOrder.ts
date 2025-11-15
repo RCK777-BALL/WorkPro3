@@ -21,6 +21,7 @@ export type WorkOrderStatus =
   | 'requested'
   | 'assigned'
   | 'in_progress'
+  | 'paused'
   | 'completed'
   | 'cancelled';
 

@@ -20,6 +20,7 @@ const statusOptions: WorkOrder['status'][] = [
   'requested',
   'assigned',
   'in_progress',
+  'paused',
   'completed',
   'cancelled',
 ];

@@ -57,6 +57,7 @@ import {
   StationRoutes,
   summaryRoutes,
   teamRoutes,
+  technicianRoutes,
   TenantRoutes,
   ThemeRoutes,
   vendorPortalRoutes,
@@ -64,6 +65,7 @@ import {
   webhooksRoutes,
   workOrdersRoutes,
 } from "./routes";
+import mobileRoutes from "./routes/mobileRoutes";
 import uiRoutes from "./routes/uiRoutes";
 import healthRouter from "./src/routes/health";
 import systemSummaryRouter from "./src/routes/summary";
@@ -153,12 +155,23 @@ setupSwagger(app);
 
 const dev = env.NODE_ENV !== "production";
 
+const mobileRateLimitWindow = parseInt(env.MOBILE_RATE_LIMIT_WINDOW_MS ?? "60000", 10);
+const mobileRateLimitMax = parseInt(env.MOBILE_RATE_LIMIT_MAX ?? "120", 10);
+
 const generalLimiter = rateLimit({
   windowMs: RATE_LIMIT_WINDOW_MS,
   max: dev ? 600 : RATE_LIMIT_MAX,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req: Request) => dev || req.ip === "::1" || req.ip === "127.0.0.1",
+  skip: (req: Request) =>
+    dev || req.ip === "::1" || req.ip === "127.0.0.1" || req.path.startsWith("/api/mobile"),
+});
+
+const mobileLimiter = rateLimit({
+  windowMs: mobileRateLimitWindow,
+  max: dev ? 400 : mobileRateLimitMax,
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 const burstFriendly = rateLimit({
@@ -211,6 +224,8 @@ app.use("/api/auth", authRoutes);
 // Protect all remaining /api routes except /api/auth and /api/public
 app.use(/^\/api(?!\/(auth|public))/, requireAuth, tenantScope);
 
+app.use("/api/mobile", mobileLimiter, mobileRoutes);
+
 app.use("/api/notifications", burstFriendly, notificationsRoutes);
 // Apply limiter to the rest of protected /api routes
 app.use(/^\/api(?!\/(auth|public))/, generalLimiter);
@@ -243,6 +258,7 @@ app.use("/api/team", teamRoutes);
 app.use("/api/theme", ThemeRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/global", globalRoutes);
+app.use("/api/technician", technicianRoutes);
 app.use("/api/request-portal", requestPortalRoutes);
 
 // Vendor portal routes

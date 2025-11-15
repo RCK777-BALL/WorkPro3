@@ -3,6 +3,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
+import axios from 'axios';
 import {
   Bar,
   BarChart,
@@ -14,8 +15,35 @@ import {
 } from 'recharts';
 import http from '@/lib/http';
 
+interface CorporateSiteMetric {
+  siteId: string;
+  siteName?: string;
+  tenantId: string;
+  totalWorkOrders: number;
+  openWorkOrders: number;
+  completedWorkOrders: number;
+  backlog: number;
+  mttrHours: number;
+  pmCompliance: { percentage: number };
+  downtimeHours?: number;
+}
+
+interface LegacyGlobalMetric {
+  plant: string;
+  siteId?: string;
+  siteName?: string;
+  tenantId?: string;
+  totalWorkOrders: number;
+  completedWorkOrders: number;
+  pmCompliance: number;
+  avgWrenchTime: number;
+  downtimeHours: number;
+}
+
 interface GlobalMetric {
   plant: string;
+  siteId?: string;
+  tenantId?: string;
   totalWorkOrders: number;
   completedWorkOrders: number;
   pmCompliance: number;
@@ -38,16 +66,57 @@ export default function GlobalAnalyticsDashboard() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    const mapCorporate = (payload?: CorporateSiteMetric[]): GlobalMetric[] =>
+      (payload ?? []).map((site) => ({
+        plant: site.siteName ?? 'Unassigned',
+        siteId: site.siteId,
+        tenantId: site.tenantId,
+        totalWorkOrders: site.totalWorkOrders,
+        completedWorkOrders: site.completedWorkOrders,
+        pmCompliance: Math.round(site.pmCompliance.percentage),
+        avgWrenchTime: Number(site.mttrHours.toFixed(2)),
+        downtimeHours: site.downtimeHours ?? 0,
+      }));
+
+    const mapLegacy = (payload?: LegacyGlobalMetric[]): GlobalMetric[] =>
+      (payload ?? []).map((item) => ({
+        plant: item.siteName ?? item.plant,
+        siteId: item.siteId,
+        tenantId: item.tenantId,
+        totalWorkOrders: item.totalWorkOrders,
+        completedWorkOrders: item.completedWorkOrders,
+        pmCompliance: item.pmCompliance,
+        avgWrenchTime: item.avgWrenchTime,
+        downtimeHours: item.downtimeHours,
+      }));
+
+    const load = async () => {
       try {
-        const response = await http.get<GlobalMetric[]>('/analytics/global');
+        const response = await http.get<CorporateSiteMetric[]>('/analytics/corporate/sites');
         if (!cancelled) {
-          setData(response.data ?? []);
+          setData(mapCorporate(response.data));
         }
       } catch (err) {
-        console.error('Failed to load global analytics', err);
+        if (axios.isAxiosError(err) && err.response?.status === 403) {
+          try {
+            const fallback = await http.get<LegacyGlobalMetric[]>('/analytics/global');
+            if (!cancelled) {
+              setData(mapLegacy(fallback.data));
+            }
+          } catch (fallbackErr) {
+            if (!cancelled) {
+              console.error('Failed to load global analytics', fallbackErr);
+            }
+          }
+          return;
+        }
+        if (!cancelled) {
+          console.error('Failed to load global analytics', err);
+        }
       }
-    })();
+    };
+
+    void load();
     return () => {
       cancelled = true;
     };

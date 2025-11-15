@@ -21,6 +21,8 @@ export type AuthedRequest<
         tenantId?: string | undefined;
         id?: string | Types.ObjectId | undefined;
         _id?: string | Types.ObjectId | undefined;
+        scopes?: string[] | undefined;
+        client?: string | undefined;
       })
     | undefined;
   tenantId?: string | undefined;

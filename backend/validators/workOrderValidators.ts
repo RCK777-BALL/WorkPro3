@@ -22,7 +22,7 @@ export const workOrderValidators = [
     .notEmpty()
     .withMessage('status is required')
     .bail()
-    .isIn(['requested', 'assigned', 'in_progress', 'completed', 'cancelled']),
+    .isIn(['requested', 'assigned', 'in_progress', 'paused', 'completed', 'cancelled']),
   body('type')
     .optional()
     .isIn(['corrective', 'preventive', 'inspection', 'calibration', 'safety']),

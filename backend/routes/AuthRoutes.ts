@@ -26,6 +26,11 @@ import { assertEmail } from '../utils/assert';
 import { getOAuthScope, type OAuthProvider } from '../config/oauthScopes';
 import { me, refresh, logout } from '../controllers/authController';
 import sendResponse from '../utils/sendResponse';
+import { configureOAuth } from '../auth/oauth';
+import { configureOIDC, type Provider as OIDCProvider } from '../auth/oidc';
+
+configureOAuth();
+configureOIDC();
 
 const ROLE_PRIORITY = [
   'general_manager',
@@ -75,6 +80,104 @@ const derivePrimaryRole = (role: unknown, roles: string[]): string => {
   return roles[0] ?? 'tech';
 };
 
+const toStringId = (value: unknown): string | undefined => {
+  if (!value) {
+    return undefined;
+  }
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof (value as { toString?: () => string }).toString === 'function') {
+    return (value as { toString(): string }).toString();
+  }
+  return undefined;
+};
+
+const sanitizeRedirect = (value: string | undefined): string | undefined => {
+  if (!value) {
+    return undefined;
+  }
+  let decoded = value;
+  try {
+    decoded = decodeURIComponent(value);
+  } catch {
+    decoded = value;
+  }
+  const trimmed = decoded.trim();
+  if (!trimmed || trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('//')) {
+    return undefined;
+  }
+  if (!trimmed.startsWith('/')) {
+    return undefined;
+  }
+  return trimmed;
+};
+
+const getRequestedState = (req: Request): string | undefined => {
+  if (typeof req.query.state === 'string') {
+    return req.query.state;
+  }
+  if (typeof req.query.redirect === 'string') {
+    return req.query.redirect;
+  }
+  return undefined;
+};
+
+const buildRedirectUrl = (
+  token: string,
+  meta: {
+    email: string;
+    tenantId?: string;
+    siteId?: string;
+    roles?: string[];
+    userId?: string;
+    redirect?: string;
+  },
+): string => {
+  const base = process.env.FRONTEND_URL || 'http://localhost:5173/login';
+  let url: URL;
+  try {
+    url = new URL(base);
+  } catch {
+    url = new URL('http://localhost:5173/login');
+  }
+
+  url.searchParams.set('token', token);
+  url.searchParams.set('email', meta.email);
+  if (meta.tenantId) {
+    url.searchParams.set('tenantId', meta.tenantId);
+  }
+  if (meta.siteId) {
+    url.searchParams.set('siteId', meta.siteId);
+  }
+  if (meta.roles && meta.roles.length > 0) {
+    url.searchParams.set('roles', meta.roles.join(','));
+  }
+  if (meta.userId) {
+    url.searchParams.set('userId', meta.userId);
+  }
+  if (meta.redirect) {
+    url.searchParams.set('redirect', meta.redirect);
+  }
+  return url.toString();
+};
+
+const extractPassportRoles = (user: unknown): string[] => {
+  if (!user || typeof user !== 'object') {
+    return [];
+  }
+  const payload = user as { roles?: unknown; role?: unknown };
+  return normalizeRoles(payload.roles ?? payload.role);
+};
+
+const extractPassportId = (user: unknown): string | undefined => {
+  if (!user || typeof user !== 'object') {
+    return undefined;
+  }
+  const payload = user as { id?: unknown; _id?: unknown };
+  return toStringId(payload.id) ?? toStringId(payload._id);
+};
+
 const loginLimiter = rateLimit({
   windowMs: 60_000,
   max: 20,
@@ -88,6 +191,9 @@ const registerLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+const OAUTH_PROVIDERS: readonly OAuthProvider[] = ['google', 'github'];
+const OIDC_PROVIDERS: readonly OIDCProvider[] = ['okta', 'azure'];
 
 const registerBodySchema = registerSchema.extend({
   name: z.string().min(1, 'Name is required'),
@@ -407,11 +513,16 @@ router.post('/register', registerLimiter, async (req: Request, res: Response, ne
 
 router.get('/oauth/:provider', async (req: Request, res: Response, next: NextFunction) => {
   const provider = req.params.provider as OAuthProvider;
+  if (!OAUTH_PROVIDERS.includes(provider)) {
+    sendResponse(res, null, 'Unsupported provider', 400);
+    return;
+  }
 
   try {
     await new Promise<void>((resolve, reject) => {
       const auth = passport.authenticate(provider, {
         scope: getOAuthScope(provider),
+        state: getRequestedState(req),
       });
       auth(req, res, (err: unknown) => (err ? reject(err) : resolve()));
     });
@@ -420,44 +531,127 @@ router.get('/oauth/:provider', async (req: Request, res: Response, next: NextFun
   }
 });
 
+router.get('/oidc/:provider', async (req: Request, res: Response, next: NextFunction) => {
+  const provider = req.params.provider as OIDCProvider;
+  if (!OIDC_PROVIDERS.includes(provider)) {
+    sendResponse(res, null, 'Unsupported provider', 400);
+    return;
+  }
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const auth = passport.authenticate(provider, {
+        scope: ['openid', 'profile', 'email'],
+        state: getRequestedState(req),
+      });
+      auth(req, res, (err: unknown) => (err ? reject(err) : resolve()));
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const handlePassportCallback = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+  provider: string,
+) => {
+  passport.authenticate(
+    provider,
+    { session: false },
+    (err: Error | null, user: unknown) => {
+      if (err || !user) {
+        if (err) {
+          logger.error(`OAuth ${provider} callback error:`, err);
+        }
+        sendResponse(res, null, 'Authentication failed', 400);
+        return;
+      }
+
+      let secret: string;
+      try {
+        secret = getJwtSecret();
+      } catch {
+        sendResponse(res, null, 'Server configuration issue', 500);
+        return;
+      }
+
+      const email = (user as { email?: unknown }).email;
+      assertEmail(email);
+
+      const tenantId = toStringId((user as { tenantId?: unknown }).tenantId);
+      const siteId = toStringId((user as { siteId?: unknown }).siteId);
+      const userId = extractPassportId(user);
+      const roles = extractPassportRoles(user);
+
+      const tokenPayload: Record<string, unknown> = { email };
+      if (tenantId) {
+        tokenPayload.tenantId = tenantId;
+      }
+      if (siteId) {
+        tokenPayload.siteId = siteId;
+      }
+      if (userId) {
+        tokenPayload.id = userId;
+      }
+      if (roles.length > 0) {
+        tokenPayload.roles = roles;
+      }
+
+      const token = jwt.sign(tokenPayload, secret, {
+        expiresIn: TOKEN_TTL,
+      });
+
+      const stateValue =
+        typeof req.query.state === 'string'
+          ? req.query.state
+          : typeof req.query.redirect === 'string'
+            ? req.query.redirect
+            : undefined;
+      const redirectHint = sanitizeRedirect(stateValue);
+
+      const redirectUrl = buildRedirectUrl(token, {
+        email,
+        tenantId,
+        siteId,
+        roles,
+        userId,
+        redirect: redirectHint,
+      });
+      res.redirect(redirectUrl);
+    },
+  )(req, res, next);
+};
+
 router.get(
   '/oauth/:provider/callback',
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const provider = req.params.provider as OAuthProvider;
+    if (!OAUTH_PROVIDERS.includes(provider)) {
+      sendResponse(res, null, 'Unsupported provider', 400);
+      return;
+    }
 
     try {
-      passport.authenticate(
-        provider,
-        { session: false },
-        (err: Error | null, user: unknown) => {
-          if (err || !user) {
-            if (err) {
-              logger.error(`OAuth ${provider} callback error:`, err);
-            }
-            sendResponse(res, null, 'Authentication failed', 400);
-            return;
-          }
+      handlePassportCallback(req, res, next, provider);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
-          let secret: string;
-          try {
-            secret = getJwtSecret();
-          } catch {
-            sendResponse(res, null, 'Server configuration issue', 500);
-            return;
-          }
+router.get(
+  '/oidc/:provider/callback',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const provider = req.params.provider as OIDCProvider;
+    if (!OIDC_PROVIDERS.includes(provider)) {
+      sendResponse(res, null, 'Unsupported provider', 400);
+      return;
+    }
 
-          const email = (user as { email?: unknown }).email;
-          assertEmail(email);
-
-          const token = jwt.sign({ email }, secret, {
-            expiresIn: TOKEN_TTL,
-          });
-
-          const frontend = process.env.FRONTEND_URL || 'http://localhost:5173/login';
-          const redirectUrl = `${frontend}?token=${token}&email=${encodeURIComponent(email)}`;
-          res.redirect(redirectUrl);
-        },
-      )(req, res, next);
+    try {
+      handlePassportCallback(req, res, next, provider);
     } catch (err) {
       next(err);
     }

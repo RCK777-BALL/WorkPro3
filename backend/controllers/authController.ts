@@ -73,7 +73,25 @@ function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
-function buildJwtPayload(user: { _id: unknown; email: string; tenantId?: unknown; roles?: string[]; role?: string; siteId?: unknown }): JwtUser {
+const normalizeClient = (client: unknown): string | undefined => {
+  if (typeof client !== 'string') {
+    return undefined;
+  }
+  const normalized = client.trim().toLowerCase();
+  return normalized.length > 0 ? normalized : undefined;
+};
+
+const scopesForClient = (client?: string): string[] => {
+  if (client === 'mobile') {
+    return ['mobile:access'];
+  }
+  return ['web:access'];
+};
+
+function buildJwtPayload(
+  user: { _id: unknown; email: string; tenantId?: unknown; roles?: string[]; role?: string; siteId?: unknown },
+  options: { scopes?: string[]; client?: string } = {},
+): JwtUser {
   const payload: JwtUser = {
     id: String(user._id),
     email: user.email,
@@ -92,6 +110,14 @@ function buildJwtPayload(user: { _id: unknown; email: string; tenantId?: unknown
 
   if (primaryRole) {
     payload.role = primaryRole;
+  }
+
+  if (options.scopes && options.scopes.length > 0) {
+    payload.scopes = options.scopes;
+  }
+
+  if (options.client) {
+    payload.client = options.client;
   }
 
   return payload;
@@ -166,10 +192,11 @@ export const register: ExpressRequestHandler = requestHandler(async (req, res) =
 }, 'register');
 
 export const login: ExpressRequestHandler = requestHandler(async (req, res) => {
-  const { email, username, password } = req.body as {
+  const { email, username, password, client: rawClient } = req.body as {
     email?: string;
     username?: string;
     password?: string;
+    client?: string;
   };
 
   const rawEmail = typeof email === 'string' && email.trim() ? email : username;
@@ -198,6 +225,9 @@ export const login: ExpressRequestHandler = requestHandler(async (req, res) => {
   const primaryRole = derivePrimaryRole((user as any).role, normalizedRoles);
   const roles = Array.from(new Set([primaryRole, ...normalizedRoles]));
 
+  const client = normalizeClient(rawClient);
+  const scopes = scopesForClient(client);
+
   const secret = process.env.JWT_SECRET;
   if (!secret) {
     logger.error('JWT_SECRET is not configured');
@@ -214,12 +244,17 @@ export const login: ExpressRequestHandler = requestHandler(async (req, res) => {
       ? (rawSiteId as { toString(): string }).toString()
       : undefined;
 
-  const tokenPayload = {
-    id: user._id.toString(),
-    role: primaryRole,
-    tenantId,
-    ...(siteId ? { siteId } : {}),
-  };
+  const tokenPayload = buildJwtPayload(
+    {
+      _id: user._id,
+      email: user.email,
+      tenantId: user.tenantId,
+      siteId,
+      roles,
+      role: primaryRole,
+    },
+    { scopes, client },
+  );
 
   const token = jwt.sign(tokenPayload, secret, { expiresIn: '7d' });
 
@@ -234,6 +269,8 @@ export const login: ExpressRequestHandler = requestHandler(async (req, res) => {
       siteId,
       role: primaryRole,
       roles,
+      scopes,
+      client,
     },
   });
 }, 'login');
@@ -281,6 +318,14 @@ export const refresh: ExpressRequestHandler = requestHandler(async (req, res) =>
 
   if (decoded.siteId) {
     payload.siteId = decoded.siteId;
+  }
+
+  if (decoded.scopes) {
+    payload.scopes = decoded.scopes;
+  }
+
+  if (decoded.client) {
+    payload.client = decoded.client;
   }
 
   const access = signAccess(payload);

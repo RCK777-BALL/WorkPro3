@@ -14,7 +14,7 @@ import Station, { type StationDoc } from '../models/Station';
 import { validationResult, ValidationError } from 'express-validator';
 import logger from '../utils/logger';
 import { filterFields } from '../utils/filterFields';
-import { writeAuditLog } from '../utils/audit';
+import { auditAction } from '../utils/audit';
 import { toEntityId, toObjectId } from '../utils/ids';
 import { sendResponse } from '../utils/sendResponse';
 import type { ParamsDictionary } from 'express-serve-static-core';
@@ -390,15 +390,7 @@ export async function createAsset(
         },
       );
     }
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
-    await writeAuditLog({
-      tenantId,
-      userId,
-      action: 'create',
-      entityType: 'Asset',
-      entityId: toEntityId(newAsset._id as Types.ObjectId),
-      after: assetObj,
-    });
+    await auditAction(req, 'create', 'Asset', toEntityId(newAsset._id as Types.ObjectId) ?? newAsset._id, undefined, assetObj);
     sendResponse(res, response, null, 201);
     return;
   } catch (err) {
@@ -544,16 +536,14 @@ export async function updateAsset(
         assetId: (asset?._id ?? existing._id) as MaybeObjectId,
       });
     }
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
-    await writeAuditLog({
-      tenantId,
-      userId,
-      action: 'update',
-      entityType: 'Asset',
-      entityId: toEntityId(new Types.ObjectId(id)),
-      before: existing.toObject(),
-      after: asset?.toObject(),
-    });
+    await auditAction(
+      req,
+      'update',
+      'Asset',
+      toEntityId(new Types.ObjectId(id)) ?? id,
+      existing.toObject(),
+      asset?.toObject(),
+    );
     if (asset && stationForAsset) {
       if (
         existing.stationId &&
@@ -643,15 +633,14 @@ export async function deleteAsset(
       stationId: asset.stationId as MaybeObjectId,
       assetId: asset._id,
     });
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
-    await writeAuditLog({
-      tenantId,
-      userId,
-      action: 'delete',
-      entityType: 'Asset',
-      entityId: toEntityId(new Types.ObjectId(id)),
-      before: asset.toObject(),
-    });
+    await auditAction(
+      req,
+      'delete',
+      'Asset',
+      toEntityId(new Types.ObjectId(id)) ?? id,
+      asset.toObject(),
+      undefined,
+    );
     sendResponse(res, { message: 'Deleted successfully' });
     return;
   } catch (err) {

@@ -581,6 +581,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 <option value="requested">Requested</option>
                 <option value="assigned">Assigned</option>
                 <option value="in_progress">In Progress</option>
+                <option value="paused">Paused</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
               </select>

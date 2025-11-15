@@ -6,6 +6,7 @@ import { Router } from 'express';
 
 import { requireAuth } from '../../../middleware/authMiddleware';
 import tenantScope from '../../../middleware/tenantScope';
+import { requirePermission } from '../../auth/permissions';
 import {
   listPartsHandler,
   savePartHandler,
@@ -22,17 +23,19 @@ const router = Router();
 router.use(requireAuth);
 router.use(tenantScope);
 
-router.get('/parts', listPartsHandler);
-router.post('/parts', savePartHandler);
-router.put('/parts/:partId', savePartHandler);
+router.get('/parts', requirePermission('inventory', 'read'), listPartsHandler);
+router.post('/parts', requirePermission('inventory', 'manage'), savePartHandler);
+router.put('/parts/:partId', requirePermission('inventory', 'manage'), savePartHandler);
 
-router.get('/vendors', listVendorsHandler);
-router.post('/vendors', saveVendorHandler);
-router.put('/vendors/:vendorId', saveVendorHandler);
+router.get('/vendors', requirePermission('inventory', 'read'), listVendorsHandler);
+router.post('/vendors', requirePermission('inventory', 'manage'), saveVendorHandler);
+router.put('/vendors/:vendorId', requirePermission('inventory', 'manage'), saveVendorHandler);
 
-router.get('/alerts', listAlertsHandler);
-router.post('/purchase-orders', createPurchaseOrderHandler);
-router.get('/purchase-orders', listPurchaseOrdersHandler);
-router.get('/purchase-orders/export', exportPurchaseOrdersHandler);
+router.get('/alerts', requirePermission('inventory', 'read'), listAlertsHandler);
+router.post(
+  '/purchase-orders',
+  requirePermission('inventory', 'purchase'),
+  createPurchaseOrderHandler,
+);
 
 export default router;

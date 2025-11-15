@@ -1,9 +1,11 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
-import request from 'supertest';
+import request, { type Test } from 'supertest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
+import { requireAuth } from '../../backend/middleware/authMiddleware';
+import tenantScope from '../../backend/middleware/tenantScope';
 import AuthRoutes from '../../backend/routes/AuthRoutes';
 import DepartmentRoutes from '../../backend/routes/DepartmentRoutes';
 import LineRoutes from '../../backend/routes/LineRoutes';
@@ -21,6 +23,7 @@ import Line from '../../backend/models/Line';
 import Station from '../../backend/models/Station';
 import Asset from '../../backend/models/Asset';
 import WorkOrder from '../../backend/models/WorkOrder';
+import Plant from '../../backend/models/Plant';
 
 const TEST_PASSWORD = 'Password123!';
 
@@ -30,7 +33,24 @@ describe('CMMS end-to-end workflows', () => {
   let adminToken: string;
   let adminId: string;
   let tenantId: string;
+  let activePlantId: string;
   let techCredentials: { email: string; password: string };
+
+  const withTenantHeaders = (req: Test): Test => {
+    let next = req;
+    if (tenantId) {
+      next = next.set('x-tenant-id', tenantId);
+    }
+    if (activePlantId) {
+      next = next.set('x-plant-id', activePlantId);
+    }
+    return next;
+  };
+
+  const withAuthHeaders = (req: Test, token: string): Test =>
+    withTenantHeaders(req).set('Authorization', `Bearer ${token}`);
+
+  const adminRequest = (req: Test): Test => withAuthHeaders(req, adminToken);
 
   beforeAll(async () => {
     mongo = await MongoMemoryServer.create({
@@ -46,6 +66,7 @@ describe('CMMS end-to-end workflows', () => {
     app.use(cookieParser());
     app.use(express.json());
     app.use('/api/auth', AuthRoutes);
+    app.use(/^\/api(?!\/(auth|public))/, requireAuth, tenantScope);
     app.use('/api/departments', DepartmentRoutes);
     app.use('/api/lines', LineRoutes);
     app.use('/api/stations', StationRoutes);
@@ -65,6 +86,9 @@ describe('CMMS end-to-end workflows', () => {
     await mongoose.connection.db?.dropDatabase();
     const tenant = await Tenant.create({ name: 'Integration Tenant' });
     tenantId = tenant._id.toString();
+
+    const plant = await Plant.create({ name: 'Integration Plant', tenantId: tenant._id });
+    activePlantId = plant._id.toString();
 
     const techEmail = 'tech.user@example.com';
     const registerRes = await request(app)
@@ -89,6 +113,7 @@ describe('CMMS end-to-end workflows', () => {
       passwordHash: TEST_PASSWORD,
       roles: ['admin'],
       tenantId: tenant._id,
+      plant: plant._id,
       employeeId: 'EMP-ADMIN',
     });
 
@@ -122,9 +147,7 @@ describe('CMMS end-to-end workflows', () => {
       .expect(200);
 
     // Department lifecycle
-    const departmentRes = await request(app)
-      .post('/api/departments')
-      .set('Authorization', `Bearer ${adminToken}`)
+    const departmentRes = await adminRequest(request(app).post('/api/departments'))
       .send({ name: 'Assembly' })
       .expect(201);
 
@@ -134,27 +157,21 @@ describe('CMMS end-to-end workflows', () => {
     expect(departmentData.lines).toEqual([]);
     const departmentId = departmentData._id as string;
 
-    const updatedDepartment = await request(app)
-      .put(`/api/departments/${departmentId}`)
-      .set('Authorization', `Bearer ${adminToken}`)
+    const updatedDepartment = await adminRequest(request(app).put(`/api/departments/${departmentId}`))
       .send({ name: 'Assembly North' })
       .expect(200);
     expect(updatedDepartment.body.success).toBe(true);
     expect(updatedDepartment.body.data.name).toBe('Assembly North');
 
     // Line CRUD
-    const lineRes = await request(app)
-      .post('/api/lines')
-      .set('Authorization', `Bearer ${adminToken}`)
+    const lineRes = await adminRequest(request(app).post('/api/lines'))
       .send({ name: 'Line A', departmentId })
       .expect(201);
     expect(lineRes.body.success).toBe(true);
     expect(lineRes.body.data.departmentId).toBe(departmentId);
     const lineId = lineRes.body.data._id as string;
 
-    const stationRes = await request(app)
-      .post('/api/stations')
-      .set('Authorization', `Bearer ${adminToken}`)
+    const stationRes = await adminRequest(request(app).post('/api/stations'))
       .send({ name: 'Station 1', lineId })
       .expect(201);
     expect(stationRes.body.success).toBe(true);
@@ -162,9 +179,7 @@ describe('CMMS end-to-end workflows', () => {
 
     const assetTypes = ['Electrical', 'Mechanical', 'Tooling', 'Interface'] as const;
     for (const type of assetTypes) {
-      const assetRes = await request(app)
-        .post('/api/assets')
-        .set('Authorization', `Bearer ${adminToken}`)
+      const assetRes = await adminRequest(request(app).post('/api/assets'))
         .send({
           name: `${type} Asset`,
           type,
@@ -181,9 +196,7 @@ describe('CMMS end-to-end workflows', () => {
       expect(assetRes.body.data.type).toBe(type);
     }
 
-    const pmTaskRes = await request(app)
-      .post('/api/pm')
-      .set('Authorization', `Bearer ${adminToken}`)
+    const pmTaskRes = await adminRequest(request(app).post('/api/pm'))
       .send({
         title: 'Quarterly Inspection',
         rule: { type: 'calendar', cron: '0 0 1 * *' },
@@ -193,9 +206,7 @@ describe('CMMS end-to-end workflows', () => {
     expect(pmTaskRes.body.success).toBe(true);
     const pmTaskId = pmTaskRes.body.data._id as string;
 
-    const teamRes = await request(app)
-      .post('/api/team')
-      .set('Authorization', `Bearer ${adminToken}`)
+    const teamRes = await adminRequest(request(app).post('/api/team'))
       .send({
         name: 'Alice Maintainer',
         email: 'alice@example.com',
@@ -208,9 +219,7 @@ describe('CMMS end-to-end workflows', () => {
     expect(teamRes.body.success).toBe(true);
     const teamMemberId = teamRes.body.data._id as string;
 
-    const teamUpdate = await request(app)
-      .put(`/api/team/${teamMemberId}`)
-      .set('Authorization', `Bearer ${adminToken}`)
+    const teamUpdate = await adminRequest(request(app).put(`/api/team/${teamMemberId}`))
       .send({
         name: 'Alice Maintainer',
         email: 'alice@example.com',
@@ -223,9 +232,7 @@ describe('CMMS end-to-end workflows', () => {
     expect(teamUpdate.body.success).toBe(true);
     expect(teamUpdate.body.data.role).toBe('assistant_general_manager');
 
-    await request(app)
-      .put(`/api/team/${teamMemberId}`)
-      .set('Authorization', `Bearer ${adminToken}`)
+    await adminRequest(request(app).put(`/api/team/${teamMemberId}`))
       .send({
         name: 'Alice Maintainer',
         email: 'alice@example.com',
@@ -236,9 +243,7 @@ describe('CMMS end-to-end workflows', () => {
       .expect(200);
 
     // Work order creation
-    const workOrderRes = await request(app)
-      .post('/api/workorders')
-      .set('Authorization', `Bearer ${adminToken}`)
+    const workOrderRes = await adminRequest(request(app).post('/api/workorders'))
       .send({
         departmentId,
         title: 'Replace filter',
@@ -259,23 +264,17 @@ describe('CMMS end-to-end workflows', () => {
     expect(workOrderRes.body.success).toBe(true);
     const workOrderId = workOrderRes.body.data._id as string;
 
-    const assignRes = await request(app)
-      .post(`/api/workorders/${workOrderId}/assign`)
-      .set('Authorization', `Bearer ${adminToken}`)
+    const assignRes = await adminRequest(request(app).post(`/api/workorders/${workOrderId}/assign`))
       .send({ assignees: [adminId] })
       .expect(200);
     expect(assignRes.body.success).toBe(true);
     expect(assignRes.body.data.status).toBe('assigned');
 
-    await request(app)
-      .post(`/api/workorders/${workOrderId}/start`)
-      .set('Authorization', `Bearer ${adminToken}`)
+    await adminRequest(request(app).post(`/api/workorders/${workOrderId}/start`))
       .send({})
       .expect(200);
 
-    const completeRes = await request(app)
-      .post(`/api/workorders/${workOrderId}/complete`)
-      .set('Authorization', `Bearer ${adminToken}`)
+    const completeRes = await adminRequest(request(app).post(`/api/workorders/${workOrderId}/complete`))
       .send({
         timeSpentMin: 45,
         checklists: [{ description: 'Inspect housing', done: true }],
@@ -294,9 +293,7 @@ describe('CMMS end-to-end workflows', () => {
     expect(storedOrder?.assignees).toHaveLength(1);
     expect(storedOrder?.timeSpentMin).toBe(45);
 
-    const summaryRes = await request(app)
-      .get('/api/summary')
-      .set('Authorization', `Bearer ${adminToken}`)
+    const summaryRes = await adminRequest(request(app).get('/api/summary'))
       .expect(200);
     expect(summaryRes.body.success).toBe(true);
     const summaryData = summaryRes.body.data;
@@ -305,9 +302,7 @@ describe('CMMS end-to-end workflows', () => {
       expect(summaryData.workOrders.total).toBeGreaterThanOrEqual(1);
     }
 
-    const workOrderSummary = await request(app)
-      .get('/api/summary/workorders')
-      .set('Authorization', `Bearer ${adminToken}`)
+    const workOrderSummary = await adminRequest(request(app).get('/api/summary/workorders'))
       .expect(200);
     expect(workOrderSummary.body.success).toBe(true);
     const workOrderSummaryData = workOrderSummary.body.data;
@@ -315,14 +310,10 @@ describe('CMMS end-to-end workflows', () => {
       expect(workOrderSummaryData.total).toBeGreaterThanOrEqual(1);
     }
 
-    await request(app)
-      .delete(`/api/team/${teamMemberId}`)
-      .set('Authorization', `Bearer ${adminToken}`)
+    await adminRequest(request(app).delete(`/api/team/${teamMemberId}`))
       .expect(200);
 
-    await request(app)
-      .delete(`/api/departments/${departmentId}`)
-      .set('Authorization', `Bearer ${adminToken}`)
+    await adminRequest(request(app).delete(`/api/departments/${departmentId}`))
       .expect(200);
 
     expect(await Department.countDocuments()).toBe(0);

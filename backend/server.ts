@@ -81,6 +81,7 @@ import pmTemplatesRouter from "./src/modules/pm";
 import templatesRouter from "./src/modules/templates";
 import onboardingRouter from "./src/modules/onboarding";
 import assetInsightsRouter from "./src/modules/assets";
+import executiveRouter from "./src/modules/executive";
 
 import { startPMScheduler } from "./utils/PMScheduler";
 import { startCopilotSummaryJob } from "./tasks/copilotSummaries";

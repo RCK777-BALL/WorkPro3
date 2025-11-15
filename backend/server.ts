@@ -79,6 +79,7 @@ import integrationsModuleRouter from "./src/modules/integrations";
 import workRequestsRouter from "./src/modules/work-requests";
 import pmTemplatesRouter from "./src/modules/pm";
 import onboardingRouter from "./src/modules/onboarding";
+import assetInsightsRouter from "./src/modules/assets";
 
 import { startPMScheduler } from "./utils/PMScheduler";
 import { startCopilotSummaryJob } from "./tasks/copilotSummaries";
@@ -243,6 +244,7 @@ app.use("/api/departments", departmentRoutes);
 app.use("/api/workorders", workOrdersRoutes);
 app.use("/api/permits", permitRoutes);
 app.use("/api/assets", assetsRoutes);
+app.use("/api/assets", assetInsightsRouter);
 app.use("/api/meters", meterRoutes);
 app.use("/api/condition-rules", conditionRuleRoutes);
 app.use("/api/tenants", TenantRoutes);

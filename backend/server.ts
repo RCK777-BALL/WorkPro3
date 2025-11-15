@@ -38,6 +38,7 @@ import {
   importRoutes,
   integrationsRoutes,
   inventoryRoutes,
+  iotRoutes,
   kbRoutes,
   laborRoutes,
   LineRoutes,
@@ -50,6 +51,7 @@ import {
   pmTasksRoutes,
   publicRequestRoutes,
   settingsRoutes,
+  alertRoutes,
   reportsRoutes,
   requestPortalRoutes,
   globalRoutes,
@@ -226,6 +228,7 @@ app.use("/api/reports", reportsRoutes);
 app.use("/api/lines", LineRoutes);
 app.use("/api/stations", StationRoutes);
 app.use("/api/inventory", inventoryRoutes);
+app.use("/api/iot", iotRoutes);
 app.use("/api/parts", partsRoutes);
 app.use("/api/import", importRoutes);
 app.use("/api/maintenance-schedules", maintenanceScheduleRoutes);
@@ -240,6 +243,7 @@ app.use("/api/ai", analyticsAIRoutes);
 app.use("/api/team", teamRoutes);
 app.use("/api/theme", ThemeRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/alerts", alertRoutes);
 app.use("/api/global", globalRoutes);
 app.use("/api/request-portal", requestPortalRoutes);
 

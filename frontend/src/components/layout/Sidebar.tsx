@@ -62,7 +62,7 @@ type SidebarProps = {
   collapsed?: boolean;
 };
 
-type NavSection = "plant" | "operations" | "management";
+type NavSection = "plant" | "operations" | "analytics" | "management";
 
 type NavItem = {
   id: NavItemId;
@@ -162,6 +162,13 @@ const navItems: Record<NavItemId, NavItem> = {
     label: "Plant Analytics",
     to: "/analytics",
     icon: BarChart3,
+    section: "analytics",
+  },
+  "iot-monitoring": {
+    id: "iot-monitoring",
+    label: "IoT Monitoring",
+    to: "/iot",
+    icon: Activity,
     section: "analytics",
   },
   "analytics-global": {

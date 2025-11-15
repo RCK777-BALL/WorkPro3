@@ -3,7 +3,7 @@
  */
 
 import { Types } from 'mongoose';
-import WorkOrder from '../models/WorkOrder';
+import WorkOrder, { WorkOrder as WorkOrderType } from '../models/WorkOrder';
 import SensorReading from '../models/SensorReading';
 import ProductionRecord from '../models/ProductionRecord';
 import Asset from '../models/Asset';
@@ -29,8 +29,8 @@ export interface KPIResult {
   energy: {
     totalKwh: number;
     averagePerHour: number;
-    perAsset: { assetId: string; assetName?: string; totalKwh: number }[];
-    perSite: { siteId: string; siteName?: string; totalKwh: number }[];
+    perAsset: { assetId: string; assetName?: string | undefined; totalKwh: number }[];
+    perSite: { siteId: string; siteName?: string | undefined; totalKwh: number }[];
   };
   downtime: {
     totalMinutes: number;
@@ -128,7 +128,7 @@ export interface DashboardKpiResult {
 
 export interface PmOptimizationAssetInsight {
   assetId: string;
-  assetName?: string;
+  assetName?: string | undefined;
   usage: {
     runHoursPerDay: number;
     cyclesPerDay: number;
@@ -159,7 +159,7 @@ export interface PmOptimizationWhatIfResponse {
 
 export interface CorporateSiteSummary {
   siteId: string;
-  siteName?: string;
+  siteName?: string | undefined;
   tenantId: string;
   totalWorkOrders: number;
   openWorkOrders: number;
@@ -191,7 +191,7 @@ const DEFAULT_THRESHOLDS: Thresholds = {
   oee: 0.8,
 };
 
-const WORK_ORDER_STATUS_ORDER: WorkOrder['status'][] = [
+const WORK_ORDER_STATUS_ORDER: WorkOrderType['status'][] = [
   'requested',
   'assigned',
   'in_progress',
@@ -706,7 +706,7 @@ export async function getDashboardKpiSummary(
   }
 
   const workOrders: Array<{
-    status: WorkOrder['status'];
+    status: WorkOrderType['status'];
     dueDate?: Date | null;
     pmTask?: Types.ObjectId | null;
     completedAt?: Date | null;
@@ -721,7 +721,7 @@ export async function getDashboardKpiSummary(
     return createEmptyDashboardKpiResult();
   }
 
-  const statusTotals = new Map<WorkOrder['status'], number>();
+  const statusTotals = new Map<WorkOrderType['status'], number>();
   workOrders.forEach((workOrder) => {
     statusTotals.set(workOrder.status, (statusTotals.get(workOrder.status) ?? 0) + 1);
   });
@@ -796,7 +796,7 @@ export async function getCorporateSiteSummaries(
 
   const workOrders: Array<{
     siteId?: Types.ObjectId | null;
-    status: WorkOrder['status'];
+    status: WorkOrderType['status'];
     completedAt?: Date | null;
     createdAt?: Date;
     pmTask?: Types.ObjectId | null;

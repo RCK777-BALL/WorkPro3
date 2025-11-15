@@ -1,0 +1,117 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
+import { useQuery } from 'react-query';
+
+import http from '@/lib/http';
+
+export type AssetHistoryEntry = {
+  id: string;
+  date: string;
+  title: string;
+  status: string;
+  duration?: number;
+  notes?: string;
+};
+
+export type AssetDocumentSummary = {
+  id: string;
+  name?: string;
+  type?: string;
+  url: string;
+  uploadedAt?: string;
+  sizeBytes?: number;
+};
+
+export type AssetBomPart = {
+  id: string;
+  name: string;
+  quantity: number;
+  unitCost?: number;
+  location?: string;
+  partNumber?: string;
+};
+
+export type AssetPmTemplate = {
+  templateId: string;
+  assignmentId: string;
+  title: string;
+  interval: string;
+  active: boolean;
+  nextDue?: string;
+  usageMetric?: string;
+  usageTarget?: number;
+};
+
+export type AssetWorkOrderSummary = {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  type: string;
+  updatedAt?: string;
+  dueDate?: string;
+};
+
+export type AssetCostRollup = {
+  total: number;
+  maintenance: number;
+  labor: number;
+  parts: number;
+  currency: string;
+  timeframe: string;
+  monthly: Array<{
+    month: string;
+    labor: number;
+    parts: number;
+    total: number;
+  }>;
+};
+
+export type AssetDetailResponse = {
+  asset: {
+    id: string;
+    tenantId: string;
+    name: string;
+    description?: string;
+    status?: string;
+    type?: string;
+    criticality?: string;
+    location?: string;
+    serialNumber?: string;
+    modelName?: string;
+    manufacturer?: string;
+    purchaseDate?: string;
+    installationDate?: string;
+    siteId?: string;
+    plantId?: string;
+    departmentId?: string;
+    lineId?: string;
+    stationId?: string;
+  };
+  history: AssetHistoryEntry[];
+  documents: AssetDocumentSummary[];
+  bom: AssetBomPart[];
+  pmTemplates: AssetPmTemplate[];
+  openWorkOrders: AssetWorkOrderSummary[];
+  costRollups: AssetCostRollup;
+};
+
+export const fetchAssetDetails = async (assetId: string): Promise<AssetDetailResponse> => {
+  const res = await http.get<AssetDetailResponse>(`/assets/${assetId}/details`);
+  return res.data;
+};
+
+export const assetKeys = {
+  all: ['assets'] as const,
+  detail: (assetId: string) => ['assets', 'detail', assetId] as const,
+};
+
+export const useAssetDetailsQuery = (assetId?: string) =>
+  useQuery({
+    queryKey: assetId ? assetKeys.detail(assetId) : [...assetKeys.all, 'detail'],
+    queryFn: () => fetchAssetDetails(assetId ?? ''),
+    enabled: Boolean(assetId),
+    staleTime: 60_000,
+  });

@@ -12,6 +12,7 @@ import {
   getDashboardKpiSummary,
   getCorporateSiteSummaries,
   getCorporateOverview,
+  getPmWhatIfSimulations,
   type AnalyticsFilters,
   type KPIResult,
   type TrendResult,

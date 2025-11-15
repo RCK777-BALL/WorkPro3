@@ -13,6 +13,9 @@ import type {
 export interface AssignmentPayload {
   assetId: string;
   interval: string;
+  usageMetric?: 'runHours' | 'cycles';
+  usageTarget?: number;
+  usageLookbackDays?: number;
   checklist?: Array<Omit<PMTemplateChecklistItem, 'id'>>;
   requiredParts?: Array<Omit<PMTemplateRequiredPart, 'id' | 'partName'>>;
 }

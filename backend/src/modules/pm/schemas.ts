@@ -21,6 +21,9 @@ const requiredPartItem = z.object({
 export const assignmentInputSchema = z.object({
   assetId: objectId,
   interval: z.string().min(1, 'Interval is required'),
+  usageMetric: z.enum(['runHours', 'cycles']).optional(),
+  usageTarget: z.number().positive().optional(),
+  usageLookbackDays: z.number().int().positive().max(365).optional(),
   checklist: z.array(checklistItem).optional(),
   requiredParts: z.array(requiredPartItem).optional(),
 });

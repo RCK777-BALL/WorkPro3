@@ -169,6 +169,10 @@ const WORK_ORDER_STATUS_ORDER: WorkOrder['status'][] = [
   'cancelled',
 ];
 
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const PRODUCTION_LOOKBACK_DAYS = 30;
+const WORKORDER_LOOKBACK_DAYS = 180;
+
 function toObjectId(id: string): Types.ObjectId | string {
   return Types.ObjectId.isValid(id) ? new Types.ObjectId(id) : id;
 }
@@ -192,6 +196,10 @@ function buildDateRange(filters: AnalyticsFilters): { $gte?: Date; $lte?: Date }
 function safeDivide(numerator: number, denominator: number): number {
   if (!denominator) return 0;
   return numerator / denominator;
+}
+
+function clampValue(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
 }
 
 function calculateMTTR(workOrders: { createdAt?: Date; completedAt?: Date | null }[]): number {

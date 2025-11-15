@@ -2,12 +2,15 @@
  * SPDX-License-Identifier: MIT
  */
 
-import PMTask from '../models/PMTask';
+import PMTask, { type PMTaskAssignmentDocument } from '../models/PMTask';
 import WorkOrder from '../models/WorkOrder';
 import Meter from '../models/Meter';
 import ConditionRule from '../models/ConditionRule';
 import SensorReading from '../models/SensorReading';
+import ProductionRecord from '../models/ProductionRecord';
 import logger from '../utils/logger';
+
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 function compare(value: number, operator: string, threshold: number): boolean {
   switch (operator) {
@@ -71,6 +74,13 @@ export async function runPMScheduler(): Promise<void> {
           if (!assignment.nextDue) {
             assignment.nextDue = calcNextDue(now, interval);
             touched = true;
+          }
+          if (assignment.usageMetric && assignment.usageTarget) {
+            const usageDue = await projectUsageDrivenDueDate(assignment, now);
+            if (usageDue && (!assignment.nextDue || usageDue < assignment.nextDue)) {
+              assignment.nextDue = usageDue;
+              touched = true;
+            }
           }
           if (assignment.nextDue && assignment.nextDue <= now) {
             await WorkOrder.create({
@@ -174,6 +184,70 @@ export async function runPMScheduler(): Promise<void> {
       logger.error('[PM Scheduler] Failed condition rule', err);
   }
 }
+}
+
+async function projectUsageDrivenDueDate(
+  assignment: PMTaskAssignmentDocument,
+  now: Date,
+): Promise<Date | null> {
+  if (!assignment.usageMetric || !assignment.usageTarget || !assignment.asset) {
+    return null;
+  }
+  const lookbackDays = assignment.usageLookbackDays && assignment.usageLookbackDays > 0
+    ? assignment.usageLookbackDays
+    : 30;
+  const fallbackStart = new Date(now.getTime() - lookbackDays * DAY_IN_MS);
+  const since =
+    assignment.lastGeneratedAt && assignment.lastGeneratedAt > fallbackStart
+      ? assignment.lastGeneratedAt
+      : fallbackStart;
+
+  const records = await ProductionRecord.find({
+    asset: assignment.asset,
+    recordedAt: { $gte: since },
+  })
+    .select('recordedAt runTimeMinutes actualUnits')
+    .sort({ recordedAt: 1 })
+    .lean();
+
+  if (!records.length) {
+    return null;
+  }
+
+  const usageConsumed = records.reduce((total, record) => {
+    if (!assignment.usageMetric) return total;
+    return total + extractUsageValue(record, assignment.usageMetric);
+  }, 0);
+
+  if (usageConsumed >= assignment.usageTarget) {
+    return now;
+  }
+
+  const firstTimestamp = records[0].recordedAt
+    ? new Date(records[0].recordedAt)
+    : since;
+  const windowMs = Math.max(now.getTime() - firstTimestamp.getTime(), DAY_IN_MS);
+  const usagePerMs = usageConsumed / windowMs;
+  if (!Number.isFinite(usagePerMs) || usagePerMs <= 0) {
+    return null;
+  }
+
+  const remaining = assignment.usageTarget - usageConsumed;
+  const additionalMs = remaining / usagePerMs;
+  if (!Number.isFinite(additionalMs) || additionalMs < 0) {
+    return now;
+  }
+  return new Date(now.getTime() + additionalMs);
+}
+
+function extractUsageValue(
+  record: { runTimeMinutes?: number | null; actualUnits?: number | null },
+  metric: 'runHours' | 'cycles',
+): number {
+  if (metric === 'runHours') {
+    return (record.runTimeMinutes ?? 0) / 60;
+  }
+  return record.actualUnits ?? 0;
 }
 
 export function calcNextDue(from: Date, freq?: string): Date {

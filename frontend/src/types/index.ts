@@ -241,6 +241,9 @@ export interface PMTemplateAssignment {
   assetId: string;
   assetName?: string;
   interval: string;
+  usageMetric?: 'runHours' | 'cycles';
+  usageTarget?: number;
+  usageLookbackDays?: number;
   nextDue?: string;
   checklist: PMTemplateChecklistItem[];
   requiredParts: PMTemplateRequiredPart[];

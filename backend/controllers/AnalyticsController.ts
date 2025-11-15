@@ -16,6 +16,7 @@ import {
   type KPIResult,
   type TrendResult,
   type DashboardKpiResult,
+  type PmOptimizationWhatIfResponse,
 } from '../services/analytics';
 import { escapeXml } from '../utils/escapeXml';
 import { sendResponse } from '../utils/sendResponse';
@@ -311,6 +312,19 @@ export const dashboardKpiPdf = async (
       doc.text(` • ${entry.status}: ${entry.count}`);
     });
     doc.end();
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const pmWhatIfSimulationsJson = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const data: PmOptimizationWhatIfResponse = await getPmWhatIfSimulations(req.tenantId!);
+    sendResponse(res, data);
   } catch (err) {
     next(err);
   }

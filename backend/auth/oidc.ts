@@ -6,6 +6,8 @@ import passport, { Strategy as PassportStrategy } from 'passport';
 import { Strategy as OIDCStrategy } from 'passport-openidconnect';
 import type { VerifyCallback } from 'passport-openidconnect';
 
+import { resolveTenantContext } from './tenantContext';
+
 interface OIDCStrategyOptions {
   name?: string;
   issuer: string;
@@ -31,31 +33,51 @@ export const mapRoles = (groups: string[] = []): string => {
   return 'planner';
 };
 
-interface UserInfo {
-  email?: string | undefined;
-  roles: string[];
-}
+const createOidcVerifier = (provider: Provider): VerifyCallback =>
+  async (
+    _issuer,
+    _sub,
+    profile,
+    jwtClaims,
+    _accessToken,
+    _refreshToken,
+    _params,
+    done,
+  ) => {
+    try {
+      const email = profile?.emails?.[0]?.value;
+      if (!email) {
+        done(null, undefined);
+        return;
+      }
 
-export const oidcVerify: VerifyCallback = async (
-  _issuer: string,
-  _sub: string,
-  profile: OIDCProfile,
-  _jwtClaims: Record<string, unknown>,
-  _accessToken: string,
-  _refreshToken: string,
-  _params: Record<string, unknown>,
-  done: (err: Error | null, user?: UserInfo) => void,
-) => {
-  try {
-    const email = profile?.emails?.[0]?.value;
-    const groups = profile?._json?.groups || [];
-    const role = mapRoles(groups);
-    const user: UserInfo = { email, roles: [role] };
-    done(null, user);
-  } catch (err) {
-    done(err as Error);
-  }
-};
+      const groups = profile?._json?.groups || [];
+      const mappedRole = mapRoles(groups);
+
+      const tenantContext = await resolveTenantContext({
+        provider,
+        email,
+        claims: jwtClaims,
+        profile: profile?._json,
+      });
+
+      const roles = tenantContext.roles && tenantContext.roles.length > 0
+        ? tenantContext.roles
+        : [mappedRole].filter(Boolean);
+
+      done(null, {
+        email,
+        roles,
+        tenantId: tenantContext.tenantId,
+        siteId: tenantContext.siteId,
+        id: tenantContext.userId,
+      });
+    } catch (err) {
+      done(err as Error);
+    }
+  };
+
+export const oidcVerify = createOidcVerifier('okta');
 
 export const configureOIDC = () => {
   const oktaIssuer = process.env.OKTA_ISSUER;
@@ -71,7 +93,7 @@ export const configureOIDC = () => {
           clientSecret: oktaClientSecret,
           callbackURL: '/api/auth/oidc/okta/callback',
         },
-        oidcVerify,
+        createOidcVerifier('okta'),
       ) as unknown as PassportStrategy,
     );
   }
@@ -89,7 +111,7 @@ export const configureOIDC = () => {
           clientSecret: azureClientSecret,
           callbackURL: '/api/auth/oidc/azure/callback',
         },
-        oidcVerify,
+        createOidcVerifier('azure'),
       ) as unknown as PassportStrategy,
     );
   }

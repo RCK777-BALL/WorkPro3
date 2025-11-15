@@ -7,36 +7,44 @@ import type { Strategy as PassportStrategy } from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as GithubStrategy } from 'passport-github2';
 
+import { resolveTenantContext } from './tenantContext';
+
 export { type OAuthProvider } from '../config/oauthScopes';
 
 interface OAuthProfile {
   emails?: Array<{ value?: string }>;
+  _json?: Record<string, unknown>;
 }
 
-interface DoneCallback {
-  (err: unknown, user?: { email?: string }, info?: unknown): void;
-}
+type DoneCallback = (err: unknown, user?: { email?: string; tenantId?: string; siteId?: string; roles?: string[]; id?: string }, info?: unknown) => void;
 
-export const oauthVerify = (
-  _accessToken: string,
-  _refreshToken: string,
-  profile: OAuthProfile,
-  done: DoneCallback,
-): void => {
-  try {
-    const email = profile?.emails?.[0]?.value;
+const createOAuthVerifier = (provider: OAuthProvider) =>
+  async (_accessToken: string, _refreshToken: string, profile: OAuthProfile, done: DoneCallback) => {
+    try {
+      const email = profile?.emails?.[0]?.value;
+      if (!email) {
+        done(null, undefined);
+        return;
+      }
 
-    // Only include the property when it's defined
-    if (email) {
-      done(null, { email });
-    } else {
-      // no email in profile -> no user object (or you could pass false)
-      done(null, undefined);
+      const tenantContext = await resolveTenantContext({
+        provider,
+        email,
+        domain: (profile?._json?.hd as string | undefined) ?? undefined,
+        profile: profile?._json,
+      });
+
+      done(null, {
+        email,
+        tenantId: tenantContext.tenantId,
+        siteId: tenantContext.siteId,
+        roles: tenantContext.roles,
+        id: tenantContext.userId,
+      });
+    } catch (err) {
+      done(err);
     }
-  } catch (err) {
-    done(err);
-  }
-};
+  };
 
 export const configureOAuth = () => {
   const googleId = process.env.GOOGLE_CLIENT_ID;
@@ -50,7 +58,7 @@ export const configureOAuth = () => {
           clientSecret: googleSecret,
           callbackURL: '/api/auth/oauth/google/callback',
         },
-        oauthVerify,
+        createOAuthVerifier('google'),
       ) as unknown as PassportStrategy,
     );
   }
@@ -66,10 +74,10 @@ export const configureOAuth = () => {
           clientSecret: githubSecret,
           callbackURL: '/api/auth/oauth/github/callback',
         },
-        oauthVerify,
+        createOAuthVerifier('github'),
       ) as unknown as PassportStrategy,
     );
   }
 };
 
-export default { configureOAuth, oauthVerify };
+export default { configureOAuth };

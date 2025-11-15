@@ -36,6 +36,8 @@ type RawAuthUser = {
 const AUTH_ROUTE_PREFIXES = ['/login', '/register', '/forgot'];
 
 const allowedRoles: AuthUser['role'][] = [
+  'global_admin',
+  'plant_admin',
   'general_manager',
   'assistant_general_manager',
   'operations_manager',
@@ -113,6 +115,8 @@ type AuthUserInput =
   | (Omit<AuthUser, 'role'> & { role?: unknown; roles?: unknown });
 
 const ROLE_PRIORITY: AuthRole[] = [
+  'global_admin',
+  'plant_admin',
   'general_manager',
   'assistant_general_manager',
   'operations_manager',

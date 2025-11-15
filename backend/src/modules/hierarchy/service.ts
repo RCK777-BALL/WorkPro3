@@ -29,6 +29,7 @@ const toId = (value?: DepartmentDoc['tenantId'] | LineDoc['tenantId'] | StationD
 
 export interface HierarchyAssetNode {
   id: string;
+  tenantId: string;
   name: string;
   status?: string;
   type?: AssetDoc['type'];
@@ -36,10 +37,13 @@ export interface HierarchyAssetNode {
   departmentId?: string;
   lineId?: string;
   stationId?: string;
+  siteId?: string;
+  plantId?: string;
 }
 
 export interface HierarchyStationNode {
   id: string;
+  tenantId: string;
   name: string;
   notes?: string;
   siteId?: string;
@@ -51,6 +55,7 @@ export interface HierarchyStationNode {
 
 export interface HierarchyLineNode {
   id: string;
+  tenantId: string;
   name: string;
   notes?: string;
   departmentId: string;
@@ -62,6 +67,7 @@ export interface HierarchyLineNode {
 
 export interface HierarchyDepartmentNode {
   id: string;
+  tenantId: string;
   name: string;
   notes?: string;
   plantId?: string;
@@ -78,6 +84,7 @@ export interface HierarchyTreeResponse {
 export interface AssetDetailResponse {
   asset: {
     id: string;
+    tenantId: string;
     name: string;
     description?: string;
     status?: string;
@@ -85,6 +92,8 @@ export interface AssetDetailResponse {
     criticality?: string;
     location?: string;
     serialNumber?: string;
+    siteId?: string;
+    plantId?: string;
     lineId?: string;
     stationId?: string;
     departmentId?: string;
@@ -206,6 +215,7 @@ export const fetchHierarchy = async (context: Context): Promise<HierarchyTreeRes
   departments.forEach((dept) => {
     departmentMap.set(dept._id.toString(), {
       id: dept._id.toString(),
+      tenantId: dept.tenantId.toString(),
       name: dept.name,
       notes: dept.notes ?? '',
       plantId: toId(dept.plant),
@@ -220,6 +230,7 @@ export const fetchHierarchy = async (context: Context): Promise<HierarchyTreeRes
     const departmentId = line.departmentId.toString();
     const lineNode: HierarchyLineNode = {
       id: line._id.toString(),
+      tenantId: line.tenantId?.toString() ?? context.tenantId,
       name: line.name,
       notes: line.notes ?? '',
       departmentId,
@@ -239,6 +250,7 @@ export const fetchHierarchy = async (context: Context): Promise<HierarchyTreeRes
     const lineId = station.lineId.toString();
     const stationNode: HierarchyStationNode = {
       id: station._id.toString(),
+      tenantId: station.tenantId?.toString() ?? context.tenantId,
       name: station.name,
       notes: station.notes ?? '',
       lineId,
@@ -273,10 +285,13 @@ export const fetchHierarchy = async (context: Context): Promise<HierarchyTreeRes
   assets.forEach((asset) => {
     const assetNode: HierarchyAssetNode = {
       id: asset._id.toString(),
+      tenantId: asset.tenantId.toString(),
       name: asset.name,
       status: asset.status,
       type: asset.type,
       criticality: asset.criticality,
+      siteId: toId(asset.siteId),
+      plantId: toId(asset.plant),
       departmentId: asset.departmentId ? asset.departmentId.toString() : undefined,
       lineId: asset.lineId ? asset.lineId.toString() : undefined,
       stationId: asset.stationId ? asset.stationId.toString() : undefined,
@@ -822,6 +837,7 @@ export const getAssetDetail = async (context: Context, assetId: string): Promise
   return {
     asset: {
       id: asset._id.toString(),
+      tenantId: asset.tenantId.toString(),
       name: asset.name,
       description: asset.description ?? asset.notes ?? undefined,
       status: asset.status,
@@ -829,6 +845,8 @@ export const getAssetDetail = async (context: Context, assetId: string): Promise
       criticality: asset.criticality,
       location: asset.location,
       serialNumber: asset.serialNumber,
+      siteId: asset.siteId ? asset.siteId.toString() : undefined,
+      plantId: asset.plant ? asset.plant.toString() : undefined,
       lineId: asset.lineId ? asset.lineId.toString() : undefined,
       stationId: asset.stationId ? asset.stationId.toString() : undefined,
       departmentId: asset.departmentId ? asset.departmentId.toString() : undefined,

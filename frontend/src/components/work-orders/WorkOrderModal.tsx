@@ -23,6 +23,7 @@ import {
   type ChecklistFormValue,
   type SignatureFormValue,
 } from "@/utils/workOrderTransforms";
+import CopilotPanel, { type CopilotSuggestion } from "@/workorders/CopilotPanel";
    
 
 interface WorkOrderModalProps {
@@ -47,6 +48,9 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
   const [newSignature, setNewSignature] = useState<SignatureFormValue>({ by: '', ts: '' });
   const [docFile, setDocFile] = useState<File | null>(null);
   const [docUrl, setDocUrl] = useState('');
+  const [failureTags, setFailureTags] = useState<string[]>(
+    workOrder?.failureModeTags || initialData?.failureModeTags || []
+  );
 
   const departments = useDepartmentStore((s) => s.departments);
   const linesMap = useDepartmentStore((s) => s.linesByDepartment);
@@ -136,6 +140,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
     setSignatures(mapSignaturesFromApi(workOrder?.signatures || initialData?.signatures));
     setDocFile(null);
     setDocUrl('');
+    setFailureTags(workOrder?.failureModeTags || initialData?.failureModeTags || []);
   }, [initialData, isOpen, reset, workOrder]);
 
   const departmentId = watch("departmentId");
@@ -144,6 +149,34 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
 
   const lines = departmentId ? linesMap[departmentId] || [] : [];
   const stations = lineId ? stationsMap[lineId] || [] : [];
+  const assetIdValue = watch("assetId") || workOrder?.assetId || initialData?.assetId;
+  const descriptionValue = watch("description") || '';
+
+  const mergeFailureModes = (existing: string[], incoming: string[]): string[] => {
+    const seen = new Map(existing.map((tag) => [tag.toLowerCase(), tag]));
+    const result = [...existing];
+    incoming.forEach((tag) => {
+      const slug = tag.toLowerCase();
+      if (!seen.has(slug)) {
+        seen.set(slug, tag);
+        result.push(tag);
+      }
+    });
+    return result;
+  };
+
+  const handleApplySuggestion = (suggestion: CopilotSuggestion) => {
+    const nextDescription = [descriptionValue, suggestion.detail]
+      .filter((value) => Boolean(value && value.trim().length))
+      .join('\n\n')
+      .trim();
+    if (nextDescription) {
+      setValue('description', nextDescription, { shouldValidate: true });
+    }
+    if (suggestion.failureModes?.length) {
+      setFailureTags((prev) => mergeFailureModes(prev, suggestion.failureModes));
+    }
+  };
 
   const { getRootProps, getInputProps } = useDropzone({
     accept: {
@@ -219,6 +252,10 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
       signatures: signaturePayload,
       checklists: checklistPayload,
     };
+
+    if (failureTags.length) {
+      payload.failureModeTags = failureTags;
+    }
 
     if (files.length > 0) {
       const fd = new FormData();
@@ -568,6 +605,29 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
               {...register("description")}
             />
           </div>
+          {failureTags.length > 0 && (
+            <div>
+              <div className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-300">
+                Failure modes
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {failureTags.map((tag) => (
+                  <span key={tag} className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-700">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {workOrder?.id && (
+            <CopilotPanel
+              workOrderId={workOrder.id}
+              assetId={assetIdValue}
+              initialSummary={workOrder.copilotSummary}
+              initialTags={failureTags}
+              onApplySuggestion={handleApplySuggestion}
+            />
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -581,6 +641,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 <option value="requested">Requested</option>
                 <option value="assigned">Assigned</option>
                 <option value="in_progress">In Progress</option>
+                <option value="paused">Paused</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
               </select>

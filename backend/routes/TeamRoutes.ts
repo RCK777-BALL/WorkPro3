@@ -10,12 +10,14 @@ import {
   deleteTeamMember,
 } from '../controllers/TeamMemberController';
 import { requireAuth } from '../middleware/authMiddleware';
+import tenantScope from '../middleware/tenantScope';
 import requireRoles from '../middleware/requireRoles';
 
 const router = express.Router();
 
 // Ensure the request is authenticated and tenant is resolved
 router.use(requireAuth);
+router.use(tenantScope);
 
 router.get('/', getTeamMembers);
 router.post(

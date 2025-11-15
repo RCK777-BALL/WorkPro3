@@ -6,7 +6,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import http from "@/lib/http";
 import { useToast } from "@/context/ToastContext";
-import RecentActivity, { AuditLog } from "@/components/dashboard/RecentActivity";
+import RecentActivity from "@/components/dashboard/RecentActivity";
+import type { AuditLog, AuditLogPage } from "@/features/audit";
 import EmailPreferencesCard from "@/components/dashboard/EmailPreferencesCard";
 import { Sparkline } from "@/components/charts/Sparkline";
 import {
@@ -90,8 +91,8 @@ export default function DashboardHome() {
     try {
       setActivityError(null);
       setActivityLoading(true);
-      const res = await http.get<AuditLog[]>("/audit", { params: { limit: 10 } });
-      setActivityLogs(res.data);
+      const res = await http.get<AuditLogPage>("/audit", { params: { limit: 10 } });
+      setActivityLogs(res.data?.items ?? []);
     } catch (e) {
       setActivityError("Failed to load activity");
       addToast("Failed to load activity", "error");

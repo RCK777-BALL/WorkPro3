@@ -2,31 +2,49 @@
  * SPDX-License-Identifier: MIT
  */
 
-import mongoose from 'mongoose';
+import mongoose, { Schema, type Document, type Model, type Types } from 'mongoose';
 
-const siteSchema = new mongoose.Schema(
+export interface SiteDocument extends Document {
+  _id: Types.ObjectId;
+  tenantId: Types.ObjectId;
+  name: string;
+  code?: string;
+  timezone?: string;
+  country?: string;
+  region?: string;
+}
+
+const siteSchema = new Schema<SiteDocument>(
   {
-    name: { type: String, required: true },
+    name: { type: String, required: true, trim: true },
+    code: { type: String, trim: true, uppercase: true },
+    timezone: { type: String, trim: true },
+    country: { type: String, trim: true },
+    region: { type: String, trim: true },
     tenantId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'Tenant',
       required: true,
       index: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
+
+siteSchema.index({ tenantId: 1, code: 1 }, { sparse: true });
 
 // Enforce per-tenant site creation limits using Tenant.maxSites
 siteSchema.pre('save', async function (next) {
-  const Site = this.constructor as mongoose.Model<any>;
+  const SiteModel = this.constructor as Model<SiteDocument>;
   const tenant = await mongoose.model('Tenant').findById(this.tenantId);
   const max = (tenant as any)?.maxSites ?? Infinity;
-  const count = await Site.countDocuments({ tenantId: this.tenantId });
+  const count = await SiteModel.countDocuments({ tenantId: this.tenantId });
   if (count >= max) {
     return next(new Error('Site limit reached'));
   }
   next();
 });
 
-export default mongoose.model('Site', siteSchema);
+const Site: Model<SiteDocument> = mongoose.model<SiteDocument>('Site', siteSchema);
+
+export default Site;

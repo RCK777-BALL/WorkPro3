@@ -7,12 +7,16 @@ import type { InventoryUpdatePayload } from '@shared/inventory';
 export interface WorkOrderUpdatePayload {
   _id: string;
   tenantId: string;
+  siteId?: string;
+  plantId?: string;
   title: string;
-  status: 'requested' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'requested' | 'assigned' | 'in_progress' | 'paused' | 'completed' | 'cancelled';
   type?: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
   complianceProcedureId?: string;
   calibrationIntervalDays?: number;
   assignees?: string[];
+  failureModeTags?: string[];
+  copilotSummary?: string;
   deleted?: boolean;
 }
 

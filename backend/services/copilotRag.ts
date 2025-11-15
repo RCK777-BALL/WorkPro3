@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Types, type FilterQuery } from 'mongoose';
+import { Types, type FilterQuery, type LeanDocument } from 'mongoose';
 import WorkOrder, { type WorkOrder as WorkOrderModel } from '../models/WorkOrder';
 import WorkHistory, { type WorkHistoryDocument } from '../models/WorkHistory';
 import Asset, { type AssetDoc } from '../models/Asset';
@@ -14,12 +14,12 @@ const CONTEXT_LIMIT = 40;
 interface ContextMetadata {
   title: string;
   source: 'work-order' | 'asset' | 'history';
-  workOrderId?: string;
-  assetId?: string;
-  summary?: string;
-  action?: string;
-  failureModes?: string[];
-  createdAt?: Date | string;
+  workOrderId?: string | undefined;
+  assetId?: string | undefined;
+  summary?: string | undefined;
+  action?: string | undefined;
+  failureModes?: string[] | undefined;
+  createdAt?: Date | string | undefined;
 }
 
 interface EmbeddingDoc {
@@ -50,8 +50,8 @@ export interface CopilotContextEntry {
   snippet: string;
   score: number;
   sourceType: string;
-  workOrderId?: string;
-  assetId?: string;
+  workOrderId?: string | undefined;
+  assetId?: string | undefined;
 }
 
 export interface CopilotResponsePayload {
@@ -64,8 +64,8 @@ export interface CopilotResponsePayload {
     id: string;
     title: string;
     status: WorkOrderModel['status'];
-    failureModeTags?: string[];
-    copilotSummary?: string;
+    failureModeTags?: string[] | undefined;
+    copilotSummary?: string | undefined;
   };
 }
 
@@ -167,8 +167,8 @@ async function findWorkOrder(
 
 interface ContextParams {
   tenantId: string;
-  plantId?: string;
-  assetId?: string;
+  plantId?: string | undefined;
+  assetId?: string | undefined;
 }
 
 async function getContextDocuments(params: ContextParams): Promise<EmbeddingDoc[]> {
@@ -285,7 +285,7 @@ function buildWorkOrderText(order: WorkOrderModel & { _id: Types.ObjectId }): st
   return parts.filter(Boolean).join('\n');
 }
 
-function buildHistoryText(history: WorkHistoryDocument): string {
+function buildHistoryText(history: WorkHistoryDocument | LeanDocument<WorkHistoryDocument>): string {
   const notes: string[] = [];
   if (history.actions) {
     notes.push(history.actions);

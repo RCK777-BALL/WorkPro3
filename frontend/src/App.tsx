@@ -38,6 +38,7 @@ import Stations from "@/pages/Stations";
 import Teams from "@/pages/Teams";
 import { AssetExplorerPage } from "@/features/assets";
 import { AuditLogsPage } from "@/features/audit";
+import { ExecutiveInsightsPage } from "@/features/executive";
 import PermitsPage from "@/pages/PermitsPage";
 import TeamMemberProfile from "@/pages/TeamMemberProfile";
 import Settings from "@/pages/Settings";
@@ -95,6 +96,14 @@ export default function App() {
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/analytics/global" element={<GlobalAnalyticsDashboard />} />
           <Route path="/analytics/ai" element={<AIDashboard />} />
+          <Route
+            path="/executive"
+            element={
+              <RequirePermission scope="executive" action="read">
+                <ExecutiveInsightsPage />
+              </RequirePermission>
+            }
+          />
           <Route path="/iot" element={<IotMonitoring />} />
           <Route path="/work-orders" element={<WorkOrders />} />
           <Route path="/workorders" element={<WorkOrders />} />

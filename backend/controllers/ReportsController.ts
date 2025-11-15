@@ -34,6 +34,23 @@ interface AnalyticsStats {
 
 type TenantId = string | Types.ObjectId;
 
+const HOURS_PER_MONTH = 24 * 30;
+
+const resolveTenantId = (req: Parameters<AuthedRequestHandler>[0]): TenantId => {
+  const headerTenant = req.headers?.['x-tenant-id'];
+  const headerValue = Array.isArray(headerTenant) ? headerTenant[0] : headerTenant;
+  const resolved =
+    req.tenantId ||
+    (typeof req.user?.tenantId === 'string' ? req.user.tenantId : undefined) ||
+    headerValue;
+
+  if (!resolved) {
+    throw new Error('Tenant context is required for reports');
+  }
+
+  return resolved;
+};
+
 const calculateStats = async (
   tenantId: TenantId,
   role?: string,
@@ -141,7 +158,7 @@ const calculateStats = async (
 const getAnalyticsReport: AuthedRequestHandler = async (req, res, next) => {
   try {
     const role = typeof req.query.role === 'string' ? req.query.role : undefined;
-    const tenantId = req.tenantId as TenantId;
+    const tenantId = resolveTenantId(req);
     const typeFilter = typeof req.query.type === 'string' ? req.query.type : undefined;
     const stats = await calculateStats(tenantId, role, typeFilter);
     sendResponse(res, stats);
@@ -150,13 +167,87 @@ const getAnalyticsReport: AuthedRequestHandler = async (req, res, next) => {
   }
 };
 
+const drawTrendChart = (
+  doc: PDFDocument,
+  {
+    x,
+    y,
+    width,
+    height,
+    labels,
+    series,
+  }: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    labels: string[];
+    series: Array<{
+      label: string;
+      color: string;
+      values: number[];
+    }>;
+  },
+) => {
+  const values = series.flatMap((item) => item.values);
+  const max = Math.max(...values, 1);
+  const min = Math.min(...values, 0);
+  const range = max - min || 1;
+  doc.save();
+  doc.strokeColor('#d4d4d8').rect(x, y, width, height).stroke();
+  const steps = 4;
+  for (let i = 1; i < steps; i += 1) {
+    const yPos = y + (i / steps) * height;
+    doc.moveTo(x, yPos).lineTo(x + width, yPos).stroke('#f1f5f9');
+  }
+  series.forEach((dataset, datasetIndex) => {
+    if (dataset.values.length === 0) return;
+    doc.save();
+    doc.lineWidth(1.5).strokeColor(dataset.color);
+    dataset.values.forEach((value, index) => {
+      const xPos =
+        labels.length <= 1
+          ? x
+          : x + (index / Math.max(labels.length - 1, 1)) * width;
+      const normalized = (value - min) / range;
+      const yPos = y + height - normalized * height;
+      if (index === 0) {
+        doc.moveTo(xPos, yPos);
+      } else {
+        doc.lineTo(xPos, yPos);
+      }
+    });
+    doc.stroke();
+    doc.restore();
+    doc
+      .fillColor(dataset.color)
+      .rect(x + datasetIndex * 90, y - 14, 8, 8)
+      .fill();
+    doc
+      .fillColor('#0f172a')
+      .fontSize(8)
+      .text(dataset.label, x + datasetIndex * 90 + 10, y - 16, { width: 80 });
+  });
+  doc.restore();
+};
+
+const currencyFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 0,
+});
+
 const downloadReport: AuthedRequestHandler = async (req, res, next) => {
   try {
     const format = String(req.query.format ?? 'pdf').toLowerCase();
     const role = typeof req.query.role === 'string' ? req.query.role : undefined;
-    const tenantId = req.tenantId as TenantId;
+    const tenantId = resolveTenantId(req);
     const typeFilter = typeof req.query.type === 'string' ? req.query.type : undefined;
-    const stats = await calculateStats(tenantId, role, typeFilter);
+    const [stats, trends] = await Promise.all([
+      calculateStats(tenantId, role, typeFilter),
+      aggregateLongTermTrends(tenantId, 12),
+    ]);
+    const aiSummary = generateAiSummary(trends);
 
     if (format === 'csv') {
       const transform = new Json2csvTransform();
@@ -173,8 +264,46 @@ const downloadReport: AuthedRequestHandler = async (req, res, next) => {
     doc.fontSize(18).text('Analytics Report', { align: 'center' });
     doc.moveDown();
     Object.entries(stats).forEach(([key, value]) => {
-      doc.fontSize(12).text(`${key}: ${value}`);
+      if (Array.isArray(value)) {
+        doc.fontSize(12).text(`${key}:`);
+        value.forEach((item) => doc.fontSize(10).text(`• ${JSON.stringify(item)}`));
+      } else {
+        doc.fontSize(12).text(`${key}: ${value}`);
+      }
     });
+    doc.moveDown();
+    doc.fontSize(16).text('AI Summary', { underline: true });
+    doc.moveDown(0.5);
+    doc.fontSize(12).text(aiSummary.summary);
+    if (aiSummary.highlights.length > 0) {
+      doc.moveDown(0.5);
+      aiSummary.highlights.forEach((highlight) => {
+        doc.text(`• ${highlight}`);
+      });
+    }
+    if (trends.length > 0) {
+      doc.addPage();
+      doc.fontSize(16).text('Long-term KPI Trends');
+      doc.moveDown();
+      const labels = trends.map((point) => point.period);
+      drawTrendChart(doc, {
+        x: 50,
+        y: 120,
+        width: 500,
+        height: 220,
+        labels,
+        series: [
+          { label: 'Downtime (hrs)', color: '#ef4444', values: trends.map((p) => p.downtimeHours) },
+          { label: 'Compliance (%)', color: '#2563eb', values: trends.map((p) => p.compliance) },
+          { label: 'Reliability (%)', color: '#16a34a', values: trends.map((p) => p.reliability) },
+        ],
+      });
+      doc.moveDown(14);
+      const latestCost = trends.at(-1)?.maintenanceCost ?? 0;
+      doc
+        .fontSize(12)
+        .text(`Latest maintenance cost: ${currencyFormatter.format(latestCost)}`, { align: 'left' });
+    }
     doc.end();
   } catch (err) {
     next(err);
@@ -213,7 +342,7 @@ const aggregateTrends = async (tenantId: TenantId): Promise<TrendDataPoint[]> =>
 
 const getTrendData: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const tenantId = req.tenantId as TenantId;
+    const tenantId = resolveTenantId(req);
     const data = await aggregateTrends(tenantId);
     sendResponse(res, data);
   } catch (err) {
@@ -224,7 +353,7 @@ const getTrendData: AuthedRequestHandler = async (req, res, next) => {
 const exportTrendData: AuthedRequestHandler = async (req, res, next) => {
   try {
     const format = String(req.query.format ?? 'json').toLowerCase();
-    const tenantId = req.tenantId as TenantId;
+    const tenantId = resolveTenantId(req);
     const data = await aggregateTrends(tenantId);
 
     if (format === 'csv') {
@@ -237,6 +366,159 @@ const exportTrendData: AuthedRequestHandler = async (req, res, next) => {
     }
 
     sendResponse(res, data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+interface LongTermTrendPoint {
+  period: string;
+  downtimeHours: number;
+  compliance: number;
+  maintenanceCost: number;
+  reliability: number;
+}
+
+const reliabilityScore = (downtimeHours: number): number => {
+  const clamped = Math.min(Math.max(downtimeHours, 0), HOURS_PER_MONTH);
+  const ratio = 1 - clamped / HOURS_PER_MONTH;
+  return Number((ratio * 100).toFixed(1));
+};
+
+const aggregateLongTermTrends = async (
+  tenantId: TenantId,
+  months = 12,
+): Promise<LongTermTrendPoint[]> => {
+  const safeMonths = Number.isFinite(months)
+    ? Math.min(Math.max(Math.trunc(months), 1), 36)
+    : 12;
+  const [downtime, compliance, costs, assetTrends] = await Promise.all([
+    aggregateDowntime(tenantId),
+    aggregatePmCompliance(tenantId),
+    aggregateCosts(tenantId),
+    aggregateTrends(tenantId),
+  ]);
+  const map = new Map<string, LongTermTrendPoint>();
+  const ensureEntry = (period: string): LongTermTrendPoint => {
+    const existing = map.get(period);
+    if (existing) return existing;
+    const entry: LongTermTrendPoint = {
+      period,
+      downtimeHours: 0,
+      compliance: 0,
+      maintenanceCost: 0,
+      reliability: 100,
+    };
+    map.set(period, entry);
+    return entry;
+  };
+
+  downtime.forEach((point) => {
+    ensureEntry(point.period).downtimeHours = Number(point.downtime.toFixed(2));
+  });
+  compliance.forEach((point) => {
+    ensureEntry(point.period).compliance = Number(point.compliance.toFixed(1));
+  });
+  costs.forEach((point) => {
+    ensureEntry(point.period).maintenanceCost = Number(point.totalCost.toFixed(2));
+  });
+  assetTrends.forEach((point) => {
+    const entry = ensureEntry(point.period);
+    const downtimeHours = point.assetDowntime ?? entry.downtimeHours;
+    entry.reliability = reliabilityScore(downtimeHours);
+    if (!entry.maintenanceCost) {
+      entry.maintenanceCost = Number(point.maintenanceCost.toFixed(2));
+    }
+    if (!entry.downtimeHours) {
+      entry.downtimeHours = Number(point.assetDowntime.toFixed(2));
+    }
+  });
+
+  return Array.from(map.values())
+    .sort((a, b) => (a.period < b.period ? -1 : 1))
+    .slice(-safeMonths);
+};
+
+interface AiSummaryPayload {
+  summary: string;
+  highlights: string[];
+  latestPeriod: string | null;
+  confidence: number;
+}
+
+const describeChange = (current: number, previous?: number, suffix = '') => {
+  if (previous == null || Number.isNaN(previous)) {
+    return { direction: 'flat', delta: 0, label: `at ${current.toFixed(1)}${suffix}` };
+  }
+  const delta = current - previous;
+  if (Math.abs(delta) < 0.1) {
+    return { direction: 'flat', delta: 0, label: 'holding steady' };
+  }
+  const direction = delta > 0 ? 'up' : 'down';
+  return {
+    direction,
+    delta,
+    label: `${direction} ${Math.abs(delta).toFixed(1)}${suffix}`,
+  };
+};
+
+const generateAiSummary = (trends: LongTermTrendPoint[]): AiSummaryPayload => {
+  if (trends.length === 0) {
+    return {
+      summary: 'Insufficient data to summarize long-term performance trends.',
+      highlights: [],
+      latestPeriod: null,
+      confidence: 0.4,
+    };
+  }
+
+  const latest = trends.at(-1)!;
+  const previous = trends.length > 1 ? trends.at(-2) : undefined;
+  const downtimeChange = describeChange(latest.downtimeHours, previous?.downtimeHours, 'h');
+  const complianceChange = describeChange(latest.compliance, previous?.compliance, '%');
+  const reliabilityChange = describeChange(latest.reliability, previous?.reliability, '%');
+  const costChange = describeChange(latest.maintenanceCost, previous?.maintenanceCost, ' USD');
+
+  const summary = `AI insight (${latest.period}): downtime averaged ${latest.downtimeHours.toFixed(
+    1,
+  )}h (${downtimeChange.label}), compliance reached ${latest.compliance.toFixed(
+    1,
+  )}% (${complianceChange.label}), reliability held at ${latest.reliability.toFixed(
+    1,
+  )}% (${reliabilityChange.label}), and spend was ${currencyFormatter.format(
+    latest.maintenanceCost,
+  )} (${costChange.label}).`;
+
+  return {
+    summary,
+    highlights: [
+      `Downtime ${downtimeChange.direction === 'down' ? 'improved' : downtimeChange.direction === 'up' ? 'worsened' : 'held steady'} by ${Math.abs(downtimeChange.delta).toFixed(1)}h`,
+      `Compliance ${complianceChange.direction === 'up' ? 'gained' : complianceChange.direction === 'down' ? 'slipped' : 'held'} ${Math.abs(complianceChange.delta).toFixed(1)} pts`,
+      `Reliability ${reliabilityChange.direction === 'up' ? 'strengthened' : reliabilityChange.direction === 'down' ? 'softened' : 'remained stable'}`,
+    ],
+    latestPeriod: latest.period,
+    confidence: trends.length >= 6 ? 0.87 : 0.72,
+  };
+};
+
+const getLongTermTrends: AuthedRequestHandler = async (req, res, next) => {
+  try {
+    const tenantId = resolveTenantId(req);
+    const months = Number(req.query.months ?? 12);
+    const data = await aggregateLongTermTrends(tenantId, months);
+    sendResponse(res, data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getAiSummary: AuthedRequestHandler = async (req, res, next) => {
+  try {
+    const tenantId = resolveTenantId(req);
+    const months = Number(req.query.months ?? 12);
+    const trends = await aggregateLongTermTrends(tenantId, months);
+    const payload = generateAiSummary(trends);
+    sendResponse(res, payload);
   } catch (err) {
     next(err);
   }
@@ -334,7 +616,7 @@ const aggregateCosts = async (tenantId: TenantId): Promise<CostBreakdown[]> => {
 
 const getCostMetrics: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const tenantId = req.tenantId as TenantId;
+    const tenantId = resolveTenantId(req);
     const data = await aggregateCosts(tenantId);
     sendResponse(res, data);
   } catch (err) {
@@ -367,7 +649,7 @@ const aggregateDowntime = async (tenantId: TenantId): Promise<DowntimePoint[]> =
 
 const getDowntimeReport: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const tenantId = req.tenantId as TenantId;
+    const tenantId = resolveTenantId(req);
     const data = await aggregateDowntime(tenantId);
     sendResponse(res, data);
   } catch (err) {
@@ -415,7 +697,7 @@ const aggregatePmCompliance = async (tenantId: TenantId): Promise<PmCompliancePo
 
 const getPmCompliance: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const tenantId = req.tenantId as TenantId;
+    const tenantId = resolveTenantId(req);
     const data = await aggregatePmCompliance(tenantId);
     sendResponse(res, data);
   } catch (err) {
@@ -461,9 +743,113 @@ const aggregateCostByAsset = async (tenantId: TenantId): Promise<CostByAssetPoin
 
 const getCostByAsset: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const tenantId = req.tenantId as TenantId;
+    const tenantId = resolveTenantId(req);
     const data = await aggregateCostByAsset(tenantId);
     sendResponse(res, data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+interface ReportSchedule {
+  frequency: 'monthly';
+  dayOfMonth: number;
+  hourUtc: string;
+  recipients: string[];
+  sendEmail: boolean;
+  sendDownloadLink: boolean;
+  format: 'pdf' | 'csv';
+  timezone: string;
+  nextRun: string;
+  updatedAt: string;
+}
+
+type ReportScheduleInput = Partial<Omit<ReportSchedule, 'nextRun' | 'updatedAt' | 'frequency'>>;
+
+const scheduleStore = new Map<string, ReportSchedule>();
+
+const computeNextRun = (dayOfMonth: number, hourUtc: string): string => {
+  const [hours, minutes] = hourUtc.split(':').map((part) => Number(part));
+  const now = new Date();
+  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), dayOfMonth, hours || 0, minutes || 0));
+  if (next <= now) {
+    next.setUTCMonth(next.getUTCMonth() + 1);
+  }
+  return next.toISOString();
+};
+
+const normalizeRecipients = (recipients?: unknown): string[] => {
+  if (!recipients) return [];
+  if (Array.isArray(recipients)) {
+    return recipients.map((item) => String(item)).map((email) => email.trim()).filter(Boolean);
+  }
+  if (typeof recipients === 'string') {
+    return recipients
+      .split(',')
+      .map((email) => email.trim())
+      .filter(Boolean);
+  }
+  return [];
+};
+
+const resolveSchedule = (tenantId: string): ReportSchedule => {
+  const existing = scheduleStore.get(tenantId);
+  if (existing) return existing;
+  const schedule: ReportSchedule = {
+    frequency: 'monthly',
+    dayOfMonth: 1,
+    hourUtc: '08:00',
+    recipients: [],
+    sendEmail: true,
+    sendDownloadLink: false,
+    format: 'pdf',
+    timezone: 'UTC',
+    nextRun: computeNextRun(1, '08:00'),
+    updatedAt: new Date().toISOString(),
+  };
+  scheduleStore.set(tenantId, schedule);
+  return schedule;
+};
+
+const getReportSchedule: AuthedRequestHandler = async (req, res, next) => {
+  try {
+    const tenantId = String(resolveTenantId(req));
+    const schedule = resolveSchedule(tenantId);
+    sendResponse(res, schedule);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updateReportSchedule: AuthedRequestHandler = async (req, res, next) => {
+  try {
+    const tenantId = String(resolveTenantId(req));
+    const current = resolveSchedule(tenantId);
+    const payload: ReportScheduleInput = {
+      dayOfMonth: typeof req.body?.dayOfMonth === 'number' ? req.body.dayOfMonth : current.dayOfMonth,
+      hourUtc: typeof req.body?.hourUtc === 'string' ? req.body.hourUtc : current.hourUtc,
+      recipients: normalizeRecipients(req.body?.recipients),
+      sendEmail: req.body?.sendEmail ?? current.sendEmail,
+      sendDownloadLink: req.body?.sendDownloadLink ?? current.sendDownloadLink,
+      format: req.body?.format === 'csv' ? 'csv' : 'pdf',
+      timezone: typeof req.body?.timezone === 'string' ? req.body.timezone : current.timezone,
+    };
+
+    const nextRun = computeNextRun(payload.dayOfMonth ?? current.dayOfMonth, payload.hourUtc ?? current.hourUtc);
+    const updated: ReportSchedule = {
+      frequency: 'monthly',
+      dayOfMonth: payload.dayOfMonth ?? current.dayOfMonth,
+      hourUtc: payload.hourUtc ?? current.hourUtc,
+      recipients: payload.recipients ?? current.recipients,
+      sendEmail: Boolean(payload.sendEmail),
+      sendDownloadLink: Boolean(payload.sendDownloadLink),
+      format: payload.format ?? current.format,
+      timezone: payload.timezone ?? current.timezone,
+      nextRun,
+      updatedAt: new Date().toISOString(),
+    };
+    scheduleStore.set(tenantId, updated);
+    sendResponse(res, updated, null, 200, 'Schedule updated');
   } catch (err) {
     next(err);
   }
@@ -478,4 +864,8 @@ export {
   getDowntimeReport,
   getPmCompliance,
   getCostByAsset,
+  getLongTermTrends,
+  getAiSummary,
+  getReportSchedule,
+  updateReportSchedule,
 };

@@ -73,25 +73,69 @@ describe('Reports metrics', () => {
     const res = await request(app)
       .get('/api/reports/costs')
       .set('Authorization', `Bearer ${token}`)
+      .set('x-tenant-id', tenantId.toString())
       .expect(200);
-    expect(res.body).toHaveLength(1);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data).toHaveLength(1);
     const expectedPeriod = base.toISOString().slice(0, 7);
-    expect(res.body[0].period).toBe(expectedPeriod);
+    expect(res.body.data[0].period).toBe(expectedPeriod);
     const laborRate = Number(process.env.LABOR_RATE);
-    expect(res.body[0].laborCost).toBeCloseTo(8 * laborRate);
-    expect(res.body[0].maintenanceCost).toBeCloseTo(4 * laborRate);
-    expect(res.body[0].materialCost).toBeCloseTo(5);
-    expect(res.body[0].totalCost).toBeCloseTo(12 * laborRate + 5);
+    expect(res.body.data[0].laborCost).toBeCloseTo(8 * laborRate);
+    expect(res.body.data[0].maintenanceCost).toBeCloseTo(4 * laborRate);
+    expect(res.body.data[0].materialCost).toBeCloseTo(5);
+    expect(res.body.data[0].totalCost).toBeCloseTo(12 * laborRate + 5);
   });
 
   it('aggregates downtime data', async () => {
     const res = await request(app)
       .get('/api/reports/downtime')
       .set('Authorization', `Bearer ${token}`)
+      .set('x-tenant-id', tenantId.toString())
       .expect(200);
-    expect(res.body).toHaveLength(1);
+    expect(res.body.data).toHaveLength(1);
     const expectedPeriod = base.toISOString().slice(0, 7);
-    expect(res.body[0].period).toBe(expectedPeriod);
-    expect(res.body[0].downtime).toBe(4);
+    expect(res.body.data[0].period).toBe(expectedPeriod);
+    expect(res.body.data[0].downtime).toBe(4);
+  });
+
+  it('combines long term trends and AI summary', async () => {
+    const [trendRes, summaryRes] = await Promise.all([
+      request(app)
+        .get('/api/reports/long-term-trends?months=12')
+        .set('Authorization', `Bearer ${token}`)
+        .set('x-tenant-id', tenantId.toString()),
+      request(app)
+        .get('/api/reports/summary/ai?months=12')
+        .set('Authorization', `Bearer ${token}`)
+        .set('x-tenant-id', tenantId.toString()),
+    ]);
+
+    expect(trendRes.status).toBe(200);
+    expect(Array.isArray(trendRes.body.data)).toBe(true);
+    expect(trendRes.body.data[0]).toMatchObject({ period: expect.any(String) });
+    expect(summaryRes.body.data.summary).toContain('AI insight');
+  });
+
+  it('saves a schedule preference', async () => {
+    const payload = {
+      dayOfMonth: 15,
+      hourUtc: '10:30',
+      recipients: ['ops@example.com'],
+      sendEmail: true,
+      sendDownloadLink: true,
+      format: 'pdf',
+      timezone: 'UTC',
+    };
+
+    const res = await request(app)
+      .post('/api/reports/schedule')
+      .set('Authorization', `Bearer ${token}`)
+      .set('x-tenant-id', tenantId.toString())
+      .send(payload)
+      .expect(200);
+
+    expect(res.body.data.dayOfMonth).toBe(15);
+    expect(res.body.data.recipients).toContain('ops@example.com');
+    expect(new Date(res.body.data.nextRun).getUTCDate()).toBe(15);
   });
 });

@@ -17,6 +17,7 @@ import {
   dashboardKpiCsv,
   dashboardKpiXlsx,
   dashboardKpiPdf,
+  pmWhatIfSimulationsJson,
   corporateSitesJson,
   corporateOverviewJson,
 } from '../controllers/AnalyticsController';

@@ -6,7 +6,7 @@ import type { Request, Response, NextFunction } from "express";
 import { Types, isValidObjectId } from "mongoose";
 import InventoryItem, { type IInventoryItem } from "../models/InventoryItem";
 import logger from "../utils/logger";
-import { writeAuditLog } from "../utils/audit";
+import { auditAction } from "../utils/audit";
 import { toEntityId } from "../utils/ids";
 import { sendResponse } from "../utils/sendResponse";
 
@@ -205,16 +205,8 @@ export async function createInventoryItem(
 
     const payload: Partial<IInventoryItem> = scopedQuery(req, data);
     const saved = await new InventoryItem(payload).save();
-    const userId = (req.user as any)?._id || (req.user as any)?.id;
     const savedPlain = toPlainObject(saved);
-    await writeAuditLog({
-      tenantId,
-      userId,
-      action: "create",
-      entityType: "InventoryItem",
-      entityId: toEntityId(saved._id),
-      after: savedPlain,
-    });
+    await auditAction(req, "create", "InventoryItem", toEntityId(saved._id) ?? saved._id, undefined, savedPlain);
     sendResponse(res, saved, null, 201);
   } catch (err) {
     logger.error("Error creating inventory item", err);
@@ -264,18 +256,9 @@ export async function updateInventoryItem(
       return;
     }
 
-    const userId2 = (req.user as any)?._id || (req.user as any)?.id;
     const before = toPlainObject(existing);
     const after = toPlainObject(updated);
-    await writeAuditLog({
-      tenantId,
-      userId: userId2,
-      action: "update",
-      entityType: "InventoryItem",
-      entityId: toEntityId(id),
-      before,
-      after,
-    });
+    await auditAction(req, "update", "InventoryItem", toEntityId(id) ?? id, before, after);
     sendResponse(res, updated);
   } catch (err) {
     logger.error("Error updating inventory item", err);
@@ -308,16 +291,8 @@ export async function deleteInventoryItem(
       return;
     }
 
-    const userId3 = (req.user as any)?._id || (req.user as any)?.id;
     const deletedPlain = toPlainObject(deleted);
-    await writeAuditLog({
-      tenantId,
-      userId: userId3,
-      action: "delete",
-      entityType: "InventoryItem",
-      entityId: toEntityId(id),
-      before: deletedPlain,
-    });
+    await auditAction(req, "delete", "InventoryItem", toEntityId(id) ?? id, deletedPlain, undefined);
     sendResponse(res, { message: "Deleted successfully" });
   } catch (err) {
     next(err);
@@ -378,16 +353,7 @@ export async function useInventoryItem(
       return;
     }
 
-    const userId4 = (req.user as any)?._id || (req.user as any)?.id;
-    await writeAuditLog({
-      tenantId,
-      userId: userId4,
-      action: "use",
-      entityType: "InventoryItem",
-      entityId: toEntityId(id),
-      before,
-      after: toPlainObject(item),
-    });
+    await auditAction(req, "use", "InventoryItem", toEntityId(id) ?? id, before, toPlainObject(item));
     sendResponse(res, item);
   } catch (err) {
     next(err);

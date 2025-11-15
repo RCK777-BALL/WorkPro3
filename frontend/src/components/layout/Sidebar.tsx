@@ -24,6 +24,7 @@ import {
   LogOut,
   MapPin,
   MessageSquare,
+  ScrollText,
   Scan,
   Settings,
   Users,
@@ -218,6 +219,13 @@ const navItems: Record<NavItemId, NavItem> = {
     label: "Imports",
     to: "/imports",
     icon: Activity,
+    section: "management",
+  },
+  audit: {
+    id: "audit",
+    label: "Audit Logs",
+    to: "/admin/audit",
+    icon: ScrollText,
     section: "management",
   },
 };

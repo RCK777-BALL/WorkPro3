@@ -34,6 +34,7 @@ import Lines from "@/pages/Lines";
 import Stations from "@/pages/Stations";
 import Teams from "@/pages/Teams";
 import { AssetExplorerPage } from "@/features/assets";
+import { AuditLogsPage } from "@/features/audit";
 import PermitsPage from "@/pages/PermitsPage";
 import TeamMemberProfile from "@/pages/TeamMemberProfile";
 import Settings from "@/pages/Settings";
@@ -114,6 +115,7 @@ export default function App() {
           <Route path="/pm/tasks" element={<PMTasksPage />} />
           <Route path="/timesheets" element={<TimeSheets />} />
           <Route path="/admin/tenants" element={<AdminTenants />} />
+          <Route path="/admin/audit" element={<AuditLogsPage />} />
           <Route path="/imports" element={<Imports />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -720,6 +720,8 @@ export const getDashboardRecentActivity = async (
     const items = logs.map((log) => {
       const user: any = (log as any).userId ?? null;
       const userLabel =
+        log.actor?.name?.trim() ||
+        log.actor?.email?.trim() ||
         (user?.name as string | undefined)?.trim() ||
         (user?.email as string | undefined)?.trim() ||
         'System';
@@ -910,12 +912,18 @@ export const postDashboardImportSync = async (req: Request, res: Response, next:
 
     const processedCount = assetCount + inventoryCount;
 
+    const actorId = toObjectId(req.user?._id ?? req.user?.id ?? null);
+    const actor = req.user
+      ? { id: actorId, name: (req.user as any)?.name, email: (req.user as any)?.email }
+      : undefined;
     await AuditLog.create({
       tenantId,
-      userId: toObjectId(req.user?._id ?? req.user?.id ?? null),
+      userId: actorId,
+      actor,
       action: 'import.sync',
       entityType: 'data-import',
       entityId: 'dashboard',
+      entity: { type: 'data-import', id: 'dashboard', label: 'Dashboard Import' },
       after: {
         status: 'success',
         processedCount,
@@ -936,12 +944,18 @@ export const postLaunchPlanner = async (req: Request, res: Response, next: NextF
   try {
     const tenantId = resolveTenantId(req);
     if (tenantId) {
+      const actorId = toObjectId(req.user?._id ?? req.user?.id ?? null);
+      const actor = req.user
+        ? { id: actorId, name: (req.user as any)?.name, email: (req.user as any)?.email }
+        : undefined;
       await AuditLog.create({
         tenantId,
-        userId: toObjectId(req.user?._id ?? req.user?.id ?? null),
+        userId: actorId,
+        actor,
         action: 'planner.launch',
         entityType: 'command-center',
         entityId: 'planner',
+        entity: { type: 'command-center', id: 'planner', label: 'Planner' },
         after: {
           from: 'dashboard',
         },

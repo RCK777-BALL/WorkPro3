@@ -4,6 +4,24 @@
 
 import mongoose, { Schema, type Document, type Model, type Types } from 'mongoose';
 
+export interface AuditLogEntityRef {
+  type: string;
+  id?: string | null;
+  label?: string | null;
+}
+
+export interface AuditLogActor {
+  id?: Types.ObjectId | null;
+  name?: string | null;
+  email?: string | null;
+}
+
+export interface AuditLogDiffEntry {
+  path: string;
+  before?: unknown;
+  after?: unknown;
+}
+
 export interface AuditLogDocument extends Document {
   tenantId: Types.ObjectId;
   siteId?: Types.ObjectId | null;
@@ -11,10 +29,40 @@ export interface AuditLogDocument extends Document {
   action: string;
   entityType: string;
   entityId?: string | null;
-  before?: Record<string, unknown> | null;
-  after?: Record<string, unknown> | null;
+  entity: AuditLogEntityRef;
+  actor?: AuditLogActor | null;
+  before?: unknown;
+  after?: unknown;
+  diff?: AuditLogDiffEntry[] | null;
   ts: Date;
 }
+
+const actorSchema = new Schema<AuditLogActor>(
+  {
+    id: { type: Schema.Types.ObjectId, ref: 'User' },
+    name: { type: String },
+    email: { type: String },
+  },
+  { _id: false },
+);
+
+const entitySchema = new Schema<AuditLogEntityRef>(
+  {
+    type: { type: String, required: true },
+    id: { type: String },
+    label: { type: String },
+  },
+  { _id: false },
+);
+
+const diffSchema = new Schema<AuditLogDiffEntry>(
+  {
+    path: { type: String, required: true },
+    before: { type: Schema.Types.Mixed },
+    after: { type: Schema.Types.Mixed },
+  },
+  { _id: false },
+);
 
 const auditLogSchema = new Schema<AuditLogDocument>(
   {
@@ -24,8 +72,11 @@ const auditLogSchema = new Schema<AuditLogDocument>(
     action: { type: String, required: true },
     entityType: { type: String, required: true },
     entityId: { type: String },
+    entity: { type: entitySchema, required: true },
+    actor: { type: actorSchema },
     before: { type: Schema.Types.Mixed },
     after: { type: Schema.Types.Mixed },
+    diff: { type: [diffSchema], default: void 0 },
     ts: { type: Date, required: true, default: () => new Date(), index: true },
   },
   {
@@ -34,6 +85,9 @@ const auditLogSchema = new Schema<AuditLogDocument>(
 );
 
 auditLogSchema.index({ tenantId: 1, ts: -1 });
+auditLogSchema.index({ tenantId: 1, 'entity.type': 1, ts: -1 });
+auditLogSchema.index({ tenantId: 1, action: 1, ts: -1 });
+auditLogSchema.index({ tenantId: 1, 'actor.email': 1 });
 
 type AuditLogModel = Model<AuditLogDocument>;
 

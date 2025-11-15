@@ -21,7 +21,7 @@ import type {
   PMTaskGenerateWOResponse,
 } from '../types/pmTask';
 import type { ParamsDictionary } from 'express-serve-static-core';
-import { writeAuditLog } from '../utils/audit';
+import { auditAction } from '../utils/audit';
 import { toEntityId } from '../utils/ids';
 
 
@@ -109,18 +109,7 @@ export const createPMTask: AuthedRequestHandler<ParamsDictionary, PMTaskResponse
     }
     const payload = { ...req.body, tenantId, siteId: req.siteId };
     const task: PMTaskDocument = await PMTask.create(payload);
-    const rawUserId = (req.user as any)?._id ?? (req.user as any)?.id;
-    const auditUserId = rawUserId
-      ? toEntityId(rawUserId as string | Types.ObjectId)
-      : undefined;
-    await writeAuditLog({
-      tenantId,
-      ...(auditUserId ? { userId: auditUserId } : {}),
-      action: 'create',
-      entityType: 'PMTask',
-      entityId: toEntityId(task._id as Types.ObjectId),
-      after: task.toObject(),
-    });
+    await auditAction(req, 'create', 'PMTask', toEntityId(task._id as Types.ObjectId) ?? task._id, undefined, task.toObject());
     sendResponse(res, task, null, 201);
   } catch (err) {
     if (err instanceof MongooseError.ValidationError) {
@@ -168,19 +157,14 @@ export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | n
       return;
     }
     const rawUserId = (req.user as any)?._id ?? (req.user as any)?.id;
-    const auditUserId = rawUserId
-      ? toEntityId(rawUserId as string | Types.ObjectId)
-      : undefined;
-    await writeAuditLog({
-      tenantId,
-      ...(auditUserId ? { userId: auditUserId } : {}),
-      action: 'update',
-      entityType: 'PMTask',
-      entityId: toEntityId(task._id as Types.ObjectId),
-
-      before: existing.toObject(),
-      after: task.toObject(),
-    });
+    await auditAction(
+      req,
+      'update',
+      'PMTask',
+      toEntityId(task._id as Types.ObjectId) ?? task._id,
+      existing.toObject(),
+      task.toObject(),
+    );
     sendResponse(res, task);
   } catch (err) {
     if (err instanceof MongooseError.ValidationError) {
@@ -216,19 +200,14 @@ export const deletePMTask: AuthedRequestHandler<PMTaskParams, PMTaskDeleteRespon
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    const rawUserId = (req.user as any)?._id ?? (req.user as any)?.id;
-    const auditUserId = rawUserId
-      ? toEntityId(rawUserId as string | Types.ObjectId)
-      : undefined;
-    await writeAuditLog({
-      tenantId,
-      ...(auditUserId ? { userId: auditUserId } : {}),
-      action: 'delete',
-      entityType: 'PMTask',
-      entityId: toEntityId(task._id as Types.ObjectId),
-
-      before: task.toObject(),
-    });
+    await auditAction(
+      req,
+      'delete',
+      'PMTask',
+      toEntityId(task._id as Types.ObjectId) ?? task._id,
+      task.toObject(),
+      undefined,
+    );
     sendResponse(res, { message: 'Deleted successfully' });
   } catch (err) {
     if (err instanceof MongooseError.ValidationError) {

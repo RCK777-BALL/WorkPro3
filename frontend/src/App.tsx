@@ -36,6 +36,7 @@ import Lines from "@/pages/Lines";
 import Stations from "@/pages/Stations";
 import Teams from "@/pages/Teams";
 import { AssetExplorerPage } from "@/features/assets";
+import { AuditLogsPage } from "@/features/audit";
 import PermitsPage from "@/pages/PermitsPage";
 import TeamMemberProfile from "@/pages/TeamMemberProfile";
 import Settings from "@/pages/Settings";

@@ -15,7 +15,7 @@ import notifyUser from '../utils/notify';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
-import { writeAuditLog } from '../utils/audit';
+import { auditAction } from '../utils/audit';
 
 import type { WorkOrderType, WorkOrderInput } from '../types/workOrder';
 
@@ -625,14 +625,7 @@ export async function createWorkOrder(
         }),
       );
     }
-    await writeAuditLog({
-      tenantId,
-      ...(userObjectId ? { userId: userObjectId } : {}),
-      action: 'create',
-      entityType: 'WorkOrder',
-      entityId: saved._id,
-      after: saved.toObject(),
-    });
+    await auditAction(req, 'create', 'WorkOrder', saved._id, undefined, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved, null, 201);
     return;
@@ -820,15 +813,7 @@ export async function updateWorkOrder(
         }),
       );
     }
-    await writeAuditLog({
-      tenantId,
-      ...(userObjectId ? { userId: userObjectId } : {}),
-      action: 'update',
-      entityType: 'WorkOrder',
-      entityId: new Types.ObjectId(req.params.id),
-      before: existing.toObject(),
-      after: updated.toObject(),
-    });
+    await auditAction(req, 'update', 'WorkOrder', new Types.ObjectId(req.params.id), existing.toObject(), updated.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(updated));
     sendResponse(res, updated);
     return;
@@ -880,15 +865,7 @@ export async function deleteWorkOrder(
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    const auditUserId = resolveUserObjectId(req);
-    await writeAuditLog({
-      tenantId,
-      ...(auditUserId ? { userId: auditUserId } : {}),
-      action: 'delete',
-      entityType: 'WorkOrder',
-      entityId: new Types.ObjectId(req.params.id),
-      before: deleted.toObject(),
-    });
+    await auditAction(req, 'delete', 'WorkOrder', new Types.ObjectId(req.params.id), deleted.toObject(), undefined);
     emitWorkOrderUpdate(toWorkOrderUpdatePayload({ _id: req.params.id, deleted: true }));
     sendResponse(res, { message: 'Deleted successfully' });
     return;
@@ -986,15 +963,7 @@ export async function approveWorkOrder(
     }
 
     const saved = await workOrder.save();
-    await writeAuditLog({
-      tenantId,
-      userId: userObjectId,
-      action: 'approve',
-      entityType: 'WorkOrder',
-      entityId: new Types.ObjectId(req.params.id),
-      before,
-      after: saved.toObject(),
-    });
+    await auditAction(req, 'approve', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
 
     const message =
@@ -1085,16 +1054,7 @@ export async function assignWorkOrder(
       workOrder.set('assignees', mapAssignees(validAssignees));
     }
     const saved = await workOrder.save();
-    const auditUserId = resolveUserObjectId(req);
-    await writeAuditLog({
-      tenantId,
-      ...(auditUserId ? { userId: auditUserId } : {}),
-      action: 'assign',
-      entityType: 'WorkOrder',
-      entityId: new Types.ObjectId(req.params.id),
-      before,
-      after: saved.toObject(),
-    });
+    await auditAction(req, 'assign', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved);
     return;
@@ -1162,15 +1122,7 @@ export async function startWorkOrder(
         }),
       );
     }
-    await writeAuditLog({
-      tenantId,
-      ...(userObjectId ? { userId: userObjectId } : {}),
-      action: 'start',
-      entityType: 'WorkOrder',
-      entityId: new Types.ObjectId(req.params.id),
-      before,
-      after: saved.toObject(),
-    });
+    await auditAction(req, 'start', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved);
     return;
@@ -1274,15 +1226,7 @@ export async function completeWorkOrder(
         }),
       );
     }
-    await writeAuditLog({
-      tenantId,
-      ...(userObjectId ? { userId: userObjectId } : {}),
-      action: 'complete',
-      entityType: 'WorkOrder',
-      entityId: new Types.ObjectId(req.params.id),
-      before,
-      after: saved.toObject(),
-    });
+    await auditAction(req, 'complete', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved);
     return;
@@ -1333,16 +1277,7 @@ export async function cancelWorkOrder(
     const before = workOrder.toObject();
     workOrder.status = 'cancelled';
     const saved = await workOrder.save();
-    const auditUserId = resolveUserObjectId(req);
-    await writeAuditLog({
-      tenantId,
-      ...(auditUserId ? { userId: auditUserId } : {}),
-      action: 'cancel',
-      entityType: 'WorkOrder',
-      entityId: new Types.ObjectId(req.params.id),
-      before,
-      after: saved.toObject(),
-    });
+    await auditAction(req, 'cancel', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved);
     return;

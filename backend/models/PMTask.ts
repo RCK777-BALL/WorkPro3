@@ -37,6 +37,7 @@ export interface PMTaskAssignmentDocument extends Document {
 }
 
 export interface PMTaskDocument extends Document {
+  task: Types.ObjectId;
   title: string;
   tenantId: Schema.Types.ObjectId;
   notes?: string;

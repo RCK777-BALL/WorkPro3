@@ -25,10 +25,11 @@ const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest &
 
 const buildContext = (req: AuthedRequest): PMContext => {
   const user = req.user as { _id?: string; id?: string } | undefined;
+  const userId = user?._id ?? user?.id ?? '';
   return {
     tenantId: req.tenantId!,
-    siteId: req.siteId,
-    userId: user?._id ?? user?.id,
+    siteId: req.siteId!,
+    userId,
   };
 };
 

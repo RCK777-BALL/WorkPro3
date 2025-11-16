@@ -5,7 +5,6 @@
 import PDFDocument from 'pdfkit';
 import { Parser as Json2csvParser, Transform as Json2csvTransform } from 'json2csv';
 import { Readable } from 'stream';
-import type { Request } from 'express';
 import type { Types } from 'mongoose';
 
 import WorkOrder from '../models/WorkOrder';
@@ -35,10 +34,7 @@ interface AnalyticsStats {
 
 type TenantId = string | Types.ObjectId;
 
-type RequestWithTenantContext = Request & {
-  tenantId?: string | Types.ObjectId;
-  user?: { tenantId?: string } | undefined;
-};
+type RequestWithTenantContext = Parameters<AuthedRequestHandler>[0];
 
 type PdfKitDocument = InstanceType<typeof PDFDocument>;
 

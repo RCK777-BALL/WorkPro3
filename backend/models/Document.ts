@@ -19,6 +19,8 @@ export interface DocumentDoc extends Document {
   url: string;
   uploadedBy?: Types.ObjectId;
   metadata?: StoredDocumentMetadata;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const documentSchema = new Schema<DocumentDoc>({

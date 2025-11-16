@@ -88,9 +88,11 @@ const scopesForClient = (client?: string): string[] => {
   return ['web:access'];
 };
 
+type JwtPayloadOptions = { scopes?: string[]; client?: string | undefined };
+
 function buildJwtPayload(
   user: { _id: unknown; email: string; tenantId?: unknown; roles?: string[]; role?: string; siteId?: unknown },
-  options: { scopes?: string[]; client?: string } = {},
+  options: JwtPayloadOptions = {},
 ): JwtUser {
   const payload: JwtUser = {
     id: String(user._id),
@@ -244,7 +246,7 @@ export const login: ExpressRequestHandler = requestHandler(async (req, res) => {
       ? (rawSiteId as { toString(): string }).toString()
       : undefined;
 
-  const jwtOptions: { scopes?: string[]; client?: string } = { scopes };
+  const jwtOptions: JwtPayloadOptions = { scopes };
   if (client) {
     jwtOptions.client = client;
   }

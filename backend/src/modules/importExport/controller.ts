@@ -33,11 +33,21 @@ const ensureTenant = (req: AuthedRequest, res: Response): string | undefined => 
   return req.tenantId;
 };
 
-const buildContext = (req: AuthedRequest): Context => ({
-  tenantId: req.tenantId!,
-  plantId: req.plantId,
-  siteId: req.siteId,
-});
+const buildContext = (req: AuthedRequest): Context => {
+  const context: Context = {
+    tenantId: req.tenantId!,
+  };
+
+  if (req.plantId) {
+    context.plantId = req.plantId;
+  }
+
+  if (req.siteId) {
+    context.siteId = req.siteId;
+  }
+
+  return context;
+};
 
 const parseFormat = (value?: string): ExportFormat | undefined => {
   if (!value) return 'xlsx';

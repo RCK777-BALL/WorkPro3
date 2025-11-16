@@ -146,8 +146,8 @@ export interface AssetDetailResponse {
 
 type Context = {
   tenantId: string;
-  plantId?: string;
-  siteId?: string;
+  plantId?: string | undefined;
+  siteId?: string | undefined;
 };
 
 const sortByName = <T extends { name: string }>(items: T[]): T[] =>

@@ -3,6 +3,7 @@
  */
 
 import type { Response, NextFunction } from 'express';
+import type { ParamsDictionary } from 'express-serve-static-core';
 
 import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
 import { fail } from '../../lib/http';
@@ -72,7 +73,11 @@ export const getAssetDetails: AuthedRequestHandler<{ assetId: string }> = async 
   }
 };
 
-export const createDepartmentHandler: AuthedRequestHandler<unknown, unknown, { name?: string; notes?: string; siteId?: string }> = async (
+export const createDepartmentHandler: AuthedRequestHandler<
+  ParamsDictionary,
+  unknown,
+  { name?: string; notes?: string; siteId?: string }
+> = async (
   req,
   res,
   next,
@@ -115,7 +120,7 @@ export const deleteDepartmentHandler: AuthedRequestHandler<{ departmentId: strin
 };
 
 export const createLineHandler: AuthedRequestHandler<
-  unknown,
+  ParamsDictionary,
   unknown,
   { name?: string; notes?: string; departmentId?: string; siteId?: string }
 > = async (req, res, next) => {
@@ -153,7 +158,7 @@ export const deleteLineHandler: AuthedRequestHandler<{ lineId: string }> = async
 };
 
 export const createStationHandler: AuthedRequestHandler<
-  unknown,
+  ParamsDictionary,
   unknown,
   { name?: string; notes?: string; lineId?: string; siteId?: string }
 > = async (req, res, next) => {
@@ -206,7 +211,7 @@ type AssetBody = {
   stationId?: string;
 };
 
-export const createAssetHandler: AuthedRequestHandler<unknown, unknown, AssetBody> = async (req, res, next) => {
+export const createAssetHandler: AuthedRequestHandler<ParamsDictionary, unknown, AssetBody> = async (req, res, next) => {
   if (!ensureTenant(req, res)) return;
   try {
     const asset = await createAsset(buildContext(req), req.body);

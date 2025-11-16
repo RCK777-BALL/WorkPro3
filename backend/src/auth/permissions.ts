@@ -25,10 +25,10 @@ const toRoleList = (input: unknown): string[] => {
   return [];
 };
 
-export const hasPermission = (
+export const hasPermission = <S extends PermissionScope>(
   roles: string[] | undefined,
-  scope: PermissionScope,
-  action: PermissionAction,
+  scope: S,
+  action: PermissionAction<S>,
 ): boolean => {
   if (!roles || roles.length === 0) {
     return false;
@@ -49,9 +49,9 @@ export const hasPermission = (
   return normalizedRoles.some((role) => allowedSet.has(role));
 };
 
-export const requirePermission = (
-  scope: PermissionScope,
-  action: PermissionAction,
+export const requirePermission = <S extends PermissionScope>(
+  scope: S,
+  action: PermissionAction<S>,
 ): RequestHandler =>
   (req, res, next): void => {
     const authedReq = req as AuthedRequest;

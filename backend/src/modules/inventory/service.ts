@@ -289,7 +289,7 @@ export const listParts = async (context: InventoryContext): Promise<PartResponse
   if (context.siteId) {
     query.siteId = maybeObjectId(context.siteId);
   }
-  const parts = await PartModel.find(query).lean<PartRecord>();
+  const parts = (await PartModel.find(query).lean()) as PartRecord[];
   const refs = await resolveReferenceMaps(parts);
   return parts.map((part) => serializePart(part, refs));
 };
@@ -673,7 +673,7 @@ export const listAlerts = async (context: InventoryContext): Promise<InventoryAl
   if (context.siteId) {
     match.siteId = maybeObjectId(context.siteId);
   }
-  const parts = await PartModel.find(match).lean<PartRecord>();
+  const parts = (await PartModel.find(match).lean()) as PartRecord[];
   const refs = await resolveReferenceMaps(parts);
   return parts.map((part) => {
     const alert: InventoryAlert = {
@@ -683,10 +683,10 @@ export const listAlerts = async (context: InventoryContext): Promise<InventoryAl
       reorderPoint: part.reorderPoint,
       assetNames: (part.assetIds ?? [])
         .map((assetId: Types.ObjectId) => refs.assets.get(assetId.toString()))
-        .filter((name): name is string => Boolean(name)),
+        .filter((name: string | undefined): name is string => Boolean(name)),
       pmTemplateTitles: (part.pmTemplateIds ?? [])
         .map((templateId: Types.ObjectId) => refs.templates.get(templateId.toString()))
-        .filter((title): title is string => Boolean(title)),
+        .filter((title: string | undefined): title is string => Boolean(title)),
     };
 
     if (part.tenantId) {

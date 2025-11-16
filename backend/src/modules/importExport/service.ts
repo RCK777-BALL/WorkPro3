@@ -29,14 +29,14 @@ export interface ImportValidationError {
 
 export interface ImportAssetRow {
   name: string;
-  type?: AssetDoc['type'];
-  status?: string;
-  location?: string;
-  department?: string;
-  line?: string;
-  station?: string;
-  serialNumber?: string;
-  criticality?: string;
+  type?: AssetDoc['type'] | undefined;
+  status?: string | undefined;
+  location?: string | undefined;
+  department?: string | undefined;
+  line?: string | undefined;
+  station?: string | undefined;
+  serialNumber?: string | undefined;
+  criticality?: string | undefined;
 }
 
 export interface ImportSummary {
@@ -287,7 +287,10 @@ export const parseImportFile = (
 ): { rows: ImportAssetRow[]; format: 'csv' | 'xlsx'; columns: string[] } => {
   const format = detectFormat(file);
   const rawRows = format === 'csv' ? parseCsvRows(file) : parseWorkbookRows(file);
-  const columns = Array.from(new Set(rawRows.flatMap((row) => Object.keys(row ?? {}))));
+  type RawRow = Record<string, unknown>;
+  const columns: string[] = Array.from(
+    new Set(rawRows.flatMap((row: RawRow) => Object.keys(row ?? {}))),
+  );
   const rows = normalizeRows(rawRows);
   if (!rows.length) {
     throw new ImportExportError('No valid rows were detected in the uploaded file.');

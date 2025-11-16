@@ -17,8 +17,8 @@ import {
 
 type Context = {
   tenantId: string;
-  plantId?: string | undefined;
-  siteId?: string | undefined;
+  plantId?: string;
+  siteId?: string;
 };
 
 type UploadRequest = AuthedRequest & { file?: Express.Multer.File };

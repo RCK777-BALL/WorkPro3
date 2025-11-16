@@ -35,10 +35,15 @@ interface AnalyticsStats {
 
 type TenantId = string | Types.ObjectId;
 
+type RequestWithTenantContext = Request & {
+  tenantId?: string | Types.ObjectId;
+  user?: { tenantId?: string } | undefined;
+};
+
+type PdfKitDocument = InstanceType<typeof PDFDocument>;
+
 const HOURS_PER_MONTH = 24 * 30;
-const resolveTenantId = (
-  req: Request & { tenantId?: string | Types.ObjectId; user?: { tenantId?: string } },
-): TenantId => {
+const resolveTenantId = (req: RequestWithTenantContext): TenantId => {
   const headerTenant = req.headers?.['x-tenant-id'];
   const headerValue = Array.isArray(headerTenant) ? headerTenant[0] : headerTenant;
   const resolved =
@@ -51,7 +56,6 @@ const resolveTenantId = (
   }
 
   return resolved;
-};
 };
 
 const calculateStats = async (
@@ -171,7 +175,7 @@ const getAnalyticsReport: AuthedRequestHandler = async (req, res, next) => {
 };
 
 const drawTrendChart = (
-  doc: PDFDocument,
+  doc: PdfKitDocument,
   {
     x,
     y,

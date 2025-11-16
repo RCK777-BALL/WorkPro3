@@ -8,7 +8,7 @@ import User, { type UserDocument } from '../models/User';
 
 interface MappingEntry {
   tenantId: string;
-  siteId?: string;
+  siteId?: string | undefined;
 }
 
 const parseMapping = (value: string | undefined): Record<string, MappingEntry> => {
@@ -96,10 +96,10 @@ export interface TenantResolutionInput {
 }
 
 export interface TenantResolution {
-  tenantId?: string;
-  siteId?: string;
-  userId?: string;
-  roles?: string[];
+  tenantId?: string | undefined;
+  siteId?: string | undefined;
+  userId?: string | undefined;
+  roles?: string[] | undefined;
 }
 
 export const resolveTenantContext = async ({

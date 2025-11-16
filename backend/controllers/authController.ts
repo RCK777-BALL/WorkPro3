@@ -244,6 +244,11 @@ export const login: ExpressRequestHandler = requestHandler(async (req, res) => {
       ? (rawSiteId as { toString(): string }).toString()
       : undefined;
 
+  const jwtOptions: { scopes?: string[]; client?: string } = { scopes };
+  if (client) {
+    jwtOptions.client = client;
+  }
+
   const tokenPayload = buildJwtPayload(
     {
       _id: user._id,
@@ -253,7 +258,7 @@ export const login: ExpressRequestHandler = requestHandler(async (req, res) => {
       roles,
       role: primaryRole,
     },
-    { scopes, client },
+    jwtOptions,
   );
 
   const token = jwt.sign(tokenPayload, secret, { expiresIn: '7d' });

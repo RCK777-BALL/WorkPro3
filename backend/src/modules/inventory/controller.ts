@@ -29,11 +29,25 @@ const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest &
   return true;
 };
 
-const buildContext = (req: AuthedRequest): InventoryContext => ({
-  tenantId: req.tenantId!,
-  siteId: req.siteId ?? '',
-  userId: req.user && typeof req.user === 'object' ? (req.user as { id?: string; _id?: string }).id : undefined,
-});
+const buildContext = (req: AuthedRequest): InventoryContext => {
+  const context: InventoryContext = {
+    tenantId: req.tenantId!,
+  };
+
+  if (typeof req.siteId === 'string' && req.siteId.length > 0) {
+    context.siteId = req.siteId;
+  }
+
+  if (req.user && typeof req.user === 'object') {
+    const { id, _id } = req.user as { id?: string; _id?: string };
+    const userId = typeof id === 'string' ? id : typeof _id === 'string' ? _id : undefined;
+    if (userId) {
+      context.userId = userId;
+    }
+  }
+
+  return context;
+};
 
 const send = (res: Response, data: unknown, status = 200) => {
   res.status(status).json({ success: true, data });
@@ -76,7 +90,14 @@ export const listPartsHandler: AuthedRequestHandler = async (req, res, next) => 
 
 export const savePartHandler: AuthedRequestHandler<{ partId?: string }> = async (req, res, next) => {
   if (!ensureTenant(req, res)) return;
-  const parse = partInputSchema.safeParse({ ...req.body, name: req.body?.name ?? req.body?.title });
+  const rawBody = (typeof req.body === 'object' && req.body !== null ? req.body : {}) as Record<string, unknown>;
+  const partName =
+    typeof rawBody.name === 'string'
+      ? rawBody.name
+      : typeof rawBody.title === 'string'
+        ? rawBody.title
+        : undefined;
+  const parse = partInputSchema.safeParse({ ...rawBody, name: partName });
   if (!parse.success) {
     fail(res, parse.error.errors.map((error) => error.message).join(', '), 400);
     return;

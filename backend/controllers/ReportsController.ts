@@ -5,7 +5,6 @@
 import PDFDocument from 'pdfkit';
 import { Parser as Json2csvParser, Transform as Json2csvTransform } from 'json2csv';
 import { Readable } from 'stream';
-import type { Request } from 'express';
 import type { Types } from 'mongoose';
 
 import WorkOrder from '../models/WorkOrder';
@@ -35,10 +34,7 @@ interface AnalyticsStats {
 
 type TenantId = string | Types.ObjectId;
 
-type RequestWithTenantContext = Request & {
-  tenantId?: string | Types.ObjectId;
-  user?: { tenantId?: string } | undefined;
-};
+type RequestWithTenantContext = Parameters<AuthedRequestHandler>[0];
 
 type PdfKitDocument = InstanceType<typeof PDFDocument>;
 
@@ -832,14 +828,15 @@ const updateReportSchedule: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = String(resolveTenantId(req));
     const current = resolveSchedule(tenantId);
+    const body = req.body as Partial<ReportScheduleInput> | undefined;
     const payload: ReportScheduleInput = {
-      dayOfMonth: typeof req.body?.dayOfMonth === 'number' ? req.body.dayOfMonth : current.dayOfMonth,
-      hourUtc: typeof req.body?.hourUtc === 'string' ? req.body.hourUtc : current.hourUtc,
-      recipients: normalizeRecipients(req.body?.recipients),
-      sendEmail: req.body?.sendEmail ?? current.sendEmail,
-      sendDownloadLink: req.body?.sendDownloadLink ?? current.sendDownloadLink,
-      format: req.body?.format === 'csv' ? 'csv' : 'pdf',
-      timezone: typeof req.body?.timezone === 'string' ? req.body.timezone : current.timezone,
+      dayOfMonth: typeof body?.dayOfMonth === 'number' ? body.dayOfMonth : current.dayOfMonth,
+      hourUtc: typeof body?.hourUtc === 'string' ? body.hourUtc : current.hourUtc,
+      recipients: normalizeRecipients(body?.recipients),
+      sendEmail: body?.sendEmail ?? current.sendEmail,
+      sendDownloadLink: body?.sendDownloadLink ?? current.sendDownloadLink,
+      format: body?.format === 'csv' ? 'csv' : 'pdf',
+      timezone: typeof body?.timezone === 'string' ? body.timezone : current.timezone,
     };
 
     const nextRun = computeNextRun(payload.dayOfMonth ?? current.dayOfMonth, payload.hourUtc ?? current.hourUtc);

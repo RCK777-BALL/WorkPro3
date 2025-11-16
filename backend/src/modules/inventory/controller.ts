@@ -31,7 +31,7 @@ const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest &
 
 const buildContext = (req: AuthedRequest): InventoryContext => ({
   tenantId: req.tenantId!,
-  siteId: req.siteId,
+  siteId: req.siteId ?? '',
   userId: req.user && typeof req.user === 'object' ? (req.user as { id?: string; _id?: string }).id : undefined,
 });
 

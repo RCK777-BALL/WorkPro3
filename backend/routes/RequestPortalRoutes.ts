@@ -9,7 +9,7 @@ import path from 'path';
 import { mkdirSync } from 'fs';
 
 import RequestForm from '../models/RequestForm';
-import { submitPublicRequest, WorkRequestError } from '../src/modules/work-requests/service';
+import { getPublicRequestStatus, submitPublicRequest, WorkRequestError } from '../src/modules/work-requests/service';
 import { publicWorkRequestSchema } from '../src/modules/work-requests/schemas';
 
 const router = express.Router();

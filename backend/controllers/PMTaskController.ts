@@ -109,7 +109,8 @@ export const createPMTask: AuthedRequestHandler<ParamsDictionary, PMTaskResponse
     }
     const payload = { ...req.body, tenantId, siteId: req.siteId };
     const task: PMTaskDocument = await PMTask.create(payload);
-    await auditAction(req, 'create', 'PMTask', toEntityId(task._id as Types.ObjectId) ?? task._id, undefined, task.toObject());
+    const targetId: string | Types.ObjectId = (toEntityId(task._id as Types.ObjectId) ?? task._id) as string | Types.ObjectId;
+    await auditAction(req as any, 'create', 'PMTask', targetId, undefined, task.toObject());
     sendResponse(res, task, null, 201);
   } catch (err) {
     if (err instanceof MongooseError.ValidationError) {
@@ -156,12 +157,12 @@ export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | n
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    const rawUserId = (req.user as any)?._id ?? (req.user as any)?.id;
+    const targetId: string | Types.ObjectId = (toEntityId(task!._id as Types.ObjectId) ?? task!._id) as string | Types.ObjectId;
     await auditAction(
-      req,
+      req as any,
       'update',
       'PMTask',
-      toEntityId(task._id as Types.ObjectId) ?? task._id,
+      targetId,
       existing.toObject(),
       task.toObject(),
     );
@@ -200,11 +201,12 @@ export const deletePMTask: AuthedRequestHandler<PMTaskParams, PMTaskDeleteRespon
       sendResponse(res, null, 'Not found', 404);
       return;
     }
+    const targetId: string | Types.ObjectId = (toEntityId(task._id as Types.ObjectId) ?? task._id) as string | Types.ObjectId;
     await auditAction(
-      req,
+      req as any,
       'delete',
       'PMTask',
-      toEntityId(task._id as Types.ObjectId) ?? task._id,
+      targetId,
       task.toObject(),
       undefined,
     );

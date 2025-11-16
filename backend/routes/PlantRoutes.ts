@@ -83,17 +83,17 @@ router.put('/:id', async (req: AuthedRequest, res, next) => {
 
     if (Object.prototype.hasOwnProperty.call(req.body, 'location')) {
       if (typeof location === 'string') {
-        updates.location = location.trim();
+        setOperations.location = location.trim();
       } else if (location === null) {
-        updates.location = undefined;
+        unsetOperations.location = 1;
       }
     }
 
     if (Object.prototype.hasOwnProperty.call(req.body, 'description')) {
       if (typeof description === 'string') {
-        updates.description = description.trim();
+        setOperations.description = description.trim();
       } else if (description === null) {
-        updates.description = undefined;
+        unsetOperations.description = 1;
       }
     }
 

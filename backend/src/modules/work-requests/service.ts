@@ -162,7 +162,7 @@ export const getPublicRequestStatus = async (token: string) => {
         } | null>()
     : null;
 
-  const updates: Array<{ label: string; description?: string; timestamp?: Date }> = [
+  const updates: Array<{ label: string; description?: string; timestamp?: Date | undefined }> = [
     {
       label: 'Request submitted',
       description: request.description ?? 'Request received by the maintenance team.',

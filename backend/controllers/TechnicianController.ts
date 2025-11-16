@@ -75,18 +75,35 @@ type WorkOrderLean = ReturnType<WorkOrderDocument['toObject']> & {
   assetId?: { _id?: Types.ObjectId; name?: string } | Types.ObjectId | null;
 };
 
-const toWorkOrderUpdatePayload = (doc: WorkOrderDocument): WorkOrderUpdatePayload => ({
-  _id: doc._id.toString(),
-  tenantId: doc.tenantId instanceof Types.ObjectId ? doc.tenantId.toString() : String(doc.tenantId),
-  title: doc.title,
-  status: doc.status,
-  type: doc.type,
-  complianceProcedureId: doc.complianceProcedureId,
-  calibrationIntervalDays: doc.calibrationIntervalDays,
-  assignees: Array.isArray(doc.assignees)
-    ? doc.assignees.map((assignee) => assignee.toString())
-    : undefined,
-});
+const toWorkOrderUpdatePayload = (doc: WorkOrderDocument): WorkOrderUpdatePayload => {
+  const tenantId =
+    doc.tenantId instanceof Types.ObjectId ? doc.tenantId.toString() : String(doc.tenantId);
+
+  const complianceProcedureId =
+    doc.complianceProcedureId && (doc.complianceProcedureId as any) instanceof Types.ObjectId
+      ? (doc.complianceProcedureId as Types.ObjectId).toString()
+      : doc.complianceProcedureId
+      ? String(doc.complianceProcedureId)
+      : '';
+
+  const calibrationIntervalDays =
+    typeof doc.calibrationIntervalDays === 'number' ? doc.calibrationIntervalDays : 0;
+
+  const assignees = Array.isArray(doc.assignees)
+    ? doc.assignees.map((assignee) => String(assignee))
+    : [];
+
+  return {
+    _id: doc._id.toString(),
+    tenantId,
+    title: doc.title,
+    status: doc.status,
+    type: doc.type,
+    complianceProcedureId,
+    calibrationIntervalDays,
+    assignees,
+  };
+};
 
 const toTechnicianPayload = (
   doc: WorkOrderDocument | WorkOrderLean,

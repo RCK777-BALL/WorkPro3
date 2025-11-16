@@ -3,7 +3,7 @@
  */
 
 import type { ParamsDictionary } from 'express-serve-static-core';
-import type { Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import type { ParsedQs } from 'qs';
 
 import type { AuthedRequest } from '../types/http';
@@ -214,8 +214,8 @@ const buildWorkOrderSearchFilter = (
 };
 
 interface LocationScope {
-  plantId?: string;
-  siteId?: string;
+  plantId?: string | undefined;
+  siteId?: string | undefined;
 }
 
 const resolveLocationScope = (req: { plantId?: string; siteId?: string }): LocationScope => ({
@@ -223,12 +223,12 @@ const resolveLocationScope = (req: { plantId?: string; siteId?: string }): Locat
   siteId: req.siteId ?? req.plantId ?? undefined,
 });
 
-const withLocationScope = <T extends Record<string, unknown>>(filter: T, scope: LocationScope): T => {
+const withLocationScope = <T extends object>(filter: T, scope: LocationScope): T => {
   if (scope.plantId) {
-    (filter as Record<string, unknown>).plant = scope.plantId;
+    (filter as any).plant = scope.plantId;
   }
   if (scope.siteId) {
-    (filter as Record<string, unknown>).siteId = scope.siteId;
+    (filter as any).siteId = scope.siteId;
   }
   return filter;
 };
@@ -625,7 +625,7 @@ export async function createWorkOrder(
         }),
       );
     }
-    await auditAction(req, 'create', 'WorkOrder', saved._id, undefined, saved.toObject());
+    await auditAction(req as unknown as Request, 'create', 'WorkOrder', saved._id, undefined, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved, null, 201);
     return;
@@ -813,7 +813,7 @@ export async function updateWorkOrder(
         }),
       );
     }
-    await auditAction(req, 'update', 'WorkOrder', new Types.ObjectId(req.params.id), existing.toObject(), updated.toObject());
+    await auditAction(req as unknown as Request, 'update', 'WorkOrder', new Types.ObjectId(req.params.id), existing.toObject(), updated.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(updated));
     sendResponse(res, updated);
     return;
@@ -865,7 +865,7 @@ export async function deleteWorkOrder(
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    await auditAction(req, 'delete', 'WorkOrder', new Types.ObjectId(req.params.id), deleted.toObject(), undefined);
+    await auditAction(req as unknown as Request, 'delete', 'WorkOrder', new Types.ObjectId(req.params.id), deleted.toObject(), undefined);
     emitWorkOrderUpdate(toWorkOrderUpdatePayload({ _id: req.params.id, deleted: true }));
     sendResponse(res, { message: 'Deleted successfully' });
     return;
@@ -963,7 +963,7 @@ export async function approveWorkOrder(
     }
 
     const saved = await workOrder.save();
-    await auditAction(req, 'approve', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
+    await auditAction(req as unknown as Request, 'approve', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
 
     const message =
@@ -1054,7 +1054,7 @@ export async function assignWorkOrder(
       workOrder.set('assignees', mapAssignees(validAssignees));
     }
     const saved = await workOrder.save();
-    await auditAction(req, 'assign', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
+    await auditAction(req as unknown as Request, 'assign', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved);
     return;
@@ -1122,7 +1122,7 @@ export async function startWorkOrder(
         }),
       );
     }
-    await auditAction(req, 'start', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
+    await auditAction(req as unknown as Request, 'start', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved);
     return;
@@ -1226,7 +1226,7 @@ export async function completeWorkOrder(
         }),
       );
     }
-    await auditAction(req, 'complete', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
+    await auditAction(req as unknown as Request, 'complete', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved);
     return;
@@ -1277,7 +1277,7 @@ export async function cancelWorkOrder(
     const before = workOrder.toObject();
     workOrder.status = 'cancelled';
     const saved = await workOrder.save();
-    await auditAction(req, 'cancel', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
+    await auditAction(req as unknown as Request, 'cancel', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved);
     return;
@@ -1350,3 +1350,6 @@ export async function assistWorkOrder(
     return;
   }
 }
+
+
+// Duplicate withLocationScope removed — use the generic implementation defined earlier in this file.

@@ -27,11 +27,16 @@ const toReadingArray = (payload: IngestBody): IoTReadingInput[] => {
   if (Array.isArray(payload)) {
     return payload;
   }
-  if (payload && typeof payload === 'object' && Array.isArray(payload.readings)) {
-    return payload.readings;
+  if (payload && typeof payload === 'object' && Array.isArray((payload as any).readings)) {
+    return (payload as any).readings;
   }
   if (payload && typeof payload === 'object') {
-    return [payload];
+    // If the object has a 'readings' key (possibly undefined), treat it as the wrapper type.
+    if ('readings' in payload) {
+      return (payload as { readings?: IoTReadingInput[] }).readings ?? [];
+    }
+    // Otherwise treat the object as a single IoTReadingInput
+    return [payload as IoTReadingInput];
   }
   return [];
 };

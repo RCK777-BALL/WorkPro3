@@ -7,9 +7,10 @@ import type { Strategy as PassportStrategy } from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as GithubStrategy } from 'passport-github2';
 
+import type { OAuthProvider } from '../config/oauthScopes';
 import { resolveTenantContext } from './tenantContext';
 
-export { type OAuthProvider } from '../config/oauthScopes';
+export type { OAuthProvider } from '../config/oauthScopes';
 
 interface OAuthProfile {
   emails?: Array<{ value?: string }>;
@@ -17,6 +18,11 @@ interface OAuthProfile {
 }
 
 type DoneCallback = (err: unknown, user?: { email?: string; tenantId?: string; siteId?: string; roles?: string[]; id?: string }, info?: unknown) => void;
+
+const getProfileDomain = (profile: OAuthProfile | undefined): string | null => {
+  const domainCandidate = profile?._json?.hd;
+  return typeof domainCandidate === 'string' ? domainCandidate : null;
+};
 
 const createOAuthVerifier = (provider: OAuthProvider) =>
   async (_accessToken: string, _refreshToken: string, profile: OAuthProfile, done: DoneCallback) => {
@@ -30,17 +36,25 @@ const createOAuthVerifier = (provider: OAuthProvider) =>
       const tenantContext = await resolveTenantContext({
         provider,
         email,
-        domain: (profile?._json?.hd as string | undefined) ?? undefined,
+        domain: getProfileDomain(profile),
         profile: profile?._json,
       });
 
-      done(null, {
-        email,
-        tenantId: tenantContext.tenantId,
-        siteId: tenantContext.siteId,
-        roles: tenantContext.roles,
-        id: tenantContext.userId,
-      });
+      const user: NonNullable<Parameters<DoneCallback>[1]> = { email };
+      if (tenantContext.tenantId) {
+        user.tenantId = tenantContext.tenantId;
+      }
+      if (tenantContext.siteId) {
+        user.siteId = tenantContext.siteId;
+      }
+      if (tenantContext.roles?.length) {
+        user.roles = tenantContext.roles;
+      }
+      if (tenantContext.userId) {
+        user.id = tenantContext.userId;
+      }
+
+      done(null, user);
     } catch (err) {
       done(err);
     }

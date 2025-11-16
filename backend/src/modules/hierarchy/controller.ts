@@ -84,11 +84,12 @@ export const createDepartmentHandler: AuthedRequestHandler<
 ) => {
   if (!ensureTenant(req, res)) return;
   try {
-    const department = await createDepartment(buildContext(req), {
-      name: req.body.name,
-      notes: req.body.notes,
-      siteId: req.body.siteId,
-    });
+    const payload: { name?: string; notes?: string; siteId?: string } = {};
+    if (req.body.name !== undefined) payload.name = req.body.name;
+    if (req.body.notes !== undefined) payload.notes = req.body.notes;
+    if (req.body.siteId !== undefined) payload.siteId = req.body.siteId;
+
+    const department = await createDepartment(buildContext(req), payload);
     send(res, department, 201);
   } catch (err) {
     handleError(err, res, next);

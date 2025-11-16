@@ -31,7 +31,7 @@ const ensureTenant = (
 
 const buildContext = (req: AuthedRequest): WorkRequestContext => ({
   tenantId: req.tenantId!,
-  siteId: req.siteId,
+  ...(req.siteId ? { siteId: req.siteId } : {}),
 });
 
 const send = (res: Response, data: unknown, status = 200) => {

@@ -127,11 +127,11 @@ const buildRedirectUrl = (
   token: string,
   meta: {
     email: string;
-    tenantId?: string;
-    siteId?: string;
-    roles?: string[];
-    userId?: string;
-    redirect?: string;
+    tenantId?: string | undefined;
+    siteId?: string | undefined;
+    roles?: string[] | undefined;
+    userId?: string | undefined;
+    redirect?: string | undefined;
   },
 ): string => {
   const base = process.env.FRONTEND_URL || 'http://localhost:5173/login';

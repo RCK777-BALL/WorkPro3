@@ -14,7 +14,7 @@ import User from '../models/User';
 import TimeSheet from '../models/TimeSheet';
 import { LABOR_RATE } from '../config/env';
 import { sendResponse } from '../utils/sendResponse';
-import type { AuthedRequestHandler } from '../types/http';
+import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 
 interface AnalyticsStats {
   workOrderCompletionRate: number;
@@ -34,7 +34,7 @@ interface AnalyticsStats {
 
 type TenantId = string | Types.ObjectId;
 
-type RequestWithTenantContext = Parameters<AuthedRequestHandler>[0];
+type RequestWithTenantContext = AuthedRequest;
 
 type PdfKitDocument = InstanceType<typeof PDFDocument>;
 

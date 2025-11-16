@@ -390,7 +390,7 @@ export async function createAsset(
         },
       );
     }
-    await auditAction(req, 'create', 'Asset', toEntityId(newAsset._id as Types.ObjectId) ?? newAsset._id, undefined, assetObj);
+    await auditAction(req as any, 'create', 'Asset', toEntityId(newAsset._id as Types.ObjectId) ?? newAsset._id, undefined, assetObj);
     sendResponse(res, response, null, 201);
     return;
   } catch (err) {
@@ -537,7 +537,7 @@ export async function updateAsset(
       });
     }
     await auditAction(
-      req,
+      req as any,
       'update',
       'Asset',
       toEntityId(new Types.ObjectId(id)) ?? id,
@@ -634,7 +634,7 @@ export async function deleteAsset(
       assetId: asset._id,
     });
     await auditAction(
-      req,
+      req as any,
       'delete',
       'Asset',
       toEntityId(new Types.ObjectId(id)) ?? id,

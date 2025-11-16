@@ -5,6 +5,7 @@
 import PDFDocument from 'pdfkit';
 import { Parser as Json2csvParser, Transform as Json2csvTransform } from 'json2csv';
 import { Readable } from 'stream';
+import type { Request } from 'express';
 import type { Types } from 'mongoose';
 
 import WorkOrder from '../models/WorkOrder';
@@ -35,12 +36,13 @@ interface AnalyticsStats {
 type TenantId = string | Types.ObjectId;
 
 const HOURS_PER_MONTH = 24 * 30;
-
-const resolveTenantId = (req: Parameters<AuthedRequestHandler>[0]): TenantId => {
+const resolveTenantId = (
+  req: Request & { tenantId?: string | Types.ObjectId; user?: { tenantId?: string } },
+): TenantId => {
   const headerTenant = req.headers?.['x-tenant-id'];
   const headerValue = Array.isArray(headerTenant) ? headerTenant[0] : headerTenant;
   const resolved =
-    req.tenantId ||
+    (req.tenantId as string | Types.ObjectId | undefined) ||
     (typeof req.user?.tenantId === 'string' ? req.user.tenantId : undefined) ||
     headerValue;
 
@@ -49,6 +51,7 @@ const resolveTenantId = (req: Parameters<AuthedRequestHandler>[0]): TenantId => 
   }
 
   return resolved;
+};
 };
 
 const calculateStats = async (

@@ -28,7 +28,41 @@ export class PMTemplateError extends Error {
   }
 }
 
-const toObjectId = (value: string, label: string): Types.ObjectId => {
+interface ChecklistItemLean {
+  _id?: Types.ObjectId;
+  description: string;
+  required?: boolean;
+}
+
+interface RequiredPartLean {
+  _id?: Types.ObjectId;
+  partId?: Types.ObjectId;
+  quantity?: number;
+}
+
+interface AssignmentLean {
+  _id?: Types.ObjectId;
+  asset?: Types.ObjectId;
+  interval: string;
+  usageMetric?: 'runHours' | 'cycles';
+  usageTarget?: number;
+  usageLookbackDays?: number;
+  checklist?: ChecklistItemLean[];
+  requiredParts?: RequiredPartLean[];
+  nextDue?: Date;
+}
+
+interface PMTaskLean {
+  _id: Types.ObjectId;
+  title: string;
+  notes?: string | null;
+  active: boolean;
+  assignments?: AssignmentLean[];
+}
+
+type AssignmentObject = PMTaskDocument['assignments'][number] | AssignmentLean;
+
+const toObjectId = (value: string | Types.ObjectId, label: string): Types.ObjectId => {
   if (value instanceof Types.ObjectId) {
     return value;
   }
@@ -103,7 +137,7 @@ const notifyAssignmentChange = async (
 };
 
 const serializeAssignment = (
-  assignment: PMTaskDocument['assignments'][number],
+  assignment: AssignmentObject,
   refs: {
     assetNames: Map<string, string>;
     partNames: Map<string, string>;
@@ -131,7 +165,7 @@ const serializeAssignment = (
 });
 
 const collectReferenceNames = async (
-  templates: Array<ReturnType<PMTaskDocument['toObject']>>,
+  templates: PMTaskLean[],
 ): Promise<{
   assetNames: Map<string, string>;
   partNames: Map<string, string>;
@@ -177,16 +211,16 @@ export interface PMTemplateResponse {
 }
 
 export const listTemplates = async (context: PMContext): Promise<PMTemplateResponse[]> => {
-  const tasks = await PMTask.find({ tenantId: context.tenantId })
+  const tasks = (await PMTask.find({ tenantId: context.tenantId })
     .select('title notes active assignments')
-    .lean();
+    .lean()) as unknown as PMTaskLean[];
   const refs = await collectReferenceNames(tasks);
   return tasks.map((task) => ({
     id: task._id.toString(),
     title: task.title,
-    notes: task.notes ?? undefined,
-    active: task.active,
-    assignments: (task.assignments ?? []).map((assignment) => serializeAssignment(assignment as any, refs)),
+    ...(task.notes ? { notes: task.notes } : {}),
+    active: task.active ?? false,
+    assignments: (task.assignments ?? []).map((assignment) => serializeAssignment(assignment, refs)),
   }));
 };
 
@@ -250,7 +284,7 @@ export const upsertAssignment = async (
     task.assignments.push(baseAssignment as any);
     assignment = task.assignments[task.assignments.length - 1];
   }
-  task.asset = asset._id;
+  task.set('asset', asset._id);
   await task.save();
 
   await notifyAssignmentChange(context, asset, task, assignmentId ? 'updated' : 'created');

@@ -37,7 +37,7 @@ const createOAuthVerifier = (provider: OAuthProvider) =>
         provider,
         email,
         domain: getProfileDomain(profile),
-        profile: profile?._json,
+        ...(profile?._json ? { profile: profile._json } : {}),
       });
 
       const user: NonNullable<Parameters<DoneCallback>[1]> = { email };

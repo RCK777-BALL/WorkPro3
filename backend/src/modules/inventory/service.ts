@@ -289,7 +289,7 @@ export const listParts = async (context: InventoryContext): Promise<PartResponse
   if (context.siteId) {
     query.siteId = maybeObjectId(context.siteId);
   }
-  const parts = await PartModel.find(query).lean<PartRecord>();
+  const parts: PartRecord[] = await PartModel.find(query).lean<PartRecord[]>();
   const refs = await resolveReferenceMaps(parts);
   return parts.map((part) => serializePart(part, refs));
 };
@@ -673,7 +673,7 @@ export const listAlerts = async (context: InventoryContext): Promise<InventoryAl
   if (context.siteId) {
     match.siteId = maybeObjectId(context.siteId);
   }
-  const parts = await PartModel.find(match).lean<PartRecord>();
+  const parts: PartRecord[] = await PartModel.find(match).lean<PartRecord[]>();
   const refs = await resolveReferenceMaps(parts);
   return parts.map((part) => {
     const alert: InventoryAlert = {

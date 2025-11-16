@@ -153,6 +153,28 @@ export async function writeAuditLog({
   }
 }
 
+type ActorSource = {
+  _id?: EntityIdLike;
+  id?: EntityIdLike;
+  name?: string | null;
+  email?: string | null;
+};
+
+const resolveActorFromUser = (user?: ActorSource | null): AuditActor | undefined => {
+  if (!user) return undefined;
+  const actor: AuditActor = {};
+  const id = user._id ?? user.id;
+  if (id) actor.id = id;
+  const name = typeof user.name === 'string' ? user.name : undefined;
+  if (name?.trim()) actor.name = name.trim();
+  const email = typeof user.email === 'string' ? user.email : undefined;
+  if (email?.trim()) actor.email = email.trim();
+  if (!actor.id && !actor.name && !actor.email) {
+    return undefined;
+  }
+  return actor;
+};
+
 export async function auditAction(
   req: Request,
   action: string,
@@ -162,19 +184,17 @@ export async function auditAction(
   after?: AuditValue,
 ): Promise<void> {
   try {
-    const authed = req as AuthedRequest & { user?: { _id?: EntityIdLike; id?: EntityIdLike } };
+    const authed = req as AuthedRequest & { user?: ActorSource };
     const tenantId = authed.tenantId;
     if (!tenantId) return;
 
     const user = authed.user;
-    const user = authed.user;
+    const actor = resolveActorFromUser(user);
     await writeAuditLog({
       tenantId,
       siteId: authed.siteId,
       userId: user?._id ?? user?.id,
-      actor: user
-        ? { id: user._id ?? user.id, name: (user as any)?.name, email: (user as any)?.email }
-        : undefined,
+      ...(actor ? { actor } : {}),
       action,
       entityType,
       entityId: targetId,
@@ -209,7 +229,7 @@ export function withAudit<
   return async (req, res, next) => {
     const authedReq = req as AuthedRequest<P, ResBody, ReqBody, ReqQuery> & {
       auditId?: EntityIdLike;
-      user?: { _id?: EntityIdLike; id?: EntityIdLike };
+      user?: ActorSource;
     };
     const authedRes = res as Parameters<AuthedRequestHandler<P, ResBody, ReqBody, ReqQuery>>[1];
 
@@ -222,13 +242,12 @@ export function withAudit<
       ((authedReq.params as unknown as { id?: EntityIdLike })?.id ??
         ((after as any)?._id as EntityIdLike | undefined));
 
+    const actor = resolveActorFromUser(authedReq.user);
     await writeAuditLog({
       tenantId: authedReq.tenantId,
       siteId: authedReq.siteId,
       userId: authedReq.user?._id ?? authedReq.user?.id,
-      actor: authedReq.user
-        ? { id: authedReq.user._id ?? authedReq.user.id, name: (authedReq.user as any)?.name, email: (authedReq.user as any)?.email }
-        : undefined,
+      ...(actor ? { actor } : {}),
       action,
       entityType,
       entityId: rawId,

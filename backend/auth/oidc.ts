@@ -58,7 +58,7 @@ const createOidcVerifier = (provider: Provider): VerifyCallback =>
         provider,
         email,
         claims: jwtClaims,
-        profile: profile?._json,
+        ...(profile?._json ? { profile: profile._json } : {}),
       });
 
       const roles = tenantContext.roles && tenantContext.roles.length > 0

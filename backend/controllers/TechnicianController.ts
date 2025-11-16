@@ -101,7 +101,7 @@ const toWorkOrderUpdatePayload = (doc: WorkOrderDocument): WorkOrderUpdatePayloa
 
   const complianceProcedureId =
     doc.complianceProcedureId && (doc.complianceProcedureId as any) instanceof Types.ObjectId
-      ? (doc.complianceProcedureId as Types.ObjectId).toString()
+      ? (doc.complianceProcedureId as unknown as Types.ObjectId).toString()
       : doc.complianceProcedureId
       ? String(doc.complianceProcedureId)
       : '';
@@ -395,7 +395,7 @@ export const recordTechnicianPartUsage: AuthedRequestHandler<{ id: string }> = a
       });
     }
 
-    parsed.data.entries.forEach((entry: { partId: string; qty: number; cost?: number }) => {
+    parsed.data.entries.forEach((entry) => {
       const objectId = toObjectId(entry.partId);
       const key = objectId.toString();
       const existing = map.get(key) ?? { partId: objectId, qty: 0 };

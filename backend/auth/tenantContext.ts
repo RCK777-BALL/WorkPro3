@@ -91,8 +91,8 @@ export interface TenantResolutionInput {
   provider?: string;
   email?: string;
   domain?: string | null;
-  claims?: Record<string, unknown>;
-  profile?: Record<string, unknown>;
+  claims?: Record<string, unknown> | undefined;
+  profile?: Record<string, unknown> | undefined;
 }
 
 export interface TenantResolution {

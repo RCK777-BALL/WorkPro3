@@ -17,7 +17,7 @@ export const listTemplateLibrary = (): PMTemplateLibraryResponse[] => pmTemplate
 const formatChecklistNote = (checklist: string[]) =>
   checklist.length ? `\n\nChecklist:\n${checklist.map((item) => `• ${item}`).join('\n')}` : '';
 
-const toObjectId = (value: string, label: string): Types.ObjectId => {
+const toObjectId = (value: string | Types.ObjectId, label: string): Types.ObjectId => {
   if (value instanceof Types.ObjectId) {
     return value;
   }
@@ -45,10 +45,12 @@ export const cloneTemplateFromLibrary = async (
     assignments: [],
   });
 
+  const id = (doc._id as Types.ObjectId).toString();
+
   return {
-    id: doc._id.toString(),
+    id,
     title: doc.title,
-    notes: doc.notes ?? undefined,
+    notes: doc.notes ?? '',
     active: doc.active,
     assignments: [],
   };

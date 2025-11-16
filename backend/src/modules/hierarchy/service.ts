@@ -8,7 +8,7 @@ import Department, { type DepartmentDoc } from '../../../models/Department';
 import Line, { type LineDoc } from '../../../models/Line';
 import Station, { type StationDoc } from '../../../models/Station';
 import Asset, { type AssetDoc } from '../../../models/Asset';
-import InventoryItem, { type IInventoryItem } from '../../../models/InventoryItem';
+import InventoryItem from '../../../models/InventoryItem';
 import WorkHistory, { type WorkHistoryDocument } from '../../../models/WorkHistory';
 import DocumentModel from '../../../models/Document';
 import PMTask, { type PMTaskDocument } from '../../../models/PMTask';
@@ -213,17 +213,24 @@ export const fetchHierarchy = async (context: Context): Promise<HierarchyTreeRes
   const stationMap = new Map<string, HierarchyStationNode>();
 
   departments.forEach((dept) => {
-    departmentMap.set(dept._id.toString(), {
+    const departmentNode: HierarchyDepartmentNode = {
       id: dept._id.toString(),
       tenantId: dept.tenantId.toString(),
       name: dept.name,
       notes: dept.notes ?? '',
-      plantId: toId(dept.plant),
-      siteId: toId(dept.siteId),
       assetCount: 0,
       assets: [],
       lines: [],
-    });
+    };
+    const plantId = toId(dept.plant);
+    const siteId = toId(dept.siteId);
+    if (plantId) {
+      departmentNode.plantId = plantId;
+    }
+    if (siteId) {
+      departmentNode.siteId = siteId;
+    }
+    departmentMap.set(dept._id.toString(), departmentNode);
   });
 
   lines.forEach((line) => {
@@ -234,11 +241,14 @@ export const fetchHierarchy = async (context: Context): Promise<HierarchyTreeRes
       name: line.name,
       notes: line.notes ?? '',
       departmentId,
-      siteId: toId(line.siteId),
       assetCount: 0,
       assets: [],
       stations: [],
     };
+    const siteId = toId(line.siteId);
+    if (siteId) {
+      lineNode.siteId = siteId;
+    }
     lineMap.set(line._id.toString(), lineNode);
     const department = departmentMap.get(departmentId);
     if (department) {
@@ -254,11 +264,16 @@ export const fetchHierarchy = async (context: Context): Promise<HierarchyTreeRes
       name: station.name,
       notes: station.notes ?? '',
       lineId,
-      departmentId: station.departmentId ? station.departmentId.toString() : undefined,
-      siteId: toId(station.siteId),
       assetCount: 0,
       assets: [],
     };
+    if (station.departmentId) {
+      stationNode.departmentId = station.departmentId.toString();
+    }
+    const siteId = toId(station.siteId);
+    if (siteId) {
+      stationNode.siteId = siteId;
+    }
     stationMap.set(station._id.toString(), stationNode);
     const parentLine = lineMap.get(lineId);
     if (parentLine) {
@@ -287,15 +302,33 @@ export const fetchHierarchy = async (context: Context): Promise<HierarchyTreeRes
       id: asset._id.toString(),
       tenantId: asset.tenantId.toString(),
       name: asset.name,
-      status: asset.status,
-      type: asset.type,
-      criticality: asset.criticality,
-      siteId: toId(asset.siteId),
-      plantId: toId(asset.plant),
-      departmentId: asset.departmentId ? asset.departmentId.toString() : undefined,
-      lineId: asset.lineId ? asset.lineId.toString() : undefined,
-      stationId: asset.stationId ? asset.stationId.toString() : undefined,
     };
+    if (asset.status) {
+      assetNode.status = asset.status;
+    }
+    if (asset.type) {
+      assetNode.type = asset.type;
+    }
+    if (asset.criticality) {
+      assetNode.criticality = asset.criticality;
+    }
+    const siteId = toId(asset.siteId);
+    if (siteId) {
+      assetNode.siteId = siteId;
+    }
+    const plantId = toId(asset.plant);
+    if (plantId) {
+      assetNode.plantId = plantId;
+    }
+    if (asset.departmentId) {
+      assetNode.departmentId = asset.departmentId.toString();
+    }
+    if (asset.lineId) {
+      assetNode.lineId = asset.lineId.toString();
+    }
+    if (asset.stationId) {
+      assetNode.stationId = asset.stationId.toString();
+    }
     const station = assetNode.stationId ? stationMap.get(assetNode.stationId) : undefined;
     if (station) {
       station.assets.push(assetNode);
@@ -798,17 +831,26 @@ export const deleteAsset = async (context: Context, assetId: string) => {
   return { id: assetId };
 };
 
-const flattenHistory = (history: WorkHistoryDocument[]): AssetDetailResponse['history'] =>
+type WorkHistorySource = Array<Pick<WorkHistoryDocument, 'recentWork'>>;
+
+const flattenHistory = (history: WorkHistorySource): AssetDetailResponse['history'] =>
   history
     .flatMap((entry) => entry.recentWork ?? [])
-    .map((entry) => ({
-      id: entry.id,
-      date: entry.date,
-      title: entry.title,
-      status: entry.status,
-      duration: entry.duration,
-      notes: entry.notes,
-    }));
+    .map((entry) => {
+      const flattened: AssetDetailResponse['history'][number] = {
+        id: entry.id,
+        date: entry.date,
+        title: entry.title,
+        status: entry.status,
+      };
+      if (typeof entry.duration === 'number') {
+        flattened.duration = entry.duration;
+      }
+      if (entry.notes !== undefined) {
+        flattened.notes = entry.notes;
+      }
+      return flattened;
+    });
 
 export const getAssetDetail = async (context: Context, assetId: string): Promise<AssetDetailResponse> => {
   const asset = await Asset.findOne({ _id: assetId, tenantId: context.tenantId });
@@ -834,52 +876,107 @@ export const getAssetDetail = async (context: Context, assetId: string): Promise
   );
   const maintenance = partsCost + laborCost;
 
+  const assetResponse: AssetDetailResponse['asset'] = {
+    id: asset._id.toString(),
+    tenantId: asset.tenantId.toString(),
+    name: asset.name,
+  };
+  const description = asset.description ?? asset.notes;
+  if (description !== undefined) {
+    assetResponse.description = description;
+  }
+  if (asset.status) {
+    assetResponse.status = asset.status;
+  }
+  if (asset.type) {
+    assetResponse.type = asset.type;
+  }
+  if (asset.criticality) {
+    assetResponse.criticality = asset.criticality;
+  }
+  if (asset.location !== undefined) {
+    assetResponse.location = asset.location;
+  }
+  if (asset.serialNumber !== undefined) {
+    assetResponse.serialNumber = asset.serialNumber;
+  }
+  if (asset.siteId) {
+    assetResponse.siteId = asset.siteId.toString();
+  }
+  if (asset.plant) {
+    assetResponse.plantId = asset.plant.toString();
+  }
+  if (asset.lineId) {
+    assetResponse.lineId = asset.lineId.toString();
+  }
+  if (asset.stationId) {
+    assetResponse.stationId = asset.stationId.toString();
+  }
+  if (asset.departmentId) {
+    assetResponse.departmentId = asset.departmentId.toString();
+  }
+
   return {
-    asset: {
-      id: asset._id.toString(),
-      tenantId: asset.tenantId.toString(),
-      name: asset.name,
-      description: asset.description ?? asset.notes ?? undefined,
-      status: asset.status,
-      type: asset.type,
-      criticality: asset.criticality,
-      location: asset.location,
-      serialNumber: asset.serialNumber,
-      siteId: asset.siteId ? asset.siteId.toString() : undefined,
-      plantId: asset.plant ? asset.plant.toString() : undefined,
-      lineId: asset.lineId ? asset.lineId.toString() : undefined,
-      stationId: asset.stationId ? asset.stationId.toString() : undefined,
-      departmentId: asset.departmentId ? asset.departmentId.toString() : undefined,
-    },
+    asset: assetResponse,
     history: flattenHistory(history),
-    documents: documents.map((doc) => ({
-      id: doc._id.toString(),
-      name: doc.name ?? doc.title,
-      type: doc.type,
-      url: doc.url,
-      uploadedAt: doc.createdAt?.toISOString(),
-    })),
-    parts: parts.map((part: IInventoryItem) => ({
-      id: part._id.toString(),
-      name: part.name,
-      quantity: part.quantity,
-      unitCost: part.unitCost,
-      location: part.location,
-    })),
-    pmTasks: pmTasks.map((task: PMTaskDocument) => ({
-      id: task._id.toString(),
-      title: task.title,
-      active: task.active,
-      lastGeneratedAt: task.lastGeneratedAt?.toISOString(),
-    })),
-    workOrders: workOrders.map((order: WorkOrder) => ({
-      id: order._id.toString(),
-      title: order.title,
-      status: order.status,
-      priority: order.priority,
-      type: order.type,
-      updatedAt: order.updatedAt?.toISOString(),
-    })),
+    documents: documents.map((doc) => {
+      const documentResponse: AssetDetailResponse['documents'][number] = {
+        id: doc._id.toString(),
+        url: doc.url,
+      };
+      const name = doc.name ?? doc.title;
+      if (name !== undefined) {
+        documentResponse.name = name;
+      }
+      if (doc.type) {
+        documentResponse.type = doc.type;
+      }
+      const uploadedAt = doc.createdAt?.toISOString();
+      if (uploadedAt) {
+        documentResponse.uploadedAt = uploadedAt;
+      }
+      return documentResponse;
+    }),
+    parts: parts.map((part) => {
+      const partResponse: AssetDetailResponse['parts'][number] = {
+        id: part._id.toString(),
+        name: part.name,
+        quantity: part.quantity,
+      };
+      if (typeof part.unitCost === 'number') {
+        partResponse.unitCost = part.unitCost;
+      }
+      if (part.location !== undefined) {
+        partResponse.location = part.location;
+      }
+      return partResponse;
+    }),
+    pmTasks: pmTasks.map((task) => {
+      const pmTaskResponse: AssetDetailResponse['pmTasks'][number] = {
+        id: task._id.toString(),
+        title: task.title,
+        active: task.active,
+      };
+      const lastGeneratedAt = task.lastGeneratedAt?.toISOString();
+      if (lastGeneratedAt) {
+        pmTaskResponse.lastGeneratedAt = lastGeneratedAt;
+      }
+      return pmTaskResponse;
+    }),
+    workOrders: workOrders.map((order) => {
+      const workOrderResponse: AssetDetailResponse['workOrders'][number] = {
+        id: order._id.toString(),
+        title: order.title,
+        status: order.status,
+        priority: order.priority,
+        type: order.type,
+      };
+      const updatedAt = order.updatedAt?.toISOString();
+      if (updatedAt) {
+        workOrderResponse.updatedAt = updatedAt;
+      }
+      return workOrderResponse;
+    }),
     cost: {
       total: maintenance,
       maintenance,

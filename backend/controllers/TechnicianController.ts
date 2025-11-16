@@ -7,8 +7,8 @@ import { Types } from 'mongoose';
 import path from 'path';
 import type { Express, Response } from 'express';
 
-import WorkOrder, { type WorkOrderDocument } from '../models/WorkOrder';
-import type { AuthedRequestHandler } from '../types/http';
+import WorkOrder, { type WorkOrderDocument, type WorkOrder as WorkOrderModel } from '../models/WorkOrder';
+import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import sendResponse from '../utils/sendResponse';
 import { technicianStateSchema, technicianPartUsageSchema } from '../src/schemas/technician';
 import { writeAuditLog } from '../utils/audit';
@@ -16,10 +16,11 @@ import { emitWorkOrderUpdate } from '../server';
 import type { WorkOrderUpdatePayload } from '../types/Payloads';
 import type { UploadedFile } from '@shared/uploads';
 
-const resolvePlantId = (req: { plantId?: string; siteId?: string }): string | undefined =>
-  req.plantId ?? req.siteId ?? undefined;
+const resolvePlantId = (
+  req: Pick<AuthedRequest, 'plantId' | 'siteId'>,
+): string | undefined => req.plantId ?? req.siteId ?? undefined;
 
-const withPlantScope = <T extends Record<string, unknown>>(filter: T, plantId?: string): T => {
+const withPlantScope = <T extends Record<string, unknown>>(filter: T, plantId?: string | undefined): T => {
   if (plantId) {
     (filter as Record<string, unknown>).plant = plantId;
   }
@@ -37,7 +38,7 @@ const toMaybeString = (value: unknown): string | undefined => {
 };
 
 const resolveUserObjectId = (
-  req: { user?: { _id?: string | Types.ObjectId; id?: string | Types.ObjectId } },
+  req: Pick<AuthedRequest, 'user'>,
 ): Types.ObjectId | undefined => {
   const raw = req.user?._id ?? req.user?.id;
   return raw ? toObjectId(raw) : undefined;
@@ -71,8 +72,27 @@ type TechnicianListQuery = ParsedQs & {
 
 const DEFAULT_LIST_STATUSES = ['requested', 'assigned', 'in_progress', 'paused'] as const;
 
-type WorkOrderLean = ReturnType<WorkOrderDocument['toObject']> & {
-  assetId?: { _id?: Types.ObjectId; name?: string } | Types.ObjectId | null;
+type TechnicianWorkOrderMatch = {
+  tenantId: string;
+  $or: ({ assignedTo: Types.ObjectId; assignees?: never } | { assignees: Types.ObjectId; assignedTo?: never })[];
+  status?: { $in: string[] };
+  plant?: string;
+};
+
+type WorkOrderPartUsageEntry = {
+  partId?: Types.ObjectId | string | null;
+  qty?: number | null;
+  cost?: number | null;
+};
+
+type WorkOrderLean = Partial<
+  Omit<WorkOrderModel, 'assetId' | 'partsUsed' | 'photos' | 'department'>
+> & {
+  _id?: Types.ObjectId;
+  assetId?: { _id?: Types.ObjectId; name?: string } | Types.ObjectId | string | null;
+  department?: Types.ObjectId | string | null;
+  partsUsed?: WorkOrderPartUsageEntry[];
+  photos?: string[];
 };
 
 const toWorkOrderUpdatePayload = (doc: WorkOrderDocument): WorkOrderUpdatePayload => ({
@@ -107,13 +127,13 @@ const toTechnicianPayload = (
 
   const parts = Array.isArray(plain.partsUsed)
     ? plain.partsUsed
-        .map((part) => {
+        .map((part: WorkOrderPartUsageEntry) => {
           if (!part?.partId) return null;
           const partId = part.partId instanceof Types.ObjectId ? part.partId.toString() : String(part.partId);
           return {
             partId,
-            qty: (part as { qty?: number }).qty ?? 0,
-            cost: (part as { cost?: number }).cost ?? 0,
+            qty: part.qty ?? 0,
+            cost: part.cost ?? 0,
           };
         })
         .filter((value): value is { partId: string; qty: number; cost: number } => Boolean(value))
@@ -168,7 +188,7 @@ export const listTechnicianWorkOrders: AuthedRequestHandler<
     const statuses = parseStatusFilter(status) ?? [...DEFAULT_LIST_STATUSES];
     const resolvedLimit = Math.min(Math.max(parseInt(String(limit ?? '25'), 10) || 25, 1), 100);
 
-    const baseMatch = withPlantScope(
+    const baseMatch: TechnicianWorkOrderMatch = withPlantScope<TechnicianWorkOrderMatch>(
       {
         tenantId,
         $or: [{ assignedTo: userId }, { assignees: userId }],
@@ -193,9 +213,15 @@ export const listTechnicianWorkOrders: AuthedRequestHandler<
   }
 };
 
+interface TechnicianContext {
+  tenantId: string;
+  userId: Types.ObjectId;
+  plantId?: string | undefined;
+}
+
 const ensureTenantContext = (
-  req: Parameters<typeof listTechnicianWorkOrders>[0],
-): { tenantId: string; userId: Types.ObjectId; plantId?: string } | undefined => {
+  req: Pick<AuthedRequest, 'tenantId' | 'plantId' | 'siteId' | 'user'>,
+): TechnicianContext | undefined => {
   const tenantId = req.tenantId;
   const userId = resolveUserObjectId(req);
   if (!tenantId || !userId) {
@@ -223,7 +249,7 @@ const canTransition = (current: string, action: TechnicianStateAction): boolean 
   }
 };
 
-const actionStatusMap: Partial<Record<TechnicianStateAction, string>> = {
+const actionStatusMap: Partial<Record<TechnicianStateAction, WorkOrderDocument['status']>> = {
   start: 'in_progress',
   resume: 'in_progress',
   pause: 'paused',
@@ -271,7 +297,7 @@ export const updateTechnicianWorkOrderState: AuthedRequestHandler<{ id: string }
     const before = workOrder.toObject();
     const newStatus = actionStatusMap[action];
     if (newStatus) {
-      workOrder.status = newStatus as WorkOrder['status'];
+      workOrder.status = newStatus;
       if (newStatus === 'completed') {
         workOrder.completedAt = new Date();
       }
@@ -333,21 +359,26 @@ export const recordTechnicianPartUsage: AuthedRequestHandler<{ id: string }> = a
     }
 
     const before = workOrder.toObject();
-    const map = new Map<string, { partId: Types.ObjectId; qty: number; cost?: number }>();
+    type PersistedPartEntry = { partId: Types.ObjectId; qty: number; cost?: number | undefined };
+    const map = new Map<string, PersistedPartEntry>();
 
     if (Array.isArray(workOrder.partsUsed)) {
-      workOrder.partsUsed.forEach((entry) => {
+      (workOrder.partsUsed as unknown as WorkOrderPartUsageEntry[]).forEach((entry) => {
         if (!entry?.partId) return;
         const id = entry.partId instanceof Types.ObjectId ? entry.partId : toObjectId(String(entry.partId));
-        map.set(id.toString(), {
+        const nextEntry: PersistedPartEntry = {
           partId: id,
           qty: (entry as { qty?: number }).qty ?? 0,
-          cost: (entry as { cost?: number }).cost,
-        });
+        };
+        const cost = (entry as { cost?: number }).cost;
+        if (cost !== undefined) {
+          nextEntry.cost = cost;
+        }
+        map.set(id.toString(), nextEntry);
       });
     }
 
-    parsed.data.entries.forEach((entry) => {
+    parsed.data.entries.forEach((entry: { partId: string; qty: number; cost?: number }) => {
       const objectId = toObjectId(entry.partId);
       const key = objectId.toString();
       const existing = map.get(key) ?? { partId: objectId, qty: 0 };
@@ -416,12 +447,15 @@ export const uploadTechnicianAttachments: AuthedRequestHandler<{ id: string }> =
     }
 
     const uploads: UploadedFile[] = [];
-    workOrder.photos ??= [];
+    if (!Array.isArray(workOrder.photos)) {
+      workOrder.set('photos', []);
+    }
+    const photos = workOrder.photos as Types.Array<string>;
     files.forEach((file) => {
       const relativePath = path.relative(path.join(process.cwd(), 'uploads'), file.path);
       const normalized = relativePath.replace(/\\/g, '/');
       const url = `/static/uploads/${normalized}`;
-      workOrder.photos!.push(url);
+      photos.push(url);
       uploads.push({ id: file.filename, filename: file.originalname, url });
     });
 

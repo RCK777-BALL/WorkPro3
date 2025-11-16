@@ -129,59 +129,110 @@ const HOURLY_RATE = 75;
 const flattenHistory = (history: WorkHistoryDocument[]): AssetHistoryEntry[] =>
   history
     .flatMap((entry) => entry.recentWork ?? [])
-    .map((entry) => ({
-      id: entry.id,
-      date: entry.date,
-      title: entry.title,
-      status: entry.status,
-      duration: entry.duration,
-      notes: entry.notes,
-    }));
+    .map((entry) => {
+      const result: AssetHistoryEntry = {
+        id: entry.id,
+        date: entry.date,
+        title: entry.title,
+        status: entry.status,
+      };
+
+      if (typeof entry.duration === 'number') {
+        result.duration = entry.duration;
+      }
+
+      if (entry.notes !== undefined) {
+        result.notes = entry.notes;
+      }
+
+      return result;
+    });
 
 const toDocumentSummary = (doc: Pick<DocumentDoc, '_id' | 'name' | 'title' | 'type' | 'url' | 'metadata'> & { createdAt?: Date }):
-  AssetDocumentSummary => ({
-    id: doc._id?.toString() ?? '',
-    name: doc.name ?? doc.title,
-    type: doc.type ?? doc.metadata?.type,
-    url: doc.url,
-    uploadedAt: doc.createdAt?.toISOString(),
-    sizeBytes: doc.metadata?.size,
-  });
+  AssetDocumentSummary => {
+    const summary: AssetDocumentSummary = {
+      id: doc._id?.toString() ?? '',
+      url: doc.url,
+    };
+
+    const name = doc.name ?? doc.title;
+    if (name !== undefined) {
+      summary.name = name;
+    }
+
+    const type = doc.type ?? doc.metadata?.type;
+    if (type !== undefined) {
+      summary.type = type;
+    }
+
+    if (doc.createdAt) {
+      summary.uploadedAt = doc.createdAt.toISOString();
+    }
+
+    if (doc.metadata?.size !== undefined) {
+      summary.sizeBytes = doc.metadata.size;
+    }
+
+    return summary;
+  };
 
 const toBomPart = (part: IInventoryItem): AssetBomPart => ({
   id: part._id.toString(),
   name: part.name,
   quantity: part.quantity ?? 0,
-  unitCost: part.unitCost ?? undefined,
-  location: part.location ?? undefined,
-  partNumber: part.partNumber ?? undefined,
+  ...(part.unitCost !== undefined ? { unitCost: part.unitCost } : {}),
+  ...(part.location !== undefined ? { location: part.location } : {}),
+  ...(part.partNumber !== undefined ? { partNumber: part.partNumber } : {}),
 });
 
 const toPmTemplateSummary = (template: PMTaskDocument, assetId: string): AssetPmTemplateSummary[] => {
   const assignments = Array.from(template.assignments ?? []);
   return assignments
     .filter((assignment) => assignment.asset?.toString() === assetId)
-    .map((assignment) => ({
-      templateId: template._id?.toString() ?? '',
-      assignmentId: assignment._id?.toString() ?? '',
-      title: template.title,
-      interval: assignment.interval,
-      active: Boolean(template.active),
-      nextDue: assignment.nextDue ? assignment.nextDue.toISOString() : undefined,
-      usageMetric: assignment.usageMetric ?? undefined,
-      usageTarget: assignment.usageTarget ?? undefined,
-    }));
+    .map((assignment) => {
+      const summary: AssetPmTemplateSummary = {
+        templateId: template._id?.toString() ?? '',
+        assignmentId: assignment._id?.toString() ?? '',
+        title: template.title,
+        interval: assignment.interval,
+        active: Boolean(template.active),
+      };
+
+      if (assignment.nextDue) {
+        summary.nextDue = assignment.nextDue.toISOString();
+      }
+
+      if (assignment.usageMetric !== undefined) {
+        summary.usageMetric = assignment.usageMetric;
+      }
+
+      if (assignment.usageTarget !== undefined) {
+        summary.usageTarget = assignment.usageTarget;
+      }
+
+      return summary;
+    });
 };
 
-const toWorkOrderSummary = (order: WorkOrder): AssetWorkOrderSummary => ({
-  id: order._id.toString(),
-  title: order.title,
-  status: order.status,
-  priority: order.priority,
-  type: order.type,
-  updatedAt: order.updatedAt?.toISOString(),
-  dueDate: order.dueDate?.toISOString(),
-});
+const toWorkOrderSummary = (order: WorkOrder): AssetWorkOrderSummary => {
+  const summary: AssetWorkOrderSummary = {
+    id: order._id.toString(),
+    title: order.title,
+    status: order.status,
+    priority: order.priority,
+    type: order.type,
+  };
+
+  if (order.updatedAt) {
+    summary.updatedAt = order.updatedAt.toISOString();
+  }
+
+  if (order.dueDate) {
+    summary.dueDate = order.dueDate.toISOString();
+  }
+
+  return summary;
+};
 
 const createCostWindowStart = () => {
   const now = new Date();
@@ -252,7 +303,14 @@ export const getAssetInsights = async (
 
   const costWindowStart = createCostWindowStart();
 
-  const [history, documents, bomParts, pmTemplates, openWorkOrders, costOrders] = await Promise.all([
+  const [
+    historyRaw,
+    documentsRaw,
+    bomPartsRaw,
+    pmTemplatesRaw,
+    openWorkOrdersRaw,
+    costOrdersRaw,
+  ] = await Promise.all([
     WorkHistory.find({ tenantId: context.tenantId, asset: assetId }).limit(25).lean(),
     DocumentModel.find({ asset: assetId }).sort({ createdAt: -1 }).limit(50).lean(),
     InventoryItem.find({ tenantId: context.tenantId, asset: assetId }).lean(),
@@ -272,34 +330,85 @@ export const getAssetInsights = async (
       .lean(),
   ]);
 
+  const pmTemplates = pmTemplatesRaw as PMTaskDocument[];
   const pmTemplateSummaries = pmTemplates.flatMap((template) => toPmTemplateSummary(template, assetId));
 
+  const assetSummary: AssetInsightsResponse['asset'] = {
+    id: asset._id.toString(),
+    tenantId: asset.tenantId.toString(),
+    name: asset.name,
+  };
+
+  const description = asset.description ?? asset.notes;
+  if (description) {
+    assetSummary.description = description;
+  }
+
+  if (asset.status) {
+    assetSummary.status = asset.status;
+  }
+
+  if (asset.type) {
+    assetSummary.type = asset.type;
+  }
+
+  if (asset.criticality) {
+    assetSummary.criticality = asset.criticality;
+  }
+
+  if (asset.location) {
+    assetSummary.location = asset.location;
+  }
+
+  if (asset.serialNumber) {
+    assetSummary.serialNumber = asset.serialNumber;
+  }
+
+  if (asset.modelName) {
+    assetSummary.modelName = asset.modelName;
+  }
+
+  if (asset.manufacturer) {
+    assetSummary.manufacturer = asset.manufacturer;
+  }
+
+  if (asset.purchaseDate) {
+    assetSummary.purchaseDate = asset.purchaseDate.toISOString();
+  }
+
+  if (asset.installationDate) {
+    assetSummary.installationDate = asset.installationDate.toISOString();
+  }
+
+  if (asset.siteId) {
+    assetSummary.siteId = asset.siteId.toString();
+  }
+
+  if (asset.plant) {
+    assetSummary.plantId = asset.plant.toString();
+  }
+
+  if (asset.departmentId) {
+    assetSummary.departmentId = asset.departmentId.toString();
+  }
+
+  if (asset.lineId) {
+    assetSummary.lineId = asset.lineId.toString();
+  }
+
+  if (asset.stationId) {
+    assetSummary.stationId = asset.stationId.toString();
+  }
+
   return {
-    asset: {
-      id: asset._id.toString(),
-      tenantId: asset.tenantId.toString(),
-      name: asset.name,
-      description: asset.description ?? asset.notes ?? undefined,
-      status: asset.status,
-      type: asset.type,
-      criticality: asset.criticality,
-      location: asset.location,
-      serialNumber: asset.serialNumber,
-      modelName: asset.modelName,
-      manufacturer: asset.manufacturer,
-      purchaseDate: asset.purchaseDate?.toISOString(),
-      installationDate: asset.installationDate?.toISOString(),
-      siteId: asset.siteId?.toString(),
-      plantId: asset.plant?.toString(),
-      departmentId: asset.departmentId?.toString(),
-      lineId: asset.lineId?.toString(),
-      stationId: asset.stationId?.toString(),
-    },
-    history: flattenHistory(history),
-    documents: documents.map(toDocumentSummary),
-    bom: bomParts.map(toBomPart),
+    asset: assetSummary,
+    history: flattenHistory(historyRaw as WorkHistoryDocument[]),
+    documents: (documentsRaw as Array<Pick<DocumentDoc, '_id' | 'name' | 'title' | 'type' | 'url' | 'metadata'> & { createdAt?: Date }>).map(
+      toDocumentSummary,
+    ),
+    bom: (bomPartsRaw as IInventoryItem[]).map(toBomPart),
     pmTemplates: pmTemplateSummaries,
-    openWorkOrders: openWorkOrders.map(toWorkOrderSummary),
-    costRollups: calculateCostRollups(costOrders),
+    openWorkOrders: (openWorkOrdersRaw as WorkOrder[]).map(toWorkOrderSummary),
+    costRollups: calculateCostRollups(costOrdersRaw as WorkOrder[]),
   };
 };

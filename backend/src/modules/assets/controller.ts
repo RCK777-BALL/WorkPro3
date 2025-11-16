@@ -20,8 +20,8 @@ const ensureTenant = (req: AuthedRequest, res: Response): Maybe<string> => {
 
 const buildContext = (req: AuthedRequest): AssetInsightsContext => ({
   tenantId: req.tenantId!,
-  siteId: req.siteId,
-  plantId: req.plantId,
+  siteId: req.siteId!,
+  plantId: req.plantId!,
 });
 
 const send = (res: Response, data: unknown, status = 200) => {

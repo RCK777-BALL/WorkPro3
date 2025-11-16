@@ -3,6 +3,8 @@
  */
 
 import type { Express, Response, NextFunction } from 'express';
+import type { ParamsDictionary } from 'express-serve-static-core';
+import type { ParsedQs } from 'qs';
 
 import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
 import { fail } from '../../lib/http';
@@ -15,13 +17,13 @@ import {
 
 type Context = {
   tenantId: string;
-  plantId?: string;
-  siteId?: string;
+  plantId?: string | undefined;
+  siteId?: string | undefined;
 };
 
 type UploadRequest = AuthedRequest & { file?: Express.Multer.File };
 
-type ExportQuery = { format?: string };
+type ExportQuery = ParsedQs & { format?: string };
 
 const ensureTenant = (req: AuthedRequest, res: Response): string | undefined => {
   if (!req.tenantId) {
@@ -54,8 +56,8 @@ const handleError = (err: unknown, res: Response, next: NextFunction) => {
   next(err);
 };
 
-export const exportAssets: AuthedRequestHandler<unknown, unknown, unknown, ExportQuery> = async (
-  req,
+export const exportAssets: AuthedRequestHandler<ParamsDictionary, unknown, unknown, ExportQuery> = async (
+  req: AuthedRequest<ParamsDictionary, unknown, unknown, ExportQuery>,
   res,
   next,
 ) => {
@@ -76,7 +78,11 @@ export const exportAssets: AuthedRequestHandler<unknown, unknown, unknown, Expor
   }
 };
 
-export const importAssets: AuthedRequestHandler = async (req, res, next) => {
+export const importAssets: AuthedRequestHandler = async (
+  req: AuthedRequest,
+  res,
+  next,
+) => {
   if (!ensureTenant(req, res)) return;
   const file = (req as UploadRequest).file;
   if (!file) {

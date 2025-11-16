@@ -58,18 +58,19 @@ const ensureTenant = async (tenantId: string): Promise<TenantDocument> => {
   return tenant;
 };
 
-const ensureState = (state?: TenantOnboardingState): TenantOnboardingState => ({
-  steps: {
-    site: state?.steps?.site ?? { completed: false },
-    assets: state?.steps?.assets ?? { completed: false },
-    pmTemplates: state?.steps?.pmTemplates ?? { completed: false },
-    team: state?.steps?.team ?? { completed: false },
-  },
-  ...(state?.lastReminderAt ? { lastReminderAt: state.lastReminderAt } : {}),
-  ...(state?.reminderDismissedAt
-    ? { reminderDismissedAt: state.reminderDismissedAt }
-    : {}),
-});
+const ensureState = (state?: TenantOnboardingState): TenantOnboardingState => {
+  const next = {
+    steps: {
+      site: state?.steps?.site ?? { completed: false },
+      assets: state?.steps?.assets ?? { completed: false },
+      pmTemplates: state?.steps?.pmTemplates ?? { completed: false },
+      team: state?.steps?.team ?? { completed: false },
+    },
+    lastReminderAt: state?.lastReminderAt,
+    reminderDismissedAt: state?.reminderDismissedAt,
+  };
+  return next as TenantOnboardingState;
+};
 
 const collectSignals = async (tenantId: Types.ObjectId) => {
   const [hasSite, hasAsset, hasPmTask, userCount] = await Promise.all([

@@ -131,11 +131,14 @@ const shouldShowReminder = (state: TenantOnboardingState, hasIncomplete: boolean
 export const getOnboardingState = async (tenantId: string): Promise<OnboardingStateResponse> => {
   const tenant = await ensureTenant(tenantId);
   const state = await refreshState(tenant);
-  const steps: OnboardingStepResponse[] = STEP_DEFINITIONS.map((step) => ({
-    ...step,
-    completed: state.steps[step.key]?.completed ?? false,
-    completedAt: state.steps[step.key]?.completedAt?.toISOString(),
-  }));
+  const steps: OnboardingStepResponse[] = STEP_DEFINITIONS.map((step) => {
+    const completedAt = state.steps[step.key]?.completedAt;
+    return {
+      ...step,
+      completed: state.steps[step.key]?.completed ?? false,
+      ...(completedAt ? { completedAt: completedAt.toISOString() } : {}),
+    };
+  });
   const incomplete = steps.filter((step) => !step.completed);
   const nextStep = incomplete[0]?.key ?? null;
   const pendingReminder = shouldShowReminder(state, incomplete.length > 0);
@@ -148,8 +151,10 @@ export const getOnboardingState = async (tenantId: string): Promise<OnboardingSt
   return {
     steps,
     pendingReminder,
-    reminderMessage,
-    lastReminderAt: state.lastReminderAt?.toISOString(),
+    ...(reminderMessage !== undefined ? { reminderMessage } : {}),
+    ...(state.lastReminderAt
+      ? { lastReminderAt: state.lastReminderAt.toISOString() }
+      : {}),
     nextStepKey: nextStep,
   };
 };

@@ -149,7 +149,7 @@ const Documentation: React.FC = () => {
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [categories, setCategories] = useState<Category[]>([
     {
-      id: '1',
+      id: 'getting-started',
       title: 'Getting Started',
       description: 'Learn the basics and set up your environment',
       icon: <Book className="h-6 w-6 text-primary-600" />,
@@ -161,7 +161,7 @@ const Documentation: React.FC = () => {
       ]
     },
     {
-      id: '2',
+      id: 'asset-management',
       title: 'Asset Management',
       description: 'Track and maintain your equipment',
       icon: <FileText className="h-6 w-6 text-teal-600" />,
@@ -173,7 +173,7 @@ const Documentation: React.FC = () => {
       ]
     },
     {
-      id: '3',
+      id: 'work-orders',
       title: 'Work Orders',
       description: 'Manage maintenance tasks efficiently',
       icon: <MessageCircle className="h-6 w-6 text-success-600" />,
@@ -185,7 +185,7 @@ const Documentation: React.FC = () => {
       ]
     },
     {
-      id: '4',
+      id: 'video-tutorials',
       title: 'Video Tutorials',
       description: 'Watch step-by-step guides',
       icon: <Video className="h-6 w-6 text-accent-600" />,
@@ -495,7 +495,11 @@ const Documentation: React.FC = () => {
         {/* Categories Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {categories.map((category, index) => (
-            <Card key={category.id} className="hover:border-primary-200 transition-colors duration-200">
+            <Card
+              key={category.id}
+              id={category.id}
+              className="hover:border-primary-200 transition-colors duration-200"
+            >
               <div className="flex items-start justify-between">
                 <div className="flex items-start">
                   <div className="p-3 rounded-lg bg-neutral-50">{category.icon}</div>

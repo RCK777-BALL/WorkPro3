@@ -32,6 +32,7 @@ import Reports from "@/pages/Reports";
 import Notifications from "@/pages/Notifications";
 import Messages from "@/pages/Messages";
 import Documentation from "@/pages/Documentation";
+import AssetManagementGuide from "@/pages/AssetManagementGuide";
 import Departments from "@/pages/Departments";
 import Lines from "@/pages/Lines";
 import Stations from "@/pages/Stations";
@@ -163,6 +164,7 @@ export default function App() {
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/documentation" element={<Documentation />} />
+          <Route path="/documentation/asset-management" element={<AssetManagementGuide />} />
           <Route path="/departments" element={<Departments />} />
           <Route path="/lines" element={<Lines />} />
           <Route path="/stations" element={<Stations />} />

@@ -3,6 +3,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Search,
   Book,
@@ -39,6 +40,7 @@ interface Category {
   articles: Array<{
     title: string;
     time: string;
+    href?: string;
   }>;
 }
 
@@ -169,7 +171,8 @@ const Documentation: React.FC = () => {
         { title: 'Adding New Assets', time: '7 min read' },
         { title: 'Asset Categories', time: '5 min read' },
         { title: 'Maintenance Schedules', time: '15 min read' },
-        { title: 'Asset Reports', time: '10 min read' }
+        { title: 'Asset Reports', time: '10 min read' },
+        { title: 'Asset Management Setup', time: 'Step-by-step', href: '/documentation/asset-management' }
       ]
     },
     {
@@ -534,10 +537,17 @@ const Documentation: React.FC = () => {
                     key={articleIndex}
                     className="flex items-center justify-between p-3 rounded-lg hover:bg-neutral-50 transition-colors duration-150 group"
                   >
-                    <button className="flex items-center flex-1">
-                      <span className="text-sm font-medium text-neutral-900">{article.title}</span>
-                      <span className="ml-2 text-xs text-neutral-500">{article.time}</span>
-                    </button>
+                    {article.href ? (
+                      <Link to={article.href} className="flex items-center flex-1">
+                        <span className="text-sm font-medium text-neutral-900">{article.title}</span>
+                        <span className="ml-2 text-xs text-neutral-500">{article.time}</span>
+                      </Link>
+                    ) : (
+                      <button className="flex items-center flex-1">
+                        <span className="text-sm font-medium text-neutral-900">{article.title}</span>
+                        <span className="ml-2 text-xs text-neutral-500">{article.time}</span>
+                      </button>
+                    )}
                     <div className="flex items-center space-x-2">
                       <Button
                         variant="ghost"

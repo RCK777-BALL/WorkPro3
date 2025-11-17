@@ -5,6 +5,15 @@
 import type { Request, Response } from 'express';
 import { computeCollectionEtag, normalizeEtag } from '../utils/versioning';
 
+export const computeBackoffSeconds = (
+  attempts: number,
+  { baseSeconds = 5, maxSeconds = 300 }: { baseSeconds?: number; maxSeconds?: number } = {},
+): number => {
+  const exponent = Math.max(0, attempts - 1);
+  const backoff = baseSeconds * 2 ** exponent;
+  return Math.min(maxSeconds, backoff);
+};
+
 export const setEntityVersionHeaders = (
   res: Response,
   entity: { etag?: string; version?: number },

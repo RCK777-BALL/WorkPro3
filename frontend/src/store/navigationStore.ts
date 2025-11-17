@@ -27,6 +27,10 @@ export type NavItemId =
   | 'vendors'
   | 'messages'
   | 'documentation'
+  | 'documentation-getting-started'
+  | 'documentation-asset-management'
+  | 'documentation-work-orders'
+  | 'documentation-video-tutorials'
   | 'settings'
   | 'imports'
   | 'audit';
@@ -52,6 +56,10 @@ const defaultOrder: NavItemId[] = [
   'vendors',
   'messages',
   'documentation',
+  'documentation-getting-started',
+  'documentation-asset-management',
+  'documentation-work-orders',
+  'documentation-video-tutorials',
   'settings',
   'audit',
   'imports',

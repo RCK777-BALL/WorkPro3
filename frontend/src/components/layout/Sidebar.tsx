@@ -28,6 +28,7 @@ import {
   Scan,
   Settings,
   Users,
+  Video,
   Warehouse,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -231,6 +232,34 @@ const navItems: Record<NavItemId, NavItem> = {
     label: "Documentation",
     to: "/documentation",
     icon: BookOpen,
+    section: "management",
+  },
+  "documentation-getting-started": {
+    id: "documentation-getting-started",
+    label: "Getting Started",
+    to: "/documentation#getting-started",
+    icon: BookOpen,
+    section: "management",
+  },
+  "documentation-asset-management": {
+    id: "documentation-asset-management",
+    label: "Asset Management",
+    to: "/documentation#asset-management",
+    icon: Warehouse,
+    section: "management",
+  },
+  "documentation-work-orders": {
+    id: "documentation-work-orders",
+    label: "Work Orders",
+    to: "/documentation#work-orders",
+    icon: ClipboardList,
+    section: "management",
+  },
+  "documentation-video-tutorials": {
+    id: "documentation-video-tutorials",
+    label: "Video Tutorials",
+    to: "/documentation#video-tutorials",
+    icon: Video,
     section: "management",
   },
   settings: {

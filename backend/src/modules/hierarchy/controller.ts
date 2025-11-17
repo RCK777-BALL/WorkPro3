@@ -254,7 +254,9 @@ export const duplicateAssetHandler: AuthedRequestHandler<{ assetId: string }, un
 ) => {
   if (!ensureTenant(req, res)) return;
   try {
-    const asset = await duplicateAsset(buildContext(req), req.params.assetId, { name: req.body.name });
+    const payload: { name?: string } = {};
+    if (req.body.name !== undefined) payload.name = req.body.name;
+    const asset = await duplicateAsset(buildContext(req), req.params.assetId, payload);
     send(res, asset, 201);
   } catch (err) {
     handleError(err, res, next);

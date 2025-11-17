@@ -198,6 +198,14 @@ export default function App() {
               </RequirePermission>
             }
           />
+          <Route
+            path="/admin/audit"
+            element={
+              <RequirePermission scope="audit" action="read">
+                <AuditLogsPage />
+              </RequirePermission>
+            }
+          />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>

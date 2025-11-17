@@ -16,9 +16,9 @@ import {
 } from './hooks';
 
 const TemplateAssignmentsView = () => {
-  const { data: templates, isLoading, error } = usePmTemplates();
+  const { data: templates, isLoading, isError, error } = usePmTemplates();
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>();
-  const [editingAssignment, setEditingAssignment] = useState<PMTemplateAssignment | undefined>();
+  const [editingAssignment, setEditingAssignment] = useState<PMTemplateAssignment | null>(null);
   const { assets } = useAssetOptions();
   const { options: partOptions } = useInventorySelectOptions();
   const deleteMutation = useDeleteAssignment();
@@ -29,7 +29,7 @@ const TemplateAssignmentsView = () => {
 
   const handleTemplateSelect = (template: PMTemplate) => {
     setSelectedTemplateId(template.id);
-    setEditingAssignment(undefined);
+    setEditingAssignment(null);
   };
 
   const handleEdit = (assignment: PMTemplateAssignment) => {
@@ -46,7 +46,7 @@ const TemplateAssignmentsView = () => {
   };
 
   const handleFormSuccess = () => {
-    setEditingAssignment(undefined);
+    setEditingAssignment(null);
   };
 
   return (
@@ -58,8 +58,8 @@ const TemplateAssignmentsView = () => {
         </div>
         <div className="divide-y divide-neutral-100">
           {isLoading && <p className="px-4 py-3 text-sm text-neutral-500">Loading templates...</p>}
-          {error && <p className="px-4 py-3 text-sm text-error-500">Failed to load templates</p>}
-          {!isLoading && !error && templates?.length === 0 && (
+          {isError && <p className="px-4 py-3 text-sm text-error-500">Failed to load templates</p>}
+          {!isLoading && !isError && templates?.length === 0 && (
             <p className="px-4 py-3 text-sm text-neutral-500">No templates available.</p>
           )}
           {(templates ?? []).map((template) => {
@@ -88,7 +88,7 @@ const TemplateAssignmentsView = () => {
                   <h2 className="text-lg font-semibold text-neutral-900">{resolvedTemplate.title}</h2>
                   {resolvedTemplate.notes && <p className="text-sm text-neutral-500">{resolvedTemplate.notes}</p>}
                 </div>
-                <Button variant="outline" onClick={() => setEditingAssignment(undefined)}>
+                <Button variant="outline" onClick={() => setEditingAssignment(null)}>
                   Add assignment
                 </Button>
               </div>

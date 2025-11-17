@@ -3,6 +3,7 @@
  */
 
 import mongoose, { Schema, Model, Types, HydratedDocument, SchemaDefinitionProperty } from 'mongoose';
+import { computeEtag } from '../utils/versioning';
 
 
 export interface WorkOrder {
@@ -46,6 +47,9 @@ export interface WorkOrder {
 
   dueDate?: Date;
   completedAt?: Date;
+  version?: number;
+  etag?: string;
+  lastSyncedAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;
   downtime?: number;
@@ -55,11 +59,11 @@ export interface WorkOrder {
 export type WorkOrderDocument = HydratedDocument<WorkOrder>;
 
 const tenantRef = {
-  type: Schema.Types.ObjectId,
-  ref: 'Tenant',
-  required: true,
-  index: true,
-} as SchemaDefinitionProperty<Types.ObjectId>;
+    type: Schema.Types.ObjectId,
+    ref: 'Tenant',
+    required: true,
+    index: true,
+  } as SchemaDefinitionProperty<Types.ObjectId>;
 
 const workOrderSchema = new Schema<WorkOrder>(
   {
@@ -137,11 +141,32 @@ const workOrderSchema = new Schema<WorkOrder>(
     downtime: { type: Number },
     wrenchTime: { type: Number },
 
+    version: { type: Number, default: 1, min: 1 },
+    etag: { type: String, index: true },
+    lastSyncedAt: { type: Date },
+
     dueDate: { type: Date },
     completedAt: Date,
   },
   { timestamps: true }
 );
+
+workOrderSchema.pre('save', function handleVersioning(next) {
+  if (this.isNew) {
+    this.version = this.version ?? 1;
+  } else if (this.isModified()) {
+    this.version = (this.version ?? 0) + 1;
+  }
+
+  const updatedAt = this.updatedAt ?? new Date();
+  this.etag = computeEtag(this._id, this.version ?? 1, updatedAt);
+
+  if (this.isModified()) {
+    this.lastSyncedAt = new Date();
+  }
+
+  next();
+});
 
 const WorkOrder: Model<WorkOrder> = mongoose.model<WorkOrder>('WorkOrder', workOrderSchema);
 

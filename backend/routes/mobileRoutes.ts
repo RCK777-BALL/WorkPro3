@@ -6,7 +6,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import { mkdir } from 'fs/promises';
-import { requireScopes } from '../middleware/authMiddleware';
+import { requireAuth, requireScopes } from '../middleware/authMiddleware';
 import {
   completeOfflineAction,
   enqueueOfflineAction,
@@ -20,6 +20,7 @@ const router = Router();
 
 const MOBILE_SCOPE = 'mobile:access';
 
+router.use(requireAuth);
 router.use(requireScopes(MOBILE_SCOPE));
 
 const uploadsDir = path.join(process.cwd(), 'uploads', 'mobile');

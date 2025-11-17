@@ -13,6 +13,7 @@ import User from '../../models/User';
 import MobileOfflineAction from '../../models/MobileOfflineAction';
 import AuditLog from '../../models/AuditLog';
 import WorkOrder from '../../models/WorkOrder';
+import { telemetryEmitter } from '../../services/telemetryService';
 
 const app = express();
 app.use(express.json());
@@ -26,7 +27,7 @@ const authHeader = () => ({ Authorization: `Bearer ${token}` });
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'testsecret';
-  mongo = await MongoMemoryServer.create({ binary: { version: '7.0.14' } });
+  mongo = await MongoMemoryServer.create({ binary: { version: '7.0.5' } });
   await mongoose.connect(mongo.getUri());
 });
 
@@ -39,6 +40,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await mongoose.connection.db?.dropDatabase();
+  telemetryEmitter.removeAllListeners();
   user = await User.create({
     name: 'Mobile User',
     email: 'mobile@example.com',
@@ -116,6 +118,67 @@ describe('mobile routes offline queue versioning', () => {
       .post(`/mobile/v1/offline-queue/${actionId}/complete`)
       .set({ ...authHeader(), 'If-Match': etag })
       .expect(412);
+  });
+});
+
+describe('mobile offline queue backoff and telemetry', () => {
+  it('applies exponential backoff on failure and emits telemetry', async () => {
+    const created = await request(app)
+      .post('/mobile/v1/offline-queue')
+      .set(authHeader())
+      .send({ type: 'sync-wo', payload: { ref: 'WO-4' } })
+      .expect(201);
+
+    const actionId = created.body.data.id as string;
+    const etag = created.body.data.etag as string;
+
+    const telemetryPromise = new Promise((resolve) => {
+      telemetryEmitter.once('mobile.offlineAction.failed', resolve);
+    });
+
+    const failureRes = await request(app)
+      .post(`/mobile/v1/offline-queue/${actionId}/fail`)
+      .set({ ...authHeader(), 'If-Match': etag })
+      .send({ message: 'network unavailable' })
+      .expect(200);
+
+    expect(failureRes.body.data.attempts).toBe(1);
+    expect(failureRes.body.data.status).toBe('pending');
+    expect(failureRes.body.data.backoffSeconds).toBeGreaterThanOrEqual(5);
+    expect(new Date(failureRes.body.data.nextAttemptAt).getTime()).toBeGreaterThan(Date.now());
+
+    const telemetryEvent: any = await telemetryPromise;
+    expect(telemetryEvent.event).toBe('mobile.offlineAction.failed');
+    expect(telemetryEvent.actionId).toBe(actionId);
+    expect(telemetryEvent.attempts).toBe(1);
+  });
+
+  it('marks an offline action as failed after exhausting retries', async () => {
+    const created = await request(app)
+      .post('/mobile/v1/offline-queue')
+      .set(authHeader())
+      .send({ type: 'sync-wo', payload: { ref: 'WO-5' } })
+      .expect(201);
+
+    const actionId = created.body.data.id as string;
+    let etag = created.body.data.etag as string;
+
+    let latest = created;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const res = await request(app)
+        .post(`/mobile/v1/offline-queue/${actionId}/fail`)
+        .set({ ...authHeader(), 'If-Match': etag })
+        .send({ message: 'still failing' })
+        .expect(200);
+
+      latest = res;
+      etag = res.headers.etag as string;
+    }
+
+    expect(latest.body.data.status).toBe('failed');
+    expect(latest.body.data.backoffSeconds).toBeUndefined();
+    expect(latest.body.data.nextAttemptAt).toBeUndefined();
+    expect(latest.body.data.attempts).toBeGreaterThanOrEqual(5);
   });
 });
 

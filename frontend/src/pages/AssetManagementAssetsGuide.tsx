@@ -83,9 +83,6 @@ const assetSteps = [
 ];
 
 const quickActions = [
-  { label: 'Add Asset', to: '/assets?intent=add' },
-  { label: 'Edit Asset', to: '/assets?intent=edit' },
-  { label: 'Duplicate Asset', to: '/assets?intent=duplicate' },
   { label: 'Assets Home', to: '/assets' },
   { label: 'Asset Explorer', to: '/assets/explorer' },
   { label: 'Import Assets', to: '/imports' },

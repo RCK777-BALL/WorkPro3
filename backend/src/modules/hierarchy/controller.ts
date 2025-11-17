@@ -4,6 +4,7 @@
 
 import type { Response, NextFunction } from 'express';
 import type { ParamsDictionary } from 'express-serve-static-core';
+import Department from '../../../models/Department';
 
 import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
 import { fail } from '../../lib/http';
@@ -53,6 +54,41 @@ const buildContext = (req: AuthedRequest) => ({
   plantId: req.plantId,
   siteId: req.siteId,
 });
+
+const mapDepartment = (department: typeof Department.prototype) => ({
+  _id: department._id.toString(),
+  name: department.name,
+  description: department.notes ?? (department as any).description,
+  notes: department.notes ?? (department as any).description,
+  plant: department.plant?.toString(),
+  lines: (department.lines ?? []).map((line) => ({
+    _id: line._id.toString(),
+    name: line.name,
+    description: line.notes ?? '',
+    notes: line.notes ?? '',
+    stations: (line.stations ?? []).map((station) => ({
+      _id: station._id.toString(),
+      name: station.name,
+      description: station.notes ?? '',
+      notes: station.notes ?? '',
+      assets: [],
+    })),
+  })),
+});
+
+const sendDepartment = async (
+  context: ReturnType<typeof buildContext>,
+  departmentId: string,
+  res: Response,
+  status = 200,
+) => {
+  const department = await Department.findOne({ _id: departmentId, tenantId: context.tenantId });
+  if (!department) {
+    fail(res, 'Department not found', 404);
+    return;
+  }
+  send(res, mapDepartment(department), status);
+};
 
 export const getHierarchy: AuthedRequestHandler = async (req, res, next) => {
   if (!ensureTenant(req, res)) return;
@@ -135,6 +171,20 @@ export const createLineHandler: AuthedRequestHandler<
   }
 };
 
+export const createLineForDepartmentHandler: AuthedRequestHandler<
+  { departmentId: string },
+  unknown,
+  { name?: string; notes?: string; siteId?: string }
+> = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    await createLine(buildContext(req), { ...req.body, departmentId: req.params.departmentId });
+    await sendDepartment(buildContext(req), req.params.departmentId, res, 201);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
 export const updateLineHandler: AuthedRequestHandler<
   { lineId: string },
   unknown,
@@ -149,11 +199,37 @@ export const updateLineHandler: AuthedRequestHandler<
   }
 };
 
+export const updateLineForDepartmentHandler: AuthedRequestHandler<
+  { departmentId: string; lineId: string },
+  unknown,
+  { name?: string; notes?: string }
+> = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    await updateLine(buildContext(req), req.params.lineId, req.body);
+    await sendDepartment(buildContext(req), req.params.departmentId, res);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
 export const deleteLineHandler: AuthedRequestHandler<{ lineId: string }> = async (req, res, next) => {
   if (!ensureTenant(req, res)) return;
   try {
     await deleteLine(buildContext(req), req.params.lineId);
     send(res, { id: req.params.lineId });
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const deleteLineForDepartmentHandler: AuthedRequestHandler<
+  { departmentId: string; lineId: string }
+> = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    await deleteLine(buildContext(req), req.params.lineId);
+    await sendDepartment(buildContext(req), req.params.departmentId, res);
   } catch (err) {
     handleError(err, res, next);
   }
@@ -173,6 +249,20 @@ export const createStationHandler: AuthedRequestHandler<
   }
 };
 
+export const createStationForLineHandler: AuthedRequestHandler<
+  { departmentId: string; lineId: string },
+  unknown,
+  { name?: string; notes?: string; siteId?: string }
+> = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    await createStation(buildContext(req), { ...req.body, lineId: req.params.lineId });
+    await sendDepartment(buildContext(req), req.params.departmentId, res, 201);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
 export const updateStationHandler: AuthedRequestHandler<
   { stationId: string },
   unknown,
@@ -187,11 +277,37 @@ export const updateStationHandler: AuthedRequestHandler<
   }
 };
 
+export const updateStationForLineHandler: AuthedRequestHandler<
+  { departmentId: string; lineId: string; stationId: string },
+  unknown,
+  { name?: string; notes?: string }
+> = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    await updateStation(buildContext(req), req.params.stationId, req.body);
+    await sendDepartment(buildContext(req), req.params.departmentId, res);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
 export const deleteStationHandler: AuthedRequestHandler<{ stationId: string }> = async (req, res, next) => {
   if (!ensureTenant(req, res)) return;
   try {
     await deleteStation(buildContext(req), req.params.stationId);
     send(res, { id: req.params.stationId });
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const deleteStationForLineHandler: AuthedRequestHandler<
+  { departmentId: string; lineId: string; stationId: string }
+> = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    await deleteStation(buildContext(req), req.params.stationId);
+    await sendDepartment(buildContext(req), req.params.departmentId, res);
   } catch (err) {
     handleError(err, res, next);
   }
@@ -223,6 +339,20 @@ export const createAssetHandler: AuthedRequestHandler<ParamsDictionary, unknown,
   }
 };
 
+export const createAssetForStationHandler: AuthedRequestHandler<
+  { departmentId: string; lineId: string; stationId: string },
+  unknown,
+  AssetBody
+> = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    await createAsset(buildContext(req), { ...req.body, stationId: req.params.stationId });
+    await sendDepartment(buildContext(req), req.params.departmentId, res, 201);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
 export const updateAssetHandler: AuthedRequestHandler<{ assetId: string }, unknown, AssetBody> = async (
   req,
   res,
@@ -237,11 +367,37 @@ export const updateAssetHandler: AuthedRequestHandler<{ assetId: string }, unkno
   }
 };
 
+export const updateAssetForStationHandler: AuthedRequestHandler<
+  { departmentId: string; lineId: string; stationId: string; assetId: string },
+  unknown,
+  AssetBody
+> = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    await updateAsset(buildContext(req), req.params.assetId, req.body);
+    await sendDepartment(buildContext(req), req.params.departmentId, res);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
 export const deleteAssetHandler: AuthedRequestHandler<{ assetId: string }> = async (req, res, next) => {
   if (!ensureTenant(req, res)) return;
   try {
     await deleteAsset(buildContext(req), req.params.assetId);
     send(res, { id: req.params.assetId });
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const deleteAssetForStationHandler: AuthedRequestHandler<
+  { departmentId: string; lineId: string; stationId: string; assetId: string }
+> = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    await deleteAsset(buildContext(req), req.params.assetId);
+    await sendDepartment(buildContext(req), req.params.departmentId, res);
   } catch (err) {
     handleError(err, res, next);
   }

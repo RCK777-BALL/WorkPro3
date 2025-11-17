@@ -146,3 +146,36 @@ The following tickets refine the roadmap epics into implementation-ready tasks. 
 - Affected Components: backend, DB, API, frontend
 - Dependencies: HR/identity data, WO assignment flow, notification service.
 - Complexity: M
+
+## Execution Tasks to Complete the Backlog
+
+### Offline/Mobile Technician Execution
+- Define the mobile offline data model (work orders, steps, parts, assets) with versioning fields to support conflict detection.
+- Implement the pending-sync queue with exponential backoff and per-operation status tracking; emit telemetry for queue lifecycle events.
+- Add conflict detection/resolution flow on sync using ETag/version headers and persistence of audit entries.
+- Integrate barcode/QR scanning into mobile asset/part selection with graceful permission handling and ambiguity prompts.
+- Build offline attachment capture that stores blobs locally and stages uploads through signed URLs when connectivity resumes.
+
+### Inventory → Purchasing Integration
+- Extend part schema with min/max thresholds, preferred vendor linkage, and change audit logging; schedule nightly/on-demand reorder suggestion jobs.
+- Introduce Purchase Order entity with approval workflow, vendor linkage, and inventory updates on receiving; expose CRUD APIs/UI.
+- Embed availability/reservation widget in WO planning UI, including live counts, reservation management, and PO linkage.
+- Ingest vendor catalogs with pricing, lead times, and currency support; apply FX conversion when displaying PO totals.
+
+### Reliability & SLA Analytics
+- Build analytics pipeline/jobs for MTBF/MTTR with caching and filters (date range, asset hierarchy, site) plus unit tests for edge cases.
+- Implement SLA policy CRUD and timer tracking on work orders with breach notifications and report exports.
+- Calculate technician utilization using calendars/PTO; surface day/week/month dashboards and ensure exclusions for travel/idle when configured.
+- Add multi-site and multi-period comparison APIs/UI with normalization and CSV export handling missing data gracefully.
+
+### Centralized Multi-Tenant Guardrails
+- Add tenant/site extraction middleware for REST and WebSocket paths with rejection of unauthenticated context.
+- Build centralized policy module invoked across services for tenant isolation and role-based access with standardized errors and tests.
+- Implement structured security logging and audit API/UI for denied access attempts with alerting on repeated violations.
+- Expand integration test suite covering tenant boundary protection across CRUD, streaming, and batch endpoints.
+
+### PM Engine Enhancements (Compliance / EHS)
+- Extend PM engine for time/usage-based WO generation with backfill and de-duplication; expose configuration UI/API.
+- Add overdue escalation rules and SLA monitoring for PM/WOs with notifications and breach tracking.
+- Create permit-to-work/LOTO checklists with signature capture and gating of WO start/close until completion.
+- Persist technician certifications with expiry, enforce against WO requirements during assignment, and surface warnings/reports for expiring certs.

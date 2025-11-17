@@ -11,6 +11,7 @@ import {
   completeOfflineAction,
   enqueueOfflineAction,
   getOfflineQueue,
+  recordOfflineActionFailure,
   listMobileWorkOrders,
   lookupAsset,
   uploadMobileAttachment,
@@ -51,6 +52,7 @@ router.get('/v1/assets', lookupAsset);
 router.post('/v1/attachments', upload.single('file'), uploadMobileAttachment);
 router.get('/v1/offline-queue', getOfflineQueue);
 router.post('/v1/offline-queue', enqueueOfflineAction);
+router.post('/v1/offline-queue/:id/fail', recordOfflineActionFailure);
 router.post('/v1/offline-queue/:id/complete', completeOfflineAction);
 
 export default router;

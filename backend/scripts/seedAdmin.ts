@@ -48,7 +48,7 @@ const seedAdmin = async () => {
         name: 'Admin User',
         email: ADMIN_EMAIL,
         passwordHash: ADMIN_PASSWORD,
-        roles: ['admin'],
+        roles: ['global_admin'],
         tenantId: tenant._id,
         employeeId: randomUUID(),
       });
@@ -56,7 +56,7 @@ const seedAdmin = async () => {
       logger.info(`✅ Admin account created: ${ADMIN_EMAIL}`);
     } else {
       user.name = 'Admin User';
-      user.roles = ['admin'];
+      user.roles = ['global_admin'];
       user.tenantId = tenant._id;
       user.passwordHash = ADMIN_PASSWORD;
       if (!user.employeeId) {

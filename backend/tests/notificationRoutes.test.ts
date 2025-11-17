@@ -29,7 +29,7 @@ let userB: UserDocument;
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'testsecret';
-  mongo = await MongoMemoryServer.create({ binary: { version: '7.0.3' } });
+  mongo = await MongoMemoryServer.create({ binary: { version: '7.0.5' } });
   await mongoose.connect(mongo.getUri());
   tenantA = new mongoose.Types.ObjectId();
   tenantB = new mongoose.Types.ObjectId();

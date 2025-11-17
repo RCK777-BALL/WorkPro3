@@ -7,6 +7,11 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     include: ['tests/**/*.test.ts'],
+    env: {
+      // Pin MongoDB binary version used by mongodb-memory-server to avoid 404 downloads
+      MONGOMS_VERSION: '7.0.5',
+      MONGOMS_OS: 'ubuntu2004',
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

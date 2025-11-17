@@ -1,6 +1,6 @@
 # Backlog Gap Tracker
 
-This tracker captures the executable tasks derived from the CMMS audit gap analysis and schedules them across upcoming sprints.
+This tracker captures the executable tasks derived from the CMMS audit gap analysis and schedules them across upcoming sprints. For implementation guidance on each bundle of work, see the [Backlog Gap Tracker implementation guide](./backlog-gap-tracker-guide.md).
 
 | Tracker ID | Area | Task | Target Sprint | Status |
 | --- | --- | --- | --- | --- |

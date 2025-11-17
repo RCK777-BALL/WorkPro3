@@ -46,6 +46,8 @@ const defaultOrder: NavItemId[] = [
   'inventory',
   'analytics',
   'iot-monitoring',
+  'analytics-global',
+  'analytics-ai',
   'executive',
   'vendors',
   'messages',

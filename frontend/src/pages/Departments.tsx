@@ -857,7 +857,6 @@ const Departments = () => {
                   <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {Array.from({ length: 3 }).map((__, idx) => (
                       <div
-                        // eslint-disable-next-line react/no-array-index-key
                         key={idx}
                         className="h-20 rounded-lg border border-dashed border-neutral-200 bg-white/60 dark:border-neutral-700 dark:bg-neutral-900/40"
                       />

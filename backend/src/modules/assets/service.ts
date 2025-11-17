@@ -330,7 +330,7 @@ export const getAssetInsights = async (
       .lean(),
   ]);
 
-  const pmTemplates = pmTemplatesRaw as PMTaskDocument[];
+  const pmTemplates = pmTemplatesRaw as unknown as PMTaskDocument[];
   const pmTemplateSummaries = pmTemplates.flatMap((template) => toPmTemplateSummary(template, assetId));
 
   const assetSummary: AssetInsightsResponse['asset'] = {
@@ -402,11 +402,11 @@ export const getAssetInsights = async (
 
   return {
     asset: assetSummary,
-    history: flattenHistory(historyRaw as WorkHistoryDocument[]),
+    history: flattenHistory(historyRaw as unknown as WorkHistoryDocument[]),
     documents: (documentsRaw as Array<Pick<DocumentDoc, '_id' | 'name' | 'title' | 'type' | 'url' | 'metadata'> & { createdAt?: Date }>).map(
       toDocumentSummary,
     ),
-    bom: (bomPartsRaw as IInventoryItem[]).map(toBomPart),
+    bom: (bomPartsRaw as unknown as IInventoryItem[]).map(toBomPart),
     pmTemplates: pmTemplateSummaries,
     openWorkOrders: (openWorkOrdersRaw as WorkOrder[]).map(toWorkOrderSummary),
     costRollups: calculateCostRollups(costOrdersRaw as WorkOrder[]),

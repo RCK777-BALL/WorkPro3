@@ -3,7 +3,7 @@
  */
 
 import PDFDocument from 'pdfkit';
-import type { Types } from 'mongoose';
+import { Types } from 'mongoose';
 import cron from 'node-cron';
 
 import WorkHistory from '../../../models/WorkHistory';
@@ -74,10 +74,10 @@ export interface ExecutiveScheduleSettings {
 }
 
 export interface UpdateExecutiveScheduleInput {
-  enabled?: boolean;
-  cron?: string;
-  timezone?: string;
-  recipients?: string[];
+  enabled?: boolean | undefined;
+  cron?: string | undefined;
+  timezone?: string | undefined;
+  recipients?: string[] | undefined;
 }
 
 export class ExecutiveScheduleError extends Error {
@@ -347,19 +347,24 @@ const mapScheduleDoc = (doc: ExecutiveReportScheduleDoc | null): ExecutiveSchedu
       timezone: DEFAULT_TIMEZONE,
       recipients: [],
       lastRunAt: null,
-      lastRunStatus: undefined,
-      lastRunError: undefined,
     };
   }
-  return {
+
+  const base: ExecutiveScheduleSettings = {
     enabled: doc.enabled,
     cron: doc.cron,
     timezone: doc.timezone,
     recipients: doc.recipients,
     lastRunAt: doc.lastRunAt ?? null,
     lastRunStatus: doc.lastRunStatus,
-    lastRunError: doc.lastRunError,
   };
+
+  // only include lastRunError when it is a real string value to satisfy exactOptionalPropertyTypes
+  if (doc.lastRunError !== undefined && doc.lastRunError !== null) {
+    return { ...base, lastRunError: doc.lastRunError };
+  }
+
+  return base;
 };
 
 export async function getExecutiveKpiTrends(

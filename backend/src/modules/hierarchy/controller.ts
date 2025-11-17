@@ -55,26 +55,31 @@ const buildContext = (req: AuthedRequest) => ({
   siteId: req.siteId,
 });
 
-const mapDepartment = (department: typeof Department.prototype) => ({
-  _id: department._id.toString(),
-  name: department.name,
-  description: department.notes ?? (department as any).description,
-  notes: department.notes ?? (department as any).description,
-  plant: department.plant?.toString(),
-  lines: (department.lines ?? []).map((line) => ({
-    _id: line._id.toString(),
-    name: line.name,
-    description: line.notes ?? '',
-    notes: line.notes ?? '',
-    stations: (line.stations ?? []).map((station) => ({
-      _id: station._id.toString(),
-      name: station.name,
-      description: station.notes ?? '',
-      notes: station.notes ?? '',
-      assets: [],
+const mapDepartment = (department: typeof Department.prototype) => {
+  type StationDoc = { _id: { toString(): string }; name: string; notes?: string };
+  type LineDoc = { _id: { toString(): string }; name: string; notes?: string; stations?: StationDoc[] };
+
+  return {
+    _id: department._id.toString(),
+    name: department.name,
+    description: department.notes ?? (department as any).description,
+    notes: department.notes ?? (department as any).description,
+    plant: department.plant?.toString(),
+    lines: (department.lines ?? []).map((line: LineDoc) => ({
+      _id: line._id.toString(),
+      name: line.name,
+      description: line.notes ?? '',
+      notes: line.notes ?? '',
+      stations: (line.stations ?? []).map((station: StationDoc) => ({
+        _id: station._id.toString(),
+        name: station.name,
+        description: station.notes ?? '',
+        notes: station.notes ?? '',
+        assets: [],
+      })),
     })),
-  })),
-});
+  };
+};
 
 const sendDepartment = async (
   context: ReturnType<typeof buildContext>,

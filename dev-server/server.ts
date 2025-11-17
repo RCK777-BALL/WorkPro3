@@ -61,6 +61,17 @@ interface InventoryPart {
   updatedAt: string;
 }
 
+interface PMTemplateLibraryItem {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  interval: string;
+  checklist: string[];
+  impact: string;
+  rule: { type: 'calendar' | 'meter'; cron?: string; meterName?: string; threshold?: number };
+}
+
 const defaultSettings: SettingsState = {
   general: {
     companyName: 'Acme Industries',
@@ -129,6 +140,57 @@ let parts: InventoryPart[] = sampleParts.map((part) => ({
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 }));
+
+const pmTemplateLibrary: PMTemplateLibraryItem[] = [
+  {
+    id: 'boiler-efficiency',
+    title: 'Boiler efficiency inspection',
+    description: 'Dial in routine PM for your boilers with safety checks and trending.',
+    category: 'Utilities',
+    interval: 'Weekly',
+    impact: 'Keeps boilers tuned while catching safety issues before downtime.',
+    checklist: [
+      'Inspect flame quality and log readings',
+      'Verify relief valve and low water cutoffs',
+      'Record flue gas temperature and draft',
+      'Check burner air mix and clean igniters',
+      'Document stack O2/CO for trending',
+    ],
+    rule: { type: 'calendar', cron: '0 4 * * 1' },
+  },
+  {
+    id: 'ahu-cleaning',
+    title: 'Air handling unit cleaning',
+    description: 'Prefill a full coil cleaning, filter swap, and logging steps.',
+    category: 'Air handling',
+    interval: 'Monthly',
+    impact: 'Improves airflow and keeps AHU coils clean for energy efficiency.',
+    checklist: [
+      'Remove and dispose of dirty filters',
+      'Clean supply and return coils',
+      'Check belt tension and sheave alignment',
+      'Inspect drain pans and clear condensate',
+      'Log supply/return temperature differential',
+    ],
+    rule: { type: 'calendar', cron: '0 5 1 * *' },
+  },
+  {
+    id: 'compressor-performance',
+    title: 'Compressor performance capture',
+    description: 'Quick win to log compressor health and spot air leaks.',
+    category: 'Compressor',
+    interval: 'Quarterly',
+    impact: 'Captures baseline performance data to prevent surprises.',
+    checklist: [
+      'Capture amperage and discharge pressure',
+      'Inspect inlet filters and oil levels',
+      'Test condensate traps and drains',
+      'Walkdown for audible air leaks',
+      'Record dryer dew point and alarms',
+    ],
+    rule: { type: 'calendar', cron: '0 6 1 */3 *' },
+  },
+];
 
 const toOptionalString = (value: unknown): string | undefined => {
   if (typeof value === 'string') {
@@ -206,6 +268,33 @@ app.get('/api/vendors', (_req, res) => {
 
 app.get('/api/parts', (_req, res) => {
   res.json({ success: true, data: parts });
+});
+
+app.get('/api/templates/library', (_req, res) => {
+  res.json({ success: true, data: pmTemplateLibrary });
+});
+
+app.post('/api/templates/library/:templateId/clone', (req, res) => {
+  const template = pmTemplateLibrary.find((item) => item.id === req.params.templateId);
+  if (!template) {
+    res.status(404).json({ message: 'Template not found' });
+    return;
+  }
+
+  const checklistNote = template.checklist.length
+    ? `\n\nChecklist:\n${template.checklist.map((item) => `• ${item}`).join('\n')}`
+    : '';
+
+  res.status(201).json({
+    success: true,
+    data: {
+      id: randomUUID(),
+      title: template.title,
+      notes: `${template.description}\n${template.impact}${checklistNote}`.trim(),
+      active: true,
+      assignments: [],
+    },
+  });
 });
 
 app.post('/api/parts', (req, res) => {

@@ -6,6 +6,7 @@ import { Router } from 'express';
 import type { FilterQuery } from 'mongoose';
 
 import { requireAuth } from '../middleware/authMiddleware';
+import { requirePermission } from '../auth/permissions';
 import tenantScope from '../middleware/tenantScope';
 import validateObjectId from '../middleware/validateObjectId';
 import AuditLog, { type AuditLogDocument, type AuditLogDiffEntry } from '../models/AuditLog';
@@ -114,6 +115,7 @@ const router = Router();
 
 router.use(requireAuth);
 router.use(tenantScope);
+router.use(requirePermission('audit', 'read'));
 
 router.get('/', async (req, res, next) => {
   try {

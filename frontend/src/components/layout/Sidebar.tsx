@@ -261,6 +261,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/admin/audit",
     icon: ScrollText,
     section: "management",
+    permission: { scope: "audit", action: "read" },
   },
 };
 

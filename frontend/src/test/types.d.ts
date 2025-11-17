@@ -2,7 +2,7 @@ import type { Db } from 'mongodb';
 import type { AxeResults } from 'jest-axe';
 
 declare global {
-  var testDb: Db;
+  let testDb: Db;
 }
 
 declare module 'vitest' {

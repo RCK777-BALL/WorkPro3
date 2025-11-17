@@ -8,8 +8,7 @@
 export async function registerSWIfAvailable(opts?: { immediate?: boolean }) {
   const id = 'virtual:pwa-register'; // variable to avoid static analysis
   try {
-    // @ts-ignore - virtual module only exists when the plugin is installed
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error - virtual module only exists when the plugin is installed
     const mod = (await import(/* @vite-ignore */ id)) as {
       registerSW?: (options?: { immediate?: boolean }) => void;
     };

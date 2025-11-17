@@ -740,6 +740,23 @@ const toAssetPayload = (asset: AssetDoc) => ({
   stationId: asset.stationId ? asset.stationId.toString() : undefined,
 });
 
+const generateCopyName = async (tenantId: string, baseName: string) => {
+  const proposed = `${baseName} (Copy)`;
+  const exists = await Asset.exists({ tenantId, name: proposed });
+  if (!exists) return proposed;
+
+  let suffix = 2;
+  while (suffix < 50) {
+    const candidate = `${baseName} (Copy ${suffix})`;
+    // eslint-disable-next-line no-await-in-loop
+    const duplicate = await Asset.exists({ tenantId, name: candidate });
+    if (!duplicate) return candidate;
+    suffix += 1;
+  }
+
+  throw new HierarchyError('Unable to generate unique asset name');
+};
+
 export const createAsset = async (context: Context, payload: AssetInput) => {
   const name = ensureName(payload.name);
   if (!payload.type) {
@@ -821,6 +838,39 @@ export const updateAsset = async (
     throw new HierarchyError('Asset not found', 404);
   }
   return toAssetPayload(asset);
+};
+
+export const duplicateAsset = async (
+  context: Context,
+  assetId: string,
+  overrides: { name?: string } = {},
+) => {
+  const asset = await Asset.findOne({ _id: assetId, tenantId: context.tenantId });
+  if (!asset) {
+    throw new HierarchyError('Asset not found', 404);
+  }
+
+  const resolvedName = ensureName(overrides.name ?? (await generateCopyName(context.tenantId, asset.name)));
+  const clone = await Asset.create({
+    name: resolvedName,
+    type: asset.type,
+    status: asset.status,
+    notes: asset.notes,
+    description: asset.description,
+    location: asset.location,
+    serialNumber: asset.serialNumber,
+    modelName: asset.modelName,
+    manufacturer: asset.manufacturer,
+    criticality: asset.criticality,
+    tenantId: context.tenantId,
+    plant: asset.plant,
+    siteId: asset.siteId,
+    departmentId: asset.departmentId,
+    lineId: asset.lineId,
+    stationId: asset.stationId,
+  });
+
+  return toAssetPayload(clone);
 };
 
 export const deleteAsset = async (context: Context, assetId: string) => {

@@ -22,6 +22,7 @@ import {
   createAsset,
   updateAsset,
   deleteAsset,
+  duplicateAsset,
   getAssetDetail,
 } from './service';
 
@@ -241,6 +242,20 @@ export const deleteAssetHandler: AuthedRequestHandler<{ assetId: string }> = asy
   try {
     await deleteAsset(buildContext(req), req.params.assetId);
     send(res, { id: req.params.assetId });
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const duplicateAssetHandler: AuthedRequestHandler<{ assetId: string }, unknown, { name?: string }> = async (
+  req,
+  res,
+  next,
+) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    const asset = await duplicateAsset(buildContext(req), req.params.assetId, { name: req.body.name });
+    send(res, asset, 201);
   } catch (err) {
     handleError(err, res, next);
   }

@@ -22,6 +22,7 @@ import {
   createAssetHandler,
   updateAssetHandler,
   deleteAssetHandler,
+  duplicateAssetHandler,
 } from './controller';
 
 const router = Router();
@@ -50,6 +51,7 @@ router.delete('/stations/:stationId', requirePermission('hierarchy', 'delete' as
 
 router.post('/assets', requirePermission('hierarchy', 'write' as any), createAssetHandler);
 router.put('/assets/:assetId', requirePermission('hierarchy', 'write' as any), updateAssetHandler);
+router.post('/assets/:assetId/duplicate', requirePermission('hierarchy', 'write' as any), duplicateAssetHandler);
 router.delete('/assets/:assetId', requirePermission('hierarchy', 'delete' as any), deleteAssetHandler);
 
 export default router;

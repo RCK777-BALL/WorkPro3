@@ -7,6 +7,7 @@ const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const logger_1 = __importDefault(require("./logger"));
+const crypto_1 = require("node:crypto");
 const db_1 = require("../backend/config/db");
 const defaultSettings = {
     general: {
@@ -42,6 +43,56 @@ let settingsState = {
     email: Object.assign({}, defaultSettings.email),
     theme: Object.assign({}, defaultSettings.theme),
 };
+const pmTemplateLibrary = [
+    {
+        id: 'boiler-efficiency',
+        title: 'Boiler efficiency inspection',
+        description: 'Dial in routine PM for your boilers with safety checks and trending.',
+        category: 'Utilities',
+        interval: 'Weekly',
+        impact: 'Keeps boilers tuned while catching safety issues before downtime.',
+        checklist: [
+            'Inspect flame quality and log readings',
+            'Verify relief valve and low water cutoffs',
+            'Record flue gas temperature and draft',
+            'Check burner air mix and clean igniters',
+            'Document stack O2/CO for trending',
+        ],
+        rule: { type: 'calendar', cron: '0 4 * * 1' },
+    },
+    {
+        id: 'ahu-cleaning',
+        title: 'Air handling unit cleaning',
+        description: 'Prefill a full coil cleaning, filter swap, and logging steps.',
+        category: 'Air handling',
+        interval: 'Monthly',
+        impact: 'Improves airflow and keeps AHU coils clean for energy efficiency.',
+        checklist: [
+            'Remove and dispose of dirty filters',
+            'Clean supply and return coils',
+            'Check belt tension and sheave alignment',
+            'Inspect drain pans and clear condensate',
+            'Log supply/return temperature differential',
+        ],
+        rule: { type: 'calendar', cron: '0 5 1 * *' },
+    },
+    {
+        id: 'compressor-performance',
+        title: 'Compressor performance capture',
+        description: 'Quick win to log compressor health and spot air leaks.',
+        category: 'Compressor',
+        interval: 'Quarterly',
+        impact: 'Captures baseline performance data to prevent surprises.',
+        checklist: [
+            'Capture amperage and discharge pressure',
+            'Inspect inlet filters and oil levels',
+            'Test condensate traps and drains',
+            'Walkdown for audible air leaks',
+            'Record dryer dew point and alarms',
+        ],
+        rule: { type: 'calendar', cron: '0 6 1 */3 *' },
+    },
+];
 // Load environment variables
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -67,6 +118,29 @@ app.get('/api/health', (req, res) => {
 });
 app.get('/api/settings', (_req, res) => {
     res.json({ data: settingsState });
+});
+app.get('/api/templates/library', (_req, res) => {
+    res.json({ success: true, data: pmTemplateLibrary });
+});
+app.post('/api/templates/library/:templateId/clone', (req, res) => {
+    const template = pmTemplateLibrary.find((item) => item.id === req.params.templateId);
+    if (!template) {
+        res.status(404).json({ message: 'Template not found' });
+        return;
+    }
+    const checklistNote = template.checklist.length
+        ? `\n\nChecklist:\n${template.checklist.map((item) => `• ${item}`).join('\n')}`
+        : '';
+    res.status(201).json({
+        success: true,
+        data: {
+            id: (0, crypto_1.randomUUID)(),
+            title: template.title,
+            notes: `${template.description}\n${template.impact}${checklistNote}`.trim(),
+            active: true,
+            assignments: [],
+        },
+    });
 });
 app.post('/api/settings', (req, res) => {
     const payload = (req.body ?? {});

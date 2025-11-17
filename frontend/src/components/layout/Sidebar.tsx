@@ -236,7 +236,7 @@ const navItems: Record<NavItemId, NavItem> = {
   "documentation-asset-management": {
     id: "documentation-asset-management",
     label: "Asset Management",
-    to: "/documentation#asset-management",
+    to: "/documentation/asset-management",
     icon: Warehouse,
     section: "management",
   },

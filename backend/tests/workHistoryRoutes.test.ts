@@ -69,7 +69,7 @@ beforeAll(async () => {
   process.env.JWT_SECRET = 'testsecret';
   mongo = await MongoMemoryServer.create({
     binary: {
-      version: '7.0.3',
+      version: '7.0.5',
       os: {
         dist: 'ubuntu2004',
       },

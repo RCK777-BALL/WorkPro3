@@ -11,7 +11,7 @@ import { execute } from '../integrations/graphql';
 let mongo: MongoMemoryServer;
 
 beforeAll(async () => {
-  mongo = await MongoMemoryServer.create({ binary: { version: '7.0.3' } });
+  mongo = await MongoMemoryServer.create({ binary: { version: '7.0.5' } });
   await mongoose.connect(mongo.getUri());
 });
 

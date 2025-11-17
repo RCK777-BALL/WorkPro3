@@ -23,7 +23,7 @@ interface PartFormItem {
 
 interface AssignmentFormProps {
   templateId: string;
-  assignment?: PMTemplateAssignment;
+  assignment?: PMTemplateAssignment | null;
   assets: Array<{ id: string; name: string }>;
   partOptions: Array<{ id: string; name: string }>;
   onSuccess?: () => void;

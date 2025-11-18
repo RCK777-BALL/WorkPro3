@@ -9,7 +9,7 @@ import type { AuthedRequestHandler } from '../types/http';
 import WorkOrder, { type WorkOrder as WorkOrderEntity } from '../models/WorkOrder';
 import Asset, { type AssetDoc } from '../models/Asset';
 import MobileOfflineAction, { type MobileOfflineAction as MobileOfflineActionDoc } from '../models/MobileOfflineAction';
-import { writeAuditLog } from '../utils/audit';
+import { writeAuditLog, type AuditActor } from '../utils/audit';
 import {
   computeBackoffSeconds,
   ensureMatchHeader,
@@ -34,6 +34,18 @@ const sanitizeSearch = (value: unknown): string | undefined => {
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
+};
+
+const toAuditActor = (user?: AuthedRequest['user']): AuditActor | undefined => {
+  if (!user) return undefined;
+  const actor: AuditActor = {};
+  const id = user._id ?? user.id;
+  if (id) actor.id = id;
+  const name = typeof (user as any).name === 'string' ? (user as any).name.trim() : undefined;
+  if (name) actor.name = name;
+  const email = typeof (user as any).email === 'string' ? (user as any).email.trim() : undefined;
+  if (email) actor.email = email;
+  return actor.id || actor.name || actor.email ? actor : undefined;
 };
 
 const serializeWorkOrder = (workOrder: any) => ({
@@ -262,7 +274,7 @@ export const enqueueOfflineAction: AuthedRequestHandler = async (req, res) => {
   await writeAuditLog({
     tenantId,
     userId,
-    actor: req.user ?? undefined,
+    actor: toAuditActor(req.user),
     action: 'mobile.offlineAction.created',
     entityType: 'MobileOfflineAction',
     entityId: action._id,
@@ -319,7 +331,7 @@ export const completeOfflineAction: AuthedRequestHandler = async (req, res) => {
   await writeAuditLog({
     tenantId,
     userId,
-    actor: req.user ?? undefined,
+    actor: toAuditActor(req.user),
     action: 'mobile.offlineAction.completed',
     entityType: 'MobileOfflineAction',
     entityId: existing._id,
@@ -369,7 +381,7 @@ export const recordOfflineActionFailure: AuthedRequestHandler = async (req, res)
 
   const attempts = (existing.attempts ?? 0) + 1;
   existing.attempts = attempts;
-  existing.lastError = parsed.data.message;
+  existing.set('lastError', parsed.data.message ?? undefined);
 
   const shouldRetry = parsed.data.retryable !== false && attempts < (existing.maxAttempts ?? 5);
   if (shouldRetry) {
@@ -379,8 +391,8 @@ export const recordOfflineActionFailure: AuthedRequestHandler = async (req, res)
     existing.status = 'pending';
   } else {
     existing.status = 'failed';
-    existing.nextAttemptAt = undefined;
-    existing.backoffSeconds = undefined;
+    existing.set('nextAttemptAt', undefined);
+    existing.set('backoffSeconds', undefined);
   }
 
   await existing.save();
@@ -397,7 +409,7 @@ export const recordOfflineActionFailure: AuthedRequestHandler = async (req, res)
   await writeAuditLog({
     tenantId,
     userId,
-    actor: req.user ?? undefined,
+    actor: toAuditActor(req.user),
     action: 'mobile.offlineAction.failed',
     entityType: 'MobileOfflineAction',
     entityId: existing._id,

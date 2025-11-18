@@ -3,6 +3,8 @@
  */
 
 import type { Request, Response } from 'express';
+import type { Types } from 'mongoose';
+import type { AuthedRequest } from '../types/http';
 import { computeCollectionEtag, normalizeEtag } from '../utils/versioning';
 
 export const computeBackoffSeconds = (
@@ -27,7 +29,7 @@ export const setEntityVersionHeaders = (
 };
 
 export const handleConditionalListRequest = (
-  req: Request,
+  req: Request | AuthedRequest,
   res: Response,
   etag: string,
 ): boolean => {
@@ -40,7 +42,7 @@ export const handleConditionalListRequest = (
   return false;
 };
 
-export const ensureMatchHeader = (req: Request, currentEtag?: string): void => {
+export const ensureMatchHeader = (req: Request | AuthedRequest, currentEtag?: string): void => {
   if (!currentEtag) return;
   const provided = normalizeEtag(req.headers['if-match']);
   if (provided && provided !== currentEtag) {
@@ -51,5 +53,5 @@ export const ensureMatchHeader = (req: Request, currentEtag?: string): void => {
 };
 
 export const computeListEtag = (
-  items: Array<{ _id?: string; version?: number; updatedAt?: Date; etag?: string }>,
+  items: Array<{ _id?: string | Types.ObjectId; version?: number; updatedAt?: Date; etag?: string }>,
 ): string => computeCollectionEtag(items);

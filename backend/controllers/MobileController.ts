@@ -4,10 +4,20 @@
 
 import type { FilterQuery } from 'mongoose';
 import { Types } from 'mongoose';
+import { z } from 'zod';
 import type { AuthedRequestHandler } from '../types/http';
 import WorkOrder, { type WorkOrder as WorkOrderEntity } from '../models/WorkOrder';
 import Asset, { type AssetDoc } from '../models/Asset';
-import MobileOfflineAction from '../models/MobileOfflineAction';
+import MobileOfflineAction, { type MobileOfflineAction as MobileOfflineActionDoc } from '../models/MobileOfflineAction';
+import { writeAuditLog } from '../utils/audit';
+import {
+  computeBackoffSeconds,
+  ensureMatchHeader,
+  handleConditionalListRequest,
+  computeListEtag,
+  setEntityVersionHeaders,
+} from '../services/mobileSyncService';
+import { emitTelemetry } from '../services/telemetryService';
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
@@ -38,6 +48,9 @@ const serializeWorkOrder = (workOrder: any) => ({
   dueDate: workOrder.dueDate,
   lineId: workOrder.line?.toString?.() ?? workOrder.line,
   stationId: workOrder.station?.toString?.() ?? workOrder.station,
+  version: workOrder.version,
+  etag: workOrder.etag,
+  lastSyncedAt: workOrder.lastSyncedAt,
 });
 
 const serializeAsset = (asset: any) => ({
@@ -56,8 +69,26 @@ const serializeOfflineAction = (action: any) => ({
   type: action.type,
   payload: action.payload ?? {},
   status: action.status,
+  version: action.version,
+  etag: action.etag,
+  lastSyncedAt: action.lastSyncedAt,
+  attempts: action.attempts,
+  maxAttempts: action.maxAttempts,
+  nextAttemptAt: action.nextAttemptAt,
+  backoffSeconds: action.backoffSeconds,
+  lastError: action.lastError,
   processedAt: action.processedAt,
   createdAt: action.createdAt,
+});
+
+const offlineActionSchema = z.object({
+  type: z.string().trim().min(1),
+  payload: z.record(z.any()).optional().default({}),
+});
+
+const offlineActionFailureSchema = z.object({
+  message: z.string().trim().min(1).optional(),
+  retryable: z.boolean().optional().default(true),
 });
 
 export const listMobileWorkOrders: AuthedRequestHandler = async (req, res) => {
@@ -91,10 +122,15 @@ export const listMobileWorkOrders: AuthedRequestHandler = async (req, res) => {
       .sort({ updatedAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
-      .select('title status priority type updatedAt dueDate assetId assignedTo line station')
+      .select('title status priority type updatedAt dueDate assetId assignedTo line station version etag lastSyncedAt')
       .lean(),
     WorkOrder.countDocuments(filter),
   ]);
+
+  const etag = computeListEtag(items);
+  if (handleConditionalListRequest(req, res, etag)) {
+    return;
+  }
 
   res.json({
     data: {
@@ -170,14 +206,26 @@ export const getOfflineQueue: AuthedRequestHandler = async (req, res) => {
   const limit = Math.min(parseNumber(req.query.limit, DEFAULT_LIMIT), MAX_LIMIT);
   const status = sanitizeSearch(req.query.status) ?? 'pending';
 
-  const actions = await MobileOfflineAction.find({
+  const now = new Date();
+  const query: FilterQuery<MobileOfflineActionDoc> = {
     tenantId,
     userId,
     status,
-  })
+  };
+
+  if (status === 'pending') {
+    query.$or = [{ nextAttemptAt: { $exists: false } }, { nextAttemptAt: { $lte: now } }];
+  }
+
+  const actions = await MobileOfflineAction.find(query)
     .sort({ createdAt: -1 })
     .limit(limit)
     .lean();
+
+  const etag = computeListEtag(actions);
+  if (handleConditionalListRequest(req, res, etag)) {
+    return;
+  }
 
   res.json({ data: actions.map(serializeOfflineAction) });
 };
@@ -190,23 +238,38 @@ export const enqueueOfflineAction: AuthedRequestHandler = async (req, res) => {
     return;
   }
 
-  const { type, payload } = (req.body ?? {}) as {
-    type?: unknown;
-    payload?: Record<string, unknown>;
-  };
-
-  if (typeof type !== 'string' || !type.trim()) {
-    res.status(400).json({ message: 'Action type is required' });
+  const parsed = offlineActionSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    res.status(400).json({ message: 'Invalid payload', errors: parsed.error.flatten() });
     return;
   }
 
   const action = await MobileOfflineAction.create({
     tenantId,
     userId,
-    type: type.trim(),
-    payload: payload ?? {},
+    type: parsed.data.type.trim(),
+    payload: parsed.data.payload,
+    nextAttemptAt: new Date(),
   });
 
+  emitTelemetry('mobile.offlineAction.created', {
+    tenantId: tenantId.toString(),
+    userId: userId.toString(),
+    actionId: action._id.toString(),
+    type: action.type,
+  });
+
+  await writeAuditLog({
+    tenantId,
+    userId,
+    actor: req.user ?? undefined,
+    action: 'mobile.offlineAction.created',
+    entityType: 'MobileOfflineAction',
+    entityId: action._id,
+    after: action.toObject(),
+  });
+
+  setEntityVersionHeaders(res, action);
   res.status(201).json({ data: serializeOfflineAction(action) });
 };
 
@@ -225,16 +288,123 @@ export const completeOfflineAction: AuthedRequestHandler = async (req, res) => {
     return;
   }
 
-  const updated = await MobileOfflineAction.findOneAndUpdate(
-    { _id: actionId, tenantId, userId },
-    { status: 'processed', processedAt: new Date() },
-    { new: true },
-  ).lean();
+  const existing = await MobileOfflineAction.findOne({ _id: actionId, tenantId, userId });
 
-  if (!updated) {
+  if (!existing) {
     res.status(404).json({ message: 'Offline action not found' });
     return;
   }
 
-  res.json({ data: serializeOfflineAction(updated) });
+  try {
+    ensureMatchHeader(req, existing.etag);
+  } catch (error) {
+    res.status((error as any).status ?? 412).json({ message: 'Precondition Failed' });
+    return;
+  }
+
+  const before = existing.toObject();
+  existing.status = 'processed';
+  existing.processedAt = new Date();
+  existing.lastSyncedAt = new Date();
+  await existing.save();
+
+  emitTelemetry('mobile.offlineAction.completed', {
+    tenantId: tenantId.toString(),
+    userId: userId.toString(),
+    actionId: existing._id.toString(),
+    type: existing.type,
+    attempts: existing.attempts ?? 0,
+  });
+
+  await writeAuditLog({
+    tenantId,
+    userId,
+    actor: req.user ?? undefined,
+    action: 'mobile.offlineAction.completed',
+    entityType: 'MobileOfflineAction',
+    entityId: existing._id,
+    before,
+    after: existing.toObject(),
+  });
+
+  setEntityVersionHeaders(res, existing);
+  res.json({ data: serializeOfflineAction(existing) });
+};
+
+export const recordOfflineActionFailure: AuthedRequestHandler = async (req, res) => {
+  const tenantId = req.tenantId;
+  const userId = req.user?._id ?? req.user?.id;
+  const actionId = sanitizeSearch(req.params?.id);
+
+  if (!tenantId || !userId) {
+    res.status(400).json({ message: 'Tenant and user are required' });
+    return;
+  }
+
+  if (!actionId || !Types.ObjectId.isValid(actionId)) {
+    res.status(400).json({ message: 'A valid action id is required' });
+    return;
+  }
+
+  const parsed = offlineActionFailureSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    res.status(400).json({ message: 'Invalid payload', errors: parsed.error.flatten() });
+    return;
+  }
+
+  const existing = await MobileOfflineAction.findOne({ _id: actionId, tenantId, userId });
+  if (!existing) {
+    res.status(404).json({ message: 'Offline action not found' });
+    return;
+  }
+
+  try {
+    ensureMatchHeader(req, existing.etag);
+  } catch (error) {
+    res.status((error as any).status ?? 412).json({ message: 'Precondition Failed' });
+    return;
+  }
+
+  const before = existing.toObject();
+
+  const attempts = (existing.attempts ?? 0) + 1;
+  existing.attempts = attempts;
+  existing.lastError = parsed.data.message;
+
+  const shouldRetry = parsed.data.retryable !== false && attempts < (existing.maxAttempts ?? 5);
+  if (shouldRetry) {
+    const backoffSeconds = computeBackoffSeconds(attempts);
+    existing.backoffSeconds = backoffSeconds;
+    existing.nextAttemptAt = new Date(Date.now() + backoffSeconds * 1000);
+    existing.status = 'pending';
+  } else {
+    existing.status = 'failed';
+    existing.nextAttemptAt = undefined;
+    existing.backoffSeconds = undefined;
+  }
+
+  await existing.save();
+
+  emitTelemetry('mobile.offlineAction.failed', {
+    tenantId: tenantId.toString(),
+    userId: userId.toString(),
+    actionId: existing._id.toString(),
+    attempts: existing.attempts,
+    backoffSeconds: existing.backoffSeconds,
+    status: existing.status,
+  });
+
+  await writeAuditLog({
+    tenantId,
+    userId,
+    actor: req.user ?? undefined,
+    action: 'mobile.offlineAction.failed',
+    entityType: 'MobileOfflineAction',
+    entityId: existing._id,
+    before,
+    after: existing.toObject(),
+  });
+
+  setEntityVersionHeaders(res, existing);
+  res.json({ data: serializeOfflineAction(existing) });
 };

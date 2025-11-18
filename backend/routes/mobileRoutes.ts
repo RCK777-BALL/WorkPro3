@@ -6,11 +6,12 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import { mkdir } from 'fs/promises';
-import { requireScopes } from '../middleware/authMiddleware';
+import { requireAuth, requireScopes } from '../middleware/authMiddleware';
 import {
   completeOfflineAction,
   enqueueOfflineAction,
   getOfflineQueue,
+  recordOfflineActionFailure,
   listMobileWorkOrders,
   lookupAsset,
   uploadMobileAttachment,
@@ -20,6 +21,7 @@ const router = Router();
 
 const MOBILE_SCOPE = 'mobile:access';
 
+router.use(requireAuth);
 router.use(requireScopes(MOBILE_SCOPE));
 
 const uploadsDir = path.join(process.cwd(), 'uploads', 'mobile');
@@ -50,6 +52,7 @@ router.get('/v1/assets', lookupAsset);
 router.post('/v1/attachments', upload.single('file'), uploadMobileAttachment);
 router.get('/v1/offline-queue', getOfflineQueue);
 router.post('/v1/offline-queue', enqueueOfflineAction);
+router.post('/v1/offline-queue/:id/fail', recordOfflineActionFailure);
 router.post('/v1/offline-queue/:id/complete', completeOfflineAction);
 
 export default router;

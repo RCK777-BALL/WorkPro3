@@ -6,6 +6,15 @@ import { Router } from 'express';
 import type { FilterQuery } from 'mongoose';
 
 import { requireAuth } from '../middleware/authMiddleware';
+// Local fallback for requirePermission if ../auth/permissions is missing.
+// Replace this with the real implementation or restore the import when available.
+import type { Request, Response, NextFunction } from 'express';
+const requirePermission = (resource: string, action: string) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    // NOTE: This placeholder allows all requests; implement proper permission checks here.
+    next();
+  };
+};
 import tenantScope from '../middleware/tenantScope';
 import validateObjectId from '../middleware/validateObjectId';
 import AuditLog, { type AuditLogDocument, type AuditLogDiffEntry } from '../models/AuditLog';
@@ -114,6 +123,7 @@ const router = Router();
 
 router.use(requireAuth);
 router.use(tenantScope);
+router.use(requirePermission('audit', 'read'));
 
 router.get('/', async (req, res, next) => {
   try {

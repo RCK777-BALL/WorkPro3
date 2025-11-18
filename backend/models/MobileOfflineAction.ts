@@ -3,8 +3,9 @@
  */
 
 import mongoose, { Schema, type Model, type Types } from 'mongoose';
+import { computeEtag } from '../utils/versioning';
 
-export type MobileOfflineActionStatus = 'pending' | 'processed';
+export type MobileOfflineActionStatus = 'pending' | 'processed' | 'failed';
 
 export interface MobileOfflineAction {
   _id: Types.ObjectId;
@@ -13,6 +14,14 @@ export interface MobileOfflineAction {
   type: string;
   payload: Record<string, unknown>;
   status: MobileOfflineActionStatus;
+  version?: number;
+  etag?: string;
+  lastSyncedAt?: Date;
+  attempts?: number;
+  maxAttempts?: number;
+  nextAttemptAt?: Date;
+  backoffSeconds?: number;
+  lastError?: string;
   processedAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;
@@ -26,10 +35,18 @@ const MobileOfflineActionSchema = new Schema<MobileOfflineAction>(
     payload: { type: Schema.Types.Mixed, default: {} },
     status: {
       type: String,
-      enum: ['pending', 'processed'],
+      enum: ['pending', 'processed', 'failed'],
       default: 'pending',
       index: true,
     },
+    version: { type: Number, default: 1, min: 1 },
+    etag: { type: String, index: true },
+    attempts: { type: Number, default: 0, min: 0 },
+    maxAttempts: { type: Number, default: 5, min: 1 },
+    nextAttemptAt: { type: Date, index: true },
+    backoffSeconds: { type: Number, min: 0 },
+    lastError: { type: String },
+    lastSyncedAt: { type: Date },
     processedAt: { type: Date },
   },
   { timestamps: true },
@@ -37,6 +54,26 @@ const MobileOfflineActionSchema = new Schema<MobileOfflineAction>(
 
 MobileOfflineActionSchema.index({ tenantId: 1, userId: 1, createdAt: -1 });
 MobileOfflineActionSchema.index({ tenantId: 1, status: 1 });
+MobileOfflineActionSchema.index({ tenantId: 1, etag: 1 });
+MobileOfflineActionSchema.index({ tenantId: 1, status: 1, nextAttemptAt: 1 });
+
+MobileOfflineActionSchema.pre('save', function handleVersioning(next) {
+  if (this.isNew) {
+    this.version = this.version ?? 1;
+    this.nextAttemptAt = this.nextAttemptAt ?? new Date();
+  } else if (this.isModified()) {
+    this.version = (this.version ?? 0) + 1;
+  }
+
+  const updatedAt = this.updatedAt ?? new Date();
+  this.etag = computeEtag(this._id, this.version ?? 1, updatedAt);
+
+  if (this.isModified('status') || this.isModified('attempts') || this.isModified('backoffSeconds')) {
+    this.lastSyncedAt = new Date();
+  }
+
+  next();
+});
 
 const MobileOfflineActionModel: Model<MobileOfflineAction> = mongoose.model<MobileOfflineAction>(
   'MobileOfflineAction',

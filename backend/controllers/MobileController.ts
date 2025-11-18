@@ -5,7 +5,7 @@
 import type { FilterQuery } from 'mongoose';
 import { Types } from 'mongoose';
 import { z } from 'zod';
-import type { AuthedRequestHandler } from '../types/http';
+import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import WorkOrder, { type WorkOrder as WorkOrderEntity } from '../models/WorkOrder';
 import Asset, { type AssetDoc } from '../models/Asset';
 import MobileOfflineAction, { type MobileOfflineAction as MobileOfflineActionDoc } from '../models/MobileOfflineAction';
@@ -271,10 +271,12 @@ export const enqueueOfflineAction: AuthedRequestHandler = async (req, res) => {
     type: action.type,
   });
 
+  const actor = toAuditActor(req.user);
+
   await writeAuditLog({
     tenantId,
     userId,
-    actor: toAuditActor(req.user),
+    ...(actor ? { actor } : {}),
     action: 'mobile.offlineAction.created',
     entityType: 'MobileOfflineAction',
     entityId: action._id,
@@ -328,10 +330,12 @@ export const completeOfflineAction: AuthedRequestHandler = async (req, res) => {
     attempts: existing.attempts ?? 0,
   });
 
+  const actor = toAuditActor(req.user);
+
   await writeAuditLog({
     tenantId,
     userId,
-    actor: toAuditActor(req.user),
+    ...(actor ? { actor } : {}),
     action: 'mobile.offlineAction.completed',
     entityType: 'MobileOfflineAction',
     entityId: existing._id,
@@ -406,10 +410,12 @@ export const recordOfflineActionFailure: AuthedRequestHandler = async (req, res)
     status: existing.status,
   });
 
+  const actor = toAuditActor(req.user);
+
   await writeAuditLog({
     tenantId,
     userId,
-    actor: toAuditActor(req.user),
+    ...(actor ? { actor } : {}),
     action: 'mobile.offlineAction.failed',
     entityType: 'MobileOfflineAction',
     entityId: existing._id,

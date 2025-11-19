@@ -3,7 +3,7 @@
  */
 
 import { useMemo } from 'react';
-import { Tabs, Button, Group, TextInput, ScrollArea, Stack } from '@mantine/core';
+import { Tabs, Button, Group, TextInput, ScrollArea, Stack, Badge, Text } from '@mantine/core';
 import { MessageSquare, Search, Users, PlusCircle, BadgeInfo } from 'lucide-react';
 import type { ChatPreview } from '@/types/messages';
 import type { TeamMember } from '@/types';
@@ -71,10 +71,23 @@ const ChatSidebar = ({
       </div>
       <Tabs value={activeTab} onChange={(value) => onTabChange((value as SidebarTab) ?? 'channels')} className="flex-1">
         <Tabs.List className="border-b border-gray-900 bg-gray-950/60 px-4">
-          <Tabs.Tab value="channels" leftSection={<MessageSquare size={14} />}>Channels</Tabs.Tab>
-          <Tabs.Tab value="direct" leftSection={<Users size={14} />}>Direct</Tabs.Tab>
-          <Tabs.Tab value="teams" leftSection={<BadgeInfo size={14} />}>Teams</Tabs.Tab>
-          <Tabs.Tab value="search" leftSection={<Search size={14} />}>Search</Tabs.Tab>
+          {[
+            { value: 'channels' as const, label: 'Channels', icon: <MessageSquare size={14} /> },
+            { value: 'direct' as const, label: 'Direct', icon: <Users size={14} /> },
+            { value: 'teams' as const, label: 'Teams', icon: <BadgeInfo size={14} /> },
+            { value: 'search' as const, label: 'Search', icon: <Search size={14} /> },
+          ].map((tab) => (
+            <Tabs.Tab key={tab.value} value={tab.value} leftSection={tab.icon}>
+              <span className="flex items-center gap-2">
+                {tab.label}
+                {tab.value === 'teams' && !!teamMembers.length && (
+                  <Badge size="xs" variant="light" color="indigo">
+                    {teamMembers.length}
+                  </Badge>
+                )}
+              </span>
+            </Tabs.Tab>
+          ))}
         </Tabs.List>
         <Tabs.Panel value="channels" className="flex-1">
           <ScrollArea className="h-full px-4 pb-4">
@@ -97,6 +110,14 @@ const ChatSidebar = ({
         </Tabs.Panel>
         <Tabs.Panel value="teams" className="flex-1">
           <ScrollArea className="h-full px-4 pb-4">
+            <div className="mt-3 flex items-center justify-between px-2 text-xs uppercase tracking-wide text-gray-400">
+              <Text size="xs" className="font-semibold text-gray-300">
+                All employees
+              </Text>
+              <Badge size="xs" variant="outline" color="gray">
+                {teamMembers.length}
+              </Badge>
+            </div>
             <TeamMemberList members={teamMembers} />
           </ScrollArea>
         </Tabs.Panel>

@@ -45,3 +45,9 @@ This tracker captures the executable tasks derived from the CMMS audit gap analy
 | BGT-039 | PM Engine Enhancements | Add overdue escalation rules and SLA monitoring for PM/WOs with notifications and breach tracking.【F:docs/executable_tasks.md†L177-L181】 | Sprint 24.28 | Scheduled |
 | BGT-040 | PM Engine Enhancements | Create permit-to-work/LOTO checklists with signature capture and gating of WO start/close until completion.【F:docs/executable_tasks.md†L177-L181】 | Sprint 24.29 | Scheduled |
 | BGT-041 | PM Engine Enhancements | Persist technician certifications with expiry, enforce assignment validation, and surface expiry warnings/reports.【F:docs/executable_tasks.md†L177-L181】 | Sprint 24.29 | Scheduled |
+| BGT-042 | Platform Hardening | Enforce secure admin provisioning with mandatory credential rotation and MFA enrollment.【F:docs/executable_tasks.md†L328-L334】 | Sprint 24.30 | Scheduled |
+| BGT-043 | Platform Hardening | Add Kafka resilience features with documented fallbacks and delivery guarantees for realtime updates.【F:docs/executable_tasks.md†L335-L340】 | Sprint 24.30 | Scheduled |
+| BGT-044 | Offline / Mobile Execution | Provide admin visibility into offline sync queues, conflicts, and device telemetry with configurable policies.【F:docs/executable_tasks.md†L342-L347】 | Sprint 24.31 | Scheduled |
+| BGT-045 | CMMS Parity | Launch safety/compliance module with WO gating, templates, and reporting coverage.【F:docs/executable_tasks.md†L349-L354】 | Sprint 24.31 | Scheduled |
+| BGT-046 | CMMS Parity | Add contractor/vendor workforce management with credential enforcement and assignment rules.【F:docs/executable_tasks.md†L356-L361】 | Sprint 24.32 | Scheduled |
+| BGT-047 | CMMS Parity | Implement calibration/instrumentation management with schedules, certificates, and WO gating for expired assets.【F:docs/executable_tasks.md†L363-L367】 | Sprint 24.32 | Scheduled |

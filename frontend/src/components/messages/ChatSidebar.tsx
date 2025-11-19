@@ -4,18 +4,21 @@
 
 import { useMemo } from 'react';
 import { Tabs, Button, Group, TextInput, ScrollArea, Stack } from '@mantine/core';
-import { MessageSquare, Search, Users, PlusCircle } from 'lucide-react';
+import { MessageSquare, Search, Users, PlusCircle, BadgeInfo } from 'lucide-react';
 import type { ChatPreview } from '@/types/messages';
+import type { TeamMember } from '@/types';
 import ChannelList from './ChannelList';
 import DirectMessageList from './DirectMessageList';
+import TeamMemberList from './TeamMemberList';
 
-type SidebarTab = 'channels' | 'direct' | 'search';
+type SidebarTab = 'channels' | 'direct' | 'teams' | 'search';
 
 interface ChatSidebarProps {
   activeTab: SidebarTab;
   onTabChange: (tab: SidebarTab) => void;
   channels: ChatPreview[];
   directs: ChatPreview[];
+  teamMembers: TeamMember[];
   searchTerm: string;
   onSearchTermChange: (value: string) => void;
   onSelectConversation: (conversation: ChatPreview) => void;
@@ -29,6 +32,7 @@ const ChatSidebar = ({
   onTabChange,
   channels,
   directs,
+  teamMembers,
   searchTerm,
   onSearchTermChange,
   onSelectConversation,
@@ -69,6 +73,7 @@ const ChatSidebar = ({
         <Tabs.List className="border-b border-gray-900 bg-gray-950/60 px-4">
           <Tabs.Tab value="channels" leftSection={<MessageSquare size={14} />}>Channels</Tabs.Tab>
           <Tabs.Tab value="direct" leftSection={<Users size={14} />}>Direct</Tabs.Tab>
+          <Tabs.Tab value="teams" leftSection={<BadgeInfo size={14} />}>Teams</Tabs.Tab>
           <Tabs.Tab value="search" leftSection={<Search size={14} />}>Search</Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="channels" className="flex-1">
@@ -88,6 +93,11 @@ const ChatSidebar = ({
               currentUserId={currentUserId}
               onSelect={onSelectConversation}
             />
+          </ScrollArea>
+        </Tabs.Panel>
+        <Tabs.Panel value="teams" className="flex-1">
+          <ScrollArea className="h-full px-4 pb-4">
+            <TeamMemberList members={teamMembers} />
           </ScrollArea>
         </Tabs.Panel>
         <Tabs.Panel value="search" className="flex-1">

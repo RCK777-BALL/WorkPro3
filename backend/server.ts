@@ -42,7 +42,6 @@ import {
   iotRoutes,
   kbRoutes,
   laborRoutes,
-  safetyRoutes,
   LineRoutes,
   maintenanceScheduleRoutes,
   meterRoutes,
@@ -246,13 +245,12 @@ app.use("/api/onboarding", onboardingRouter);
 app.use("/api/executive", executiveRouter);
 
 app.use("/api/departments", departmentRoutes);
+app.use("/api/departments", departmentRoutes);
 app.use("/api/workorders", workOrdersRoutes);
 app.use("/api/permits", permitRoutes);
-app.use("/api/safety", safetyRoutes);
 app.use("/api/assets", assetsRoutes);
 app.use("/api/assets", assetInsightsRouter);
 app.use("/api/meters", meterRoutes);
-app.use("/api/condition-rules", conditionRuleRoutes);
 app.use("/api/tenants", TenantRoutes);
 app.use("/api/pm-tasks", pmTasksRoutes);
 app.use("/api/pm", pmRoutes);

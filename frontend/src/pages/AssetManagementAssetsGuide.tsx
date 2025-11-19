@@ -14,6 +14,7 @@ import {
   FileText,
   Settings,
   BookOpen,
+  Sparkles,
 } from 'lucide-react';
 import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
@@ -82,6 +83,54 @@ const assetSteps = [
     ],
     icon: <ShieldCheck className="h-6 w-6 text-primary-600" />,
   },
+];
+
+const namingTemplate =
+  '<Manufacturer + Model> | <Short description> | <Station / install> | <Line> | <Department> | <Serial number> | <Plant or $> | <Date installed> | <Warranty details> | <Criticality> | <Asset type>';
+
+const namingFields = [
+  {
+    label: 'Manufacturer + Model',
+    description: 'Include every applicable combination, separating multiples with semicolons.',
+  },
+  {
+    label: 'Short description',
+    description: 'One concise phrase describing what the asset does so techs recognize it immediately.',
+  },
+  {
+    label: 'Station / install',
+    description: 'Match the station identifier or install area that exists in your hierarchy.',
+  },
+  { label: 'Line', description: 'Use the production or assembly line name tied to the station.' },
+  { label: 'Department', description: 'Identifies the owning department for reporting rollups.' },
+  {
+    label: 'Serial number',
+    description: 'Manufacturer serial or asset tag. Use “N/A” if the value is not yet available.',
+  },
+  {
+    label: 'Plant or $',
+    description: 'Enter the plant name or a cost flag (such as $) if your governance requires it.',
+  },
+  {
+    label: 'Date installed',
+    description: 'Always use ISO format (YYYY-MM-DD) so imports and filters can sort reliably.',
+  },
+  {
+    label: 'Warranty details',
+    description: 'Spell out coverage (“Warranty to 2026-04-18” or “Warranty expired”).',
+  },
+  {
+    label: 'Criticality',
+    description: 'Reference the standard scale (High/Medium/Low or numeric) defined by your CMMS program.',
+  },
+  { label: 'Asset type', description: 'Match the WorkPro category (Robot, PLC, Conveyor, Compressor, etc.).' },
+];
+
+const namingTips = [
+  'Keep the pipe (`|`) delimiter everywhere so imports stay clean and technicians can scan names quickly.',
+  'Maintain the exact field order when creating records manually or via CSV uploads.',
+  'Document approved criticality levels, asset types, and cost codes so teams reuse the same vocabulary.',
+  'Fill every segment—even placeholders like “N/A”—to avoid ambiguous double pipes (||) in the name.',
 ];
 
 const quickActions = [
@@ -209,6 +258,39 @@ const AssetManagementAssetsGuide: React.FC = () => {
           </Card>
         ))}
       </div>
+
+      <Card>
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-lg bg-primary-50 text-primary-700">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-neutral-900">Asset naming template</h2>
+              <p className="text-neutral-600">
+                Apply a consistent structure whenever you add or import equipment so every record is searchable and easy to
+                decode on the floor.
+              </p>
+            </div>
+          </div>
+          <pre className="bg-neutral-900 text-neutral-50 text-sm p-4 rounded-md overflow-x-auto">
+            <code>{namingTemplate}</code>
+          </pre>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {namingFields.map((field) => (
+              <div key={field.label} className="border border-neutral-200 rounded-lg p-3 shadow-sm">
+                <p className="font-semibold text-neutral-900">{field.label}</p>
+                <p className="text-sm text-neutral-600">{field.description}</p>
+              </div>
+            ))}
+          </div>
+          <ul className="list-disc list-inside text-neutral-700 space-y-1">
+            {namingTips.map((tip) => (
+              <li key={tip}>{tip}</li>
+            ))}
+          </ul>
+        </div>
+      </Card>
 
       {showExplorer && (
         <Card id="asset-explorer">

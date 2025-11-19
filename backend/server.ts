@@ -42,6 +42,7 @@ import {
   iotRoutes,
   kbRoutes,
   laborRoutes,
+  safetyRoutes,
   LineRoutes,
   maintenanceScheduleRoutes,
   meterRoutes,
@@ -247,6 +248,7 @@ app.use("/api/executive", executiveRouter);
 app.use("/api/departments", departmentRoutes);
 app.use("/api/workorders", workOrdersRoutes);
 app.use("/api/permits", permitRoutes);
+app.use("/api/safety", safetyRoutes);
 app.use("/api/assets", assetsRoutes);
 app.use("/api/assets", assetInsightsRouter);
 app.use("/api/meters", meterRoutes);

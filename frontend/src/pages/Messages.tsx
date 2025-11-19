@@ -10,6 +10,7 @@ import ChatHeader from '@/components/messages/ChatHeader';
 import MessageList from '@/components/messages/MessageList';
 import MessageInput from '@/components/messages/MessageInput';
 import type { ChatMessage, ChatParticipant, ChatPreview } from '@/types/messages';
+import type { TeamMember } from '@/types';
 import {
   fetchChannelPreviews,
   fetchDirectPreviews,
@@ -22,9 +23,10 @@ import {
   uploadChatFile,
 } from '@/api/chat';
 import { useAuthStore } from '@/store/authStore';
+import { useTeamMembers } from '@/store/useTeamMembers';
 import { getNotificationsSocket } from '@/utils/notificationsSocket';
 
-type SidebarTab = 'channels' | 'direct' | 'search';
+type SidebarTab = 'channels' | 'direct' | 'teams' | 'search';
 
 interface SocketMessagePayload {
   channelId: string;
@@ -52,6 +54,7 @@ const Messages = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [channels, setChannels] = useState<ChatPreview[]>([]);
   const [directs, setDirects] = useState<ChatPreview[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [activeConversation, setActiveConversation] = useState<ChatPreview | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -97,6 +100,21 @@ const Messages = () => {
   useEffect(() => {
     void loadPreviews();
   }, [loadPreviews]);
+
+  const { fetchMembers } = useTeamMembers();
+
+  useEffect(() => {
+    const loadTeamMembers = async () => {
+      try {
+        const members = await fetchMembers();
+        setTeamMembers(members);
+      } catch (error) {
+        console.error('Failed to load team members', error);
+      }
+    };
+
+    void loadTeamMembers();
+  }, [fetchMembers]);
 
   const loadMessages = useCallback(
     async (conversation: ChatPreview | null) => {
@@ -343,6 +361,7 @@ const Messages = () => {
         onTabChange={setSidebarTab}
         channels={channels}
         directs={directs}
+        teamMembers={teamMembers}
         searchTerm={searchTerm}
         onSearchTermChange={setSearchTerm}
         onSelectConversation={handleSelectConversation}

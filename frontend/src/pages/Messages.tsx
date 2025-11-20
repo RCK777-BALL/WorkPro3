@@ -365,15 +365,15 @@ const Messages = () => {
         searchTerm={searchTerm}
         onSearchTermChange={setSearchTerm}
         onSelectConversation={handleSelectConversation}
-        activeConversationId={activeConversation?.id}
-        currentUserId={currentUserId}
+        {...(activeConversation?.id ? { activeConversationId: activeConversation.id } : {})}
+        {...(currentUserId ? { currentUserId } : {})}
         onNewChat={() => console.log('New chat coming soon')}
       />
       <div className="flex min-h-screen flex-1 flex-col">
         <ChatHeader
           conversation={activeConversation}
           presence={presenceForActive}
-          currentUserId={currentUserId}
+          {...(currentUserId ? { currentUserId } : {})}
           onOpenDetails={() => console.log('Open details drawer')}
           onTogglePin={(conversation) =>
             setChannels((prev) =>
@@ -390,13 +390,13 @@ const Messages = () => {
                 <Loader color="indigo" />
               </div>
             ) : (
-              <MessageList
-                messages={messages}
-                typingUsers={typingUsers}
-                currentUserId={currentUserId}
-                readReceiptLabel={readReceiptLabel}
-              />
-            )}
+            <MessageList
+              messages={messages}
+              typingUsers={typingUsers}
+              {...(currentUserId ? { currentUserId } : {})}
+              readReceiptLabel={readReceiptLabel}
+            />
+          )}
             <MessageInput
               onSend={handleSendMessage}
               onTyping={() => {

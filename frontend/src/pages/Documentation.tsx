@@ -253,13 +253,17 @@ const Documentation: React.FC = () => {
       const uploads = await Promise.all(
         files.map(async (file) => {
           const [parsed, base64] = await Promise.all([parseDocument(file), fileToBase64(file)]);
+          const lastModified =
+            parsed.metadata.lastModified instanceof Date
+              ? parsed.metadata.lastModified
+              : new Date(parsed.metadata.lastModified);
           const response = await http.post<ApiDocument>('/documents', {
             base64,
             name: file.name,
             metadata: {
               size: parsed.metadata.size,
               mimeType: parsed.metadata.mimeType,
-              lastModified: parsed.metadata.lastModified.toISOString(),
+              lastModified: lastModified.toISOString(),
               type: parsed.metadata.type,
             },
           });
@@ -456,7 +460,11 @@ const Documentation: React.FC = () => {
                       <p className="font-medium text-neutral-900">{doc.metadata.title}</p>
                       <p className="text-sm text-neutral-500">
                         {doc.metadata.type.toUpperCase()} · {(doc.metadata.size / 1024).toFixed(1)} KB ·{' '}
-                        {doc.metadata.lastModified.toLocaleDateString()}
+                        {(
+                          doc.metadata.lastModified instanceof Date
+                            ? doc.metadata.lastModified
+                            : new Date(doc.metadata.lastModified)
+                        ).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">

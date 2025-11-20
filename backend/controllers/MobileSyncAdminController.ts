@@ -94,8 +94,9 @@ export const resolveConflict: AuthedRequestHandler = async (req, res) => {
   }
 
   const conflictId = parseString(req.params?.id);
-  const resolution = parseString((req.body ?? {}).resolution);
-  const notes = parseString((req.body ?? {}).notes);
+  const body = (req.body ?? {}) as Partial<{ resolution: unknown; notes: unknown }>;
+  const resolution = parseString(body.resolution);
+  const notes = parseString(body.notes);
 
   if (!conflictId || !Types.ObjectId.isValid(conflictId)) {
     res.status(400).json({ message: 'A valid conflict id is required' });
@@ -107,6 +108,8 @@ export const resolveConflict: AuthedRequestHandler = async (req, res) => {
     return;
   }
 
+  const tenantObjectId = new Types.ObjectId(tenantId);
+
   const actor = req.user
     ? {
         id: req.user._id ?? req.user.id,
@@ -117,7 +120,7 @@ export const resolveConflict: AuthedRequestHandler = async (req, res) => {
 
   const updated = await resolveConflictWithPolicy(
     conflictId,
-    tenantId,
+    tenantObjectId,
     new Types.ObjectId(userId),
     resolution,
     notes,
@@ -163,26 +166,42 @@ export const recordConflictFromClient: AuthedRequestHandler = async (req, res) =
     return;
   }
 
-  const deviceId = parseString((req.body ?? {}).deviceId);
-  const entityType = parseString((req.body ?? {}).entityType);
+  const body = (req.body ?? {}) as Partial<{
+    deviceId: unknown;
+    entityType: unknown;
+    entityId: Types.ObjectId | string;
+    serverVersion?: number;
+    clientVersion?: number;
+    payload?: Record<string, unknown>;
+  }>;
+
+  const deviceId = parseString(body.deviceId);
+  const entityType = parseString(body.entityType);
   if (!deviceId || !entityType) {
     res.status(400).json({ message: 'deviceId and entityType are required' });
     return;
   }
 
+  const tenantObjectId = new Types.ObjectId(tenantId);
+
   const conflict = await MobileSyncConflict.create({
-    tenantId,
-    userId,
+    tenantId: tenantObjectId,
+    userId: new Types.ObjectId(userId),
     deviceId,
     entityType,
-    entityId: (req.body ?? {}).entityId,
-    serverVersion: (req.body ?? {}).serverVersion,
-    clientVersion: (req.body ?? {}).clientVersion,
-    payload: (req.body ?? {}).payload ?? {},
+    entityId: body.entityId,
+    serverVersion: body.serverVersion,
+    clientVersion: body.clientVersion,
+    payload: body.payload ?? {},
     status: 'pending',
   });
 
-  await upsertDeviceTelemetry({ tenantId, userId: new Types.ObjectId(userId), deviceId, conflictDelta: 1 });
+  await upsertDeviceTelemetry({
+    tenantId: tenantObjectId,
+    userId: new Types.ObjectId(userId),
+    deviceId,
+    conflictDelta: 1,
+  });
 
   await writeAuditLog({
     tenantId,

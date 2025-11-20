@@ -233,7 +233,7 @@ export const updateVendorPurchaseOrder = async (
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    if (po.vendor.toString() !== vendorId) {
+    if (!po.vendorId || po.vendorId.toString() !== vendorId) {
       sendResponse(res, null, 'Forbidden', 403);
       return;
     }

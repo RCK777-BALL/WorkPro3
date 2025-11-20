@@ -43,6 +43,7 @@ import {
   updateAsset,
   updateLine,
   updateStation,
+  type DepartmentPayload,
 } from '@/api/departments';
 import type {
   Asset,

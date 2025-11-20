@@ -20,6 +20,7 @@ import {
 } from "@/lib/http";
 import Dashboard from "@/pages/Dashboard";
 import Analytics from "@/pages/Analytics";
+import AnalyticsDashboardV2 from "@/pages/AnalyticsDashboardV2";
 import WorkOrders from "@/pages/WorkOrders";
 import WorkRequestDashboard from "@/pages/WorkRequestDashboard";
 import Maintenance from "@/pages/Maintenance";
@@ -100,6 +101,7 @@ export default function App() {
           <Route index element={<Navigate to="/dashboard" />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/analytics/dashboard/v2" element={<AnalyticsDashboardV2 />} />
           <Route path="/analytics/global" element={<GlobalAnalyticsDashboard />} />
           <Route path="/analytics/ai" element={<AIDashboard />} />
           <Route

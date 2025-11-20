@@ -2,12 +2,17 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { createPurchaseOrder } from '@/api/purchasing';
-import { downloadPurchaseOrderExport, type PurchaseOrderExportFormat } from '@/api/inventory';
+import {
+  downloadPurchaseOrderExport,
+  fetchPurchaseOrders,
+  type PurchaseOrderExportFormat,
+} from '@/api/inventory';
 import Button from '@/components/common/Button';
 import { triggerFileDownload } from '@/utils/download';
+import type { PurchaseOrder } from '@/types';
 
 export default function PurchaseOrderPage() {
   const [vendor, setVendor] = useState('');
@@ -15,6 +20,11 @@ export default function PurchaseOrderPage() {
   const [qty, setQty] = useState(0);
   const [exporting, setExporting] = useState<PurchaseOrderExportFormat | null>(null);
   const [exportStatus, setExportStatus] = useState<string | null>(null);
+  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
+
+  useEffect(() => {
+    fetchPurchaseOrders().then(setOrders).catch(() => setOrders([]));
+  }, []);
 
   const submit = async () => {
     await createPurchaseOrder({ vendor, items: [{ item, quantity: qty }] });
@@ -91,6 +101,44 @@ export default function PurchaseOrderPage() {
             </Button>
           </div>
           {exportStatus && <p className="text-xs text-neutral-500">{exportStatus}</p>}
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-neutral-200 p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-neutral-900">Open purchase orders</p>
+            <p className="text-xs text-neutral-500">Tracks workflow from draft to receipt.</p>
+          </div>
+        </div>
+        <div className="mt-4 overflow-x-auto">
+          <table className="min-w-full divide-y divide-neutral-200 text-sm">
+            <thead className="bg-neutral-50">
+              <tr>
+                <th className="px-3 py-2 text-left font-medium text-neutral-700">PO #</th>
+                <th className="px-3 py-2 text-left font-medium text-neutral-700">Status</th>
+                <th className="px-3 py-2 text-left font-medium text-neutral-700">Vendor</th>
+                <th className="px-3 py-2 text-left font-medium text-neutral-700">Lines</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-200">
+              {orders.map((po) => (
+                <tr key={po.id}>
+                  <td className="px-3 py-2 text-neutral-900">{po.poNumber ?? po.id}</td>
+                  <td className="px-3 py-2 text-neutral-700">{po.status}</td>
+                  <td className="px-3 py-2 text-neutral-700">{po.vendor?.name ?? '—'}</td>
+                  <td className="px-3 py-2 text-neutral-700">{po.items.length}</td>
+                </tr>
+              ))}
+              {!orders.length && (
+                <tr>
+                  <td className="px-3 py-4 text-neutral-500" colSpan={4}>
+                    No purchase orders yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </section>
     </div>

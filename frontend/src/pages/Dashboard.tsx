@@ -1350,7 +1350,7 @@ export default function Dashboard() {
               title={card.title}
               description={card.description}
               value={card.value}
-              suffix={card.suffix}
+              {...(card.suffix ? { suffix: card.suffix } : {})}
               icon={card.icon}
               gradient={card.gradient}
               trend={card.trend}

@@ -78,12 +78,16 @@ const IotMonitoring = () => {
 
   const signalsQuery = useQuery(
     ['iot-signals', assetFilter, metricFilter],
-    () =>
-      fetchIotSignals({
-        assetId: assetFilter !== 'all' ? assetFilter : undefined,
-        metric: metricFilter !== 'all' ? metricFilter : undefined,
-        limit: 150,
-      }),
+    () => {
+      const params: IoTSignalQuery = { limit: 150 };
+      if (assetFilter !== 'all') {
+        params.assetId = assetFilter;
+      }
+      if (metricFilter !== 'all') {
+        params.metric = metricFilter;
+      }
+      return fetchIotSignals(params);
+    },
     { keepPreviousData: true, staleTime: 30_000 },
   );
 

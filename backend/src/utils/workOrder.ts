@@ -44,7 +44,7 @@ export const mapChecklists = (
     text: item.description,
     done: Boolean(item.done),
     status: item.status ?? (item.done ? 'done' : 'not_started'),
-    photos: item.photos?.length ? item.photos : undefined,
+    ...(item.photos?.length ? { photos: item.photos } : {}),
   }));
 
 export const mapSignatures = (

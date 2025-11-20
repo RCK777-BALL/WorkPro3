@@ -2,6 +2,7 @@ import { fetchNotifications } from '@/api/notifications';
 import type { NotificationType } from '@/types';
 import { useSocketStore } from '@/store/socketStore';
 import { emitToast } from '@/context/ToastContext';
+import { useRealtimeStatusStore } from '@/modules/realtime/status/store';
 
 let pollTimer: ReturnType<typeof setTimeout> | null = null;
 let startTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -11,6 +12,7 @@ let callback: ((notes: NotificationType[]) => void) | null = null;
 let intervalMs = 30_000;
 let retryCount = 0;
 const MAX_RETRIES = 5;
+const realtimeStatus = useRealtimeStatusStore.getState();
 
 function scheduleNextPoll(delay: number) {
   pollTimer = setTimeout(() => void poll(), delay);
@@ -25,8 +27,10 @@ async function poll() {
     if (Array.isArray(data) && data.length > 0) {
       since = data[data.length - 1].createdAt;
       callback?.(data);
+      realtimeStatus.markDelivery();
     }
     retryCount = 0;
+    realtimeStatus.setPolling('Live stream unavailable; continuing via polling', intervalMs);
     scheduleNextPoll(intervalMs);
   } catch (err) {
     console.error('Notification poll failed', err);
@@ -36,6 +40,7 @@ async function poll() {
       stopPolling();
     } else {
       const delay = intervalMs * 2 ** (retryCount - 1);
+      realtimeStatus.setPolling('Retrying after notification fetch failure', delay);
       scheduleNextPoll(delay);
     }
   }
@@ -69,8 +74,10 @@ export function startNotificationsPoll(
   const handleConnectionChange = (connected: boolean) => {
     if (connected) {
       stopPolling();
+      realtimeStatus.setStreaming();
     } else if (!pollTimer && !startTimeout) {
       startTimeout = setTimeout(() => {
+        realtimeStatus.setPolling('Socket offline; falling back to polling', intervalMs);
         beginPolling();
       }, 10_000);
     }

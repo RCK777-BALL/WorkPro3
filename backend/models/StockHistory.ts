@@ -14,6 +14,8 @@ export interface StockHistoryDocument extends Document {
   reason?: string;
   userId?: Types.ObjectId;
   balance?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const stockHistorySchema = new Schema<StockHistoryDocument>(

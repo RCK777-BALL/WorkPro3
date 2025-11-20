@@ -17,8 +17,11 @@ export interface IPurchaseOrder extends Document {
   siteId?: Types.ObjectId;
   poNumber?: string;
   vendorId?: Types.ObjectId;
+  vendor?: Types.ObjectId;
   lines: IPurchaseOrderLine[];
   status: 'Draft' | 'Pending' | 'Approved' | 'Ordered' | 'Received' | 'Closed';
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const purchaseOrderSchema = new Schema<IPurchaseOrder>(

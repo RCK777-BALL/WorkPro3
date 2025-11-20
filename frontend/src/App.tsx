@@ -183,6 +183,10 @@ export default function App() {
             path="/documentation/asset-management/assets"
             element={<AssetManagementAssetsGuide />}
           />
+          <Route
+            path="/documentation/asset-management/assets/manage"
+            element={<Navigate to="/assets/manage" replace />}
+          />
           <Route path="/departments" element={<Departments />} />
           <Route path="/lines" element={<Lines />} />
           <Route path="/stations" element={<Stations />} />

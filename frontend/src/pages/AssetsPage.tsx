@@ -3,6 +3,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import AssetTable from '@/components/assets/AssetTable';
 import AssetModal from '@/components/assets/AssetModal';
 import WorkOrderModal from '@/components/work-orders/WorkOrderModal';
@@ -19,6 +20,7 @@ import { safeLocalStorage } from '@/utils/safeLocalStorage';
 const ASSET_CACHE_KEY = 'offline-assets';
 
 const AssetsPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const assets = useAssetStore((s) => s.assets);
   const setAssets = useAssetStore((s) => s.setAssets);
   const addAsset = useAssetStore((s) => s.addAsset);
@@ -100,6 +102,18 @@ const AssetsPage = () => {
   useEffect(() => {
     fetchAssets();
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get('intent') === 'create') {
+      setSelected(null);
+      setModalOpen(true);
+      setSearchParams((params) => {
+        const next = new URLSearchParams(params);
+        next.delete('intent');
+        return next;
+      }, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const handleSave = (asset: Asset) => {
     if (assets.find(a => a.id === asset.id)) {

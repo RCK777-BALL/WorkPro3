@@ -274,7 +274,7 @@ export const enqueueOfflineAction: AuthedRequestHandler = async (req, res) => {
   const device = getDeviceContext(req);
   if (device.deviceId) {
     await upsertDeviceTelemetry({
-      tenantId,
+      tenantId: new Types.ObjectId(tenantId),
       userId: new Types.ObjectId(userId),
       deviceId: device.deviceId,
       platform: device.platform,
@@ -344,7 +344,7 @@ export const completeOfflineAction: AuthedRequestHandler = async (req, res) => {
   const device = getDeviceContext(req);
   if (device.deviceId) {
     await upsertDeviceTelemetry({
-      tenantId,
+      tenantId: new Types.ObjectId(tenantId),
       userId: new Types.ObjectId(userId),
       deviceId: device.deviceId,
       platform: device.platform,
@@ -435,7 +435,7 @@ export const recordOfflineActionFailure: AuthedRequestHandler = async (req, res)
   const device = getDeviceContext(req);
   if (device.deviceId) {
     await upsertDeviceTelemetry({
-      tenantId,
+      tenantId: new Types.ObjectId(tenantId),
       userId: new Types.ObjectId(userId),
       deviceId: device.deviceId,
       platform: device.platform,

@@ -45,7 +45,7 @@ interface QueueMessage {
   payload: unknown;
   attempts: number;
   enqueuedAt: number;
-  lastError?: string;
+  lastError?: string | undefined;
 }
 
 type KafkaFactory = (config: KafkaConfig) => Kafka;

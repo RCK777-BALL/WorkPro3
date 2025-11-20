@@ -69,7 +69,7 @@ export const resolveConflictWithPolicy = async (
   conflict.resolution = resolution;
   conflict.resolvedBy = userId;
   conflict.resolvedAt = new Date();
-  conflict.resolutionNotes = notes;
+  conflict.resolutionNotes = notes ?? ''; // Assign an empty string if notes is undefined
   await conflict.save();
 
   await writeAuditLog({

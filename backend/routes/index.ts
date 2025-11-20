@@ -3,6 +3,7 @@
  */
 
 export { default as analyticsRoutes } from './analyticsRoutes';
+export { default as analyticsDashboardRoutes } from './analyticsDashboardRoutes';
 export { default as analyticsAIRoutes } from './analyticsAI';
 export { default as copilotRoutes } from './copilotRoutes';
 export { default as goodsReceiptRoutes } from './GoodsReceiptRoutes';
@@ -18,6 +19,7 @@ export { default as iotRoutes } from './iotRoutes';
 export { default as timeSheetRoutes } from './TimeSheetRoutes';
 export { default as calendarRoutes } from './CalendarRoutes';
 export { default as inventoryRoutes } from './inventoryRoutes';
+export { default as inventoryV2Routes } from './inventoryV2Routes';
 export { default as partsRoutes } from './PartsRoutes';
 export { default as auditRoutes } from './AuditRoutes';
 export { default as roleRoutes } from './RoleRoutes';

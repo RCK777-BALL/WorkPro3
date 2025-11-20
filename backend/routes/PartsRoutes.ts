@@ -321,6 +321,22 @@ router.post('/:id/adjust', async (req: Request, res: Response, next: NextFunctio
     existingDoc.quantity = nextQuantity;
     await existingDoc.save();
 
+    try {
+      const StockHistory = (await import('../models/StockHistory')).default;
+      await StockHistory.create({
+        tenantId: req.tenantId,
+        siteId: req.siteId ? new Types.ObjectId(req.siteId) : undefined,
+        stockItem: existingDoc._id,
+        part: existingDoc.sharedPartId ?? existingDoc._id,
+        delta,
+        reason,
+        userId: (req.user as any)?._id,
+        balance: nextQuantity,
+      });
+    } catch (historyErr) {
+      logger.warn('Failed to write stock history', historyErr);
+    }
+
     const afterObject = existingDoc.toObject() as LeanInventoryItem & {
       _adjustment?: { delta: number; reason?: string };
     };

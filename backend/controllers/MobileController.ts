@@ -18,6 +18,7 @@ import {
   setEntityVersionHeaders,
 } from '../services/mobileSyncService';
 import { emitTelemetry } from '../services/telemetryService';
+import { upsertDeviceTelemetry } from '../services/mobileSyncAdminService';
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
@@ -35,6 +36,12 @@ const sanitizeSearch = (value: unknown): string | undefined => {
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
 };
+
+const getDeviceContext = (req: AuthedRequest) => ({
+  deviceId: sanitizeSearch(req.headers['x-device-id']),
+  platform: sanitizeSearch(req.headers['x-device-platform']),
+  appVersion: sanitizeSearch(req.headers['x-app-version']),
+});
 
 const toAuditActor = (user?: AuthedRequest['user']): AuditActor | undefined => {
   if (!user) return undefined;
@@ -264,6 +271,18 @@ export const enqueueOfflineAction: AuthedRequestHandler = async (req, res) => {
     nextAttemptAt: new Date(),
   });
 
+  const device = getDeviceContext(req);
+  if (device.deviceId) {
+    await upsertDeviceTelemetry({
+      tenantId,
+      userId: new Types.ObjectId(userId),
+      deviceId: device.deviceId,
+      platform: device.platform,
+      appVersion: device.appVersion,
+      pendingDelta: 1,
+    });
+  }
+
   emitTelemetry('mobile.offlineAction.created', {
     tenantId: tenantId.toString(),
     userId: userId.toString(),
@@ -321,6 +340,18 @@ export const completeOfflineAction: AuthedRequestHandler = async (req, res) => {
   existing.processedAt = new Date();
   existing.lastSyncedAt = new Date();
   await existing.save();
+
+  const device = getDeviceContext(req);
+  if (device.deviceId) {
+    await upsertDeviceTelemetry({
+      tenantId,
+      userId: new Types.ObjectId(userId),
+      deviceId: device.deviceId,
+      platform: device.platform,
+      appVersion: device.appVersion,
+      pendingDelta: -1,
+    });
+  }
 
   emitTelemetry('mobile.offlineAction.completed', {
     tenantId: tenantId.toString(),
@@ -400,6 +431,19 @@ export const recordOfflineActionFailure: AuthedRequestHandler = async (req, res)
   }
 
   await existing.save();
+
+  const device = getDeviceContext(req);
+  if (device.deviceId) {
+    await upsertDeviceTelemetry({
+      tenantId,
+      userId: new Types.ObjectId(userId),
+      deviceId: device.deviceId,
+      platform: device.platform,
+      appVersion: device.appVersion,
+      failedDelta: existing.status === 'failed' ? 1 : 0,
+      lastFailureReason: parsed.data.message,
+    });
+  }
 
   emitTelemetry('mobile.offlineAction.failed', {
     tenantId: tenantId.toString(),

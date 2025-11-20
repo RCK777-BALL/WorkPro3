@@ -5,7 +5,9 @@
 import React, { useEffect, useState } from 'react';
 import Card from '@common/Card';
 import { getNotificationsSocket } from '@/utils/notificationsSocket';
- 
+import RealtimeStatusBanner from '@/modules/realtime/status/RealtimeStatusBanner';
+import { useRealtimeStatusStore } from '@/modules/realtime/status/store';
+
 import Badge from '@common/Badge';
 import { useSocketStore, type SocketState } from '@/store/socketStore';
 import type {
@@ -16,6 +18,7 @@ import type {
 
 const NotificationFeed: React.FC = () => {
   const connected = useSocketStore((s: SocketState) => s.connected);
+  const markDelivery = useRealtimeStatusStore((state) => state.markDelivery);
   const [items, setItems] = useState<NotificationType[]>([]);
 
   useEffect(() => {
@@ -33,6 +36,7 @@ const NotificationFeed: React.FC = () => {
           read: false,
         },
       ]);
+      markDelivery();
     };
 
     const handleInventory = (data: InventoryUpdatePayload) => {
@@ -47,6 +51,7 @@ const NotificationFeed: React.FC = () => {
           read: false,
         },
       ]);
+      markDelivery();
     };
 
     s.on('workOrderUpdated', handleWorkOrder);
@@ -56,7 +61,7 @@ const NotificationFeed: React.FC = () => {
       s.off('workOrderUpdated', handleWorkOrder);
       s.off('inventoryUpdated', handleInventory);
     };
-  }, []);
+  }, [markDelivery]);
 
   return (
     <Card
@@ -69,6 +74,9 @@ const NotificationFeed: React.FC = () => {
         />
       }
     >
+      <div className="mb-3">
+        <RealtimeStatusBanner />
+      </div>
       <ul className="space-y-2">
         {items.map((n) => (
           <li key={n.id} className="border-b border-neutral-200 dark:border-neutral-700 pb-2 text-sm">

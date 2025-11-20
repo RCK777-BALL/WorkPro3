@@ -151,27 +151,33 @@ const AssetManagementAssetsGuide: React.FC = () => {
     setIsLoadingAssets(true);
     setAssetError(null);
     try {
-      interface AssetResponse extends Partial<Asset> { _id?: string }
+      interface AssetResponse extends Partial<Asset> {
+        _id?: string;
+      }
+
       const res = await http.get<AssetResponse[]>('/assets');
-      const parsedAssets = Array.isArray(res.data)
-        ? res.data.flatMap((asset) => {
+      const parsedAssets: Asset[] = Array.isArray(res.data)
+        ? res.data.reduce<Asset[]>((acc, asset) => {
             const resolvedId = asset._id ?? asset.id;
-            if (!resolvedId) return [] as Asset[];
-            return [
-              {
-                id: resolvedId,
-                name: asset.name ?? 'Unnamed Asset',
-                type: asset.type,
-                location: asset.location,
-                stationId: asset.stationId,
-                department: asset.department,
-                line: asset.line,
-                station: asset.station,
-                createdAt: asset.createdAt,
-              },
-            ];
-          })
+            if (!resolvedId) return acc;
+
+            const parsedAsset: Asset = {
+              id: resolvedId,
+              name: asset.name ?? 'Unnamed Asset',
+              ...(asset.type ? { type: asset.type } : {}),
+              ...(asset.location ? { location: asset.location } : {}),
+              ...(asset.stationId ? { stationId: asset.stationId } : {}),
+              ...(asset.department ? { department: asset.department } : {}),
+              ...(asset.line ? { line: asset.line } : {}),
+              ...(asset.station ? { station: asset.station } : {}),
+              ...(asset.createdAt ? { createdAt: asset.createdAt } : {}),
+            };
+
+            acc.push(parsedAsset);
+            return acc;
+          }, [])
         : [];
+
       setAssets(parsedAssets);
     } catch (err) {
       console.error('Failed to load assets for explorer quick action', err);
@@ -209,16 +215,17 @@ const AssetManagementAssetsGuide: React.FC = () => {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          {quickActions.map((link) => (
-            <Button
-              key={link.label}
-              asChild={Boolean(link.to)}
-              variant="outline"
-              onClick={!link.to ? openExplorer : undefined}
-            >
-              {link.to ? <Link to={link.to}>{link.label}</Link> : <span>{link.label}</span>}
-            </Button>
-          ))}
+          {quickActions.map((link) =>
+            link.to ? (
+              <Link key={link.label} to={link.to} className="inline-flex">
+                <Button variant="outline">{link.label}</Button>
+              </Link>
+            ) : (
+              <Button key={link.label} variant="outline" onClick={openExplorer}>
+                {link.label}
+              </Button>
+            ),
+          )}
         </div>
       </div>
 
@@ -303,12 +310,12 @@ const AssetManagementAssetsGuide: React.FC = () => {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button asChild>
-                <Link to="/assets">
+              <Link to="/assets" className="inline-flex">
+                <Button>
                   <Settings className="h-4 w-4 mr-2" />
                   Manage Assets
-                </Link>
-              </Button>
+                </Button>
+              </Link>
               <Button variant="outline" onClick={fetchAssets} disabled={isLoadingAssets}>
                 {isLoadingAssets ? 'Refreshing...' : 'Refresh list'}
               </Button>

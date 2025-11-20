@@ -23,9 +23,15 @@ if (!process.env.MONGO_URI) {
   process.exit(1);
 }
 
-const ADMIN_EMAIL = 'admin@cmms.com';
-const ADMIN_PASSWORD = 'Password123!';
+const ADMIN_EMAIL = process.env.BOOTSTRAP_ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.BOOTSTRAP_ADMIN_PASSWORD;
+const ADMIN_NAME = process.env.BOOTSTRAP_ADMIN_NAME || 'Bootstrap Admin';
 const DEFAULT_TENANT_NAME = 'Default Tenant';
+
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  logger.error('❌ BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD are required.');
+  process.exit(1);
+}
 
 const seedAdmin = async () => {
   try {
@@ -45,20 +51,26 @@ const seedAdmin = async () => {
     let user = await User.findOne({ email: ADMIN_EMAIL });
     if (!user) {
       user = new User({
-        name: 'Admin User',
+        name: ADMIN_NAME,
         email: ADMIN_EMAIL,
         passwordHash: ADMIN_PASSWORD,
         roles: ['global_admin'],
         tenantId: tenant._id,
         employeeId: randomUUID(),
+        passwordExpired: true,
+        bootstrapAccount: true,
+        mfaEnabled: false,
       });
       await user.save();
       logger.info(`✅ Admin account created: ${ADMIN_EMAIL}`);
     } else {
-      user.name = 'Admin User';
+      user.name = ADMIN_NAME;
       user.roles = ['global_admin'];
       user.tenantId = tenant._id;
       user.passwordHash = ADMIN_PASSWORD;
+      user.passwordExpired = true;
+      user.bootstrapAccount = true;
+      user.mfaEnabled = false;
       if (!user.employeeId) {
         user.employeeId = randomUUID();
       }

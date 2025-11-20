@@ -46,6 +46,12 @@ The backend queues these events using Kafka so that high-volume updates do not o
 
 The internal consumer subscribed to these topics broadcasts each message to connected WebSocket clients using the event names listed above.
 
+If Kafka is unavailable or explicitly disabled, messages are retained in an in-memory buffer with backpressure protection. The
+producer and consumer expose health data via `/api/status`, and the buffering logic retries sends with exponential backoff to
+preserve ordering and at-least-once delivery. When the retry budget is exhausted, the event is logged as a dead-letter for
+operational follow-up. Topic names and queue sizing are configurable through environment variables so non-Kafka deployments can
+disable the broker and still rely on the in-process buffer.
+
 ## Seeding data
 
 Run `npm run seed` to populate the database with sample records. Run `npm run seed:admin` to create a tenant and admin account if the database has no users. Both scripts create the admin user `admin@example.com` with the default password `admin123`. Set the `ADMIN_DEFAULT_PASSWORD` environment variable to override this password when running the scripts.
@@ -307,6 +313,12 @@ below along with its default value if one exists.
 | `KAFKA_BROKERS` | Comma-separated Kafka brokers used for the event queue. | *(none)* |
 | `KAFKA_CLIENT_ID` | Client id for the Kafka connection. | `cmms-backend` |
 | `KAFKA_GROUP_ID` | Consumer group id for the Socket.IO broadcaster. | `cmms-backend-group` |
+| `KAFKA_WORK_ORDER_TOPIC` | Topic name used for work order updates. | `workOrderUpdates` |
+| `KAFKA_INVENTORY_TOPIC` | Topic name used for inventory updates. | `inventoryUpdates` |
+| `MESSAGING_DISABLED` | Set to `true` to bypass Kafka and rely solely on the in-memory buffer. | `false` |
+| `MESSAGING_QUEUE_LIMIT` | Maximum buffered events before backpressure drops the oldest payloads to a dead-letter log. | `1000` |
+| `MESSAGING_MAX_ATTEMPTS` | Retry attempts before dead-lettering a message. | `5` |
+| `MESSAGING_RETRY_BACKOFF_MS` | Base backoff in milliseconds between retry attempts (multiplied by the attempt count). | `500` |
 | `SEED_TENANT_ID` | Tenant id used when running the seed scripts. | *(generated)* |
 | `DEFAULT_TENANT_ID` | Tenant id assigned to new users and records when none is provided. | *(none)* |
 | `ADMIN_DEFAULT_PASSWORD` | Password assigned to the seeded admin user. | `admin123` |

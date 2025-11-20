@@ -56,6 +56,7 @@ import TechnicianConsole from "@/pages/TechnicianConsole";
 import Login from "@/pages/Login";
 import RegisterPage from "@/pages/RegisterPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import BootstrapSetupPage from "@/modules/admin/setup";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
 import PublicRequestPage from "@/public/request";
 import RequestStatus from "@/pages/RequestStatus";
@@ -92,6 +93,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot" element={<ForgotPasswordPage />} />
+        <Route path="/admin/setup" element={<BootstrapSetupPage />} />
         <Route path="/public/request/:slug?" element={<PublicRequestPage />} />
         <Route path="/request/:token" element={<RequestStatus />} />
         <Route element={<RequireAuth><Layout /></RequireAuth>}>

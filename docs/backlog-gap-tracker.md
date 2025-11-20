@@ -4,26 +4,26 @@ This tracker captures the executable tasks derived from the CMMS audit gap analy
 
 | Tracker ID | Area | Task | Target Sprint | Status |
 | --- | --- | --- | --- | --- |
-| BGT-001 | Offline / Mobile Execution | Build offline-first mobile WO execution with pending-sync queue and telemetry.【F:docs/executable_tasks.md†L5-L32】 | Sprint 24.10 | Scheduled |
-| BGT-002 | Offline / Mobile Execution | Add asset/part barcode and QR scanning within mobile WO flows.【F:docs/executable_tasks.md†L13-L18】 | Sprint 24.10 | Scheduled |
-| BGT-003 | Offline / Mobile Execution | Implement conflict resolution with audit trail for offline sync collisions.【F:docs/executable_tasks.md†L20-L25】 | Sprint 24.11 | Scheduled |
-| BGT-004 | Offline / Mobile Execution | Support offline attachment capture with a staged upload queue.【F:docs/executable_tasks.md†L27-L32】 | Sprint 24.11 | Scheduled |
-| BGT-005 | Inventory → Purchasing Integration | Extend part schema with thresholds and preferred vendors plus reorder suggestion jobs.【F:docs/executable_tasks.md†L34-L40】 | Sprint 24.12 | Scheduled |
-| BGT-006 | Inventory → Purchasing Integration | Introduce PO approval workflow with role-based states and audit of approvers.【F:docs/executable_tasks.md†L42-L47】 | Sprint 24.12 | Scheduled |
-| BGT-007 | Inventory → Purchasing Integration | Embed part availability/reservation widget in WO planning UI tied to live counts and incoming POs.【F:docs/executable_tasks.md†L49-L54】 | Sprint 24.13 | Scheduled |
-| BGT-008 | Inventory → Purchasing Integration | Ingest vendor catalogs with pricing/lead times and apply FX conversion to PO totals.【F:docs/executable_tasks.md†L56-L61】 | Sprint 24.13 | Scheduled |
-| BGT-009 | Reliability & SLA Analytics | Ship MTBF/MTTR jobs and paginated APIs with caching and filters.【F:docs/executable_tasks.md†L63-L69】 | Sprint 24.14 | Scheduled |
-| BGT-010 | Reliability & SLA Analytics | Implement SLA policy CRUD plus response/resolution timers with breach notifications/export.【F:docs/executable_tasks.md†L71-L76】 | Sprint 24.14 | Scheduled |
-| BGT-011 | Reliability & SLA Analytics | Calculate technician utilization using calendars/PTO and surface dashboards.【F:docs/executable_tasks.md†L78-L83】 | Sprint 24.15 | Scheduled |
-| BGT-012 | Reliability & SLA Analytics | Deliver multi-site and multi-period comparison APIs/UI with CSV export.【F:docs/executable_tasks.md†L85-L90】 | Sprint 24.15 | Scheduled |
-| BGT-013 | Centralized Multi-Tenant Guardrails | Add tenant-scoped middleware for HTTP/WebSocket with propagated context to services.【F:docs/executable_tasks.md†L92-L99】 | Sprint 24.16 | Scheduled |
-| BGT-014 | Centralized Multi-Tenant Guardrails | Create centralized policy checks for tenant isolation and role-based access with standardized errors/tests.【F:docs/executable_tasks.md†L100-L105】 | Sprint 24.16 | Scheduled |
-| BGT-015 | Centralized Multi-Tenant Guardrails | Build security logging + audit reporting with alerts for repeated violations.【F:docs/executable_tasks.md†L107-L112】 | Sprint 24.17 | Scheduled |
-| BGT-016 | Centralized Multi-Tenant Guardrails | Expand integration tests that validate tenant boundary protection for CRUD/streaming/batch paths.【F:docs/executable_tasks.md†L114-L119】 | Sprint 24.17 | Scheduled |
-| BGT-017 | PM Engine Enhancements | Extend PM engine for time/usage-based WO generation with backfill and deduplication safeguards.【F:docs/executable_tasks.md†L121-L127】【F:docs/executable_tasks.md†L177-L178】 | Sprint 24.18 | Scheduled |
-| BGT-018 | PM Engine Enhancements | Add overdue escalation rules with SLA monitoring and notifications for PM/WOs.【F:docs/executable_tasks.md†L129-L134】【F:docs/executable_tasks.md†L178-L179】 | Sprint 24.18 | Scheduled |
-| BGT-019 | PM Engine Enhancements | Create permit-to-work/LOTO checklists with signatures and gating of WO start/close.【F:docs/executable_tasks.md†L136-L141】【F:docs/executable_tasks.md†L179-L180】 | Sprint 24.19 | Scheduled |
-| BGT-020 | PM Engine Enhancements | Persist technician certifications with expiry and block invalid assignments while surfacing expiring cert reports.【F:docs/executable_tasks.md†L143-L148】【F:docs/executable_tasks.md†L180-L181】 | Sprint 24.19 | Scheduled |
+| BGT-001 | Offline / Mobile Execution | Build offline-first mobile WO execution with pending-sync queue and telemetry.【F:docs/executable_tasks.md†L5-L32】 | Sprint 24.10 | Done |
+| BGT-002 | Offline / Mobile Execution | Add asset/part barcode and QR scanning within mobile WO flows.【F:docs/executable_tasks.md†L13-L18】 | Sprint 24.10 | Done |
+| BGT-003 | Offline / Mobile Execution | Implement conflict resolution with audit trail for offline sync collisions.【F:docs/executable_tasks.md†L20-L25】 | Sprint 24.11 | Done |
+| BGT-004 | Offline / Mobile Execution | Support offline attachment capture with a staged upload queue.【F:docs/executable_tasks.md†L27-L32】 | Sprint 24.11 | Done |
+| BGT-005 | Inventory → Purchasing Integration | Extend part schema with thresholds and preferred vendors plus reorder suggestion jobs.【F:docs/executable_tasks.md†L34-L40】 | Sprint 24.12 | Done |
+| BGT-006 | Inventory → Purchasing Integration | Introduce PO approval workflow with role-based states and audit of approvers.【F:docs/executable_tasks.md†L42-L47】 | Sprint 24.12 | Done |
+| BGT-007 | Inventory → Purchasing Integration | Embed part availability/reservation widget in WO planning UI tied to live counts and incoming POs.【F:docs/executable_tasks.md†L49-L54】 | Sprint 24.13 | Done |
+| BGT-008 | Inventory → Purchasing Integration | Ingest vendor catalogs with pricing/lead times and apply FX conversion to PO totals.【F:docs/executable_tasks.md†L56-L61】 | Sprint 24.13 | Done |
+| BGT-009 | Reliability & SLA Analytics | Ship MTBF/MTTR jobs and paginated APIs with caching and filters.【F:docs/executable_tasks.md†L63-L69】 | Sprint 24.14 | Done |
+| BGT-010 | Reliability & SLA Analytics | Implement SLA policy CRUD plus response/resolution timers with breach notifications/export.【F:docs/executable_tasks.md†L71-L76】 | Sprint 24.14 | Done |
+| BGT-011 | Reliability & SLA Analytics | Calculate technician utilization using calendars/PTO and surface dashboards.【F:docs/executable_tasks.md†L78-L83】 | Sprint 24.15 | Done |
+| BGT-012 | Reliability & SLA Analytics | Deliver multi-site and multi-period comparison APIs/UI with CSV export.【F:docs/executable_tasks.md†L85-L90】 | Sprint 24.15 | Done |
+| BGT-013 | Centralized Multi-Tenant Guardrails | Add tenant-scoped middleware for HTTP/WebSocket with propagated context to services.【F:docs/executable_tasks.md†L92-L99】 | Sprint 24.16 | Done |
+| BGT-014 | Centralized Multi-Tenant Guardrails | Create centralized policy checks for tenant isolation and role-based access with standardized errors/tests.【F:docs/executable_tasks.md†L100-L105】 | Sprint 24.16 | Done |
+| BGT-015 | Centralized Multi-Tenant Guardrails | Build security logging + audit reporting with alerts for repeated violations.【F:docs/executable_tasks.md†L107-L112】 | Sprint 24.17 | Done |
+| BGT-016 | Centralized Multi-Tenant Guardrails | Expand integration tests that validate tenant boundary protection for CRUD/streaming/batch paths.【F:docs/executable_tasks.md†L114-L119】 | Sprint 24.17 | Done |
+| BGT-017 | PM Engine Enhancements | Extend PM engine for time/usage-based WO generation with backfill and deduplication safeguards.【F:docs/executable_tasks.md†L121-L127】【F:docs/executable_tasks.md†L177-L178】 | Sprint 24.18 | Done |
+| BGT-018 | PM Engine Enhancements | Add overdue escalation rules with SLA monitoring and notifications for PM/WOs.【F:docs/executable_tasks.md†L129-L134】【F:docs/executable_tasks.md†L178-L179】 | Sprint 24.18 | Done |
+| BGT-019 | PM Engine Enhancements | Create permit-to-work/LOTO checklists with signatures and gating of WO start/close.【F:docs/executable_tasks.md†L136-L141】【F:docs/executable_tasks.md†L179-L180】 | Sprint 24.19 | Done |
+| BGT-020 | PM Engine Enhancements | Persist technician certifications with expiry and block invalid assignments while surfacing expiring cert reports.【F:docs/executable_tasks.md†L143-L148】【F:docs/executable_tasks.md†L180-L181】 | Sprint 24.19 | Done |
 | BGT-021 | Offline / Mobile Execution | Define mobile offline data model with versioning across WOs, steps, parts, and assets.【F:docs/executable_tasks.md†L152-L157】 | Sprint 24.20 | Scheduled |
 | BGT-022 | Offline / Mobile Execution | Implement pending-sync queue with exponential backoff, per-operation status, and telemetry.【F:docs/executable_tasks.md†L152-L157】 | Sprint 24.20 | Scheduled |
 | BGT-023 | Offline / Mobile Execution | Add conflict detection/resolution on sync using ETag/version headers with audit entries.【F:docs/executable_tasks.md†L152-L157】 | Sprint 24.21 | Scheduled |
@@ -45,3 +45,9 @@ This tracker captures the executable tasks derived from the CMMS audit gap analy
 | BGT-039 | PM Engine Enhancements | Add overdue escalation rules and SLA monitoring for PM/WOs with notifications and breach tracking.【F:docs/executable_tasks.md†L177-L181】 | Sprint 24.28 | Scheduled |
 | BGT-040 | PM Engine Enhancements | Create permit-to-work/LOTO checklists with signature capture and gating of WO start/close until completion.【F:docs/executable_tasks.md†L177-L181】 | Sprint 24.29 | Scheduled |
 | BGT-041 | PM Engine Enhancements | Persist technician certifications with expiry, enforce assignment validation, and surface expiry warnings/reports.【F:docs/executable_tasks.md†L177-L181】 | Sprint 24.29 | Scheduled |
+| BGT-042 | Platform Hardening | Enforce secure admin provisioning with mandatory credential rotation and MFA enrollment.【F:docs/executable_tasks.md†L328-L334】 | Sprint 24.30 | Scheduled |
+| BGT-043 | Platform Hardening | Add Kafka resilience features with documented fallbacks and delivery guarantees for realtime updates.【F:docs/executable_tasks.md†L335-L340】 | Sprint 24.30 | Scheduled |
+| BGT-044 | Offline / Mobile Execution | Provide admin visibility into offline sync queues, conflicts, and device telemetry with configurable policies.【F:docs/executable_tasks.md†L342-L347】 | Sprint 24.31 | Scheduled |
+| BGT-045 | CMMS Parity | Launch safety/compliance module with WO gating, templates, and reporting coverage.【F:docs/executable_tasks.md†L349-L354】 | Sprint 24.31 | Scheduled |
+| BGT-046 | CMMS Parity | Add contractor/vendor workforce management with credential enforcement and assignment rules.【F:docs/executable_tasks.md†L356-L361】 | Sprint 24.32 | Scheduled |
+| BGT-047 | CMMS Parity | Implement calibration/instrumentation management with schedules, certificates, and WO gating for expired assets.【F:docs/executable_tasks.md†L363-L367】 | Sprint 24.32 | Scheduled |

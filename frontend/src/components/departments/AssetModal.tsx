@@ -9,6 +9,8 @@ import type { Asset } from '@/types';
 
 const assetTypes: Asset['type'][] = ['Electrical', 'Mechanical', 'Tooling', 'Interface'];
 const statusOptions = ['Active', 'Offline', 'In Repair'];
+const assetNameTemplate =
+  'Manufacturer + Model | Short description | Station / install | Line | Department | Serial | Plant or $ | Date installed | Warranty | Criticality | Asset type';
 
 interface AssetModalProps {
   open: boolean;
@@ -117,6 +119,9 @@ const AssetModal = ({ open, initial, loading = false, onClose, onSave, onDelete 
               className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-neutral-700 dark:bg-neutral-900"
               placeholder="Asset name"
             />
+            <p className="mt-1 text-xs text-neutral-500">
+              Suggested format: {assetNameTemplate}
+            </p>
             {error && <p className="mt-1 text-sm text-error-600">{error}</p>}
           </div>
           <div>

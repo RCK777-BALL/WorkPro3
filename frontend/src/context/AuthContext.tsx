@@ -312,6 +312,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       const payload = response.data;
 
+      const rotationSource = (() => {
+        if (!payload || typeof payload !== 'object') return null;
+        const candidate =
+          'data' in payload && typeof (payload as { data?: unknown }).data === 'object'
+            ? (payload as { data?: unknown }).data
+            : payload;
+        return (candidate as { rotationRequired?: unknown }).rotationRequired ? candidate : null;
+      })();
+
+      if (rotationSource) {
+        return rotationSource as AuthLoginResponse;
+      }
+
       if (
         payload &&
         typeof payload === 'object' &&
@@ -329,7 +342,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           (payload as { data?: unknown }).data &&
           typeof (payload as { data?: unknown }).data === 'object'
         ) {
-          return (payload as { data?: { user?: unknown; token?: string } }).data;
+          return (payload as { data?: { user?: unknown; token?: string; rotationRequired?: boolean } }).data;
         }
         return payload as { user?: unknown; token?: string };
       })();

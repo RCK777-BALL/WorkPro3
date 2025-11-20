@@ -322,3 +322,47 @@ Use the following slices to open tracker tickets. Each item is grouped by API, V
 - **Data Access**: Checklist templates, instance tables, and signature blobs; align with storage encryption policies.
 - **UI**: Checklist UI with signature capture and gating dialogs in WO flows (`frontend/pm/permit-ui`).
 - **Tests**: Gating logic integration tests and signature capture edge cases.
+
+## Platform Hardening and Parity Gaps (BGT-042 → BGT-047)
+
+### BGT-042: Secure admin provisioning and credential rotation
+- **API**: Remove hardcoded default admin seed; require environment-provided bootstrap credentials and first-login rotation (`backend/scripts/seedAdmin.ts`, `backend/auth/passwordPolicy.ts`).
+- **Validation**: Enforce strong password policy and lockout/expiry on seeded accounts until rotated.
+- **Data Access**: Migration to mark default admin credentials as expired; audit log hooks for bootstrap account changes.
+- **UI**: Admin setup flow prompting rotation and MFA enrollment on first login (`frontend/src/modules/admin/setup`).
+- **Tests**: Regression tests confirming no default password acceptance and successful rotation path.
+
+### BGT-043: Kafka resilience and graceful fallback
+- **API**: Health checks and backpressure handling for Kafka producers/consumers with retry/fallback to in-memory queue (`backend/services/messaging.ts`).
+- **Validation**: Event delivery guarantees documented per mode; configurable topic names and disable flag for non-Kafka deployments.
+- **Data Access**: Durable buffering with at-least-once semantics and dead-letter logging when Kafka is unavailable.
+- **UI**: User-visible freshness indicators and retry banners when realtime streams fall back to polling (`frontend/src/modules/realtime/status`).
+- **Tests**: Chaos tests simulating broker outages, ensuring fallback paths preserve event delivery/order.
+
+### BGT-044: Offline sync observability and conflict governance
+- **API**: Admin endpoints exposing pending-sync queues, conflict summaries, and device sync telemetry (`backend/routes/mobileSyncAdmin.ts`).
+- **Validation**: Configurable conflict policies (prefer server/client/manual) with audit logging of resolutions and overrides.
+- **Data Access**: Per-device sync stats, failure reasons, and conflict records persisted for reporting.
+- **UI**: Admin dashboards for offline actions, conflicts, and retries with device/user filters (`frontend/src/modules/offline/admin-dashboard`).
+- **Tests**: Integration tests covering conflict surfacing, policy application, and audit persistence.
+
+### BGT-045: Safety and compliance module
+- **API**: Safety program entities (JSAs, permits, inspections) with scheduling, approvals, and linkage to WOs (`backend/routes/safety.ts`).
+- **Validation**: Enforce safety check completion gates on WO start/close; configurable compliance templates per site.
+- **Data Access**: Safety checklist templates, completion records, signatures, and document storage with retention rules.
+- **UI**: Safety/compliance workspace for authoring templates, tracking inspections, and surfacing compliance status in WO flows (`frontend/src/modules/safety`).
+- **Tests**: Workflow tests for WO gating, template versioning, and compliance reporting exports.
+
+### BGT-046: Contractor and vendor workforce management
+- **API**: Contractor/vendor profiles with onboarding requirements, insurance/credential tracking, and WO assignment rules (`backend/routes/contractors.ts`).
+- **Validation**: Prevent assignments when credentials/insurance are expired; approval flows for new contractors.
+- **Data Access**: Credential expiration dates, documents, and assignment history with audit logs.
+- **UI**: Contractor roster management with status badges, assignment eligibility warnings, and vendor contacts (`frontend/src/modules/contractors`).
+- **Tests**: Eligibility rule tests, onboarding flow tests, and assignment edge cases.
+
+### BGT-047: Calibration and instrumentation management
+- **API**: Calibration schedules, certificates, and due/overdue status endpoints tied to assets/instruments (`backend/routes/calibration.ts`).
+- **Validation**: Block WO completion when required calibration is expired; alerts for upcoming due dates.
+- **Data Access**: Calibration records with certificate storage, tolerances, and linkage to asset hierarchy.
+- **UI**: Calibration calendar and certificate repository with export capabilities (`frontend/src/modules/calibration`).
+- **Tests**: Calibration schedule calculations, WO gating tests, and export/report validations.

@@ -47,6 +47,7 @@ import {
   meterRoutes,
   notificationsRoutes,
   plantRoutes,
+  contractorRoutes,
   permitRoutes,
   pmRoutes,
   pmTasksRoutes,
@@ -68,6 +69,7 @@ import {
   workOrdersRoutes,
 } from "./routes";
 import mobileRoutes from "./routes/mobileRoutes";
+import mobileSyncAdminRoutes from "./routes/mobileSyncAdmin";
 import uiRoutes from "./routes/uiRoutes";
 import healthRouter from "./src/routes/health";
 import systemSummaryRouter from "./src/routes/summary";
@@ -234,6 +236,7 @@ app.use("/api/auth", authRoutes);
 app.use(/^\/api(?!\/(auth|public))/, requireAuth, tenantScope);
 
 app.use("/api/mobile", mobileLimiter, mobileRoutes);
+app.use("/api/mobile", mobileLimiter, mobileSyncAdminRoutes);
 
 app.use("/api/notifications", burstFriendly, notificationsRoutes);
 // Apply limiter to the rest of protected /api routes
@@ -245,12 +248,12 @@ app.use("/api/onboarding", onboardingRouter);
 app.use("/api/executive", executiveRouter);
 
 app.use("/api/departments", departmentRoutes);
+app.use("/api/departments", departmentRoutes);
 app.use("/api/workorders", workOrdersRoutes);
 app.use("/api/permits", permitRoutes);
 app.use("/api/assets", assetsRoutes);
 app.use("/api/assets", assetInsightsRouter);
 app.use("/api/meters", meterRoutes);
-app.use("/api/condition-rules", conditionRuleRoutes);
 app.use("/api/tenants", TenantRoutes);
 app.use("/api/pm-tasks", pmTasksRoutes);
 app.use("/api/pm", pmRoutes);
@@ -263,6 +266,7 @@ app.use("/api/parts", partsRoutes);
 app.use("/api/import", importRoutes);
 app.use("/api/maintenance-schedules", maintenanceScheduleRoutes);
 app.use("/api/vendors", vendorRoutes);
+app.use("/api/contractors", contractorRoutes);
 app.use("/api/labor", laborRoutes);
 app.use("/api/knowledge-base", kbRoutes);
 app.use("/api/plants", plantRoutes);

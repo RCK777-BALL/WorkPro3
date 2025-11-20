@@ -22,6 +22,7 @@ import requestLog from "./middleware/requestLog";
 import {
   adminRoutes,
   analyticsRoutes,
+  analyticsDashboardRoutes,
   analyticsAIRoutes,
   copilotRoutes,
   alertRoutes,
@@ -46,6 +47,7 @@ import {
   maintenanceScheduleRoutes,
   meterRoutes,
   notificationsRoutes,
+  inventoryV2Routes,
   plantRoutes,
   contractorRoutes,
   permitRoutes,
@@ -226,6 +228,7 @@ app.use("/api/health", healthRouter);
 app.use("/api/hierarchy", hierarchyRouter);
 app.use("/api", workRequestsRouter);
 app.use("/api/import-export", importExportRouter);
+app.use("/api/inventory/v2", inventoryV2Routes);
 app.use("/api/inventory/v2", inventoryModuleRouter);
 app.use("/api/integrations/v2", integrationsModuleRouter);
 
@@ -272,6 +275,7 @@ app.use("/api/knowledge-base", kbRoutes);
 app.use("/api/plants", plantRoutes);
 
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/analytics/dashboard", analyticsDashboardRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
 app.use("/api/ai", analyticsAIRoutes);
 app.use("/api/ai", copilotRoutes);

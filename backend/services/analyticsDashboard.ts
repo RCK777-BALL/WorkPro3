@@ -37,8 +37,8 @@ export async function buildAnalyticsSnapshot(tenantId: Types.ObjectId, siteId?: 
   const workOrderVolume = await WorkOrder.countDocuments(scope);
 
   const costPerAsset = completed.reduce((sum, wo) => {
-    const partsCost = Array.from((wo as any).partsUsed ?? []).reduce(
-      (inner, part) => inner + Number((part as any).cost ?? 0),
+    const partsCost = Array.from((wo as any).partsUsed ?? []).reduce<number>(
+      (inner, part: { cost?: number }) => inner + Number(part?.cost ?? 0),
       0,
     );
     return sum + partsCost;

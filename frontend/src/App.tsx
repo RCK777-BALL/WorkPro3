@@ -35,6 +35,7 @@ import Messages from "@/pages/Messages";
 import Documentation from "@/pages/Documentation";
 import AssetManagementGuide from "@/pages/AssetManagementGuide";
 import AssetManagementAssetsGuide from "@/pages/AssetManagementAssetsGuide";
+import ManageAssets from "@/pages/ManageAssets";
 import Departments from "@/pages/Departments";
 import Lines from "@/pages/Lines";
 import Stations from "@/pages/Stations";
@@ -130,6 +131,14 @@ export default function App() {
             element={
               <RequirePermission scope="hierarchy" action="read">
                 <AssetsPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/assets/manage"
+            element={
+              <RequirePermission scope="hierarchy" action="read">
+                <ManageAssets />
               </RequirePermission>
             }
           />

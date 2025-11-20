@@ -5,14 +5,14 @@
 import React from 'react';
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  title?: string;
-  subtitle?: string;
+  title?: string | undefined;
+  subtitle?: string | undefined;
   headerActions?: React.ReactNode;
   /** Optional icon displayed next to the title */
   icon?: React.ReactNode;
   children: React.ReactNode;
-  className?: string;
-  noPadding?: boolean;
+  className?: string | undefined;
+  noPadding?: boolean | undefined;
 }
 
 const Card: React.FC<CardProps> = ({

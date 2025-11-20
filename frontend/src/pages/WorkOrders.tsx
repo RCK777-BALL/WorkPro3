@@ -126,7 +126,12 @@ export default function WorkOrders() {
 
   const fetchWorkOrders = useCallback(
     async (
-      filters?: { status?: string; priority?: string; startDate?: string; endDate?: string },
+      filters?: {
+        status?: string | undefined;
+        priority?: string | undefined;
+        startDate?: string | undefined;
+        endDate?: string | undefined;
+      },
     ) => {
       if (!navigator.onLine) {
         const cached = safeLocalStorage.getItem(LOCAL_KEY);
@@ -243,7 +248,7 @@ export default function WorkOrders() {
       });
 
       setWorkOrders((prev) => {
-        const recordPayload = payload as Record<string, unknown>;
+        const recordPayload = payload as unknown as Record<string, unknown>;
         if (isEdit && existingId) {
           const updated = prev.map((wo) => {
             if (wo.id !== existingId) {

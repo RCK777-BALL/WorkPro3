@@ -32,6 +32,7 @@ export { default as conditionRuleRoutes } from './ConditionRuleRoutes';
 export { default as meterRoutes } from './meterRoutes';
 export { default as teamMemberRoutes } from './TeamMemberRoutes';
 export { default as plantRoutes } from './PlantRoutes';
+export { default as contractorRoutes } from './contractors';
 export { default as globalRoutes } from './globalRoutes';
 export { default as videoRoutes } from './VideoRoutes';
 export { default as maintenanceScheduleRoutes } from './MaintenanceScheduleRoutes';

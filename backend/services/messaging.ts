@@ -166,7 +166,7 @@ export class MessagingService {
       consumerReady: this.consumerReady,
       backpressure: this.backpressure,
       queueDepth: this.queue.length,
-      lastFailure: this.lastFailure,
+      ...(this.lastFailure ? { lastFailure: this.lastFailure } : {}),
     };
   }
 

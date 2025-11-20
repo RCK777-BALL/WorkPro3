@@ -18,7 +18,7 @@ import {
   setEntityVersionHeaders,
 } from '../services/mobileSyncService';
 import { emitTelemetry } from '../services/telemetryService';
-import { upsertDeviceTelemetry } from '../services/mobileSyncAdminService';
+import { upsertDeviceTelemetry, type DeviceTelemetryInput } from '../services/mobileSyncAdminService';
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
@@ -273,14 +273,17 @@ export const enqueueOfflineAction: AuthedRequestHandler = async (req, res) => {
 
   const device = getDeviceContext(req);
   if (device.deviceId) {
-    await upsertDeviceTelemetry({
+    const telemetry: DeviceTelemetryInput = {
       tenantId: new Types.ObjectId(tenantId),
       userId: new Types.ObjectId(userId),
       deviceId: device.deviceId,
-      platform: device.platform,
-      appVersion: device.appVersion,
       pendingDelta: 1,
-    });
+    };
+
+    if (device.platform) telemetry.platform = device.platform;
+    if (device.appVersion) telemetry.appVersion = device.appVersion;
+
+    await upsertDeviceTelemetry(telemetry);
   }
 
   emitTelemetry('mobile.offlineAction.created', {
@@ -343,14 +346,17 @@ export const completeOfflineAction: AuthedRequestHandler = async (req, res) => {
 
   const device = getDeviceContext(req);
   if (device.deviceId) {
-    await upsertDeviceTelemetry({
+    const telemetry: DeviceTelemetryInput = {
       tenantId: new Types.ObjectId(tenantId),
       userId: new Types.ObjectId(userId),
       deviceId: device.deviceId,
-      platform: device.platform,
-      appVersion: device.appVersion,
       pendingDelta: -1,
-    });
+    };
+
+    if (device.platform) telemetry.platform = device.platform;
+    if (device.appVersion) telemetry.appVersion = device.appVersion;
+
+    await upsertDeviceTelemetry(telemetry);
   }
 
   emitTelemetry('mobile.offlineAction.completed', {
@@ -434,15 +440,18 @@ export const recordOfflineActionFailure: AuthedRequestHandler = async (req, res)
 
   const device = getDeviceContext(req);
   if (device.deviceId) {
-    await upsertDeviceTelemetry({
+    const telemetry: DeviceTelemetryInput = {
       tenantId: new Types.ObjectId(tenantId),
       userId: new Types.ObjectId(userId),
       deviceId: device.deviceId,
-      platform: device.platform,
-      appVersion: device.appVersion,
       failedDelta: existing.status === 'failed' ? 1 : 0,
-      lastFailureReason: parsed.data.message,
-    });
+    };
+
+    if (device.platform) telemetry.platform = device.platform;
+    if (device.appVersion) telemetry.appVersion = device.appVersion;
+    if (parsed.data.message) telemetry.lastFailureReason = parsed.data.message;
+
+    await upsertDeviceTelemetry(telemetry);
   }
 
   emitTelemetry('mobile.offlineAction.failed', {

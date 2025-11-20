@@ -5,6 +5,8 @@
 export interface ChecklistItem {
   description: string;
   completed?: boolean;
+  status?: 'not_started' | 'in_progress' | 'done' | 'blocked';
+  photos?: string[];
 }
 
 export interface WorkOrderSignature {
@@ -38,6 +40,12 @@ export interface WorkOrder {
   priority: 'low' | 'medium' | 'high' | 'critical';
   status: WorkOrderStatus;
   type: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
+  approvalStatus?: 'draft' | 'pending' | 'approved' | 'rejected';
+  approvedBy?: string;
+  approvedAt?: string;
+  requestedBy?: string;
+  requestedAt?: string;
+  slaDueAt?: string;
   failureModeTags?: string[];
   assignees?: string[];
   checklists?: ChecklistItem[];
@@ -46,6 +54,16 @@ export interface WorkOrder {
   timeSpentMin?: number;
   photos?: string[];
   failureCode?: string;
+  causeCode?: string;
+  actionCode?: string;
+  downtimeMinutes?: number;
+  laborHours?: number;
+  laborCost?: number;
+  partsCost?: number;
+  miscCost?: number;
+  totalCost?: number;
+  attachments?: { url: string; name?: string; uploadedBy?: string; uploadedAt?: string }[];
+  timeline?: { label: string; notes?: string; createdAt?: string; createdBy?: string; type?: 'status' | 'comment' | 'approval' | 'sla' }[];
   permits?: string[];
   requiredPermitTypes?: string[];
   pmTask?: string;

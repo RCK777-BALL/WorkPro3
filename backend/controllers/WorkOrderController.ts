@@ -54,6 +54,10 @@ const workOrderCreateFields = [
   'approvalStatus',
   'approvalRequestedBy',
   'approvedBy',
+  'approvedAt',
+  'requestedBy',
+  'requestedAt',
+  'slaDueAt',
   'assignedTo',
   'assignees',
   'checklists',
@@ -62,6 +66,8 @@ const workOrderCreateFields = [
   'timeSpentMin',
   'photos',
   'failureCode',
+  'causeCode',
+  'actionCode',
   'pmTask',
   'department',
 
@@ -71,6 +77,14 @@ const workOrderCreateFields = [
   'importance',
   'complianceProcedureId',
   'calibrationIntervalDays',
+  'downtimeMinutes',
+  'laborHours',
+  'laborCost',
+  'partsCost',
+  'miscCost',
+  'totalCost',
+  'attachments',
+  'timeline',
   'dueDate',
   'completedAt',
   'permits',
@@ -117,7 +131,7 @@ interface CompleteWorkOrderBody extends WorkOrderComplete {
 
 const START_APPROVED_STATUSES = new Set(['approved', 'active']);
 const COMPLETION_ALLOWED_STATUSES = new Set(['active', 'approved', 'closed']);
-const APPROVAL_STATUS_VALUES = ['pending', 'approved', 'rejected'] as const;
+const APPROVAL_STATUS_VALUES = ['draft', 'pending', 'approved', 'rejected'] as const;
 type ApprovalStatus = (typeof APPROVAL_STATUS_VALUES)[number];
 
 const toObjectId = (value: Types.ObjectId | string): Types.ObjectId =>

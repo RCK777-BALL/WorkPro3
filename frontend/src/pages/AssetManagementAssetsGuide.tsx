@@ -304,7 +304,7 @@ const AssetManagementAssetsGuide: React.FC = () => {
             </div>
             <div className="flex flex-wrap gap-2">
               <Button asChild>
-                <Link to="/assets">
+                <Link to="/assets?intent=create">
                   <Settings className="h-4 w-4 mr-2" />
                   Manage Assets
                 </Link>

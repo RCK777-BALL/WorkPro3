@@ -37,10 +37,10 @@ export async function buildAnalyticsSnapshot(tenantId: Types.ObjectId, siteId?: 
   const workOrderVolume = await WorkOrder.countDocuments(scope);
 
   const costPerAsset = completed.reduce((sum, wo) => {
-    const partsCost = Array.from((wo as any).partsUsed ?? []).reduce<number>(
-      (inner, part: { cost?: number }) => inner + Number(part?.cost ?? 0),
-      0,
-    );
+    const parts = Array.isArray((wo as any).partsUsed)
+      ? ((wo as any).partsUsed as Array<{ cost?: number }>)
+      : [];
+    const partsCost = parts.reduce<number>((inner, part) => inner + Number(part?.cost ?? 0), 0);
     return sum + partsCost;
   }, 0);
 

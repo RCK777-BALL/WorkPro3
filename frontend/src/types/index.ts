@@ -145,14 +145,37 @@ export interface WorkOrder {
   assignedTo?: string;
   assignedToAvatar?: string;
   assignees?: string[];
-  checklists?: { text: string; done: boolean }[];
+  checklists?: {
+    text: string;
+    done: boolean;
+    status?: 'not_started' | 'in_progress' | 'done' | 'blocked';
+    photos?: string[];
+  }[];
   partsUsed?: { partId: string; qty: number; cost: number }[];
   signatures?: { by: string; ts: string }[];
   timeSpentMin?: number;
   photos?: string[];
   failureCode?: string;
+  causeCode?: string;
+  actionCode?: string;
+  downtimeMinutes?: number;
+  laborHours?: number;
+  laborCost?: number;
+  partsCost?: number;
+  miscCost?: number;
+  totalCost?: number;
   permits?: string[];
   requiredPermitTypes?: string[];
+
+  approvalStatus?: 'draft' | 'pending' | 'approved' | 'rejected';
+  approvedBy?: string;
+  approvedAt?: string;
+  requestedBy?: string;
+  requestedAt?: string;
+  slaDueAt?: string;
+
+  attachments?: { url: string; name?: string; uploadedBy?: string; uploadedAt?: string }[];
+  timeline?: { label: string; notes?: string; createdAt?: string; createdBy?: string; type?: 'status' | 'comment' | 'approval' | 'sla' }[];
 
   /** Department associated with the work order */
   department: string;

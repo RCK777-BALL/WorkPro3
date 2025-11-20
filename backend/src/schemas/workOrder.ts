@@ -9,6 +9,18 @@ const objectId = z.string().min(1, 'Identifier is required');
 const checklistItem = z.object({
   description: z.string().min(1, 'Checklist description is required'),
   done: z.boolean().optional(),
+  status: z
+    .enum(['not_started', 'in_progress', 'done', 'blocked'])
+    .optional()
+    .default('not_started'),
+  photos: z.array(z.string()).optional(),
+});
+
+const attachmentItem = z.object({
+  url: z.string().min(1, 'Attachment URL is required'),
+  name: z.string().optional(),
+  uploadedBy: objectId.optional(),
+  uploadedAt: z.union([z.string(), z.date()]).optional(),
 });
 
 const partItem = z.object({
@@ -27,7 +39,7 @@ const statusEnum = z.enum(['requested', 'assigned', 'in_progress', 'paused', 'co
 const priorityEnum = z.enum(['low', 'medium', 'high', 'critical']);
 const typeEnum = z.enum(['corrective', 'preventive', 'inspection', 'calibration', 'safety']);
 const importanceEnum = z.enum(['low', 'medium', 'high', 'severe']);
-const approvalStatusEnum = z.enum(['not-required', 'pending', 'approved', 'rejected']);
+const approvalStatusEnum = z.enum(['draft', 'pending', 'approved', 'rejected']);
 
 const baseSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -55,6 +67,10 @@ const baseSchema = z.object({
   approvalStatus: approvalStatusEnum.optional(),
   approvalRequestedBy: objectId.optional(),
   approvedBy: objectId.optional(),
+  approvedAt: z.union([z.string(), z.date()]).optional(),
+  requestedBy: objectId.optional(),
+  requestedAt: z.union([z.string(), z.date()]).optional(),
+  slaDueAt: z.union([z.string(), z.date()]).optional(),
   assignedTo: objectId.optional(),
   assignees: z.array(objectId).optional(),
   checklists: z.array(checklistItem).optional(),
@@ -65,6 +81,26 @@ const baseSchema = z.object({
   timeSpentMin: z.number().int().nonnegative().optional(),
   photos: z.array(z.string()).optional(),
   failureCode: z.string().optional(),
+  causeCode: z.string().optional(),
+  actionCode: z.string().optional(),
+  downtimeMinutes: z.number().int().nonnegative().optional(),
+  laborHours: z.number().nonnegative().optional(),
+  laborCost: z.number().nonnegative().optional(),
+  partsCost: z.number().nonnegative().optional(),
+  miscCost: z.number().nonnegative().optional(),
+  totalCost: z.number().nonnegative().optional(),
+  attachments: z.array(attachmentItem).optional(),
+  timeline: z
+    .array(
+      z.object({
+        label: z.string().min(1),
+        notes: z.string().optional(),
+        createdAt: z.union([z.string(), z.date()]).optional(),
+        createdBy: objectId.optional(),
+        type: z.enum(['status', 'comment', 'approval', 'sla']).optional(),
+      }),
+    )
+    .optional(),
   dueDate: z.union([z.string(), z.date()]).optional(),
   completedAt: z.union([z.string(), z.date()]).optional(),
 });

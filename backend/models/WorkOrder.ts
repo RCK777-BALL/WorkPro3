@@ -16,12 +16,21 @@ export interface WorkOrder {
   priority: 'low' | 'medium' | 'high' | 'critical';
   status: 'requested' | 'assigned' | 'in_progress' | 'paused' | 'completed' | 'cancelled';
   type: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
-  approvalStatus: 'not-required' | 'pending' | 'approved' | 'rejected';
+  approvalStatus: 'draft' | 'pending' | 'approved' | 'rejected';
   approvalRequestedBy?: Types.ObjectId;
   approvedBy?: Types.ObjectId;
+  approvedAt?: Date;
+  requestedBy?: Types.ObjectId;
+  requestedAt?: Date;
+  slaDueAt?: Date;
   assignedTo?: Types.ObjectId;
   assignees: Types.Array<Types.ObjectId>;
-  checklists: Types.Array<{ text: string; done: boolean }>;
+  checklists: Types.Array<{
+    text: string;
+    done: boolean;
+    status?: 'not_started' | 'in_progress' | 'done' | 'blocked';
+    photos?: string[];
+  }>;
   partsUsed: Types.Array<{ partId: Types.ObjectId; qty: number; cost: number }>;
   signatures: Types.Array<{ by: Types.ObjectId; ts: Date }>;
   permits: Types.Array<Types.ObjectId>;
@@ -29,6 +38,8 @@ export interface WorkOrder {
   timeSpentMin?: number;
   photos: Types.Array<string>;
   failureCode?: string;
+  causeCode?: string;
+  actionCode?: string;
   failureModeTags?: Types.Array<string>;
 
   /** Optional relationships */
@@ -47,6 +58,20 @@ export interface WorkOrder {
 
   dueDate?: Date;
   completedAt?: Date;
+  downtimeMinutes?: number;
+  laborHours?: number;
+  laborCost?: number;
+  partsCost?: number;
+  miscCost?: number;
+  totalCost?: number;
+  attachments?: Types.Array<{ url: string; name?: string; uploadedBy?: Types.ObjectId; uploadedAt?: Date }>;
+  timeline?: Types.Array<{
+    label: string;
+    notes?: string;
+    createdAt: Date;
+    createdBy?: Types.ObjectId;
+    type?: 'status' | 'comment' | 'approval' | 'sla';
+  }>;
   version?: number;
   etag?: string;
   lastSyncedAt?: Date;
@@ -89,14 +114,29 @@ const workOrderSchema = new Schema<WorkOrder>(
     },
     approvalStatus: {
       type: String,
-      enum: ['not-required', 'pending', 'approved', 'rejected'],
-      default: 'not-required',
+      enum: ['draft', 'pending', 'approved', 'rejected'],
+      default: 'draft',
     },
     approvalRequestedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     approvedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    approvedAt: { type: Date },
+    requestedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    requestedAt: { type: Date },
+    slaDueAt: { type: Date },
     assignedTo: { type: Schema.Types.ObjectId, ref: 'User' },
     assignees: [{ type: Schema.Types.ObjectId, ref: 'User' }],
-    checklists: [{ text: String, done: { type: Boolean, default: false } }],
+    checklists: [
+      {
+        text: String,
+        done: { type: Boolean, default: false },
+        status: {
+          type: String,
+          enum: ['not_started', 'in_progress', 'done', 'blocked'],
+          default: 'not_started',
+        },
+        photos: [{ type: String }],
+      },
+    ],
     partsUsed: [
       {
         partId: { type: Schema.Types.ObjectId, ref: 'InventoryItem' },
@@ -117,6 +157,8 @@ const workOrderSchema = new Schema<WorkOrder>(
     timeSpentMin: Number,
     photos: [String],
     failureCode: String,
+    causeCode: String,
+    actionCode: String,
     failureModeTags: [{ type: String }],
     copilotSummary: { type: String },
     copilotSummaryUpdatedAt: { type: Date },
@@ -138,6 +180,29 @@ const workOrderSchema = new Schema<WorkOrder>(
     tenantId: tenantRef,
     plant: { type: Schema.Types.ObjectId, ref: 'Plant', index: true },
     siteId: { type: Schema.Types.ObjectId, ref: 'Site', index: true },
+    downtimeMinutes: { type: Number, default: 0 },
+    laborHours: { type: Number, default: 0 },
+    laborCost: { type: Number, default: 0 },
+    partsCost: { type: Number, default: 0 },
+    miscCost: { type: Number, default: 0 },
+    totalCost: { type: Number, default: 0 },
+    attachments: [
+      {
+        url: { type: String, required: true },
+        name: { type: String },
+        uploadedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+        uploadedAt: { type: Date, default: Date.now },
+      },
+    ],
+    timeline: [
+      {
+        label: { type: String, required: true },
+        notes: { type: String },
+        createdAt: { type: Date, default: Date.now },
+        createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+        type: { type: String, enum: ['status', 'comment', 'approval', 'sla'] },
+      },
+    ],
     downtime: { type: Number },
     wrenchTime: { type: Number },
 
@@ -150,6 +215,21 @@ const workOrderSchema = new Schema<WorkOrder>(
   },
   { timestamps: true }
 );
+
+workOrderSchema.pre('save', function handleCosts(next) {
+  if (
+    this.isModified('laborCost') ||
+    this.isModified('partsCost') ||
+    this.isModified('miscCost') ||
+    this.isModified('laborHours')
+  ) {
+    const labor = this.laborCost ?? 0;
+    const parts = this.partsCost ?? 0;
+    const misc = this.miscCost ?? 0;
+    this.totalCost = labor + parts + misc;
+  }
+  next();
+});
 
 workOrderSchema.pre('save', function handleVersioning(next) {
   if (this.isNew) {

@@ -393,7 +393,15 @@ export interface AuthLoginMfaChallenge {
   userId: string;
 }
 
-export type AuthLoginResponse = AuthSession | AuthLoginMfaChallenge;
+export interface AuthRotationRequired {
+  rotationRequired: true;
+  userId: string;
+  email?: string | null;
+  rotationToken: string;
+  mfaSecret: string;
+}
+
+export type AuthLoginResponse = AuthSession | AuthLoginMfaChallenge | AuthRotationRequired;
 
 export type AuthMfaVerifyResponse = AuthSession;
 

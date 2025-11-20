@@ -8,7 +8,7 @@ import { Activity, AlertTriangle, RefreshCcw } from 'lucide-react';
 
 import Card from '@/components/common/Card';
 import SimpleLineChart from '@/components/charts/SimpleLineChart';
-import { fetchIotAlerts, fetchIotSignals, type IoTSignalSeries } from '@/api/iot';
+import { fetchIotAlerts, fetchIotSignals, IoTSignalQuery, type IoTSignalSeries } from '@/api/iot';
 import type { Alert } from '@/store/alertStore';
 import { useHierarchyTree } from '@/features/assets/hooks';
 import type { HierarchyAsset, HierarchyResponse } from '@/api/hierarchy';

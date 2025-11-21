@@ -4,6 +4,7 @@
 
 import { io, type Socket } from 'socket.io-client';
 import { useSocketStore } from '@/store/socketStore';
+import { useRealtimeStatusStore } from '@/modules/realtime/status/store';
 import { endpoints } from './env';
 import { FALLBACK_TOKEN_KEY, TENANT_KEY, TOKEN_KEY } from '@/lib/http';
 import { safeLocalStorage } from '@/utils/safeLocalStorage';
@@ -31,10 +32,20 @@ function createSocket(): Socket {
   });
 
   const { setConnected } = useSocketStore.getState();
+  const realtimeStatus = useRealtimeStatusStore.getState();
 
-  s.on('connect', () => setConnected(true));
-  s.on('disconnect', () => setConnected(false));
-  s.on('connect_error', () => setConnected(false));
+  const handleDegraded = () => {
+    setConnected(false);
+    realtimeStatus.setPolling('Realtime stream unavailable; falling back to polling', 5_000);
+  };
+
+  s.on('connect', () => {
+    setConnected(true);
+    realtimeStatus.setStreaming();
+  });
+  s.on('disconnect', handleDegraded);
+  s.on('connect_error', handleDegraded);
+  s.onAny(() => realtimeStatus.markDelivery());
 
   return s;
 }

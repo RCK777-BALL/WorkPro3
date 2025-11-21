@@ -20,6 +20,7 @@ import {
 } from "@/lib/http";
 import Dashboard from "@/pages/Dashboard";
 import Analytics from "@/pages/Analytics";
+import AnalyticsDashboardV2 from "@/pages/AnalyticsDashboardV2";
 import WorkOrders from "@/pages/WorkOrders";
 import WorkRequestDashboard from "@/pages/WorkRequestDashboard";
 import Maintenance from "@/pages/Maintenance";
@@ -34,6 +35,7 @@ import Messages from "@/pages/Messages";
 import Documentation from "@/pages/Documentation";
 import AssetManagementGuide from "@/pages/AssetManagementGuide";
 import AssetManagementAssetsGuide from "@/pages/AssetManagementAssetsGuide";
+import ManageAssets from "@/pages/ManageAssets";
 import Departments from "@/pages/Departments";
 import Lines from "@/pages/Lines";
 import Stations from "@/pages/Stations";
@@ -56,6 +58,7 @@ import TechnicianConsole from "@/pages/TechnicianConsole";
 import Login from "@/pages/Login";
 import RegisterPage from "@/pages/RegisterPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import BootstrapSetupPage from "@/modules/admin/setup";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
 import PublicRequestPage from "@/public/request";
 import RequestStatus from "@/pages/RequestStatus";
@@ -92,12 +95,14 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot" element={<ForgotPasswordPage />} />
+        <Route path="/admin/setup" element={<BootstrapSetupPage />} />
         <Route path="/public/request/:slug?" element={<PublicRequestPage />} />
         <Route path="/request/:token" element={<RequestStatus />} />
         <Route element={<RequireAuth><Layout /></RequireAuth>}>
           <Route index element={<Navigate to="/dashboard" />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/analytics/dashboard/v2" element={<AnalyticsDashboardV2 />} />
           <Route path="/analytics/global" element={<GlobalAnalyticsDashboard />} />
           <Route path="/analytics/ai" element={<AIDashboard />} />
           <Route
@@ -126,6 +131,14 @@ export default function App() {
             element={
               <RequirePermission scope="hierarchy" action="read">
                 <AssetsPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/assets/manage"
+            element={
+              <RequirePermission scope="hierarchy" action="read">
+                <ManageAssets />
               </RequirePermission>
             }
           />
@@ -169,6 +182,10 @@ export default function App() {
           <Route
             path="/documentation/asset-management/assets"
             element={<AssetManagementAssetsGuide />}
+          />
+          <Route
+            path="/documentation/asset-management/assets/manage"
+            element={<Navigate to="/assets/manage" replace />}
           />
           <Route path="/departments" element={<Departments />} />
           <Route path="/lines" element={<Lines />} />

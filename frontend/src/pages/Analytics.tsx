@@ -3,7 +3,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams, type URLSearchParamsInit } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import http from '@/lib/http';
@@ -26,15 +26,25 @@ const getInitialSearch = () => {
   return '';
 };
 
-const toSearchParamsInit = (value: unknown): URLSearchParamsInit => {
+type SearchParamsCtorInit = string | string[][] | URLSearchParams;
+
+const toSearchParamsInit = (value: unknown): SearchParamsCtorInit => {
   if (value instanceof URLSearchParams || typeof value === 'string') {
     return value;
   }
+
   if (Array.isArray(value)) {
-    return value as string[][];
+    const entries: Array<[string, string]> = [];
+    value.forEach((item) => {
+      if (Array.isArray(item) && item.length >= 2) {
+        entries.push([String(item[0]), String(item[1])]);
+      }
+    });
+    return entries;
   }
+
   if (value && typeof value === 'object') {
-    const entries: string[][] = [];
+    const entries: Array<[string, string]> = [];
     Object.entries(value as Record<string, unknown>).forEach(([key, entryValue]) => {
       if (Array.isArray(entryValue)) {
         entryValue.forEach((item) => entries.push([key, String(item)]));
@@ -44,7 +54,8 @@ const toSearchParamsInit = (value: unknown): URLSearchParamsInit => {
     });
     return entries;
   }
-  return new URLSearchParams();
+
+  return [];
 };
 
 const useSafeSearchParams = (): ReturnType<typeof useSearchParams> => {

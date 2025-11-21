@@ -28,6 +28,8 @@ import { me, refresh, logout } from '../controllers/authController';
 import sendResponse from '../utils/sendResponse';
 import { configureOAuth } from '../auth/oauth';
 import { configureOIDC, type Provider as OIDCProvider } from '../auth/oidc';
+import { validatePasswordStrength } from '../auth/passwordPolicy';
+import { writeAuditLog } from '../utils/audit';
 
 configureOAuth();
 configureOIDC();
@@ -210,12 +212,19 @@ const mfaVerifySchema = mfaSetupSchema.extend({
   remember: z.boolean().optional(),
 });
 
+const bootstrapRotationSchema = z.object({
+  rotationToken: z.string().min(1, 'Rotation token is required'),
+  newPassword: z.string().min(12, 'New password is required'),
+  mfaToken: z.string().min(1, 'MFA token is required'),
+});
+
 const FAKE_PASSWORD_HASH = bcrypt.hashSync('invalid-password', 10);
 
 const AUTH_COOKIE_NAME = 'auth';
 const TOKEN_TTL = '7d';
 const SHORT_SESSION_MS = 1000 * 60 * 60 * 8;
 const LONG_SESSION_MS = 1000 * 60 * 60 * 24 * 30;
+const ROTATION_TOKEN_PURPOSE = 'bootstrap-rotation';
 
 type AuthUser = {
   tenantId?: string;
@@ -251,6 +260,25 @@ const toAuthUser = (user: UserDocument): AuthUser => {
     role: primaryRole,
     roles,
   } as AuthUser;
+};
+
+const signRotationToken = (userId: string): string => {
+  const secret = getJwtSecret();
+  return jwt.sign({ id: userId, purpose: ROTATION_TOKEN_PURPOSE }, secret, { expiresIn: '15m' });
+};
+
+const decodeRotationToken = (token: string): { id: string } | null => {
+  try {
+    const secret = getJwtSecret();
+    const payload = jwt.verify(token, secret) as { id?: string; purpose?: string };
+    if (payload.purpose !== ROTATION_TOKEN_PURPOSE || !payload.id) {
+      return null;
+    }
+    return { id: payload.id };
+  } catch (error) {
+    logger.warn('Invalid rotation token', error);
+    return null;
+  }
 };
 
 const sendAuthSuccess = (
@@ -395,7 +423,7 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
 
   try {
     const user = await User.findOne({ email: normalizedEmail }).select(
-      '+passwordHash +mfaEnabled +tenantId +tokenVersion +email +name +roles +role +siteId',
+      '+passwordHash +mfaEnabled +tenantId +tokenVersion +email +name +roles +role +siteId +passwordExpired +bootstrapAccount +mfaSecret',
     );
 
     if (!user) {
@@ -414,6 +442,33 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
     const valid = await bcrypt.compare(password, hashed);
     if (!valid) {
       sendResponse(res, null, 'Invalid email or password.', 400);
+      return;
+    }
+
+    if (user.passwordExpired || user.bootstrapAccount) {
+      const secret = user.mfaSecret || speakeasy.generateSecret({ length: 20 }).base32;
+      if (!user.mfaSecret) {
+        user.mfaSecret = secret;
+      }
+      user.mfaEnabled = false;
+      user.passwordExpired = true;
+      user.bootstrapAccount = true;
+      await user.save();
+
+      const rotationToken = signRotationToken(user._id.toString());
+      sendResponse(
+        res,
+        {
+          rotationRequired: true,
+          userId: user._id.toString(),
+          email: user.email,
+          rotationToken,
+          mfaSecret: user.mfaSecret,
+        },
+        null,
+        423,
+        'Password rotation required before login',
+      );
       return;
     }
 
@@ -460,10 +515,89 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
   }
 });
 
+router.post('/bootstrap/rotate', async (req: Request, res: Response, next: NextFunction) => {
+  const parsed = bootstrapRotationSchema.safeParse(req.body);
+  if (!parsed.success) {
+    sendResponse(res, null, 'Invalid request', 400);
+    return;
+  }
+
+  const rotation = decodeRotationToken(parsed.data.rotationToken);
+  if (!rotation?.id) {
+    sendResponse(res, null, 'Invalid or expired rotation token', 401);
+    return;
+  }
+
+  const passwordCheck = validatePasswordStrength(parsed.data.newPassword);
+  if (!passwordCheck.valid) {
+    sendResponse(res, null, passwordCheck.errors, 400);
+    return;
+  }
+
+  try {
+    const user = await User.findById(rotation.id).select(
+      '+passwordExpired +bootstrapAccount +mfaSecret +tenantId +tokenVersion',
+    );
+    if (!user || (!user.passwordExpired && !user.bootstrapAccount)) {
+      sendResponse(res, null, 'Rotation not required for this account', 400);
+      return;
+    }
+
+    if (!user.mfaSecret) {
+      sendResponse(res, null, 'MFA secret not initialized', 400);
+      return;
+    }
+
+    const mfaValid = speakeasy.totp.verify({
+      secret: user.mfaSecret,
+      encoding: 'base32',
+      token: parsed.data.mfaToken,
+      window: 1,
+    });
+
+    if (!mfaValid) {
+      sendResponse(res, null, 'Invalid MFA token', 400);
+      return;
+    }
+
+    user.passwordHash = parsed.data.newPassword;
+    user.passwordExpired = false;
+    user.bootstrapAccount = false;
+    user.mfaEnabled = true;
+    user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+    await user.save();
+
+    await writeAuditLog({
+      tenantId: user.tenantId,
+      userId: user._id,
+      action: 'bootstrap_rotation',
+      entityType: 'user',
+      entityId: user._id.toString(),
+      before: { passwordExpired: true, bootstrapAccount: true },
+      after: {
+        passwordExpired: user.passwordExpired,
+        bootstrapAccount: user.bootstrapAccount,
+        mfaEnabled: user.mfaEnabled,
+      },
+    });
+
+    sendResponse(res, { rotated: true }, null, 200, 'Password rotated');
+  } catch (err) {
+    logger.error('Bootstrap rotation error', err);
+    next(err);
+  }
+});
+
 router.post('/register', registerLimiter, async (req: Request, res: Response, next: NextFunction) => {
   const parsed = await registerBodySchema.safeParseAsync(req.body);
   if (!parsed.success) {
     sendResponse(res, null, 'Invalid request', 400);
+    return;
+  }
+
+  const passwordCheck = validatePasswordStrength(parsed.data.password);
+  if (!passwordCheck.valid) {
+    sendResponse(res, null, passwordCheck.errors, 400);
     return;
   }
 

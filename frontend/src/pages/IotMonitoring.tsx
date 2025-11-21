@@ -8,7 +8,7 @@ import { Activity, AlertTriangle, RefreshCcw } from 'lucide-react';
 
 import Card from '@/components/common/Card';
 import SimpleLineChart from '@/components/charts/SimpleLineChart';
-import { fetchIotAlerts, fetchIotSignals, type IoTSignalSeries } from '@/api/iot';
+import { fetchIotAlerts, fetchIotSignals, IoTSignalQuery, type IoTSignalSeries } from '@/api/iot';
 import type { Alert } from '@/store/alertStore';
 import { useHierarchyTree } from '@/features/assets/hooks';
 import type { HierarchyAsset, HierarchyResponse } from '@/api/hierarchy';
@@ -78,12 +78,16 @@ const IotMonitoring = () => {
 
   const signalsQuery = useQuery(
     ['iot-signals', assetFilter, metricFilter],
-    () =>
-      fetchIotSignals({
-        assetId: assetFilter !== 'all' ? assetFilter : undefined,
-        metric: metricFilter !== 'all' ? metricFilter : undefined,
-        limit: 150,
-      }),
+    () => {
+      const params: IoTSignalQuery = { limit: 150 };
+      if (assetFilter !== 'all') {
+        params.assetId = assetFilter;
+      }
+      if (metricFilter !== 'all') {
+        params.metric = metricFilter;
+      }
+      return fetchIotSignals(params);
+    },
     { keepPreviousData: true, staleTime: 30_000 },
   );
 

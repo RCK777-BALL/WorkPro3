@@ -89,9 +89,9 @@ const AssetManagementGuide: React.FC = () => (
       </div>
       <div className="flex flex-wrap gap-3">
         {quickLinks.map((link) => (
-          <Button key={link.to} asChild variant="outline">
-            <Link to={link.to}>{link.label}</Link>
-          </Button>
+          <Link key={link.to} to={link.to} className="inline-flex">
+            <Button variant="outline">{link.label}</Button>
+          </Link>
         ))}
       </div>
     </div>

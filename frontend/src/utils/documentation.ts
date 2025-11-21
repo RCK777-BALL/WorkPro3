@@ -39,16 +39,16 @@ export const getMimeTypeForType = (type: DocumentType): string => CANONICAL_MIME
 export const getDefaultMimeForType = getMimeTypeForType;
 
 export interface DocumentMetadata {
-  id?: string;
+  id?: string | undefined;
   title: string;
   type: DocumentType;
   mimeType: string;
   size: number;
   lastModified: Date | string;
-  url?: string;
-  tags?: string[];
-  category?: string;
-  downloadUrl?: string;
+  url?: string | undefined;
+  tags?: string[] | undefined;
+  category?: string | undefined;
+  downloadUrl?: string | undefined;
 }
 
 const toDate = (value: number | string | Date): Date => {

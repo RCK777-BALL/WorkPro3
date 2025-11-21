@@ -3,6 +3,7 @@
  */
 
 export { default as analyticsRoutes } from './analyticsRoutes';
+export { default as analyticsDashboardRoutes } from './analyticsDashboardRoutes';
 export { default as analyticsAIRoutes } from './analyticsAI';
 export { default as copilotRoutes } from './copilotRoutes';
 export { default as goodsReceiptRoutes } from './GoodsReceiptRoutes';
@@ -18,6 +19,7 @@ export { default as iotRoutes } from './iotRoutes';
 export { default as timeSheetRoutes } from './TimeSheetRoutes';
 export { default as calendarRoutes } from './CalendarRoutes';
 export { default as inventoryRoutes } from './inventoryRoutes';
+export { default as inventoryV2Routes } from './inventoryV2Routes';
 export { default as partsRoutes } from './PartsRoutes';
 export { default as auditRoutes } from './AuditRoutes';
 export { default as roleRoutes } from './RoleRoutes';
@@ -32,6 +34,7 @@ export { default as conditionRuleRoutes } from './ConditionRuleRoutes';
 export { default as meterRoutes } from './meterRoutes';
 export { default as teamMemberRoutes } from './TeamMemberRoutes';
 export { default as plantRoutes } from './PlantRoutes';
+export { default as contractorRoutes } from './contractors';
 export { default as globalRoutes } from './globalRoutes';
 export { default as videoRoutes } from './VideoRoutes';
 export { default as maintenanceScheduleRoutes } from './MaintenanceScheduleRoutes';
@@ -54,8 +57,10 @@ export { default as kbRoutes } from './kbRoutes';
 export { default as laborRoutes } from './laborRoutes';
 export { default as complianceRoutes } from './complianceRoutes';
 export { default as adminRoutes } from './adminRoutes';
+export { default as mobileSyncAdminRoutes } from './mobileSyncAdmin';
 export { default as dashboardRoutes } from './DashboardRoutes';
 export { default as statusRoutes } from './StatusRoutes';
 export { default as settingsRoutes } from './settingsRoutes';
 export { default as alertRoutes } from './alertRoutes';
 export { default as technicianRoutes } from './technicianRoutes';
+export { default as calibrationRoutes } from './calibration';

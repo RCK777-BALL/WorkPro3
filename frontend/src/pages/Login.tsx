@@ -28,8 +28,8 @@ const sanitizeRedirect = (value: string | null): string => {
 };
 
 export default function Login() {
-  const [email, setEmail] = useState('admin@cmms.com');
-  const [password, setPassword] = useState('Password123!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { login: authLogin, setUser } = useAuth();
   const navigate = useNavigate();
@@ -62,8 +62,8 @@ export default function Login() {
       email: normalizedEmail,
       role: primaryRole,
       roles: roles.length > 0 ? Array.from(new Set<AuthRole>(roles)) : [primaryRole],
-      tenantId,
-      siteId,
+      ...(tenantId ? { tenantId } : {}),
+      ...(siteId ? { siteId } : {}),
     };
 
     safeLocalStorage.setItem(TOKEN_KEY, token);
@@ -89,6 +89,18 @@ export default function Login() {
     setLoading(true);
     try {
       const result = await authLogin(email, password);
+
+      if ('rotationRequired' in result && result.rotationRequired) {
+        navigate('/admin/setup', {
+          state: {
+            rotationToken: result.rotationToken,
+            mfaSecret: result.mfaSecret,
+            email: result.email,
+          },
+        });
+        toast('Password rotation required before continuing.', { icon: '🔒' });
+        return;
+      }
 
       if ('mfaRequired' in result && result.mfaRequired) {
         toast('Multi-factor authentication required. Please complete the MFA challenge.', {

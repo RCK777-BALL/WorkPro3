@@ -43,6 +43,7 @@ import {
   updateAsset,
   updateLine,
   updateStation,
+  type DepartmentPayload,
 } from '@/api/departments';
 import type {
   Asset,
@@ -243,12 +244,12 @@ const Departments = () => {
     try {
       const { plantId, plant } = values;
       if (departmentEditing) {
-        const departmentPayload: { name: string; description?: string | null; plantId?: string } = {
+        const departmentPayload: DepartmentPayload = {
           name: values.name,
           plantId,
         };
         if (values.description !== undefined) {
-          departmentPayload.description = values.description;
+          departmentPayload.description = values.description ?? '';
         }
         await updateDepartment(departmentEditing.id, departmentPayload);
 
@@ -350,7 +351,7 @@ const Departments = () => {
             const updatedDepartment = await updateStation(
               currentDepartment.id,
               lineId,
-              station.id,
+              station.id!,
               {
                 name: station.name,
               },
@@ -390,12 +391,12 @@ const Departments = () => {
         replaceDepartment(currentDepartment);
         addToast('Department updated', 'success');
       } else {
-        const departmentPayload: { name: string; description?: string | null; plantId?: string } = {
+        const departmentPayload: DepartmentPayload = {
           name: values.name,
           plantId,
         };
         if (values.description !== undefined) {
-          departmentPayload.description = values.description;
+          departmentPayload.description = values.description ?? '';
         }
 
         const created = await createDepartment(departmentPayload);
@@ -966,7 +967,7 @@ const Departments = () => {
           setDepartmentEditing(null);
         }}
         onSave={handleDepartmentSave}
-        onDelete={departmentEditing ? handleDepartmentDelete : undefined}
+        {...(departmentEditing ? { onDelete: handleDepartmentDelete } : {})}
       />
 
       <LineModal
@@ -978,8 +979,8 @@ const Departments = () => {
           setLineModalState(null);
         }}
         onSave={handleLineSave}
-        onDelete={lineModalState?.line ? handleLineDelete : undefined}
-        onAddStation={lineModalState?.line ? handleSwitchToAddStation : undefined}
+        {...(lineModalState?.line ? { onDelete: handleLineDelete } : {})}
+        {...(lineModalState?.line ? { onAddStation: handleSwitchToAddStation } : {})}
       />
 
       <StationModal
@@ -991,10 +992,8 @@ const Departments = () => {
           setStationModalState(null);
         }}
         onSave={handleStationSave}
-        onDelete={stationModalState?.station ? handleStationDelete : undefined}
-        onAddLine={
-          stationModalState && !stationModalState.station ? handleSwitchToAddLine : undefined
-        }
+        {...(stationModalState?.station ? { onDelete: handleStationDelete } : {})}
+        {...(stationModalState && !stationModalState.station ? { onAddLine: handleSwitchToAddLine } : {})}
       />
 
       <AssetModal
@@ -1006,7 +1005,7 @@ const Departments = () => {
           setAssetModalState(null);
         }}
         onSave={handleAssetSave}
-        onDelete={assetModalState?.asset ? handleAssetDelete : undefined}
+        {...(assetModalState?.asset ? { onDelete: handleAssetDelete } : {})}
       />
 
     </div>

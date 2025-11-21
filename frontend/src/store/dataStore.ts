@@ -130,9 +130,9 @@ export type QueuedRequest = {
   method: 'post' | 'put' | 'delete';
   url: string;
   data?: unknown;
-  retries?: number;
-  error?: string;
-  nextAttempt?: number;
+  retries?: number | undefined;
+  error?: string | undefined;
+  nextAttempt?: number | undefined;
 };
 
 export const loadQueue = async (): Promise<QueuedRequest[]> =>

@@ -69,25 +69,25 @@ export default function GlobalAnalyticsDashboard() {
     const mapCorporate = (payload?: CorporateSiteMetric[]): GlobalMetric[] =>
       (payload ?? []).map((site) => ({
         plant: site.siteName ?? 'Unassigned',
-        siteId: site.siteId,
-        tenantId: site.tenantId,
         totalWorkOrders: site.totalWorkOrders,
         completedWorkOrders: site.completedWorkOrders,
         pmCompliance: Math.round(site.pmCompliance.percentage),
         avgWrenchTime: Number(site.mttrHours.toFixed(2)),
         downtimeHours: site.downtimeHours ?? 0,
+        ...(site.siteId ? { siteId: site.siteId } : {}),
+        ...(site.tenantId ? { tenantId: site.tenantId } : {}),
       }));
 
     const mapLegacy = (payload?: LegacyGlobalMetric[]): GlobalMetric[] =>
       (payload ?? []).map((item) => ({
         plant: item.siteName ?? item.plant,
-        siteId: item.siteId,
-        tenantId: item.tenantId,
         totalWorkOrders: item.totalWorkOrders,
         completedWorkOrders: item.completedWorkOrders,
         pmCompliance: item.pmCompliance,
         avgWrenchTime: item.avgWrenchTime,
         downtimeHours: item.downtimeHours,
+        ...(item.siteId ? { siteId: item.siteId } : {}),
+        ...(item.tenantId ? { tenantId: item.tenantId } : {}),
       }));
 
     const load = async () => {

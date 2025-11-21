@@ -103,17 +103,22 @@ const AssetDetails = () => {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'history':
-        return <AssetHistoryTimeline entries={data?.history} isLoading={isLoading} />;
+        return <AssetHistoryTimeline entries={data?.history ?? []} isLoading={isLoading} />;
       case 'documents':
-        return <AssetDocumentsList documents={data?.documents} isLoading={isLoading} />;
+        return <AssetDocumentsList documents={data?.documents ?? []} isLoading={isLoading} />;
       case 'bom':
-        return <AssetBomTable parts={data?.bom} isLoading={isLoading} />;
+        return <AssetBomTable parts={data?.bom ?? []} isLoading={isLoading} />;
       case 'pm':
-        return <AssetPmTemplateCards templates={data?.pmTemplates} isLoading={isLoading} />;
+        return <AssetPmTemplateCards templates={data?.pmTemplates ?? []} isLoading={isLoading} />;
       case 'work':
-        return <AssetWorkOrderList workOrders={data?.openWorkOrders} isLoading={isLoading} />;
+        return <AssetWorkOrderList workOrders={data?.openWorkOrders ?? []} isLoading={isLoading} />;
       case 'costs':
-        return <AssetCostRollupChart cost={data?.costRollups} isLoading={isLoading} />;
+        return (
+          <AssetCostRollupChart
+            isLoading={isLoading}
+            {...(data?.costRollups ? { cost: data.costRollups } : {})}
+          />
+        );
       default:
         return overviewContent ?? <p className="text-sm text-neutral-500">Select an asset to view details.</p>;
     }
@@ -132,7 +137,11 @@ const AssetDetails = () => {
       <header>
         <p className="text-xs uppercase tracking-wide text-indigo-300">Asset insights</p>
         <h1 className="text-3xl font-bold text-white">{assetName}</h1>
-        {error && <p className="text-sm text-rose-300">{error instanceof Error ? error.message : 'Unable to load asset details.'}</p>}
+        {!!error && (
+          <p className="text-sm text-rose-300">
+            {error instanceof Error ? error.message : 'Unable to load asset details.'}
+          </p>
+        )}
       </header>
       <nav className="flex flex-wrap gap-2">
         {tabs.map((tab) => (

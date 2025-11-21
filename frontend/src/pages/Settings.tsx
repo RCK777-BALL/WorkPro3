@@ -477,7 +477,7 @@ const Settings: React.FC = () => {
       setTheme: setThemeState,
     } = useSettingsStore.getState();
 
-    const applyPartialUpdate = <T extends Record<string, unknown>>(
+    const applyPartialUpdate = <T extends object>(
       current: T,
       updates: Partial<T> | undefined,
       setter: (value: Partial<T>) => void,

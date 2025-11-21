@@ -9,6 +9,8 @@ import type { ParsedQs } from 'qs';
 import type { AuthedRequest } from '../types/http';
 
 import WorkOrder, { WorkOrderDocument } from '../models/WorkOrder';
+import InventoryItem from '../models/InventoryItem';
+import StockHistory from '../models/StockHistory';
 import Permit, { type PermitDocument } from '../models/Permit';
 import { emitWorkOrderUpdate } from '../server';
 import notifyUser from '../utils/notify';
@@ -54,6 +56,10 @@ const workOrderCreateFields = [
   'approvalStatus',
   'approvalRequestedBy',
   'approvedBy',
+  'approvedAt',
+  'requestedBy',
+  'requestedAt',
+  'slaDueAt',
   'assignedTo',
   'assignees',
   'checklists',
@@ -62,6 +68,8 @@ const workOrderCreateFields = [
   'timeSpentMin',
   'photos',
   'failureCode',
+  'causeCode',
+  'actionCode',
   'pmTask',
   'department',
 
@@ -71,6 +79,14 @@ const workOrderCreateFields = [
   'importance',
   'complianceProcedureId',
   'calibrationIntervalDays',
+  'downtimeMinutes',
+  'laborHours',
+  'laborCost',
+  'partsCost',
+  'miscCost',
+  'totalCost',
+  'attachments',
+  'timeline',
   'dueDate',
   'completedAt',
   'permits',
@@ -117,7 +133,7 @@ interface CompleteWorkOrderBody extends WorkOrderComplete {
 
 const START_APPROVED_STATUSES = new Set(['approved', 'active']);
 const COMPLETION_ALLOWED_STATUSES = new Set(['active', 'approved', 'closed']);
-const APPROVAL_STATUS_VALUES = ['pending', 'approved', 'rejected'] as const;
+const APPROVAL_STATUS_VALUES = ['draft', 'pending', 'approved', 'rejected'] as const;
 type ApprovalStatus = (typeof APPROVAL_STATUS_VALUES)[number];
 
 const toObjectId = (value: Types.ObjectId | string): Types.ObjectId =>
@@ -1209,6 +1225,30 @@ export async function completeWorkOrder(
     if (body.failureCode !== undefined) workOrder.failureCode = body.failureCode;
 
     const saved = await workOrder.save();
+
+    if (Array.isArray(workOrder.partsUsed) && workOrder.partsUsed.length) {
+      await Promise.all(
+        workOrder.partsUsed.map(async (usage) => {
+          const partId = (usage as any).partId as Types.ObjectId | undefined;
+          if (!partId) return;
+          const part = await InventoryItem.findOne({ _id: partId, tenantId });
+          if (!part) return;
+          const delta = -Math.abs(Number((usage as any).qty ?? 0));
+          part.quantity = Math.max(0, Number(part.quantity ?? 0) + delta);
+          await part.save();
+          await StockHistory.create({
+            tenantId,
+            siteId: req.siteId ? new Types.ObjectId(req.siteId) : undefined,
+            stockItem: part._id,
+            part: part.sharedPartId ?? part._id,
+            delta,
+            reason: `Consumed on WO ${workOrder.title}`,
+            userId: resolveUserObjectId(req),
+            balance: part.quantity,
+          });
+        }),
+      );
+    }
     const userObjectId = resolveUserObjectId(req);
     if (readiness.permits.length) {
       await Promise.all(

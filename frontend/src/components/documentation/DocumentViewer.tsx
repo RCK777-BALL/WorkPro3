@@ -10,8 +10,8 @@ import type { DocumentMetadata } from '@/utils/documentation';
 import { useToast } from '@/context/ToastContext';
 
 interface DocumentViewerProps {
-  content?: string;
-  preview?: string;
+  content?: string | undefined;
+  preview?: string | undefined;
   metadata: DocumentMetadata;
   onDownload: () => void | Promise<void>;
   onDelete: () => void | Promise<void>;

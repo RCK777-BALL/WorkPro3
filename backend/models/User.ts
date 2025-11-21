@@ -27,6 +27,8 @@ export interface UserDocument extends Document {
   colorScheme?: string;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
+  passwordExpired?: boolean;
+  bootstrapAccount?: boolean;
   mfaEnabled: boolean;
   mfaSecret?: string;
   tokenVersion: number;
@@ -63,6 +65,8 @@ const userSchema = new Schema<UserDocument>(
 
     passwordResetToken: { type: String },
     passwordResetExpires: { type: Date },
+    passwordExpired: { type: Boolean, default: false },
+    bootstrapAccount: { type: Boolean, default: false },
 
     theme: {
       type: String,

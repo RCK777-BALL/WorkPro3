@@ -13,6 +13,8 @@ export interface RawPart {
 export interface RawChecklist {
   description: string;
   done?: boolean;
+  status?: 'not_started' | 'in_progress' | 'done' | 'blocked';
+  photos?: string[];
 }
 
 export interface RawSignature {
@@ -37,10 +39,12 @@ export const mapPartsUsed = (
 
 export const mapChecklists = (
   items: RawChecklist[],
-): { text: string; done: boolean }[] =>
+): { text: string; done: boolean; status?: RawChecklist['status']; photos?: string[] }[] =>
   items.map((item) => ({
     text: item.description,
     done: Boolean(item.done),
+    status: item.status ?? (item.done ? 'done' : 'not_started'),
+    ...(item.photos?.length ? { photos: item.photos } : {}),
   }));
 
 export const mapSignatures = (

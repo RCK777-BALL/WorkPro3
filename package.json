@@ -9,7 +9,7 @@
   },
   "scripts": {
     "test": "jest",
-    "postinstall": "npm ci --silent --prefix backend",
+    "postinstall": "npm ci --silent --prefix backend && npm ci --silent --prefix frontend",
     "fix:backend": "node fixWorkPro.js backend",
     "fix:frontend": "node fixWorkPro.js frontend",
     "fix:all": "node fixWorkPro.js all"

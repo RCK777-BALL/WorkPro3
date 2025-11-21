@@ -22,6 +22,7 @@ import requestLog from "./middleware/requestLog";
 import {
   adminRoutes,
   analyticsRoutes,
+  analyticsDashboardRoutes,
   analyticsAIRoutes,
   copilotRoutes,
   alertRoutes,
@@ -46,7 +47,9 @@ import {
   maintenanceScheduleRoutes,
   meterRoutes,
   notificationsRoutes,
+  inventoryV2Routes,
   plantRoutes,
+  contractorRoutes,
   permitRoutes,
   pmRoutes,
   pmTasksRoutes,
@@ -68,6 +71,7 @@ import {
   workOrdersRoutes,
 } from "./routes";
 import mobileRoutes from "./routes/mobileRoutes";
+import mobileSyncAdminRoutes from "./routes/mobileSyncAdmin";
 import uiRoutes from "./routes/uiRoutes";
 import healthRouter from "./src/routes/health";
 import systemSummaryRouter from "./src/routes/summary";
@@ -224,6 +228,7 @@ app.use("/api/health", healthRouter);
 app.use("/api/hierarchy", hierarchyRouter);
 app.use("/api", workRequestsRouter);
 app.use("/api/import-export", importExportRouter);
+app.use("/api/inventory/v2", inventoryV2Routes);
 app.use("/api/inventory/v2", inventoryModuleRouter);
 app.use("/api/integrations/v2", integrationsModuleRouter);
 
@@ -234,6 +239,7 @@ app.use("/api/auth", authRoutes);
 app.use(/^\/api(?!\/(auth|public))/, requireAuth, tenantScope);
 
 app.use("/api/mobile", mobileLimiter, mobileRoutes);
+app.use("/api/mobile", mobileLimiter, mobileSyncAdminRoutes);
 
 app.use("/api/notifications", burstFriendly, notificationsRoutes);
 // Apply limiter to the rest of protected /api routes
@@ -245,12 +251,12 @@ app.use("/api/onboarding", onboardingRouter);
 app.use("/api/executive", executiveRouter);
 
 app.use("/api/departments", departmentRoutes);
+app.use("/api/departments", departmentRoutes);
 app.use("/api/workorders", workOrdersRoutes);
 app.use("/api/permits", permitRoutes);
 app.use("/api/assets", assetsRoutes);
 app.use("/api/assets", assetInsightsRouter);
 app.use("/api/meters", meterRoutes);
-app.use("/api/condition-rules", conditionRuleRoutes);
 app.use("/api/tenants", TenantRoutes);
 app.use("/api/pm-tasks", pmTasksRoutes);
 app.use("/api/pm", pmRoutes);
@@ -263,11 +269,13 @@ app.use("/api/parts", partsRoutes);
 app.use("/api/import", importRoutes);
 app.use("/api/maintenance-schedules", maintenanceScheduleRoutes);
 app.use("/api/vendors", vendorRoutes);
+app.use("/api/contractors", contractorRoutes);
 app.use("/api/labor", laborRoutes);
 app.use("/api/knowledge-base", kbRoutes);
 app.use("/api/plants", plantRoutes);
 
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/analytics/dashboard", analyticsDashboardRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
 app.use("/api/ai", analyticsAIRoutes);
 app.use("/api/ai", copilotRoutes);

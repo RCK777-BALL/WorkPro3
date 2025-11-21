@@ -461,7 +461,7 @@ function SortableSidebarItem({ item, collapsed, isActive }: SortableSidebarItemP
             collapsed ? "justify-center" : "gap-3",
             linkActive
               ? "bg-primary-600 text-white shadow"
-              : "text-neutral-600 hover:bg-primary-50 hover:text-primary-700 dark:text-neutral-300 dark:hover:bg-primary-500/10 dark:hover:text-primary-100",
+              : "text-white hover:bg-white/10 dark:text-white dark:hover:bg-white/10",
             (isDragging || isActive) && "ring-2 ring-primary-400 dark:ring-primary-500",
           )
         }

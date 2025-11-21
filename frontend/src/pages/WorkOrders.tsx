@@ -252,7 +252,7 @@ export default function WorkOrders() {
             departmentId?: string;
             checklists?: unknown;
             signatures?: unknown;
-          };
+          } & Record<string, unknown>;
           if (isEdit && existingId) {
             const updated = prev.map((wo) => {
               if (wo.id !== existingId) {
@@ -292,7 +292,7 @@ export default function WorkOrders() {
           } as WorkOrder;
 
           OPTIONAL_WORK_ORDER_KEYS.forEach((key) => {
-            const value = recordPayload[key as string];
+            const value = (recordPayload as Record<string, unknown>)[key as string];
             assignIfDefined(temp, key, value as WorkOrder[typeof key] | undefined);
           });
           if (checklists !== undefined) {

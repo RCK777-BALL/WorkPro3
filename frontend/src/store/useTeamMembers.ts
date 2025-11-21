@@ -27,9 +27,11 @@ export const useTeamMembers = create<TeamMemberState>((set) => ({
 
   addMember: async (data) => {
     const isForm = data instanceof FormData;
-    const res = await http.post<TeamMemberResponse>('/team', data, {
-      headers: isForm ? { 'Content-Type': 'multipart/form-data' } : undefined,
-    });
+    const res = await http.post<TeamMemberResponse>(
+      '/team',
+      data,
+      isForm ? { headers: { 'Content-Type': 'multipart/form-data' } } : {}
+    );
     const member = mapMember(res.data);
     set((state) => ({ members: [...state.members, member] }));
     return member;
@@ -37,9 +39,11 @@ export const useTeamMembers = create<TeamMemberState>((set) => ({
 
   updateMember: async (id, data) => {
     const isForm = data instanceof FormData;
-    const res = await http.put<TeamMemberResponse>(`/team/${id}`, data, {
-      headers: isForm ? { 'Content-Type': 'multipart/form-data' } : undefined,
-    });
+    const res = await http.put<TeamMemberResponse>(
+      `/team/${id}`,
+      data,
+      isForm ? { headers: { 'Content-Type': 'multipart/form-data' } } : {}
+    );
     const member = mapMember(res.data);
     set((state) => ({
       members: state.members.map((m) => (m.id === id ? member : m)),

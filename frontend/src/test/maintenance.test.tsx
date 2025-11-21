@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Maintenance from '@/pages/Maintenance';
@@ -94,7 +95,9 @@ describe('MaintenanceModal', () => {
       ...baseSchedule,
       id: 'persisted-id',
     });
-    const onOptimisticSave = vi.fn(() => vi.fn());
+    const onOptimisticSave = vi.fn<
+      (value: MaintenanceSchedule) => () => void
+    >(() => vi.fn());
     const onFinalizeSave = vi.fn();
     const onClose = vi.fn();
 
@@ -132,7 +135,9 @@ describe('MaintenanceModal', () => {
   it('rolls back changes when update fails', async () => {
     mockedUpdateMaintenanceSchedule.mockRejectedValueOnce(new Error('network error'));
     const rollback = vi.fn();
-    const onOptimisticSave = vi.fn(() => rollback);
+    const onOptimisticSave = vi.fn<
+      (value: MaintenanceSchedule) => () => void
+    >(() => rollback);
     const onFinalizeSave = vi.fn();
     const onClose = vi.fn();
 
@@ -160,8 +165,8 @@ describe('MaintenanceModal', () => {
   });
 
   it('deletes a schedule and closes on success', async () => {
-    mockedDeleteMaintenanceSchedule.mockResolvedValueOnce();
-    const onOptimisticDelete = vi.fn(() => vi.fn());
+    mockedDeleteMaintenanceSchedule.mockResolvedValueOnce(undefined);
+    const onOptimisticDelete = vi.fn<(id: string) => () => void>(() => vi.fn());
     const onClose = vi.fn();
     const confirmSpy = vi
       .spyOn(window, 'confirm')

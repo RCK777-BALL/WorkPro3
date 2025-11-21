@@ -5,6 +5,7 @@
 import { beforeAll, afterAll, beforeEach } from 'vitest';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongoClient, Db } from 'mongodb';
+import '../types/test-db';
 
 let mongod: MongoMemoryServer;
 let connection: MongoClient;
@@ -17,7 +18,7 @@ beforeAll(async () => {
   db = connection.db('test-db');
 
   // Make db available to tests
-  global.testDb = db;
+  globalThis.testDb = db;
 });
 
 afterAll(async () => {

@@ -11,7 +11,7 @@ describe('MongoDB E2E Tests', () => {
       title: 'Test Work Order',
       description: 'Test Description',
       priority: 'high',
-      status: 'open',
+      status: 'requested',
       type: 'corrective',
     };
 
@@ -32,20 +32,20 @@ describe('MongoDB E2E Tests', () => {
     // Insert initial work order
     const workOrder: Partial<WorkOrder> = {
       title: 'Initial Title',
-      status: 'open',
+      status: 'requested',
     };
     const result = await collection.insertOne(workOrder);
 
     // Update work order
     const updateResult = await collection.updateOne(
       { _id: result.insertedId },
-      { $set: { status: 'in-progress' } }
+      { $set: { status: 'in_progress' } }
     );
     expect(updateResult.modifiedCount).toBe(1);
 
     // Verify update
     const updatedWorkOrder = await collection.findOne({ _id: result.insertedId });
-    expect(updatedWorkOrder?.status).toBe('in-progress');
+    expect(updatedWorkOrder?.status).toBe('in_progress');
   });
 
   it('should delete a work order', async () => {
@@ -54,7 +54,7 @@ describe('MongoDB E2E Tests', () => {
     // Insert work order
     const workOrder: Partial<WorkOrder> = {
       title: 'To Be Deleted',
-      status: 'open',
+      status: 'requested',
     };
     const result = await collection.insertOne(workOrder);
 

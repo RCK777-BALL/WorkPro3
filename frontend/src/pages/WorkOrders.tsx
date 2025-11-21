@@ -247,59 +247,60 @@ export default function WorkOrders() {
         data: payload,
       });
 
-      setWorkOrders((prev) => {
-        const recordPayload = payload as unknown as Record<string, unknown>;
-        if (isEdit && existingId) {
-          const updated = prev.map((wo) => {
-            if (wo.id !== existingId) {
-              return wo;
-            }
-            const departmentValue = (recordPayload.department as string)
-              ?? (recordPayload.departmentId as string)
-              ?? wo.department;
-            const rawChecklists = (recordPayload as { checklists?: unknown }).checklists;
-            const rawSignatures = (recordPayload as { signatures?: unknown }).signatures;
-            const merged: WorkOrder = {
-              ...wo,
-              ...recordPayload,
-              department: departmentValue,
-            } as WorkOrder;
-            delete (merged as Record<string, unknown>).departmentId;
-            if (rawChecklists !== undefined) {
-              merged.checklists = mapChecklistsFromApi(rawChecklists);
-            }
-            if (rawSignatures !== undefined) {
-              merged.signatures = mapSignaturesFromApi(rawSignatures);
-            }
-            return merged;
+        setWorkOrders((prev) => {
+          const recordPayload = payload as unknown as Partial<WorkOrder> & {
+            departmentId?: string;
+            checklists?: unknown;
+            signatures?: unknown;
+          };
+          if (isEdit && existingId) {
+            const updated = prev.map((wo) => {
+              if (wo.id !== existingId) {
+                return wo;
+              }
+              const { departmentId, checklists, signatures, ...restPayload } = recordPayload;
+              const departmentValue = (recordPayload.department as string)
+                ?? departmentId
+                ?? wo.department;
+              const merged: WorkOrder = {
+                ...wo,
+                ...restPayload,
+                department: departmentValue,
+              } as WorkOrder;
+              if (checklists !== undefined) {
+                merged.checklists = mapChecklistsFromApi(checklists);
+              }
+              if (signatures !== undefined) {
+                merged.signatures = mapSignaturesFromApi(signatures);
+              }
+              return merged;
+            });
+            safeLocalStorage.setItem(LOCAL_KEY, JSON.stringify(updated));
+            return updated;
+          }
+
+          const { departmentId, checklists, signatures } = recordPayload;
+          const departmentValue = (recordPayload.department as string) ?? departmentId ?? 'General';
+
+          const temp: WorkOrder = {
+            id: Date.now().toString(),
+            title: (recordPayload.title as string) ?? 'Untitled Work Order',
+            priority: (recordPayload.priority as WorkOrder['priority']) ?? 'medium',
+            status: (recordPayload.status as WorkOrder['status']) ?? 'requested',
+            type: (recordPayload.type as WorkOrder['type']) ?? 'corrective',
+            department: departmentValue,
+          } as WorkOrder;
+
+          OPTIONAL_WORK_ORDER_KEYS.forEach((key) => {
+            const value = recordPayload[key as string];
+            assignIfDefined(temp, key, value as WorkOrder[typeof key] | undefined);
           });
-          safeLocalStorage.setItem(LOCAL_KEY, JSON.stringify(updated));
-          return updated;
-        }
-
-        const departmentValue = (recordPayload.department as string)
-          ?? (recordPayload.departmentId as string)
-          ?? 'General';
-
-        const temp: WorkOrder = {
-          id: Date.now().toString(),
-          title: (recordPayload.title as string) ?? 'Untitled Work Order',
-          priority: (recordPayload.priority as WorkOrder['priority']) ?? 'medium',
-          status: (recordPayload.status as WorkOrder['status']) ?? 'requested',
-          type: (recordPayload.type as WorkOrder['type']) ?? 'corrective',
-          department: departmentValue,
-        } as WorkOrder;
-
-        OPTIONAL_WORK_ORDER_KEYS.forEach((key) => {
-          const value = recordPayload[key as string];
-          assignIfDefined(temp, key, value as WorkOrder[typeof key] | undefined);
-        });
-        if (recordPayload.checklists !== undefined) {
-          temp.checklists = mapChecklistsFromApi(recordPayload.checklists);
-        }
-        if (recordPayload.signatures !== undefined) {
-          temp.signatures = mapSignaturesFromApi(recordPayload.signatures);
-        }
+          if (checklists !== undefined) {
+            temp.checklists = mapChecklistsFromApi(checklists);
+          }
+          if (signatures !== undefined) {
+            temp.signatures = mapSignaturesFromApi(signatures);
+          }
 
         const updated = [...prev, temp];
         safeLocalStorage.setItem(LOCAL_KEY, JSON.stringify(updated));

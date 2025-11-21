@@ -249,7 +249,7 @@ const Departments = () => {
           plantId,
         };
         if (values.description !== undefined) {
-          departmentPayload.description = values.description ?? undefined;
+          departmentPayload.description = values.description ?? '';
         }
         await updateDepartment(departmentEditing.id, departmentPayload);
 
@@ -396,7 +396,7 @@ const Departments = () => {
           plantId,
         };
         if (values.description !== undefined) {
-          departmentPayload.description = values.description ?? undefined;
+          departmentPayload.description = values.description ?? '';
         }
 
         const created = await createDepartment(departmentPayload);

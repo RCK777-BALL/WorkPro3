@@ -3,7 +3,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams, type URLSearchParamsInit } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import http from '@/lib/http';
@@ -26,7 +26,9 @@ const getInitialSearch = () => {
   return '';
 };
 
-const toSearchParamsInit = (value: unknown): URLSearchParamsInit => {
+type SearchParamsCtorInit = string | string[][] | URLSearchParams;
+
+const toSearchParamsInit = (value: unknown): SearchParamsCtorInit => {
   if (value instanceof URLSearchParams || typeof value === 'string') {
     return value;
   }

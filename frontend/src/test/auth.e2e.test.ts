@@ -13,7 +13,7 @@ import authRoutes from '../../../backend/routes/AuthRoutes';
 
 const app = express();
 app.use(express.json());
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRoutes as any);
 
 declare const testDb: any;
 

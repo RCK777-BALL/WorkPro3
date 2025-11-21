@@ -32,8 +32,8 @@ export interface ThemeSettings {
   sidebarCollapsed: boolean;
   denseMode: boolean;
   highContrast: boolean;
-  colorScheme?: string;
-  mode?: 'light' | 'dark' | 'system';
+  colorScheme: string | undefined;
+  mode: 'light' | 'dark' | 'system' | undefined;
 }
 
 interface SettingsState {

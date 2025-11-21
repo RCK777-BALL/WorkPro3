@@ -363,11 +363,11 @@ export interface TeamMember {
   name: string;
   email: string;
   role: AuthRole;
-  department?: string;
+  department?: string | undefined;
   /** Unique employee identifier */
-  employeeId?: string;
+  employeeId?: string | undefined;
   /** Identifier of the member this person reports to */
-  managerId?: string | null;
+  managerId?: string | null | undefined;
   avatar?: string;
 }
 

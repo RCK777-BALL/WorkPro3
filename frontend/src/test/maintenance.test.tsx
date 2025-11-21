@@ -15,7 +15,6 @@ import {
   updateMaintenanceSchedule,
   deleteMaintenanceSchedule,
 } from '@/api/maintenanceSchedules';
-import { vi } from 'vitest';
 
 vi.mock('uuid', () => ({ v4: vi.fn(() => 'temp-id') }));
 

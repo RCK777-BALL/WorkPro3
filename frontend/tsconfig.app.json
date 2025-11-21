@@ -18,7 +18,8 @@
       "react",
       "react-dom",
       "@testing-library/jest-dom",
-      "vitest"
+      "vitest",
+      "node"
     ]
   },
   "include": ["src", "src/types/globals.d.ts"]

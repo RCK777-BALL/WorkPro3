@@ -3,10 +3,9 @@
     "checkJs": false
   },
   "exclude": [
-    "backend-legacy",
-    "backend/dist",
-    "backend/**/*.js",
-    "Backend/**/*.js",
-    "WorkPro3"
+    "node_modules",
+    "**/dist/**",
+    "**/Backend/**/*.js",
+    "**/backend/**/*.js"
   ]
 }

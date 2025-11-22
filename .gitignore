@@ -11,6 +11,7 @@
 
 # Build output
 **/dist/
+WorkPro3/
 
 # Logs
 npm-debug.log*

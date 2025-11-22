@@ -5,6 +5,8 @@
   "exclude": [
     "backend-legacy",
     "backend/dist",
-    "backend/**/*.js"
+    "backend/**/*.js",
+    "Backend/**/*.js",
+    "WorkPro3"
   ]
 }

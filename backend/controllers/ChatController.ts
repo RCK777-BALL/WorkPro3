@@ -158,7 +158,7 @@ const markConversationRead = async (
   return 0;
 };
 
-export async function uploadChatAttachment(
+async function uploadChatAttachment(
   req: AuthedRequest,
   res: Response,
   next: NextFunction,
@@ -193,9 +193,8 @@ export async function uploadChatAttachment(
     return;
   }
 }
-
 // Channel controllers
-export async function getChannels(
+async function getChannels(
   req: AuthedRequest,
   res: Response,
   next: NextFunction,
@@ -248,7 +247,7 @@ export async function getChannels(
   }
 }
 
-export async function createChannel(
+async function createChannel(
   req: AuthedRequest<ParamsDictionary, unknown, CreateChannelBody>,
   res: Response,
   next: NextFunction,
@@ -274,7 +273,7 @@ export async function createChannel(
   }
 }
 
-export async function updateChannel(
+async function updateChannel(
   req: AuthedRequest<ChannelIdParams, unknown, UpdateChannelBody>,
   res: Response,
   next: NextFunction,
@@ -310,7 +309,7 @@ export async function updateChannel(
   }
 }
 
-export async function deleteChannel(
+async function deleteChannel(
   req: AuthedRequest<ChannelIdParams>,
   res: Response,
   next: NextFunction,
@@ -333,7 +332,7 @@ export async function deleteChannel(
   }
 }
 
-export async function getChannelMessages(
+async function getChannelMessages(
   req: AuthedRequest<ChannelIdParams>,
   res: Response,
   next: NextFunction,
@@ -384,7 +383,7 @@ export async function getChannelMessages(
   }
 }
 
-export async function sendChannelMessage(
+async function sendChannelMessage(
   req: AuthedRequest<ChannelIdParams, unknown, MessageBody>,
   res: Response,
   next: NextFunction,
@@ -441,7 +440,7 @@ export async function sendChannelMessage(
   }
 }
 
-export async function markChannelRead(
+async function markChannelRead(
   req: AuthedRequest<ChannelIdParams>,
   res: Response,
   next: NextFunction,
@@ -460,7 +459,7 @@ export async function markChannelRead(
 }
 
 // Message controllers shared between channel and direct messages
-export async function updateMessage(
+async function updateMessage(
   req: AuthedRequest<MessageIdParams, unknown, MessageBody>,
   res: Response,
   next: NextFunction,
@@ -486,7 +485,7 @@ export async function updateMessage(
   }
 }
 
-export async function deleteMessage(
+async function deleteMessage(
   req: AuthedRequest<MessageIdParams>,
   res: Response,
   next: NextFunction,
@@ -505,7 +504,7 @@ export async function deleteMessage(
 }
 
 // Direct message controllers
-export async function getDirectMessages(
+async function getDirectMessages(
   req: AuthedRequest,
   res: Response,
   next: NextFunction,
@@ -554,7 +553,7 @@ export async function getDirectMessages(
   }
 }
 
-export async function createDirectMessage(
+async function createDirectMessage(
   req: AuthedRequest<ParamsDictionary, unknown, CreateDirectMessageBody>,
   res: Response,
   next: NextFunction,
@@ -589,7 +588,7 @@ export async function createDirectMessage(
   }
 }
 
-export async function deleteDirectMessage(
+async function deleteDirectMessage(
   req: AuthedRequest<ConversationIdParams>,
   res: Response,
   next: NextFunction,
@@ -613,7 +612,7 @@ export async function deleteDirectMessage(
   }
 }
 
-export async function getDirectMessagesForUser(
+async function getDirectMessagesForUser(
   req: AuthedRequest<ConversationIdParams>,
   res: Response,
   next: NextFunction,
@@ -665,7 +664,7 @@ export async function getDirectMessagesForUser(
   }
 }
 
-export async function sendDirectMessage(
+async function sendDirectMessage(
   req: AuthedRequest<ConversationIdParams, unknown, MessageBody>,
   res: Response,
   next: NextFunction,
@@ -722,7 +721,7 @@ export async function sendDirectMessage(
   }
 }
 
-export async function markDirectConversationRead(
+async function markDirectConversationRead(
   req: AuthedRequest<ConversationIdParams>,
   res: Response,
   next: NextFunction,
@@ -751,3 +750,22 @@ export async function markDirectConversationRead(
     return;
   }
 }
+
+export {
+  uploadChatAttachment,
+  getChannels,
+  createChannel,
+  updateChannel,
+  deleteChannel,
+  getChannelMessages,
+  sendChannelMessage,
+  markChannelRead,
+  updateMessage,
+  deleteMessage,
+  getDirectMessages,
+  createDirectMessage,
+  deleteDirectMessage,
+  getDirectMessagesForUser,
+  sendDirectMessage,
+  markDirectConversationRead,
+};

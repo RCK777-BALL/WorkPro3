@@ -103,7 +103,7 @@ const normalizeMetadata = (
   return Object.keys(normalized).length > 0 ? normalized : undefined;
 };
 
-export const getAllDocuments: AuthedRequestHandler = async (_req, res, next) => {
+const getAllDocuments: AuthedRequestHandler = async (_req, res, next) => {
 
   try {
     const items = await Document.find();
@@ -115,7 +115,7 @@ export const getAllDocuments: AuthedRequestHandler = async (_req, res, next) => 
   }
 };
 
-export const getDocumentById: AuthedRequestHandler<{ id: string }> = async (
+const getDocumentById: AuthedRequestHandler<{ id: string }> = async (
   req,
   res,
   next,
@@ -177,7 +177,7 @@ const validateFileName = (input: string): { base: string; ext: string } => {
   return { base, ext };
 };
 
-export const createDocument: AuthedRequestHandler<
+const createDocument: AuthedRequestHandler<
   ParamsDictionary,
   unknown,
   DocumentPayload
@@ -279,7 +279,7 @@ export const createDocument: AuthedRequestHandler<
   }
 };
 
-export const updateDocument: AuthedRequestHandler<
+const updateDocument: AuthedRequestHandler<
   { id: string },
   unknown,
   DocumentPayload
@@ -406,7 +406,7 @@ export const updateDocument: AuthedRequestHandler<
   }
 };
 
-export const deleteDocument: AuthedRequestHandler<{ id: string }> = async (
+const deleteDocument: AuthedRequestHandler<{ id: string }> = async (
   req,
   res,
   next,
@@ -461,4 +461,12 @@ export const deleteDocument: AuthedRequestHandler<{ id: string }> = async (
     next(err);
     return;
   }
+};
+
+export {
+  getAllDocuments,
+  getDocumentById,
+  createDocument,
+  updateDocument,
+  deleteDocument,
 };

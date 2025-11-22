@@ -34,9 +34,9 @@ const ManageAssets = () => {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Asset | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [conflict, setConflict] = useState<SyncConflict | null>(null);
+  const isLoadingRef = useRef(false);
 
   useEffect(() => {
     const unsub = onSyncConflict(setConflict);
@@ -51,7 +51,7 @@ const ManageAssets = () => {
     setConflict(null);
   };
 
-  const loadCachedAssets = () => {
+  const loadCachedAssets = useCallback(() => {
     const cached = safeLocalStorage.getItem(ASSET_CACHE_KEY);
     if (cached) {
       setAssets(JSON.parse(cached));
@@ -59,51 +59,48 @@ const ManageAssets = () => {
       return true;
     }
     return false;
-  };
+  }, [addToast, setAssets]);
 
-  const fetchAssets = useMemo(
-    () => async () => {
-      if (isLoading) return;
-      if (!navigator.onLine) {
-        if (!loadCachedAssets()) {
-          setError('Failed to load assets while offline');
-        }
-        return;
+  const fetchAssets = useCallback(async () => {
+    if (isLoadingRef.current) return;
+    if (!navigator.onLine) {
+      if (!loadCachedAssets()) {
+        setError('Failed to load assets while offline');
       }
+      return;
+    }
 
-      try {
-        setIsLoading(true);
-        interface AssetResponse extends Partial<Asset> { _id?: string; id?: string }
-        const res = await http.get<AssetResponse[]>('/assets');
-        const normalized: Asset[] = Array.isArray(res.data)
-          ? res.data.flatMap((asset) => {
-              const { _id, id: assetId, name, ...rest } = asset;
-              const resolvedId = _id ?? assetId;
-              if (!resolvedId) return [] as Asset[];
-              const restFields: Partial<Omit<Asset, 'id' | 'name'>> = rest;
-              const normalizedAsset: Asset = {
-                id: resolvedId,
-                name: name ?? 'Unnamed Asset',
-                ...restFields,
-              };
-              return [normalizedAsset];
-            })
-          : [];
+    try {
+      isLoadingRef.current = true;
+      interface AssetResponse extends Partial<Asset> { _id?: string; id?: string }
+      const res = await http.get<AssetResponse[]>('/assets');
+      const normalized: Asset[] = Array.isArray(res.data)
+        ? res.data.flatMap((asset) => {
+            const { _id, id: assetId, name, ...rest } = asset;
+            const resolvedId = _id ?? assetId;
+            if (!resolvedId) return [] as Asset[];
+            const restFields: Partial<Omit<Asset, 'id' | 'name'>> = rest;
+            const normalizedAsset: Asset = {
+              id: resolvedId,
+              name: name ?? 'Unnamed Asset',
+              ...restFields,
+            };
+            return [normalizedAsset];
+          })
+        : [];
 
-        setAssets(normalized);
-        safeLocalStorage.setItem(ASSET_CACHE_KEY, JSON.stringify(normalized));
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching assets', err);
-        if (!loadCachedAssets()) {
-          setError('Unable to load assets');
-        }
-      } finally {
-        setIsLoading(false);
+      setAssets(normalized);
+      safeLocalStorage.setItem(ASSET_CACHE_KEY, JSON.stringify(normalized));
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching assets', err);
+      if (!loadCachedAssets()) {
+        setError('Unable to load assets');
       }
-    },
-    [addToast, isLoading, setAssets],
-  );
+    } finally {
+      isLoadingRef.current = false;
+    }
+  }, [loadCachedAssets, setAssets]);
 
   useEffect(() => {
     fetchAssets();

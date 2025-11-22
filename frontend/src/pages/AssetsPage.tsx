@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { PlusCircle, RefreshCcw } from 'lucide-react';
 import AssetTable from '@/components/assets/AssetTable';
@@ -38,6 +38,7 @@ const AssetsPage: React.FC = () => {
   const [showWO, setShowWO] = useState(false);
   const [woAsset, setWoAsset] = useState<Asset | null>(null);
   const [conflict, setConflict] = useState<SyncConflict | null>(null);
+  const isFetching = useRef(false);
 
   useEffect(() => {
     const unsub = onSyncConflict(setConflict);
@@ -63,11 +64,13 @@ const AssetsPage: React.FC = () => {
   };
 
   const fetchAssets = useCallback(async () => {
-    if (isLoading) return;
+    if (isFetching.current) return;
+    isFetching.current = true;
     if (!navigator.onLine) {
       if (!loadCachedAssets()) {
         setError('Failed to load assets while offline');
       }
+      isFetching.current = false;
       return;
     }
 
@@ -100,8 +103,9 @@ const AssetsPage: React.FC = () => {
       }
     } finally {
       setIsLoading(false);
+      isFetching.current = false;
     }
-  }, [addToast, isLoading, setAssets]);
+  }, [addToast, setAssets]);
 
   useEffect(() => {
     fetchAssets();

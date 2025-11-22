@@ -15,11 +15,24 @@ import {
   createPurchaseOrder,
   listPurchaseOrders,
   exportPurchaseOrders,
+  listLocations,
+  saveLocation,
+  listStockItems,
+  adjustStock,
+  listStockHistory,
+  transitionPurchaseOrder,
   InventoryError,
   type InventoryContext,
   type PurchaseOrderExportFormat,
 } from './service';
-import { partInputSchema, purchaseOrderInputSchema, vendorInputSchema } from './schemas';
+import {
+  locationInputSchema,
+  partInputSchema,
+  purchaseOrderInputSchema,
+  purchaseOrderStatusSchema,
+  stockAdjustmentSchema,
+  vendorInputSchema,
+} from './schemas';
 
 const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
   if (!req.tenantId) {
@@ -164,6 +177,88 @@ export const listPurchaseOrdersHandler: AuthedRequestHandler = async (req, res, 
   if (!ensureTenant(req, res)) return;
   try {
     const data = await listPurchaseOrders(buildContext(req));
+    send(res, data);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const listLocationsHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    const data = await listLocations(buildContext(req));
+    send(res, data);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const saveLocationHandler: AuthedRequestHandler<{ locationId?: string }> = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  const rawBody = (typeof req.body === 'object' && req.body !== null ? req.body : {}) as Record<string, unknown>;
+  const parse = locationInputSchema.safeParse(rawBody);
+  if (!parse.success) {
+    fail(res, parse.error.errors.map((error) => error.message).join(', '), 400);
+    return;
+  }
+  try {
+    const data = await saveLocation(buildContext(req), parse.data, req.params.locationId);
+    send(res, data, req.params.locationId ? 200 : 201);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const listStockItemsHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    const data = await listStockItems(buildContext(req));
+    send(res, data);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const adjustStockHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  const rawBody = (typeof req.body === 'object' && req.body !== null ? req.body : {}) as Record<string, unknown>;
+  const parse = stockAdjustmentSchema.safeParse(rawBody);
+  if (!parse.success) {
+    fail(res, parse.error.errors.map((error) => error.message).join(', '), 400);
+    return;
+  }
+  try {
+    const data = await adjustStock(buildContext(req), parse.data);
+    send(res, data, 200);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const listStockHistoryHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    const data = await listStockHistory(buildContext(req));
+    send(res, data);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const transitionPurchaseOrderHandler: AuthedRequestHandler<{ purchaseOrderId: string }> = async (
+  req,
+  res,
+  next,
+) => {
+  if (!ensureTenant(req, res)) return;
+  const rawBody = (typeof req.body === 'object' && req.body !== null ? req.body : {}) as Record<string, unknown>;
+  const parse = purchaseOrderStatusSchema.safeParse(rawBody);
+  if (!parse.success) {
+    fail(res, parse.error.errors.map((error) => error.message).join(', '), 400);
+    return;
+  }
+  try {
+    const data = await transitionPurchaseOrder(buildContext(req), req.params.purchaseOrderId, parse.data);
     send(res, data);
   } catch (err) {
     handleError(err, res, next);

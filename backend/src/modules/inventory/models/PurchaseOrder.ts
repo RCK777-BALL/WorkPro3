@@ -8,13 +8,15 @@ export interface PurchaseOrderItem {
   part: Types.ObjectId;
   quantity: number;
   unitCost?: number;
+  qtyReceived?: number;
 }
 
 export interface PurchaseOrderDocument extends Document {
   tenantId: Types.ObjectId;
   siteId?: Types.ObjectId;
+  poNumber?: string;
   vendor: Types.ObjectId;
-  status: 'draft' | 'submitted' | 'acknowledged' | 'received';
+  status: 'draft' | 'pending' | 'approved' | 'ordered' | 'received' | 'closed';
   items: PurchaseOrderItem[];
   notes?: string;
   expectedDate?: Date;
@@ -27,10 +29,11 @@ const purchaseOrderSchema = new Schema<PurchaseOrderDocument>(
   {
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
     siteId: { type: Schema.Types.ObjectId, ref: 'Site', index: true },
+    poNumber: { type: String, index: true },
     vendor: { type: Schema.Types.ObjectId, ref: 'InventoryVendor', required: true },
     status: {
       type: String,
-      enum: ['draft', 'submitted', 'acknowledged', 'received'],
+      enum: ['draft', 'pending', 'approved', 'ordered', 'received', 'closed'],
       default: 'draft',
     },
     items: [
@@ -38,6 +41,7 @@ const purchaseOrderSchema = new Schema<PurchaseOrderDocument>(
         part: { type: Schema.Types.ObjectId, ref: 'InventoryPart', required: true },
         quantity: { type: Number, required: true },
         unitCost: { type: Number },
+        qtyReceived: { type: Number, default: 0 },
       },
     ],
     notes: String,

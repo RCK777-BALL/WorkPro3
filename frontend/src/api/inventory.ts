@@ -5,9 +5,13 @@
 import http from '@/lib/http';
 import type {
   InventoryAlert,
+  InventoryLocation,
   Part,
   PurchaseOrder,
   PurchaseOrderPayload,
+  StockAdjustment,
+  StockHistoryEntry,
+  StockItem,
   VendorSummary,
 } from '@/types';
 
@@ -47,6 +51,14 @@ export const fetchPurchaseOrders = async (): Promise<PurchaseOrder[]> => {
   return res.data;
 };
 
+export const updatePurchaseOrderStatus = async (
+  purchaseOrderId: string,
+  payload: { status: 'pending' | 'approved' | 'ordered' | 'received' | 'closed'; receipts?: Array<{ partId: string; quantity: number }>; },
+): Promise<PurchaseOrder> => {
+  const res = await http.post<PurchaseOrder>(`${BASE_PATH}/purchase-orders/${purchaseOrderId}/status`, payload);
+  return res.data;
+};
+
 const extractFileName = (value?: string): string | undefined => {
   if (!value) return undefined;
   const match = /filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i.exec(value);
@@ -76,4 +88,39 @@ export const downloadPurchaseOrderExport = async (
   const mimeType = (res.headers['content-type'] as string | undefined) ??
     (format === 'pdf' ? 'application/pdf' : 'text/csv');
   return { data: res.data, fileName, mimeType };
+};
+
+export const fetchLocations = async (): Promise<InventoryLocation[]> => {
+  const res = await http.get<InventoryLocation[]>(`${BASE_PATH}/locations`);
+  return res.data;
+};
+
+export const upsertLocation = async (
+  payload: Partial<InventoryLocation> & { name: string; id?: string },
+): Promise<InventoryLocation> => {
+  if (payload.id) {
+    const res = await http.put<InventoryLocation>(`${BASE_PATH}/locations/${payload.id}`, payload);
+    return res.data;
+  }
+  const res = await http.post<InventoryLocation>(`${BASE_PATH}/locations`, payload);
+  return res.data;
+};
+
+export const fetchStockItems = async (): Promise<StockItem[]> => {
+  const res = await http.get<StockItem[]>(`${BASE_PATH}/stock`);
+  return res.data;
+};
+
+export const adjustStockLevel = async (payload: {
+  stockItemId: string;
+  delta: number;
+  reason?: string;
+}): Promise<StockAdjustment> => {
+  const res = await http.post<StockAdjustment>(`${BASE_PATH}/stock/adjust`, payload);
+  return res.data;
+};
+
+export const fetchStockHistory = async (): Promise<StockHistoryEntry[]> => {
+  const res = await http.get<StockHistoryEntry[]>(`${BASE_PATH}/stock/history`);
+  return res.data;
 };

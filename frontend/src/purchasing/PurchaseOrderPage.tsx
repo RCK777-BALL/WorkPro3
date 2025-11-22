@@ -8,6 +8,7 @@ import { createPurchaseOrder } from '@/api/purchasing';
 import {
   downloadPurchaseOrderExport,
   fetchPurchaseOrders,
+  updatePurchaseOrderStatus,
   type PurchaseOrderExportFormat,
 } from '@/api/inventory';
 import Button from '@/components/common/Button';
@@ -119,6 +120,7 @@ export default function PurchaseOrderPage() {
                 <th className="px-3 py-2 text-left font-medium text-neutral-700">Status</th>
                 <th className="px-3 py-2 text-left font-medium text-neutral-700">Vendor</th>
                 <th className="px-3 py-2 text-left font-medium text-neutral-700">Lines</th>
+                <th className="px-3 py-2 text-right font-medium text-neutral-700">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200">
@@ -128,11 +130,25 @@ export default function PurchaseOrderPage() {
                   <td className="px-3 py-2 text-neutral-700">{po.status}</td>
                   <td className="px-3 py-2 text-neutral-700">{po.vendor?.name ?? '—'}</td>
                   <td className="px-3 py-2 text-neutral-700">{po.items.length}</td>
+                  <td className="px-3 py-2 text-right">
+                    {po.status !== 'Received' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          const updated = await updatePurchaseOrderStatus(po.id, { status: 'received' });
+                          setOrders((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+                        }}
+                      >
+                        Mark received
+                      </Button>
+                    )}
+                  </td>
                 </tr>
               ))}
               {!orders.length && (
                 <tr>
-                  <td className="px-3 py-4 text-neutral-500" colSpan={4}>
+                  <td className="px-3 py-4 text-neutral-500" colSpan={5}>
                     No purchase orders yet.
                   </td>
                 </tr>

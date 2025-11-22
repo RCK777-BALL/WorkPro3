@@ -50,6 +50,7 @@ export interface Part {
   tenantId: string;
   siteId?: string;
   name: string;
+  partNo?: string;
   description?: string;
   category?: string;
   sku?: string;
@@ -57,10 +58,15 @@ export interface Part {
   location?: string;
   quantity: number;
   unitCost?: number;
+  cost?: number;
+  unit?: string;
   minStock?: number;
+  minQty?: number;
+  maxQty?: number;
   reorderPoint: number;
   reorderQty?: number;
   reorderThreshold?: number;
+  leadTime?: number;
   autoReorder?: boolean;
   vendorId?: string;
   vendor?: VendorSummary;
@@ -94,6 +100,7 @@ export interface PurchaseOrderItem {
   partName: string;
   quantity: number;
   unitCost?: number;
+  qtyReceived?: number;
 }
 
 export interface PurchaseOrder {
@@ -121,4 +128,54 @@ export interface InventoryAlert {
   assetNames: string[];
   pmTemplateTitles: string[];
   lastTriggeredAt?: string;
+}
+
+export interface InventoryLocation {
+  id: string;
+  tenantId: string;
+  siteId?: string;
+  name: string;
+  store?: string;
+  room?: string;
+  bin?: string;
+  parentId?: string;
+  path: string[];
+}
+
+export interface StockItem {
+  id: string;
+  tenantId: string;
+  siteId?: string;
+  partId: string;
+  part?: Pick<Part, 'id' | 'name' | 'partNumber' | 'partNo'>;
+  locationId: string;
+  location?: InventoryLocation;
+  quantity: number;
+  unitCost?: number;
+  unit?: string;
+  cost?: number;
+}
+
+export interface StockAdjustment {
+  stockItemId: string;
+  partId: string;
+  locationId: string;
+  newQuantity: number;
+  reason?: string;
+  location?: InventoryLocation;
+}
+
+export interface StockHistoryEntry {
+  id: string;
+  partId: string;
+  stockItemId: string;
+  delta: number;
+  reason?: string;
+  createdAt?: string;
+  location: {
+    locationId: string;
+    store?: string;
+    room?: string;
+    bin?: string;
+  };
 }

@@ -10,14 +10,28 @@ import Asset from '../../../models/Asset';
 import PMTask from '../../../models/PMTask';
 import type {
   InventoryAlert,
+  InventoryLocation,
   Part as PartResponse,
   PurchaseOrder as PurchaseOrderResponse,
+  StockAdjustment,
+  StockHistoryEntry,
+  StockItem as StockItemResponse,
   VendorSummary,
 } from '@shared/inventory';
 import PartModel, { type PartDocument } from './models/Part';
 import VendorModel, { type VendorDocument } from './models/Vendor';
 import PurchaseOrderModel, { type PurchaseOrderDocument } from './models/PurchaseOrder';
-import type { PartInput, PurchaseOrderInput, VendorInput } from './schemas';
+import LocationModel, { type LocationDocument } from './models/Location';
+import StockItemModel, { type StockItemDocument } from './models/StockItem';
+import StockHistoryModel, { type StockHistoryDocument } from './models/StockHistory';
+import type {
+  LocationInput,
+  PartInput,
+  PurchaseOrderInput,
+  PurchaseOrderStatusInput,
+  StockAdjustmentInput,
+  VendorInput,
+} from './schemas';
 import logger from '../../../utils/logger';
 
 export interface InventoryContext {
@@ -41,6 +55,7 @@ const AUTO_REORDER_COOLDOWN_MS = 1000 * 60 * 60 * 6;
 type PartRecord = Pick<
   PartDocument,
   | 'name'
+  | 'partNo'
   | 'description'
   | 'category'
   | 'sku'
@@ -48,10 +63,15 @@ type PartRecord = Pick<
   | 'location'
   | 'quantity'
   | 'unitCost'
+  | 'unit'
+  | 'cost'
   | 'minStock'
+  | 'minQty'
+  | 'maxQty'
   | 'reorderPoint'
   | 'reorderQty'
   | 'reorderThreshold'
+  | 'leadTime'
   | 'autoReorder'
   | 'vendor'
   | 'assetIds'
@@ -214,6 +234,8 @@ const serializePart = (
     name: part.name,
     quantity: part.quantity,
     unitCost: part.unitCost ?? 0,
+    unit: part.unit,
+    cost: part.cost,
     reorderPoint: part.reorderPoint,
     autoReorder: part.autoReorder ?? false,
     assets: (part.assetIds ?? [])
@@ -237,6 +259,9 @@ const serializePart = (
   if (part.description) {
     response.description = part.description;
   }
+  if (part.partNo) {
+    response.partNo = part.partNo;
+  }
   if (part.category) {
     response.category = part.category;
   }
@@ -251,6 +276,12 @@ const serializePart = (
   }
   if (typeof part.minStock === 'number') {
     response.minStock = part.minStock;
+  }
+  if (typeof part.minQty === 'number') {
+    response.minQty = part.minQty;
+  }
+  if (typeof part.maxQty === 'number') {
+    response.maxQty = part.maxQty;
   }
   if (typeof part.reorderQty === 'number') {
     response.reorderQty = part.reorderQty;
@@ -273,6 +304,9 @@ const serializePart = (
   if (part.lastOrderDate) {
     response.lastOrderDate = part.lastOrderDate.toISOString();
   }
+  if (typeof part.leadTime === 'number') {
+    response.leadTime = part.leadTime;
+  }
   if (part.notes) {
     response.notes = part.notes;
   }
@@ -280,6 +314,21 @@ const serializePart = (
     response.lastAutoReorderAt = part.lastAutoReorderAt.toISOString();
   }
 
+  return response;
+};
+
+const serializeLocation = (location: LocationDocument): InventoryLocation => {
+  const response: InventoryLocation = {
+    id: (location._id as Types.ObjectId).toString(),
+    tenantId: location.tenantId.toString(),
+    name: location.name,
+    path: location.path,
+  };
+  if (location.siteId) response.siteId = location.siteId.toString();
+  if (location.parent) response.parentId = location.parent.toString();
+  if (location.store) response.store = location.store;
+  if (location.room) response.room = location.room;
+  if (location.bin) response.bin = location.bin;
   return response;
 };
 
@@ -294,10 +343,196 @@ export const listParts = async (context: InventoryContext): Promise<PartResponse
   return parts.map((part) => serializePart(part, refs));
 };
 
+const buildLocationPath = async (
+  tenantId: Types.ObjectId,
+  parentId?: Types.ObjectId,
+): Promise<string[]> => {
+  if (!parentId) return [];
+  const parent = await LocationModel.findOne({ _id: parentId, tenantId });
+  return parent ? [...(parent.path ?? []), parent.name] : [];
+};
+
+export const listLocations = async (context: InventoryContext): Promise<InventoryLocation[]> => {
+  const tenantId = toObjectId(context.tenantId, 'tenant id');
+  const query: Record<string, unknown> = { tenantId };
+  if (context.siteId) query.siteId = maybeObjectId(context.siteId);
+  const locations = await LocationModel.find(query).sort({ name: 1 });
+  return locations.map((loc) => serializeLocation(loc));
+};
+
+export const saveLocation = async (
+  context: InventoryContext,
+  input: LocationInput,
+  locationId?: string,
+): Promise<InventoryLocation> => {
+  const tenantId = toObjectId(context.tenantId, 'tenant id');
+  const parentId = input.parentId ? toObjectId(input.parentId, 'parent id') : undefined;
+  const path = await buildLocationPath(tenantId, parentId);
+  let location: LocationDocument | null;
+  if (locationId) {
+    location = await LocationModel.findOne({ _id: locationId, tenantId });
+    if (!location) {
+      throw new InventoryError('Location not found', 404);
+    }
+    location.set({
+      name: input.name,
+      store: input.store,
+      room: input.room,
+      bin: input.bin,
+      parent: parentId,
+      path,
+      siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
+    });
+    await location.save();
+  } else {
+    location = await LocationModel.create({
+      tenantId,
+      siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
+      name: input.name,
+      store: input.store,
+      room: input.room,
+      bin: input.bin,
+      parent: parentId,
+      path,
+    });
+  }
+  return serializeLocation(location);
+};
+
+const serializeStockItem = (
+  stock: StockItemDocument,
+  part?: PartDocument | null,
+  location?: LocationDocument | null,
+): StockItemResponse => {
+  const response: StockItemResponse = {
+    id: (stock._id as Types.ObjectId).toString(),
+    tenantId: stock.tenantId.toString(),
+    partId: stock.part.toString(),
+    locationId: stock.location.toString(),
+    quantity: stock.quantity,
+    unitCost: stock.unitCost,
+    unit: stock.unit,
+    cost: stock.cost,
+  };
+  if (stock.siteId) response.siteId = stock.siteId.toString();
+  if (part) {
+    response.part = {
+      id: (part._id as Types.ObjectId).toString(),
+      name: part.name,
+      partNumber: part.partNumber,
+      partNo: part.partNo,
+    };
+  }
+  if (location) {
+    response.location = serializeLocation(location);
+  }
+  return response;
+};
+
+const ensureStockItem = async (
+  context: InventoryContext,
+  stockItemId: string,
+): Promise<StockItemDocument> => {
+  const stockItem = await StockItemModel.findOne({ _id: stockItemId, tenantId: context.tenantId });
+  if (!stockItem) {
+    throw new InventoryError('Stock record not found', 404);
+  }
+  return stockItem;
+};
+
+export const listStockItems = async (context: InventoryContext): Promise<StockItemResponse[]> => {
+  const tenantId = toObjectId(context.tenantId, 'tenant id');
+  const query: Record<string, unknown> = { tenantId };
+  if (context.siteId) query.siteId = maybeObjectId(context.siteId);
+  const stocks = await StockItemModel.find(query);
+  const partIds = stocks.map((s) => s.part);
+  const locationIds = stocks.map((s) => s.location);
+  const [parts, locations] = await Promise.all([
+    PartModel.find({ _id: { $in: partIds } }),
+    LocationModel.find({ _id: { $in: locationIds } }),
+  ]);
+  const partMap = new Map(parts.map((p) => [p._id.toString(), p]));
+  const locationMap = new Map(locations.map((l) => [l._id.toString(), l]));
+  return stocks.map((stock) =>
+    serializeStockItem(stock, partMap.get(stock.part.toString()) ?? undefined, locationMap.get(stock.location.toString()) ?? undefined),
+  );
+};
+
+const recordStockHistory = async (
+  context: InventoryContext,
+  stockItem: StockItemDocument,
+  delta: number,
+  reason?: string,
+): Promise<StockHistoryDocument> => {
+  const location = await LocationModel.findById(stockItem.location);
+  return StockHistoryModel.create({
+    tenantId: toObjectId(context.tenantId, 'tenant id'),
+    siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
+    part: stockItem.part,
+    stockItem: stockItem._id,
+    locationSnapshot: {
+      locationId: stockItem.location,
+      store: location?.store,
+      room: location?.room,
+      bin: location?.bin,
+    },
+    delta,
+    reason,
+    createdBy: context.userId ? toObjectId(context.userId, 'user id') : undefined,
+  });
+};
+
+export const adjustStock = async (
+  context: InventoryContext,
+  input: StockAdjustmentInput,
+): Promise<StockAdjustment> => {
+  const stockItem = await ensureStockItem(context, input.stockItemId);
+  const part = await PartModel.findById(stockItem.part);
+  stockItem.quantity += input.delta;
+  if (stockItem.quantity < 0) stockItem.quantity = 0;
+  await stockItem.save();
+  if (part) {
+    part.quantity = Math.max(0, (part.quantity ?? 0) + input.delta);
+    await part.save();
+  }
+  await recordStockHistory(context, stockItem, input.delta, input.reason);
+  const location = await LocationModel.findById(stockItem.location);
+  return {
+    stockItemId: stockItem._id.toString(),
+    newQuantity: stockItem.quantity,
+    partId: stockItem.part.toString(),
+    locationId: stockItem.location.toString(),
+    reason: input.reason,
+    location: location ? serializeLocation(location) : undefined,
+  };
+};
+
+export const listStockHistory = async (context: InventoryContext): Promise<StockHistoryEntry[]> => {
+  const tenantId = toObjectId(context.tenantId, 'tenant id');
+  const query: Record<string, unknown> = { tenantId };
+  if (context.siteId) query.siteId = maybeObjectId(context.siteId);
+  const history = await StockHistoryModel.find(query).sort({ createdAt: -1 }).limit(100);
+  return history.map((entry) => ({
+    id: (entry._id as Types.ObjectId).toString(),
+    partId: entry.part.toString(),
+    stockItemId: entry.stockItem.toString(),
+    delta: entry.delta,
+    reason: entry.reason,
+    createdAt: entry.createdAt?.toISOString(),
+    location: {
+      locationId: entry.locationSnapshot.locationId.toString(),
+      store: entry.locationSnapshot.store,
+      room: entry.locationSnapshot.room,
+      bin: entry.locationSnapshot.bin,
+    },
+  }));
+};
+
 const buildPartPayload = (input: PartInput): Partial<PartDocument> => {
   const payload: Partial<PartDocument> = {};
 
   if (input.description !== undefined) payload.description = input.description;
+  if (input.partNo !== undefined) payload.partNo = input.partNo;
   if (input.category !== undefined) payload.category = input.category;
   if (input.sku !== undefined) payload.sku = input.sku;
   if (input.partNumber !== undefined) payload.partNumber = input.partNumber;
@@ -305,10 +540,15 @@ const buildPartPayload = (input: PartInput): Partial<PartDocument> => {
   if (input.notes !== undefined) payload.notes = input.notes;
   if (typeof input.quantity === 'number') payload.quantity = input.quantity;
   if (typeof input.unitCost === 'number') payload.unitCost = input.unitCost;
+  if (typeof input.cost === 'number') payload.cost = input.cost;
+  if (input.unit !== undefined) payload.unit = input.unit;
   if (typeof input.minStock === 'number') payload.minStock = input.minStock;
+  if (typeof input.minQty === 'number') payload.minQty = input.minQty;
+  if (typeof input.maxQty === 'number') payload.maxQty = input.maxQty;
   if (typeof input.reorderPoint === 'number') payload.reorderPoint = input.reorderPoint;
   if (typeof input.reorderQty === 'number') payload.reorderQty = input.reorderQty;
   if (typeof input.reorderThreshold === 'number') payload.reorderThreshold = input.reorderThreshold;
+  if (typeof input.leadTime === 'number') payload.leadTime = input.leadTime;
   if (typeof input.autoReorder === 'boolean') payload.autoReorder = input.autoReorder;
   if (input.assetIds !== undefined) {
     payload.assetIds = input.assetIds.map((id) => toObjectId(id, 'asset id'));
@@ -487,12 +727,16 @@ const serializePurchaseOrder = async (
     switch (s) {
       case 'draft':
         return 'Draft';
-      case 'submitted':
+      case 'pending':
         return 'Pending';
-      case 'acknowledged':
+      case 'approved':
+        return 'Approved';
+      case 'ordered':
         return 'Ordered';
       case 'received':
         return 'Received';
+      case 'closed':
+        return 'Closed';
       default:
         return 'Draft';
     }
@@ -504,12 +748,16 @@ const serializePurchaseOrder = async (
     status: mapStatus(po.status),
     autoGenerated: po.autoGenerated,
     createdAt: po.createdAt?.toISOString() ?? new Date().toISOString(),
+    poNumber: po.poNumber,
     items: po.items.map((item) => {
       const purchaseItem: PurchaseOrderResponse['items'][number] = {
         partId: item.part.toString(),
         partName: partMap.get(item.part.toString()) ?? 'Part',
         quantity: item.quantity,
       };
+      if (typeof item.qtyReceived === 'number') {
+        purchaseItem.qtyReceived = item.qtyReceived;
+      }
       if (typeof item.unitCost === 'number') {
         purchaseItem.unitCost = item.unitCost;
       }
@@ -633,16 +881,79 @@ export const createPurchaseOrder = async (
     part: toObjectId(item.partId, 'part id'),
     quantity: item.quantity,
     unitCost: item.unitCost,
+    qtyReceived: 0,
   }));
   const po = await PurchaseOrderModel.create({
     tenantId,
     siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
     vendor: vendor._id,
     notes: input.notes,
+    poNumber: input.poNumber,
     expectedDate: normalizeDate(input.expectedDate),
     autoGenerated: input.autoGenerated ?? false,
     items,
   });
+  return serializePurchaseOrder(po);
+};
+
+const ensurePurchaseOrder = async (
+  context: InventoryContext,
+  purchaseOrderId: string,
+): Promise<PurchaseOrderDocument> => {
+  const po = await PurchaseOrderModel.findOne({ _id: purchaseOrderId, tenantId: context.tenantId });
+  if (!po) {
+    throw new InventoryError('Purchase order not found', 404);
+  }
+  return po;
+};
+
+const ALLOWED_TRANSITIONS: Record<PurchaseOrderDocument['status'], PurchaseOrderDocument['status'][]> = {
+  draft: ['pending'],
+  pending: ['approved', 'closed'],
+  approved: ['ordered', 'closed'],
+  ordered: ['received', 'closed'],
+  received: ['closed'],
+  closed: [],
+};
+
+const applyReceipts = (
+  po: PurchaseOrderDocument,
+  receipts: PurchaseOrderStatusInput['receipts'],
+): void => {
+  if (!receipts) return;
+  receipts.forEach((receipt) => {
+    const line = po.items.find((item) => item.part.toString() === receipt.partId);
+    if (!line) return;
+    const nextValue = Math.min(line.quantity, (line.qtyReceived ?? 0) + receipt.quantity);
+    line.qtyReceived = nextValue;
+  });
+};
+
+export const transitionPurchaseOrder = async (
+  context: InventoryContext,
+  purchaseOrderId: string,
+  input: PurchaseOrderStatusInput,
+): Promise<PurchaseOrderResponse> => {
+  const po = await ensurePurchaseOrder(context, purchaseOrderId);
+  const allowed = ALLOWED_TRANSITIONS[po.status] ?? [];
+  if (!allowed.includes(input.status)) {
+    throw new InventoryError('Invalid purchase order transition', 400);
+  }
+  applyReceipts(po, input.receipts);
+  po.status = input.status;
+  await po.save();
+  if (input.status === 'received' && input.receipts?.length) {
+    await Promise.all(
+      input.receipts.map(async (receipt) => {
+        const partId = toObjectId(receipt.partId, 'part id');
+        const part = await PartModel.findById(partId);
+        if (part) {
+          part.quantity = (part.quantity ?? 0) + receipt.quantity;
+          await part.save();
+        }
+      }),
+    );
+  }
   return serializePurchaseOrder(po);
 };
 

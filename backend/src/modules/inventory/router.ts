@@ -16,6 +16,12 @@ import {
   createPurchaseOrderHandler,
   listPurchaseOrdersHandler,
   exportPurchaseOrdersHandler,
+  listLocationsHandler,
+  saveLocationHandler,
+  listStockItemsHandler,
+  adjustStockHandler,
+  listStockHistoryHandler,
+  transitionPurchaseOrderHandler,
 } from './controller';
 
 const router = Router();
@@ -37,5 +43,18 @@ router.post(
   requirePermission('inventory', 'purchase'),
   createPurchaseOrderHandler,
 );
+router.post(
+  '/purchase-orders/:purchaseOrderId/status',
+  requirePermission('inventory', 'purchase'),
+  transitionPurchaseOrderHandler,
+);
+
+router.get('/locations', requirePermission('inventory', 'read'), listLocationsHandler);
+router.post('/locations', requirePermission('inventory', 'manage'), saveLocationHandler);
+router.put('/locations/:locationId', requirePermission('inventory', 'manage'), saveLocationHandler);
+
+router.get('/stock', requirePermission('inventory', 'read'), listStockItemsHandler);
+router.post('/stock/adjust', requirePermission('inventory', 'manage'), adjustStockHandler);
+router.get('/stock/history', requirePermission('inventory', 'read'), listStockHistoryHandler);
 
 export default router;

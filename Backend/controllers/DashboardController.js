@@ -1,19 +1,44 @@
 // Dashboard controller stubs to ensure syntactic integrity.
 
-const notImplemented = (res, action) => {
+// controller methods
+async function getDashboardOverview(_req, res) {
+  return notImplemented(res, 'getDashboardOverview');
+}
+
+async function getDashboardLivePulse(_req, res) {
+  return notImplemented(res, 'getDashboardLivePulse');
+}
+
+async function getDashboardWorkOrders(_req, res) {
+  return notImplemented(res, 'getDashboardWorkOrders');
+}
+
+async function getDashboardRecentActivity(_req, res) {
+  return notImplemented(res, 'getDashboardRecentActivity');
+}
+
+async function getDashboardPermits(_req, res) {
+  return notImplemented(res, 'getDashboardPermits');
+}
+
+async function getDashboardExportPdf(_req, res) {
+  return notImplemented(res, 'getDashboardExportPdf');
+}
+
+async function postDashboardImportSync(_req, res) {
+  return notImplemented(res, 'postDashboardImportSync');
+}
+
+async function postLaunchPlanner(_req, res) {
+  return notImplemented(res, 'postLaunchPlanner');
+}
+
+// shared helper
+function notImplemented(res, action) {
   res.status(501).json({ success: false, message: `${action} not implemented` });
-};
+}
 
-const getDashboardOverview = (_req, res) => notImplemented(res, 'getDashboardOverview');
-const getDashboardLivePulse = (_req, res) => notImplemented(res, 'getDashboardLivePulse');
-const getDashboardWorkOrders = (_req, res) => notImplemented(res, 'getDashboardWorkOrders');
-const getDashboardRecentActivity = (_req, res) =>
-  notImplemented(res, 'getDashboardRecentActivity');
-const getDashboardPermits = (_req, res) => notImplemented(res, 'getDashboardPermits');
-const getDashboardExportPdf = (_req, res) => notImplemented(res, 'getDashboardExportPdf');
-const postDashboardImportSync = (_req, res) => notImplemented(res, 'postDashboardImportSync');
-const postLaunchPlanner = (_req, res) => notImplemented(res, 'postLaunchPlanner');
-
+// exports
 module.exports = {
   getDashboardOverview,
   getDashboardLivePulse,

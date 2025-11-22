@@ -3,9 +3,9 @@
  */
 
 import type React from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Plus, RefreshCcw } from 'lucide-react';
 import AssetTable from '@/components/assets/AssetTable';
 import AssetModal from '@/components/assets/AssetModal';
 import Button from '@/components/common/Button';
@@ -157,6 +157,10 @@ const ManageAssets = () => {
           <p className="text-neutral-600 mt-1">Add new equipment, edit details, duplicate templates, or remove retired assets.</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={fetchAssets} disabled={isLoading}>
+            <RefreshCcw className="w-4 h-4 mr-2" />
+            {isLoading ? 'Refreshing...' : 'Refresh'}
+          </Button>
           <Button variant="primary" onClick={() => { setSelected(null); setModalOpen(true); }}>
             <Plus className="w-4 h-4 mr-2" />
             Add Asset

@@ -135,6 +135,7 @@ const namingTips = [
 
 const quickActions = [
   { label: 'Asset Explorer', to: null },
+  { label: 'Manage Assets', to: '/assets/manage' },
   { label: 'Import Assets', to: '/imports' },
   { label: 'Asset Management Guide', to: '/documentation/asset-management' },
 ];
@@ -310,7 +311,7 @@ const AssetManagementAssetsGuide: React.FC = () => {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Link to="/assets" className="inline-flex">
+              <Link to="/assets/manage" className="inline-flex">
                 <Button>
                   <Settings className="h-4 w-4 mr-2" />
                   Manage Assets

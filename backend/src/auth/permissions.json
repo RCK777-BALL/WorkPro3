@@ -10,6 +10,7 @@
       "assistant_department_leader",
       "area_leader",
       "team_leader",
+      "admin",
       "team_member",
       "technical_team_member",
       "manager",

@@ -1,15 +1,32 @@
 // Condition rule controller stubs with a single CommonJS export.
 
-const notImplemented = (res, action) => {
+// controller methods
+async function getAllConditionRules(_req, res) {
+  return notImplemented(res, 'getAllConditionRules');
+}
+
+async function getConditionRuleById(_req, res) {
+  return notImplemented(res, 'getConditionRuleById');
+}
+
+async function createConditionRule(_req, res) {
+  return notImplemented(res, 'createConditionRule');
+}
+
+async function updateConditionRule(_req, res) {
+  return notImplemented(res, 'updateConditionRule');
+}
+
+async function deleteConditionRule(_req, res) {
+  return notImplemented(res, 'deleteConditionRule');
+}
+
+// shared helper
+function notImplemented(res, action) {
   res.status(501).json({ success: false, message: `${action} not implemented` });
-};
+}
 
-const getAllConditionRules = (_req, res) => notImplemented(res, 'getAllConditionRules');
-const getConditionRuleById = (_req, res) => notImplemented(res, 'getConditionRuleById');
-const createConditionRule = (_req, res) => notImplemented(res, 'createConditionRule');
-const updateConditionRule = (_req, res) => notImplemented(res, 'updateConditionRule');
-const deleteConditionRule = (_req, res) => notImplemented(res, 'deleteConditionRule');
-
+// exports
 module.exports = {
   getAllConditionRules,
   getConditionRuleById,

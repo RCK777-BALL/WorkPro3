@@ -4,7 +4,7 @@
 
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Plus, RefreshCcw } from 'lucide-react';
 import AssetTable from '@/components/assets/AssetTable';
 import AssetModal from '@/components/assets/AssetModal';
@@ -30,7 +30,6 @@ const ManageAssets = () => {
 
   const { addToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
 
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Asset | null>(null);
@@ -161,7 +160,6 @@ const ManageAssets = () => {
           <p className="text-neutral-600 mt-1">Add new equipment, edit details, duplicate templates, or remove retired assets.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="ghost" onClick={() => navigate('/assets')}>View asset explorer</Button>
           <Button variant="outline" onClick={fetchAssets} disabled={isLoading}>
             <RefreshCcw className="w-4 h-4 mr-2" />
             {isLoading ? 'Refreshing...' : 'Refresh'}

@@ -206,7 +206,7 @@ const locationKey = ({ departmentId, lineId, stationId }: AssetHierarchyLocation
   return `${department}::${line}::${station}`;
 };
 
-export async function getAllAssets(
+async function getAllAssets(
   req: AuthedRequest,
   res: Response,
   next: NextFunction,
@@ -232,7 +232,7 @@ export async function getAllAssets(
   }
 }
 
-export async function getAssetById(
+async function getAssetById(
   req: AuthedRequest<AssetParams>,
   res: Response,
   next: NextFunction,
@@ -271,7 +271,7 @@ export async function getAssetById(
   }
 }
 
-export async function createAsset(
+async function createAsset(
   req: AuthedRequest<ParamsDictionary, unknown, AssetBody>,
   res: Response,
   next: NextFunction,
@@ -405,7 +405,7 @@ export async function createAsset(
   }
 }
 
-export async function updateAsset(
+async function updateAsset(
   req: AuthedRequest<AssetParams, unknown, AssetUpdateBody>,
   res: Response,
   next: NextFunction,
@@ -595,7 +595,7 @@ export async function updateAsset(
   }
 }
 
-export async function deleteAsset(
+async function deleteAsset(
   req: AuthedRequest<AssetParams>,
   res: Response,
   next: NextFunction,
@@ -655,7 +655,7 @@ export async function deleteAsset(
   }
 }
 
-export async function searchAssets(
+async function searchAssets(
   req: AuthedRequest<ParamsDictionary, unknown, unknown, SearchAssetsQuery>,
   res: Response,
   next: NextFunction,
@@ -692,7 +692,7 @@ export async function searchAssets(
   }
 }
 
-export async function getAssetTree(
+async function getAssetTree(
   req: AuthedRequest,
   res: Response,
   next: NextFunction,
@@ -813,4 +813,14 @@ export async function getAssetTree(
     return;
   }
 }
+
+export {
+  getAllAssets,
+  getAssetById,
+  createAsset,
+  updateAsset,
+  deleteAsset,
+  searchAssets,
+  getAssetTree,
+};
 

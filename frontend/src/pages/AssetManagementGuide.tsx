@@ -70,7 +70,7 @@ const quickLinks = [
   { label: 'Departments', to: '/departments' },
   { label: 'Lines', to: '/lines' },
   { label: 'Stations', to: '/stations' },
-  { label: 'Assets', to: '/assets/manage' },
+  { label: 'Assets', to: '/assets' },
 ];
 
 const AssetManagementGuide: React.FC = () => (

@@ -30,6 +30,8 @@ type RawAuthUser = {
   email?: string | null;
   tenantId?: string;
   siteId?: string;
+  roles?: string[];
+  permissions?: string[];
   role?: string;
 };
 
@@ -105,6 +107,18 @@ const toAuthUser = (payload: RawAuthUser): AuthUser => {
 
   if (payload.siteId !== undefined) {
     user.siteId = payload.siteId;
+  }
+
+  if (Array.isArray(payload.roles)) {
+    user.roles = payload.roles
+      .map((role) => (typeof role === 'string' ? role.toLowerCase() : ''))
+      .filter(Boolean) as AuthUser['roles'];
+  }
+
+  if (Array.isArray(payload.permissions)) {
+    user.permissions = payload.permissions
+      .map((permission) => (typeof permission === 'string' ? permission.toLowerCase() : ''))
+      .filter((permission): permission is string => Boolean(permission));
   }
 
   return user;

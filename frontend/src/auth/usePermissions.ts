@@ -38,10 +38,19 @@ export const usePermissions = () => {
     return normalizeRoles(merged as AuthRole[]);
   }, [user]);
 
+  const explicitPermissions = useMemo(() => {
+    if (!user?.permissions?.length) return null;
+    return new Set(user.permissions.map((permission) => permission.toLowerCase()));
+  }, [user]);
+
   const can = useCallback(
     (scope: PermissionScope, action: PermissionAction) => {
       if (!user) {
         return false;
+      }
+      const permissionKey = `${String(scope)}:${String(action)}`.toLowerCase();
+      if (explicitPermissions?.has(permissionKey)) {
+        return true;
       }
       if (roles.some((role) => ADMIN_ROLES.includes(role))) {
         return true;
@@ -53,7 +62,7 @@ export const usePermissions = () => {
       const allowedSet = new Set(allowed.map((role) => role.toLowerCase()));
       return roles.some((role) => allowedSet.has(role));
     },
-    [roles, user],
+    [explicitPermissions, roles, user],
   );
 
   return { can };

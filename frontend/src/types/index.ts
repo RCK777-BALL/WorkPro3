@@ -31,12 +31,16 @@ export type MaintenanceType = 'preventive' | 'corrective' | 'inspection';
 
 export interface Asset {
   id: string;
+  tenantId: string;
+  siteId?: string;
+  plantId?: string;
   name: string;
   type?: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface';
   qrCode?: string;
   location?: string;
   notes?: string;
   department?: string;
+  departmentId?: string;
   category?: string;
   status?: 'Active' | 'Offline' | 'In Repair';
   description?: string;
@@ -107,6 +111,15 @@ export interface DepartmentHierarchy extends Department {
 export interface WorkOrder {
   /** Unique identifier */
   id: string;
+
+  /** Tenant context for the work order */
+  tenantId: string;
+
+  /** Optional site context for the work order */
+  siteId?: string;
+
+  /** Optional plant context */
+  plant?: string;
 
   /** Human readable title */
   title: string;
@@ -409,6 +422,7 @@ export interface AuthUser {
   email: string;
   role: AuthRole;
   roles?: AuthRole[];
+  permissions?: string[];
   /** Identifier for the user's tenant */
   tenantId?: string;
   /** Optional site identifier associated with the user */

@@ -26,6 +26,9 @@ export type AuthedRequest<
       })
     | undefined;
   tenantId?: string | undefined;
+  roles?: string[] | undefined;
+  role?: string | undefined;
+  permissions?: string[] | undefined;
   siteId?: string | undefined;
   plantId?: string | undefined;
 };

@@ -25,18 +25,36 @@ const toRoleList = (input: unknown): string[] => {
   return [];
 };
 
+const toPermissionSet = (input: unknown): Set<string> => {
+  if (!input) return new Set();
+  const list = Array.isArray(input) ? input : [input];
+  const normalized = list
+    .map((value) => (typeof value === 'string' ? value.toLowerCase() : ''))
+    .filter(Boolean);
+  return new Set(normalized);
+};
+
 export const hasPermission = <S extends PermissionScope>(
   roles: string[] | undefined,
   scope: S,
   action: PermissionAction<S>,
+  permissions?: Set<string> | string[] | undefined,
 ): boolean => {
   if (!roles || roles.length === 0) {
-    return false;
+    const explicit = permissions instanceof Set ? permissions : toPermissionSet(permissions);
+    const permissionKey = `${String(scope)}:${String(action)}`.toLowerCase();
+    return explicit.has(permissionKey);
   }
 
   const normalizedRoles = roles.map((role) => role.toLowerCase());
 
   if (normalizedRoles.some((role) => ADMIN_ROLES.includes(role as UserRole))) {
+    return true;
+  }
+
+  const explicit = permissions instanceof Set ? permissions : toPermissionSet(permissions);
+  const permissionKey = `${String(scope)}:${String(action)}`.toLowerCase();
+  if (explicit.has(permissionKey)) {
     return true;
   }
 
@@ -55,13 +73,15 @@ export const requirePermission = <S extends PermissionScope>(
 ): RequestHandler =>
   (req, res, next): void => {
     const authedReq = req as AuthedRequest;
-    const user = authedReq.user as { roles?: unknown; role?: unknown } | undefined;
+    const user = authedReq.user as { roles?: unknown; role?: unknown; permissions?: unknown } | undefined;
     const roles = toRoleList(user?.roles);
     if (roles.length === 0 && user?.role) {
       roles.push(...toRoleList(user.role));
     }
 
-    if (!hasPermission(roles, scope, action)) {
+    const permissions = toPermissionSet(user?.permissions);
+
+    if (!hasPermission(roles, scope, action, permissions)) {
       res.status(403).json({ message: 'Forbidden' });
       return;
     }

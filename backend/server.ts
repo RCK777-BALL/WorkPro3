@@ -50,6 +50,7 @@ import {
   inventoryV2Routes,
   plantRoutes,
   contractorRoutes,
+  commentRoutes,
   permitRoutes,
   pmRoutes,
   pmTasksRoutes,
@@ -57,6 +58,7 @@ import {
   settingsRoutes,
   reportsRoutes,
   requestPortalRoutes,
+  requestsRoutes,
   globalRoutes,
   statusRoutes,
   StationRoutes,
@@ -69,6 +71,7 @@ import {
   vendorRoutes,
   webhooksRoutes,
   workOrdersRoutes,
+  mobileSyncRoutes,
 } from "./routes";
 import mobileRoutes from "./routes/mobileRoutes";
 import mobileSyncAdminRoutes from "./routes/mobileSyncAdmin";
@@ -240,6 +243,7 @@ app.use(/^\/api(?!\/(auth|public))/, requireAuth, tenantScope);
 
 app.use("/api/mobile", mobileLimiter, mobileRoutes);
 app.use("/api/mobile", mobileLimiter, mobileSyncAdminRoutes);
+app.use("/api/mobile", mobileLimiter, mobileSyncRoutes);
 
 app.use("/api/notifications", burstFriendly, notificationsRoutes);
 // Apply limiter to the rest of protected /api routes
@@ -255,6 +259,7 @@ app.use("/api/departments", departmentRoutes);
 app.use("/api/workorders", workOrdersRoutes);
 app.use("/api/permits", permitRoutes);
 app.use("/api/assets", assetsRoutes);
+app.use("/api/comments", commentRoutes);
 app.use("/api/assets", assetInsightsRouter);
 app.use("/api/meters", meterRoutes);
 app.use("/api/tenants", TenantRoutes);
@@ -286,6 +291,8 @@ app.use("/api/alerts", alertRoutes);
 app.use("/api/global", globalRoutes);
 app.use("/api/technician", technicianRoutes);
 app.use("/api/request-portal", requestPortalRoutes);
+app.use("/api/requests", requestsRoutes);
+app.use("/api/work-requests", requestsRoutes);
 
 // Vendor portal routes
 app.use("/api/vendor-portal", vendorPortalRoutes);

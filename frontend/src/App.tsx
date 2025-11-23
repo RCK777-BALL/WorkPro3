@@ -22,6 +22,7 @@ import Dashboard from "@/pages/Dashboard";
 import Analytics from "@/pages/Analytics";
 import AnalyticsDashboardV2 from "@/pages/AnalyticsDashboardV2";
 import WorkOrders from "@/pages/WorkOrders";
+import WorkOrderDetail from "@/pages/workorders/WorkOrderDetail";
 import WorkRequestDashboard from "@/pages/WorkRequestDashboard";
 import Maintenance from "@/pages/Maintenance";
 import AssetsPage from "@/pages/AssetsPage";
@@ -64,6 +65,8 @@ import BootstrapSetupPage from "@/modules/admin/setup";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
 import PublicRequestPage from "@/public/request";
 import RequestStatus from "@/pages/RequestStatus";
+import SubmitRequest from "@/pages/requests/SubmitRequest";
+import RequestTriage from "@/pages/requests/RequestTriage";
 
 export default function App() {
   const navigate = useNavigate();
@@ -118,11 +121,28 @@ export default function App() {
           <Route path="/iot" element={<IotMonitoring />} />
           <Route path="/work-orders" element={<WorkOrders />} />
           <Route path="/workorders" element={<WorkOrders />} />
+          <Route path="/workorders/:id" element={<WorkOrderDetail />} />
           <Route
             path="/work-requests"
             element={
               <RequirePermission scope="workRequests" action="read">
                 <WorkRequestDashboard />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/requests/submit"
+            element={
+              <RequirePermission scope="workRequests" action="read">
+                <SubmitRequest />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/requests/triage"
+            element={
+              <RequirePermission scope="workRequests" action="read">
+                <RequestTriage />
               </RequirePermission>
             }
           />

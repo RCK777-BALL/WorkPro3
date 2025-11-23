@@ -57,6 +57,7 @@ import {
   settingsRoutes,
   reportsRoutes,
   requestPortalRoutes,
+  requestsRoutes,
   globalRoutes,
   statusRoutes,
   StationRoutes,
@@ -286,6 +287,8 @@ app.use("/api/alerts", alertRoutes);
 app.use("/api/global", globalRoutes);
 app.use("/api/technician", technicianRoutes);
 app.use("/api/request-portal", requestPortalRoutes);
+app.use("/api/requests", requestsRoutes);
+app.use("/api/work-requests", requestsRoutes);
 
 // Vendor portal routes
 app.use("/api/vendor-portal", vendorPortalRoutes);

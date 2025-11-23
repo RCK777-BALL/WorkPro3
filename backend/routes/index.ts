@@ -50,6 +50,7 @@ export { default as predictiveRoutes } from './PredictiveRoutes';
 export { default as attachmentRoutes } from './AttachmentRoutes';
 export { default as TenantRoutes } from './TenantRoutes';
 export { default as workOrdersRoutes } from './workOrdersRoutes';
+export { default as requestsRoutes } from './requests';
 export { default as webhooksRoutes } from './WebhooksRoutes';
 export { default as publicRequestRoutes } from './publicRequestRoutes';
 export { default as permitRoutes } from './permitRoutes';

@@ -45,6 +45,11 @@ export const fetchWorkRequests = async () => {
   return response.data;
 };
 
+export const updateWorkRequestStatus = async (requestId: string, status: WorkRequestStatus) => {
+  const response = await http.patch<WorkRequestItem>(`/work-requests/${requestId}/status`, { status });
+  return response.data;
+};
+
 export const convertWorkRequest = async (requestId: string) => {
   const response = await http.post<ConvertWorkRequestResponse>(`/work-requests/${requestId}/convert`, {});
   return response.data;

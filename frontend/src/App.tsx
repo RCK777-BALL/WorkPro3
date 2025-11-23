@@ -64,6 +64,8 @@ import BootstrapSetupPage from "@/modules/admin/setup";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
 import PublicRequestPage from "@/public/request";
 import RequestStatus from "@/pages/RequestStatus";
+import SubmitRequest from "@/pages/requests/SubmitRequest";
+import RequestTriage from "@/pages/requests/RequestTriage";
 
 export default function App() {
   const navigate = useNavigate();
@@ -123,6 +125,22 @@ export default function App() {
             element={
               <RequirePermission scope="workRequests" action="read">
                 <WorkRequestDashboard />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/requests/submit"
+            element={
+              <RequirePermission scope="workRequests" action="read">
+                <SubmitRequest />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/requests/triage"
+            element={
+              <RequirePermission scope="workRequests" action="read">
+                <RequestTriage />
               </RequirePermission>
             }
           />

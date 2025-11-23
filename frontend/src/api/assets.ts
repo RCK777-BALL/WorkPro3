@@ -73,6 +73,7 @@ export type AssetDetailResponse = {
   asset: {
     id: string;
     tenantId: string;
+    qrCode?: string;
     name: string;
     description?: string;
     status?: string;

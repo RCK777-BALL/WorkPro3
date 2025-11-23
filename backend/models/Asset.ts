@@ -8,6 +8,7 @@ export interface AssetDoc extends Document {
   _id: Types.ObjectId;
   name: string;
   type: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface';
+  qrCode?: string;
   location?: string;
   departmentId?: Types.ObjectId;
   department?: string;
@@ -61,6 +62,7 @@ const assetSchema = new Schema<AssetDoc>(
     station: { type: String },
     lineId: { type: Schema.Types.ObjectId, ref: 'Line', index: true },
     stationId: { type: Schema.Types.ObjectId, ref: 'Station', index: true },
+    qrCode: { type: String },
     tenantId: {
       type: Schema.Types.ObjectId,
       ref: 'Tenant',

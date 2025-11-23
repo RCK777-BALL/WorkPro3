@@ -9,6 +9,7 @@ export interface IInventoryItem extends Document {
   _id: Types.ObjectId;                 // <- make required (not optional)
   tenantId: Types.ObjectId;
   name: string;
+  qrCode?: string;
   description?: string;
   partNumber?: string;
   partNo?: string;
@@ -42,6 +43,7 @@ const inventoryItemSchema = new Schema<IInventoryItem>(
   {
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
     name: { type: String, required: true },
+    qrCode: { type: String },
     description: String,
     partNumber: String,
     partNo: { type: String, index: true },

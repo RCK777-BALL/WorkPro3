@@ -181,6 +181,30 @@ Initiate OpenID Connect authentication (`okta` or `azure`). An optional `tenant`
 
 The callback behaves like the OAuth flow and redirects back to the frontend with a signed token.
 
+### Single sign-on configuration
+
+Set `ENABLE_OIDC` or `ENABLE_SAML` to `true` to expose SSO endpoints without enabling them globally. Per-tenant settings are
+stored in the `identityproviderconfigs` collection with the `IdentityProviderConfig` model, allowing you to persist issuer
+identifiers, metadata URLs or XML, ACS/redirect URIs, and PEM-encoded signing certificates.
+
+SAML metadata and placeholders live under `/api/sso/tenants/:tenantId/saml/*`:
+
+- `GET /api/sso/tenants/:tenantId/saml/metadata` returns stored entity IDs, ACS URLs, metadata XML, and certificates.
+- `GET /api/sso/tenants/:tenantId/saml/redirect` is a redirect placeholder for IdP-initiated flows.
+- `POST /api/sso/tenants/:tenantId/saml/acs` is a stub Assertion Consumer Service endpoint ready for integration.
+
+OIDC tenants can expose discovery-like data via `GET /api/sso/tenants/:tenantId/oidc/metadata`, which returns issuer,
+client ID, redirect URI, and metadata URL details.
+
+### SCIM stubs
+
+To integrate external identity systems, set `ENABLE_SCIM=true` and provide a shared secret in `SCIM_BEARER_TOKEN`. The
+SCIM router currently implements guarded placeholders:
+
+- `GET /api/scim/Users` and `GET /api/scim/Groups` return empty list responses when authenticated with the bearer token.
+- `POST /api/scim/Users` and `POST /api/scim/Groups` accept payloads and respond with `202 Accepted` while provisioning
+  logic is wired in.
+
 ### Multi‑factor authentication
 
 `POST /api/auth/mfa/setup`

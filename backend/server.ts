@@ -75,6 +75,8 @@ import {
   webhooksRoutes,
   workOrdersRoutes,
   mobileSyncRoutes,
+  scimRoutes,
+  ssoRoutes,
 } from "./routes";
 import mobileRoutes from "./routes/mobileRoutes";
 import mobileSyncAdminRoutes from "./routes/mobileSyncAdmin";

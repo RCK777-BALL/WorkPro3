@@ -29,12 +29,15 @@ import { me, refresh, logout } from '../controllers/authController';
 import sendResponse from '../utils/sendResponse';
 import { configureOAuth } from '../auth/oauth';
 import { configureOIDC, type Provider as OIDCProvider } from '../auth/oidc';
+import { isFeatureEnabled } from '../config/featureFlags';
 import { validatePasswordStrength } from '../auth/passwordPolicy';
 import { writeAuditLog } from '../utils/audit';
 import type { AuthedRequest } from '../types/http';
 
 configureOAuth();
-configureOIDC();
+if (isFeatureEnabled('oidc')) {
+  configureOIDC();
+}
 
 const ROLE_PRIORITY = [
   'general_manager',
@@ -205,7 +208,7 @@ const registerLimiter = rateLimit({
 });
 
 const OAUTH_PROVIDERS: readonly OAuthProvider[] = ['google', 'github'];
-const OIDC_PROVIDERS: readonly OIDCProvider[] = ['okta', 'azure'];
+const OIDC_PROVIDERS: readonly OIDCProvider[] = isFeatureEnabled('oidc') ? ['okta', 'azure'] : [];
 
 const isStaticOidcProvider = (provider: string): provider is OIDCProvider =>
   (OIDC_PROVIDERS as readonly string[]).includes(provider);

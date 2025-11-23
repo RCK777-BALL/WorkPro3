@@ -51,7 +51,6 @@ export { default as attachmentRoutes } from './AttachmentRoutes';
 export { default as TenantRoutes } from './TenantRoutes';
 export { default as workOrdersRoutes } from './workOrdersRoutes';
 export { default as requestsRoutes } from './requests';
-export { default as scimRoutes } from './scimRoutes';
 export { default as ssoRoutes } from './ssoRoutes';
 export { default as webhooksRoutes } from './WebhooksRoutes';
 export { default as publicRequestRoutes } from './publicRequestRoutes';
@@ -69,5 +68,4 @@ export { default as alertRoutes } from './alertRoutes';
 export { default as technicianRoutes } from './technicianRoutes';
 export { default as calibrationRoutes } from './calibration';
 export { default as commentRoutes } from './comments';
-export { default as ssoRoutes } from './ssoRoutes';
-export { default as scimRoutes } from './scimRoutes';
+

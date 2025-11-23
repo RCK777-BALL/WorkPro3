@@ -45,7 +45,7 @@ import {
   kbRoutes,
   laborRoutes,
   LineRoutes,
-  scimRoutes,
+  pmRoutes,
   maintenanceScheduleRoutes,
   meterRoutes,
   notificationsRoutes,
@@ -54,10 +54,8 @@ import {
   contractorRoutes,
   commentRoutes,
   permitRoutes,
-  pmRoutes,
   pmTasksRoutes,
   publicRequestRoutes,
-  scimRoutes,
   settingsRoutes,
   reportsRoutes,
   requestPortalRoutes,
@@ -76,8 +74,7 @@ import {
   webhooksRoutes,
   workOrdersRoutes,
   mobileSyncRoutes,
-  scimRoutes,
-  ssoRoutes,
+ 
 } from "./routes";
 import mobileRoutes from "./routes/mobileRoutes";
 import mobileSyncAdminRoutes from "./routes/mobileSyncAdmin";
@@ -111,6 +108,7 @@ import type {
   InventoryUpdatePayload,
   NotificationPayload,
 } from "./types/Payloads";
+import scimRoutes from "./routes/ScimRoutes";
 
 dotenv.config();
 

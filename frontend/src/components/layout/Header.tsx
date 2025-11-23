@@ -11,10 +11,13 @@ import NotificationMenu from './NotificationMenu';
 import { useAuthStore, type AuthState } from '@/store/authStore';
 import GlobalSearch from './GlobalSearch';
 import PlantSwitcher from './PlantSwitcher';
+import TenantSwitcher from './TenantSwitcher';
+import { useScopeContext } from '@/context/ScopeContext';
 
 const Header: React.FC = () => {
   const { t } = useTranslation();
   const user = useAuthStore((s: AuthState) => s.user);
+  const { activeTenant, activePlant, loadingTenants, loadingPlants } = useScopeContext();
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -65,6 +68,23 @@ const Header: React.FC = () => {
         </kbd>
       </button>
       <div className="ml-4 flex items-center gap-4">
+        <div
+          className="hidden items-center gap-2 rounded-md border border-slate-700/80 bg-slate-900/60 px-3 py-2 text-xs text-slate-200 md:flex"
+          aria-live="polite"
+        >
+          <span className="text-slate-400">{t('context.tenant')}:</span>
+          <span className="font-semibold">
+            {loadingTenants ? t('context.loading') : activeTenant?.name ?? t('context.unassigned')}
+          </span>
+          <span className="ml-2 text-slate-600" aria-hidden>
+            •
+          </span>
+          <span className="text-slate-400">{t('context.site')}:</span>
+          <span className="font-semibold">
+            {loadingPlants ? t('context.loading') : activePlant?.name ?? t('context.unassigned')}
+          </span>
+        </div>
+        <TenantSwitcher />
         <PlantSwitcher />
         <span className="hidden text-sm font-medium text-slate-300 md:block">
           {formattedDateTime}

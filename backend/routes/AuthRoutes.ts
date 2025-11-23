@@ -14,6 +14,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import * as speakeasy from 'speakeasy';
 import { z } from 'zod';
+import { Types } from 'mongoose';
 
 import User, { type UserDocument } from '../models/User';
 import { loginSchema, registerSchema } from '../validators/authValidators';
@@ -28,15 +29,15 @@ import { me, refresh, logout } from '../controllers/authController';
 import sendResponse from '../utils/sendResponse';
 import { configureOAuth } from '../auth/oauth';
 import { configureOIDC, type Provider as OIDCProvider } from '../auth/oidc';
-import { getOidcProviderConfigs } from '../config/ssoProviders';
-import { getSamlMetadata, samlAcsPlaceholder, samlRedirectPlaceholder } from '../auth/saml';
-import { isFeatureEnabled } from '../utils/featureFlags';
+import { isFeatureEnabled } from '../config/featureFlags';
 import { validatePasswordStrength } from '../auth/passwordPolicy';
 import { writeAuditLog } from '../utils/audit';
+import type { AuthedRequest } from '../types/http';
 
 configureOAuth();
-const OIDC_PROVIDER_CONFIGS = getOidcProviderConfigs();
-const OIDC_PROVIDERS = configureOIDC(OIDC_PROVIDER_CONFIGS);
+if (isFeatureEnabled('oidc')) {
+  configureOIDC();
+}
 
 const ROLE_PRIORITY = [
   'general_manager',
@@ -97,6 +98,14 @@ const toStringId = (value: unknown): string | undefined => {
     return (value as { toString(): string }).toString();
   }
   return undefined;
+};
+
+const resolveRequestTenant = (req: Request): string | undefined => {
+  const headerTenant = req.header('x-tenant-id');
+  if (typeof headerTenant === 'string' && headerTenant.trim()) {
+    return headerTenant.trim();
+  }
+  return (req as AuthedRequest).tenantId;
 };
 
 const sanitizeRedirect = (value: string | undefined): string | undefined => {
@@ -199,16 +208,26 @@ const registerLimiter = rateLimit({
 });
 
 const OAUTH_PROVIDERS: readonly OAuthProvider[] = ['google', 'github'];
-const OIDC_PROVIDER_NAMES: readonly OIDCProvider[] =
-  OIDC_PROVIDERS.length > 0
-    ? (OIDC_PROVIDERS as OIDCProvider[])
-    : (OIDC_PROVIDER_CONFIGS.length ? OIDC_PROVIDER_CONFIGS : getOidcProviderConfigs()).map(
-        (provider) => provider.name as OIDCProvider,
-      );
+const OIDC_PROVIDERS: readonly OIDCProvider[] = isFeatureEnabled('oidc') ? ['okta', 'azure'] : [];
+
+const isStaticOidcProvider = (provider: string): provider is OIDCProvider =>
+  (OIDC_PROVIDERS as readonly string[]).includes(provider);
+
+const isAllowedOidcProvider = async (provider: string): Promise<boolean> => {
+  if (!isOidcEnabled()) {
+    return false;
+  }
+
+  if (isStaticOidcProvider(provider)) {
+    return true;
+  }
+
+  return isIdentityProviderAllowed(provider, 'oidc');
+};
 
 const registerBodySchema = registerSchema.extend({
   name: z.string().min(1, 'Name is required'),
-  tenantId: z.string().min(1, 'Tenant is required'),
+  tenantId: z.string().min(1, 'Tenant is required').optional(),
   employeeId: z.string().min(1, 'Employee ID is required'),
 });
 
@@ -441,6 +460,18 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
       return;
     }
 
+    const requestTenantId = resolveRequestTenant(req);
+    const userTenantId = toStringId(user.tenantId);
+    if (requestTenantId && userTenantId && requestTenantId !== userTenantId) {
+      sendResponse(res, null, 'Invalid tenant for user', 403);
+      return;
+    }
+
+    if (requestTenantId && !userTenantId) {
+      user.tenantId = new Types.ObjectId(requestTenantId);
+      await user.save();
+    }
+
     const hashed = user.passwordHash;
     if (!hashed) {
       await bcrypt.compare(password, FAKE_PASSWORD_HASH);
@@ -612,8 +643,19 @@ router.post('/register', registerLimiter, async (req: Request, res: Response, ne
 
   const { name, email, password, tenantId, employeeId } = parsed.data;
   const normalizedEmail = email.trim().toLowerCase();
+  const resolvedTenant = tenantId ?? resolveRequestTenant(req);
 
   try {
+    if (!resolvedTenant) {
+      sendResponse(res, null, 'Tenant is required', 400);
+      return;
+    }
+
+    if (tenantId && resolvedTenant !== tenantId) {
+      sendResponse(res, null, 'Cross-tenant registration is not allowed', 403);
+      return;
+    }
+
     const existing = await User.findOne({ email: normalizedEmail });
     if (existing) {
       sendResponse(res, null, 'Email already in use', 400);
@@ -624,7 +666,7 @@ router.post('/register', registerLimiter, async (req: Request, res: Response, ne
       name,
       email: normalizedEmail,
       passwordHash: password,
-      tenantId,
+      tenantId: resolvedTenant,
       employeeId,
     });
 
@@ -702,14 +744,21 @@ router.get('/oidc/:provider/metadata', async (req: Request, res: Response) => {
 });
 
 router.get('/oidc/:provider', async (req: Request, res: Response, next: NextFunction) => {
-  if (!isFeatureEnabled('oidc')) {
-    sendResponse(res, null, 'OIDC is disabled', 404);
+  const provider = req.params.provider;
+  const allowed = await isAllowedOidcProvider(provider);
+  if (!allowed) {
+    sendResponse(res, null, 'Unsupported provider', 400);
     return;
   }
 
-  const provider = req.params.provider as OIDCProvider;
-  if (!OIDC_PROVIDER_NAMES.includes(provider)) {
-    sendResponse(res, null, 'Unsupported provider', 400);
+  if (!isStaticOidcProvider(provider)) {
+    sendResponse(
+      res,
+      { provider },
+      null,
+      202,
+      'OIDC provider registered but no passport strategy bound',
+    );
     return;
   }
 
@@ -837,14 +886,21 @@ router.get(
 router.get(
   '/oidc/:provider/callback',
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const provider = req.params.provider as OIDCProvider;
-    if (!isFeatureEnabled('oidc')) {
-      sendResponse(res, null, 'OIDC is disabled', 404);
+    const provider = req.params.provider;
+    const allowed = await isAllowedOidcProvider(provider);
+    if (!allowed) {
+      sendResponse(res, null, 'Unsupported provider', 400);
       return;
     }
 
-    if (!OIDC_PROVIDER_NAMES.includes(provider)) {
-      sendResponse(res, null, 'Unsupported provider', 400);
+    if (!isStaticOidcProvider(provider)) {
+      sendResponse(
+        res,
+        { provider },
+        null,
+        202,
+        'OIDC provider registered but callback handling is not configured',
+      );
       return;
     }
 

@@ -23,11 +23,15 @@ export type AuthedRequest<
         _id?: string | Types.ObjectId | undefined;
         scopes?: string[] | undefined;
         client?: string | undefined;
+        roles?: string[] | undefined;
+        permissions?: string[] | undefined;
       })
     | undefined;
   tenantId?: string | undefined;
+  tenantDomain?: string | undefined;
   siteId?: string | undefined;
   plantId?: string | undefined;
+  permissions?: string[] | undefined;
 };
 
 export interface AuthedRequestHandler<

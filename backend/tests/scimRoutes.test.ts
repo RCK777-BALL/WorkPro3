@@ -1,48 +1,45 @@
-/*
- * SPDX-License-Identifier: MIT
- */
-
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import express from 'express';
+import { beforeEach, describe, expect, it } from 'vitest';
 import request from 'supertest';
+import express from 'express';
+import scimRoutes from '../routes/scimRoutes';
 
-const buildApp = async () => {
-  const app = express();
-  app.use(express.json());
-  const scimRoutes = (await import('../routes/ScimRoutes')).default;
-  app.use('/api/scim', scimRoutes);
-  return app;
-};
+const app = express();
+app.use(express.json());
+app.use('/api/scim/v2', scimRoutes);
 
-describe('SCIM route stubs', () => {
-  beforeEach(() => {
-    vi.resetModules();
-    process.env = { ...process.env, ENABLE_SCIM: 'true', SCIM_BEARER_TOKEN: 'token' };
+beforeEach(() => {
+  process.env.ENABLE_SCIM_API = 'true';
+  process.env.SCIM_BEARER_TOKEN = 'token-123';
+});
+
+describe('SCIM routes', () => {
+  it('rejects SCIM calls when disabled', async () => {
+    process.env.ENABLE_SCIM_API = 'false';
+    await request(app).get('/api/scim/v2/Users').expect(404);
   });
 
-  it('returns 404 when SCIM is disabled', async () => {
-    process.env.ENABLE_SCIM = 'false';
-    const app = await buildApp();
-    const res = await request(app).get('/api/scim/v2/Users');
-    expect(res.status).toBe(404);
-  });
+  it('requires bearer token for reads', async () => {
+    const res = await request(app)
+      .get('/api/scim/v2/Users')
+      .set('X-Tenant-Id', 'tenant-1')
+      .expect(401);
 
-  it('rejects missing or invalid bearer tokens', async () => {
-    const app = await buildApp();
-    const res = await request(app).get('/api/scim/v2/Users');
-    expect(res.status).toBe(401);
     expect(res.body.message).toBe('Invalid SCIM token');
   });
 
-  it('accepts basic SCIM user payloads', async () => {
-    const app = await buildApp();
+  it('accepts user payloads and echoes metadata', async () => {
     const res = await request(app)
       .post('/api/scim/v2/Users')
-      .set('Authorization', 'Bearer token')
-      .send({ userName: 'user@example.com', active: true });
+      .set('Authorization', 'Bearer token-123')
+      .set('X-Tenant-Id', 'tenant-1')
+      .send({
+        userName: 'ada.lovelace',
+        emails: [{ value: 'ada@example.com' }],
+      })
+      .expect(201);
 
-    expect(res.status).toBe(202);
-    expect(res.body.data.id).toBe('pending-sync');
-    expect(res.body.data.userName).toBe('user@example.com');
+    expect(res.body.id).toBeDefined();
+    expect(res.body.meta.tenantId).toBe('tenant-1');
+    expect(res.body.emails[0].value).toBe('ada@example.com');
   });
 });

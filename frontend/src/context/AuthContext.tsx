@@ -13,7 +13,7 @@ import {
 } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuthStore, type AuthState } from '@/store/authStore';
-import type { AuthLoginResponse, AuthRole, AuthSession, AuthUser } from '@/types';
+import type { AuthLoginResponse, AuthRole, AuthSession, AuthUser, RoleAssignment } from '@/types';
 import {
   FALLBACK_TOKEN_KEY,
   SITE_KEY,
@@ -30,7 +30,10 @@ type RawAuthUser = {
   email?: string | null;
   tenantId?: string;
   siteId?: string;
+  roles?: string[];
+  permissions?: string[];
   role?: string;
+  permissions?: string[];
 };
 
 const AUTH_ROUTE_PREFIXES = ['/login', '/register', '/forgot'];
@@ -107,12 +110,16 @@ const toAuthUser = (payload: RawAuthUser): AuthUser => {
     user.siteId = payload.siteId;
   }
 
+  if (Array.isArray(payload.permissions)) {
+    user.permissions = payload.permissions;
+  }
+
   return user;
 };
 
 type AuthUserInput =
-  | (AuthUser & { roles?: unknown })
-  | (Omit<AuthUser, 'role'> & { role?: unknown; roles?: unknown });
+  | (AuthUser & { roles?: unknown; permissions?: unknown })
+  | (Omit<AuthUser, 'role'> & { role?: unknown; roles?: unknown; permissions?: unknown });
 
 const ROLE_PRIORITY: AuthRole[] = [
   'global_admin',
@@ -149,6 +156,20 @@ const normalizeRoles = (roles: unknown): AuthRole[] => {
   return normalized;
 };
 
+const normalizePermissions = (permissions: unknown): string[] => {
+  if (!permissions) return [];
+  const list = Array.isArray(permissions) ? permissions : [permissions];
+  const normalized: string[] = [];
+  for (const permission of list) {
+    if (typeof permission !== 'string') continue;
+    const candidate = permission.toLowerCase();
+    if (!normalized.includes(candidate)) {
+      normalized.push(candidate);
+    }
+  }
+  return normalized;
+};
+
 const derivePrimaryRole = (role: unknown, roles: AuthRole[]): AuthRole => {
   if (typeof role === 'string') {
     const candidate = role.toLowerCase() as AuthRole;
@@ -168,10 +189,12 @@ const normalizeAuthUser = (user: AuthUserInput): AuthUser => {
   const normalizedRoles = normalizeRoles(user.roles);
   const primaryRole = derivePrimaryRole((user as { role?: unknown }).role, normalizedRoles);
   const roles = Array.from(new Set<AuthRole>([primaryRole, ...normalizedRoles]));
+  const permissions = normalizePermissions((user as { permissions?: unknown }).permissions);
   return {
     ...(user as Record<string, unknown>),
     role: primaryRole,
     roles,
+    permissions,
   } as AuthUser;
 };
 

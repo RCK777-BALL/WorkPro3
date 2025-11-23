@@ -16,6 +16,10 @@ const randomId = (): string => {
 export interface TechnicianWorkOrderDto {
   id?: string;
   _id?: string;
+  tenantId?: string;
+  siteId?: string;
+  plant?: string;
+  plantId?: string;
   title?: string;
   description?: string;
   priority?: WorkOrder['priority'];
@@ -32,6 +36,9 @@ export interface TechnicianWorkOrderDto {
 
 export const normalizeTechnicianWorkOrder = (dto: TechnicianWorkOrderDto): WorkOrder => ({
   id: dto.id ?? dto._id ?? randomId(),
+  tenantId: dto.tenantId ?? 'unknown-tenant',
+  siteId: dto.siteId,
+  plant: dto.plant ?? dto.plantId,
   title: dto.title ?? 'Untitled Work Order',
   description: dto.description,
   priority: dto.priority ?? 'medium',

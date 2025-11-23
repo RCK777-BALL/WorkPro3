@@ -25,6 +25,7 @@ import Notification from './models/Notifications';
 import Tenant from './models/Tenant';
 import AuditLog from './models/AuditLog';
 import Site from './models/Site';
+import Plant from './models/Plant';
 import SensorReading from './models/SensorReading';
 import ProductionRecord from './models/ProductionRecord';
 
@@ -58,10 +59,19 @@ mongoose.connect(mongoUri).then(async () => {
   await AuditLog.deleteMany({});
 
   // Seed Tenant
-  await Tenant.create({ _id: tenantId, name: 'Default Tenant' });
+  await Tenant.create({
+    _id: tenantId,
+    name: 'Default Tenant',
+    domain: 'default.local',
+    branding: {
+      primaryColor: '#0f766e',
+      accentColor: '#ec4899',
+    },
+  });
 
   // Seed Site for analytics
   const mainSite = await Site.create({ name: 'Main Plant', tenantId });
+  const mainPlant = await Plant.create({ name: 'Main Plant', tenantId, organization: 'Default Tenant' });
 
   // Seed Users
   const admin = await User.create({
@@ -143,7 +153,13 @@ mongoose.connect(mongoUri).then(async () => {
   ]);
 
   // Seed Department hierarchy
-  const dept = await Department.create({ name: 'Production', lines: [] });
+  const dept = await Department.create({
+    name: 'Production',
+    lines: [],
+    tenantId,
+    plant: mainPlant._id,
+    siteId: mainSite._id,
+  });
 
   const line = { name: 'Line A', stations: [] } as any;
   line.stations.push({ name: 'Station 1' });
@@ -161,6 +177,7 @@ mongoose.connect(mongoUri).then(async () => {
     departmentId: dept._id,
     lineId,
     stationId,
+    plant: mainPlant._id,
     status: 'Active',
     description: 'Main conveyor belt for packaging line',
     tenantId,

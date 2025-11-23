@@ -28,11 +28,14 @@ import { me, refresh, logout } from '../controllers/authController';
 import sendResponse from '../utils/sendResponse';
 import { configureOAuth } from '../auth/oauth';
 import { configureOIDC, type Provider as OIDCProvider } from '../auth/oidc';
+import { isFeatureEnabled } from '../config/featureFlags';
 import { validatePasswordStrength } from '../auth/passwordPolicy';
 import { writeAuditLog } from '../utils/audit';
 
 configureOAuth();
-configureOIDC();
+if (isFeatureEnabled('oidc')) {
+  configureOIDC();
+}
 
 const ROLE_PRIORITY = [
   'general_manager',
@@ -195,7 +198,7 @@ const registerLimiter = rateLimit({
 });
 
 const OAUTH_PROVIDERS: readonly OAuthProvider[] = ['google', 'github'];
-const OIDC_PROVIDERS: readonly OIDCProvider[] = ['okta', 'azure'];
+const OIDC_PROVIDERS: readonly OIDCProvider[] = isFeatureEnabled('oidc') ? ['okta', 'azure'] : [];
 
 const registerBodySchema = registerSchema.extend({
   name: z.string().min(1, 'Name is required'),
@@ -667,6 +670,10 @@ router.get('/oauth/:provider', async (req: Request, res: Response, next: NextFun
 
 router.get('/oidc/:provider', async (req: Request, res: Response, next: NextFunction) => {
   const provider = req.params.provider as OIDCProvider;
+  if (!isFeatureEnabled('oidc')) {
+    sendResponse(res, null, 'OIDC is disabled', 404);
+    return;
+  }
   if (!OIDC_PROVIDERS.includes(provider)) {
     sendResponse(res, null, 'Unsupported provider', 400);
     return;
@@ -779,6 +786,10 @@ router.get(
   '/oidc/:provider/callback',
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const provider = req.params.provider as OIDCProvider;
+    if (!isFeatureEnabled('oidc')) {
+      sendResponse(res, null, 'OIDC is disabled', 404);
+      return;
+    }
     if (!OIDC_PROVIDERS.includes(provider)) {
       sendResponse(res, null, 'Unsupported provider', 400);
       return;

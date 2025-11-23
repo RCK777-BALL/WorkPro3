@@ -72,6 +72,8 @@ import {
   webhooksRoutes,
   workOrdersRoutes,
   mobileSyncRoutes,
+  scimRoutes,
+  ssoRoutes,
 } from "./routes";
 import mobileRoutes from "./routes/mobileRoutes";
 import mobileSyncAdminRoutes from "./routes/mobileSyncAdmin";
@@ -234,6 +236,8 @@ app.use("/api/import-export", importExportRouter);
 app.use("/api/inventory/v2", inventoryV2Routes);
 app.use("/api/inventory/v2", inventoryModuleRouter);
 app.use("/api/integrations/v2", integrationsModuleRouter);
+app.use("/api/sso", ssoRoutes);
+app.use("/api/scim", scimRoutes);
 
 // --- Routes (order matters for the limiter) ---
 app.use("/api/auth", authRoutes);

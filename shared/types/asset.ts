@@ -1,4 +1,6 @@
-export interface Asset {
+import type { TenantScoped } from './http';
+
+export interface Asset extends TenantScoped {
   id: string;
   tenantId: string;
   siteId?: string;

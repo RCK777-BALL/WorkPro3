@@ -39,6 +39,30 @@ export const usePermissions = () => {
     return new Set(user.permissions.map((permission) => permission.toLowerCase()));
   }, [user]);
 
+  const tenantId = useMemo(
+    () => user?.tenantId ?? safeLocalStorage.getItem(TENANT_KEY) ?? undefined,
+    [user?.tenantId],
+  );
+
+  const siteId = useMemo(
+    () => user?.siteId ?? safeLocalStorage.getItem(SITE_KEY) ?? undefined,
+    [user?.siteId],
+  );
+
+  const hasScopedPermission = useCallback(
+    (scope: PermissionScope, action: PermissionAction) => {
+      if (!user?.permissions?.length) return false;
+      return user.permissions.some((grant) => {
+        if (grant.scope !== scope) return false;
+        if (!grant.actions.includes(action)) return false;
+        if (grant.tenantId && tenantId && grant.tenantId !== tenantId) return false;
+        if (grant.siteId && siteId && grant.siteId !== siteId) return false;
+        return true;
+      });
+    },
+    [siteId, tenantId, user?.permissions],
+  );
+
   const can = useCallback(
     (permissionOrScope: Permission | PermissionCategory, action?: PermissionAction) => {
       if (!user) return false;

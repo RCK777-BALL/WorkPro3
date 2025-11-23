@@ -15,7 +15,7 @@ export type {
 
 export type Vendor = VendorSummary;
 export type { UploadedFile, UploadResponse } from '@shared/uploads';
-export type { ApiResult } from '@shared/http';
+export type { ApiResult, TenantScoped } from '@shared/http';
 export type { OnboardingState, OnboardingStep, OnboardingStepKey, PMTemplateLibraryItem } from '@shared/onboarding';
 export type {
   Permit,
@@ -63,8 +63,6 @@ export interface Asset {
   lastServiced?: string;
   warrantyExpiry?: string;
   documents?: File[];
-  createdAt?: string;
-  updatedAt?: string;
 }
 
 export type AssetStatusMap = Record<string, number>;
@@ -127,6 +125,10 @@ export interface WorkOrder {
 
   /** Optional plant context */
   plant?: string;
+
+  /** Tenant and site scoping */
+  tenantId?: string;
+  siteId?: string;
 
   /** Human readable title */
   title: string;
@@ -349,32 +351,14 @@ export interface Message {
   reactions: Reaction[];
 }
 
-export type AuthRole =
-  | 'global_admin'
-  | 'plant_admin'
-  | 'general_manager'
-  | 'assistant_general_manager'
-  | 'operations_manager'
-  | 'assistant_department_leader'
-  | 'technical_team_member'
-  | 'admin'
-  | 'supervisor'
-  | 'manager'
-  | 'planner'
-  | 'tech'
-  | 'technician'
-  | 'team_member'
-  | 'team_leader'
-  | 'area_leader'
-  | 'department_leader'
-  | 'viewer';
-
 export interface User {
   id: string;
   name: string;
   email: string;
   role: AuthRole;
   roles?: AuthRole[];
+  tenantId?: string;
+  siteId?: string | null;
   department: string;
   avatar?: string;
 }
@@ -400,6 +384,8 @@ export interface TeamMember {
   name: string;
   email: string;
   role: AuthRole;
+  tenantId?: string;
+  siteId?: string | null;
   department?: string | undefined;
   /** Unique employee identifier */
   employeeId?: string | undefined;
@@ -415,6 +401,8 @@ export interface TeamMemberResponse {
   name: string;
   email: string;
   role: AuthRole;
+  tenantId?: string;
+  siteId?: string | null;
   department?: string;
   employeeId?: string;
   managerId?: string | null;
@@ -433,7 +421,9 @@ export interface AuthUser {
   /** Identifier for the user's tenant */
   tenantId?: string;
   /** Optional site identifier associated with the user */
-  siteId?: string;
+  siteId?: string | null;
+  /** Optional fine-grained permissions for scoped enforcement */
+  permissions?: PermissionAssignment[];
   /** Optional JWT token used for authenticated requests */
   token?: string;
   /** Optional URL for the user's avatar */

@@ -6,6 +6,8 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import AuditEvent from '../models/AuditEvent';
+import AuditLog from '../models/AuditLog';
+import { writeAuditLog } from '../utils/audit';
 
 let mongo: MongoMemoryServer | null;
 let mongoUnavailable = false;

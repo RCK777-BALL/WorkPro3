@@ -7,6 +7,7 @@ import { Strategy as OIDCStrategy } from 'passport-openidconnect';
 import type { VerifyCallback } from 'passport-openidconnect';
 
 import { resolveTenantContext } from './tenantContext';
+import { isOidcEnabled } from '../config/featureFlags';
 
 interface OIDCStrategyOptions {
   name?: string;
@@ -80,6 +81,10 @@ const createOidcVerifier = (provider: Provider): VerifyCallback =>
 export const oidcVerify = createOidcVerifier('okta');
 
 export const configureOIDC = () => {
+  if (!isOidcEnabled()) {
+    return;
+  }
+
   const oktaIssuer = process.env.OKTA_ISSUER;
   const oktaClientId = process.env.OKTA_CLIENT_ID;
   const oktaClientSecret = process.env.OKTA_CLIENT_SECRET;

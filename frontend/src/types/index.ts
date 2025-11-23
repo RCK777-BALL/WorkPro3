@@ -409,6 +409,7 @@ export interface AuthUser {
   email: string;
   role: AuthRole;
   roles?: AuthRole[];
+  permissions?: string[];
   /** Identifier for the user's tenant */
   tenantId?: string;
   /** Optional site identifier associated with the user */

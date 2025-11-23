@@ -29,8 +29,10 @@ type RawAuthUser = {
   id: string;
   email?: string | null;
   tenantId?: string;
-  siteId?: string;
+  siteId?: string | null;
   role?: string;
+  roles?: AuthRole[];
+  permissions?: AuthUser['permissions'];
 };
 
 const AUTH_ROUTE_PREFIXES = ['/login', '/register', '/forgot'];
@@ -105,6 +107,14 @@ const toAuthUser = (payload: RawAuthUser): AuthUser => {
 
   if (payload.siteId !== undefined) {
     user.siteId = payload.siteId;
+  }
+
+  if (Array.isArray(payload.roles) && payload.roles.length > 0) {
+    user.roles = normalizeRoles(payload.roles);
+  }
+
+  if (Array.isArray(payload.permissions)) {
+    user.permissions = payload.permissions;
   }
 
   return user;

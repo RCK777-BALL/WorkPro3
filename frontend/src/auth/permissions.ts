@@ -3,9 +3,9 @@
  */
 
 import permissionsMatrix from '../../../backend/src/auth/permissions.json';
+import type { PermissionAction, PermissionScope, PermissionsMatrix } from '@shared/auth';
 
-export type PermissionsMatrix = typeof permissionsMatrix;
-export type PermissionScope = keyof PermissionsMatrix;
-export type PermissionAction<S extends PermissionScope = PermissionScope> = keyof PermissionsMatrix[S];
+const typedPermissionsMatrix: PermissionsMatrix = permissionsMatrix;
 
-export { permissionsMatrix };
+export { typedPermissionsMatrix as permissionsMatrix };
+export type { PermissionsMatrix, PermissionScope, PermissionAction };

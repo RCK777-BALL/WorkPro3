@@ -3,11 +3,10 @@
  */
 
 import http from '@/lib/http';
+import type { TenantScoped } from '@shared/http';
 
-export type HierarchyAsset = {
+export type HierarchyAsset = TenantScoped & {
   id: string;
-  tenantId: string;
-  siteId?: string;
   name: string;
   status?: string;
   type?: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface';
@@ -17,37 +16,31 @@ export type HierarchyAsset = {
   stationId?: string;
 };
 
-export type HierarchyStation = {
+export type HierarchyStation = TenantScoped & {
   id: string;
-  tenantId: string;
   name: string;
   notes?: string;
-  siteId?: string;
   departmentId?: string;
   lineId: string;
   assetCount: number;
   assets: HierarchyAsset[];
 };
 
-export type HierarchyLine = {
+export type HierarchyLine = TenantScoped & {
   id: string;
-  tenantId: string;
   name: string;
   notes?: string;
   departmentId: string;
-  siteId?: string;
   assetCount: number;
   assets: HierarchyAsset[];
   stations: HierarchyStation[];
 };
 
-export type HierarchyDepartment = {
+export type HierarchyDepartment = TenantScoped & {
   id: string;
-  tenantId: string;
   name: string;
   notes?: string;
   plantId?: string;
-  siteId?: string;
   assetCount: number;
   assets: HierarchyAsset[];
   lines: HierarchyLine[];

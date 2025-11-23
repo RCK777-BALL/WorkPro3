@@ -1,17 +1,15 @@
-export interface InventoryItem {
+import type { TenantScoped } from './http';
+
+export interface InventoryItem extends TenantScoped {
   id: string;
-  tenantId?: string;
-  siteId?: string;
   name: string;
   quantity: number;
   reorderThreshold?: number;
   reorderPoint?: number;
 }
 
-export interface InventoryUpdatePayload {
+export interface InventoryUpdatePayload extends TenantScoped {
   _id: string;
-  tenantId?: string;
-  siteId?: string;
   name: string;
   quantity: number;
 }
@@ -45,10 +43,8 @@ export interface VendorSummary {
   partIds?: string[];
 }
 
-export interface Part {
+export interface Part extends TenantScoped {
   id: string;
-  tenantId: string;
-  siteId?: string;
   qrCode?: string;
   name: string;
   partNo?: string;
@@ -104,10 +100,8 @@ export interface PurchaseOrderItem {
   qtyReceived?: number;
 }
 
-export interface PurchaseOrder {
+export interface PurchaseOrder extends TenantScoped {
   id: string;
-  tenantId?: string;
-  siteId?: string;
   vendor?: VendorSummary;
   poNumber?: string;
   status: 'Draft' | 'Pending' | 'Approved' | 'Ordered' | 'Received' | 'Closed';
@@ -118,11 +112,9 @@ export interface PurchaseOrder {
   items: PurchaseOrderItem[];
 }
 
-export interface InventoryAlert {
+export interface InventoryAlert extends TenantScoped {
   partId: string;
   partName: string;
-  tenantId?: string;
-  siteId?: string;
   quantity: number;
   reorderPoint: number;
   vendorName?: string;
@@ -131,10 +123,8 @@ export interface InventoryAlert {
   lastTriggeredAt?: string;
 }
 
-export interface InventoryLocation {
+export interface InventoryLocation extends TenantScoped {
   id: string;
-  tenantId: string;
-  siteId?: string;
   name: string;
   store?: string;
   room?: string;
@@ -143,10 +133,8 @@ export interface InventoryLocation {
   path: string[];
 }
 
-export interface StockItem {
+export interface StockItem extends TenantScoped {
   id: string;
-  tenantId: string;
-  siteId?: string;
   partId: string;
   part?: Pick<Part, 'id' | 'name' | 'partNumber' | 'partNo'>;
   locationId: string;

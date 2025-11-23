@@ -6,6 +6,7 @@ import type { RequestHandler } from 'express';
 
 import type { AuthedRequest } from '../../types/http';
 import type { UserRole } from '../../types/auth';
+import type { PermissionAssignment } from '@shared/auth';
 import permissionsMatrix from './permissions.json';
 
 export type PermissionsMatrix = typeof permissionsMatrix;
@@ -29,7 +30,23 @@ export const hasPermission = <S extends PermissionScope>(
   roles: string[] | undefined,
   scope: S,
   action: PermissionAction<S>,
+  permissions?: PermissionAssignment[],
+  tenantId?: string,
+  siteId?: string,
 ): boolean => {
+  if (permissions?.length) {
+    const matched = permissions.some((grant) => {
+      if (grant.scope !== scope) return false;
+      if (!grant.actions.includes(action)) return false;
+      if (grant.tenantId && tenantId && grant.tenantId !== tenantId) return false;
+      if (grant.siteId && siteId && grant.siteId !== siteId) return false;
+      return true;
+    });
+    if (matched) {
+      return true;
+    }
+  }
+
   if (!roles || roles.length === 0) {
     return false;
   }
@@ -55,13 +72,15 @@ export const requirePermission = <S extends PermissionScope>(
 ): RequestHandler =>
   (req, res, next): void => {
     const authedReq = req as AuthedRequest;
-    const user = authedReq.user as { roles?: unknown; role?: unknown } | undefined;
+    const user = authedReq.user as { roles?: unknown; role?: unknown; permissions?: PermissionAssignment[] } | undefined;
     const roles = toRoleList(user?.roles);
     if (roles.length === 0 && user?.role) {
       roles.push(...toRoleList(user.role));
     }
 
-    if (!hasPermission(roles, scope, action)) {
+    const permissions = Array.isArray(user?.permissions) ? user?.permissions : undefined;
+
+    if (!hasPermission(roles, scope, action, permissions, authedReq.tenantId, authedReq.siteId)) {
       res.status(403).json({ message: 'Forbidden' });
       return;
     }

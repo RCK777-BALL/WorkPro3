@@ -28,11 +28,15 @@ import { me, refresh, logout } from '../controllers/authController';
 import sendResponse from '../utils/sendResponse';
 import { configureOAuth } from '../auth/oauth';
 import { configureOIDC, type Provider as OIDCProvider } from '../auth/oidc';
+import { getOidcProviderConfigs } from '../config/ssoProviders';
+import { getSamlMetadata, samlAcsPlaceholder, samlRedirectPlaceholder } from '../auth/saml';
+import { isFeatureEnabled } from '../utils/featureFlags';
 import { validatePasswordStrength } from '../auth/passwordPolicy';
 import { writeAuditLog } from '../utils/audit';
 
 configureOAuth();
-configureOIDC();
+const OIDC_PROVIDER_CONFIGS = getOidcProviderConfigs();
+const OIDC_PROVIDERS = configureOIDC(OIDC_PROVIDER_CONFIGS);
 
 const ROLE_PRIORITY = [
   'general_manager',
@@ -195,7 +199,12 @@ const registerLimiter = rateLimit({
 });
 
 const OAUTH_PROVIDERS: readonly OAuthProvider[] = ['google', 'github'];
-const OIDC_PROVIDERS: readonly OIDCProvider[] = ['okta', 'azure'];
+const OIDC_PROVIDER_NAMES: readonly OIDCProvider[] =
+  OIDC_PROVIDERS.length > 0
+    ? (OIDC_PROVIDERS as OIDCProvider[])
+    : (OIDC_PROVIDER_CONFIGS.length ? OIDC_PROVIDER_CONFIGS : getOidcProviderConfigs()).map(
+        (provider) => provider.name as OIDCProvider,
+      );
 
 const registerBodySchema = registerSchema.extend({
   name: z.string().min(1, 'Name is required'),
@@ -665,9 +674,41 @@ router.get('/oauth/:provider', async (req: Request, res: Response, next: NextFun
   }
 });
 
-router.get('/oidc/:provider', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/oidc/:provider/metadata', async (req: Request, res: Response) => {
+  if (!isFeatureEnabled('oidc')) {
+    sendResponse(res, null, 'OIDC is disabled', 404);
+    return;
+  }
+
   const provider = req.params.provider as OIDCProvider;
-  if (!OIDC_PROVIDERS.includes(provider)) {
+  const config = OIDC_PROVIDER_CONFIGS.find((item) => item.name === provider);
+  if (!config) {
+    sendResponse(res, null, 'Unsupported provider', 400);
+    return;
+  }
+
+  sendResponse(
+    res,
+    {
+      issuer: config.issuer,
+      authorizationEndpoint: config.authorizationUrl ?? `${config.issuer.replace(/\/$/, '')}/authorize`,
+      tokenEndpoint: config.tokenUrl ?? `${config.issuer.replace(/\/$/, '')}/token`,
+      callbackPath: config.callbackPath,
+    },
+    null,
+    200,
+    'OIDC metadata',
+  );
+});
+
+router.get('/oidc/:provider', async (req: Request, res: Response, next: NextFunction) => {
+  if (!isFeatureEnabled('oidc')) {
+    sendResponse(res, null, 'OIDC is disabled', 404);
+    return;
+  }
+
+  const provider = req.params.provider as OIDCProvider;
+  if (!OIDC_PROVIDER_NAMES.includes(provider)) {
     sendResponse(res, null, 'Unsupported provider', 400);
     return;
   }
@@ -684,6 +725,24 @@ router.get('/oidc/:provider', async (req: Request, res: Response, next: NextFunc
     next(err);
   }
 });
+
+router.get('/saml/:tenantId/metadata', async (req: Request, res: Response) => {
+  if (!isFeatureEnabled('saml')) {
+    sendResponse(res, null, 'SAML is disabled', 404);
+    return;
+  }
+
+  try {
+    const metadata = await getSamlMetadata(req.params.tenantId);
+    res.type('application/xml').send(metadata);
+  } catch (err) {
+    logger.error('Failed to build SAML metadata', err);
+    sendResponse(res, null, 'Unable to generate SAML metadata', 500);
+  }
+});
+
+router.post('/saml/:tenantId/acs', samlAcsPlaceholder);
+router.get('/saml/:tenantId/redirect', samlRedirectPlaceholder);
 
 const handlePassportCallback = (
   req: Request,
@@ -779,7 +838,12 @@ router.get(
   '/oidc/:provider/callback',
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const provider = req.params.provider as OIDCProvider;
-    if (!OIDC_PROVIDERS.includes(provider)) {
+    if (!isFeatureEnabled('oidc')) {
+      sendResponse(res, null, 'OIDC is disabled', 404);
+      return;
+    }
+
+    if (!OIDC_PROVIDER_NAMES.includes(provider)) {
       sendResponse(res, null, 'Unsupported provider', 400);
       return;
     }

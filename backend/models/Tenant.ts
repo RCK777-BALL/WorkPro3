@@ -30,6 +30,7 @@ export interface TenantDocument extends Document {
   status?: 'active' | 'suspended';
   maxSites?: number;
   sso?: TenantSSOConfig;
+  identityProviders?: Types.ObjectId[];
   onboarding?: TenantOnboardingState;
 }
 
@@ -66,6 +67,7 @@ const tenantSchema = new Schema<TenantDocument>(
       issuer: { type: String, required: false },
       clientId: { type: String, required: false },
     },
+    identityProviders: [{ type: Schema.Types.ObjectId, ref: 'IdentityProviderConfig' }],
     onboarding: { type: onboardingSchema, required: false },
   },
   { timestamps: true },

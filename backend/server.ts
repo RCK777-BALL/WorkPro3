@@ -44,6 +44,7 @@ import {
   kbRoutes,
   laborRoutes,
   LineRoutes,
+  scimRoutes,
   maintenanceScheduleRoutes,
   meterRoutes,
   notificationsRoutes,
@@ -237,6 +238,7 @@ app.use("/api/integrations/v2", integrationsModuleRouter);
 
 // --- Routes (order matters for the limiter) ---
 app.use("/api/auth", authRoutes);
+app.use("/api/scim", scimRoutes);
 
 // Protect all remaining /api routes except /api/auth and /api/public
 app.use(/^\/api(?!\/(auth|public))/, requireAuth, tenantScope);

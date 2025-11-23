@@ -7,14 +7,8 @@ import { Strategy as OIDCStrategy } from 'passport-openidconnect';
 import type { VerifyCallback } from 'passport-openidconnect';
 
 import { resolveTenantContext } from './tenantContext';
-
-interface OIDCStrategyOptions {
-  name?: string;
-  issuer: string;
-  clientID: string;
-  clientSecret: string;
-  callbackURL: string;
-}
+import { getOidcProviderConfigs, type OIDCProviderConfig, type Provider } from '../config/ssoProviders';
+import { isFeatureEnabled } from '../utils/featureFlags';
 
 interface OIDCProfile {
   emails?: Array<{ value: string }>;
@@ -24,7 +18,7 @@ interface OIDCProfile {
 // OIDC authentication relies on Passport and the passport-openidconnect strategy.
 // These modules are regular dependencies and are imported directly.
 
-export type Provider = 'okta' | 'azure';
+export type Provider = 'okta' | 'azure' | 'custom';
 
 export const mapRoles = (groups: string[] = []): string => {
   if (groups.includes('Admin')) return 'general_manager';
@@ -79,42 +73,31 @@ const createOidcVerifier = (provider: Provider): VerifyCallback =>
 
 export const oidcVerify = createOidcVerifier('okta');
 
-export const configureOIDC = () => {
-  const oktaIssuer = process.env.OKTA_ISSUER;
-  const oktaClientId = process.env.OKTA_CLIENT_ID;
-  const oktaClientSecret = process.env.OKTA_CLIENT_SECRET;
-  if (oktaIssuer && oktaClientId && oktaClientSecret && passport.use) {
+export const configureOIDC = (providers: OIDCProviderConfig[] = getOidcProviderConfigs()) => {
+  if (!isFeatureEnabled('oidc')) return [] as Provider[];
+
+  const registered: Provider[] = [];
+
+  for (const provider of providers) {
+    if (!passport.use) continue;
     passport.use(
-      'okta',
+      provider.name,
       new OIDCStrategy(
         {
-          issuer: oktaIssuer,
-          clientID: oktaClientId,
-          clientSecret: oktaClientSecret,
-          callbackURL: '/api/auth/oidc/okta/callback',
+          issuer: provider.issuer,
+          clientID: provider.clientId,
+          clientSecret: provider.clientSecret,
+          callbackURL: provider.callbackPath,
+          authorizationURL: provider.authorizationUrl,
+          tokenURL: provider.tokenUrl,
         },
-        createOidcVerifier('okta'),
+        createOidcVerifier(provider.name),
       ) as unknown as PassportStrategy,
     );
+    registered.push(provider.name);
   }
 
-  const azureIssuer = process.env.AZURE_ISSUER;
-  const azureClientId = process.env.AZURE_CLIENT_ID;
-  const azureClientSecret = process.env.AZURE_CLIENT_SECRET;
-  if (azureIssuer && azureClientId && azureClientSecret && passport.use) {
-    passport.use(
-      'azure',
-      new OIDCStrategy(
-        {
-          issuer: azureIssuer,
-          clientID: azureClientId,
-          clientSecret: azureClientSecret,
-          callbackURL: '/api/auth/oidc/azure/callback',
-        },
-        createOidcVerifier('azure'),
-      ) as unknown as PassportStrategy,
-    );
-  }
+  return registered;
 };
 
 export default { configureOIDC, mapRoles, oidcVerify };

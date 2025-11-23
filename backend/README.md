@@ -181,6 +181,26 @@ Initiate OpenID Connect authentication (`okta` or `azure`). An optional `tenant`
 
 The callback behaves like the OAuth flow and redirects back to the frontend with a signed token.
 
+`GET /api/auth/oidc/:provider/metadata`
+
+Returns the issuer, token endpoints, and callback path for configured OIDC providers. Set `ENABLE_OIDC=true` and define
+`OKTA_*`/`AZURE_*` secrets (or `OIDC_CUSTOM_*`) to register providers.
+
+### SAML metadata and placeholders
+
+`GET /api/auth/saml/:tenantId/metadata`
+
+Serves an XML descriptor using tenant-specific identity provider configuration and stored certificates. Requires
+`ENABLE_SAML=true` and optionally persisted records in `IdentityProviderConfig`.
+
+`POST /api/auth/saml/:tenantId/acs`
+
+Accepts assertions and echoes the RelayState and SAMLResponse for integration testing.
+
+`GET /api/auth/saml/:tenantId/redirect`
+
+Placeholder endpoint for initiating SP-initiated flows. Use the `redirect` query string parameter to test return URLs.
+
 ### Multi‑factor authentication
 
 `POST /api/auth/mfa/setup`
@@ -198,6 +218,12 @@ Generate a secret for time‑based one‑time password (TOTP) MFA.
 ```json
 { "secret": "<base32>", "token": "123456" }
 ```
+
+### SCIM stubs
+
+Set `ENABLE_SCIM=true` and `SCIM_BEARER_TOKEN=<token>` to expose `/api/scim/v2/Users` and `/api/scim/v2/Groups`. Requests
+must include `Authorization: Bearer <token>` and currently return empty resources with 202 responses for create calls to help
+wire up provisioning flows safely.
 
 `POST /api/auth/mfa/verify`
 

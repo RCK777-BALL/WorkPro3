@@ -23,6 +23,10 @@ const envSchema = z.object({
   PM_SCHEDULER_TASK: z.string().default('./tasks/PMSchedulerTask'),
   DEFAULT_TENANT_ID: z.string().optional(),
   EXECUTIVE_REPORT_CRON: z.string().default('0 * * * *'),
+  ENABLE_OIDC_SSO: z.string().optional(),
+  ENABLE_SAML_SSO: z.string().optional(),
+  ENABLE_SCIM_API: z.string().optional(),
+  SCIM_BEARER_TOKEN: z.string().optional(),
 });
 
 export type EnvVars = z.infer<typeof envSchema>;

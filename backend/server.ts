@@ -18,6 +18,7 @@ import { initKafka, sendKafkaEvent } from "./utils/kafka";
 import { initMQTTFromConfig } from "./iot/mqttClient";
 import logger from "./utils/logger";
 import requestLog from "./middleware/requestLog";
+import tenantResolver from "./middleware/tenantResolver";
 
 import {
   adminRoutes,
@@ -55,11 +56,13 @@ import {
   pmRoutes,
   pmTasksRoutes,
   publicRequestRoutes,
+  scimRoutes,
   settingsRoutes,
   reportsRoutes,
   requestPortalRoutes,
   requestsRoutes,
   globalRoutes,
+  ssoRoutes,
   statusRoutes,
   StationRoutes,
   summaryRoutes,
@@ -165,6 +168,7 @@ app.use(corsMiddleware);
 app.options("*", corsMiddleware);
 app.use(helmet());
 app.use(requestLog);
+app.use(tenantResolver);
 app.use(express.json({ limit: "1mb" }));
 app.use(mongoSanitize());
 setupSwagger(app);
@@ -234,12 +238,14 @@ app.use("/api/import-export", importExportRouter);
 app.use("/api/inventory/v2", inventoryV2Routes);
 app.use("/api/inventory/v2", inventoryModuleRouter);
 app.use("/api/integrations/v2", integrationsModuleRouter);
+app.use("/api/sso", ssoRoutes);
+app.use("/api/scim/v2", scimRoutes);
 
 // --- Routes (order matters for the limiter) ---
 app.use("/api/auth", authRoutes);
 
-// Protect all remaining /api routes except /api/auth and /api/public
-app.use(/^\/api(?!\/(auth|public))/, requireAuth, tenantScope);
+// Protect all remaining /api routes except /api/auth, /api/public, /api/sso, and /api/scim
+app.use(/^\/api(?!\/(auth|public|sso|scim))/, requireAuth, tenantScope);
 
 app.use("/api/mobile", mobileLimiter, mobileRoutes);
 app.use("/api/mobile", mobileLimiter, mobileSyncAdminRoutes);

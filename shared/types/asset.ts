@@ -9,6 +9,8 @@ export interface Asset {
   location?: string;
   notes?: string;
   department?: string;
+  departmentId?: string;
+  lineId?: string;
   category?: string;
   status?: 'Active' | 'Offline' | 'In Repair';
   description?: string;

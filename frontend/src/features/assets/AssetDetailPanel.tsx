@@ -5,6 +5,7 @@
 import type { ReactNode } from 'react';
 
 import type { AssetDetailResponse } from '@/api/hierarchy';
+import { EntityAuditList } from '@/features/audit';
 import type { TreeAssetSummary } from './hooks';
 
 type AssetDetailPanelProps = {
@@ -209,6 +210,8 @@ const AssetDetailPanel = ({ assetSummary, assetDetails, isLoading }: AssetDetail
           <EmptyState message={isLoading ? 'Calculating costs…' : 'Cost data unavailable'} />
         )}
       </SectionCard>
+
+      <EntityAuditList entityType="Asset" entityId={asset?.id} siteId={asset?.siteId} limit={12} />
     </div>
   );
 };

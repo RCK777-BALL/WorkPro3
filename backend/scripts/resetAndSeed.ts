@@ -12,6 +12,7 @@ import Line from '../models/Line';
 import Station from '../models/Station';
 import Asset from '../models/Asset';
 import Tenant from '../models/Tenant';
+import Plant from '../models/Plant';
 import logger from '../utils/logger';
 
 dotenv.config();
@@ -39,13 +40,21 @@ async function resetAndSeed() {
         logger.info('🗑️ Existing data cleared');
 
         // 2️⃣ Insert seed data
-        const tenant = await Tenant.create({ name: 'Default Tenant' });
+        const tenant = await Tenant.create({
+            name: 'Default Tenant',
+            domain: 'default.local',
+            branding: { primaryColor: '#0f766e', accentColor: '#ec4899' },
+        });
+        const plant = await Plant.create({ name: 'Default Plant', tenantId: tenant._id });
         await Department.create({
             name: 'Maintenance',
+            tenantId: tenant._id,
+            plant: plant._id,
             lines: [
                 {
                     name: 'Line 1',
-                    stations: [{ name: 'Station A' }],
+                    tenantId: tenant._id,
+                    stations: [{ name: 'Station A', tenantId: tenant._id }],
                 },
             ],
         });
@@ -58,9 +67,13 @@ async function resetAndSeed() {
         logger.info(`👤 Created admin user: ${adminUser.email}`);
 
         // Seed Departments → Lines → Stations → Assets
-        const productionDepartment = await Department.create({ name: 'Production' });
-        const productionLine = await Line.create({ name: 'Line A', department: productionDepartment._id });
-        const productionStation = await Station.create({ name: 'Station 1', line: productionLine._id });
+        const productionDepartment = await Department.create({
+            name: 'Production',
+            tenantId: tenant._id,
+            plant: plant._id,
+        });
+        const productionLine = await Line.create({ name: 'Line A', department: productionDepartment._id, tenantId: tenant._id });
+        const productionStation = await Station.create({ name: 'Station 1', line: productionLine._id, tenantId: tenant._id });
 
  
         await Asset.insertMany([
@@ -71,6 +84,7 @@ async function resetAndSeed() {
                 departmentId: productionDepartment._id,
                 lineId: productionLine._id,
                 stationId: productionStation._id,
+                plant: plant._id,
                 tenantId: tenant._id,
             },
             {
@@ -80,6 +94,7 @@ async function resetAndSeed() {
                 departmentId: productionDepartment._id,
                 lineId: productionLine._id,
                 stationId: productionStation._id,
+                plant: plant._id,
                 tenantId: tenant._id,
             },
  

@@ -45,11 +45,13 @@ const toStringOrUndefined = (value: unknown): MaybeString => {
 const tenantScope = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const headerTenant = req.header("x-tenant-id");
   const userTenant = toStringOrUndefined(req.user?.tenantId);
+  const resolvedTenantFromResolver = toStringOrUndefined((res.locals as { tenantId?: string }).tenantId);
   const existingTenant = toStringOrUndefined(req.tenantId);
   const envTenant = toStringOrUndefined(process.env.DEFAULT_TENANT_ID);
 
   const resolvedTenant =
     existingTenant ||
+    resolvedTenantFromResolver ||
     toStringOrUndefined(headerTenant) ||
     userTenant ||
     envTenant;

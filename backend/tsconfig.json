@@ -3,12 +3,10 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "..",
-    "noEmit": false
+    "noEmit": false,
+    "baseUrl": "."
   },
-  "include": [
-    "./**/*.ts",
-    "../shared/types/**/*.ts"
-  ],
+  "include": ["./**/*.ts"],
   "exclude": [
     "**/*.test.ts",
     "**/*.spec.ts",

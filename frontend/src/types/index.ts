@@ -1,3 +1,6 @@
+import type { Asset as SharedAssetType } from '@shared/asset';
+import type { PermissionGrant, RoleAssignment } from '@shared/admin';
+
 export type { Asset as SharedAsset } from '@shared/asset';
 export type { WorkOrder as SharedWorkOrder } from '@shared/workOrder';
 export type {
@@ -23,40 +26,15 @@ export type {
   SafetyKpiResponse,
   PermitActivitySummary,
 } from '@shared/permit';
+export type { PermissionGrant, RoleAssignment } from '@shared/admin';
 
 /**
  * Defines the allowed maintenance categories for upcoming maintenance tasks.
  */
 export type MaintenanceType = 'preventive' | 'corrective' | 'inspection';
 
-export interface Asset {
-  id: string;
-  name: string;
-  type?: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface';
-  qrCode?: string;
-  location?: string;
-  notes?: string;
-  department?: string;
-  category?: string;
-  status?: 'Active' | 'Offline' | 'In Repair';
-  description?: string;
-  image?: string;
-  serialNumber?: string;
-  modelName?: string;
-  manufacturer?: string;
-  purchaseDate?: string;
-  installationDate?: string;
-  line?: string;
-  station?: string;
-  /** Identifier of the station the asset belongs to */
-  stationId?: string;
-  criticality?: 'high' | 'medium' | 'low';
-  lastPmDate?: string;
-  lastServiced?: string;
-  warrantyExpiry?: string;
-  documents?: File[];
-  createdAt?: string;
-  updatedAt?: string;
+export interface Asset extends Omit<SharedAssetType, 'documents'> {
+  documents?: Array<File | string>;
 }
 
 export type AssetStatusMap = Record<string, number>;
@@ -107,6 +85,9 @@ export interface DepartmentHierarchy extends Department {
 export interface WorkOrder {
   /** Unique identifier */
   id: string;
+  tenantId: string;
+  siteId?: string;
+  plantId?: string;
 
   /** Human readable title */
   title: string;
@@ -409,6 +390,8 @@ export interface AuthUser {
   email: string;
   role: AuthRole;
   roles?: AuthRole[];
+  permissions?: string[];
+  roleAssignments?: RoleAssignment[];
   /** Identifier for the user's tenant */
   tenantId?: string;
   /** Optional site identifier associated with the user */

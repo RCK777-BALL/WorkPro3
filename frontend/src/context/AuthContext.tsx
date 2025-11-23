@@ -13,7 +13,7 @@ import {
 } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuthStore, type AuthState } from '@/store/authStore';
-import type { AuthLoginResponse, AuthRole, AuthSession, AuthUser } from '@/types';
+import type { AuthLoginResponse, AuthRole, AuthSession, AuthUser, RoleAssignment } from '@/types';
 import {
   FALLBACK_TOKEN_KEY,
   SITE_KEY,
@@ -31,6 +31,8 @@ type RawAuthUser = {
   tenantId?: string;
   siteId?: string;
   role?: string;
+  permissions?: string[];
+  roleAssignments?: RoleAssignment[];
 };
 
 const AUTH_ROUTE_PREFIXES = ['/login', '/register', '/forgot'];
@@ -107,12 +109,22 @@ const toAuthUser = (payload: RawAuthUser): AuthUser => {
     user.siteId = payload.siteId;
   }
 
+  const permissions = normalizePermissions(payload.permissions);
+  if (permissions.length) {
+    user.permissions = permissions;
+  }
+
+  const roleAssignments = normalizeRoleAssignments(payload.roleAssignments);
+  if (roleAssignments.length) {
+    user.roleAssignments = roleAssignments;
+  }
+
   return user;
 };
 
 type AuthUserInput =
-  | (AuthUser & { roles?: unknown })
-  | (Omit<AuthUser, 'role'> & { role?: unknown; roles?: unknown });
+  | (AuthUser & { roles?: unknown; permissions?: unknown; roleAssignments?: unknown })
+  | (Omit<AuthUser, 'role'> & { role?: unknown; roles?: unknown; permissions?: unknown; roleAssignments?: unknown });
 
 const ROLE_PRIORITY: AuthRole[] = [
   'global_admin',
@@ -149,6 +161,85 @@ const normalizeRoles = (roles: unknown): AuthRole[] => {
   return normalized;
 };
 
+const normalizePermissions = (permissions: unknown): string[] => {
+  if (!permissions) return [];
+  const values = Array.isArray(permissions) ? permissions : [permissions];
+  const normalized: string[] = [];
+  for (const permission of values) {
+    if (typeof permission !== 'string') continue;
+    const trimmed = permission.trim();
+    if (trimmed && !normalized.includes(trimmed)) {
+      normalized.push(trimmed);
+    }
+  }
+  return normalized;
+};
+
+const normalizePermissionGrants = (grants: unknown, tenantId?: string, siteId?: string) => {
+  if (!Array.isArray(grants)) return [] as RoleAssignment['permissions'];
+  const normalized: NonNullable<RoleAssignment['permissions']> = [];
+  for (const grant of grants) {
+    if (!grant || typeof grant !== 'object') continue;
+    const permission = typeof (grant as { permission?: unknown }).permission === 'string'
+      ? (grant as { permission: string }).permission.trim()
+      : '';
+    if (!permission) continue;
+    normalized.push({
+      permission,
+      tenantId: typeof (grant as { tenantId?: unknown }).tenantId === 'string'
+        ? ((grant as { tenantId: string }).tenantId || tenantId || '')
+        : tenantId || '',
+      siteId:
+        typeof (grant as { siteId?: unknown }).siteId === 'string'
+          ? (grant as { siteId: string }).siteId || siteId
+          : siteId,
+      grantedBy:
+        typeof (grant as { grantedBy?: unknown }).grantedBy === 'string'
+          ? (grant as { grantedBy: string }).grantedBy
+          : undefined,
+      grantedAt:
+        typeof (grant as { grantedAt?: unknown }).grantedAt === 'string'
+          ? (grant as { grantedAt: string }).grantedAt
+          : undefined,
+    });
+  }
+  return normalized;
+};
+
+const normalizeRoleAssignments = (assignments: unknown): RoleAssignment[] => {
+  if (!assignments || !Array.isArray(assignments)) return [];
+  const normalized: RoleAssignment[] = [];
+  for (const assignment of assignments) {
+    if (!assignment || typeof assignment !== 'object') continue;
+    const role = typeof (assignment as { role?: unknown }).role === 'string'
+      ? (assignment as { role: string }).role
+      : undefined;
+    const tenantId = typeof (assignment as { tenantId?: unknown }).tenantId === 'string'
+      ? (assignment as { tenantId: string }).tenantId
+      : undefined;
+    if (!role || !tenantId) continue;
+    const siteId = typeof (assignment as { siteId?: unknown }).siteId === 'string'
+      ? (assignment as { siteId: string }).siteId
+      : undefined;
+    const permissions = normalizePermissionGrants(
+      (assignment as RoleAssignment).permissions,
+      tenantId,
+      siteId,
+    );
+    normalized.push({
+      role,
+      tenantId,
+      siteId,
+      permissions: permissions.length ? permissions : undefined,
+      expiresAt:
+        typeof (assignment as { expiresAt?: unknown }).expiresAt === 'string'
+          ? (assignment as { expiresAt: string }).expiresAt
+          : undefined,
+    });
+  }
+  return normalized;
+};
+
 const derivePrimaryRole = (role: unknown, roles: AuthRole[]): AuthRole => {
   if (typeof role === 'string') {
     const candidate = role.toLowerCase() as AuthRole;
@@ -168,10 +259,14 @@ const normalizeAuthUser = (user: AuthUserInput): AuthUser => {
   const normalizedRoles = normalizeRoles(user.roles);
   const primaryRole = derivePrimaryRole((user as { role?: unknown }).role, normalizedRoles);
   const roles = Array.from(new Set<AuthRole>([primaryRole, ...normalizedRoles]));
+  const permissions = normalizePermissions((user as { permissions?: unknown }).permissions);
+  const roleAssignments = normalizeRoleAssignments((user as { roleAssignments?: unknown }).roleAssignments);
   return {
     ...(user as Record<string, unknown>),
     role: primaryRole,
     roles,
+    permissions: permissions.length ? permissions : undefined,
+    roleAssignments,
   } as AuthUser;
 };
 

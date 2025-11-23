@@ -1,9 +1,13 @@
 export interface Asset {
   id: string;
+  tenantId: string;
+  siteId?: string;
+  plantId?: string;
   name: string;
   type?: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface';
   qrCode?: string;
   location?: string;
+  notes?: string;
   department?: string;
   category?: string;
   status?: 'Active' | 'Offline' | 'In Repair';

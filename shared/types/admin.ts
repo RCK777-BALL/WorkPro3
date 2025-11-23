@@ -50,11 +50,27 @@ export interface RolePermission {
   remove: boolean;
 }
 
+export interface PermissionGrant {
+  permission: string;
+  tenantId: string;
+  siteId?: string;
+  grantedBy?: string;
+  grantedAt?: string;
+}
+
 export interface RoleDefinition {
   key: string;
   label: string;
   description: string;
   permissions: RolePermission[];
+}
+
+export interface RoleAssignment {
+  role: string;
+  tenantId: string;
+  siteId?: string;
+  permissions?: PermissionGrant[];
+  expiresAt?: string;
 }
 
 export interface RolePermissionsConfig {

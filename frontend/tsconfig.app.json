@@ -11,7 +11,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@common/*": ["src/components/common/*"]
+      "@common/*": ["src/components/common/*"],
+      "@backend-shared/*": ["../backend/shared/*"]
     },
     "types": [
       "vite/client",

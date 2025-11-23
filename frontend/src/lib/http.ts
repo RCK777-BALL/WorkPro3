@@ -8,7 +8,7 @@ import type {
   AxiosResponse,
   AxiosError,
 } from 'axios';
-import type { ApiResult } from '../../../Backend/shared/http';
+import type { ApiResult } from '@backend-shared/http';
 
 import { safeLocalStorage } from '@/utils/safeLocalStorage';
 

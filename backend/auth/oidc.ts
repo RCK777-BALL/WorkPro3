@@ -91,6 +91,7 @@ export const configureOIDC = () => {
 
   for (const provider of providers) {
     if (!passport.use) continue;
+    const issuerBase = provider.issuer.replace(/\/$/, '');
     passport.use(
       provider.name,
       new OIDCStrategy(
@@ -99,8 +100,8 @@ export const configureOIDC = () => {
           clientID: provider.clientId,
           clientSecret: provider.clientSecret,
           callbackURL: provider.callbackPath,
-          authorizationURL: provider.authorizationUrl,
-          tokenURL: provider.tokenUrl,
+          authorizationURL: provider.authorizationUrl ?? `${issuerBase}/authorize`,
+          tokenURL: provider.tokenUrl ?? `${issuerBase}/token`,
         },
         createOidcVerifier(provider.name),
       ) as unknown as PassportStrategy,

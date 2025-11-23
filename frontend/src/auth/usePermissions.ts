@@ -4,7 +4,12 @@
 
 import { useCallback, useMemo } from 'react';
 
-import { formatPermission, type Permission, type PermissionAction, type PermissionCategory } from '@shared/permissions';
+import {
+  formatPermission,
+  type Permission,
+  type PermissionAction,
+  type PermissionCategory,
+} from '../../../Backend/shared/permissions';
 import { useAuth } from '@/context/AuthContext';
 
 const normalizePermissions = (permissions?: string[]): Permission[] => {

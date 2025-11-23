@@ -1,8 +1,8 @@
-import type { Asset as SharedAssetType } from '@shared/asset';
-import type { PermissionGrant, RoleAssignment } from '@shared/admin';
+import type { Asset as SharedAssetType } from '../../../shared/types/asset';
+import type { PermissionGrant, RoleAssignment } from '../../../shared/types/admin';
 
-export type { Asset as SharedAsset } from '@shared/asset';
-export type { WorkOrder as SharedWorkOrder } from '@shared/workOrder';
+export type { Asset as SharedAsset } from '../../../shared/types/asset';
+export type { WorkOrder as SharedWorkOrder } from '../../../Backend/shared/workOrder';
 export type {
   InventoryItem,
   InventoryUpdatePayload,
@@ -11,12 +11,12 @@ export type {
   PurchaseOrder,
   PurchaseOrderPayload,
   InventoryAlert,
-} from '@shared/inventory';
+} from '../../../Backend/shared/inventory';
 
 export type Vendor = VendorSummary;
-export type { UploadedFile, UploadResponse } from '@shared/uploads';
-export type { ApiResult, TenantScoped } from '@shared/http';
-export type { OnboardingState, OnboardingStep, OnboardingStepKey, PMTemplateLibraryItem } from '@shared/onboarding';
+export type { UploadedFile, UploadResponse } from '../../../Backend/shared/uploads';
+export type { ApiResult, TenantScoped } from '../../../Backend/shared/http';
+export type { OnboardingState, OnboardingStep, OnboardingStepKey, PMTemplateLibraryItem } from '../../../Backend/shared/onboarding';
 export type {
   Permit,
   PermitHistoryEntry,
@@ -25,8 +25,8 @@ export type {
   SafetyIncident,
   SafetyKpiResponse,
   PermitActivitySummary,
-} from '@shared/permit';
-export type { PermissionGrant, RoleAssignment } from '@shared/admin';
+} from '../../../shared/types/permit';
+export type { PermissionGrant, RoleAssignment } from '../../../shared/types/admin';
 
 /**
  * Defines the allowed maintenance categories for upcoming maintenance tasks.

@@ -3,7 +3,7 @@
  */
 
 import http from '@/lib/http';
-import type { OnboardingReminderResponse, OnboardingState } from '@shared/onboarding';
+import type { OnboardingReminderResponse, OnboardingState } from '../../../Backend/shared/onboarding';
 
 export const fetchOnboardingState = async (): Promise<OnboardingState> => {
   const res = await http.get<OnboardingState>('/onboarding');

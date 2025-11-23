@@ -14,6 +14,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import * as speakeasy from 'speakeasy';
 import { z } from 'zod';
+import { Types } from 'mongoose';
 
 import User, { type UserDocument } from '../models/User';
 import { loginSchema, registerSchema } from '../validators/authValidators';
@@ -30,8 +31,7 @@ import { configureOAuth } from '../auth/oauth';
 import { configureOIDC, type Provider as OIDCProvider } from '../auth/oidc';
 import { validatePasswordStrength } from '../auth/passwordPolicy';
 import { writeAuditLog } from '../utils/audit';
-import { isOidcEnabled } from '../config/featureFlags';
-import { isIdentityProviderAllowed } from '../services/identityProviderService';
+import type { AuthedRequest } from '../types/http';
 
 configureOAuth();
 configureOIDC();
@@ -95,6 +95,14 @@ const toStringId = (value: unknown): string | undefined => {
     return (value as { toString(): string }).toString();
   }
   return undefined;
+};
+
+const resolveRequestTenant = (req: Request): string | undefined => {
+  const headerTenant = req.header('x-tenant-id');
+  if (typeof headerTenant === 'string' && headerTenant.trim()) {
+    return headerTenant.trim();
+  }
+  return (req as AuthedRequest).tenantId;
 };
 
 const sanitizeRedirect = (value: string | undefined): string | undefined => {
@@ -216,7 +224,7 @@ const isAllowedOidcProvider = async (provider: string): Promise<boolean> => {
 
 const registerBodySchema = registerSchema.extend({
   name: z.string().min(1, 'Name is required'),
-  tenantId: z.string().min(1, 'Tenant is required'),
+  tenantId: z.string().min(1, 'Tenant is required').optional(),
   employeeId: z.string().min(1, 'Employee ID is required'),
 });
 
@@ -449,6 +457,18 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
       return;
     }
 
+    const requestTenantId = resolveRequestTenant(req);
+    const userTenantId = toStringId(user.tenantId);
+    if (requestTenantId && userTenantId && requestTenantId !== userTenantId) {
+      sendResponse(res, null, 'Invalid tenant for user', 403);
+      return;
+    }
+
+    if (requestTenantId && !userTenantId) {
+      user.tenantId = new Types.ObjectId(requestTenantId);
+      await user.save();
+    }
+
     const hashed = user.passwordHash;
     if (!hashed) {
       await bcrypt.compare(password, FAKE_PASSWORD_HASH);
@@ -620,8 +640,19 @@ router.post('/register', registerLimiter, async (req: Request, res: Response, ne
 
   const { name, email, password, tenantId, employeeId } = parsed.data;
   const normalizedEmail = email.trim().toLowerCase();
+  const resolvedTenant = tenantId ?? resolveRequestTenant(req);
 
   try {
+    if (!resolvedTenant) {
+      sendResponse(res, null, 'Tenant is required', 400);
+      return;
+    }
+
+    if (tenantId && resolvedTenant !== tenantId) {
+      sendResponse(res, null, 'Cross-tenant registration is not allowed', 403);
+      return;
+    }
+
     const existing = await User.findOne({ email: normalizedEmail });
     if (existing) {
       sendResponse(res, null, 'Email already in use', 400);
@@ -632,7 +663,7 @@ router.post('/register', registerLimiter, async (req: Request, res: Response, ne
       name,
       email: normalizedEmail,
       passwordHash: password,
-      tenantId,
+      tenantId: resolvedTenant,
       employeeId,
     });
 

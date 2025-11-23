@@ -18,6 +18,7 @@ import { initKafka, sendKafkaEvent } from "./utils/kafka";
 import { initMQTTFromConfig } from "./iot/mqttClient";
 import logger from "./utils/logger";
 import requestLog from "./middleware/requestLog";
+import tenantResolver from "./middleware/tenantResolver";
 
 import {
   adminRoutes,
@@ -167,6 +168,7 @@ app.use(corsMiddleware);
 app.options("*", corsMiddleware);
 app.use(helmet());
 app.use(requestLog);
+app.use(tenantResolver);
 app.use(express.json({ limit: "1mb" }));
 app.use(mongoSanitize());
 setupSwagger(app);

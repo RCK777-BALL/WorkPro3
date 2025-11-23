@@ -36,7 +36,7 @@ import clsx from "clsx";
 
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/auth/usePermissions";
-import type { PermissionScope, PermissionAction } from "@/auth/permissions";
+import type { Permission } from "@/auth/permissions";
 import {
   defaultOrder,
   useNavigationStore,
@@ -73,7 +73,7 @@ type NavItem = {
   to: string;
   icon: LucideIcon;
   section: NavSection;
-  permission?: { scope: PermissionScope; action: PermissionAction };
+  permission?: Permission;
 };
 
 const sections: { id: NavSection; title: string }[] = [
@@ -104,7 +104,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/work-requests",
     icon: Inbox,
     section: "operations",
-    permission: { scope: "workRequests", action: "read" },
+    permission: "workRequests.read",
   },
   permits: {
     id: "permits",
@@ -126,7 +126,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/assets",
     icon: Warehouse,
     section: "plant",
-    permission: { scope: "hierarchy", action: "read" },
+    permission: "hierarchy.read",
   },
   departments: {
     id: "departments",
@@ -134,7 +134,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/departments",
     icon: Building2,
     section: "plant",
-    permission: { scope: "hierarchy", action: "read" },
+    permission: "hierarchy.read",
   },
   lines: {
     id: "lines",
@@ -142,7 +142,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/lines",
     icon: GitBranch,
     section: "plant",
-    permission: { scope: "hierarchy", action: "read" },
+    permission: "hierarchy.read",
   },
   stations: {
     id: "stations",
@@ -150,7 +150,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/stations",
     icon: Scan,
     section: "plant",
-    permission: { scope: "hierarchy", action: "read" },
+    permission: "hierarchy.read",
   },
   inventory: {
     id: "inventory",
@@ -158,7 +158,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/inventory",
     icon: MapPin,
     section: "operations",
-    permission: { scope: "inventory", action: "read" },
+    permission: "inventory.read",
   },
   teams: {
     id: "teams",
@@ -166,7 +166,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/teams",
     icon: Users,
     section: "plant",
-    permission: { scope: "hierarchy", action: "read" },
+    permission: "hierarchy.read",
   },
   analytics: {
     id: "analytics",
@@ -202,7 +202,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/executive",
     icon: Factory,
     section: "analytics",
-    permission: { scope: "executive", action: "read" },
+    permission: "executive.read",
   },
   reports: {
     id: "reports",
@@ -217,7 +217,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/vendors",
     icon: Briefcase,
     section: "management",
-    permission: { scope: "inventory", action: "read" },
+    permission: "inventory.read",
   },
   messages: {
     id: "messages",
@@ -253,7 +253,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/imports",
     icon: Activity,
     section: "management",
-    permission: { scope: "importExport", action: "import" },
+    permission: "importExport.import",
   },
   audit: {
     id: "audit",
@@ -261,7 +261,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/admin/audit",
     icon: ScrollText,
     section: "management",
-    permission: { scope: "audit", action: "read" },
+    permission: "audit.read",
   },
 };
 
@@ -298,7 +298,7 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
         .map((id) => navItems[id])
         .filter((item) => item && item.section === section.id)
         .filter((item): item is NavItem =>
-          Boolean(item) && (!item.permission || can(item.permission.scope, item.permission.action)),
+          Boolean(item) && (!item.permission || can(item.permission)),
         ),
     }));
   }, [sidebarOrder, can]);

@@ -14,6 +14,9 @@ async function run() {
     const db = client.db();
     await db.collection('assets').updateMany({ siteId: { $exists: false } }, { $set: { siteId: null } });
     await db.collection('inventoryitems').updateMany({ siteId: { $exists: false } }, { $set: { siteId: null } });
+    await db.collection('workorders').updateMany({ siteId: { $exists: false } }, { $set: { siteId: null } });
+    await db.collection('pmtasks').updateMany({ siteId: { $exists: false } }, { $set: { siteId: null } });
+    await db.collection('users').updateMany({ siteId: { $exists: false } }, { $set: { siteId: null } });
     await db.collection('requestforms').updateMany({ siteId: { $exists: false } }, { $set: { siteId: null } });
     logger.info('addSiteId migration complete');
   } finally {

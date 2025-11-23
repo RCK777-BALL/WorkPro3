@@ -46,4 +46,6 @@ export interface AuditLogFilters {
   entityId?: string;
   start?: string;
   end?: string;
+  siteId?: string;
+  limit?: number;
 }

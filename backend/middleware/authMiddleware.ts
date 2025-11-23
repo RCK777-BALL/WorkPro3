@@ -10,7 +10,7 @@ import User from '../models/User';
 import type { UserDocument, UserRole } from '../models/User';
 import type { AuthedRequest } from '../types/http';
 import { resolveUserPermissions } from '../services/permissionService';
-import type { Permission } from '../../Backend/shared/permissions';
+import type { Permission } from '../shared/permissions';
 
 type DecodedToken = {
   id?: string;

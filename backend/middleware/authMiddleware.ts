@@ -9,6 +9,8 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import type { UserDocument, UserRole } from '../models/User';
 import type { AuthedRequest } from '../types/http';
+import { resolveUserPermissions } from '../services/permissionService';
+import type { Permission } from '@shared/permissions';
 
 type DecodedToken = {
   id?: string;
@@ -39,6 +41,14 @@ const getJwtSecret = (): string => {
     throw new Error('JWT_SECRET is not configured');
   }
   return secret;
+};
+
+const toStringOrUndefined = (value: unknown): string | undefined => {
+  if (typeof value === 'string') return value;
+  if (value && typeof (value as { toString?: () => string }).toString === 'function') {
+    return (value as { toString(): string }).toString();
+  }
+  return undefined;
 };
 
 const toPlainUser = (user: HydratedDocument<UserDocument>, decoded: DecodedToken): Express.User => {
@@ -98,12 +108,30 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
     const authedReq = req as AuthedRequest;
     const plainUser = toPlainUser(user, decoded) as any;
 
+    const tenantId = toStringOrUndefined(req.header('x-tenant-id')) ?? plainUser.tenantId;
+    const siteId = toStringOrUndefined(req.header('x-site-id')) ?? plainUser.siteId;
+
+    const { roles, permissions } = await resolveUserPermissions({
+      userId: user._id,
+      tenantId,
+      siteId,
+      fallbackRoles: Array.isArray(plainUser.roles) ? plainUser.roles : [],
+    });
+
+    if (roles.length > 0) {
+      plainUser.roles = roles;
+    }
+    (plainUser as { permissions?: Permission[] }).permissions = permissions;
+
     authedReq.user = plainUser;
     if (plainUser.tenantId) {
       authedReq.tenantId = String(plainUser.tenantId);
     }
     if (plainUser.siteId) {
       authedReq.siteId = String(plainUser.siteId);
+    }
+    if (permissions && permissions.length > 0) {
+      authedReq.permissions = permissions;
     }
 
     next();

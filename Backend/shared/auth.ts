@@ -1,3 +1,5 @@
+// shared/auth.ts
+
 export const AUTH_ROLES = ['admin', 'manager', 'technician', 'viewer'] as const;
 export type AuthRole = (typeof AUTH_ROLES)[number];
 

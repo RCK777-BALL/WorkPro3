@@ -7,6 +7,7 @@ import { Strategy as OIDCStrategy } from 'passport-openidconnect';
 import type { VerifyCallback } from 'passport-openidconnect';
 
 import { resolveTenantContext } from './tenantContext';
+import { getOidcProviderConfigs } from '../config/ssoProviders';
 import { isOidcEnabled } from '../config/featureFlags';
 
 interface OIDCStrategyOptions {
@@ -85,24 +86,7 @@ export const configureOIDC = () => {
     return;
   }
 
-  const oktaIssuer = process.env.OKTA_ISSUER;
-  const oktaClientId = process.env.OKTA_CLIENT_ID;
-  const oktaClientSecret = process.env.OKTA_CLIENT_SECRET;
-  if (oktaIssuer && oktaClientId && oktaClientSecret && passport.use) {
-    passport.use(
-      'okta',
-      new OIDCStrategy(
-        {
-          issuer: oktaIssuer,
-          clientID: oktaClientId,
-          clientSecret: oktaClientSecret,
-          callbackURL: '/api/auth/oidc/okta/callback',
-        },
-        createOidcVerifier('okta'),
-      ) as unknown as PassportStrategy,
-    );
-  }
-
+  const providers = getOidcProviderConfigs();
   const registered: Provider[] = [];
 
   for (const provider of providers) {

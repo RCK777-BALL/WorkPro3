@@ -30,6 +30,8 @@ type RawAuthUser = {
   email?: string | null;
   tenantId?: string;
   siteId?: string;
+  roles?: string[];
+  permissions?: string[];
   role?: string;
   permissions?: string[];
 };

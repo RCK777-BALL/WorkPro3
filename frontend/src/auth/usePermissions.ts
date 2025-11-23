@@ -34,6 +34,11 @@ export const usePermissions = () => {
     return set;
   }, [user]);
 
+  const explicitPermissions = useMemo(() => {
+    if (!user?.permissions?.length) return null;
+    return new Set(user.permissions.map((permission) => permission.toLowerCase()));
+  }, [user]);
+
   const can = useCallback(
     (permissionOrScope: Permission | PermissionCategory, action?: PermissionAction) => {
       if (!user) return false;

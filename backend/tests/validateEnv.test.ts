@@ -22,4 +22,17 @@ describe('validateEnv logging', () => {
     expect(() => validateEnv()).toThrow('Missing or invalid environment variables');
     expect(spy).toHaveBeenCalledWith('❌ Invalid environment variables:', expect.any(Object));
   });
+
+  it('accepts optional SSO feature flags without requiring values', () => {
+    process.env = {
+      ...process.env,
+      JWT_SECRET: 'secret',
+      MONGO_URI: 'mongodb://localhost:27017/workpro',
+      ENABLE_OIDC: undefined as any,
+      ENABLE_SAML: undefined as any,
+      ENABLE_SCIM: undefined as any,
+    } as any;
+
+    expect(() => validateEnv()).not.toThrow();
+  });
 });

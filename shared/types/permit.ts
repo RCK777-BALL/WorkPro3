@@ -45,6 +45,8 @@ export interface PermitHistoryEntry {
 export interface Permit {
   _id?: string;
   id?: string;
+  tenantId: string;
+  siteId?: string;
   permitNumber: string;
   type: string;
   description?: string;
@@ -82,6 +84,8 @@ export interface SafetyIncidentLogEntry {
 export interface SafetyIncident {
   _id?: string;
   id?: string;
+  tenantId?: string;
+  siteId?: string;
   permit?: string;
   workOrder?: string;
   title: string;

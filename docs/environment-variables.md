@@ -18,6 +18,10 @@ The application uses the following environment variables. All names use `UPPER_S
 | `PM_SCHEDULER_TASK` | Path to PM scheduler task | `./tasks/PMSchedulerTask` |
 | `LABOR_RATE` | Hourly labor rate for cost calculations | `50` |
 | `DEFAULT_TENANT_ID` | Default tenant identifier | optional |
+| `ENABLE_OIDC_SSO` | Enable built-in OIDC providers (Okta/Azure) | `true` |
+| `ENABLE_SAML_SSO` | Enable SAML endpoints | `false` |
+| `ENABLE_SCIM_API` | Enable SCIM provisioning endpoints | `false` |
+| `SCIM_BEARER_TOKEN` | Token expected in `Authorization: Bearer` for SCIM | optional |
 
 ## Frontend
 

@@ -2,10 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import permissionsMatrix from '../../../backend/src/auth/permissions.json';
-import type { PermissionAction, PermissionScope, PermissionsMatrix } from '@shared/auth';
+import { ALL_PERMISSIONS, PERMISSIONS, type Permission, type PermissionAction, type PermissionCategory } from '@shared/permissions';
 
-const typedPermissionsMatrix: PermissionsMatrix = permissionsMatrix;
-
-export { typedPermissionsMatrix as permissionsMatrix };
-export type { PermissionsMatrix, PermissionScope, PermissionAction };
+export { ALL_PERMISSIONS, PERMISSIONS };
+export type { Permission, PermissionAction, PermissionCategory };

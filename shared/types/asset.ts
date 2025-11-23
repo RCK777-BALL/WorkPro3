@@ -2,11 +2,17 @@ import type { TenantScoped } from './http';
 
 export interface Asset extends TenantScoped {
   id: string;
+  tenantId: string;
+  siteId?: string;
+  plantId?: string;
   name: string;
   type?: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface';
   qrCode?: string;
   location?: string;
+  notes?: string;
   department?: string;
+  departmentId?: string;
+  lineId?: string;
   category?: string;
   status?: 'Active' | 'Offline' | 'In Repair';
   description?: string;

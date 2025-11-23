@@ -2,118 +2,101 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { MongoClient, ObjectId } from 'mongodb';
+import mongoose, { Types } from 'mongoose';
+import dotenv from 'dotenv';
+import Tenant from '../../models/Tenant';
+import Site from '../../models/Site';
 import logger from '../../utils/logger';
 
-type TenantContext = {
-  defaultTenant?: ObjectId;
-  defaultSiteByTenant: Map<string, ObjectId>;
-  siteTenant: Map<string, ObjectId>;
+dotenv.config();
+
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/workpro';
+
+const toObjectId = (value: string): Types.ObjectId => {
+  if (!Types.ObjectId.isValid(value)) {
+    throw new Error(`Invalid ObjectId provided: ${value}`);
+  }
+  return new Types.ObjectId(value);
 };
 
-const resolveContext = async (db: ReturnType<MongoClient['db']>): Promise<TenantContext> => {
-  const siteTenant = new Map<string, ObjectId>();
-  const defaultSiteByTenant = new Map<string, ObjectId>();
-
-  const sites = await db.collection('sites').find({ tenantId: { $exists: true } }).toArray();
-  for (const site of sites) {
-    if (!site._id || !site.tenantId) continue;
-    siteTenant.set(site._id.toString(), new ObjectId(site.tenantId));
-    if (!defaultSiteByTenant.has(site.tenantId.toString())) {
-      defaultSiteByTenant.set(site.tenantId.toString(), new ObjectId(site._id));
-    }
+const resolveDefaultTenant = async (): Promise<Types.ObjectId> => {
+  const envTenant = process.env.DEFAULT_TENANT_ID;
+  if (envTenant) {
+    logger.info('Using DEFAULT_TENANT_ID from environment');
+    return toObjectId(envTenant);
   }
 
-  const defaultTenantDoc = await db.collection('tenants').findOne({}, { projection: { _id: 1 } });
+  const existing = await Tenant.findOne().select('_id').lean();
+  if (existing?._id) {
+    logger.info('Found existing tenant to use for backfill');
+    return existing._id;
+  }
 
-  return {
-    defaultTenant: defaultTenantDoc?._id ? new ObjectId(defaultTenantDoc._id) : undefined,
-    defaultSiteByTenant,
-    siteTenant,
-  };
+  const created = await Tenant.create({ name: 'Default Tenant' });
+  logger.info('Created fallback tenant for backfill', { tenantId: created._id.toString() });
+  return created._id;
+};
+
+const resolveDefaultSite = async (tenantId: Types.ObjectId): Promise<Types.ObjectId> => {
+  const existing = await Site.findOne({ tenantId }).select('_id').lean();
+  if (existing?._id) {
+    return existing._id;
+  }
+
+  const created = await Site.create({ tenantId, name: 'Primary Site' });
+  logger.info('Created fallback site for backfill', {
+    tenantId: tenantId.toString(),
+    siteId: created._id.toString(),
+  });
+  return created._id;
 };
 
 const backfillCollection = async (
-  db: ReturnType<MongoClient['db']>,
   collectionName: string,
-  context: TenantContext,
-  tenantField = 'tenantId',
-  siteField = 'siteId',
+  tenantId: Types.ObjectId,
+  siteId: Types.ObjectId,
 ) => {
-  const collection = db.collection(collectionName);
-  const cursor = collection.find({
-    $or: [{ [tenantField]: { $exists: false } }, { [siteField]: { $exists: false } }],
+  const collection = mongoose.connection.collection(collectionName);
+  const tenantFilter = { $or: [{ tenantId: { $exists: false } }, { tenantId: null }] };
+  const siteFilter = { $or: [{ siteId: { $exists: false } }, { siteId: null }] };
+
+  const { matchedCount: tenantMatched, modifiedCount: tenantModified } = await collection.updateMany(
+    tenantFilter,
+    { $set: { tenantId } },
+  );
+
+  const { matchedCount: siteMatched, modifiedCount: siteModified } = await collection.updateMany(
+    siteFilter,
+    { $set: { siteId } },
+  );
+
+  logger.info('Backfill complete for collection', {
+    collection: collectionName,
+    tenantMatched,
+    tenantModified,
+    siteMatched,
+    siteModified,
   });
-
-  const bulk = collection.initializeUnorderedBulkOp();
-  let updates = 0;
-
-  // eslint-disable-next-line no-await-in-loop -- intentional cursor iteration
-  for await (const doc of cursor) {
-    let tenantId: ObjectId | undefined = doc[tenantField];
-    let siteId: ObjectId | undefined = doc[siteField];
-
-    if (!tenantId && siteId) {
-      const resolved = context.siteTenant.get(siteId.toString());
-      if (resolved) {
-        tenantId = resolved;
-      }
-    }
-
-    if (!tenantId && context.defaultTenant) {
-      tenantId = context.defaultTenant;
-    }
-
-    if (!siteId && tenantId) {
-      const fallbackSite = context.defaultSiteByTenant.get(tenantId.toString());
-      if (fallbackSite) {
-        siteId = fallbackSite;
-      }
-    }
-
-    const update: Record<string, ObjectId> = {};
-    if (tenantId && !doc[tenantField]) {
-      update[tenantField] = tenantId;
-    }
-    if (siteId && !doc[siteField]) {
-      update[siteField] = siteId;
-    }
-
-    if (Object.keys(update).length > 0) {
-      bulk.find({ _id: doc._id }).updateOne({ $set: update });
-      updates += 1;
-    }
-  }
-
-  if (updates === 0) {
-    logger.info(`${collectionName}: no documents required updates`);
-    return;
-  }
-
-  await bulk.execute();
-  logger.info(`${collectionName}: backfilled tenant/site fields for ${updates} documents`);
 };
 
 async function run() {
-  const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/workpro';
-  const client = new MongoClient(uri);
+  await mongoose.connect(MONGO_URI);
+  logger.info('Connected to MongoDB for backfill');
 
-  try {
-    await client.connect();
-    const db = client.db();
-    const context = await resolveContext(db);
+  const tenantId = await resolveDefaultTenant();
+  const siteId = await resolveDefaultSite(tenantId);
 
-    await backfillCollection(db, 'assets', context);
-    await backfillCollection(db, 'inventoryitems', context);
-    await backfillCollection(db, 'workorders', context);
-    await backfillCollection(db, 'requestforms', context);
-    await backfillCollection(db, 'comments', context, 'tenantId', 'siteId');
-  } finally {
-    await client.close();
+  const collections = ['assets', 'inventoryitems', 'workorders', 'requestforms', 'auditevents'];
+  for (const collection of collections) {
+    await backfillCollection(collection, tenantId, siteId);
   }
+
+  logger.info('Tenant/site backfill completed successfully');
+  await mongoose.disconnect();
 }
 
-run().catch((err) => {
-  logger.error(err);
+run().catch(async (error) => {
+  logger.error('Backfill failed', error);
+  await mongoose.disconnect();
   process.exit(1);
 });

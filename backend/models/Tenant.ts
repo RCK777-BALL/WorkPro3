@@ -26,10 +26,17 @@ export interface TenantSSOConfig {
 export interface TenantDocument extends Document {
   _id: Types.ObjectId;
   name: string;
+  domain?: string;
+  branding?: {
+    logoUrl?: string;
+    primaryColor?: string;
+    accentColor?: string;
+  };
   slug?: string;
   status?: 'active' | 'suspended';
   maxSites?: number;
   sso?: TenantSSOConfig;
+  identityProviders?: Types.ObjectId[];
   onboarding?: TenantOnboardingState;
 }
 
@@ -58,6 +65,12 @@ const onboardingSchema = new Schema<TenantOnboardingState>(
 const tenantSchema = new Schema<TenantDocument>(
   {
     name: { type: String, required: true },
+    domain: { type: String, lowercase: true, trim: true, unique: true, sparse: true },
+    branding: {
+      logoUrl: { type: String },
+      primaryColor: { type: String },
+      accentColor: { type: String },
+    },
     slug: { type: String, lowercase: true, trim: true, unique: true, sparse: true },
     status: { type: String, enum: ['active', 'suspended'], default: 'active' },
     maxSites: { type: Number, min: 1 },
@@ -66,12 +79,14 @@ const tenantSchema = new Schema<TenantDocument>(
       issuer: { type: String, required: false },
       clientId: { type: String, required: false },
     },
+    identityProviders: [{ type: Schema.Types.ObjectId, ref: 'IdentityProviderConfig' }],
     onboarding: { type: onboardingSchema, required: false },
   },
   { timestamps: true },
 );
 
 tenantSchema.index({ slug: 1 }, { unique: true, sparse: true });
+tenantSchema.index({ domain: 1 }, { unique: true, sparse: true });
 
 const Tenant: Model<TenantDocument> = mongoose.model<TenantDocument>('Tenant', tenantSchema);
 

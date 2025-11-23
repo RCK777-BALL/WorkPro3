@@ -8,6 +8,7 @@ import { RefreshCcw } from 'lucide-react';
 import Button from '@/components/common/Button';
 import type { Part } from '@/types';
 import { usePartsQuery, useVendorsQuery } from './hooks';
+import { QrLabel } from '@/components/qr';
 
 const matchSearch = (part: Part, term: string) => {
   const haystack = [
@@ -116,6 +117,15 @@ const PartsTableView = () => {
                   <td className="px-4 py-3">
                     <p className="font-medium text-neutral-900">{part.name}</p>
                     <p className="text-xs text-neutral-500">SKU {part.sku ?? 'n/a'}</p>
+                    <div className="pt-2">
+                      <QrLabel
+                        name={part.name}
+                        subtitle={part.vendor?.name ?? 'Part label'}
+                        qrValue={part.qrCode ?? JSON.stringify({ type: 'part', id: part.id })}
+                        showPreview={false}
+                        buttonLabel="Print QR Label"
+                      />
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-sm text-neutral-600">
                     {part.vendor ? (

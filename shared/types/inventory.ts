@@ -49,6 +49,7 @@ export interface Part {
   id: string;
   tenantId: string;
   siteId?: string;
+  qrCode?: string;
   name: string;
   partNo?: string;
   description?: string;

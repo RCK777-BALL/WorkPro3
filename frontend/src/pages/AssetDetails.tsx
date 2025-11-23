@@ -13,6 +13,7 @@ import AssetDocumentsList from '@/components/assets/AssetDocumentsList';
 import AssetHistoryTimeline from '@/components/assets/AssetHistoryTimeline';
 import AssetPmTemplateCards from '@/components/assets/AssetPmTemplateCards';
 import AssetWorkOrderList from '@/components/assets/AssetWorkOrderList';
+import { QrLabel } from '@/components/qr';
 
 const tabs = [
   { id: 'overview', label: 'Overview' },
@@ -34,6 +35,10 @@ const AssetDetails = () => {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
 
   const assetName = data?.asset.name ?? 'Asset details';
+  const qrValue = useMemo(() => {
+    if (!data?.asset?.id) return null;
+    return data.asset.qrCode ?? JSON.stringify({ type: 'asset', id: data.asset.id });
+  }, [data?.asset]);
 
   const overviewContent = useMemo(() => {
     if (!data) {
@@ -143,6 +148,17 @@ const AssetDetails = () => {
           </p>
         )}
       </header>
+      {qrValue && (
+        <div className="flex justify-end">
+          <div className="max-w-sm">
+            <QrLabel
+              name={assetName}
+              subtitle={data?.asset.location ?? data?.asset.type ?? 'Asset label'}
+              qrValue={qrValue}
+            />
+          </div>
+        </div>
+      )}
       <nav className="flex flex-wrap gap-2">
         {tabs.map((tab) => (
           <button

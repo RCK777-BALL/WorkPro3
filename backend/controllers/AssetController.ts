@@ -18,6 +18,7 @@ import { auditAction } from '../utils/audit';
 import { toEntityId, toObjectId } from '../utils/ids';
 import { sendResponse } from '../utils/sendResponse';
 import type { ParamsDictionary } from 'express-serve-static-core';
+import { ensureQrCode, generateQrCodeValue } from '../services/qrCode';
 
 type AssetParams = ParamsDictionary & { id: string };
 type AssetBody = Record<string, unknown> & { name?: string };
@@ -101,6 +102,8 @@ const toAssetResponse = (asset: unknown): AssetLike | null => {
   if (rawTenant instanceof Types.ObjectId) {
     response.tenantId = rawTenant.toString();
   }
+
+  ensureQrCode(response as AssetDoc, 'asset');
 
   return response;
 };
@@ -361,6 +364,13 @@ async function createAsset(
     if (req.siteId && !payload.siteId) payload.siteId = req.siteId;
 
     const newAsset = await Asset.create(payload);
+    ensureQrCode(newAsset, 'asset');
+    if (!newAsset.qrCode) {
+      newAsset.qrCode = generateQrCodeValue({ type: 'asset', id: newAsset._id.toString(), tenantId: tenantId.toString() });
+    }
+    if (newAsset.isModified('qrCode')) {
+      await newAsset.save();
+    }
     await addAssetToHierarchy({
       tenantId,
       departmentId: newAsset.departmentId as MaybeObjectId,
@@ -499,6 +509,7 @@ async function updateAsset(
       sendResponse(res, null, 'Not found', 404);
       return;
     }
+    update.qrCode = generateQrCodeValue({ type: 'asset', id, tenantId: tenantId.toString() });
     update.plant = plantId;
     const asset = await Asset.findOneAndUpdate(filter, update, {
       new: true,
@@ -782,7 +793,7 @@ async function getAssetTree(
       station.assets.push({
         id: a._id.toString(),
         name: a.name,
-        qr: JSON.stringify({ type: 'asset', id: a._id.toString() }),
+        qr: a.qrCode ?? generateQrCodeValue({ type: 'asset', id: a._id.toString(), tenantId: req.tenantId ?? undefined }),
       });
     });
 

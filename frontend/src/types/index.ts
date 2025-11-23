@@ -33,6 +33,7 @@ export interface Asset {
   id: string;
   name: string;
   type?: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface';
+  qrCode?: string;
   location?: string;
   notes?: string;
   department?: string;

@@ -29,7 +29,10 @@ import { me, refresh, logout } from '../controllers/authController';
 import sendResponse from '../utils/sendResponse';
 import { configureOAuth } from '../auth/oauth';
 import { configureOIDC, type Provider as OIDCProvider } from '../auth/oidc';
-import { isFeatureEnabled } from '../config/featureFlags';
+import { getOidcProviderConfigs, type OIDCProviderConfig } from '../config/ssoProviders';
+import { getSamlMetadata, samlAcsPlaceholder, samlRedirectPlaceholder } from '../auth/saml';
+import { isIdentityProviderAllowed } from '../services/identityProviderService';
+import { isFeatureEnabled, isOidcEnabled } from '../config/featureFlags';
 import { validatePasswordStrength } from '../auth/passwordPolicy';
 import { writeAuditLog } from '../utils/audit';
 import type { AuthedRequest } from '../types/http';
@@ -208,7 +211,8 @@ const registerLimiter = rateLimit({
 });
 
 const OAUTH_PROVIDERS: readonly OAuthProvider[] = ['google', 'github'];
-const OIDC_PROVIDERS: readonly OIDCProvider[] = isFeatureEnabled('oidc') ? ['okta', 'azure'] : [];
+const OIDC_PROVIDER_CONFIGS: readonly OIDCProviderConfig[] = getOidcProviderConfigs();
+const OIDC_PROVIDERS: readonly OIDCProvider[] = OIDC_PROVIDER_CONFIGS.map((provider) => provider.name);
 
 const isStaticOidcProvider = (provider: string): provider is OIDCProvider =>
   (OIDC_PROVIDERS as readonly string[]).includes(provider);

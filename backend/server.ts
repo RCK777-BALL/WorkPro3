@@ -45,6 +45,7 @@ import {
   kbRoutes,
   laborRoutes,
   LineRoutes,
+  scimRoutes,
   maintenanceScheduleRoutes,
   meterRoutes,
   notificationsRoutes,
@@ -245,6 +246,7 @@ app.use("/api/scim/v2", scimRoutes);
 
 // --- Routes (order matters for the limiter) ---
 app.use("/api/auth", authRoutes);
+app.use("/api/scim", scimRoutes);
 
 // Protect all remaining /api routes except /api/auth, /api/public, /api/sso, and /api/scim
 app.use(/^\/api(?!\/(auth|public|sso|scim))/, requireAuth, tenantScope);

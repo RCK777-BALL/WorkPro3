@@ -223,6 +223,12 @@ Generate a secret for time‑based one‑time password (TOTP) MFA.
 { "secret": "<base32>", "token": "123456" }
 ```
 
+### SCIM stubs
+
+Set `ENABLE_SCIM=true` and `SCIM_BEARER_TOKEN=<token>` to expose `/api/scim/v2/Users` and `/api/scim/v2/Groups`. Requests
+must include `Authorization: Bearer <token>` and currently return empty resources with 202 responses for create calls to help
+wire up provisioning flows safely.
+
 `POST /api/auth/mfa/verify`
 
 Verify the MFA token and complete authentication.

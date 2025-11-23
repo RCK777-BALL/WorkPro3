@@ -716,6 +716,33 @@ router.get('/oauth/:provider', async (req: Request, res: Response, next: NextFun
   }
 });
 
+router.get('/oidc/:provider/metadata', async (req: Request, res: Response) => {
+  if (!isFeatureEnabled('oidc')) {
+    sendResponse(res, null, 'OIDC is disabled', 404);
+    return;
+  }
+
+  const provider = req.params.provider as OIDCProvider;
+  const config = OIDC_PROVIDER_CONFIGS.find((item) => item.name === provider);
+  if (!config) {
+    sendResponse(res, null, 'Unsupported provider', 400);
+    return;
+  }
+
+  sendResponse(
+    res,
+    {
+      issuer: config.issuer,
+      authorizationEndpoint: config.authorizationUrl ?? `${config.issuer.replace(/\/$/, '')}/authorize`,
+      tokenEndpoint: config.tokenUrl ?? `${config.issuer.replace(/\/$/, '')}/token`,
+      callbackPath: config.callbackPath,
+    },
+    null,
+    200,
+    'OIDC metadata',
+  );
+});
+
 router.get('/oidc/:provider', async (req: Request, res: Response, next: NextFunction) => {
   const provider = req.params.provider;
   const allowed = await isAllowedOidcProvider(provider);
@@ -747,6 +774,24 @@ router.get('/oidc/:provider', async (req: Request, res: Response, next: NextFunc
     next(err);
   }
 });
+
+router.get('/saml/:tenantId/metadata', async (req: Request, res: Response) => {
+  if (!isFeatureEnabled('saml')) {
+    sendResponse(res, null, 'SAML is disabled', 404);
+    return;
+  }
+
+  try {
+    const metadata = await getSamlMetadata(req.params.tenantId);
+    res.type('application/xml').send(metadata);
+  } catch (err) {
+    logger.error('Failed to build SAML metadata', err);
+    sendResponse(res, null, 'Unable to generate SAML metadata', 500);
+  }
+});
+
+router.post('/saml/:tenantId/acs', samlAcsPlaceholder);
+router.get('/saml/:tenantId/redirect', samlRedirectPlaceholder);
 
 const handlePassportCallback = (
   req: Request,

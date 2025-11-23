@@ -25,7 +25,7 @@ interface OIDCProfile {
 // OIDC authentication relies on Passport and the passport-openidconnect strategy.
 // These modules are regular dependencies and are imported directly.
 
-export type Provider = 'okta' | 'azure';
+export type Provider = 'okta' | 'azure' | 'custom';
 
 export const mapRoles = (groups: string[] = []): string => {
   if (groups.includes('Admin')) return 'general_manager';
@@ -103,23 +103,28 @@ export const configureOIDC = () => {
     );
   }
 
-  const azureIssuer = process.env.AZURE_ISSUER;
-  const azureClientId = process.env.AZURE_CLIENT_ID;
-  const azureClientSecret = process.env.AZURE_CLIENT_SECRET;
-  if (azureIssuer && azureClientId && azureClientSecret && passport.use) {
+  const registered: Provider[] = [];
+
+  for (const provider of providers) {
+    if (!passport.use) continue;
     passport.use(
-      'azure',
+      provider.name,
       new OIDCStrategy(
         {
-          issuer: azureIssuer,
-          clientID: azureClientId,
-          clientSecret: azureClientSecret,
-          callbackURL: '/api/auth/oidc/azure/callback',
+          issuer: provider.issuer,
+          clientID: provider.clientId,
+          clientSecret: provider.clientSecret,
+          callbackURL: provider.callbackPath,
+          authorizationURL: provider.authorizationUrl,
+          tokenURL: provider.tokenUrl,
         },
-        createOidcVerifier('azure'),
+        createOidcVerifier(provider.name),
       ) as unknown as PassportStrategy,
     );
+    registered.push(provider.name);
   }
+
+  return registered;
 };
 
 export default { configureOIDC, mapRoles, oidcVerify };

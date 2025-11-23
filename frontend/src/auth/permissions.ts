@@ -8,7 +8,7 @@ import {
   type Permission,
   type PermissionAction,
   type PermissionCategory,
-} from '../../../Backend/shared/permissions';
+} from '@backend-shared/permissions';
 
 export { ALL_PERMISSIONS, PERMISSIONS };
 export type { Permission, PermissionAction, PermissionCategory };

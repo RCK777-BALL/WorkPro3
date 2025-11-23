@@ -9,7 +9,7 @@ import {
   type Permission,
   type PermissionAction,
   type PermissionCategory,
-} from '../../../Backend/shared/permissions';
+} from '@backend-shared/permissions';
 import { useAuth } from '@/context/AuthContext';
 
 const normalizePermissions = (permissions?: string[]): Permission[] => {

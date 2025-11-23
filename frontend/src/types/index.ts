@@ -2,7 +2,7 @@ import type { Asset as SharedAssetType } from '../../../shared/types/asset';
 import type { PermissionGrant, RoleAssignment } from '../../../shared/types/admin';
 
 export type { Asset as SharedAsset } from '../../../shared/types/asset';
-export type { WorkOrder as SharedWorkOrder } from '../../../Backend/shared/workOrder';
+export type { WorkOrder as SharedWorkOrder } from '@backend-shared/workorder';
 export type {
   InventoryItem,
   InventoryUpdatePayload,
@@ -11,12 +11,12 @@ export type {
   PurchaseOrder,
   PurchaseOrderPayload,
   InventoryAlert,
-} from '../../../Backend/shared/inventory';
+} from '@backend-shared/inventory';
 
 export type Vendor = VendorSummary;
-export type { UploadedFile, UploadResponse } from '../../../Backend/shared/uploads';
-export type { ApiResult, TenantScoped } from '../../../Backend/shared/http';
-export type { OnboardingState, OnboardingStep, OnboardingStepKey, PMTemplateLibraryItem } from '../../../Backend/shared/onboarding';
+export type { UploadedFile, UploadResponse } from '@backend-shared/uploads';
+export type { ApiResult, TenantScoped } from '@backend-shared/http';
+export type { OnboardingState, OnboardingStep, OnboardingStepKey, PMTemplateLibraryItem } from '@backend-shared/onboarding';
 export type {
   Permit,
   PermitHistoryEntry,

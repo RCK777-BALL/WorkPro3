@@ -5,6 +5,10 @@ import path from 'path';
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: { '@': path.resolve(__dirname, './src') },
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@common': path.resolve(__dirname, './src/components/common'),
+      '@backend-shared': path.resolve(__dirname, '../backend/shared'),
+    },
   },
 });

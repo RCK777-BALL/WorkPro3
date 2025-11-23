@@ -8,7 +8,7 @@ import {
   type Permission,
   type PermissionAction,
   type PermissionCategory,
-} from '../../../Backend/shared/permissions';
+} from '@backend-shared/permissions';
 import { usePermissions } from './usePermissions';
 
 interface RequirePermissionProps {

@@ -247,12 +247,20 @@ export const login: ExpressRequestHandler = requestHandler(async (req, res) => {
       ? (rawSiteId as { toString(): string }).toString()
       : undefined;
 
-  const { roles: resolvedRoles, permissions } = await resolveUserPermissions({
+  const permissionInput: Parameters<typeof resolveUserPermissions>[0] = {
     userId: user._id,
-    tenantId: tenantId ?? undefined,
-    siteId,
     fallbackRoles,
-  });
+  };
+
+  if (tenantId) {
+    permissionInput.tenantId = tenantId;
+  }
+
+  if (siteId) {
+    permissionInput.siteId = siteId;
+  }
+
+  const { roles: resolvedRoles, permissions } = await resolveUserPermissions(permissionInput);
 
   const roles = resolvedRoles.length > 0 ? resolvedRoles : fallbackRoles;
   const primaryRole = derivePrimaryRole((user as any).role, roles);

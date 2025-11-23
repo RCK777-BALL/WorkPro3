@@ -13,6 +13,7 @@ import AssetDocumentsList from '@/components/assets/AssetDocumentsList';
 import AssetHistoryTimeline from '@/components/assets/AssetHistoryTimeline';
 import AssetPmTemplateCards from '@/components/assets/AssetPmTemplateCards';
 import AssetWorkOrderList from '@/components/assets/AssetWorkOrderList';
+import CommentThread from '@/components/comments/CommentThread';
 
 const tabs = [
   { id: 'overview', label: 'Overview' },
@@ -22,6 +23,7 @@ const tabs = [
   { id: 'pm', label: 'PM Templates' },
   { id: 'work', label: 'Open Work Orders' },
   { id: 'costs', label: 'Cost Rollups' },
+  { id: 'comments', label: 'Comments' },
 ] as const;
 
 type TabId = (typeof tabs)[number]['id'];
@@ -118,6 +120,12 @@ const AssetDetails = () => {
             isLoading={isLoading}
             {...(data?.costRollups ? { cost: data.costRollups } : {})}
           />
+        );
+      case 'comments':
+        return id ? (
+          <CommentThread entityType="Asset" entityId={id} />
+        ) : (
+          <p className="text-sm text-neutral-500">Asset id required to load comments.</p>
         );
       default:
         return overviewContent ?? <p className="text-sm text-neutral-500">Select an asset to view details.</p>;

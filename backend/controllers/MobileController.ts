@@ -267,6 +267,8 @@ export const enqueueOfflineAction: AuthedRequestHandler = async (req, res) => {
     tenantId,
     userId,
     type: parsed.data.type.trim(),
+    entityType: parsed.data.type.trim(),
+    operation: parsed.data.type.trim(),
     payload: parsed.data.payload,
     nextAttemptAt: new Date(),
   });

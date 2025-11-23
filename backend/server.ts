@@ -71,6 +71,7 @@ import {
   vendorRoutes,
   webhooksRoutes,
   workOrdersRoutes,
+  mobileSyncRoutes,
 } from "./routes";
 import mobileRoutes from "./routes/mobileRoutes";
 import mobileSyncAdminRoutes from "./routes/mobileSyncAdmin";
@@ -242,6 +243,7 @@ app.use(/^\/api(?!\/(auth|public))/, requireAuth, tenantScope);
 
 app.use("/api/mobile", mobileLimiter, mobileRoutes);
 app.use("/api/mobile", mobileLimiter, mobileSyncAdminRoutes);
+app.use("/api/mobile", mobileLimiter, mobileSyncRoutes);
 
 app.use("/api/notifications", burstFriendly, notificationsRoutes);
 // Apply limiter to the rest of protected /api routes

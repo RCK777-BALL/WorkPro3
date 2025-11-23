@@ -8,9 +8,13 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import RightPanel from './RightPanel';
+import ContextBreadcrumbs from './ContextBreadcrumbs';
 import CommandPalette from '@/components/global/CommandPalette';
 import { useTheme } from '@/context/ThemeContext';
 import { useSettingsStore } from '@/store/settingsStore';
+import { ScopeProvider } from '@/context/ScopeContext';
+import { emitToast } from '@/context/ToastContext';
+import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 
 const COLOR_SCHEMES: Record<
@@ -66,7 +70,9 @@ const hexToRgba = (hex: string, alpha: number) => {
 };
 
 export default function Layout() {
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname } = location;
+  const { t } = useTranslation();
   const { backgroundColor, textColor } = useTheme();
   const { sidebarCollapsed, denseMode, highContrast, colorScheme = 'default' } = useSettingsStore(
     (state) => state.theme,
@@ -109,6 +115,14 @@ export default function Layout() {
     root.style.setProperty('--accent-halo', accent.halo);
   }, [accent, colorScheme]);
 
+  useEffect(() => {
+    const state = (location.state as { unauthorized?: boolean; message?: string } | null) ?? null;
+    if (state?.unauthorized) {
+      emitToast(state.message ?? t('auth.permissionRedirect'), 'error');
+      window.history.replaceState({}, document.title, location.pathname + location.search);
+    }
+  }, [location.pathname, location.search, location.state, t]);
+
   const isAuthRoute =
     pathname.startsWith('/login') ||
     pathname.startsWith('/register') ||
@@ -119,34 +133,37 @@ export default function Layout() {
   }
 
   return (
-    <div
-      className="relative min-h-screen bg-slate-950 text-slate-100 transition-colors duration-300"
-      style={{ backgroundColor, color: textColor }}
-    >
+    <ScopeProvider>
       <div
-        className="pointer-events-none absolute inset-0 bg-slate-950"
-        style={{ background: accentBackground.radial }}
-      />
+        className="relative min-h-screen bg-slate-950 text-slate-100 transition-colors duration-300"
+        style={{ backgroundColor, color: textColor }}
+      >
+        <div
+          className="pointer-events-none absolute inset-0 bg-slate-950"
+          style={{ background: accentBackground.radial }}
+        />
 
-      <div className={clsx('relative z-10 flex min-h-screen', denseMode ? 'gap-4' : undefined)}>
-        <Sidebar collapsed={sidebarCollapsed} />
+        <div className={clsx('relative z-10 flex min-h-screen', denseMode ? 'gap-4' : undefined)}>
+          <Sidebar collapsed={sidebarCollapsed} />
 
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <CommandPalette />
-          <Header />
-          <main
-            className={clsx(
-              'flex-1 overflow-y-auto',
-              denseMode ? 'px-4 pb-6 pt-4 md:px-6' : 'px-6 pb-10 pt-6 md:px-10',
-            )}
-          >
-            <div className="mx-auto flex w-full flex-col gap-6">
-              <Outlet />
-            </div>
-          </main>
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <CommandPalette />
+            <Header />
+            <main
+              className={clsx(
+                'flex-1 overflow-y-auto',
+                denseMode ? 'px-4 pb-6 pt-4 md:px-6' : 'px-6 pb-10 pt-6 md:px-10',
+              )}
+            >
+              <div className="mx-auto flex w-full flex-col gap-6">
+                <ContextBreadcrumbs />
+                <Outlet />
+              </div>
+            </main>
+          </div>
+          <RightPanel />
         </div>
-        <RightPanel />
       </div>
-    </div>
+    </ScopeProvider>
   );
 }

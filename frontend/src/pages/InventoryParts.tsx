@@ -2,9 +2,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { fetchParts, upsertPart } from '@/api/inventory';
+import { usePermissions } from '@/auth/usePermissions';
 import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
 import Input from '@/components/common/Input';
@@ -13,12 +14,16 @@ import type { Part } from '@/types';
 const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string }) => Promise<void> }) => {
   const [form, setForm] = useState<Partial<Part> & { name: string }>({ name: '', partNo: '', unit: '', reorderPoint: 0 });
   const [saving, setSaving] = useState(false);
+  const { can } = usePermissions();
+  const canManageInventory = useMemo(() => can('inventory.manage'), [can]);
+  const disableEdits = !canManageInventory;
 
-  const handleChange = (key: keyof Part, value: string) => {
+  const handleChange = (key: keyof Part, value: string | number) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
   const submit = async () => {
+    if (disableEdits) return;
     setSaving(true);
     try {
       await onSave(form);
@@ -30,28 +35,47 @@ const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string
 
   return (
     <div className="space-y-3">
-      <Input label="Name" value={form.name} required onChange={(e) => handleChange('name', e.target.value)} />
+      <Input
+        label="Name"
+        value={form.name}
+        required
+        disabled={disableEdits}
+        onChange={(e) => handleChange('name', e.target.value)}
+      />
       <div className="grid gap-3 md:grid-cols-2">
-        <Input label="Part #" value={form.partNo ?? ''} onChange={(e) => handleChange('partNo', e.target.value)} />
-        <Input label="Unit" value={form.unit ?? ''} onChange={(e) => handleChange('unit', e.target.value)} />
+        <Input
+          label="Part #"
+          value={form.partNo ?? ''}
+          disabled={disableEdits}
+          onChange={(e) => handleChange('partNo', e.target.value)}
+        />
+        <Input
+          label="Unit"
+          value={form.unit ?? ''}
+          disabled={disableEdits}
+          onChange={(e) => handleChange('unit', e.target.value)}
+        />
       </div>
       <div className="grid gap-3 md:grid-cols-3">
         <Input
           label="Cost"
           type="number"
           value={form.cost ?? ''}
+          disabled={disableEdits}
           onChange={(e) => setForm((prev) => ({ ...prev, cost: Number(e.target.value) }))}
         />
         <Input
           label="Min qty"
           type="number"
           value={form.minQty ?? ''}
+          disabled={disableEdits}
           onChange={(e) => setForm((prev) => ({ ...prev, minQty: Number(e.target.value) }))}
         />
         <Input
           label="Max qty"
           type="number"
           value={form.maxQty ?? ''}
+          disabled={disableEdits}
           onChange={(e) => setForm((prev) => ({ ...prev, maxQty: Number(e.target.value) }))}
         />
       </div>
@@ -59,10 +83,17 @@ const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string
         label="Reorder point"
         type="number"
         value={form.reorderPoint ?? 0}
+        disabled={disableEdits}
         onChange={(e) => setForm((prev) => ({ ...prev, reorderPoint: Number(e.target.value) }))}
       />
-      <Button onClick={submit} disabled={!form.name} loading={saving}>
-        Add part
+      <Button
+        type="button"
+        className="w-full"
+        onClick={submit}
+        disabled={!form.name || disableEdits}
+        loading={saving}
+      >
+        {disableEdits ? 'View only' : 'Save part'}
       </Button>
     </div>
   );
@@ -128,8 +159,8 @@ export default function InventoryParts() {
                   ))}
                   {!parts.length && (
                     <tr>
-                      <td colSpan={5} className="px-3 py-4 text-center text-neutral-500">
-                        No parts configured yet.
+                      <td className="px-3 py-6 text-center text-neutral-500" colSpan={5}>
+                        No parts found.
                       </td>
                     </tr>
                   )}

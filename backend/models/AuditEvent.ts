@@ -7,6 +7,7 @@ import mongoose, { Schema, Document, Model, Types } from 'mongoose';
 export interface AuditEventDocument extends Document {
   _id: Types.ObjectId;
   tenantId: Types.ObjectId;
+  siteId?: Types.ObjectId;
   userId?: Types.ObjectId;
   action: string;
   details?: Record<string, unknown>;
@@ -17,6 +18,7 @@ export interface AuditEventDocument extends Document {
 const auditEventSchema = new Schema<AuditEventDocument>(
   {
     tenantId: { type: Schema.Types.ObjectId, required: true, index: true },
+    siteId: { type: Schema.Types.ObjectId, index: true },
     userId: { type: Schema.Types.ObjectId },
     action: { type: String, required: true },
     details: { type: Schema.Types.Mixed },

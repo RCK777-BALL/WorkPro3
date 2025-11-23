@@ -7,6 +7,7 @@ export interface Asset {
   type?: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface';
   qrCode?: string;
   location?: string;
+  notes?: string;
   department?: string;
   departmentId?: string;
   lineId?: string;

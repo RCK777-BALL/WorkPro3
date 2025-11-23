@@ -1,3 +1,6 @@
+import type { Asset as SharedAssetType } from '@shared/asset';
+import type { PermissionGrant, RoleAssignment } from '@shared/admin';
+
 export type { Asset as SharedAsset } from '@shared/asset';
 export type { WorkOrder as SharedWorkOrder } from '@shared/workOrder';
 export type {
@@ -23,6 +26,7 @@ export type {
   SafetyKpiResponse,
   PermitActivitySummary,
 } from '@shared/permit';
+export type { PermissionGrant, RoleAssignment } from '@shared/admin';
 
 /**
  * Defines the allowed maintenance categories for upcoming maintenance tasks.
@@ -111,6 +115,9 @@ export interface DepartmentHierarchy extends Department {
 export interface WorkOrder {
   /** Unique identifier */
   id: string;
+  tenantId: string;
+  siteId?: string;
+  plantId?: string;
 
   /** Tenant context for the work order */
   tenantId: string;

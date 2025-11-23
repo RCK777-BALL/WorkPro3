@@ -13,7 +13,7 @@ import {
 } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuthStore, type AuthState } from '@/store/authStore';
-import type { AuthLoginResponse, AuthRole, AuthSession, AuthUser } from '@/types';
+import type { AuthLoginResponse, AuthRole, AuthSession, AuthUser, RoleAssignment } from '@/types';
 import {
   FALLBACK_TOKEN_KEY,
   SITE_KEY,

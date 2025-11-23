@@ -10,7 +10,7 @@ import {
   type Permission,
   type PermissionAction,
   type PermissionCategory,
-} from '../../../Backend/shared/permissions';
+} from '../../shared/permissions';
 import { ensurePermissionList, hasPermission, resolveUserPermissions } from '../../services/permissionService';
 
 const toPermissionKey = (

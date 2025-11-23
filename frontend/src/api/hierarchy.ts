@@ -3,7 +3,7 @@
  */
 
 import http from '@/lib/http';
-import type { TenantScoped } from '@shared/http';
+import type { TenantScoped } from '../../../Backend/shared/http';
 
 export type HierarchyAsset = TenantScoped & {
   id: string;

@@ -5,7 +5,12 @@
 import type { RequestHandler } from 'express';
 
 import type { AuthedRequest } from '../../types/http';
-import { formatPermission, type Permission, type PermissionAction, type PermissionCategory } from '@shared/permissions';
+import {
+  formatPermission,
+  type Permission,
+  type PermissionAction,
+  type PermissionCategory,
+} from '../../../Backend/shared/permissions';
 import { ensurePermissionList, hasPermission, resolveUserPermissions } from '../../services/permissionService';
 
 const toPermissionKey = (

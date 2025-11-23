@@ -3,7 +3,12 @@
  */
 
 import type { ReactNode } from 'react';
-import { formatPermission, type Permission, type PermissionAction, type PermissionCategory } from '@shared/permissions';
+import {
+  formatPermission,
+  type Permission,
+  type PermissionAction,
+  type PermissionCategory,
+} from '../../../Backend/shared/permissions';
 import { usePermissions } from './usePermissions';
 
 interface RequirePermissionProps {

@@ -4,7 +4,7 @@
 
 import http from '@/lib/http';
 import type { WorkOrder } from '@/types';
-import type { UploadResponse } from '@shared/uploads';
+import type { UploadResponse } from '../../../Backend/shared/uploads';
 
 const randomId = (): string => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {

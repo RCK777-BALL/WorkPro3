@@ -219,6 +219,16 @@ export default function AuditLogsPage() {
               />
             </label>
             <label className="flex flex-col gap-1 text-sm text-slate-300">
+              Site
+              <input
+                type="text"
+                placeholder="Optional site filter"
+                className="rounded-xl border border-slate-700 bg-transparent px-3 py-2"
+                value={draftFilters.siteId ?? ''}
+                onChange={(event) => handleInput('siteId', event.target.value)}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm text-slate-300">
               Entity ID
               <input
                 type="text"

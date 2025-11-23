@@ -441,6 +441,8 @@ export interface Notification {
   title: string;
   message: string;
   type: 'critical' | 'warning' | 'info';
+  category: 'assigned' | 'updated' | 'overdue' | 'pm_due' | 'comment' | 'request_submitted';
+  deliveryState: 'pending' | 'queued' | 'sent' | 'failed' | 'delivered';
   read: boolean;
   createdAt: string;
 }
@@ -450,6 +452,8 @@ export interface NotificationType {
   title: string;
   message: string;
   type: 'info' | 'warning' | 'critical';
+  category: 'assigned' | 'updated' | 'overdue' | 'pm_due' | 'comment' | 'request_submitted';
+  deliveryState: 'pending' | 'queued' | 'sent' | 'failed' | 'delivered';
   createdAt: string;
   read: boolean;
 }

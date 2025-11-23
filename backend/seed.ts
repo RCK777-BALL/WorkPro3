@@ -311,18 +311,27 @@ mongoose.connect(mongoUri).then(async () => {
   await Notification.insertMany([
     {
       tenantId,
+      title: 'Line A failure',
       message: 'Critical system failure on Line A',
       type: 'critical',
+      category: 'overdue',
+      deliveryState: 'sent',
     },
     {
       tenantId,
+      title: 'PM Due Soon',
       message: 'Pending maintenance due this week',
       type: 'warning',
+      category: 'pm_due',
+      deliveryState: 'queued',
     },
     {
       tenantId,
+      title: 'System Check',
       message: 'System check completed successfully',
       type: 'info',
+      category: 'updated',
+      deliveryState: 'delivered',
     },
   ]);
 

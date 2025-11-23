@@ -32,7 +32,9 @@ const sample: NotificationType = {
   type: 'info',
   read: false,
   title: '',
-  createdAt: ''
+  createdAt: '',
+  category: 'updated',
+  deliveryState: 'pending',
 };
 
 const setup = (

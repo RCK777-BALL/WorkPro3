@@ -107,7 +107,7 @@ const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
     
           <ul>
             {items.map((n) => (
-              <li key={n.id} className={colorClasses(n.type)}>
+              <li key={n.id} className={`${colorClasses(n.type)} space-y-1`}>
                 <button
                   data-testid="notification"
                   data-read={n.read ? 'true' : 'false'}
@@ -116,7 +116,14 @@ const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
                     markRead(n.id);
                   }}
                 >
-                  {n.message}
+                  <div className="flex items-center justify-between text-sm font-medium">
+                    <span>{n.title}</span>
+                    <span className="text-xs uppercase tracking-wide text-neutral-500">
+                      {n.category.replace('_', ' ')}
+                    </span>
+                  </div>
+                  <div className="text-left text-sm">{n.message}</div>
+                  <div className="text-xs text-neutral-500">State: {n.deliveryState}</div>
                 </button>
               </li>
             ))}

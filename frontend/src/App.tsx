@@ -22,6 +22,7 @@ import Dashboard from "@/pages/Dashboard";
 import Analytics from "@/pages/Analytics";
 import AnalyticsDashboardV2 from "@/pages/AnalyticsDashboardV2";
 import WorkOrders from "@/pages/WorkOrders";
+import WorkOrderDetail from "@/pages/workorders/WorkOrderDetail";
 import WorkRequestDashboard from "@/pages/WorkRequestDashboard";
 import Maintenance from "@/pages/Maintenance";
 import AssetsPage from "@/pages/AssetsPage";
@@ -118,6 +119,7 @@ export default function App() {
           <Route path="/iot" element={<IotMonitoring />} />
           <Route path="/work-orders" element={<WorkOrders />} />
           <Route path="/workorders" element={<WorkOrders />} />
+          <Route path="/workorders/:id" element={<WorkOrderDetail />} />
           <Route
             path="/work-requests"
             element={

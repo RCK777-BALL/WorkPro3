@@ -17,6 +17,8 @@ import { duplicateAsset } from '@/utils/duplicate';
 import { useToast } from '@/context/ToastContext';
 import ConflictResolver from '@/components/offline/ConflictResolver';
 import { safeLocalStorage } from '@/utils/safeLocalStorage';
+import { usePermissions } from '@/auth/usePermissions';
+import { useTranslation } from 'react-i18next';
 
 const ASSET_CACHE_KEY = 'offline-assets';
 
@@ -29,6 +31,8 @@ const AssetsPage: React.FC = () => {
   const removeAsset = useAssetStore((s) => s.removeAsset);
 
   const { addToast } = useToast();
+  const { can } = usePermissions();
+  const { t } = useTranslation();
 
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Asset | null>(null);
@@ -160,6 +164,10 @@ const AssetsPage: React.FC = () => {
     return { total, active, critical };
   }, [assets]);
 
+  const canManageAssets = can('hierarchy', 'write');
+  const canDeleteAssets = can('hierarchy', 'delete');
+  const canCreateWorkOrders = can('workRequests', 'convert');
+
   return (
     <>
       <div className="space-y-6">
@@ -176,12 +184,34 @@ const AssetsPage: React.FC = () => {
               <RefreshCcw className="w-4 h-4 mr-2" />
               {isLoading ? 'Refreshing...' : 'Refresh'}
             </Button>
-            <Button variant="primary" onClick={() => { setSelected(null); setModalOpen(true); }}>
+            <Button
+              variant="primary"
+              onClick={() => {
+                setSelected(null);
+                setModalOpen(true);
+              }}
+              disabled={!canManageAssets}
+              aria-disabled={!canManageAssets}
+              title={!canManageAssets ? t('assets.permissionWarning') : undefined}
+            >
               <PlusCircle className="w-4 h-4 mr-2" />
               Add asset
             </Button>
           </div>
         </div>
+
+        {!canManageAssets && (
+          <div
+            className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100"
+            role="alert"
+          >
+            <span className="mt-0.5 text-amber-300">⚠️</span>
+            <div>
+              <p className="font-semibold">{t('assets.readOnlyTitle')}</p>
+              <p>{t('assets.permissionWarning')}</p>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
@@ -217,6 +247,10 @@ const AssetsPage: React.FC = () => {
           onDuplicate={handleDuplicate}
           onDelete={(a) => handleDelete(a.id)}
           onCreateWorkOrder={(a) => { setWoAsset(a); setShowWO(true); }}
+          canEdit={canManageAssets}
+          canDelete={canDeleteAssets}
+          canCreateWorkOrder={canCreateWorkOrders}
+          readOnlyReason={t('assets.permissionWarning')}
         />
 
         <AssetModal

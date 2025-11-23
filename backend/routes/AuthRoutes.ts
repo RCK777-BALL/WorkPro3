@@ -207,6 +207,21 @@ const registerLimiter = rateLimit({
 const OAUTH_PROVIDERS: readonly OAuthProvider[] = ['google', 'github'];
 const OIDC_PROVIDERS: readonly OIDCProvider[] = ['okta', 'azure'];
 
+const isStaticOidcProvider = (provider: string): provider is OIDCProvider =>
+  (OIDC_PROVIDERS as readonly string[]).includes(provider);
+
+const isAllowedOidcProvider = async (provider: string): Promise<boolean> => {
+  if (!isOidcEnabled()) {
+    return false;
+  }
+
+  if (isStaticOidcProvider(provider)) {
+    return true;
+  }
+
+  return isIdentityProviderAllowed(provider, 'oidc');
+};
+
 const registerBodySchema = registerSchema.extend({
   name: z.string().min(1, 'Name is required'),
   tenantId: z.string().min(1, 'Tenant is required').optional(),
@@ -699,9 +714,21 @@ router.get('/oauth/:provider', async (req: Request, res: Response, next: NextFun
 });
 
 router.get('/oidc/:provider', async (req: Request, res: Response, next: NextFunction) => {
-  const provider = req.params.provider as OIDCProvider;
-  if (!OIDC_PROVIDERS.includes(provider)) {
+  const provider = req.params.provider;
+  const allowed = await isAllowedOidcProvider(provider);
+  if (!allowed) {
     sendResponse(res, null, 'Unsupported provider', 400);
+    return;
+  }
+
+  if (!isStaticOidcProvider(provider)) {
+    sendResponse(
+      res,
+      { provider },
+      null,
+      202,
+      'OIDC provider registered but no passport strategy bound',
+    );
     return;
   }
 
@@ -811,9 +838,21 @@ router.get(
 router.get(
   '/oidc/:provider/callback',
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const provider = req.params.provider as OIDCProvider;
-    if (!OIDC_PROVIDERS.includes(provider)) {
+    const provider = req.params.provider;
+    const allowed = await isAllowedOidcProvider(provider);
+    if (!allowed) {
       sendResponse(res, null, 'Unsupported provider', 400);
+      return;
+    }
+
+    if (!isStaticOidcProvider(provider)) {
+      sendResponse(
+        res,
+        { provider },
+        null,
+        202,
+        'OIDC provider registered but callback handling is not configured',
+      );
       return;
     }
 

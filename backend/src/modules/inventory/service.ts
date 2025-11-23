@@ -17,7 +17,7 @@ import type {
   StockHistoryEntry,
   StockItem as StockItemResponse,
   VendorSummary,
-} from '../../../../Backend/shared/inventory';
+} from '../../../../shared/inventory';
 import PartModel, { type PartDocument } from './models/Part';
 import VendorModel, { type VendorDocument } from './models/Vendor';
 import PurchaseOrderModel, { type PurchaseOrderDocument } from './models/PurchaseOrder';

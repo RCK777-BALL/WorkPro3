@@ -6,7 +6,7 @@ import { Types } from 'mongoose';
 
 import Role from '../models/Role';
 import UserRoleAssignment from '../models/UserRoleAssignment';
-import type { Permission } from '../Backend/shared/permissions';
+import type { Permission } from '../shared/permissions';
 
 const toObjectId = (value: unknown): Types.ObjectId | undefined => {
   if (!value) return undefined;

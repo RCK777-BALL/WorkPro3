@@ -77,6 +77,8 @@ const Notifications = () => {
         title: n.title || '',
         message: n.message || '',
         type: n.type || 'info',
+        category: n.category || 'updated',
+        deliveryState: n.deliveryState || 'pending',
         createdAt: n.createdAt || n.created_at || '',
         read: n.read ?? false,
         assetId: n.assetId,

@@ -3,7 +3,12 @@
  */
 
 import { Types, type HydratedDocument } from 'mongoose';
-import Notification, { NotificationDocument, NotificationType } from '../models/Notifications';
+import Notification, {
+  NotificationCategory,
+  NotificationDeliveryState,
+  NotificationDocument,
+  NotificationType,
+} from '../models/Notifications';
 import User from '../models/User';
 import nodemailer from 'nodemailer';
 import { sendResponse } from '../utils/sendResponse';
@@ -23,8 +28,10 @@ interface NotificationCreateBody {
   title: string;
   message: string;
   type: NotificationType;
+  category: NotificationCategory;
   assetId?: string;
   user?: string;
+  deliveryState?: NotificationDeliveryState;
   read?: boolean;
 }
 
@@ -141,14 +148,17 @@ export const createNotification: AuthedRequestHandler<
       return;
     }
     const tenantObjectId = new Types.ObjectId(tenantId);
-    const { title, message, type, assetId, user, read } = authedReq.body;
+    const { title, message, type, category, assetId, user, deliveryState, read } =
+      authedReq.body;
     const saved = (await Notification.create({
       title,
       message,
       type,
+      category,
       tenantId: tenantObjectId,
       ...(assetId ? { assetId } : {}),
       ...(user ? { user } : {}),
+      ...(deliveryState ? { deliveryState } : {}),
       ...(read !== undefined ? { read } : {}),
     })) as HydratedDocument<NotificationDocument>;
     const userId = toEntityId((authedReq.user as any)?._id ?? (authedReq.user as any)?.id);

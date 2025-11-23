@@ -2,8 +2,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useState } from 'react';
-import { Select } from '@mantine/core';
+import { Loader, Select } from '@mantine/core';
+import { useTranslation } from 'react-i18next';
 
 import http from '@/lib/http';
 import { useSite } from '@/context/SiteContext';
@@ -76,14 +76,18 @@ const PlantSwitcher: React.FC = () => {
 
   return (
     <Select
-      placeholder={options.length ? 'Select plant' : 'No plants available'}
-      data={options}
-      value={activePlant}
-      onChange={handleChange}
+      aria-label={t('context.siteSelectorLabel')}
+      placeholder={placeholder}
+      data={data}
+      value={activePlant?.id ?? null}
+      onChange={(value) => value && switchPlant(value)}
       size="xs"
       radius="sm"
       allowDeselect={false}
-      disabled={options.length === 0 || loading}
+      disabled={disabled}
+      nothingFound={errors.plant ?? t('context.noSites')}
+      error={errors.plant}
+      rightSection={switchingPlant ? <Loader size="xs" aria-label={t('context.switchingSite')} /> : undefined}
       styles={{
         input: {
           minWidth: 160,

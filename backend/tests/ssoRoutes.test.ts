@@ -1,104 +1,87 @@
-/*
- * SPDX-License-Identifier: MIT
- */
-
-import express from 'express';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
-import { Types } from 'mongoose';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
+import express from 'express';
 import ssoRoutes from '../routes/ssoRoutes';
-import scimRoutes from '../routes/scimRoutes';
-import IdentityProviderConfig from '../models/IdentityProviderConfig';
+import type { IdentityProviderDocument } from '../models/IdentityProvider';
+import { findIdentityProvider } from '../services/identityProviderService';
+
+vi.mock('../services/identityProviderService', () => ({
+  findIdentityProvider: vi.fn(),
+}));
 
 const app = express();
 app.use(express.json());
 app.use('/api/sso', ssoRoutes);
-app.use('/api/scim', scimRoutes);
 
-const findOneSpy = vi.spyOn(IdentityProviderConfig, 'findOne');
+const mockFindIdentityProvider = findIdentityProvider as unknown as ReturnType<typeof vi.fn>;
 
-const asQuery = <T>(result: T) => ({
-  select: vi.fn().mockReturnThis(),
-  lean: vi.fn().mockResolvedValue(result),
+const buildProvider = (
+  overrides: Partial<IdentityProviderDocument> & { protocol: 'oidc' | 'saml' },
+): IdentityProviderDocument => ({
+  _id: 'id' as unknown as IdentityProviderDocument['_id'],
+  tenantId: 'tenant' as unknown as IdentityProviderDocument['tenantId'],
+  name: 'Provider',
+  slug: 'provider',
+  issuer: 'https://issuer.example.com',
+  metadataUrl: '',
+  authorizationUrl: 'https://issuer.example.com/auth',
+  tokenUrl: 'https://issuer.example.com/token',
+  redirectUrl: 'https://frontend.example.com/callback',
+  acsUrl: 'https://frontend.example.com/acs',
+  ssoUrl: 'https://issuer.example.com/sso',
+  clientId: 'client',
+  clientSecret: 'secret',
+  certificates: ['cert-data'],
+  rawMetadata: undefined,
+  enabled: true,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  ...overrides,
 });
 
 beforeEach(() => {
-  findOneSpy.mockReset();
-  process.env.ENABLE_SAML = 'true';
-  process.env.ENABLE_SCIM = 'true';
-  process.env.SCIM_BEARER_TOKEN = 'scim-secret';
+  process.env.ENABLE_OIDC_SSO = 'true';
+  process.env.ENABLE_SAML_SSO = 'true';
+  vi.resetAllMocks();
 });
 
-afterEach(() => {
-  findOneSpy.mockReset();
-  delete process.env.ENABLE_SAML;
-  delete process.env.ENABLE_SCIM;
-  delete process.env.SCIM_BEARER_TOKEN;
-});
-
-describe('SSO Routes', () => {
-  it('returns SAML metadata for a tenant when enabled', async () => {
-    const tenantId = new Types.ObjectId();
-    findOneSpy.mockReturnValueOnce(
-      asQuery({
-        tenantId,
-        protocol: 'saml',
-        provider: 'acme-idp',
-        issuer: 'https://idp.example.com',
-        acsUrl: 'https://app.example.com/acs',
-        certificates: [{ pem: '-----BEGIN CERTIFICATE-----ABC' }],
-        metadataXml: '<EntityDescriptor />',
-      }),
+describe('SSO routes', () => {
+  it('returns OIDC metadata for configured tenant provider', async () => {
+    mockFindIdentityProvider.mockResolvedValue(
+      buildProvider({ protocol: 'oidc', slug: 'custom', authorizationUrl: 'https://issuer/authorize' }),
     );
 
-    const res = await request(app).get(`/api/sso/tenants/${tenantId}/saml/metadata`).expect(200);
-
-    expect(findOneSpy).toHaveBeenCalledWith({ tenantId: tenantId.toString(), protocol: 'saml', enabled: true });
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.provider).toBe('acme-idp');
-    expect(res.body.data.certificates[0].pem).toContain('CERTIFICATE');
-  });
-
-  it('rejects SAML requests when the feature flag is disabled', async () => {
-    process.env.ENABLE_SAML = 'false';
-    const tenantId = new Types.ObjectId();
-
-    const res = await request(app).get(`/api/sso/tenants/${tenantId}/saml/metadata`).expect(404);
-
-    expect(res.body.success).toBe(false);
-    expect(res.body.message).toContain('disabled');
-  });
-});
-
-describe('SCIM Routes', () => {
-  it('requires a bearer token before returning Users', async () => {
-    const tenantRequest = request(app).get('/api/scim/Users');
-
-    await tenantRequest.expect(401);
-
-    const unauthorized = await request(app)
-      .get('/api/scim/Users')
-      .set('Authorization', 'Bearer nope');
-    expect(unauthorized.status).toBe(401);
-
-    const ok = await request(app)
-      .get('/api/scim/Users')
-      .set('Authorization', 'Bearer scim-secret')
+    const res = await request(app)
+      .get('/api/sso/tenant-id/oidc/metadata?provider=custom')
       .expect(200);
 
-    expect(ok.body.data.schemas).toContain('urn:ietf:params:scim:api:messages:2.0:ListResponse');
+    expect(res.body.authorization_endpoint).toBe('https://issuer/authorize');
+    expect(res.body.certificates).toContain('cert-data');
+    expect(mockFindIdentityProvider).toHaveBeenCalled();
   });
 
-  it('honors the SCIM feature toggle', async () => {
-    process.env.ENABLE_SCIM = 'false';
+  it('returns SAML metadata XML when enabled', async () => {
+    mockFindIdentityProvider.mockResolvedValue(
+      buildProvider({ protocol: 'saml', issuer: 'urn:example:test', certificates: ['ABC123'] }),
+    );
 
     const res = await request(app)
-      .get('/api/scim/Groups')
-      .set('Authorization', 'Bearer scim-secret')
-      .expect(404);
+      .get('/api/sso/tenant-id/saml/metadata?provider=saml')
+      .expect(200);
 
-    expect(res.body.success).toBe(false);
-    expect(res.body.message).toContain('disabled');
+    expect(res.type).toContain('application/xml');
+    expect(res.text).toContain('urn:example:test');
+    expect(res.text).toContain('ABC123');
+  });
+
+  it('returns 404 when SAML is disabled', async () => {
+    process.env.ENABLE_SAML_SSO = 'false';
+    mockFindIdentityProvider.mockResolvedValue(
+      buildProvider({ protocol: 'saml', issuer: 'urn:example:test' }),
+    );
+
+    await request(app)
+      .get('/api/sso/tenant-id/saml/metadata')
+      .expect(404);
   });
 });

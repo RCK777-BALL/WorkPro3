@@ -113,7 +113,7 @@ export default function App() {
           <Route
             path="/executive"
             element={
-              <RequirePermission scope="executive" action="read">
+              <RequirePermission permission="executive.read">
                 <ExecutiveInsightsPage />
               </RequirePermission>
             }
@@ -125,7 +125,7 @@ export default function App() {
           <Route
             path="/work-requests"
             element={
-              <RequirePermission scope="workRequests" action="read">
+              <RequirePermission permission="workRequests.read">
                 <WorkRequestDashboard />
               </RequirePermission>
             }
@@ -133,7 +133,7 @@ export default function App() {
           <Route
             path="/requests/submit"
             element={
-              <RequirePermission scope="workRequests" action="read">
+              <RequirePermission permission="workRequests.read">
                 <SubmitRequest />
               </RequirePermission>
             }
@@ -141,7 +141,7 @@ export default function App() {
           <Route
             path="/requests/triage"
             element={
-              <RequirePermission scope="workRequests" action="read">
+              <RequirePermission permission="workRequests.read">
                 <RequestTriage />
               </RequirePermission>
             }
@@ -151,7 +151,7 @@ export default function App() {
           <Route
             path="/assets"
             element={
-              <RequirePermission scope="hierarchy" action="read">
+              <RequirePermission permission="hierarchy.read">
                 <AssetsPage />
               </RequirePermission>
             }
@@ -159,7 +159,7 @@ export default function App() {
           <Route
             path="/assets/manage"
             element={
-              <RequirePermission scope="hierarchy" action="read">
+              <RequirePermission permission="hierarchy.read">
                 <ManageAssets />
               </RequirePermission>
             }
@@ -167,7 +167,7 @@ export default function App() {
           <Route
             path="/assets/explorer"
             element={
-              <RequirePermission scope="hierarchy" action="read">
+              <RequirePermission permission="hierarchy.read">
                 <AssetExplorerPage />
               </RequirePermission>
             }
@@ -175,7 +175,7 @@ export default function App() {
           <Route
             path="/assets/:assetId"
             element={
-              <RequirePermission scope="hierarchy" action="read">
+              <RequirePermission permission="hierarchy.read">
                 <AssetDetails />
               </RequirePermission>
             }
@@ -183,7 +183,7 @@ export default function App() {
           <Route
             path="/inventory"
             element={
-              <RequirePermission scope="inventory" action="read">
+              <RequirePermission permission="inventory.read">
                 <Inventory />
               </RequirePermission>
             }
@@ -191,7 +191,7 @@ export default function App() {
           <Route
             path="/inventory/locations"
             element={
-              <RequirePermission scope="inventory" action="read">
+              <RequirePermission permission="inventory.read">
                 <InventoryLocations />
               </RequirePermission>
             }
@@ -199,7 +199,7 @@ export default function App() {
           <Route
             path="/inventory/parts"
             element={
-              <RequirePermission scope="inventory" action="read">
+              <RequirePermission permission="inventory.read">
                 <InventoryParts />
               </RequirePermission>
             }
@@ -207,7 +207,7 @@ export default function App() {
           <Route
             path="/vendors"
             element={
-              <RequirePermission scope="inventory" action="read">
+              <RequirePermission permission="inventory.read">
                 <VendorsPage />
               </RequirePermission>
             }
@@ -235,7 +235,7 @@ export default function App() {
           <Route
             path="/pm/scheduler"
             element={
-              <RequirePermission scope="pm" action="read">
+              <RequirePermission permission="pm.read">
                 <PMScheduler />
               </RequirePermission>
             }
@@ -243,7 +243,7 @@ export default function App() {
           <Route
             path="/pm/tasks"
             element={
-              <RequirePermission scope="pm" action="read">
+              <RequirePermission permission="pm.read">
                 <PMTasksPage />
               </RequirePermission>
             }
@@ -253,7 +253,7 @@ export default function App() {
           <Route
             path="/imports"
             element={
-              <RequirePermission scope="importExport" action="import">
+              <RequirePermission permission="importExport.import">
                 <Imports />
               </RequirePermission>
             }
@@ -261,7 +261,7 @@ export default function App() {
           <Route
             path="/admin/audit"
             element={
-              <RequirePermission scope="audit" action="read">
+              <RequirePermission permission="audit.read">
                 <AuditLogsPage />
               </RequirePermission>
             }

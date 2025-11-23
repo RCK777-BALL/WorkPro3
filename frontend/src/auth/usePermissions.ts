@@ -4,57 +4,63 @@
 
 import { useCallback, useMemo } from 'react';
 
-import { permissionsMatrix, type PermissionScope, type PermissionAction } from './permissions';
+import { formatPermission, type Permission, type PermissionAction, type PermissionCategory } from '@shared/permissions';
 import { useAuth } from '@/context/AuthContext';
-import type { AuthRole } from '@/types';
 
-const ADMIN_ROLES: AuthRole[] = ['global_admin', 'plant_admin'];
-
-const normalizeRoles = (roles?: AuthRole[] | string[]): AuthRole[] => {
-  if (!roles) return [];
-  const normalized: AuthRole[] = [];
-  for (const role of roles) {
-    if (typeof role !== 'string') continue;
-    const value = role.toLowerCase() as AuthRole;
-    if (!normalized.includes(value)) {
-      normalized.push(value);
+const normalizePermissions = (permissions?: string[]): Permission[] => {
+  if (!Array.isArray(permissions)) return [];
+  const normalized: Permission[] = [];
+  for (const permission of permissions) {
+    if (typeof permission !== 'string') continue;
+    const key = permission.trim().toLowerCase() as Permission;
+    if (!normalized.includes(key)) {
+      normalized.push(key);
     }
   }
   return normalized;
 };
 
+const normalizePermissionKey = (
+  permissionOrScope: Permission | PermissionCategory,
+  action?: PermissionAction,
+): Permission => formatPermission(String(permissionOrScope), action as string | undefined);
+
 export const usePermissions = () => {
   const { user } = useAuth();
 
-  const roles = useMemo(() => {
-    if (!user) return [] as AuthRole[];
-    const merged: (AuthRole | string)[] = [];
-    if (user.role) {
-      merged.push(user.role);
-    }
-    if (user.roles) {
-      merged.push(...user.roles);
-    }
-    return normalizeRoles(merged as AuthRole[]);
+  const permissionSet = useMemo(() => {
+    const normalized = normalizePermissions(user?.permissions ?? (user as { permissions?: string[] })?.permissions);
+    const set = new Set<Permission>(normalized);
+    return set;
+  }, [user]);
+
+  const explicitPermissions = useMemo(() => {
+    if (!user?.permissions?.length) return null;
+    return new Set(user.permissions.map((permission) => permission.toLowerCase()));
   }, [user]);
 
   const can = useCallback(
-    (scope: PermissionScope, action: PermissionAction) => {
-      if (!user) {
-        return false;
-      }
-      if (roles.some((role) => ADMIN_ROLES.includes(role))) {
-        return true;
-      }
-      const allowed = permissionsMatrix[scope]?.[action];
-      if (!Array.isArray(allowed)) {
-        return false;
-      }
-      const allowedSet = new Set(allowed.map((role) => role.toLowerCase()));
-      return roles.some((role) => allowedSet.has(role));
+    (permissionOrScope: Permission | PermissionCategory, action?: PermissionAction) => {
+      if (!user) return false;
+      const key = normalizePermissionKey(permissionOrScope, action);
+      const [scope] = key.split('.', 1);
+      return (
+        permissionSet.has('*' as Permission) ||
+        permissionSet.has(`${scope}.*` as Permission) ||
+        permissionSet.has(key)
+      );
     },
-    [roles, user],
+    [permissionSet, user],
   );
 
-  return { can };
+  const canAny = useCallback(
+    (permissions: Array<Permission | [PermissionCategory, PermissionAction]>) => {
+      return permissions.some((permission) =>
+        Array.isArray(permission) ? can(permission[0], permission[1]) : can(permission),
+      );
+    },
+    [can],
+  );
+
+  return { can, canAny, permissions: Array.from(permissionSet.values()) };
 };

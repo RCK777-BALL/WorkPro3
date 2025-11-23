@@ -15,6 +15,10 @@ interface AssetTableProps {
   onDuplicate: (asset: Asset) => void;
   onDelete: (asset: Asset) => void;
   onCreateWorkOrder?: (asset: Asset) => void;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  canCreateWorkOrder?: boolean;
+  readOnlyReason?: string;
 }
 
 const AssetTable: React.FC<AssetTableProps> = ({
@@ -24,6 +28,10 @@ const AssetTable: React.FC<AssetTableProps> = ({
   onDuplicate,
   onDelete,
   onCreateWorkOrder,
+  canEdit = true,
+  canDelete = true,
+  canCreateWorkOrder = true,
+  readOnlyReason,
 }) => {
   const filteredAssets = assets.filter((asset) =>
     Object.values(asset).some((value) =>
@@ -110,7 +118,7 @@ const AssetTable: React.FC<AssetTableProps> = ({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right">
                   <div className="flex items-center justify-end space-x-2">
-                    {onCreateWorkOrder && (
+                    {onCreateWorkOrder && canCreateWorkOrder && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -118,16 +126,24 @@ const AssetTable: React.FC<AssetTableProps> = ({
                           e.stopPropagation();
                           onCreateWorkOrder(asset);
                         }}
+                        aria-label="Create work order"
                       >
                         New WO
                       </Button>
                     )}
-                    <DuplicateButton onClick={() => onDuplicate(asset)} />
+                    <DuplicateButton
+                      onClick={() => onDuplicate(asset)}
+                      disabled={!canEdit}
+                      aria-label={canEdit ? 'Duplicate asset' : 'Duplicate disabled - insufficient permissions'}
+                    />
                     <Button
                       variant="ghost"
                       size="sm"
+                      disabled={!canDelete}
+                      aria-disabled={!canDelete}
                       onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation();
+                        if (!canDelete) return;
                         onDelete(asset);
                       }}
                     >
@@ -136,7 +152,9 @@ const AssetTable: React.FC<AssetTableProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => onRowClick(asset)}
+                      disabled={!canEdit}
+                      aria-disabled={!canEdit}
+                      onClick={() => canEdit && onRowClick(asset)}
                     >
                       Edit
                     </Button>
@@ -157,6 +175,11 @@ const AssetTable: React.FC<AssetTableProps> = ({
             </svg>
           </div>
           <p className="text-slate-400">No assets found</p>
+        </div>
+      )}
+      {!canEdit && readOnlyReason && (
+        <div className="border-t border-slate-800 bg-slate-900/70 px-6 py-3 text-left text-xs text-amber-200" role="note">
+          {readOnlyReason}
         </div>
       )}
     </div>

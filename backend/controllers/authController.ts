@@ -17,6 +17,7 @@ import {
   signRefresh,
 } from '../utils/jwt';
 import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
+import { resolveUserPermissions } from '../services/permissionService';
 
 const DEFAULT_TENANT_NAME = 'Default Tenant';
 
@@ -224,8 +225,8 @@ export const login: ExpressRequestHandler = requestHandler(async (req, res) => {
   }
 
   const normalizedRoles = normalizeRoles(user.roles ?? []);
-  const primaryRole = derivePrimaryRole((user as any).role, normalizedRoles);
-  const roles = Array.from(new Set([primaryRole, ...normalizedRoles]));
+  const primaryRoleFromUser = derivePrimaryRole((user as any).role, normalizedRoles);
+  const fallbackRoles = Array.from(new Set([primaryRoleFromUser, ...normalizedRoles]));
 
   const client = normalizeClient(rawClient);
   const scopes = scopesForClient(client);
@@ -245,6 +246,16 @@ export const login: ExpressRequestHandler = requestHandler(async (req, res) => {
       : rawSiteId && typeof (rawSiteId as { toString?: () => string }).toString === 'function'
       ? (rawSiteId as { toString(): string }).toString()
       : undefined;
+
+  const { roles: resolvedRoles, permissions } = await resolveUserPermissions({
+    userId: user._id,
+    tenantId: tenantId ?? undefined,
+    siteId,
+    fallbackRoles,
+  });
+
+  const roles = resolvedRoles.length > 0 ? resolvedRoles : fallbackRoles;
+  const primaryRole = derivePrimaryRole((user as any).role, roles);
 
   const jwtOptions: JwtPayloadOptions = { scopes };
   if (client) {
@@ -278,6 +289,7 @@ export const login: ExpressRequestHandler = requestHandler(async (req, res) => {
       roles,
       scopes,
       client,
+      permissions,
     },
   });
 }, 'login');

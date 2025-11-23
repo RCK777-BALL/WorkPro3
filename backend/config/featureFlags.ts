@@ -2,31 +2,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-export interface FeatureToggles {
-  oidc: boolean;
-  saml: boolean;
-  scim: boolean;
-}
-
-const normalizeFlag = (value: string | undefined, defaultValue = false): boolean => {
-  if (typeof value !== 'string') {
-    return defaultValue;
-  }
-
-  const normalized = value.trim().toLowerCase();
-  if (!normalized) {
-    return defaultValue;
-  }
-
-  return ['1', 'true', 'yes', 'on', 'enabled'].includes(normalized);
+const parseBoolean = (value: string | undefined, defaultValue = false): boolean => {
+  if (value === undefined) return defaultValue;
+  return ['1', 'true', 'yes', 'on'].includes(value.toLowerCase());
 };
 
-export const readFeatureFlags = (env: NodeJS.ProcessEnv = process.env): FeatureToggles => ({
-  oidc: normalizeFlag(env.ENABLE_OIDC, true),
-  saml: normalizeFlag(env.ENABLE_SAML),
-  scim: normalizeFlag(env.ENABLE_SCIM),
-});
+export const isOidcEnabled = (): boolean => parseBoolean(process.env.ENABLE_OIDC_SSO, true);
+export const isSamlEnabled = (): boolean => parseBoolean(process.env.ENABLE_SAML_SSO, false);
+export const isScimEnabled = (): boolean => parseBoolean(process.env.ENABLE_SCIM_API, false);
 
-export const isFeatureEnabled = (feature: keyof FeatureToggles): boolean => readFeatureFlags()[feature];
-
-export default { readFeatureFlags, isFeatureEnabled };
+export const getScimToken = (): string | undefined => process.env.SCIM_BEARER_TOKEN;

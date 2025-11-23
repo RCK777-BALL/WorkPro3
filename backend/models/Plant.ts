@@ -11,7 +11,7 @@ export interface PlantDoc extends Document {
   description?: string;
   isActive: boolean;
   organization: string;
-  tenantId?: Types.ObjectId;
+  tenantId: Types.ObjectId;
 }
 
 const plantSchema = new Schema<PlantDoc>(
@@ -21,7 +21,7 @@ const plantSchema = new Schema<PlantDoc>(
     description: { type: String, trim: true },
     isActive: { type: Boolean, default: true },
     organization: { type: String, default: 'WorkPro CMMS Enterprise' },
-    tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', index: true },
+    tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', index: true, required: true },
   },
   { timestamps: true },
 );

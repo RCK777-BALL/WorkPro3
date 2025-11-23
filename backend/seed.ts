@@ -61,7 +61,7 @@ mongoose.connect(mongoUri).then(async () => {
   await Tenant.create({ _id: tenantId, name: 'Default Tenant' });
 
   // Seed Site for analytics
-  const mainSite = await Site.create({ name: 'Main Plant', tenantId });
+  const mainSite = await Site.create({ name: 'Main Plant', slug: 'main-plant', tenantId });
 
   // Seed Users
   const admin = await User.create({
@@ -71,6 +71,7 @@ mongoose.connect(mongoUri).then(async () => {
     roles: ['admin'],
     tenantId,
     employeeId: 'ADM001',
+    siteId: mainSite._id,
   });
   const tech = await User.create({
     name: 'Tech',
@@ -79,6 +80,7 @@ mongoose.connect(mongoUri).then(async () => {
     roles: ['tech'],
     tenantId,
     employeeId: 'TECH001',
+    siteId: mainSite._id,
   });
 
   // Additional employee hierarchy
@@ -89,6 +91,7 @@ mongoose.connect(mongoUri).then(async () => {
     roles: ['supervisor'],
     employeeId: 'DL001',
     tenantId,
+    siteId: mainSite._id,
     managerId: admin._id,
   });
 
@@ -99,6 +102,7 @@ mongoose.connect(mongoUri).then(async () => {
     roles: ['supervisor'],
     employeeId: 'AL001',
     tenantId,
+    siteId: mainSite._id,
     managerId: departmentLeader._id,
   });
 
@@ -109,6 +113,7 @@ mongoose.connect(mongoUri).then(async () => {
     roles: ['supervisor'],
     employeeId: 'TL001',
     tenantId,
+    siteId: mainSite._id,
     managerId: areaLeader._id,
   });
 
@@ -120,6 +125,7 @@ mongoose.connect(mongoUri).then(async () => {
       roles: ['tech'],
       employeeId: 'TM001',
       tenantId,
+      siteId: mainSite._id,
       managerId: teamLeader._id,
     },
     {
@@ -129,6 +135,7 @@ mongoose.connect(mongoUri).then(async () => {
       roles: ['tech'],
       employeeId: 'TM002',
       tenantId,
+      siteId: mainSite._id,
       managerId: teamLeader._id,
     },
     {
@@ -138,6 +145,7 @@ mongoose.connect(mongoUri).then(async () => {
       roles: ['tech'],
       employeeId: 'TM003',
       tenantId,
+      siteId: mainSite._id,
       managerId: teamLeader._id,
     },
   ]);
@@ -183,6 +191,7 @@ mongoose.connect(mongoUri).then(async () => {
     lastGeneratedAt: new Date(),
     notes: 'Check oil level and apply grease.',
     tenantId,
+    siteId: mainSite._id,
   });
 
   const analyticsBase = new Date();
@@ -204,6 +213,7 @@ mongoose.connect(mongoUri).then(async () => {
     importance: 'low',
     dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
     tenantId,
+    siteId: mainSite._id,
   });
 
   await WorkOrder.insertMany([
@@ -216,6 +226,7 @@ mongoose.connect(mongoUri).then(async () => {
       completedAt: new Date(day1.getTime() + 7.5 * 60 * 60 * 1000),
       timeSpentMin: 90,
       failureCode: 'mechanical',
+      siteId: mainSite._id,
     },
     {
       title: 'Sensor fault reset',
@@ -226,6 +237,7 @@ mongoose.connect(mongoUri).then(async () => {
       completedAt: new Date(day2.getTime() + 12 * 60 * 60 * 1000),
       timeSpentMin: 60,
       failureCode: 'electrical',
+      siteId: mainSite._id,
     },
   ]);
 

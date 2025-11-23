@@ -9,6 +9,7 @@ export interface SiteDocument extends Document {
   tenantId: Types.ObjectId;
   name: string;
   code?: string;
+  slug: string;
   timezone?: string;
   country?: string;
   region?: string;
@@ -18,6 +19,7 @@ const siteSchema = new Schema<SiteDocument>(
   {
     name: { type: String, required: true, trim: true },
     code: { type: String, trim: true, uppercase: true },
+    slug: { type: String, required: true, lowercase: true, trim: true },
     timezone: { type: String, trim: true },
     country: { type: String, trim: true },
     region: { type: String, trim: true },
@@ -32,6 +34,19 @@ const siteSchema = new Schema<SiteDocument>(
 );
 
 siteSchema.index({ tenantId: 1, code: 1 }, { sparse: true });
+siteSchema.index({ tenantId: 1, slug: 1 }, { unique: true });
+
+siteSchema.pre('validate', function (next) {
+  if (!this.slug && this.name) {
+    this.slug = this.name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '')
+      .slice(0, 64);
+  }
+  next();
+});
 
 // Enforce per-tenant site creation limits using Tenant.maxSites
 siteSchema.pre('save', async function (next) {

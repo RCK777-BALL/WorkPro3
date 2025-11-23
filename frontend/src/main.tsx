@@ -15,6 +15,7 @@ import { QueryClientProvider } from "react-query";
 import { Toaster } from "react-hot-toast";
 import { MantineProvider } from "@mantine/core";
 import { AuthProvider } from "@/context/AuthContext";
+import { SiteProvider } from "@/context/SiteContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { BorderPreferencesProvider } from "@/context/BorderPreferencesContext";
 import { queryClient } from "@/lib/queryClient";
@@ -28,10 +29,12 @@ const AppProviders = () => (
     <MantineProvider defaultColorScheme="dark">
       <ThemeProvider>
         <BorderPreferencesProvider>
-          <AuthProvider>
-            <App />
-            <Toaster position="top-right" />
-          </AuthProvider>
+          <SiteProvider>
+            <AuthProvider>
+              <App />
+              <Toaster position="top-right" />
+            </AuthProvider>
+          </SiteProvider>
         </BorderPreferencesProvider>
       </ThemeProvider>
     </MantineProvider>

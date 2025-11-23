@@ -16,13 +16,13 @@ const buildMetadataXml = (tenantId: string, entityId: string, acsUrl: string, ce
 export const getSamlMetadata = async (tenantId: string): Promise<string> => {
   const isConnected = IdentityProviderConfig.db?.readyState === 1;
   const config = isConnected
-    ? await IdentityProviderConfig.findOne({ tenantId, type: 'saml', enabled: true })
+    ? await IdentityProviderConfig.findOne({ tenantId, protocol: 'saml', enabled: true })
         .lean()
         .catch(() => null)
     : null;
-  const entityId = config?.entityId ?? `urn:workpro:${tenantId}`;
+  const entityId = config?.issuer ?? `urn:workpro:${tenantId}`;
   const acsUrl = config?.acsUrl ?? `/api/auth/saml/${tenantId}/acs`;
-  const certificate = config?.certificate ?? config?.metadataXml;
+  const certificate = config?.certificates?.[0]?.pem ?? config?.metadataXml;
   return buildMetadataXml(tenantId, entityId, acsUrl, certificate);
 };
 

@@ -2,11 +2,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { FilterQuery } from 'mongoose';
+import type { FilterQuery, LeanDocument } from 'mongoose';
 import IdentityProvider, {
   type IdentityProviderDocument,
   type IdentityProviderProtocol,
 } from '../models/IdentityProvider';
+
+export type IdentityProviderLean = LeanDocument<IdentityProviderDocument>;
 
 const normalizeKey = (value: string | undefined): string | undefined =>
   value?.toString().trim().toLowerCase() || undefined;
@@ -15,7 +17,7 @@ export const findIdentityProvider = async (
   tenantId: string,
   protocol: IdentityProviderProtocol,
   slug?: string,
-): Promise<IdentityProviderDocument | null> => {
+): Promise<IdentityProviderLean | null> => {
   const query: FilterQuery<IdentityProviderDocument> = {
     tenantId,
     protocol,
@@ -27,7 +29,7 @@ export const findIdentityProvider = async (
     query.slug = normalizedSlug;
   }
 
-  return IdentityProvider.findOne(query).lean();
+  return IdentityProvider.findOne(query).lean<IdentityProviderLean>();
 };
 
 export const isIdentityProviderAllowed = async (
@@ -53,10 +55,10 @@ export const isIdentityProviderAllowed = async (
 export const listTenantIdentityProviders = async (
   tenantId: string,
   protocol?: IdentityProviderProtocol,
-): Promise<IdentityProviderDocument[]> => {
+): Promise<IdentityProviderLean[]> => {
   const query: FilterQuery<IdentityProviderDocument> = { tenantId, enabled: true };
   if (protocol) {
     query.protocol = protocol;
   }
-  return IdentityProvider.find(query).lean();
+  return IdentityProvider.find(query).lean<IdentityProviderLean[]>();
 };

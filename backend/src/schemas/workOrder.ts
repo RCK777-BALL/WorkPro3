@@ -58,7 +58,7 @@ const baseSchema = z.object({
   stationId: objectId.optional(),
   line: objectId.optional(),
   station: objectId.optional(),
-  siteId: objectId,
+  siteId: objectId.optional(),
   plant: objectId.optional(),
   teamMemberName: z.string().optional(),
   importance: importanceEnum.optional(),

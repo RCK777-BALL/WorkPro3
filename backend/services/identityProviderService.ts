@@ -2,13 +2,15 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { FilterQuery, LeanDocument } from 'mongoose';
+import type { FilterQuery, FlattenMaps, Types } from 'mongoose';
 import IdentityProvider, {
   type IdentityProviderDocument,
   type IdentityProviderProtocol,
 } from '../models/IdentityProvider';
 
-export type IdentityProviderLean = LeanDocument<IdentityProviderDocument>;
+export type IdentityProviderLean = FlattenMaps<IdentityProviderDocument> & {
+  _id: Types.ObjectId;
+};
 
 const normalizeKey = (value: string | undefined): string | undefined =>
   value?.toString().trim().toLowerCase() || undefined;

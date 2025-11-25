@@ -108,7 +108,7 @@ import type {
   InventoryUpdatePayload,
   NotificationPayload,
 } from "./types/Payloads";
-import scimRoutes from "./routes/ScimRoutes";
+import scimRoutes from "./routes/scimRoutes";
 
 dotenv.config();
 

@@ -12,23 +12,30 @@ import { nanoid } from 'nanoid';
 import { convertWorkRequestToWorkOrder, listWorkRequests, getWorkRequestSummary } from '../src/modules/work-requests/service';
 import { publicWorkRequestSchema, workRequestConversionSchema } from '../src/modules/work-requests/schemas';
 import { writeAuditLog } from '../utils/audit';
-import { toObjectId } from '../utils/ids';
+import { toObjectId, type EntityIdLike } from '../utils/ids';
 import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 
 const internalSubmissionSchema = publicWorkRequestSchema.extend({
   requestFormId: z.string().optional(),
 });
 
+const workRequestStatuses = [
+  'new',
+  'reviewing',
+  'converted',
+  'closed',
+] as const satisfies readonly [WorkRequestStatus, ...WorkRequestStatus[]];
+
 const statusUpdateSchema = z.object({
-  status: z.enum(['new', 'reviewing', 'converted', 'closed'] satisfies WorkRequestStatus[]),
+  status: z.enum(workRequestStatuses),
 });
 
-const resolveFormId = async (input: { formSlug?: string; requestFormId?: string }) => {
+const resolveFormId = async (input: { formSlug?: string | undefined; requestFormId?: string | undefined }) => {
   if (input.requestFormId) {
     return toObjectId(input.requestFormId);
   }
   if (input.formSlug) {
-    const form = await RequestForm.findOne({ slug: input.formSlug }).lean<{ _id?: unknown }>();
+    const form = await RequestForm.findOne({ slug: input.formSlug }).lean<{ _id?: EntityIdLike }>();
     if (form?._id) return toObjectId(form._id);
   }
   return undefined;
@@ -40,7 +47,7 @@ export const createRequest: AuthedRequestHandler = async (
   next: NextFunction,
 ) => {
   try {
-    const parse = internalSubmissionSchema.safeParse({ ...req.body });
+    const parse = internalSubmissionSchema.safeParse({ ...(req.body ?? {}) });
     if (!parse.success) {
       res.status(400).json({ message: parse.error.errors.map((err) => err.message).join(', ') });
       return;

@@ -126,7 +126,10 @@ export const submitPublicRequest = async (
     entityType: 'WorkRequest',
     entityId: request._id,
     entityLabel: input.title,
-    actor: { name: input.requesterName, email: input.requesterEmail },
+    actor: {
+      name: input.requesterName,
+      ...(input.requesterEmail ? { email: input.requesterEmail } : {}),
+    },
     after: {
       title: input.title,
       description: input.description,

@@ -30,7 +30,7 @@ export class WorkRequestError extends Error {
 
 export interface WorkRequestContext {
   tenantId: string;
-  siteId?: string;
+  siteId?: string | undefined;
 }
 
 const toObjectId = (value: unknown): Types.ObjectId | undefined => {

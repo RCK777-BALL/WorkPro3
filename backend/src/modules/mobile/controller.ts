@@ -20,7 +20,9 @@ export const pullDeltas = async (req: AuthedRequest, res: Response): Promise<voi
     return;
   }
 
-  const data = await fetchDeltas(req.tenantId, parsed.data.lastSync);
+  const tenantId = new Types.ObjectId(req.tenantId);
+
+  const data = await fetchDeltas(tenantId, parsed.data.lastSync);
   res.json({ data });
 };
 

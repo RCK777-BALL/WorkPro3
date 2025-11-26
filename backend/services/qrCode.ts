@@ -11,7 +11,7 @@ export type QrEntityType = 'asset' | 'part';
 export interface QrCodePayload {
   type: QrEntityType;
   id: string;
-  tenantId?: string;
+  tenantId?: string | undefined;
 }
 
 const toStringId = (value?: MaybeObjectId): string | undefined => {

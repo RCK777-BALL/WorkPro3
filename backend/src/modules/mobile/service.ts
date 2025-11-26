@@ -2,7 +2,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { Types, Model } from 'mongoose';
+import { Types } from 'mongoose';
+import type { Model } from 'mongoose';
 import Asset from '../../../models/Asset';
 import PMTask from '../../../models/PMTask';
 import WorkOrder from '../../../models/WorkOrder';
@@ -38,21 +39,27 @@ const parseDate = (value?: string): Date | undefined => {
 };
 
 export const fetchDeltas = async (
-  tenantId: Types.ObjectId,
+  tenantId: Types.ObjectId | string,
   lastSync: LastSyncInput,
 ): Promise<Record<string, unknown>> => {
+  const normalizedTenantId =
+    typeof tenantId === 'string' ? new Types.ObjectId(tenantId) : tenantId;
+
   const workOrdersSince = parseDate(lastSync.workOrders);
   const pmSince = parseDate(lastSync.pms);
   const assetsSince = parseDate(lastSync.assets);
 
   const [workOrders, pms, assets] = await Promise.all([
-    WorkOrder.find({ tenantId, ...(workOrdersSince ? { updatedAt: { $gt: workOrdersSince } } : {}) })
+    WorkOrder.find({
+      tenantId: normalizedTenantId,
+      ...(workOrdersSince ? { updatedAt: { $gt: workOrdersSince } } : {}),
+    })
       .sort({ updatedAt: 1 })
       .lean(),
-    PMTask.find({ tenantId, ...(pmSince ? { updatedAt: { $gt: pmSince } } : {}) })
+    PMTask.find({ tenantId: normalizedTenantId, ...(pmSince ? { updatedAt: { $gt: pmSince } } : {}) })
       .sort({ updatedAt: 1 })
       .lean(),
-    Asset.find({ tenantId, ...(assetsSince ? { updatedAt: { $gt: assetsSince } } : {}) })
+    Asset.find({ tenantId: normalizedTenantId, ...(assetsSince ? { updatedAt: { $gt: assetsSince } } : {}) })
       .sort({ updatedAt: 1 })
       .lean(),
   ]);

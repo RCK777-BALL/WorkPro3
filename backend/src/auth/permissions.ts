@@ -20,7 +20,7 @@ const toPermissionKey = (
   if (action) {
     return formatPermission(String(scopeOrPermission), action as string);
   }
-  return formatPermission(String(scopeOrPermission));
+  return String(scopeOrPermission) as Permission;
 };
 
 const resolvePermissionsForRequest = async (
@@ -35,11 +35,15 @@ const resolvePermissionsForRequest = async (
     return { permissions: existing, roles: (req.user as { roles?: string[] }).roles ?? [] };
   }
 
+  const tenantId = req.tenantId ?? req.user.tenantId;
+  const siteId = req.siteId ?? (req.user as { siteId?: string | null }).siteId;
+  const fallbackRoles = (req.user as { roles?: string[] }).roles;
+
   const result = await resolveUserPermissions({
     userId: req.user.id,
-    tenantId: req.tenantId ?? req.user.tenantId,
-    siteId: req.siteId ?? (req.user as { siteId?: string }).siteId,
-    fallbackRoles: (req.user as { roles?: string[] }).roles,
+    ...(tenantId ? { tenantId } : {}),
+    ...(siteId ? { siteId } : {}),
+    ...(fallbackRoles ? { fallbackRoles } : {}),
   });
 
   (req.user as { permissions?: Permission[] }).permissions = result.permissions;

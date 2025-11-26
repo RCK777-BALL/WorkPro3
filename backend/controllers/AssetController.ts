@@ -103,7 +103,7 @@ const toAssetResponse = (asset: unknown): AssetLike | null => {
     response.tenantId = rawTenant.toString();
   }
 
-  ensureQrCode(response as AssetDoc, 'asset');
+  ensureQrCode(response as { _id?: MaybeObjectId; tenantId?: MaybeObjectId; qrCode?: string }, 'asset');
 
   return response;
 };
@@ -793,7 +793,11 @@ async function getAssetTree(
       station.assets.push({
         id: a._id.toString(),
         name: a.name,
-        qr: a.qrCode ?? generateQrCodeValue({ type: 'asset', id: a._id.toString(), tenantId: req.tenantId ?? undefined }),
+        qr: a.qrCode ?? generateQrCodeValue({
+          type: 'asset',
+          id: a._id.toString(),
+          ...(req.tenantId ? { tenantId: req.tenantId } : {}),
+        }),
       });
     });
 

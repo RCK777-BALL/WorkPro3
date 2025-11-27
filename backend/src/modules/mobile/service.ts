@@ -138,7 +138,7 @@ export const applyOfflineActions = async (
         entityType: action.entityType,
         entityId: String(targetId),
         serverTimestamp: existingUpdatedAt ?? new Date(),
-        clientVersion: action.version,
+        ...(action.version !== undefined ? { clientVersion: action.version } : {}),
         resolvedWith: 'server',
       });
       continue;

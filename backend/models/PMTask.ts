@@ -46,6 +46,8 @@ export interface PMTaskDocument extends Document {
   department?: string; // optional, for summary use
   rule: Rule;
   lastGeneratedAt?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
   active: boolean;
   assignments: Types.DocumentArray<PMTaskAssignmentDocument>;
 }

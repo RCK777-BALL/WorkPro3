@@ -1,7 +1,9 @@
 // shared/uploads.ts
 
 export interface UploadedFile {
-  name: string;
+  id: string;
+  filename: string;
+  url: string;
   mimetype?: string;
   size?: number;
   data?: Buffer;

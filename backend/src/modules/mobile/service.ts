@@ -11,9 +11,9 @@ import MobileOfflineAction from '../../../models/MobileOfflineAction';
 import ConflictLog from '../../../services/conflicts/ConflictLog';
 
 export interface LastSyncInput {
-  workOrders?: string;
-  pms?: string;
-  assets?: string;
+  workOrders?: string | undefined;
+  pms?: string | undefined;
+  assets?: string | undefined;
 }
 
 export interface OfflineActionInput {

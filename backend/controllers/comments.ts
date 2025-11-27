@@ -8,8 +8,9 @@ import type { AuthedRequestHandler } from '../types/http';
 import { sendResponse } from '../utils/sendResponse';
 import { toObjectId, toEntityId } from '../utils/ids';
 
-const parsePagination = (value?: string | string[]) => {
-  const numeric = Number(Array.isArray(value) ? value[0] : value);
+const parsePagination = (value: unknown) => {
+  const first = Array.isArray(value) ? value[0] : value;
+  const numeric = Number(first);
   return Number.isFinite(numeric) && numeric > 0 ? Math.floor(numeric) : undefined;
 };
 
@@ -54,8 +55,8 @@ const buildListHandler = (entityType: 'WO' | 'Asset'): AuthedRequestHandler<{ id
         tenantId,
         entityType,
         entityId,
-        page,
-        pageSize: limit,
+        ...(page !== undefined ? { page } : {}),
+        ...(limit !== undefined ? { pageSize: limit } : {}),
       });
 
       sendResponse(res, {

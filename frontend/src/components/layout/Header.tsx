@@ -54,10 +54,10 @@ const Header: React.FC = () => {
   );
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-slate-800 bg-slate-950/80 px-4 text-slate-100 backdrop-blur supports-[backdrop-filter]:bg-slate-950/70">
+    <header className="flex flex-col gap-3 border-b border-slate-800 bg-slate-950/80 px-4 py-3 text-slate-100 backdrop-blur supports-[backdrop-filter]:bg-slate-950/70 md:flex-row md:items-center md:justify-between">
       <button
         onClick={() => setSearchOpen(true)}
-        className="flex max-w-md flex-1 items-center rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200 shadow-sm transition hover:border-slate-600 hover:bg-slate-900/80"
+        className="flex w-full items-center rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200 shadow-sm transition hover:border-slate-600 hover:bg-slate-900/80 md:max-w-md md:flex-1"
       >
         <Search size={18} className="text-slate-400" />
         <span className="ml-2 hidden flex-1 text-left md:block text-slate-300">
@@ -67,7 +67,7 @@ const Header: React.FC = () => {
           ⌘K
         </kbd>
       </button>
-      <div className="ml-4 flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-3 md:ml-4 md:flex-nowrap md:gap-4">
         <div
           className="hidden items-center gap-2 rounded-md border border-slate-700/80 bg-slate-900/60 px-3 py-2 text-xs text-slate-200 md:flex"
           aria-live="polite"

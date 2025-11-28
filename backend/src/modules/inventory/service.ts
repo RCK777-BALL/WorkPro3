@@ -17,7 +17,7 @@ import type {
   StockHistoryEntry,
   StockItem as StockItemResponse,
   VendorSummary,
-} from '../../../../shared/inventory';
+} from '../../../../shared/types/inventory';
 import PartModel, { type PartDocument } from './models/Part';
 import VendorModel, { type VendorDocument } from './models/Vendor';
 import PurchaseOrderModel, { type PurchaseOrderDocument } from './models/PurchaseOrder';
@@ -451,8 +451,8 @@ export const listStockItems = async (context: InventoryContext): Promise<StockIt
     PartModel.find({ _id: { $in: partIds } }),
     LocationModel.find({ _id: { $in: locationIds } }),
   ]);
-  const partMap = new Map(parts.map((p) => [p._id.toString(), p]));
-  const locationMap = new Map(locations.map((l) => [l._id.toString(), l]));
+  const partMap = new Map(parts.map((p) => [(p._id as Types.ObjectId).toString(), p]));
+  const locationMap = new Map(locations.map((l) => [(l._id as Types.ObjectId).toString(), l]));
   return stocks.map((stock) =>
     serializeStockItem(stock, partMap.get(stock.part.toString()) ?? undefined, locationMap.get(stock.location.toString()) ?? undefined),
   );
@@ -498,7 +498,7 @@ export const adjustStock = async (
   await recordStockHistory(context, stockItem, input.delta, input.reason);
   const location = await LocationModel.findById(stockItem.location);
   return {
-    stockItemId: stockItem._id.toString(),
+    stockItemId: (stockItem._id as Types.ObjectId).toString(),
     newQuantity: stockItem.quantity,
     partId: stockItem.part.toString(),
     locationId: stockItem.location.toString(),
@@ -818,7 +818,10 @@ const buildCsvBuffer = (orders: PurchaseOrderResponse[]): Buffer => {
       {
         label: 'Total quantity',
         value: (row: PurchaseOrderResponse) =>
-          row.items.reduce((sum: number, item) => sum + item.quantity, 0),
+          row.items.reduce(
+            (sum: number, item: PurchaseOrderResponse['items'][number]) => sum + item.quantity,
+            0,
+          ),
       },
     ],
   });

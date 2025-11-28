@@ -365,14 +365,14 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                   <select
                     className="w-full px-3 py-2 border border-neutral-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-neutral-900 dark:text-neutral-100"
                     value={departmentId}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                      const value = e.target.value;
-                      setValue("departmentId", value, { shouldValidate: true });
-                      setValue("lineId", "");
-                      setValue("stationId", "");
-                    }}
                     {...register("departmentId", {
                       required: "Department is required",
+                      onChange: (e: React.ChangeEvent<HTMLSelectElement>) => {
+                        const value = e.target.value;
+                        setValue("departmentId", value, { shouldValidate: true });
+                        setValue("lineId", "");
+                        setValue("stationId", "");
+                      },
                     })}
                   >
                     <option value="">Select Department</option>

@@ -31,7 +31,6 @@ type RawAuthUser = {
   tenantId?: string;
   siteId?: string;
   roles?: string[];
-  permissions?: string[];
   role?: string;
   permissions?: string[];
 };

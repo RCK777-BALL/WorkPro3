@@ -1205,35 +1205,50 @@ export default function Dashboard() {
   };
 
   const summaryCards = useMemo(() => {
-    const trends = summaryTrends ?? {
-      pmCompliance: [],
-      woBacklog: [],
-      downtimeThisMonth: [],
-      costMTD: [],
-      cmVsPmRatio: [],
-      wrenchTimePct: [],
-      mttr: [],
-      slaCompliance: [],
+    const trends: SummaryTrends = {
+      pmCompliance: Array.isArray(summaryTrends?.pmCompliance)
+        ? summaryTrends?.pmCompliance
+        : SUMMARY_TRENDS_FALLBACK.pmCompliance,
+      woBacklog: Array.isArray(summaryTrends?.woBacklog)
+        ? summaryTrends?.woBacklog
+        : SUMMARY_TRENDS_FALLBACK.woBacklog,
+      downtimeThisMonth: Array.isArray(summaryTrends?.downtimeThisMonth)
+        ? summaryTrends?.downtimeThisMonth
+        : SUMMARY_TRENDS_FALLBACK.downtimeThisMonth,
+      costMTD: Array.isArray(summaryTrends?.costMTD)
+        ? summaryTrends?.costMTD
+        : SUMMARY_TRENDS_FALLBACK.costMTD,
+      cmVsPmRatio: Array.isArray(summaryTrends?.cmVsPmRatio)
+        ? summaryTrends?.cmVsPmRatio
+        : SUMMARY_TRENDS_FALLBACK.cmVsPmRatio,
+      wrenchTimePct: Array.isArray(summaryTrends?.wrenchTimePct)
+        ? summaryTrends?.wrenchTimePct
+        : SUMMARY_TRENDS_FALLBACK.wrenchTimePct,
+      mttr: Array.isArray(summaryTrends?.mttr) ? summaryTrends?.mttr : SUMMARY_TRENDS_FALLBACK.mttr,
+      slaCompliance: Array.isArray(summaryTrends?.slaCompliance)
+        ? summaryTrends?.slaCompliance
+        : SUMMARY_TRENDS_FALLBACK.slaCompliance,
     };
-    const data = summary ?? {
-      openWorkOrders: 0,
-      overdueWorkOrders: 0,
-      completedWorkOrders: 0,
-      pmDueNext7Days: 0,
-      permitsOpen: 0,
-      complianceScore: 0,
-      assetAvailability: 0,
-      assetAvailabilityCritical: 0,
-      activePmTasks: 0,
-      pmCompliance: 0,
-      woBacklog: 0,
-      downtimeThisMonth: 0,
-      costMTD: 0,
-      cmVsPmRatio: 0,
-      wrenchTimePct: 0,
-      mttr: 0,
-      slaCompliance: 0,
-    };
+    const data = {
+      openWorkOrders: summary?.openWorkOrders ?? SUMMARY_FALLBACK.openWorkOrders,
+      overdueWorkOrders: summary?.overdueWorkOrders ?? SUMMARY_FALLBACK.overdueWorkOrders,
+      completedWorkOrders: summary?.completedWorkOrders ?? SUMMARY_FALLBACK.completedWorkOrders,
+      pmDueNext7Days: summary?.pmDueNext7Days ?? SUMMARY_FALLBACK.pmDueNext7Days,
+      permitsOpen: summary?.permitsOpen ?? SUMMARY_FALLBACK.permitsOpen,
+      complianceScore: summary?.complianceScore ?? SUMMARY_FALLBACK.complianceScore,
+      assetAvailability: summary?.assetAvailability ?? SUMMARY_FALLBACK.assetAvailability,
+      assetAvailabilityCritical:
+        summary?.assetAvailabilityCritical ?? SUMMARY_FALLBACK.assetAvailabilityCritical,
+      activePmTasks: summary?.activePmTasks ?? SUMMARY_FALLBACK.activePmTasks,
+      pmCompliance: summary?.pmCompliance ?? SUMMARY_FALLBACK.pmCompliance,
+      woBacklog: summary?.woBacklog ?? SUMMARY_FALLBACK.woBacklog,
+      downtimeThisMonth: summary?.downtimeThisMonth ?? SUMMARY_FALLBACK.downtimeThisMonth,
+      costMTD: summary?.costMTD ?? SUMMARY_FALLBACK.costMTD,
+      cmVsPmRatio: summary?.cmVsPmRatio ?? SUMMARY_FALLBACK.cmVsPmRatio,
+      wrenchTimePct: summary?.wrenchTimePct ?? SUMMARY_FALLBACK.wrenchTimePct,
+      mttr: summary?.mttr ?? SUMMARY_FALLBACK.mttr,
+      slaCompliance: summary?.slaCompliance ?? SUMMARY_FALLBACK.slaCompliance,
+    } satisfies SummaryResponse;
     return [
       {
         key: "open",

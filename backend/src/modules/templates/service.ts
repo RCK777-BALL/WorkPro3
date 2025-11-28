@@ -8,7 +8,7 @@ import PMTask from '../../../models/PMTask';
 import type { PMContext, PMTemplateResponse } from '../pm/service';
 import { PMTemplateError } from '../pm/service';
 import { pmTemplateLibrary } from './library';
-import type { PMTemplateLibraryItem } from '../../../../shared/onboarding';
+import type { PMTemplateLibraryItem } from '../../../../shared/types/onboarding';
 
 export interface PMTemplateLibraryResponse extends PMTemplateLibraryItem {}
 

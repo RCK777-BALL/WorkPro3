@@ -27,7 +27,8 @@ const resolveTenantParams = (
     return null;
   }
 
-  return parsed.data;
+  const { tenantId, provider } = parsed.data;
+  return { tenantId, provider };
 };
 
 router.get('/:tenantId/oidc/metadata', async (req: Request, res: Response) => {

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { PMTemplateLibraryItem } from '../../../../shared/onboarding';
+import type { PMTemplateLibraryItem } from '../../../../shared/types/onboarding';
 
 export const pmTemplateLibrary: PMTemplateLibraryItem[] = [
   {

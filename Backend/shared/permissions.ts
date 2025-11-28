@@ -2,8 +2,12 @@
 
 export type Permission = string;
 
-export const formatPermission = (category: string, action: string): Permission =>
-  `${category.trim()}:${action.trim()}`;
+export const formatPermission = (category: string, action?: string): Permission => {
+  const normalizedCategory = category.trim();
+  const normalizedAction = action?.trim();
+  const key = normalizedAction ? `${normalizedCategory}.${normalizedAction}` : normalizedCategory;
+  return key.toLowerCase() as Permission;
+};
 
 export const CORE_PERMISSION_CATEGORIES = [
   'workorders',

@@ -3,8 +3,8 @@
 export interface PMTemplateLibraryItem {
   id: string;
   name: string;
-  category?: string;
-  description?: string;
-  checklist?: string[];
-  estimatedMinutes?: number;
+  category?: string | undefined;
+  description?: string | undefined;
+  checklist?: string[] | undefined;
+  estimatedMinutes?: number | undefined;
 }

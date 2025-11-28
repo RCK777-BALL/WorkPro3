@@ -25,10 +25,10 @@ export type AuthRole = (typeof AUTH_ROLES)[number];
 export interface AuthUserPayload {
   id: string;
   email: string;
-  name?: string;
+  name?: string | undefined;
   role: AuthRole | string;
-  siteId?: string;
-  tenantId?: string;
+  siteId?: string | undefined;
+  tenantId?: string | undefined;
 }
 
 export interface PermissionAssignment {

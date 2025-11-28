@@ -11,23 +11,23 @@ export interface MaintenanceScheduleParams extends ParamsDictionary {
 
 export interface MaintenanceScheduleBody {
   title: string;
-  description?: string;
-  assetId?: string;
+  description?: string | undefined;
+  assetId?: string | undefined;
   frequency: string;
   nextDue: string | Date;
   estimatedDuration: number;
-  instructions?: string;
+  instructions?: string | undefined;
   type: string;
   repeatConfig: {
     interval: number;
     unit: MaintenanceScheduleRepeatUnit;
-    endDate?: string | Date;
-    occurrences?: number;
+    endDate?: string | Date | undefined;
+    occurrences?: number | undefined;
   };
   parts: string[];
-  lastCompleted?: string | Date;
-  lastCompletedBy?: string;
-  assignedTo?: string;
+  lastCompleted?: string | Date | undefined;
+  lastCompletedBy?: string | undefined;
+  assignedTo?: string | undefined;
 }
 
 export type MaintenanceScheduleResponse = unknown;

@@ -234,7 +234,7 @@ interface LocationScope {
   siteId?: string | undefined;
 }
 
-const resolveLocationScope = (req: { plantId?: string; siteId?: string }): LocationScope => ({
+const resolveLocationScope = (req: { plantId?: string | undefined; siteId?: string | undefined }): LocationScope => ({
   plantId: req.plantId ?? req.siteId ?? undefined,
   siteId: req.siteId ?? req.plantId ?? undefined,
 });

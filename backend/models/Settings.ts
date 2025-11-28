@@ -6,8 +6,8 @@ import mongoose, { Schema, type Document, type Types } from 'mongoose';
 
 export interface SettingsDoc extends Document {
   _id: Types.ObjectId;
-  tenantId?: Types.ObjectId;
-  activePlant?: Types.ObjectId;
+  tenantId?: Types.ObjectId | undefined;
+  activePlant?: Types.ObjectId | undefined;
   defaultTheme: string;
   language: string;
 }

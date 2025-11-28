@@ -8,7 +8,7 @@ export interface UserRoleAssignmentDocument extends Document {
   userId: Types.ObjectId;
   roleId: Types.ObjectId;
   tenantId: Types.ObjectId;
-  siteId?: Types.ObjectId | null;
+  siteId?: Types.ObjectId | null | undefined;
 }
 
 const userRoleAssignmentSchema = new Schema<UserRoleAssignmentDocument>(

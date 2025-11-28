@@ -8,36 +8,36 @@ export type OnboardingStepKey = 'site' | 'assets' | 'pmTemplates' | 'team';
 
 export interface TenantOnboardingStepState {
   completed: boolean;
-  completedAt?: Date;
+  completedAt?: Date | undefined;
 }
 
 export interface TenantOnboardingState {
   steps: Record<OnboardingStepKey, TenantOnboardingStepState>;
-  lastReminderAt?: Date;
-  reminderDismissedAt?: Date;
+  lastReminderAt?: Date | undefined;
+  reminderDismissedAt?: Date | undefined;
 }
 
 export interface TenantSSOConfig {
-  provider?: 'okta' | 'azure';
-  issuer?: string;
-  clientId?: string;
+  provider?: 'okta' | 'azure' | undefined;
+  issuer?: string | undefined;
+  clientId?: string | undefined;
 }
 
 export interface TenantDocument extends Document {
   _id: Types.ObjectId;
   name: string;
-  domain?: string;
+  domain?: string | undefined;
   branding?: {
-    logoUrl?: string;
-    primaryColor?: string;
-    accentColor?: string;
-  };
-  slug?: string;
-  status?: 'active' | 'suspended';
-  maxSites?: number;
-  sso?: TenantSSOConfig;
-  identityProviders?: Types.ObjectId[];
-  onboarding?: TenantOnboardingState;
+    logoUrl?: string | undefined;
+    primaryColor?: string | undefined;
+    accentColor?: string | undefined;
+  } | undefined;
+  slug?: string | undefined;
+  status?: 'active' | 'suspended' | undefined;
+  maxSites?: number | undefined;
+  sso?: TenantSSOConfig | undefined;
+  identityProviders?: Types.ObjectId[] | undefined;
+  onboarding?: TenantOnboardingState | undefined;
 }
 
 const onboardingStepSchema = new Schema<TenantOnboardingStepState>(

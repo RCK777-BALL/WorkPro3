@@ -11,6 +11,8 @@ import {
   type PermissionCategory,
 } from '@backend-shared/permissions';
 import { useAuth } from '@/context/AuthContext';
+import { SITE_KEY, TENANT_KEY } from '@/lib/http';
+import { safeLocalStorage } from '@/utils/safeLocalStorage';
 
 const normalizePermissions = (permissions?: string[]): Permission[] => {
   if (!Array.isArray(permissions)) return [];

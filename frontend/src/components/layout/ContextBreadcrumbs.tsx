@@ -43,7 +43,9 @@ const ContextBreadcrumbs = () => {
         tenants: t('breadcrumbs.tenants'),
       };
       const label = labelMap[normalized] ?? (isDynamicSegment(normalized) ? t('breadcrumbs.details') : normalized);
-      items.push({ label, path: currentPath });
+      if (!items.some((crumb) => crumb.path === currentPath)) {
+        items.push({ label, path: currentPath });
+      }
     });
 
     return items;

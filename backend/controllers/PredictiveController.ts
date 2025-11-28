@@ -9,7 +9,7 @@ import Prediction from '../models/Prediction';
 import SensorReading from '../models/SensorReading';
 import { sendResponse } from '../utils/sendResponse';
 
-type RequestWithTenant = Request & { tenantId?: string };
+type RequestWithTenant = Request & { tenantId?: string | undefined };
 
 async function getPredictions(
   req: RequestWithTenant,

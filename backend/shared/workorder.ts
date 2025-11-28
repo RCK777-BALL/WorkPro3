@@ -11,12 +11,12 @@ export type WorkOrderStatus =
 
 export interface SharedWorkOrder {
   id: string;
-  workOrderNumber?: string;
+  workOrderNumber?: string | undefined;
   title: string;
-  description?: string;
+  description?: string | undefined;
   status: WorkOrderStatus;
-  assetId?: string;
-  priority?: 'low' | 'medium' | 'high' | 'critical';
+  assetId?: string | undefined;
+  priority?: 'low' | 'medium' | 'high' | 'critical' | undefined;
   createdAt: string | Date;
   updatedAt: string | Date;
 }

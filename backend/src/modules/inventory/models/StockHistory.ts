@@ -6,18 +6,18 @@ import { Schema, Types, model, type Document } from 'mongoose';
 
 export interface StockHistoryDocument extends Document {
   tenantId: Types.ObjectId;
-  siteId?: Types.ObjectId;
+  siteId?: Types.ObjectId | undefined;
   part: Types.ObjectId;
   stockItem: Types.ObjectId;
   locationSnapshot: {
     locationId: Types.ObjectId;
-    store?: string;
-    room?: string;
-    bin?: string;
+    store?: string | undefined;
+    room?: string | undefined;
+    bin?: string | undefined;
   };
   delta: number;
-  reason?: string;
-  createdBy?: Types.ObjectId;
+  reason?: string | undefined;
+  createdBy?: Types.ObjectId | undefined;
   createdAt: Date;
 }
 

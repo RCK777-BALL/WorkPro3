@@ -1,9 +1,9 @@
 export interface ApiResult<T> {
-  data?: T;
-  error?: string;
+  data?: T | undefined;
+  error?: string | undefined;
 }
 
 export interface TenantScoped {
   tenantId: string;
-  siteId?: string | null;
+  siteId?: string | null | undefined;
 }

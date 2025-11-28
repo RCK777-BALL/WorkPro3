@@ -6,12 +6,12 @@ import { Schema, Types, model, type Document } from 'mongoose';
 
 export interface LocationDocument extends Document {
   tenantId: Types.ObjectId;
-  siteId?: Types.ObjectId;
+  siteId?: Types.ObjectId | undefined;
   name: string;
-  store?: string;
-  room?: string;
-  bin?: string;
-  parent?: Types.ObjectId;
+  store?: string | undefined;
+  room?: string | undefined;
+  bin?: string | undefined;
+  parent?: Types.ObjectId | undefined;
   path: string[];
 }
 

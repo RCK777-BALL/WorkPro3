@@ -6,13 +6,13 @@ import { Schema, Types, model, type Document } from 'mongoose';
 
 export interface StockItemDocument extends Document {
   tenantId: Types.ObjectId;
-  siteId?: Types.ObjectId;
+  siteId?: Types.ObjectId | undefined;
   part: Types.ObjectId;
   location: Types.ObjectId;
   quantity: number;
-  unitCost?: number;
-  unit?: string;
-  cost?: number;
+  unitCost?: number | undefined;
+  unit?: string | undefined;
+  cost?: number | undefined;
 }
 
 const stockItemSchema = new Schema<StockItemDocument>(

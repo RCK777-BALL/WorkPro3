@@ -34,6 +34,6 @@ export type PermissionAction<S extends PermissionScope = PermissionScope> = keyo
 export interface PermissionAssignment {
   scope: PermissionScope;
   actions: PermissionAction[];
-  tenantId?: string;
-  siteId?: string | null;
+  tenantId?: string | undefined;
+  siteId?: string | null | undefined;
 }

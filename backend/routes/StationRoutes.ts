@@ -42,7 +42,7 @@ const router = Router();
 router.use(requireAuth);
 router.use(tenantScope);
 
-const resolvePlantId = (req: { plantId?: string; siteId?: string }): string | undefined =>
+const resolvePlantId = (req: { plantId?: string | undefined; siteId?: string | undefined }): string | undefined =>
   req.plantId ?? req.siteId ?? undefined;
 
 const listStations: AuthedRequestHandler<Record<string, string>, unknown> = async (

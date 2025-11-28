@@ -30,7 +30,10 @@ const normalizePermissions = (permissions?: string[]): Permission[] => {
 const normalizePermissionKey = (
   permissionOrScope: Permission | PermissionCategory,
   action?: PermissionAction,
-): Permission => formatPermission(String(permissionOrScope), action as string | undefined);
+): Permission => {
+  if (!permissionOrScope) return '' as Permission;
+  return formatPermission(String(permissionOrScope), action as string | undefined);
+};
 
 export const usePermissions = () => {
   const { user } = useAuth();

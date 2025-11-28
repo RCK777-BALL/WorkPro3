@@ -26,7 +26,7 @@ const PlantSwitcher: React.FC = () => {
       radius="sm"
       allowDeselect={false}
       disabled={disabled}
-      nothingFound={errors.plant ?? t('context.noSites')}
+      nothingFoundMessage={errors.plant ?? t('context.noSites')}
       error={errors.plant}
       rightSection={switchingPlant ? <Loader size="xs" aria-label={t('context.switchingSite')} /> : undefined}
       styles={{

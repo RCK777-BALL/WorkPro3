@@ -26,7 +26,7 @@ const TenantSwitcher: React.FC = () => {
       radius="sm"
       allowDeselect={false}
       disabled={disabled}
-      nothingFound={errors.tenant ?? t('context.noTenants')}
+      nothingFoundMessage={errors.tenant ?? t('context.noTenants')}
       error={errors.tenant}
       rightSection={switchingTenant ? <Loader size="xs" aria-label={t('context.switchingTenant')} /> : undefined}
       styles={{

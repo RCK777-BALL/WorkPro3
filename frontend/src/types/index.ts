@@ -1,6 +1,33 @@
 import type { Asset as SharedAssetType } from '../../../shared/types/asset';
 import type { PermissionGrant, RoleAssignment } from '../../../shared/types/admin';
 
+export type AuthRole =
+  | 'global_admin'
+  | 'plant_admin'
+  | 'general_manager'
+  | 'assistant_general_manager'
+  | 'operations_manager'
+  | 'department_leader'
+  | 'assistant_department_leader'
+  | 'area_leader'
+  | 'team_leader'
+  | 'team_member'
+  | 'technical_team_member'
+  | 'admin'
+  | 'supervisor'
+  | 'manager'
+  | 'planner'
+  | 'tech'
+  | 'technician'
+  | 'viewer';
+
+export interface PermissionAssignment {
+  name: string;
+  scope?: string | null;
+  grantedBy?: string;
+  grantedAt?: string;
+}
+
 export type { Asset as SharedAsset } from '../../../shared/types/asset';
 export type { WorkOrder as SharedWorkOrder } from '@backend-shared/workorder';
 export type {
@@ -423,7 +450,7 @@ export interface AuthUser {
   /** Optional site identifier associated with the user */
   siteId?: string | null;
   /** Optional fine-grained permissions for scoped enforcement */
-  permissions?: PermissionAssignment[];
+  permissionAssignments?: PermissionAssignment[];
   /** Optional JWT token used for authenticated requests */
   token?: string;
   /** Optional URL for the user's avatar */

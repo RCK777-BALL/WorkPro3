@@ -85,11 +85,11 @@ const HierarchyTree = ({ data, isLoading, selectedAssetId, onSelect }: Hierarchy
   useEffect(() => {
     if (!data) return;
     const initialExpanded: Record<string, boolean> = {};
-    data.departments.forEach((department) => {
+    data.departments.forEach((department: HierarchyDepartment) => {
       initialExpanded[department.id] = true;
-      department.lines.forEach((line) => {
+      department.lines.forEach((line: HierarchyLine) => {
         initialExpanded[line.id] = true;
-        line.stations.forEach((station) => {
+        line.stations.forEach((station: HierarchyStation) => {
           initialExpanded[station.id] = false;
         });
       });
@@ -154,7 +154,7 @@ const HierarchyTree = ({ data, isLoading, selectedAssetId, onSelect }: Hierarchy
             </button>
             {expanded[department.id] && (
               <div className="space-y-2 border-t border-neutral-800 p-3">
-                {department.lines.map((line) => (
+                {department.lines.map((line: HierarchyLine) => (
                   <div key={line.id} className="rounded-lg bg-neutral-900/80">
                     <button
                       type="button"
@@ -169,7 +169,7 @@ const HierarchyTree = ({ data, isLoading, selectedAssetId, onSelect }: Hierarchy
                     </button>
                     {expanded[line.id] && (
                       <div className="space-y-2 border-t border-neutral-800 px-3 py-2">
-                        {line.stations.map((station) => (
+                        {line.stations.map((station: HierarchyStation) => (
                           <div key={station.id} className="rounded-md bg-neutral-900/70">
                             <button
                               type="button"
@@ -184,7 +184,7 @@ const HierarchyTree = ({ data, isLoading, selectedAssetId, onSelect }: Hierarchy
                             </button>
                             {expanded[station.id] && (
                               <div className="space-y-1 border-t border-neutral-800 px-3 py-2">
-                                {station.assets.map((asset) => (
+                                {station.assets.map((asset: HierarchyAsset) => (
                                   <button
                                     key={asset.id}
                                     type="button"
@@ -215,7 +215,7 @@ const HierarchyTree = ({ data, isLoading, selectedAssetId, onSelect }: Hierarchy
                         ))}
                         {line.assets.length > 0 && (
                           <div className="space-y-1 rounded-md border border-neutral-800 px-2 py-2">
-                            {line.assets.map((asset) => (
+                            {line.assets.map((asset: HierarchyAsset) => (
                               <button
                                 key={asset.id}
                                 type="button"
@@ -243,7 +243,7 @@ const HierarchyTree = ({ data, isLoading, selectedAssetId, onSelect }: Hierarchy
                 ))}
                 {department.assets.length > 0 && (
                   <div className="space-y-1 rounded-md border border-dashed border-neutral-800 px-2 py-2">
-                    {department.assets.map((asset) => (
+                    {department.assets.map((asset: HierarchyAsset) => (
                       <button
                         key={asset.id}
                         type="button"

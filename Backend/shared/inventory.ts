@@ -2,9 +2,9 @@
 
 export interface InventoryAdjustmentPayload {
   partId: string;
-  locationId?: string;
+  locationId?: string | undefined;
   quantityDelta: number;
-  reason?: string;
-  workOrderId?: string;
-  note?: string;
+  reason?: string | undefined;
+  workOrderId?: string | undefined;
+  note?: string | undefined;
 }

@@ -4,8 +4,9 @@ export interface UploadedFile {
   id: string;
   filename: string;
   url: string;
-  mimetype?: string;
-  size?: number;
-  data?: Buffer;
-  mv?: (path: string) => Promise<void> | void;
+  mimetype?: string | undefined;
+  size?: number | undefined;
+  data?: Buffer | undefined;
+  mv?: ((path: string) => Promise<void> | void) | undefined;
 }
+import type { Buffer } from 'buffer';

@@ -2,7 +2,7 @@
 
 export type ApiResult<T = unknown> = {
   ok: boolean;
-  data?: T;
-  error?: string | string[] | null;
-  status?: number;
+  data?: T | undefined;
+  error?: string | string[] | null | undefined;
+  status?: number | undefined;
 };

@@ -79,14 +79,14 @@ function buildInventoryPayload(body: Record<string, unknown>) {
 
 type InventorySummaryProjection = Pick<IInventoryItem, "name" | "quantity" | "reorderThreshold">;
 
-const toPlainObject = (value: unknown): Record<string, unknown> => {
+const toPlainObject = <T>(value: unknown): T => {
   if (value && typeof (value as any).toObject === "function") {
-    return (value as any).toObject();
+    return (value as any).toObject() as T;
   }
   if (value && typeof value === "object") {
-    return value as Record<string, unknown>;
+    return value as T;
   }
-  return {};
+  return {} as T;
 };
 
 // —— GET /inventory/summary (name, stock, status) ————————————————————————
@@ -152,7 +152,7 @@ export async function getLowStockItems(
     const itemsQuery = InventoryItem.find(query);
     itemsQuery.populate("vendor");
     const items = await itemsQuery.exec();
-    const withQr = items.map((item) => ensureQrCode(toPlainObject(item) as IInventoryItem, 'part'));
+    const withQr = items.map((item) => ensureQrCode(toPlainObject<IInventoryItem>(item), 'part'));
     sendResponse(res, withQr);
   } catch (err) {
     next(err);
@@ -182,8 +182,8 @@ export async function getInventoryItemById(
 
     const qty = Number(item.quantity ?? 0);
     const threshold = Number(item.reorderThreshold ?? 0);
-    const plainItem = toPlainObject(item);
-    const withQr = ensureQrCode(plainItem as IInventoryItem, 'part');
+    const plainItem = toPlainObject<IInventoryItem>(item);
+    const withQr = ensureQrCode(plainItem, 'part');
     sendResponse(res, { ...withQr, status: qty <= threshold ? "low" : "ok" });
   } catch (err) {
     next(err);

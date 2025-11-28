@@ -9,9 +9,9 @@ import tenantScope from '../middleware/tenantScope';
 interface SafetyTemplate {
   id: string;
   name: string;
-  siteId?: string;
+  siteId?: string | undefined;
   version: number;
-  retentionDays?: number;
+  retentionDays?: number | undefined;
   checklists: string[];
   updatedAt: string;
   createdAt: string;
@@ -20,8 +20,8 @@ interface SafetyTemplate {
 interface InspectionSchedule {
   id: string;
   templateId: string;
-  workOrderId?: string;
-  siteId?: string;
+  workOrderId?: string | undefined;
+  siteId?: string | undefined;
   scheduledFor: string;
   status: 'scheduled' | 'completed' | 'canceled';
 }
@@ -68,7 +68,7 @@ const buildState = (tenantId: string): SafetyState => {
 };
 
 router.get('/templates', (req, res) => {
-  const state = buildState(req.tenantId);
+  const state = buildState(req.tenantId!);
   const { siteId } = req.query;
   const filtered = siteId
     ? state.templates.filter((template) => template.siteId === siteId)
@@ -81,7 +81,7 @@ router.get('/templates', (req, res) => {
 });
 
 router.post('/templates', (req, res) => {
-  const state = buildState(req.tenantId);
+  const state = buildState(req.tenantId!);
   const now = new Date().toISOString();
   const {
     name,
@@ -121,7 +121,7 @@ router.post('/templates', (req, res) => {
 });
 
 router.post('/templates/:templateId/schedule', (req, res) => {
-  const state = buildState(req.tenantId);
+  const state = buildState(req.tenantId!);
   const { templateId } = req.params;
   const template = state.templates.find((tpl) => tpl.id === templateId);
   if (!template) {
@@ -152,7 +152,7 @@ router.post('/templates/:templateId/schedule', (req, res) => {
 });
 
 router.get('/inspections', (req, res) => {
-  const state = buildState(req.tenantId);
+  const state = buildState(req.tenantId!);
   const { status, siteId } = req.query;
 
   const filtered = state.inspections.filter((inspection) => {
@@ -165,7 +165,7 @@ router.get('/inspections', (req, res) => {
 });
 
 router.post('/inspections/:inspectionId/complete', (req, res) => {
-  const state = buildState(req.tenantId);
+  const state = buildState(req.tenantId!);
   const { inspectionId } = req.params;
   const inspection = state.inspections.find((item) => item.id === inspectionId);
 
@@ -179,7 +179,7 @@ router.post('/inspections/:inspectionId/complete', (req, res) => {
 });
 
 router.post('/work-orders/:workOrderId/link-template', (req, res) => {
-  const state = buildState(req.tenantId);
+  const state = buildState(req.tenantId!);
   const { workOrderId } = req.params;
   const { templateId } = req.body as { templateId: string };
 
@@ -212,7 +212,7 @@ router.post('/work-orders/:workOrderId/link-template', (req, res) => {
 });
 
 router.post('/work-orders/:workOrderId/completions', (req, res) => {
-  const state = buildState(req.tenantId);
+  const state = buildState(req.tenantId!);
   const { workOrderId } = req.params;
   const body = req.body as {
     templateId: string;
@@ -247,7 +247,7 @@ router.post('/work-orders/:workOrderId/completions', (req, res) => {
 });
 
 router.post('/work-orders/:workOrderId/approvals', (req, res) => {
-  const state = buildState(req.tenantId);
+  const state = buildState(req.tenantId!);
   const { workOrderId } = req.params;
   const { approver, status } = req.body as {
     approver: string;
@@ -273,7 +273,7 @@ router.post('/work-orders/:workOrderId/approvals', (req, res) => {
 });
 
 router.get('/work-orders/:workOrderId/status', (req, res) => {
-  const state = buildState(req.tenantId);
+  const state = buildState(req.tenantId!);
   const { workOrderId } = req.params;
   const safety = state.workOrders[workOrderId];
 

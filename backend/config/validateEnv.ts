@@ -30,7 +30,6 @@ const envSchema = z.object({
   ENABLE_OIDC_SSO: z.string().optional(),
   ENABLE_SAML_SSO: z.string().optional(),
   ENABLE_SCIM_API: z.string().optional(),
-  SCIM_BEARER_TOKEN: z.string().optional(),
 });
 
 export type EnvVars = z.infer<typeof envSchema>;

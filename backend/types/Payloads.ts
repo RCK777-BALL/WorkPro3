@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { InventoryUpdatePayload } from '../shared/inventory';
+import type { InventoryUpdatePayload } from '../../shared/types/inventory';
 
 export interface WorkOrderUpdatePayload {
   _id: string;

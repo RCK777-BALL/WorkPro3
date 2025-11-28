@@ -40,11 +40,13 @@ export type PermissionAction<C extends PermissionCategory = PermissionCategory> 
 export type PermissionWildcard = '*' | `${PermissionCategory}.*`;
 export type Permission = (typeof PERMISSIONS)[PermissionCategory][PermissionAction] | PermissionWildcard;
 
-export const ALL_PERMISSIONS: Permission[] = Array.from(
-  new Set(
-    Object.values(PERMISSIONS).flatMap((group) => Object.values(group)) as Permission[],
-  ),
+const permissionValues = Object.values(PERMISSIONS).flatMap((group) =>
+  Object.values(group) as (typeof PERMISSIONS)[PermissionCategory][PermissionAction][],
 );
+
+export const ALL_PERMISSIONS: Permission[] = Array.from(
+  new Set(permissionValues),
+) as Permission[];
 
 export const formatPermission = (scope: string, action?: string): Permission => {
   const normalizedScope = scope.trim();
@@ -55,4 +57,4 @@ export const formatPermission = (scope: string, action?: string): Permission => 
 export const permissionFromParts = <C extends PermissionCategory>(
   scope: C,
   action: PermissionAction<C>,
-): Permission => PERMISSIONS[scope][action];
+): Permission => PERMISSIONS[scope][action] as Permission;

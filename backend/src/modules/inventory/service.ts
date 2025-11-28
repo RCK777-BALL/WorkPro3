@@ -535,7 +535,12 @@ export const listStockHistory = async (context: InventoryContext): Promise<Stock
     partId: entry.part.toString(),
     stockItemId: entry.stockItem.toString(),
     delta: entry.delta,
-    createdAt: entry.createdAt?.toISOString(),
+    createdAt:
+      entry.createdAt instanceof Date
+        ? entry.createdAt.toISOString()
+        : entry.createdAt
+          ? new Date(entry.createdAt).toISOString()
+          : new Date().toISOString(),
     location: {
       locationId: entry.locationSnapshot.locationId.toString(),
       store: entry.locationSnapshot.store,

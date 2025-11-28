@@ -227,7 +227,7 @@ mongoose.connect(mongoUri).then(async () => {
     name: 'Production',
     lines: [],
     tenantId,
-    plant: mainPlant._id,
+    plant: mainSite._id,
     siteId: mainSite._id,
   });
 
@@ -247,7 +247,7 @@ mongoose.connect(mongoUri).then(async () => {
     departmentId: dept._id,
     lineId,
     stationId,
-    plant: mainPlant._id,
+    plant: mainSite._id,
     status: 'Active',
     description: 'Main conveyor belt for packaging line',
     tenantId,

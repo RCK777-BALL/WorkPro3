@@ -27,18 +27,19 @@ interface AssignmentFormProps {
   assets: Array<{ id: string; name: string }>;
   partOptions: Array<{ id: string; name: string }>;
   onSuccess?: () => void;
+  fixedAssetId?: string;
 }
 
 const newId = () => Math.random().toString(36).slice(2);
 
 const DEFAULT_INTERVALS = ['weekly', 'monthly', 'quarterly', 'annually'];
 
-const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess }: AssignmentFormProps) => {
+const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess, fixedAssetId }: AssignmentFormProps) => {
   const { mutateAsync, isLoading } = useUpsertAssignment();
   const { addToast } = useToast();
   const [error, setError] = useState<string | null>(null);
 
-  const [assetId, setAssetId] = useState(assignment?.assetId ?? '');
+  const [assetId, setAssetId] = useState(assignment?.assetId ?? fixedAssetId ?? '');
   const [interval, setInterval] = useState(assignment?.interval ?? 'monthly');
   const [triggerType, setTriggerType] = useState<'time' | 'meter'>(assignment?.trigger?.type ?? 'time');
   const [meterThreshold, setMeterThreshold] = useState<number | ''>(assignment?.trigger?.meterThreshold ?? '');
@@ -58,7 +59,7 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
   );
 
   useEffect(() => {
-    setAssetId(assignment?.assetId ?? '');
+    setAssetId(assignment?.assetId ?? fixedAssetId ?? '');
     setInterval(assignment?.interval ?? 'monthly');
     setTriggerType(assignment?.trigger?.type ?? 'time');
     setMeterThreshold(assignment?.trigger?.meterThreshold ?? '');
@@ -79,10 +80,12 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
   }, [assignment]);
 
   useEffect(() => {
-    if (!assetId && assets.length > 0) {
+    if (!assetId && fixedAssetId) {
+      setAssetId(fixedAssetId);
+    } else if (!assetId && assets.length > 0) {
       setAssetId(assets[0].id);
     }
-  }, [assets, assetId]);
+  }, [assets, assetId, fixedAssetId]);
 
   const hasChecklistContent = useMemo(() => checklist.some((item) => item.description.trim().length > 0), [checklist]);
 
@@ -134,6 +137,7 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
           className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2"
           value={assetId}
           onChange={(event) => setAssetId(event.target.value)}
+          disabled={Boolean(fixedAssetId)}
         >
           {assets.length === 0 && <option value="">No assets available</option>}
           {assets.map((asset) => (

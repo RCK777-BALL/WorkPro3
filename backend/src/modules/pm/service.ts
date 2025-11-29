@@ -140,6 +140,28 @@ const notifyAssignmentChange = async (
   await Notification.create(payload);
 };
 
+const linkTemplateToAsset = async (assetId: Types.ObjectId, templateId: Types.ObjectId) => {
+  await Asset.updateOne(
+    { _id: assetId },
+    {
+      $addToSet: {
+        pmTemplateIds: templateId,
+      },
+    },
+  );
+};
+
+const unlinkTemplateFromAsset = async (assetId: Types.ObjectId, templateId: Types.ObjectId) => {
+  await Asset.updateOne(
+    { _id: assetId },
+    {
+      $pull: {
+        pmTemplateIds: templateId,
+      },
+    },
+  );
+};
+
 const serializeAssignment = (
   assignment: AssignmentObject,
   refs: {
@@ -373,6 +395,7 @@ export const upsertAssignment = async (
     assignment = task.assignments[task.assignments.length - 1];
   }
   await task.save();
+  await linkTemplateToAsset(asset._id, task._id);
 
   await notifyAssignmentChange(context, asset, task, assignmentId ? 'updated' : 'created');
 
@@ -397,6 +420,12 @@ export const removeAssignment = async (
   await task.save();
   const asset = assetId ? await Asset.findById(assetId) : null;
   if (asset) {
+    const stillLinked = task.assignments.some(
+      (existing) => existing.asset?.toString() === asset._id.toString(),
+    );
+    if (!stillLinked) {
+      await unlinkTemplateFromAsset(asset._id, task._id);
+    }
     await notifyAssignmentChange(context, asset, task, 'deleted');
   }
   return { id: assignmentId };

@@ -9,6 +9,7 @@ import type {
   Part,
   PurchaseOrder,
   PurchaseOrderPayload,
+  PartUsageReport,
   StockAdjustment,
   StockHistoryEntry,
   StockItem,

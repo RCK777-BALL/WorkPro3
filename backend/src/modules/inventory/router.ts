@@ -23,6 +23,7 @@ import {
   transferStockHandler,
   listStockHistoryHandler,
   transitionPurchaseOrderHandler,
+  partUsageReportHandler,
 } from './controller';
 
 const router = Router();
@@ -58,5 +59,6 @@ router.get('/stock', requirePermission('inventory', 'read'), listStockItemsHandl
 router.post('/stock/adjust', requirePermission('inventory', 'manage'), adjustStockHandler);
 router.post('/transfers', requirePermission('inventory', 'manage'), transferStockHandler);
 router.get('/stock/history', requirePermission('inventory', 'read'), listStockHistoryHandler);
+router.get('/analytics/usage', requirePermission('inventory', 'read'), partUsageReportHandler);
 
 export default router;

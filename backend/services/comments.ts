@@ -7,13 +7,16 @@ import Asset from '../models/Asset';
 import Comment, { type CommentDocument, type CommentEntityType } from '../models/Comment';
 import WorkOrder from '../models/WorkOrder';
 import { parseMentions, notifyMentionedUsers } from './mentions';
+import { notifyUser } from '../utils/notify';
 
 export interface CommentCreateInput {
   tenantId: Types.ObjectId;
   entityType: CommentEntityType;
   entityId: Types.ObjectId;
-  authorId: Types.ObjectId;
-  body: string;
+  userId: Types.ObjectId;
+  content: string;
+  threadId: string;
+  parentId?: Types.ObjectId | null;
 }
 
 export interface CommentListInput {
@@ -26,6 +29,22 @@ export interface CommentListInput {
 
 const getEntityModel = (entityType: CommentEntityType) =>
   entityType === 'WO' ? WorkOrder : Asset;
+
+export const buildThreadId = (entityType: CommentEntityType, entityId: Types.ObjectId) =>
+  `${entityType}:${entityId.toString()}`;
+
+const findParentComment = async (
+  parentId: Types.ObjectId,
+  tenantId: Types.ObjectId,
+  entityType: CommentEntityType,
+  entityId: Types.ObjectId,
+): Promise<CommentDocument | null> =>
+  Comment.findOne({
+    _id: parentId,
+    tenantId,
+    entityType,
+    entityId,
+  }).populate({ path: 'userId', select: 'name email avatar' });
 
 export const ensureEntityBelongsToTenant = async (
   entityType: CommentEntityType,
@@ -47,13 +66,28 @@ export const createComment = async (
 ): Promise<CommentDocument> => {
   await ensureEntityBelongsToTenant(input.entityType, input.entityId, input.tenantId);
 
-  const mentions = parseMentions(input.body);
+  const mentions = parseMentions(input.content);
+
+  let parent: CommentDocument | null = null;
+  if (input.parentId) {
+    parent = await findParentComment(input.parentId, input.tenantId, input.entityType, input.entityId);
+    if (!parent) {
+      const error = new Error('Parent comment not found for this thread');
+      // @ts-expect-error augment
+      error.status = 404;
+      throw error;
+    }
+  }
+
+  const threadId = input.threadId || parent?.threadId || buildThreadId(input.entityType, input.entityId);
   const comment = await Comment.create({
     tenantId: input.tenantId,
     entityType: input.entityType,
     entityId: input.entityId,
-    authorId: input.authorId,
-    body: input.body,
+    userId: input.userId,
+    content: input.content,
+    parentId: parent?._id ?? null,
+    threadId,
     mentions,
   });
 
@@ -62,13 +96,19 @@ export const createComment = async (
       tenantId: input.tenantId,
       entityType: input.entityType,
       entityId: input.entityId,
-      authorId: input.authorId,
-      body: input.body,
+      authorId: input.userId,
+      body: input.content,
     },
     mentions,
   );
 
-  return comment.populate({ path: 'authorId', select: 'name email avatar' });
+  if (parent && parent.userId && parent.userId.toString() !== input.userId.toString()) {
+    const entityLabel = input.entityType === 'WO' ? 'work order' : 'asset';
+    const message = `You have a new reply on ${entityLabel} ${input.entityId.toString()}.`;
+    await notifyUser(parent.userId, message, { title: 'New comment reply', category: 'comment' });
+  }
+
+  return comment.populate({ path: 'userId', select: 'name email avatar' });
 };
 
 export const listComments = async (
@@ -85,10 +125,10 @@ export const listComments = async (
     entityType: input.entityType,
     entityId: input.entityId,
   })
-    .sort({ createdAt: -1 })
+    .sort({ createdAt: 1 })
     .skip(skip)
     .limit(pageSize)
-    .populate({ path: 'authorId', select: 'name email avatar' });
+    .populate({ path: 'userId', select: 'name email avatar' });
 
   const [items, total] = await Promise.all([
     query.exec(),

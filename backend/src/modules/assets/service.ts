@@ -116,6 +116,11 @@ export type AssetInsightsResponse = {
     modelName?: string;
     manufacturer?: string;
     purchaseDate?: string;
+    warrantyStart?: string;
+    warrantyEnd?: string;
+    purchaseCost?: number;
+    expectedLifeMonths?: number;
+    replacementDate?: string;
     installationDate?: string;
     siteId?: string;
     plantId?: string;
@@ -493,6 +498,26 @@ export const getAssetInsights = async (
 
   if (asset.purchaseDate) {
     assetSummary.purchaseDate = asset.purchaseDate.toISOString();
+  }
+
+  if (asset.warrantyStart) {
+    assetSummary.warrantyStart = asset.warrantyStart.toISOString();
+  }
+
+  if (asset.warrantyEnd) {
+    assetSummary.warrantyEnd = asset.warrantyEnd.toISOString();
+  }
+
+  if (asset.purchaseCost !== undefined) {
+    assetSummary.purchaseCost = asset.purchaseCost;
+  }
+
+  if (asset.expectedLifeMonths !== undefined) {
+    assetSummary.expectedLifeMonths = asset.expectedLifeMonths;
+  }
+
+  if (asset.replacementDate) {
+    assetSummary.replacementDate = asset.replacementDate.toISOString();
   }
 
   if (asset.installationDate) {

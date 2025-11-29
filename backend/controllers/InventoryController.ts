@@ -10,6 +10,7 @@ import { auditAction } from "../utils/audit";
 import { toEntityId } from "../utils/ids";
 import { sendResponse } from "../utils/sendResponse";
 import { ensureQrCode, generateQrCodeValue } from "../services/qrCode";
+import { notifyLowStock } from "../services/notificationService";
 
 // Narrow helper to scope queries by tenant/site
 function scopedQuery<T extends Record<string, unknown>>(req: Request, base?: T) {
@@ -220,6 +221,7 @@ export async function createInventoryItem(
     }
     const savedPlain = toPlainObject(saved);
     await auditAction(req, "create", "InventoryItem", toEntityId(saved._id) ?? saved._id, undefined, savedPlain);
+    await notifyLowStock(saved);
     sendResponse(res, saved, null, 201);
   } catch (err) {
     logger.error("Error creating inventory item", err);
@@ -279,6 +281,7 @@ export async function updateInventoryItem(
     const before = toPlainObject(existing);
     const after = toPlainObject(updated);
     await auditAction(req, "update", "InventoryItem", toEntityId(id) ?? id, before, after);
+    await notifyLowStock(updated);
     sendResponse(res, updated);
   } catch (err) {
     logger.error("Error updating inventory item", err);

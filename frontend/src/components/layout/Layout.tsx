@@ -16,6 +16,7 @@ import { ScopeProvider } from '@/context/ScopeContext';
 import { emitToast } from '@/context/ToastContext';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
+import { syncManager } from '@/utils/syncManager';
 
 const COLOR_SCHEMES: Record<
   string,
@@ -122,6 +123,11 @@ export default function Layout() {
       window.history.replaceState({}, document.title, location.pathname + location.search);
     }
   }, [location.pathname, location.search, location.state, t]);
+
+  useEffect(() => {
+    syncManager.init();
+    return () => syncManager.teardown();
+  }, []);
 
   const isAuthRoute =
     pathname.startsWith('/login') ||

@@ -2,43 +2,27 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Router } from "express";
+import { Router } from 'express';
 
-import legacyVendorRoutes from "./VendorLegacyRoutes";
+import { requireAuth } from '../middleware/authMiddleware';
+import tenantScope from '../middleware/tenantScope';
+import {
+  createVendorHandler,
+  deleteVendorHandler,
+  getAllVendors,
+  getVendorById,
+  updateVendorHandler,
+} from '../controllers/VendorController';
 
 const router = Router();
 
-const summary = [
-  {
-    id: "VEN-001",
-    vendor: "ProParts Supply",
-    category: "MRO",
-    spendYtd: 18500,
-    nextReview: "2024-07-30",
-    status: "Open",
-  },
-  {
-    id: "VEN-002",
-    vendor: "Northwind Safety",
-    category: "PPE",
-    spendYtd: 8200,
-    nextReview: "2024-09-12",
-    status: "In Progress",
-  },
-  {
-    id: "VEN-003",
-    vendor: "Metro Automation",
-    category: "Controls",
-    spendYtd: 23200,
-    nextReview: "2024-08-04",
-    status: "Completed",
-  },
-];
+router.use(requireAuth);
+router.use(tenantScope);
 
-router.get("/summary", (_req, res) => {
-  res.json({ success: true, data: summary, message: "Vendor summary" });
-});
-
-router.use("/", legacyVendorRoutes);
+router.get('/', getAllVendors);
+router.get('/:id', getVendorById);
+router.post('/', createVendorHandler);
+router.put('/:id', updateVendorHandler);
+router.delete('/:id', deleteVendorHandler);
 
 export default router;

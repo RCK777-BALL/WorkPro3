@@ -26,6 +26,7 @@ import WorkOrder from '../models/WorkOrder';
 import type { AuthedRequest } from '../types/http';
 import { Types } from 'mongoose';
 import type { UserRole } from '../models/User';
+import { buildPmCompletionAnalytics } from '../services/pmAnalytics';
 
 const router = Router();
 
@@ -48,6 +49,30 @@ router.get('/dashboard/kpis.csv', dashboardKpiCsv);
 router.get('/dashboard/kpis.xlsx', dashboardKpiXlsx);
 router.get('/dashboard/kpis.pdf', dashboardKpiPdf);
 router.get('/pm-optimization/what-if', pmWhatIfSimulationsJson);
+
+router.get('/pm/completions', async (req: AuthedRequest, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId || !Types.ObjectId.isValid(tenantId)) {
+      res.status(400).json({ error: 'Tenant context required' });
+      return;
+    }
+
+    const months = typeof req.query.months === 'string' ? Number(req.query.months) : undefined;
+    const siteId =
+      req.siteId && Types.ObjectId.isValid(req.siteId)
+        ? new Types.ObjectId(req.siteId)
+        : undefined;
+
+    const analytics = await buildPmCompletionAnalytics(new Types.ObjectId(tenantId), {
+      months,
+      siteId,
+    });
+    res.json(analytics);
+  } catch (err) {
+    next(err);
+  }
+});
 
 router.get('/global', async (req: AuthedRequest, res, next) => {
   try {

@@ -70,11 +70,17 @@ export const ScopeProvider = ({ children }: { children: React.ReactNode }) => {
       const res = await http.get<Array<{ _id: string; name: string }>>('/tenants');
       const options = normalizeOptions(res.data);
       setTenants(options);
-      const fallbackTenant =
-        activeTenantId ?? user?.tenantId ?? safeLocalStorage.getItem(TENANT_KEY) ?? options[0]?.id ?? null;
-      if (fallbackTenant) {
-        safeLocalStorage.setItem(TENANT_KEY, fallbackTenant);
-        setActiveTenantId(fallbackTenant);
+
+      const storedTenant = safeLocalStorage.getItem(TENANT_KEY);
+      const candidateTenant = activeTenantId ?? user?.tenantId ?? storedTenant;
+      const resolvedTenant =
+        candidateTenant && options.some((tenant) => tenant.id === candidateTenant)
+          ? candidateTenant
+          : options[0]?.id ?? null;
+
+      if (resolvedTenant) {
+        safeLocalStorage.setItem(TENANT_KEY, resolvedTenant);
+        setActiveTenantId(resolvedTenant);
       }
     } catch (error) {
       console.error('Failed to load tenants', error);
@@ -94,7 +100,14 @@ export const ScopeProvider = ({ children }: { children: React.ReactNode }) => {
       ]);
       const options = normalizeOptions(plantsRes.data);
       setPlants(options);
-      const resolvedActive = settingsRes.data.activePlant ?? activePlantId ?? options[0]?.id ?? null;
+
+      const storedPlant = safeLocalStorage.getItem(SITE_KEY);
+      const candidatePlant = settingsRes.data.activePlant ?? activePlantId ?? storedPlant;
+      const resolvedActive =
+        candidatePlant && options.some((plant) => plant.id === candidatePlant)
+          ? candidatePlant
+          : options[0]?.id ?? null;
+
       if (resolvedActive) {
         safeLocalStorage.setItem(SITE_KEY, resolvedActive);
         setActivePlantId(resolvedActive);
@@ -123,6 +136,8 @@ export const ScopeProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         safeLocalStorage.setItem(TENANT_KEY, tenantId);
         setActiveTenantId(tenantId);
+        safeLocalStorage.removeItem(SITE_KEY);
+        setActivePlantId(null);
         emitToast(t('context.tenantSwitched', { tenant: tenants.find((t) => t.id === tenantId)?.name ?? '' }));
         await refreshPlants();
       } catch (error) {

@@ -21,6 +21,7 @@ import {
   completeWorkOrder,
   cancelWorkOrder,
   assistWorkOrder,
+  updateWorkOrderChecklist,
 } from '../controllers/WorkOrderController';
 
 const router = Router();
@@ -39,6 +40,7 @@ router.post('/:id/assign', validateObjectId('id'), assignWorkOrder);
 router.post('/:id/start', validateObjectId('id'), startWorkOrder);
 router.post('/:id/complete', validateObjectId('id'), completeWorkOrder);
 router.post('/:id/cancel', validateObjectId('id'), cancelWorkOrder);
+router.put('/:id/checklist', validateObjectId('id'), updateWorkOrderChecklist);
 router.get('/:id/assist', validateObjectId('id'), assistWorkOrder);
 
 export default router;

@@ -63,6 +63,7 @@ const workOrderCreateFields = [
   'assignedTo',
   'assignees',
   'checklists',
+  'checklist',
   'partsUsed',
   'signatures',
   'timeSpentMin',
@@ -70,6 +71,9 @@ const workOrderCreateFields = [
   'failureCode',
   'causeCode',
   'actionCode',
+  'failureCause',
+  'failureAction',
+  'failureResult',
   'pmTask',
   'department',
 
@@ -84,10 +88,12 @@ const workOrderCreateFields = [
   'laborCost',
   'partsCost',
   'miscCost',
+  'miscellaneousCost',
   'totalCost',
   'attachments',
   'timeline',
   'dueDate',
+  'slaHours',
   'completedAt',
   'permits',
   'requiredPermitTypes',
@@ -891,6 +897,39 @@ export async function deleteWorkOrder(
   }
 }
 
+export async function updateWorkOrderChecklist(
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const tenantId = req.tenantId;
+    const scope = resolveLocationScope(req);
+    if (!tenantId || !scope.plantId) {
+      sendResponse(res, null, 'Active tenant and plant required', 400);
+      return;
+    }
+    const { checklist } = req.body as { checklist?: unknown[] };
+    if (!Array.isArray(checklist)) {
+      sendResponse(res, null, 'Checklist array required', 400);
+      return;
+    }
+    const updated = await WorkOrder.findOneAndUpdate(
+      withLocationScope({ _id: req.params.id, tenantId }, scope),
+      { checklist },
+      { new: true },
+    );
+    if (!updated) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
+    emitWorkOrderUpdate(toWorkOrderUpdatePayload(updated));
+    sendResponse(res, updated);
+  } catch (err) {
+    next(err);
+  }
+}
+
 /**
  * @openapi
  * /api/workorders/{id}/approve:
@@ -938,7 +977,7 @@ export async function approveWorkOrder(
       sendResponse(res, null, 'Not authenticated', 401);
       return;
     }
-    const { status } = req.body as { status?: ApprovalStatus };
+    const { status, note } = req.body as { status?: ApprovalStatus; note?: string };
 
     if (!status || !APPROVAL_STATUS_VALUES.includes(status)) {
       sendResponse(res, null, 'Invalid status', 400);
@@ -973,10 +1012,18 @@ export async function approveWorkOrder(
     workOrder.approvalStatus = status;
 
     if (status === 'pending') {
+      workOrder.status = 'pending_approval';
       if (userObjectId) workOrder.approvalRequestedBy = userObjectId;
     } else if (userObjectId) {
       workOrder.approvedBy = userObjectId;
+      workOrder.status = status === 'approved' ? 'approved' : workOrder.status;
     }
+    workOrder.approvalLog = workOrder.approvalLog ?? [];
+    workOrder.approvalLog.push({
+      approvedBy: userObjectId,
+      approvedAt: new Date(),
+      note,
+    });
 
     const saved = await workOrder.save();
     await auditAction(req as unknown as Request, 'approve', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());

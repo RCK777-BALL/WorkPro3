@@ -21,6 +21,8 @@ export interface PartDocument extends Document {
   minStock?: number;
   minQty?: number;
   maxQty?: number;
+  minLevel?: number;
+  maxLevel?: number;
   reorderPoint: number;
   reorderQty?: number;
   reorderThreshold?: number;
@@ -55,6 +57,8 @@ const partSchema = new Schema<PartDocument>(
     minStock: { type: Number, default: 0 },
     minQty: { type: Number, default: 0 },
     maxQty: { type: Number, default: 0 },
+    minLevel: { type: Number, default: 0 },
+    maxLevel: { type: Number, default: 0 },
     reorderPoint: { type: Number, default: 0 },
     reorderQty: { type: Number, default: 0 },
     reorderThreshold: { type: Number, default: 0 },

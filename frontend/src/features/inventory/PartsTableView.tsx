@@ -9,6 +9,7 @@ import Button from '@/components/common/Button';
 import type { Part } from '@/types';
 import { usePartsQuery, useVendorsQuery } from './hooks';
 import { QrLabel } from '@/components/qr';
+import { StockLevelBadge } from './AlertIndicators';
 
 const matchSearch = (part: Part, term: string) => {
   const haystack = [
@@ -119,7 +120,10 @@ const PartsTableView = () => {
             </thead>
             <tbody className="divide-y divide-neutral-100">
               {filteredParts.map((part) => (
-                <tr key={part.id}>
+                <tr
+                  key={part.id}
+                  className={part.alertState?.needsReorder ? 'bg-warning-50/40' : undefined}
+                >
                   <td className="px-4 py-3">
                     <p className="font-medium text-neutral-900">{part.name}</p>
                     <p className="text-xs text-neutral-500">SKU {part.sku ?? 'n/a'}</p>

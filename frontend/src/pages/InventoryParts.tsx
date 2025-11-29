@@ -18,7 +18,14 @@ const formatLocation = (location?: { store?: string; room?: string; bin?: string
 };
 
 const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string }) => Promise<void> }) => {
-  const [form, setForm] = useState<Partial<Part> & { name: string }>({ name: '', partNo: '', unit: '', reorderPoint: 0 });
+  const [form, setForm] = useState<Partial<Part> & { name: string }>({
+    name: '',
+    partNo: '',
+    unit: '',
+    reorderPoint: 0,
+    minLevel: 0,
+    maxLevel: 0,
+  });
   const [saving, setSaving] = useState(false);
   const { can } = usePermissions();
   const canManageInventory = useMemo(() => can('inventory.manage'), [can]);
@@ -33,7 +40,7 @@ const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string
     setSaving(true);
     try {
       await onSave(form);
-      setForm({ name: '', partNo: '', unit: '', reorderPoint: 0 });
+      setForm({ name: '', partNo: '', unit: '', reorderPoint: 0, minLevel: 0, maxLevel: 0 });
     } finally {
       setSaving(false);
     }
@@ -83,6 +90,22 @@ const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string
           value={form.maxQty ?? ''}
           disabled={disableEdits}
           onChange={(e) => setForm((prev) => ({ ...prev, maxQty: Number(e.target.value) }))}
+        />
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        <Input
+          label="Min level (alert)"
+          type="number"
+          value={form.minLevel ?? ''}
+          disabled={disableEdits}
+          onChange={(e) => setForm((prev) => ({ ...prev, minLevel: Number(e.target.value) }))}
+        />
+        <Input
+          label="Max level"
+          type="number"
+          value={form.maxLevel ?? ''}
+          disabled={disableEdits}
+          onChange={(e) => setForm((prev) => ({ ...prev, maxLevel: Number(e.target.value) }))}
         />
       </div>
       <Input
@@ -180,7 +203,7 @@ export default function InventoryParts() {
                   ))}
                   {!parts.length && (
                     <tr>
-                      <td className="px-3 py-6 text-center text-neutral-500" colSpan={5}>
+                      <td className="px-3 py-6 text-center text-neutral-500" colSpan={6}>
                         No parts found.
                       </td>
                     </tr>

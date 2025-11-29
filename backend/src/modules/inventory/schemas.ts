@@ -21,6 +21,8 @@ export const partInputSchema = z.object({
   minStock: z.number().optional(),
   minQty: z.number().optional(),
   maxQty: z.number().optional(),
+  minLevel: z.number().optional(),
+  maxLevel: z.number().optional(),
   reorderPoint: z.number().optional(),
   reorderQty: z.number().optional(),
   reorderThreshold: z.number().optional(),

@@ -91,6 +91,13 @@ const assetSchema = new Schema<AssetDoc>(
       ref: 'Site',
       index: true,
     },
+    lastInspection: {
+      recordId: { type: Schema.Types.ObjectId, ref: 'InspectionRecord' },
+      templateName: { type: String },
+      status: { type: String, enum: ['draft', 'in-progress', 'completed', 'archived'] },
+      completedAt: { type: Date },
+      summary: { type: String },
+    },
     criticality: {
       type: String,
       enum: ['high', 'medium', 'low'],

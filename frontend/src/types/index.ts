@@ -43,7 +43,13 @@ export type {
 export type Vendor = VendorSummary;
 export type { UploadedFile, UploadResponse } from '@backend-shared/uploads';
 export type { ApiResult, TenantScoped } from '@backend-shared/http';
-export type { OnboardingState, OnboardingStep, OnboardingStepKey, PMTemplateLibraryItem } from '@backend-shared/onboarding';
+export type {
+  InspectionFormTemplate,
+  OnboardingState,
+  OnboardingStep,
+  OnboardingStepKey,
+  PMTemplateLibraryItem,
+} from '@backend-shared/onboarding';
 export type {
   Permit,
   PermitHistoryEntry,

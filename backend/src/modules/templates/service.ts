@@ -7,12 +7,14 @@ import { Types } from 'mongoose';
 import PMTask from '../../../models/PMTask';
 import type { PMContext, PMTemplateResponse } from '../pm/service';
 import { PMTemplateError } from '../pm/service';
-import { pmTemplateLibrary } from './library';
-import type { PMTemplateLibraryItem } from '../../../../shared/types/onboarding';
+import { inspectionFormLibrary, pmTemplateLibrary } from './library';
+import type { InspectionFormTemplate, PMTemplateLibraryItem } from '../../../../shared/types/onboarding';
 
 export interface PMTemplateLibraryResponse extends PMTemplateLibraryItem {}
+export interface InspectionFormLibraryResponse extends InspectionFormTemplate {}
 
 export const listTemplateLibrary = (): PMTemplateLibraryResponse[] => pmTemplateLibrary;
+export const listInspectionForms = (): InspectionFormLibraryResponse[] => inspectionFormLibrary;
 
 const formatChecklistNote = (checklist: string[]) =>
   checklist.length ? `\n\nChecklist:\n${checklist.map((item) => `• ${item}`).join('\n')}` : '';

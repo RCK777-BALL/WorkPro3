@@ -92,6 +92,7 @@ export const OnboardingWizard = () => {
   const steps = data?.steps ?? [];
   const remaining = steps.filter((step) => !step.completed).length;
   const showWizard = steps.some((step) => !step.completed);
+  const completionPct = steps.length ? Math.round(((steps.length - remaining) / steps.length) * 100) : 0;
 
   useEffect(() => {
     if (!steps.length) {
@@ -169,6 +170,13 @@ export const OnboardingWizard = () => {
               </button>
             ) : null}
           </div>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full rounded-full bg-emerald-400 transition-all"
+              style={{ width: `${completionPct}%` }}
+            />
+          </div>
+          <p className="mt-1 text-xs text-white/60">{completionPct}% complete</p>
           <p className="mt-2 text-sm text-white/70">
             {data?.reminderMessage ?? 'Complete these guided steps to unlock the full workspace.'}
           </p>

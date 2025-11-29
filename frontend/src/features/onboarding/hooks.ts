@@ -6,18 +6,22 @@ import { useMutation, useQuery, useQueryClient } from 'react-query';
 import toast from 'react-hot-toast';
 
 import { dismissOnboardingReminder, fetchOnboardingState } from '@/api/onboarding';
-import { cloneTemplateIntoTenant, fetchTemplateLibrary } from '@/api/templates';
+import { cloneTemplateIntoTenant, fetchInspectionForms, fetchTemplateLibrary } from '@/api/templates';
 import { PM_TEMPLATES_QUERY_KEY } from '@/features/pm/hooks';
 import type { OnboardingStepKey, PMTemplateLibraryItem } from '@/types';
 
 export const ONBOARDING_QUERY_KEY = ['onboarding', 'state'] as const;
 export const PM_TEMPLATE_LIBRARY_QUERY_KEY = ['templates', 'library'] as const;
+export const INSPECTION_LIBRARY_QUERY_KEY = ['templates', 'inspections'] as const;
 
 export const useOnboardingState = () =>
   useQuery({ queryKey: ONBOARDING_QUERY_KEY, queryFn: fetchOnboardingState, staleTime: 30_000 });
 
 export const usePmTemplateLibrary = () =>
   useQuery({ queryKey: PM_TEMPLATE_LIBRARY_QUERY_KEY, queryFn: fetchTemplateLibrary, staleTime: 60_000 });
+
+export const useInspectionFormLibrary = () =>
+  useQuery({ queryKey: INSPECTION_LIBRARY_QUERY_KEY, queryFn: fetchInspectionForms, staleTime: 60_000 });
 
 export const useClonePmTemplate = () => {
   const queryClient = useQueryClient();
@@ -44,9 +48,10 @@ export const useDismissOnboardingReminder = () => {
 export const useStepActionLabel = (key: OnboardingStepKey): string => {
   const labels: Record<OnboardingStepKey, string> = {
     site: 'Go to sites',
+    departments: 'Build departments',
     assets: 'Start import',
     pmTemplates: 'Open PM templates',
-    team: 'Invite teammates',
+    users: 'Invite teammates',
   };
   return labels[key];
 };

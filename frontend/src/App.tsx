@@ -67,6 +67,7 @@ import PublicRequestPage from "@/public/request";
 import RequestStatus from "@/pages/RequestStatus";
 import SubmitRequest from "@/pages/requests/SubmitRequest";
 import RequestTriage from "@/pages/requests/RequestTriage";
+import RoleManagementPage from "@/pages/RoleManagement";
 
 export default function App() {
   const navigate = useNavigate();
@@ -148,6 +149,14 @@ export default function App() {
           />
           <Route path="/maintenance" element={<Maintenance />} />
           <Route path="/permits" element={<PermitsPage />} />
+          <Route
+            path="/settings/roles"
+            element={
+              <RequirePermission permission="roles.read">
+                <RoleManagementPage />
+              </RequirePermission>
+            }
+          />
           <Route
             path="/assets"
             element={

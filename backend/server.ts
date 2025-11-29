@@ -130,19 +130,25 @@ const MONGO_URI = env.MONGO_URI;
 const RATE_LIMIT_WINDOW_MS = parseInt(env.RATE_LIMIT_WINDOW_MS, 10);
 const RATE_LIMIT_MAX = parseInt(env.RATE_LIMIT_MAX, 10);
 
+const normalizeOrigin = (origin: string | undefined) => origin?.trim().replace(/\/+$/, "").toLowerCase();
+
 const allowedOrigins = new Set<string>(
   env.CORS_ORIGIN
     .split(",")
-    .map((origin: string) => origin.trim())
-    .filter((origin: string) => origin.length > 0),
+    .map((origin: string) => normalizeOrigin(origin))
+    .filter((origin: string | undefined): origin is string => Boolean(origin)),
 );
-allowedOrigins.add("http://localhost:5173");
+
+const devOrigins = ["http://localhost:5173", "http://127.0.0.1:5173", "http://0.0.0.0:5173"];
+devOrigins.forEach((origin) => allowedOrigins.add(normalizeOrigin(origin) as string));
 
 type CorsOriginCallback = (err: Error | null, allow?: boolean) => void;
 
 const corsOptions: CorsOptions = {
   origin: (origin: string | undefined, callback: CorsOriginCallback) => {
-    if (!origin || allowedOrigins.has(origin)) {
+    const normalized = normalizeOrigin(origin);
+
+    if (!origin || (normalized && allowedOrigins.has(normalized))) {
       callback(null, true);
     } else {
       callback(new Error("Not allowed by CORS"));

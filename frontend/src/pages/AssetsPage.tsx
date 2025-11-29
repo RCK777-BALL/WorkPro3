@@ -4,7 +4,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { PlusCircle, RefreshCcw } from 'lucide-react';
+import { Pencil, PlusCircle, RefreshCcw } from 'lucide-react';
 import AssetTable from '@/components/assets/AssetTable';
 import AssetModal from '@/components/assets/AssetModal';
 import WorkOrderModal from '@/components/work-orders/WorkOrderModal';
@@ -43,6 +43,11 @@ const AssetsPage: React.FC = () => {
   const [woAsset, setWoAsset] = useState<Asset | null>(null);
   const [conflict, setConflict] = useState<SyncConflict | null>(null);
   const isFetching = useRef(false);
+
+  const normalizedAssets = useMemo(
+    () => assets.slice().sort((a, b) => a.name.localeCompare(b.name)),
+    [assets],
+  );
 
   useEffect(() => {
     const unsub = onSyncConflict(setConflict);
@@ -239,6 +244,51 @@ const AssetsPage: React.FC = () => {
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
           />
         </div>
+
+        {normalizedAssets.length > 0 && (
+          <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-neutral-600">Existing assets</p>
+                <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">Assets already created</h2>
+                <p className="text-sm text-neutral-600 dark:text-neutral-300">
+                  Quickly jump back into an asset to review details or make changes.
+                </p>
+              </div>
+              <Button variant="outline" onClick={fetchAssets} disabled={isLoading}>
+                <RefreshCcw className="mr-2 h-4 w-4" />
+                {isLoading ? 'Refreshing...' : 'Refresh list'}
+              </Button>
+            </div>
+            <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {normalizedAssets.map((asset) => (
+                <div
+                  key={asset.id}
+                  className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white/70 px-4 py-3 shadow-sm dark:border-neutral-700 dark:bg-neutral-900/60"
+                >
+                  <div>
+                    <p className="text-base font-semibold text-neutral-900 dark:text-neutral-50">{asset.name}</p>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-300">
+                      {asset.type ?? 'Type not specified'}
+                      {asset.location ? ` • ${asset.location}` : ''}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => { setSelected(asset); setModalOpen(true); }}
+                    disabled={!canManageAssets}
+                    aria-disabled={!canManageAssets}
+                    title={!canManageAssets ? t('assets.permissionWarning') : undefined}
+                  >
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edit
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {!isLoading && assets.length === 0 && (
           <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center text-neutral-700 shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">

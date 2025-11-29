@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Types, type FilterQuery } from 'mongoose';
+import { Types, type ClientSession, type FilterQuery } from 'mongoose';
 import { Parser as Json2csvParser } from 'json2csv';
 import PDFDocument from 'pdfkit';
 
@@ -16,6 +16,7 @@ import type {
   StockAdjustment,
   StockHistoryEntry,
   StockItem as StockItemResponse,
+  InventoryTransfer,
   VendorSummary,
 } from '../../../../shared/types/inventory';
 import PartModel, { type PartDocument } from './models/Part';
@@ -24,6 +25,7 @@ import PurchaseOrderModel, { type PurchaseOrderDocument } from './models/Purchas
 import LocationModel, { type LocationDocument } from './models/Location';
 import StockItemModel, { type StockItemDocument } from './models/StockItem';
 import StockHistoryModel, { type StockHistoryDocument } from './models/StockHistory';
+import InventoryTransferModel, { type InventoryTransferDocument } from './models/Transfer';
 import type {
   LocationInput,
   PartInput,
@@ -31,6 +33,7 @@ import type {
   PurchaseOrderStatusInput,
   StockAdjustmentInput,
   VendorInput,
+  InventoryTransferInput,
 } from './schemas';
 import logger from '../../../utils/logger';
 
@@ -451,6 +454,22 @@ const ensureStockItem = async (
   return stockItem;
 };
 
+const ensureLocation = async (
+  context: InventoryContext,
+  locationId: string,
+  session?: ClientSession,
+): Promise<LocationDocument> => {
+  const location = await LocationModel.findOne(
+    { _id: locationId, tenantId: context.tenantId },
+    undefined,
+    session ? { session } : undefined,
+  );
+  if (!location) {
+    throw new InventoryError('Location not found', 404);
+  }
+  return location;
+};
+
 export const listStockItems = async (context: InventoryContext): Promise<StockItemResponse[]> => {
   const tenantId = toObjectId(context.tenantId, 'tenant id');
   const query: Record<string, unknown> = { tenantId };
@@ -474,8 +493,9 @@ const recordStockHistory = async (
   stockItem: StockItemDocument,
   delta: number,
   reason?: string,
+  session?: ClientSession,
 ): Promise<StockHistoryDocument> => {
-  const location = await LocationModel.findById(stockItem.location);
+  const location = await LocationModel.findById(stockItem.location, undefined, session ? { session } : undefined);
   return StockHistoryModel.create({
     tenantId: toObjectId(context.tenantId, 'tenant id'),
     siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
@@ -490,7 +510,7 @@ const recordStockHistory = async (
     delta,
     reason,
     createdBy: context.userId ? toObjectId(context.userId, 'user id') : undefined,
-  });
+  }, { session });
 };
 
 export const adjustStock = async (
@@ -523,6 +543,132 @@ export const adjustStock = async (
   }
 
   return response;
+};
+
+export const transferStock = async (
+  context: InventoryContext,
+  input: InventoryTransferInput,
+): Promise<InventoryTransfer> => {
+  const tenantId = toObjectId(context.tenantId, 'tenant id');
+  const partId = toObjectId(input.partId, 'part id');
+  const fromLocationId = toObjectId(input.fromLocationId, 'from location id');
+  const toLocationId = toObjectId(input.toLocationId, 'to location id');
+
+  if (fromLocationId.equals(toLocationId)) {
+    throw new InventoryError('Source and destination locations must differ', 400);
+  }
+
+  const quantity = Number(input.quantity);
+  if (!Number.isFinite(quantity) || quantity <= 0) {
+    throw new InventoryError('Quantity must be greater than zero', 400);
+  }
+
+  const session = await StockItemModel.startSession();
+  try {
+    let transferDoc: ({ _id: Types.ObjectId } & InventoryTransferDocument) | null = null;
+    await session.withTransaction(async () => {
+      const [part, fromLocation, toLocation] = await Promise.all([
+        PartModel.findOne({ _id: partId, tenantId }, undefined, { session }),
+        ensureLocation(context, fromLocationId.toString(), session),
+        ensureLocation(context, toLocationId.toString(), session),
+      ]);
+
+      if (!part) {
+        throw new InventoryError('Part not found', 404);
+      }
+
+      const sourceQuery: FilterQuery<StockItemDocument> = {
+        tenantId,
+        part: part._id,
+        location: fromLocation._id,
+      };
+      if (context.siteId) sourceQuery.siteId = maybeObjectId(context.siteId);
+
+      const destinationQuery: FilterQuery<StockItemDocument> = {
+        tenantId,
+        part: part._id,
+        location: toLocation._id,
+      };
+      if (context.siteId) destinationQuery.siteId = maybeObjectId(context.siteId);
+
+      const fromStock = await StockItemModel.findOne(sourceQuery, undefined, { session });
+      if (!fromStock) {
+        throw new InventoryError('Source stock not found', 404);
+      }
+      if (fromStock.quantity < quantity) {
+        throw new InventoryError('Insufficient stock at source location', 400);
+      }
+
+      fromStock.quantity -= quantity;
+      await fromStock.save({ session });
+
+      let toStock = await StockItemModel.findOne(destinationQuery, undefined, { session });
+      if (!toStock) {
+        toStock = new StockItemModel({ ...destinationQuery, quantity: 0 });
+      }
+      toStock.quantity += quantity;
+      await toStock.save({ session });
+
+      await recordStockHistory(
+        context,
+        fromStock,
+        -quantity,
+        `Transfer to ${toLocation.name ?? toLocation._id.toString()}`,
+        session,
+      );
+      await recordStockHistory(
+        context,
+        toStock,
+        quantity,
+        `Transfer from ${fromLocation.name ?? fromLocation._id.toString()}`,
+        session,
+      );
+
+      const [createdTransfer] = await InventoryTransferModel.create(
+        [
+          {
+            tenantId,
+            siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
+            part: part._id,
+            fromLocation: fromLocation._id,
+            toLocation: toLocation._id,
+            quantity,
+            createdBy: context.userId ? toObjectId(context.userId, 'user id') : undefined,
+          },
+        ],
+        { session },
+      );
+
+      transferDoc = createdTransfer;
+    });
+
+    if (!transferDoc) {
+      throw new InventoryError('Unable to record transfer', 500);
+    }
+
+    const transfer: InventoryTransfer = {
+      id: (transferDoc._id as Types.ObjectId).toString(),
+      tenantId: tenantId.toString(),
+      partId: partId.toString(),
+      fromLocationId: fromLocationId.toString(),
+      toLocationId: toLocationId.toString(),
+      quantity,
+      createdAt: transferDoc.createdAt instanceof Date
+        ? transferDoc.createdAt.toISOString()
+        : new Date().toISOString(),
+    };
+
+    if (context.siteId) {
+      transfer.siteId = context.siteId;
+    }
+    if (transferDoc.createdBy) {
+      transfer.createdBy = transferDoc.createdBy.toString();
+    }
+
+    return transfer;
+  } finally {
+    await session.endSession();
+  }
 };
 
 export const listStockHistory = async (context: InventoryContext): Promise<StockHistoryEntry[]> => {

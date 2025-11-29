@@ -68,7 +68,7 @@ export const exportAssetsToExcel = async (assets: Asset[], filename: string) => 
     Location: asset.location,
     Status: asset.status,
     'Last Serviced': asset.lastServiced,
-    'Warranty Expiry': asset.warrantyExpiry
+    'Warranty Expiry': asset.warrantyEnd ?? asset.warrantyExpiry
   }));
 
   const headers = rows.length ? Object.keys(rows[0]) : [];
@@ -108,7 +108,7 @@ export const exportAssetsToPDF = (assets: Asset[], filename: string) => {
     yPos += 7;
     doc.text(`Last Serviced: ${asset.lastServiced || 'N/A'}`, 25, yPos);
     yPos += 7;
-    doc.text(`Warranty Expiry: ${asset.warrantyExpiry || 'N/A'}`, 25, yPos);
+    doc.text(`Warranty Expiry: ${asset.warrantyEnd || asset.warrantyExpiry || 'N/A'}`, 25, yPos);
     yPos += 15;
   });
 

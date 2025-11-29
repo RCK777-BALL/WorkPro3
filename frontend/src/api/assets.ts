@@ -54,6 +54,19 @@ export type AssetWorkOrderSummary = {
   dueDate?: string;
 };
 
+export type AssetDowntimeLog = {
+  id: string;
+  start: string;
+  end?: string;
+  reason?: string;
+  durationMinutes: number;
+};
+
+export type AssetReliabilitySummary = {
+  mttrHours: number;
+  mtbfHours: number;
+};
+
 export type AssetCostRollup = {
   total: number;
   maintenance: number;
@@ -84,6 +97,12 @@ export type AssetDetailResponse = {
     modelName?: string;
     manufacturer?: string;
     purchaseDate?: string;
+    warrantyExpiry?: string;
+    warrantyStart?: string;
+    warrantyEnd?: string;
+    purchaseCost?: number;
+    expectedLifeMonths?: number;
+    replacementDate?: string;
     installationDate?: string;
     siteId?: string;
     plantId?: string;
@@ -97,6 +116,8 @@ export type AssetDetailResponse = {
   pmTemplates: AssetPmTemplate[];
   openWorkOrders: AssetWorkOrderSummary[];
   costRollups: AssetCostRollup;
+  downtimeLogs: AssetDowntimeLog[];
+  reliability: AssetReliabilitySummary;
 };
 
 export const fetchAssetDetails = async (assetId: string): Promise<AssetDetailResponse> => {

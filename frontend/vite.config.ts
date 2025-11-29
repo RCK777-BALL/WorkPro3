@@ -11,4 +11,8 @@ export default defineConfig({
       '@backend-shared': path.resolve(__dirname, '../backend/shared'),
     },
   },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+  },
 });

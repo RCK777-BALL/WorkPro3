@@ -2,57 +2,49 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Fragment, useEffect, useMemo, useRef } from "react";
-import { Bell, CheckCircle2, Clock, Info } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Bell, CheckCircle2, Clock3, Info, Link2 } from "lucide-react";
 
+import { formatDistanceToNow } from "date-fns";
 import clsx from "clsx";
+
+import {
+  fetchNotifications,
+  markNotificationRead,
+} from "@/api/notifications";
+import { type NotificationType } from "@/types";
+import { getNotificationsSocket, closeNotificationsSocket } from "@/utils/notificationsSocket";
 
 type NotificationMenuProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
-type Notification = {
-  id: string;
-  title: string;
-  description: string;
-  timeAgo: string;
-  tone: "info" | "success" | "warning";
-};
-
-const NOTIFICATIONS: Notification[] = [
-  {
-    id: "scheduled-maintenance",
-    title: "Scheduled maintenance ready",
-    description: "Line 4 PM starts in 30 minutes.",
-    timeAgo: "5m ago",
-    tone: "info",
-  },
-  {
-    id: "work-order-complete",
-    title: "WO-2486 closed",
-    description: "Technician Rivera completed the repair.",
-    timeAgo: "32m ago",
-    tone: "success",
-  },
-  {
-    id: "safety-check",
-    title: "Safety check required",
-    description: "Forklift 12 requires a daily inspection.",
-    timeAgo: "1h ago",
-    tone: "warning",
-  },
-];
-
-const toneToClasses: Record<Notification["tone"], string> = {
+const toneToClasses: Record<NotificationType["type"], string> = {
   info: "bg-sky-500/10 text-sky-600 dark:text-sky-300",
-  success: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
   warning: "bg-amber-500/10 text-amber-600 dark:text-amber-300",
+  critical: "bg-rose-500/10 text-rose-600 dark:text-rose-300",
 };
+
+const normalizeNotification = (value: Partial<NotificationType> & { _id?: string }): NotificationType => ({
+  id: value._id ?? value.id ?? crypto.randomUUID(),
+  title: value.title ?? "Notification",
+  message: value.message ?? "",
+  type: value.type ?? "info",
+  category: value.category ?? "updated",
+  deliveryState: value.deliveryState ?? "pending",
+  createdAt: value.createdAt ?? new Date().toISOString(),
+  read: value.read ?? false,
+  workOrderId: value.workOrderId,
+  inventoryItemId: value.inventoryItemId,
+  pmTaskId: value.pmTaskId,
+});
 
 export default function NotificationMenu({ open, onOpenChange }: NotificationMenuProps) {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const [items, setItems] = useState<NotificationType[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -79,7 +71,58 @@ export default function NotificationMenu({ open, onOpenChange }: NotificationMen
     };
   }, [open, onOpenChange]);
 
-  const unreadCount = useMemo(() => NOTIFICATIONS.length, []);
+  useEffect(() => {
+    if (!open || items.length > 0 || loading) return;
+
+    const load = async () => {
+      setLoading(true);
+      try {
+        const response = await fetchNotifications({ limit: 10 });
+        const list = Array.isArray(response) ? response : (response as any).items ?? [];
+        setItems(list.map((entry) => normalizeNotification(entry)));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void load();
+  }, [open, items.length, loading]);
+
+  useEffect(() => {
+    const socket = getNotificationsSocket();
+    const handleIncoming = (notification: NotificationType) => {
+      setItems((prev) => [normalizeNotification(notification), ...prev].slice(0, 10));
+    };
+    socket.on('notification', handleIncoming);
+    return () => {
+      socket.off('notification', handleIncoming);
+      closeNotificationsSocket();
+    };
+  }, []);
+
+  const unreadCount = useMemo(() => items.filter((item) => !item.read).length, [items]);
+
+  const markOne = async (id: string) => {
+    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, read: true } : item)));
+    try {
+      await markNotificationRead(id);
+    } catch (err) {
+      console.error('Failed to mark notification as read', err);
+    }
+  };
+
+  const markAll = async () => {
+    const unreadIds = items.filter((item) => !item.read).map((item) => item.id);
+    setItems((prev) => prev.map((item) => ({ ...item, read: true })));
+    await Promise.all(unreadIds.map((id) => markNotificationRead(id)));
+    onOpenChange(false);
+  };
+
+  const renderIcon = (notification: NotificationType) => {
+    if (notification.type === 'critical') return <Info className="h-4 w-4" />;
+    if (notification.type === 'warning') return <Clock3 className="h-4 w-4" />;
+    return <CheckCircle2 className="h-4 w-4" />;
+  };
 
   return (
     <div className="relative">
@@ -109,45 +152,72 @@ export default function NotificationMenu({ open, onOpenChange }: NotificationMen
           ref={panelRef}
           role="dialog"
           aria-label="Notifications"
-          className="absolute right-0 mt-3 w-80 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/95 text-slate-100 shadow-2xl backdrop-blur"
+          className="absolute right-0 z-30 mt-3 w-96 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/95 text-slate-100 shadow-2xl backdrop-blur"
         >
           <header className="flex items-center justify-between border-b border-slate-800 bg-slate-900 px-4 py-3 text-sm font-medium text-slate-200">
             <span>Notifications</span>
-            <button
-              type="button"
-              className="text-xs text-primary-300 transition hover:text-primary-200 focus:outline-none"
-              onClick={() => onOpenChange(false)}
-            >
-              Mark all as read
-            </button>
+            <div className="flex items-center gap-2 text-xs">
+              <button
+                type="button"
+                className="text-primary-300 transition hover:text-primary-200 focus:outline-none"
+                onClick={markAll}
+                disabled={items.length === 0}
+              >
+                Mark all as read
+              </button>
+              <a
+                href="/notifications"
+                className="inline-flex items-center gap-1 text-primary-200 hover:text-primary-100"
+              >
+                <Link2 className="h-3 w-3" /> Feed
+              </a>
+            </div>
           </header>
           <div className="divide-y divide-slate-800 bg-slate-900/70">
-            {NOTIFICATIONS.map((notification) => (
-              <Fragment key={notification.id}>
-                <article className="flex items-start gap-3 px-4 py-3">
-                  <span
-                    className={clsx(
-                      "mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full",
-                      toneToClasses[notification.tone],
-                    )}
-                    aria-hidden
-                  >
-                    {notification.tone === "success" ? (
-                      <CheckCircle2 className="h-4 w-4" />
-                    ) : notification.tone === "warning" ? (
-                      <Info className="h-4 w-4" />
-                    ) : (
-                      <Clock className="h-4 w-4" />
-                    )}
-                  </span>
-                  <div className="flex-1 text-sm text-slate-200">
+            {items.map((notification) => (
+              <article key={notification.id} className="flex items-start gap-3 px-4 py-3">
+                <span
+                  className={clsx(
+                    "mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full",
+                    toneToClasses[notification.type],
+                  )}
+                  aria-hidden
+                >
+                  {renderIcon(notification)}
+                </span>
+                <div className="flex-1 text-sm text-slate-200">
+                  <div className="flex items-center justify-between gap-2">
                     <p className="font-medium text-slate-100">{notification.title}</p>
-                    <p className="mt-1 text-slate-300">{notification.description}</p>
-                    <p className="mt-2 text-xs text-slate-500">{notification.timeAgo}</p>
+                    <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-400">
+                      {notification.category.replace('_', ' ')}
+                    </span>
                   </div>
-                </article>
-              </Fragment>
+                  <p className="mt-1 text-slate-300">{notification.message}</p>
+                  <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
+                    <span>{formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}</span>
+                    {!notification.read ? (
+                      <button
+                        type="button"
+                        className="text-primary-200 hover:text-primary-100"
+                        onClick={() => markOne(notification.id)}
+                      >
+                        Mark read
+                      </button>
+                    ) : (
+                      <span className="text-emerald-400">Delivered</span>
+                    )}
+                  </div>
+                </div>
+              </article>
             ))}
+
+            {items.length === 0 && !loading && (
+              <div className="px-4 py-8 text-center text-sm text-slate-500">No notifications yet</div>
+            )}
+
+            {loading && (
+              <div className="px-4 py-4 text-center text-xs text-slate-400">Loading notifications…</div>
+            )}
           </div>
         </div>
       ) : null}

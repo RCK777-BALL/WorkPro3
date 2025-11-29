@@ -21,6 +21,11 @@ export interface Asset extends TenantScoped {
   modelName?: string | undefined;
   manufacturer?: string | undefined;
   purchaseDate?: string | undefined;
+  warrantyStart?: string | undefined;
+  warrantyEnd?: string | undefined;
+  purchaseCost?: number | undefined;
+  expectedLifeMonths?: number | undefined;
+  replacementDate?: string | undefined;
   installationDate?: string | undefined;
   line?: string | undefined;
   station?: string | undefined;

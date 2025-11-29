@@ -10,6 +10,7 @@ import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import { SimplePieChart } from '@/components/charts/SimplePieChart';
 import { SimpleBarChart } from '@/components/charts/SimpleBarChart';
+import { SimpleLineChart } from '@/components/charts/SimpleLineChart';
 import http from '@/lib/http';
 
 import {
@@ -48,35 +49,66 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
   const [exporting, setExporting] = useState<ExportFormat | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
 
+  const kpis = data?.kpis;
+  const pmCompliance = data?.pmCompliance;
+  const workOrderVolume = data?.workOrderVolume;
+
   const statusData = useMemo(() => {
-    if (!data) return [];
-    return data.statuses.map((entry, index) => ({
+    if (!kpis) return [];
+    return kpis.statuses.map((entry, index) => ({
       label: entry.status.replace(/_/g, ' '),
       value: entry.count,
       color: STATUS_COLORS[index % STATUS_COLORS.length],
     }));
-  }, [data]);
+  }, [kpis]);
 
   const performanceData = useMemo(() => {
-    if (!data) return [];
+    if (!kpis) return [];
     return [
-      { label: 'Downtime (h)', value: Number(data.downtimeHours.toFixed(1)), color: '#fbbf24' },
-      { label: 'MTTR (h)', value: Number(data.mttr.toFixed(2)), color: '#34d399' },
-      { label: 'MTBF (h)', value: Number(data.mtbf.toFixed(2)), color: '#60a5fa' },
+      { label: 'Downtime (h)', value: Number(kpis.downtimeHours.toFixed(1)), color: '#fbbf24' },
+      { label: 'MTTR (h)', value: Number(kpis.mttr.toFixed(2)), color: '#34d399' },
+      { label: 'MTBF (h)', value: Number(kpis.mtbf.toFixed(2)), color: '#60a5fa' },
     ];
-  }, [data]);
+  }, [kpis]);
 
   const summaryRows = useMemo(() => {
-    if (!data) return [];
+    if (!kpis) return [];
     return [
-      { label: 'Overdue work orders', value: numberFormatter.format(data.overdue) },
-      { label: 'PM compliance', value: `${data.pmCompliance.completed}/${data.pmCompliance.total} (${formatPercent(data.pmCompliance.percentage)})` },
-      { label: 'Downtime hours', value: data.downtimeHours.toFixed(1) },
-      { label: 'Maintenance cost', value: currencyFormatter.format(data.maintenanceCost) },
-      { label: 'MTTR', value: `${data.mttr.toFixed(2)} h` },
-      { label: 'MTBF', value: `${data.mtbf.toFixed(2)} h` },
+      { label: 'Overdue work orders', value: numberFormatter.format(kpis.overdue) },
+      {
+        label: 'PM compliance',
+        value: `${kpis.pmCompliance.completed}/${kpis.pmCompliance.total} (${formatPercent(kpis.pmCompliance.percentage)})`,
+      },
+      { label: 'Downtime hours', value: kpis.downtimeHours.toFixed(1) },
+      { label: 'Maintenance cost', value: currencyFormatter.format(kpis.maintenanceCost) },
+      { label: 'MTTR', value: `${kpis.mttr.toFixed(2)} h` },
+      { label: 'MTBF', value: `${kpis.mtbf.toFixed(2)} h` },
     ];
-  }, [data]);
+  }, [kpis]);
+
+  const mtbfTrend = useMemo(
+    () => data?.mtbf.trend.map((point) => ({ label: point.period, value: point.value })) ?? [],
+    [data?.mtbf.trend],
+  );
+
+  const pmTrend = useMemo(
+    () => pmCompliance?.trend.map((point) => ({ label: point.period, value: point.value })) ?? [],
+    [pmCompliance?.trend],
+  );
+
+  const workOrderTrend = useMemo(
+    () => workOrderVolume?.trend.map((point) => ({ label: point.period, value: point.value })) ?? [],
+    [workOrderVolume?.trend],
+  );
+
+  const workOrderStatusBreakdown = useMemo(() => {
+    if (!workOrderVolume) return [];
+    return workOrderVolume.byStatus.map((entry, index) => ({
+      label: entry.status.replace(/_/g, ' '),
+      value: entry.count,
+      color: STATUS_COLORS[index % STATUS_COLORS.length],
+    }));
+  }, [workOrderVolume]);
 
   const handleExport = async (format: ExportFormat) => {
     setExporting(format);
@@ -161,7 +193,7 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
               <p className="text-xs uppercase tracking-wider text-white/60">Status distribution</p>
               <p className="text-sm text-white/80">Work order mix by state</p>
             </div>
-            {loading && !data ? <span className="text-xs text-white/60">Loading…</span> : null}
+            {loading && !kpis ? <span className="text-xs text-white/60">Loading…</span> : null}
           </div>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <SimplePieChart data={statusData} className="h-48" />
@@ -187,7 +219,7 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
               <p className="text-xs uppercase tracking-wider text-white/60">Downtime & reliability</p>
               <p className="text-sm text-white/80">MTTR, MTBF, and downtime hours</p>
             </div>
-            {loading && !data ? <span className="text-xs text-white/60">Loading…</span> : null}
+            {loading && !kpis ? <span className="text-xs text-white/60">Loading…</span> : null}
           </div>
           <div className="mt-4 h-48">
             <SimpleBarChart data={performanceData} className="h-full" />
@@ -200,7 +232,7 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
             <p className="text-xs uppercase tracking-wider text-white/60">Summary</p>
             <p className="text-sm text-white/80">Key KPI values for the selected period</p>
           </div>
-          {loading && data ? <span className="text-xs text-white/60">Refreshing…</span> : null}
+          {loading && kpis ? <span className="text-xs text-white/60">Refreshing…</span> : null}
         </div>
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-sm">
@@ -221,22 +253,85 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
             </tbody>
           </table>
         </div>
-        {data ? (
+        {pmCompliance ? (
           <div className="mt-4">
             <p className="text-xs uppercase tracking-wider text-white/60">PM compliance trend</p>
             <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10">
               <div
                 className="h-full rounded-full bg-emerald-400"
-                style={{ width: `${Math.min(data.pmCompliance.percentage, 100).toFixed(1)}%` }}
+                style={{ width: `${Math.min(pmCompliance.percentage, 100).toFixed(1)}%` }}
               />
             </div>
             <p className="mt-1 text-xs text-white/70">
-              {formatPercent(data.pmCompliance.percentage)} compliance across {numberFormatter.format(data.pmCompliance.total)} PM
-              orders
+              {formatPercent(pmCompliance.percentage)} compliance across {numberFormatter.format(pmCompliance.total)} PM orders
             </p>
           </div>
         ) : null}
       </section>
+      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+        <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-wider text-white/60">MTBF trend</p>
+              <p className="text-sm text-white/80">Mean time between failures over time</p>
+            </div>
+            {data?.mtbf ? (
+              <span className="text-xs text-white/70">{data.mtbf.value.toFixed(2)} h</span>
+            ) : null}
+          </div>
+          <div className="mt-4 h-48">
+            <SimpleLineChart data={mtbfTrend} className="h-full" stroke="#60a5fa" />
+          </div>
+        </section>
+        <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-wider text-white/60">PM compliance</p>
+              <p className="text-sm text-white/80">Completion rate for preventive work</p>
+            </div>
+            {pmCompliance ? (
+              <span className="text-xs text-emerald-200">{formatPercent(pmCompliance.percentage)}</span>
+            ) : null}
+          </div>
+          <div className="mt-4 h-48">
+            <SimpleLineChart data={pmTrend} className="h-full" stroke="#34d399" showDots />
+          </div>
+          {pmCompliance ? (
+            <p className="mt-3 text-xs text-white/70">
+              {numberFormatter.format(pmCompliance.completed)} of {numberFormatter.format(pmCompliance.total)} PM orders completed
+              in range
+            </p>
+          ) : null}
+        </section>
+        <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-wider text-white/60">Work order volume</p>
+              <p className="text-sm text-white/80">Daily creation trend and status mix</p>
+            </div>
+            {workOrderVolume ? (
+              <span className="text-xs text-white/70">{numberFormatter.format(workOrderVolume.total)} total</span>
+            ) : null}
+          </div>
+          <div className="mt-4 h-48">
+            <SimpleBarChart data={workOrderTrend} className="h-full" />
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {workOrderStatusBreakdown.map((entry) => (
+              <div key={entry.label} className="flex items-center justify-between text-xs text-white/80">
+                <span className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                  {entry.label}
+                </span>
+                <span className="font-semibold text-white">{numberFormatter.format(entry.value)}</span>
+              </div>
+            ))}
+            {!workOrderStatusBreakdown.length && !loading ? (
+              <p className="text-xs text-white/60">No work order volume in range.</p>
+            ) : null}
+          </div>
+        </section>
+      </div>
     </Card>
   );
 }

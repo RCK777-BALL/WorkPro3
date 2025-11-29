@@ -92,6 +92,12 @@ export interface AssetDetailResponse {
     criticality?: string;
     location?: string;
     serialNumber?: string;
+    purchaseDate?: string;
+    warrantyStart?: string;
+    warrantyEnd?: string;
+    purchaseCost?: number;
+    expectedLifeMonths?: number;
+    replacementDate?: string;
     siteId?: string;
     plantId?: string;
     lineId?: string;
@@ -120,11 +126,15 @@ export interface AssetDetailResponse {
     unitCost?: number;
     location?: string;
   }>;
-  pmTasks: Array<{
-    id: string;
+  pmTemplates: Array<{
+    templateId: string;
+    assignmentId: string;
     title: string;
+    interval: string;
     active: boolean;
-    lastGeneratedAt?: string;
+    nextDue?: string;
+    usageMetric?: string;
+    usageTarget?: number;
   }>;
   workOrders: Array<{
     id: string;
@@ -680,6 +690,12 @@ type AssetInput = {
   serialNumber?: string;
   modelName?: string;
   manufacturer?: string;
+  purchaseDate?: string | Date;
+  warrantyStart?: string | Date;
+  warrantyEnd?: string | Date;
+  purchaseCost?: number;
+  expectedLifeMonths?: number;
+  replacementDate?: string | Date;
   criticality?: string;
   departmentId?: string;
   lineId?: string;
@@ -735,6 +751,12 @@ const toAssetPayload = (asset: AssetDoc) => ({
   description: asset.description,
   notes: asset.notes,
   location: asset.location,
+  purchaseDate: asset.purchaseDate ? asset.purchaseDate.toISOString() : undefined,
+  warrantyStart: asset.warrantyStart ? asset.warrantyStart.toISOString() : undefined,
+  warrantyEnd: asset.warrantyEnd ? asset.warrantyEnd.toISOString() : undefined,
+  purchaseCost: asset.purchaseCost,
+  expectedLifeMonths: asset.expectedLifeMonths,
+  replacementDate: asset.replacementDate ? asset.replacementDate.toISOString() : undefined,
   departmentId: asset.departmentId ? asset.departmentId.toString() : undefined,
   lineId: asset.lineId ? asset.lineId.toString() : undefined,
   stationId: asset.stationId ? asset.stationId.toString() : undefined,
@@ -773,6 +795,12 @@ export const createAsset = async (context: Context, payload: AssetInput) => {
     serialNumber: payload.serialNumber,
     modelName: payload.modelName,
     manufacturer: payload.manufacturer,
+    purchaseDate: payload.purchaseDate,
+    warrantyStart: payload.warrantyStart,
+    warrantyEnd: payload.warrantyEnd,
+    purchaseCost: payload.purchaseCost,
+    expectedLifeMonths: payload.expectedLifeMonths,
+    replacementDate: payload.replacementDate,
     criticality: payload.criticality ?? 'medium',
     tenantId: context.tenantId,
     plant: resolved.plantId,
@@ -816,6 +844,24 @@ export const updateAsset = async (
   }
   if (typeof payload.manufacturer === 'string') {
     update.manufacturer = payload.manufacturer;
+  }
+  if (payload.purchaseDate) {
+    update.purchaseDate = payload.purchaseDate;
+  }
+  if (payload.warrantyStart) {
+    update.warrantyStart = payload.warrantyStart;
+  }
+  if (payload.warrantyEnd) {
+    update.warrantyEnd = payload.warrantyEnd;
+  }
+  if (payload.purchaseCost !== undefined) {
+    update.purchaseCost = payload.purchaseCost;
+  }
+  if (payload.expectedLifeMonths !== undefined) {
+    update.expectedLifeMonths = payload.expectedLifeMonths;
+  }
+  if (payload.replacementDate) {
+    update.replacementDate = payload.replacementDate;
   }
   if (typeof payload.criticality === 'string') {
     update.criticality = payload.criticality;
@@ -861,6 +907,12 @@ export const duplicateAsset = async (
     serialNumber: asset.serialNumber,
     modelName: asset.modelName,
     manufacturer: asset.manufacturer,
+    purchaseDate: asset.purchaseDate,
+    warrantyStart: asset.warrantyStart,
+    warrantyEnd: asset.warrantyEnd,
+    purchaseCost: asset.purchaseCost,
+    expectedLifeMonths: asset.expectedLifeMonths,
+    replacementDate: asset.replacementDate,
     criticality: asset.criticality,
     tenantId: context.tenantId,
     plant: asset.plant,
@@ -902,16 +954,57 @@ const flattenHistory = (history: WorkHistorySource): AssetDetailResponse['histor
       return flattened;
     });
 
+const toPmTemplateSummary = (
+  template: PMTaskDocument,
+  assetId: string,
+): AssetDetailResponse['pmTemplates'] => {
+  const assignments = Array.from(template.assignments ?? []);
+  return assignments
+    .filter((assignment) => assignment.asset?.toString() === assetId)
+    .map((assignment) => {
+      const summary: AssetDetailResponse['pmTemplates'][number] = {
+        templateId: template._id?.toString() ?? '',
+        assignmentId: assignment._id?.toString() ?? '',
+        title: template.title,
+        interval: assignment.interval,
+        active: Boolean(template.active),
+      };
+
+      if (assignment.nextDue) {
+        summary.nextDue = assignment.nextDue.toISOString();
+      }
+
+      if (assignment.usageMetric !== undefined) {
+        summary.usageMetric = assignment.usageMetric;
+      }
+
+      if (assignment.usageTarget !== undefined) {
+        summary.usageTarget = assignment.usageTarget;
+      }
+
+      return summary;
+    });
+};
+
 export const getAssetDetail = async (context: Context, assetId: string): Promise<AssetDetailResponse> => {
   const asset = await Asset.findOne({ _id: assetId, tenantId: context.tenantId });
   if (!asset) {
     throw new HierarchyError('Asset not found', 404);
   }
 
-  const [history, documents, pmTasks, workOrders, parts] = await Promise.all([
+  const [history, documents, pmTemplatesRaw, workOrders, parts] = await Promise.all([
     WorkHistory.find({ tenantId: context.tenantId, asset: assetId }).limit(20).lean(),
     DocumentModel.find({ asset: assetId }).sort({ createdAt: -1 }).limit(20).lean(),
-    PMTask.find({ tenantId: context.tenantId, asset: assetId }).lean(),
+    PMTask.find({
+      tenantId: context.tenantId,
+      $or: [
+        { asset: assetId },
+        { assignments: { $elemMatch: { asset: assetId } } },
+        { _id: { $in: Array.from(asset.pmTemplateIds ?? []) } },
+      ],
+    })
+      .select('title active assignments')
+      .lean(),
     WorkOrderModel.find({ tenantId: context.tenantId, assetId }).sort({ updatedAt: -1 }).limit(20).lean(),
     InventoryItem.find({ tenantId: context.tenantId, asset: assetId }).lean(),
   ]);
@@ -943,6 +1036,24 @@ export const getAssetDetail = async (context: Context, assetId: string): Promise
   }
   if (asset.criticality) {
     assetResponse.criticality = asset.criticality;
+  }
+  if (asset.purchaseDate) {
+    assetResponse.purchaseDate = asset.purchaseDate.toISOString();
+  }
+  if (asset.warrantyStart) {
+    assetResponse.warrantyStart = asset.warrantyStart.toISOString();
+  }
+  if (asset.warrantyEnd) {
+    assetResponse.warrantyEnd = asset.warrantyEnd.toISOString();
+  }
+  if (asset.purchaseCost !== undefined) {
+    assetResponse.purchaseCost = asset.purchaseCost;
+  }
+  if (asset.expectedLifeMonths !== undefined) {
+    assetResponse.expectedLifeMonths = asset.expectedLifeMonths;
+  }
+  if (asset.replacementDate) {
+    assetResponse.replacementDate = asset.replacementDate.toISOString();
   }
   if (asset.location !== undefined) {
     assetResponse.location = asset.location;
@@ -1001,18 +1112,9 @@ export const getAssetDetail = async (context: Context, assetId: string): Promise
       }
       return partResponse;
     }),
-    pmTasks: pmTasks.map((task) => {
-      const pmTaskResponse: AssetDetailResponse['pmTasks'][number] = {
-        id: task._id.toString(),
-        title: task.title,
-        active: task.active,
-      };
-      const lastGeneratedAt = task.lastGeneratedAt?.toISOString();
-      if (lastGeneratedAt) {
-        pmTaskResponse.lastGeneratedAt = lastGeneratedAt;
-      }
-      return pmTaskResponse;
-    }),
+    pmTemplates: (pmTemplatesRaw as unknown as PMTaskDocument[]).flatMap((template) =>
+      toPmTemplateSummary(template, assetId),
+    ),
     workOrders: workOrders.map((order) => {
       const workOrderResponse: AssetDetailResponse['workOrders'][number] = {
         id: order._id.toString(),

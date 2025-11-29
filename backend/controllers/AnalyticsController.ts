@@ -13,11 +13,17 @@ import {
   getCorporateSiteSummaries,
   getCorporateOverview,
   getPmWhatIfSimulations,
+  getDashboardMtbf,
+  getDashboardPmCompliance,
+  getDashboardWorkOrderVolume,
   type AnalyticsFilters,
   type KPIResult,
   type TrendResult,
   type DashboardKpiResult,
   type PmOptimizationWhatIfResponse,
+  type MetricWithTrend,
+  type PmComplianceMetric,
+  type WorkOrderVolumeMetric,
 } from '../services/analytics';
 import { escapeXml } from '../utils/escapeXml';
 import { sendResponse } from '../utils/sendResponse';
@@ -52,7 +58,7 @@ function parseFilters(req: Request): AnalyticsFilters {
   }
   const assetIds = parseList(req.query.assetIds);
   if (assetIds) filters.assetIds = assetIds;
-  const siteIds = parseList(req.query.siteIds);
+  const siteIds = parseList(req.query.siteIds) ?? (req.siteId ? [req.siteId] : undefined);
   if (siteIds) filters.siteIds = siteIds;
   return filters;
 }
@@ -209,6 +215,48 @@ export const dashboardKpiJson = async (
   try {
     const filters = parseFilters(req);
     const data = await getDashboardKpiSummary(req.tenantId!, filters);
+    sendResponse(res, data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const dashboardMtbfJson = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const filters = parseFilters(req);
+    const data: MetricWithTrend = await getDashboardMtbf(req.tenantId!, filters);
+    sendResponse(res, data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const dashboardPmComplianceJson = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const filters = parseFilters(req);
+    const data: PmComplianceMetric = await getDashboardPmCompliance(req.tenantId!, filters);
+    sendResponse(res, data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const dashboardWorkOrderVolumeJson = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const filters = parseFilters(req);
+    const data: WorkOrderVolumeMetric = await getDashboardWorkOrderVolume(req.tenantId!, filters);
     sendResponse(res, data);
   } catch (err) {
     next(err);

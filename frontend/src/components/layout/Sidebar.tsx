@@ -128,6 +128,14 @@ const navItems: Record<NavItemId, NavItem> = {
     section: "plant",
     permission: "hierarchy.read",
   },
+  "asset-scan": {
+    id: "asset-scan",
+    label: "Scan Assets",
+    to: "/assets/scan",
+    icon: Scan,
+    section: "operations",
+    permission: "hierarchy.read",
+  },
   departments: {
     id: "departments",
     label: "Departments",

@@ -12,6 +12,7 @@ export type NavItemId =
   | 'lines'
   | 'stations'
   | 'assets'
+  | 'asset-scan'
   | 'teams'
   | 'reports'
   | 'work-orders'
@@ -38,6 +39,7 @@ const defaultOrder: NavItemId[] = [
   'lines',
   'stations',
   'assets',
+  'asset-scan',
   'teams',
   'reports',
   'work-orders',

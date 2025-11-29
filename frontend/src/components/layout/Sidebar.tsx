@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   ClipboardList,
   Cpu,
+  ListChecks,
   Factory,
   FileStack,
   FolderKanban,
@@ -112,6 +113,14 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/permits",
     icon: CheckCircle2,
     section: "operations",
+  },
+  "pm-templates": {
+    id: "pm-templates",
+    label: "PM Templates",
+    to: "/pm/templates",
+    icon: ListChecks,
+    section: "operations",
+    permission: "pm.read",
   },
   maintenance: {
     id: "maintenance",

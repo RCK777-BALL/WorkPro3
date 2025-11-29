@@ -481,6 +481,9 @@ export interface Notification {
   deliveryState: 'pending' | 'queued' | 'sent' | 'failed' | 'delivered';
   read: boolean;
   createdAt: string;
+  workOrderId?: string;
+  inventoryItemId?: string;
+  pmTaskId?: string;
 }
 
 export interface NotificationType {
@@ -492,6 +495,9 @@ export interface NotificationType {
   deliveryState: 'pending' | 'queued' | 'sent' | 'failed' | 'delivered';
   createdAt: string;
   read: boolean;
+  workOrderId?: string;
+  inventoryItemId?: string;
+  pmTaskId?: string;
 }
 
 export interface WorkOrderUpdatePayload {

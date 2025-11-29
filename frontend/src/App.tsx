@@ -35,6 +35,7 @@ import VendorsPage from "@/pages/VendorsPage";
 import VendorEditor from "@/pages/vendors/VendorEditor";
 import Reports from "@/pages/Reports";
 import Notifications from "@/pages/Notifications";
+import NotificationSettings from "@/pages/NotificationSettings";
 import Messages from "@/pages/Messages";
 import Documentation from "@/pages/Documentation";
 import AssetManagementGuide from "@/pages/AssetManagementGuide";
@@ -243,6 +244,7 @@ export default function App() {
             }
           />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/notifications/settings" element={<NotificationSettings />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/documentation" element={<Documentation />} />

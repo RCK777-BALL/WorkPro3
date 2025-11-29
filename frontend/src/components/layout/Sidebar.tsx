@@ -23,6 +23,7 @@ import {
   LayoutDashboard,
   LogIn,
   LogOut,
+  Bell,
   MapPin,
   MessageSquare,
   ScrollText,
@@ -270,6 +271,13 @@ const navItems: Record<NavItemId, NavItem> = {
     label: "Settings",
     to: "/settings",
     icon: Settings,
+    section: "management",
+  },
+  "notification-settings": {
+    id: "notification-settings",
+    label: "Notification Settings",
+    to: "/notifications/settings",
+    icon: Bell,
     section: "management",
   },
   imports: {

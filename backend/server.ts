@@ -91,6 +91,7 @@ import templatesRouter from "./src/modules/templates";
 import onboardingRouter from "./src/modules/onboarding";
 import assetInsightsRouter from "./src/modules/assets";
 import executiveRouter from "./src/modules/executive";
+import customReportsRouter from "./src/modules/custom-reports";
 
 import { startPMScheduler } from "./utils/PMScheduler";
 import { startCopilotSummaryJob } from "./tasks/copilotSummaries";
@@ -267,6 +268,7 @@ app.use("/api/pm/templates", pmTemplatesRouter);
 app.use("/api/templates", templatesRouter);
 app.use("/api/onboarding", onboardingRouter);
 app.use("/api/executive", executiveRouter);
+app.use("/api/custom-reports", customReportsRouter);
 
 app.use("/api/departments", departmentRoutes);
 app.use("/api/departments", departmentRoutes);

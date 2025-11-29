@@ -2,7 +2,15 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+
+import type {
+  PurchaseOrder,
+  PurchaseOrderItem,
+  PurchaseOrderPayload,
+  PurchaseOrderStatus,
+  ReceiptLine,
+} from '@backend-shared/purchaseOrders';
 
 import {
   createPurchaseOrder,
@@ -111,23 +119,76 @@ export default function PurchaseOrderPage() {
                           setOrders((current) => current.map((item) => (item.id === updated.id ? updated : item)));
                         }}
                       >
-                        Mark received
+                        Edit
                       </Button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {!orders.length && (
-                <tr>
-                  <td className="px-3 py-4 text-neutral-500" colSpan={5}>
-                    No purchase orders yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+                      {po.status !== 'received' && (
+                        <Button variant="outline" size="sm" onClick={() => transition(po)}>
+                          Move to {statusOrder[statusOrder.indexOf(po.status) + 1] ?? 'done'}
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {!orders.length && (
+                  <tr>
+                    <td className="px-3 py-4 text-neutral-500" colSpan={6}>
+                      No purchase orders yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {selected && (
+            <div className="space-y-3 rounded-md border border-dashed border-neutral-300 p-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-neutral-900">Receiving for PO {selected.id}</p>
+                <p className="text-xs text-neutral-500">Status: {selected.status}</p>
+              </div>
+              <div className="space-y-2">
+                {selected.items.map((item) => {
+                  const remaining = Math.max(0, item.quantity - (item.received ?? 0));
+                  return (
+                    <div key={item.partId} className="grid grid-cols-6 items-center gap-2 text-sm">
+                      <div className="col-span-2 text-neutral-800">Part {item.partId}</div>
+                      <div className="text-neutral-600">Ordered: {item.quantity}</div>
+                      <div className="text-neutral-600">Received: {item.received}</div>
+                      <input
+                        className="col-span-2 rounded-md border border-neutral-300 px-2 py-1"
+                        type="number"
+                        min={0}
+                        max={remaining}
+                        value={receipts[item.partId] ?? ''}
+                        placeholder={`Receive up to ${remaining}`}
+                        onChange={(e) =>
+                          setReceipts((current) => ({
+                            ...current,
+                            [item.partId]: Number(e.target.value),
+                          }))
+                        }
+                        disabled={remaining === 0 || selected.status === 'draft' || selected.status === 'pending'}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={resetForm}>
+                  Clear
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={receive}
+                  disabled={selected.status !== 'approved' && selected.status !== 'received'}
+                >
+                  Record receipt
+                </Button>
+              </div>
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

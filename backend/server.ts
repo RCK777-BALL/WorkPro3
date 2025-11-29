@@ -271,6 +271,7 @@ app.use("/api/pm/templates", pmTemplatesRouter);
 app.use("/api/templates", templatesRouter);
 app.use("/api/onboarding", onboardingRouter);
 app.use("/api/executive", executiveRouter);
+app.use("/api/custom-reports", customReportsRouter);
 
 app.use("/api/departments", departmentRoutes);
 app.use("/api/departments", departmentRoutes);

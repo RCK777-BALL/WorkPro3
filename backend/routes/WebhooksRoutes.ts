@@ -5,11 +5,12 @@
 import express, { type Request, type Response, type NextFunction } from 'express';
 import crypto from 'crypto';
 
-import { handleWorkOrderHook } from '../controllers/WebhookController';
+import { handleWorkOrderHook, relaySlackWebhook, relayTeamsWebhook } from '../controllers/WebhookController';
 import { requireThirdPartyAuth } from '../middleware/thirdPartyAuth';
 import Webhook from '../models/Webhook';
 import idempotency from '../middleware/idempotency';
 import { dispatchEvent as dispatchWebhookEvent } from '../utils/webhookDispatcher';
+import { apiAccessMiddleware } from '../middleware/apiAccess';
 
 const router = express.Router();
 
@@ -52,5 +53,7 @@ router.post('/event', async (req: Request, res: Response, next: NextFunction): P
 
 // Work order webhook
 router.post('/workorder', requireThirdPartyAuth, handleWorkOrderHook);
+router.post('/slack', apiAccessMiddleware, relaySlackWebhook);
+router.post('/teams', apiAccessMiddleware, relayTeamsWebhook);
 
 export default router;

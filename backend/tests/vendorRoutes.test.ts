@@ -53,44 +53,47 @@ beforeEach(async () => {
 
 describe('Vendor Routes', () => {
   it('requires authentication', async () => {
-    await request(app)
-      .get('/api/vendors')
-      .expect(401);
+    await request(app).get('/api/vendors').expect(401);
   });
 
-  it('creates and fetches a vendor', async () => {
+  it('creates, fetches, and updates a vendor', async () => {
     const createRes = await request(app)
       .post('/api/vendors')
       .set('Authorization', `Bearer ${token}`)
       .send({
         name: 'Vendor1',
-        contactName: 'John Doe',
         phone: '123',
         email: 'vendor@example.com',
-        address: '123 Street'
       })
       .expect(201);
 
-    const id = createRes.body._id;
+    const created = createRes.body.data;
+    expect(created).toMatchObject({ name: 'Vendor1', phone: '123', email: 'vendor@example.com' });
 
     const listRes = await request(app)
       .get('/api/vendors')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(listRes.body.length).toBe(1);
-    expect(listRes.body[0]._id).toBe(id);
+    expect(listRes.body.data).toHaveLength(1);
+    expect(listRes.body.data[0].id).toBe(created.id);
+
+    const updateRes = await request(app)
+      .put(`/api/vendors/${created.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Vendor1 Updated', phone: '555-1212' })
+      .expect(200);
+
+    expect(updateRes.body.data.name).toBe('Vendor1 Updated');
+    expect(updateRes.body.data.phone).toBe('555-1212');
   });
 
-  it('fails validation for invalid partsSupplied id', async () => {
+  it('returns validation errors', async () => {
     await request(app)
       .post('/api/vendors')
       .set('Authorization', `Bearer ${token}`)
-      .send({
-        name: 'VendorBad',
-        partsSupplied: ['not-a-valid-id']
-      })
-      .expect(500);
+      .send({ phone: 'missing-name' })
+      .expect(400);
   });
 });
 

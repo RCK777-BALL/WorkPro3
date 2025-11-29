@@ -29,19 +29,22 @@ interface AssignmentFormProps {
   assets: Array<{ id: string; name: string }>;
   partOptions: Array<{ id: string; name: string }>;
   onSuccess?: () => void;
+  fixedAssetId?: string;
 }
 
 const newId = () => Math.random().toString(36).slice(2);
 
 const DEFAULT_INTERVALS = ['weekly', 'monthly', 'quarterly', 'annually'];
 
-const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess }: AssignmentFormProps) => {
+const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess, fixedAssetId }: AssignmentFormProps) => {
   const { mutateAsync, isLoading } = useUpsertAssignment();
   const { addToast } = useToast();
   const [error, setError] = useState<string | null>(null);
 
-  const [assetId, setAssetId] = useState(assignment?.assetId ?? '');
+  const [assetId, setAssetId] = useState(assignment?.assetId ?? fixedAssetId ?? '');
   const [interval, setInterval] = useState(assignment?.interval ?? 'monthly');
+  const [triggerType, setTriggerType] = useState<'time' | 'meter'>(assignment?.trigger?.type ?? 'time');
+  const [meterThreshold, setMeterThreshold] = useState<number | ''>(assignment?.trigger?.meterThreshold ?? '');
   const [checklist, setChecklist] = useState<ChecklistFormItem[]>(
     assignment?.checklist.map((item) => ({
       id: item.id || newId(),
@@ -92,8 +95,10 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
   };
 
   useEffect(() => {
-    setAssetId(assignment?.assetId ?? '');
+    setAssetId(assignment?.assetId ?? fixedAssetId ?? '');
     setInterval(assignment?.interval ?? 'monthly');
+    setTriggerType(assignment?.trigger?.type ?? 'time');
+    setMeterThreshold(assignment?.trigger?.meterThreshold ?? '');
     setChecklist(
       assignment?.checklist.map((item) => ({
         id: item.id || newId(),
@@ -111,10 +116,12 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
   }, [assignment]);
 
   useEffect(() => {
-    if (!assetId && assets.length > 0) {
+    if (!assetId && fixedAssetId) {
+      setAssetId(fixedAssetId);
+    } else if (!assetId && assets.length > 0) {
       setAssetId(assets[0].id);
     }
-  }, [assets, assetId]);
+  }, [assets, assetId, fixedAssetId]);
 
   const hasChecklistContent = useMemo(() => checklist.some((item) => item.description.trim().length > 0), [checklist]);
 
@@ -124,6 +131,10 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
       setError('Please select an asset to link');
       return;
     }
+    if (triggerType === 'meter' && (!meterThreshold || meterThreshold <= 0)) {
+      setError('Provide a meter threshold greater than 0');
+      return;
+    }
     setError(null);
     try {
       await mutateAsync({
@@ -131,7 +142,11 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
         payload: {
           assignmentId: assignment?.id,
           assetId,
-          interval,
+          interval: triggerType === 'time' ? interval : undefined,
+          trigger: {
+            type: triggerType,
+            ...(triggerType === 'meter' && meterThreshold ? { meterThreshold } : {}),
+          },
           checklist: checklist
             .filter((item) => item.description.trim().length > 0)
             .map((item) => ({ description: item.description.trim(), required: item.required })),
@@ -182,6 +197,7 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
           className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2"
           value={assetId}
           onChange={(event) => setAssetId(event.target.value)}
+          disabled={Boolean(fixedAssetId)}
         >
           {assets.length === 0 && <option value="">No assets available</option>}
           {assets.map((asset) => (
@@ -192,19 +208,51 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
         </select>
       </div>
       <div>
-        <label className="block text-sm font-medium text-neutral-700">Interval</label>
-        <select
-          className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2"
-          value={interval}
-          onChange={(event) => setInterval(event.target.value)}
-        >
-          {DEFAULT_INTERVALS.map((option) => (
-            <option key={option} value={option}>
-              {option.charAt(0).toUpperCase() + option.slice(1)}
-            </option>
+        <label className="block text-sm font-medium text-neutral-700">Trigger type</label>
+        <div className="mt-1 flex flex-wrap gap-3">
+          {['time', 'meter'].map((type) => (
+            <label key={type} className="flex items-center gap-2 text-sm text-neutral-700">
+              <input
+                type="radio"
+                name="triggerType"
+                value={type}
+                checked={triggerType === type}
+                onChange={() => setTriggerType(type as 'time' | 'meter')}
+              />
+              {type === 'time' ? 'Time-based' : 'Meter-based'}
+            </label>
           ))}
-        </select>
+        </div>
       </div>
+      {triggerType === 'time' ? (
+        <div>
+          <label className="block text-sm font-medium text-neutral-700">Interval</label>
+          <select
+            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2"
+            value={interval}
+            onChange={(event) => setInterval(event.target.value)}
+          >
+            {DEFAULT_INTERVALS.map((option) => (
+              <option key={option} value={option}>
+                {option.charAt(0).toUpperCase() + option.slice(1)}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : (
+        <div>
+          <label className="block text-sm font-medium text-neutral-700">Meter threshold</label>
+          <input
+            type="number"
+            min={1}
+            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2"
+            value={meterThreshold}
+            onChange={(event) => setMeterThreshold(event.target.value ? Number(event.target.value) : '')}
+            placeholder="e.g. 100"
+          />
+          <p className="mt-1 text-xs text-neutral-500">Create a work order once the meter increases by this amount.</p>
+        </div>
+      )}
       <div>
         <div className="flex items-center justify-between">
           <label className="block text-sm font-medium text-neutral-700">Checklist</label>

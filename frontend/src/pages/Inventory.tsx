@@ -6,6 +6,7 @@ import { ClipboardList, Package2, ShieldAlert } from 'lucide-react';
 
 import {
   AlertsPanel,
+  InventoryAlertIndicator,
   PartsTableView,
   PdfExportPanel,
   PurchaseOrderBuilder,
@@ -43,6 +44,9 @@ const Inventory = () => {
           <p className="text-sm text-neutral-500">
             Track parts, see which assets rely on them, and generate purchase orders without leaving this page.
           </p>
+          <div className="pt-2">
+            <InventoryAlertIndicator />
+          </div>
         </div>
         <div className="grid gap-3 md:grid-cols-3">
           <StatCard label="Active parts" value={partsCount.toString()} icon={Package2} />

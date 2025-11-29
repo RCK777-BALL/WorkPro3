@@ -10,9 +10,26 @@ import { writeAuditLog } from '../utils/audit';
 import { sendResponse } from '../utils/sendResponse';
 import { toObjectId, toEntityId } from '../utils/ids';
 
-export const getAllRoles = async (_req: Request, res: Response, next: NextFunction) => {
+const buildScopedFilter = (tenantId: Types.ObjectId | undefined, siteId?: Types.ObjectId | null) => {
+  const filter: Record<string, unknown> = { tenantId };
+
+  if (siteId) {
+    filter.$or = [{ siteId: { $exists: false } }, { siteId: null }, { siteId }];
+  }
+
+  return filter;
+};
+
+export const getAllRoles = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const roles = await Role.find();
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const siteId = toObjectId(req.siteId);
+    const roles = await Role.find(buildScopedFilter(tenantId, siteId));
     sendResponse(res, roles);
   } catch (err) {
     next(err);
@@ -21,12 +38,18 @@ export const getAllRoles = async (_req: Request, res: Response, next: NextFuncti
 
 export const getRoleById = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
     const { id } = req.params;
     const roleId = toObjectId(id);
     if (!roleId) {
       return sendResponse(res, null, 'Invalid id', 400);
     }
-    const role = await Role.findById(roleId);
+    const role = await Role.findOne({ _id: roleId, ...buildScopedFilter(tenantId, toObjectId(req.siteId)) });
     if (!role) return sendResponse(res, null, 'Not found', 404);
     sendResponse(res, role);
   } catch (err) {
@@ -45,7 +68,9 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
     const auditUserId = rawUserId
       ? toEntityId(rawUserId as string | Types.ObjectId)
       : undefined;
-    const role = await Role.create({ ...req.body, tenantId });
+
+    const siteId = toObjectId((req.body as { siteId?: string }).siteId ?? req.siteId) ?? null;
+    const role = await Role.create({ ...req.body, tenantId, siteId });
     const entityId = toEntityId(role._id as Types.ObjectId) ?? (role._id as Types.ObjectId);
 
     await writeAuditLog({
@@ -79,9 +104,14 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
     if (!roleId) {
       return sendResponse(res, null, 'Invalid id', 400);
     }
-    const existing = await Role.findById(roleId);
+    const filter = { _id: roleId, ...buildScopedFilter(tenantId, toObjectId(req.siteId)) };
+    const existing = await Role.findOne(filter);
     if (!existing) return sendResponse(res, null, 'Not found', 404);
-    const role = await Role.findByIdAndUpdate(roleId, req.body, {
+    const payload = { ...req.body };
+    if ('siteId' in payload) {
+      payload.siteId = toObjectId(payload.siteId as string) ?? null;
+    }
+    const role = await Role.findOneAndUpdate(filter, payload, {
       new: true,
       runValidators: true,
     });
@@ -118,7 +148,8 @@ export const deleteRole = async (req: Request, res: Response, next: NextFunction
     if (!roleId) {
       return sendResponse(res, null, 'Invalid id', 400);
     }
-    const role = await Role.findByIdAndDelete(roleId);
+    const filter = { _id: roleId, ...buildScopedFilter(tenantId, toObjectId(req.siteId)) };
+    const role = await Role.findOneAndDelete(filter);
     if (!role) {
       return sendResponse(res, null, 'Not found', 404);
     }

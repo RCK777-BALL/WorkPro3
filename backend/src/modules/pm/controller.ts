@@ -6,9 +6,13 @@ import type { Response, NextFunction } from 'express';
 
 import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
 import { fail } from '../../lib/http';
-import { assignmentInputSchema } from './schemas';
+import { assignmentInputSchema, templateInputSchema } from './schemas';
 import {
   listTemplates,
+  createTemplate,
+  getTemplate,
+  updateTemplate,
+  deleteTemplate,
   upsertAssignment,
   removeAssignment,
   PMTemplateError,
@@ -49,6 +53,68 @@ export const listTemplatesHandler: AuthedRequestHandler = async (req, res, next)
   if (!ensureTenant(req, res)) return;
   try {
     const data = await listTemplates(buildContext(req));
+    send(res, data);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const createTemplateHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  const parse = templateInputSchema.safeParse(req.body);
+  if (!parse.success) {
+    fail(res, parse.error.errors.map((e) => e.message).join(', '), 400);
+    return;
+  }
+  try {
+    const data = await createTemplate(buildContext(req), parse.data);
+    send(res, data, 201);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const getTemplateHandler: AuthedRequestHandler<{ templateId: string }> = async (
+  req,
+  res,
+  next,
+) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    const data = await getTemplate(buildContext(req), req.params.templateId);
+    send(res, data);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const updateTemplateHandler: AuthedRequestHandler<{ templateId: string }> = async (
+  req,
+  res,
+  next,
+) => {
+  if (!ensureTenant(req, res)) return;
+  const parse = templateInputSchema.partial().safeParse(req.body);
+  if (!parse.success) {
+    fail(res, parse.error.errors.map((e) => e.message).join(', '), 400);
+    return;
+  }
+  try {
+    const data = await updateTemplate(buildContext(req), req.params.templateId, parse.data);
+    send(res, data);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const deleteTemplateHandler: AuthedRequestHandler<{ templateId: string }> = async (
+  req,
+  res,
+  next,
+) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    const data = await deleteTemplate(buildContext(req), req.params.templateId);
     send(res, data);
   } catch (err) {
     handleError(err, res, next);

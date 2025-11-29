@@ -33,6 +33,7 @@ const ContextBreadcrumbs = () => {
       const labelMap: Record<string, string> = {
         dashboard: t('breadcrumbs.dashboard'),
         analytics: t('breadcrumbs.analytics'),
+        pm: 'PM analytics',
         iot: t('breadcrumbs.iot'),
         'work-orders': t('breadcrumbs.workOrders'),
         workorders: t('breadcrumbs.workOrders'),

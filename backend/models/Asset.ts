@@ -30,6 +30,13 @@ export interface AssetDoc extends Document {
   lastServiced?: Date;
   criticality?: string;
   documents?: Types.Array<Types.ObjectId>;
+  lastInspection?: {
+    recordId: Types.ObjectId;
+    templateName: string;
+    status: 'draft' | 'in-progress' | 'completed' | 'archived';
+    completedAt?: Date;
+    summary?: string;
+  };
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -79,6 +86,13 @@ const assetSchema = new Schema<AssetDoc>(
       type: Schema.Types.ObjectId,
       ref: 'Site',
       index: true,
+    },
+    lastInspection: {
+      recordId: { type: Schema.Types.ObjectId, ref: 'InspectionRecord' },
+      templateName: { type: String },
+      status: { type: String, enum: ['draft', 'in-progress', 'completed', 'archived'] },
+      completedAt: { type: Date },
+      summary: { type: String },
     },
     criticality: {
       type: String,

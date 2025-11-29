@@ -19,6 +19,7 @@ import { initMQTTFromConfig } from "./iot/mqttClient";
 import logger from "./utils/logger";
 import requestLog from "./middleware/requestLog";
 import tenantResolver from "./middleware/tenantResolver";
+import auditLogMiddleware from "./middleware/auditLogMiddleware";
 
 import {
   adminRoutes,
@@ -74,7 +75,8 @@ import {
   webhooksRoutes,
   workOrdersRoutes,
   mobileSyncRoutes,
- 
+  inspectionRoutes,
+
 } from "./routes";
 import mobileRoutes from "./routes/mobileRoutes";
 import mobileSyncAdminRoutes from "./routes/mobileSyncAdmin";
@@ -176,6 +178,7 @@ app.options("*", corsMiddleware);
 app.use(helmet());
 app.use(requestLog);
 app.use(tenantResolver);
+app.use(auditLogMiddleware);
 app.use(express.json({ limit: "1mb" }));
 app.use(mongoSanitize());
 setupSwagger(app);
@@ -272,6 +275,7 @@ app.use("/api/departments", departmentRoutes);
 app.use("/api/departments", departmentRoutes);
 app.use("/api/workorders", workOrdersRoutes);
 app.use("/api/permits", permitRoutes);
+app.use("/api/inspections", inspectionRoutes);
 app.use("/api/assets", assetsRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/assets", assetInsightsRouter);

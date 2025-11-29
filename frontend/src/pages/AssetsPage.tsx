@@ -3,8 +3,8 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Pencil, PlusCircle, RefreshCcw } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Pencil, PlusCircle, RefreshCcw, Scan } from 'lucide-react';
 import AssetTable from '@/components/assets/AssetTable';
 import AssetModal from '@/components/assets/AssetModal';
 import WorkOrderModal from '@/components/work-orders/WorkOrderModal';
@@ -43,6 +43,7 @@ const AssetsPage: React.FC = () => {
   const [woAsset, setWoAsset] = useState<Asset | null>(null);
   const [conflict, setConflict] = useState<SyncConflict | null>(null);
   const isFetching = useRef(false);
+  const navigate = useNavigate();
 
   const normalizedAssets = useMemo(
     () => assets.slice().sort((a, b) => a.name.localeCompare(b.name)),
@@ -176,18 +177,26 @@ const AssetsPage: React.FC = () => {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <p className="text-sm text-neutral-600">Assets</p>
-            <h1 className="text-3xl font-bold text-neutral-900">Asset catalog</h1>
-            <p className="text-neutral-600 mt-1">
-              Browse the list of assets, make quick edits, and add new equipment to your hierarchy.
-            </p>
-          </div>
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={fetchAssets} disabled={isLoading}>
-              <RefreshCcw className="w-4 h-4 mr-2" />
-              {isLoading ? 'Refreshing...' : 'Refresh'}
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <p className="text-sm text-neutral-600">Assets</p>
+              <h1 className="text-3xl font-bold text-neutral-900">Asset catalog</h1>
+              <p className="text-neutral-600 mt-1">
+                Browse the list of assets, make quick edits, and add new equipment to your hierarchy.
+              </p>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="secondary"
+                onClick={() => navigate('/assets/scan')}
+                aria-label="Scan an asset QR code"
+              >
+                <Scan className="w-4 h-4 mr-2" />
+                Scan asset
+              </Button>
+              <Button variant="outline" onClick={fetchAssets} disabled={isLoading}>
+                <RefreshCcw className="w-4 h-4 mr-2" />
+                {isLoading ? 'Refreshing...' : 'Refresh'}
             </Button>
             <Button
               variant="primary"

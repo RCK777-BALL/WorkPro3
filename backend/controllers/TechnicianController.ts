@@ -15,6 +15,7 @@ import { writeAuditLog } from '../utils/audit';
 import { emitWorkOrderUpdate } from '../server';
 import type { WorkOrderUpdatePayload } from '../types/Payloads';
 import type { UploadedFile } from '../shared/uploads';
+import { normalizePartUsageCosts } from '../utils/partUsageCost';
 
 const resolvePlantId = (
   req: Pick<AuthedRequest, 'plantId' | 'siteId'>,
@@ -406,7 +407,9 @@ export const recordTechnicianPartUsage: AuthedRequestHandler<{ id: string }> = a
       map.set(key, existing);
     });
 
-    workOrder.set('partsUsed', Array.from(map.values()));
+    const normalizedUsage = await normalizePartUsageCosts(tenantId, Array.from(map.values()));
+    workOrder.set('partsUsed', normalizedUsage.parts);
+    workOrder.partsCost = normalizedUsage.partsCost;
     const saved = await workOrder.save();
 
     await writeAuditLog({

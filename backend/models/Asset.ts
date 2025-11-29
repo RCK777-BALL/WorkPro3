@@ -26,10 +26,16 @@ export interface AssetDoc extends Document {
   modelName?: string;
   manufacturer?: string;
   purchaseDate?: Date;
+  warrantyStart?: Date;
+  warrantyEnd?: Date;
+  purchaseCost?: number;
+  expectedLifeMonths?: number;
+  replacementDate?: Date;
   installationDate?: Date;
   lastServiced?: Date;
   criticality?: string;
   documents?: Types.Array<Types.ObjectId>;
+  pmTemplateIds?: Types.Array<Types.ObjectId>;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -56,6 +62,11 @@ const assetSchema = new Schema<AssetDoc>(
     modelName: { type: String },
     manufacturer: { type: String },
     purchaseDate: { type: Date },
+    warrantyStart: { type: Date },
+    warrantyEnd: { type: Date },
+    purchaseCost: { type: Number, min: 0 },
+    expectedLifeMonths: { type: Number, min: 1 },
+    replacementDate: { type: Date },
     installationDate: { type: Date },
     lastServiced: { type: Date },
     line: { type: String },
@@ -80,12 +91,20 @@ const assetSchema = new Schema<AssetDoc>(
       ref: 'Site',
       index: true,
     },
+    lastInspection: {
+      recordId: { type: Schema.Types.ObjectId, ref: 'InspectionRecord' },
+      templateName: { type: String },
+      status: { type: String, enum: ['draft', 'in-progress', 'completed', 'archived'] },
+      completedAt: { type: Date },
+      summary: { type: String },
+    },
     criticality: {
       type: String,
       enum: ['high', 'medium', 'low'],
       default: 'medium',
     },
     documents: [{ type: Schema.Types.ObjectId, ref: 'Document' }],
+    pmTemplateIds: [{ type: Schema.Types.ObjectId, ref: 'PmTask', index: true }],
   },
   { timestamps: true }
 );

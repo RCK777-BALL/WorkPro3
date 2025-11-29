@@ -12,6 +12,10 @@ import { fetchIotAlerts, fetchIotSignals, IoTSignalQuery, type IoTSignalSeries }
 import type { Alert } from '@/store/alertStore';
 import { useHierarchyTree } from '@/features/assets/hooks';
 import type { HierarchyAsset, HierarchyResponse } from '@/api/hierarchy';
+import { addMeterReading, fetchMeters, type Meter } from '@/api/meters';
+import { enqueueMeterReading } from '@/utils/offlineQueue';
+import { emitToast } from '@/context/ToastContext';
+import { syncManager } from '@/utils/syncManager';
 
 const numberFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
 
@@ -72,6 +76,9 @@ const flattenAssetOptions = (
 const IotMonitoring = () => {
   const [assetFilter, setAssetFilter] = useState<'all' | string>('all');
   const [metricFilter, setMetricFilter] = useState<'all' | string>('all');
+  const [meterFilter, setMeterFilter] = useState<string>('');
+  const [meterValue, setMeterValue] = useState('');
+  const [meterSubmitting, setMeterSubmitting] = useState(false);
   const { data: hierarchy } = useHierarchyTree();
 
   const assetOptions = useMemo(() => flattenAssetOptions(hierarchy), [hierarchy]);
@@ -96,6 +103,10 @@ const IotMonitoring = () => {
     refetchInterval: 30_000,
   });
 
+  const metersQuery = useQuery(['meters', assetFilter], () => fetchMeters(assetFilter === 'all' ? undefined : assetFilter), {
+    staleTime: 60_000,
+  });
+
   const signals = signalsQuery.data ?? [];
   const metricsOptions = useMemo(() => {
     const set = new Set<string>();
@@ -107,10 +118,47 @@ const IotMonitoring = () => {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [signals]);
 
+  const meterOptions = useMemo(() => {
+    return (metersQuery.data ?? []).map((meter: Meter) => ({
+      value: meter.id,
+      label: `${meter.name} (${meter.unit})`,
+    }));
+  }, [metersQuery.data]);
+
   const summary = {
     telemetryCount: signals.reduce((sum, series) => sum + series.points.length, 0),
     trendingUp: signals.filter((series) => (series.change ?? 0) > 0).length,
     alertCount: alertsQuery.data?.length ?? 0,
+  };
+
+  const submitMeterReading = async () => {
+    const value = Number.parseFloat(meterValue);
+    if (!meterFilter || Number.isNaN(value)) {
+      emitToast('Select a meter and enter a reading value.', 'error');
+      return;
+    }
+
+    setMeterSubmitting(true);
+    if (!navigator.onLine) {
+      enqueueMeterReading(meterFilter, value);
+      emitToast('Reading queued and will sync when back online.', 'info');
+      setMeterValue('');
+      setMeterSubmitting(false);
+      return;
+    }
+
+    try {
+      await addMeterReading(meterFilter, value);
+      emitToast('Meter reading recorded.');
+      setMeterValue('');
+      await syncManager.sync();
+    } catch (err) {
+      console.error(err);
+      enqueueMeterReading(meterFilter, value);
+      emitToast('Unable to send reading now; queued for sync.', 'warning');
+    } finally {
+      setMeterSubmitting(false);
+    }
   };
 
   const renderSignalCard = (series: IoTSignalSeries) => {
@@ -187,6 +235,46 @@ const IotMonitoring = () => {
           </label>
         </div>
       </div>
+
+      <Card title="Log meter reading" className="bg-slate-900/80">
+        <div className="grid gap-3 md:grid-cols-[2fr,1fr,auto] md:items-end">
+          <label className="flex flex-col gap-1 text-sm text-slate-200">
+            Meter
+            <select
+              className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100"
+              value={meterFilter}
+              onChange={(event) => setMeterFilter(event.target.value)}
+            >
+              <option value="">Select a meter</option>
+              {meterOptions.map((meter) => (
+                <option key={meter.value} value={meter.value}>
+                  {meter.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-sm text-slate-200">
+            Reading value
+            <input
+              type="number"
+              className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100"
+              placeholder="0"
+              value={meterValue}
+              onChange={(event) => setMeterValue(event.target.value)}
+            />
+          </label>
+          <button
+            className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+            onClick={() => void submitMeterReading()}
+            disabled={meterSubmitting}
+          >
+            {meterSubmitting ? 'Saving…' : 'Save reading'}
+          </button>
+        </div>
+        <p className="mt-2 text-xs text-slate-400">
+          Offline? Readings are stored locally and automatically synced when connectivity returns.
+        </p>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">

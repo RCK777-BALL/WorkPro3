@@ -25,6 +25,9 @@ export interface NotificationDocument extends Document {
   assetId?: Types.ObjectId;
   tenantId: Types.ObjectId;
   user?: Types.ObjectId;
+  workOrderId?: Types.ObjectId;
+  inventoryItemId?: Types.ObjectId;
+  pmTaskId?: Types.ObjectId;
   deliveryState: NotificationDeliveryState;
   createdAt: Date;
   read: boolean;
@@ -43,6 +46,9 @@ const notificationSchema = new Schema<NotificationDocument>({
   assetId: { type: Schema.Types.ObjectId, ref: 'Asset' },
   tenantId:{ type: Schema.Types.ObjectId, ref: 'Tenant', required: true },
   user:    { type: Schema.Types.ObjectId, ref: 'User' },
+  workOrderId: { type: Schema.Types.ObjectId, ref: 'WorkOrder' },
+  inventoryItemId: { type: Schema.Types.ObjectId, ref: 'InventoryItem' },
+  pmTaskId: { type: Schema.Types.ObjectId, ref: 'PMTask' },
   deliveryState: {
     type: String,
     enum: ['pending', 'queued', 'sent', 'failed', 'delivered'],
@@ -55,6 +61,9 @@ const notificationSchema = new Schema<NotificationDocument>({
 // keep your indexes
 notificationSchema.index({ tenantId: 1 });
 notificationSchema.index({ read: 1 });
+notificationSchema.index({ workOrderId: 1 });
+notificationSchema.index({ inventoryItemId: 1 });
+notificationSchema.index({ pmTaskId: 1 });
 
 const Notification: Model<NotificationDocument> =
   mongoose.model<NotificationDocument>('Notification', notificationSchema);

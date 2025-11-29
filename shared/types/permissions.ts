@@ -7,6 +7,10 @@ export const PERMISSIONS = {
     read: 'workRequests.read',
     convert: 'workRequests.convert',
   },
+  roles: {
+    read: 'roles.read',
+    manage: 'roles.manage',
+  },
   hierarchy: {
     read: 'hierarchy.read',
     write: 'hierarchy.write',
@@ -29,6 +33,11 @@ export const PERMISSIONS = {
   executive: {
     read: 'executive.read',
     manage: 'executive.manage',
+  },
+  reports: {
+    read: 'reports.read',
+    build: 'reports.build',
+    export: 'reports.export',
   },
   audit: {
     read: 'audit.read',

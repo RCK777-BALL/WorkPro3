@@ -91,9 +91,21 @@ const PRECONFIGURED_PERMITS = [
 
 export default function PermitsPage() {
   const [permits, setPermits] = useState<PermitRow[]>([]);
+  const [permitDetails, setPermitDetails] = useState<Permit[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedPermitId, setSelectedPermitId] = useState<string | null>(null);
+  const [builder, setBuilder] = useState({
+    permitNumber: '',
+    type: 'Hot work',
+    riskLevel: 'medium',
+    approvals: ['Supervisor'],
+    isolationSteps: ['Lockout energy source', 'Test for zero energy'],
+    watchers: '',
+    description: '',
+  });
+  const [lockoutNote, setLockoutNote] = useState('');
 
   const [statusFilter, setStatusFilter] = useState<PermitStatus | "all">(() => {
     const param = searchParams.get("status");
@@ -126,13 +138,18 @@ export default function PermitsPage() {
           })
         : [];
       setPermits(normalized);
+      setPermitDetails(data ?? []);
+      if (!selectedPermitId && data?.length) {
+        const firstId = data[0].id ?? data[0]._id ?? data[0].permitNumber;
+        setSelectedPermitId(firstId ?? null);
+      }
     } catch (err) {
       console.error("Failed to load permits", err);
       setError("Unable to load permits. Please try again later.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedPermitId]);
 
   useEffect(() => {
     void fetchPermits();
@@ -152,6 +169,92 @@ export default function PermitsPage() {
     const escalated = permits.filter((permit) => permit.status === "escalated").length;
     return { total: permits.length, pending, active, closed, escalated };
   }, [permits]);
+
+  const upsertPermit = (updated: Permit) => {
+    const id = updated.id ?? updated._id ?? updated.permitNumber;
+    if (!id) return;
+    setPermitDetails((prev) => {
+      const existing = prev.findIndex((p) => (p.id ?? p._id ?? p.permitNumber) === id);
+      if (existing === -1) return [updated, ...prev];
+      const next = [...prev];
+      next[existing] = updated;
+      return next;
+    });
+    setPermits((prev) => {
+      const normalized = normalizePermit(updated);
+      if (!normalized) return prev;
+      const existing = prev.findIndex((p) => p.id === normalized.id);
+      if (existing === -1) return [normalized, ...prev];
+      const next = [...prev];
+      next[existing] = { ...next[existing], ...normalized };
+      return next;
+    });
+  };
+
+  const selectedPermit = useMemo(() => {
+    const fallback = permitDetails[0];
+    return (
+      permitDetails.find((permit) => (permit.id ?? permit._id ?? permit.permitNumber) === selectedPermitId) ?? fallback
+    );
+  }, [permitDetails, selectedPermitId]);
+
+  const createPermitWorkflow = async () => {
+    const approvals = builder.approvals.filter(Boolean).map((role, index) => ({
+      sequence: index,
+      role,
+      status: "pending" as const,
+    }));
+    const isolationSteps = builder.isolationSteps
+      .map((description, index) => ({ description, completed: false, completedAt: undefined, index }))
+      .filter((step) => step.description);
+    const watchers = builder.watchers
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+    const payload = {
+      permitNumber: builder.permitNumber || `PTW-${Date.now()}`,
+      type: builder.type,
+      riskLevel: builder.riskLevel,
+      description: builder.description,
+      approvalChain: approvals,
+      isolationSteps,
+      watchers,
+      status: "pending" as const,
+    } satisfies Partial<Permit>;
+
+    const response = await http.post<Permit>("/permits", payload);
+    if (response.data) {
+      upsertPermit(response.data);
+      setSelectedPermitId(response.data.id ?? response.data._id ?? response.data.permitNumber);
+    }
+  };
+
+  const completeLockoutStep = async (index: number) => {
+    if (!selectedPermit || selectedPermit.isolationSteps?.[index] == null) return;
+    const { data } = await http.post<Permit>(`/permits/${selectedPermit.id ?? selectedPermit._id ?? selectedPermit.permitNumber}/lockout`, {
+      index,
+      completed: true,
+      verificationNotes: lockoutNote || undefined,
+    });
+    if (data) {
+      upsertPermit(data);
+      setLockoutNote("");
+    }
+  };
+
+  const actOnApproval = async (sequence: number, status: "approved" | "rejected") => {
+    if (!selectedPermit) return;
+    const { data } = await http.post<Permit>(
+      `/permits/${selectedPermit.id ?? selectedPermit._id ?? selectedPermit.permitNumber}/approvals`,
+      {
+        sequence,
+        status,
+      },
+    );
+    if (data) {
+      upsertPermit(data);
+    }
+  };
 
   const handleFilterChange = (value: PermitStatus | "all") => {
     setStatusFilter(value);
@@ -189,6 +292,172 @@ export default function PermitsPage() {
           </Button>
         </div>
       </header>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card title="Permit-to-work builder" subtitle="Strictly typed inputs for new permits and approvals">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="text-sm text-neutral-700 dark:text-neutral-200">
+              Permit number
+              <input
+                className="mt-1 w-full rounded border border-neutral-200 p-2 dark:border-neutral-700"
+                value={builder.permitNumber}
+                onChange={(e) => setBuilder((prev) => ({ ...prev, permitNumber: e.target.value }))}
+                placeholder="PTW-001"
+              />
+            </label>
+            <label className="text-sm text-neutral-700 dark:text-neutral-200">
+              Type
+              <input
+                className="mt-1 w-full rounded border border-neutral-200 p-2 dark:border-neutral-700"
+                value={builder.type}
+                onChange={(e) => setBuilder((prev) => ({ ...prev, type: e.target.value }))}
+                placeholder="Hot work"
+              />
+            </label>
+            <label className="text-sm text-neutral-700 dark:text-neutral-200">
+              Risk level
+              <select
+                className="mt-1 w-full rounded border border-neutral-200 p-2 dark:border-neutral-700"
+                value={builder.riskLevel}
+                onChange={(e) => setBuilder((prev) => ({ ...prev, riskLevel: e.target.value }))}
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+              </select>
+            </label>
+            <label className="text-sm text-neutral-700 dark:text-neutral-200">
+              Watchers (comma separated)
+              <input
+                className="mt-1 w-full rounded border border-neutral-200 p-2 dark:border-neutral-700"
+                value={builder.watchers}
+                onChange={(e) => setBuilder((prev) => ({ ...prev, watchers: e.target.value }))}
+                placeholder="ops@example.com"
+              />
+            </label>
+          </div>
+          <label className="mt-3 block text-sm text-neutral-700 dark:text-neutral-200">
+            Description
+            <textarea
+              className="mt-1 w-full rounded border border-neutral-200 p-2 dark:border-neutral-700"
+              value={builder.description}
+              onChange={(e) => setBuilder((prev) => ({ ...prev, description: e.target.value }))}
+              placeholder="Scope, hazards, and mitigating controls"
+            />
+          </label>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2">
+            <label className="text-sm text-neutral-700 dark:text-neutral-200">
+              Approval roles (one per line)
+              <textarea
+                className="mt-1 w-full rounded border border-neutral-200 p-2 dark:border-neutral-700"
+                value={builder.approvals.join("\n")}
+                onChange={(e) => setBuilder((prev) => ({ ...prev, approvals: e.target.value.split("\n").filter(Boolean) }))}
+              />
+            </label>
+            <label className="text-sm text-neutral-700 dark:text-neutral-200">
+              Isolation steps
+              <textarea
+                className="mt-1 w-full rounded border border-neutral-200 p-2 dark:border-neutral-700"
+                value={builder.isolationSteps.join("\n")}
+                onChange={(e) =>
+                  setBuilder((prev) => ({ ...prev, isolationSteps: e.target.value.split("\n").filter(Boolean) }))
+                }
+              />
+            </label>
+          </div>
+          <div className="mt-4">
+            <Button type="button" onClick={() => void createPermitWorkflow()} className="inline-flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4" />
+              Create permit
+            </Button>
+          </div>
+        </Card>
+
+        <Card title="Lockout / Tagout" subtitle="Track isolation, verification, and approvals">
+          {selectedPermit ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-300">Permit</p>
+                  <p className="font-semibold text-neutral-900 dark:text-neutral-100">
+                    {selectedPermit.permitNumber} · {selectedPermit.type}
+                  </p>
+                </div>
+                <select
+                  className="rounded border border-neutral-200 p-2 text-sm dark:border-neutral-700"
+                  value={selectedPermitId ?? ''}
+                  onChange={(e) => setSelectedPermitId(e.target.value || null)}
+                >
+                  {permitDetails.map((permit) => {
+                    const id = permit.id ?? permit._id ?? permit.permitNumber;
+                    return (
+                      <option key={id} value={id ?? ''}>
+                        {permit.permitNumber}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              <div>
+                <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Approval chain</p>
+                <ul className="mt-2 space-y-2">
+                  {(selectedPermit.approvalChain ?? []).map((step) => (
+                    <li key={step.sequence} className="flex items-center justify-between rounded border border-neutral-200 p-2 text-sm dark:border-neutral-700">
+                      <span>
+                        {step.role} · {step.status}
+                      </span>
+                      {step.status === "pending" ? (
+                        <div className="space-x-2">
+                          <Button size="xs" onClick={() => void actOnApproval(step.sequence, "approved")}>Approve</Button>
+                          <Button size="xs" variant="secondary" onClick={() => void actOnApproval(step.sequence, "rejected")}>
+                            Reject
+                          </Button>
+                        </div>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div>
+                <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Isolation steps</p>
+                <ul className="mt-2 space-y-2">
+                  {(selectedPermit.isolationSteps ?? []).map((step, index) => (
+                    <li key={index} className="flex items-center justify-between rounded border border-neutral-200 p-2 text-sm dark:border-neutral-700">
+                      <div>
+                        <p className="font-medium text-neutral-800 dark:text-neutral-200">{step.description}</p>
+                        {step.verificationNotes ? (
+                          <p className="text-xs text-neutral-500">Note: {step.verificationNotes}</p>
+                        ) : null}
+                      </div>
+                      {step.completed ? (
+                        <span className="text-emerald-600">Completed</span>
+                      ) : (
+                        <Button size="xs" onClick={() => void completeLockoutStep(index)}>
+                          Mark complete
+                        </Button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                <label className="mt-2 block text-sm text-neutral-700 dark:text-neutral-300">
+                  Verification notes
+                  <input
+                    className="mt-1 w-full rounded border border-neutral-200 p-2 text-sm dark:border-neutral-700"
+                    value={lockoutNote}
+                    onChange={(e) => setLockoutNote(e.target.value)}
+                    placeholder="Lock-out device applied and tested"
+                  />
+                </label>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-neutral-500">Create a permit to see the lockout workflow.</p>
+          )}
+        </Card>
+      </div>
 
       <Card
         title="Pre-created permits"

@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   ClipboardList,
   Cpu,
+  ListChecks,
   Factory,
   FileStack,
   FolderKanban,
@@ -27,6 +28,7 @@ import {
   ScrollText,
   Scan,
   Settings,
+  TrendingUp,
   Users,
   Warehouse,
 } from "lucide-react";
@@ -113,6 +115,14 @@ const navItems: Record<NavItemId, NavItem> = {
     icon: CheckCircle2,
     section: "operations",
   },
+  "pm-templates": {
+    id: "pm-templates",
+    label: "PM Templates",
+    to: "/pm/templates",
+    icon: ListChecks,
+    section: "operations",
+    permission: "pm.read",
+  },
   maintenance: {
     id: "maintenance",
     label: "Maintenance",
@@ -173,6 +183,13 @@ const navItems: Record<NavItemId, NavItem> = {
     label: "Plant Analytics",
     to: "/analytics",
     icon: BarChart3,
+    section: "analytics",
+  },
+  "pm-analytics": {
+    id: "pm-analytics",
+    label: "PM Analytics",
+    to: "/analytics/pm",
+    icon: TrendingUp,
     section: "analytics",
   },
   "iot-monitoring": {

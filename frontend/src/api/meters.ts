@@ -4,27 +4,19 @@
 
 import http from '@/lib/http';
 
-export type Meter = {
-  id: string;
-  asset: string;
-  name: string;
-  unit: string;
-  currentValue?: number;
-};
-
 export type MeterReading = {
   id: string;
-  meter: string;
+  assetId: string;
   value: number;
-  timestamp: string;
+  createdAt: string;
 };
 
-export const fetchMeters = async (assetId?: string): Promise<Meter[]> => {
-  const res = await http.get<Meter[]>('/meters', assetId ? { params: { asset: assetId } } : undefined);
-  return res.data;
+export type CreateMeterReadingInput = {
+  assetId: string;
+  value: number;
 };
 
-export const addMeterReading = async (meterId: string, value: number): Promise<MeterReading> => {
-  const res = await http.post<MeterReading>(`/meters/${meterId}/readings`, { value });
+export const createMeterReading = async (input: CreateMeterReadingInput): Promise<MeterReading> => {
+  const res = await http.post<MeterReading>('/meters/readings', input);
   return res.data;
 };

@@ -89,11 +89,15 @@ export type AssetDetailResponse = {
     unitCost?: number;
     location?: string;
   }>;
-  pmTasks: Array<{
-    id: string;
+  pmTemplates: Array<{
+    templateId: string;
+    assignmentId: string;
     title: string;
+    interval: string;
     active: boolean;
-    lastGeneratedAt?: string;
+    nextDue?: string;
+    usageMetric?: string;
+    usageTarget?: number;
   }>;
   workOrders: Array<{
     id: string;

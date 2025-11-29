@@ -52,6 +52,8 @@ import Settings from "@/pages/Settings";
 import TimeSheets from "@/pages/TimeSheets";
 import PMScheduler from "@/pages/PMScheduler";
 import PMTasksPage from "@/pages/PMTasksPage";
+import PMTemplateList from "@/pages/PMTemplateList";
+import PMTemplateEditor from "@/pages/PMTemplateEditor";
 import AdminTenants from "@/pages/AdminTenants";
 import Imports from "@/pages/Imports";
 import Plants from "@/pages/Plants";
@@ -237,6 +239,30 @@ export default function App() {
             element={
               <RequirePermission permission="pm.read">
                 <PMScheduler />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/pm/templates"
+            element={
+              <RequirePermission permission="pm.read">
+                <PMTemplateList />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/pm/templates/new"
+            element={
+              <RequirePermission permission="pm.write">
+                <PMTemplateEditor />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/pm/templates/:templateId/edit"
+            element={
+              <RequirePermission permission="pm.write">
+                <PMTemplateEditor />
               </RequirePermission>
             }
           />

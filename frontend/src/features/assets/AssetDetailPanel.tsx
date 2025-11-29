@@ -6,8 +6,8 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 
 import type { AssetDetailResponse } from '@/api/hierarchy';
 import { EntityAuditList } from '@/features/audit';
-import type { MeterType, TreeAssetSummary } from './hooks';
-import { useCreateMeterReading } from './hooks';
+import AssetTemplateAssignments from './AssetTemplateAssignments';
+import type { TreeAssetSummary } from './hooks';
 
 type AssetDetailPanelProps = {
   assetSummary?: TreeAssetSummary;
@@ -280,20 +280,22 @@ const AssetDetailPanel = ({ assetSummary, assetDetails, isLoading }: AssetDetail
           )}
         </SectionCard>
 
-        <SectionCard title="PM Tasks">
-          {assetDetails?.pmTasks?.length ? (
+        <SectionCard title="PM Templates">
+          {assetDetails?.pmTemplates?.length ? (
             <ul className="space-y-2 text-sm">
-              {assetDetails.pmTasks.slice(0, 4).map((task) => (
-                <li key={task.id} className="rounded-lg bg-neutral-900/40 px-3 py-2">
-                  <p className="font-semibold text-neutral-100">{task.title}</p>
+              {assetDetails.pmTemplates.slice(0, 4).map((assignment) => (
+                <li key={assignment.assignmentId} className="rounded-lg bg-neutral-900/40 px-3 py-2">
+                  <p className="font-semibold text-neutral-100">{assignment.title}</p>
                   <p className="text-xs text-neutral-500">
-                    {task.active ? 'Active' : 'Inactive'} • {task.lastGeneratedAt ? new Date(task.lastGeneratedAt).toLocaleDateString() : 'No runs yet'}
+                    Interval: {assignment.interval} •
+                    {' '}
+                    {assignment.nextDue ? `Next due ${new Date(assignment.nextDue).toLocaleDateString()}` : 'Next due scheduled'}
                   </p>
                 </li>
               ))}
             </ul>
           ) : (
-            <EmptyState message={isLoading ? 'Loading PM tasks…' : 'No PM tasks scheduled'} />
+            <EmptyState message={isLoading ? 'Loading templates…' : 'No PM templates assigned'} />
           )}
         </SectionCard>
 
@@ -342,6 +344,12 @@ const AssetDetailPanel = ({ assetSummary, assetDetails, isLoading }: AssetDetail
           <EmptyState message={isLoading ? 'Calculating costs…' : 'Cost data unavailable'} />
         )}
       </SectionCard>
+
+      {assetDetails?.asset && (
+        <SectionCard title="Assign Template">
+          <AssetTemplateAssignments asset={assetDetails.asset} />
+        </SectionCard>
+      )}
 
       <EntityAuditList entityType="Asset" entityId={asset?.id} siteId={asset?.siteId} limit={12} />
     </div>

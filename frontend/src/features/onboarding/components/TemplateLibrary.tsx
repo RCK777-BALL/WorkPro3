@@ -6,10 +6,16 @@ import { Fragment } from 'react';
 import { Loader2, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-import { getTemplatePreview, useClonePmTemplate, usePmTemplateLibrary } from '../hooks';
+import {
+  getTemplatePreview,
+  useClonePmTemplate,
+  useInspectionFormLibrary,
+  usePmTemplateLibrary,
+} from '../hooks';
 
 const TemplateLibrary = () => {
   const { data, isLoading, isError, refetch } = usePmTemplateLibrary();
+  const inspectionForms = useInspectionFormLibrary();
   const cloneMutation = useClonePmTemplate();
 
   const handleClone = async (templateId: string, title: string) => {
@@ -88,6 +94,46 @@ const TemplateLibrary = () => {
           </div>
         );
       })}
+
+      <div className="pt-3">
+        <p className="text-xs uppercase tracking-widest text-white/60">Inspection forms</p>
+        {inspectionForms.isLoading ? (
+          <div className="mt-2 flex items-center gap-2 text-sm text-white/70">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading forms…
+          </div>
+        ) : inspectionForms.isError ? (
+          <div className="mt-2 flex items-center justify-between rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-100">
+            <span>Unable to load inspection forms.</span>
+            <button
+              type="button"
+              onClick={() => inspectionForms.refetch()}
+              className="inline-flex items-center gap-1 rounded-full border border-white/20 px-3 py-1 text-xs text-white/90 hover:bg-white/10"
+            >
+              <RefreshCw className="h-3 w-3" /> Retry
+            </button>
+          </div>
+        ) : (
+          <div className="mt-2 space-y-3">
+            {inspectionForms.data?.map((form) => (
+              <div
+                key={form.id}
+                className="rounded-2xl border border-white/10 bg-slate-950/40 p-4 text-sm text-white/80"
+              >
+                <p className="text-xs uppercase tracking-widest text-white/50">{form.category}</p>
+                <p className="text-base font-semibold text-white">{form.title}</p>
+                <p className="text-white/70">{form.description}</p>
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-white/60">
+                  {form.sections.slice(0, 2).map((section) => (
+                    <li key={section.heading}>
+                      <span className="font-semibold text-white/80">{section.heading}:</span> {section.items.slice(0, 2).join(', ')}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

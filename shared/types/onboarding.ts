@@ -1,4 +1,4 @@
-export type OnboardingStepKey = 'site' | 'assets' | 'pmTemplates' | 'team';
+export type OnboardingStepKey = 'site' | 'departments' | 'assets' | 'pmTemplates' | 'users';
 
 export interface OnboardingStep {
   key: OnboardingStepKey;
@@ -37,4 +37,12 @@ export interface PMTemplateLibraryItem {
   checklist: string[];
   impact: string;
   rule: PMTemplateLibraryRule;
+}
+
+export interface InspectionFormTemplate {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  sections: Array<{ heading: string; items: string[] }>;
 }

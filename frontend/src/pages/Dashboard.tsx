@@ -25,6 +25,7 @@ import StatusBadge from "@/components/common/StatusBadge";
 import Button from "@common/Button";
 import AlertBanner from "@/components/layout/AlertBanner";
 import { DashboardAnalyticsPanel } from "@/features/dashboards";
+import { HelpCenterViewer } from "@/features/help-center";
 import { OnboardingWizard } from "@/features/onboarding";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
 import { usePmCompletionAnalytics } from "@/hooks/usePmAnalytics";
@@ -1346,7 +1347,10 @@ export default function Dashboard() {
 
         <AlertBanner />
 
-        <OnboardingWizard />
+        <div className="grid gap-4 lg:grid-cols-[2fr,1fr]">
+          <OnboardingWizard />
+          <HelpCenterViewer />
+        </div>
 
         <DashboardFilters
           filters={filters}

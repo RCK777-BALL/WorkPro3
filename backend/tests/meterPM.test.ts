@@ -55,8 +55,13 @@ describe('meter based PM generation', () => {
     await PMTask.create({
       title: 'Meter Task',
       tenantId,
-      rule: { type: 'meter', meterName: 'Run Hours', threshold: 100 },
       asset: asset._id,
+      assignments: [
+        {
+          asset: asset._id,
+          trigger: { type: 'meter', meterThreshold: 100 },
+        },
+      ],
     });
     await MeterReading.create({ meter: meter._id, value: 120, tenantId, siteId });
     meter.currentValue = 120;

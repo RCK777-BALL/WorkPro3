@@ -21,6 +21,8 @@ export const partInputSchema = z.object({
   minStock: z.number().optional(),
   minQty: z.number().optional(),
   maxQty: z.number().optional(),
+  minLevel: z.number().optional(),
+  maxLevel: z.number().optional(),
   reorderPoint: z.number().optional(),
   reorderQty: z.number().optional(),
   reorderThreshold: z.number().optional(),
@@ -63,11 +65,9 @@ export const purchaseOrderInputSchema = z.object({
 });
 
 export const locationInputSchema = z.object({
-  name: z.string().min(1, 'Location name is required'),
-  store: z.string().optional(),
+  store: z.string().min(1, 'Store is required'),
   room: z.string().optional(),
   bin: z.string().optional(),
-  parentId: objectId.optional(),
 });
 
 export const stockAdjustmentSchema = z.object({
@@ -88,9 +88,17 @@ export const purchaseOrderStatusSchema = z.object({
     .optional(),
 });
 
+export const inventoryTransferSchema = z.object({
+  partId: objectId,
+  fromLocationId: objectId,
+  toLocationId: objectId,
+  quantity: z.number().positive('Quantity must be greater than zero'),
+});
+
 export type PartInput = z.infer<typeof partInputSchema>;
 export type VendorInput = z.infer<typeof vendorInputSchema>;
 export type PurchaseOrderInput = z.infer<typeof purchaseOrderInputSchema>;
 export type LocationInput = z.infer<typeof locationInputSchema>;
 export type StockAdjustmentInput = z.infer<typeof stockAdjustmentSchema>;
 export type PurchaseOrderStatusInput = z.infer<typeof purchaseOrderStatusSchema>;
+export type InventoryTransferInput = z.infer<typeof inventoryTransferSchema>;

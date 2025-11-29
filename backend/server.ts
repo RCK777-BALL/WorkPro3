@@ -70,6 +70,7 @@ import {
   technicianRoutes,
   TenantRoutes,
   ThemeRoutes,
+  downtimeLogRoutes,
   vendorPortalRoutes,
   vendorRoutes,
   webhooksRoutes,
@@ -86,6 +87,7 @@ import systemSummaryRouter from "./src/routes/summary";
 import hierarchyRouter from "./src/modules/hierarchy";
 import importExportRouter from "./src/modules/importExport";
 import inventoryModuleRouter from "./src/modules/inventory";
+import purchaseOrdersRouter from "./src/modules/purchase-orders";
 import integrationsModuleRouter from "./src/modules/integrations";
 import workRequestsRouter from "./src/modules/work-requests";
 import pmTemplatesRouter from "./src/modules/pm";
@@ -93,6 +95,7 @@ import templatesRouter from "./src/modules/templates";
 import onboardingRouter from "./src/modules/onboarding";
 import assetInsightsRouter from "./src/modules/assets";
 import executiveRouter from "./src/modules/executive";
+import meterReadingsRouter from "./src/modules/meters";
 
 import { startPMScheduler } from "./utils/PMScheduler";
 import { startCopilotSummaryJob } from "./tasks/copilotSummaries";
@@ -266,10 +269,12 @@ app.use("/api/notifications", burstFriendly, notificationsRoutes);
 // Apply limiter to the rest of protected /api routes
 app.use(/^\/api(?!\/(auth|public))/, generalLimiter);
 
+app.use("/api/po", purchaseOrdersRouter);
 app.use("/api/pm/templates", pmTemplatesRouter);
 app.use("/api/templates", templatesRouter);
 app.use("/api/onboarding", onboardingRouter);
 app.use("/api/executive", executiveRouter);
+app.use("/api/custom-reports", customReportsRouter);
 
 app.use("/api/departments", departmentRoutes);
 app.use("/api/departments", departmentRoutes);
@@ -277,8 +282,10 @@ app.use("/api/workorders", workOrdersRoutes);
 app.use("/api/permits", permitRoutes);
 app.use("/api/inspections", inspectionRoutes);
 app.use("/api/assets", assetsRoutes);
+app.use("/api/downtime-logs", downtimeLogRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/assets", assetInsightsRouter);
+app.use("/api/meters", meterReadingsRouter);
 app.use("/api/meters", meterRoutes);
 app.use("/api/tenants", TenantRoutes);
 app.use("/api/pm-tasks", pmTasksRoutes);

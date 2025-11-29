@@ -11,6 +11,11 @@ interface Rule {
   threshold?: number;
 }
 
+export interface PMTriggerConfig {
+  type: 'time' | 'meter';
+  meterThreshold?: number;
+}
+
 export interface PMTaskChecklistItem {
   _id?: Types.ObjectId;
   description: string;
@@ -26,10 +31,11 @@ export interface PMTaskRequiredPart {
 export interface PMTaskAssignmentDocument extends Document {
   _id: Types.ObjectId;
   asset: Types.ObjectId;
-  interval: string;
+  interval?: string;
   usageMetric?: 'runHours' | 'cycles';
   usageTarget?: number;
   usageLookbackDays?: number;
+  trigger?: PMTriggerConfig;
   checklist: Types.DocumentArray<PMTaskChecklistItem>;
   requiredParts: Types.DocumentArray<PMTaskRequiredPart>;
   nextDue?: Date;
@@ -71,10 +77,18 @@ const requiredPartSchema = new Schema<PMTaskRequiredPart>(
 const assignmentSchema = new Schema<PMTaskAssignmentDocument>(
   {
     asset: { type: Schema.Types.ObjectId, ref: 'Asset', required: true },
-    interval: { type: String, required: true },
+    interval: { type: String },
     usageMetric: { type: String, enum: ['runHours', 'cycles'], default: null },
     usageTarget: { type: Number },
     usageLookbackDays: { type: Number, default: 30 },
+    trigger: {
+      type: {
+        type: String,
+        enum: ['time', 'meter'],
+        default: 'time',
+      },
+      meterThreshold: Number,
+    },
     checklist: { type: [checklistSchema], default: [] },
     requiredParts: { type: [requiredPartSchema], default: [] },
     nextDue: { type: Date },

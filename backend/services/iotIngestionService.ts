@@ -9,6 +9,9 @@ import ConditionRule from '../models/ConditionRule';
 import WorkOrder from '../models/WorkOrder';
 import Alert from '../models/Alert';
 import Asset from '../models/Asset';
+import Meter from '../models/Meter';
+import MeterReading from '../models/MeterReading';
+import PMTask from '../models/PMTask';
 
 const ACTIVE_WORK_ORDER_STATUSES = ['requested', 'assigned', 'in_progress'];
 const ANOMALY_LOOKBACK = 20;
@@ -49,6 +52,21 @@ export interface IngestSummary {
   savedCount: number;
   triggeredRules: RuleTriggerResult[];
   anomalies: AnomalyResult[];
+  meterUpdates?: MeterUpdateResult[];
+  meterPmWorkOrders?: MeterPmTriggerResult[];
+}
+
+export interface MeterUpdateResult {
+  meterId: string;
+  value: number;
+  readingId?: string;
+}
+
+export interface MeterPmTriggerResult {
+  pmTaskId: string;
+  meterId: string;
+  workOrderId: string;
+  triggeredAt: string;
 }
 
 const normalizeTimestamp = (value?: string | Date): Date => {
@@ -224,14 +242,67 @@ const sanitizeReadings = (readings: IoTReadingInput[]): {
     );
 };
 
+const triggerMeterPmFromMeter = async (
+  meter: (typeof Meter)['prototype'],
+  observedAt: Date,
+): Promise<MeterPmTriggerResult[]> => {
+  const pmTasks = await PMTask.find({
+    tenantId: meter.tenantId,
+    active: true,
+    'rule.type': 'meter',
+    'rule.meterName': meter.name,
+  });
+
+  const results: MeterPmTriggerResult[] = [];
+
+  for (const task of pmTasks) {
+    const threshold = task.rule?.threshold ?? meter.pmInterval ?? 0;
+    const delta = meter.currentValue - (meter.lastWOValue || 0);
+    if (!Number.isFinite(threshold) || threshold <= 0 || delta < threshold) {
+      continue;
+    }
+
+    const workOrder = await WorkOrder.create({
+      title: `Meter PM: ${task.title}`,
+      description: task.notes || '',
+      status: 'open',
+      asset: meter.asset,
+      pmTask: task._id,
+      department: task.department,
+      dueDate: observedAt,
+      priority: 'medium',
+      tenantId: task.tenantId,
+    });
+
+    meter.lastWOValue = meter.currentValue;
+    task.lastGeneratedAt = observedAt;
+    await task.save();
+
+    results.push({
+      pmTaskId: task._id.toString(),
+      meterId: meter._id.toString(),
+      workOrderId: workOrder._id.toString(),
+      triggeredAt: observedAt.toISOString(),
+    });
+  }
+
+  if (results.length > 0) {
+    await meter.save();
+  }
+
+  return results;
+};
+
 export async function ingestTelemetryBatch({
   tenantId,
   readings,
   source,
+  triggerMeterPm,
 }: {
   tenantId: string;
   readings: IoTReadingInput[];
   source?: 'http' | 'mqtt';
+  triggerMeterPm?: boolean;
 }): Promise<IngestSummary> {
   void source; // reserved for future logging
   const sanitized = sanitizeReadings(readings);
@@ -252,6 +323,8 @@ export async function ingestTelemetryBatch({
 
   const triggeredRules: RuleTriggerResult[] = [];
   const anomalies: AnomalyResult[] = [];
+  const meterUpdates: MeterUpdateResult[] = [];
+  const meterPmWorkOrders: MeterPmTriggerResult[] = [];
 
   const ruleCache = new Map<string, ConditionRuleLean[]>();
 
@@ -297,9 +370,55 @@ export async function ingestTelemetryBatch({
     }
   }
 
+  if (triggerMeterPm) {
+    const latestByMeter = new Map<
+      string,
+      { assetId: string; metric: string; value: number; timestamp: Date }
+    >();
+
+    for (const reading of sanitized) {
+      const key = `${reading.assetId}:${reading.metric}`;
+      const current = latestByMeter.get(key);
+      if (!current || current.timestamp < reading.timestamp) {
+        latestByMeter.set(key, reading);
+      }
+    }
+
+    for (const reading of latestByMeter.values()) {
+      const meter = await Meter.findOne({
+        tenantId,
+        asset: reading.assetId,
+        name: reading.metric,
+      });
+
+      if (!meter) continue;
+
+      const meterReading = await MeterReading.create({
+        meter: meter._id,
+        value: reading.value,
+        timestamp: reading.timestamp,
+        tenantId,
+      });
+
+      meter.currentValue = reading.value;
+      await meter.save();
+
+      meterUpdates.push({
+        meterId: meter._id.toString(),
+        value: reading.value,
+        readingId: meterReading._id.toString(),
+      });
+
+      const pmTriggers = await triggerMeterPmFromMeter(meter, reading.timestamp);
+      meterPmWorkOrders.push(...pmTriggers);
+    }
+  }
+
   return {
     savedCount: docs.length,
     triggeredRules,
     anomalies,
+    ...(meterUpdates.length ? { meterUpdates } : {}),
+    ...(meterPmWorkOrders.length ? { meterPmWorkOrders } : {}),
   };
 }

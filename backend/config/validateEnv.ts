@@ -30,6 +30,9 @@ const envSchema = z.object({
   ENABLE_OIDC_SSO: z.string().optional(),
   ENABLE_SAML_SSO: z.string().optional(),
   ENABLE_SCIM_API: z.string().optional(),
+  API_ACCESS_KEYS: z.string().optional(),
+  API_RATE_LIMIT_WINDOW_MS: z.string().default('60000'),
+  API_RATE_LIMIT_MAX: z.string().default('60'),
 });
 
 export type EnvVars = z.infer<typeof envSchema>;

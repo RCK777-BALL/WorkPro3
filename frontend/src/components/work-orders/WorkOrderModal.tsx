@@ -9,12 +9,14 @@ import { useDropzone } from "react-dropzone";
 import { X, Upload, Download, Camera } from "lucide-react";
 import Button from "@/components/common/Button";
 import AutoCompleteInput from "@/components/common/AutoCompleteInput";
+import FailureInsightCard from "@/components/ai/FailureInsightCard";
 import type { WorkOrder, Part } from "@/types";
 import { searchAssets } from "@/api/search";
 import http from "@/lib/http";
 import { normalizeInventoryCollection } from "@/utils/parts";
 import { useDepartmentStore } from "@/store/departmentStore";
 import { useToast } from "@/context/ToastContext";
+import { useFailurePrediction } from "@/hooks/useAiInsights";
 import {
   mapChecklistsFromApi,
   mapChecklistsToApi,
@@ -151,6 +153,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
   const stations = lineId ? stationsMap[lineId] || [] : [];
   const assetIdValue = watch("assetId") || workOrder?.assetId || initialData?.assetId;
   const descriptionValue = watch("description") || '';
+  const aiPrediction = useFailurePrediction({ workOrderId: workOrder?.id, assetId: assetIdValue });
 
   const mergeFailureModes = (existing: string[], incoming: string[]): string[] => {
     const seen = new Map(existing.map((tag) => [tag.toLowerCase(), tag]));
@@ -618,6 +621,15 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
                 ))}
               </div>
             </div>
+          )}
+          {(workOrder?.id || assetIdValue) && (
+            <FailureInsightCard
+              title="AI maintenance insights"
+              insight={aiPrediction.data}
+              loading={aiPrediction.isLoading}
+              error={aiPrediction.error}
+              onRetry={() => aiPrediction.refetch()}
+            />
           )}
           {workOrder?.id && (
             <CopilotPanel

@@ -69,4 +69,5 @@ export { default as alertRoutes } from './alertRoutes';
 export { default as technicianRoutes } from './technicianRoutes';
 export { default as calibrationRoutes } from './calibration';
 export { default as commentRoutes } from './comments';
+export { default as failureInsightsRoutes } from './failureInsightsRoutes';
 

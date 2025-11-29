@@ -7,6 +7,8 @@ import { X } from 'lucide-react';
 import Button from '@common/Button';
 import type { WorkOrder } from '@/types';
 import { useAuthStore, isAdmin as selectIsAdmin, isSupervisor as selectIsSupervisor } from '@/store/authStore';
+import FailureInsightCard from '@/components/ai/FailureInsightCard';
+import { useFailurePrediction } from '@/hooks/useAiInsights';
 import CopilotPanel, { type CopilotSuggestion } from '@/workorders/CopilotPanel';
 import http from '@/lib/http';
 
@@ -38,6 +40,10 @@ const WorkOrderReviewModal: React.FC<Props> = ({
   const isSupervisor = useAuthStore(selectIsSupervisor);
   const [status, setStatus] = useState<WorkOrder['status']>('requested');
   const [currentOrder, setCurrentOrder] = useState<WorkOrder | null>(workOrder);
+  const aiPrediction = useFailurePrediction({
+    workOrderId: currentOrder?.id,
+    assetId: currentOrder?.assetId,
+  });
 
 
   useEffect(() => {
@@ -275,6 +281,13 @@ const WorkOrderReviewModal: React.FC<Props> = ({
               </ul>
             </div>
           )}
+          <FailureInsightCard
+            title="AI maintenance insights"
+            insight={aiPrediction.data}
+            loading={aiPrediction.isLoading}
+            error={aiPrediction.error}
+            onRetry={() => aiPrediction.refetch()}
+          />
           <CopilotPanel
             workOrderId={currentOrder.id}
             assetId={currentOrder.assetId}

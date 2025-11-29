@@ -158,7 +158,7 @@ export default function PMTemplateEditor() {
             <label className="text-sm font-semibold text-neutral-800">Description</label>
             <TextArea
               value={form.description ?? ""}
-              onChange={(e) => handleChange("description", e.target.value)}
+              onChange={(e: { target: { value: string | number | string[] | undefined; }; }) => handleChange("description", e.target.value)}
               placeholder="Describe the scope and safety steps for this template"
               rows={4}
             />

@@ -92,6 +92,12 @@ export interface AssetDetailResponse {
     criticality?: string;
     location?: string;
     serialNumber?: string;
+    purchaseDate?: string;
+    warrantyStart?: string;
+    warrantyEnd?: string;
+    purchaseCost?: number;
+    expectedLifeMonths?: number;
+    replacementDate?: string;
     siteId?: string;
     plantId?: string;
     lineId?: string;
@@ -684,6 +690,12 @@ type AssetInput = {
   serialNumber?: string;
   modelName?: string;
   manufacturer?: string;
+  purchaseDate?: string | Date;
+  warrantyStart?: string | Date;
+  warrantyEnd?: string | Date;
+  purchaseCost?: number;
+  expectedLifeMonths?: number;
+  replacementDate?: string | Date;
   criticality?: string;
   departmentId?: string;
   lineId?: string;
@@ -739,6 +751,12 @@ const toAssetPayload = (asset: AssetDoc) => ({
   description: asset.description,
   notes: asset.notes,
   location: asset.location,
+  purchaseDate: asset.purchaseDate ? asset.purchaseDate.toISOString() : undefined,
+  warrantyStart: asset.warrantyStart ? asset.warrantyStart.toISOString() : undefined,
+  warrantyEnd: asset.warrantyEnd ? asset.warrantyEnd.toISOString() : undefined,
+  purchaseCost: asset.purchaseCost,
+  expectedLifeMonths: asset.expectedLifeMonths,
+  replacementDate: asset.replacementDate ? asset.replacementDate.toISOString() : undefined,
   departmentId: asset.departmentId ? asset.departmentId.toString() : undefined,
   lineId: asset.lineId ? asset.lineId.toString() : undefined,
   stationId: asset.stationId ? asset.stationId.toString() : undefined,
@@ -777,6 +795,12 @@ export const createAsset = async (context: Context, payload: AssetInput) => {
     serialNumber: payload.serialNumber,
     modelName: payload.modelName,
     manufacturer: payload.manufacturer,
+    purchaseDate: payload.purchaseDate,
+    warrantyStart: payload.warrantyStart,
+    warrantyEnd: payload.warrantyEnd,
+    purchaseCost: payload.purchaseCost,
+    expectedLifeMonths: payload.expectedLifeMonths,
+    replacementDate: payload.replacementDate,
     criticality: payload.criticality ?? 'medium',
     tenantId: context.tenantId,
     plant: resolved.plantId,
@@ -820,6 +844,24 @@ export const updateAsset = async (
   }
   if (typeof payload.manufacturer === 'string') {
     update.manufacturer = payload.manufacturer;
+  }
+  if (payload.purchaseDate) {
+    update.purchaseDate = payload.purchaseDate;
+  }
+  if (payload.warrantyStart) {
+    update.warrantyStart = payload.warrantyStart;
+  }
+  if (payload.warrantyEnd) {
+    update.warrantyEnd = payload.warrantyEnd;
+  }
+  if (payload.purchaseCost !== undefined) {
+    update.purchaseCost = payload.purchaseCost;
+  }
+  if (payload.expectedLifeMonths !== undefined) {
+    update.expectedLifeMonths = payload.expectedLifeMonths;
+  }
+  if (payload.replacementDate) {
+    update.replacementDate = payload.replacementDate;
   }
   if (typeof payload.criticality === 'string') {
     update.criticality = payload.criticality;
@@ -865,6 +907,12 @@ export const duplicateAsset = async (
     serialNumber: asset.serialNumber,
     modelName: asset.modelName,
     manufacturer: asset.manufacturer,
+    purchaseDate: asset.purchaseDate,
+    warrantyStart: asset.warrantyStart,
+    warrantyEnd: asset.warrantyEnd,
+    purchaseCost: asset.purchaseCost,
+    expectedLifeMonths: asset.expectedLifeMonths,
+    replacementDate: asset.replacementDate,
     criticality: asset.criticality,
     tenantId: context.tenantId,
     plant: asset.plant,
@@ -988,6 +1036,24 @@ export const getAssetDetail = async (context: Context, assetId: string): Promise
   }
   if (asset.criticality) {
     assetResponse.criticality = asset.criticality;
+  }
+  if (asset.purchaseDate) {
+    assetResponse.purchaseDate = asset.purchaseDate.toISOString();
+  }
+  if (asset.warrantyStart) {
+    assetResponse.warrantyStart = asset.warrantyStart.toISOString();
+  }
+  if (asset.warrantyEnd) {
+    assetResponse.warrantyEnd = asset.warrantyEnd.toISOString();
+  }
+  if (asset.purchaseCost !== undefined) {
+    assetResponse.purchaseCost = asset.purchaseCost;
+  }
+  if (asset.expectedLifeMonths !== undefined) {
+    assetResponse.expectedLifeMonths = asset.expectedLifeMonths;
+  }
+  if (asset.replacementDate) {
+    assetResponse.replacementDate = asset.replacementDate.toISOString();
   }
   if (asset.location !== undefined) {
     assetResponse.location = asset.location;

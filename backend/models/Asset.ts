@@ -26,6 +26,11 @@ export interface AssetDoc extends Document {
   modelName?: string;
   manufacturer?: string;
   purchaseDate?: Date;
+  warrantyStart?: Date;
+  warrantyEnd?: Date;
+  purchaseCost?: number;
+  expectedLifeMonths?: number;
+  replacementDate?: Date;
   installationDate?: Date;
   lastServiced?: Date;
   criticality?: string;
@@ -57,6 +62,11 @@ const assetSchema = new Schema<AssetDoc>(
     modelName: { type: String },
     manufacturer: { type: String },
     purchaseDate: { type: Date },
+    warrantyStart: { type: Date },
+    warrantyEnd: { type: Date },
+    purchaseCost: { type: Number, min: 0 },
+    expectedLifeMonths: { type: Number, min: 1 },
+    replacementDate: { type: Date },
     installationDate: { type: Date },
     lastServiced: { type: Date },
     line: { type: String },

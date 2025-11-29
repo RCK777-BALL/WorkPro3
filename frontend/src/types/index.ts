@@ -93,6 +93,11 @@ export interface Asset {
   modelName?: string;
   manufacturer?: string;
   purchaseDate?: string;
+  warrantyStart?: string;
+  warrantyEnd?: string;
+  purchaseCost?: number;
+  expectedLifeMonths?: number;
+  replacementDate?: string;
   installationDate?: string;
   line?: string;
   station?: string;

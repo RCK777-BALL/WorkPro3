@@ -84,6 +84,12 @@ export type AssetDetailResponse = {
     modelName?: string;
     manufacturer?: string;
     purchaseDate?: string;
+    warrantyExpiry?: string;
+    warrantyStart?: string;
+    warrantyEnd?: string;
+    purchaseCost?: number;
+    expectedLifeMonths?: number;
+    replacementDate?: string;
     installationDate?: string;
     siteId?: string;
     plantId?: string;

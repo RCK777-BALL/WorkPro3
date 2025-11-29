@@ -14,6 +14,7 @@ import AssetHistoryTimeline from '@/components/assets/AssetHistoryTimeline';
 import AssetPmTemplateCards from '@/components/assets/AssetPmTemplateCards';
 import AssetWorkOrderList from '@/components/assets/AssetWorkOrderList';
 import CommentThread from '@/components/comments/CommentThread';
+import AssetLifecycle, { evaluateWarrantyStatus } from '@/components/assets/AssetLifecycle';
 
 const tabs = [
   { id: 'overview', label: 'Overview' },
@@ -23,6 +24,7 @@ const tabs = [
   { id: 'pm', label: 'PM Templates' },
   { id: 'work', label: 'Open Work Orders' },
   { id: 'costs', label: 'Cost Rollups' },
+  { id: 'lifecycle', label: 'Lifecycle' },
   { id: 'comments', label: 'Comments' },
 ] as const;
 
@@ -34,6 +36,7 @@ const AssetDetails = () => {
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, error } = useAssetDetailsQuery(id);
   const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const warrantyStatus = evaluateWarrantyStatus(data?.asset);
 
   const assetName = data?.asset.name ?? 'Asset details';
   const qrValue = useMemo(() => {
@@ -125,6 +128,12 @@ const AssetDetails = () => {
             {...(data?.costRollups ? { cost: data.costRollups } : {})}
           />
         );
+      case 'lifecycle':
+        return data?.asset ? (
+          <AssetLifecycle asset={data.asset} />
+        ) : (
+          <p className="text-sm text-neutral-500">Asset lifecycle data unavailable.</p>
+        );
       case 'comments':
         return id ? (
           <CommentThread entityType="Asset" entityId={id} />
@@ -153,6 +162,25 @@ const AssetDetails = () => {
           <p className="text-sm text-rose-300">
             {error instanceof Error ? error.message : 'Unable to load asset details.'}
           </p>
+        )}
+        {warrantyStatus.status !== 'none' && (
+          <div
+            className={clsx(
+              'mt-3 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold',
+              warrantyStatus.status === 'expired' && 'border-rose-500/40 bg-rose-500/10 text-rose-200',
+              warrantyStatus.status === 'expiring' && 'border-amber-500/40 bg-amber-500/10 text-amber-100',
+              warrantyStatus.status === 'active' && 'border-emerald-500/40 bg-emerald-500/10 text-emerald-100',
+            )}
+          >
+            {warrantyStatus.status === 'expired' && 'Warranty expired'}
+            {warrantyStatus.status === 'expiring' && 'Warranty expiring soon'}
+            {warrantyStatus.status === 'active' && 'Warranty active'}
+            {warrantyStatus.daysRemaining !== undefined && (
+              <span className="text-[11px] font-normal text-white/70">
+                {Math.abs(warrantyStatus.daysRemaining)} day{Math.abs(warrantyStatus.daysRemaining) === 1 ? '' : 's'} remaining
+              </span>
+            )}
+          </div>
         )}
       </header>
       {qrValue && (

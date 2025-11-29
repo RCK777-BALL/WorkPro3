@@ -4,6 +4,7 @@
 
 import { Types } from 'mongoose';
 import WorkOrder, { WorkOrder as WorkOrderType } from '../models/WorkOrder';
+import WorkHistory from '../models/WorkHistory';
 import SensorReading from '../models/SensorReading';
 import ProductionRecord from '../models/ProductionRecord';
 import Asset from '../models/Asset';
@@ -113,6 +114,11 @@ interface AnalyticsSources {
     timestamp: Date;
     value: number;
     metric: string;
+  }>;
+  workHistory: Array<{
+    asset?: ObjectIdLike | null;
+    completedAt?: Date | null;
+    timeSpentHours?: number | null;
   }>;
 }
 
@@ -256,6 +262,38 @@ function calculateMTBF(workOrders: { completedAt?: Date | null }[]): number {
   return safeDivide(total, failures.length - 1) / 36e5;
 }
 
+function calculateHistoryReliability(
+  history: AnalyticsSources['workHistory'],
+): { mttrHours: number; mtbfHours: number } {
+  const completed = history.filter((item) => item.completedAt);
+  if (!completed.length) {
+    return { mttrHours: 0, mtbfHours: 0 };
+  }
+
+  const mttrHours = (() => {
+    const durations = completed
+      .map((item) => item.timeSpentHours)
+      .filter((value): value is number => typeof value === 'number' && value >= 0);
+    if (!durations.length) return 0;
+    const total = durations.reduce((sum, value) => sum + value, 0);
+    return safeDivide(total, durations.length);
+  })();
+
+  const mtbfHours = (() => {
+    const failures = [...completed].sort(
+      (a, b) => (a.completedAt?.getTime() ?? 0) - (b.completedAt?.getTime() ?? 0),
+    );
+    if (failures.length < 2) return 0;
+    let delta = 0;
+    for (let i = 1; i < failures.length; i += 1) {
+      delta += (failures[i].completedAt?.getTime() ?? 0) - (failures[i - 1].completedAt?.getTime() ?? 0);
+    }
+    return safeDivide(delta, failures.length - 1) / 36e5;
+  })();
+
+  return { mttrHours, mtbfHours };
+}
+
 function calculateBacklog(workOrders: { status: string }[]): number {
   return workOrders.filter((w) => w.status !== 'completed').length;
 }
@@ -354,6 +392,14 @@ async function loadSources(tenantId: string, filters: AnalyticsFilters): Promise
     .select('createdAt completedAt status failureCode timeSpentMin assetId')
     .lean();
 
+  const historyQuery: Record<string, unknown> = { tenantId: tenantFilter };
+  if (dateRange) historyQuery.completedAt = dateRange;
+  if (assetFilter) historyQuery.asset = { $in: assetFilter };
+
+  const workHistory = await WorkHistory.find(historyQuery)
+    .select('asset completedAt timeSpentHours')
+    .lean();
+
   const sensorQuery: Record<string, unknown> = { tenantId: tenantFilter, metric: ENERGY_METRIC };
   if (dateRange) sensorQuery.timestamp = dateRange;
   if (assetFilter) sensorQuery.asset = { $in: assetFilter };
@@ -362,7 +408,7 @@ async function loadSources(tenantId: string, filters: AnalyticsFilters): Promise
     .select('asset timestamp value metric')
     .lean();
 
-  return { workOrders, production, sensorReadings };
+  return { workOrders, production, sensorReadings, workHistory };
 }
 
 function buildBenchmark(
@@ -611,9 +657,13 @@ export async function getKPIs(tenantId: string, filters: AnalyticsFilters = {}):
   const assetBenchmarks = buildBenchmark(sources.production, (record) => record.asset, assetNames);
   const siteBenchmarks = buildBenchmark(sources.production, (record) => record.site ?? assetSite.get(record.asset?.toString() ?? ''), siteNames);
 
+  const reliability = calculateHistoryReliability(sources.workHistory);
+  const mttr = reliability.mttrHours || calculateMTTR(sources.workOrders);
+  const mtbf = reliability.mtbfHours || calculateMTBF(sources.workOrders);
+
   return {
-    mttr: calculateMTTR(sources.workOrders),
-    mtbf: calculateMTBF(sources.workOrders),
+    mttr,
+    mtbf,
     backlog: calculateBacklog(sources.workOrders),
     availability,
     performance,
@@ -717,6 +767,18 @@ export async function getDashboardKpiSummary(
     .select('status dueDate pmTask completedAt createdAt downtime partsUsed')
     .lean();
 
+  const historyMatch: Record<string, unknown> = { tenantId: tenantFilter };
+  if (assetFilter && assetFilter.length) {
+    historyMatch.asset = { $in: assetFilter };
+  }
+  if (dateRange) {
+    historyMatch.completedAt = dateRange;
+  }
+
+  const workHistory = await WorkHistory.find(historyMatch)
+    .select('asset completedAt timeSpentHours')
+    .lean();
+
   if (!workOrders.length) {
     return createEmptyDashboardKpiResult();
   }
@@ -737,6 +799,10 @@ export async function getDashboardKpiSummary(
   let downtimeHours = 0;
   let pmTotal = 0;
   let pmCompleted = 0;
+
+  const reliability = calculateHistoryReliability(workHistory);
+  const mttr = reliability.mttrHours || calculateMTTR(workOrders);
+  const mtbf = reliability.mtbfHours || calculateMTBF(workOrders);
 
   workOrders.forEach((wo) => {
     if (wo.pmTask) {
@@ -762,8 +828,8 @@ export async function getDashboardKpiSummary(
     pmCompliance: { total: pmTotal, completed: pmCompleted, percentage: pmPercentage },
     downtimeHours,
     maintenanceCost,
-    mttr: calculateMTTR(workOrders),
-    mtbf: calculateMTBF(workOrders),
+    mttr,
+    mtbf,
   };
 }
 
@@ -781,6 +847,16 @@ export async function getCorporateSiteSummaries(
   }
   const siteDocs = await Site.find(siteQuery).select('name tenantId').lean();
   const siteNames = new Map(siteDocs.map((site) => [site._id.toString(), site.name]));
+
+  const assetSiteQuery: Record<string, unknown> = { tenantId: tenantFilter };
+  if (siteFilter && siteFilter.length) {
+    assetSiteQuery.siteId = { $in: siteFilter };
+  }
+  const assetSites: Array<{ _id: Types.ObjectId; siteId?: Types.ObjectId | null }> = await Asset.find(assetSiteQuery)
+    .select('_id siteId')
+    .lean();
+  const assetSiteMap = new Map(assetSites.map((asset) => [asset._id.toString(), asset.siteId?.toString()]));
+  const allowedSites = siteFilter ? new Set(siteFilter.map((id) => id.toString())) : null;
 
   const workOrderMatch: Record<string, unknown> = { tenantId: tenantFilter };
   if (siteFilter && siteFilter.length) {
@@ -804,6 +880,20 @@ export async function getCorporateSiteSummaries(
     .select('siteId status completedAt createdAt pmTask')
     .lean();
 
+  const historyMatch: Record<string, unknown> = { tenantId: tenantFilter };
+  if (dateRange) {
+    historyMatch.completedAt = dateRange;
+  }
+  if (siteFilter && siteFilter.length && !assetSites.length) {
+    historyMatch.asset = { $in: [] };
+  } else if (assetSites.length) {
+    historyMatch.asset = { $in: assetSites.map((asset) => asset._id) };
+  }
+
+  const workHistory = await WorkHistory.find(historyMatch)
+    .select('asset completedAt timeSpentHours')
+    .lean();
+
   const grouped = new Map<string, typeof workOrders>();
   workOrders.forEach((order) => {
     const key = order.siteId ? order.siteId.toString() : 'unassigned';
@@ -820,6 +910,18 @@ export async function getCorporateSiteSummaries(
     }
   });
 
+  const historyBySite = new Map<string, typeof workHistory>();
+  workHistory.forEach((entry) => {
+    const assetId = entry.asset ? entry.asset.toString() : null;
+    const siteId = assetId ? assetSiteMap.get(assetId) : undefined;
+    const key = siteId ?? 'unassigned';
+    if (allowedSites && siteId && !allowedSites.has(siteId)) return;
+    if (!historyBySite.has(key)) {
+      historyBySite.set(key, []);
+    }
+    historyBySite.get(key)!.push(entry);
+  });
+
   const summaries: CorporateSiteSummary[] = [];
   grouped.forEach((orders, siteId) => {
     const total = orders.length;
@@ -829,6 +931,9 @@ export async function getCorporateSiteSummaries(
     const pmTotal = orders.filter((order) => Boolean(order.pmTask)).length;
     const pmCompleted = orders.filter((order) => order.pmTask && order.status === 'completed').length;
     const pmPercentage = pmTotal ? (pmCompleted / pmTotal) * 100 : 0;
+    const reliability = calculateHistoryReliability(historyBySite.get(siteId) ?? []);
+    const mttrHours = reliability.mttrHours || calculateMTTR(orders);
+    const mtbfHours = reliability.mtbfHours || calculateMTBF(orders);
     summaries.push({
       siteId,
       siteName: siteNames.get(siteId) ?? (siteId === 'unassigned' ? 'Unassigned' : undefined),
@@ -837,8 +942,8 @@ export async function getCorporateSiteSummaries(
       openWorkOrders: open,
       completedWorkOrders: completed,
       backlog,
-      mttrHours: calculateMTTR(orders),
-      mtbfHours: calculateMTBF(orders),
+      mttrHours,
+      mtbfHours,
       pmCompliance: { total: pmTotal, completed: pmCompleted, percentage: pmPercentage },
     });
   });

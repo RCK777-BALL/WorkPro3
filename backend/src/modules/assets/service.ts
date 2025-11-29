@@ -7,6 +7,7 @@ import DocumentModel, { type DocumentDoc } from '../../../models/Document';
 import InventoryItem, { type IInventoryItem } from '../../../models/InventoryItem';
 import PMTask, { type PMTaskDocument } from '../../../models/PMTask';
 import WorkHistory, { type WorkHistoryDocument } from '../../../models/WorkHistory';
+import DowntimeLog, { type DowntimeLogDocument } from '../../../models/DowntimeLog';
 import WorkOrderModel, { type WorkOrder } from '../../../models/WorkOrder';
 
 export class AssetInsightsError extends Error {
@@ -73,6 +74,19 @@ export type AssetWorkOrderSummary = {
   dueDate?: string;
 };
 
+export type AssetDowntimeLog = {
+  id: string;
+  start: string;
+  end?: string;
+  reason?: string;
+  durationMinutes: number;
+};
+
+export type AssetReliabilitySummary = {
+  mttrHours: number;
+  mtbfHours: number;
+};
+
 export type AssetCostRollup = {
   total: number;
   maintenance: number;
@@ -120,6 +134,8 @@ export type AssetInsightsResponse = {
   pmTemplates: AssetPmTemplateSummary[];
   openWorkOrders: AssetWorkOrderSummary[];
   costRollups: AssetCostRollup;
+  downtimeLogs: AssetDowntimeLog[];
+  reliability: AssetReliabilitySummary;
 };
 
 const OPEN_WORK_ORDER_STATUSES: ReadonlySet<WorkOrder['status']> = new Set([
@@ -251,6 +267,98 @@ const partsCostForOrder = (order: WorkOrder): number =>
 
 const laborCostForOrder = (order: WorkOrder): number => ((order.timeSpentMin ?? 0) / 60) * HOURLY_RATE;
 
+const calculateMttrFromOrders = (orders: WorkOrder[]): number => {
+  const completed = orders.filter((order) => order.completedAt);
+  if (!completed.length) return 0;
+  const totalHours = completed.reduce((sum, order) => {
+    const end = order.completedAt?.getTime() ?? 0;
+    const start = order.createdAt?.getTime() ?? end;
+    const durationHours =
+      typeof order.timeSpentMin === 'number' && order.timeSpentMin > 0
+        ? order.timeSpentMin / 60
+        : Math.max(end - start, 0) / 36e5;
+    return sum + durationHours;
+  }, 0);
+
+  return totalHours / completed.length;
+};
+
+const calculateMtbfFromOrders = (orders: WorkOrder[]): number => {
+  const failures = [...orders]
+    .filter((order) => order.completedAt)
+    .sort((a, b) => (a.completedAt?.getTime() ?? 0) - (b.completedAt?.getTime() ?? 0));
+  if (failures.length < 2) return 0;
+  let total = 0;
+  for (let idx = 1; idx < failures.length; idx += 1) {
+    total += (failures[idx].completedAt?.getTime() ?? 0) - (failures[idx - 1].completedAt?.getTime() ?? 0);
+  }
+  return total / (failures.length - 1) / 36e5;
+};
+
+const calculateReliabilityFromHistory = (
+  history: WorkHistoryDocument[],
+): AssetReliabilitySummary => {
+  const completed = history.filter((entry) => entry.completedAt);
+  if (!completed.length) {
+    return { mtbfHours: 0, mttrHours: 0 };
+  }
+
+  const mttrHours = (() => {
+    const durations = completed
+      .map((entry) => entry.timeSpentHours)
+      .filter((value): value is number => typeof value === 'number' && value >= 0);
+    if (!durations.length) return 0;
+    const total = durations.reduce((sum, value) => sum + value, 0);
+    return total / durations.length;
+  })();
+
+  const mtbfHours = (() => {
+    const failures = [...completed].sort(
+      (a, b) => (a.completedAt?.getTime() ?? 0) - (b.completedAt?.getTime() ?? 0),
+    );
+    if (failures.length < 2) return 0;
+    let delta = 0;
+    for (let idx = 1; idx < failures.length; idx += 1) {
+      delta += (failures[idx].completedAt?.getTime() ?? 0) - (failures[idx - 1].completedAt?.getTime() ?? 0);
+    }
+    return delta / (failures.length - 1) / 36e5;
+  })();
+
+  return { mtbfHours, mttrHours };
+};
+
+const buildReliabilitySummary = (
+  history: WorkHistoryDocument[],
+  orders: WorkOrder[],
+): AssetReliabilitySummary => {
+  const historyMetrics = calculateReliabilityFromHistory(history);
+  const mttrHours = historyMetrics.mttrHours || calculateMttrFromOrders(orders);
+  const mtbfHours = historyMetrics.mtbfHours || calculateMtbfFromOrders(orders);
+  return { mttrHours, mtbfHours };
+};
+
+const toDowntimeLog = (log: DowntimeLogDocument): AssetDowntimeLog => {
+  const start = log.start ? new Date(log.start) : new Date();
+  const end = log.end ? new Date(log.end) : new Date();
+  const durationMinutes = Math.max(end.getTime() - start.getTime(), 0) / 60000;
+
+  const summary: AssetDowntimeLog = {
+    id: log._id?.toString() ?? '',
+    start: start.toISOString(),
+    durationMinutes,
+  };
+
+  if (log.end) {
+    summary.end = log.end.toISOString();
+  }
+
+  if (log.reason) {
+    summary.reason = log.reason;
+  }
+
+  return summary;
+};
+
 const buildMonthlyRollups = (orders: WorkOrder[]): AssetCostRollup['monthly'] => {
   const months: { key: string; label: string }[] = [];
   const now = new Date();
@@ -315,8 +423,13 @@ export const getAssetInsights = async (
     pmTemplatesRaw,
     openWorkOrdersRaw,
     costOrdersRaw,
+    downtimeLogsRaw,
+    reliabilityOrdersRaw,
   ] = await Promise.all([
-    WorkHistory.find({ tenantId: context.tenantId, asset: assetId }).limit(25).lean(),
+    WorkHistory.find({ tenantId: context.tenantId, asset: assetId })
+      .sort({ completedAt: -1 })
+      .limit(250)
+      .lean(),
     DocumentModel.find({ asset: assetId }).sort({ createdAt: -1 }).limit(50).lean(),
     InventoryItem.find({ tenantId: context.tenantId, asset: assetId }).lean(),
     PMTask.find({ tenantId: context.tenantId, 'assignments.asset': assetId })
@@ -332,6 +445,12 @@ export const getAssetInsights = async (
       .lean(),
     WorkOrderModel.find({ tenantId: context.tenantId, assetId, updatedAt: { $gte: costWindowStart } })
       .select('partsUsed timeSpentMin updatedAt completedAt createdAt')
+      .lean(),
+    DowntimeLog.find({ tenantId: context.tenantId, assetId }).sort({ start: -1 }).limit(200).lean(),
+    WorkOrderModel.find({ tenantId: context.tenantId, assetId })
+      .select('createdAt completedAt status timeSpentMin')
+      .sort({ completedAt: -1 })
+      .limit(500)
       .lean(),
   ]);
 
@@ -435,5 +554,10 @@ export const getAssetInsights = async (
     pmTemplates: pmTemplateSummaries,
     openWorkOrders: (openWorkOrdersRaw as WorkOrder[]).map(toWorkOrderSummary),
     costRollups: calculateCostRollups(costOrdersRaw as WorkOrder[]),
+    downtimeLogs: (downtimeLogsRaw as DowntimeLogDocument[]).map(toDowntimeLog),
+    reliability: buildReliabilitySummary(
+      historyRaw as WorkHistoryDocument[],
+      reliabilityOrdersRaw as WorkOrder[],
+    ),
   };
 };

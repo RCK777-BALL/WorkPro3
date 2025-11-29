@@ -124,7 +124,7 @@ const AssetTable: React.FC<AssetTableProps> = ({
                   {asset.lastServiced || 'N/A'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                  {asset.warrantyExpiry || 'N/A'}
+                  {asset.warrantyEnd || asset.warrantyExpiry || 'N/A'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right">
                   <div className="flex items-center justify-end space-x-2">

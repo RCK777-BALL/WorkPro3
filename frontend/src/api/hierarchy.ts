@@ -61,6 +61,12 @@ export type AssetDetailResponse = {
     criticality?: string;
     location?: string;
     serialNumber?: string;
+    purchaseDate?: string;
+    warrantyStart?: string;
+    warrantyEnd?: string;
+    purchaseCost?: number;
+    expectedLifeMonths?: number;
+    replacementDate?: string;
     siteId?: string;
     plantId?: string;
     lineId?: string;

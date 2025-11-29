@@ -14,6 +14,7 @@ import StockHistory from '../models/StockHistory';
 import Permit, { type PermitDocument } from '../models/Permit';
 import { emitWorkOrderUpdate } from '../server';
 import notifyUser from '../utils/notify';
+import { notifySlaBreach, notifyWorkOrderAssigned } from '../services/notificationService';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
@@ -837,6 +838,7 @@ export async function updateWorkOrder(
     }
     await auditAction(req as unknown as Request, 'update', 'WorkOrder', new Types.ObjectId(req.params.id), existing.toObject(), updated.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(updated));
+    await notifySlaBreach(updated);
     sendResponse(res, updated);
     return;
   } catch (err) {
@@ -1118,6 +1120,9 @@ export async function assignWorkOrder(
     }
     const saved = await workOrder.save();
     await auditAction(req as unknown as Request, 'assign', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
+    if (saved.assignees && saved.assignees.length) {
+      await notifyWorkOrderAssigned(saved, saved.assignees as unknown as Types.ObjectId[]);
+    }
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved);
     return;

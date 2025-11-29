@@ -20,6 +20,15 @@ export interface NotificationSettings {
   maintenanceReminders: boolean;
   inventoryAlerts: boolean;
   systemUpdates: boolean;
+  assignedWorkOrders: boolean;
+  slaBreachAlerts: boolean;
+  inventoryLowStock: boolean;
+  preventiveMaintenanceDue: boolean;
+  smsNotifications: boolean;
+  smsNumber: string;
+  webhookUrl?: string;
+  slackWebhookUrl?: string;
+  teamsWebhookUrl?: string;
 }
 
 export interface EmailSettings {
@@ -67,6 +76,15 @@ const createDefaultNotifications = (): NotificationSettings => ({
   maintenanceReminders: true,
   inventoryAlerts: true,
   systemUpdates: false,
+  assignedWorkOrders: true,
+  slaBreachAlerts: true,
+  inventoryLowStock: true,
+  preventiveMaintenanceDue: true,
+  smsNotifications: false,
+  smsNumber: '',
+  webhookUrl: '',
+  slackWebhookUrl: '',
+  teamsWebhookUrl: '',
 });
 
 const createDefaultEmail = (): EmailSettings => ({
@@ -137,6 +155,32 @@ const sanitizeNotificationsState = (value: unknown): NotificationSettings => {
       typeof record['systemUpdates'] === 'boolean'
         ? (record['systemUpdates'] as boolean)
         : defaults.systemUpdates,
+    assignedWorkOrders:
+      typeof record['assignedWorkOrders'] === 'boolean'
+        ? (record['assignedWorkOrders'] as boolean)
+        : defaults.assignedWorkOrders,
+    slaBreachAlerts:
+      typeof record['slaBreachAlerts'] === 'boolean'
+        ? (record['slaBreachAlerts'] as boolean)
+        : defaults.slaBreachAlerts,
+    inventoryLowStock:
+      typeof record['inventoryLowStock'] === 'boolean'
+        ? (record['inventoryLowStock'] as boolean)
+        : defaults.inventoryLowStock,
+    preventiveMaintenanceDue:
+      typeof record['preventiveMaintenanceDue'] === 'boolean'
+        ? (record['preventiveMaintenanceDue'] as boolean)
+        : defaults.preventiveMaintenanceDue,
+    smsNotifications:
+      typeof record['smsNotifications'] === 'boolean'
+        ? (record['smsNotifications'] as boolean)
+        : defaults.smsNotifications,
+    smsNumber: typeof record['smsNumber'] === 'string' ? (record['smsNumber'] as string) : defaults.smsNumber,
+    webhookUrl: typeof record['webhookUrl'] === 'string' ? (record['webhookUrl'] as string) : defaults.webhookUrl,
+    slackWebhookUrl:
+      typeof record['slackWebhookUrl'] === 'string' ? (record['slackWebhookUrl'] as string) : defaults.slackWebhookUrl,
+    teamsWebhookUrl:
+      typeof record['teamsWebhookUrl'] === 'string' ? (record['teamsWebhookUrl'] as string) : defaults.teamsWebhookUrl,
   };
 };
 
@@ -250,6 +294,33 @@ const sanitizeNotificationUpdate = (
   }
   if (typeof value.systemUpdates === 'boolean') {
     updates.systemUpdates = value.systemUpdates;
+  }
+  if (typeof value.assignedWorkOrders === 'boolean') {
+    updates.assignedWorkOrders = value.assignedWorkOrders;
+  }
+  if (typeof value.slaBreachAlerts === 'boolean') {
+    updates.slaBreachAlerts = value.slaBreachAlerts;
+  }
+  if (typeof value.inventoryLowStock === 'boolean') {
+    updates.inventoryLowStock = value.inventoryLowStock;
+  }
+  if (typeof value.preventiveMaintenanceDue === 'boolean') {
+    updates.preventiveMaintenanceDue = value.preventiveMaintenanceDue;
+  }
+  if (typeof value.smsNotifications === 'boolean') {
+    updates.smsNotifications = value.smsNotifications;
+  }
+  if (typeof value.smsNumber === 'string') {
+    updates.smsNumber = value.smsNumber;
+  }
+  if (typeof value.webhookUrl === 'string') {
+    updates.webhookUrl = value.webhookUrl;
+  }
+  if (typeof value.slackWebhookUrl === 'string') {
+    updates.slackWebhookUrl = value.slackWebhookUrl;
+  }
+  if (typeof value.teamsWebhookUrl === 'string') {
+    updates.teamsWebhookUrl = value.teamsWebhookUrl;
   }
 
   return updates;

@@ -28,6 +28,7 @@ export type NavItemId =
   | 'messages'
   | 'documentation-getting-started'
   | 'documentation-asset-management'
+  | 'notification-settings'
   | 'settings'
   | 'imports'
   | 'audit';
@@ -54,6 +55,7 @@ const defaultOrder: NavItemId[] = [
   'messages',
   'documentation-getting-started',
   'documentation-asset-management',
+  'notification-settings',
   'settings',
   'audit',
   'imports',

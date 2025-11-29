@@ -9,6 +9,7 @@ import ConditionRule from '../models/ConditionRule';
 import SensorReading from '../models/SensorReading';
 import ProductionRecord from '../models/ProductionRecord';
 import logger from '../utils/logger';
+import { notifyPmDue } from './notificationService';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
@@ -102,6 +103,9 @@ export async function runPMScheduler(): Promise<void> {
                 qty: part.quantity,
               })),
             });
+            if (assignment.nextDue) {
+              await notifyPmDue(task, assignment.nextDue);
+            }
             assignment.lastGeneratedAt = now;
             assignment.nextDue = calcNextDue(now, interval);
             task.lastGeneratedAt = now;
@@ -128,6 +132,7 @@ export async function runPMScheduler(): Promise<void> {
             priority: 'medium',
             tenantId: task.tenantId,
           });
+          await notifyPmDue(task, next);
           task.lastGeneratedAt = now;
           await task.save();
         }
@@ -150,6 +155,7 @@ export async function runPMScheduler(): Promise<void> {
             priority: 'medium',
             tenantId: task.tenantId,
           });
+          await notifyPmDue(task, now);
           meter.lastWOValue = meter.currentValue;
           await meter.save();
           task.lastGeneratedAt = now;

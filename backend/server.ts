@@ -108,6 +108,7 @@ import { initChatSocket } from "./socket/chatSocket";
 import User from "./models/User";
 import { requireAuth } from "./middleware/authMiddleware";
 import tenantScope from "./middleware/tenantScope";
+import { apiAccessMiddleware } from "./middleware/apiAccess";
 import type {
   WorkOrderUpdatePayload,
   InventoryUpdatePayload,
@@ -184,7 +185,10 @@ app.use(tenantResolver);
 app.use(auditLogMiddleware);
 app.use(express.json({ limit: "1mb" }));
 app.use(mongoSanitize());
-setupSwagger(app);
+setupSwagger(app, "/api/docs/ui", apiAccessMiddleware);
+app.get("/api-docs", (_req: Request, res: Response) => {
+  res.redirect(301, "/api/docs/ui");
+});
 
 const dev = env.NODE_ENV !== "production";
 
@@ -246,6 +250,7 @@ app.use("/api/public", publicRequestRoutes);
 app.use("/api", uiRoutes);
 app.use("/api/health", healthRouter);
 app.use("/api/hierarchy", hierarchyRouter);
+app.use("/api/docs", apiDocsRouter);
 app.use("/api", workRequestsRouter);
 app.use("/api/import-export", importExportRouter);
 app.use("/api/inventory/v2", inventoryV2Routes);
@@ -259,7 +264,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/scim", scimRoutes);
 
 // Protect all remaining /api routes except /api/auth, /api/public, /api/sso, and /api/scim
-app.use(/^\/api(?!\/(auth|public|sso|scim))/, requireAuth, tenantScope);
+app.use(/^\/api(?!\/(auth|public|sso|scim|docs))/, requireAuth, tenantScope);
 
 app.use("/api/mobile", mobileLimiter, mobileRoutes);
 app.use("/api/mobile", mobileLimiter, mobileSyncAdminRoutes);

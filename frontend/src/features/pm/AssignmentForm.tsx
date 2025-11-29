@@ -5,6 +5,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import Button from '@/components/common/Button';
+import FailureInsightCard from '@/components/ai/FailureInsightCard';
+import { useFailurePrediction } from '@/hooks/useAiInsights';
 import { useToast } from '@/context/ToastContext';
 import type { PMTemplateAssignment } from '@/types';
 import { useUpsertAssignment } from './hooks';
@@ -57,6 +59,40 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
       quantity: part.quantity ?? 1,
     })) ?? [],
   );
+  const aiPrediction = useFailurePrediction({ assetId });
+
+  const resolveIntervalFromDays = (days?: number) => {
+    if (!days) return interval;
+    if (days <= 10) return 'weekly';
+    if (days <= 45) return 'monthly';
+    if (days <= 120) return 'quarterly';
+    return 'annually';
+  };
+
+  const applyPmDraft = () => {
+    const draft = aiPrediction.data?.pmTemplateDraft;
+    if (!draft) return;
+    setInterval(resolveIntervalFromDays(draft.intervalDays));
+    setChecklist(
+      draft.checklist.map((item) => ({
+        id: newId(),
+        description: item,
+        required: true,
+      })),
+    );
+    setRequiredParts(
+      draft.parts.map((part) => {
+        const matched = partOptions.find(
+          (option) => option.name.toLowerCase() === part.name.toLowerCase(),
+        );
+        return {
+          id: newId(),
+          partId: matched?.id ?? part.partId ?? '',
+          quantity: part.quantity ?? 1,
+        };
+      }),
+    );
+  };
 
   useEffect(() => {
     setAssetId(assignment?.assetId ?? fixedAssetId ?? '');
@@ -131,6 +167,30 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       {error && <p className="text-sm text-error-500">{error}</p>}
+      {(assetId || aiPrediction.isLoading || aiPrediction.error) && (
+        <div className="space-y-2 rounded-lg border border-neutral-200 bg-white p-3 shadow-sm">
+          <FailureInsightCard
+            title="AI PM assist"
+            insight={aiPrediction.data}
+            loading={aiPrediction.isLoading}
+            error={aiPrediction.error}
+            onRetry={() => aiPrediction.refetch()}
+          />
+          {aiPrediction.data?.pmTemplateDraft && (
+            <div className="flex items-start justify-between gap-3 rounded-md border border-dashed border-primary-200 bg-primary-50/70 p-3">
+              <div>
+                <p className="text-sm font-semibold text-neutral-900">Apply suggested PM draft</p>
+                <p className="text-xs text-neutral-600">
+                  Prefills interval, checklist, and parts using meter/work-order signals.
+                </p>
+              </div>
+              <Button size="sm" variant="outline" type="button" onClick={applyPmDraft}>
+                Apply
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
       <div>
         <label className="block text-sm font-medium text-neutral-700">Asset</label>
         <select

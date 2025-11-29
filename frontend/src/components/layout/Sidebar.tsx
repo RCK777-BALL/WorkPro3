@@ -27,6 +27,7 @@ import {
   ScrollText,
   Scan,
   Settings,
+  TrendingUp,
   Users,
   Warehouse,
 } from "lucide-react";
@@ -173,6 +174,13 @@ const navItems: Record<NavItemId, NavItem> = {
     label: "Plant Analytics",
     to: "/analytics",
     icon: BarChart3,
+    section: "analytics",
+  },
+  "pm-analytics": {
+    id: "pm-analytics",
+    label: "PM Analytics",
+    to: "/analytics/pm",
+    icon: TrendingUp,
     section: "analytics",
   },
   "iot-monitoring": {

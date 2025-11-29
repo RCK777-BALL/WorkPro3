@@ -100,7 +100,9 @@ const TemplateAssignmentsView = () => {
                     <div>
                       <p className="font-medium text-neutral-800">{assignment.assetName ?? 'Unresolved asset'}</p>
                       <p className="text-sm text-neutral-500">
-                        Interval: {assignment.interval} {assignment.nextDue ? `· Next due ${new Date(assignment.nextDue).toLocaleDateString()}` : ''}
+                        {assignment.trigger?.type === 'meter'
+                          ? `Meter trigger: +${assignment.trigger.meterThreshold ?? '–'}`
+                          : `Interval: ${assignment.interval ?? 'Not set'}${assignment.nextDue ? ` · Next due ${new Date(assignment.nextDue).toLocaleDateString()}` : ''}`}
                       </p>
                       <p className="text-xs text-neutral-500">
                         Checklist items: {assignment.checklist.length} · Parts: {assignment.requiredParts.length}

@@ -43,10 +43,11 @@ interface RequiredPartLean {
 interface AssignmentLean {
   _id?: Types.ObjectId;
   asset?: Types.ObjectId;
-  interval: string;
+  interval?: string;
   usageMetric?: 'runHours' | 'cycles';
   usageTarget?: number;
   usageLookbackDays?: number;
+  trigger?: PMTriggerConfig;
   checklist?: ChecklistItemLean[];
   requiredParts?: RequiredPartLean[];
   nextDue?: Date;
@@ -176,6 +177,7 @@ const serializeAssignment = (
   usageMetric: assignment.usageMetric ?? undefined,
   usageTarget: assignment.usageTarget ?? undefined,
   usageLookbackDays: assignment.usageLookbackDays ?? undefined,
+  trigger: assignment.trigger ?? { type: 'time' },
   nextDue: assignment.nextDue?.toISOString(),
   checklist: (assignment.checklist ?? []).map((item) => ({
     id: item._id?.toString() ?? '',
@@ -350,6 +352,15 @@ const normalizeParts = (input?: AssignmentInput['requiredParts']) =>
       quantity: part.quantity && part.quantity > 0 ? part.quantity : 1,
     }));
 
+const resolveTrigger = (
+  payload: AssignmentInput,
+  current?: PMTriggerConfig,
+): PMTriggerConfig => {
+  const type = payload.trigger?.type ?? current?.type ?? 'time';
+  const meterThreshold = payload.trigger?.meterThreshold ?? current?.meterThreshold;
+  return meterThreshold ? { type, meterThreshold } : { type };
+};
+
 export const upsertAssignment = async (
   context: PMContext,
   templateId: string,
@@ -373,6 +384,7 @@ export const upsertAssignment = async (
   }
 
   const now = new Date();
+  const resolvedTrigger = resolveTrigger(payload, assignment?.trigger);
   const resolvedUsageMetric = payload.usageMetric ?? assignment?.usageMetric;
   const baseAssignment = {
     asset: asset._id,
@@ -383,9 +395,10 @@ export const upsertAssignment = async (
       payload.usageLookbackDays ??
       assignment?.usageLookbackDays ??
       (resolvedUsageMetric ? 30 : undefined),
+    trigger: resolvedTrigger,
     checklist: normalizedChecklist,
     requiredParts: normalizedParts,
-    nextDue: calcNextDue(now, payload.interval),
+    nextDue: resolvedTrigger.type === 'time' && payload.interval ? calcNextDue(now, payload.interval) : undefined,
     lastGeneratedAt: now,
   };
   if (assignment) {

@@ -18,15 +18,31 @@ const requiredPartItem = z.object({
   quantity: z.number().int().positive().optional(),
 });
 
-export const assignmentInputSchema = z.object({
-  assetId: objectId,
-  interval: z.string().min(1, 'Interval is required'),
-  usageMetric: z.enum(['runHours', 'cycles']).optional(),
-  usageTarget: z.number().positive().optional(),
-  usageLookbackDays: z.number().int().positive().max(365).optional(),
-  checklist: z.array(checklistItem).optional(),
-  requiredParts: z.array(requiredPartItem).optional(),
+const triggerSchema = z.object({
+  type: z.enum(['time', 'meter']).default('time'),
+  meterThreshold: z.number().positive().optional(),
 });
+
+export const assignmentInputSchema = z
+  .object({
+    assetId: objectId,
+    interval: z.string().min(1, 'Interval is required').optional(),
+    usageMetric: z.enum(['runHours', 'cycles']).optional(),
+    usageTarget: z.number().positive().optional(),
+    usageLookbackDays: z.number().int().positive().max(365).optional(),
+    checklist: z.array(checklistItem).optional(),
+    requiredParts: z.array(requiredPartItem).optional(),
+    trigger: triggerSchema.optional(),
+  })
+  .superRefine((data, ctx) => {
+    const triggerType = data.trigger?.type ?? 'time';
+    if (triggerType === 'time' && !data.interval) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Interval is required for time-based triggers' });
+    }
+    if (triggerType === 'meter' && !data.trigger?.meterThreshold) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Meter threshold is required for meter triggers' });
+    }
+  });
 
 export type AssignmentInput = z.infer<typeof assignmentInputSchema>;
 

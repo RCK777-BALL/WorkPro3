@@ -59,6 +59,24 @@ export interface TrendResult {
   downtime: TrendPoint[];
 }
 
+export interface MetricWithTrend {
+  value: number;
+  trend: TrendPoint[];
+}
+
+export interface PmComplianceMetric {
+  total: number;
+  completed: number;
+  percentage: number;
+  trend: TrendPoint[];
+}
+
+export interface WorkOrderVolumeMetric {
+  total: number;
+  byStatus: { status: WorkOrderType['status']; count: number }[];
+  trend: TrendPoint[];
+}
+
 export interface BenchmarkEntry {
   id: string;
   name: string;
@@ -224,6 +242,11 @@ function buildDateRange(filters: AnalyticsFilters): { $gte?: Date; $lte?: Date }
   return range;
 }
 
+function bucketByDay(date?: Date | null): string | null {
+  if (!date) return null;
+  return date.toISOString().slice(0, 10);
+}
+
 function safeDivide(numerator: number, denominator: number): number {
   if (!denominator) return 0;
   return numerator / denominator;
@@ -349,6 +372,7 @@ async function loadSources(tenantId: string, filters: AnalyticsFilters): Promise
     ];
   }
   if (assetFilter) workOrderQuery.assetId = { $in: assetFilter };
+  if (siteFilter) workOrderQuery.siteId = { $in: siteFilter };
 
   const workOrders = await WorkOrder.find(workOrderQuery)
     .select('createdAt completedAt status failureCode timeSpentMin assetId')
@@ -662,10 +686,21 @@ function createEmptyDashboardKpiResult(): DashboardKpiResult {
   };
 }
 
-export async function getDashboardKpiSummary(
-  tenantId: string,
-  filters: AnalyticsFilters = {},
-): Promise<DashboardKpiResult> {
+type DashboardWorkOrderFields = {
+  status: WorkOrderType['status'];
+  dueDate?: Date | null;
+  pmTask?: Types.ObjectId | null;
+  completedAt?: Date | null;
+  createdAt?: Date;
+  downtime?: number | null;
+  partsUsed?: Array<{ cost?: number | null; qty?: number | null }>;
+  siteId?: Types.ObjectId | null;
+  assetId?: Types.ObjectId | null;
+};
+
+async function fetchDashboardWorkOrders<
+  T extends DashboardWorkOrderFields = DashboardWorkOrderFields,
+>(tenantId: string, filters: AnalyticsFilters, select: string): Promise<T[]> {
   const tenantFilter = toObjectId(tenantId);
   const dateRange = buildDateRange(filters);
   let assetFilter = normalizeIdList(filters.assetIds);
@@ -678,17 +713,14 @@ export async function getDashboardKpiSummary(
     })
       .select('_id')
       .lean();
-    if (!assetsForSites.length) {
-      return createEmptyDashboardKpiResult();
-    }
     const siteAssetIds = assetsForSites.map((doc) => doc._id);
     if (assetFilter && assetFilter.length) {
       const allowed = new Set(siteAssetIds.map((id) => id.toString()));
       assetFilter = assetFilter.filter((id) => allowed.has(id.toString()));
       if (!assetFilter.length) {
-        return createEmptyDashboardKpiResult();
+        return [];
       }
-    } else {
+    } else if (siteAssetIds.length) {
       assetFilter = siteAssetIds;
     }
   }
@@ -696,6 +728,9 @@ export async function getDashboardKpiSummary(
   const workOrderMatch: Record<string, unknown> = { tenantId: tenantFilter };
   if (assetFilter && assetFilter.length) {
     workOrderMatch.assetId = { $in: assetFilter };
+  }
+  if (siteFilter && siteFilter.length) {
+    workOrderMatch.siteId = { $in: siteFilter };
   }
   if (dateRange) {
     workOrderMatch.$or = [
@@ -705,7 +740,32 @@ export async function getDashboardKpiSummary(
     ];
   }
 
-  const workOrders: Array<{
+  const workOrders = await WorkOrder.find(workOrderMatch).select(select).lean();
+  return workOrders as T[];
+}
+
+function filterOrdersByDate<T>(
+  orders: T[],
+  filters: AnalyticsFilters,
+  selector: (order: T) => Date | null | undefined,
+): T[] {
+  const range = buildDateRange(filters);
+  if (!range) return orders;
+
+  return orders.filter((order) => {
+    const date = selector(order);
+    if (!date) return false;
+    if (range.$gte && date < range.$gte) return false;
+    if (range.$lte && date > range.$lte) return false;
+    return true;
+  });
+}
+
+export async function getDashboardKpiSummary(
+  tenantId: string,
+  filters: AnalyticsFilters = {},
+): Promise<DashboardKpiResult> {
+  const workOrders = await fetchDashboardWorkOrders<{
     status: WorkOrderType['status'];
     dueDate?: Date | null;
     pmTask?: Types.ObjectId | null;
@@ -713,9 +773,7 @@ export async function getDashboardKpiSummary(
     createdAt?: Date;
     downtime?: number | null;
     partsUsed?: Array<{ cost?: number | null; qty?: number | null }>;
-  }> = await WorkOrder.find(workOrderMatch)
-    .select('status dueDate pmTask completedAt createdAt downtime partsUsed')
-    .lean();
+  }>(tenantId, filters, 'status dueDate pmTask completedAt createdAt downtime partsUsed');
 
   if (!workOrders.length) {
     return createEmptyDashboardKpiResult();
@@ -764,6 +822,119 @@ export async function getDashboardKpiSummary(
     maintenanceCost,
     mttr: calculateMTTR(workOrders),
     mtbf: calculateMTBF(workOrders),
+  };
+}
+
+function buildMtbfTrend(workOrders: Array<{ completedAt?: Date | null }>): TrendPoint[] {
+  const grouped = new Map<string, typeof workOrders>();
+  workOrders.forEach((order) => {
+    const bucket = bucketByDay(order.completedAt ?? null);
+    if (!bucket) return;
+    if (!grouped.has(bucket)) {
+      grouped.set(bucket, []);
+    }
+    grouped.get(bucket)!.push(order);
+  });
+
+  return Array.from(grouped.entries())
+    .map(([period, orders]) => ({ period, value: Number(calculateMTBF(orders).toFixed(2)) }))
+    .sort((a, b) => (a.period < b.period ? -1 : 1));
+}
+
+function buildPmComplianceTrend(
+  workOrders: Array<{ pmTask?: Types.ObjectId | null; status: WorkOrderType['status']; completedAt?: Date | null }>,
+): TrendPoint[] {
+  const grouped = new Map<string, { total: number; completed: number }>();
+  workOrders.forEach((order) => {
+    const bucket = bucketByDay(order.completedAt ?? null);
+    if (!bucket || !order.pmTask) return;
+    const current = grouped.get(bucket) ?? { total: 0, completed: 0 };
+    current.total += 1;
+    if (order.status === 'completed') {
+      current.completed += 1;
+    }
+    grouped.set(bucket, current);
+  });
+
+  return Array.from(grouped.entries())
+    .map(([period, counts]) => ({
+      period,
+      value: counts.total ? Number(((counts.completed / counts.total) * 100).toFixed(1)) : 0,
+    }))
+    .sort((a, b) => (a.period < b.period ? -1 : 1));
+}
+
+function buildWorkOrderVolumeTrend(workOrders: Array<{ createdAt?: Date }>): TrendPoint[] {
+  const grouped = new Map<string, number>();
+  workOrders.forEach((order) => {
+    const bucket = bucketByDay(order.createdAt ?? null);
+    if (!bucket) return;
+    grouped.set(bucket, (grouped.get(bucket) ?? 0) + 1);
+  });
+
+  return normalizeTrend(grouped);
+}
+
+export async function getDashboardMtbf(
+  tenantId: string,
+  filters: AnalyticsFilters = {},
+): Promise<MetricWithTrend> {
+  const workOrders = await fetchDashboardWorkOrders<{ completedAt?: Date | null }>(
+    tenantId,
+    filters,
+    'completedAt',
+  );
+  const scoped = filterOrdersByDate(workOrders, filters, (order) => order.completedAt ?? null);
+  return {
+    value: Number(calculateMTBF(scoped).toFixed(2)),
+    trend: buildMtbfTrend(scoped),
+  };
+}
+
+export async function getDashboardPmCompliance(
+  tenantId: string,
+  filters: AnalyticsFilters = {},
+): Promise<PmComplianceMetric> {
+  const workOrders = await fetchDashboardWorkOrders<{
+    pmTask?: Types.ObjectId | null;
+    status: WorkOrderType['status'];
+    completedAt?: Date | null;
+  }>(tenantId, filters, 'pmTask status completedAt');
+
+  const scoped = filterOrdersByDate(workOrders, filters, (order) => order.completedAt ?? null);
+
+  const pmTotal = scoped.filter((wo) => Boolean(wo.pmTask)).length;
+  const pmCompleted = scoped.filter((wo) => wo.pmTask && wo.status === 'completed').length;
+  const percentage = pmTotal ? (pmCompleted / pmTotal) * 100 : 0;
+
+  return {
+    total: pmTotal,
+    completed: pmCompleted,
+    percentage,
+    trend: buildPmComplianceTrend(scoped),
+  };
+}
+
+export async function getDashboardWorkOrderVolume(
+  tenantId: string,
+  filters: AnalyticsFilters = {},
+): Promise<WorkOrderVolumeMetric> {
+  const workOrders = await fetchDashboardWorkOrders<{
+    status: WorkOrderType['status'];
+    createdAt?: Date;
+  }>(tenantId, filters, 'status createdAt');
+
+  const scopedOrders = filterOrdersByDate(workOrders, filters, (order) => order.createdAt ?? null);
+
+  const statusCounts = new Map<WorkOrderType['status'], number>();
+  scopedOrders.forEach((order) => {
+    statusCounts.set(order.status, (statusCounts.get(order.status) ?? 0) + 1);
+  });
+
+  return {
+    total: scopedOrders.length,
+    byStatus: WORK_ORDER_STATUS_ORDER.map((status) => ({ status, count: statusCounts.get(status) ?? 0 })),
+    trend: buildWorkOrderVolumeTrend(scopedOrders),
   };
 }
 

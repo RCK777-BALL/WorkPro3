@@ -17,6 +17,9 @@ import {
   dashboardKpiCsv,
   dashboardKpiXlsx,
   dashboardKpiPdf,
+  dashboardMtbfJson,
+  dashboardPmComplianceJson,
+  dashboardWorkOrderVolumeJson,
   pmWhatIfSimulationsJson,
   corporateSitesJson,
   corporateOverviewJson,
@@ -47,6 +50,9 @@ router.get('/dashboard/kpis', dashboardKpiJson);
 router.get('/dashboard/kpis.csv', dashboardKpiCsv);
 router.get('/dashboard/kpis.xlsx', dashboardKpiXlsx);
 router.get('/dashboard/kpis.pdf', dashboardKpiPdf);
+router.get('/dashboard/mtbf', dashboardMtbfJson);
+router.get('/dashboard/pm-compliance', dashboardPmComplianceJson);
+router.get('/dashboard/work-order-volume', dashboardWorkOrderVolumeJson);
 router.get('/pm-optimization/what-if', pmWhatIfSimulationsJson);
 
 router.get('/global', async (req: AuthedRequest, res, next) => {

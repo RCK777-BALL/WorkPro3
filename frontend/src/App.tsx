@@ -32,6 +32,7 @@ import InventoryLocations from "@/pages/InventoryLocations";
 import InventoryParts from "@/pages/InventoryParts";
 import IotMonitoring from "@/pages/IotMonitoring";
 import VendorsPage from "@/pages/VendorsPage";
+import VendorEditor from "@/pages/vendors/VendorEditor";
 import Reports from "@/pages/Reports";
 import Notifications from "@/pages/Notifications";
 import Messages from "@/pages/Messages";
@@ -52,6 +53,8 @@ import Settings from "@/pages/Settings";
 import TimeSheets from "@/pages/TimeSheets";
 import PMScheduler from "@/pages/PMScheduler";
 import PMTasksPage from "@/pages/PMTasksPage";
+import PMTemplateList from "@/pages/PMTemplateList";
+import PMTemplateEditor from "@/pages/PMTemplateEditor";
 import AdminTenants from "@/pages/AdminTenants";
 import Imports from "@/pages/Imports";
 import Plants from "@/pages/Plants";
@@ -59,6 +62,7 @@ import GlobalAnalyticsDashboard from "@/pages/GlobalAnalyticsDashboard";
 import AIDashboard from "@/pages/AIDashboard";
 import TechnicianConsole from "@/pages/TechnicianConsole";
 import Login from "@/pages/Login";
+import PMAnalytics from "@/pages/PMAnalytics";
 import RegisterPage from "@/pages/RegisterPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import BootstrapSetupPage from "@/modules/admin/setup";
@@ -108,6 +112,7 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/analytics/dashboard/v2" element={<AnalyticsDashboardV2 />} />
+          <Route path="/analytics/pm" element={<PMAnalytics />} />
           <Route path="/analytics/global" element={<GlobalAnalyticsDashboard />} />
           <Route path="/analytics/ai" element={<AIDashboard />} />
           <Route
@@ -212,6 +217,22 @@ export default function App() {
               </RequirePermission>
             }
           />
+          <Route
+            path="/vendors/new"
+            element={
+              <RequirePermission permission="inventory.read">
+                <VendorEditor />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/vendors/:vendorId"
+            element={
+              <RequirePermission permission="inventory.read">
+                <VendorEditor />
+              </RequirePermission>
+            }
+          />
           <Route path="/reports" element={<Reports />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/messages" element={<Messages />} />
@@ -237,6 +258,30 @@ export default function App() {
             element={
               <RequirePermission permission="pm.read">
                 <PMScheduler />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/pm/templates"
+            element={
+              <RequirePermission permission="pm.read">
+                <PMTemplateList />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/pm/templates/new"
+            element={
+              <RequirePermission permission="pm.write">
+                <PMTemplateEditor />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/pm/templates/:templateId/edit"
+            element={
+              <RequirePermission permission="pm.write">
+                <PMTemplateEditor />
               </RequirePermission>
             }
           />

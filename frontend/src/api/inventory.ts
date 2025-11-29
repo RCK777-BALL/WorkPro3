@@ -12,6 +12,8 @@ import type {
   StockAdjustment,
   StockHistoryEntry,
   StockItem,
+  InventoryTransfer,
+  InventoryTransferPayload,
   VendorSummary,
 } from '@/types';
 
@@ -96,7 +98,7 @@ export const fetchLocations = async (): Promise<InventoryLocation[]> => {
 };
 
 export const upsertLocation = async (
-  payload: Partial<InventoryLocation> & { name: string; id?: string },
+  payload: Partial<InventoryLocation> & { store: string; id?: string },
 ): Promise<InventoryLocation> => {
   if (payload.id) {
     const res = await http.put<InventoryLocation>(`${BASE_PATH}/locations/${payload.id}`, payload);
@@ -122,5 +124,12 @@ export const adjustStockLevel = async (payload: {
 
 export const fetchStockHistory = async (): Promise<StockHistoryEntry[]> => {
   const res = await http.get<StockHistoryEntry[]>(`${BASE_PATH}/stock/history`);
+  return res.data;
+};
+
+export const transferInventory = async (
+  payload: InventoryTransferPayload,
+): Promise<InventoryTransfer> => {
+  const res = await http.post<InventoryTransfer>(`${BASE_PATH}/transfers`, payload);
   return res.data;
 };

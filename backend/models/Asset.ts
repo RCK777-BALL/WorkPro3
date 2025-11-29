@@ -30,6 +30,7 @@ export interface AssetDoc extends Document {
   lastServiced?: Date;
   criticality?: string;
   documents?: Types.Array<Types.ObjectId>;
+  pmTemplateIds?: Types.Array<Types.ObjectId>;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -86,6 +87,7 @@ const assetSchema = new Schema<AssetDoc>(
       default: 'medium',
     },
     documents: [{ type: Schema.Types.ObjectId, ref: 'Document' }],
+    pmTemplateIds: [{ type: Schema.Types.ObjectId, ref: 'PmTask', index: true }],
   },
   { timestamps: true }
 );

@@ -240,6 +240,32 @@ const AssetsPage: React.FC = () => {
           />
         </div>
 
+        {!isLoading && assets.length === 0 && (
+          <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center text-neutral-700 shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+            <p className="text-lg font-semibold">No assets yet</p>
+            <p className="max-w-xl text-sm text-neutral-600 dark:text-neutral-300">
+              Start building your asset catalog to track equipment details, status, and maintenance history. You can add new assets or import them from your existing records.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setSelected(null);
+                  setModalOpen(true);
+                }}
+                disabled={!canManageAssets}
+              >
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add asset
+              </Button>
+              <Button variant="outline" onClick={fetchAssets} disabled={isLoading}>
+                <RefreshCcw className="mr-2 h-4 w-4" />
+                Refresh list
+              </Button>
+            </div>
+          </div>
+        )}
+
         <AssetTable
           assets={assets}
           search={search}

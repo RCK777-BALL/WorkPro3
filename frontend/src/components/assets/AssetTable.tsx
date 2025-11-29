@@ -73,6 +73,16 @@ const AssetTable: React.FC<AssetTableProps> = ({
                 <tr
                   key={asset.id}
                   className="cursor-pointer transition-colors duration-150 hover:bg-slate-800/70"
+                  onClick={() => onRowClick(asset)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      onRowClick(asset);
+                    }
+                  }}
+                  aria-label={`View or edit ${asset.name}`}
                 >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">

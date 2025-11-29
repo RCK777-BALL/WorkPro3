@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { ChangeEvent, MouseEvent } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import http from '@/lib/http';
 import {
   addToQueue,
@@ -16,7 +16,7 @@ import ConflictResolver from '@/components/offline/ConflictResolver';
 import DataTable from '@/components/common/DataTable';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
-import { Search } from 'lucide-react';
+import { Scan, Search } from 'lucide-react';
 import NewWorkOrderModal from '@/components/work-orders/NewWorkOrderModal';
 import WorkOrderReviewModal from '@/components/work-orders/WorkOrderReviewModal';
 import type { WorkOrder } from '@/types';
@@ -96,6 +96,7 @@ function assignIfDefined<T, K extends keyof T>(target: T, key: K, value: T[K] | 
 export default function WorkOrders() {
   const [searchParams, setSearchParams] = useSearchParams();
   const searchKey = searchParams.toString();
+  const navigate = useNavigate();
 
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -613,13 +614,19 @@ export default function WorkOrders() {
       <div className="space-y-6 p-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Work Orders</h1>
-          <Button
-            variant="primary"
-            onClick={openCreateModal}
-            className="border border-primary-700"
-          >
-            Create Work Order
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate('/assets/scan')}>
+              <Scan className="mr-2 h-4 w-4" />
+              Scan asset QR
+            </Button>
+            <Button
+              variant="primary"
+              onClick={openCreateModal}
+              className="border border-primary-700"
+            >
+              Create Work Order
+            </Button>
+          </div>
         </div>
 
         {error && <p className="text-red-600">{error}</p>}

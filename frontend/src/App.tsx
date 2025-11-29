@@ -71,6 +71,7 @@ import PublicRequestPage from "@/public/request";
 import RequestStatus from "@/pages/RequestStatus";
 import SubmitRequest from "@/pages/requests/SubmitRequest";
 import RequestTriage from "@/pages/requests/RequestTriage";
+import AssetScan from "@/pages/AssetScan";
 
 export default function App() {
   const navigate = useNavigate();
@@ -158,6 +159,14 @@ export default function App() {
             element={
               <RequirePermission permission="hierarchy.read">
                 <AssetsPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/assets/scan"
+            element={
+              <RequirePermission permission="hierarchy.read">
+                <AssetScan />
               </RequirePermission>
             }
           />

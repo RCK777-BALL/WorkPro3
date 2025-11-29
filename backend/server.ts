@@ -20,6 +20,8 @@ import logger from "./utils/logger";
 import requestLog from "./middleware/requestLog";
 import tenantResolver from "./middleware/tenantResolver";
 import auditLogMiddleware from "./middleware/auditLogMiddleware";
+import apiDocsRouter from './utils/swagger'; // Adjust path if needed
+import customReportsRouter from './routes/customReportsRoutes'; // Adjust path if needed
 
 import {
   adminRoutes,

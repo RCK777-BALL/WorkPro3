@@ -14,7 +14,16 @@ export interface WorkOrder {
   copilotSummary?: string;
   copilotSummaryUpdatedAt?: Date;
   priority: 'low' | 'medium' | 'high' | 'critical';
-  status: 'requested' | 'assigned' | 'in_progress' | 'paused' | 'completed' | 'cancelled';
+  status:
+    | 'requested'
+    | 'assigned'
+    | 'in_progress'
+    | 'paused'
+    | 'completed'
+    | 'cancelled'
+    | 'draft'
+    | 'pending_approval'
+    | 'approved';
   type: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
   approvalStatus: 'draft' | 'pending' | 'approved' | 'rejected';
   approvalRequestedBy?: Types.ObjectId;
@@ -31,6 +40,13 @@ export interface WorkOrder {
     status?: 'not_started' | 'in_progress' | 'done' | 'blocked';
     photos?: string[];
   }>;
+  checklist?: Types.Array<{
+    id: string;
+    text: string;
+    type: 'checkbox' | 'numeric' | 'text';
+    completedValue?: string | number | boolean;
+    required?: boolean;
+  }>;
   partsUsed: Types.Array<{ partId: Types.ObjectId; qty: number; cost: number }>;
   signatures: Types.Array<{ by: Types.ObjectId; ts: Date }>;
   permits: Types.Array<Types.ObjectId>;
@@ -40,6 +56,9 @@ export interface WorkOrder {
   failureCode?: string;
   causeCode?: string;
   actionCode?: string;
+  failureCause?: string;
+  failureAction?: string;
+  failureResult?: string;
   failureModeTags?: Types.Array<string>;
 
   /** Optional relationships */
@@ -57,12 +76,15 @@ export interface WorkOrder {
   siteId?: Types.ObjectId;
 
   dueDate?: Date;
+  slaHours?: number;
+  isSLABreached?: boolean;
   completedAt?: Date;
   downtimeMinutes?: number;
   laborHours?: number;
   laborCost?: number;
   partsCost?: number;
   miscCost?: number;
+  miscellaneousCost?: number;
   totalCost?: number;
   attachments?: Types.Array<{ url: string; name?: string; uploadedBy?: Types.ObjectId; uploadedAt?: Date }>;
   timeline?: Types.Array<{
@@ -72,6 +94,7 @@ export interface WorkOrder {
     createdBy?: Types.ObjectId;
     type?: 'status' | 'comment' | 'approval' | 'sla';
   }>;
+  approvalLog?: Types.Array<{ approvedBy?: Types.ObjectId; approvedAt?: Date; note?: string }>;
   version?: number;
   etag?: string;
   lastSyncedAt?: Date;
@@ -102,7 +125,17 @@ const workOrderSchema = new Schema<WorkOrder>(
     },
     status: {
       type: String,
-      enum: ['requested', 'assigned', 'in_progress', 'paused', 'completed', 'cancelled'],
+      enum: [
+        'requested',
+        'assigned',
+        'in_progress',
+        'paused',
+        'completed',
+        'cancelled',
+        'draft',
+        'pending_approval',
+        'approved',
+      ],
       default: 'requested',
       index: true,
     },
@@ -137,6 +170,15 @@ const workOrderSchema = new Schema<WorkOrder>(
         photos: [{ type: String }],
       },
     ],
+    checklist: [
+      {
+        id: { type: String, required: true },
+        text: { type: String, required: true },
+        type: { type: String, enum: ['checkbox', 'numeric', 'text'], default: 'checkbox' },
+        completedValue: { type: Schema.Types.Mixed },
+        required: { type: Boolean, default: false },
+      },
+    ],
     partsUsed: [
       {
         partId: { type: Schema.Types.ObjectId, ref: 'InventoryItem' },
@@ -159,6 +201,9 @@ const workOrderSchema = new Schema<WorkOrder>(
     failureCode: String,
     causeCode: String,
     actionCode: String,
+    failureCause: String,
+    failureAction: String,
+    failureResult: String,
     failureModeTags: [{ type: String }],
     copilotSummary: { type: String },
     copilotSummaryUpdatedAt: { type: Date },
@@ -185,6 +230,7 @@ const workOrderSchema = new Schema<WorkOrder>(
     laborCost: { type: Number, default: 0 },
     partsCost: { type: Number, default: 0 },
     miscCost: { type: Number, default: 0 },
+    miscellaneousCost: { type: Number, default: 0 },
     totalCost: { type: Number, default: 0 },
     attachments: [
       {
@@ -203,6 +249,13 @@ const workOrderSchema = new Schema<WorkOrder>(
         type: { type: String, enum: ['status', 'comment', 'approval', 'sla'] },
       },
     ],
+    approvalLog: [
+      {
+        approvedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+        approvedAt: { type: Date, default: Date.now },
+        note: { type: String },
+      },
+    ],
     downtime: { type: Number },
     wrenchTime: { type: Number },
 
@@ -211,6 +264,7 @@ const workOrderSchema = new Schema<WorkOrder>(
     lastSyncedAt: { type: Date },
 
     dueDate: { type: Date },
+    slaHours: { type: Number },
     completedAt: Date,
   },
   { timestamps: true }
@@ -221,14 +275,21 @@ workOrderSchema.pre('save', function handleCosts(next) {
     this.isModified('laborCost') ||
     this.isModified('partsCost') ||
     this.isModified('miscCost') ||
+    this.isModified('miscellaneousCost') ||
     this.isModified('laborHours')
   ) {
     const labor = this.laborCost ?? 0;
     const parts = this.partsCost ?? 0;
-    const misc = this.miscCost ?? 0;
+    const misc = this.miscellaneousCost ?? this.miscCost ?? 0;
+    this.miscCost = this.miscCost ?? this.miscellaneousCost ?? 0;
     this.totalCost = labor + parts + misc;
   }
   next();
+});
+
+workOrderSchema.virtual('isSLABreached').get(function isSLABreached(this: WorkOrder) {
+  if (!this.dueDate) return false;
+  return Date.now() > new Date(this.dueDate).getTime();
 });
 
 workOrderSchema.pre('save', function handleVersioning(next) {

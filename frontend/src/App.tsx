@@ -61,6 +61,7 @@ import GlobalAnalyticsDashboard from "@/pages/GlobalAnalyticsDashboard";
 import AIDashboard from "@/pages/AIDashboard";
 import TechnicianConsole from "@/pages/TechnicianConsole";
 import Login from "@/pages/Login";
+import PMAnalytics from "@/pages/PMAnalytics";
 import RegisterPage from "@/pages/RegisterPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import BootstrapSetupPage from "@/modules/admin/setup";
@@ -110,6 +111,7 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/analytics/dashboard/v2" element={<AnalyticsDashboardV2 />} />
+          <Route path="/analytics/pm" element={<PMAnalytics />} />
           <Route path="/analytics/global" element={<GlobalAnalyticsDashboard />} />
           <Route path="/analytics/ai" element={<AIDashboard />} />
           <Route

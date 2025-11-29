@@ -32,6 +32,7 @@ import InventoryLocations from "@/pages/InventoryLocations";
 import InventoryParts from "@/pages/InventoryParts";
 import IotMonitoring from "@/pages/IotMonitoring";
 import VendorsPage from "@/pages/VendorsPage";
+import VendorEditor from "@/pages/vendors/VendorEditor";
 import Reports from "@/pages/Reports";
 import Notifications from "@/pages/Notifications";
 import Messages from "@/pages/Messages";
@@ -213,6 +214,22 @@ export default function App() {
             element={
               <RequirePermission permission="inventory.read">
                 <VendorsPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/vendors/new"
+            element={
+              <RequirePermission permission="inventory.read">
+                <VendorEditor />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/vendors/:vendorId"
+            element={
+              <RequirePermission permission="inventory.read">
+                <VendorEditor />
               </RequirePermission>
             }
           />

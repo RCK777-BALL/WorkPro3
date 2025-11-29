@@ -27,6 +27,7 @@ export interface LinkedTemplate {
 export interface PartAlertState {
   needsReorder: boolean;
   severity: 'ok' | 'warning' | 'critical';
+  minimumLevel?: number | undefined;
 }
 
 export interface VendorSummary {
@@ -60,6 +61,8 @@ export interface Part extends TenantScoped {
   minStock?: number | undefined;
   minQty?: number | undefined;
   maxQty?: number | undefined;
+  minLevel?: number | undefined;
+  maxLevel?: number | undefined;
   reorderPoint: number;
   reorderQty?: number | undefined;
   reorderThreshold?: number | undefined;
@@ -117,6 +120,7 @@ export interface InventoryAlert extends TenantScoped {
   partName: string;
   quantity: number;
   reorderPoint: number;
+  minLevel?: number | undefined;
   vendorName?: string | undefined;
   assetNames: string[];
   pmTemplateTitles: string[];

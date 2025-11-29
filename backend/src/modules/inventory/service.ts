@@ -68,6 +68,8 @@ type PartRecord = Pick<
   | 'minStock'
   | 'minQty'
   | 'maxQty'
+  | 'minLevel'
+  | 'maxLevel'
   | 'reorderPoint'
   | 'reorderQty'
   | 'reorderThreshold'
@@ -152,17 +154,18 @@ const normalizeDate = (value?: string): Date | undefined => {
   return Number.isNaN(parsed.valueOf()) ? undefined : parsed;
 };
 
-const computeAlertState = (part: { quantity: number; reorderPoint: number }) => {
-  if (part.quantity <= 0 && part.reorderPoint <= 0) {
-    return { needsReorder: false, severity: 'ok' as const };
+const computeAlertState = (part: { quantity: number; reorderPoint: number; minLevel?: number }) => {
+  const threshold = typeof part.minLevel === 'number' && part.minLevel > 0 ? part.minLevel : part.reorderPoint;
+  if (!threshold || threshold <= 0) {
+    return { needsReorder: false, severity: 'ok' as const, minimumLevel: undefined };
   }
-  if (part.quantity <= part.reorderPoint / 2) {
-    return { needsReorder: true, severity: 'critical' as const };
+  if (part.quantity <= threshold / 2) {
+    return { needsReorder: true, severity: 'critical' as const, minimumLevel: threshold };
   }
-  if (part.quantity <= part.reorderPoint) {
-    return { needsReorder: true, severity: 'warning' as const };
+  if (part.quantity <= threshold) {
+    return { needsReorder: true, severity: 'warning' as const, minimumLevel: threshold };
   }
-  return { needsReorder: false, severity: 'ok' as const };
+  return { needsReorder: false, severity: 'ok' as const, minimumLevel: threshold };
 };
 
 const resolveReferenceMaps = async (parts: PartRecord[]) => {
@@ -289,6 +292,12 @@ const serializePart = (
   }
   if (typeof part.maxQty === 'number') {
     response.maxQty = part.maxQty;
+  }
+  if (typeof part.minLevel === 'number') {
+    response.minLevel = part.minLevel;
+  }
+  if (typeof part.maxLevel === 'number') {
+    response.maxLevel = part.maxLevel;
   }
   if (typeof part.reorderQty === 'number') {
     response.reorderQty = part.reorderQty;
@@ -568,6 +577,8 @@ const buildPartPayload = (input: PartInput): Partial<PartDocument> => {
   if (typeof input.minStock === 'number') payload.minStock = input.minStock;
   if (typeof input.minQty === 'number') payload.minQty = input.minQty;
   if (typeof input.maxQty === 'number') payload.maxQty = input.maxQty;
+  if (typeof input.minLevel === 'number') payload.minLevel = input.minLevel;
+  if (typeof input.maxLevel === 'number') payload.maxLevel = input.maxLevel;
   if (typeof input.reorderPoint === 'number') payload.reorderPoint = input.reorderPoint;
   if (typeof input.reorderQty === 'number') payload.reorderQty = input.reorderQty;
   if (typeof input.reorderThreshold === 'number') payload.reorderThreshold = input.reorderThreshold;
@@ -619,9 +630,10 @@ const determineReorderQuantity = (part: PartDocument): number => {
   if (part.reorderQty && part.reorderQty > 0) {
     return part.reorderQty;
   }
-  if (part.minStock && part.minStock > 0) {
-    const delta = part.minStock - part.quantity;
-    return delta > 0 ? delta : part.minStock;
+  const minimumLevel = part.minLevel && part.minLevel > 0 ? part.minLevel : part.minStock;
+  if (minimumLevel && minimumLevel > 0) {
+    const delta = minimumLevel - part.quantity;
+    return delta > 0 ? delta : minimumLevel;
   }
   const diff = part.reorderPoint - part.quantity;
   return diff > 0 ? diff : part.reorderPoint || 1;
@@ -631,7 +643,8 @@ const triggerAutoReorder = async (context: InventoryContext, part: PartDocument)
   if (!part.autoReorder || !part.vendor) {
     return;
   }
-  if (part.quantity > part.reorderPoint) {
+  const threshold = part.minLevel && part.minLevel > 0 ? part.minLevel : part.reorderPoint;
+  if (part.quantity > threshold) {
     return;
   }
   const now = new Date();
@@ -1024,7 +1037,29 @@ export const exportPurchaseOrders = async (
 
 export const listAlerts = async (context: InventoryContext): Promise<InventoryAlert[]> => {
   const tenantId = toObjectId(context.tenantId, 'tenant id');
-  const match: Record<string, unknown> = { tenantId, $expr: { $lte: ['$quantity', '$reorderPoint'] } };
+  const match: FilterQuery<PartDocument> = {
+    tenantId,
+    $expr: {
+      $and: [
+        {
+          $gt: [
+            {
+              $cond: [{ $gt: ['$minLevel', 0] }, '$minLevel', '$reorderPoint'],
+            },
+            0,
+          ],
+        },
+        {
+          $lte: [
+            '$quantity',
+            {
+              $cond: [{ $gt: ['$minLevel', 0] }, '$minLevel', '$reorderPoint'],
+            },
+          ],
+        },
+      ],
+    },
+  };
   if (context.siteId) {
     match.siteId = maybeObjectId(context.siteId);
   }
@@ -1037,6 +1072,7 @@ export const listAlerts = async (context: InventoryContext): Promise<InventoryAl
       partName: part.name,
       quantity: part.quantity,
       reorderPoint: part.reorderPoint,
+      minLevel: part.minLevel,
       assetNames: (part.assetIds ?? [])
         .map((assetId: Types.ObjectId) => refs.assets.get(assetId.toString()))
         .filter((name: string | undefined): name is string => Boolean(name)),

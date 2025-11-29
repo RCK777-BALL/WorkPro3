@@ -12,7 +12,14 @@ import Input from '@/components/common/Input';
 import type { Part } from '@/types';
 
 const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string }) => Promise<void> }) => {
-  const [form, setForm] = useState<Partial<Part> & { name: string }>({ name: '', partNo: '', unit: '', reorderPoint: 0 });
+  const [form, setForm] = useState<Partial<Part> & { name: string }>({
+    name: '',
+    partNo: '',
+    unit: '',
+    reorderPoint: 0,
+    minLevel: 0,
+    maxLevel: 0,
+  });
   const [saving, setSaving] = useState(false);
   const { can } = usePermissions();
   const canManageInventory = useMemo(() => can('inventory.manage'), [can]);
@@ -27,7 +34,7 @@ const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string
     setSaving(true);
     try {
       await onSave(form);
-      setForm({ name: '', partNo: '', unit: '', reorderPoint: 0 });
+      setForm({ name: '', partNo: '', unit: '', reorderPoint: 0, minLevel: 0, maxLevel: 0 });
     } finally {
       setSaving(false);
     }
@@ -77,6 +84,22 @@ const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string
           value={form.maxQty ?? ''}
           disabled={disableEdits}
           onChange={(e) => setForm((prev) => ({ ...prev, maxQty: Number(e.target.value) }))}
+        />
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        <Input
+          label="Min level (alert)"
+          type="number"
+          value={form.minLevel ?? ''}
+          disabled={disableEdits}
+          onChange={(e) => setForm((prev) => ({ ...prev, minLevel: Number(e.target.value) }))}
+        />
+        <Input
+          label="Max level"
+          type="number"
+          value={form.maxLevel ?? ''}
+          disabled={disableEdits}
+          onChange={(e) => setForm((prev) => ({ ...prev, maxLevel: Number(e.target.value) }))}
         />
       </div>
       <Input
@@ -143,23 +166,28 @@ export default function InventoryParts() {
                     <th className="px-3 py-2 text-left font-medium text-neutral-700">Part</th>
                     <th className="px-3 py-2 text-left font-medium text-neutral-700">Part #</th>
                     <th className="px-3 py-2 text-left font-medium text-neutral-700">Qty</th>
+                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Min level</th>
                     <th className="px-3 py-2 text-left font-medium text-neutral-700">Reorder</th>
                     <th className="px-3 py-2 text-left font-medium text-neutral-700">Lead time</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-200">
-                  {parts.map((part) => (
-                    <tr key={part.id}>
-                      <td className="px-3 py-2 text-neutral-900">{part.name}</td>
-                      <td className="px-3 py-2 text-neutral-700">{part.partNo ?? part.partNumber ?? '—'}</td>
-                      <td className="px-3 py-2 text-neutral-700">{part.quantity}</td>
-                      <td className="px-3 py-2 text-neutral-700">{part.reorderPoint}</td>
-                      <td className="px-3 py-2 text-neutral-700">{part.leadTime ?? '—'} days</td>
-                    </tr>
-                  ))}
+                  {parts.map((part) => {
+                    const belowMinimum = part.alertState?.needsReorder;
+                    return (
+                      <tr key={part.id} className={belowMinimum ? 'bg-warning-50/60' : undefined}>
+                        <td className="px-3 py-2 text-neutral-900">{part.name}</td>
+                        <td className="px-3 py-2 text-neutral-700">{part.partNo ?? part.partNumber ?? '—'}</td>
+                        <td className="px-3 py-2 text-neutral-700">{part.quantity}</td>
+                        <td className="px-3 py-2 text-neutral-700">{part.minLevel ?? '—'}</td>
+                        <td className="px-3 py-2 text-neutral-700">{part.reorderPoint}</td>
+                        <td className="px-3 py-2 text-neutral-700">{part.leadTime ?? '—'} days</td>
+                      </tr>
+                    );
+                  })}
                   {!parts.length && (
                     <tr>
-                      <td className="px-3 py-6 text-center text-neutral-500" colSpan={5}>
+                      <td className="px-3 py-6 text-center text-neutral-500" colSpan={6}>
                         No parts found.
                       </td>
                     </tr>

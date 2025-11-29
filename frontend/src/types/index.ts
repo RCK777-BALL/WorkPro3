@@ -45,7 +45,19 @@ export type {
 export type Vendor = VendorSummary;
 export type { UploadedFile, UploadResponse } from '@backend-shared/uploads';
 export type { ApiResult, TenantScoped } from '@backend-shared/http';
-export type { OnboardingState, OnboardingStep, OnboardingStepKey, PMTemplateLibraryItem } from '@backend-shared/onboarding';
+export type {
+  OnboardingState,
+  OnboardingStep,
+  OnboardingStepKey,
+  PMTemplateLibraryItem,
+} from '@backend-shared/onboarding';
+export type {
+  PMTemplate,
+  PMTemplateAssignment,
+  PMTemplateChecklistItem,
+  PMTemplateRequiredPart,
+  PMTemplateUpsertInput,
+} from '@backend-shared/pmTemplates';
 export type {
   Permit,
   PermitHistoryEntry,
@@ -297,40 +309,6 @@ export interface PMTask {
   notes?: string;
   asset?: string;
   department?: string;
-}
-
-export interface PMTemplateChecklistItem {
-  id: string;
-  description: string;
-  required?: boolean;
-}
-
-export interface PMTemplateRequiredPart {
-  id: string;
-  partId: string;
-  partName?: string;
-  quantity?: number;
-}
-
-export interface PMTemplateAssignment {
-  id: string;
-  assetId: string;
-  assetName?: string;
-  interval: string;
-  usageMetric?: 'runHours' | 'cycles';
-  usageTarget?: number;
-  usageLookbackDays?: number;
-  nextDue?: string;
-  checklist: PMTemplateChecklistItem[];
-  requiredParts: PMTemplateRequiredPart[];
-}
-
-export interface PMTemplate {
-  id: string;
-  title: string;
-  notes?: string;
-  active: boolean;
-  assignments: PMTemplateAssignment[];
 }
 
 export interface Channel {

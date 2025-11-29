@@ -6,7 +6,12 @@ import { useCallback, useEffect, useState } from 'react';
 import type { ChangeEvent, MouseEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import http from '@/lib/http';
-import { addToQueue, onSyncConflict, type SyncConflict } from '@/utils/offlineQueue';
+import {
+  addToQueue,
+  enqueueWorkOrderUpdate,
+  onSyncConflict,
+  type SyncConflict,
+} from '@/utils/offlineQueue';
 import ConflictResolver from '@/components/offline/ConflictResolver';
 import DataTable from '@/components/common/DataTable';
 import Badge from '@/components/common/Badge';
@@ -184,7 +189,7 @@ export default function WorkOrders() {
   ) => {
     const update = { status };
     if (!navigator.onLine) {
-      addToQueue({ method: 'put', url: `/workorders/${id}`, data: update });
+      enqueueWorkOrderUpdate(id, update);
       const updated = workOrders.map((wo) =>
         wo.id === id ? { ...wo, status } : wo
       );
@@ -196,7 +201,7 @@ export default function WorkOrders() {
       await http.put(`/workorders/${id}`, update);
       fetchWorkOrders();
     } catch {
-      addToQueue({ method: 'put', url: `/workorders/${id}`, data: update });
+      enqueueWorkOrderUpdate(id, update);
     }
   };
 
@@ -241,13 +246,13 @@ export default function WorkOrders() {
         return;
       }
 
-      addToQueue({
-        method: isEdit ? 'put' : 'post',
-        url: isEdit ? `/workorders/${existingId}` : '/workorders',
-        data: payload,
-      });
+      const queueAction =
+        isEdit && existingId
+          ? () => enqueueWorkOrderUpdate(existingId, payload as Record<string, unknown>)
+          : () => addToQueue({ method: 'post', url: '/workorders', data: payload });
+      queueAction();
 
-        setWorkOrders((prev) => {
+      setWorkOrders((prev) => {
           const recordPayload = payload as unknown as Partial<WorkOrder> & {
             departmentId?: string;
             checklists?: unknown;

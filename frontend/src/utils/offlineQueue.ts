@@ -14,10 +14,25 @@ export interface QueuedRequest<T = unknown> {
   error?: string;
   /** timestamp after which another attempt should be made */
   nextAttempt?: number;
+  meta?: {
+    entityType?: string;
+    entityId?: string;
+    description?: string;
+  };
 }
 
 const QUEUE_KEY = 'offline-queue';
 export const MAX_QUEUE_RETRIES = 5;
+
+const queueListeners = new Set<(size: number) => void>();
+export const onQueueChange = (listener: (size: number) => void) => {
+  queueListeners.add(listener);
+  return () => queueListeners.delete(listener);
+};
+
+const notifyQueue = <T = unknown>(queue: QueuedRequest<T>[]) => {
+  queueListeners.forEach((cb) => cb(queue.length));
+};
 
 export const loadQueue = <T = unknown>(): QueuedRequest<T>[] => {
   try {
@@ -31,6 +46,7 @@ export const loadQueue = <T = unknown>(): QueuedRequest<T>[] => {
 const saveQueue = <T = unknown>(queue: QueuedRequest<T>[]) => {
   try {
     safeLocalStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+    notifyQueue(queue);
   } catch (err: unknown) {
     if (
       err instanceof DOMException &&
@@ -45,6 +61,7 @@ const saveQueue = <T = unknown>(queue: QueuedRequest<T>[]) => {
         trimmed.shift();
         try {
           safeLocalStorage.setItem(QUEUE_KEY, JSON.stringify(trimmed));
+          notifyQueue(trimmed);
           return;
         } catch (e: unknown) {
           if (
@@ -106,7 +123,32 @@ export const enqueueTechnicianPartUsageRequest = (
   addToQueue({ method: 'post', url: `/technician/work-orders/${workOrderId}/parts`, data: payload });
 };
 
-export const clearQueue = () => safeLocalStorage.removeItem(QUEUE_KEY);
+export const enqueueWorkOrderUpdate = (
+  workOrderId: string,
+  data: Record<string, unknown>,
+) => {
+  addToQueue({
+    method: 'put',
+    url: `/workorders/${workOrderId}`,
+    data,
+    meta: { entityType: 'workorder', entityId: workOrderId },
+  });
+};
+
+export const enqueueMeterReading = (meterId: string, value: number) => {
+  addToQueue({
+    method: 'post',
+    url: `/meters/${meterId}/readings`,
+    data: { value },
+    meta: { entityType: 'meter', entityId: meterId },
+  });
+};
+
+export const clearQueue = () => {
+  notifyQueue([]);
+  safeLocalStorage.removeItem(QUEUE_KEY);
+};
+export const getQueueLength = () => loadQueue().length;
 
 import http from '@/lib/http';
 
@@ -246,7 +288,10 @@ export const diffObjects = (
 };
 let isFlushing = false;
 
-export const flushQueue = async (useBackoff = true) => {
+export const flushQueue = async (
+  useBackoff = true,
+  onProgress?: (processed: number, remaining: number) => void,
+) => {
   if (isFlushing) return;
   isFlushing = true;
 
@@ -256,11 +301,13 @@ export const flushQueue = async (useBackoff = true) => {
 
     const now = Date.now();
     const remaining: QueuedRequest[] = [];
+    let processed = 0;
 
     for (let i = 0; i < queue.length; i += 1) {
       const req = queue[i];
       if (useBackoff && req.nextAttempt && req.nextAttempt > now) {
         remaining.push(req);
+        onProgress?.(processed, remaining.length + (queue.length - i - 1));
         continue;
       }
       try {
@@ -296,6 +343,8 @@ export const flushQueue = async (useBackoff = true) => {
           retryRequest.nextAttempt = now + backoff;
         }
         remaining.push(retryRequest);
+        processed += 1;
+        onProgress?.(processed, remaining.length + (queue.length - i - 1));
         continue; // continue processing remaining requests
 
       }
@@ -306,6 +355,9 @@ export const flushQueue = async (useBackoff = true) => {
       } else {
         clearQueue();
       }
+
+      processed += 1;
+      onProgress?.(processed, toPersist.length);
 
     }
   } finally {

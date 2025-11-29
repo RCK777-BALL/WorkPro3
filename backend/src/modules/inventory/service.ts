@@ -71,6 +71,8 @@ type PartRecord = Pick<
   | 'minStock'
   | 'minQty'
   | 'maxQty'
+  | 'minLevel'
+  | 'maxLevel'
   | 'reorderPoint'
   | 'reorderQty'
   | 'reorderThreshold'
@@ -155,17 +157,18 @@ const normalizeDate = (value?: string): Date | undefined => {
   return Number.isNaN(parsed.valueOf()) ? undefined : parsed;
 };
 
-const computeAlertState = (part: { quantity: number; reorderPoint: number }) => {
-  if (part.quantity <= 0 && part.reorderPoint <= 0) {
-    return { needsReorder: false, severity: 'ok' as const };
+const computeAlertState = (part: { quantity: number; reorderPoint: number; minLevel?: number }) => {
+  const threshold = typeof part.minLevel === 'number' && part.minLevel > 0 ? part.minLevel : part.reorderPoint;
+  if (!threshold || threshold <= 0) {
+    return { needsReorder: false, severity: 'ok' as const, minimumLevel: undefined };
   }
-  if (part.quantity <= part.reorderPoint / 2) {
-    return { needsReorder: true, severity: 'critical' as const };
+  if (part.quantity <= threshold / 2) {
+    return { needsReorder: true, severity: 'critical' as const, minimumLevel: threshold };
   }
-  if (part.quantity <= part.reorderPoint) {
-    return { needsReorder: true, severity: 'warning' as const };
+  if (part.quantity <= threshold) {
+    return { needsReorder: true, severity: 'warning' as const, minimumLevel: threshold };
   }
-  return { needsReorder: false, severity: 'ok' as const };
+  return { needsReorder: false, severity: 'ok' as const, minimumLevel: threshold };
 };
 
 const resolveReferenceMaps = async (parts: PartRecord[]) => {
@@ -230,7 +233,10 @@ const resolveReferenceMaps = async (parts: PartRecord[]) => {
 const serializePart = (
   part: PartRecord,
   refs: Awaited<ReturnType<typeof resolveReferenceMaps>>,
+  stock?: StockItemDocument[],
+  locations?: Map<string, LocationDocument>,
 ): PartResponse => {
+  const locationMap = locations ?? new Map<string, LocationDocument>();
   const response: PartResponse = {
     id: part._id.toString(),
     tenantId: part.tenantId.toString(),
@@ -252,6 +258,32 @@ const serializePart = (
       .filter((template) => template.id),
     alertState: computeAlertState(part),
   };
+
+  if (stock?.length) {
+    response.stockByLocation = stock.map((item) => {
+      const serialized = serializeStockItem(
+        item,
+        undefined,
+        locationMap.get(item.location.toString()) ?? undefined,
+      );
+
+      return {
+        stockItemId: serialized.id,
+        locationId: serialized.locationId,
+        quantity: serialized.quantity,
+        unitCost: serialized.unitCost,
+        unit: serialized.unit,
+        cost: serialized.cost,
+        ...(serialized.location ? { location: serialized.location } : {}),
+      };
+    });
+
+    response.quantity = stock.reduce((sum, item) => sum + (item.quantity ?? 0), 0);
+    response.alertState = computeAlertState({
+      quantity: response.quantity,
+      reorderPoint: part.reorderPoint,
+    });
+  }
 
   if (typeof part.unitCost === 'number') {
     response.unitCost = part.unitCost;
@@ -293,6 +325,12 @@ const serializePart = (
   if (typeof part.maxQty === 'number') {
     response.maxQty = part.maxQty;
   }
+  if (typeof part.minLevel === 'number') {
+    response.minLevel = part.minLevel;
+  }
+  if (typeof part.maxLevel === 'number') {
+    response.maxLevel = part.maxLevel;
+  }
   if (typeof part.reorderQty === 'number') {
     response.reorderQty = part.reorderQty;
   }
@@ -331,12 +369,9 @@ const serializeLocation = (location: LocationDocument): InventoryLocation => {
   const response: InventoryLocation = {
     id: (location._id as Types.ObjectId).toString(),
     tenantId: location.tenantId.toString(),
-    name: location.name,
-    path: location.path,
+    store: location.store,
   };
   if (location.siteId) response.siteId = location.siteId.toString();
-  if (location.parent) response.parentId = location.parent.toString();
-  if (location.store) response.store = location.store;
   if (location.room) response.room = location.room;
   if (location.bin) response.bin = location.bin;
   return response;
@@ -349,24 +384,41 @@ export const listParts = async (context: InventoryContext): Promise<PartResponse
     query.siteId = maybeObjectId(context.siteId);
   }
   const parts: PartRecord[] = await PartModel.find(query).lean<PartRecord[]>();
-  const refs = await resolveReferenceMaps(parts);
-  return parts.map((part) => serializePart(part, refs));
-};
+  const partIds = parts.map((part) => part._id);
+  const [refs, stockItems] = await Promise.all([
+    resolveReferenceMaps(parts),
+    StockItemModel.find({
+      tenantId,
+      ...(context.siteId ? { siteId: maybeObjectId(context.siteId) } : {}),
+      part: { $in: partIds },
+    }),
+  ]);
 
-const buildLocationPath = async (
-  tenantId: Types.ObjectId,
-  parentId?: Types.ObjectId,
-): Promise<string[]> => {
-  if (!parentId) return [];
-  const parent = await LocationModel.findOne({ _id: parentId, tenantId });
-  return parent ? [...(parent.path ?? []), parent.name] : [];
+  const locationIds = stockItems.map((item) => item.location);
+  const locations = locationIds.length
+    ? await LocationModel.find({ _id: { $in: locationIds } })
+    : [];
+  const locationMap = new Map(
+    locations.map((loc) => [(loc._id as Types.ObjectId).toString(), loc]),
+  );
+  const stockByPart = stockItems.reduce((acc, item) => {
+    const key = item.part.toString();
+    const current = acc.get(key) ?? [];
+    current.push(item);
+    acc.set(key, current);
+    return acc;
+  }, new Map<string, StockItemDocument[]>());
+
+  return parts.map((part) =>
+    serializePart(part, refs, stockByPart.get(part._id.toString()), locationMap),
+  );
 };
 
 export const listLocations = async (context: InventoryContext): Promise<InventoryLocation[]> => {
   const tenantId = toObjectId(context.tenantId, 'tenant id');
   const query: Record<string, unknown> = { tenantId };
   if (context.siteId) query.siteId = maybeObjectId(context.siteId);
-  const locations = await LocationModel.find(query).sort({ name: 1 });
+  const locations = await LocationModel.find(query).sort({ store: 1, room: 1, bin: 1 });
   return locations.map((loc) => serializeLocation(loc));
 };
 
@@ -376,8 +428,6 @@ export const saveLocation = async (
   locationId?: string,
 ): Promise<InventoryLocation> => {
   const tenantId = toObjectId(context.tenantId, 'tenant id');
-  const parentId = input.parentId ? toObjectId(input.parentId, 'parent id') : undefined;
-  const path = await buildLocationPath(tenantId, parentId);
   let location: LocationDocument | null;
   if (locationId) {
     location = await LocationModel.findOne({ _id: locationId, tenantId });
@@ -385,12 +435,9 @@ export const saveLocation = async (
       throw new InventoryError('Location not found', 404);
     }
     location.set({
-      name: input.name,
       store: input.store,
       room: input.room,
       bin: input.bin,
-      parent: parentId,
-      path,
       siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
     });
     await location.save();
@@ -398,12 +445,9 @@ export const saveLocation = async (
     location = await LocationModel.create({
       tenantId,
       siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
-      name: input.name,
       store: input.store,
       room: input.room,
       bin: input.bin,
-      parent: parentId,
-      path,
     });
   }
   return serializeLocation(location);
@@ -714,6 +758,8 @@ const buildPartPayload = (input: PartInput): Partial<PartDocument> => {
   if (typeof input.minStock === 'number') payload.minStock = input.minStock;
   if (typeof input.minQty === 'number') payload.minQty = input.minQty;
   if (typeof input.maxQty === 'number') payload.maxQty = input.maxQty;
+  if (typeof input.minLevel === 'number') payload.minLevel = input.minLevel;
+  if (typeof input.maxLevel === 'number') payload.maxLevel = input.maxLevel;
   if (typeof input.reorderPoint === 'number') payload.reorderPoint = input.reorderPoint;
   if (typeof input.reorderQty === 'number') payload.reorderQty = input.reorderQty;
   if (typeof input.reorderThreshold === 'number') payload.reorderThreshold = input.reorderThreshold;
@@ -765,9 +811,10 @@ const determineReorderQuantity = (part: PartDocument): number => {
   if (part.reorderQty && part.reorderQty > 0) {
     return part.reorderQty;
   }
-  if (part.minStock && part.minStock > 0) {
-    const delta = part.minStock - part.quantity;
-    return delta > 0 ? delta : part.minStock;
+  const minimumLevel = part.minLevel && part.minLevel > 0 ? part.minLevel : part.minStock;
+  if (minimumLevel && minimumLevel > 0) {
+    const delta = minimumLevel - part.quantity;
+    return delta > 0 ? delta : minimumLevel;
   }
   const diff = part.reorderPoint - part.quantity;
   return diff > 0 ? diff : part.reorderPoint || 1;
@@ -777,7 +824,8 @@ const triggerAutoReorder = async (context: InventoryContext, part: PartDocument)
   if (!part.autoReorder || !part.vendor) {
     return;
   }
-  if (part.quantity > part.reorderPoint) {
+  const threshold = part.minLevel && part.minLevel > 0 ? part.minLevel : part.reorderPoint;
+  if (part.quantity > threshold) {
     return;
   }
   const now = new Date();
@@ -836,8 +884,23 @@ export const savePart = async (
   }
   await triggerAutoReorder(context, part);
   const plainPart = part.toObject() as PartRecord;
-  const refs = await resolveReferenceMaps([plainPart]);
-  return serializePart(plainPart, refs);
+  const [refs, stockItems] = await Promise.all([
+    resolveReferenceMaps([plainPart]),
+    StockItemModel.find({
+      tenantId,
+      part: part._id,
+      ...(context.siteId ? { siteId: maybeObjectId(context.siteId) } : {}),
+    }),
+  ]);
+  const locationIds = stockItems.map((item) => item.location);
+  const locations = locationIds.length
+    ? await LocationModel.find({ _id: { $in: locationIds } })
+    : [];
+  const locationMap = new Map(
+    locations.map((loc) => [(loc._id as Types.ObjectId).toString(), loc]),
+  );
+
+  return serializePart(plainPart, refs, stockItems, locationMap);
 };
 
 export const listVendors = async (context: InventoryContext): Promise<VendorSummary[]> => {
@@ -1170,7 +1233,29 @@ export const exportPurchaseOrders = async (
 
 export const listAlerts = async (context: InventoryContext): Promise<InventoryAlert[]> => {
   const tenantId = toObjectId(context.tenantId, 'tenant id');
-  const match: Record<string, unknown> = { tenantId, $expr: { $lte: ['$quantity', '$reorderPoint'] } };
+  const match: FilterQuery<PartDocument> = {
+    tenantId,
+    $expr: {
+      $and: [
+        {
+          $gt: [
+            {
+              $cond: [{ $gt: ['$minLevel', 0] }, '$minLevel', '$reorderPoint'],
+            },
+            0,
+          ],
+        },
+        {
+          $lte: [
+            '$quantity',
+            {
+              $cond: [{ $gt: ['$minLevel', 0] }, '$minLevel', '$reorderPoint'],
+            },
+          ],
+        },
+      ],
+    },
+  };
   if (context.siteId) {
     match.siteId = maybeObjectId(context.siteId);
   }
@@ -1183,6 +1268,7 @@ export const listAlerts = async (context: InventoryContext): Promise<InventoryAl
       partName: part.name,
       quantity: part.quantity,
       reorderPoint: part.reorderPoint,
+      minLevel: part.minLevel,
       assetNames: (part.assetIds ?? [])
         .map((assetId: Types.ObjectId) => refs.assets.get(assetId.toString()))
         .filter((name: string | undefined): name is string => Boolean(name)),

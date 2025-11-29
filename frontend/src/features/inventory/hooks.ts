@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 
 import {
@@ -32,14 +33,14 @@ export const useVendorsQuery = () =>
 export const useAlertsQuery = () =>
   useQuery({ queryKey: INVENTORY_ALERTS_QUERY_KEY, queryFn: fetchInventoryAlerts, staleTime: 15_000 });
 
-export const useLocationsQuery = () =>
-  useQuery({ queryKey: INVENTORY_LOCATIONS_QUERY_KEY, queryFn: fetchLocations, staleTime: 60_000 });
-
-export const useStockItemsQuery = () =>
-  useQuery({ queryKey: INVENTORY_STOCK_QUERY_KEY, queryFn: fetchStockItems, staleTime: 20_000 });
-
-export const useStockHistoryQuery = () =>
-  useQuery({ queryKey: INVENTORY_HISTORY_QUERY_KEY, queryFn: fetchStockHistory, staleTime: 20_000 });
+export const useLowStockParts = () => {
+  const query = usePartsQuery();
+  const lowStock = useMemo(
+    () => (query.data ?? []).filter((part) => part.alertState?.needsReorder),
+    [query.data],
+  );
+  return { ...query, lowStock };
+};
 
 export const useCreatePurchaseOrder = () => {
   const queryClient = useQueryClient();

@@ -21,21 +21,24 @@ import {
   useTransferInventory,
 } from '@/features/inventory';
 
+const formatLocation = (location: Pick<InventoryLocation, 'store' | 'room' | 'bin'>) => {
+  const parts = [location.store, location.room, location.bin].filter(Boolean);
+  return parts.length ? parts.join(' • ') : 'Unassigned';
+};
+
 const LocationForm = ({
   onSave,
   initial,
 }: {
-  onSave: (payload: Partial<InventoryLocation>) => Promise<void>;
+  onSave: (payload: Partial<InventoryLocation> & { store: string }) => Promise<void>;
   initial?: InventoryLocation | null;
 }) => {
-  const [name, setName] = useState(initial?.name ?? '');
   const [store, setStore] = useState(initial?.store ?? '');
   const [room, setRoom] = useState(initial?.room ?? '');
   const [bin, setBin] = useState(initial?.bin ?? '');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setName(initial?.name ?? '');
     setStore(initial?.store ?? '');
     setRoom(initial?.room ?? '');
     setBin(initial?.bin ?? '');
@@ -44,8 +47,7 @@ const LocationForm = ({
   const submit = async () => {
     setSaving(true);
     try {
-      await onSave({ id: initial?.id, name, store, room, bin });
-      setName('');
+      await onSave({ id: initial?.id, store, room, bin });
       setStore('');
       setRoom('');
       setBin('');
@@ -56,13 +58,12 @@ const LocationForm = ({
 
   return (
     <div className="space-y-3">
-      <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} required />
       <div className="grid gap-3 md:grid-cols-3">
-        <Input label="Store" value={store} onChange={(e) => setStore(e.target.value)} />
+        <Input label="Store" value={store} onChange={(e) => setStore(e.target.value)} required />
         <Input label="Room" value={room} onChange={(e) => setRoom(e.target.value)} />
         <Input label="Bin" value={bin} onChange={(e) => setBin(e.target.value)} />
       </div>
-      <Button onClick={submit} loading={saving} disabled={!name}>
+      <Button onClick={submit} loading={saving} disabled={!store}>
         {initial ? 'Update location' : 'Create location'}
       </Button>
     </div>
@@ -84,7 +85,9 @@ const StockTable = ({ items }: { items: StockItem[] }) => (
         {items.map((item) => (
           <tr key={item.id}>
             <td className="px-3 py-2 text-neutral-900">{item.part?.name ?? item.partId}</td>
-            <td className="px-3 py-2 text-neutral-700">{item.location?.name ?? item.locationId}</td>
+            <td className="px-3 py-2 text-neutral-700">
+              {item.location ? formatLocation(item.location) : item.locationId}
+            </td>
             <td className="px-3 py-2 text-neutral-700">{item.quantity}</td>
             <td className="px-3 py-2 text-neutral-700">{item.unit ?? '—'}</td>
           </tr>
@@ -105,6 +108,13 @@ const HistoryList = ({ entries }: { entries: StockHistoryEntry[] }) => (
           </span>
           <span className="text-xs text-neutral-500">{entry.createdAt ? new Date(entry.createdAt).toLocaleString() : '—'}</span>
         </div>
+        <p className="text-xs text-neutral-500">
+          {formatLocation({
+            store: entry.location.store ?? 'Unassigned',
+            room: entry.location.room,
+            bin: entry.location.bin,
+          })}
+        </p>
         {entry.reason && <p className="text-xs text-neutral-500">{entry.reason}</p>}
       </div>
     ))}
@@ -297,9 +307,10 @@ export default function InventoryLocations() {
     [locations],
   );
 
-  const handleSave = async (payload: Partial<InventoryLocation>) => {
-    await upsertLocation(payload as InventoryLocation & { name: string });
-    await queryClient.invalidateQueries(INVENTORY_LOCATIONS_QUERY_KEY);
+  const handleSave = async (payload: Partial<InventoryLocation> & { store: string }) => {
+    const saved = await upsertLocation(payload);
+    const next = locations.filter((loc) => loc.id !== saved.id);
+    setLocations([...next, saved]);
     setSelected(null);
   };
 
@@ -339,8 +350,8 @@ export default function InventoryLocations() {
                         onClick={() => setSelected(loc)}
                         className="rounded-md border border-neutral-200 p-3 text-left hover:border-neutral-400"
                       >
-                        <p className="font-medium text-neutral-900">{loc.name}</p>
-                        <p className="text-xs text-neutral-500">{[loc.room, loc.bin].filter(Boolean).join(' • ') || 'No room/bin set'}</p>
+                        <p className="font-medium text-neutral-900">{formatLocation(loc)}</p>
+                        <p className="text-xs text-neutral-500">{loc.bin ? `Bin ${loc.bin}` : 'No bin set'}</p>
                       </button>
                     ))}
                   </div>
@@ -355,7 +366,7 @@ export default function InventoryLocations() {
 
         <Card>
           <Card.Header>
-            <Card.Title>{selected ? 'Edit location' : 'New location'}</Card.Title>
+          <Card.Title>{selected ? 'Edit location' : 'New location'}</Card.Title>
             <Card.Description>Define store, room, and bin to support multi-level stock.</Card.Description>
           </Card.Header>
           <Card.Content>

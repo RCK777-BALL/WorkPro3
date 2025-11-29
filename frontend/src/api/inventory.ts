@@ -98,7 +98,7 @@ export const fetchLocations = async (): Promise<InventoryLocation[]> => {
 };
 
 export const upsertLocation = async (
-  payload: Partial<InventoryLocation> & { name: string; id?: string },
+  payload: Partial<InventoryLocation> & { store: string; id?: string },
 ): Promise<InventoryLocation> => {
   if (payload.id) {
     const res = await http.put<InventoryLocation>(`${BASE_PATH}/locations/${payload.id}`, payload);

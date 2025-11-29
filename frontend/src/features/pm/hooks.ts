@@ -5,7 +5,16 @@
 import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 
-import { fetchPmTemplates, upsertPmAssignment, deletePmAssignment, type AssignmentPayload } from '@/api/pm';
+import {
+  fetchPmTemplates,
+  fetchPmTemplate,
+  createPmTemplate,
+  updatePmTemplate,
+  deletePmTemplate,
+  upsertPmAssignment,
+  deletePmAssignment,
+  type AssignmentPayload,
+} from '@/api/pm';
 import { fetchInventoryItems } from '@/api/inventoryItems';
 import { useHierarchyTree } from '@/features/assets/hooks';
 import type { InventoryItem, PMTemplate } from '@/types';
@@ -14,6 +23,46 @@ export const PM_TEMPLATES_QUERY_KEY = ['pm', 'templates'] as const;
 
 export const usePmTemplates = () =>
   useQuery({ queryKey: PM_TEMPLATES_QUERY_KEY, queryFn: fetchPmTemplates, staleTime: 30_000 });
+
+export const usePmTemplate = (templateId?: string) =>
+  useQuery({
+    queryKey: [...PM_TEMPLATES_QUERY_KEY, templateId],
+    queryFn: () => fetchPmTemplate(templateId ?? ''),
+    enabled: Boolean(templateId),
+    staleTime: 10_000,
+  });
+
+export const useCreatePmTemplate = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createPmTemplate,
+    onSuccess: () => {
+      void queryClient.invalidateQueries(PM_TEMPLATES_QUERY_KEY);
+    },
+  });
+};
+
+export const useUpdatePmTemplate = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ templateId, payload }: { templateId: string; payload: Parameters<typeof updatePmTemplate>[1] }) =>
+      updatePmTemplate(templateId, payload),
+    onSuccess: (data) => {
+      void queryClient.invalidateQueries(PM_TEMPLATES_QUERY_KEY);
+      void queryClient.invalidateQueries([...PM_TEMPLATES_QUERY_KEY, data.id]);
+    },
+  });
+};
+
+export const useDeletePmTemplate = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deletePmTemplate,
+    onSuccess: () => {
+      void queryClient.invalidateQueries(PM_TEMPLATES_QUERY_KEY);
+    },
+  });
+};
 
 export const useUpsertAssignment = () => {
   const queryClient = useQueryClient();

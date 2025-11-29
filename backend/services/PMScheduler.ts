@@ -5,6 +5,7 @@
 import PMTask, { type PMTaskAssignmentDocument } from '../models/PMTask';
 import WorkOrder from '../models/WorkOrder';
 import Meter from '../models/Meter';
+import MeterReading from '../models/MeterReading';
 import ConditionRule from '../models/ConditionRule';
 import SensorReading from '../models/SensorReading';
 import ProductionRecord from '../models/ProductionRecord';
@@ -67,6 +68,52 @@ export async function runPMScheduler(): Promise<void> {
       if (Array.isArray(task.assignments) && task.assignments.length > 0) {
         let touched = false;
         for (const assignment of task.assignments) {
+          const triggerType = assignment.trigger?.type ?? 'time';
+
+          if (triggerType === 'meter') {
+            const threshold = assignment.trigger?.meterThreshold;
+            if (!threshold) {
+              continue;
+            }
+            const meter = await Meter.findOne({ asset: assignment.asset, tenantId: task.tenantId });
+            if (!meter) {
+              continue;
+            }
+            const latestReading = await MeterReading.findOne({ meter: meter._id, tenantId: task.tenantId })
+              .sort({ timestamp: -1 })
+              .lean();
+            const currentValue = latestReading?.value ?? meter.currentValue ?? 0;
+            const sinceLast = currentValue - (meter.lastWOValue || 0);
+
+            if (sinceLast >= threshold) {
+              await WorkOrder.create({
+                title: `PM: ${task.title}`,
+                description: task.notes || '',
+                status: 'open',
+                asset: assignment.asset,
+                pmTask: task._id,
+                department: task.department,
+                dueDate: now,
+                priority: 'medium',
+                tenantId: task.tenantId,
+                checklists: assignment.checklist?.map((item) => ({
+                  description: item.description,
+                  done: false,
+                })),
+                partsUsed: assignment.requiredParts?.map((part) => ({
+                  partId: part.partId,
+                  qty: part.quantity,
+                })),
+              });
+              meter.lastWOValue = currentValue;
+              await meter.save();
+              assignment.lastGeneratedAt = now;
+              task.lastGeneratedAt = now;
+              touched = true;
+            }
+            continue;
+          }
+
           const interval = assignment.interval;
           if (!interval) {
             continue;

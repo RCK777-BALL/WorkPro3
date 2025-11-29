@@ -21,6 +21,8 @@ export const partInputSchema = z.object({
   minStock: z.number().optional(),
   minQty: z.number().optional(),
   maxQty: z.number().optional(),
+  minLevel: z.number().optional(),
+  maxLevel: z.number().optional(),
   reorderPoint: z.number().optional(),
   reorderQty: z.number().optional(),
   reorderThreshold: z.number().optional(),
@@ -63,11 +65,9 @@ export const purchaseOrderInputSchema = z.object({
 });
 
 export const locationInputSchema = z.object({
-  name: z.string().min(1, 'Location name is required'),
-  store: z.string().optional(),
+  store: z.string().min(1, 'Store is required'),
   room: z.string().optional(),
   bin: z.string().optional(),
-  parentId: objectId.optional(),
 });
 
 export const stockAdjustmentSchema = z.object({

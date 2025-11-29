@@ -25,6 +25,9 @@ export interface NotificationDocument extends Document {
   category: NotificationCategory;
   assetId?: Types.ObjectId;
   tenantId: Types.ObjectId;
+  workOrderId?: Types.ObjectId;
+  inventoryItemId?: Types.ObjectId;
+  pmTaskId?: Types.ObjectId;
   deliveryState: NotificationDeliveryState;
   createdAt: Date;
   read: boolean;
@@ -42,6 +45,9 @@ const notificationSchema = new Schema<NotificationDocument>({
   },
   assetId: { type: Schema.Types.ObjectId, ref: 'Asset' },
   tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true },
+  workOrderId: { type: Schema.Types.ObjectId, ref: 'WorkOrder' },
+  inventoryItemId: { type: Schema.Types.ObjectId, ref: 'InventoryItem' },
+  pmTaskId: { type: Schema.Types.ObjectId, ref: 'PMTask' },
   deliveryState: {
     type: String,
     enum: ['pending', 'queued', 'sent', 'failed', 'delivered'],
@@ -53,6 +59,9 @@ const notificationSchema = new Schema<NotificationDocument>({
 
 notificationSchema.index({ tenantId: 1 });
 notificationSchema.index({ read: 1 });
+notificationSchema.index({ workOrderId: 1 });
+notificationSchema.index({ inventoryItemId: 1 });
+notificationSchema.index({ pmTaskId: 1 });
 
 const Notification: Model<NotificationDocument> = mongoose.model<NotificationDocument>(
   'Notification',

@@ -9,6 +9,8 @@ import { useAlertsQuery } from './hooks';
 const AlertsPanel = () => {
   const { data, isLoading, error } = useAlertsQuery();
   const alerts = data ?? [];
+  const thresholdForAlert = (alert: (typeof alerts)[number]) =>
+    alert.minLevel && alert.minLevel > 0 ? alert.minLevel : alert.reorderPoint;
 
   return (
     <section className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
@@ -37,7 +39,7 @@ const AlertsPanel = () => {
                 <div>
                   <p className="font-medium text-neutral-900">{alert.partName}</p>
                   <p className="text-xs text-neutral-500">
-                    {alert.quantity} in stock · Reorder point {alert.reorderPoint}
+                    {alert.quantity} in stock · Minimum {thresholdForAlert(alert)}
                   </p>
                   {alert.vendorName && (
                     <p className="text-xs text-neutral-500">Vendor: {alert.vendorName}</p>
@@ -55,12 +57,12 @@ const AlertsPanel = () => {
                 </div>
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                    alert.quantity <= alert.reorderPoint / 2
+                    alert.quantity <= thresholdForAlert(alert) / 2
                       ? 'bg-error-50 text-error-700'
                       : 'bg-warning-50 text-warning-700'
                   }`}
                 >
-                  {alert.quantity <= alert.reorderPoint / 2 ? 'Critical' : 'Warning'}
+                  {alert.quantity <= thresholdForAlert(alert) / 2 ? 'Critical' : 'Warning'}
                 </span>
               </div>
             </li>

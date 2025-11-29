@@ -63,6 +63,8 @@ export const notifyMentionedUsers = async (
   const message = `You were mentioned in a comment on ${entityLabel} ${context.entityId.toString()}.`;
 
   await Promise.all(
-    recipients.map(async (user) => notifyUser(user._id, message)),
+    recipients.map(async (user) =>
+      notifyUser(user._id, message, { title: 'You were mentioned', category: 'comment' }),
+    ),
   );
 };

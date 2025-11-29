@@ -14,10 +14,12 @@ import StockHistory from '../models/StockHistory';
 import Permit, { type PermitDocument } from '../models/Permit';
 import { emitWorkOrderUpdate } from '../server';
 import notifyUser from '../utils/notify';
+import { notifySlaBreach, notifyWorkOrderAssigned } from '../services/notificationService';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
 import { auditAction } from '../utils/audit';
+import { normalizePartUsageCosts } from '../utils/partUsageCost';
 
 import type { WorkOrderType, WorkOrderInput } from '../types/workOrder';
 
@@ -737,7 +739,13 @@ export async function updateWorkOrder(
         'part',
       );
       if (!validParts) return;
-      update.partsUsed = mapPartsUsed(validParts);
+      const mappedParts = mapPartsUsed(validParts);
+      const normalizedUsage = await normalizePartUsageCosts(
+        tenantId,
+        mappedParts as Array<{ partId: Types.ObjectId; qty?: number; cost?: number }>,
+      );
+      update.partsUsed = normalizedUsage.parts;
+      update.partsCost = normalizedUsage.partsCost;
     }
     if (update.assignees && update.assignees.length) {
       const assigneeIds = update.assignees.map((id) =>
@@ -837,6 +845,7 @@ export async function updateWorkOrder(
     }
     await auditAction(req as unknown as Request, 'update', 'WorkOrder', new Types.ObjectId(req.params.id), existing.toObject(), updated.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(updated));
+    await notifySlaBreach(updated);
     sendResponse(res, updated);
     return;
   } catch (err) {
@@ -1118,6 +1127,9 @@ export async function assignWorkOrder(
     }
     const saved = await workOrder.save();
     await auditAction(req as unknown as Request, 'assign', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
+    if (saved.assignees && saved.assignees.length) {
+      await notifyWorkOrderAssigned(saved, saved.assignees as unknown as Types.ObjectId[]);
+    }
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved);
     return;
@@ -1270,6 +1282,17 @@ export async function completeWorkOrder(
 
     if (Array.isArray(body.photos)) workOrder.set('photos', body.photos);
     if (body.failureCode !== undefined) workOrder.failureCode = body.failureCode;
+
+    if (Array.isArray(workOrder.partsUsed) && workOrder.partsUsed.length) {
+      const { parts, partsCost } = await normalizePartUsageCosts(
+        tenantId,
+        workOrder.partsUsed as unknown as Array<{ partId: Types.ObjectId; qty?: number; cost?: number }>,
+      );
+      workOrder.set('partsUsed', parts);
+      workOrder.partsCost = partsCost;
+    } else {
+      workOrder.partsCost = 0;
+    }
 
     const saved = await workOrder.save();
 

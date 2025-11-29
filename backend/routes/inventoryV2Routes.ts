@@ -291,7 +291,6 @@ router.get('/vendors', async (req, res, next) => {
     sendResponse(res, vendors.map((vendor) => ({
       id: vendor._id.toString(),
       name: vendor.name,
-      contact: vendor.contactName,
       email: vendor.email,
       phone: vendor.phone,
     })));

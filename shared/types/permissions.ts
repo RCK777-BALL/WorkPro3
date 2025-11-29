@@ -34,6 +34,11 @@ export const PERMISSIONS = {
     read: 'executive.read',
     manage: 'executive.manage',
   },
+  reports: {
+    read: 'reports.read',
+    build: 'reports.build',
+    export: 'reports.export',
+  },
   audit: {
     read: 'audit.read',
   },

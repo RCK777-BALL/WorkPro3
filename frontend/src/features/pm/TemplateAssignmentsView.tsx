@@ -72,7 +72,7 @@ const TemplateAssignmentsView = () => {
                 }`}
                 onClick={() => handleTemplateSelect(template)}
               >
-                <span className="font-medium">{template.title}</span>
+                <span className="font-medium">{template.name}</span>
                 <span className="text-xs text-neutral-500">{template.assignments.length} assignment(s)</span>
               </button>
             );
@@ -85,8 +85,10 @@ const TemplateAssignmentsView = () => {
             <>
               <div className="flex flex-col gap-2 border-b border-neutral-100 pb-3 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-neutral-900">{resolvedTemplate.title}</h2>
-                  {resolvedTemplate.notes && <p className="text-sm text-neutral-500">{resolvedTemplate.notes}</p>}
+                  <h2 className="text-lg font-semibold text-neutral-900">{resolvedTemplate.name}</h2>
+                  {resolvedTemplate.description && (
+                    <p className="text-sm text-neutral-500">{resolvedTemplate.description}</p>
+                  )}
                 </div>
                 <Button variant="outline" onClick={() => setEditingAssignment(null)}>
                   Add assignment
@@ -98,7 +100,9 @@ const TemplateAssignmentsView = () => {
                     <div>
                       <p className="font-medium text-neutral-800">{assignment.assetName ?? 'Unresolved asset'}</p>
                       <p className="text-sm text-neutral-500">
-                        Interval: {assignment.interval} {assignment.nextDue ? `· Next due ${new Date(assignment.nextDue).toLocaleDateString()}` : ''}
+                        {assignment.trigger?.type === 'meter'
+                          ? `Meter trigger: +${assignment.trigger.meterThreshold ?? '–'}`
+                          : `Interval: ${assignment.interval ?? 'Not set'}${assignment.nextDue ? ` · Next due ${new Date(assignment.nextDue).toLocaleDateString()}` : ''}`}
                       </p>
                       <p className="text-xs text-neutral-500">
                         Checklist items: {assignment.checklist.length} · Parts: {assignment.requiredParts.length}

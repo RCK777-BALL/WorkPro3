@@ -17,11 +17,15 @@ exports[`CommentThread > renders existing comments and matches snapshot 1`] = `
     <form
       class="relative space-y-2"
     >
-      <label
-        class="text-sm font-medium text-neutral-700"
+      <div
+        class="flex items-center justify-between gap-2 text-sm text-neutral-700"
       >
-        Add a comment
-      </label>
+        <label
+          class="font-medium"
+        >
+          Add a comment
+        </label>
+      </div>
       <div
         class="relative"
       >
@@ -96,9 +100,9 @@ exports[`CommentThread > renders existing comments and matches snapshot 1`] = `
           </div>
           <time
             class="text-xs text-neutral-500"
-            datetime="2024-01-01T00:00:00.000Z"
+            datetime="1/1/2024, 12:00:00 AM"
           >
-            2024-01-01T00:00:00.000Z
+            1/1/2024, 12:00:00 AM
           </time>
         </header>
         <p
@@ -114,6 +118,16 @@ exports[`CommentThread > renders existing comments and matches snapshot 1`] = `
             Jane Doe
           </span>
         </p>
+        <div
+          class="mt-2 flex items-center gap-4 text-xs text-neutral-500"
+        >
+          <button
+            class="font-semibold text-indigo-600 hover:text-indigo-700"
+            type="button"
+          >
+            Reply
+          </button>
+        </div>
       </article>
     </div>
   </div>

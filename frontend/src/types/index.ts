@@ -390,7 +390,7 @@ export interface User {
   avatar?: string;
 }
 
-export interface CommentAuthor {
+export interface CommentUser {
   id: string;
   name?: string;
   email?: string;
@@ -399,9 +399,11 @@ export interface CommentAuthor {
 
 export interface Comment {
   id: string;
-  body: string;
-  mentions: string[];
-  author?: CommentAuthor;
+  threadId: string;
+  parentId?: string;
+  content: string;
+  mentions?: string[];
+  user?: CommentUser;
   createdAt: string | Date;
   updatedAt?: string | Date;
 }

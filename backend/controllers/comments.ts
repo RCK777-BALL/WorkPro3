@@ -3,7 +3,7 @@
  */
 
 import { Types } from 'mongoose';
-import { createComment, listComments } from '../services/comments';
+import { createComment, listComments, buildThreadId } from '../services/comments';
 import type { AuthedRequestHandler } from '../types/http';
 import { sendResponse } from '../utils/sendResponse';
 import { toObjectId, toEntityId } from '../utils/ids';
@@ -16,16 +16,18 @@ const parsePagination = (value: unknown) => {
 
 const mapComment = (comment: any) => ({
   id: toEntityId(comment._id) ?? '',
-  body: comment.body,
+  threadId: comment.threadId,
+  parentId: comment.parentId ? toEntityId(comment.parentId) ?? undefined : undefined,
+  content: comment.content,
   mentions: Array.isArray(comment.mentions)
     ? comment.mentions.map((m: Types.ObjectId | string) => m.toString())
     : [],
-  author: comment.authorId
+  user: comment.userId
     ? {
-        id: toEntityId(comment.authorId._id) ?? '',
-        name: comment.authorId.name,
-        email: comment.authorId.email,
-        avatar: comment.authorId.avatar,
+        id: toEntityId(comment.userId._id) ?? '',
+        name: comment.userId.name,
+        email: comment.userId.email,
+        avatar: comment.userId.avatar,
       }
     : undefined,
   createdAt:
@@ -72,20 +74,27 @@ const buildListHandler = (entityType: 'WO' | 'Asset'): AuthedRequestHandler<{ id
 
 const buildCreateHandler = (
   entityType: 'WO' | 'Asset',
-): AuthedRequestHandler<{ id: string }, unknown, { body?: string }> =>
+): AuthedRequestHandler<{ id: string }, unknown, { body?: string; content?: string; parentId?: string }> =>
   async (req, res, next) => {
     try {
       const tenantId = toObjectId(req.tenantId ?? req.user?.tenantId);
       const entityId = toObjectId(req.params.id);
-      const authorId = toObjectId(req.user?._id ?? req.user?.id);
-      if (!tenantId || !entityId || !authorId) {
+      const userId = toObjectId(req.user?._id ?? req.user?.id);
+      if (!tenantId || !entityId || !userId) {
         res.status(400).json({ message: 'Invalid tenant or user context' });
         return;
       }
 
-      const body = typeof req.body?.body === 'string' ? req.body.body.trim() : '';
-      if (!body) {
+      const contentRaw = typeof req.body?.content === 'string' ? req.body.content : req.body?.body;
+      const content = typeof contentRaw === 'string' ? contentRaw.trim() : '';
+      if (!content) {
         res.status(400).json({ message: 'Comment body is required' });
+        return;
+      }
+
+      const parentId = req.body?.parentId ? toObjectId(req.body.parentId) : null;
+      if (req.body?.parentId && !parentId) {
+        res.status(400).json({ message: 'Invalid parent comment identifier' });
         return;
       }
 
@@ -93,8 +102,10 @@ const buildCreateHandler = (
         tenantId,
         entityType,
         entityId,
-        authorId,
-        body,
+        userId,
+        content,
+        threadId: buildThreadId(entityType, entityId),
+        parentId: parentId ?? undefined,
       });
 
       sendResponse(res, mapComment(comment));

@@ -57,7 +57,12 @@ export const resolveUserPermissions = async (
     .map((assignment) => toObjectId(assignment.roleId))
     .filter((value): value is Types.ObjectId => Boolean(value));
 
-  const roles = roleIds.length > 0 ? await Role.find({ _id: { $in: roleIds } }).lean() : [];
+  const roleFilter: Record<string, unknown> = { _id: { $in: roleIds }, tenantId };
+  if (siteId) {
+    roleFilter.$or = [{ siteId: { $exists: false } }, { siteId: null }, { siteId }];
+  }
+
+  const roles = roleIds.length > 0 ? await Role.find(roleFilter).lean() : [];
 
   const permissionSet = new Set<Permission>();
   const roleNames = new Set<string>();

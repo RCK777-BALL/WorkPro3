@@ -157,6 +157,14 @@ export default function App() {
           <Route path="/maintenance" element={<Maintenance />} />
           <Route path="/permits" element={<PermitsPage />} />
           <Route
+            path="/settings/roles"
+            element={
+              <RequirePermission permission="roles.read">
+                <RoleManagementPage />
+              </RequirePermission>
+            }
+          />
+          <Route
             path="/assets"
             element={
               <RequirePermission permission="hierarchy.read">

@@ -13,6 +13,7 @@ import GlobalSearch from './GlobalSearch';
 import PlantSwitcher from './PlantSwitcher';
 import TenantSwitcher from './TenantSwitcher';
 import { useScopeContext } from '@/context/ScopeContext';
+import SyncStatusIndicator from '@/components/offline/SyncStatusIndicator';
 
 const Header: React.FC = () => {
   const { t } = useTranslation();
@@ -89,6 +90,7 @@ const Header: React.FC = () => {
         <span className="hidden text-sm font-medium text-slate-300 md:block">
           {formattedDateTime}
         </span>
+        <SyncStatusIndicator />
         <NotificationMenu open={showNotifications} onOpenChange={setShowNotifications} />
         <Avatar name={user?.name || ''} size="sm" />
       </div>

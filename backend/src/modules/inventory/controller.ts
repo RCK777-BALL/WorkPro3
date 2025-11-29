@@ -23,7 +23,9 @@ import {
   transitionPurchaseOrder,
   InventoryError,
   type InventoryContext,
+  type PartUsageFilters,
   type PurchaseOrderExportFormat,
+  getPartUsageReport,
 } from './service';
 import {
   locationInputSchema,
@@ -71,6 +73,12 @@ const normalizeFormat = (value: unknown): PurchaseOrderExportFormat | null => {
   if (value.toLowerCase() === 'pdf') return 'pdf';
   if (value.toLowerCase() === 'csv') return 'csv';
   return null;
+};
+
+const parseDate = (value: unknown): Date | undefined => {
+  if (typeof value !== 'string') return undefined;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
 };
 
 const toIdArray = (value: unknown): string[] | undefined => {
@@ -239,6 +247,22 @@ export const listStockHistoryHandler: AuthedRequestHandler = async (req, res, ne
   if (!ensureTenant(req, res)) return;
   try {
     const data = await listStockHistory(buildContext(req));
+    send(res, data);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const partUsageReportHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  const filters: PartUsageFilters = {
+    startDate: parseDate(req.query.startDate),
+    endDate: parseDate(req.query.endDate),
+    partIds: toIdArray(req.query.partIds ?? req.query.partId),
+    siteIds: toIdArray(req.query.siteIds ?? req.query.siteId),
+  };
+  try {
+    const data = await getPartUsageReport(buildContext(req), filters);
     send(res, data);
   } catch (err) {
     handleError(err, res, next);

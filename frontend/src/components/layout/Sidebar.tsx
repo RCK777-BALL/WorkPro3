@@ -160,6 +160,14 @@ const navItems: Record<NavItemId, NavItem> = {
     section: "operations",
     permission: "inventory.read",
   },
+  "inventory-analytics": {
+    id: "inventory-analytics",
+    label: "Inventory Analytics",
+    to: "/inventory/analytics",
+    icon: BarChart3,
+    section: "operations",
+    permission: "inventory.read",
+  },
   teams: {
     id: "teams",
     label: "Teams",

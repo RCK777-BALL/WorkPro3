@@ -38,6 +38,8 @@ export type {
   PurchaseOrder,
   PurchaseOrderPayload,
   InventoryAlert,
+  PartUsageReport,
+  PartUsageRecord,
 } from '@backend-shared/inventory';
 
 export type Vendor = VendorSummary;

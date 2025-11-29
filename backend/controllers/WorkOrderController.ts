@@ -18,6 +18,7 @@ import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
 import { auditAction } from '../utils/audit';
+import { normalizePartUsageCosts } from '../utils/partUsageCost';
 
 import type { WorkOrderType, WorkOrderInput } from '../types/workOrder';
 
@@ -737,7 +738,13 @@ export async function updateWorkOrder(
         'part',
       );
       if (!validParts) return;
-      update.partsUsed = mapPartsUsed(validParts);
+      const mappedParts = mapPartsUsed(validParts);
+      const normalizedUsage = await normalizePartUsageCosts(
+        tenantId,
+        mappedParts as Array<{ partId: Types.ObjectId; qty?: number; cost?: number }>,
+      );
+      update.partsUsed = normalizedUsage.parts;
+      update.partsCost = normalizedUsage.partsCost;
     }
     if (update.assignees && update.assignees.length) {
       const assigneeIds = update.assignees.map((id) =>
@@ -1270,6 +1277,17 @@ export async function completeWorkOrder(
 
     if (Array.isArray(body.photos)) workOrder.set('photos', body.photos);
     if (body.failureCode !== undefined) workOrder.failureCode = body.failureCode;
+
+    if (Array.isArray(workOrder.partsUsed) && workOrder.partsUsed.length) {
+      const { parts, partsCost } = await normalizePartUsageCosts(
+        tenantId,
+        workOrder.partsUsed as unknown as Array<{ partId: Types.ObjectId; qty?: number; cost?: number }>,
+      );
+      workOrder.set('partsUsed', parts);
+      workOrder.partsCost = partsCost;
+    } else {
+      workOrder.partsCost = 0;
+    }
 
     const saved = await workOrder.save();
 

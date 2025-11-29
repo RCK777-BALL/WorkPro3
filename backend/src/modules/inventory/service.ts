@@ -7,11 +7,14 @@ import { Parser as Json2csvParser } from 'json2csv';
 import PDFDocument from 'pdfkit';
 
 import Asset from '../../../models/Asset';
+import InventoryItem from '../../../models/InventoryItem';
 import PMTask from '../../../models/PMTask';
+import WorkOrder from '../../../models/WorkOrder';
 import type {
   InventoryAlert,
   InventoryLocation,
   Part as PartResponse,
+  PartUsageReport,
   PurchaseOrder as PurchaseOrderResponse,
   StockAdjustment,
   StockHistoryEntry,
@@ -38,6 +41,13 @@ export interface InventoryContext {
   tenantId: string;
   siteId?: string;
   userId?: string;
+}
+
+export interface PartUsageFilters {
+  startDate?: Date;
+  endDate?: Date;
+  partIds?: string[];
+  siteIds?: string[];
 }
 
 export class InventoryError extends Error {
@@ -1060,4 +1070,167 @@ export const listAlerts = async (context: InventoryContext): Promise<InventoryAl
 
     return alert;
   });
+};
+
+export const getPartUsageReport = async (
+  context: InventoryContext,
+  filters: PartUsageFilters = {},
+): Promise<PartUsageReport> => {
+  const tenantId = toObjectId(context.tenantId, 'tenant id');
+  const match: FilterQuery<any> = { tenantId, status: 'completed' };
+
+  if (context.siteId) {
+    match.siteId = toObjectId(context.siteId, 'site id');
+  }
+
+  if (filters.siteIds?.length) {
+    match.siteId = { $in: filters.siteIds.map((id) => toObjectId(id, 'site id')) } as any;
+  }
+
+  const dateRange: Record<string, Date> = {};
+  if (filters.startDate) dateRange.$gte = filters.startDate;
+  if (filters.endDate) dateRange.$lte = filters.endDate;
+  if (Object.keys(dateRange).length) {
+    match.completedAt = dateRange;
+  }
+
+  const partFilterSet = filters.partIds?.length ? new Set(filters.partIds) : null;
+
+  const workOrders = await WorkOrder.find(match)
+    .select('_id partsUsed completedAt')
+    .lean();
+
+  if (!workOrders.length) {
+    return {
+      summary: { totalQuantity: 0, totalCost: 0, distinctParts: 0, workOrders: 0 },
+      parts: [],
+    };
+  }
+
+  const usage = new Map<
+    string,
+    {
+      partId: string;
+      totalQuantity: number;
+      providedCost: number;
+      missingCostQuantity: number;
+      workOrders: Set<string>;
+      lastUsedAt?: Date;
+    }
+  >();
+
+  const completedOrders = new Set<string>();
+
+  workOrders.forEach((order) => {
+    const completedAt = order.completedAt ?? undefined;
+    if (!Array.isArray(order.partsUsed)) return;
+    order.partsUsed.forEach((entry) => {
+      const rawId = (entry as { partId?: Types.ObjectId | string }).partId;
+      if (!rawId) return;
+      const partId = rawId instanceof Types.ObjectId ? rawId : new Types.ObjectId(rawId);
+      const key = partId.toString();
+      if (partFilterSet && !partFilterSet.has(key)) return;
+
+      const quantity = Number((entry as { qty?: number }).qty ?? 0);
+      if (!Number.isFinite(quantity) || quantity <= 0) return;
+
+      const costValue = (entry as { cost?: number }).cost;
+      const record =
+        usage.get(key) ?? {
+          partId: key,
+          totalQuantity: 0,
+          providedCost: 0,
+          missingCostQuantity: 0,
+          workOrders: new Set<string>(),
+          lastUsedAt: undefined,
+        };
+
+      record.totalQuantity += quantity;
+      if (typeof costValue === 'number' && Number.isFinite(costValue)) {
+        record.providedCost += quantity * costValue;
+      } else {
+        record.missingCostQuantity += quantity;
+      }
+
+      record.workOrders.add(order._id.toString());
+      if (completedAt && (!record.lastUsedAt || completedAt > record.lastUsedAt)) {
+        record.lastUsedAt = completedAt;
+      }
+
+      usage.set(key, record);
+      completedOrders.add(order._id.toString());
+    });
+  });
+
+  if (!usage.size) {
+    return {
+      summary: { totalQuantity: 0, totalCost: 0, distinctParts: 0, workOrders: 0 },
+      parts: [],
+    };
+  }
+
+  const partIds = Array.from(usage.keys()).map((id) => new Types.ObjectId(id));
+  const partDocs = await PartModel.find({ tenantId, _id: { $in: partIds } })
+    .select('name partNo partNumber unitCost cost')
+    .lean();
+
+  const metadata = new Map<string, { name?: string; partNo?: string; unitCost?: number | null; cost?: number | null }>();
+  partDocs.forEach((doc) => {
+    metadata.set(doc._id.toString(), {
+      name: doc.name,
+      partNo: doc.partNo ?? doc.partNumber,
+      unitCost: doc.unitCost,
+      cost: doc.cost,
+    });
+  });
+
+  const missingMetaIds = partIds.filter((id) => !metadata.has(id.toString()));
+  if (missingMetaIds.length) {
+    const legacyItems = await InventoryItem.find({ tenantId, _id: { $in: missingMetaIds } })
+      .select('name partNo partNumber unitCost cost')
+      .lean();
+    legacyItems.forEach((item) => {
+      metadata.set(item._id.toString(), {
+        name: (item as any).name,
+        partNo: (item as any).partNo ?? (item as any).partNumber,
+        unitCost: (item as any).unitCost,
+        cost: (item as any).cost,
+      });
+    });
+  }
+
+  let totalQuantity = 0;
+  let totalCost = 0;
+
+  const parts = Array.from(usage.values()).map((entry) => {
+    const meta = metadata.get(entry.partId);
+    const unitCost = meta?.unitCost ?? meta?.cost ?? 0;
+    const partCost = entry.providedCost + entry.missingCostQuantity * unitCost;
+
+    totalQuantity += entry.totalQuantity;
+    totalCost += partCost;
+
+    return {
+      partId: entry.partId,
+      partName: meta?.name ?? 'Unknown part',
+      partNumber: meta?.partNo,
+      totalQuantity: entry.totalQuantity,
+      totalCost: partCost,
+      workOrderCount: entry.workOrders.size,
+      lastUsedAt: entry.lastUsedAt?.toISOString(),
+      unitCost,
+    };
+  });
+
+  parts.sort((a, b) => b.totalCost - a.totalCost || b.totalQuantity - a.totalQuantity);
+
+  return {
+    summary: {
+      totalQuantity,
+      totalCost,
+      distinctParts: parts.length,
+      workOrders: completedOrders.size,
+    },
+    parts,
+  };
 };

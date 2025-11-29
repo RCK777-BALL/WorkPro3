@@ -9,6 +9,7 @@ import type {
   Part,
   PurchaseOrder,
   PurchaseOrderPayload,
+  PartUsageReport,
   StockAdjustment,
   StockHistoryEntry,
   StockItem,
@@ -122,5 +123,10 @@ export const adjustStockLevel = async (payload: {
 
 export const fetchStockHistory = async (): Promise<StockHistoryEntry[]> => {
   const res = await http.get<StockHistoryEntry[]>(`${BASE_PATH}/stock/history`);
+  return res.data;
+};
+
+export const fetchPartUsageReport = async (): Promise<PartUsageReport> => {
+  const res = await http.get<PartUsageReport>(`${BASE_PATH}/analytics/usage`);
   return res.data;
 };

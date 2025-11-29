@@ -168,3 +168,24 @@ export interface StockHistoryEntry {
     bin?: string | undefined;
   };
 }
+
+export interface PartUsageRecord {
+  partId: string;
+  partName: string;
+  partNumber?: string | undefined;
+  unitCost?: number | null | undefined;
+  totalQuantity: number;
+  totalCost: number;
+  workOrderCount: number;
+  lastUsedAt?: string | undefined;
+}
+
+export interface PartUsageReport {
+  summary: {
+    totalQuantity: number;
+    totalCost: number;
+    distinctParts: number;
+    workOrders: number;
+  };
+  parts: PartUsageRecord[];
+}

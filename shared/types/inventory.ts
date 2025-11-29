@@ -78,6 +78,7 @@ export interface Part extends TenantScoped {
   lastAutoReorderAt?: string | undefined;
   alertState?: PartAlertState | undefined;
   image?: string | undefined;
+  stockByLocation?: PartLocationStock[] | undefined;
 }
 
 export interface PurchaseOrderItemPayload {
@@ -129,18 +130,26 @@ export interface InventoryAlert extends TenantScoped {
 
 export interface InventoryLocation extends TenantScoped {
   id: string;
-  name: string;
-  store?: string | undefined;
+  siteId?: string | undefined;
+  store: string;
   room?: string | undefined;
   bin?: string | undefined;
-  parentId?: string | undefined;
-  path: string[];
 }
 
 export interface StockItem extends TenantScoped {
   id: string;
   partId: string;
   part?: Pick<Part, 'id' | 'name' | 'partNumber' | 'partNo'> | undefined;
+  locationId: string;
+  location?: InventoryLocation | undefined;
+  quantity: number;
+  unitCost?: number | undefined;
+  unit?: string | undefined;
+  cost?: number | undefined;
+}
+
+export interface PartLocationStock {
+  stockItemId: string;
   locationId: string;
   location?: InventoryLocation | undefined;
   quantity: number;

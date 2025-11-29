@@ -27,6 +27,18 @@ const matchSearch = (part: Part, term: string) => {
   return haystack.includes(term.toLowerCase());
 };
 
+const severityClass: Record<string, string> = {
+  critical: 'bg-error-50 text-error-700',
+  warning: 'bg-warning-50 text-warning-700',
+  ok: 'bg-success-50 text-success-700',
+};
+
+const formatLocation = (location?: { store?: string; room?: string; bin?: string }) => {
+  if (!location) return 'Unassigned';
+  const parts = [location.store, location.room, location.bin].filter(Boolean);
+  return parts.length ? parts.join(' • ') : 'Unassigned';
+};
+
 const PartsTableView = () => {
   const partsQuery = usePartsQuery();
   const vendorsQuery = useVendorsQuery();
@@ -137,14 +149,36 @@ const PartsTableView = () => {
                       <p className="text-neutral-400">Unassigned</p>
                     )}
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="space-y-1">
-                      <StockLevelBadge part={part} />
-                      <p className="text-xs text-neutral-500">
-                        Target min {part.minLevel ?? part.reorderPoint}
-                      </p>
-                    </div>
-                  </td>
+                <td className="px-4 py-3">
+                  <div className="space-y-2">
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        severityClass[part.alertState?.severity ?? 'ok']
+                      }`}
+                    >
+                      {part.quantity} pcs
+                    </span>
+                    <p className="text-xs text-neutral-500">Reorder @ {part.reorderPoint}</p>
+                    {part.stockByLocation?.length ? (
+                      <div className="rounded-md bg-neutral-50 p-2">
+                        <p className="text-[11px] font-semibold uppercase text-neutral-500">By location</p>
+                        <ul className="space-y-1 text-xs text-neutral-700">
+                          {part.stockByLocation.map((stock) => (
+                            <li
+                              key={stock.stockItemId}
+                              className="flex items-center justify-between gap-2"
+                            >
+                              <span>{formatLocation(stock.location)}</span>
+                              <span className="text-neutral-500">{stock.quantity}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-neutral-400">No location assignments</p>
+                    )}
+                  </div>
+                </td>
                   <td className="px-4 py-3 text-sm text-neutral-600">
                     {part.assets && part.assets.length > 0 ? (
                       <ul className="list-inside list-disc text-xs text-neutral-600">

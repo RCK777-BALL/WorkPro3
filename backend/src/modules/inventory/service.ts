@@ -230,7 +230,10 @@ const resolveReferenceMaps = async (parts: PartRecord[]) => {
 const serializePart = (
   part: PartRecord,
   refs: Awaited<ReturnType<typeof resolveReferenceMaps>>,
+  stock?: StockItemDocument[],
+  locations?: Map<string, LocationDocument>,
 ): PartResponse => {
+  const locationMap = locations ?? new Map<string, LocationDocument>();
   const response: PartResponse = {
     id: part._id.toString(),
     tenantId: part.tenantId.toString(),
@@ -252,6 +255,32 @@ const serializePart = (
       .filter((template) => template.id),
     alertState: computeAlertState(part),
   };
+
+  if (stock?.length) {
+    response.stockByLocation = stock.map((item) => {
+      const serialized = serializeStockItem(
+        item,
+        undefined,
+        locationMap.get(item.location.toString()) ?? undefined,
+      );
+
+      return {
+        stockItemId: serialized.id,
+        locationId: serialized.locationId,
+        quantity: serialized.quantity,
+        unitCost: serialized.unitCost,
+        unit: serialized.unit,
+        cost: serialized.cost,
+        ...(serialized.location ? { location: serialized.location } : {}),
+      };
+    });
+
+    response.quantity = stock.reduce((sum, item) => sum + (item.quantity ?? 0), 0);
+    response.alertState = computeAlertState({
+      quantity: response.quantity,
+      reorderPoint: part.reorderPoint,
+    });
+  }
 
   if (typeof part.unitCost === 'number') {
     response.unitCost = part.unitCost;
@@ -337,12 +366,9 @@ const serializeLocation = (location: LocationDocument): InventoryLocation => {
   const response: InventoryLocation = {
     id: (location._id as Types.ObjectId).toString(),
     tenantId: location.tenantId.toString(),
-    name: location.name,
-    path: location.path,
+    store: location.store,
   };
   if (location.siteId) response.siteId = location.siteId.toString();
-  if (location.parent) response.parentId = location.parent.toString();
-  if (location.store) response.store = location.store;
   if (location.room) response.room = location.room;
   if (location.bin) response.bin = location.bin;
   return response;
@@ -355,24 +381,41 @@ export const listParts = async (context: InventoryContext): Promise<PartResponse
     query.siteId = maybeObjectId(context.siteId);
   }
   const parts: PartRecord[] = await PartModel.find(query).lean<PartRecord[]>();
-  const refs = await resolveReferenceMaps(parts);
-  return parts.map((part) => serializePart(part, refs));
-};
+  const partIds = parts.map((part) => part._id);
+  const [refs, stockItems] = await Promise.all([
+    resolveReferenceMaps(parts),
+    StockItemModel.find({
+      tenantId,
+      ...(context.siteId ? { siteId: maybeObjectId(context.siteId) } : {}),
+      part: { $in: partIds },
+    }),
+  ]);
 
-const buildLocationPath = async (
-  tenantId: Types.ObjectId,
-  parentId?: Types.ObjectId,
-): Promise<string[]> => {
-  if (!parentId) return [];
-  const parent = await LocationModel.findOne({ _id: parentId, tenantId });
-  return parent ? [...(parent.path ?? []), parent.name] : [];
+  const locationIds = stockItems.map((item) => item.location);
+  const locations = locationIds.length
+    ? await LocationModel.find({ _id: { $in: locationIds } })
+    : [];
+  const locationMap = new Map(
+    locations.map((loc) => [(loc._id as Types.ObjectId).toString(), loc]),
+  );
+  const stockByPart = stockItems.reduce((acc, item) => {
+    const key = item.part.toString();
+    const current = acc.get(key) ?? [];
+    current.push(item);
+    acc.set(key, current);
+    return acc;
+  }, new Map<string, StockItemDocument[]>());
+
+  return parts.map((part) =>
+    serializePart(part, refs, stockByPart.get(part._id.toString()), locationMap),
+  );
 };
 
 export const listLocations = async (context: InventoryContext): Promise<InventoryLocation[]> => {
   const tenantId = toObjectId(context.tenantId, 'tenant id');
   const query: Record<string, unknown> = { tenantId };
   if (context.siteId) query.siteId = maybeObjectId(context.siteId);
-  const locations = await LocationModel.find(query).sort({ name: 1 });
+  const locations = await LocationModel.find(query).sort({ store: 1, room: 1, bin: 1 });
   return locations.map((loc) => serializeLocation(loc));
 };
 
@@ -382,8 +425,6 @@ export const saveLocation = async (
   locationId?: string,
 ): Promise<InventoryLocation> => {
   const tenantId = toObjectId(context.tenantId, 'tenant id');
-  const parentId = input.parentId ? toObjectId(input.parentId, 'parent id') : undefined;
-  const path = await buildLocationPath(tenantId, parentId);
   let location: LocationDocument | null;
   if (locationId) {
     location = await LocationModel.findOne({ _id: locationId, tenantId });
@@ -391,12 +432,9 @@ export const saveLocation = async (
       throw new InventoryError('Location not found', 404);
     }
     location.set({
-      name: input.name,
       store: input.store,
       room: input.room,
       bin: input.bin,
-      parent: parentId,
-      path,
       siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
     });
     await location.save();
@@ -404,12 +442,9 @@ export const saveLocation = async (
     location = await LocationModel.create({
       tenantId,
       siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
-      name: input.name,
       store: input.store,
       room: input.room,
       bin: input.bin,
-      parent: parentId,
-      path,
     });
   }
   return serializeLocation(location);
@@ -703,8 +738,23 @@ export const savePart = async (
   }
   await triggerAutoReorder(context, part);
   const plainPart = part.toObject() as PartRecord;
-  const refs = await resolveReferenceMaps([plainPart]);
-  return serializePart(plainPart, refs);
+  const [refs, stockItems] = await Promise.all([
+    resolveReferenceMaps([plainPart]),
+    StockItemModel.find({
+      tenantId,
+      part: part._id,
+      ...(context.siteId ? { siteId: maybeObjectId(context.siteId) } : {}),
+    }),
+  ]);
+  const locationIds = stockItems.map((item) => item.location);
+  const locations = locationIds.length
+    ? await LocationModel.find({ _id: { $in: locationIds } })
+    : [];
+  const locationMap = new Map(
+    locations.map((loc) => [(loc._id as Types.ObjectId).toString(), loc]),
+  );
+
+  return serializePart(plainPart, refs, stockItems, locationMap);
 };
 
 export const listVendors = async (context: InventoryContext): Promise<VendorSummary[]> => {

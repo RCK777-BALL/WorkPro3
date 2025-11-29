@@ -27,6 +27,7 @@ export interface LinkedTemplate {
 export interface PartAlertState {
   needsReorder: boolean;
   severity: 'ok' | 'warning' | 'critical';
+  minimumLevel?: number | undefined;
 }
 
 export interface VendorSummary {
@@ -60,6 +61,8 @@ export interface Part extends TenantScoped {
   minStock?: number | undefined;
   minQty?: number | undefined;
   maxQty?: number | undefined;
+  minLevel?: number | undefined;
+  maxLevel?: number | undefined;
   reorderPoint: number;
   reorderQty?: number | undefined;
   reorderThreshold?: number | undefined;
@@ -75,6 +78,7 @@ export interface Part extends TenantScoped {
   lastAutoReorderAt?: string | undefined;
   alertState?: PartAlertState | undefined;
   image?: string | undefined;
+  stockByLocation?: PartLocationStock[] | undefined;
 }
 
 export interface PurchaseOrderItemPayload {
@@ -117,6 +121,7 @@ export interface InventoryAlert extends TenantScoped {
   partName: string;
   quantity: number;
   reorderPoint: number;
+  minLevel?: number | undefined;
   vendorName?: string | undefined;
   assetNames: string[];
   pmTemplateTitles: string[];
@@ -125,18 +130,26 @@ export interface InventoryAlert extends TenantScoped {
 
 export interface InventoryLocation extends TenantScoped {
   id: string;
-  name: string;
-  store?: string | undefined;
+  siteId?: string | undefined;
+  store: string;
   room?: string | undefined;
   bin?: string | undefined;
-  parentId?: string | undefined;
-  path: string[];
 }
 
 export interface StockItem extends TenantScoped {
   id: string;
   partId: string;
   part?: Pick<Part, 'id' | 'name' | 'partNumber' | 'partNo'> | undefined;
+  locationId: string;
+  location?: InventoryLocation | undefined;
+  quantity: number;
+  unitCost?: number | undefined;
+  unit?: string | undefined;
+  cost?: number | undefined;
+}
+
+export interface PartLocationStock {
+  stockItemId: string;
   locationId: string;
   location?: InventoryLocation | undefined;
   quantity: number;
@@ -169,23 +182,19 @@ export interface StockHistoryEntry {
   };
 }
 
-export interface PartUsageRecord {
+export interface InventoryTransfer extends TenantScoped {
+  id: string;
   partId: string;
-  partName: string;
-  partNumber?: string | undefined;
-  unitCost?: number | null | undefined;
-  totalQuantity: number;
-  totalCost: number;
-  workOrderCount: number;
-  lastUsedAt?: string | undefined;
+  fromLocationId: string;
+  toLocationId: string;
+  quantity: number;
+  createdAt: string;
+  createdBy?: string | undefined;
 }
 
-export interface PartUsageReport {
-  summary: {
-    totalQuantity: number;
-    totalCost: number;
-    distinctParts: number;
-    workOrders: number;
-  };
-  parts: PartUsageRecord[];
+export interface InventoryTransferPayload {
+  partId: string;
+  fromLocationId: string;
+  toLocationId: string;
+  quantity: number;
 }

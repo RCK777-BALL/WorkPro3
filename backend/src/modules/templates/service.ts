@@ -4,7 +4,7 @@
 
 import { Types } from 'mongoose';
 
-import PMTask from '../../../models/PMTask';
+import PMTemplate from '../../../models/PMTemplate';
 import type { PMContext, PMTemplateResponse } from '../pm/service';
 import { PMTemplateError } from '../pm/service';
 import { pmTemplateLibrary } from './library';
@@ -13,9 +13,6 @@ import type { PMTemplateLibraryItem } from '../../../../shared/types/onboarding'
 export interface PMTemplateLibraryResponse extends PMTemplateLibraryItem {}
 
 export const listTemplateLibrary = (): PMTemplateLibraryResponse[] => pmTemplateLibrary;
-
-const formatChecklistNote = (checklist: string[]) =>
-  checklist.length ? `\n\nChecklist:\n${checklist.map((item) => `• ${item}`).join('\n')}` : '';
 
 const toObjectId = (value: string | Types.ObjectId, label: string): Types.ObjectId => {
   if (value instanceof Types.ObjectId) {
@@ -37,11 +34,13 @@ export const cloneTemplateFromLibrary = async (
   }
 
   const tenantId = toObjectId(context.tenantId, 'tenant id');
-  const doc = await PMTask.create({
-    title: template.title,
-    notes: `${template.description}\n${template.impact}${formatChecklistNote(template.checklist)}`.trim(),
+  const doc = await PMTemplate.create({
+    name: template.title,
+    category: template.category,
+    description: `${template.description}\n${template.impact}`.trim(),
+    tasks: template.checklist ?? [],
+    estimatedMinutes: template.estimatedMinutes ?? 0,
     tenantId,
-    rule: template.rule,
     assignments: [],
   });
 
@@ -49,9 +48,13 @@ export const cloneTemplateFromLibrary = async (
 
   return {
     id,
-    title: doc.title,
-    notes: doc.notes ?? '',
-    active: doc.active,
+    name: doc.name,
+    category: doc.category,
+    description: doc.description ?? '',
+    tasks: doc.tasks ?? [],
+    estimatedMinutes: doc.estimatedMinutes ?? undefined,
     assignments: [],
+    createdAt: doc.createdAt?.toISOString(),
+    updatedAt: doc.updatedAt?.toISOString(),
   };
 };

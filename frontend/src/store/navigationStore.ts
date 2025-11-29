@@ -12,15 +12,18 @@ export type NavItemId =
   | 'lines'
   | 'stations'
   | 'assets'
+  | 'asset-scan'
   | 'teams'
   | 'reports'
   | 'work-orders'
   | 'work-requests'
   | 'permits'
+  | 'pm-templates'
   | 'maintenance'
   | 'inventory'
   | 'inventory-analytics'
   | 'analytics'
+  | 'pm-analytics'
   | 'iot-monitoring'
   | 'analytics-global'
   | 'analytics-ai'
@@ -29,6 +32,7 @@ export type NavItemId =
   | 'messages'
   | 'documentation-getting-started'
   | 'documentation-asset-management'
+  | 'notification-settings'
   | 'settings'
   | 'imports'
   | 'audit';
@@ -39,15 +43,18 @@ const defaultOrder: NavItemId[] = [
   'lines',
   'stations',
   'assets',
+  'asset-scan',
   'teams',
   'reports',
   'work-orders',
   'work-requests',
   'permits',
+  'pm-templates',
   'maintenance',
   'inventory',
   'inventory-analytics',
   'analytics',
+  'pm-analytics',
   'iot-monitoring',
   'analytics-global',
   'analytics-ai',
@@ -56,6 +63,7 @@ const defaultOrder: NavItemId[] = [
   'messages',
   'documentation-getting-started',
   'documentation-asset-management',
+  'notification-settings',
   'settings',
   'audit',
   'imports',

@@ -7,7 +7,15 @@ import { Router } from 'express';
 import { requireAuth } from '../../../middleware/authMiddleware';
 import tenantScope from '../../../middleware/tenantScope';
 import { requirePermission } from '../../auth/permissions';
-import { listTemplatesHandler, upsertAssignmentHandler, deleteAssignmentHandler } from './controller';
+import {
+  listTemplatesHandler,
+  createTemplateHandler,
+  getTemplateHandler,
+  updateTemplateHandler,
+  deleteTemplateHandler,
+  upsertAssignmentHandler,
+  deleteAssignmentHandler,
+} from './controller';
 
 const router = Router();
 
@@ -15,6 +23,10 @@ router.use(requireAuth);
 router.use(tenantScope);
 
 router.get('/', requirePermission('pm', 'read'), listTemplatesHandler);
+router.post('/', requirePermission('pm', 'write'), createTemplateHandler);
+router.get('/:templateId', requirePermission('pm', 'read'), getTemplateHandler);
+router.put('/:templateId', requirePermission('pm', 'write'), updateTemplateHandler);
+router.delete('/:templateId', requirePermission('pm', 'delete'), deleteTemplateHandler);
 router.post(
   '/:templateId/assignments',
   requirePermission('pm', 'write'),

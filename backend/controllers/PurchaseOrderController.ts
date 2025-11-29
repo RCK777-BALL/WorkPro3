@@ -5,9 +5,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { Types, isValidObjectId } from 'mongoose';
 
-import PurchaseOrder from '../models/PurchaseOrder';
+import PurchaseOrder, { type IPurchaseOrder, type IPurchaseOrderLine } from '../models/PurchaseOrder';
 import StockHistory from '../models/StockHistory';
 import StockItem from '../models/StockItem';
+import type { VendorResponse } from '../services/vendorService';
+import { getVendor, VendorNotFoundError } from '../services/vendorService';
 import { writeAuditLog } from '../utils/audit';
 import { sendResponse } from '../utils/sendResponse';
 
@@ -22,6 +24,58 @@ const toPlainObject = (value: unknown): Record<string, unknown> | undefined => {
   return undefined;
 };
 
+type PurchaseOrderResponse = {
+  id: string;
+  tenantId: string;
+  siteId?: string;
+  poNumber?: string;
+  vendorId?: string;
+  vendor?: VendorResponse;
+  status: IPurchaseOrder['status'];
+  lines: Array<IPurchaseOrderLine & { _id?: Types.ObjectId }>;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+const mapVendor = (value: unknown): VendorResponse | undefined => {
+  const vendor = value as { _id?: Types.ObjectId; id?: string; name?: string; email?: string; phone?: string } | undefined;
+  if (!vendor) return undefined;
+  const id = vendor.id ?? vendor._id?.toString();
+  if (!id || !vendor.name) return undefined;
+  const result: VendorResponse = {
+    id,
+    tenantId: (vendor as { tenantId?: Types.ObjectId | string }).tenantId
+      ? String((vendor as { tenantId?: Types.ObjectId | string }).tenantId)
+      : '',
+    name: vendor.name,
+  };
+  if (vendor.email) result.email = vendor.email;
+  if (vendor.phone) result.phone = vendor.phone;
+  return result;
+};
+
+const serializePurchaseOrder = (
+  po: IPurchaseOrder,
+  vendor?: VendorResponse,
+): PurchaseOrderResponse => ({
+  id: po._id.toString(),
+  tenantId: po.tenantId.toString(),
+  siteId: po.siteId?.toString(),
+  poNumber: po.poNumber,
+  vendorId: po.vendorId?.toString(),
+  vendor,
+  status: po.status,
+  lines: (po.lines ?? []).map((line) => ({
+    _id: line._id,
+    part: line.part,
+    qtyOrdered: line.qtyOrdered,
+    qtyReceived: line.qtyReceived,
+    price: line.price,
+  })),
+  createdAt: po.createdAt?.toISOString(),
+  updatedAt: po.updatedAt?.toISOString(),
+});
+
 export const createPurchaseOrder = async (
   req: Request,
   res: Response,
@@ -29,12 +83,45 @@ export const createPurchaseOrder = async (
 ): Promise<Response | void> => {
   try {
     const tenantId = req.tenantId;
-    if (!tenantId)
-      return sendResponse(res, null, 'Tenant ID required', 400);
+    if (!tenantId) return sendResponse(res, null, 'Tenant ID required', 400);
+
+    const vendorId = (req.body as any).vendorId as string | undefined;
+    let vendor: VendorResponse | undefined;
+    if (vendorId) {
+      if (!isValidObjectId(vendorId)) {
+        return sendResponse(res, null, 'Invalid vendor id', 400);
+      }
+      try {
+        vendor = await getVendor(tenantId, vendorId);
+      } catch (err) {
+        if (err instanceof VendorNotFoundError) {
+          return sendResponse(res, null, err.message, 404);
+        }
+        throw err;
+      }
+    }
+
+    const rawLines = Array.isArray((req.body as any).lines) ? (req.body as any).lines : [];
+    const lines: IPurchaseOrderLine[] = rawLines
+      .map((line) => ({
+        part: line.part,
+        qtyOrdered: Number(line.qtyOrdered ?? line.quantity ?? 0),
+        qtyReceived: Number(line.qtyReceived ?? 0),
+        price: Number(line.price ?? line.unitCost ?? 0),
+      }))
+      .filter((line) => isValidObjectId(line.part) && line.qtyOrdered > 0);
+
+    if (lines.length === 0) {
+      return sendResponse(res, null, 'At least one line item is required', 400);
+    }
+
     const po = await PurchaseOrder.create({
-      ...req.body,
       status: 'Draft',
       tenantId,
+      vendorId: vendorId ? new Types.ObjectId(vendorId) : undefined,
+      lines,
+      poNumber: (req.body as any).poNumber,
+      siteId: req.siteId ? new Types.ObjectId(req.siteId) : undefined,
     });
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const entityId = po._id as Types.ObjectId;
@@ -46,7 +133,7 @@ export const createPurchaseOrder = async (
       entityId,
       after: toPlainObject(po),
     });
-    sendResponse(res, po, null, 201);
+    sendResponse(res, serializePurchaseOrder(po, vendor), null, 201);
     return;
   } catch (err) {
     next(err);
@@ -66,12 +153,14 @@ export const getPurchaseOrder = async (
       return;
     }
     const objectId = new Types.ObjectId(id);
-    const po = await PurchaseOrder.findOne({ _id: objectId, tenantId: req.tenantId }).lean();
+    const po = await PurchaseOrder.findOne({ _id: objectId, tenantId: req.tenantId })
+      .populate('vendorId')
+      .lean();
     if (!po) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    sendResponse(res, po);
+    sendResponse(res, serializePurchaseOrder(po as any, mapVendor((po as any).vendorId)));
     return;
   } catch (err) {
     next(err);
@@ -86,8 +175,9 @@ export const listVendorPurchaseOrders = async (
 ): Promise<Response | void> => {
   try {
     const vendorId = req.vendorId;
-    const pos = await PurchaseOrder.find({ vendor: vendorId }).lean();
-    sendResponse(res, pos);
+    const pos = await PurchaseOrder.find({ vendor: vendorId }).populate('vendorId').lean();
+    const payload = pos.map((po) => serializePurchaseOrder(po as any, mapVendor((po as any).vendorId)));
+    sendResponse(res, payload);
     return;
   } catch (err) {
     next(err);
@@ -104,8 +194,9 @@ export const listPurchaseOrders = async (
     if (!req.tenantId) {
       return sendResponse(res, null, 'Tenant ID required', 400);
     }
-    const orders = await PurchaseOrder.find({ tenantId: req.tenantId }).lean();
-    sendResponse(res, orders);
+    const orders = await PurchaseOrder.find({ tenantId: req.tenantId }).populate('vendorId').lean();
+    const payload = orders.map((order) => serializePurchaseOrder(order as any, mapVendor((order as any).vendorId)));
+    sendResponse(res, payload);
     return;
   } catch (err) {
     next(err);
@@ -130,7 +221,7 @@ export const updatePurchaseOrderStatus = async (
       sendResponse(res, null, 'Invalid status', 400);
       return;
     }
-    const po = await PurchaseOrder.findOne({ _id: new Types.ObjectId(id), tenantId: req.tenantId });
+    const po = await PurchaseOrder.findOne({ _id: new Types.ObjectId(id), tenantId: req.tenantId }).populate('vendorId');
     if (!po) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -147,7 +238,7 @@ export const updatePurchaseOrderStatus = async (
       before,
       after: toPlainObject(po),
     });
-    sendResponse(res, po);
+    sendResponse(res, serializePurchaseOrder(po as any, mapVendor((po as any).vendorId)));
     return;
   } catch (err) {
     next(err);
@@ -166,7 +257,7 @@ export const receivePurchaseOrder = async (
       sendResponse(res, null, 'Invalid id', 400);
       return;
     }
-    const po = await PurchaseOrder.findOne({ _id: new Types.ObjectId(id), tenantId: req.tenantId });
+    const po = await PurchaseOrder.findOne({ _id: new Types.ObjectId(id), tenantId: req.tenantId }).populate('vendorId');
     if (!po) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -201,7 +292,7 @@ export const receivePurchaseOrder = async (
         });
       }),
     );
-    sendResponse(res, po);
+    sendResponse(res, serializePurchaseOrder(po as any, mapVendor((po as any).vendorId)));
     return;
   } catch (err) {
     next(err);
@@ -228,7 +319,7 @@ export const updateVendorPurchaseOrder = async (
       return;
     }
     const objectId = new Types.ObjectId(id);
-    const po = await PurchaseOrder.findById(objectId);
+    const po = await PurchaseOrder.findById(objectId).populate('vendorId');
     if (!po) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -251,7 +342,7 @@ export const updateVendorPurchaseOrder = async (
       before,
       after: toPlainObject(po),
     });
-    sendResponse(res, po);
+    sendResponse(res, serializePurchaseOrder(po as any, mapVendor((po as any).vendorId)));
     return;
   } catch (err) {
     next(err);

@@ -3,17 +3,23 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from 'react-query';
 
-import {
-  fetchLocations,
-  fetchStockHistory,
-  fetchStockItems,
-  upsertLocation,
-} from '@/api/inventory';
+import { upsertLocation } from '@/api/inventory';
 import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
 import Input from '@/components/common/Input';
-import type { InventoryLocation, StockHistoryEntry, StockItem } from '@/types';
+import SlideOver from '@/components/common/SlideOver';
+import type { InventoryLocation, InventoryTransferPayload, StockHistoryEntry, StockItem } from '@/types';
+import {
+  INVENTORY_HISTORY_QUERY_KEY,
+  INVENTORY_LOCATIONS_QUERY_KEY,
+  INVENTORY_STOCK_QUERY_KEY,
+  useLocationsQuery,
+  useStockHistoryQuery,
+  useStockItemsQuery,
+  useTransferInventory,
+} from '@/features/inventory';
 
 const formatLocation = (location: Pick<InventoryLocation, 'store' | 'room' | 'bin'>) => {
   const parts = [location.store, location.room, location.bin].filter(Boolean);
@@ -116,29 +122,201 @@ const HistoryList = ({ entries }: { entries: StockHistoryEntry[] }) => (
   </div>
 );
 
+const TransferModal = ({
+  open,
+  onClose,
+  stockItems,
+  locations,
+  onSubmit,
+  submitting,
+  error,
+}: {
+  open: boolean;
+  onClose: () => void;
+  stockItems: StockItem[];
+  locations: InventoryLocation[];
+  onSubmit: (payload: InventoryTransferPayload) => Promise<void>;
+  submitting: boolean;
+  error?: string | null;
+}) => {
+  const [partId, setPartId] = useState('');
+  const [fromLocationId, setFromLocationId] = useState('');
+  const [toLocationId, setToLocationId] = useState('');
+  const [quantity, setQuantity] = useState<number>(1);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const partOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const stock of stockItems) {
+      if (!map.has(stock.partId)) {
+        map.set(stock.partId, stock.part?.name ?? stock.partId);
+      }
+    }
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [stockItems]);
+
+  const sourceOptions = useMemo(
+    () => stockItems.filter((stock) => stock.partId === partId && stock.quantity > 0),
+    [partId, stockItems],
+  );
+
+  const availableQty = sourceOptions.find((entry) => entry.locationId === fromLocationId)?.quantity ?? 0;
+
+  const resetState = () => {
+    setPartId('');
+    setFromLocationId('');
+    setToLocationId('');
+    setQuantity(1);
+    setFormError(null);
+  };
+
+  const handleClose = () => {
+    resetState();
+    onClose();
+  };
+
+  const validate = () => {
+    if (!partId) return 'Select a part to transfer';
+    if (!fromLocationId) return 'Choose a source location';
+    if (!toLocationId) return 'Choose a destination location';
+    if (fromLocationId === toLocationId) return 'Source and destination must be different';
+    if (quantity <= 0) return 'Quantity must be greater than zero';
+    if (availableQty < quantity) return 'Insufficient quantity at source location';
+    return null;
+  };
+
+  const handleSubmit = async () => {
+    const validationError = validate();
+    if (validationError) {
+      setFormError(validationError);
+      return;
+    }
+    setFormError(null);
+    await onSubmit({ partId, fromLocationId, toLocationId, quantity });
+    resetState();
+  };
+
+  return (
+    <SlideOver
+      open={open}
+      onClose={handleClose}
+      title="Transfer stock"
+      footer={
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleClose} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} loading={submitting}>
+            Transfer
+          </Button>
+        </div>
+      }
+    >
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-neutral-200">Part</label>
+          <select
+            className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"
+            value={partId}
+            onChange={(e) => {
+              setPartId(e.target.value);
+              setFromLocationId('');
+            }}
+          >
+            <option value="">Select part</option>
+            {partOptions.map((part) => (
+              <option key={part.id} value={part.id}>
+                {part.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-neutral-200">From location</label>
+          <select
+            className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"
+            value={fromLocationId}
+            onChange={(e) => setFromLocationId(e.target.value)}
+            disabled={!partId}
+          >
+            <option value="">Select source</option>
+            {sourceOptions.map((stock) => (
+              <option key={stock.id} value={stock.locationId}>
+                {stock.location?.name ?? stock.locationId} (Qty {stock.quantity})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-neutral-200">To location</label>
+          <select
+            className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"
+            value={toLocationId}
+            onChange={(e) => setToLocationId(e.target.value)}
+            disabled={!partId}
+          >
+            <option value="">Select destination</option>
+            {locations.map((loc) => (
+              <option key={loc.id} value={loc.id}>
+                {loc.name} {[loc.store, loc.room, loc.bin].filter(Boolean).join(' • ')}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <Input
+          type="number"
+          label="Quantity"
+          min={1}
+          value={quantity}
+          onChange={(e) => setQuantity(Number(e.target.value))}
+          helperText={availableQty ? `Available: ${availableQty}` : undefined}
+        />
+
+        {(formError || error) && (
+          <p className="text-sm text-error-300">{formError ?? error}</p>
+        )}
+      </div>
+    </SlideOver>
+  );
+};
+
 export default function InventoryLocations() {
-  const [locations, setLocations] = useState<InventoryLocation[]>([]);
+  const queryClient = useQueryClient();
   const [selected, setSelected] = useState<InventoryLocation | null>(null);
-  const [stock, setStock] = useState<StockItem[]>([]);
-  const [history, setHistory] = useState<StockHistoryEntry[]>([]);
+  const [transferOpen, setTransferOpen] = useState(false);
 
-  useEffect(() => {
-    fetchLocations().then(setLocations);
-    fetchStockItems().then(setStock);
-    fetchStockHistory().then(setHistory);
-  }, []);
+  const locationsQuery = useLocationsQuery();
+  const stockQuery = useStockItemsQuery();
+  const historyQuery = useStockHistoryQuery();
+  const transferMutation = useTransferInventory();
 
-  const grouped = useMemo(() => locations.reduce<Record<string, InventoryLocation[]>>((acc, loc) => {
-    const key = loc.store ?? 'Default';
-    acc[key] = acc[key] ? [...acc[key], loc] : [loc];
-    return acc;
-  }, {}), [locations]);
+  const locations = locationsQuery.data ?? [];
+  const stock = stockQuery.data ?? [];
+  const history = historyQuery.data ?? [];
+
+  const grouped = useMemo(
+    () =>
+      locations.reduce<Record<string, InventoryLocation[]>>((acc, loc) => {
+        const key = loc.store ?? 'Default';
+        acc[key] = acc[key] ? [...acc[key], loc] : [loc];
+        return acc;
+      }, {}),
+    [locations],
+  );
 
   const handleSave = async (payload: Partial<InventoryLocation> & { store: string }) => {
     const saved = await upsertLocation(payload);
     const next = locations.filter((loc) => loc.id !== saved.id);
     setLocations([...next, saved]);
     setSelected(null);
+  };
+
+  const handleTransfer = async (payload: InventoryTransferPayload) => {
+    await transferMutation.mutateAsync(payload);
+    setTransferOpen(false);
   };
 
   return (
@@ -158,6 +336,10 @@ export default function InventoryLocations() {
           </Card.Header>
           <Card.Content>
             <div className="space-y-4">
+              {locationsQuery.isLoading && <p className="text-sm text-neutral-500">Loading locations…</p>}
+              {locationsQuery.error && (
+                <p className="text-sm text-error-600">Unable to load locations. Please try again.</p>
+              )}
               {Object.entries(grouped).map(([store, list]) => (
                 <div key={store} className="space-y-2">
                   <p className="text-xs font-semibold uppercase text-neutral-500">{store}</p>
@@ -175,7 +357,9 @@ export default function InventoryLocations() {
                   </div>
                 </div>
               ))}
-              {!locations.length && <p className="text-sm text-neutral-500">No locations yet.</p>}
+              {!locationsQuery.isLoading && !locationsQuery.error && !locations.length && (
+                <p className="text-sm text-neutral-500">No locations yet.</p>
+              )}
             </div>
           </Card.Content>
         </Card>
@@ -193,11 +377,20 @@ export default function InventoryLocations() {
 
       <Card>
         <Card.Header>
-          <Card.Title>Stock by location</Card.Title>
-          <Card.Description>Understand where inventory lives and how it is moving.</Card.Description>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <Card.Title>Stock by location</Card.Title>
+              <Card.Description>Understand where inventory lives and how it is moving.</Card.Description>
+            </div>
+            <Button onClick={() => setTransferOpen(true)} variant="outline">
+              Transfer stock
+            </Button>
+          </div>
         </Card.Header>
         <Card.Content>
-          <StockTable items={stock} />
+          {stockQuery.isLoading && <p className="text-sm text-neutral-500">Loading stock…</p>}
+          {stockQuery.error && <p className="text-sm text-error-600">Unable to load stock.</p>}
+          {!stockQuery.isLoading && !stockQuery.error && <StockTable items={stock} />}
         </Card.Content>
       </Card>
 
@@ -207,9 +400,27 @@ export default function InventoryLocations() {
           <Card.Description>Recent adjustments and receipts.</Card.Description>
         </Card.Header>
         <Card.Content>
-          <HistoryList entries={history} />
+          {historyQuery.isLoading && <p className="text-sm text-neutral-500">Loading history…</p>}
+          {historyQuery.error && <p className="text-sm text-error-600">Unable to load stock history.</p>}
+          {!historyQuery.isLoading && !historyQuery.error && <HistoryList entries={history} />}
         </Card.Content>
       </Card>
+
+      <TransferModal
+        open={transferOpen}
+        onClose={() => setTransferOpen(false)}
+        stockItems={stock}
+        locations={locations}
+        onSubmit={handleTransfer}
+        submitting={transferMutation.isLoading}
+        error={
+          transferMutation.isError
+            ? transferMutation.error instanceof Error
+              ? transferMutation.error.message
+              : 'Unable to transfer stock'
+            : null
+        }
+      />
     </div>
   );
 }

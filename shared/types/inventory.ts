@@ -181,3 +181,20 @@ export interface StockHistoryEntry {
     bin?: string | undefined;
   };
 }
+
+export interface InventoryTransfer extends TenantScoped {
+  id: string;
+  partId: string;
+  fromLocationId: string;
+  toLocationId: string;
+  quantity: number;
+  createdAt: string;
+  createdBy?: string | undefined;
+}
+
+export interface InventoryTransferPayload {
+  partId: string;
+  fromLocationId: string;
+  toLocationId: string;
+  quantity: number;
+}

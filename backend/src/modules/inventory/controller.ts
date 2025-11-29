@@ -19,6 +19,7 @@ import {
   saveLocation,
   listStockItems,
   adjustStock,
+  transferStock,
   listStockHistory,
   transitionPurchaseOrder,
   InventoryError,
@@ -31,6 +32,7 @@ import {
   purchaseOrderInputSchema,
   purchaseOrderStatusSchema,
   stockAdjustmentSchema,
+  inventoryTransferSchema,
   vendorInputSchema,
 } from './schemas';
 
@@ -230,6 +232,22 @@ export const adjustStockHandler: AuthedRequestHandler = async (req, res, next) =
   try {
     const data = await adjustStock(buildContext(req), parse.data);
     send(res, data, 200);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const transferStockHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  const rawBody = (typeof req.body === 'object' && req.body !== null ? req.body : {}) as Record<string, unknown>;
+  const parse = inventoryTransferSchema.safeParse(rawBody);
+  if (!parse.success) {
+    fail(res, parse.error.errors.map((error) => error.message).join(', '), 400);
+    return;
+  }
+  try {
+    const data = await transferStock(buildContext(req), parse.data);
+    send(res, data, 201);
   } catch (err) {
     handleError(err, res, next);
   }

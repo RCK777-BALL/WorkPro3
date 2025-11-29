@@ -63,11 +63,9 @@ export const purchaseOrderInputSchema = z.object({
 });
 
 export const locationInputSchema = z.object({
-  name: z.string().min(1, 'Location name is required'),
-  store: z.string().optional(),
+  store: z.string().min(1, 'Store is required'),
   room: z.string().optional(),
   bin: z.string().optional(),
-  parentId: objectId.optional(),
 });
 
 export const stockAdjustmentSchema = z.object({

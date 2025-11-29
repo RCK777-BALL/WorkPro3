@@ -11,6 +11,12 @@ import Card from '@/components/common/Card';
 import Input from '@/components/common/Input';
 import type { Part } from '@/types';
 
+const formatLocation = (location?: { store?: string; room?: string; bin?: string }) => {
+  if (!location) return 'Unassigned';
+  const parts = [location.store, location.room, location.bin].filter(Boolean);
+  return parts.length ? parts.join(' • ') : 'Unassigned';
+};
+
 const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string }) => Promise<void> }) => {
   const [form, setForm] = useState<Partial<Part> & { name: string }>({ name: '', partNo: '', unit: '', reorderPoint: 0 });
   const [saving, setSaving] = useState(false);
@@ -143,6 +149,7 @@ export default function InventoryParts() {
                     <th className="px-3 py-2 text-left font-medium text-neutral-700">Part</th>
                     <th className="px-3 py-2 text-left font-medium text-neutral-700">Part #</th>
                     <th className="px-3 py-2 text-left font-medium text-neutral-700">Qty</th>
+                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Locations</th>
                     <th className="px-3 py-2 text-left font-medium text-neutral-700">Reorder</th>
                     <th className="px-3 py-2 text-left font-medium text-neutral-700">Lead time</th>
                   </tr>
@@ -153,6 +160,20 @@ export default function InventoryParts() {
                       <td className="px-3 py-2 text-neutral-900">{part.name}</td>
                       <td className="px-3 py-2 text-neutral-700">{part.partNo ?? part.partNumber ?? '—'}</td>
                       <td className="px-3 py-2 text-neutral-700">{part.quantity}</td>
+                      <td className="px-3 py-2 text-neutral-700">
+                        {part.stockByLocation?.length ? (
+                          <ul className="space-y-1 text-xs text-neutral-700">
+                            {part.stockByLocation.map((stock) => (
+                              <li key={stock.stockItemId} className="flex items-center justify-between gap-2">
+                                <span>{formatLocation(stock.location)}</span>
+                                <span className="text-neutral-500">{stock.quantity}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <span className="text-xs text-neutral-400">No location data</span>
+                        )}
+                      </td>
                       <td className="px-3 py-2 text-neutral-700">{part.reorderPoint}</td>
                       <td className="px-3 py-2 text-neutral-700">{part.leadTime ?? '—'} days</td>
                     </tr>

@@ -13,6 +13,7 @@ import AssetDocumentsList from '@/components/assets/AssetDocumentsList';
 import AssetHistoryTimeline from '@/components/assets/AssetHistoryTimeline';
 import AssetPmTemplateCards from '@/components/assets/AssetPmTemplateCards';
 import AssetWorkOrderList from '@/components/assets/AssetWorkOrderList';
+import DowntimeHistory from '@/components/assets/DowntimeHistory';
 import CommentThread from '@/components/comments/CommentThread';
 
 const tabs = [
@@ -23,6 +24,7 @@ const tabs = [
   { id: 'pm', label: 'PM Templates' },
   { id: 'work', label: 'Open Work Orders' },
   { id: 'costs', label: 'Cost Rollups' },
+  { id: 'downtime', label: 'Downtime' },
   { id: 'comments', label: 'Comments' },
 ] as const;
 
@@ -45,6 +47,7 @@ const AssetDetails = () => {
     if (!data) {
       return null;
     }
+    const downtimeMinutes = data.downtimeLogs?.reduce((sum, log) => sum + (log.durationMinutes ?? 0), 0) ?? 0;
     return (
       <div className="space-y-6">
         <section className="rounded-3xl border border-neutral-800 bg-gradient-to-br from-neutral-950 to-neutral-900/70 p-6">
@@ -88,7 +91,32 @@ const AssetDetails = () => {
             </div>
           </dl>
         </section>
-        <div className="grid gap-6 lg:grid-cols-2">
+        {data.reliability ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
+              <p className="text-xs uppercase text-neutral-500">MTBF</p>
+              <p className="text-2xl font-semibold text-white">
+                {data.reliability.mtbfHours.toFixed(2)} <span className="text-sm text-neutral-400">hours</span>
+              </p>
+              <p className="text-xs text-neutral-400">Mean time between failures</p>
+            </div>
+            <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
+              <p className="text-xs uppercase text-neutral-500">MTTR</p>
+              <p className="text-2xl font-semibold text-white">
+                {data.reliability.mttrHours.toFixed(2)} <span className="text-sm text-neutral-400">hours</span>
+              </p>
+              <p className="text-xs text-neutral-400">Mean time to repair</p>
+            </div>
+            <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
+              <p className="text-xs uppercase text-neutral-500">Recorded downtime</p>
+              <p className="text-2xl font-semibold text-white">
+                {(downtimeMinutes / 60).toFixed(1)} <span className="text-sm text-neutral-400">hours</span>
+              </p>
+              <p className="text-xs text-neutral-400">{data.downtimeLogs.length} events logged</p>
+            </div>
+          </div>
+        ) : null}
+        <div className="grid gap-6 lg:grid-cols-3">
           <section className="rounded-2xl border border-neutral-800 bg-neutral-900/50 p-4">
             <header className="mb-3 flex items-center justify-between">
               <h2 className="text-base font-semibold text-white">Recent history</h2>
@@ -100,6 +128,12 @@ const AssetDetails = () => {
               <h2 className="text-base font-semibold text-white">Open work orders</h2>
             </header>
             <AssetWorkOrderList workOrders={data.openWorkOrders.slice(0, 4)} isLoading={isLoading} />
+          </section>
+          <section className="rounded-2xl border border-neutral-800 bg-neutral-900/50 p-4">
+            <header className="mb-3 flex items-center justify-between">
+              <h2 className="text-base font-semibold text-white">Downtime</h2>
+            </header>
+            <DowntimeHistory logs={data.downtimeLogs} isLoading={isLoading} maxItems={5} />
           </section>
         </div>
       </div>
@@ -125,6 +159,8 @@ const AssetDetails = () => {
             {...(data?.costRollups ? { cost: data.costRollups } : {})}
           />
         );
+      case 'downtime':
+        return <DowntimeHistory logs={data?.downtimeLogs ?? []} isLoading={isLoading} />;
       case 'comments':
         return id ? (
           <CommentThread entityType="Asset" entityId={id} />

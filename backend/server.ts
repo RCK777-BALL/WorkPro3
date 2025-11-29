@@ -69,6 +69,7 @@ import {
   technicianRoutes,
   TenantRoutes,
   ThemeRoutes,
+  downtimeLogRoutes,
   vendorPortalRoutes,
   vendorRoutes,
   webhooksRoutes,
@@ -273,6 +274,7 @@ app.use("/api/departments", departmentRoutes);
 app.use("/api/workorders", workOrdersRoutes);
 app.use("/api/permits", permitRoutes);
 app.use("/api/assets", assetsRoutes);
+app.use("/api/downtime-logs", downtimeLogRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/assets", assetInsightsRouter);
 app.use("/api/meters", meterRoutes);

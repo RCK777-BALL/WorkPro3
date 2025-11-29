@@ -4,7 +4,7 @@
 
 import { Types } from 'mongoose';
 
-import PMTask, { type PMTaskDocument } from '../../../models/PMTask';
+import PMTemplate, { type PMTemplateDocument } from '../../../models/PMTemplate';
 import Asset, { type AssetDoc } from '../../../models/Asset';
 import InventoryItem, { type IInventoryItem } from '../../../models/InventoryItem';
 import Notification from '../../../models/Notifications';
@@ -52,15 +52,19 @@ interface AssignmentLean {
   nextDue?: Date;
 }
 
-interface PMTaskLean {
-  _id: Types.ObjectId;
-  title: string;
-  notes?: string | null;
-  active: boolean;
-  assignments?: AssignmentLean[];
-}
+type PMTemplateLean = Pick<
+  PMTemplateDocument,
+  | '_id'
+  | 'name'
+  | 'category'
+  | 'description'
+  | 'tasks'
+  | 'estimatedMinutes'
+  | 'createdAt'
+  | 'updatedAt'
+> & { assignments?: AssignmentLean[] };
 
-type AssignmentObject = PMTaskDocument['assignments'][number] | AssignmentLean;
+type AssignmentObject = PMTemplateDocument['assignments'][number] | AssignmentLean;
 
 const toObjectId = (value: string | Types.ObjectId, label: string): Types.ObjectId => {
   if (value instanceof Types.ObjectId) {
@@ -72,12 +76,12 @@ const toObjectId = (value: string | Types.ObjectId, label: string): Types.Object
   return new Types.ObjectId(value);
 };
 
-const ensureTemplate = async (context: PMContext, templateId: string): Promise<PMTaskDocument> => {
-  const task = await PMTask.findOne({ _id: templateId, tenantId: context.tenantId });
-  if (!task) {
+const ensureTemplate = async (context: PMContext, templateId: string): Promise<PMTemplateDocument> => {
+  const template = await PMTemplate.findOne({ _id: templateId, tenantId: context.tenantId });
+  if (!template) {
     throw new PMTemplateError('Template not found', 404);
   }
-  return task;
+  return template;
 };
 
 const ensureAsset = async (context: PMContext, assetId: string): Promise<AssetDoc> => {
@@ -113,7 +117,7 @@ const ensureParts = async (
 const notifyAssignmentChange = async (
   context: PMContext,
   asset: AssetDoc,
-  template: PMTaskDocument,
+  template: PMTemplateDocument,
   action: 'created' | 'updated' | 'deleted',
 ) => {
   const payload: {
@@ -127,7 +131,7 @@ const notifyAssignmentChange = async (
     tenantId: toObjectId(context.tenantId, 'tenant id'),
     assetId: asset._id,
     title: `PM assignment ${action}`,
-    message: `${template.title} ${action === 'deleted' ? 'removed from' : 'linked to'} ${asset.name}`,
+    message: `${template.name} ${action === 'deleted' ? 'removed from' : 'linked to'} ${asset.name}`,
     type: 'info',
   };
   if (context.userId && Types.ObjectId.isValid(context.userId)) {
@@ -165,7 +169,7 @@ const serializeAssignment = (
 });
 
 const collectReferenceNames = async (
-  templates: PMTaskLean[],
+  templates: PMTemplateLean[],
 ): Promise<{
   assetNames: Map<string, string>;
   partNames: Map<string, string>;
@@ -204,24 +208,108 @@ const collectReferenceNames = async (
 
 export interface PMTemplateResponse {
   id: string;
-  title: string;
-  notes?: string;
-  active: boolean;
+  name: string;
+  category: string;
+  description?: string;
+  tasks: string[];
+  estimatedMinutes?: number;
   assignments: ReturnType<typeof serializeAssignment>[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export const listTemplates = async (context: PMContext): Promise<PMTemplateResponse[]> => {
-  const tasks = (await PMTask.find({ tenantId: context.tenantId })
-    .select('title notes active assignments')
-    .lean()) as unknown as PMTaskLean[];
+  const tasks = (await PMTemplate.find({ tenantId: context.tenantId })
+    .select('name category description tasks estimatedMinutes assignments createdAt updatedAt')
+    .lean()) as unknown as PMTemplateLean[];
   const refs = await collectReferenceNames(tasks);
   return tasks.map((task) => ({
     id: task._id.toString(),
-    title: task.title,
-    ...(task.notes ? { notes: task.notes } : {}),
-    active: task.active ?? false,
+    name: task.name,
+    category: task.category,
+    ...(task.description ? { description: task.description } : {}),
+    tasks: task.tasks ?? [],
+    estimatedMinutes: task.estimatedMinutes ?? undefined,
     assignments: (task.assignments ?? []).map((assignment) => serializeAssignment(assignment, refs)),
+    createdAt: task?.createdAt?.toISOString?.(),
+    updatedAt: task?.updatedAt?.toISOString?.(),
   }));
+};
+
+const normalizeTasks = (input?: string[]) =>
+  (input ?? [])
+    .map((task) => task.trim())
+    .filter((task) => task.length > 0);
+
+export const createTemplate = async (
+  context: PMContext,
+  payload: Pick<PMTemplateResponse, 'name' | 'category' | 'description' | 'tasks' | 'estimatedMinutes'>,
+): Promise<PMTemplateResponse> => {
+  const tenantId = toObjectId(context.tenantId, 'tenant id');
+  const doc = await PMTemplate.create({
+    name: payload.name,
+    category: payload.category,
+    description: payload.description ?? '',
+    tasks: normalizeTasks(payload.tasks),
+    estimatedMinutes: payload.estimatedMinutes ?? 0,
+    tenantId,
+    assignments: [],
+  });
+
+  return {
+    id: doc._id.toString(),
+    name: doc.name,
+    category: doc.category,
+    description: doc.description ?? undefined,
+    tasks: doc.tasks ?? [],
+    estimatedMinutes: doc.estimatedMinutes ?? undefined,
+    assignments: [],
+    createdAt: doc.createdAt?.toISOString(),
+    updatedAt: doc.updatedAt?.toISOString(),
+  };
+};
+
+export const getTemplate = async (context: PMContext, templateId: string): Promise<PMTemplateResponse> => {
+  const template = await ensureTemplate(context, templateId);
+  const templateObject = template.toObject();
+  const refs = await collectReferenceNames([templateObject as unknown as PMTemplateLean]);
+  return {
+    id: template._id.toString(),
+    name: templateObject.name,
+    category: templateObject.category,
+    description: templateObject.description ?? undefined,
+    tasks: templateObject.tasks ?? [],
+    estimatedMinutes: templateObject.estimatedMinutes ?? undefined,
+    assignments: (templateObject.assignments ?? []).map((assignment) => serializeAssignment(assignment, refs)),
+    createdAt: templateObject.createdAt?.toISOString?.(),
+    updatedAt: templateObject.updatedAt?.toISOString?.(),
+  };
+};
+
+export const updateTemplate = async (
+  context: PMContext,
+  templateId: string,
+  payload: Partial<Pick<PMTemplateResponse, 'name' | 'category' | 'description' | 'tasks' | 'estimatedMinutes'>>,
+): Promise<PMTemplateResponse> => {
+  const template = await ensureTemplate(context, templateId);
+  template.set({
+    ...(payload.name ? { name: payload.name } : {}),
+    ...(payload.category ? { category: payload.category } : {}),
+    ...(payload.description !== undefined ? { description: payload.description } : {}),
+    ...(payload.tasks ? { tasks: normalizeTasks(payload.tasks) } : {}),
+    ...(payload.estimatedMinutes !== undefined ? { estimatedMinutes: payload.estimatedMinutes } : {}),
+  });
+  await template.save();
+  return getTemplate(context, templateId);
+};
+
+export const deleteTemplate = async (
+  context: PMContext,
+  templateId: string,
+): Promise<{ id: string }> => {
+  const template = await ensureTemplate(context, templateId);
+  await template.deleteOne();
+  return { id: template._id.toString() };
 };
 
 const normalizeChecklist = (input?: AssignmentInput['checklist']) =>
@@ -284,7 +372,6 @@ export const upsertAssignment = async (
     task.assignments.push(baseAssignment as any);
     assignment = task.assignments[task.assignments.length - 1];
   }
-  task.set('asset', asset._id);
   await task.save();
 
   await notifyAssignmentChange(context, asset, task, assignmentId ? 'updated' : 'created');

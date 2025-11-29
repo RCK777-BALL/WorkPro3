@@ -29,3 +29,11 @@ export const assignmentInputSchema = z.object({
 });
 
 export type AssignmentInput = z.infer<typeof assignmentInputSchema>;
+
+export const templateInputSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  category: z.string().min(1, 'Category is required'),
+  description: z.string().optional(),
+  tasks: z.array(z.string()).optional(),
+  estimatedMinutes: z.number().int().nonnegative().optional(),
+});

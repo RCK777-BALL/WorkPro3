@@ -314,7 +314,8 @@ export interface PMTemplateAssignment {
   id: string;
   assetId: string;
   assetName?: string;
-  interval: string;
+  interval?: string;
+  trigger?: { type: 'time' | 'meter'; meterThreshold?: number };
   usageMetric?: 'runHours' | 'cycles';
   usageTarget?: number;
   usageLookbackDays?: number;

@@ -12,7 +12,8 @@ import type {
 
 export interface AssignmentPayload {
   assetId: string;
-  interval: string;
+  interval?: string;
+  trigger?: { type: 'time' | 'meter'; meterThreshold?: number };
   usageMetric?: 'runHours' | 'cycles';
   usageTarget?: number;
   usageLookbackDays?: number;

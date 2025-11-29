@@ -20,8 +20,10 @@ import {
   saveLocationHandler,
   listStockItemsHandler,
   adjustStockHandler,
+  transferStockHandler,
   listStockHistoryHandler,
   transitionPurchaseOrderHandler,
+  partUsageReportHandler,
 } from './controller';
 
 const router = Router();
@@ -55,6 +57,8 @@ router.put('/locations/:locationId', requirePermission('inventory', 'manage'), s
 
 router.get('/stock', requirePermission('inventory', 'read'), listStockItemsHandler);
 router.post('/stock/adjust', requirePermission('inventory', 'manage'), adjustStockHandler);
+router.post('/transfers', requirePermission('inventory', 'manage'), transferStockHandler);
 router.get('/stock/history', requirePermission('inventory', 'read'), listStockHistoryHandler);
+router.get('/analytics/usage', requirePermission('inventory', 'read'), partUsageReportHandler);
 
 export default router;

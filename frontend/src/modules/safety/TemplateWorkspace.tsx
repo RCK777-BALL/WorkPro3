@@ -1,26 +1,37 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
+import type { ChecklistItem, ChecklistSection, InspectionTemplate } from '../../../../shared/types/inspection';
+
 interface TemplateInput {
   name: string;
   siteId?: string;
   retentionDays?: number;
-  checklists: string[];
-}
-
-interface SafetyTemplate extends TemplateInput {
-  id: string;
-  version: number;
-  createdAt: string;
-  updatedAt: string;
+  sections: ChecklistSection[];
+  categories?: string[];
+  description?: string;
 }
 
 const TemplateWorkspace: React.FC = () => {
-  const [templates, setTemplates] = useState<SafetyTemplate[]>([]);
-  const [form, setForm] = useState<TemplateInput>({ name: '', siteId: undefined, retentionDays: undefined, checklists: ['JSA', 'Permit'] });
+  const [templates, setTemplates] = useState<InspectionTemplate[]>([]);
+  const [form, setForm] = useState<TemplateInput>({
+    name: '',
+    siteId: undefined,
+    retentionDays: undefined,
+    description: '',
+    sections: [
+      {
+        id: 'section-1',
+        title: 'General checks',
+        items: [],
+      },
+    ],
+    categories: ['safety'],
+  });
   const [isSaving, setIsSaving] = useState(false);
+  const [newItem, setNewItem] = useState<ChecklistItem>({ id: 'item-1', prompt: '', type: 'boolean', required: true });
 
   const grouped = useMemo(() => {
-    return templates.reduce<Record<string, SafetyTemplate[]>>((acc, template) => {
+    return templates.reduce<Record<string, InspectionTemplate[]>>((acc, template) => {
       const key = template.siteId ?? 'global';
       acc[key] = acc[key] ?? [];
       acc[key].push(template);
@@ -29,7 +40,7 @@ const TemplateWorkspace: React.FC = () => {
   }, [templates]);
 
   useEffect(() => {
-    fetch('/api/safety/templates')
+    fetch('/api/inspections/templates')
       .then((res) => res.json())
       .then((payload) => setTemplates(payload.data ?? []))
       .catch(() => setTemplates([]));
@@ -39,7 +50,7 @@ const TemplateWorkspace: React.FC = () => {
     event.preventDefault();
     setIsSaving(true);
     try {
-      const res = await fetch('/api/safety/templates', {
+      const res = await fetch('/api/inspections/templates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -51,6 +62,20 @@ const TemplateWorkspace: React.FC = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const addChecklistItem = () => {
+    const [firstSection, ...rest] = form.sections;
+    const section = firstSection ?? { id: 'section-1', title: 'General checks', items: [] };
+    const updatedSection: ChecklistSection = {
+      ...section,
+      items: [...section.items, { ...newItem, id: `${section.items.length + 1}-${Date.now()}` }],
+    };
+    setForm({
+      ...form,
+      sections: [updatedSection, ...rest],
+    });
+    setNewItem({ id: `${Date.now()}`, prompt: '', type: 'boolean', required: true });
   };
 
   return (
@@ -92,13 +117,56 @@ const TemplateWorkspace: React.FC = () => {
             />
           </label>
           <label>
-            Checklists
+            Description
             <textarea
-              value={form.checklists.join('\n')}
-              onChange={(e) => setForm({ ...form, checklists: e.target.value.split('\n').filter(Boolean) })}
-              placeholder={'JSA\nPermit'}
+              value={form.description ?? ''}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder="Inspection scope and expectations"
             />
           </label>
+          <fieldset>
+            <legend>Checklist builder</legend>
+            <div className="flex flex-col gap-2 rounded border border-neutral-200 p-3">
+              <label>
+                Item prompt
+                <input
+                  value={newItem.prompt}
+                  onChange={(e) => setNewItem({ ...newItem, prompt: e.target.value })}
+                  placeholder="Verify guards in place"
+                />
+              </label>
+              <label>
+                Input type
+                <select
+                  value={newItem.type}
+                  onChange={(e) => setNewItem({ ...newItem, type: e.target.value as ChecklistItem['type'] })}
+                >
+                  <option value="boolean">Pass/Fail</option>
+                  <option value="text">Text</option>
+                  <option value="number">Number</option>
+                  <option value="choice">Choice</option>
+                </select>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={newItem.required ?? false}
+                  onChange={(e) => setNewItem({ ...newItem, required: e.target.checked })}
+                />
+                Required to complete
+              </label>
+              <button type="button" onClick={addChecklistItem} disabled={!newItem.prompt}>
+                Add checklist item
+              </button>
+            </div>
+            <ul>
+              {form.sections[0]?.items.map((item) => (
+                <li key={item.id} className="text-sm text-neutral-700">
+                  {item.prompt} <span className="text-neutral-400">({item.type})</span>
+                </li>
+              ))}
+            </ul>
+          </fieldset>
           <button type="submit" disabled={isSaving}>
             {isSaving ? 'Saving…' : 'Save template'}
           </button>
@@ -117,9 +185,9 @@ const TemplateWorkspace: React.FC = () => {
                   <li key={template.id}>
                     <strong>{template.name}</strong> v{template.version}
                     <div className="meta">
-                      <span>Checklists: {template.checklists.join(', ') || 'None'}</span>
+                      <span>Checks: {template.sections.flatMap((section) => section.items).length}</span>
                       {template.retentionDays ? <span>Retention: {template.retentionDays} days</span> : null}
-                      <span>Updated: {new Date(template.updatedAt).toLocaleString()}</span>
+                      <span>Updated: {new Date(template.updatedAt ?? template.createdAt ?? new Date().toISOString()).toLocaleString()}</span>
                     </div>
                   </li>
                 ))}

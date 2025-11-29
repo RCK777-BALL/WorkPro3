@@ -38,18 +38,25 @@ export type {
   PurchaseOrder,
   PurchaseOrderPayload,
   InventoryAlert,
+  InventoryTransfer,
+  InventoryTransferPayload,
 } from '@backend-shared/inventory';
-
-export type Vendor = VendorSummary;
+export type { Vendor } from './vendor';
 export type { UploadedFile, UploadResponse } from '@backend-shared/uploads';
 export type { ApiResult, TenantScoped } from '@backend-shared/http';
 export type {
-  InspectionFormTemplate,
   OnboardingState,
   OnboardingStep,
   OnboardingStepKey,
   PMTemplateLibraryItem,
 } from '@backend-shared/onboarding';
+export type {
+  PMTemplate,
+  PMTemplateAssignment,
+  PMTemplateChecklistItem,
+  PMTemplateRequiredPart,
+  PMTemplateUpsertInput,
+} from '@backend-shared/pmTemplates';
 export type {
   Permit,
   PermitHistoryEntry,
@@ -86,6 +93,11 @@ export interface Asset {
   modelName?: string;
   manufacturer?: string;
   purchaseDate?: string;
+  warrantyStart?: string;
+  warrantyEnd?: string;
+  purchaseCost?: number;
+  expectedLifeMonths?: number;
+  replacementDate?: string;
   installationDate?: string;
   line?: string;
   station?: string;
@@ -303,40 +315,6 @@ export interface PMTask {
   department?: string;
 }
 
-export interface PMTemplateChecklistItem {
-  id: string;
-  description: string;
-  required?: boolean;
-}
-
-export interface PMTemplateRequiredPart {
-  id: string;
-  partId: string;
-  partName?: string;
-  quantity?: number;
-}
-
-export interface PMTemplateAssignment {
-  id: string;
-  assetId: string;
-  assetName?: string;
-  interval: string;
-  usageMetric?: 'runHours' | 'cycles';
-  usageTarget?: number;
-  usageLookbackDays?: number;
-  nextDue?: string;
-  checklist: PMTemplateChecklistItem[];
-  requiredParts: PMTemplateRequiredPart[];
-}
-
-export interface PMTemplate {
-  id: string;
-  title: string;
-  notes?: string;
-  active: boolean;
-  assignments: PMTemplateAssignment[];
-}
-
 export interface Channel {
   id: string;
   name: string;
@@ -396,7 +374,7 @@ export interface User {
   avatar?: string;
 }
 
-export interface CommentAuthor {
+export interface CommentUser {
   id: string;
   name?: string;
   email?: string;
@@ -405,9 +383,11 @@ export interface CommentAuthor {
 
 export interface Comment {
   id: string;
-  body: string;
-  mentions: string[];
-  author?: CommentAuthor;
+  threadId: string;
+  parentId?: string;
+  content: string;
+  mentions?: string[];
+  user?: CommentUser;
   createdAt: string | Date;
   updatedAt?: string | Date;
 }
@@ -506,6 +486,9 @@ export interface Notification {
   deliveryState: 'pending' | 'queued' | 'sent' | 'failed' | 'delivered';
   read: boolean;
   createdAt: string;
+  workOrderId?: string;
+  inventoryItemId?: string;
+  pmTaskId?: string;
 }
 
 export interface NotificationType {
@@ -517,6 +500,9 @@ export interface NotificationType {
   deliveryState: 'pending' | 'queued' | 'sent' | 'failed' | 'delivered';
   createdAt: string;
   read: boolean;
+  workOrderId?: string;
+  inventoryItemId?: string;
+  pmTaskId?: string;
 }
 
 export interface WorkOrderUpdatePayload {

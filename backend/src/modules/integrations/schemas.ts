@@ -13,6 +13,13 @@ const providers: [NotificationProvider, NotificationProvider, NotificationProvid
   'teams',
 ];
 
+export const accountingProviderSchema = z.enum(['quickbooks', 'xero']);
+
+export const accountingSyncSchema = z.object({
+  provider: accountingProviderSchema,
+  payload: z.record(z.unknown()).optional(),
+});
+
 export const notificationTestSchema = z
   .object({
     provider: z.enum(providers),

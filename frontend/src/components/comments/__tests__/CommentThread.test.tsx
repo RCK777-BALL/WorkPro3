@@ -3,6 +3,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import '@testing-library/jest-dom';
 import { render, screen, waitFor } from '@testing-library/react';
 
 const { getMock, postMock } = vi.hoisted(() => ({
@@ -28,10 +29,11 @@ describe('CommentThread', () => {
             items: [
               {
                 id: 'c1',
-                body: 'Hello @{Jane Doe|507f1f77bcf86cd799439011}',
+                threadId: 'WO:wo-1',
+                content: 'Hello @{Jane Doe|507f1f77bcf86cd799439011}',
                 mentions: ['507f1f77bcf86cd799439011'],
                 createdAt: '2024-01-01T00:00:00.000Z',
-                author: { id: 'u1', name: 'Author', email: 'author@example.com' },
+                user: { id: 'u1', name: 'Author', email: 'author@example.com' },
               },
             ],
             total: 1,
@@ -42,7 +44,15 @@ describe('CommentThread', () => {
       }
       return Promise.resolve({ data: [] });
     });
-    postMock.mockResolvedValue({ data: { id: 'c2', body: 'New comment', mentions: [], createdAt: '2024-01-02T00:00:00.000Z' } });
+    postMock.mockResolvedValue({
+      data: {
+        id: 'c2',
+        threadId: 'WO:wo-1',
+        content: 'New comment',
+        mentions: [],
+        createdAt: '2024-01-02T00:00:00.000Z',
+      },
+    });
 
     const { container } = render(<CommentThread entityType="WO" entityId="wo-1" />);
 

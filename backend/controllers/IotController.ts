@@ -8,7 +8,11 @@ import type { FilterQuery } from 'mongoose';
 
 import type { AuthedRequestHandler } from '../types/http';
 import { sendResponse } from '../utils/sendResponse';
-import { ingestTelemetryBatch, type IoTReadingInput } from '../services/iotIngestionService';
+import {
+  ingestTelemetryBatch,
+  type IoTReadingInput,
+  type IngestSummary,
+} from '../services/iotIngestionService';
 import SensorReading from '../models/SensorReading';
 import Asset from '../models/Asset';
 
@@ -58,6 +62,34 @@ export const ingestTelemetry: AuthedRequestHandler<ParamsDictionary, unknown, In
       return;
     }
     const result = await ingestTelemetryBatch({ tenantId, readings, source: 'http' });
+    sendResponse(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const ingestSensorWithMetering: AuthedRequestHandler<
+  ParamsDictionary,
+  IngestSummary,
+  IngestBody
+> = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant context is required', 400);
+      return;
+    }
+    const readings = toReadingArray(req.body);
+    if (!readings.length) {
+      sendResponse(res, null, 'No readings provided', 400);
+      return;
+    }
+    const result = await ingestTelemetryBatch({
+      tenantId,
+      readings,
+      source: 'http',
+      triggerMeterPm: true,
+    });
     sendResponse(res, result);
   } catch (err) {
     next(err);

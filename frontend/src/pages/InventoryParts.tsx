@@ -11,8 +11,21 @@ import Card from '@/components/common/Card';
 import Input from '@/components/common/Input';
 import type { Part } from '@/types';
 
+const formatLocation = (location?: { store?: string; room?: string; bin?: string }) => {
+  if (!location) return 'Unassigned';
+  const parts = [location.store, location.room, location.bin].filter(Boolean);
+  return parts.length ? parts.join(' • ') : 'Unassigned';
+};
+
 const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string }) => Promise<void> }) => {
-  const [form, setForm] = useState<Partial<Part> & { name: string }>({ name: '', partNo: '', unit: '', reorderPoint: 0 });
+  const [form, setForm] = useState<Partial<Part> & { name: string }>({
+    name: '',
+    partNo: '',
+    unit: '',
+    reorderPoint: 0,
+    minLevel: 0,
+    maxLevel: 0,
+  });
   const [saving, setSaving] = useState(false);
   const { can } = usePermissions();
   const canManageInventory = useMemo(() => can('inventory.manage'), [can]);
@@ -27,7 +40,7 @@ const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string
     setSaving(true);
     try {
       await onSave(form);
-      setForm({ name: '', partNo: '', unit: '', reorderPoint: 0 });
+      setForm({ name: '', partNo: '', unit: '', reorderPoint: 0, minLevel: 0, maxLevel: 0 });
     } finally {
       setSaving(false);
     }
@@ -77,6 +90,22 @@ const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string
           value={form.maxQty ?? ''}
           disabled={disableEdits}
           onChange={(e) => setForm((prev) => ({ ...prev, maxQty: Number(e.target.value) }))}
+        />
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        <Input
+          label="Min level (alert)"
+          type="number"
+          value={form.minLevel ?? ''}
+          disabled={disableEdits}
+          onChange={(e) => setForm((prev) => ({ ...prev, minLevel: Number(e.target.value) }))}
+        />
+        <Input
+          label="Max level"
+          type="number"
+          value={form.maxLevel ?? ''}
+          disabled={disableEdits}
+          onChange={(e) => setForm((prev) => ({ ...prev, maxLevel: Number(e.target.value) }))}
         />
       </div>
       <Input
@@ -143,6 +172,7 @@ export default function InventoryParts() {
                     <th className="px-3 py-2 text-left font-medium text-neutral-700">Part</th>
                     <th className="px-3 py-2 text-left font-medium text-neutral-700">Part #</th>
                     <th className="px-3 py-2 text-left font-medium text-neutral-700">Qty</th>
+                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Locations</th>
                     <th className="px-3 py-2 text-left font-medium text-neutral-700">Reorder</th>
                     <th className="px-3 py-2 text-left font-medium text-neutral-700">Lead time</th>
                   </tr>
@@ -153,13 +183,27 @@ export default function InventoryParts() {
                       <td className="px-3 py-2 text-neutral-900">{part.name}</td>
                       <td className="px-3 py-2 text-neutral-700">{part.partNo ?? part.partNumber ?? '—'}</td>
                       <td className="px-3 py-2 text-neutral-700">{part.quantity}</td>
+                      <td className="px-3 py-2 text-neutral-700">
+                        {part.stockByLocation?.length ? (
+                          <ul className="space-y-1 text-xs text-neutral-700">
+                            {part.stockByLocation.map((stock) => (
+                              <li key={stock.stockItemId} className="flex items-center justify-between gap-2">
+                                <span>{formatLocation(stock.location)}</span>
+                                <span className="text-neutral-500">{stock.quantity}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <span className="text-xs text-neutral-400">No location data</span>
+                        )}
+                      </td>
                       <td className="px-3 py-2 text-neutral-700">{part.reorderPoint}</td>
                       <td className="px-3 py-2 text-neutral-700">{part.leadTime ?? '—'} days</td>
                     </tr>
                   ))}
                   {!parts.length && (
                     <tr>
-                      <td className="px-3 py-6 text-center text-neutral-500" colSpan={5}>
+                      <td className="px-3 py-6 text-center text-neutral-500" colSpan={6}>
                         No parts found.
                       </td>
                     </tr>

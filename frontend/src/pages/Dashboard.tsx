@@ -28,6 +28,7 @@ import { DashboardAnalyticsPanel } from "@/features/dashboards";
 import { HelpCenterViewer } from "@/features/help-center";
 import { OnboardingWizard } from "@/features/onboarding";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
+import { usePmCompletionAnalytics } from "@/hooks/usePmAnalytics";
 
 type SummaryResponse = {
   openWorkOrders: number;
@@ -1205,6 +1206,11 @@ export default function Dashboard() {
     navigate(path);
   };
 
+  const pmAnalyticsQuery = usePmCompletionAnalytics(6);
+  const pmTrend = pmAnalyticsQuery.data?.trend ?? [];
+  const pmTotals = pmAnalyticsQuery.data?.totals;
+  const pmCompletionSparkline = useMemo(() => pmTrend.map((point) => Number(point.completionRate ?? 0)), [pmTrend]);
+
   const summaryCards = useMemo(() => {
     const trends: SummaryTrends = {
       pmCompliance: Array.isArray(summaryTrends?.pmCompliance)
@@ -1461,6 +1467,48 @@ export default function Dashboard() {
                   color="rgba(255,255,255,0.8)"
                   className="mt-4 h-16 w-full"
                 />
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-xs uppercase tracking-widest text-white/60">PM completion</p>
+                    <div className="mt-3 flex items-baseline gap-2">
+                      <span className="text-2xl font-semibold">
+                        {pmTotals ? `${pmTotals.completionRate.toFixed(1)}%` : "–"}
+                      </span>
+                      <span className="text-xs text-white/60">last 6 months</span>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="rounded-full bg-white/10 text-white hover:bg-white/20"
+                    onClick={() => navigateTo("/analytics/pm")}
+                  >
+                    View
+                    <ArrowUpRight className="ml-1 h-4 w-4" />
+                  </Button>
+                </div>
+                <Sparkline
+                  data={pmCompletionSparkline}
+                  color="rgba(59, 130, 246, 0.9)"
+                  className="mt-4 h-16 w-full"
+                />
+                <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-white/70">
+                  <div>
+                    <span className="block text-[11px] uppercase text-white/50">On-time</span>
+                    <span className="font-semibold">{pmTotals?.onTime ?? 0}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[11px] uppercase text-white/50">Late</span>
+                    <span className="font-semibold">{pmTotals?.late ?? 0}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[11px] uppercase text-white/50">Missed</span>
+                    <span className="font-semibold">{pmTotals?.missed ?? 0}</span>
+                  </div>
+                </div>
               </div>
               <AssetAvailabilityWidget
                 overall={summary?.assetAvailability ?? 0}

@@ -32,8 +32,9 @@ export const fetchComments = async (
 export const createComment = async (
   entityType: 'WO' | 'Asset',
   entityId: string,
-  body: string,
+  content: string,
+  parentId?: string,
 ): Promise<Comment> => {
-  const res = await http.post<Comment>(pathFor(entityType, entityId), { body });
+  const res = await http.post<Comment>(pathFor(entityType, entityId), { content, parentId });
   return res.data;
 };

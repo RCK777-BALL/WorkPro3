@@ -9,4 +9,4 @@ export {
   type PermissionAction,
   type PermissionCategory,
   type PermissionWildcard,
-} from '../shared/types/permissions';
+} from '../../shared/types/permissions';

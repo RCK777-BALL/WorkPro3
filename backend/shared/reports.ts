@@ -1,6 +1,6 @@
 // shared/reports.ts
 
-import type { TenantScoped } from '../shared/types/http';
+import type { TenantScoped } from '../../shared/types/http';
 
 export type ReportField =
   | 'title'

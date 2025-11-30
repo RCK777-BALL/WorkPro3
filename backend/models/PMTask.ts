@@ -45,7 +45,7 @@ export interface PMTaskAssignmentDocument extends Document {
 export interface PMTaskDocument extends Document {
   task: Types.ObjectId;
   title: string;
-  tenantId: Schema.Types.ObjectId;
+  tenantId: Types.ObjectId;
   siteId?: Types.ObjectId;
   notes?: string;
   asset?: mongoose.Schema.Types.ObjectId;

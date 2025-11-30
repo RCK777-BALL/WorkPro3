@@ -22,7 +22,7 @@ export interface InspectionRecordDocument extends Document {
   templateId: Types.ObjectId;
   templateName: string;
   status: InspectionStatus;
-  sections: ChecklistSection[];
+  sections: unknown[];
   responses: ChecklistResponse[];
   summary?: string | null;
   completedBy?: Types.ObjectId | null;

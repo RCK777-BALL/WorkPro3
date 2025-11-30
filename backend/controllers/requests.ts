@@ -47,7 +47,8 @@ export const createRequest: AuthedRequestHandler = async (
   next: NextFunction,
 ) => {
   try {
-    const parse = internalSubmissionSchema.safeParse({ ...(req.body ?? {}) });
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const parse = internalSubmissionSchema.safeParse({ ...body });
     if (!parse.success) {
       res.status(400).json({ message: parse.error.errors.map((err) => err.message).join(', ') });
       return;

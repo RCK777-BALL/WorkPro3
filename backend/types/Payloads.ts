@@ -10,7 +10,16 @@ export interface WorkOrderUpdatePayload {
   siteId?: string | undefined;
   plantId?: string | undefined;
   title: string;
-  status: 'requested' | 'assigned' | 'in_progress' | 'paused' | 'completed' | 'cancelled';
+  status:
+    | 'requested'
+    | 'assigned'
+    | 'in_progress'
+    | 'paused'
+    | 'completed'
+    | 'cancelled'
+    | 'draft'
+    | 'pending_approval'
+    | 'approved';
   type?: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety' | undefined;
   complianceProcedureId?: string | undefined;
   calibrationIntervalDays?: number | undefined;

@@ -57,9 +57,9 @@ export function requirePermission<C extends PermissionCategory>(
   scope: C,
   action: PermissionAction<C>,
 ): RequestHandler;
-export function requirePermission(
-  scopeOrPermission: Permission | PermissionCategory,
-  action?: PermissionAction,
+export function requirePermission<C extends PermissionCategory>(
+  scopeOrPermission: Permission | C,
+  action?: PermissionAction<C>,
 ): RequestHandler {
   return async (req, res, next): Promise<void> => {
     try {

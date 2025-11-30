@@ -82,11 +82,17 @@ export function requirePermission<C extends PermissionCategory>(
   };
 }
 
-export const assertPermission = async (
+export function assertPermission(req: AuthedRequest, permission: Permission): Promise<void>;
+export function assertPermission<C extends PermissionCategory>(
   req: AuthedRequest,
-  scopeOrPermission: Permission | PermissionCategory,
-  action?: PermissionAction,
-): Promise<void> => {
+  scope: C,
+  action: PermissionAction<C>,
+): Promise<void>;
+export async function assertPermission<C extends PermissionCategory>(
+  req: AuthedRequest,
+  scopeOrPermission: Permission | C,
+  action?: PermissionAction<C>,
+): Promise<void> {
   const permission = toPermissionKey(scopeOrPermission, action);
   const { permissions } = await resolvePermissionsForRequest(req);
   if (!hasPermission(permissions, permission)) {
@@ -94,7 +100,7 @@ export const assertPermission = async (
     (error as { status?: number }).status = 403;
     throw error;
   }
-};
+}
 
 export default {
   requirePermission,

@@ -3,6 +3,7 @@
  */
 
 import { Router } from 'express';
+import { Types } from 'mongoose';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/authMiddleware';
 import tenantScope from '../middleware/tenantScope';

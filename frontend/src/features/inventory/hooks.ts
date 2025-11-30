@@ -33,6 +33,15 @@ export const useVendorsQuery = () =>
 export const useAlertsQuery = () =>
   useQuery({ queryKey: INVENTORY_ALERTS_QUERY_KEY, queryFn: fetchInventoryAlerts, staleTime: 15_000 });
 
+export const useLocationsQuery = () =>
+  useQuery({ queryKey: INVENTORY_LOCATIONS_QUERY_KEY, queryFn: fetchLocations, staleTime: 60_000 });
+
+export const useStockItemsQuery = () =>
+  useQuery({ queryKey: INVENTORY_STOCK_QUERY_KEY, queryFn: fetchStockItems, staleTime: 15_000 });
+
+export const useStockHistoryQuery = () =>
+  useQuery({ queryKey: INVENTORY_HISTORY_QUERY_KEY, queryFn: fetchStockHistory, staleTime: 15_000 });
+
 export const useLowStockParts = () => {
   const query = usePartsQuery();
   const lowStock = useMemo(

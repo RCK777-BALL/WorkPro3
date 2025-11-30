@@ -309,8 +309,10 @@ export default function InventoryLocations() {
 
   const handleSave = async (payload: Partial<InventoryLocation> & { store: string }) => {
     const saved = await upsertLocation(payload);
-    const next = locations.filter((loc) => loc.id !== saved.id);
-    setLocations([...next, saved]);
+    queryClient.setQueryData<InventoryLocation[]>(INVENTORY_LOCATIONS_QUERY_KEY, (prev) => {
+      const next = (prev ?? []).filter((loc) => loc.id !== saved.id);
+      return [...next, saved];
+    });
     setSelected(null);
   };
 

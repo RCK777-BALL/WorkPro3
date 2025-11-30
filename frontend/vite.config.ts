@@ -6,8 +6,9 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      // This tells Vite that @/ resolves to the src directory
-      '@/': path.resolve(__dirname, './src/')
+      '@': path.resolve(__dirname, './src'),
+      '@common': path.resolve(__dirname, './src/components/common'),
+      '@backend-shared': path.resolve(__dirname, '../backend/shared'),
     }
   },
   test: {

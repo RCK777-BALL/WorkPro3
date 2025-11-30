@@ -748,9 +748,18 @@ type DashboardWorkOrderFields = {
   assetId?: Types.ObjectId | null;
 };
 
-async function fetchDashboardWorkOrders<
-  T extends DashboardWorkOrderFields = DashboardWorkOrderFields,
->(tenantId: string, filters: AnalyticsFilters, select: string): Promise<T[]> {
+type DashboardFilterContext = {
+  tenantFilter: Types.ObjectId | string;
+  dateRange: ReturnType<typeof buildDateRange>;
+  assetFilter?: Types.ObjectId[];
+  siteFilter?: Types.ObjectId[];
+  isEmpty: boolean;
+};
+
+async function buildDashboardFilterContext(
+  tenantId: string,
+  filters: AnalyticsFilters,
+): Promise<DashboardFilterContext> {
   const tenantFilter = toObjectId(tenantId);
   const dateRange = buildDateRange(filters);
   let assetFilter = normalizeIdList(filters.assetIds);
@@ -768,12 +777,23 @@ async function fetchDashboardWorkOrders<
       const allowed = new Set(siteAssetIds.map((id) => id.toString()));
       assetFilter = assetFilter.filter((id) => allowed.has(id.toString()));
       if (!assetFilter.length) {
-        return [];
+        return { tenantFilter, dateRange, assetFilter, siteFilter, isEmpty: true };
       }
     } else if (siteAssetIds.length) {
       assetFilter = siteAssetIds;
     }
   }
+
+  return { tenantFilter, dateRange, assetFilter, siteFilter, isEmpty: false };
+}
+
+async function fetchDashboardWorkOrders<
+  T extends DashboardWorkOrderFields = DashboardWorkOrderFields,
+>(tenantId: string, filters: AnalyticsFilters, select: string, context?: DashboardFilterContext): Promise<T[]> {
+  const { tenantFilter, dateRange, assetFilter, siteFilter, isEmpty } =
+    context ?? (await buildDashboardFilterContext(tenantId, filters));
+
+  if (isEmpty) return [];
 
   const workOrderMatch: Record<string, unknown> = { tenantId: tenantFilter };
   if (assetFilter && assetFilter.length) {
@@ -815,6 +835,11 @@ export async function getDashboardKpiSummary(
   tenantId: string,
   filters: AnalyticsFilters = {},
 ): Promise<DashboardKpiResult> {
+  const filterContext = await buildDashboardFilterContext(tenantId, filters);
+  if (filterContext.isEmpty) {
+    return createEmptyDashboardKpiResult();
+  }
+
   const workOrders = await fetchDashboardWorkOrders<{
     status: WorkOrderType['status'];
     dueDate?: Date | null;
@@ -823,7 +848,9 @@ export async function getDashboardKpiSummary(
     createdAt?: Date;
     downtime?: number | null;
     partsUsed?: Array<{ cost?: number | null; qty?: number | null }>;
-  }>(tenantId, filters, 'status dueDate pmTask completedAt createdAt downtime partsUsed');
+  }>(tenantId, filters, 'status dueDate pmTask completedAt createdAt downtime partsUsed', filterContext);
+
+  const { tenantFilter, assetFilter, dateRange } = filterContext;
 
   const historyMatch: Record<string, unknown> = { tenantId: tenantFilter };
   if (assetFilter && assetFilter.length) {
@@ -945,7 +972,7 @@ export async function getDashboardMtbf(
   tenantId: string,
   filters: AnalyticsFilters = {},
 ): Promise<MetricWithTrend> {
-  const workOrders = await fetchDashboardWorkOrders<{ completedAt?: Date | null }>(
+  const workOrders = await fetchDashboardWorkOrders<{ completedAt?: Date | null; status: WorkOrderType['status'] }>(
     tenantId,
     filters,
     'completedAt',

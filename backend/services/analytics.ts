@@ -762,10 +762,10 @@ async function buildDashboardFilterContext(
 ): Promise<DashboardFilterContext> {
   const tenantFilter = toObjectId(tenantId);
   const dateRange = buildDateRange(filters);
-  let assetFilter = normalizeIdList(filters.assetIds);
-  const siteFilter = normalizeIdList(filters.siteIds);
+  let assetFilter = normalizeIdList(filters.assetIds) ?? [];
+  const siteFilter = normalizeIdList(filters.siteIds) ?? [];
 
-  if (siteFilter && siteFilter.length) {
+  if (siteFilter.length) {
     const assetsForSites: Array<{ _id: Types.ObjectId }> = await Asset.find({
       tenantId: tenantFilter,
       siteId: { $in: siteFilter },
@@ -773,7 +773,7 @@ async function buildDashboardFilterContext(
       .select('_id')
       .lean();
     const siteAssetIds = assetsForSites.map((doc) => doc._id);
-    if (assetFilter && assetFilter.length) {
+    if (assetFilter.length) {
       const allowed = new Set(siteAssetIds.map((id) => id.toString()));
       assetFilter = assetFilter.filter((id) => allowed.has(id.toString()));
       if (!assetFilter.length) {
@@ -784,7 +784,11 @@ async function buildDashboardFilterContext(
     }
   }
 
-  return { tenantFilter, dateRange, assetFilter, siteFilter, isEmpty: false };
+  const context: DashboardFilterContext = { tenantFilter, dateRange, isEmpty: false };
+  if (assetFilter.length) context.assetFilter = assetFilter;
+  if (siteFilter.length) context.siteFilter = siteFilter;
+
+  return context;
 }
 
 async function fetchDashboardWorkOrders<

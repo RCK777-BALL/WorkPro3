@@ -133,7 +133,7 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
 
 export const deleteRole = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = req.tenantId;
+    const tenantId = toObjectId(req.tenantId);
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;

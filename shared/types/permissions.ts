@@ -45,7 +45,10 @@ export const PERMISSIONS = {
 } as const;
 
 export type PermissionCategory = keyof typeof PERMISSIONS;
-export type PermissionAction<C extends PermissionCategory = PermissionCategory> = keyof (typeof PERMISSIONS)[C];
+export type PermissionAction<C extends PermissionCategory = PermissionCategory> = Extract<
+  keyof (typeof PERMISSIONS)[C],
+  string
+>;
 export type PermissionWildcard = '*' | `${PermissionCategory}.*`;
 export type Permission = (typeof PERMISSIONS)[PermissionCategory][PermissionAction] | PermissionWildcard;
 

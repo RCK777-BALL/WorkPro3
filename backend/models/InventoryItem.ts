@@ -17,6 +17,7 @@ export interface IInventoryItem extends Document {
   category?: string;
   quantity: number;                     // kept required in the interface
   unitCost?: number;
+  cost?: number;
   unit?: string;
   uom?: Types.ObjectId;
   location?: string;
@@ -51,6 +52,7 @@ const inventoryItemSchema = new Schema<IInventoryItem>(
     category: String,
     quantity: { type: Number, required: true, default: 0 },   // <- default prevents “possibly undefined”
     unitCost: { type: Number, default: 0 },
+    cost: { type: Number, default: 0 },
     unit: String,
     uom: { type: Schema.Types.ObjectId, ref: 'unitOfMeasure' },
     location: String,

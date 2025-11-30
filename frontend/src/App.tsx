@@ -38,6 +38,7 @@ import Reports from "@/pages/Reports";
 import Notifications from "@/pages/Notifications";
 import NotificationSettings from "@/pages/NotificationSettings";
 import Messages from "@/pages/Messages";
+import RoleManagementPage from "@/pages/RoleManagement";
 import Documentation from "@/pages/Documentation";
 import AssetManagementGuide from "@/pages/AssetManagementGuide";
 import AssetManagementAssetsGuide from "@/pages/AssetManagementAssetsGuide";

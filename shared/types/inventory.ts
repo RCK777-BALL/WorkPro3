@@ -198,3 +198,26 @@ export interface InventoryTransferPayload {
   toLocationId: string;
   quantity: number;
 }
+
+export interface PartUsageReportSummary {
+  totalQuantity: number;
+  totalCost: number;
+  distinctParts: number;
+  workOrders: number;
+}
+
+export interface PartUsageReportItem {
+  partId: string;
+  partName: string;
+  partNumber?: string | undefined;
+  totalQuantity: number;
+  totalCost: number;
+  workOrderCount: number;
+  lastUsedAt?: string | undefined;
+  unitCost?: number | undefined;
+}
+
+export interface PartUsageReport {
+  summary: PartUsageReportSummary;
+  parts: PartUsageReportItem[];
+}

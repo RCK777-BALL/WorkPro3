@@ -17,11 +17,8 @@ export interface AuditLogContext {
 }
 
 declare module 'express-serve-static-core' {
-  interface Response {
-    locals: {
-      auditLogEntries?: AuditLogContext[];
-      [key: string]: unknown;
-    };
+  interface Locals {
+    auditLogEntries?: AuditLogContext[];
   }
 }
 
@@ -37,11 +34,13 @@ export const auditLogMiddleware: RequestHandler = (req: Request, res: Response, 
     const entries = res.locals.auditLogEntries;
     if (!entries?.length || res.statusCode >= 400) return;
 
-    const actor = req.user
+    const user = req.user as { _id?: string; name?: string; firstName?: string; lastName?: string; email?: string } | undefined;
+    const fullName = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
+    const actor = user
       ? {
-          id: req.user._id,
-          name: req.user.name ?? `${req.user.firstName ?? ''} ${req.user.lastName ?? ''}`.trim() || undefined,
-          email: req.user.email,
+          id: user._id,
+          name: user.name ?? (fullName ? fullName : undefined),
+          email: user.email,
         }
       : undefined;
 
@@ -69,7 +68,7 @@ export const auditLogMiddleware: RequestHandler = (req: Request, res: Response, 
             ts: new Date(),
           });
         } catch (err) {
-          logger.warn({ err }, 'Failed to write audit log');
+          logger.warn('Failed to write audit log', { err });
         }
       }),
     );

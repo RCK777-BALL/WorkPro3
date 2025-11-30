@@ -10,7 +10,7 @@ import { writeAuditLog } from '../utils/audit';
 import { sendResponse } from '../utils/sendResponse';
 import { toObjectId, toEntityId } from '../utils/ids';
 
-const buildScopedFilter = (tenantId: Types.ObjectId | undefined, siteId?: Types.ObjectId | null) => {
+const buildScopedFilter = (tenantId: Types.ObjectId, siteId?: Types.ObjectId | null) => {
   const filter: Record<string, unknown> = { tenantId };
 
   if (siteId) {
@@ -22,7 +22,7 @@ const buildScopedFilter = (tenantId: Types.ObjectId | undefined, siteId?: Types.
 
 export const getAllRoles = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = req.tenantId;
+    const tenantId = toObjectId(req.tenantId);
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
@@ -38,7 +38,7 @@ export const getAllRoles = async (req: Request, res: Response, next: NextFunctio
 
 export const getRoleById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = req.tenantId;
+    const tenantId = toObjectId(req.tenantId);
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
@@ -59,7 +59,7 @@ export const getRoleById = async (req: Request, res: Response, next: NextFunctio
 
 export const createRole = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = req.tenantId;
+    const tenantId = toObjectId(req.tenantId);
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
@@ -89,7 +89,7 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
 
 export const updateRole = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tenantId = req.tenantId;
+    const tenantId = toObjectId(req.tenantId);
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;

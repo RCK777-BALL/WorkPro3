@@ -13,12 +13,12 @@ import {
 } from '../../shared/permissions';
 import { ensurePermissionList, hasPermission, resolveUserPermissions } from '../../services/permissionService';
 
-const toPermissionKey = (
-  scopeOrPermission: Permission | PermissionCategory,
-  action?: PermissionAction,
+const toPermissionKey = <C extends PermissionCategory>(
+  scopeOrPermission: Permission | C,
+  action?: PermissionAction<C>,
 ): Permission => {
   if (action) {
-    return formatPermission(String(scopeOrPermission), action as string);
+    return formatPermission(String(scopeOrPermission), action);
   }
   return String(scopeOrPermission) as Permission;
 };

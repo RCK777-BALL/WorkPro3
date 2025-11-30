@@ -49,8 +49,8 @@ export const auditLogMiddleware: RequestHandler = (req: Request, res: Response, 
         try {
           const entity: AuditLogEntityRef = {
             type: entry.entityType,
-            id: entry.entityId,
-            label: entry.entityLabel,
+            id: entry.entityId ?? null,
+            label: entry.entityLabel ?? null,
           };
 
           await AuditLog.create({

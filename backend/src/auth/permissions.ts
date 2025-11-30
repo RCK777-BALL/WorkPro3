@@ -52,11 +52,16 @@ const resolvePermissionsForRequest = async (
   return result;
 };
 
-export const requirePermission = (
+export function requirePermission(permission: Permission): RequestHandler;
+export function requirePermission<C extends PermissionCategory>(
+  scope: C,
+  action: PermissionAction<C>,
+): RequestHandler;
+export function requirePermission(
   scopeOrPermission: Permission | PermissionCategory,
   action?: PermissionAction,
-): RequestHandler =>
-  async (req, res, next): Promise<void> => {
+): RequestHandler {
+  return async (req, res, next): Promise<void> => {
     try {
       const permission = toPermissionKey(scopeOrPermission, action);
       const { permissions } = await resolvePermissionsForRequest(req as AuthedRequest);
@@ -75,6 +80,7 @@ export const requirePermission = (
       next(error);
     }
   };
+}
 
 export const assertPermission = async (
   req: AuthedRequest,

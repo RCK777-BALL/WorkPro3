@@ -70,10 +70,12 @@ router.get('/pm/completions', async (req: AuthedRequest, res, next) => {
         ? new Types.ObjectId(req.siteId)
         : undefined;
 
-    const analytics = await buildPmCompletionAnalytics(new Types.ObjectId(tenantId), {
-      months,
-      siteId,
-    });
+    const options = {
+      ...(months !== undefined ? { months } : {}),
+      ...(siteId ? { siteId } : {}),
+    };
+
+    const analytics = await buildPmCompletionAnalytics(new Types.ObjectId(tenantId), options);
     res.json(analytics);
   } catch (err) {
     next(err);

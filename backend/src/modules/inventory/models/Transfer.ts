@@ -12,6 +12,7 @@ export interface InventoryTransferDocument extends Document {
   toLocation: Types.ObjectId;
   quantity: number;
   createdBy?: Types.ObjectId | undefined;
+  createdAt: Date;
 }
 
 const inventoryTransferSchema = new Schema<InventoryTransferDocument>(

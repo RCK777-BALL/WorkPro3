@@ -387,6 +387,9 @@ const serializeLocation = (location: LocationDocument): InventoryLocation => {
   return response;
 };
 
+const formatLocationLabel = (location: LocationDocument): string =>
+  [location.store, location.room, location.bin].filter(Boolean).join(' / ') || location._id.toString();
+
 export const listParts = async (context: InventoryContext): Promise<PartResponse[]> => {
   const tenantId = toObjectId(context.tenantId, 'tenant id');
   const query: Record<string, unknown> = { tenantId };
@@ -550,21 +553,28 @@ const recordStockHistory = async (
   session?: ClientSession,
 ): Promise<StockHistoryDocument> => {
   const location = await LocationModel.findById(stockItem.location, undefined, session ? { session } : undefined);
-  return StockHistoryModel.create({
-    tenantId: toObjectId(context.tenantId, 'tenant id'),
-    siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
-    part: stockItem.part,
-    stockItem: stockItem._id,
-    locationSnapshot: {
-      locationId: stockItem.location,
-      store: location?.store,
-      room: location?.room,
-      bin: location?.bin,
-    },
-    delta,
-    reason,
-    createdBy: context.userId ? toObjectId(context.userId, 'user id') : undefined,
-  }, { session });
+  const [history] = await StockHistoryModel.create(
+    [
+      {
+        tenantId: toObjectId(context.tenantId, 'tenant id'),
+        siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
+        part: stockItem.part,
+        stockItem: stockItem._id,
+        locationSnapshot: {
+          locationId: stockItem.location,
+          store: location?.store,
+          room: location?.room,
+          bin: location?.bin,
+        },
+        delta,
+        reason,
+        createdBy: context.userId ? toObjectId(context.userId, 'user id') : undefined,
+      },
+    ],
+    { session },
+  );
+
+  return history;
 };
 
 export const adjustStock = async (
@@ -667,14 +677,14 @@ export const transferStock = async (
         context,
         fromStock,
         -quantity,
-        `Transfer to ${toLocation.name ?? toLocation._id.toString()}`,
+        `Transfer to ${formatLocationLabel(toLocation)}`,
         session,
       );
       await recordStockHistory(
         context,
         toStock,
         quantity,
-        `Transfer from ${fromLocation.name ?? fromLocation._id.toString()}`,
+        `Transfer from ${formatLocationLabel(fromLocation)}`,
         session,
       );
 
@@ -700,23 +710,25 @@ export const transferStock = async (
       throw new InventoryError('Unable to record transfer', 500);
     }
 
+    const persistedTransfer = transferDoc as InventoryTransferDocument & { _id: Types.ObjectId };
+
     const transfer: InventoryTransfer = {
-      id: (transferDoc._id as Types.ObjectId).toString(),
+      id: persistedTransfer._id.toString(),
       tenantId: tenantId.toString(),
       partId: partId.toString(),
       fromLocationId: fromLocationId.toString(),
       toLocationId: toLocationId.toString(),
       quantity,
-      createdAt: transferDoc.createdAt instanceof Date
-        ? transferDoc.createdAt.toISOString()
+      createdAt: persistedTransfer.createdAt instanceof Date
+        ? persistedTransfer.createdAt.toISOString()
         : new Date().toISOString(),
     };
 
     if (context.siteId) {
       transfer.siteId = context.siteId;
     }
-    if (transferDoc.createdBy) {
-      transfer.createdBy = transferDoc.createdBy.toString();
+    if (persistedTransfer.createdBy) {
+      transfer.createdBy = persistedTransfer.createdBy.toString();
     }
 
     return transfer;

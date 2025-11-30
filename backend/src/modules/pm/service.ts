@@ -12,6 +12,11 @@ import { calcNextDue } from '../../../services/PMScheduler';
 
 import type { AssignmentInput } from './schemas';
 
+export interface PMTriggerConfig {
+  type: 'time' | 'meter';
+  meterThreshold?: number;
+}
+
 export interface PMContext {
   tenantId: string;
   siteId?: string;

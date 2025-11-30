@@ -104,7 +104,7 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
     if (!roleId) {
       return sendResponse(res, null, 'Invalid id', 400);
     }
-    const filter = { _id: roleId, ...buildScopedFilter(tenantId, toObjectId(req.siteId)) };
+    const filter = { _id: roleId as Types.ObjectId, ...buildScopedFilter(tenantId, toObjectId(req.siteId)) };
     const existing = await Role.findOne(filter);
     if (!existing) return sendResponse(res, null, 'Not found', 404);
     const payload = { ...req.body };

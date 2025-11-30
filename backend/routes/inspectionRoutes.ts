@@ -234,7 +234,9 @@ router.post('/records/:recordId/complete', async (req, res, next) => {
     record.status = 'completed';
     record.responses = (body.data.responses ?? record.responses) as typeof record.responses;
     record.summary = body.data.summary ?? record.summary;
-    record.completedBy = (body.data.completedBy as unknown as undefined) ?? req.user?._id ?? undefined;
+    record.completedBy = body.data.completedBy
+      ? new Types.ObjectId(body.data.completedBy)
+      : (req.user?._id as Types.ObjectId | undefined);
     record.completedAt = new Date();
     await record.save();
 

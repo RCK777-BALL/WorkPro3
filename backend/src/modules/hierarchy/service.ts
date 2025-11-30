@@ -130,7 +130,7 @@ export interface AssetDetailResponse {
     templateId: string;
     assignmentId: string;
     title: string;
-    interval: string;
+    interval?: string;
     active: boolean;
     nextDue?: string;
     usageMetric?: string;
@@ -966,9 +966,12 @@ const toPmTemplateSummary = (
         templateId: template._id?.toString() ?? '',
         assignmentId: assignment._id?.toString() ?? '',
         title: template.title,
-        interval: assignment.interval,
         active: Boolean(template.active),
       };
+
+      if (assignment.interval !== undefined) {
+        summary.interval = assignment.interval;
+      }
 
       if (assignment.nextDue) {
         summary.nextDue = assignment.nextDue.toISOString();

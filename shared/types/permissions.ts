@@ -44,17 +44,16 @@ export const PERMISSIONS = {
   },
 } as const;
 
-export type PermissionCategory = keyof typeof PERMISSIONS;
-export type PermissionAction<C extends PermissionCategory = PermissionCategory> = Extract<
-  keyof (typeof PERMISSIONS)[C],
-  string
->;
-export type PermissionWildcard = '*' | `${PermissionCategory}.*`;
-export type Permission = (typeof PERMISSIONS)[PermissionCategory][PermissionAction] | PermissionWildcard;
+type KnownPermissionCategory = keyof typeof PERMISSIONS;
 
-const permissionValues = Object.values(PERMISSIONS).flatMap((group) =>
-  Object.values(group) as (typeof PERMISSIONS)[PermissionCategory][PermissionAction][],
-);
+export type PermissionCategory = KnownPermissionCategory | (string & {});
+export type PermissionAction<C extends PermissionCategory = PermissionCategory> = C extends KnownPermissionCategory
+  ? Extract<keyof (typeof PERMISSIONS)[C], string>
+  : string;
+export type PermissionWildcard = '*' | `${PermissionCategory}.*`;
+export type Permission = `${PermissionCategory}.${PermissionAction}` | PermissionWildcard;
+
+const permissionValues = Object.values(PERMISSIONS).flatMap((group) => Object.values(group) as string[]);
 
 export const ALL_PERMISSIONS: Permission[] = Array.from(
   new Set(permissionValues),
@@ -66,7 +65,7 @@ export const formatPermission = (scope: string, action?: string): Permission => 
   return key.toLowerCase() as Permission;
 };
 
-export const permissionFromParts = <C extends PermissionCategory>(
-  scope: C,
-  action: PermissionAction<C>,
-): Permission => PERMISSIONS[scope][action] as Permission;
+export const permissionFromParts = (
+  scope: PermissionCategory,
+  action: PermissionAction,
+): Permission => formatPermission(scope, action);

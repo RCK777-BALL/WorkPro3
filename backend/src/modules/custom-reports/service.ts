@@ -116,10 +116,18 @@ const buildColumnMeta = (fields: ReportField[], includeAggregates: boolean): Rep
   return columns;
 };
 
+const isObjectIdValue = (
+  value: unknown,
+): value is string | number | Types.ObjectId | Uint8Array<ArrayBufferLike> => {
+  if (typeof value === 'string' || typeof value === 'number') return true;
+  if (value instanceof Types.ObjectId) return true;
+  return value instanceof Uint8Array;
+};
+
 const formatRowValue = (value: unknown): string | number | null => {
   if (value === undefined || value === null) return null;
   if (value instanceof Date) return value.toISOString();
-  if (Types.ObjectId.isValid(value)) return String(value);
+  if (isObjectIdValue(value) && Types.ObjectId.isValid(value)) return String(value);
   return typeof value === 'string' || typeof value === 'number' ? value : JSON.stringify(value);
 };
 

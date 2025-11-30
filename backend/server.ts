@@ -20,8 +20,7 @@ import logger from "./utils/logger";
 import requestLog from "./middleware/requestLog";
 import tenantResolver from "./middleware/tenantResolver";
 import auditLogMiddleware from "./middleware/auditLogMiddleware";
-import apiDocsRouter from './utils/swagger'; // Adjust path if needed
-import customReportsRouter from './routes/customReportsRoutes'; // Adjust path if needed
+import customReportsRouter from "./src/modules/custom-reports";
 
 import {
   adminRoutes,
@@ -252,7 +251,6 @@ app.use("/api/public", publicRequestRoutes);
 app.use("/api", uiRoutes);
 app.use("/api/health", healthRouter);
 app.use("/api/hierarchy", hierarchyRouter);
-app.use("/api/docs", apiDocsRouter);
 app.use("/api", workRequestsRouter);
 app.use("/api/import-export", importExportRouter);
 app.use("/api/inventory/v2", inventoryV2Routes);

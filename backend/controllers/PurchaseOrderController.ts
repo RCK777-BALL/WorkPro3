@@ -101,15 +101,17 @@ export const createPurchaseOrder = async (
       }
     }
 
-    const rawLines = Array.isArray((req.body as any).lines) ? (req.body as any).lines : [];
+    const rawLines: Array<Partial<IPurchaseOrderLine>> = Array.isArray((req.body as any).lines)
+      ? (req.body as IPurchaseOrder).lines ?? []
+      : [];
     const lines: IPurchaseOrderLine[] = rawLines
-      .map((line) => ({
-        part: line.part,
-        qtyOrdered: Number(line.qtyOrdered ?? line.quantity ?? 0),
+      .map((line: Partial<IPurchaseOrderLine>) => ({
+        part: line.part as Types.ObjectId,
+        qtyOrdered: Number(line.qtyOrdered ?? (line as any).quantity ?? 0),
         qtyReceived: Number(line.qtyReceived ?? 0),
-        price: Number(line.price ?? line.unitCost ?? 0),
+        price: Number(line.price ?? (line as any).unitCost ?? 0),
       }))
-      .filter((line) => isValidObjectId(line.part) && line.qtyOrdered > 0);
+      .filter((line: IPurchaseOrderLine) => isValidObjectId(line.part) && line.qtyOrdered > 0);
 
     if (lines.length === 0) {
       return sendResponse(res, null, 'At least one line item is required', 400);

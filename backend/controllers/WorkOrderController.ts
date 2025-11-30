@@ -1027,7 +1027,7 @@ export async function approveWorkOrder(
       workOrder.approvedBy = userObjectId;
       workOrder.status = status === 'approved' ? 'approved' : workOrder.status;
     }
-    workOrder.approvalLog = workOrder.approvalLog ?? [];
+    workOrder.approvalLog ??= [] as any;
     workOrder.approvalLog.push({
       approvedBy: userObjectId,
       approvedAt: new Date(),

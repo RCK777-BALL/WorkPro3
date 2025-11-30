@@ -23,6 +23,10 @@ export interface PMTemplateAssignment extends Document {
   usageMetric?: 'runHours' | 'cycles';
   usageTarget?: number;
   usageLookbackDays?: number;
+  trigger?: {
+    type: 'time' | 'meter';
+    meterThreshold?: number;
+  };
   checklist: Types.DocumentArray<PMTemplateChecklistItem>;
   requiredParts: Types.DocumentArray<PMTemplateRequiredPart>;
   nextDue?: Date;
@@ -65,6 +69,15 @@ const assignmentSchema = new Schema<PMTemplateAssignment>(
     usageMetric: { type: String, enum: ['runHours', 'cycles'], default: null },
     usageTarget: { type: Number },
     usageLookbackDays: { type: Number, default: 30 },
+    trigger: {
+      type: {
+        type: String,
+        enum: ['time', 'meter'],
+        default: 'time',
+      },
+      meterThreshold: { type: Number },
+      _id: false,
+    },
     checklist: { type: [checklistSchema], default: [] },
     requiredParts: { type: [requiredPartSchema], default: [] },
     nextDue: { type: Date },

@@ -120,7 +120,6 @@ router.patch('/:id', validateObjectId('id'), async (req, res, next) => {
       return;
     }
     const update = parsed.data;
-    const before = permit.toObject();
     const normalized: Record<string, unknown> = { ...update };
     if (update.validFrom) normalized.validFrom = new Date(update.validFrom);
     if (update.validTo) normalized.validTo = new Date(update.validTo);
@@ -141,6 +140,12 @@ router.patch('/:id', validateObjectId('id'), async (req, res, next) => {
       }));
     }
     if (update.watchers) normalized.watchers = update.watchers;
+    const existing = await Permit.findOne({ _id: req.params.id, tenantId: req.tenantId });
+    if (!existing) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
+    const before = existing.toObject();
     const permit = await Permit.findOneAndUpdate(
       { _id: req.params.id, tenantId: req.tenantId },
       normalized,
@@ -212,7 +217,7 @@ router.post('/:id/approvals', validateObjectId('id'), async (req, res, next) => 
     permit.history.push({
       action: parsed.data.status === 'approved' ? 'approval-approved' : 'approval-rejected',
       at: new Date(),
-      by: req.user?._id,
+      by: req.user?._id ? new Types.ObjectId(req.user._id) : undefined,
       notes: parsed.data.notes,
     });
 
@@ -264,7 +269,7 @@ router.post('/:id/lockout', validateObjectId('id'), async (req, res, next) => {
     permit.history.push({
       action: 'lockout-step-updated',
       at: new Date(),
-      by: req.user?._id,
+      by: req.user?._id ? new Types.ObjectId(req.user._id) : undefined,
       notes: parsed.data.verificationNotes,
     });
     await permit.save();

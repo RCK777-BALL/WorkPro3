@@ -2,11 +2,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { FilterQuery } from 'mongoose';
+import type { FilterQuery, LeanDocument } from 'mongoose';
 
 import DowntimeLog, { type DowntimeLogDocument } from '../models/DowntimeLog';
 
-export type LeanDowntimeLog = DowntimeLogDocument;
+export type LeanDowntimeLog = LeanDocument<DowntimeLogDocument>;
 
 export type DowntimeLogFilters = {
   assetId?: string;

@@ -9,6 +9,7 @@ export interface IPurchaseOrderLine {
   qtyOrdered: number;
   qtyReceived: number;
   price: number;
+  _id?: Types.ObjectId;
 }
 
 export interface IPurchaseOrder extends Document {

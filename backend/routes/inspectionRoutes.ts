@@ -3,6 +3,7 @@
  */
 
 import { Router } from 'express';
+import { Types } from 'mongoose';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/authMiddleware';
 import tenantScope from '../middleware/tenantScope';
@@ -165,10 +166,13 @@ router.post('/records', async (req, res, next) => {
       return;
     }
 
+    const siteId = parsed.data.siteId ? new Types.ObjectId(parsed.data.siteId) : template.siteId;
+    const assetId = parsed.data.assetId ? new Types.ObjectId(parsed.data.assetId) : undefined;
+
     const record = await InspectionRecord.create({
       tenantId: req.tenantId,
-      siteId: parsed.data.siteId ?? template.siteId,
-      assetId: parsed.data.assetId,
+      siteId,
+      assetId,
       templateId: template._id,
       templateName: template.name,
       status: parsed.data.status ?? 'in-progress',
@@ -228,7 +232,7 @@ router.post('/records/:recordId/complete', async (req, res, next) => {
 
     const before = record.toObject();
     record.status = 'completed';
-    record.responses = body.data.responses ?? record.responses;
+    record.responses = (body.data.responses ?? record.responses) as typeof record.responses;
     record.summary = body.data.summary ?? record.summary;
     record.completedBy = (body.data.completedBy as unknown as undefined) ?? req.user?._id ?? undefined;
     record.completedAt = new Date();

@@ -33,6 +33,13 @@ export interface AssetDoc extends Document {
   replacementDate?: Date;
   installationDate?: Date;
   lastServiced?: Date;
+  lastInspection?: {
+    recordId?: Types.ObjectId;
+    templateName?: string;
+    status?: 'draft' | 'in-progress' | 'completed' | 'archived';
+    completedAt?: Date;
+    summary?: string;
+  };
   criticality?: string;
   documents?: Types.Array<Types.ObjectId>;
   pmTemplateIds?: Types.Array<Types.ObjectId>;
@@ -97,6 +104,7 @@ const assetSchema = new Schema<AssetDoc>(
       status: { type: String, enum: ['draft', 'in-progress', 'completed', 'archived'] },
       completedAt: { type: Date },
       summary: { type: String },
+      _id: false,
     },
     criticality: {
       type: String,
@@ -109,7 +117,7 @@ const assetSchema = new Schema<AssetDoc>(
   { timestamps: true }
 );
 
-assetSchema.pre('validate', function (next) {
+assetSchema.pre('validate', function (this: AssetDoc, next) {
   if (!this.plant && this.siteId) {
     this.plant = this.siteId as Types.ObjectId;
   }

@@ -2,11 +2,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { FilterQuery, LeanDocument } from 'mongoose';
+import type { FilterQuery, FlattenMaps, Types } from 'mongoose';
 
 import DowntimeLog, { type DowntimeLogDocument } from '../models/DowntimeLog';
 
-export type LeanDowntimeLog = LeanDocument<DowntimeLogDocument>;
+export type LeanDowntimeLog = FlattenMaps<DowntimeLogDocument> & { _id: Types.ObjectId };
 
 export type DowntimeLogFilters = {
   assetId?: string;
@@ -32,7 +32,7 @@ export const listDowntimeLogs = async (
     if (filters.end) query.start.$lte = filters.end;
   }
 
-  return DowntimeLog.find(query).sort({ start: -1 }).lean().exec();
+  return DowntimeLog.find(query).sort({ start: -1 }).lean<LeanDowntimeLog[]>().exec();
 };
 
 export const createDowntimeLog = async (
@@ -49,14 +49,14 @@ export const updateDowntimeLog = async (
   payload: Partial<DowntimeLogPayload>,
 ): Promise<LeanDowntimeLog | null> =>
   DowntimeLog.findOneAndUpdate({ _id: id, tenantId }, payload, { new: true, runValidators: true })
-    .lean()
+    .lean<LeanDowntimeLog>()
     .exec();
 
 export const deleteDowntimeLog = async (tenantId: string, id: string): Promise<LeanDowntimeLog | null> =>
-  DowntimeLog.findOneAndDelete({ _id: id, tenantId }).lean().exec();
+  DowntimeLog.findOneAndDelete({ _id: id, tenantId }).lean<LeanDowntimeLog>().exec();
 
 export const getDowntimeLog = async (
   tenantId: string,
   id: string,
 ): Promise<LeanDowntimeLog | null> =>
-  DowntimeLog.findOne({ _id: id, tenantId }).lean().exec();
+  DowntimeLog.findOne({ _id: id, tenantId }).lean<LeanDowntimeLog>().exec();

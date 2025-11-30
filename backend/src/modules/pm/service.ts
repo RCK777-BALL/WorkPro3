@@ -312,7 +312,9 @@ export const getTemplate = async (context: PMContext, templateId: string): Promi
     description: templateObject.description ?? undefined,
     tasks: templateObject.tasks ?? [],
     estimatedMinutes: templateObject.estimatedMinutes ?? undefined,
-    assignments: (templateObject.assignments ?? []).map((assignment) => serializeAssignment(assignment, refs)),
+    assignments: (templateObject.assignments ?? []).map((assignment: AssignmentObject) =>
+      serializeAssignment(assignment, refs),
+    ),
     createdAt: templateObject.createdAt?.toISOString?.(),
     updatedAt: templateObject.updatedAt?.toISOString?.(),
   };

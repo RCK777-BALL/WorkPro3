@@ -9,6 +9,7 @@ import {
   createPurchaseOrder,
   fetchInventoryAlerts,
   fetchLocations,
+  fetchPartUsageReport,
   fetchParts,
   fetchStockHistory,
   fetchStockItems,
@@ -23,6 +24,7 @@ export const INVENTORY_ALERTS_QUERY_KEY = ['inventory', 'v2', 'alerts'] as const
 export const INVENTORY_LOCATIONS_QUERY_KEY = ['inventory', 'v2', 'locations'] as const;
 export const INVENTORY_STOCK_QUERY_KEY = ['inventory', 'v2', 'stock'] as const;
 export const INVENTORY_HISTORY_QUERY_KEY = ['inventory', 'v2', 'history'] as const;
+export const INVENTORY_USAGE_QUERY_KEY = ['inventory', 'v2', 'usage'] as const;
 
 export const usePartsQuery = () =>
   useQuery({ queryKey: INVENTORY_PARTS_QUERY_KEY, queryFn: fetchParts, staleTime: 30_000 });
@@ -41,6 +43,9 @@ export const useStockItemsQuery = () =>
 
 export const useStockHistoryQuery = () =>
   useQuery({ queryKey: INVENTORY_HISTORY_QUERY_KEY, queryFn: fetchStockHistory, staleTime: 15_000 });
+
+export const usePartUsageReport = () =>
+  useQuery({ queryKey: INVENTORY_USAGE_QUERY_KEY, queryFn: fetchPartUsageReport, staleTime: 60_000 });
 
 export const useLowStockParts = () => {
   const query = usePartsQuery();

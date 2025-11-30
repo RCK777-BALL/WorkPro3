@@ -128,6 +128,11 @@ export const fetchStockHistory = async (): Promise<StockHistoryEntry[]> => {
   return res.data;
 };
 
+export const fetchPartUsageReport = async (): Promise<PartUsageReport> => {
+  const res = await http.get<PartUsageReport>(`${BASE_PATH}/analytics/usage`);
+  return res.data;
+};
+
 export const transferInventory = async (
   payload: InventoryTransferPayload,
 ): Promise<InventoryTransfer> => {

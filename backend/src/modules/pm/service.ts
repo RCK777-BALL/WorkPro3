@@ -272,7 +272,10 @@ const normalizeTasks = (input?: string[]) =>
 
 export const createTemplate = async (
   context: PMContext,
-  payload: Pick<PMTemplateResponse, 'name' | 'category' | 'description' | 'tasks' | 'estimatedMinutes'>,
+  payload: Pick<PMTemplateResponse, 'name' | 'category' | 'estimatedMinutes'> & {
+    description?: string;
+    tasks?: string[];
+  },
 ): Promise<PMTemplateResponse> => {
   const tenantId = toObjectId(context.tenantId, 'tenant id');
   const doc = await PMTemplate.create({

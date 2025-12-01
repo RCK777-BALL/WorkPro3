@@ -70,6 +70,7 @@ interface PMTemplateLibraryItem {
   checklist: string[];
   impact: string;
   rule: { type: 'calendar' | 'meter'; cron?: string; meterName?: string; threshold?: number };
+  estimatedMinutes?: number;
 }
 
 const defaultSettings: SettingsState = {

@@ -37,6 +37,7 @@ export interface PMTemplateLibraryItem {
   checklist: string[];
   impact: string;
   rule: PMTemplateLibraryRule;
+  estimatedMinutes?: number | undefined;
 }
 
 export interface InspectionFormTemplate {

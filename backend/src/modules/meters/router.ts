@@ -14,6 +14,6 @@ const router = Router();
 router.use(requireAuth);
 router.use(tenantScope);
 
-router.post('/readings', requirePermission('hierarchy', 'update'), createMeterReadingHandler);
+router.post('/readings', requirePermission('hierarchy', 'write'), createMeterReadingHandler);
 
 export default router;

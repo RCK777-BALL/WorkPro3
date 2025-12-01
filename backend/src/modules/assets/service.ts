@@ -557,9 +557,9 @@ export const getAssetInsights = async (
     pmTemplates: pmTemplateSummaries,
     openWorkOrders: (openWorkOrdersRaw as WorkOrder[]).map(toWorkOrderSummary),
     costRollups: calculateCostRollups(costOrdersRaw as WorkOrder[]),
-    downtimeLogs: (downtimeLogsRaw as DowntimeLogDocument[]).map(toDowntimeLog),
+    downtimeLogs: (downtimeLogsRaw as unknown as DowntimeLogDocument[]).map(toDowntimeLog),
     reliability: buildReliabilitySummary(
-      historyRaw as WorkHistoryDocument[],
+      historyRaw as unknown as WorkHistoryDocument[],
       reliabilityOrdersRaw as WorkOrder[],
     ),
   };

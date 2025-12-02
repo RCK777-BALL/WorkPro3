@@ -5,6 +5,10 @@
     "esModuleInterop": true,
     "allowJs": true,
     "types": ["jest"],
+    "typeRoots": [
+      "./node_modules/@types",
+      "./backend/node_modules/@types"
+    ],
     "baseUrl": ".",
     "paths": {
       "@backend/*": ["backend/*"],

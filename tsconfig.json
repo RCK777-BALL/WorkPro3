@@ -11,6 +11,10 @@
     "module": "commonjs",
     "baseUrl": ".",
     "resolveJsonModule": true,
+    "typeRoots": [
+      "./node_modules/@types",
+      "./backend/node_modules/@types"
+    ],
     "paths": {
       "@shared/*": ["shared/types/*"]
     }

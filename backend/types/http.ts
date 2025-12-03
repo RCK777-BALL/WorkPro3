@@ -6,9 +6,9 @@ import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import type { ParamsDictionary, User as ExpressUser } from 'express-serve-static-core';
 import type { ParsedQs } from 'qs';
 import type { Types } from 'mongoose';
-import type { PermissionAssignment } from '../shared/auth';
+import type { PermissionAssignment } from '../../shared/types/auth';
 
-export type { ApiResult } from '../shared/http';
+export type { ApiResult } from '../../shared/types/http';
 
 export type AuthedRequest<
   P extends ParamsDictionary = ParamsDictionary,

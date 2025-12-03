@@ -14,7 +14,7 @@ import { technicianStateSchema, technicianPartUsageSchema } from '../src/schemas
 import { writeAuditLog } from '../utils/audit';
 import { emitWorkOrderUpdate } from '../server';
 import type { WorkOrderUpdatePayload } from '../types/Payloads';
-import type { UploadedFile } from '../shared/uploads';
+import type { UploadedFile } from '../../shared/types/uploads';
 import { normalizePartUsageCosts } from '../utils/partUsageCost';
 
 const resolvePlantId = (

@@ -3,6 +3,13 @@
 This folder contains the Express API server. Vite is installed only for
 bundling tests with Vitest and is not required to run the server in production.
 
+### UI dependencies
+
+The backend no longer ships React or other client-side component libraries;
+those belong in the `frontend` package. The only UI dependency that remains in
+this service is `swagger-ui-express`, which serves the API reference under the
+server’s `/docs` route for operational visibility.
+
 ## Development
 
 Install dependencies and run the server with ts-node:

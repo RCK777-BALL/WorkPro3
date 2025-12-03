@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "exactOptionalPropertyTypes": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "moduleResolution": "node",
+    "target": "ES2020",
+    "lib": ["ES2022"],
+    "module": "commonjs",
+    "baseUrl": ".",
+    "resolveJsonModule": true,
+    "typeRoots": ["./node_modules/@types"],
+    "paths": {
+      "@shared/*": ["../shared/types/*"]
+    }
+  },
+  "include": [
+    "./**/*.ts",
+    "../shared/types/**/*.ts"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "tests",
+    "scripts",
+    "seed",
+    "seeds",
+    "scripts/**/*",
+    "tests/**/*",
+    "dist",
+    "node_modules"
+  ],
+  "ts-node": {
+    "preferTsExts": true
+  }
+}

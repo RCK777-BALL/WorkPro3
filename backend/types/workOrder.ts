@@ -3,7 +3,7 @@
  */
 
 import type { z } from 'zod';
-import type { SharedWorkOrder } from '../shared/workorder';
+import type { WorkOrder as SharedWorkOrder } from '../../shared/types/workOrder';
 import { workOrderCreateSchema } from '../src/schemas/workOrder';
 
 export type WorkOrderType = SharedWorkOrder;

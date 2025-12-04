@@ -814,8 +814,8 @@ async function fetchDashboardWorkOrders<
     ];
   }
 
-  const workOrders = await WorkOrder.find(workOrderMatch).select(select).lean();
-  return workOrders as T[];
+  const workOrders = await WorkOrder.find(workOrderMatch).select(select).lean<T[]>();
+  return workOrders;
 }
 
 function filterOrdersByDate<T>(

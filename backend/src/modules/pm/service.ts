@@ -272,7 +272,8 @@ const normalizeTasks = (input?: string[]) =>
 
 export const createTemplate = async (
   context: PMContext,
-  payload: Pick<PMTemplateResponse, 'name' | 'category' | 'estimatedMinutes'> & {
+  payload: Pick<PMTemplateResponse, 'name' | 'category'> & {
+    estimatedMinutes?: number;
     description?: string;
     tasks?: string[];
   },

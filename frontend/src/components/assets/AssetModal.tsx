@@ -9,6 +9,7 @@ import { X, Upload, Download } from "lucide-react";
 import Button from "@common/Button";
 import http from "@/lib/http";
 import { useToast } from "@/context/ToastContext";
+import { useScopeContext } from "@/context/ScopeContext";
 import { useDepartmentStore } from "@/store/departmentStore";
 import { useAuthStore, type AuthState } from "@/store/authStore";
 import type { Asset, Department, Line, Station } from "@/types";
@@ -152,6 +153,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
   const stations = lineId ? stationsMap[lineId] || [] : [];
   const [error, setError] = useState<string | null>(null);
   const { addToast } = useToast();
+  const { activePlant } = useScopeContext();
 
   useEffect(() => {
     reset(toFormValues(asset));
@@ -223,6 +225,8 @@ const AssetModal: React.FC<AssetModalProps> = ({
       departmentId: formDepartmentId || undefined,
       lineId: formLineId || undefined,
       stationId: formStationId || undefined,
+      plantId: activePlant?.id ?? asset?.plantId ?? undefined,
+      siteId: activePlant?.id ?? asset?.siteId ?? undefined,
       ...(tenantId ? { tenantId } : {}),
     };
 

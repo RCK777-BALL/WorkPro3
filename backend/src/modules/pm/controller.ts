@@ -17,6 +17,7 @@ import {
   removeAssignment,
   PMTemplateError,
   type PMContext,
+  type PMTemplateResponse,
 } from './service';
 
 const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
@@ -67,7 +68,19 @@ export const createTemplateHandler: AuthedRequestHandler = async (req, res, next
     return;
   }
   try {
-    const data = await createTemplate(buildContext(req), parse.data);
+    const payload = {
+      name: parse.data.name,
+      category: parse.data.category,
+      description: parse.data.description,
+      tasks: parse.data.tasks,
+      estimatedMinutes: parse.data.estimatedMinutes,
+    } satisfies Pick<PMTemplateResponse, 'name' | 'category'> & {
+      estimatedMinutes?: number;
+      description?: string;
+      tasks?: string[];
+    };
+
+    const data = await createTemplate(buildContext(req), payload);
     send(res, data, 201);
   } catch (err) {
     handleError(err, res, next);

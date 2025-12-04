@@ -93,6 +93,11 @@ export default function CustomReportBuilder() {
   const saveTemplate = useSaveReportTemplate();
   const updateTemplate = useUpdateReportTemplate();
 
+  const activeTemplate = useMemo(
+    () => templatesQuery.data?.find((template) => template.id === activeTemplateId),
+    [activeTemplateId, templatesQuery.data],
+  );
+
   const toggleField = (field: ReportField) => {
     setSelectedFields((prev) =>
       prev.includes(field) ? prev.filter((item) => item !== field) : [...prev, field],

@@ -4,7 +4,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Pencil, PlusCircle, RefreshCcw, Scan } from 'lucide-react';
+import { Copy, Pencil, PlusCircle, RefreshCcw, Scan, Trash2 } from 'lucide-react';
 import AssetTable from '@/components/assets/AssetTable';
 import AssetModal from '@/components/assets/AssetModal';
 import WorkOrderModal from '@/components/work-orders/WorkOrderModal';
@@ -14,11 +14,12 @@ import { enqueueAssetRequest, onSyncConflict, type SyncConflict } from '@/utils/
 import { useAssetStore } from '@/store/assetStore';
 import type { Asset } from '@/types';
 import { duplicateAsset } from '@/utils/duplicate';
-import { useToast } from '@/context/ToastContext';
 import ConflictResolver from '@/components/offline/ConflictResolver';
 import { safeLocalStorage } from '@/utils/safeLocalStorage';
 import { usePermissions } from '@/auth/usePermissions';
 import { useTranslation } from 'react-i18next';
+import { useScopeContext } from '@/context/ScopeContext';
+import { useToast } from '@/context/ToastContext';
 
 const ASSET_CACHE_KEY = 'offline-assets';
 
@@ -33,6 +34,7 @@ const AssetsPage: React.FC = () => {
   const { addToast } = useToast();
   const { can } = usePermissions();
   const { t } = useTranslation();
+  const { activePlant, loadingPlants } = useScopeContext();
 
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Asset | null>(null);
@@ -45,9 +47,17 @@ const AssetsPage: React.FC = () => {
   const isFetching = useRef(false);
   const navigate = useNavigate();
 
+  const scopedAssets = useMemo(() => {
+    if (!activePlant) return assets;
+    return assets.filter((asset) => {
+      const assetPlant = asset.plantId ?? asset.siteId;
+      return assetPlant ? assetPlant === activePlant.id : false;
+    });
+  }, [activePlant, assets]);
+
   const normalizedAssets = useMemo(
-    () => assets.slice().sort((a, b) => a.name.localeCompare(b.name)),
-    [assets],
+    () => scopedAssets.slice().sort((a, b) => a.name.localeCompare(b.name)),
+    [scopedAssets],
   );
 
   useEffect(() => {
@@ -66,7 +76,8 @@ const AssetsPage: React.FC = () => {
   const loadCachedAssets = () => {
     const cached = safeLocalStorage.getItem(ASSET_CACHE_KEY);
     if (cached) {
-      setAssets(JSON.parse(cached));
+      const cachedAssets: Asset[] = JSON.parse(cached);
+      setAssets(cachedAssets);
       addToast('Showing cached assets', 'error');
       return true;
     }
@@ -75,6 +86,12 @@ const AssetsPage: React.FC = () => {
 
   const fetchAssets = useCallback(async () => {
     if (isFetching.current) return;
+    if (loadingPlants) return;
+    if (!activePlant) {
+      setError('Select a plant to view assets');
+      setAssets([]);
+      return;
+    }
     isFetching.current = true;
     if (!navigator.onLine) {
       if (!loadCachedAssets()) {
@@ -87,7 +104,9 @@ const AssetsPage: React.FC = () => {
     try {
       setIsLoading(true);
       interface AssetResponse extends Partial<Asset> { _id?: string; id?: string }
-      const res = await http.get<AssetResponse[]>('/assets');
+      const res = await http.get<AssetResponse[]>('/assets', {
+        params: { plantId: activePlant.id },
+      });
       const normalized: Asset[] = Array.isArray(res.data)
         ? res.data.flatMap((asset) => {
             const { _id, id: assetId, name, ...rest } = asset;
@@ -103,8 +122,13 @@ const AssetsPage: React.FC = () => {
           })
         : [];
 
-      setAssets(normalized);
-      safeLocalStorage.setItem(ASSET_CACHE_KEY, JSON.stringify(normalized));
+      const filteredByPlant = normalized.filter((asset) => {
+        const assetPlant = asset.plantId ?? asset.siteId;
+        return assetPlant ? assetPlant === activePlant.id : false;
+      });
+
+      setAssets(filteredByPlant);
+      safeLocalStorage.setItem(ASSET_CACHE_KEY, JSON.stringify(filteredByPlant));
       setError(null);
     } catch (err) {
       console.error('Error fetching assets:', err);
@@ -115,7 +139,7 @@ const AssetsPage: React.FC = () => {
       setIsLoading(false);
       isFetching.current = false;
     }
-  }, [addToast, setAssets]);
+  }, [activePlant, addToast, loadingPlants, setAssets]);
 
   useEffect(() => {
     fetchAssets();
@@ -134,16 +158,28 @@ const AssetsPage: React.FC = () => {
   }, [searchParams, setSearchParams]);
 
   const handleSave = (asset: Asset) => {
+    const assetWithPlant = activePlant
+      ? {
+          ...asset,
+          plantId: asset.plantId ?? activePlant.id,
+          siteId: asset.siteId ?? activePlant.id,
+        }
+      : asset;
+
     if (assets.find((a) => a.id === asset.id)) {
-      updateAsset(asset);
+      updateAsset(assetWithPlant);
     } else {
-      addAsset(asset);
+      addAsset(assetWithPlant);
     }
     setModalOpen(false);
   };
 
   const handleDuplicate = async (asset: Asset) => {
-    const clone = duplicateAsset(asset);
+    const clone = duplicateAsset({
+      ...asset,
+      plantId: asset.plantId ?? activePlant?.id,
+      siteId: asset.siteId ?? activePlant?.id,
+    });
     if (!navigator.onLine) {
       enqueueAssetRequest('post', clone);
       addAsset({ ...clone, id: Date.now().toString() });
@@ -164,11 +200,11 @@ const AssetsPage: React.FC = () => {
   };
 
   const stats = useMemo(() => {
-    const total = assets.length;
-    const active = assets.filter((asset) => (asset.status ?? '').toLowerCase() === 'active').length;
-    const critical = assets.filter((asset) => asset.criticality === 'high').length;
+    const total = scopedAssets.length;
+    const active = scopedAssets.filter((asset) => (asset.status ?? '').toLowerCase() === 'active').length;
+    const critical = scopedAssets.filter((asset) => asset.criticality === 'high').length;
     return { total, active, critical };
-  }, [assets]);
+  }, [scopedAssets]);
 
   const canManageAssets = can('hierarchy', 'write');
   const canDeleteAssets = can('hierarchy', 'delete');
@@ -177,26 +213,26 @@ const AssetsPage: React.FC = () => {
   return (
     <>
       <div className="space-y-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <p className="text-sm text-neutral-600">Assets</p>
-              <h1 className="text-3xl font-bold text-neutral-900">Asset catalog</h1>
-              <p className="text-neutral-600 mt-1">
-                Browse the list of assets, make quick edits, and add new equipment to your hierarchy.
-              </p>
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Button
-                variant="secondary"
-                onClick={() => navigate('/assets/scan')}
-                aria-label="Scan an asset QR code"
-              >
-                <Scan className="w-4 h-4 mr-2" />
-                Scan asset
-              </Button>
-              <Button variant="outline" onClick={fetchAssets} disabled={isLoading}>
-                <RefreshCcw className="w-4 h-4 mr-2" />
-                {isLoading ? 'Refreshing...' : 'Refresh'}
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-sm text-neutral-600">Assets</p>
+            <h1 className="text-3xl font-bold text-neutral-900">Asset catalog</h1>
+            <p className="text-neutral-600 mt-1">
+              Browse the list of assets, make quick edits, and add new equipment to your hierarchy.
+            </p>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button
+              variant="secondary"
+              onClick={() => navigate('/assets/scan')}
+              aria-label="Scan an asset QR code"
+            >
+              <Scan className="w-4 h-4 mr-2" />
+              Scan asset
+            </Button>
+            <Button variant="outline" onClick={fetchAssets} disabled={isLoading}>
+              <RefreshCcw className="w-4 h-4 mr-2" />
+              {isLoading ? 'Refreshing...' : 'Refresh'}
             </Button>
             <Button
               variant="primary"
@@ -204,9 +240,15 @@ const AssetsPage: React.FC = () => {
                 setSelected(null);
                 setModalOpen(true);
               }}
-              disabled={!canManageAssets}
-              aria-disabled={!canManageAssets}
-              title={!canManageAssets ? t('assets.permissionWarning') : undefined}
+              disabled={!canManageAssets || !activePlant}
+              aria-disabled={!canManageAssets || !activePlant}
+              title={
+                !canManageAssets
+                  ? t('assets.permissionWarning')
+                  : !activePlant
+                    ? 'Select a plant to create assets'
+                    : undefined
+              }
             >
               <PlusCircle className="w-4 h-4 mr-2" />
               Add asset
@@ -254,6 +296,16 @@ const AssetsPage: React.FC = () => {
           />
         </div>
 
+        {!activePlant && !loadingPlants && (
+          <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100" role="alert">
+            <span className="mt-0.5 text-amber-300">⚠️</span>
+            <div>
+              <p className="font-semibold">Select a plant to manage assets</p>
+              <p>Use the plant switcher in the header to choose the site whose assets you want to view.</p>
+            </div>
+          </div>
+        )}
+
         {normalizedAssets.length > 0 && (
           <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -273,33 +325,57 @@ const AssetsPage: React.FC = () => {
               {normalizedAssets.map((asset) => (
                 <div
                   key={asset.id}
-                  className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white/70 px-4 py-3 shadow-sm dark:border-neutral-700 dark:bg-neutral-900/60"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white/70 px-4 py-3 shadow-sm dark:border-neutral-700 dark:bg-neutral-900/60"
                 >
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-base font-semibold text-neutral-900 dark:text-neutral-50">{asset.name}</p>
                     <p className="text-sm text-neutral-600 dark:text-neutral-300">
                       {asset.type ?? 'Type not specified'}
                       {asset.location ? ` • ${asset.location}` : ''}
                     </p>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => { setSelected(asset); setModalOpen(true); }}
-                    disabled={!canManageAssets}
-                    aria-disabled={!canManageAssets}
-                    title={!canManageAssets ? t('assets.permissionWarning') : undefined}
-                  >
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Edit
-                  </Button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => { setSelected(asset); setModalOpen(true); }}
+                      disabled={!canManageAssets}
+                      aria-disabled={!canManageAssets}
+                      title={!canManageAssets ? t('assets.permissionWarning') : undefined}
+                    >
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDuplicate(asset)}
+                      disabled={!canManageAssets}
+                      aria-disabled={!canManageAssets}
+                      title={!canManageAssets ? t('assets.permissionWarning') : undefined}
+                    >
+                      <Copy className="mr-2 h-4 w-4" />
+                      Duplicate
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDelete(asset.id)}
+                      disabled={!canDeleteAssets}
+                      aria-disabled={!canDeleteAssets}
+                      title={!canDeleteAssets ? t('assets.permissionWarning') : undefined}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {!isLoading && assets.length === 0 && (
+        {!isLoading && scopedAssets.length === 0 && (
           <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center text-neutral-700 shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
             <p className="text-lg font-semibold">No assets yet</p>
             <p className="max-w-xl text-sm text-neutral-600 dark:text-neutral-300">
@@ -326,7 +402,7 @@ const AssetsPage: React.FC = () => {
         )}
 
         <AssetTable
-          assets={assets}
+          assets={scopedAssets}
           search={search}
           onRowClick={(a) => { setSelected(a); setModalOpen(true); }}
           onDuplicate={handleDuplicate}

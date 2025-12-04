@@ -63,6 +63,9 @@ const AssetTable: React.FC<AssetTableProps> = ({
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
                 Warranty Expiry
               </th>
+              <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-300">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800 bg-slate-900/60">
@@ -126,11 +129,11 @@ const AssetTable: React.FC<AssetTableProps> = ({
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                   {asset.warrantyEnd || asset.warrantyExpiry || 'N/A'}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right">
-                  <div className="flex items-center justify-end space-x-2">
+                <td className="px-6 py-4 whitespace-nowrap text-right align-top">
+                  <div className="flex flex-wrap items-center justify-end gap-2">
                     {onCreateWorkOrder && canCreateWorkOrder && (
                       <Button
-                        variant="ghost"
+                        variant="secondary"
                         size="sm"
                         onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                           e.stopPropagation();
@@ -147,7 +150,7 @@ const AssetTable: React.FC<AssetTableProps> = ({
                       aria-label={canEdit ? 'Duplicate asset' : 'Duplicate disabled - insufficient permissions'}
                     />
                     <Button
-                      variant="ghost"
+                      variant="secondary"
                       size="sm"
                       disabled={!canDelete}
                       aria-disabled={!canDelete}
@@ -160,7 +163,7 @@ const AssetTable: React.FC<AssetTableProps> = ({
                       Delete
                     </Button>
                     <Button
-                      variant="ghost"
+                      variant="secondary"
                       size="sm"
                       disabled={!canEdit}
                       aria-disabled={!canEdit}

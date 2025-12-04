@@ -4,7 +4,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Pencil, PlusCircle, RefreshCcw, Scan } from 'lucide-react';
+import { Copy, Pencil, PlusCircle, RefreshCcw, Scan, Trash2 } from 'lucide-react';
 import AssetTable from '@/components/assets/AssetTable';
 import AssetModal from '@/components/assets/AssetModal';
 import WorkOrderModal from '@/components/work-orders/WorkOrderModal';
@@ -325,26 +325,50 @@ const AssetsPage: React.FC = () => {
               {normalizedAssets.map((asset) => (
                 <div
                   key={asset.id}
-                  className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white/70 px-4 py-3 shadow-sm dark:border-neutral-700 dark:bg-neutral-900/60"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white/70 px-4 py-3 shadow-sm dark:border-neutral-700 dark:bg-neutral-900/60"
                 >
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-base font-semibold text-neutral-900 dark:text-neutral-50">{asset.name}</p>
                     <p className="text-sm text-neutral-600 dark:text-neutral-300">
                       {asset.type ?? 'Type not specified'}
                       {asset.location ? ` • ${asset.location}` : ''}
                     </p>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => { setSelected(asset); setModalOpen(true); }}
-                    disabled={!canManageAssets}
-                    aria-disabled={!canManageAssets}
-                    title={!canManageAssets ? t('assets.permissionWarning') : undefined}
-                  >
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Edit
-                  </Button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => { setSelected(asset); setModalOpen(true); }}
+                      disabled={!canManageAssets}
+                      aria-disabled={!canManageAssets}
+                      title={!canManageAssets ? t('assets.permissionWarning') : undefined}
+                    >
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDuplicate(asset)}
+                      disabled={!canManageAssets}
+                      aria-disabled={!canManageAssets}
+                      title={!canManageAssets ? t('assets.permissionWarning') : undefined}
+                    >
+                      <Copy className="mr-2 h-4 w-4" />
+                      Duplicate
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDelete(asset.id)}
+                      disabled={!canDeleteAssets}
+                      aria-disabled={!canDeleteAssets}
+                      title={!canDeleteAssets ? t('assets.permissionWarning') : undefined}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

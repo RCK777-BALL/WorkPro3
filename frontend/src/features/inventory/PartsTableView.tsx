@@ -14,30 +14,8 @@ import { INVENTORY_PARTS_QUERY_KEY, usePartsQuery, useVendorsQuery } from './hoo
 import { QrLabel } from '@/components/qr';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
-const HEADER_HEIGHT = 48;
-const ROW_HEIGHT = 112;
 
-interface ColumnDefinition {
-  key: string;
-  label: string;
-  width: number;
-  sortable?: boolean;
-  render: (part: Part) => React.ReactNode;
-}
-
-interface GridData {
-  columns: ColumnDefinition[];
-  parts: Part[];
-  onSort: (key: string) => void;
-  sortBy: string;
-  sortDirection: SortDirection;
-}
-
-const EmptyState = ({ message }: { message: string }) => (
-  <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-neutral-500">
-    <p>{message}</p>
-  </div>
-);
+type SortDirection = 'asc' | 'desc';
 
 const LoadingSkeleton = () => (
   <div className="space-y-3 p-4">
@@ -57,42 +35,10 @@ const LoadingSkeleton = () => (
   </div>
 );
 
-const HeaderCell = ({ columnIndex, style, data }: GridChildComponentProps<GridData>) => {
-  const column = data.columns[columnIndex];
-  const isSorted = data.sortBy === column.key;
-  const direction = data.sortDirection === 'asc' ? '▲' : '▼';
-
-  return (
-    <div
-      style={style}
-      className={clsx(
-        'flex items-center border-b border-neutral-100 bg-neutral-50 px-4 text-xs font-semibold uppercase tracking-wide text-neutral-600',
-        column.sortable ? 'cursor-pointer select-none' : 'cursor-default',
-      )}
-      onClick={() => column.sortable && data.onSort(column.key)}
-      role={column.sortable ? 'button' : undefined}
-      tabIndex={column.sortable ? 0 : undefined}
-    >
-      <span>{column.label}</span>
-      {isSorted && <span className="ml-1 text-[10px] text-neutral-400">{direction}</span>}
-    </div>
-  );
-};
-
-const BodyCell = ({ columnIndex, rowIndex, style, data }: GridChildComponentProps<GridData>) => {
-  const column = data.columns[columnIndex];
-  const part = data.parts[rowIndex];
-  return (
-    <div
-      style={style}
-      className={clsx(
-        'border-b border-neutral-100 px-4 py-3 text-sm text-neutral-700',
-        rowIndex % 2 === 0 ? 'bg-white' : 'bg-neutral-50/40',
-      )}
-    >
-      {column.render(part)}
-    </div>
-  );
+const severityClass: Record<string, string> = {
+  ok: 'bg-green-100 text-green-800',
+  warning: 'bg-amber-100 text-amber-800',
+  critical: 'bg-red-100 text-red-800',
 };
 
 const PartsTableView = () => {
@@ -100,12 +46,15 @@ const PartsTableView = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [vendorFilter, setVendorFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(PAGE_SIZE_OPTIONS[0]);
+  const [sortBy, setSortBy] = useState('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [noteTargetId, setNoteTargetId] = useState<string | null>(null);
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
 
   const noteMutation = useMutation({
-    mutationFn: ({ partId, notes }: { partId: string; notes: string }) =>
-      upsertPart({ id: partId, notes }),
+    mutationFn: ({ partId, notes }: { partId: string; notes: string }) => upsertPart({ id: partId, notes }),
     onSuccess: async () => {
       await queryClient.invalidateQueries(INVENTORY_PARTS_QUERY_KEY);
       setNoteTargetId(null);
@@ -126,12 +75,7 @@ const PartsTableView = () => {
   const totalPages = partsQuery.data?.totalPages ?? Math.max(1, Math.ceil(total / pageSize));
   const vendorOptions = vendorsQuery.data ?? [];
 
-  const headerRef = useRef<VariableSizeGrid<GridData>>(null);
-  const bodyRef = useRef<VariableSizeGrid<GridData>>(null);
-
-  const handleScroll = ({ scrollLeft }: GridOnScrollProps) => {
-    headerRef.current?.scrollTo({ scrollLeft, scrollTop: 0 });
-  };
+  const filteredParts = useMemo(() => parts, [parts]);
 
   const handleSort = (key: string) => {
     const nextDirection = sortBy === key && sortDirection === 'asc' ? 'desc' : 'asc';
@@ -139,146 +83,6 @@ const PartsTableView = () => {
     setSortDirection(nextDirection);
     setPage(1);
   };
-
-  const columns = useMemo<ColumnDefinition[]>(
-    () => [
-      {
-        key: 'name',
-        label: 'Part',
-        width: 280,
-        sortable: true,
-        render: (part) => (
-          <div className="flex flex-col gap-2 text-sm text-neutral-700">
-            <div>
-              <p className="font-semibold text-neutral-900">{part.name}</p>
-              <p className="text-xs text-neutral-500">SKU {part.sku ?? 'n/a'}</p>
-            </div>
-            <QrLabel
-              name={part.name}
-              subtitle={part.vendor?.name ?? 'Part label'}
-              qrValue={part.qrCode ?? JSON.stringify({ type: 'part', id: part.id })}
-              showPreview={false}
-              buttonLabel="Print QR Label"
-            />
-          </div>
-        ),
-      },
-      {
-        key: 'vendor',
-        label: 'Vendor',
-        width: 200,
-        sortable: true,
-        render: (part) => (
-          <div className="text-sm text-neutral-700">
-            {part.vendor ? (
-              <div>
-                <p className="font-medium text-neutral-900">{part.vendor.name}</p>
-                {part.vendor.leadTimeDays && (
-                  <p className="text-xs text-neutral-500">Lead time {part.vendor.leadTimeDays} day(s)</p>
-                )}
-              </div>
-            ) : (
-              <p className="text-neutral-400">Unassigned</p>
-            )}
-          </div>
-        ),
-      },
-      {
-        key: 'quantity',
-        label: 'Stock',
-        width: 180,
-        sortable: true,
-        render: (part) => (
-          <div className="space-y-2">
-            <StockLevelBadge alertState={part.alertState} quantity={part.quantity} reorderPoint={part.reorderPoint} />
-            <p className="text-xs text-neutral-500">Reorder @ {part.reorderPoint}</p>
-            {part.stockByLocation?.length ? (
-              <div className="rounded-md bg-neutral-50 p-2">
-                <p className="text-[11px] font-semibold uppercase text-neutral-500">By location</p>
-                <ul className="space-y-1 text-xs text-neutral-700">
-                  {part.stockByLocation.map((stock) => (
-                    <li key={stock.stockItemId} className="flex items-center justify-between gap-2">
-                      <span>
-                        {[stock.location?.store, stock.location?.room, stock.location?.bin]
-                          .filter(Boolean)
-                          .join(' / ') || 'Unassigned'}
-                      </span>
-                      <span className="text-neutral-500">{stock.quantity}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <p className="text-xs text-neutral-400">No location assignments</p>
-            )}
-          </div>
-        ),
-      },
-      {
-        key: 'assets',
-        label: 'Linked assets',
-        width: 220,
-        sortable: true,
-        render: (part) => (
-          <div className="text-sm text-neutral-700">
-            {part.assets && part.assets.length > 0 ? (
-              <ul className="list-inside list-disc text-xs text-neutral-600">
-                {part.assets.slice(0, 3).map((asset) => (
-                  <li key={asset.id}>{asset.name}</li>
-                ))}
-                {part.assets.length > 3 && (
-                  <li className="text-neutral-400">+{part.assets.length - 3} more</li>
-                )}
-              </ul>
-            ) : (
-              <p className="text-xs text-neutral-400">No linked assets</p>
-            )}
-          </div>
-        ),
-      },
-      {
-        key: 'templates',
-        label: 'PM templates',
-        width: 220,
-        sortable: true,
-        render: (part) => (
-          <div className="text-sm text-neutral-700">
-            {part.pmTemplates && part.pmTemplates.length > 0 ? (
-              <ul className="list-inside list-disc text-xs text-neutral-600">
-                {part.pmTemplates.slice(0, 3).map((template) => (
-                  <li key={template.id}>{template.title}</li>
-                ))}
-                {part.pmTemplates.length > 3 && (
-                  <li className="text-neutral-400">+{part.pmTemplates.length - 3} more</li>
-                )}
-              </ul>
-            ) : (
-              <p className="text-xs text-neutral-400">Not in templates</p>
-            )}
-          </div>
-        ),
-      },
-      {
-        key: 'autoReorder',
-        label: 'Auto reorder',
-        width: 160,
-        sortable: true,
-        render: (part) => (
-          <div className="text-xs text-neutral-500">
-            {part.autoReorder ? <p className="text-success-600">Enabled</p> : <p className="text-neutral-400">Off</p>}
-            {part.lastAutoReorderAt && (
-              <p className="text-[11px] text-neutral-400">
-                Last {new Date(part.lastAutoReorderAt).toLocaleDateString()}
-              </p>
-            )}
-          </div>
-        ),
-      },
-    ],
-    [],
-  );
-
-  const columnWidth = (index: number) => columns[index]?.width ?? 180;
 
   const handlePageChange = (nextPage: number) => {
     setPage(Math.min(Math.max(1, nextPage), totalPages));
@@ -323,7 +127,14 @@ const PartsTableView = () => {
             </select>
           </label>
           <div className="relative">
-            <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+            <svg
+              className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M16 10a6 6 0 11-12 0 6 6 0 0112 0z" />
+            </svg>
             <input
               type="search"
               placeholder="Search parts, assets, templates"
@@ -338,26 +149,49 @@ const PartsTableView = () => {
           <Button
             variant="outline"
             size="sm"
-            icon={<RefreshCcw size={14} />}
+            icon={<RefreshCcw className="h-4 w-4" />}
             onClick={() => partsQuery.refetch()}
             loading={partsQuery.isFetching}
           >
             Refresh
           </Button>
+          <label className="flex items-center gap-2 text-sm text-neutral-600">
+            <span>Page size</span>
+            <select
+              className="rounded-md border border-neutral-300 px-2 py-1 text-sm"
+              value={pageSize}
+              onChange={(event) => {
+                setPageSize(Number(event.target.value));
+                setPage(1);
+              }}
+            >
+              {PAGE_SIZE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option} per page
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </div>
-      {partsQuery.isLoading && <p className="p-4 text-sm text-neutral-500">Loading current stock…</p>}
+
+      {partsQuery.isLoading && <LoadingSkeleton />}
       {partsQuery.error && (
         <p className="p-4 text-sm text-error-600">Unable to load inventory. Please try again.</p>
       )}
+
       {!partsQuery.isLoading && !partsQuery.error && (
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-neutral-50 text-xs font-semibold uppercase tracking-wide text-neutral-500">
               <tr>
                 <th className="px-4 py-3">Part</th>
-                <th className="px-4 py-3">Vendor</th>
-                <th className="px-4 py-3">Stock</th>
+                <th className="px-4 py-3 cursor-pointer" onClick={() => handleSort('vendor')}>
+                  Vendor {sortBy === 'vendor' && (sortDirection === 'asc' ? '▲' : '▼')}
+                </th>
+                <th className="px-4 py-3 cursor-pointer" onClick={() => handleSort('quantity')}>
+                  Stock {sortBy === 'quantity' && (sortDirection === 'asc' ? '▲' : '▼')}
+                </th>
                 <th className="px-4 py-3">Linked assets</th>
                 <th className="px-4 py-3">PM templates</th>
                 <th className="px-4 py-3">Auto reorder</th>
@@ -366,18 +200,14 @@ const PartsTableView = () => {
             <tbody className="divide-y divide-neutral-100">
               {filteredParts.map((part) => {
                 const commentCount = part.commentsCount ?? (part.notes ? 1 : 0);
-                const attachmentCount =
-                  part.attachmentsCount ?? part.attachments?.length ?? (part.image ? 1 : 0);
+                const attachmentCount = part.attachmentsCount ?? part.attachments?.length ?? (part.image ? 1 : 0);
                 const isNoteOpen = noteTargetId === part.id;
                 const noteDraft = noteDrafts[part.id] ?? '';
                 const noteSaving = noteMutation.isLoading && noteMutation.variables?.partId === part.id;
 
                 return (
-                  <tr
-                    key={part.id}
-                    className={part.alertState?.needsReorder ? 'bg-warning-50/40' : undefined}
-                  >
-                    <td className="px-4 py-3">
+                  <tr key={part.id} className={part.alertState?.needsReorder ? 'bg-warning-50/40' : undefined}>
+                    <td className="px-4 py-3 align-top">
                       <p className="font-medium text-neutral-900">{part.name}</p>
                       <p className="text-xs text-neutral-500">SKU {part.sku ?? 'n/a'}</p>
                       <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-neutral-500">
@@ -414,12 +244,7 @@ const PartsTableView = () => {
                             placeholder="Add a quick note about this part"
                           />
                           <div className="flex flex-wrap items-center gap-2">
-                            <Button
-                              size="sm"
-                              onClick={() => saveNote(part)}
-                              loading={noteSaving}
-                              disabled={!noteDraft.trim()}
-                            >
+                            <Button size="sm" onClick={() => saveNote(part)} loading={noteSaving} disabled={!noteDraft.trim()}>
                               Save note
                             </Button>
                             <Button size="sm" variant="ghost" onClick={() => setNoteTargetId(null)}>
@@ -443,54 +268,111 @@ const PartsTableView = () => {
                         />
                       </div>
                     </td>
-                  <td className="px-4 py-3 text-sm text-neutral-600">
-                    {part.vendor ? (
-                      <div>
-                        <p className="font-medium text-neutral-900">{part.vendor.name}</p>
-                        {part.vendor.leadTimeDays && (
-                          <p className="text-xs text-neutral-500">Lead time {part.vendor.leadTimeDays} day(s)</p>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-neutral-400">Unassigned</p>
-                    )}
-                  </td>
-                <td className="px-4 py-3">
-                  <div className="space-y-2">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        severityClass[part.alertState?.severity ?? 'ok']
-                      }`}
-                    >
-                      {HeaderCell}
-                    </Grid>
-                    <Grid
-                      ref={bodyRef}
-                      columnCount={columns.length}
-                      columnWidth={columnWidth}
-                      height={Math.max(HEADER_HEIGHT, height - HEADER_HEIGHT)}
-                      rowCount={parts.length}
-                      rowHeight={() => ROW_HEIGHT}
-                      width={width}
-                      onScroll={handleScroll}
-                      itemData={{ columns, parts, onSort: handleSort, sortBy, sortDirection }}
-                      overscanRowCount={4}
-                      overscanColumnCount={2}
-                    >
-                      {BodyCell}
-                    </Grid>
-                  </div>
-                )}
-              </AutoSizer>
-            </div>
-          )}
-          {partsQuery.isFetching && !partsQuery.isLoading && (
-            <div className="pointer-events-none absolute inset-0 bg-white/40 backdrop-blur-sm" aria-hidden>
-              <LoadingSkeleton />
-            </div>
-          )}
+                    <td className="px-4 py-3 text-sm text-neutral-600 align-top">
+                      {part.vendor ? (
+                        <div>
+                          <p className="font-medium text-neutral-900">{part.vendor.name}</p>
+                          {part.vendor.leadTimeDays && (
+                            <p className="text-xs text-neutral-500">Lead time {part.vendor.leadTimeDays} day(s)</p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-neutral-400">Unassigned</p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 align-top text-sm text-neutral-700">
+                      <p className="font-semibold">{part.quantity ?? 0}</p>
+                      <p className="text-xs text-neutral-500">Reorder @ {part.reorderPoint ?? 'n/a'}</p>
+                      {part.stockByLocation?.length ? (
+                        <div className="mt-2 rounded-md bg-neutral-50 p-2">
+                          <p className="text-[11px] font-semibold uppercase text-neutral-500">By location</p>
+                          <ul className="space-y-1 text-xs text-neutral-700">
+                            {part.stockByLocation.map((stock) => (
+                              <li key={stock.stockItemId} className="flex items-center justify-between gap-2">
+                                <span>
+                                  {[stock.location?.store, stock.location?.room, stock.location?.bin]
+                                    .filter(Boolean)
+                                    .join(' / ') || 'Unassigned'}
+                                </span>
+                                <span className="text-neutral-500">{stock.quantity}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-neutral-400">No location assignments</p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 align-top text-sm text-neutral-700">
+                      {part.assets && part.assets.length > 0 ? (
+                        <ul className="list-inside list-disc text-xs text-neutral-600">
+                          {part.assets.slice(0, 3).map((asset) => (
+                            <li key={asset.id}>{asset.name}</li>
+                          ))}
+                          {part.assets.length > 3 && (
+                            <li className="text-neutral-400">+{part.assets.length - 3} more</li>
+                          )}
+                        </ul>
+                      ) : (
+                        <p className="text-neutral-400">No linked assets</p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 align-top text-sm text-neutral-700">
+                      {part.pmTemplates && part.pmTemplates.length > 0 ? (
+                        <ul className="list-inside list-disc text-xs text-neutral-600">
+                          {part.pmTemplates.map((template) => (
+                            <li key={template.id}>{template.name}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-neutral-400">No PM templates</p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 align-top text-sm text-neutral-700">
+                      {part.alertState ? (
+                        <div className="space-y-1">
+                          <span
+                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                              severityClass[part.alertState.severity ?? 'ok'] ?? severityClass.ok
+                            }`}
+                          >
+                            {part.alertState.severity ?? 'ok'}
+                          </span>
+                          {part.alertState.message && (
+                            <p className="text-xs text-neutral-500">{part.alertState.message}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-neutral-400">No alerts</p>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 p-4 text-sm text-neutral-600">
+        <div>
+          Page {page} of {totalPages}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" disabled={page === 1} onClick={() => handlePageChange(page - 1)}>
+            Previous
+          </Button>
+          <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => handlePageChange(page + 1)}>
+            Next
+          </Button>
         </div>
       </div>
+
+      {partsQuery.isFetching && !partsQuery.isLoading && (
+        <div className="pointer-events-none absolute inset-0 bg-white/40 backdrop-blur-sm" aria-hidden>
+          <LoadingSkeleton />
+        </div>
+      )}
     </section>
   );
 };

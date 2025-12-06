@@ -96,6 +96,7 @@ import templatesRouter from "./src/modules/templates";
 import onboardingRouter from "./src/modules/onboarding";
 import assetInsightsRouter from "./src/modules/assets";
 import executiveRouter from "./src/modules/executive";
+import analyticsModuleRouter from "./src/modules/analytics";
 import meterReadingsRouter from "./src/modules/meters";
 import workOrdersModuleRouter from "./src/modules/work-orders";
 import { startWorkOrderReminderJobs } from "./src/modules/work-orders/jobs";
@@ -103,6 +104,7 @@ import { startWorkOrderReminderJobs } from "./src/modules/work-orders/jobs";
 import { startPMScheduler } from "./utils/PMScheduler";
 import { startCopilotSummaryJob } from "./tasks/copilotSummaries";
 import { startExecutiveReportScheduler } from "./tasks/executiveReports";
+import { startAnalyticsWarehouseScheduler } from "./tasks/analyticsWarehouse";
 import { setupSwagger } from "./utils/swagger";
 import mongoose from "mongoose";
 import errorHandler from "./middleware/errorHandler";
@@ -281,6 +283,7 @@ app.use("/api/pm/templates", pmTemplatesRouter);
 app.use("/api/templates", templatesRouter);
 app.use("/api/onboarding", onboardingRouter);
 app.use("/api/executive", executiveRouter);
+app.use("/api/analytics/v2", analyticsModuleRouter);
 app.use("/api/custom-reports", customReportsRouter);
 app.use("/api/work-orders", workOrdersModuleRouter);
 
@@ -375,7 +378,7 @@ if (env.NODE_ENV !== "test") {
       });
       startCopilotSummaryJob();
       startExecutiveReportScheduler(env.EXECUTIVE_REPORT_CRON);
-      startWorkOrderReminderJobs();
+      startAnalyticsWarehouseScheduler();
     })
     .catch((err) => {
       logger.error("MongoDB connection error:", err);

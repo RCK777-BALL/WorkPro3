@@ -38,4 +38,6 @@ export interface Asset extends TenantScoped {
   documents?: string[] | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
+  reliability?: { mttrHours: number; mtbfHours: number } | undefined;
+  downtimeCount?: number | undefined;
 }

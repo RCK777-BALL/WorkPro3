@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Badge from '@common/Badge';
 import Button from '@common/Button';
 import DuplicateButton from '@common/DuplicateButton';
@@ -39,6 +40,8 @@ const AssetTable: React.FC<AssetTableProps> = ({
     )
   );
 
+  const formatHours = (value?: number) => (typeof value === 'number' ? value.toFixed(1) : '0.0');
+
   return (
     <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900/80 text-slate-100 shadow-sm backdrop-blur">
       <div className="overflow-x-auto">
@@ -62,6 +65,9 @@ const AssetTable: React.FC<AssetTableProps> = ({
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
                 Warranty Expiry
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
+                Reliability
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-300">
                 Actions
@@ -129,6 +135,22 @@ const AssetTable: React.FC<AssetTableProps> = ({
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                   {asset.warrantyEnd || asset.warrantyExpiry || 'N/A'}
                 </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                  <div className="flex flex-col gap-1 text-xs text-slate-300">
+                    <div className="flex items-center gap-1" title="Mean time between failures in hours">
+                      <span className="text-slate-400">MTBF</span>
+                      <span className="font-semibold text-slate-100">{formatHours(asset.reliability?.mtbfHours)}</span>
+                    </div>
+                    <div className="flex items-center gap-1" title="Mean time to repair in hours">
+                      <span className="text-slate-400">MTTR</span>
+                      <span className="font-semibold text-slate-100">{formatHours(asset.reliability?.mttrHours)}</span>
+                    </div>
+                    <div className="flex items-center gap-1" title="Number of recorded downtime events">
+                      <span className="text-slate-400">Downtime</span>
+                      <span className="font-semibold text-slate-100">{asset.downtimeCount ?? 0}</span>
+                    </div>
+                  </div>
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right align-top">
                   <div className="flex flex-wrap items-center justify-end gap-2">
                     {onCreateWorkOrder && canCreateWorkOrder && (
@@ -144,6 +166,14 @@ const AssetTable: React.FC<AssetTableProps> = ({
                         New WO
                       </Button>
                     )}
+                    <Link
+                      to={`/reports?assetIds=${asset.id}#reliability`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="rounded-md border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-100 transition hover:bg-slate-700"
+                      title="Open reliability reports with this asset pre-selected"
+                    >
+                      Reliability report
+                    </Link>
                     <DuplicateButton
                       onClick={() => onDuplicate(asset)}
                       disabled={!canEdit}

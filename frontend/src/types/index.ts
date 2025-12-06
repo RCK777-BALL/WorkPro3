@@ -108,6 +108,8 @@ export interface Asset {
   lastServiced?: string;
   warrantyExpiry?: string;
   documents?: File[];
+  reliability?: { mttrHours: number; mtbfHours: number };
+  downtimeCount?: number;
 }
 
 export type AssetStatusMap = Record<string, number>;

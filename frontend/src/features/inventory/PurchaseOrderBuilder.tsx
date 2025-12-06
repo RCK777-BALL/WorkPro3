@@ -19,7 +19,7 @@ const resolveReorderQuantity = (part: Part): number => {
 };
 
 const PurchaseOrderBuilder = () => {
-  const partsQuery = usePartsQuery();
+  const partsQuery = usePartsQuery({ pageSize: 200, sortBy: 'quantity', sortDirection: 'asc' });
   const vendorsQuery = useVendorsQuery();
   const mutation = useCreatePurchaseOrder();
   const [vendorId, setVendorId] = useState('');
@@ -28,8 +28,8 @@ const PurchaseOrderBuilder = () => {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const reorderCandidates = useMemo(
-    () => (partsQuery.data ?? []).filter((part) => part.alertState?.needsReorder),
-    [partsQuery.data],
+    () => (partsQuery.data?.items ?? []).filter((part) => part.alertState?.needsReorder),
+    [partsQuery.data?.items],
   );
 
   const handleToggle = (partId: string, part: Part) => {

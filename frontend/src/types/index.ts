@@ -43,7 +43,7 @@ export type {
 } from '@backend-shared/inventory';
 export type { Vendor } from './vendor';
 export type { UploadedFile, UploadResponse } from '@backend-shared/uploads';
-export type { ApiResult, TenantScoped } from '@backend-shared/http';
+export type { ApiResult, PaginatedResult, SortDirection, TenantScoped } from '@backend-shared/http';
 export type {
   OnboardingState,
   OnboardingStep,

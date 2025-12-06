@@ -37,9 +37,12 @@ const Inventory = () => {
   const alertsQuery = useAlertsQuery();
   const { can } = usePermissions();
 
-  const partsCount = partsQuery.data?.length ?? 0;
+  const partsCount = partsQuery.data?.total ?? 0;
   const lowStockCount = alertsQuery.data?.length ?? 0;
-  const linkedAssets = (partsQuery.data ?? []).reduce((sum, part) => sum + (part.assets?.length ?? 0), 0);
+  const linkedAssets = (partsQuery.data?.items ?? []).reduce(
+    (sum, part) => sum + (part.assets?.length ?? 0),
+    0,
+  );
 
   return (
     <div className="space-y-6">

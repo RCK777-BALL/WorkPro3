@@ -4,7 +4,17 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Copy, Pencil, PlusCircle, RefreshCcw, Scan, Trash2 } from 'lucide-react';
+import {
+  Copy,
+  FileSpreadsheet,
+  Pencil,
+  PlayCircle,
+  PlusCircle,
+  RefreshCcw,
+  Scan,
+  Trash2,
+  UploadCloud,
+} from 'lucide-react';
 import AssetTable from '@/components/assets/AssetTable';
 import AssetModal from '@/components/assets/AssetModal';
 import WorkOrderModal from '@/components/work-orders/WorkOrderModal';
@@ -20,8 +30,51 @@ import { usePermissions } from '@/auth/usePermissions';
 import { useTranslation } from 'react-i18next';
 import { useScopeContext } from '@/context/ScopeContext';
 import { useToast } from '@/context/ToastContext';
+import { uploadAssetImport, type ImportSummary } from '@/api/importExport';
 
 const ASSET_CACHE_KEY = 'offline-assets';
+
+const SAMPLE_ASSETS: Asset[] = [
+  {
+    id: 'sample-robot-arm',
+    tenantId: 'demo',
+    plantId: 'sample-plant-1',
+    name: 'Kuka Robot Arm KR 6',
+    type: 'Mechanical',
+    status: 'Active',
+    criticality: 'high',
+    location: 'Cell A3',
+    line: 'Robot Assembly',
+    station: 'Pick & Place',
+    lastServiced: '2024-12-04',
+  },
+  {
+    id: 'sample-conveyor',
+    tenantId: 'demo',
+    plantId: 'sample-plant-1',
+    name: 'Dorner Conveyor 2200',
+    type: 'Mechanical',
+    status: 'Active',
+    criticality: 'medium',
+    location: 'Line 2 - Transfer',
+    line: 'Packaging',
+    station: 'Conveyor Zone 2',
+    lastServiced: '2025-01-22',
+  },
+  {
+    id: 'sample-plc',
+    tenantId: 'demo',
+    plantId: 'sample-plant-1',
+    name: 'Allen-Bradley CompactLogix',
+    type: 'Electrical',
+    status: 'Offline',
+    criticality: 'high',
+    location: 'Control Cabinet CC-14',
+    line: 'Filling',
+    station: 'Controls',
+    lastServiced: '2024-11-10',
+  },
+];
 
 const AssetsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -45,7 +98,12 @@ const AssetsPage: React.FC = () => {
   const [woAsset, setWoAsset] = useState<Asset | null>(null);
   const [conflict, setConflict] = useState<SyncConflict | null>(null);
   const isFetching = useRef(false);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
   const navigate = useNavigate();
+
+  const [showSampleData, setShowSampleData] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
 
   const scopedAssets = useMemo(() => {
     if (!activePlant) return assets;
@@ -55,9 +113,14 @@ const AssetsPage: React.FC = () => {
     });
   }, [activePlant, assets]);
 
+  const displayAssets = useMemo(
+    () => (showSampleData ? SAMPLE_ASSETS : scopedAssets),
+    [scopedAssets, showSampleData],
+  );
+
   const normalizedAssets = useMemo(
-    () => scopedAssets.slice().sort((a, b) => a.name.localeCompare(b.name)),
-    [scopedAssets],
+    () => displayAssets.slice().sort((a, b) => a.name.localeCompare(b.name)),
+    [displayAssets],
   );
 
   useEffect(() => {
@@ -71,6 +134,10 @@ const AssetsPage: React.FC = () => {
       await http({ method: conflict.method, url: conflict.url, data: conflict.local });
     }
     setConflict(null);
+  };
+
+  const blockSampleEdits = (action: string) => {
+    addToast(`Turn off sample data to ${action}.`, 'warning');
   };
 
   const loadCachedAssets = () => {
@@ -158,6 +225,11 @@ const AssetsPage: React.FC = () => {
   }, [searchParams, setSearchParams]);
 
   const handleSave = (asset: Asset) => {
+    if (showSampleData) {
+      blockSampleEdits('add or edit assets');
+      return;
+    }
+
     const assetWithPlant = activePlant
       ? {
           ...asset,
@@ -175,6 +247,11 @@ const AssetsPage: React.FC = () => {
   };
 
   const handleDuplicate = async (asset: Asset) => {
+    if (showSampleData) {
+      blockSampleEdits('duplicate assets');
+      return;
+    }
+
     const clone = duplicateAsset({
       ...asset,
       plantId: asset.plantId ?? activePlant?.id,
@@ -190,6 +267,11 @@ const AssetsPage: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (showSampleData) {
+      blockSampleEdits('delete assets');
+      return;
+    }
+
     if (!navigator.onLine) {
       enqueueAssetRequest('delete', { id } as Asset);
       removeAsset(id);
@@ -200,15 +282,44 @@ const AssetsPage: React.FC = () => {
   };
 
   const stats = useMemo(() => {
-    const total = scopedAssets.length;
-    const active = scopedAssets.filter((asset) => (asset.status ?? '').toLowerCase() === 'active').length;
-    const critical = scopedAssets.filter((asset) => asset.criticality === 'high').length;
+    const total = displayAssets.length;
+    const active = displayAssets.filter((asset) => (asset.status ?? '').toLowerCase() === 'active').length;
+    const critical = displayAssets.filter((asset) => asset.criticality === 'high').length;
     return { total, active, critical };
-  }, [scopedAssets]);
+  }, [displayAssets]);
 
   const canManageAssets = can('hierarchy', 'write');
   const canDeleteAssets = can('hierarchy', 'delete');
   const canCreateWorkOrders = can('workRequests', 'convert');
+
+  const handleTemplateDownload = () => {
+    const anchor = document.createElement('a');
+    anchor.href = '/assets-import-template.csv';
+    anchor.download = 'assets-import-template.csv';
+    anchor.click();
+  };
+
+  const handleImportClick = () => importInputRef.current?.click();
+
+  const handleImportChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const summary = await uploadAssetImport(file);
+      setImportSummary(summary);
+      addToast(`Validated ${summary.totalRows.toLocaleString()} rows from ${file.name}`, 'success');
+    } catch (err) {
+      console.error('Asset import failed', err);
+      addToast('Import failed. Please try again.', 'error');
+    } finally {
+      setImporting(false);
+      event.target.value = '';
+    }
+  };
+
+  const displayError = showSampleData ? null : error;
+  const actionsDisabled = !canManageAssets || !activePlant || showSampleData;
 
   return (
     <>
@@ -240,14 +351,16 @@ const AssetsPage: React.FC = () => {
                 setSelected(null);
                 setModalOpen(true);
               }}
-              disabled={!canManageAssets || !activePlant}
-              aria-disabled={!canManageAssets || !activePlant}
+              disabled={actionsDisabled}
+              aria-disabled={actionsDisabled}
               title={
                 !canManageAssets
                   ? t('assets.permissionWarning')
-                  : !activePlant
-                    ? 'Select a plant to create assets'
-                    : undefined
+                  : showSampleData
+                    ? 'Turn off sample data to add live assets'
+                    : !activePlant
+                      ? 'Select a plant to create assets'
+                      : undefined
               }
             >
               <PlusCircle className="w-4 h-4 mr-2" />
@@ -269,6 +382,35 @@ const AssetsPage: React.FC = () => {
           </div>
         )}
 
+        <div className="flex flex-col gap-3 rounded-lg border border-dashed border-neutral-300 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-neutral-800 dark:text-neutral-100">
+                <input
+                  type="checkbox"
+                  checked={showSampleData}
+                  onChange={(event) => {
+                    setShowSampleData(event.target.checked);
+                    if (event.target.checked) {
+                      setError(null);
+                    }
+                  }}
+                  className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                />
+                Enable sample data for demos & training
+              </label>
+              {showSampleData && (
+                <span className="rounded-full bg-primary-50 px-2.5 py-1 text-xs font-semibold text-primary-700 dark:bg-primary-900/40 dark:text-primary-100">
+                  Read-only mode
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              Sample assets stay local to your session so you can demo search, filtering, and table actions without touching live data.
+            </p>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
             <p className="text-sm text-neutral-500">Total assets</p>
@@ -284,7 +426,7 @@ const AssetsPage: React.FC = () => {
           </div>
         </div>
 
-        {error && <p className="text-red-600" role="alert">{error}</p>}
+        {displayError && <p className="text-red-600" role="alert">{displayError}</p>}
 
         <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 bg-white dark:bg-neutral-800 p-4 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-700">
           <input
@@ -296,7 +438,7 @@ const AssetsPage: React.FC = () => {
           />
         </div>
 
-        {!activePlant && !loadingPlants && (
+        {!activePlant && !loadingPlants && !showSampleData && (
           <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100" role="alert">
             <span className="mt-0.5 text-amber-300">⚠️</span>
             <div>
@@ -338,10 +480,23 @@ const AssetsPage: React.FC = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => { setSelected(asset); setModalOpen(true); }}
-                      disabled={!canManageAssets}
-                      aria-disabled={!canManageAssets}
-                      title={!canManageAssets ? t('assets.permissionWarning') : undefined}
+                      onClick={() => {
+                        if (showSampleData) {
+                          blockSampleEdits('edit assets');
+                          return;
+                        }
+                        setSelected(asset);
+                        setModalOpen(true);
+                      }}
+                      disabled={!canManageAssets || showSampleData}
+                      aria-disabled={!canManageAssets || showSampleData}
+                      title={
+                        showSampleData
+                          ? 'Turn off sample data to edit live assets'
+                          : !canManageAssets
+                            ? t('assets.permissionWarning')
+                            : undefined
+                      }
                     >
                       <Pencil className="mr-2 h-4 w-4" />
                       Edit
@@ -350,9 +505,15 @@ const AssetsPage: React.FC = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => handleDuplicate(asset)}
-                      disabled={!canManageAssets}
-                      aria-disabled={!canManageAssets}
-                      title={!canManageAssets ? t('assets.permissionWarning') : undefined}
+                      disabled={!canManageAssets || showSampleData}
+                      aria-disabled={!canManageAssets || showSampleData}
+                      title={
+                        showSampleData
+                          ? 'Turn off sample data to duplicate live assets'
+                          : !canManageAssets
+                            ? t('assets.permissionWarning')
+                            : undefined
+                      }
                     >
                       <Copy className="mr-2 h-4 w-4" />
                       Duplicate
@@ -361,9 +522,15 @@ const AssetsPage: React.FC = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => handleDelete(asset.id)}
-                      disabled={!canDeleteAssets}
-                      aria-disabled={!canDeleteAssets}
-                      title={!canDeleteAssets ? t('assets.permissionWarning') : undefined}
+                      disabled={!canDeleteAssets || showSampleData}
+                      aria-disabled={!canDeleteAssets || showSampleData}
+                      title={
+                        showSampleData
+                          ? 'Turn off sample data to delete live assets'
+                          : !canDeleteAssets
+                            ? t('assets.permissionWarning')
+                            : undefined
+                      }
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
                       Delete
@@ -375,7 +542,7 @@ const AssetsPage: React.FC = () => {
           </div>
         )}
 
-        {!isLoading && scopedAssets.length === 0 && (
+        {!isLoading && displayAssets.length === 0 && (
           <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center text-neutral-700 shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
             <p className="text-lg font-semibold">No assets yet</p>
             <p className="max-w-xl text-sm text-neutral-600 dark:text-neutral-300">
@@ -388,30 +555,75 @@ const AssetsPage: React.FC = () => {
                   setSelected(null);
                   setModalOpen(true);
                 }}
-                disabled={!canManageAssets}
+                disabled={actionsDisabled}
               >
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Add asset
               </Button>
-              <Button variant="outline" onClick={fetchAssets} disabled={isLoading}>
+              <Button variant="outline" onClick={fetchAssets} disabled={isLoading || showSampleData}>
                 <RefreshCcw className="mr-2 h-4 w-4" />
                 Refresh list
               </Button>
+              <Button variant="outline" onClick={handleImportClick} disabled={importing}>
+                <UploadCloud className="mr-2 h-4 w-4" />
+                Validate CSV import
+              </Button>
+              <Button variant="ghost" onClick={handleTemplateDownload}>
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Download CSV template
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/documentation/asset-management/assets')}
+              >
+                <PlayCircle className="mr-2 h-4 w-4" />
+                Add first asset walkthrough
+              </Button>
             </div>
+            {importSummary && (
+              <div className="mt-2 rounded-md bg-neutral-50 p-3 text-xs text-neutral-600 dark:bg-neutral-900/70 dark:text-neutral-300">
+                Last import preview: {importSummary.validRows.toLocaleString()} valid rows out of {importSummary.totalRows.toLocaleString()} ({importSummary.errors.length.toLocaleString()} issues)
+              </div>
+            )}
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              onChange={handleImportChange}
+              className="hidden"
+            />
           </div>
         )}
 
         <AssetTable
-          assets={scopedAssets}
+          assets={displayAssets}
           search={search}
-          onRowClick={(a) => { setSelected(a); setModalOpen(true); }}
+          onRowClick={(a) => {
+            if (showSampleData) {
+              blockSampleEdits('open and edit assets');
+              return;
+            }
+            setSelected(a);
+            setModalOpen(true);
+          }}
           onDuplicate={handleDuplicate}
           onDelete={(a) => handleDelete(a.id)}
-          onCreateWorkOrder={(a) => { setWoAsset(a); setShowWO(true); }}
-          canEdit={canManageAssets}
-          canDelete={canDeleteAssets}
-          canCreateWorkOrder={canCreateWorkOrders}
-          readOnlyReason={t('assets.permissionWarning')}
+          onCreateWorkOrder={(a) => {
+            if (showSampleData) {
+              blockSampleEdits('create work orders from sample assets');
+              return;
+            }
+            setWoAsset(a);
+            setShowWO(true);
+          }}
+          canEdit={canManageAssets && !showSampleData}
+          canDelete={canDeleteAssets && !showSampleData}
+          canCreateWorkOrder={canCreateWorkOrders && !showSampleData}
+          readOnlyReason={
+            showSampleData
+              ? 'Sample data is read-only. Turn off the toggle to edit live assets.'
+              : t('assets.permissionWarning')
+          }
         />
 
         <AssetModal

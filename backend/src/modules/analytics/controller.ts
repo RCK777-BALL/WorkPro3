@@ -41,7 +41,8 @@ export const getSnapshotHandler: AuthedRequestHandler = async (req, res, next) =
 
 export const rebuildSnapshotHandler: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const months = typeof req.body?.months === 'number' ? req.body.months : undefined;
+    const monthsValue = (req.body as { months?: unknown })?.months;
+    const months = typeof monthsValue === 'number' ? monthsValue : undefined;
     const snapshots = await rebuildWarehouseForTenant(req.tenantId!, months ?? 6);
     sendResponse(res, { snapshots, rebuilt: true });
   } catch (err) {

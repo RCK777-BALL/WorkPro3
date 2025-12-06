@@ -43,7 +43,9 @@ export const enforceSafetyControls = async (
       return;
     }
 
-    if (req.body?.status === 'completed' && (workOrder.approvalSteps ?? []).length) {
+    const requestedStatus = (req.body as { status?: unknown })?.status;
+
+    if (requestedStatus === 'completed' && (workOrder.approvalSteps ?? []).length) {
       const activeStep = (workOrder.approvalSteps ?? []).find((step) => step.step === workOrder.currentApprovalStep);
       if (activeStep && activeStep.status !== 'approved') {
         fail(res, 'Work order completion blocked: pending approvals', 409);

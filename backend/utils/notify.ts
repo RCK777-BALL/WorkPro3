@@ -13,7 +13,7 @@ import logger from './logger';
 import { enqueueEmailRetry } from './emailQueue';
 
 export const notifyUser = async (
-  userId: mongoose.Types.ObjectId,
+  userId: mongoose.Types.ObjectId | string,
   message: string,
   {
     title = 'Notification',
@@ -22,10 +22,12 @@ export const notifyUser = async (
 ) => {
   if (!userId) return;
 
-  const user = await User.findById(userId);
+  const normalizedId = typeof userId === 'string' ? new mongoose.Types.ObjectId(userId) : userId;
+
+  const user = await User.findById(normalizedId);
   if (!user) return;
 
-  await Notification.create({ tenantId: user.tenantId, user: userId, message, title, category });
+  await Notification.create({ tenantId: user.tenantId, user: normalizedId, message, title, category });
 
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
     if (user.email) {

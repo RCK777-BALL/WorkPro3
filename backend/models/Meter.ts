@@ -22,6 +22,8 @@ export interface Meter {
   };
   tenantId: Types.ObjectId;
   siteId?: Types.ObjectId;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export type MeterDocument = HydratedDocument<Meter>;

@@ -8,6 +8,24 @@ import Button from '@common/Button';
 import DuplicateButton from '@common/DuplicateButton';
 import type { Asset } from '@/types';
 
+const formatCriticality = (value?: Asset['criticality']) => {
+  if (!value) return 'Criticality: N/A';
+  return `Criticality: ${value.charAt(0).toUpperCase()}${value.slice(1)}`;
+};
+
+const formatHealth = (value?: string) => (value ? `Health: ${value}` : 'Health: N/A');
+
+const formatLastMaintenance = (asset: Asset) => {
+  const lastDate = asset.lastMaintenanceDate ?? asset.lastPmDate ?? asset.lastServiced;
+  return lastDate ? `Last maintenance: ${lastDate}` : 'Last maintenance: N/A';
+};
+
+const formatOpenWorkOrders = (value?: number) =>
+  typeof value === 'number' ? `${value} open WO${value === 1 ? '' : 's'}` : 'Open WOs: N/A';
+
+const formatDowntime = (value?: number) =>
+  typeof value === 'number' ? `Recent downtime: ${value}h` : 'Recent downtime: N/A';
+
 interface AssetTableProps {
   assets: Asset[];
   search: string;
@@ -110,6 +128,13 @@ const AssetTable: React.FC<AssetTableProps> = ({
                       </div>
                       <div className="text-sm text-slate-400">
                         {asset.serialNumber}
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <Badge text={formatCriticality(asset.criticality)} type="priority" size="sm" />
+                        <Badge text={formatHealth(asset.health)} type="status" size="sm" />
+                        <Badge text={formatLastMaintenance(asset)} size="sm" />
+                        <Badge text={formatOpenWorkOrders(asset.openWorkOrders)} size="sm" />
+                        <Badge text={formatDowntime(asset.recentDowntimeHours)} size="sm" />
                       </div>
                     </div>
                   </div>

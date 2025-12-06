@@ -75,6 +75,7 @@ import RequestStatus from "@/pages/RequestStatus";
 import SubmitRequest from "@/pages/requests/SubmitRequest";
 import RequestTriage from "@/pages/requests/RequestTriage";
 import AssetScan from "@/pages/AssetScan";
+import MobileWorkOrder from "@/pages/mobile/MobileWorkOrder";
 
 export default function App() {
   const navigate = useNavigate();
@@ -131,6 +132,7 @@ export default function App() {
           <Route path="/work-orders" element={<WorkOrders />} />
           <Route path="/workorders" element={<WorkOrders />} />
           <Route path="/workorders/:id" element={<WorkOrderDetail />} />
+          <Route path="/m/wo/:id" element={<MobileWorkOrder />} />
           <Route
             path="/work-requests"
             element={

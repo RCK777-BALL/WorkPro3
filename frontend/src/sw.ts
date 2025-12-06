@@ -27,6 +27,8 @@ declare global {
 
 const DB_NAME = 'offline-queue';
 const STORE_NAME = 'requests';
+const API_CACHE_NAME = 'offline-api';
+const DATA_ENDPOINTS = ['/api/workorders', '/api/checklists', '/api/parts', '/api/assets'];
 let offlineQueue: QueueItem[] = [];
 
 async function openDB() {
@@ -117,6 +119,14 @@ registerRoute(
 registerRoute(
   ({ request }) => request.destination === 'image',
   new CacheFirst({ cacheName: 'images' })
+);
+
+// Cache key API endpoints required for worker mode usage
+registerRoute(
+  ({ url, request }) =>
+    request.method === 'GET' &&
+    DATA_ENDPOINTS.some((path) => url.pathname.startsWith(path)),
+  new NetworkFirst({ cacheName: API_CACHE_NAME })
 );
 
 self.addEventListener('message', (event) => {

@@ -23,6 +23,32 @@ const attachmentItem = z.object({
   uploadedAt: z.union([z.string(), z.date()]).optional(),
 });
 
+const approvalStepItem = z.object({
+  step: z.number().int().positive(),
+  name: z.string().min(1),
+  approver: objectId.optional(),
+  status: z.enum(['pending', 'approved', 'rejected', 'skipped']).optional(),
+  approvedAt: z.union([z.string(), z.date()]).optional(),
+  note: z.string().optional(),
+  required: z.boolean().optional(),
+});
+
+const permitApprovalItem = z.object({
+  type: z.string().min(1, 'Permit type is required'),
+  status: z.enum(['pending', 'approved', 'rejected']).optional(),
+  approvedBy: objectId.optional(),
+  approvedAt: z.union([z.string(), z.date()]).optional(),
+  note: z.string().optional(),
+});
+
+const lockoutTagoutItem = z.object({
+  category: z.enum(['electrical', 'mechanical', 'hydraulic', 'pneumatic', 'chemical', 'other']).default('mechanical'),
+  description: z.string().min(1),
+  verifiedBy: objectId.optional(),
+  verifiedAt: z.union([z.string(), z.date()]).optional(),
+  clearedAt: z.union([z.string(), z.date()]).optional(),
+});
+
 const partItem = z.object({
   partId: objectId,
   qty: z.number().int().positive().optional(),
@@ -71,13 +97,33 @@ const baseSchema = z.object({
   requestedBy: objectId.optional(),
   requestedAt: z.union([z.string(), z.date()]).optional(),
   slaDueAt: z.union([z.string(), z.date()]).optional(),
+  slaResponseDueAt: z.union([z.string(), z.date()]).optional(),
+  slaResolveDueAt: z.union([z.string(), z.date()]).optional(),
+  slaRespondedAt: z.union([z.string(), z.date()]).optional(),
+  slaResolvedAt: z.union([z.string(), z.date()]).optional(),
+  slaBreachAt: z.union([z.string(), z.date()]).optional(),
+  slaEscalations: z
+    .array(
+      z.object({
+        trigger: z.enum(['response', 'resolve']),
+        thresholdMinutes: z.number().int().positive().optional(),
+        escalateTo: z.array(objectId).optional(),
+        escalatedAt: z.union([z.string(), z.date()]).optional(),
+        channel: z.enum(['email', 'push']).optional(),
+      }),
+    )
+    .optional(),
   assignedTo: objectId.optional(),
   assignees: z.array(objectId).optional(),
+  approvalSteps: z.array(approvalStepItem).optional(),
+  currentApprovalStep: z.number().int().positive().optional(),
   checklists: z.array(checklistItem).optional(),
   partsUsed: z.array(partItem).optional(),
   signatures: z.array(signatureItem).optional(),
   permits: z.array(objectId).optional(),
   requiredPermitTypes: z.array(z.string().min(1)).optional(),
+  permitApprovals: z.array(permitApprovalItem).optional(),
+  lockoutTagout: z.array(lockoutTagoutItem).optional(),
   timeSpentMin: z.number().int().nonnegative().optional(),
   photos: z.array(z.string()).optional(),
   failureCode: z.string().optional(),

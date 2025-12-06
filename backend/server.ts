@@ -97,6 +97,8 @@ import onboardingRouter from "./src/modules/onboarding";
 import assetInsightsRouter from "./src/modules/assets";
 import executiveRouter from "./src/modules/executive";
 import meterReadingsRouter from "./src/modules/meters";
+import workOrdersModuleRouter from "./src/modules/work-orders";
+import { startWorkOrderReminderJobs } from "./src/modules/work-orders/jobs";
 
 import { startPMScheduler } from "./utils/PMScheduler";
 import { startCopilotSummaryJob } from "./tasks/copilotSummaries";
@@ -280,6 +282,7 @@ app.use("/api/templates", templatesRouter);
 app.use("/api/onboarding", onboardingRouter);
 app.use("/api/executive", executiveRouter);
 app.use("/api/custom-reports", customReportsRouter);
+app.use("/api/work-orders", workOrdersModuleRouter);
 
 app.use("/api/departments", departmentRoutes);
 app.use("/api/departments", departmentRoutes);
@@ -372,6 +375,7 @@ if (env.NODE_ENV !== "test") {
       });
       startCopilotSummaryJob();
       startExecutiveReportScheduler(env.EXECUTIVE_REPORT_CRON);
+      startWorkOrderReminderJobs();
     })
     .catch((err) => {
       logger.error("MongoDB connection error:", err);

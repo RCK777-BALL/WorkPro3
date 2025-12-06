@@ -11,11 +11,13 @@ import type { ApprovalStepUpdate, StatusTransition, WorkOrderContext, WorkOrderT
 import { resolveUserId } from './middleware';
 import { notifyUser } from '../../../utils';
 
-const ensureTimeline = (workOrder: WorkOrderDocument) => {
+const ensureTimeline = (
+  workOrder: WorkOrderDocument,
+): NonNullable<WorkOrderDocument['timeline']> => {
   if (!workOrder.timeline) {
     workOrder.timeline = [] as unknown as typeof workOrder.timeline;
   }
-  return workOrder.timeline;
+  return workOrder.timeline!;
 };
 
 export const getWorkOrderById = async (context: WorkOrderContext, workOrderId: string) => {

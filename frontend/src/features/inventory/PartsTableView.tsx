@@ -2,23 +2,16 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { RefreshCcw, Search } from 'lucide-react';
-import AutoSizer from 'react-virtualized-auto-sizer';
-import {
-  VariableSizeGrid as Grid,
-  type GridChildComponentProps,
-  type GridOnScrollProps,
-  type VariableSizeGrid,
-} from 'react-window';
+import { useMemo, useState } from 'react';
+import { MessageSquare, Paperclip, Plus, RefreshCcw } from 'lucide-react';
+import { useMutation, useQueryClient } from 'react-query';
 
 import Button from '@/components/common/Button';
-import type { Part, SortDirection } from '@/types';
-import { usePartsQuery, useVendorsQuery } from './hooks';
+import TextArea from '@/components/common/TextArea';
+import { upsertPart } from '@/api/inventory';
+import type { Part } from '@/types';
+import { INVENTORY_PARTS_QUERY_KEY, usePartsQuery, useVendorsQuery } from './hooks';
 import { QrLabel } from '@/components/qr';
-import { StockLevelBadge } from './AlertIndicators';
-import { useSearchParams } from 'react-router-dom';
-import clsx from 'clsx';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 const HEADER_HEIGHT = 48;
@@ -104,26 +97,20 @@ const BodyCell = ({ columnIndex, rowIndex, style, data }: GridChildComponentProp
 
 const PartsTableView = () => {
   const vendorsQuery = useVendorsQuery();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [search, setSearch] = useState(searchParams.get('search') ?? '');
-  const [vendorFilter, setVendorFilter] = useState(searchParams.get('vendor') ?? 'all');
-  const [page, setPage] = useState(() => Number(searchParams.get('page')) || 1);
-  const [pageSize, setPageSize] = useState(() => Number(searchParams.get('pageSize')) || 25);
-  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') ?? 'name');
-  const [sortDirection, setSortDirection] = useState<SortDirection>(
-    searchParams.get('sortDirection') === 'desc' ? 'desc' : 'asc',
-  );
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState('');
+  const [vendorFilter, setVendorFilter] = useState('all');
+  const [noteTargetId, setNoteTargetId] = useState<string | null>(null);
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (search.trim()) params.set('search', search.trim());
-    if (vendorFilter !== 'all') params.set('vendor', vendorFilter);
-    params.set('page', String(page));
-    params.set('pageSize', String(pageSize));
-    params.set('sortBy', sortBy);
-    params.set('sortDirection', sortDirection);
-    setSearchParams(params, { replace: true });
-  }, [page, pageSize, search, sortBy, sortDirection, vendorFilter, setSearchParams]);
+  const noteMutation = useMutation({
+    mutationFn: ({ partId, notes }: { partId: string; notes: string }) =>
+      upsertPart({ id: partId, notes }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries(INVENTORY_PARTS_QUERY_KEY);
+      setNoteTargetId(null);
+    },
+  });
 
   const partsQuery = usePartsQuery({
     page,
@@ -297,6 +284,18 @@ const PartsTableView = () => {
     setPage(Math.min(Math.max(1, nextPage), totalPages));
   };
 
+  const openNoteForm = (partId: string) => {
+    setNoteTargetId(partId);
+    setNoteDrafts((prev) => ({ ...prev, [partId]: prev[partId] ?? '' }));
+  };
+
+  const saveNote = (part: Part) => {
+    const draft = (noteDrafts[part.id] ?? '').trim();
+    if (!draft) return;
+    const mergedNotes = part.notes ? `${part.notes}\n\n${draft}` : draft;
+    noteMutation.mutate({ partId: part.id, notes: mergedNotes });
+  };
+
   return (
     <section className="rounded-lg border border-neutral-200 bg-white shadow-sm">
       <div className="flex flex-col gap-4 border-b border-neutral-100 p-4 md:flex-row md:items-center md:justify-between">
@@ -347,68 +346,121 @@ const PartsTableView = () => {
           </Button>
         </div>
       </div>
+      {partsQuery.isLoading && <p className="p-4 text-sm text-neutral-500">Loading current stock…</p>}
+      {partsQuery.error && (
+        <p className="p-4 text-sm text-error-600">Unable to load inventory. Please try again.</p>
+      )}
+      {!partsQuery.isLoading && !partsQuery.error && (
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-neutral-50 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              <tr>
+                <th className="px-4 py-3">Part</th>
+                <th className="px-4 py-3">Vendor</th>
+                <th className="px-4 py-3">Stock</th>
+                <th className="px-4 py-3">Linked assets</th>
+                <th className="px-4 py-3">PM templates</th>
+                <th className="px-4 py-3">Auto reorder</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-100">
+              {filteredParts.map((part) => {
+                const commentCount = part.commentsCount ?? (part.notes ? 1 : 0);
+                const attachmentCount =
+                  part.attachmentsCount ?? part.attachments?.length ?? (part.image ? 1 : 0);
+                const isNoteOpen = noteTargetId === part.id;
+                const noteDraft = noteDrafts[part.id] ?? '';
+                const noteSaving = noteMutation.isLoading && noteMutation.variables?.partId === part.id;
 
-      <div className="px-4 py-3">
-        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-sm text-neutral-600">
-            Showing {parts.length ? (page - 1) * pageSize + 1 : 0} –
-            {Math.min(total, page * pageSize)} of {total} parts
-          </div>
-          <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-600">
-            <span>Rows per page</span>
-            <select
-              className="rounded-md border border-neutral-300 px-2 py-1"
-              value={pageSize}
-              onChange={(event) => {
-                setPageSize(Number(event.target.value));
-                setPage(1);
-              }}
-            >
-              {PAGE_SIZE_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-            <div className="flex items-center gap-1">
-              <Button variant="outline" size="sm" onClick={() => handlePageChange(page - 1)} disabled={page === 1}>
-                Prev
-              </Button>
-              <span className="text-xs text-neutral-500">
-                Page {page} of {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(page + 1)}
-                disabled={page >= totalPages}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        <div className="relative">
-          {partsQuery.isLoading ? (
-            <LoadingSkeleton />
-          ) : parts.length === 0 ? (
-            <EmptyState message={search || vendorFilter !== 'all' ? 'No parts matched your filters.' : 'No parts found.'} />
-          ) : (
-            <div className="h-[520px]">
-              <AutoSizer>
-                {({ height, width }) => (
-                  <div>
-                    <Grid
-                      ref={headerRef}
-                      columnCount={columns.length}
-                      columnWidth={columnWidth}
-                      height={HEADER_HEIGHT}
-                      rowCount={1}
-                      rowHeight={() => HEADER_HEIGHT}
-                      width={width}
-                      itemData={{ columns, parts, onSort: handleSort, sortBy, sortDirection }}
-                      style={{ overflow: 'hidden' }}
+                return (
+                  <tr
+                    key={part.id}
+                    className={part.alertState?.needsReorder ? 'bg-warning-50/40' : undefined}
+                  >
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-neutral-900">{part.name}</p>
+                      <p className="text-xs text-neutral-500">SKU {part.sku ?? 'n/a'}</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-neutral-500">
+                        {commentCount > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-1 font-semibold">
+                            <MessageSquare size={12} />
+                            {commentCount} note{commentCount === 1 ? '' : 's'}
+                          </span>
+                        )}
+                        {attachmentCount > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-1 font-semibold">
+                            <Paperclip size={12} />
+                            {attachmentCount} attachment{attachmentCount === 1 ? '' : 's'}
+                          </span>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="px-2 py-1 text-xs"
+                          icon={<Plus size={12} />}
+                          onClick={() => openNoteForm(part.id)}
+                        >
+                          {isNoteOpen ? 'Editing note' : 'Quick add note'}
+                        </Button>
+                      </div>
+                      {isNoteOpen && (
+                        <div className="mt-3 space-y-2 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
+                          <TextArea
+                            value={noteDraft}
+                            onChange={(event) =>
+                              setNoteDrafts((prev) => ({ ...prev, [part.id]: event.target.value }))
+                            }
+                            rows={3}
+                            placeholder="Add a quick note about this part"
+                          />
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => saveNote(part)}
+                              loading={noteSaving}
+                              disabled={!noteDraft.trim()}
+                            >
+                              Save note
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setNoteTargetId(null)}>
+                              Cancel
+                            </Button>
+                            {part.notes && (
+                              <p className="text-[11px] text-neutral-500">
+                                We will append this to existing notes so you keep prior context.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      <div className="pt-2">
+                        <QrLabel
+                          name={part.name}
+                          subtitle={part.vendor?.name ?? 'Part label'}
+                          qrValue={part.qrCode ?? JSON.stringify({ type: 'part', id: part.id })}
+                          showPreview={false}
+                          buttonLabel="Print QR / Label"
+                        />
+                      </div>
+                    </td>
+                  <td className="px-4 py-3 text-sm text-neutral-600">
+                    {part.vendor ? (
+                      <div>
+                        <p className="font-medium text-neutral-900">{part.vendor.name}</p>
+                        {part.vendor.leadTimeDays && (
+                          <p className="text-xs text-neutral-500">Lead time {part.vendor.leadTimeDays} day(s)</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-neutral-400">Unassigned</p>
+                    )}
+                  </td>
+                <td className="px-4 py-3">
+                  <div className="space-y-2">
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        severityClass[part.alertState?.severity ?? 'ok']
+                      }`}
                     >
                       {HeaderCell}
                     </Grid>

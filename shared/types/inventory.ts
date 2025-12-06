@@ -47,6 +47,7 @@ export interface VendorSummary {
 export interface Part extends TenantScoped {
   id: string;
   qrCode?: string | undefined;
+  commentsCount?: number | undefined;
   name: string;
   partNo?: string | undefined;
   description?: string | undefined;
@@ -78,7 +79,17 @@ export interface Part extends TenantScoped {
   lastAutoReorderAt?: string | undefined;
   alertState?: PartAlertState | undefined;
   image?: string | undefined;
+  attachments?: PartAttachment[] | undefined;
+  attachmentsCount?: number | undefined;
   stockByLocation?: PartLocationStock[] | undefined;
+}
+
+export interface PartAttachment {
+  id?: string | undefined;
+  name?: string | undefined;
+  url?: string | undefined;
+  uploadedBy?: string | undefined;
+  uploadedAt?: string | undefined;
 }
 
 export interface PurchaseOrderItemPayload {

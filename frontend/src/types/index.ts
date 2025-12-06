@@ -104,10 +104,24 @@ export interface Asset {
   /** Identifier of the station the asset belongs to */
   stationId?: string;
   criticality?: 'high' | 'medium' | 'low';
+  /** Optional health indicator for the asset */
+  health?: string;
   lastPmDate?: string;
   lastServiced?: string;
+  /** Timestamp of the most recent maintenance completed for the asset */
+  lastMaintenanceDate?: string;
+  /** Count of open work orders tied to the asset */
+  openWorkOrders?: number;
+  /** Hours of downtime accumulated in the recent reporting window */
+  recentDowntimeHours?: number;
   warrantyExpiry?: string;
+  openWorkOrders?: number;
+  openWorkOrderCount?: number;
+  recentDowntimeHours?: number;
+  downtimeHours?: number;
   documents?: File[];
+  reliability?: { mttrHours: number; mtbfHours: number };
+  downtimeCount?: number;
 }
 
 export type AssetStatusMap = Record<string, number>;

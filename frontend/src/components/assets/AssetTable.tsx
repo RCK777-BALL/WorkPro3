@@ -8,6 +8,11 @@ import Button from '@common/Button';
 import DuplicateButton from '@common/DuplicateButton';
 import type { Asset } from '@/types';
 
+export interface AssetFilters {
+  status?: string;
+  criticality?: string;
+}
+
 interface AssetTableProps {
   assets: Asset[];
   search: string;
@@ -19,6 +24,7 @@ interface AssetTableProps {
   canDelete?: boolean;
   canCreateWorkOrder?: boolean;
   readOnlyReason?: string;
+  filters?: AssetFilters;
 }
 
 const AssetTable: React.FC<AssetTableProps> = ({
@@ -32,12 +38,43 @@ const AssetTable: React.FC<AssetTableProps> = ({
   canDelete = true,
   canCreateWorkOrder = true,
   readOnlyReason,
+  filters = {},
 }) => {
-  const filteredAssets = assets.filter((asset) =>
-    Object.values(asset).some((value) =>
-      String(value).toLowerCase().includes(search.toLowerCase())
-    )
-  );
+  const normalizeSearch = search.trim().toLowerCase();
+
+  const filteredAssets = assets.filter((asset) => {
+    const matchesSearch = Object.values(asset).some((value) =>
+      String(value).toLowerCase().includes(normalizeSearch)
+    );
+
+    const matchesStatus = (() => {
+      if (!filters.status || filters.status === 'all') return true;
+      return (asset.status ?? '').toLowerCase() === filters.status.toLowerCase();
+    })();
+
+    const matchesCriticality = (() => {
+      if (!filters.criticality || filters.criticality === 'all') return true;
+      return (asset.criticality ?? '').toLowerCase() === filters.criticality.toLowerCase();
+    })();
+
+    return matchesSearch && matchesStatus && matchesCriticality;
+  });
+
+  const formatMaintenanceDate = (value?: string) => {
+    if (!value) return 'N/A';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleDateString();
+  };
+
+  const getHealthBadgeTone = (value?: number) => {
+    if (value === undefined || value === null || Number.isNaN(value)) {
+      return 'bg-slate-800 text-slate-200 border border-slate-700';
+    }
+    if (value >= 80) return 'bg-emerald-500/15 text-emerald-200 border border-emerald-500/30';
+    if (value >= 50) return 'bg-amber-500/15 text-amber-200 border border-amber-500/30';
+    return 'bg-rose-500/15 text-rose-200 border border-rose-500/30';
+  };
 
   return (
     <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900/80 text-slate-100 shadow-sm backdrop-blur">
@@ -58,10 +95,10 @@ const AssetTable: React.FC<AssetTableProps> = ({
                 Department
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
-                Last Serviced
+                Reliability
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
-                Warranty Expiry
+                Maintenance
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-300">
                 Actions
@@ -71,6 +108,28 @@ const AssetTable: React.FC<AssetTableProps> = ({
           <tbody className="divide-y divide-slate-800 bg-slate-900/60">
             {filteredAssets.map((asset) => {
               const statusText = asset.status?.trim() || 'Unknown';
+              const criticalityText = asset.criticality
+                ? `${asset.criticality.charAt(0).toUpperCase()}${asset.criticality.slice(1)} criticality`
+                : 'Criticality not set';
+              const healthValue = asset.healthScore ?? asset.health;
+              const normalizedHealth =
+                typeof healthValue === 'number'
+                  ? healthValue
+                  : Number.isFinite(Number(healthValue))
+                    ? Number(healthValue)
+                    : undefined;
+              const healthText =
+                normalizedHealth !== undefined && normalizedHealth !== null
+                  ? `${Math.round(normalizedHealth)}% health`
+                  : 'Health pending';
+              const lastMaintenance =
+                asset.lastMaintenanceDate ?? asset.lastServiced ?? asset.lastPmDate;
+              const openWorkOrders = asset.openWorkOrders ?? asset.openWorkOrderCount ?? 0;
+              const downtime = asset.recentDowntimeHours ?? asset.downtimeHours;
+              const downtimeText =
+                downtime === undefined || downtime === null
+                  ? 'Downtime n/a'
+                  : `${downtime}h recent downtime`;
 
               return (
                 <tr
@@ -124,10 +183,29 @@ const AssetTable: React.FC<AssetTableProps> = ({
                   {asset.department}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                  {asset.lastServiced || 'N/A'}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge text={criticalityText} type="priority" size="sm" />
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${getHealthBadgeTone(normalizedHealth)}`}
+                    >
+                      {healthText}
+                    </span>
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                  {asset.warrantyEnd || asset.warrantyExpiry || 'N/A'}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge
+                      text={`Last maintenance: ${formatMaintenanceDate(lastMaintenance)}`}
+                      size="sm"
+                      className="bg-blue-500/15 text-blue-200 border border-blue-500/30"
+                    />
+                    <span className="inline-flex items-center rounded-full border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-100">
+                      Open WO: {openWorkOrders}
+                    </span>
+                    <span className="inline-flex items-center rounded-full border border-indigo-700/60 bg-indigo-800/60 px-2.5 py-1 text-xs font-medium text-indigo-100">
+                      {downtimeText}
+                    </span>
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right align-top">
                   <div className="flex flex-wrap items-center justify-end gap-2">

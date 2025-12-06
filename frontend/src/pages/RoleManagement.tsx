@@ -55,6 +55,24 @@ const RoleManagementPage = () => {
     [plants],
   );
 
+  const siteSummaries = useMemo(() => {
+    const lookup = new Map<string, { label: string; roles: number }>();
+    lookup.set('all', { label: 'Tenant-wide', roles: 0 });
+    siteOptions.forEach((site) => {
+      if (site.value) {
+        lookup.set(site.value, { label: site.label, roles: 0 });
+      }
+    });
+
+    roles.forEach((role) => {
+      const key = role.siteId ?? 'all';
+      const existing = lookup.get(key) ?? { label: key, roles: 0 };
+      lookup.set(key, { ...existing, roles: existing.roles + 1 });
+    });
+
+    return Array.from(lookup.values());
+  }, [roles, siteOptions]);
+
   const resetForm = () => {
     setSelectedRoleId(null);
     setName('');
@@ -172,6 +190,26 @@ const RoleManagementPage = () => {
           </select>
         </div>
       </div>
+
+      <Card>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-100">Tenant &amp; site scopes</h2>
+            <p className="text-sm text-slate-400">
+              Policies are evaluated with the current tenant, site context, and socket connections using shared guards.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {siteSummaries.map((site) => (
+              <div key={site.label} className="rounded-md border border-slate-800 bg-slate-900 px-4 py-3">
+                <p className="text-xs uppercase tracking-wide text-slate-500">{site.label}</p>
+                <p className="text-xl font-semibold text-slate-100">{site.roles}</p>
+                <p className="text-xs text-slate-500">Roles scoped here</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Card>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>

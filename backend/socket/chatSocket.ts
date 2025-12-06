@@ -3,23 +3,9 @@
  */
 
 import type { Server, Socket } from 'socket.io';
-import jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
-import User from '../models/User';
 import Channel from '../models/Channel';
-
-interface DecodedToken {
-  id?: string;
-  tenantId?: string;
-}
-
-const getJwtSecret = (): string => {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error('JWT_SECRET is not configured');
-  }
-  return secret;
-};
+import { authorizeSocketTenant } from '../src/auth/accessControl';
 
 export function buildChannelRoomId(tenantId: string, channelId: string): string {
   return `tenant:${tenantId}:channel:${channelId}`;
@@ -34,42 +20,14 @@ const getPresenceSet = (room: string): Set<string> => {
   return presenceByRoom.get(room)!;
 };
 
-async function authorizeSocket(socket: Socket): Promise<void> {
-  const token =
-    (typeof socket.handshake.auth?.token === 'string' && socket.handshake.auth?.token) ||
-    (typeof socket.handshake.headers.authorization === 'string'
-      ? socket.handshake.headers.authorization.replace(/^Bearer\s+/i, '')
-      : undefined);
-
-  if (!token) {
-    throw new Error('Missing token');
-  }
-
-  const decoded = jwt.verify(token, getJwtSecret()) as DecodedToken;
-  if (!decoded?.id) {
-    throw new Error('Invalid token');
-  }
-
-  const user = await User.findById(decoded.id).select('_id tenantId roles name email');
-  if (!user) {
-    throw new Error('User not found');
-  }
-
-  const tenantId = decoded.tenantId ?? (user.tenantId ? String(user.tenantId) : undefined);
-  if (!tenantId) {
-    throw new Error('Tenant not found');
-  }
-
-  socket.data.userId = String(user._id);
-  socket.data.tenantId = tenantId;
-  socket.data.roles = Array.isArray(user.roles) ? user.roles.map((role) => String(role)) : [];
-  socket.data.name = user.name;
-}
-
 export function initChatSocket(io: Server): void {
   io.use(async (socket, next) => {
     try {
-      await authorizeSocket(socket);
+      const { userId, tenantId, roles, name } = await authorizeSocketTenant(socket);
+      socket.data.userId = userId;
+      socket.data.tenantId = tenantId;
+      socket.data.roles = roles;
+      socket.data.name = name;
       next();
     } catch (err) {
       next(err instanceof Error ? err : new Error('Unauthorized'));

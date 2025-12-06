@@ -8,5 +8,5 @@
       "@backend-shared/*": ["../backend/shared/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "analytics"]
 }

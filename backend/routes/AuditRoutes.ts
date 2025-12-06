@@ -7,11 +7,10 @@ import { Types } from 'mongoose';
 import type { FilterQuery } from 'mongoose';
 
 import { requireAuth } from '../middleware/authMiddleware';
-import { requirePermission } from '../src/auth/permissions';
-import tenantScope from '../middleware/tenantScope';
 import validateObjectId from '../middleware/validateObjectId';
 import AuditLog, { type AuditLogDocument, type AuditLogDiffEntry } from '../models/AuditLog';
 import type { AuthedRequest } from '../types/http';
+import { ensureTenantContext, scopeQueryToTenant, withPolicyGuard } from '../src/auth/accessControl';
 
 const MAX_LIMIT = 200;
 
@@ -44,7 +43,8 @@ const toObjectId = (value: unknown) => {
 };
 
 const buildMatch = (req: AuthedRequest): FilterQuery<AuditLogDocument> => {
-  const match: FilterQuery<AuditLogDocument> = { tenantId: req.tenantId };
+  const tenantId = ensureTenantContext(req);
+  const match: FilterQuery<AuditLogDocument> = tenantId ? scopeQueryToTenant({}, tenantId, req.siteId) : {};
   const entityTypes = toStringArray(req.query?.entityType);
   if (entityTypes.length) {
     match.entityType = entityTypes.length === 1 ? entityTypes[0] : { $in: entityTypes };
@@ -127,8 +127,7 @@ const toCsv = (logs: Array<Pick<AuditLogDocument, 'ts' | 'entityType' | 'entityI
 const router = Router();
 
 router.use(requireAuth);
-router.use(tenantScope);
-router.use(requirePermission('audit', 'read'));
+router.use(...withPolicyGuard({ permissions: 'audit.read' }));
 
 router.get('/', async (req, res, next) => {
   try {

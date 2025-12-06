@@ -85,7 +85,7 @@ const findRelationships = (assetId?: string, hierarchy?: HierarchyResponse): Rel
 
 const METER_OPTIONS: Record<
   MeterType,
-  { label: string; helper: string; unit: 'hours' | 'cycles' },
+  { label: string; helper: string; unit: 'hours' | 'cycles' }
 > = {
   runtimeHours: {
     label: 'Runtime hours',

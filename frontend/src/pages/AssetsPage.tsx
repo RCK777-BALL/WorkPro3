@@ -547,21 +547,31 @@ const AssetsPage: React.FC = () => {
               Browse the list of assets, make quick edits, and add new equipment to your hierarchy.
             </p>
           </div>
-          <div className="flex gap-2 justify-end">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
             <Button
-              variant="secondary"
+              variant="primary"
+              size="lg"
+              className="w-full sm:w-auto"
               onClick={() => navigate('/assets/scan')}
-              aria-label="Scan an asset QR code"
+              aria-label="Scan an asset QR or barcode"
             >
-              <Scan className="w-4 h-4 mr-2" />
-              Scan asset
+              <Scan className="w-5 h-5 mr-2" />
+              Scan QR/Barcode
             </Button>
-            <Button variant="outline" onClick={fetchAssets} disabled={isLoading}>
-              <RefreshCcw className="w-4 h-4 mr-2" />
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full sm:w-auto"
+              onClick={fetchAssets}
+              disabled={isLoading}
+            >
+              <RefreshCcw className="w-5 h-5 mr-2" />
               {isLoading ? 'Refreshing...' : 'Refresh'}
             </Button>
             <Button
               variant="primary"
+              size="lg"
+              className="w-full sm:w-auto"
               onClick={() => {
                 setSelected(null);
                 setModalOpen(true);

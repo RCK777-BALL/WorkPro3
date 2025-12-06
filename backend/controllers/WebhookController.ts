@@ -3,9 +3,8 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import logger from '../utils/logger';
-import { sendResponse } from '../utils/sendResponse';
 import { sendNotificationTest } from '../src/modules/integrations/service';
+import { logger, sendResponse } from '../utils';
 
 
 /**

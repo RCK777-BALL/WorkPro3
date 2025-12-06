@@ -5,8 +5,7 @@
 import { Types } from 'mongoose';
 import { createComment, listComments, buildThreadId } from '../services/comments';
 import type { AuthedRequestHandler } from '../types/http';
-import { sendResponse } from '../utils/sendResponse';
-import { toObjectId, toEntityId } from '../utils/ids';
+import { sendResponse, toObjectId, toEntityId } from '../utils';
 
 const parsePagination = (value: unknown) => {
   const first = Array.isArray(value) ? value[0] : value;

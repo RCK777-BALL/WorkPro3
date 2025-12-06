@@ -12,12 +12,12 @@ import ChatMessage, {
 } from '../models/ChatMessage';
 import type { AuthedRequest } from '../types/http';
 import { resolveUserAndTenant } from './chat/utils';
-import { sendResponse } from '../utils/sendResponse';
 import type { UserDocument } from '../models/User';
 import { Types } from 'mongoose';
 import { buildChannelRoomId } from '../socket/chatSocket';
 import fs from 'fs/promises';
 import path from 'path';
+import { sendResponse } from '../utils';
 
 type ChannelIdParams = ParamsDictionary & { channelId: string };
 type MessageIdParams = ParamsDictionary & { messageId: string };

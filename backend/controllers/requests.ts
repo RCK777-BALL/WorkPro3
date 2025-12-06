@@ -11,9 +11,8 @@ import Notification from '../models/Notifications';
 import { nanoid } from 'nanoid';
 import { convertWorkRequestToWorkOrder, listWorkRequests, getWorkRequestSummary } from '../src/modules/work-requests/service';
 import { publicWorkRequestSchema, workRequestConversionSchema } from '../src/modules/work-requests/schemas';
-import { writeAuditLog } from '../utils/audit';
-import { toObjectId, type EntityIdLike } from '../utils/ids';
 import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
+import { writeAuditLog, toObjectId, type EntityIdLike } from '../utils';
 
 const internalSubmissionSchema = publicWorkRequestSchema.extend({
   requestFormId: z.string().optional(),

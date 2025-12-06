@@ -3,12 +3,9 @@
  */
 
 import User from '../models/User';
-import { filterFields } from '../utils/filterFields';
 import { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
-import { auditAction } from '../utils/audit';
-import { toEntityId } from '../utils/ids';
-import { sendResponse } from '../utils/sendResponse';
+import { filterFields, auditAction, toEntityId, sendResponse } from '../utils';
 
 const userCreateFields = [
   'name',

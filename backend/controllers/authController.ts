@@ -8,14 +8,14 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import Tenant from '../models/Tenant';
 import User from '../models/User';
-import logger from '../utils/logger';
 import {
   type JwtUser,
   clearAuthCookies,
   setAuthCookies,
   signAccess,
   signRefresh,
-} from '../utils/jwt';
+  logger,
+} from '../utils';
 import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import { resolveUserPermissions } from '../services/permissionService';
 

@@ -5,8 +5,7 @@
 import type { Response } from 'express';
 import { Types } from 'mongoose';
 import type { AuthedRequest } from '../../types/http';
-import { sendResponse } from '../../utils/sendResponse';
-import { toObjectId } from '../../utils/ids';
+import { sendResponse, toObjectId } from '../../utils';
 
 interface ResolveOptions {
   requireUser?: boolean;

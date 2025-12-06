@@ -7,7 +7,6 @@ import type { ParsedQs } from 'qs';
 import type { FilterQuery } from 'mongoose';
 
 import type { AuthedRequestHandler } from '../types/http';
-import { sendResponse } from '../utils/sendResponse';
 import {
   ingestTelemetryBatch,
   type IoTReadingInput,
@@ -15,6 +14,7 @@ import {
 } from '../services/iotIngestionService';
 import SensorReading from '../models/SensorReading';
 import Asset from '../models/Asset';
+import { sendResponse } from '../utils';
 
 interface IoTSignalQuery extends ParsedQs {
   assetId?: string;

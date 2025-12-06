@@ -4,11 +4,9 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
-import { sendResponse } from '../utils/sendResponse';
 
 import TimeSheet from '../models/TimeSheet';
-import { writeAuditLog } from '../utils/audit';
-import { toEntityId } from '../utils/ids';
+import { sendResponse, writeAuditLog, toEntityId } from '../utils';
 
  export const getAllTimeSheets = async (
   req: Request,

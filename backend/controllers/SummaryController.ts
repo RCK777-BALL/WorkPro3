@@ -12,8 +12,8 @@ import TimeSheet from '../models/TimeSheet';
 import Asset from '../models/Asset';
 import Permit from '../models/Permit';
 import PmTask from '../models/PMTask';
-import { sendResponse } from '../utils/sendResponse';
 import { LABOR_RATE } from '../config/env';
+import { sendResponse } from '../utils';
 
 /**
  * Helper to resolve the tenant id from the request. It checks the `tenantId`

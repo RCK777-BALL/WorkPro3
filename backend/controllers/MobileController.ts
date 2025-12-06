@@ -9,7 +9,6 @@ import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import WorkOrder, { type WorkOrder as WorkOrderEntity } from '../models/WorkOrder';
 import Asset, { type AssetDoc } from '../models/Asset';
 import MobileOfflineAction, { type MobileOfflineAction as MobileOfflineActionDoc } from '../models/MobileOfflineAction';
-import { writeAuditLog, type AuditActor } from '../utils/audit';
 import {
   computeBackoffSeconds,
   ensureMatchHeader,
@@ -19,6 +18,7 @@ import {
 } from '../services/mobileSyncService';
 import { emitTelemetry } from '../services/telemetryService';
 import { upsertDeviceTelemetry, type DeviceTelemetryInput } from '../services/mobileSyncAdminService';
+import { writeAuditLog, type AuditActor } from '../utils';
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;

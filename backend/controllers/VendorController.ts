@@ -4,6 +4,7 @@
 
 import { type Request, type Response, type NextFunction } from 'express';
 
+import { sendResponse } from '../utils';
 import {
   VendorNotFoundError,
   createVendor,
@@ -13,7 +14,6 @@ import {
   updateVendor,
   type VendorInput,
 } from '../services/vendorService';
-import { sendResponse } from '../utils/sendResponse';
 
 const parseVendorInput = (body: any): { data?: VendorInput; error?: string } => {
   const name = typeof body?.name === 'string' ? body.name.trim() : '';

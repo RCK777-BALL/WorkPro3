@@ -108,6 +108,14 @@ export interface Asset {
   lastServiced?: string;
   warrantyExpiry?: string;
   documents?: File[];
+  assignee?: string;
+  assignedTo?: string;
+  nextPmDate?: string;
+  keyMeters?: Array<{
+    name: string;
+    value?: number | string;
+    unit?: string;
+  }>;
 }
 
 export type AssetStatusMap = Record<string, number>;

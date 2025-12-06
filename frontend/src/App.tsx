@@ -21,6 +21,7 @@ import {
 import Dashboard from "@/pages/Dashboard";
 import Analytics from "@/pages/Analytics";
 import AnalyticsDashboardV2 from "@/pages/AnalyticsDashboardV2";
+import AnalyticsWarehousePage from "@/pages/AnalyticsWarehouse";
 import WorkOrders from "@/pages/WorkOrders";
 import WorkOrderDetail from "@/pages/workorders/WorkOrderDetail";
 import WorkRequestDashboard from "@/pages/WorkRequestDashboard";
@@ -116,6 +117,7 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/analytics/dashboard/v2" element={<AnalyticsDashboardV2 />} />
+          <Route path="/analytics/operations" element={<AnalyticsWarehousePage />} />
           <Route path="/analytics/pm" element={<PMAnalytics />} />
           <Route path="/analytics/global" element={<GlobalAnalyticsDashboard />} />
           <Route path="/analytics/ai" element={<AIDashboard />} />

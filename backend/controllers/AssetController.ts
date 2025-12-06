@@ -5,7 +5,7 @@
 import type { NextFunction, Response } from 'express';
 import type { AuthedRequest } from '../types/http';
 import type { ParsedQs } from 'qs';
-import mongoose, { Error as MongooseError, LeanDocument, Types } from 'mongoose';
+import mongoose, { Error as MongooseError, FlattenMaps, Types } from 'mongoose';
 import Asset, { type AssetDoc } from '../models/Asset';
 import WorkHistory, { type WorkHistoryDocument } from '../models/WorkHistory';
 import DowntimeLog from '../models/DowntimeLog';
@@ -23,6 +23,9 @@ type AssetParams = ParamsDictionary & { id: string };
 type AssetBody = Record<string, unknown> & { name?: string };
 type AssetUpdateBody = Record<string, unknown>;
 type SearchAssetsQuery = ParsedQs & { q?: string };
+
+type LeanWorkHistory = FlattenMaps<WorkHistoryDocument>;
+type LeanWorkOrderReliability = FlattenMaps<WorkOrderReliability>;
 
 const assetCreateFields = [
   'name',
@@ -106,7 +109,7 @@ const calculateMtbfFromOrders = (orders: WorkOrderReliability[]): number => {
 };
 
 const calculateReliabilityFromHistory = (
-  history: Array<LeanDocument<WorkHistoryDocument>>,
+  history: LeanWorkHistory[],
 ): { mttrHours: number; mtbfHours: number } => {
   const completed = history.filter((entry) => entry.completedAt);
   if (!completed.length) {
@@ -138,8 +141,8 @@ const calculateReliabilityFromHistory = (
 };
 
 const buildReliabilitySummary = (
-  history: Array<LeanDocument<WorkHistoryDocument>>,
-  orders: Array<LeanDocument<WorkOrderReliability>>,
+  history: LeanWorkHistory[],
+  orders: LeanWorkOrderReliability[],
 ): { mttrHours: number; mtbfHours: number } => {
   const historyMetrics = calculateReliabilityFromHistory(history);
   const mttrHours = historyMetrics.mttrHours || calculateMttrFromOrders(orders);
@@ -156,16 +159,16 @@ const collectAssetReliability = async (
   const [historyRaw, ordersRaw, downtimeLogs] = await Promise.all([
     WorkHistory.find({ tenantId, asset: { $in: assetIds } })
       .select('asset completedAt timeSpentHours')
-      .lean<LeanDocument<WorkHistoryDocument>>(),
+      .lean<LeanWorkHistory>(),
     WorkOrderModel.find({ tenantId, assetId: { $in: assetIds } })
       .select('assetId createdAt completedAt timeSpentMin')
-      .lean<LeanDocument<WorkOrderReliability>>(),
+      .lean<LeanWorkOrderReliability>(),
     DowntimeLog.find({ tenantId, assetId: { $in: assetIds } })
       .select('assetId')
       .lean<{ assetId?: Types.ObjectId }>(),
   ]);
 
-  const historyByAsset = new Map<string, LeanDocument<WorkHistoryDocument>[]>();
+  const historyByAsset = new Map<string, LeanWorkHistory[]>();
   historyRaw.forEach((entry) => {
     const key = entry.asset?.toString();
     if (!key) return;
@@ -174,7 +177,7 @@ const collectAssetReliability = async (
     historyByAsset.set(key, list);
   });
 
-  const ordersByAsset = new Map<string, LeanDocument<WorkOrderReliability>[]>();
+  const ordersByAsset = new Map<string, LeanWorkOrderReliability[]>();
   ordersRaw.forEach((order) => {
     const key = order.assetId?.toString();
     if (!key) return;

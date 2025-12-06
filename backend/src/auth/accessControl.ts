@@ -8,7 +8,7 @@ import jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
 import User from '../../models/User';
 import type { AuthedRequest } from '../../types/http';
-import type { Permission } from './permissions';
+import type { Permission } from '../../shared/permissions';
 import { assertPermission } from './permissions';
 import type { UserRole } from '../../types/auth';
 

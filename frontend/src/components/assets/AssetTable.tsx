@@ -150,6 +150,9 @@ const AssetTable: React.FC<AssetTableProps> = ({
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
                 Recent Downtime
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
+                Reliability
+              </th>
               <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-300">
                 Actions
               </th>
@@ -260,6 +263,22 @@ const AssetTable: React.FC<AssetTableProps> = ({
                     type={(asset.downtimeHoursLast30Days ?? 0) > 0 ? 'status' : 'default'}
                     size="sm"
                   />
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                  <div className="flex flex-col gap-1 text-xs text-slate-300">
+                    <div className="flex items-center gap-1" title="Mean time between failures in hours">
+                      <span className="text-slate-400">MTBF</span>
+                      <span className="font-semibold text-slate-100">{formatHours(asset.reliability?.mtbfHours)}</span>
+                    </div>
+                    <div className="flex items-center gap-1" title="Mean time to repair in hours">
+                      <span className="text-slate-400">MTTR</span>
+                      <span className="font-semibold text-slate-100">{formatHours(asset.reliability?.mttrHours)}</span>
+                    </div>
+                    <div className="flex items-center gap-1" title="Number of recorded downtime events">
+                      <span className="text-slate-400">Downtime</span>
+                      <span className="font-semibold text-slate-100">{asset.downtimeCount ?? 0}</span>
+                    </div>
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right align-top">
                   <div className="flex flex-wrap items-center justify-end gap-2">

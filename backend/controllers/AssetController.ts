@@ -7,6 +7,9 @@ import type { AuthedRequest } from '../types/http';
 import type { ParsedQs } from 'qs';
 import mongoose, { Error as MongooseError, Types } from 'mongoose';
 import Asset, { type AssetDoc } from '../models/Asset';
+import WorkHistory, { type WorkHistoryDocument } from '../models/WorkHistory';
+import DowntimeLog from '../models/DowntimeLog';
+import WorkOrderModel, { type WorkOrder } from '../models/WorkOrder';
 import Site from '../models/Site';
 import Department from '../models/Department';
 import Line from '../models/Line';
@@ -69,6 +72,130 @@ const normalizeId = (value?: MaybeObjectId): Types.ObjectId | undefined => {
   if (value instanceof Types.ObjectId) return value;
   if (typeof value === 'string') return toObjectId(value);
   return undefined;
+};
+
+type WorkOrderReliability = Pick<WorkOrder, 'createdAt' | 'completedAt' | 'timeSpentMin'>;
+
+const calculateMttrFromOrders = (orders: WorkOrderReliability[]): number => {
+  const completed = orders.filter((order) => order.completedAt);
+  if (!completed.length) return 0;
+
+  const totalHours = completed.reduce((sum, order) => {
+    const end = order.completedAt?.getTime() ?? 0;
+    const start = order.createdAt?.getTime() ?? end;
+    const durationHours =
+      typeof order.timeSpentMin === 'number' && order.timeSpentMin > 0
+        ? order.timeSpentMin / 60
+        : Math.max(end - start, 0) / 36e5;
+    return sum + durationHours;
+  }, 0);
+
+  return totalHours / completed.length;
+};
+
+const calculateMtbfFromOrders = (orders: WorkOrderReliability[]): number => {
+  const failures = [...orders]
+    .filter((order) => order.completedAt)
+    .sort((a, b) => (a.completedAt?.getTime() ?? 0) - (b.completedAt?.getTime() ?? 0));
+  if (failures.length < 2) return 0;
+  let total = 0;
+  for (let idx = 1; idx < failures.length; idx += 1) {
+    total += (failures[idx].completedAt?.getTime() ?? 0) - (failures[idx - 1].completedAt?.getTime() ?? 0);
+  }
+  return total / (failures.length - 1) / 36e5;
+};
+
+const calculateReliabilityFromHistory = (
+  history: WorkHistoryDocument[],
+): { mttrHours: number; mtbfHours: number } => {
+  const completed = history.filter((entry) => entry.completedAt);
+  if (!completed.length) {
+    return { mtbfHours: 0, mttrHours: 0 };
+  }
+
+  const mttrHours = (() => {
+    const durations = completed
+      .map((entry) => entry.timeSpentHours)
+      .filter((value): value is number => typeof value === 'number' && value >= 0);
+    if (!durations.length) return 0;
+    const total = durations.reduce((sum, value) => sum + value, 0);
+    return total / durations.length;
+  })();
+
+  const mtbfHours = (() => {
+    const failures = [...completed].sort(
+      (a, b) => (a.completedAt?.getTime() ?? 0) - (b.completedAt?.getTime() ?? 0),
+    );
+    if (failures.length < 2) return 0;
+    let delta = 0;
+    for (let idx = 1; idx < failures.length; idx += 1) {
+      delta += (failures[idx].completedAt?.getTime() ?? 0) - (failures[idx - 1].completedAt?.getTime() ?? 0);
+    }
+    return delta / (failures.length - 1) / 36e5;
+  })();
+
+  return { mtbfHours, mttrHours };
+};
+
+const buildReliabilitySummary = (
+  history: WorkHistoryDocument[],
+  orders: WorkOrderReliability[],
+): { mttrHours: number; mtbfHours: number } => {
+  const historyMetrics = calculateReliabilityFromHistory(history);
+  const mttrHours = historyMetrics.mttrHours || calculateMttrFromOrders(orders);
+  const mtbfHours = historyMetrics.mtbfHours || calculateMtbfFromOrders(orders);
+  return { mttrHours, mtbfHours };
+};
+
+const collectAssetReliability = async (
+  tenantId: string,
+  assetIds: Types.ObjectId[],
+): Promise<Map<string, { mttrHours: number; mtbfHours: number; downtimeCount: number }>> => {
+  if (!assetIds.length) return new Map();
+
+  const [historyRaw, ordersRaw, downtimeLogs] = await Promise.all([
+    WorkHistory.find({ tenantId, asset: { $in: assetIds } })
+      .select('asset completedAt timeSpentHours')
+      .lean(),
+    WorkOrderModel.find({ tenantId, assetId: { $in: assetIds } })
+      .select('assetId createdAt completedAt timeSpentMin')
+      .lean(),
+    DowntimeLog.find({ tenantId, assetId: { $in: assetIds } }).select('assetId').lean(),
+  ]);
+
+  const historyByAsset = new Map<string, WorkHistoryDocument[]>();
+  (historyRaw as WorkHistoryDocument[]).forEach((entry) => {
+    const key = entry.asset?.toString();
+    if (!key) return;
+    const list = historyByAsset.get(key) ?? [];
+    list.push(entry);
+    historyByAsset.set(key, list);
+  });
+
+  const ordersByAsset = new Map<string, WorkOrderReliability[]>();
+  (ordersRaw as WorkOrderReliability[]).forEach((order) => {
+    const key = (order as { assetId?: Types.ObjectId }).assetId?.toString();
+    if (!key) return;
+    const list = ordersByAsset.get(key) ?? [];
+    list.push(order);
+    ordersByAsset.set(key, list);
+  });
+
+  const downtimeCounts = new Map<string, number>();
+  downtimeLogs.forEach((log) => {
+    const key = (log as { assetId?: Types.ObjectId }).assetId?.toString();
+    if (!key) return;
+    downtimeCounts.set(key, (downtimeCounts.get(key) ?? 0) + 1);
+  });
+
+  const metrics = new Map<string, { mttrHours: number; mtbfHours: number; downtimeCount: number }>();
+  assetIds.forEach((assetId) => {
+    const id = assetId.toString();
+    const reliability = buildReliabilitySummary(historyByAsset.get(id) ?? [], ordersByAsset.get(id) ?? []);
+    metrics.set(id, { ...reliability, downtimeCount: downtimeCounts.get(id) ?? 0 });
+  });
+
+  return metrics;
 };
 
 type AssetLike = Record<string, unknown>;
@@ -221,7 +348,30 @@ async function getAllAssets(
     if (plantId) filter.plant = plantId;
     if (req.siteId) filter.siteId = req.siteId;
     const assets = await Asset.find(filter).lean();
-    const payload = assets.map((asset) => toAssetResponse(asset)).filter(isAssetLike);
+    const assetIds = assets
+      .map((asset) => {
+        if (asset._id instanceof Types.ObjectId) return asset._id;
+        if (typeof asset._id === 'string') return toObjectId(asset._id);
+        return undefined;
+      })
+      .filter((id): id is Types.ObjectId => id instanceof Types.ObjectId);
+    const reliabilityMap = req.tenantId ? await collectAssetReliability(req.tenantId, assetIds) : new Map();
+
+    const payload = assets
+      .map((asset) => {
+        const response = toAssetResponse(asset);
+        if (!response) return null;
+
+        const assetId = typeof response.id === 'string' ? response.id : response._id;
+        const metrics = typeof assetId === 'string' ? reliabilityMap.get(assetId) : undefined;
+        if (metrics) {
+          response.reliability = { mttrHours: metrics.mttrHours, mtbfHours: metrics.mtbfHours };
+          response.downtimeCount = metrics.downtimeCount;
+        }
+
+        return response;
+      })
+      .filter(isAssetLike);
     sendResponse(res, payload);
     return;
   } catch (err) {

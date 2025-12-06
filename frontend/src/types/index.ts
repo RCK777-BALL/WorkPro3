@@ -120,6 +120,8 @@ export interface Asset {
   recentDowntimeHours?: number;
   downtimeHours?: number;
   documents?: File[];
+  reliability?: { mttrHours: number; mtbfHours: number };
+  downtimeCount?: number;
 }
 
 export type AssetStatusMap = Record<string, number>;

@@ -67,6 +67,18 @@ export type AssetReliabilitySummary = {
   mtbfHours: number;
 };
 
+export type AssetMeter = {
+  id: string;
+  assetId: string;
+  name: string;
+  unit: string;
+  currentValue: number;
+  pmInterval: number;
+  thresholds?: { warning?: number; critical?: number };
+  updatedAt?: string;
+  trend?: { timestamp: string; value: number }[];
+};
+
 export type AssetCostRollup = {
   total: number;
   maintenance: number;
@@ -128,12 +140,26 @@ export const fetchAssetDetails = async (assetId: string): Promise<AssetDetailRes
 export const assetKeys = {
   all: ['assets'] as const,
   detail: (assetId: string) => ['assets', 'detail', assetId] as const,
+  meters: (assetId: string) => ['assets', 'meters', assetId] as const,
 };
 
 export const useAssetDetailsQuery = (assetId?: string) =>
   useQuery({
     queryKey: assetId ? assetKeys.detail(assetId) : [...assetKeys.all, 'detail'],
     queryFn: () => fetchAssetDetails(assetId ?? ''),
+    enabled: Boolean(assetId),
+    staleTime: 60_000,
+  });
+
+export const fetchAssetMeters = async (assetId: string): Promise<AssetMeter[]> => {
+  const res = await http.get<AssetMeter[]>(`/assets/${assetId}/meters`);
+  return res.data ?? [];
+};
+
+export const useAssetMetersQuery = (assetId?: string) =>
+  useQuery({
+    queryKey: assetId ? assetKeys.meters(assetId) : [...assetKeys.all, 'meters'],
+    queryFn: () => fetchAssetMeters(assetId ?? ''),
     enabled: Boolean(assetId),
     staleTime: 60_000,
   });

@@ -132,7 +132,7 @@ export default function InventoryParts() {
   const [parts, setParts] = useState<Part[]>([]);
 
   useEffect(() => {
-    fetchParts().then(setParts);
+    fetchParts({ pageSize: 200, sortBy: 'name' }).then((response) => setParts(response.items));
   }, []);
 
   const handleSave = async (payload: Partial<Part> & { name: string }) => {

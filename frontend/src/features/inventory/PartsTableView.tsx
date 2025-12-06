@@ -13,36 +13,89 @@ import type { Part } from '@/types';
 import { INVENTORY_PARTS_QUERY_KEY, usePartsQuery, useVendorsQuery } from './hooks';
 import { QrLabel } from '@/components/qr';
 
-const matchSearch = (part: Part, term: string) => {
-  const haystack = [
-    part.name,
-    part.sku,
-    part.partNumber,
-    part.category,
-    part.vendor?.name,
-    part.assets?.map((asset) => asset.name).join(' '),
-    part.pmTemplates?.map((template) => template.title).join(' '),
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-  return haystack.includes(term.toLowerCase());
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+const HEADER_HEIGHT = 48;
+const ROW_HEIGHT = 112;
+
+interface ColumnDefinition {
+  key: string;
+  label: string;
+  width: number;
+  sortable?: boolean;
+  render: (part: Part) => React.ReactNode;
+}
+
+interface GridData {
+  columns: ColumnDefinition[];
+  parts: Part[];
+  onSort: (key: string) => void;
+  sortBy: string;
+  sortDirection: SortDirection;
+}
+
+const EmptyState = ({ message }: { message: string }) => (
+  <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-neutral-500">
+    <p>{message}</p>
+  </div>
+);
+
+const LoadingSkeleton = () => (
+  <div className="space-y-3 p-4">
+    {Array.from({ length: 6 }).map((_, index) => (
+      <div key={index} className="animate-pulse rounded-lg border border-neutral-100 bg-neutral-50 p-3">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div className="h-4 w-40 rounded bg-neutral-200" />
+          <div className="h-3 w-24 rounded bg-neutral-200" />
+        </div>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <div className="h-3 w-24 rounded bg-neutral-200" />
+          <div className="h-3 w-20 rounded bg-neutral-200" />
+          <div className="h-3 w-28 rounded bg-neutral-200" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+const HeaderCell = ({ columnIndex, style, data }: GridChildComponentProps<GridData>) => {
+  const column = data.columns[columnIndex];
+  const isSorted = data.sortBy === column.key;
+  const direction = data.sortDirection === 'asc' ? '▲' : '▼';
+
+  return (
+    <div
+      style={style}
+      className={clsx(
+        'flex items-center border-b border-neutral-100 bg-neutral-50 px-4 text-xs font-semibold uppercase tracking-wide text-neutral-600',
+        column.sortable ? 'cursor-pointer select-none' : 'cursor-default',
+      )}
+      onClick={() => column.sortable && data.onSort(column.key)}
+      role={column.sortable ? 'button' : undefined}
+      tabIndex={column.sortable ? 0 : undefined}
+    >
+      <span>{column.label}</span>
+      {isSorted && <span className="ml-1 text-[10px] text-neutral-400">{direction}</span>}
+    </div>
+  );
 };
 
-const severityClass: Record<string, string> = {
-  critical: 'bg-error-50 text-error-700',
-  warning: 'bg-warning-50 text-warning-700',
-  ok: 'bg-success-50 text-success-700',
-};
-
-const formatLocation = (location?: { store?: string; room?: string; bin?: string }) => {
-  if (!location) return 'Unassigned';
-  const parts = [location.store, location.room, location.bin].filter(Boolean);
-  return parts.length ? parts.join(' • ') : 'Unassigned';
+const BodyCell = ({ columnIndex, rowIndex, style, data }: GridChildComponentProps<GridData>) => {
+  const column = data.columns[columnIndex];
+  const part = data.parts[rowIndex];
+  return (
+    <div
+      style={style}
+      className={clsx(
+        'border-b border-neutral-100 px-4 py-3 text-sm text-neutral-700',
+        rowIndex % 2 === 0 ? 'bg-white' : 'bg-neutral-50/40',
+      )}
+    >
+      {column.render(part)}
+    </div>
+  );
 };
 
 const PartsTableView = () => {
-  const partsQuery = usePartsQuery();
   const vendorsQuery = useVendorsQuery();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
@@ -59,20 +112,177 @@ const PartsTableView = () => {
     },
   });
 
-  const parts = partsQuery.data ?? [];
+  const partsQuery = usePartsQuery({
+    page,
+    pageSize,
+    search: search.trim() || undefined,
+    vendorId: vendorFilter !== 'all' ? vendorFilter : undefined,
+    sortBy,
+    sortDirection,
+  });
+
+  const parts = partsQuery.data?.items ?? [];
+  const total = partsQuery.data?.total ?? 0;
+  const totalPages = partsQuery.data?.totalPages ?? Math.max(1, Math.ceil(total / pageSize));
   const vendorOptions = vendorsQuery.data ?? [];
 
-  const filteredParts = useMemo(() => {
-    return parts.filter((part) => {
-      if (vendorFilter !== 'all' && part.vendorId !== vendorFilter) {
-        return false;
-      }
-      if (!search.trim()) {
-        return true;
-      }
-      return matchSearch(part, search.trim());
-    });
-  }, [parts, search, vendorFilter]);
+  const headerRef = useRef<VariableSizeGrid<GridData>>(null);
+  const bodyRef = useRef<VariableSizeGrid<GridData>>(null);
+
+  const handleScroll = ({ scrollLeft }: GridOnScrollProps) => {
+    headerRef.current?.scrollTo({ scrollLeft, scrollTop: 0 });
+  };
+
+  const handleSort = (key: string) => {
+    const nextDirection = sortBy === key && sortDirection === 'asc' ? 'desc' : 'asc';
+    setSortBy(key);
+    setSortDirection(nextDirection);
+    setPage(1);
+  };
+
+  const columns = useMemo<ColumnDefinition[]>(
+    () => [
+      {
+        key: 'name',
+        label: 'Part',
+        width: 280,
+        sortable: true,
+        render: (part) => (
+          <div className="flex flex-col gap-2 text-sm text-neutral-700">
+            <div>
+              <p className="font-semibold text-neutral-900">{part.name}</p>
+              <p className="text-xs text-neutral-500">SKU {part.sku ?? 'n/a'}</p>
+            </div>
+            <QrLabel
+              name={part.name}
+              subtitle={part.vendor?.name ?? 'Part label'}
+              qrValue={part.qrCode ?? JSON.stringify({ type: 'part', id: part.id })}
+              showPreview={false}
+              buttonLabel="Print QR Label"
+            />
+          </div>
+        ),
+      },
+      {
+        key: 'vendor',
+        label: 'Vendor',
+        width: 200,
+        sortable: true,
+        render: (part) => (
+          <div className="text-sm text-neutral-700">
+            {part.vendor ? (
+              <div>
+                <p className="font-medium text-neutral-900">{part.vendor.name}</p>
+                {part.vendor.leadTimeDays && (
+                  <p className="text-xs text-neutral-500">Lead time {part.vendor.leadTimeDays} day(s)</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-neutral-400">Unassigned</p>
+            )}
+          </div>
+        ),
+      },
+      {
+        key: 'quantity',
+        label: 'Stock',
+        width: 180,
+        sortable: true,
+        render: (part) => (
+          <div className="space-y-2">
+            <StockLevelBadge alertState={part.alertState} quantity={part.quantity} reorderPoint={part.reorderPoint} />
+            <p className="text-xs text-neutral-500">Reorder @ {part.reorderPoint}</p>
+            {part.stockByLocation?.length ? (
+              <div className="rounded-md bg-neutral-50 p-2">
+                <p className="text-[11px] font-semibold uppercase text-neutral-500">By location</p>
+                <ul className="space-y-1 text-xs text-neutral-700">
+                  {part.stockByLocation.map((stock) => (
+                    <li key={stock.stockItemId} className="flex items-center justify-between gap-2">
+                      <span>
+                        {[stock.location?.store, stock.location?.room, stock.location?.bin]
+                          .filter(Boolean)
+                          .join(' / ') || 'Unassigned'}
+                      </span>
+                      <span className="text-neutral-500">{stock.quantity}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <p className="text-xs text-neutral-400">No location assignments</p>
+            )}
+          </div>
+        ),
+      },
+      {
+        key: 'assets',
+        label: 'Linked assets',
+        width: 220,
+        sortable: true,
+        render: (part) => (
+          <div className="text-sm text-neutral-700">
+            {part.assets && part.assets.length > 0 ? (
+              <ul className="list-inside list-disc text-xs text-neutral-600">
+                {part.assets.slice(0, 3).map((asset) => (
+                  <li key={asset.id}>{asset.name}</li>
+                ))}
+                {part.assets.length > 3 && (
+                  <li className="text-neutral-400">+{part.assets.length - 3} more</li>
+                )}
+              </ul>
+            ) : (
+              <p className="text-xs text-neutral-400">No linked assets</p>
+            )}
+          </div>
+        ),
+      },
+      {
+        key: 'templates',
+        label: 'PM templates',
+        width: 220,
+        sortable: true,
+        render: (part) => (
+          <div className="text-sm text-neutral-700">
+            {part.pmTemplates && part.pmTemplates.length > 0 ? (
+              <ul className="list-inside list-disc text-xs text-neutral-600">
+                {part.pmTemplates.slice(0, 3).map((template) => (
+                  <li key={template.id}>{template.title}</li>
+                ))}
+                {part.pmTemplates.length > 3 && (
+                  <li className="text-neutral-400">+{part.pmTemplates.length - 3} more</li>
+                )}
+              </ul>
+            ) : (
+              <p className="text-xs text-neutral-400">Not in templates</p>
+            )}
+          </div>
+        ),
+      },
+      {
+        key: 'autoReorder',
+        label: 'Auto reorder',
+        width: 160,
+        sortable: true,
+        render: (part) => (
+          <div className="text-xs text-neutral-500">
+            {part.autoReorder ? <p className="text-success-600">Enabled</p> : <p className="text-neutral-400">Off</p>}
+            {part.lastAutoReorderAt && (
+              <p className="text-[11px] text-neutral-400">
+                Last {new Date(part.lastAutoReorderAt).toLocaleDateString()}
+              </p>
+            )}
+          </div>
+        ),
+      },
+    ],
+    [],
+  );
+
+  const columnWidth = (index: number) => columns[index]?.width ?? 180;
+
+  const handlePageChange = (nextPage: number) => {
+    setPage(Math.min(Math.max(1, nextPage), totalPages));
+  };
 
   const openNoteForm = (partId: string) => {
     setNoteTargetId(partId);
@@ -99,7 +309,10 @@ const PartsTableView = () => {
             <select
               className="rounded-md border border-neutral-300 px-2 py-1 text-sm"
               value={vendorFilter}
-              onChange={(event) => setVendorFilter(event.target.value)}
+              onChange={(event) => {
+                setVendorFilter(event.target.value);
+                setPage(1);
+              }}
             >
               <option value="all">All vendors</option>
               {vendorOptions.map((vendor) => (
@@ -109,13 +322,19 @@ const PartsTableView = () => {
               ))}
             </select>
           </label>
-          <input
-            type="search"
-            placeholder="Search parts, assets, templates"
-            className="min-w-[200px] rounded-md border border-neutral-300 px-3 py-1 text-sm"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+            <input
+              type="search"
+              placeholder="Search parts, assets, templates"
+              className="min-w-[220px] rounded-md border border-neutral-300 px-3 py-1 pl-8 text-sm"
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
           <Button
             variant="outline"
             size="sm"
@@ -243,82 +462,35 @@ const PartsTableView = () => {
                         severityClass[part.alertState?.severity ?? 'ok']
                       }`}
                     >
-                      {part.quantity} pcs
-                    </span>
-                    <p className="text-xs text-neutral-500">Reorder @ {part.reorderPoint}</p>
-                    {part.stockByLocation?.length ? (
-                      <div className="rounded-md bg-neutral-50 p-2">
-                        <p className="text-[11px] font-semibold uppercase text-neutral-500">By location</p>
-                        <ul className="space-y-1 text-xs text-neutral-700">
-                          {part.stockByLocation.map((stock) => (
-                            <li
-                              key={stock.stockItemId}
-                              className="flex items-center justify-between gap-2"
-                            >
-                              <span>{formatLocation(stock.location)}</span>
-                              <span className="text-neutral-500">{stock.quantity}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-neutral-400">No location assignments</p>
-                    )}
+                      {HeaderCell}
+                    </Grid>
+                    <Grid
+                      ref={bodyRef}
+                      columnCount={columns.length}
+                      columnWidth={columnWidth}
+                      height={Math.max(HEADER_HEIGHT, height - HEADER_HEIGHT)}
+                      rowCount={parts.length}
+                      rowHeight={() => ROW_HEIGHT}
+                      width={width}
+                      onScroll={handleScroll}
+                      itemData={{ columns, parts, onSort: handleSort, sortBy, sortDirection }}
+                      overscanRowCount={4}
+                      overscanColumnCount={2}
+                    >
+                      {BodyCell}
+                    </Grid>
                   </div>
-                </td>
-                  <td className="px-4 py-3 text-sm text-neutral-600">
-                    {part.assets && part.assets.length > 0 ? (
-                      <ul className="list-inside list-disc text-xs text-neutral-600">
-                        {part.assets.slice(0, 3).map((asset) => (
-                          <li key={asset.id}>{asset.name}</li>
-                        ))}
-                        {part.assets.length > 3 && (
-                          <li className="text-neutral-400">+{part.assets.length - 3} more</li>
-                        )}
-                      </ul>
-                    ) : (
-                      <p className="text-xs text-neutral-400">No linked assets</p>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-neutral-600">
-                    {part.pmTemplates && part.pmTemplates.length > 0 ? (
-                      <ul className="list-inside list-disc text-xs text-neutral-600">
-                        {part.pmTemplates.slice(0, 3).map((template) => (
-                          <li key={template.id}>{template.title}</li>
-                        ))}
-                        {part.pmTemplates.length > 3 && (
-                          <li className="text-neutral-400">+{part.pmTemplates.length - 3} more</li>
-                        )}
-                      </ul>
-                    ) : (
-                      <p className="text-xs text-neutral-400">Not in templates</p>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-neutral-500">
-                    {part.autoReorder ? (
-                      <p className="text-success-600">Enabled</p>
-                    ) : (
-                      <p className="text-neutral-400">Off</p>
-                    )}
-                    {part.lastAutoReorderAt && (
-                      <p className="text-[11px] text-neutral-400">
-                        Last {new Date(part.lastAutoReorderAt).toLocaleDateString()}
-                      </p>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {filteredParts.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center text-sm text-neutral-500">
-                    No parts matched your filters.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </AutoSizer>
+            </div>
+          )}
+          {partsQuery.isFetching && !partsQuery.isLoading && (
+            <div className="pointer-events-none absolute inset-0 bg-white/40 backdrop-blur-sm" aria-hidden>
+              <LoadingSkeleton />
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </section>
   );
 };

@@ -22,6 +22,7 @@ import type {
   InventoryTransfer,
   VendorSummary,
 } from '../../../../shared/types/inventory';
+import type { PaginatedResult, SortDirection } from '../../../../shared/types/http';
 import PartModel, { type PartDocument } from './models/Part';
 import VendorModel, { type VendorDocument } from './models/Vendor';
 import PurchaseOrderModel, { type PurchaseOrderDocument } from './models/PurchaseOrder';
@@ -51,6 +52,15 @@ export interface PartUsageFilters {
   endDate?: Date;
   partIds?: string[];
   siteIds?: string[];
+}
+
+export interface ListPartsOptions {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  vendorId?: string;
+  sortBy?: string;
+  sortDirection?: SortDirection;
 }
 
 export class InventoryError extends Error {
@@ -390,13 +400,59 @@ const serializeLocation = (location: LocationDocument): InventoryLocation => {
 const formatLocationLabel = (location: LocationDocument): string =>
   [location.store, location.room, location.bin].filter(Boolean).join(' / ') || location._id.toString();
 
-export const listParts = async (context: InventoryContext): Promise<PartResponse[]> => {
+const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const resolveSortField = (raw: string | undefined): keyof PartRecord => {
+  const normalized = (raw ?? '').toLowerCase();
+  const mapping: Record<string, keyof PartRecord> = {
+    name: 'name',
+    sku: 'sku',
+    quantity: 'quantity',
+    reorderpoint: 'reorderPoint',
+    autoreorder: 'autoReorder',
+    category: 'category',
+    vendor: 'vendor',
+    lastorderdate: 'lastOrderDate',
+  };
+  return mapping[normalized] ?? 'name';
+};
+
+export const listParts = async (
+  context: InventoryContext,
+  options: ListPartsOptions = {},
+): Promise<PaginatedResult<PartResponse>> => {
   const tenantId = toObjectId(context.tenantId, 'tenant id');
-  const query: Record<string, unknown> = { tenantId };
+  const page = Math.max(1, options.page ?? 1);
+  const pageSize = Math.min(Math.max(1, options.pageSize ?? 25), 200);
+  const search = typeof options.search === 'string' ? options.search.trim() : '';
+  const vendorFilter = options.vendorId ? maybeObjectId(options.vendorId) : undefined;
+  const sortDirection = options.sortDirection === 'desc' ? -1 : 1;
+  const sortField = resolveSortField(options.sortBy);
+
+  const query: FilterQuery<PartDocument> = { tenantId };
   if (context.siteId) {
     query.siteId = maybeObjectId(context.siteId);
   }
-  const parts: PartRecord[] = await PartModel.find(query).lean<PartRecord[]>();
+  if (search) {
+    const searchRegex = new RegExp(escapeRegex(search), 'i');
+    query.$or = [
+      { name: searchRegex },
+      { sku: searchRegex },
+      { partNumber: searchRegex },
+      { category: searchRegex },
+      { description: searchRegex },
+    ];
+  }
+  if (vendorFilter) {
+    query.vendor = vendorFilter;
+  }
+
+  const total = await PartModel.countDocuments(query);
+  const parts: PartRecord[] = await PartModel.find(query)
+    .sort({ [sortField]: sortDirection })
+    .skip((page - 1) * pageSize)
+    .limit(pageSize)
+    .lean<PartRecord[]>();
   const partIds = parts.map((part) => part._id);
   const [refs, stockItems] = await Promise.all([
     resolveReferenceMaps(parts),
@@ -422,9 +478,19 @@ export const listParts = async (context: InventoryContext): Promise<PartResponse
     return acc;
   }, new Map<string, StockItemDocument[]>());
 
-  return parts.map((part) =>
+  const items = parts.map((part) =>
     serializePart(part, refs, stockByPart.get(part._id.toString()), locationMap),
   );
+
+  return {
+    items,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    sortBy: options.sortBy ?? 'name',
+    sortDirection: options.sortDirection ?? 'asc',
+  };
 };
 
 export const listLocations = async (context: InventoryContext): Promise<InventoryLocation[]> => {

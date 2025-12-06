@@ -104,16 +104,16 @@ export interface Asset {
   /** Identifier of the station the asset belongs to */
   stationId?: string;
   criticality?: 'high' | 'medium' | 'low';
+  /** Optional health indicator for the asset */
+  health?: string;
   lastPmDate?: string;
   lastServiced?: string;
-  /** Most recent preventive or corrective maintenance completion date */
+  /** Timestamp of the most recent maintenance completed for the asset */
   lastMaintenanceDate?: string;
-  /** Optional health score from condition monitoring (0-100) */
-  healthScore?: number;
-  /** Number of currently open work orders linked to the asset */
+  /** Count of open work orders tied to the asset */
   openWorkOrders?: number;
-  /** Downtime recorded in the most recent 30-day window (hours) */
-  downtimeHoursLast30Days?: number;
+  /** Hours of downtime accumulated in the recent reporting window */
+  recentDowntimeHours?: number;
   warrantyExpiry?: string;
   documents?: File[];
 }

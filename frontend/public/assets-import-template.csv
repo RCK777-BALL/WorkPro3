@@ -1,0 +1,4 @@
+Asset Name,Type,Status,Location,Department,Line,Station,Serial Number,Criticality,Last Serviced
+Kuka Robot Arm KR 6,Mechanical,Active,Cell A3,Robot Assembly,Robot Assembly,Pick & Place,KR6-2025,HIGH,2024-12-04
+Dorner Conveyor 2200,Mechanical,Active,Line 2 - Transfer,Packaging,Packaging,Conveyor Zone 2,DC2200-19,MEDIUM,2025-01-22
+Allen-Bradley CompactLogix,Electrical,Offline,Control Cabinet CC-14,Filling,Filling,Controls,AB-CLX-144,HIGH,2024-11-10

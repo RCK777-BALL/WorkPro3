@@ -20,8 +20,24 @@ import { usePermissions } from '@/auth/usePermissions';
 import { useTranslation } from 'react-i18next';
 import { useScopeContext } from '@/context/ScopeContext';
 import { useToast } from '@/context/ToastContext';
+import { useAuth } from '@/context/AuthContext';
 
 const ASSET_CACHE_KEY = 'offline-assets';
+
+interface AssetSavedView {
+  id: string;
+  name: string;
+  statuses: Array<Asset['status']>;
+  criticalities: Array<Asset['criticality']>;
+  search: string;
+}
+
+const DEFAULT_VIEWS: AssetSavedView[] = [
+  { id: 'all', name: 'All assets', statuses: [], criticalities: [], search: '' },
+  { id: 'critical-active', name: 'Active critical', statuses: ['Active'], criticalities: ['high'], search: '' },
+];
+
+const getFilterStorageKey = (userId?: string | null) => `asset:filters:${userId ?? 'guest'}`;
 
 const AssetsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -35,8 +51,13 @@ const AssetsPage: React.FC = () => {
   const { can } = usePermissions();
   const { t } = useTranslation();
   const { activePlant, loadingPlants } = useScopeContext();
+  const { user } = useAuth();
 
   const [search, setSearch] = useState('');
+  const [statusFilters, setStatusFilters] = useState<Array<Asset['status']>>([]);
+  const [criticalityFilters, setCriticalityFilters] = useState<Array<Asset['criticality']>>([]);
+  const [savedViews, setSavedViews] = useState<AssetSavedView[]>([]);
+  const [activeViewId, setActiveViewId] = useState<string>('all');
   const [selected, setSelected] = useState<Asset | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -58,6 +79,11 @@ const AssetsPage: React.FC = () => {
   const normalizedAssets = useMemo(
     () => scopedAssets.slice().sort((a, b) => a.name.localeCompare(b.name)),
     [scopedAssets],
+  );
+
+  const mergedViews = useMemo(
+    () => [...DEFAULT_VIEWS, ...savedViews],
+    [savedViews],
   );
 
   useEffect(() => {
@@ -146,6 +172,44 @@ const AssetsPage: React.FC = () => {
   }, [fetchAssets]);
 
   useEffect(() => {
+    const key = getFilterStorageKey(user?.id);
+    const saved = safeLocalStorage.getItem(key);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as {
+          search?: string;
+          statuses?: Array<Asset['status']>;
+          criticalities?: Array<Asset['criticality']>;
+          savedViews?: AssetSavedView[];
+          activeViewId?: string;
+        };
+
+        setSearch(parsed.search ?? '');
+        setStatusFilters(parsed.statuses ?? []);
+        setCriticalityFilters(parsed.criticalities ?? []);
+        setSavedViews(parsed.savedViews ?? []);
+        setActiveViewId(parsed.activeViewId ?? 'all');
+      } catch (err) {
+        console.warn('Unable to parse saved asset filters', err);
+      }
+    } else {
+      setActiveViewId('all');
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    const key = getFilterStorageKey(user?.id);
+    const payload = {
+      search,
+      statuses: statusFilters,
+      criticalities: criticalityFilters,
+      savedViews,
+      activeViewId,
+    };
+    safeLocalStorage.setItem(key, JSON.stringify(payload));
+  }, [activeViewId, criticalityFilters, savedViews, search, statusFilters, user?.id]);
+
+  useEffect(() => {
     if (searchParams.get('intent') === 'create') {
       setSelected(null);
       setModalOpen(true);
@@ -205,6 +269,66 @@ const AssetsPage: React.FC = () => {
     const critical = scopedAssets.filter((asset) => asset.criticality === 'high').length;
     return { total, active, critical };
   }, [scopedAssets]);
+
+  const filteredAssets = useMemo(() => {
+    const statusSet = new Set(statusFilters.filter(Boolean));
+    const criticalitySet = new Set(criticalityFilters.filter(Boolean));
+
+    return normalizedAssets.filter((asset) => {
+      const statusMatches = statusSet.size === 0 || (asset.status && statusSet.has(asset.status));
+
+      const criticalityMatches =
+        criticalitySet.size === 0 || (asset.criticality && criticalitySet.has(asset.criticality));
+
+      return statusMatches && criticalityMatches;
+    });
+  }, [criticalityFilters, normalizedAssets, statusFilters]);
+
+  const applyView = useCallback(
+    (viewId: string) => {
+      const view = mergedViews.find((candidate) => candidate.id === viewId);
+      if (!view) return;
+      setActiveViewId(viewId);
+      setSearch(view.search ?? '');
+      setStatusFilters(view.statuses ?? []);
+      setCriticalityFilters(view.criticalities ?? []);
+    },
+    [mergedViews],
+  );
+
+  const toggleStatus = (status: Asset['status']) => {
+    setStatusFilters((current) =>
+      current.includes(status)
+        ? current.filter((item) => item !== status)
+        : [...current, status]
+    );
+    setActiveViewId('custom');
+  };
+
+  const toggleCriticality = (criticality: Asset['criticality']) => {
+    setCriticalityFilters((current) =>
+      current.includes(criticality)
+        ? current.filter((item) => item !== criticality)
+        : [...current, criticality]
+    );
+    setActiveViewId('custom');
+  };
+
+  const handleSaveView = () => {
+    const name = window.prompt('Name this view');
+    if (!name) return;
+
+    const newView: AssetSavedView = {
+      id: `${Date.now()}`,
+      name,
+      statuses: statusFilters,
+      criticalities: criticalityFilters,
+      search,
+    };
+
+    setSavedViews((current) => [...current, newView]);
+    setActiveViewId(newView.id);
+  };
 
   const canManageAssets = can('hierarchy', 'write');
   const canDeleteAssets = can('hierarchy', 'delete');
@@ -286,14 +410,84 @@ const AssetsPage: React.FC = () => {
 
         {error && <p className="text-red-600" role="alert">{error}</p>}
 
-        <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 bg-white dark:bg-neutral-800 p-4 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-700">
-          <input
-            type="text"
-            placeholder="Search assets..."
-            className="flex-1 bg-transparent border-none outline-none text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 dark:placeholder:text-neutral-400"
-            value={search}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-          />
+        <div className="flex flex-col gap-3 bg-white dark:bg-neutral-800 p-4 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-700">
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-4">
+            <input
+              type="text"
+              placeholder="Search assets..."
+              className="flex-1 bg-transparent border-none outline-none text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 dark:placeholder:text-neutral-400"
+              value={search}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                setSearch(e.target.value);
+                setActiveViewId('custom');
+              }}
+            />
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={activeViewId}
+                onChange={(event) => applyView(event.target.value)}
+                className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+              >
+                {mergedViews.map((view) => (
+                  <option key={view.id} value={view.id}>
+                    {view.name}
+                  </option>
+                ))}
+                {activeViewId === 'custom' && <option value="custom">Custom view</option>}
+              </select>
+              <Button variant="outline" size="sm" onClick={handleSaveView}>
+                Save view
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Status</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {(['Active', 'Offline', 'In Repair'] as Array<Asset['status']>).map((status) => {
+                  const isActive = statusFilters.includes(status);
+                  return (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={() => toggleStatus(status)}
+                      className={`rounded-full border px-3 py-1 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                        isActive
+                          ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:border-indigo-400 dark:bg-indigo-900/40 dark:text-indigo-100'
+                          : 'border-neutral-300 text-neutral-700 hover:border-indigo-400 dark:border-neutral-700 dark:text-neutral-200 dark:hover:border-indigo-400'
+                      }`}
+                    >
+                      {status}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Criticality</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {(['high', 'medium', 'low'] as Array<Asset['criticality']>).map((level) => {
+                  const label = `${level.charAt(0).toUpperCase()}${level.slice(1)}`;
+                  const isActive = criticalityFilters.includes(level);
+                  return (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => toggleCriticality(level)}
+                      className={`rounded-full border px-3 py-1 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                        isActive
+                          ? 'border-amber-500 bg-amber-50 text-amber-800 dark:border-amber-400 dark:bg-amber-900/30 dark:text-amber-100'
+                          : 'border-neutral-300 text-neutral-700 hover:border-amber-400 dark:border-neutral-700 dark:text-neutral-200 dark:hover:border-amber-400'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </div>
 
         {!activePlant && !loadingPlants && (
@@ -402,7 +596,7 @@ const AssetsPage: React.FC = () => {
         )}
 
         <AssetTable
-          assets={scopedAssets}
+          assets={filteredAssets}
           search={search}
           onRowClick={(a) => { setSelected(a); setModalOpen(true); }}
           onDuplicate={handleDuplicate}

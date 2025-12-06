@@ -104,8 +104,12 @@ export interface Asset {
   /** Identifier of the station the asset belongs to */
   stationId?: string;
   criticality?: 'high' | 'medium' | 'low';
+  health?: 'excellent' | 'good' | 'fair' | 'poor';
+  lastMaintenanceDate?: string;
   lastPmDate?: string;
   lastServiced?: string;
+  openWorkOrders?: number;
+  recentDowntimeHours?: number;
   warrantyExpiry?: string;
   documents?: File[];
 }

@@ -95,6 +95,33 @@ export const inventoryTransferSchema = z.object({
   quantity: z.number().positive('Quantity must be greater than zero'),
 });
 
+export const vendorPriceSchema = z.object({
+  vendorId: objectId,
+  partId: objectId,
+  unitCost: z.number().nonnegative('Unit cost must be zero or greater'),
+  currency: z.string().optional(),
+  leadTimeDays: z.number().int().nonnegative().optional(),
+  effectiveDate: z.string().optional(),
+});
+
+export const partReservationSchema = z.object({
+  partId: objectId,
+  workOrderId: objectId.optional(),
+  quantity: z.number().positive('Reservation quantity must be greater than zero'),
+  neededBy: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+export const receivingTransactionSchema = z.object({
+  purchaseOrderId: objectId.optional(),
+  partId: objectId,
+  quantity: z.number().positive('Quantity must be positive'),
+  unitCost: z.number().nonnegative('Unit cost must be zero or greater').optional(),
+  locationId: objectId.optional(),
+  receivedAt: z.string().optional(),
+  reference: z.string().optional(),
+});
+
 export type PartInput = z.infer<typeof partInputSchema>;
 export type VendorInput = z.infer<typeof vendorInputSchema>;
 export type PurchaseOrderInput = z.infer<typeof purchaseOrderInputSchema>;
@@ -102,3 +129,6 @@ export type LocationInput = z.infer<typeof locationInputSchema>;
 export type StockAdjustmentInput = z.infer<typeof stockAdjustmentSchema>;
 export type PurchaseOrderStatusInput = z.infer<typeof purchaseOrderStatusSchema>;
 export type InventoryTransferInput = z.infer<typeof inventoryTransferSchema>;
+export type VendorPriceInput = z.infer<typeof vendorPriceSchema>;
+export type PartReservationInput = z.infer<typeof partReservationSchema>;
+export type ReceivingTransactionInput = z.infer<typeof receivingTransactionSchema>;

@@ -2,16 +2,19 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 
-import type { AssetDetailResponse } from '@/api/hierarchy';
+import type { AssetDetailResponse, HierarchyAsset, HierarchyResponse } from '@/api/hierarchy';
 import { EntityAuditList } from '@/features/audit';
 import AssetTemplateAssignments from './AssetTemplateAssignments';
-import type { TreeAssetSummary } from './hooks';
+import type { MeterType, TreeAssetSummary } from './hooks';
+import { useAssetMeters, useCreateMeterReading } from './hooks';
 
 type AssetDetailPanelProps = {
   assetSummary?: TreeAssetSummary;
   assetDetails?: AssetDetailResponse;
+  hierarchy?: HierarchyResponse;
+  onSelectAsset?(assetId: string): void;
   isLoading?: boolean;
 };
 
@@ -32,6 +35,53 @@ const formatCurrency = (value?: number, currency = 'USD') =>
   typeof value === 'number' ?
     new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(value) :
     '-';
+
+type RelationshipContext = {
+  parentLabel?: string;
+  parentName?: string;
+  children: HierarchyAsset[];
+};
+
+const findRelationships = (assetId?: string, hierarchy?: HierarchyResponse): RelationshipContext => {
+  if (!assetId || !hierarchy) {
+    return { children: [] };
+  }
+
+  for (const department of hierarchy.departments) {
+    const departmentAsset = department.assets.find((asset) => asset.id === assetId);
+    if (departmentAsset) {
+      return {
+        parentLabel: 'Department',
+        parentName: department.name,
+        children: department.assets.filter((asset) => asset.id !== assetId),
+      };
+    }
+
+    for (const line of department.lines) {
+      const lineAsset = line.assets.find((asset) => asset.id === assetId);
+      if (lineAsset) {
+        return {
+          parentLabel: 'Line',
+          parentName: line.name,
+          children: line.assets.filter((asset) => asset.id !== assetId),
+        };
+      }
+
+      for (const station of line.stations) {
+        const stationAsset = station.assets.find((asset) => asset.id === assetId);
+        if (stationAsset) {
+          return {
+            parentLabel: 'Station',
+            parentName: station.name,
+            children: station.assets.filter((asset) => asset.id !== assetId),
+          };
+        }
+      }
+    }
+  }
+
+  return { children: [] };
+};
 
 const METER_OPTIONS: Record<
   MeterType,
@@ -160,7 +210,7 @@ const MeterEntryCard = ({ assetId }: { assetId?: string }) => {
   );
 };
 
-const AssetDetailPanel = ({ assetSummary, assetDetails, isLoading }: AssetDetailPanelProps) => {
+const AssetDetailPanel = ({ assetSummary, assetDetails, hierarchy, isLoading, onSelectAsset }: AssetDetailPanelProps) => {
   if (!assetSummary && !assetDetails && !isLoading) {
     return (
       <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-neutral-800 bg-neutral-900/40">
@@ -175,6 +225,20 @@ const AssetDetailPanel = ({ assetSummary, assetDetails, isLoading }: AssetDetail
     line: assetSummary?.lineName,
     station: assetSummary?.stationName,
   };
+
+  const breadcrumbs = useMemo(
+    () =>
+      [
+        hierarchyHints.department ? { label: 'Department', value: hierarchyHints.department } : null,
+        hierarchyHints.line ? { label: 'Line', value: hierarchyHints.line } : null,
+        hierarchyHints.station ? { label: 'Station', value: hierarchyHints.station } : null,
+        asset ? { label: 'Asset', value: asset.name } : null,
+      ].filter((item): item is { label: string; value: string } => Boolean(item)),
+    [asset, hierarchyHints.department, hierarchyHints.line, hierarchyHints.station],
+  );
+
+  const relationships = useMemo(() => findRelationships(asset?.id, hierarchy), [asset?.id, hierarchy]);
+  const { data: meters, isLoading: metersLoading } = useAssetMeters(asset?.id);
 
   return (
     <div className="space-y-4">
@@ -211,6 +275,104 @@ const AssetDetailPanel = ({ assetSummary, assetDetails, isLoading }: AssetDetail
           <p className="text-sm text-neutral-400">Loading asset details…</p>
         )}
       </section>
+
+      <SectionCard title="Relationships & Links">
+        <div className="space-y-4">
+          <div>
+            <p className="text-xs uppercase text-neutral-500">Breadcrumbs</p>
+            {breadcrumbs.length ? (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                {breadcrumbs.map((crumb, index) => (
+                  <div key={`${crumb.label}-${crumb.value}`} className="flex items-center gap-2">
+                    <span className="rounded-full bg-neutral-900 px-3 py-1 text-xs text-neutral-200">
+                      <span className="text-neutral-500">{crumb.label}:</span> {crumb.value}
+                    </span>
+                    {index < breadcrumbs.length - 1 && <span className="text-neutral-600">/</span>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState message={isLoading ? 'Loading breadcrumbs…' : 'No breadcrumbs available.'} />
+            )}
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-2">
+            <div className="rounded-lg border border-neutral-800 bg-neutral-900/50 p-3">
+              <p className="text-xs uppercase text-neutral-500">Parent</p>
+              <p className="text-sm font-semibold text-neutral-100">{relationships.parentName ?? 'Not placed in hierarchy'}</p>
+              <p className="text-xs text-neutral-500">{relationships.parentLabel ?? 'No parent container detected.'}</p>
+            </div>
+            <div className="rounded-lg border border-neutral-800 bg-neutral-900/50 p-3">
+              <p className="text-xs uppercase text-neutral-500">Children</p>
+              {relationships.children.length ? (
+                <ul className="mt-2 space-y-1">
+                  {relationships.children.slice(0, 5).map((child) => (
+                    <li
+                      key={child.id}
+                      className="flex items-center justify-between rounded-md bg-neutral-900/70 px-2 py-1 text-sm text-neutral-200"
+                    >
+                      <span>{child.name}</span>
+                      {onSelectAsset && (
+                        <button
+                          type="button"
+                          onClick={() => onSelectAsset(child.id)}
+                          className="text-xs font-semibold text-indigo-300 hover:text-indigo-200"
+                        >
+                          View
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-sm text-neutral-500">No child assets recorded for this parent.</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-2">
+            <div className="rounded-lg border border-neutral-800 bg-neutral-900/50 p-3">
+              <p className="text-xs uppercase text-neutral-500">Linked meters</p>
+              {metersLoading ? (
+                <p className="mt-2 text-sm text-neutral-500">Loading meters…</p>
+              ) : meters?.length ? (
+                <ul className="mt-2 space-y-1">
+                  {meters.slice(0, 4).map((meter) => (
+                    <li key={meter.id} className="flex items-center justify-between rounded-md bg-neutral-900/70 px-2 py-1 text-sm">
+                      <span className="text-neutral-100">{meter.name}</span>
+                      <span className="text-xs text-neutral-500">{meter.currentValue ?? 0} {meter.unit}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-sm text-neutral-500">No linked meters yet.</p>
+              )}
+            </div>
+            <div className="rounded-lg border border-neutral-800 bg-neutral-900/50 p-3">
+              <p className="text-xs uppercase text-neutral-500">Documents</p>
+              {assetDetails?.documents?.length ? (
+                <ul className="mt-2 space-y-1">
+                  {assetDetails.documents.slice(0, 4).map((doc) => (
+                    <li key={doc.id} className="flex items-center justify-between rounded-md bg-neutral-900/70 px-2 py-1 text-sm">
+                      <span className="text-neutral-100">{doc.name ?? 'Untitled document'}</span>
+                      <a
+                        href={doc.url}
+                        className="text-xs font-semibold text-indigo-300 hover:text-indigo-200"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Open
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-sm text-neutral-500">No documents linked to this asset.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </SectionCard>
 
       <SectionCard title="Usage meters">
         <MeterEntryCard assetId={asset?.id} />

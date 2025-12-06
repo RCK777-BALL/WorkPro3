@@ -156,20 +156,24 @@ const collectAssetReliability = async (
 ): Promise<Map<string, { mttrHours: number; mtbfHours: number; downtimeCount: number }>> => {
   if (!assetIds.length) return new Map();
 
-  const [historyRaw, ordersRaw, downtimeLogs] = await Promise.all([
+  const [historyRaw, ordersRaw, downtimeLogs]: [
+    LeanWorkHistory[],
+    LeanWorkOrderReliability[],
+    Array<{ assetId?: Types.ObjectId }>,
+  ] = await Promise.all([
     WorkHistory.find({ tenantId, asset: { $in: assetIds } })
       .select('asset completedAt timeSpentHours')
-      .lean<LeanWorkHistory>(),
+      .lean<LeanWorkHistory[]>(),
     WorkOrderModel.find({ tenantId, assetId: { $in: assetIds } })
       .select('assetId createdAt completedAt timeSpentMin')
-      .lean<LeanWorkOrderReliability>(),
+      .lean<LeanWorkOrderReliability[]>(),
     DowntimeLog.find({ tenantId, assetId: { $in: assetIds } })
       .select('assetId')
-      .lean<{ assetId?: Types.ObjectId }>(),
+      .lean<Array<{ assetId?: Types.ObjectId }>>(),
   ]);
 
   const historyByAsset = new Map<string, LeanWorkHistory[]>();
-  historyRaw.forEach((entry) => {
+  historyRaw.forEach((entry: LeanWorkHistory) => {
     const key = entry.asset?.toString();
     if (!key) return;
     const list = historyByAsset.get(key) ?? [];
@@ -178,7 +182,7 @@ const collectAssetReliability = async (
   });
 
   const ordersByAsset = new Map<string, LeanWorkOrderReliability[]>();
-  ordersRaw.forEach((order) => {
+  ordersRaw.forEach((order: LeanWorkOrderReliability) => {
     const key = order.assetId?.toString();
     if (!key) return;
     const list = ordersByAsset.get(key) ?? [];
@@ -187,8 +191,8 @@ const collectAssetReliability = async (
   });
 
   const downtimeCounts = new Map<string, number>();
-  downtimeLogs.forEach((log) => {
-    const key = (log as { assetId?: Types.ObjectId }).assetId?.toString();
+  downtimeLogs.forEach((log: { assetId?: Types.ObjectId }) => {
+    const key = log.assetId?.toString();
     if (!key) return;
     downtimeCounts.set(key, (downtimeCounts.get(key) ?? 0) + 1);
   });

@@ -7,7 +7,7 @@ import type { FilterQuery } from 'mongoose';
 
 import Prediction from '../models/Prediction';
 import SensorReading from '../models/SensorReading';
-import { sendResponse } from '../utils/sendResponse';
+import { sendResponse } from '../utils';
 
 type RequestWithTenant = Request & { tenantId?: string | undefined };
 

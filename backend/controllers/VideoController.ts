@@ -4,11 +4,9 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
-import { sendResponse } from '../utils/sendResponse';
 
 import Video from '../models/Video';
-import { writeAuditLog } from '../utils/audit';
-import { toEntityId } from '../utils/ids';
+import { sendResponse, writeAuditLog, toEntityId } from '../utils';
 
 export const getAllVideos = async (req: Request, res: Response, next: NextFunction) => {
   try {

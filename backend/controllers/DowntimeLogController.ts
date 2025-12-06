@@ -5,9 +5,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
 
-import { sendResponse } from '../utils/sendResponse';
-import { writeAuditLog } from '../utils/audit';
-import { toEntityId } from '../utils/ids';
+import { sendResponse, writeAuditLog, toEntityId } from '../utils';
 import {
   createDowntimeLog,
   deleteDowntimeLog,

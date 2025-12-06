@@ -6,9 +6,7 @@ import type { ParamsDictionary } from 'express-serve-static-core';
 
 import type { AuthedRequestHandler } from '../types/http';
 import User from '../models/User';
-import { writeAuditLog } from '../utils/audit';
-import { sendResponse } from '../utils/sendResponse';
-import { toEntityId } from '../utils/ids';
+import { writeAuditLog, sendResponse, toEntityId } from '../utils';
 
 // Helper to normalize a possible ObjectId/string into string
 function toIdString(v: unknown): string | undefined {

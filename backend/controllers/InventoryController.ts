@@ -5,12 +5,9 @@
 import type { Request, Response, NextFunction } from "express";
 import { Types, isValidObjectId } from "mongoose";
 import InventoryItem, { type IInventoryItem } from "../models/InventoryItem";
-import logger from "../utils/logger";
-import { auditAction } from "../utils/audit";
-import { toEntityId } from "../utils/ids";
-import { sendResponse } from "../utils/sendResponse";
 import { ensureQrCode, generateQrCodeValue } from "../services/qrCode";
 import { notifyLowStock } from "../services/notificationService";
+import { logger, auditAction, toEntityId, sendResponse } from '../utils';
 
 // Narrow helper to scope queries by tenant/site
 function scopedQuery<T extends Record<string, unknown>>(req: Request, base?: T) {

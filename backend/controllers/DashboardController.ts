@@ -5,8 +5,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
 import PDFDocument from 'pdfkit';
+import { sendResponse } from '../utils';
 
-import { sendResponse } from '../utils/sendResponse';
 
 import Asset from '../models/Asset';
 import WorkOrder from '../models/WorkOrder';

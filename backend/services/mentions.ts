@@ -4,7 +4,7 @@
 
 import { Types } from 'mongoose';
 import User from '../models/User';
-import { notifyUser } from '../utils/notify';
+import { notifyUser } from '../utils';
 
 const MENTION_PATTERN = /@\{[^|}]+\|([a-fA-F0-9]{24})\}/g;
 

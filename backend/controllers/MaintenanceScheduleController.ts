@@ -6,7 +6,7 @@ import { Types } from 'mongoose';
 import { validationResult } from 'express-validator';
 import MaintenanceSchedule from '../models/MaintenanceSchedule';
 import type { AuthedRequestHandler } from '../types/http';
-import { sendResponse } from '../utils/sendResponse';
+import { sendResponse } from '../utils';
 import type {
   MaintenanceScheduleParams,
   MaintenanceScheduleBody,

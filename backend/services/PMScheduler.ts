@@ -9,8 +9,8 @@ import MeterReading from '../models/MeterReading';
 import ConditionRule from '../models/ConditionRule';
 import SensorReading from '../models/SensorReading';
 import ProductionRecord from '../models/ProductionRecord';
-import logger from '../utils/logger';
 import { notifyPmDue } from './notificationService';
+import { logger } from '../utils';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 

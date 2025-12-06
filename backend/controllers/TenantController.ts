@@ -5,11 +5,9 @@
 import type { Response, NextFunction } from 'express';
 import type { AuthedRequest } from '../types/http';
 import { Types } from 'mongoose';
-import { sendResponse } from '../utils/sendResponse';
 
 import Tenant, { type TenantDocument } from '../models/Tenant';
-import { writeAuditLog } from '../utils/audit';
-import { toEntityId } from '../utils/ids';
+import { sendResponse, writeAuditLog, toEntityId } from '../utils';
 
 const getAllTenantsHandler = async (
   _req: AuthedRequest,

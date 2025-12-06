@@ -6,6 +6,7 @@ import { Request, Response, NextFunction } from 'express';
 import { Parser as Json2csvParser } from 'json2csv';
 import PDFDocument from 'pdfkit';
 import type { Readable } from 'stream';
+import { escapeXml, sendResponse } from '../utils';
 import {
   getKPIs,
   getTrendDatasets,
@@ -25,8 +26,6 @@ import {
   type PmComplianceMetric,
   type WorkOrderVolumeMetric,
 } from '../services/analytics';
-import { escapeXml } from '../utils/escapeXml';
-import { sendResponse } from '../utils/sendResponse';
 
 function parseList(param: unknown): string[] | undefined {
   if (!param) return undefined;

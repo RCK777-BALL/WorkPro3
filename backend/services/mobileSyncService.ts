@@ -5,7 +5,7 @@
 import type { Request, Response } from 'express';
 import type { Types } from 'mongoose';
 import type { AuthedRequest } from '../types/http';
-import { computeCollectionEtag, normalizeEtag } from '../utils/versioning';
+import { computeCollectionEtag, normalizeEtag } from '../utils';
 
 export const computeBackoffSeconds = (
   attempts: number,

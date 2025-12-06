@@ -7,7 +7,7 @@ import Asset from '../models/Asset';
 import Comment, { type CommentDocument, type CommentEntityType } from '../models/Comment';
 import WorkOrder from '../models/WorkOrder';
 import { parseMentions, notifyMentionedUsers } from './mentions';
-import { notifyUser } from '../utils/notify';
+import { notifyUser } from '../utils';
 
 export interface CommentCreateInput {
   tenantId: Types.ObjectId;

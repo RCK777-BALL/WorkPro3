@@ -10,9 +10,7 @@ import { Types } from 'mongoose';
 import type { ParamsDictionary } from 'express-serve-static-core';
 import Document, { type StoredDocumentMetadata } from '../models/Document';
 import type { AuthedRequestHandler } from '../types/http';
-import { sendResponse } from '../utils/sendResponse';
-import { writeAuditLog } from '../utils/audit';
-import { toObjectId, toEntityId } from '../utils/ids';
+import { sendResponse, writeAuditLog, toObjectId, toEntityId } from '../utils';
 
 interface DocumentPayload {
   base64?: string;

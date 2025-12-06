@@ -13,18 +13,14 @@ import InventoryItem from '../models/InventoryItem';
 import StockHistory from '../models/StockHistory';
 import Permit, { type PermitDocument } from '../models/Permit';
 import { emitWorkOrderUpdate } from '../server';
-import notifyUser from '../utils/notify';
 import { notifySlaBreach, notifyWorkOrderAssigned } from '../services/notificationService';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
-import { auditAction } from '../utils/audit';
-import { normalizePartUsageCosts } from '../utils/partUsageCost';
 
 import type { WorkOrderType, WorkOrderInput } from '../types/workOrder';
+import { notifyUser, auditAction, normalizePartUsageCosts, sendResponse, validateItems } from '../utils';
 
-import { sendResponse } from '../utils/sendResponse';
-import { validateItems } from '../utils/validateItems';
 import {
   workOrderCreateSchema,
   workOrderUpdateSchema,

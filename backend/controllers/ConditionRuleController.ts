@@ -4,10 +4,8 @@
 
 import type { ParamsDictionary } from 'express-serve-static-core';
 import type { AuthedRequestHandler } from '../types/http';
-import { sendResponse } from '../utils/sendResponse';
 import ConditionRule from '../models/ConditionRule';
-import { writeAuditLog } from '../utils/audit';
-import { toEntityId } from '../utils/ids';
+import { sendResponse, writeAuditLog, toEntityId } from '../utils';
 
 type ConditionRuleBody = Record<string, unknown>;
 

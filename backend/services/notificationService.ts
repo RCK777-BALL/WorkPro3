@@ -14,10 +14,8 @@ import User from '../models/User';
 import type { WorkOrderDocument } from '../models/WorkOrder';
 import type { IInventoryItem } from '../models/InventoryItem';
 import type { PMTaskDocument } from '../models/PMTask';
-import logger from '../utils/logger';
-import { assertEmail } from '../utils/assert';
-import { enqueueEmailRetry } from '../utils/emailQueue';
 import { getIO } from '../socket';
+import { logger, assertEmail, enqueueEmailRetry } from '../utils';
 
 export interface NotificationChannels {
   email?: string;

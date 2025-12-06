@@ -6,9 +6,7 @@ import { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
 
 import Role from '../models/Role';
-import { writeAuditLog } from '../utils/audit';
-import { sendResponse } from '../utils/sendResponse';
-import { toObjectId, toEntityId } from '../utils/ids';
+import { writeAuditLog, sendResponse, toObjectId, toEntityId } from '../utils';
 
 const buildScopedFilter = (tenantId: Types.ObjectId, siteId?: Types.ObjectId | null) => {
   const filter: Record<string, unknown> = { tenantId };

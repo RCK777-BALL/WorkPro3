@@ -5,7 +5,7 @@
 import { Kafka, logLevel } from 'kafkajs';
 import type { Producer, Consumer, EachMessagePayload, KafkaConfig } from 'kafkajs';
 import type { Server as SocketIOServer } from 'socket.io';
-import logger from '../utils/logger';
+import { logger } from '../utils';
 
 const brokersEnv = process.env.KAFKA_BROKERS || '';
 const brokers = brokersEnv.split(',').map((b) => b.trim()).filter(Boolean);

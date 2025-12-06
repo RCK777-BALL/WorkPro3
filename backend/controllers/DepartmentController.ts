@@ -8,7 +8,7 @@ import type { ParamsDictionary } from 'express-serve-static-core';
 
 import Department, { type DepartmentDoc } from '../models/Department';
 import type { AuthedRequestHandler } from '../types/http';
-import { sendResponse } from '../utils/sendResponse';
+import { sendResponse } from '../utils';
 
 
 interface DepartmentListQuery extends ParsedQs {

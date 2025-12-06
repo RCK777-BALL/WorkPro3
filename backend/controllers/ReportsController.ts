@@ -13,8 +13,8 @@ import WorkHistory from '../models/WorkHistory';
 import User from '../models/User';
 import TimeSheet from '../models/TimeSheet';
 import { LABOR_RATE } from '../config/env';
-import { sendResponse } from '../utils/sendResponse';
 import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
+import { sendResponse } from '../utils';
 
 interface AnalyticsStats {
   workOrderCompletionRate: number;

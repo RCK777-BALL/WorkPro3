@@ -3,7 +3,7 @@
  */
 
 import { EventEmitter } from 'events';
-import logger from '../utils/logger';
+import { logger } from '../utils';
 
 export const telemetryEmitter = new EventEmitter();
 

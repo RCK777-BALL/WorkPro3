@@ -10,8 +10,7 @@ import StockHistory from '../models/StockHistory';
 import StockItem from '../models/StockItem';
 import type { VendorResponse } from '../services/vendorService';
 import { getVendor, VendorNotFoundError } from '../services/vendorService';
-import { writeAuditLog } from '../utils/audit';
-import { sendResponse } from '../utils/sendResponse';
+import { writeAuditLog, sendResponse } from '../utils';
 
 const toPlainObject = (value: unknown): Record<string, unknown> | undefined => {
   if (!value) return undefined;

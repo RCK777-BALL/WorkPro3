@@ -313,7 +313,7 @@ export async function buildAnalyticsSnapshots(
     status: 'completed',
   })
     .where('completedAt')
-    .gte(from)
+    .gte(from.getTime())
     .lean();
 
   workOrders.forEach((order) => {
@@ -448,16 +448,22 @@ export async function persistSnapshots(
   if (!hydrated.length) return hydrated;
 
   await AnalyticsSnapshot.bulkWrite(
-    hydrated.map((snapshot) => ({
-      updateOne: {
-        filter: {
-          tenantId: normalizedTenantId,
-          period: new Date(snapshot.period),
-          granularity: snapshot.granularity,
-          siteId: snapshot.siteId ? new Types.ObjectId(snapshot.siteId) : null,
-          assetId: snapshot.assetId ? new Types.ObjectId(snapshot.assetId) : null,
-          technicianId: snapshot.technicianId ? new Types.ObjectId(snapshot.technicianId) : null,
-        },
+      hydrated.map((snapshot) => ({
+        updateOne: {
+          filter: {
+            tenantId: normalizedTenantId,
+            period: new Date(snapshot.period),
+            granularity: snapshot.granularity,
+            ...(snapshot.siteId
+              ? { siteId: new Types.ObjectId(snapshot.siteId) }
+              : { siteId: { $exists: false } }),
+            ...(snapshot.assetId
+              ? { assetId: new Types.ObjectId(snapshot.assetId) }
+              : { assetId: { $exists: false } }),
+            ...(snapshot.technicianId
+              ? { technicianId: new Types.ObjectId(snapshot.technicianId) }
+              : { technicianId: { $exists: false } }),
+          },
         update: {
           $set: {
             mtbfHours: snapshot.mtbfHours,

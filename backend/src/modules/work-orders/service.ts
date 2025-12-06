@@ -11,6 +11,13 @@ import type { ApprovalStepUpdate, StatusTransition, WorkOrderContext, WorkOrderT
 import { resolveUserId } from './middleware';
 import { notifyUser } from '../../../utils';
 
+const ensureTimeline = (workOrder: WorkOrderDocument) => {
+  if (!workOrder.timeline) {
+    workOrder.timeline = [] as unknown as typeof workOrder.timeline;
+  }
+  return workOrder.timeline;
+};
+
 export const getWorkOrderById = async (context: WorkOrderContext, workOrderId: string) => {
   if (!isValidObjectId(workOrderId)) throw new Error('Invalid work order id');
   return WorkOrder.findOne({ _id: workOrderId, tenantId: context.tenantId });
@@ -24,9 +31,9 @@ export const updateWorkOrderStatus = async (
   const workOrder = await getWorkOrderById(context, workOrderId);
   if (!workOrder) throw new Error('Work order not found');
 
-  workOrder.status = payload.status as WorkOrder['status'];
-  workOrder.timeline = workOrder.timeline ?? [];
-  workOrder.timeline.push({
+  workOrder.status = payload.status as WorkOrderDocument['status'];
+  const timeline = ensureTimeline(workOrder);
+  timeline.push({
     label: `Status changed to ${payload.status}`,
     notes: payload.note,
     createdAt: new Date(),
@@ -63,25 +70,24 @@ export const advanceApproval = async (
   active.approver = update.approverId ?? resolveUserId(user);
 
   const maxStep = Math.max(...workOrder.approvalSteps.map((step) => step.step));
-  if (update.approved && workOrder.currentApprovalStep && workOrder.currentApprovalStep < maxStep) {
-    workOrder.currentApprovalStep += 1;
-    const nextStep = findActiveApproval(workOrder);
-    if (nextStep?.approver) {
-      notifyUser(nextStep.approver.toString(), {
-        title: 'Work order approval needed',
-        body: `Approval required for ${workOrder.title}`,
-      }).catch(() => undefined);
+    if (update.approved && workOrder.currentApprovalStep && workOrder.currentApprovalStep < maxStep) {
+      workOrder.currentApprovalStep += 1;
+      const nextStep = findActiveApproval(workOrder);
+      if (nextStep?.approver) {
+        notifyUser(nextStep.approver, `Approval required for ${workOrder.title}`, {
+          title: 'Work order approval needed',
+        }).catch(() => undefined);
+      }
+    } else {
+      workOrder.approvalStatus = update.approved ? 'approved' : 'rejected';
     }
-  } else {
-    workOrder.approvalStatus = update.approved ? 'approved' : 'rejected';
-  }
 
-  workOrder.timeline = workOrder.timeline ?? [];
-  workOrder.timeline.push({
-    label: `Approval ${update.approved ? 'approved' : 'rejected'}`,
-    notes: update.note,
-    createdAt: new Date(),
-    type: 'approval',
+    const timeline = ensureTimeline(workOrder);
+    timeline.push({
+      label: `Approval ${update.approved ? 'approved' : 'rejected'}`,
+      notes: update.note,
+      createdAt: new Date(),
+      type: 'approval',
     createdBy: update.approverId ?? resolveUserId(user),
   });
 
@@ -104,8 +110,8 @@ export const acknowledgeSla = async (
     workOrder.slaResolvedAt = timestamp;
   }
 
-  workOrder.timeline = workOrder.timeline ?? [];
-  workOrder.timeline.push({
+  const timeline = ensureTimeline(workOrder);
+  timeline.push({
     label: kind === 'response' ? 'Response acknowledged' : 'Resolution recorded',
     createdAt: timestamp,
     type: 'sla',
@@ -171,9 +177,8 @@ export const escalateIfNeeded = async (workOrder: WorkOrderDocument) => {
   rules.forEach((rule) => {
     rule.escalatedAt = new Date();
     (rule.escalateTo ?? []).forEach((userId) => {
-      notifyUser(userId.toString(), {
+      notifyUser(userId, `${workOrder.title} breached the ${rule.trigger} threshold`, {
         title: 'SLA escalation',
-        body: `${workOrder.title} breached the ${rule.trigger} threshold`,
       }).catch(() => undefined);
     });
   });

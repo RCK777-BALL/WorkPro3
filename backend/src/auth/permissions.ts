@@ -106,3 +106,5 @@ export default {
   requirePermission,
   assertPermission,
 };
+
+export type { Permission } from '../../shared/permissions';

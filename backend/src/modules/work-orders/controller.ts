@@ -3,12 +3,23 @@
  */
 
 import type { Response, NextFunction } from 'express';
+import { Types } from 'mongoose';
 
 import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
 import { fail } from '../../lib/http';
 import { approvalAdvanceSchema, slaAcknowledgeSchema, statusUpdateSchema, templateCreateSchema, templateParamSchema, templateUpdateSchema, workOrderParamSchema } from './schemas';
 import { acknowledgeSla, advanceApproval, createTemplate, deleteTemplate, getTemplate, listTemplates, updateTemplate, updateWorkOrderStatus } from './service';
-import type { WorkOrderContext } from './types';
+import type { ApprovalStepUpdate, StatusTransition, WorkOrderContext } from './types';
+import type { WorkOrderTemplate } from './templateModel';
+
+type TemplateDefaultsInput = {
+  priority?: string;
+  type?: string;
+  assignedTo?: string | Types.ObjectId;
+  checklists?: { text?: string; required?: boolean }[];
+  parts?: { partId?: string | Types.ObjectId; qty?: number }[];
+  status?: string;
+};
 
 const ensureContext = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
   if (!req.tenantId) {
@@ -31,6 +42,41 @@ const handleError = (err: unknown, res: Response, next: NextFunction) => {
   next(err);
 };
 
+const normalizeTemplateDefaults = (
+  defaults?: TemplateDefaultsInput | undefined,
+): WorkOrderTemplate['defaults'] | undefined => {
+  if (!defaults) return undefined;
+  const normalized: WorkOrderTemplate['defaults'] = {};
+
+  if (defaults.priority) normalized.priority = defaults.priority;
+  if (defaults.type) normalized.type = defaults.type;
+  if (defaults.status) normalized.status = defaults.status;
+
+  if (defaults.assignedTo) {
+    normalized.assignedTo = new Types.ObjectId(defaults.assignedTo);
+  }
+
+  if (defaults.checklists) {
+    normalized.checklists = defaults.checklists
+      .filter((item): item is { text: string; required?: boolean } => typeof item.text === 'string')
+      .map((item) => ({
+        text: item.text,
+        ...(item.required !== undefined ? { required: item.required } : {}),
+      }));
+  }
+
+  if (defaults.parts) {
+    normalized.parts = defaults.parts
+      .filter((part): part is { partId: string | Types.ObjectId; qty?: number } => Boolean(part.partId))
+      .map((part) => ({
+        partId: new Types.ObjectId(part.partId),
+        ...(part.qty ? { qty: part.qty } : {}),
+      }));
+  }
+
+  return normalized;
+};
+
 export const updateStatusHandler: AuthedRequestHandler<{ workOrderId: string }> = async (req, res, next) => {
   if (!ensureContext(req, res)) return;
   const parse = statusUpdateSchema.safeParse(req.body);
@@ -39,7 +85,11 @@ export const updateStatusHandler: AuthedRequestHandler<{ workOrderId: string }> 
     return;
   }
   try {
-    const workOrder = await updateWorkOrderStatus(buildContext(req), req.params.workOrderId, parse.data);
+    const payload: StatusTransition = {
+      status: parse.data.status!,
+      ...(parse.data.note ? { note: parse.data.note } : {}),
+    };
+    const workOrder = await updateWorkOrderStatus(buildContext(req), req.params.workOrderId, payload);
     res.json({ success: true, data: workOrder });
   } catch (err) {
     handleError(err, res, next);
@@ -58,7 +108,12 @@ export const advanceApprovalHandler: AuthedRequestHandler<{ workOrderId: string 
     return;
   }
   try {
-    const workOrder = await advanceApproval(buildContext(req), req.params.workOrderId, parse.data, req.user);
+    const payload: ApprovalStepUpdate = {
+      approved: parse.data.approved ?? true,
+      ...(parse.data.note ? { note: parse.data.note } : {}),
+      approverId: undefined,
+    };
+    const workOrder = await advanceApproval(buildContext(req), req.params.workOrderId, payload, req.user);
     res.json({ success: true, data: workOrder });
   } catch (err) {
     handleError(err, res, next);
@@ -97,7 +152,13 @@ export const createTemplateHandler: AuthedRequestHandler = async (req, res, next
     return;
   }
   try {
-    const template = await createTemplate({ ...parse.data, tenantId: req.tenantId!, siteId: req.siteId });
+    const template = await createTemplate({
+      name: parse.data.name!,
+      description: parse.data.description,
+      tenantId: req.tenantId!,
+      siteId: req.siteId,
+      defaults: normalizeTemplateDefaults(parse.data.defaults),
+    });
     res.status(201).json({ success: true, data: template });
   } catch (err) {
     handleError(err, res, next);
@@ -139,7 +200,10 @@ export const updateTemplateHandler: AuthedRequestHandler<{ templateId: string }>
     return;
   }
   try {
-    const template = await updateTemplate(buildContext(req), paramParse.data.templateId, bodyParse.data);
+    const template = await updateTemplate(buildContext(req), paramParse.data.templateId, {
+      ...bodyParse.data,
+      defaults: normalizeTemplateDefaults(bodyParse.data.defaults),
+    });
     res.json({ success: true, data: template });
   } catch (err) {
     handleError(err, res, next);

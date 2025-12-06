@@ -44,6 +44,7 @@ interface AssetTableProps {
   canDelete?: boolean;
   canCreateWorkOrder?: boolean;
   readOnlyReason?: string;
+  filters?: AssetFilters;
 }
 
 const AssetTable: React.FC<AssetTableProps> = ({
@@ -63,6 +64,7 @@ const AssetTable: React.FC<AssetTableProps> = ({
   canDelete = true,
   canCreateWorkOrder = true,
   readOnlyReason,
+  filters = {},
 }) => {
   const [internalSelection, setInternalSelection] = useState<string[]>(selectedIds);
 

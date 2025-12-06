@@ -18,6 +18,7 @@ import { duplicateAsset } from '@/utils/duplicate';
 import ConflictResolver from '@/components/offline/ConflictResolver';
 import { safeLocalStorage } from '@/utils/safeLocalStorage';
 import { usePermissions } from '@/auth/usePermissions';
+import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useScopeContext } from '@/context/ScopeContext';
 import { useToast } from '@/context/ToastContext';
@@ -219,6 +220,51 @@ const AssetsPage: React.FC = () => {
     const unsub = onSyncConflict(setConflict);
     return () => unsub();
   }, []);
+
+  useEffect(() => {
+    const savedFilters = safeLocalStorage.getItem(filterStorageKey);
+    if (!savedFilters) return;
+
+    try {
+      const parsed = JSON.parse(savedFilters) as {
+        search?: string;
+        status?: string;
+        criticality?: string;
+        preset?: string;
+      };
+
+      if (typeof parsed.search === 'string') setSearch(parsed.search);
+      if (typeof parsed.status === 'string') setStatusFilter(parsed.status);
+      if (typeof parsed.criticality === 'string') setCriticalityFilter(parsed.criticality);
+      if (typeof parsed.preset === 'string') setSelectedPreset(parsed.preset);
+    } catch (error) {
+      console.warn('Failed to parse saved asset filters', error);
+    }
+  }, [filterStorageKey]);
+
+  useEffect(() => {
+    const preset = ASSET_VIEW_PRESETS.find((p) => p.id === selectedPreset);
+    const matchesPreset =
+      preset && preset.status === statusFilter && preset.criticality === criticalityFilter;
+
+    if (!preset && selectedPreset !== 'custom') {
+      setSelectedPreset('custom');
+    } else if (!matchesPreset && selectedPreset !== 'custom') {
+      setSelectedPreset('custom');
+    }
+  }, [criticalityFilter, selectedPreset, statusFilter]);
+
+  useEffect(() => {
+    safeLocalStorage.setItem(
+      filterStorageKey,
+      JSON.stringify({
+        search,
+        status: statusFilter,
+        criticality: criticalityFilter,
+        preset: selectedPreset,
+      }),
+    );
+  }, [criticalityFilter, filterStorageKey, search, selectedPreset, statusFilter]);
 
   const resolveConflict = async (choice: 'local' | 'server') => {
     if (!conflict) return;

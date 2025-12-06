@@ -115,6 +115,10 @@ export interface Asset {
   /** Hours of downtime accumulated in the recent reporting window */
   recentDowntimeHours?: number;
   warrantyExpiry?: string;
+  openWorkOrders?: number;
+  openWorkOrderCount?: number;
+  recentDowntimeHours?: number;
+  downtimeHours?: number;
   documents?: File[];
 }
 

@@ -86,8 +86,7 @@ const tenantSchema = new Schema<TenantDocument>(
   { timestamps: true },
 );
 
-tenantSchema.index({ slug: 1 }, { unique: true, sparse: true });
-tenantSchema.index({ domain: 1 }, { unique: true, sparse: true });
+
 
 const Tenant: Model<TenantDocument> = mongoose.model<TenantDocument>('Tenant', tenantSchema);
 

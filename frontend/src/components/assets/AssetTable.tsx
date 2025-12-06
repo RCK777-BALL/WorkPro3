@@ -2,24 +2,44 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { History, QrCode, Wrench } from 'lucide-react';
 import Badge from '@common/Badge';
 import Button from '@common/Button';
 import DuplicateButton from '@common/DuplicateButton';
 import type { Asset } from '@/types';
 
-export interface AssetFilters {
-  status?: string;
-  criticality?: string;
-}
+const formatCriticality = (value?: Asset['criticality']) => {
+  if (!value) return 'Criticality: N/A';
+  return `Criticality: ${value.charAt(0).toUpperCase()}${value.slice(1)}`;
+};
+
+const formatHealth = (value?: string) => (value ? `Health: ${value}` : 'Health: N/A');
+
+const formatLastMaintenance = (asset: Asset) => {
+  const lastDate = asset.lastMaintenanceDate ?? asset.lastPmDate ?? asset.lastServiced;
+  return lastDate ? `Last maintenance: ${lastDate}` : 'Last maintenance: N/A';
+};
+
+const formatOpenWorkOrders = (value?: number) =>
+  typeof value === 'number' ? `${value} open WO${value === 1 ? '' : 's'}` : 'Open WOs: N/A';
+
+const formatDowntime = (value?: number) =>
+  typeof value === 'number' ? `Recent downtime: ${value}h` : 'Recent downtime: N/A';
 
 interface AssetTableProps {
   assets: Asset[];
   search: string;
+  statusFilter?: string;
+  criticalityFilter?: string;
   onRowClick: (asset: Asset) => void;
   onDuplicate: (asset: Asset) => void;
   onDelete: (asset: Asset) => void;
   onCreateWorkOrder?: (asset: Asset) => void;
+  onViewMaintenance?: (asset: Asset) => void;
+  onViewQrCode?: (asset: Asset) => void;
+  selectedIds?: string[];
+  onSelectionChange?: (ids: string[]) => void;
   canEdit?: boolean;
   canDelete?: boolean;
   canCreateWorkOrder?: boolean;
@@ -30,50 +50,63 @@ interface AssetTableProps {
 const AssetTable: React.FC<AssetTableProps> = ({
   assets,
   search,
+  statusFilter,
+  criticalityFilter,
   onRowClick,
   onDuplicate,
   onDelete,
   onCreateWorkOrder,
+  onViewMaintenance,
+  onViewQrCode,
+  selectedIds = [],
+  onSelectionChange,
   canEdit = true,
   canDelete = true,
   canCreateWorkOrder = true,
   readOnlyReason,
   filters = {},
 }) => {
-  const normalizeSearch = search.trim().toLowerCase();
+  const [internalSelection, setInternalSelection] = useState<string[]>(selectedIds);
 
-  const filteredAssets = assets.filter((asset) => {
-    const matchesSearch = Object.values(asset).some((value) =>
-      String(value).toLowerCase().includes(normalizeSearch)
-    );
+  useEffect(() => {
+    setInternalSelection(selectedIds);
+  }, [selectedIds]);
 
-    const matchesStatus = (() => {
-      if (!filters.status || filters.status === 'all') return true;
-      return (asset.status ?? '').toLowerCase() === filters.status.toLowerCase();
-    })();
+  const filteredAssets = useMemo(
+    () =>
+      assets.filter((asset) =>
+        Object.values(asset).some((value) =>
+          String(value).toLowerCase().includes(search.toLowerCase())
+        )
+      ),
+    [assets, search]
+  );
 
-    const matchesCriticality = (() => {
-      if (!filters.criticality || filters.criticality === 'all') return true;
-      return (asset.criticality ?? '').toLowerCase() === filters.criticality.toLowerCase();
-    })();
+  const selectedSet = new Set(internalSelection);
+  const allVisibleSelected =
+    filteredAssets.length > 0 && filteredAssets.every((asset) => selectedSet.has(asset.id));
 
-    return matchesSearch && matchesStatus && matchesCriticality;
-  });
-
-  const formatMaintenanceDate = (value?: string) => {
-    if (!value) return 'N/A';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleDateString();
+  const emitSelectionChange = (ids: string[]) => {
+    setInternalSelection(ids);
+    onSelectionChange?.(ids);
   };
 
-  const getHealthBadgeTone = (value?: number) => {
-    if (value === undefined || value === null || Number.isNaN(value)) {
-      return 'bg-slate-800 text-slate-200 border border-slate-700';
+  const toggleRow = (assetId: string) => {
+    if (!onSelectionChange) return;
+    const nextSelection = selectedSet.has(assetId)
+      ? internalSelection.filter((id) => id !== assetId)
+      : [...internalSelection, assetId];
+    emitSelectionChange(nextSelection);
+  };
+
+  const toggleAll = () => {
+    if (!onSelectionChange) return;
+    const visibleIds = filteredAssets.map((asset) => asset.id);
+    if (allVisibleSelected) {
+      emitSelectionChange(internalSelection.filter((id) => !visibleIds.includes(id)));
+    } else {
+      emitSelectionChange(Array.from(new Set([...internalSelection, ...visibleIds])));
     }
-    if (value >= 80) return 'bg-emerald-500/15 text-emerald-200 border border-emerald-500/30';
-    if (value >= 50) return 'bg-amber-500/15 text-amber-200 border border-amber-500/30';
-    return 'bg-rose-500/15 text-rose-200 border border-rose-500/30';
   };
 
   return (
@@ -82,11 +115,25 @@ const AssetTable: React.FC<AssetTableProps> = ({
         <table className="min-w-full divide-y divide-slate-800">
           <thead className="bg-slate-900/80">
             <tr>
+              {onSelectionChange && (
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
+                  <input
+                    aria-label={allVisibleSelected ? 'Deselect all visible assets' : 'Select all visible assets'}
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-slate-700 bg-slate-900 text-indigo-500"
+                    checked={allVisibleSelected}
+                    onChange={toggleAll}
+                  />
+                </th>
+              )}
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
                 Asset
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
                 Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
+                Criticality / Health
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
                 Location
@@ -95,10 +142,13 @@ const AssetTable: React.FC<AssetTableProps> = ({
                 Department
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
-                Reliability
+                Last Maintenance
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
-                Maintenance
+                Open WOs
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
+                Recent Downtime
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-300">
                 Actions
@@ -108,33 +158,16 @@ const AssetTable: React.FC<AssetTableProps> = ({
           <tbody className="divide-y divide-slate-800 bg-slate-900/60">
             {filteredAssets.map((asset) => {
               const statusText = asset.status?.trim() || 'Unknown';
-              const criticalityText = asset.criticality
-                ? `${asset.criticality.charAt(0).toUpperCase()}${asset.criticality.slice(1)} criticality`
-                : 'Criticality not set';
-              const healthValue = asset.healthScore ?? asset.health;
-              const normalizedHealth =
-                typeof healthValue === 'number'
-                  ? healthValue
-                  : Number.isFinite(Number(healthValue))
-                    ? Number(healthValue)
-                    : undefined;
-              const healthText =
-                normalizedHealth !== undefined && normalizedHealth !== null
-                  ? `${Math.round(normalizedHealth)}% health`
-                  : 'Health pending';
-              const lastMaintenance =
-                asset.lastMaintenanceDate ?? asset.lastServiced ?? asset.lastPmDate;
-              const openWorkOrders = asset.openWorkOrders ?? asset.openWorkOrderCount ?? 0;
-              const downtime = asset.recentDowntimeHours ?? asset.downtimeHours;
-              const downtimeText =
-                downtime === undefined || downtime === null
-                  ? 'Downtime n/a'
-                  : `${downtime}h recent downtime`;
+              const criticality = asset.criticality ?? 'low';
+              const health = asset.health ?? 'good';
+              const lastMaintenance = asset.lastMaintenanceDate || asset.lastServiced;
+              const openWorkOrders = asset.openWorkOrders ?? 0;
+              const downtime = asset.recentDowntimeHours ?? 0;
 
               return (
                 <tr
                   key={asset.id}
-                  className="cursor-pointer transition-colors duration-150 hover:bg-slate-800/70"
+                  className={`cursor-pointer transition-colors duration-150 hover:bg-slate-800/70 ${selectedSet.has(asset.id) ? 'bg-slate-800/60' : ''}`}
                   onClick={() => onRowClick(asset)}
                   role="button"
                   tabIndex={0}
@@ -146,6 +179,18 @@ const AssetTable: React.FC<AssetTableProps> = ({
                   }}
                   aria-label={`View or edit ${asset.name}`}
                 >
+                {onSelectionChange && (
+                  <td className="px-4 py-4 whitespace-nowrap align-middle">
+                    <input
+                      aria-label={`Select ${asset.name}`}
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-slate-700 bg-slate-900 text-indigo-500"
+                      checked={selectedSet.has(asset.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={() => toggleRow(asset.id)}
+                    />
+                  </td>
+                )}
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <div className="flex-shrink-0 h-10 w-10">
@@ -170,11 +215,28 @@ const AssetTable: React.FC<AssetTableProps> = ({
                       <div className="text-sm text-slate-400">
                         {asset.serialNumber}
                       </div>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <Badge text={formatCriticality(asset.criticality)} type="priority" size="sm" />
+                        <Badge text={formatHealth(asset.health)} type="status" size="sm" />
+                        <Badge text={formatLastMaintenance(asset)} size="sm" />
+                        <Badge text={formatOpenWorkOrders(asset.openWorkOrders)} size="sm" />
+                        <Badge text={formatDowntime(asset.recentDowntimeHours)} size="sm" />
+                      </div>
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <Badge text={statusText} type="status" size="sm" />
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                  <div className="flex flex-col gap-1">
+                    <Badge
+                      text={asset.criticality ? asset.criticality : 'N/A'}
+                      type="priority"
+                      size="sm"
+                    />
+                    <Badge text={getHealthBadge(asset)} size="sm" />
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                   {asset.location}
@@ -183,29 +245,21 @@ const AssetTable: React.FC<AssetTableProps> = ({
                   {asset.department}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge text={criticalityText} type="priority" size="sm" />
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${getHealthBadgeTone(normalizedHealth)}`}
-                    >
-                      {healthText}
-                    </span>
-                  </div>
+                  {asset.lastMaintenanceDate || asset.lastServiced || 'N/A'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge
-                      text={`Last maintenance: ${formatMaintenanceDate(lastMaintenance)}`}
-                      size="sm"
-                      className="bg-blue-500/15 text-blue-200 border border-blue-500/30"
-                    />
-                    <span className="inline-flex items-center rounded-full border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-100">
-                      Open WO: {openWorkOrders}
-                    </span>
-                    <span className="inline-flex items-center rounded-full border border-indigo-700/60 bg-indigo-800/60 px-2.5 py-1 text-xs font-medium text-indigo-100">
-                      {downtimeText}
-                    </span>
-                  </div>
+                  <Badge
+                    text={`${asset.openWorkOrders ?? 0} open`}
+                    type={(asset.openWorkOrders ?? 0) > 0 ? 'status' : 'default'}
+                    size="sm"
+                  />
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                  <Badge
+                    text={`${asset.downtimeHoursLast30Days ?? 0}h`}
+                    type={(asset.downtimeHoursLast30Days ?? 0) > 0 ? 'status' : 'default'}
+                    size="sm"
+                  />
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right align-top">
                   <div className="flex flex-wrap items-center justify-end gap-2">
@@ -218,8 +272,37 @@ const AssetTable: React.FC<AssetTableProps> = ({
                           onCreateWorkOrder(asset);
                         }}
                         aria-label="Create work order"
+                        icon={<Wrench className="h-4 w-4" />}
                       >
                         New WO
+                      </Button>
+                    )}
+                    {onViewMaintenance && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                          e.stopPropagation();
+                          onViewMaintenance(asset);
+                        }}
+                        aria-label="View maintenance history"
+                        icon={<History className="h-4 w-4" />}
+                      >
+                        History
+                      </Button>
+                    )}
+                    {onViewQrCode && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                          e.stopPropagation();
+                          onViewQrCode(asset);
+                        }}
+                        aria-label="View QR code"
+                        icon={<QrCode className="h-4 w-4" />}
+                      >
+                        QR
                       </Button>
                     )}
                     <DuplicateButton

@@ -6,10 +6,12 @@ import http from '@/lib/http';
 import type {
   InventoryAlert,
   InventoryLocation,
+  PaginatedResult,
   Part,
   PurchaseOrder,
   PurchaseOrderPayload,
   PartUsageReport,
+  SortDirection,
   StockAdjustment,
   StockHistoryEntry,
   StockItem,
@@ -20,8 +22,17 @@ import type {
 
 const BASE_PATH = '/inventory/v2';
 
-export const fetchParts = async (): Promise<Part[]> => {
-  const res = await http.get<Part[]>(`${BASE_PATH}/parts`);
+export interface PartQueryParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  vendorId?: string;
+  sortBy?: string;
+  sortDirection?: SortDirection;
+}
+
+export const fetchParts = async (params: PartQueryParams = {}): Promise<PaginatedResult<Part>> => {
+  const res = await http.get<PaginatedResult<Part>>(`${BASE_PATH}/parts`, { params });
   return res.data;
 };
 

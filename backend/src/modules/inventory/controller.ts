@@ -104,7 +104,18 @@ const handleError = (err: unknown, res: Response, next: NextFunction) => {
 export const listPartsHandler: AuthedRequestHandler = async (req, res, next) => {
   if (!ensureTenant(req, res)) return;
   try {
-    const data = await listParts(buildContext(req));
+    const toNumber = (value: unknown, fallback: number) => {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+    };
+    const data = await listParts(buildContext(req), {
+      page: toNumber(req.query.page, 1),
+      pageSize: Math.min(toNumber(req.query.pageSize, 25), 200),
+      search: typeof req.query.search === 'string' ? req.query.search : undefined,
+      vendorId: typeof req.query.vendorId === 'string' ? req.query.vendorId : undefined,
+      sortBy: typeof req.query.sortBy === 'string' ? req.query.sortBy : undefined,
+      sortDirection: req.query.sortDirection === 'desc' ? 'desc' : 'asc',
+    });
     send(res, data);
   } catch (err) {
     handleError(err, res, next);

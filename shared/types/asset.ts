@@ -32,10 +32,19 @@ export interface Asset extends TenantScoped {
   /** Identifier of the station the asset belongs to */
   stationId?: string | undefined;
   criticality?: 'high' | 'medium' | 'low' | undefined;
+  healthScore?: number | undefined;
+  health?: number | undefined;
   lastPmDate?: string | undefined;
   lastServiced?: string | undefined;
+  lastMaintenanceDate?: string | undefined;
   warrantyExpiry?: string | undefined;
+  openWorkOrders?: number | undefined;
+  openWorkOrderCount?: number | undefined;
+  recentDowntimeHours?: number | undefined;
+  downtimeHours?: number | undefined;
   documents?: string[] | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
+  reliability?: { mttrHours: number; mtbfHours: number } | undefined;
+  downtimeCount?: number | undefined;
 }

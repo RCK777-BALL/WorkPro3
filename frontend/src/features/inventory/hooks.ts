@@ -11,6 +11,7 @@ import {
   fetchLocations,
   fetchPartUsageReport,
   fetchParts,
+  type PartQueryParams,
   fetchStockHistory,
   fetchStockItems,
   fetchVendors,
@@ -26,8 +27,13 @@ export const INVENTORY_STOCK_QUERY_KEY = ['inventory', 'v2', 'stock'] as const;
 export const INVENTORY_HISTORY_QUERY_KEY = ['inventory', 'v2', 'history'] as const;
 export const INVENTORY_USAGE_QUERY_KEY = ['inventory', 'v2', 'usage'] as const;
 
-export const usePartsQuery = () =>
-  useQuery({ queryKey: INVENTORY_PARTS_QUERY_KEY, queryFn: fetchParts, staleTime: 30_000 });
+export const usePartsQuery = (params: PartQueryParams = {}) =>
+  useQuery({
+    queryKey: [...INVENTORY_PARTS_QUERY_KEY, params],
+    queryFn: () => fetchParts(params),
+    staleTime: 30_000,
+    keepPreviousData: true,
+  });
 
 export const useVendorsQuery = () =>
   useQuery({ queryKey: INVENTORY_VENDORS_QUERY_KEY, queryFn: fetchVendors, staleTime: 60_000 });
@@ -48,10 +54,10 @@ export const usePartUsageReport = () =>
   useQuery({ queryKey: INVENTORY_USAGE_QUERY_KEY, queryFn: fetchPartUsageReport, staleTime: 60_000 });
 
 export const useLowStockParts = () => {
-  const query = usePartsQuery();
+  const query = usePartsQuery({ pageSize: 200, sortBy: 'reorderPoint' });
   const lowStock = useMemo(
-    () => (query.data ?? []).filter((part) => part.alertState?.needsReorder),
-    [query.data],
+    () => (query.data?.items ?? []).filter((part) => part.alertState?.needsReorder),
+    [query.data?.items],
   );
   return { ...query, lowStock };
 };

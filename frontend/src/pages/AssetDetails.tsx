@@ -16,6 +16,7 @@ import AssetWorkOrderList from '@/components/assets/AssetWorkOrderList';
 import DowntimeHistory from '@/components/assets/DowntimeHistory';
 import CommentThread from '@/components/comments/CommentThread';
 import AssetLifecycle, { evaluateWarrantyStatus } from '@/components/assets/AssetLifecycle';
+import AssetMetersPanel from '@/components/assets/AssetMetersPanel';
 
 const tabs = [
   { id: 'overview', label: 'Overview' },
@@ -26,6 +27,7 @@ const tabs = [
   { id: 'work', label: 'Open Work Orders' },
   { id: 'costs', label: 'Cost Rollups' },
   { id: 'lifecycle', label: 'Lifecycle' },
+  { id: 'meters', label: 'Meters' },
   { id: 'comments', label: 'Comments' },
 ] as const;
 
@@ -161,6 +163,8 @@ const AssetDetails = () => {
             {...(data?.costRollups ? { cost: data.costRollups } : {})}
           />
         );
+      case 'meters':
+        return id ? <AssetMetersPanel assetId={id} /> : null;
       case 'lifecycle':
         return data?.asset ? (
           <AssetLifecycle asset={data.asset} />

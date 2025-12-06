@@ -16,6 +16,10 @@ export interface Meter {
   currentValue: number;
   pmInterval: number;
   lastWOValue: number;
+  thresholds?: {
+    warning?: number;
+    critical?: number;
+  };
   tenantId: Types.ObjectId;
   siteId?: Types.ObjectId;
 }
@@ -30,6 +34,10 @@ const meterSchema = new Schema<Meter>(
     currentValue: { type: Number, default: 0 },
     pmInterval: { type: Number, required: true },
     lastWOValue: { type: Number, default: 0 },
+    thresholds: {
+      warning: { type: Number },
+      critical: { type: Number },
+    },
     tenantId: {
       type: Schema.Types.ObjectId,
       ref: 'Tenant',

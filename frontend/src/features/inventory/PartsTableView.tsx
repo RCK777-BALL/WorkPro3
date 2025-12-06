@@ -3,13 +3,15 @@
  */
 
 import { useMemo, useState } from 'react';
-import { RefreshCcw } from 'lucide-react';
+import { MessageSquare, Paperclip, Plus, RefreshCcw } from 'lucide-react';
+import { useMutation, useQueryClient } from 'react-query';
 
 import Button from '@/components/common/Button';
+import TextArea from '@/components/common/TextArea';
+import { upsertPart } from '@/api/inventory';
 import type { Part } from '@/types';
-import { usePartsQuery, useVendorsQuery } from './hooks';
+import { INVENTORY_PARTS_QUERY_KEY, usePartsQuery, useVendorsQuery } from './hooks';
 import { QrLabel } from '@/components/qr';
-import { StockLevelBadge } from './AlertIndicators';
 
 const matchSearch = (part: Part, term: string) => {
   const haystack = [
@@ -42,8 +44,20 @@ const formatLocation = (location?: { store?: string; room?: string; bin?: string
 const PartsTableView = () => {
   const partsQuery = usePartsQuery();
   const vendorsQuery = useVendorsQuery();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [vendorFilter, setVendorFilter] = useState('all');
+  const [noteTargetId, setNoteTargetId] = useState<string | null>(null);
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
+
+  const noteMutation = useMutation({
+    mutationFn: ({ partId, notes }: { partId: string; notes: string }) =>
+      upsertPart({ id: partId, notes }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries(INVENTORY_PARTS_QUERY_KEY);
+      setNoteTargetId(null);
+    },
+  });
 
   const parts = partsQuery.data ?? [];
   const vendorOptions = vendorsQuery.data ?? [];
@@ -59,6 +73,18 @@ const PartsTableView = () => {
       return matchSearch(part, search.trim());
     });
   }, [parts, search, vendorFilter]);
+
+  const openNoteForm = (partId: string) => {
+    setNoteTargetId(partId);
+    setNoteDrafts((prev) => ({ ...prev, [partId]: prev[partId] ?? '' }));
+  };
+
+  const saveNote = (part: Part) => {
+    const draft = (noteDrafts[part.id] ?? '').trim();
+    if (!draft) return;
+    const mergedNotes = part.notes ? `${part.notes}\n\n${draft}` : draft;
+    noteMutation.mutate({ partId: part.id, notes: mergedNotes });
+  };
 
   return (
     <section className="rounded-lg border border-neutral-200 bg-white shadow-sm">
@@ -119,24 +145,85 @@ const PartsTableView = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100">
-              {filteredParts.map((part) => (
-                <tr
-                  key={part.id}
-                  className={part.alertState?.needsReorder ? 'bg-warning-50/40' : undefined}
-                >
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-neutral-900">{part.name}</p>
-                    <p className="text-xs text-neutral-500">SKU {part.sku ?? 'n/a'}</p>
-                    <div className="pt-2">
-                      <QrLabel
-                        name={part.name}
-                        subtitle={part.vendor?.name ?? 'Part label'}
-                        qrValue={part.qrCode ?? JSON.stringify({ type: 'part', id: part.id })}
-                        showPreview={false}
-                        buttonLabel="Print QR Label"
-                      />
-                    </div>
-                  </td>
+              {filteredParts.map((part) => {
+                const commentCount = part.commentsCount ?? (part.notes ? 1 : 0);
+                const attachmentCount =
+                  part.attachmentsCount ?? part.attachments?.length ?? (part.image ? 1 : 0);
+                const isNoteOpen = noteTargetId === part.id;
+                const noteDraft = noteDrafts[part.id] ?? '';
+                const noteSaving = noteMutation.isLoading && noteMutation.variables?.partId === part.id;
+
+                return (
+                  <tr
+                    key={part.id}
+                    className={part.alertState?.needsReorder ? 'bg-warning-50/40' : undefined}
+                  >
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-neutral-900">{part.name}</p>
+                      <p className="text-xs text-neutral-500">SKU {part.sku ?? 'n/a'}</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-neutral-500">
+                        {commentCount > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-1 font-semibold">
+                            <MessageSquare size={12} />
+                            {commentCount} note{commentCount === 1 ? '' : 's'}
+                          </span>
+                        )}
+                        {attachmentCount > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-1 font-semibold">
+                            <Paperclip size={12} />
+                            {attachmentCount} attachment{attachmentCount === 1 ? '' : 's'}
+                          </span>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="px-2 py-1 text-xs"
+                          icon={<Plus size={12} />}
+                          onClick={() => openNoteForm(part.id)}
+                        >
+                          {isNoteOpen ? 'Editing note' : 'Quick add note'}
+                        </Button>
+                      </div>
+                      {isNoteOpen && (
+                        <div className="mt-3 space-y-2 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
+                          <TextArea
+                            value={noteDraft}
+                            onChange={(event) =>
+                              setNoteDrafts((prev) => ({ ...prev, [part.id]: event.target.value }))
+                            }
+                            rows={3}
+                            placeholder="Add a quick note about this part"
+                          />
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => saveNote(part)}
+                              loading={noteSaving}
+                              disabled={!noteDraft.trim()}
+                            >
+                              Save note
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setNoteTargetId(null)}>
+                              Cancel
+                            </Button>
+                            {part.notes && (
+                              <p className="text-[11px] text-neutral-500">
+                                We will append this to existing notes so you keep prior context.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      <div className="pt-2">
+                        <QrLabel
+                          name={part.name}
+                          subtitle={part.vendor?.name ?? 'Part label'}
+                          qrValue={part.qrCode ?? JSON.stringify({ type: 'part', id: part.id })}
+                          showPreview={false}
+                          buttonLabel="Print QR / Label"
+                        />
+                      </div>
+                    </td>
                   <td className="px-4 py-3 text-sm text-neutral-600">
                     {part.vendor ? (
                       <div>

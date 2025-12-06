@@ -106,6 +106,14 @@ export interface Asset {
   criticality?: 'high' | 'medium' | 'low';
   lastPmDate?: string;
   lastServiced?: string;
+  /** Most recent preventive or corrective maintenance completion date */
+  lastMaintenanceDate?: string;
+  /** Optional health score from condition monitoring (0-100) */
+  healthScore?: number;
+  /** Number of currently open work orders linked to the asset */
+  openWorkOrders?: number;
+  /** Downtime recorded in the most recent 30-day window (hours) */
+  downtimeHoursLast30Days?: number;
   warrantyExpiry?: string;
   documents?: File[];
 }

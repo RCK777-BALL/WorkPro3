@@ -11,6 +11,8 @@ import type { Asset } from '@/types';
 interface AssetTableProps {
   assets: Asset[];
   search: string;
+  statusFilter?: string;
+  criticalityFilter?: string;
   onRowClick: (asset: Asset) => void;
   onDuplicate: (asset: Asset) => void;
   onDelete: (asset: Asset) => void;
@@ -24,6 +26,8 @@ interface AssetTableProps {
 const AssetTable: React.FC<AssetTableProps> = ({
   assets,
   search,
+  statusFilter,
+  criticalityFilter,
   onRowClick,
   onDuplicate,
   onDelete,
@@ -33,11 +37,25 @@ const AssetTable: React.FC<AssetTableProps> = ({
   canCreateWorkOrder = true,
   readOnlyReason,
 }) => {
-  const filteredAssets = assets.filter((asset) =>
-    Object.values(asset).some((value) =>
+  const filteredAssets = assets.filter((asset) => {
+    const matchesSearch = Object.values(asset).some((value) =>
       String(value).toLowerCase().includes(search.toLowerCase())
-    )
-  );
+    );
+    const matchesStatus = statusFilter
+      ? (asset.status ?? '').toLowerCase() === statusFilter.toLowerCase()
+      : true;
+    const matchesCriticality = criticalityFilter
+      ? (asset.criticality ?? '').toLowerCase() === criticalityFilter.toLowerCase()
+      : true;
+    return matchesSearch && matchesStatus && matchesCriticality;
+  });
+
+  const getHealthBadge = (asset: Asset) => {
+    if (typeof asset.healthScore !== 'number') return 'Health N/A';
+    if (asset.healthScore >= 80) return `Health ${asset.healthScore}%`;
+    if (asset.healthScore >= 60) return `Health ${asset.healthScore}%`;
+    return `Health ${asset.healthScore}%`;
+  };
 
   return (
     <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900/80 text-slate-100 shadow-sm backdrop-blur">
@@ -52,16 +70,22 @@ const AssetTable: React.FC<AssetTableProps> = ({
                 Status
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
+                Criticality / Health
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
                 Location
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
                 Department
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
-                Last Serviced
+                Last Maintenance
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
-                Warranty Expiry
+                Open WOs
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
+                Recent Downtime
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-300">
                 Actions
@@ -118,16 +142,37 @@ const AssetTable: React.FC<AssetTableProps> = ({
                   <Badge text={statusText} type="status" size="sm" />
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                  <div className="flex flex-col gap-1">
+                    <Badge
+                      text={asset.criticality ? asset.criticality : 'N/A'}
+                      type="priority"
+                      size="sm"
+                    />
+                    <Badge text={getHealthBadge(asset)} size="sm" />
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                   {asset.location}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                   {asset.department}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                  {asset.lastServiced || 'N/A'}
+                  {asset.lastMaintenanceDate || asset.lastServiced || 'N/A'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                  {asset.warrantyEnd || asset.warrantyExpiry || 'N/A'}
+                  <Badge
+                    text={`${asset.openWorkOrders ?? 0} open`}
+                    type={(asset.openWorkOrders ?? 0) > 0 ? 'status' : 'default'}
+                    size="sm"
+                  />
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                  <Badge
+                    text={`${asset.downtimeHoursLast30Days ?? 0}h`}
+                    type={(asset.downtimeHoursLast30Days ?? 0) > 0 ? 'status' : 'default'}
+                    size="sm"
+                  />
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right align-top">
                   <div className="flex flex-wrap items-center justify-end gap-2">

@@ -219,13 +219,18 @@ const QrScanner: React.FC<QrScannerProps> = ({ onDetected, onError, onStatusChan
           </div>
         )}
       </div>
-      <div className="flex items-center justify-between text-sm text-neutral-600 dark:text-neutral-300">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-sm text-neutral-600 dark:text-neutral-300">
         <div className="flex items-center gap-2">
-          <Video className="h-4 w-4" />
+          <Video className="h-5 w-5" />
           <span>{hintCopy}</span>
         </div>
-        <Button size="sm" variant="outline" onClick={() => setScanAttempt((value) => value + 1)}>
-          Retry
+        <Button
+          size="lg"
+          variant="outline"
+          className="w-full sm:w-auto"
+          onClick={() => setScanAttempt((value) => value + 1)}
+        >
+          Retry scan
         </Button>
       </div>
       {permissionState === 'denied' && (

@@ -612,17 +612,23 @@ export default function WorkOrders() {
   return (
     <>
       <div className="space-y-6 p-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-2xl font-bold">Work Orders</h1>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate('/assets/scan')}>
-              <Scan className="mr-2 h-4 w-4" />
-              Scan asset QR
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <Button
+              variant="primary"
+              size="lg"
+              className="w-full sm:w-auto"
+              onClick={() => navigate('/assets/scan')}
+            >
+              <Scan className="mr-2 h-5 w-5" />
+              Scan QR/Barcode
             </Button>
             <Button
               variant="primary"
+              size="lg"
               onClick={openCreateModal}
-              className="border border-primary-700"
+              className="w-full border border-primary-700 sm:w-auto"
             >
               Create Work Order
             </Button>

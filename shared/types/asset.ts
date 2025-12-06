@@ -45,14 +45,6 @@ export interface Asset extends TenantScoped {
   documents?: string[] | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
-  assignee?: string | undefined;
-  assignedTo?: string | undefined;
-  nextPmDate?: string | undefined;
-  keyMeters?:
-    | Array<{
-        name: string;
-        value?: number | string;
-        unit?: string;
-      }>
-    | undefined;
+  reliability?: { mttrHours: number; mtbfHours: number } | undefined;
+  downtimeCount?: number | undefined;
 }

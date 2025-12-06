@@ -1,0 +1,41 @@
+name: Nightly MongoDB Build
+
+on:
+  schedule:
+    - cron: '30 5 * * *'
+  workflow_dispatch:
+
+env:
+  MONGODB_URI: ${{ secrets.NIGHTLY_MONGODB_URI }}
+  MONGODB_DATABASE: ${{ vars.NIGHTLY_MONGODB_DATABASE }}
+  MONGODB_USERNAME: ${{ secrets.NIGHTLY_MONGODB_USERNAME }}
+  MONGODB_PASSWORD: ${{ secrets.NIGHTLY_MONGODB_PASSWORD }}
+
+jobs:
+  backend-mongodb:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Build backend
+        run: npm run build --if-present
+
+      - name: Run MongoDB-specific tests
+        env:
+          MONGODB_URI: ${{ env.MONGODB_URI }}
+          MONGODB_DATABASE: ${{ env.MONGODB_DATABASE }}
+        run: npm test --if-present

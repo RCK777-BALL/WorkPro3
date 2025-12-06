@@ -26,12 +26,34 @@ export interface WorkOrder {
     | 'approved';
   type: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
   approvalStatus: 'draft' | 'pending' | 'approved' | 'rejected';
+  approvalSteps?: Types.Array<{
+    step: number;
+    name: string;
+    approver?: Types.ObjectId;
+    status: 'pending' | 'approved' | 'rejected' | 'skipped';
+    approvedAt?: Date;
+    note?: string;
+    required?: boolean;
+  }>;
+  currentApprovalStep?: number;
   approvalRequestedBy?: Types.ObjectId;
   approvedBy?: Types.ObjectId;
   approvedAt?: Date;
   requestedBy?: Types.ObjectId;
   requestedAt?: Date;
   slaDueAt?: Date;
+  slaResponseDueAt?: Date;
+  slaResolveDueAt?: Date;
+  slaRespondedAt?: Date;
+  slaResolvedAt?: Date;
+  slaBreachAt?: Date;
+  slaEscalations?: Types.Array<{
+    trigger: 'response' | 'resolve';
+    thresholdMinutes?: number;
+    escalateTo?: Types.Array<Types.ObjectId>;
+    escalatedAt?: Date;
+    channel?: 'email' | 'push';
+  }>;
   assignedTo?: Types.ObjectId;
   assignees: Types.Array<Types.ObjectId>;
   checklists: Types.Array<{
@@ -51,6 +73,20 @@ export interface WorkOrder {
   signatures: Types.Array<{ by: Types.ObjectId; ts: Date }>;
   permits: Types.Array<Types.ObjectId>;
   requiredPermitTypes: Types.Array<string>;
+  permitApprovals?: Types.Array<{
+    type: string;
+    status: 'pending' | 'approved' | 'rejected';
+    approvedBy?: Types.ObjectId;
+    approvedAt?: Date;
+    note?: string;
+  }>;
+  lockoutTagout?: Types.Array<{
+    category: 'electrical' | 'mechanical' | 'hydraulic' | 'pneumatic' | 'chemical' | 'other';
+    description: string;
+    verifiedBy?: Types.ObjectId;
+    verifiedAt?: Date;
+    clearedAt?: Date;
+  }>;
   timeSpentMin?: number;
   photos: Types.Array<string>;
   failureCode?: string;
@@ -150,12 +186,48 @@ const workOrderSchema = new Schema<WorkOrder>(
       enum: ['draft', 'pending', 'approved', 'rejected'],
       default: 'draft',
     },
+    approvalSteps: {
+      type: [
+        {
+          step: { type: Number, required: true },
+          name: { type: String, required: true },
+          approver: { type: Schema.Types.ObjectId, ref: 'User' },
+          status: {
+            type: String,
+            enum: ['pending', 'approved', 'rejected', 'skipped'],
+            default: 'pending',
+          },
+          approvedAt: { type: Date },
+          note: { type: String },
+          required: { type: Boolean, default: true },
+        },
+      ],
+      default: [],
+    },
+    currentApprovalStep: { type: Number, default: 1 },
     approvalRequestedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     approvedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     approvedAt: { type: Date },
     requestedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     requestedAt: { type: Date },
     slaDueAt: { type: Date },
+    slaResponseDueAt: { type: Date },
+    slaResolveDueAt: { type: Date },
+    slaRespondedAt: { type: Date },
+    slaResolvedAt: { type: Date },
+    slaBreachAt: { type: Date },
+    slaEscalations: {
+      type: [
+        {
+          trigger: { type: String, enum: ['response', 'resolve'], required: true },
+          thresholdMinutes: { type: Number },
+          escalateTo: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+          escalatedAt: { type: Date },
+          channel: { type: String, enum: ['email', 'push'], default: 'email' },
+        },
+      ],
+      default: [],
+    },
     assignedTo: { type: Schema.Types.ObjectId, ref: 'User' },
     assignees: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     checklists: [
@@ -196,6 +268,34 @@ const workOrderSchema = new Schema<WorkOrder>(
     ],
     permits: [{ type: Schema.Types.ObjectId, ref: 'Permit' }],
     requiredPermitTypes: [{ type: String }],
+    permitApprovals: {
+      type: [
+        {
+          type: { type: String, required: true },
+          status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+          approvedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+          approvedAt: { type: Date },
+          note: { type: String },
+        },
+      ],
+      default: [],
+    },
+    lockoutTagout: {
+      type: [
+        {
+          category: {
+            type: String,
+            enum: ['electrical', 'mechanical', 'hydraulic', 'pneumatic', 'chemical', 'other'],
+            default: 'mechanical',
+          },
+          description: { type: String, required: true },
+          verifiedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+          verifiedAt: { type: Date },
+          clearedAt: { type: Date },
+        },
+      ],
+      default: [],
+    },
     timeSpentMin: Number,
     photos: [String],
     failureCode: String,
@@ -288,8 +388,24 @@ workOrderSchema.pre('save', function handleCosts(next) {
 });
 
 workOrderSchema.virtual('isSLABreached').get(function isSLABreached(this: WorkOrder) {
-  if (!this.dueDate) return false;
-  return Date.now() > new Date(this.dueDate).getTime();
+  const now = Date.now();
+  if (this.slaResolveDueAt && !this.slaResolvedAt && now > new Date(this.slaResolveDueAt).getTime()) {
+    return true;
+  }
+  if (this.slaResponseDueAt && !this.slaRespondedAt && now > new Date(this.slaResponseDueAt).getTime()) {
+    return true;
+  }
+  if (this.dueDate && now > new Date(this.dueDate).getTime()) {
+    return true;
+  }
+  return false;
+});
+
+workOrderSchema.pre('save', function updateSlaBreach(next) {
+  if (this.isSLABreached && !this.slaBreachAt) {
+    this.slaBreachAt = new Date();
+  }
+  next();
 });
 
 workOrderSchema.pre('save', function handleVersioning(next) {

@@ -98,6 +98,8 @@ import assetInsightsRouter from "./src/modules/assets";
 import executiveRouter from "./src/modules/executive";
 import analyticsModuleRouter from "./src/modules/analytics";
 import meterReadingsRouter from "./src/modules/meters";
+import workOrdersModuleRouter from "./src/modules/work-orders";
+import { startWorkOrderReminderJobs } from "./src/modules/work-orders/jobs";
 
 import { startPMScheduler } from "./utils/PMScheduler";
 import { startCopilotSummaryJob } from "./tasks/copilotSummaries";
@@ -283,6 +285,7 @@ app.use("/api/onboarding", onboardingRouter);
 app.use("/api/executive", executiveRouter);
 app.use("/api/analytics/v2", analyticsModuleRouter);
 app.use("/api/custom-reports", customReportsRouter);
+app.use("/api/work-orders", workOrdersModuleRouter);
 
 app.use("/api/departments", departmentRoutes);
 app.use("/api/departments", departmentRoutes);

@@ -156,6 +156,11 @@ const AssetTable: React.FC<AssetTableProps> = ({
           <tbody className="divide-y divide-slate-800 bg-slate-900/60">
             {filteredAssets.map((asset) => {
               const statusText = asset.status?.trim() || 'Unknown';
+              const criticality = asset.criticality ?? 'low';
+              const health = asset.health ?? 'good';
+              const lastMaintenance = asset.lastMaintenanceDate || asset.lastServiced;
+              const openWorkOrders = asset.openWorkOrders ?? 0;
+              const downtime = asset.recentDowntimeHours ?? 0;
 
               return (
                 <tr

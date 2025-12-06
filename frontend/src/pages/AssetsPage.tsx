@@ -34,6 +34,21 @@ const SAVED_VIEWS = [
   { id: 'healthy', label: 'Healthy running', search: '', status: 'Active', criticality: '' },
 ];
 
+interface AssetSavedView {
+  id: string;
+  name: string;
+  statuses: Array<Asset['status']>;
+  criticalities: Array<Asset['criticality']>;
+  search: string;
+}
+
+const DEFAULT_VIEWS: AssetSavedView[] = [
+  { id: 'all', name: 'All assets', statuses: [], criticalities: [], search: '' },
+  { id: 'critical-active', name: 'Active critical', statuses: ['Active'], criticalities: ['high'], search: '' },
+];
+
+const getFilterStorageKey = (userId?: string | null) => `asset:filters:${userId ?? 'guest'}`;
+
 const AssetsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const assets = useAssetStore((s) => s.assets);
@@ -118,6 +133,11 @@ const AssetsPage: React.FC = () => {
   const preferencesKey = useMemo(
     () => `asset-view-preferences-${user?.id ?? 'guest'}`,
     [user?.id],
+  );
+
+  const mergedViews = useMemo(
+    () => [...DEFAULT_VIEWS, ...savedViews],
+    [savedViews],
   );
 
   useEffect(() => {
@@ -281,6 +301,44 @@ const AssetsPage: React.FC = () => {
   }, [fetchAssets]);
 
   useEffect(() => {
+    const key = getFilterStorageKey(user?.id);
+    const saved = safeLocalStorage.getItem(key);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as {
+          search?: string;
+          statuses?: Array<Asset['status']>;
+          criticalities?: Array<Asset['criticality']>;
+          savedViews?: AssetSavedView[];
+          activeViewId?: string;
+        };
+
+        setSearch(parsed.search ?? '');
+        setStatusFilters(parsed.statuses ?? []);
+        setCriticalityFilters(parsed.criticalities ?? []);
+        setSavedViews(parsed.savedViews ?? []);
+        setActiveViewId(parsed.activeViewId ?? 'all');
+      } catch (err) {
+        console.warn('Unable to parse saved asset filters', err);
+      }
+    } else {
+      setActiveViewId('all');
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    const key = getFilterStorageKey(user?.id);
+    const payload = {
+      search,
+      statuses: statusFilters,
+      criticalities: criticalityFilters,
+      savedViews,
+      activeViewId,
+    };
+    safeLocalStorage.setItem(key, JSON.stringify(payload));
+  }, [activeViewId, criticalityFilters, savedViews, search, statusFilters, user?.id]);
+
+  useEffect(() => {
     if (searchParams.get('intent') === 'create') {
       setSelected(null);
       setModalOpen(true);
@@ -367,6 +425,66 @@ const AssetsPage: React.FC = () => {
     const critical = scopedAssets.filter((asset) => asset.criticality === 'high').length;
     return { total, active, critical };
   }, [scopedAssets]);
+
+  const filteredAssets = useMemo(() => {
+    const statusSet = new Set(statusFilters.filter(Boolean));
+    const criticalitySet = new Set(criticalityFilters.filter(Boolean));
+
+    return normalizedAssets.filter((asset) => {
+      const statusMatches = statusSet.size === 0 || (asset.status && statusSet.has(asset.status));
+
+      const criticalityMatches =
+        criticalitySet.size === 0 || (asset.criticality && criticalitySet.has(asset.criticality));
+
+      return statusMatches && criticalityMatches;
+    });
+  }, [criticalityFilters, normalizedAssets, statusFilters]);
+
+  const applyView = useCallback(
+    (viewId: string) => {
+      const view = mergedViews.find((candidate) => candidate.id === viewId);
+      if (!view) return;
+      setActiveViewId(viewId);
+      setSearch(view.search ?? '');
+      setStatusFilters(view.statuses ?? []);
+      setCriticalityFilters(view.criticalities ?? []);
+    },
+    [mergedViews],
+  );
+
+  const toggleStatus = (status: Asset['status']) => {
+    setStatusFilters((current) =>
+      current.includes(status)
+        ? current.filter((item) => item !== status)
+        : [...current, status]
+    );
+    setActiveViewId('custom');
+  };
+
+  const toggleCriticality = (criticality: Asset['criticality']) => {
+    setCriticalityFilters((current) =>
+      current.includes(criticality)
+        ? current.filter((item) => item !== criticality)
+        : [...current, criticality]
+    );
+    setActiveViewId('custom');
+  };
+
+  const handleSaveView = () => {
+    const name = window.prompt('Name this view');
+    if (!name) return;
+
+    const newView: AssetSavedView = {
+      id: `${Date.now()}`,
+      name,
+      statuses: statusFilters,
+      criticalities: criticalityFilters,
+      search,
+    };
+
+    setSavedViews((current) => [...current, newView]);
+    setActiveViewId(newView.id);
+  };
 
   const canManageAssets = can('hierarchy', 'write');
   const canDeleteAssets = can('hierarchy', 'delete');

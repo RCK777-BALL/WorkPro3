@@ -115,6 +115,37 @@ const AssetsPage: React.FC = () => {
     [],
   );
 
+  const preferencesKey = useMemo(
+    () => `asset-view-preferences-${user?.id ?? 'guest'}`,
+    [user?.id],
+  );
+
+  useEffect(() => {
+    const stored = safeLocalStorage.getItem(preferencesKey);
+    if (!stored) return;
+    try {
+      const parsed = JSON.parse(stored) as ReturnType<typeof createDefaultViewPreferences>;
+      setSearch(parsed.search ?? '');
+      setStatusFilter(parsed.statusFilter ?? '');
+      setCriticalityFilter(parsed.criticalityFilter ?? '');
+      setSavedViews(parsed.savedViews ?? []);
+      setSelectedView(parsed.selectedView ?? '');
+    } catch (err) {
+      console.warn('Failed to load asset view preferences', err);
+    }
+  }, [preferencesKey]);
+
+  useEffect(() => {
+    const snapshot = {
+      search,
+      statusFilter,
+      criticalityFilter,
+      savedViews,
+      selectedView,
+    };
+    safeLocalStorage.setItem(preferencesKey, JSON.stringify(snapshot));
+  }, [search, statusFilter, criticalityFilter, savedViews, selectedView, preferencesKey]);
+
   useEffect(() => {
     const stored = safeLocalStorage.getItem(filterPreferenceKey);
     if (!stored) return;
@@ -301,6 +332,33 @@ const AssetsPage: React.FC = () => {
     }
     await http.delete(`/assets/${id}`);
     removeAsset(id);
+  };
+
+  const handleApplySavedView = (viewName: string) => {
+    setSelectedView(viewName);
+    const matched = savedViews.find((view) => view.name === viewName);
+    if (!matched) return;
+    setSearch(matched.search ?? '');
+    setStatusFilter(matched.statusFilter ?? '');
+    setCriticalityFilter(matched.criticalityFilter ?? '');
+  };
+
+  const handleSaveCurrentView = () => {
+    const name = window.prompt('Name this view');
+    if (!name) return;
+    setSavedViews((prev) => {
+      const filtered = prev.filter((view) => view.name !== name);
+      return [
+        ...filtered,
+        {
+          name,
+          search,
+          statusFilter,
+          criticalityFilter,
+        },
+      ];
+    });
+    setSelectedView(name);
   };
 
   const stats = useMemo(() => {
@@ -572,6 +630,8 @@ const AssetsPage: React.FC = () => {
         <AssetTable
           assets={filteredAssets}
           search={search}
+          statusFilter={statusFilter}
+          criticalityFilter={criticalityFilter}
           onRowClick={(a) => { setSelected(a); setModalOpen(true); }}
           onDuplicate={handleDuplicate}
           onDelete={(a) => handleDelete(a.id)}

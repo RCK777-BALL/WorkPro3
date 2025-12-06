@@ -7,8 +7,11 @@ import Badge from "@/components/common/Badge";
 import Card from "@/components/common/Card";
 import DataTable from "@/components/common/DataTable";
 import StatusBadge from "@/components/common/StatusBadge";
+import TableLayoutControls from "@/components/common/TableLayoutControls";
 import http from "@/lib/http";
 import type { ContractorRosterEntry } from "./types";
+import { useTableLayout } from "@/hooks/useTableLayout";
+import { useAuth } from "@/context/AuthContext";
 
 const formatWarningLabel = (warnings: string[]) => {
   if (warnings.length === 0) return "Clear";
@@ -17,6 +20,7 @@ const formatWarningLabel = (warnings: string[]) => {
 };
 
 const ContractorRoster = () => {
+  const { user } = useAuth();
   const [roster, setRoster] = useState<ContractorRosterEntry[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -48,6 +52,7 @@ const ContractorRoster = () => {
   const columns = useMemo(
     () => [
       {
+        id: "contractor",
         header: "Contractor",
         accessor: (entry: ContractorRosterEntry) => (
           <div className="space-y-1">
@@ -62,6 +67,7 @@ const ContractorRoster = () => {
         ),
       },
       {
+        id: "status",
         header: "Status",
         accessor: (entry: ContractorRosterEntry) => (
           <div className="space-y-1">
@@ -83,6 +89,7 @@ const ContractorRoster = () => {
         ),
       },
       {
+        id: "eligibility",
         header: "Eligibility",
         accessor: (entry: ContractorRosterEntry) => (
           <div className="space-y-1">
@@ -100,6 +107,7 @@ const ContractorRoster = () => {
         ),
       },
       {
+        id: "warnings",
         header: "Warnings",
         accessor: (entry: ContractorRosterEntry) => (
           <div className="text-sm text-amber-200">
@@ -108,6 +116,7 @@ const ContractorRoster = () => {
         ),
       },
       {
+        id: "vendor",
         header: "Vendor Contact",
         accessor: (entry: ContractorRosterEntry) => (
           <div className="text-sm text-slate-200 leading-tight">
@@ -126,6 +135,43 @@ const ContractorRoster = () => {
     ],
     [roster],
   );
+
+  const columnOptions = useMemo(
+    () => columns.map((column) => ({ id: column.id ?? column.header, label: column.header })),
+    [columns],
+  );
+
+  const tableLayout = useTableLayout({
+    tableKey: "contractor-roster",
+    columnIds: columnOptions.map((column) => column.id),
+    userId: user?.id,
+  });
+
+  const columnLookup = useMemo(
+    () => new Map(columns.map((column) => [column.id ?? column.header, column])),
+    [columns],
+  );
+
+  const visibleColumns = useMemo(
+    () =>
+      tableLayout.visibleColumnOrder
+        .map((id) => columnLookup.get(id))
+        .filter(Boolean) as typeof columns,
+    [columnLookup, tableLayout.visibleColumnOrder],
+  );
+
+  const handleSaveLayout = (name: string) => tableLayout.saveLayout(name, {});
+
+  const handleApplyLayout = (layoutId: string) => {
+    tableLayout.applyLayout(layoutId);
+  };
+
+  const shareLayoutLink = (layoutId?: string) => {
+    const targetState = layoutId
+      ? tableLayout.savedLayouts.find((layout) => layout.id === layoutId)?.state
+      : tableLayout.preferences;
+    return tableLayout.getShareableLink(targetState ?? tableLayout.preferences);
+  };
 
   return (
     <div className="space-y-6">
@@ -154,14 +200,31 @@ const ContractorRoster = () => {
       </div>
 
       <Card title="Contractor Roster" subtitle="Onboarding state, approvals, and eligibility checks">
-        <DataTable
-          columns={columns}
-          data={roster}
-          keyField="id"
-          isLoading={loading}
-          emptyMessage="No contractors yet"
-          variant="dark"
-        />
+        <div className="space-y-4">
+          <TableLayoutControls
+            columns={columnOptions}
+            columnOrder={tableLayout.columnOrder}
+            hiddenColumns={tableLayout.hiddenColumns}
+            onToggleColumn={tableLayout.toggleColumn}
+            onMoveColumn={tableLayout.moveColumn}
+            onReset={tableLayout.resetLayout}
+            onSaveLayout={handleSaveLayout}
+            savedLayouts={tableLayout.savedLayouts}
+            onApplyLayout={handleApplyLayout}
+            onShareLayout={shareLayoutLink}
+            activeLayoutId={tableLayout.activeLayoutId}
+          />
+          <DataTable
+            columns={visibleColumns}
+            data={roster}
+            keyField="id"
+            isLoading={loading}
+            emptyMessage="No contractors yet"
+            variant="dark"
+            sortState={tableLayout.sort ?? undefined}
+            onSortChange={(state) => tableLayout.setSort(state ?? null)}
+          />
+        </div>
       </Card>
     </div>
   );

@@ -2,26 +2,20 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { Request, RequestHandler } from 'express';
+import type { RequestHandler } from 'express';
 import type { Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
 import User from '../../models/User';
 import type { AuthedRequest } from '../../types/http';
 import type { Permission } from './permissions';
-import { assertPermission, requirePermission } from './permissions';
+import { assertPermission } from './permissions';
 import type { UserRole } from '../../types/auth';
 
-export interface TenantScopedRequest extends Request {
-  tenantId?: string;
+export type TenantScopedRequest = AuthedRequest & {
   siteId?: string | null;
-  user?: {
-    _id?: string;
-    tenantId?: string;
-    siteId?: string | null;
-    roles?: UserRole[];
-  };
-}
+  user?: (NonNullable<AuthedRequest['user']> & { siteId?: string | null; roles?: UserRole[] }) | undefined;
+};
 
 type PermissionGuard = Permission | Permission[] | RequestHandler;
 

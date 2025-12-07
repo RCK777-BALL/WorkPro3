@@ -26,6 +26,8 @@ export interface UserDocument extends Document {
   managerId?: Types.ObjectId;
   theme?: 'light' | 'dark' | 'system';
   colorScheme?: string;
+  notifyByEmail?: boolean;
+  notifyBySms?: boolean;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
   passwordExpired?: boolean;
@@ -80,6 +82,9 @@ const userSchema = new Schema<UserDocument>(
       type: String,
       default: 'default',
     },
+
+    notifyByEmail: { type: Boolean, default: true },
+    notifyBySms: { type: Boolean, default: false },
 
     mfaEnabled: { type: Boolean, default: false },
     mfaSecret: { type: String },

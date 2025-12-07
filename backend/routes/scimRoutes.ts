@@ -5,12 +5,18 @@
 import { Router, type Request } from 'express';
 import { randomUUID } from 'crypto';
 import scimAuth from '../middleware/scimAuth';
+import User, { type UserDocument } from '../models/User';
+import { writeAuditLog } from '../utils/audit';
+import logger from '../utils/logger';
+import { getSecurityPolicy } from '../config/securityPolicies';
 
 type TenantRequest = Request & { tenantId?: string };
 
 const router = Router();
 
 router.use(scimAuth);
+
+const SECURITY_POLICY = getSecurityPolicy();
 
 const buildListResponse = () => ({
   schemas: ['urn:ietf:params:scim:api:messages:2.0:ListResponse'],
@@ -39,30 +45,154 @@ router.get('/Groups', (_req, res) => {
   res.json(buildListResponse());
 });
 
-router.post('/Users', (req, res) => {
-  const tenantId = (req as TenantRequest).tenantId;
-  const id = req.body?.id ?? randomUUID();
-  const meta = buildMeta('User', tenantId, id);
+const normalizeEmail = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim().toLowerCase();
+  return trimmed.includes('@') ? trimmed : undefined;
+};
 
-  res.status(201).json({
-    schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
-    id,
-    ...req.body,
-    meta,
+const resolveEmailFromScim = (body: Record<string, unknown>): string | undefined => {
+  const direct = normalizeEmail(body.userName);
+  if (direct) return direct;
+  const emails = body.emails as Array<{ value?: string }> | undefined;
+  const primary = emails?.find((item) => item?.value)?.value;
+  return normalizeEmail(primary);
+};
+
+const normalizeRoles = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) =>
+        typeof entry === 'string'
+          ? entry
+          : typeof entry === 'object' && entry
+            ? (entry as { value?: unknown }).value
+            : undefined,
+      )
+      .filter((entry): entry is string => typeof entry === 'string')
+      .map((entry) => entry.trim().toLowerCase())
+      .filter(Boolean);
+  }
+  return [];
+};
+
+const provisionUserFromScim = async (tenantId: string, payload: Record<string, any>) => {
+  const email = resolveEmailFromScim(payload);
+  if (!email) {
+    throw new Error('SCIM user email is required');
+  }
+
+  const displayName =
+    typeof payload.displayName === 'string'
+      ? payload.displayName
+      : typeof payload.name?.formatted === 'string'
+        ? payload.name.formatted
+        : email.split('@')[0];
+  const employeeId = typeof payload.externalId === 'string' && payload.externalId.trim()
+    ? payload.externalId.trim()
+    : payload.id ?? randomUUID();
+  const roles = normalizeRoles(payload.roles ?? payload.groups) || ['tech'];
+
+  let user = await User.findOne({ email: email.toLowerCase(), tenantId }).select(
+    '+passwordHash +tenantId +siteId +roles +role +name +employeeId',
+  );
+
+  const userPayload = {
+    name: displayName,
+    email,
+    employeeId,
+    tenantId,
+    roles: roles.length ? roles : ['tech'],
+    siteId: payload.siteId ?? undefined,
+    passwordHash: randomUUID(),
+    bootstrapAccount: true,
+    passwordExpired: true,
+    mfaEnabled: SECURITY_POLICY.mfa.enforced,
+  } satisfies Partial<UserDocument>;
+
+  const action = user ? 'updated' : 'created';
+  if (!user) {
+    user = new User(userPayload);
+  } else {
+    Object.assign(user, userPayload);
+  }
+
+  await user.save();
+
+  await writeAuditLog({
+    tenantId,
+    userId: user._id,
+    action: `scim_user_${action}`,
+    entityType: 'user',
+    entityId: user._id.toString(),
+    after: {
+      email: user.email,
+      name: user.name,
+      roles: user.roles,
+      employeeId: user.employeeId,
+      mfaEnabled: user.mfaEnabled,
+    },
   });
+
+  return { user, action } as const;
+};
+
+router.post('/Users', async (req, res, next) => {
+  try {
+    const tenantId = (req as TenantRequest).tenantId;
+    if (!tenantId) {
+      res.status(400).json({ message: 'Missing tenant identifier' });
+      return;
+    }
+
+    const { user, action } = await provisionUserFromScim(tenantId, req.body ?? {});
+    const id = user._id.toString();
+    const meta = buildMeta('User', tenantId, id);
+    res.status(action === 'created' ? 201 : 200).json({
+      schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
+      id,
+      userName: user.email,
+      name: { formatted: user.name },
+      active: req.body?.active ?? true,
+      roles: user.roles,
+      emails: [{ value: user.email, primary: true }],
+      externalId: user.employeeId,
+      meta,
+    });
+  } catch (err) {
+    logger.error('SCIM user provisioning failed', err);
+    next(err);
+  }
 });
 
-router.post('/Groups', (req, res) => {
-  const tenantId = (req as TenantRequest).tenantId;
-  const id = req.body?.id ?? randomUUID();
-  const meta = buildMeta('Group', tenantId, id);
+router.post('/Groups', async (req, res, next) => {
+  try {
+    const tenantId = (req as TenantRequest).tenantId;
+    if (!tenantId) {
+      res.status(400).json({ message: 'Missing tenant identifier' });
+      return;
+    }
+    const id = req.body?.id ?? randomUUID();
+    const meta = buildMeta('Group', tenantId, id);
 
-  res.status(201).json({
-    schemas: ['urn:ietf:params:scim:schemas:core:2.0:Group'],
-    id,
-    ...req.body,
-    meta,
-  });
+    await writeAuditLog({
+      tenantId,
+      action: 'scim_group_placeholder',
+      entityType: 'group',
+      entityId: id,
+      after: req.body,
+    });
+
+    res.status(201).json({
+      schemas: ['urn:ietf:params:scim:schemas:core:2.0:Group'],
+      id,
+      ...req.body,
+      meta,
+    });
+  } catch (err) {
+    logger.error('SCIM group provisioning failed', err);
+    next(err);
+  }
 });
 
 export default router;

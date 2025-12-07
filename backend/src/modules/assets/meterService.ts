@@ -30,7 +30,7 @@ export type MeterReadingPayload = {
 
 export type MeterTrendPoint = { timestamp: string; value: number };
 
-type MeterWithTimestamps = MeterType & { createdAt?: Date; updatedAt?: Date };
+type MeterWithTimestamps = MeterType & { _id: Types.ObjectId; createdAt?: Date; updatedAt?: Date };
 
 export type MeterConfigResponse = {
   id: string;
@@ -54,9 +54,9 @@ export const listMetersForAsset = async (
   context: MeterContext,
   assetId: string,
 ): Promise<MeterConfigResponse[]> => {
-  const meters = await Meter.find({ tenantId: context.tenantId, asset: assetId })
+  const meters: MeterWithTimestamps[] = await Meter.find({ tenantId: context.tenantId, asset: assetId })
     .sort({ updatedAt: -1 })
-    .lean<MeterWithTimestamps>();
+    .lean();
 
   const meterIds = meters.map((meter) => meter._id as Types.ObjectId);
   const readings = await MeterReading.aggregate<{

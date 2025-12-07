@@ -48,8 +48,10 @@ export const useDismissOnboardingReminder = () => {
 export const useStepActionLabel = (key: OnboardingStepKey): string => {
   const labels: Record<OnboardingStepKey, string> = {
     site: 'Go to sites',
+    roles: 'Configure roles',
     departments: 'Build departments',
     assets: 'Start import',
+    starterData: 'Load starter data',
     pmTemplates: 'Open PM templates',
     users: 'Invite teammates',
   };

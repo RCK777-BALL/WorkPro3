@@ -15,12 +15,25 @@ import {
 import SensorReading from '../models/SensorReading';
 import Asset from '../models/Asset';
 import { sendResponse } from '../utils';
+import SensorDevice from '../models/SensorDevice';
 
 interface IoTSignalQuery extends ParsedQs {
   assetId?: string;
   metric?: string;
   limit?: string;
 }
+
+interface SensorDeviceQuery extends ParsedQs {
+  assetId?: string;
+}
+
+type SensorDeviceBody = {
+  deviceId?: string;
+  name?: string;
+  asset?: string;
+  status?: 'online' | 'offline' | 'unknown';
+  metrics?: { name: string; unit?: string; threshold?: number }[];
+};
 
 type IngestBody =
   | IoTReadingInput
@@ -170,6 +183,65 @@ export const getSignals: AuthedRequestHandler<ParamsDictionary, unknown, unknown
       })
       .sort((a, b) => (a.assetName ?? '').localeCompare(b.assetName ?? ''));
     sendResponse(res, data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const listSensorDevices: AuthedRequestHandler<
+  ParamsDictionary,
+  unknown,
+  unknown,
+  SensorDeviceQuery
+> = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant context is required', 400);
+      return;
+    }
+    const filter: FilterQuery<Record<string, unknown>> = { tenantId };
+    const { assetId } = req.query;
+    if (typeof assetId === 'string' && assetId.trim()) {
+      filter.asset = assetId.trim();
+    }
+    const devices = await SensorDevice.find(filter).sort({ updatedAt: -1 }).lean();
+    sendResponse(res, devices);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const upsertSensorDevice: AuthedRequestHandler<
+  { id?: string },
+  unknown,
+  SensorDeviceBody
+> = async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant context is required', 400);
+      return;
+    }
+
+    const payload = req.body ?? {};
+    const deviceId = payload.deviceId || req.params.id;
+    if (!deviceId) {
+      sendResponse(res, null, 'Device ID is required', 400);
+      return;
+    }
+    if (!payload.asset) {
+      sendResponse(res, null, 'Asset is required for device registration', 400);
+      return;
+    }
+
+    const updated = await SensorDevice.findOneAndUpdate(
+      { tenantId, deviceId },
+      { ...payload, tenantId, deviceId },
+      { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true },
+    );
+
+    sendResponse(res, updated, null, req.params?.id ? 200 : 201);
   } catch (err) {
     next(err);
   }

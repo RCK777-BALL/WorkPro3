@@ -88,3 +88,95 @@ export const rebuildSnapshots = async (months: number): Promise<SnapshotResponse
   const response = await http.post<SnapshotResponse>('/analytics/v2/metrics/rebuild', { months });
   return response.data;
 };
+
+export interface MetricsRollupFilters {
+  startDate?: string;
+  endDate?: string;
+  siteIds?: string[];
+  lineIds?: string[];
+  assetIds?: string[];
+  granularity?: 'day' | 'month';
+}
+
+export interface MetricsRollupBreakdownRow {
+  scope: 'tenant' | 'site' | 'line' | 'asset';
+  id?: string;
+  name?: string;
+  workOrders: number;
+  completedWorkOrders: number;
+  mttrHours: number;
+  mtbfHours: number;
+  pmCompleted: number;
+  pmTotal: number;
+  pmCompliance: number;
+  downtimeMinutes: number;
+}
+
+export interface MetricsRollupSummaryResponse {
+  range: { start?: string; end?: string; granularity: 'day' | 'month' };
+  totals: MetricsRollupBreakdownRow;
+  breakdown: MetricsRollupBreakdownRow[];
+  availableFilters: {
+    sites: Array<{ id: string; name?: string }>;
+    lines: Array<{ id: string; name?: string; siteId?: string }>;
+    assets: Array<{ id: string; name?: string; siteId?: string; lineId?: string }>;
+  };
+}
+
+export interface MetricsRollupDetailRow {
+  id: string;
+  title: string;
+  status: string;
+  type: string;
+  priority?: string;
+  createdAt?: string;
+  completedAt?: string;
+  downtimeMinutes?: number;
+  timeSpentMinutes?: number;
+  assetId?: string;
+  assetName?: string;
+  siteId?: string;
+  siteName?: string;
+  lineId?: string;
+  lineName?: string;
+  pmTaskId?: string;
+  pmTaskTitle?: string;
+}
+
+export interface MetricsRollupDetailsResponse {
+  workOrders: MetricsRollupDetailRow[];
+}
+
+export const fetchMetricsRollups = async (
+  params: MetricsRollupFilters,
+): Promise<MetricsRollupSummaryResponse> => {
+  const response = await http.get<MetricsRollupSummaryResponse>('/analytics/v2/metrics/rollups', {
+    params,
+  });
+  return response.data;
+};
+
+export const fetchMetricsRollupDetails = async (
+  params: MetricsRollupFilters,
+): Promise<MetricsRollupDetailsResponse> => {
+  const response = await http.get<MetricsRollupDetailsResponse>('/analytics/v2/metrics/rollups/details', {
+    params,
+  });
+  return response.data;
+};
+
+export const exportMetricsRollupCsv = async (params: MetricsRollupFilters): Promise<Blob> => {
+  const response = await http.get('/analytics/v2/metrics/rollups.csv', {
+    params,
+    responseType: 'blob',
+  });
+  return response.data as Blob;
+};
+
+export const exportMetricsRollupPdf = async (params: MetricsRollupFilters): Promise<Blob> => {
+  const response = await http.get('/analytics/v2/metrics/rollups.pdf', {
+    params,
+    responseType: 'blob',
+  });
+  return response.data as Blob;
+};

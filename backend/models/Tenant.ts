@@ -4,7 +4,14 @@
 
 import mongoose, { Schema, type Document, type Model, type Types } from 'mongoose';
 
-export type OnboardingStepKey = 'site' | 'departments' | 'assets' | 'pmTemplates' | 'users';
+export type OnboardingStepKey =
+  | 'site'
+  | 'roles'
+  | 'departments'
+  | 'assets'
+  | 'starterData'
+  | 'pmTemplates'
+  | 'users';
 
 export interface TenantOnboardingStepState {
   completed: boolean;
@@ -52,8 +59,10 @@ const onboardingSchema = new Schema<TenantOnboardingState>(
   {
     steps: {
       site: { type: onboardingStepSchema, default: () => ({}) },
+      roles: { type: onboardingStepSchema, default: () => ({}) },
       departments: { type: onboardingStepSchema, default: () => ({}) },
       assets: { type: onboardingStepSchema, default: () => ({}) },
+      starterData: { type: onboardingStepSchema, default: () => ({}) },
       pmTemplates: { type: onboardingStepSchema, default: () => ({}) },
       users: { type: onboardingStepSchema, default: () => ({}) },
     },

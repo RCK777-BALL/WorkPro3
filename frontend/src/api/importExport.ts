@@ -4,17 +4,9 @@
 
 import http from '@/lib/http';
 
-export type ImportPreviewRow = {
-  name: string;
-  type?: string;
-  status?: string;
-  location?: string;
-  department?: string;
-  line?: string;
-  station?: string;
-  serialNumber?: string;
-  criticality?: string;
-};
+export type ImportEntity = 'assets' | 'pms' | 'workOrders' | 'parts';
+
+export type ImportPreviewRow = Record<string, string | number | undefined>;
 
 export type ImportValidationError = {
   row: number;
@@ -34,11 +26,11 @@ export type ImportSummary = {
 
 export type ExportFormat = 'csv' | 'xlsx';
 
-export const uploadAssetImport = async (file: File): Promise<ImportSummary> => {
+export const uploadImport = async (entity: ImportEntity, file: File): Promise<ImportSummary> => {
   const formData = new FormData();
   formData.append('file', file);
 
-  const res = await http.post<ImportSummary>('/import-export/assets/import', formData);
+  const res = await http.post<ImportSummary>(`/import-export/${entity}/import`, formData);
   return res.data;
 };
 

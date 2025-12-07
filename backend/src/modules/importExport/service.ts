@@ -9,6 +9,8 @@ import XLSX from 'xlsx';
 
 import Asset, { type AssetDoc } from '../../../models/Asset';
 
+export type ImportEntity = 'assets' | 'pms' | 'workOrders' | 'parts';
+
 export class ImportExportError extends Error {
   status: number;
 
@@ -39,12 +41,40 @@ export interface ImportAssetRow {
   criticality?: string | undefined;
 }
 
+export interface ImportPmRow {
+  title: string;
+  asset?: string;
+  interval?: string;
+  department?: string;
+  priority?: string;
+}
+
+export interface ImportWorkOrderRow {
+  title: string;
+  status?: string;
+  priority?: string;
+  asset?: string;
+  requestedBy?: string;
+  dueDate?: string;
+}
+
+export interface ImportPartRow {
+  name: string;
+  partNumber?: string;
+  quantity?: number;
+  location?: string;
+  unit?: string;
+  reorderThreshold?: number;
+}
+
+export type ImportPreviewRow = Record<string, string | number | undefined>;
+
 export interface ImportSummary {
   totalRows: number;
   validRows: number;
   invalidRows: number;
   errors: ImportValidationError[];
-  preview: ImportAssetRow[];
+  preview: ImportPreviewRow[];
   columns: string[];
   detectedFormat: 'csv' | 'xlsx';
 }
@@ -76,14 +106,18 @@ const EXPORT_HEADERS = [
 type ExportRow = Record<(typeof EXPORT_HEADERS)[number]['label'], string>;
 
 type ImportableColumn = keyof ImportAssetRow;
+type ColumnAliases<TRow extends Record<string, unknown>> = Record<string, keyof TRow>;
 
 const STATUS_VALUES = new Set(['Active', 'Offline', 'In Repair']);
 const CRITICALITY_VALUES = new Set(['high', 'medium', 'low']);
 const TYPE_VALUES = new Set(['Electrical', 'Mechanical', 'Tooling', 'Interface']);
+const PM_PRIORITY_VALUES = new Set(['low', 'medium', 'high']);
+const WORK_ORDER_STATUS_VALUES = new Set(['Open', 'In Progress', 'Completed', 'Cancelled']);
+const WORK_ORDER_PRIORITY_VALUES = new Set(['Low', 'Medium', 'High', 'Critical']);
 
 const REQUIRED_FIELDS: ImportableColumn[] = ['name', 'type'];
 
-const COLUMN_ALIASES: Record<string, ImportableColumn> = {
+const COLUMN_ALIASES: ColumnAliases<ImportAssetRow> = {
   assetname: 'name',
   name: 'name',
   type: 'type',
@@ -99,6 +133,46 @@ const COLUMN_ALIASES: Record<string, ImportableColumn> = {
   criticality: 'criticality',
 };
 
+const PM_ALIASES: ColumnAliases<ImportPmRow> = {
+  title: 'title',
+  task: 'title',
+  name: 'title',
+  asset: 'asset',
+  assetname: 'asset',
+  interval: 'interval',
+  frequency: 'interval',
+  department: 'department',
+  priority: 'priority',
+};
+
+const WORK_ORDER_ALIASES: ColumnAliases<ImportWorkOrderRow> = {
+  title: 'title',
+  summary: 'title',
+  status: 'status',
+  priority: 'priority',
+  asset: 'asset',
+  assetname: 'asset',
+  requestedby: 'requestedBy',
+  requester: 'requestedBy',
+  duedate: 'dueDate',
+  due: 'dueDate',
+};
+
+const PART_ALIASES: ColumnAliases<ImportPartRow> = {
+  name: 'name',
+  partname: 'name',
+  partnumber: 'partNumber',
+  sku: 'partNumber',
+  quantity: 'quantity',
+  qty: 'quantity',
+  onhand: 'quantity',
+  location: 'location',
+  bin: 'location',
+  unit: 'unit',
+  reorder: 'reorderThreshold',
+  reorderpoint: 'reorderThreshold',
+};
+
 const trimValue = (value: unknown): string => {
   if (value === undefined || value === null) return '';
   if (value instanceof Date) return value.toISOString();
@@ -107,17 +181,20 @@ const trimValue = (value: unknown): string => {
 
 const normalizeKey = (key: string): string => key.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-const normalizeRow = (row: Record<string, unknown>): ImportAssetRow | null => {
-  const normalized: Partial<ImportAssetRow> = {};
+const normalizeRowWithAliases = <TRow extends Record<string, unknown>>(
+  row: Record<string, unknown>,
+  aliases: ColumnAliases<TRow>,
+): Partial<TRow> | null => {
+  const normalized: Partial<TRow> = {};
   let hasValue = false;
 
   for (const [rawKey, rawValue] of Object.entries(row)) {
     if (rawValue === undefined || rawValue === null) continue;
     const trimmedValue = trimValue(rawValue);
     if (!trimmedValue) continue;
-    const normalizedKey = COLUMN_ALIASES[normalizeKey(rawKey)];
+    const normalizedKey = aliases[normalizeKey(rawKey)];
     if (!normalizedKey) continue;
-    (normalized as Record<string, string>)[normalizedKey] = trimmedValue;
+    (normalized as Record<string, string | number>)[normalizedKey] = trimmedValue;
     hasValue = true;
   }
 
@@ -125,7 +202,7 @@ const normalizeRow = (row: Record<string, unknown>): ImportAssetRow | null => {
     return null;
   }
 
-  return normalized as ImportAssetRow;
+  return normalized;
 };
 
 const buildAssetFilter = (context: Context): FilterQuery<AssetDoc> => {
@@ -271,10 +348,13 @@ const detectFormat = (file: Express.Multer.File): 'csv' | 'xlsx' => {
   throw new ImportExportError('Only CSV or Excel files are supported for imports.');
 };
 
-const normalizeRows = (rawRows: Record<string, unknown>[]): ImportAssetRow[] => {
-  const rows: ImportAssetRow[] = [];
+const normalizeRows = <TRow extends Record<string, unknown>>(
+  rawRows: Record<string, unknown>[],
+  aliases: ColumnAliases<TRow>,
+): Partial<TRow>[] => {
+  const rows: Partial<TRow>[] = [];
   for (const row of rawRows) {
-    const normalized = normalizeRow(row);
+    const normalized = normalizeRowWithAliases<TRow>(row, aliases);
     if (normalized) {
       rows.push(normalized);
     }
@@ -282,27 +362,35 @@ const normalizeRows = (rawRows: Record<string, unknown>[]): ImportAssetRow[] => 
   return rows;
 };
 
+const getAliasesForEntity = (entity: ImportEntity): ColumnAliases<Record<string, unknown>> => {
+  if (entity === 'assets') return COLUMN_ALIASES as ColumnAliases<Record<string, unknown>>;
+  if (entity === 'pms') return PM_ALIASES as ColumnAliases<Record<string, unknown>>;
+  if (entity === 'workOrders') return WORK_ORDER_ALIASES as ColumnAliases<Record<string, unknown>>;
+  return PART_ALIASES as ColumnAliases<Record<string, unknown>>;
+};
+
 export const parseImportFile = (
   file: Express.Multer.File,
-): { rows: ImportAssetRow[]; format: 'csv' | 'xlsx'; columns: string[] } => {
+  entity: ImportEntity,
+): { rows: Partial<Record<string, unknown>>[]; format: 'csv' | 'xlsx'; columns: string[] } => {
   const format = detectFormat(file);
   const rawRows = format === 'csv' ? parseCsvRows(file) : parseWorkbookRows(file);
   type RawRow = Record<string, unknown>;
   const columns: string[] = Array.from(
     new Set(rawRows.flatMap((row: RawRow) => Object.keys(row ?? {}))),
   );
-  const rows = normalizeRows(rawRows);
+  const rows = normalizeRows(rawRows, getAliasesForEntity(entity));
   if (!rows.length) {
     throw new ImportExportError('No valid rows were detected in the uploaded file.');
   }
   return { rows, format, columns };
 };
 
-export const validateRows = (
-  rows: ImportAssetRow[],
-): { errors: ImportValidationError[]; valid: ImportAssetRow[] } => {
+export const validateAssetRows = (
+  rows: Array<Partial<ImportAssetRow>>,
+): { errors: ImportValidationError[]; valid: ImportPreviewRow[] } => {
   const errors: ImportValidationError[] = [];
-  const validRows: ImportAssetRow[] = [];
+  const validRows: ImportPreviewRow[] = [];
   const serials = new Set<string>();
 
   rows.forEach((row, index) => {
@@ -310,15 +398,15 @@ export const validateRows = (
     const issues: ImportValidationError[] = [];
 
     const normalized: ImportAssetRow = {
-      name: row.name?.trim() ?? '',
-      type: normalizeType(row.type),
-      status: normalizeStatus(row.status),
-      location: row.location?.trim(),
-      department: row.department?.trim(),
-      line: row.line?.trim(),
-      station: row.station?.trim(),
-      serialNumber: row.serialNumber?.trim(),
-      criticality: normalizeCriticality(row.criticality),
+      name: row.name?.toString().trim() ?? '',
+      type: normalizeType(row.type as string | undefined),
+      status: normalizeStatus(row.status as string | undefined),
+      location: row.location?.toString().trim(),
+      department: row.department?.toString().trim(),
+      line: row.line?.toString().trim(),
+      station: row.station?.toString().trim(),
+      serialNumber: row.serialNumber?.toString().trim(),
+      criticality: normalizeCriticality(row.criticality as string | undefined),
     };
 
     for (const field of REQUIRED_FIELDS) {
@@ -357,9 +445,155 @@ export const validateRows = (
   return { errors, valid: validRows };
 };
 
-export const summarizeImport = (file: Express.Multer.File): ImportSummary => {
-  const { rows, format, columns } = parseImportFile(file);
-  const { errors, valid } = validateRows(rows);
+export const validatePmRows = (
+  rows: Array<Partial<ImportPmRow>>,
+): { errors: ImportValidationError[]; valid: ImportPreviewRow[] } => {
+  const errors: ImportValidationError[] = [];
+  const validRows: ImportPreviewRow[] = [];
+
+  rows.forEach((row, index) => {
+    const rowNumber = index + 2;
+    const issues: ImportValidationError[] = [];
+
+    const title = row.title?.toString().trim() ?? '';
+    const interval = row.interval?.toString().trim();
+    const priority = row.priority?.toString().toLowerCase();
+
+    if (!title) {
+      issues.push({ row: rowNumber, field: 'title', message: 'Title is required.' });
+    }
+
+    if (!interval) {
+      issues.push({ row: rowNumber, field: 'interval', message: 'Interval is required.' });
+    }
+
+    if (priority && !PM_PRIORITY_VALUES.has(priority)) {
+      issues.push({ row: rowNumber, field: 'priority', message: 'Priority must be low, medium, or high.' });
+    }
+
+    if (issues.length) {
+      errors.push(...issues);
+      return;
+    }
+
+    validRows.push({
+      title,
+      interval,
+      asset: row.asset?.toString().trim(),
+      department: row.department?.toString().trim(),
+      priority,
+    });
+  });
+
+  return { errors, valid: validRows };
+};
+
+export const validateWorkOrderRows = (
+  rows: Array<Partial<ImportWorkOrderRow>>,
+): { errors: ImportValidationError[]; valid: ImportPreviewRow[] } => {
+  const errors: ImportValidationError[] = [];
+  const validRows: ImportPreviewRow[] = [];
+
+  rows.forEach((row, index) => {
+    const rowNumber = index + 2;
+    const issues: ImportValidationError[] = [];
+
+    const title = row.title?.toString().trim() ?? '';
+    if (!title) {
+      issues.push({ row: rowNumber, field: 'title', message: 'Title is required.' });
+    }
+
+    const status = row.status ? toTitle(row.status.toString()) : undefined;
+    if (status && !WORK_ORDER_STATUS_VALUES.has(status)) {
+      issues.push({ row: rowNumber, field: 'status', message: 'Status must be Open, In Progress, Completed, or Cancelled.' });
+    }
+
+    const priority = row.priority ? toTitle(row.priority.toString()) : undefined;
+    if (priority && !WORK_ORDER_PRIORITY_VALUES.has(priority)) {
+      issues.push({ row: rowNumber, field: 'priority', message: 'Priority must be Low, Medium, High, or Critical.' });
+    }
+
+    if (issues.length) {
+      errors.push(...issues);
+      return;
+    }
+
+    validRows.push({
+      title,
+      status: status ?? 'Open',
+      priority: priority ?? 'Medium',
+      asset: row.asset?.toString().trim(),
+      requestedBy: row.requestedBy?.toString().trim(),
+      dueDate: row.dueDate?.toString().trim(),
+    });
+  });
+
+  return { errors, valid: validRows };
+};
+
+export const validatePartRows = (
+  rows: Array<Partial<ImportPartRow>>,
+): { errors: ImportValidationError[]; valid: ImportPreviewRow[] } => {
+  const errors: ImportValidationError[] = [];
+  const validRows: ImportPreviewRow[] = [];
+
+  const parseNumber = (value?: unknown) => {
+    if (value === undefined) return undefined;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  };
+
+  rows.forEach((row, index) => {
+    const rowNumber = index + 2;
+    const issues: ImportValidationError[] = [];
+
+    const name = row.name?.toString().trim() ?? '';
+    if (!name) {
+      issues.push({ row: rowNumber, field: 'name', message: 'Name is required.' });
+    }
+
+    const quantity = parseNumber(row.quantity);
+    const reorderThreshold = parseNumber(row.reorderThreshold);
+
+    if (row.quantity !== undefined && quantity === undefined) {
+      issues.push({ row: rowNumber, field: 'quantity', message: 'Quantity must be numeric.' });
+    }
+
+    if (row.reorderThreshold !== undefined && reorderThreshold === undefined) {
+      issues.push({ row: rowNumber, field: 'reorderThreshold', message: 'Reorder threshold must be numeric.' });
+    }
+
+    if (issues.length) {
+      errors.push(...issues);
+      return;
+    }
+
+    validRows.push({
+      name,
+      partNumber: row.partNumber?.toString().trim(),
+      quantity,
+      location: row.location?.toString().trim(),
+      unit: row.unit?.toString().trim(),
+      reorderThreshold,
+    });
+  });
+
+  return { errors, valid: validRows };
+};
+
+const validateByEntity = (
+  entity: ImportEntity,
+  rows: Partial<Record<string, unknown>>[],
+): { errors: ImportValidationError[]; valid: ImportPreviewRow[] } => {
+  if (entity === 'assets') return validateAssetRows(rows as Array<Partial<ImportAssetRow>>);
+  if (entity === 'pms') return validatePmRows(rows as Array<Partial<ImportPmRow>>);
+  if (entity === 'workOrders') return validateWorkOrderRows(rows as Array<Partial<ImportWorkOrderRow>>);
+  return validatePartRows(rows as Array<Partial<ImportPartRow>>);
+};
+
+export const summarizeImport = (file: Express.Multer.File, entity: ImportEntity): ImportSummary => {
+  const { rows, format, columns } = parseImportFile(file, entity);
+  const { errors, valid } = validateByEntity(entity, rows);
   return {
     totalRows: rows.length,
     validRows: valid.length,

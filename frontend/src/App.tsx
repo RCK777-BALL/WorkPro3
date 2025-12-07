@@ -77,6 +77,7 @@ import SubmitRequest from "@/pages/requests/SubmitRequest";
 import RequestTriage from "@/pages/requests/RequestTriage";
 import AssetScan from "@/pages/AssetScan";
 import MobileWorkOrder from "@/pages/mobile/MobileWorkOrder";
+import PwaTechnicianShell from "@/pages/PwaTechnicianShell";
 
 export default function App() {
   const navigate = useNavigate();
@@ -285,6 +286,7 @@ export default function App() {
           <Route path="/teams" element={<Teams />} />
           <Route path="/plants" element={<Plants />} />
           <Route path="/technician" element={<TechnicianConsole />} />
+          <Route path="/pwa/technician" element={<PwaTechnicianShell />} />
           <Route path="/team-members/:teamMemberId" element={<TeamMemberProfile />} />
           <Route
             path="/pm/scheduler"

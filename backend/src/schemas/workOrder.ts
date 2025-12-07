@@ -147,6 +147,7 @@ const baseSchema = z.object({
       }),
     )
     .optional(),
+  customFields: z.record(z.any()).optional(),
   dueDate: z.union([z.string(), z.date()]).optional(),
   completedAt: z.union([z.string(), z.date()]).optional(),
 });

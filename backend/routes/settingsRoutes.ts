@@ -14,6 +14,8 @@ interface GeneralSettings {
   timezone: string;
   dateFormat: string;
   language: string;
+  unitSystem: 'metric' | 'imperial';
+  locale: string;
 }
 
 interface NotificationSettings {
@@ -52,6 +54,8 @@ const defaultSettings: SettingsState = {
     timezone: 'America/New_York',
     dateFormat: 'MM/DD/YYYY',
     language: 'en-US',
+    unitSystem: 'metric',
+    locale: 'en-US',
   },
   notifications: {
     emailNotifications: true,
@@ -103,6 +107,9 @@ router.get('/', async (req, res, next) => {
       general: {
         ...settingsState.general,
         language: doc?.language ?? settingsState.general.language,
+        timezone: doc?.timezone ?? settingsState.general.timezone,
+        locale: doc?.locale ?? settingsState.general.locale,
+        unitSystem: (doc?.unitSystem as GeneralSettings['unitSystem']) ?? settingsState.general.unitSystem,
       },
       theme: {
         ...settingsState.theme,
@@ -135,6 +142,21 @@ router.post('/', async (req, res, next) => {
     const language = payload.general?.language ?? settingsState.general.language;
     if (language) {
       update.language = language;
+    }
+
+    const timezone = payload.general?.timezone ?? settingsState.general.timezone;
+    if (timezone) {
+      update.timezone = timezone;
+    }
+
+    const locale = payload.general?.locale ?? settingsState.general.locale;
+    if (locale) {
+      update.locale = locale;
+    }
+
+    const unitSystem = payload.general?.unitSystem ?? settingsState.general.unitSystem;
+    if (unitSystem) {
+      update.unitSystem = unitSystem;
     }
 
     const themeMode = payload.theme?.mode ?? settingsState.theme.mode;

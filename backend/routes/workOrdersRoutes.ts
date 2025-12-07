@@ -22,6 +22,7 @@ import {
   cancelWorkOrder,
   assistWorkOrder,
   updateWorkOrderChecklist,
+  bulkUpdateWorkOrders,
 } from '../controllers/WorkOrderController';
 
 const router = Router();
@@ -31,6 +32,7 @@ router.use(tenantScope);
 
 router.get('/', getAllWorkOrders);
 router.get('/search', searchWorkOrders);
+router.post('/bulk/update', bulkUpdateWorkOrders);
 router.get('/:id', validateObjectId('id'), getWorkOrderById);
 router.post('/', workOrderValidators, validate, createWorkOrder);
 router.put('/:id', validateObjectId('id'), updateWorkOrder);

@@ -13,6 +13,7 @@ import {
   deleteAsset,
   searchAssets,
   getAssetTree,
+  bulkUpdateAssets,
 } from '../controllers/AssetController';
 import { requireAuth } from '../middleware/authMiddleware';
 import tenantScope from '../middleware/tenantScope';
@@ -74,6 +75,7 @@ router.use(tenantScope);
 
 router.get('/', getAllAssets);
 router.get('/search', searchAssets);
+router.post('/bulk/update', bulkUpdateAssets);
 router.get('/tree', getAssetTree);
 router.get('/:id', validateObjectId('id'), getAssetById);
 

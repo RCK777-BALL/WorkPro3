@@ -68,9 +68,12 @@ export const getPMTaskById: AuthedRequestHandler<PMTaskParams, PMTaskResponse> =
       return;
     }
 
+    const siteFilter = req.siteId ? { siteId: req.siteId } : {};
+
     const task = await PMTask.findOne({
       _id: req.params.id,
       tenantId,
+      ...siteFilter,
     });
 
     if (!task) {
@@ -141,13 +144,14 @@ export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | n
       return;
     }
 
-    const existing = await PMTask.findOne({ _id: req.params.id, tenantId });
+    const siteFilter = req.siteId ? { siteId: req.siteId } : {};
+    const existing = await PMTask.findOne({ _id: req.params.id, tenantId, ...siteFilter });
     if (!existing) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
     const task = await PMTask.findOneAndUpdate(
-      { _id: req.params.id, tenantId },
+      { _id: req.params.id, tenantId, ...siteFilter },
       req.body,
       { new: true, runValidators: true },
     );
@@ -190,9 +194,11 @@ export const deletePMTask: AuthedRequestHandler<PMTaskParams, PMTaskDeleteRespon
       return;
     }
 
+    const siteFilter = req.siteId ? { siteId: req.siteId } : {};
     const task = await PMTask.findOneAndDelete({
       _id: req.params.id,
       tenantId,
+      ...siteFilter,
     });
 
     if (!task) {

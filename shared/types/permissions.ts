@@ -3,6 +3,20 @@
  */
 
 export const PERMISSIONS = {
+  sites: {
+    read: 'sites.read',
+    manage: 'sites.manage',
+  },
+  assets: {
+    read: 'assets.read',
+    write: 'assets.write',
+    delete: 'assets.delete',
+  },
+  workOrders: {
+    read: 'workorders.read',
+    write: 'workorders.write',
+    approve: 'workorders.approve',
+  },
   workRequests: {
     read: 'workRequests.read',
     convert: 'workRequests.convert',

@@ -8,6 +8,7 @@ import { Types } from 'mongoose';
 import WorkOrder from '../models/WorkOrder';
 import logger from '../utils/logger';
 import { runWarehouseAggregation } from '../src/modules/analytics/service';
+import { upsertMetricsRollups } from '../src/modules/analytics/rollups';
 
 const DEFAULT_CRON = process.env.ANALYTICS_WAREHOUSE_CRON || '30 1 * * *';
 
@@ -39,6 +40,8 @@ export const runAnalyticsWarehouseJob = async (): Promise<void> => {
       try {
         await runWarehouseAggregation(tenantId, 'day', start, end);
         await runWarehouseAggregation(tenantId, 'month', start, end);
+        await upsertMetricsRollups(tenantId, 'day', start, end);
+        await upsertMetricsRollups(tenantId, 'month', start, end);
         logger.info(`[Analytics Warehouse] aggregated metrics for tenant ${tenantId.toString()}`);
       } catch (err) {
         logger.error(`[Analytics Warehouse] failed aggregation for tenant ${tenantId.toString()}`, err);

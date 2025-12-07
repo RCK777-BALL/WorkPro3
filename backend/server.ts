@@ -100,6 +100,7 @@ import analyticsModuleRouter from "./src/modules/analytics";
 import meterReadingsRouter from "./src/modules/meters";
 import workOrdersModuleRouter from "./src/modules/work-orders";
 import { startWorkOrderReminderJobs } from "./src/modules/work-orders/jobs";
+import { startWorkRequestReminderJobs } from "./src/modules/work-requests/jobs";
 
 import { startPMScheduler } from "./utils/PMScheduler";
 import { startCopilotSummaryJob } from "./tasks/copilotSummaries";
@@ -379,6 +380,8 @@ if (env.NODE_ENV !== "test") {
       startCopilotSummaryJob();
       startExecutiveReportScheduler(env.EXECUTIVE_REPORT_CRON);
       startAnalyticsWarehouseScheduler();
+      startWorkOrderReminderJobs();
+      startWorkRequestReminderJobs();
     })
     .catch((err) => {
       logger.error("MongoDB connection error:", err);

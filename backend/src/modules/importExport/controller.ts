@@ -12,6 +12,7 @@ import {
   ImportExportError,
   generateAssetExport,
   summarizeImport,
+  type ImportEntity,
   type ExportFormat,
 } from './service';
 
@@ -22,6 +23,7 @@ type Context = {
 };
 
 type UploadRequest = AuthedRequest & { file?: Express.Multer.File };
+type ImportParams = ParamsDictionary & { entity: ImportEntity };
 
 type ExportQuery = ParsedQs & { format?: string };
 
@@ -58,6 +60,15 @@ const parseFormat = (value?: string): ExportFormat | undefined => {
   return undefined;
 };
 
+const parseEntity = (value?: string): ImportEntity | undefined => {
+  if (!value) return undefined;
+  const normalized = value.toLowerCase();
+  if (normalized === 'assets' || normalized === 'pms' || normalized === 'workorders' || normalized === 'parts') {
+    return normalized === 'workorders' ? 'workOrders' : (normalized as ImportEntity);
+  }
+  return undefined;
+};
+
 const handleError = (err: unknown, res: Response, next: NextFunction) => {
   if (err instanceof ImportExportError) {
     fail(res, err.message, err.status);
@@ -88,8 +99,8 @@ export const exportAssets: AuthedRequestHandler<ParamsDictionary, unknown, unkno
   }
 };
 
-export const importAssets: AuthedRequestHandler = async (
-  req: AuthedRequest,
+export const importEntities: AuthedRequestHandler<ImportParams> = async (
+  req: AuthedRequest<ImportParams>,
   res,
   next,
 ) => {
@@ -100,8 +111,14 @@ export const importAssets: AuthedRequestHandler = async (
     return;
   }
 
+  const entity = parseEntity(req.params.entity);
+  if (!entity) {
+    fail(res, 'Unsupported import type. Use assets, pms, workOrders, or parts.', 400);
+    return;
+  }
+
   try {
-    const summary = summarizeImport(file);
+    const summary = summarizeImport(file, entity);
     res.json({ success: true, data: summary });
   } catch (err) {
     handleError(err, res, next);

@@ -13,6 +13,7 @@ import InventoryItem from '../models/InventoryItem';
 import StockHistory from '../models/StockHistory';
 import Permit, { type PermitDocument } from '../models/Permit';
 import { emitWorkOrderUpdate } from '../server';
+import { applyWorkflowToWorkOrder } from '../services/workflowEngine';
 import { notifySlaBreach, notifyWorkOrderAssigned } from '../services/notificationService';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
 import { Types } from 'mongoose';
@@ -628,6 +629,7 @@ export async function createWorkOrder(
       plant: plantId,
       siteId: scope.siteId ?? plantId,
     });
+    await applyWorkflowToWorkOrder(newItem);
     const saved = await newItem.save();
     const userObjectId = resolveUserObjectId(req);
     if (permitDocs.length) {

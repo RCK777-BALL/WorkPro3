@@ -91,6 +91,23 @@ export const createComment = async (
     mentions,
   });
 
+  if (input.entityType === 'WO') {
+    await WorkOrder.updateOne(
+      { _id: input.entityId, tenantId: input.tenantId },
+      {
+        $push: {
+          timeline: {
+            label: 'Comment added',
+            notes: input.content.slice(0, 240),
+            createdAt: new Date(),
+            createdBy: input.userId,
+            type: 'comment',
+          },
+        },
+      },
+    );
+  }
+
   await notifyMentionedUsers(
     {
       tenantId: input.tenantId,

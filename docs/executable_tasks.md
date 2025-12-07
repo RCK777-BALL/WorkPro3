@@ -366,3 +366,26 @@ Use the following slices to open tracker tickets. Each item is grouped by API, V
 - **Data Access**: Calibration records with certificate storage, tolerances, and linkage to asset hierarchy.
 - **UI**: Calibration calendar and certificate repository with export capabilities (`frontend/src/modules/calibration`).
 - **Tests**: Calibration schedule calculations, WO gating tests, and export/report validations.
+
+## Integration Delivery (BGT-048 → BGT-050)
+
+### BGT-048: Versioned REST API docs and developer portal samples
+- **API**: Publish versioned OpenAPI specs for public and admin APIs with semantic version tags and changelog feeds (`backend/openapi/index.ts`, `docs/api`).
+- **Validation**: Contract tests to ensure route handlers remain in sync with generated OpenAPI schemas and deny breaking changes without version bumps.
+- **Data Access**: Store generated specs and sample payload fixtures for SDK generation; wire CI artifact publishing to the developer portal static site (`docs/portal`).
+- **UI**: Developer portal pages with language-specific starter requests, auth walkthroughs, and environment switcher for sandbox vs. production (`frontend/src/modules/dev-portal`).
+- **Tests**: Snapshot tests for generated OpenAPI files and e2e checks that portal samples execute successfully against sandbox mocks.
+
+### BGT-049: Webhook framework for work orders, assets, and inventory events
+- **API**: Webhook subscription CRUD with secret rotation, HMAC signing headers, and delivery logs for WO created/updated, asset updates, and inventory adjustments (`backend/routes/webhooks.ts`).
+- **Validation**: Enforce per-tenant rate limits, retry policies with exponential backoff, and signature verification helpers for consumers.
+- **Data Access**: Delivery attempts persisted with status, latency, and payload digests plus dead-letter queue for failed events; expose replay endpoints.
+- **UI**: Tenant admin screens to create endpoints, copy signing secrets, view recent deliveries, and replay failures (`frontend/src/modules/integrations/webhooks`).
+- **Tests**: Contract tests for each event payload, retry/resume scenarios, and signature validation including clock-skew handling.
+
+### BGT-050: CSV/SFTP scheduled imports/exports and automation connectors
+- **API**: Schedules for CSV import/export jobs with column mappings for assets, WOs, and inventory plus SFTP credential storage and rotation (`backend/routes/data-pipelines.ts`).
+- **Validation**: Schema validation for uploads, delimiter/encoding detection, and guardrails to prevent destructive updates without dry-run approvals.
+- **Data Access**: Staging tables for inbound files, audit trails for row-level changes, and job history with file references in object storage (`shared/data-pipelines`).
+- **UI**: Job wizard to define schedules, mappings, dry-run previews, and delivery channels (email/SFTP/HTTP); include quick-start templates for Zapier and Power Automate (`frontend/src/modules/integrations/data-pipelines`).
+- **Tests**: E2E import/export flows with sample files, SFTP connection mocks, and regression coverage for mapping templates.

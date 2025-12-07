@@ -162,13 +162,20 @@ const shouldEscalate = (workOrder: WorkOrderDocument) => {
   const now = Date.now();
   return (workOrder.slaEscalations ?? []).filter((rule) => {
     const thresholdMs = (rule.thresholdMinutes ?? 0) * 60 * 1000;
-    if (rule.trigger === 'response' && workOrder.slaResponseDueAt && !workOrder.slaRespondedAt) {
-      return now >= new Date(workOrder.slaResponseDueAt).getTime() + thresholdMs && !rule.escalatedAt;
-    }
-    if (rule.trigger === 'resolve' && workOrder.slaResolveDueAt && !workOrder.slaResolvedAt) {
-      return now >= new Date(workOrder.slaResolveDueAt).getTime() + thresholdMs && !rule.escalatedAt;
-    }
-    return false;
+    const due =
+      rule.trigger === 'response'
+        ? workOrder.slaResponseDueAt && !workOrder.slaRespondedAt
+        : workOrder.slaResolveDueAt && !workOrder.slaResolvedAt;
+
+    if (!due) return false;
+    const baseTime = rule.trigger === 'response' ? workOrder.slaResponseDueAt : workOrder.slaResolveDueAt;
+    const thresholdReached = baseTime && now >= new Date(baseTime).getTime() + thresholdMs;
+    if (!thresholdReached) return false;
+
+    if (rule.nextAttemptAt && now < new Date(rule.nextAttemptAt).getTime()) return false;
+    if (rule.maxRetries && (rule.retryCount ?? 0) >= rule.maxRetries) return false;
+
+    return true;
   });
 };
 
@@ -178,6 +185,10 @@ export const escalateIfNeeded = async (workOrder: WorkOrderDocument) => {
 
   rules.forEach((rule) => {
     rule.escalatedAt = new Date();
+    rule.retryCount = (rule.retryCount ?? 0) + 1;
+    if (rule.retryBackoffMinutes && rule.maxRetries && rule.retryCount < rule.maxRetries) {
+      rule.nextAttemptAt = new Date(Date.now() + rule.retryBackoffMinutes * 60 * 1000);
+    }
     (rule.escalateTo ?? []).forEach((userId) => {
       notifyUser(userId, `${workOrder.title} breached the ${rule.trigger} threshold`, {
         title: 'SLA escalation',

@@ -14,8 +14,9 @@ import {
 
 import {
   downloadAssetExport,
-  uploadAssetImport,
+  uploadImport,
   type ExportFormat,
+  type ImportEntity,
   type ImportPreviewRow,
   type ImportSummary,
 } from '@/api/importExport';
@@ -42,6 +43,13 @@ const uploadProgress: Record<UploadStage, { value: number; label: string }> = {
   error: { value: 100, label: 'Upload failed' },
 };
 
+const IMPORT_TARGETS: Array<{ value: ImportEntity; label: string; description: string }> = [
+  { value: 'assets', label: 'Assets', description: 'Equipment registry columns' },
+  { value: 'pms', label: 'PMs', description: 'Recurring maintenance tasks' },
+  { value: 'workOrders', label: 'Work orders', description: 'Open and historical work' },
+  { value: 'parts', label: 'Parts & inventory', description: 'Stock, bins, and reorder points' },
+];
+
 const formatDate = (value?: Date | null) =>
   value ? value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
 
@@ -49,6 +57,7 @@ const formatError = (err: unknown) =>
   err instanceof Error ? err.message : 'Something went wrong. Please try again.';
 
 export const ImportExportPanel = () => {
+  const [importEntity, setImportEntity] = useState<ImportEntity>('assets');
   const [uploadStage, setUploadStage] = useState<UploadStage>('idle');
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
@@ -56,7 +65,9 @@ export const ImportExportPanel = () => {
   const [lastDownloadedAt, setLastDownloadedAt] = useState<Date | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
-  const uploadMutation = useMutation<ImportSummary, Error, File>(uploadAssetImport);
+  const uploadMutation = useMutation<ImportSummary, Error, { entity: ImportEntity; file: File }>((payload) =>
+    uploadImport(payload.entity, payload.file),
+  );
   const downloadMutation = useMutation<Blob, Error, ExportFormat>(downloadAssetExport);
 
   const handleFile = async (file?: File) => {
@@ -65,7 +76,7 @@ export const ImportExportPanel = () => {
     setLastUploadedFile(file.name);
     setUploadStage('uploading');
     try {
-      const pending = uploadMutation.mutateAsync(file);
+      const pending = uploadMutation.mutateAsync({ entity: importEntity, file });
       setUploadStage('processing');
       const result = await pending;
       setSummary(result);
@@ -112,16 +123,45 @@ export const ImportExportPanel = () => {
     [summary],
   );
 
+  const previewColumns = useMemo(() => {
+    if (summary?.columns.length) {
+      return summary.columns.slice(0, 8).map((key) => ({ key, label: key.replace(/([A-Z])/g, ' $1') }));
+    }
+    return PREVIEW_COLUMNS;
+  }, [summary]);
+
   return (
     <div className="space-y-8">
       <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-primary-600">Import</p>
-            <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">Upload asset spreadsheets</h2>
+            <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
+              Upload CSV/XLSX for assets, PMs, work orders, and parts
+            </h2>
             <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
               CSV and XLSX files are parsed in-memory using PapaParse + SheetJS so you can validate data before committing it.
             </p>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {IMPORT_TARGETS.map((target) => {
+                const active = importEntity === target.value;
+                return (
+                  <button
+                    key={target.value}
+                    type="button"
+                    onClick={() => setImportEntity(target.value)}
+                    className={`rounded-xl border px-3 py-2 text-left text-sm transition ${
+                      active
+                        ? 'border-primary-400 bg-primary-50 text-primary-900 dark:border-primary-500/70 dark:bg-primary-900/20 dark:text-primary-50'
+                        : 'border-neutral-200 bg-neutral-50 text-neutral-800 hover:border-primary-300 hover:bg-white dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-50'
+                    }`}
+                  >
+                    <span className="block font-semibold">{target.label}</span>
+                    <span className="block text-xs text-neutral-500 dark:text-neutral-400">{target.description}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <label className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-primary-500 disabled:cursor-not-allowed disabled:opacity-70">
             <UploadCloud className="h-4 w-4" />
@@ -207,7 +247,7 @@ export const ImportExportPanel = () => {
                 <table className="min-w-full divide-y divide-neutral-200 text-sm dark:divide-neutral-800">
                   <thead className="bg-neutral-50 dark:bg-neutral-900/50">
                     <tr>
-                      {PREVIEW_COLUMNS.map((column) => (
+                      {previewColumns.map((column) => (
                         <th
                           key={column.key}
                           scope="col"
@@ -220,10 +260,10 @@ export const ImportExportPanel = () => {
                   </thead>
                   <tbody className="divide-y divide-neutral-100 bg-white dark:divide-neutral-800 dark:bg-neutral-900">
                     {summary.preview.map((row, rowIndex) => (
-                      <tr key={`${row.name}-${rowIndex}`}>
-                        {PREVIEW_COLUMNS.map((column) => (
+                      <tr key={`${rowIndex}-${summary.detectedFormat}`}>
+                        {previewColumns.map((column) => (
                           <td key={column.key} className="px-3 py-2 text-neutral-800 dark:text-neutral-100">
-                            {row[column.key] ?? '—'}
+                            {(row as ImportPreviewRow)[column.key] ?? '—'}
                           </td>
                         ))}
                       </tr>

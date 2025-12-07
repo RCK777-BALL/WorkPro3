@@ -1,4 +1,11 @@
-export type OnboardingStepKey = 'site' | 'departments' | 'assets' | 'pmTemplates' | 'users';
+export type OnboardingStepKey =
+  | 'site'
+  | 'roles'
+  | 'departments'
+  | 'assets'
+  | 'starterData'
+  | 'pmTemplates'
+  | 'users';
 
 export interface OnboardingStep {
   key: OnboardingStepKey;

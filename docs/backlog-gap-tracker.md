@@ -51,3 +51,6 @@ This tracker captures the executable tasks derived from the CMMS audit gap analy
 | BGT-045 | CMMS Parity | Launch safety/compliance module with WO gating, templates, and reporting coverage.【F:docs/executable_tasks.md†L349-L354】 | Sprint 24.31 | Scheduled |
 | BGT-046 | CMMS Parity | Add contractor/vendor workforce management with credential enforcement and assignment rules.【F:docs/executable_tasks.md†L356-L361】 | Sprint 24.32 | Scheduled |
 | BGT-047 | CMMS Parity | Implement calibration/instrumentation management with schedules, certificates, and WO gating for expired assets.【F:docs/executable_tasks.md†L363-L367】 | Sprint 24.32 | Scheduled |
+| BGT-048 | Integrations | Publish versioned REST API docs with portal samples and enforce contract parity with OpenAPI outputs.【F:docs/executable_tasks.md†L369-L376】 | Sprint 24.33 | Scheduled |
+| BGT-049 | Integrations | Ship webhook framework for WO/asset/inventory events with signed deliveries, retries, and replay tools.【F:docs/executable_tasks.md†L378-L384】 | Sprint 24.34 | Scheduled |
+| BGT-050 | Integrations | Provide CSV/SFTP import-export schedules plus Zapier/Power Automate starter connectors with safe mappings.【F:docs/executable_tasks.md†L386-L392】 | Sprint 24.35 | Scheduled |

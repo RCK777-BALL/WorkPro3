@@ -37,7 +37,16 @@ interface NotificationInput {
   category: NotificationCategory;
   type?: NotificationType;
   channels?: NotificationChannels;
+  templateContext?: Record<string, string>;
 }
+
+const renderTemplate = (template: string | undefined, context?: Record<string, string>) => {
+  if (!template) return undefined;
+  return Object.entries(context ?? {}).reduce(
+    (acc, [key, value]) => acc.replace(new RegExp(`{{${key}}}`, 'g'), value),
+    template,
+  );
+};
 
 const sendEmail = async (to: string, subject: string, text: string) => {
   if (!process.env.SMTP_HOST || !(process.env.SMTP_FROM || process.env.SMTP_USER)) {
@@ -142,9 +151,10 @@ const deliver = async (
 export const createNotification = async (
   input: NotificationInput,
 ): Promise<HydratedDocument<NotificationDocument>> => {
+  const message = renderTemplate(input.message, input.templateContext) ?? input.message;
   const doc = await Notification.create({
     title: input.title,
-    message: input.message,
+    message,
     type: input.type ?? 'info',
     category: input.category,
     tenantId: input.tenantId,
@@ -157,16 +167,18 @@ export const createNotification = async (
 
   if (input.userId) {
     const user = await User.findById(input.userId);
-    if (user?.email) {
+    const allowEmail = user?.notifyByEmail !== false;
+    const allowSms = Boolean(user?.notifyBySms);
+    if (user?.email && allowEmail) {
       await sendEmail(
         user.email,
         input.title,
-        input.message,
+        message,
       );
     }
     const maybePhone = (user as unknown as { phone?: string })?.phone;
-    if (maybePhone) {
-      await sendSms(maybePhone, `${input.title}: ${input.message}`);
+    if (maybePhone && allowSms) {
+      await sendSms(maybePhone, `${input.title}: ${message}`);
     }
   }
 

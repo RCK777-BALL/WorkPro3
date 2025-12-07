@@ -38,6 +38,7 @@ import VendorEditor from "@/pages/vendors/VendorEditor";
 import Reports from "@/pages/Reports";
 import Notifications from "@/pages/Notifications";
 import NotificationSettings from "@/pages/NotificationSettings";
+import WorkflowRulesAdmin from "@/pages/WorkflowRulesAdmin";
 import Messages from "@/pages/Messages";
 import RoleManagementPage from "@/pages/RoleManagement";
 import Documentation from "@/pages/Documentation";
@@ -77,6 +78,7 @@ import SubmitRequest from "@/pages/requests/SubmitRequest";
 import RequestTriage from "@/pages/requests/RequestTriage";
 import AssetScan from "@/pages/AssetScan";
 import MobileWorkOrder from "@/pages/mobile/MobileWorkOrder";
+import PwaTechnicianShell from "@/pages/PwaTechnicianShell";
 
 export default function App() {
   const navigate = useNavigate();
@@ -285,6 +287,7 @@ export default function App() {
           <Route path="/teams" element={<Teams />} />
           <Route path="/plants" element={<Plants />} />
           <Route path="/technician" element={<TechnicianConsole />} />
+          <Route path="/pwa/technician" element={<PwaTechnicianShell />} />
           <Route path="/team-members/:teamMemberId" element={<TeamMemberProfile />} />
           <Route
             path="/pm/scheduler"
@@ -333,6 +336,14 @@ export default function App() {
             element={
               <RequirePermission permission="importExport.import">
                 <Imports />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/admin/workflow"
+            element={
+              <RequirePermission permission="admin">
+                <WorkflowRulesAdmin />
               </RequirePermission>
             }
           />

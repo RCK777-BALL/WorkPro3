@@ -80,6 +80,20 @@ The following breakdown captures requested epics, their major feature areas, and
 - **Safety Workflows**
   - Permit-to-work
 
+## Documentation & Knowledge Base
+- **Authoring**
+  - Rich-text editor with attachments and media
+  - Templates for SOPs/work instructions
+- **Search & Discovery**
+  - Full-text search with filters
+  - Highlights and related articles
+- **Contextual Links**
+  - Link SOPs to assets, PMs, and WOs
+  - Inline viewer for technicians
+- **Governance**
+  - Versioning with history
+  - Required-read acknowledgements
+
 ## Multi-Site
 - **Multi-site Support**
   - Site switching
@@ -90,10 +104,19 @@ The following breakdown captures requested epics, their major feature areas, and
 - **Public API**
   - API docs
   - API keys
+- **Developer Experience**
+  - Versioned OpenAPI docs
+  - Developer portal samples
+- **Webhooks and Events**
+  - WO/asset/inventory webhooks
+  - Delivery monitoring
 - **ERP Integration**
   - QuickBooks/Xero
 - **IoT Integration**
   - Sensor ingestion
+- **Data Exchange**
+  - CSV/SFTP import/export
+  - Automation connectors (Zapier/Power Automate)
 
 ## AI
 - **Predictive AI**

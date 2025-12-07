@@ -90,10 +90,19 @@ The following breakdown captures requested epics, their major feature areas, and
 - **Public API**
   - API docs
   - API keys
+- **Developer Experience**
+  - Versioned OpenAPI docs
+  - Developer portal samples
+- **Webhooks and Events**
+  - WO/asset/inventory webhooks
+  - Delivery monitoring
 - **ERP Integration**
   - QuickBooks/Xero
 - **IoT Integration**
   - Sensor ingestion
+- **Data Exchange**
+  - CSV/SFTP import/export
+  - Automation connectors (Zapier/Power Automate)
 
 ## AI
 - **Predictive AI**

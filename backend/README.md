@@ -158,6 +158,23 @@ Create a new account.
 { "message": "User registered successfully" }
 ```
 
+### Security policies and MFA
+
+Password strength, MFA posture, audit retention, and session lifetimes are
+centrally defined. Override defaults with environment variables when
+deploying:
+
+- `PASSWORD_MIN_LENGTH`, `PASSWORD_REQUIRE_UPPERCASE`,
+  `PASSWORD_REQUIRE_LOWERCASE`, `PASSWORD_REQUIRE_NUMBER`, and
+  `PASSWORD_REQUIRE_SYMBOL` define password complexity requirements.
+- `SESSION_SHORT_TTL` and `SESSION_LONG_TTL` set cookie duration for normal and
+  "remember me" sessions (values like `8h` or `30d`).
+- `MFA_ENFORCED`, `MFA_OPTIONAL_FOR_SSO`, and `MFA_ALLOWED_FACTORS` control MFA
+  prompting. When MFA is enforced, login flows return `mfaRequired` until a
+  factor is validated.
+- `AUDIT_LOG_RETENTION_DAYS` sets a retention window and stamps an `expiresAt`
+  value on audit log documents for TTL cleanup.
+
 ### OAuth login
 
 `GET /api/auth/oauth/:provider`
@@ -203,14 +220,15 @@ SAML metadata and placeholders live under `/api/sso/tenants/:tenantId/saml/*`:
 OIDC tenants can expose discovery-like data via `GET /api/sso/tenants/:tenantId/oidc/metadata`, which returns issuer,
 client ID, redirect URI, and metadata URL details.
 
-### SCIM stubs
+### SCIM provisioning and JIT onboarding
 
-To integrate external identity systems, set `ENABLE_SCIM=true` and provide a shared secret in `SCIM_BEARER_TOKEN`. The
-SCIM router currently implements guarded placeholders:
-
-- `GET /api/scim/Users` and `GET /api/scim/Groups` return empty list responses when authenticated with the bearer token.
-- `POST /api/scim/Users` and `POST /api/scim/Groups` accept payloads and respond with `202 Accepted` while provisioning
-  logic is wired in.
+Set `ENABLE_SCIM=true` and provide a shared secret in `SCIM_BEARER_TOKEN` to
+enable `/api/scim/v2` and `/api/scim` routes. Requests must include
+`X-Tenant-Id` so the server can scope provisioning to the right tenant. When a
+SCIM IdP posts a user payload, the backend will create or update a user record,
+mark it for password rotation, respect MFA enforcement rules, and emit an audit
+log for export. Group payloads are accepted for compatibility and also recorded
+in audit logs.
 
 ### Multi‑factor authentication
 
@@ -230,11 +248,14 @@ Generate a secret for time‑based one‑time password (TOTP) MFA.
 { "secret": "<base32>", "token": "123456" }
 ```
 
-### SCIM stubs
+### SCIM provisioning and JIT onboarding
 
 Set `ENABLE_SCIM=true` and `SCIM_BEARER_TOKEN=<token>` to expose `/api/scim/v2/Users` and `/api/scim/v2/Groups`. Requests
-must include `Authorization: Bearer <token>` and currently return empty resources with 202 responses for create calls to help
-wire up provisioning flows safely.
+must include `Authorization: Bearer <token>` and an `X-Tenant-Id` header. SCIM
+user payloads now provision or update tenant-scoped users, mark accounts for
+password rotation, honor MFA enforcement, and emit audit log entries for
+export. Group payloads are accepted for compatibility and recorded in audit
+logs.
 
 `POST /api/auth/mfa/verify`
 

@@ -11,6 +11,7 @@ import AuditLog, { type AuditLogDiffEntry } from '../models/AuditLog';
 import logger from './logger';
 import { toEntityId, toObjectId, type EntityIdLike } from './ids';
 import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
+import { getSecurityPolicy } from '../config/securityPolicies';
 
 export type AuditValue = unknown;
 export interface AuditActor {
@@ -105,6 +106,7 @@ export interface WriteAuditLogInput {
   after?: AuditValue;
   diff?: AuditLogDiffEntry[];
   ts?: Date;
+  expiresAt?: Date;
 }
 
 export async function writeAuditLog({
@@ -120,6 +122,7 @@ export async function writeAuditLog({
   after,
   diff,
   ts,
+  expiresAt,
 }: WriteAuditLogInput): Promise<void> {
   const tenantObjectId = toObjectId(tenantId);
   if (!tenantObjectId) {
@@ -134,6 +137,9 @@ export async function writeAuditLog({
     const label = resolveEntityLabel(entityLabel, normalizedBefore, normalizedAfter);
     const actorRecord = normalizeActor(actor, userId);
 
+    const retentionDays = getSecurityPolicy().audit.retentionDays;
+    const expiration = expiresAt ?? new Date(Date.now() + retentionDays * 24 * 60 * 60 * 1000);
+
     await AuditLog.create({
       tenantId: tenantObjectId,
       siteId: toObjectId(siteId) ?? undefined,
@@ -147,6 +153,7 @@ export async function writeAuditLog({
       after: normalizedAfter,
       diff: resolvedDiff,
       ts: ts ?? new Date(),
+      expiresAt: expiration,
     });
   } catch (err) {
     logger.error('writeAuditLog error', err);

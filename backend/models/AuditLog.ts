@@ -35,6 +35,7 @@ export interface AuditLogDocument extends Document {
   after?: unknown;
   diff?: AuditLogDiffEntry[] | null;
   ts: Date;
+  expiresAt?: Date;
 }
 
 const actorSchema = new Schema<AuditLogActor>(
@@ -78,6 +79,7 @@ const auditLogSchema = new Schema<AuditLogDocument>(
     after: { type: Schema.Types.Mixed },
     diff: { type: [diffSchema], default: void 0 },
     ts: { type: Date, required: true, default: () => new Date(), index: true },
+    expiresAt: { type: Date, index: true },
   },
   {
     versionKey: false,
@@ -88,6 +90,7 @@ auditLogSchema.index({ tenantId: 1, ts: -1 });
 auditLogSchema.index({ tenantId: 1, 'entity.type': 1, ts: -1 });
 auditLogSchema.index({ tenantId: 1, action: 1, ts: -1 });
 auditLogSchema.index({ tenantId: 1, 'actor.email': 1 });
+auditLogSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 type AuditLogModel = Model<AuditLogDocument>;
 

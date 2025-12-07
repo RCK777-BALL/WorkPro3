@@ -5,7 +5,7 @@
 import type { Types } from 'mongoose';
 
 import AuditLog from '../../../models/AuditLog';
-import Meter, { type MeterDocument } from '../../../models/Meter';
+import Meter, { type Meter as MeterType, type MeterDocument } from '../../../models/Meter';
 import MeterReading from '../../../models/MeterReading';
 import WorkOrder from '../../../models/WorkOrder';
 
@@ -29,6 +29,8 @@ export type MeterReadingPayload = {
 };
 
 export type MeterTrendPoint = { timestamp: string; value: number };
+
+type MeterWithTimestamps = MeterType & { createdAt?: Date; updatedAt?: Date };
 
 export type MeterConfigResponse = {
   id: string;
@@ -54,7 +56,7 @@ export const listMetersForAsset = async (
 ): Promise<MeterConfigResponse[]> => {
   const meters = await Meter.find({ tenantId: context.tenantId, asset: assetId })
     .sort({ updatedAt: -1 })
-    .lean();
+    .lean<MeterWithTimestamps>();
 
   const meterIds = meters.map((meter) => meter._id as Types.ObjectId);
   const readings = await MeterReading.aggregate<{
@@ -96,6 +98,7 @@ export const createMeterConfig = async (
     asset: assetId,
     ...payload,
   });
+  const updatedAt = (meter as MeterWithTimestamps).updatedAt;
   return {
     id: meter._id.toString(),
     assetId,
@@ -104,7 +107,7 @@ export const createMeterConfig = async (
     currentValue: meter.currentValue ?? 0,
     pmInterval: meter.pmInterval,
     thresholds: meter.thresholds,
-    updatedAt: meter.updatedAt?.toISOString(),
+    updatedAt: updatedAt?.toISOString(),
   };
 };
 

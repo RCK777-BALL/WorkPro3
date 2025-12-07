@@ -36,6 +36,7 @@ import { isFeatureEnabled, isOidcEnabled } from '../config/featureFlags';
 import { validatePasswordStrength } from '../auth/passwordPolicy';
 import { writeAuditLog } from '../utils/audit';
 import type { AuthedRequest } from '../types/http';
+import { getSecurityPolicy } from '../config/securityPolicies';
 
 configureOAuth();
 if (isFeatureEnabled('oidc')) {
@@ -139,6 +140,38 @@ const getRequestedState = (req: Request): string | undefined => {
     return req.query.redirect;
   }
   return undefined;
+};
+
+const recordAuthEvent = async ({
+  user,
+  action,
+  tenantId,
+  details,
+}: {
+  user?: UserDocument | null;
+  action: string;
+  tenantId?: string;
+  details?: Record<string, unknown>;
+}) => {
+  const resolvedTenantId = tenantId ?? toStringId(user?.tenantId);
+  if (!resolvedTenantId) return;
+
+  await writeAuditLog({
+    tenantId: resolvedTenantId,
+    siteId: user?.siteId,
+    userId: user?._id,
+    actor: user
+      ? {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+        }
+      : undefined,
+    action,
+    entityType: 'authentication',
+    entityId: toStringId(user?._id) ?? tenantId,
+    after: details,
+  });
 };
 
 const buildRedirectUrl = (
@@ -254,8 +287,9 @@ const FAKE_PASSWORD_HASH = bcrypt.hashSync('invalid-password', 10);
 
 const AUTH_COOKIE_NAME = 'auth';
 const TOKEN_TTL = '7d';
-const SHORT_SESSION_MS = 1000 * 60 * 60 * 8;
-const LONG_SESSION_MS = 1000 * 60 * 60 * 24 * 30;
+const SECURITY_POLICY = getSecurityPolicy();
+const SHORT_SESSION_MS = SECURITY_POLICY.sessions.shortTtlMs;
+const LONG_SESSION_MS = SECURITY_POLICY.sessions.longTtlMs;
 const ROTATION_TOKEN_PURPOSE = 'bootstrap-rotation';
 
 type AuthUser = {
@@ -403,6 +437,11 @@ const validateMfaToken = async (
     });
 
     if (!valid) {
+      await recordAuthEvent({
+        user,
+        action: 'mfa_failed',
+        details: { reason: 'invalid_token' },
+      });
       sendResponse(res, null, 'Invalid MFA token', 400);
       return;
     }
@@ -432,6 +471,12 @@ const validateMfaToken = async (
       secret,
       { expiresIn: TOKEN_TTL },
     );
+
+    await recordAuthEvent({
+      user,
+      action: 'mfa_validated',
+      details: { method: 'totp' },
+    });
 
     sendAuthSuccess(res, authUser, signed, remember);
   } catch (err) {
@@ -485,6 +530,11 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
 
     const valid = await bcrypt.compare(password, hashed);
     if (!valid) {
+      await recordAuthEvent({
+        user,
+        action: 'login_failed',
+        details: { reason: 'invalid_credentials', email: normalizedEmail },
+      });
       sendResponse(res, null, 'Invalid email or password.', 400);
       return;
     }
@@ -500,6 +550,11 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
       await user.save();
 
       const rotationToken = signRotationToken(user._id.toString());
+      await recordAuthEvent({
+        user,
+        action: 'password_rotation_required',
+        details: { email: user.email },
+      });
       sendResponse(
         res,
         {
@@ -516,7 +571,12 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
       return;
     }
 
-    if (user.mfaEnabled) {
+    if (user.mfaEnabled || (SECURITY_POLICY.mfa.enforced && !user.mfaEnabled)) {
+      await recordAuthEvent({
+        user,
+        action: 'mfa_challenge',
+        details: { enforced: SECURITY_POLICY.mfa.enforced },
+      });
       sendResponse(
         res,
         {
@@ -551,6 +611,12 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
       secret,
       { expiresIn: TOKEN_TTL },
     );
+
+    await recordAuthEvent({
+      user,
+      action: 'login_success',
+      details: { remember, method: 'password' },
+    });
 
     sendAuthSuccess(res, authUser, token, remember);
   } catch (err) {
@@ -847,6 +913,12 @@ const handlePassportCallback = (
 
       const token = jwt.sign(tokenPayload, secret, {
         expiresIn: TOKEN_TTL,
+      });
+
+      void recordAuthEvent({
+        action: 'sso_login_success',
+        tenantId,
+        details: { provider, email, roles, userId },
       });
 
       const stateValue =

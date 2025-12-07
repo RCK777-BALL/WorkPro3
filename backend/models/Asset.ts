@@ -43,6 +43,7 @@ export interface AssetDoc extends Document {
   criticality?: string;
   documents?: Types.Array<Types.ObjectId>;
   pmTemplateIds?: Types.Array<Types.ObjectId>;
+  customFields?: Record<string, unknown>;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -113,6 +114,7 @@ const assetSchema = new Schema<AssetDoc>(
     },
     documents: [{ type: Schema.Types.ObjectId, ref: 'Document' }],
     pmTemplateIds: [{ type: Schema.Types.ObjectId, ref: 'PmTask', index: true }],
+    customFields: { type: Schema.Types.Mixed, default: {} },
   },
   { timestamps: true }
 );

@@ -53,6 +53,11 @@ export interface WorkOrder {
     escalateTo?: Types.Array<Types.ObjectId>;
     escalatedAt?: Date;
     channel?: 'email' | 'push';
+    maxRetries?: number;
+    retryBackoffMinutes?: number;
+    retryCount?: number;
+    nextAttemptAt?: Date;
+    templateKey?: string;
   }>;
   assignedTo?: Types.ObjectId;
   assignees: Types.Array<Types.ObjectId>;
@@ -96,6 +101,7 @@ export interface WorkOrder {
   failureAction?: string;
   failureResult?: string;
   failureModeTags?: Types.Array<string>;
+  customFields?: Record<string, unknown>;
 
   /** Optional relationships */
   pmTask?: Types.ObjectId;
@@ -223,7 +229,12 @@ const workOrderSchema = new Schema<WorkOrder>(
           thresholdMinutes: { type: Number },
           escalateTo: [{ type: Schema.Types.ObjectId, ref: 'User' }],
           escalatedAt: { type: Date },
-          channel: { type: String, enum: ['email', 'push'], default: 'email' },
+          channel: { type: String, enum: ['email', 'push', 'sms'], default: 'email' },
+          maxRetries: { type: Number, default: 0 },
+          retryBackoffMinutes: { type: Number, default: 30 },
+          retryCount: { type: Number, default: 0 },
+          nextAttemptAt: { type: Date },
+          templateKey: { type: String },
         },
       ],
       default: [],
@@ -296,6 +307,7 @@ const workOrderSchema = new Schema<WorkOrder>(
       ],
       default: [],
     },
+    customFields: { type: Schema.Types.Mixed, default: {} },
     timeSpentMin: Number,
     photos: [String],
     failureCode: String,

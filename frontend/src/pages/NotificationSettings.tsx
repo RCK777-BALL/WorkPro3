@@ -12,6 +12,7 @@ import {
   sendNotificationTest,
   type NotificationProviderStatus,
 } from '@/api/notifications';
+import { updateNotificationPreferences } from '@/api/settings';
 import { useSettingsStore } from '@/store/settingsStore';
 
 interface TestFormState {
@@ -26,6 +27,8 @@ const NotificationSettingsPage = () => {
   const { notifications, setNotifications } = useSettingsStore();
   const [providers, setProviders] = useState<NotificationProviderStatus[]>([]);
   const [testState, setTestState] = useState<{ provider?: string; result?: string; error?: string }>({});
+  const [preferences, setPreferences] = useState<{ email: boolean; sms: boolean }>({ email: true, sms: false });
+  const [prefResult, setPrefResult] = useState<string | null>(null);
   const [form, setForm] = useState<TestFormState>({
     emailTarget: '',
     smsTarget: notifications.smsNumber ?? '',
@@ -73,6 +76,16 @@ const NotificationSettingsPage = () => {
     } catch (err) {
       setTestState({ provider, error: 'Failed to send test notification' });
       console.error(err);
+    }
+  };
+
+  const savePreferences = async () => {
+    try {
+      await updateNotificationPreferences({ notifyByEmail: preferences.email, notifyBySms: preferences.sms });
+      setPrefResult('Saved');
+    } catch (err) {
+      console.error(err);
+      setPrefResult('Failed to save preferences');
     }
   };
 
@@ -182,6 +195,31 @@ const NotificationSettingsPage = () => {
               </span>
             </div>
           ))}
+        </div>
+      </Card>
+
+      <Card title="User opt-in" subtitle="Control how you receive alerts" icon={<Bell className="h-5 w-5 text-primary-500" />}>
+        <div className="space-y-3">
+          <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-200">
+            <input
+              type="checkbox"
+              checked={preferences.email}
+              onChange={(event) => setPreferences((prev) => ({ ...prev, email: event.target.checked }))}
+            />
+            Email notifications
+          </label>
+          <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-200">
+            <input
+              type="checkbox"
+              checked={preferences.sms}
+              onChange={(event) => setPreferences((prev) => ({ ...prev, sms: event.target.checked }))}
+            />
+            SMS notifications
+          </label>
+          <Button variant="primary" onClick={savePreferences} icon={<Bell className="h-4 w-4" />}>
+            Save preferences
+          </Button>
+          {prefResult && <p className="text-xs text-neutral-500">{prefResult}</p>}
         </div>
       </Card>
 

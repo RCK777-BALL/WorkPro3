@@ -74,6 +74,7 @@ export interface WorkOrder {
   importance?: 'low' | 'medium' | 'high' | 'severe' | undefined;
   complianceProcedureId?: string | undefined;
   calibrationIntervalDays?: number | undefined;
+  customFields?: Record<string, unknown> | undefined;
   dueDate?: string | undefined;
   completedAt?: string | undefined;
   createdAt?: string | undefined;

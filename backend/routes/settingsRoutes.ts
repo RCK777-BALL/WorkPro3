@@ -8,12 +8,15 @@ import { Types } from 'mongoose';
 import { requireAuth } from '../middleware/authMiddleware';
 import Settings from '../models/Settings';
 import { auditAction } from '../utils/audit';
+import User from '../models/User';
 
 interface GeneralSettings {
   companyName: string;
   timezone: string;
   dateFormat: string;
   language: string;
+  unitSystem: 'metric' | 'imperial';
+  locale: string;
 }
 
 interface NotificationSettings {
@@ -52,6 +55,8 @@ const defaultSettings: SettingsState = {
     timezone: 'America/New_York',
     dateFormat: 'MM/DD/YYYY',
     language: 'en-US',
+    unitSystem: 'metric',
+    locale: 'en-US',
   },
   notifications: {
     emailNotifications: true,
@@ -103,6 +108,9 @@ router.get('/', async (req, res, next) => {
       general: {
         ...settingsState.general,
         language: doc?.language ?? settingsState.general.language,
+        timezone: doc?.timezone ?? settingsState.general.timezone,
+        locale: doc?.locale ?? settingsState.general.locale,
+        unitSystem: (doc?.unitSystem as GeneralSettings['unitSystem']) ?? settingsState.general.unitSystem,
       },
       theme: {
         ...settingsState.theme,
@@ -137,6 +145,21 @@ router.post('/', async (req, res, next) => {
       update.language = language;
     }
 
+    const timezone = payload.general?.timezone ?? settingsState.general.timezone;
+    if (timezone) {
+      update.timezone = timezone;
+    }
+
+    const locale = payload.general?.locale ?? settingsState.general.locale;
+    if (locale) {
+      update.locale = locale;
+    }
+
+    const unitSystem = payload.general?.unitSystem ?? settingsState.general.unitSystem;
+    if (unitSystem) {
+      update.unitSystem = unitSystem;
+    }
+
     const themeMode = payload.theme?.mode ?? settingsState.theme.mode;
     if (themeMode) {
       update.defaultTheme = themeMode;
@@ -166,6 +189,25 @@ router.post('/', async (req, res, next) => {
         activePlant: settings?.activePlant ? settings.activePlant.toString() : plantId,
       },
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/notifications/preferences', async (req, res, next) => {
+  try {
+    const userId = req.user?._id;
+    if (!userId) {
+      res.status(401).json({ success: false, error: 'Unauthorized' });
+      return;
+    }
+    const { notifyByEmail, notifyBySms } = req.body ?? {};
+    const updated = await User.findByIdAndUpdate(
+      userId,
+      { $set: { notifyByEmail, notifyBySms } },
+      { new: true },
+    ).select('notifyByEmail notifyBySms');
+    res.json({ success: true, data: updated });
   } catch (err) {
     next(err);
   }

@@ -9,6 +9,7 @@ const sensorReadingSchema = new mongoose.Schema({
   metric: { type: String, required: true },
   value: { type: Number, required: true },
   timestamp: { type: Date, default: Date.now },
+  deviceId: { type: String },
   tenantId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Tenant',

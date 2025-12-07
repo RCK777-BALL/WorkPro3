@@ -33,6 +33,7 @@ import { useTranslation } from 'react-i18next';
 import { useScopeContext } from '@/context/ScopeContext';
 import { useToast } from '@/context/ToastContext';
 import { useAuthStore } from '@/store/authStore';
+import { uploadImport } from '@/api/importExport';
 
 const ASSET_CACHE_KEY = 'offline-assets';
 const FILTER_STORAGE_VERSION = 1;
@@ -446,7 +447,7 @@ const AssetsPage: React.FC = () => {
     if (!file) return;
     setImporting(true);
     try {
-      const summary = await uploadAssetImport(file);
+      const summary = await uploadImport('assets', file);
       setImportSummary(summary);
       addToast(`Validated ${summary.totalRows.toLocaleString()} rows from ${file.name}`, 'success');
     } catch (err) {

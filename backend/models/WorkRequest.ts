@@ -18,6 +18,33 @@ export interface WorkRequestDocument extends Document {
   assetTag?: string;
   priority: 'low' | 'medium' | 'high' | 'critical';
   status: WorkRequestStatus;
+  approvalStatus?: 'draft' | 'pending' | 'approved' | 'rejected';
+  approvalSteps?: Types.Array<{
+    step: number;
+    name: string;
+    approver?: Types.ObjectId;
+    status: 'pending' | 'approved' | 'rejected' | 'skipped';
+    approvedAt?: Date;
+    note?: string;
+    required?: boolean;
+  }>;
+  currentApprovalStep?: number;
+  slaResponseDueAt?: Date;
+  slaResolveDueAt?: Date;
+  slaRespondedAt?: Date;
+  slaResolvedAt?: Date;
+  slaEscalations?: Types.Array<{
+    trigger: 'response' | 'resolve';
+    thresholdMinutes?: number;
+    escalateTo?: Types.Array<Types.ObjectId>;
+    escalatedAt?: Date;
+    channel?: 'email' | 'push' | 'sms';
+    maxRetries?: number;
+    retryBackoffMinutes?: number;
+    retryCount?: number;
+    nextAttemptAt?: Date;
+    templateKey?: string;
+  }>;
   siteId: Types.ObjectId;
   tenantId: Types.ObjectId;
   requestForm: Types.ObjectId;
@@ -48,6 +75,51 @@ const workRequestSchema = new Schema<WorkRequestDocument>(
       enum: ['new', 'reviewing', 'converted', 'closed'],
       default: 'new',
       index: true,
+    },
+    approvalStatus: {
+      type: String,
+      enum: ['draft', 'pending', 'approved', 'rejected'],
+      default: 'draft',
+    },
+    approvalSteps: {
+      type: [
+        {
+          step: { type: Number, required: true },
+          name: { type: String, required: true },
+          approver: { type: Schema.Types.ObjectId, ref: 'User' },
+          status: {
+            type: String,
+            enum: ['pending', 'approved', 'rejected', 'skipped'],
+            default: 'pending',
+          },
+          approvedAt: { type: Date },
+          note: { type: String },
+          required: { type: Boolean, default: true },
+        },
+      ],
+      default: [],
+    },
+    currentApprovalStep: { type: Number, default: 1 },
+    slaResponseDueAt: { type: Date },
+    slaResolveDueAt: { type: Date },
+    slaRespondedAt: { type: Date },
+    slaResolvedAt: { type: Date },
+    slaEscalations: {
+      type: [
+        {
+          trigger: { type: String, enum: ['response', 'resolve'], required: true },
+          thresholdMinutes: { type: Number },
+          escalateTo: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+          escalatedAt: { type: Date },
+          channel: { type: String, enum: ['email', 'push', 'sms'], default: 'email' },
+          maxRetries: { type: Number, default: 0 },
+          retryBackoffMinutes: { type: Number, default: 30 },
+          retryCount: { type: Number, default: 0 },
+          nextAttemptAt: { type: Date },
+          templateKey: { type: String },
+        },
+      ],
+      default: [],
     },
     photos: [{ type: String }],
     siteId: { type: Schema.Types.ObjectId, ref: 'Site', required: true, index: true },

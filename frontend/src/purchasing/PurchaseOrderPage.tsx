@@ -4,14 +4,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import type {
-  PurchaseOrder,
-  PurchaseOrderItem,
-  PurchaseOrderPayload,
-  PurchaseOrderStatus,
-  ReceiptLine,
-} from '@backend-shared/purchaseOrders';
-
 import {
   createPurchaseOrder,
   listPurchaseOrders,
@@ -22,17 +14,39 @@ import {
 import Button from '@/components/common/Button';
 import { useVendors } from '@/hooks/useVendors';
 
+const statusOrder: PurchaseOrderStatus[] = [
+  'Draft',
+  'Pending',
+  'Approved',
+  'Ordered',
+  'Received',
+  'Closed',
+];
+
+const getNextStatus = (status: PurchaseOrderStatus) => {
+  const currentIndex = statusOrder.indexOf(status);
+  if (currentIndex === -1 || currentIndex === statusOrder.length - 1) return null;
+  return statusOrder[currentIndex + 1];
+};
+
 export default function PurchaseOrderPage() {
   const [vendorId, setVendorId] = useState('');
   const [item, setItem] = useState('');
   const [qty, setQty] = useState(0);
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
-  const { data: vendors } = useVendors();
-  const vendorList = vendors ?? [];
   const [error, setError] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  const { data: vendors } = useVendors();
+  const vendorLookup = useMemo(
+    () => Object.fromEntries((vendors ?? []).map((vendor) => [vendor.id, vendor.name])),
+    [vendors],
+  );
 
   useEffect(() => {
-    listPurchaseOrders().then(setOrders).catch(() => setOrders([]));
+    listPurchaseOrders()
+      .then(setOrders)
+      .catch(() => setOrders([]));
   }, []);
 
   const submit = async () => {
@@ -40,15 +54,35 @@ export default function PurchaseOrderPage() {
       setError('Vendor, item, and quantity are required');
       return;
     }
-    setError(null);
-    const created = await createPurchaseOrder({
-      vendorId,
-      lines: [{ part: item, qtyOrdered: qty }],
-    });
-    setOrders((prev) => [created, ...prev]);
-    setVendorId('');
-    setItem('');
-    setQty(0);
+
+    try {
+      setError(null);
+      const created = await createPurchaseOrder({
+        vendorId,
+        lines: [{ part: item, qtyOrdered: qty }],
+      });
+      setOrders((prev) => [created, ...prev]);
+      setVendorId('');
+      setItem('');
+      setQty(0);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to create purchase order');
+    }
+  };
+
+  const advanceStatus = async (po: PurchaseOrder) => {
+    const next = getNextStatus(po.status);
+    if (!next) return;
+
+    setUpdatingId(po.id);
+    try {
+      const updated = await updatePurchaseOrderStatus(po.id, next);
+      setOrders((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to update status');
+    } finally {
+      setUpdatingId(null);
+    }
   };
 
   return (
@@ -61,7 +95,7 @@ export default function PurchaseOrderPage() {
           onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setVendorId(e.target.value)}
         >
           <option value="">Select vendor…</option>
-          {vendorList.map((vendor) => (
+          {(vendors ?? []).map((vendor) => (
             <option key={vendor.id} value={vendor.id}>
               {vendor.name} {vendor.email ? `(${vendor.email})` : ''}
             </option>
@@ -103,92 +137,42 @@ export default function PurchaseOrderPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200">
-              {orders.map((po) => (
-                <tr key={po.id}>
-                  <td className="px-3 py-2 text-neutral-900">{po.poNumber ?? po.id}</td>
-                  <td className="px-3 py-2 text-neutral-700">{po.status}</td>
-                  <td className="px-3 py-2 text-neutral-700">{po.vendor?.name ?? '—'}</td>
-                  <td className="px-3 py-2 text-neutral-700">{po.lines.length}</td>
-                  <td className="px-3 py-2 text-right">
-                    {po.status !== 'Received' && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={async () => {
-                          const updated = await updatePurchaseOrderStatus(po.id, 'Received' as PurchaseOrderStatus);
-                          setOrders((current) => current.map((item) => (item.id === updated.id ? updated : item)));
-                        }}
-                      >
-                        Edit
-                      </Button>
-                      {po.status !== 'received' && (
-                        <Button variant="outline" size="sm" onClick={() => transition(po)}>
-                          Move to {statusOrder[statusOrder.indexOf(po.status) + 1] ?? 'done'}
+              {orders.map((po) => {
+                const nextStatus = getNextStatus(po.status);
+                return (
+                  <tr key={po.id}>
+                    <td className="px-3 py-2 text-neutral-900">{po.poNumber ?? po.id}</td>
+                    <td className="px-3 py-2 text-neutral-700">{po.status}</td>
+                    <td className="px-3 py-2 text-neutral-700">{vendorLookup[po.vendorId ?? ''] ?? po.vendor?.name ?? '—'}</td>
+                    <td className="px-3 py-2 text-neutral-700">{po.lines.length}</td>
+                    <td className="px-3 py-2 text-right">
+                      {nextStatus ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={updatingId === po.id}
+                          onClick={() => advanceStatus(po)}
+                        >
+                          Move to {nextStatus}
                         </Button>
+                      ) : (
+                        <span className="text-xs text-neutral-500">Completed</span>
                       )}
                     </td>
                   </tr>
-                ))}
-                {!orders.length && (
-                  <tr>
-                    <td className="px-3 py-4 text-neutral-500" colSpan={6}>
-                      No purchase orders yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {selected && (
-            <div className="space-y-3 rounded-md border border-dashed border-neutral-300 p-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-neutral-900">Receiving for PO {selected.id}</p>
-                <p className="text-xs text-neutral-500">Status: {selected.status}</p>
-              </div>
-              <div className="space-y-2">
-                {selected.items.map((item) => {
-                  const remaining = Math.max(0, item.quantity - (item.received ?? 0));
-                  return (
-                    <div key={item.partId} className="grid grid-cols-6 items-center gap-2 text-sm">
-                      <div className="col-span-2 text-neutral-800">Part {item.partId}</div>
-                      <div className="text-neutral-600">Ordered: {item.quantity}</div>
-                      <div className="text-neutral-600">Received: {item.received}</div>
-                      <input
-                        className="col-span-2 rounded-md border border-neutral-300 px-2 py-1"
-                        type="number"
-                        min={0}
-                        max={remaining}
-                        value={receipts[item.partId] ?? ''}
-                        placeholder={`Receive up to ${remaining}`}
-                        onChange={(e) =>
-                          setReceipts((current) => ({
-                            ...current,
-                            [item.partId]: Number(e.target.value),
-                          }))
-                        }
-                        disabled={remaining === 0 || selected.status === 'draft' || selected.status === 'pending'}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" size="sm" onClick={resetForm}>
-                  Clear
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={receive}
-                  disabled={selected.status !== 'approved' && selected.status !== 'received'}
-                >
-                  Record receipt
-                </Button>
-              </div>
-            </div>
-          )}
-        </section>
-      </div>
+                );
+              })}
+              {!orders.length && (
+                <tr>
+                  <td className="px-3 py-4 text-neutral-500" colSpan={6}>
+                    No purchase orders yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   );
 }

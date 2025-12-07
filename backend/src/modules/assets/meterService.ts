@@ -77,7 +77,10 @@ export const listMetersForAsset = async (
     currentValue: meter.currentValue ?? 0,
     pmInterval: meter.pmInterval,
     thresholds: meter.thresholds,
-    updatedAt: meter.updatedAt?.toISOString(),
+    updatedAt:
+      'updatedAt' in meter && meter.updatedAt instanceof Date
+        ? meter.updatedAt.toISOString()
+        : undefined,
     trend: readingMap.get(meter._id?.toString() ?? '')?.map((point) => ({
       timestamp: point.timestamp.toISOString(),
       value: point.value,
@@ -104,7 +107,7 @@ export const createMeterConfig = async (
     currentValue: meter.currentValue ?? 0,
     pmInterval: meter.pmInterval,
     thresholds: meter.thresholds,
-    updatedAt: meter.updatedAt?.toISOString(),
+    updatedAt: ('updatedAt' in meter ? (meter as { updatedAt?: Date }).updatedAt : undefined)?.toISOString(),
   };
 };
 
@@ -218,7 +221,7 @@ export const ingestMeterReadings = async (
     }
 
     meter.currentValue = reading.value;
-    meter.updatedAt = new Date();
+    meter.set('updatedAt', new Date());
     await meter.save();
 
     const createdReading = await MeterReading.create({

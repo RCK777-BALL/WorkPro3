@@ -18,6 +18,7 @@ import { requireAuth } from '../middleware/authMiddleware';
 import tenantScope from '../middleware/tenantScope';
 import validateObjectId from '../middleware/validateObjectId';
 import { validate } from '../middleware/validationMiddleware';
+import { requirePermission } from '../src/auth/permissions';
 import { assetUpdateValidators, assetValidators } from '../validators/assetValidators';
 
 const router = express.Router();
@@ -72,20 +73,21 @@ const handleUploads: RequestHandler = (req, res, next) => {
 router.use(requireAuth);
 router.use(tenantScope);
 
-router.get('/', getAllAssets);
-router.get('/search', searchAssets);
-router.get('/tree', getAssetTree);
-router.get('/:id', validateObjectId('id'), getAssetById);
+router.get('/', requirePermission('assets.read'), getAllAssets);
+router.get('/search', requirePermission('assets.read'), searchAssets);
+router.get('/tree', requirePermission('assets.read'), getAssetTree);
+router.get('/:id', validateObjectId('id'), requirePermission('assets.read'), getAssetById);
 
-router.post('/', handleUploads, assetValidators, validate, createAsset);
+router.post('/', requirePermission('assets.write'), handleUploads, assetValidators, validate, createAsset);
 router.put(
   '/:id',
   validateObjectId('id'),
+  requirePermission('assets.write'),
   handleUploads,
   assetUpdateValidators,
   validate,
   updateAsset,
 );
-router.delete('/:id', validateObjectId('id'), deleteAsset);
+router.delete('/:id', validateObjectId('id'), requirePermission('assets.delete'), deleteAsset);
 
 export default router;

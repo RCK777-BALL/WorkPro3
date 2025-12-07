@@ -147,6 +147,26 @@ export default function WorkOrders() {
   const applySharedLayoutState = tableLayout.applySharedLayout;
   const updateLayoutFilters = tableLayout.updateFilters;
 
+  const applyLayoutFilters = useCallback(
+    (filters?: Record<string, string>) => {
+      if (!filters) return;
+
+      setSearch(filters.search ?? '');
+      setStatusFilter(filters.status ?? '');
+      setPriorityFilter(filters.priority ?? '');
+      setStartDate(filters.startDate ?? '');
+      setEndDate(filters.endDate ?? '');
+
+      const params = new URLSearchParams();
+      if (filters.status) params.set('status', filters.status);
+      if (filters.priority) params.set('priority', filters.priority);
+      if (filters.startDate) params.set('startDate', filters.startDate);
+      if (filters.endDate) params.set('endDate', filters.endDate);
+      setSearchParams(params);
+    },
+    [setSearchParams],
+  );
+
   useEffect(() => {
     const unsub = onSyncConflict(setConflict);
     return () => {
@@ -180,26 +200,6 @@ export default function WorkOrders() {
       applyLayoutFilters(applied.filters);
     }
   }, [applyLayoutFilters, applySharedLayoutState, searchKey]);
-
-  const applyLayoutFilters = useCallback(
-    (filters?: Record<string, string>) => {
-      if (!filters) return;
-
-      setSearch(filters.search ?? '');
-      setStatusFilter(filters.status ?? '');
-      setPriorityFilter(filters.priority ?? '');
-      setStartDate(filters.startDate ?? '');
-      setEndDate(filters.endDate ?? '');
-
-      const params = new URLSearchParams();
-      if (filters.status) params.set('status', filters.status);
-      if (filters.priority) params.set('priority', filters.priority);
-      if (filters.startDate) params.set('startDate', filters.startDate);
-      if (filters.endDate) params.set('endDate', filters.endDate);
-      setSearchParams(params);
-    },
-    [setSearchParams],
-  );
 
   const fetchWorkOrders = useCallback(
     async (

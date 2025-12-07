@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+import mongoose from 'mongoose';
 import WorkOrder from '../../../models/WorkOrder';
 import { notifyUser } from '../../../utils';
 import { escalateIfNeeded } from './service';
@@ -23,7 +24,12 @@ const notifyUpcomingDeadlines = async () => {
   await Promise.all(
     workOrders.map(async (wo) => {
       if (wo.assignedTo) {
-        await notifyUser(wo.assignedTo, `${wo.title} is approaching its SLA window`, {
+        const assignedToId =
+          typeof wo.assignedTo === 'string'
+            ? new mongoose.Types.ObjectId(wo.assignedTo)
+            : wo.assignedTo;
+
+        await notifyUser(assignedToId, `${wo.title} is approaching its SLA window`, {
           title: 'SLA deadline approaching',
         }).catch(() => undefined);
       }

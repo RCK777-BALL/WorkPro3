@@ -28,7 +28,15 @@ export interface Meter {
 
 export type MeterDocument = HydratedDocument<Meter>;
 
-const meterSchema = new Schema<Meter>(
+const meterSchema = new Schema<
+  Meter,
+  Model<Meter>,
+  Record<string, never>,
+  Record<string, never>,
+  Record<string, never>,
+  Record<string, never>,
+  { createdAt: Date; updatedAt: Date }
+>(
   {
     asset: { type: Schema.Types.ObjectId, ref: 'Asset', required: true },
     name: { type: String, required: true },

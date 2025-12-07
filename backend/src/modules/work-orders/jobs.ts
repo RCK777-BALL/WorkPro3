@@ -21,16 +21,16 @@ const notifyUpcomingDeadlines = async () => {
   }).limit(100);
 
   await Promise.all(
-      workOrders.map(async (wo) => {
-        if (wo.assignedTo) {
-          await notifyUser(wo.assignedTo.toString(), `${wo.title} is approaching its SLA window`, {
-            title: 'SLA deadline approaching',
-          }).catch(() => undefined);
-        }
-        await escalateIfNeeded(wo);
-      }),
-    );
-  };
+    workOrders.map(async (wo) => {
+      if (wo.assignedTo) {
+        await notifyUser(wo.assignedTo, `${wo.title} is approaching its SLA window`, {
+          title: 'SLA deadline approaching',
+        }).catch(() => undefined);
+      }
+      await escalateIfNeeded(wo);
+    }),
+  );
+};
 
 export const startWorkOrderReminderJobs = () => {
   setInterval(() => {

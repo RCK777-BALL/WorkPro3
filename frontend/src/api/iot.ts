@@ -33,6 +33,29 @@ export type IoTReadingPayload = {
   timestamp?: string;
 };
 
+export type SensorDevice = {
+  _id: string;
+  deviceId: string;
+  name?: string;
+  asset: string;
+  status: 'online' | 'offline' | 'unknown';
+  metrics?: { name: string; unit?: string; threshold?: number }[];
+  lastSeenAt?: string;
+  lastMetric?: string;
+  lastValue?: number;
+};
+
+export type ConditionRule = {
+  _id: string;
+  asset: string;
+  metric: string;
+  operator: '>' | '<' | '>=' | '<=' | '==';
+  threshold: number;
+  workOrderTitle: string;
+  workOrderDescription?: string;
+  active: boolean;
+};
+
 export const fetchIotSignals = async (
   params?: IoTSignalQuery,
 ): Promise<IoTSignalSeries[]> => {
@@ -42,6 +65,16 @@ export const fetchIotSignals = async (
 
 export const fetchIotAlerts = async (limit = 50): Promise<Alert[]> => {
   const res = await http.get<Alert[]>('/alerts', { params: { type: 'iot', limit } });
+  return res.data;
+};
+
+export const fetchSensorDevices = async (assetId?: string): Promise<SensorDevice[]> => {
+  const res = await http.get<SensorDevice[]>('/iot/devices', { params: assetId ? { assetId } : undefined });
+  return res.data;
+};
+
+export const fetchConditionRules = async (): Promise<ConditionRule[]> => {
+  const res = await http.get<ConditionRule[]>('/condition-rules');
   return res.data;
 };
 

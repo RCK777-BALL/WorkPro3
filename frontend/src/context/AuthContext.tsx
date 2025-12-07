@@ -11,7 +11,7 @@ import {
   useEffect,
   useCallback,
 } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useInRouterContext, useLocation } from 'react-router-dom';
 import { useAuthStore, type AuthState } from '@/store/authStore';
 import type { AuthLoginResponse, AuthRole, AuthSession, AuthUser, RoleAssignment } from '@/types';
 import {
@@ -72,19 +72,19 @@ const getWindowPathname = (): string => {
 let hasLoggedRouterFallback = false;
 
 const useSafeLocation = (): ReturnType<typeof useLocation> | null => {
-  try {
+  if (useInRouterContext()) {
     return useLocation();
-  } catch (error) {
-    if (process.env.NODE_ENV !== 'production' && !hasLoggedRouterFallback) {
-      // eslint-disable-next-line no-console -- surfaced only in non-production environments for debugging
-      console.warn(
-        'AuthProvider is rendering outside of a Router context. Falling back to window.location.',
-        error,
-      );
-      hasLoggedRouterFallback = true;
-    }
-    return null;
   }
+
+  if (process.env.NODE_ENV !== 'production' && !hasLoggedRouterFallback) {
+    // eslint-disable-next-line no-console -- surfaced only in non-production environments for debugging
+    console.warn(
+      'AuthProvider is rendering outside of a Router context. Falling back to window.location.',
+    );
+    hasLoggedRouterFallback = true;
+  }
+
+  return null;
 };
 
 const toAuthUser = (payload: RawAuthUser): AuthUser => {

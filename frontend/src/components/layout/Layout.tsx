@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 
 import Header from './Header';
@@ -78,6 +78,7 @@ export default function Layout() {
   const { sidebarCollapsed, denseMode, highContrast, colorScheme = 'default' } = useSettingsStore(
     (state) => state.theme,
   );
+  const unauthorizedHandledKeyRef = useRef<string | null>(null);
   const accent = useMemo(() => COLOR_SCHEMES[colorScheme] ?? COLOR_SCHEMES.default, [colorScheme]);
   const accentBackground = useMemo(
     () => ({
@@ -119,10 +120,15 @@ export default function Layout() {
   useEffect(() => {
     const state = (location.state as { unauthorized?: boolean; message?: string } | null) ?? null;
     if (state?.unauthorized) {
+      if (unauthorizedHandledKeyRef.current === location.key) return;
+
+      unauthorizedHandledKeyRef.current = location.key;
       emitToast(state.message ?? t('auth.permissionRedirect'), 'error');
       window.history.replaceState({}, document.title, location.pathname + location.search);
+    } else {
+      unauthorizedHandledKeyRef.current = null;
     }
-  }, [location.pathname, location.search, location.state, t]);
+  }, [location.key, location.pathname, location.search, location.state, t]);
 
   useEffect(() => {
     syncManager.init();

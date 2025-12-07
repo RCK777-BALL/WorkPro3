@@ -38,6 +38,7 @@ import VendorEditor from "@/pages/vendors/VendorEditor";
 import Reports from "@/pages/Reports";
 import Notifications from "@/pages/Notifications";
 import NotificationSettings from "@/pages/NotificationSettings";
+import WorkflowRulesAdmin from "@/pages/WorkflowRulesAdmin";
 import Messages from "@/pages/Messages";
 import RoleManagementPage from "@/pages/RoleManagement";
 import Documentation from "@/pages/Documentation";
@@ -335,6 +336,14 @@ export default function App() {
             element={
               <RequirePermission permission="importExport.import">
                 <Imports />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/admin/workflow"
+            element={
+              <RequirePermission permission="admin">
+                <WorkflowRulesAdmin />
               </RequirePermission>
             }
           />

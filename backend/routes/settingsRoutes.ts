@@ -8,6 +8,7 @@ import { Types } from 'mongoose';
 import { requireAuth } from '../middleware/authMiddleware';
 import Settings from '../models/Settings';
 import { auditAction } from '../utils/audit';
+import User from '../models/User';
 
 interface GeneralSettings {
   companyName: string;
@@ -166,6 +167,25 @@ router.post('/', async (req, res, next) => {
         activePlant: settings?.activePlant ? settings.activePlant.toString() : plantId,
       },
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/notifications/preferences', async (req, res, next) => {
+  try {
+    const userId = req.user?._id;
+    if (!userId) {
+      res.status(401).json({ success: false, error: 'Unauthorized' });
+      return;
+    }
+    const { notifyByEmail, notifyBySms } = req.body ?? {};
+    const updated = await User.findByIdAndUpdate(
+      userId,
+      { $set: { notifyByEmail, notifyBySms } },
+      { new: true },
+    ).select('notifyByEmail notifyBySms');
+    res.json({ success: true, data: updated });
   } catch (err) {
     next(err);
   }

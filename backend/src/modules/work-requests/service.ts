@@ -14,6 +14,7 @@ import Site from '../../../models/Site';
 import WorkOrder from '../../../models/WorkOrder';
 import type { PublicWorkRequestInput, WorkRequestConversionInput } from './schemas';
 import { writeAuditLog } from '../../../utils/audit';
+import { applyWorkflowToRequest } from '../../../services/workflowEngine';
 
 const UPLOAD_ROOT = path.join(process.cwd(), 'uploads');
 const WORK_REQUEST_UPLOAD_DIR = path.join(UPLOAD_ROOT, 'work-requests');
@@ -119,6 +120,8 @@ export const submitPublicRequest = async (
     requestForm: requestFormId,
     photos: photoPaths,
   });
+  await applyWorkflowToRequest(request);
+  await request.save();
   await writeAuditLog({
     tenantId,
     siteId,

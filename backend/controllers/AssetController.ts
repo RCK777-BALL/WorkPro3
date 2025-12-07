@@ -53,6 +53,7 @@ const assetCreateFields = [
   'siteId',
   'criticality',
   'documents',
+  'customFields',
 ];
 
 const assetUpdateFields = [...assetCreateFields];
@@ -989,6 +990,79 @@ async function getAssetTree(
   }
 }
 
+async function bulkUpdateAssets(
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const { assetIds, updates } = (req.body ?? {}) as {
+      assetIds?: string[];
+      updates?: Record<string, unknown>;
+    };
+
+    if (!Array.isArray(assetIds) || assetIds.length === 0) {
+      sendResponse(res, null, 'assetIds array is required', 400);
+      return;
+    }
+
+    if (!updates || typeof updates !== 'object') {
+      sendResponse(res, null, 'updates payload is required', 400);
+      return;
+    }
+
+    const normalizedIds = assetIds
+      .filter((id) => Types.ObjectId.isValid(id))
+      .map((id) => new Types.ObjectId(id));
+
+    if (!normalizedIds.length) {
+      sendResponse(res, null, 'No valid asset IDs provided', 400);
+      return;
+    }
+
+    const allowedFields = new Set([
+      'status',
+      'departmentId',
+      'lineId',
+      'stationId',
+      'notes',
+      'location',
+      'criticality',
+      'customFields',
+    ]);
+
+    const updateBody: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(updates)) {
+      if (!allowedFields.has(key)) continue;
+      if (['departmentId', 'lineId', 'stationId'].includes(key)) {
+        updateBody[key] = value ? toObjectId(value as string) : undefined;
+      } else if (key === 'customFields' && typeof value === 'object') {
+        updateBody.customFields = value as Record<string, unknown>;
+      } else {
+        updateBody[key] = value;
+      }
+    }
+
+    const result = await Asset.updateMany(
+      { _id: { $in: normalizedIds }, tenantId },
+      { $set: updateBody },
+    );
+
+    sendResponse(res, {
+      matched: (result as any).matchedCount ?? (result as any).n,
+      modified: (result as any).modifiedCount ?? (result as any).nModified,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export {
   getAllAssets,
   getAssetById,
@@ -997,5 +1071,6 @@ export {
   deleteAsset,
   searchAssets,
   getAssetTree,
+  bulkUpdateAssets,
 };
 

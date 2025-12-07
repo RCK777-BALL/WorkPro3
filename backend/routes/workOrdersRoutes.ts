@@ -23,6 +23,7 @@ import {
   cancelWorkOrder,
   assistWorkOrder,
   updateWorkOrderChecklist,
+  bulkUpdateWorkOrders,
 } from '../controllers/WorkOrderController';
 
 const router = Router();

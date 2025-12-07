@@ -101,6 +101,7 @@ export interface WorkOrder {
   failureAction?: string;
   failureResult?: string;
   failureModeTags?: Types.Array<string>;
+  customFields?: Record<string, unknown>;
 
   /** Optional relationships */
   pmTask?: Types.ObjectId;
@@ -306,6 +307,7 @@ const workOrderSchema = new Schema<WorkOrder>(
       ],
       default: [],
     },
+    customFields: { type: Schema.Types.Mixed, default: {} },
     timeSpentMin: Number,
     photos: [String],
     failureCode: String,

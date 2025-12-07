@@ -96,6 +96,7 @@ const workOrderCreateFields = [
   'completedAt',
   'permits',
   'requiredPermitTypes',
+  'customFields',
 ];
 
 const workOrderUpdateFields = [...workOrderCreateFields];
@@ -849,6 +850,81 @@ export async function updateWorkOrder(
   } catch (err) {
     next(err);
     return;
+  }
+}
+
+export async function bulkUpdateWorkOrders(
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const scope = resolveLocationScope(req);
+    const { workOrderIds, updates } = (req.body ?? {}) as {
+      workOrderIds?: string[];
+      updates?: Record<string, unknown>;
+    };
+
+    if (!Array.isArray(workOrderIds) || workOrderIds.length === 0) {
+      sendResponse(res, null, 'workOrderIds array is required', 400);
+      return;
+    }
+
+    if (!updates || typeof updates !== 'object') {
+      sendResponse(res, null, 'updates payload is required', 400);
+      return;
+    }
+
+    const normalizedIds = workOrderIds
+      .filter((id) => Types.ObjectId.isValid(id))
+      .map((id) => new Types.ObjectId(id));
+
+    if (!normalizedIds.length) {
+      sendResponse(res, null, 'No valid work order IDs provided', 400);
+      return;
+    }
+
+    const allowedFields = new Set([
+      'status',
+      'priority',
+      'assignees',
+      'department',
+      'line',
+      'station',
+      'dueDate',
+      'customFields',
+    ]);
+
+    const updateBody: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(updates)) {
+      if (!allowedFields.has(key)) continue;
+      if (['department', 'line', 'station'].includes(key)) {
+        updateBody[key] = value ? toOptionalObjectId(value as string) : undefined;
+      } else if (key === 'assignees' && Array.isArray(value)) {
+        const validAssignees = value.filter((id) => Types.ObjectId.isValid(String(id)));
+        updateBody.assignees = mapAssignees(validAssignees as string[]);
+      } else if (key === 'customFields' && typeof value === 'object') {
+        updateBody.customFields = value as Record<string, unknown>;
+      } else {
+        updateBody[key] = value;
+      }
+    }
+
+    const filter = withLocationScope({ _id: { $in: normalizedIds }, tenantId }, scope);
+    const result = await WorkOrder.updateMany(filter, { $set: updateBody });
+
+    sendResponse(res, {
+      matched: (result as any).matchedCount ?? (result as any).n,
+      modified: (result as any).modifiedCount ?? (result as any).nModified,
+    });
+  } catch (err) {
+    next(err);
   }
 }
 

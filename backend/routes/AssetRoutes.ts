@@ -13,6 +13,7 @@ import {
   deleteAsset,
   searchAssets,
   getAssetTree,
+  bulkUpdateAssets,
 } from '../controllers/AssetController';
 import { requireAuth } from '../middleware/authMiddleware';
 import tenantScope from '../middleware/tenantScope';

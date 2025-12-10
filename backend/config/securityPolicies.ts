@@ -51,8 +51,10 @@ const parseBoolean = (value: string | undefined, fallback = false): boolean => {
 };
 
 const parseDurationMs = (value: string | undefined, fallback: number): number => {
-  if (!value) return fallback;
-  const parsed = ms(value);
+  const normalized = value?.trim();
+  if (!normalized) return fallback;
+
+  const parsed = ms(normalized as ms.StringValue);
   return typeof parsed === 'number' && parsed > 0 ? parsed : fallback;
 };
 

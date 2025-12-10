@@ -8,7 +8,8 @@ import { ArrowUpCircle, CheckSquare, Clock, Shield } from 'lucide-react';
 import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import { createWorkflowRule, listWorkflowRules, type WorkflowRuleInput } from '@/api/workflowRules';
-import { useToast } from '@/hooks/useToast';
+import { useToast } from '@/context/ToastContext';
+import { getErrorMessage } from '@/lib/api';
 
 const defaultRule: WorkflowRuleInput = {
   name: 'Default approvals',
@@ -31,13 +32,13 @@ const WorkflowRulesAdmin = () => {
   const [rules, setRules] = useState<any[]>([]);
   const [draft, setDraft] = useState<WorkflowRuleInput>(defaultRule);
   const [saving, setSaving] = useState(false);
-  const { pushApiError, pushSuccess } = useToast();
+  const { addToast } = useToast();
 
   useEffect(() => {
     listWorkflowRules()
       .then((data) => setRules(data))
-      .catch((err) => pushApiError(err, 'Failed to load workflow rules'));
-  }, [pushApiError]);
+      .catch((err) => addToast(`Failed to load workflow rules: ${getErrorMessage(err)}`, 'error'));
+  }, [addToast]);
 
   const approvalLabels = useMemo(() => draft.approvalSteps?.map((step) => step.name).join(' → '), [draft.approvalSteps]);
 
@@ -46,9 +47,9 @@ const WorkflowRulesAdmin = () => {
     try {
       const created = await createWorkflowRule({ ...draft, isDefault: true });
       setRules((prev) => [created, ...prev]);
-      pushSuccess('Workflow rule saved');
+      addToast('Workflow rule saved', 'success');
     } catch (err) {
-      pushApiError(err, 'Unable to save workflow rule');
+      addToast(`Unable to save workflow rule: ${getErrorMessage(err)}`, 'error');
     } finally {
       setSaving(false);
     }

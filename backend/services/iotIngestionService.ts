@@ -228,18 +228,18 @@ const detectAnomaly = async (
   };
 };
 
+type SanitizedReading = {
+  assetId: string;
+  metric: string;
+  value: number;
+  timestamp: Date;
+  deviceId?: string;
+};
+
 const sanitizeReadings = async (
   tenantId: string,
   readings: IoTReadingInput[],
-): Promise<
-  {
-    assetId: string;
-    metric: string;
-    value: number;
-    timestamp: Date;
-    deviceId?: string;
-  }[]
-> => {
+): Promise<SanitizedReading[]> => {
   const deviceIds = Array.from(
     new Set(
       readings
@@ -257,7 +257,7 @@ const sanitizeReadings = async (
   );
 
   return readings
-    .map((reading) => {
+    .map<SanitizedReading | null>((reading) => {
       const deviceId = typeof reading.deviceId === 'string' ? reading.deviceId.trim() : undefined;
       const assetId = reading.assetId ?? reading.asset ?? (deviceId ? deviceMap.get(deviceId)?.assetId : undefined);
       const metric = typeof reading.metric === 'string' ? reading.metric.trim() : '';
@@ -269,13 +269,12 @@ const sanitizeReadings = async (
         assetId,
         metric,
         value,
-        deviceId,
+        ...(deviceId ? { deviceId } : {}),
         timestamp: normalizeTimestamp(reading.timestamp),
       };
     })
     .filter(
-      (entry): entry is { assetId: string; metric: string; value: number; timestamp: Date; deviceId?: string } =>
-        entry !== null,
+      (entry): entry is SanitizedReading => entry !== null,
     );
 };
 

@@ -71,6 +71,7 @@ const quickLinks = [
   { label: 'Lines', to: '/lines' },
   { label: 'Stations', to: '/stations' },
   { label: 'Assets', to: '/assets' },
+  { label: 'Add Assets to Stations Guide', to: '/documentation/asset-management/assets/add-to-stations' },
 ];
 
 const AssetManagementGuide: React.FC = () => (

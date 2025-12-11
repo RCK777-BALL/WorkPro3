@@ -44,6 +44,7 @@ import RoleManagementPage from "@/pages/RoleManagement";
 import Documentation from "@/pages/Documentation";
 import AssetManagementGuide from "@/pages/AssetManagementGuide";
 import AssetManagementAssetsGuide from "@/pages/AssetManagementAssetsGuide";
+import AddAssetsToStationsGuide from "@/pages/AddAssetsToStationsGuide";
 import ManageAssets from "@/pages/ManageAssets";
 import Departments from "@/pages/Departments";
 import Lines from "@/pages/Lines";
@@ -276,6 +277,10 @@ export default function App() {
           <Route
             path="/documentation/asset-management/assets"
             element={<AssetManagementAssetsGuide />}
+          />
+          <Route
+            path="/documentation/asset-management/assets/add-to-stations"
+            element={<AddAssetsToStationsGuide />}
           />
           <Route
             path="/documentation/asset-management/assets/manage"

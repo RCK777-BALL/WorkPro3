@@ -6,10 +6,12 @@ import { useCallback, useMemo } from 'react';
 
 import {
   formatPermission,
+  type PermissionScope,
   type Permission,
   type PermissionAction,
   type PermissionCategory,
 } from '@backend-shared/permissions';
+import type { PermissionGrant } from '@backend-shared/admin';
 import { useAuth } from '@/context/AuthContext';
 import { SITE_KEY, TENANT_KEY } from '@/lib/http';
 import { safeLocalStorage } from '@/utils/safeLocalStorage';
@@ -62,7 +64,7 @@ export const usePermissions = () => {
   const hasScopedPermission = useCallback(
     (scope: PermissionScope, action: PermissionAction) => {
       if (!user?.permissions?.length) return false;
-      return user.permissions.some((grant) => {
+      return (user.permissions as PermissionGrant[]).some((grant) => {
         if (grant.scope !== scope) return false;
         if (!grant.actions.includes(action)) return false;
         if (grant.tenantId && tenantId && grant.tenantId !== tenantId) return false;

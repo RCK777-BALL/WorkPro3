@@ -32,15 +32,21 @@ export type { Asset as SharedAsset } from '../../../shared/types/asset';
 export type { WorkOrder as SharedWorkOrder } from '@backend-shared/workorder';
 export type {
   InventoryItem,
+  InventoryLocation,
   InventoryUpdatePayload,
   Part,
   VendorSummary,
   PurchaseOrder,
   PurchaseOrderPayload,
   InventoryAlert,
+  StockHistoryEntry,
+  StockAdjustment,
+  StockItem,
+  PartUsageReport,
   InventoryTransfer,
   InventoryTransferPayload,
 } from '@backend-shared/inventory';
+export type { CustomReportResponse, ReportQueryRequest, ReportTemplate, ReportTemplateInput } from '@backend-shared/reports';
 export type { Vendor } from './vendor';
 export type { UploadedFile, UploadResponse } from '@backend-shared/uploads';
 export type { ApiResult, PaginatedResult, SortDirection, TenantScoped } from '@backend-shared/http';
@@ -49,6 +55,7 @@ export type {
   OnboardingStep,
   OnboardingStepKey,
   PMTemplateLibraryItem,
+  InspectionFormTemplate,
 } from '@backend-shared/onboarding';
 export type {
   PMTemplate,

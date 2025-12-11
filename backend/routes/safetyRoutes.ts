@@ -3,6 +3,7 @@
  */
 
 import { Router, type Request } from 'express';
+import { Types } from 'mongoose';
 import { requireAuth } from '../middleware/authMiddleware';
 import tenantScope from '../middleware/tenantScope';
 import { writeAuditLog } from '../utils/audit';
@@ -85,7 +86,7 @@ const buildState = (tenantId: string): SafetyState => {
   return tenantSafetyState.get(tenantId)!;
 };
 
-type SafetyRequest = Request & { tenantId?: string; siteId?: string; user?: { _id?: string } };
+type SafetyRequest = Request & { tenantId?: string; siteId?: string; user?: { _id?: string | Types.ObjectId } };
 
 const logHistory = async (
   req: SafetyRequest,
@@ -427,7 +428,9 @@ router.get('/work-orders/:workOrderId/status', (req, res) => {
 
   if (permitTemplates.length > 0) {
     const permitIds = permitTemplates.map((tpl) => tpl.permitType ?? tpl.category);
-    const permitCompletions = safety.completions.filter((completion) => permitIds.includes(completion.permitType ?? ''));
+    const permitCompletions = safety.completions.filter((completion) =>
+      permitIds.includes(completion.permitType ?? 'general'),
+    );
     if (permitCompletions.length < permitTemplates.length) {
       missing.push('Work permit templates require completion');
     }

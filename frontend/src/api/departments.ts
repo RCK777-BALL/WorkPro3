@@ -25,7 +25,7 @@ type AssetResponse = {
   _id: string;
   name: string;
   type: Asset['type'];
-  status?: string;
+  status?: Asset['status'];
   description?: string;
   notes?: string;
   location?: string;

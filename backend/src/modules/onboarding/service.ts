@@ -26,7 +26,7 @@ export interface OnboardingStepDefinition {
   href: string;
 }
 
-const STEP_DEFINITIONS: OnboardingStepDefinition[] = [
+export const STEP_DEFINITIONS: OnboardingStepDefinition[] = [
   {
     key: 'site',
     title: 'Add your first site',
@@ -37,7 +37,7 @@ const STEP_DEFINITIONS: OnboardingStepDefinition[] = [
     key: 'roles',
     title: 'Configure access roles',
     description: 'Set up tenant and site roles so users land with the right permissions.',
-    href: '/roles',
+    href: '/settings/roles',
   },
   {
     key: 'departments',

@@ -172,6 +172,11 @@ const Documentation: React.FC = () => {
         { title: 'Asset Categories', time: '5 min read' },
         { title: 'Maintenance Schedules', time: '15 min read' },
         { title: 'Asset Reports', time: '10 min read' },
+        {
+          title: 'Add Assets to Stations',
+          time: 'Step-by-step',
+          href: '/documentation/asset-management/assets/add-to-stations',
+        },
         { title: 'Assets Setup Guide', time: 'Step-by-step', href: '/documentation/asset-management/assets' },
         { title: 'Asset Management Setup', time: 'Step-by-step', href: '/documentation/asset-management' }
       ]

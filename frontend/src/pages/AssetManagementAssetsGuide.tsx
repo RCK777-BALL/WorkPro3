@@ -135,6 +135,7 @@ const namingTips = [
 
 const quickActions = [
   { label: 'Asset Explorer', to: null },
+  { label: 'Add Assets to Stations Guide', to: '/documentation/asset-management/assets/add-to-stations' },
   { label: 'Manage Assets', to: '/assets/manage' },
   { label: 'Import Assets', to: '/imports' },
   { label: 'Asset Management Guide', to: '/documentation/asset-management' },

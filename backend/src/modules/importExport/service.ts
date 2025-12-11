@@ -105,7 +105,7 @@ const EXPORT_HEADERS = [
 
 type ExportRow = Record<(typeof EXPORT_HEADERS)[number]['label'], string>;
 
-type ImportableColumn = keyof ImportAssetRow;
+type ImportableColumn = keyof ImportAssetRow & string;
 type ColumnAliases<TRow extends Record<string, unknown>> = Record<string, keyof TRow & string>;
 type ImportRowMap = {
   assets: ImportAssetRow;
@@ -368,12 +368,15 @@ const normalizeRows = <TRow extends Record<string, unknown>>(
   return rows;
 };
 
-const getAliasesForEntity = <T extends ImportEntity>(entity: T): ColumnAliases<ImportRowMap[T]> => {
-  if (entity === 'assets') return COLUMN_ALIASES;
-  if (entity === 'pms') return PM_ALIASES;
-  if (entity === 'workOrders') return WORK_ORDER_ALIASES;
-  return PART_ALIASES;
+const ALIASES_BY_ENTITY: { [K in ImportEntity]: ColumnAliases<ImportRowMap[K]> } = {
+  assets: COLUMN_ALIASES,
+  pms: PM_ALIASES,
+  workOrders: WORK_ORDER_ALIASES,
+  parts: PART_ALIASES,
 };
+
+const getAliasesForEntity = <T extends ImportEntity>(entity: T): ColumnAliases<ImportRowMap[T]> =>
+  ALIASES_BY_ENTITY[entity];
 
 export const parseImportFile = <T extends ImportEntity>(
   file: Express.Multer.File,
@@ -417,7 +420,8 @@ export const validateAssetRows = (
 
     for (const field of REQUIRED_FIELDS) {
       if (!normalized[field]) {
-        issues.push({ row: rowNumber, field, message: `${toTitle(field)} is required.` });
+        const fieldName = field.toString();
+        issues.push({ row: rowNumber, field: fieldName, message: `${toTitle(fieldName)} is required.` });
       }
     }
 

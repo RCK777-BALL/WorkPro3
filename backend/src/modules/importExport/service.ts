@@ -30,6 +30,7 @@ export interface ImportValidationError {
 }
 
 export interface ImportAssetRow {
+  [key: string]: unknown;
   name: string;
   type?: AssetDoc['type'] | undefined;
   status?: string | undefined;
@@ -42,6 +43,7 @@ export interface ImportAssetRow {
 }
 
 export interface ImportPmRow {
+  [key: string]: unknown;
   title: string;
   asset?: string;
   interval?: string;
@@ -50,6 +52,7 @@ export interface ImportPmRow {
 }
 
 export interface ImportWorkOrderRow {
+  [key: string]: unknown;
   title: string;
   status?: string;
   priority?: string;
@@ -59,6 +62,7 @@ export interface ImportWorkOrderRow {
 }
 
 export interface ImportPartRow {
+  [key: string]: unknown;
   name: string;
   partNumber?: string;
   quantity?: number;
@@ -106,7 +110,7 @@ const EXPORT_HEADERS = [
 type ExportRow = Record<(typeof EXPORT_HEADERS)[number]['label'], string>;
 
 type ImportableColumn = keyof ImportAssetRow;
-type ColumnAliases<TRow extends Record<string, unknown>> = Record<string, keyof TRow>;
+type ColumnAliases<TRow extends Record<string, unknown>> = Record<string, keyof TRow & string>;
 
 const STATUS_VALUES = new Set(['Active', 'Offline', 'In Repair']);
 const CRITICALITY_VALUES = new Set(['high', 'medium', 'low']);

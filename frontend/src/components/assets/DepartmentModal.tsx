@@ -156,6 +156,7 @@ const DepartmentModal: React.FC<Props> = ({
     const newAsset: Asset = {
       id: `${Date.now()}-${Math.random()}`,
       name: '',
+      tenantId: 'temp-tenant',
       line: lines[lineIndex].id,
       station: station.id,
       type: 'Electrical',

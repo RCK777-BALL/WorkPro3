@@ -342,7 +342,7 @@ export default function App() {
           <Route
             path="/admin/workflow"
             element={
-              <RequirePermission permission="admin">
+              <RequirePermission permission="roles.manage">
                 <WorkflowRulesAdmin />
               </RequirePermission>
             }

@@ -29,8 +29,7 @@ export interface ImportValidationError {
   message: string;
 }
 
-export interface ImportAssetRow {
-  [key: string]: unknown;
+export interface ImportAssetRow extends Record<string, string | number | undefined> {
   name: string;
   type?: AssetDoc['type'] | undefined;
   status?: string | undefined;
@@ -42,8 +41,7 @@ export interface ImportAssetRow {
   criticality?: string | undefined;
 }
 
-export interface ImportPmRow {
-  [key: string]: unknown;
+export interface ImportPmRow extends Record<string, string | number | undefined> {
   title: string;
   asset?: string;
   interval?: string;
@@ -51,8 +49,7 @@ export interface ImportPmRow {
   priority?: string;
 }
 
-export interface ImportWorkOrderRow {
-  [key: string]: unknown;
+export interface ImportWorkOrderRow extends Record<string, string | number | undefined> {
   title: string;
   status?: string;
   priority?: string;
@@ -61,8 +58,7 @@ export interface ImportWorkOrderRow {
   dueDate?: string;
 }
 
-export interface ImportPartRow {
-  [key: string]: unknown;
+export interface ImportPartRow extends Record<string, string | number | undefined> {
   name: string;
   partNumber?: string;
   quantity?: number;
@@ -111,6 +107,12 @@ type ExportRow = Record<(typeof EXPORT_HEADERS)[number]['label'], string>;
 
 type ImportableColumn = keyof ImportAssetRow;
 type ColumnAliases<TRow extends Record<string, unknown>> = Record<string, keyof TRow & string>;
+type ImportRowMap = {
+  assets: ImportAssetRow;
+  pms: ImportPmRow;
+  workOrders: ImportWorkOrderRow;
+  parts: ImportPartRow;
+};
 
 const STATUS_VALUES = new Set(['Active', 'Offline', 'In Repair']);
 const CRITICALITY_VALUES = new Set(['high', 'medium', 'low']);
@@ -198,7 +200,7 @@ const normalizeRowWithAliases = <TRow extends Record<string, unknown>>(
     if (!trimmedValue) continue;
     const normalizedKey = aliases[normalizeKey(rawKey)];
     if (!normalizedKey) continue;
-    (normalized as Record<string, string | number>)[normalizedKey] = trimmedValue;
+    (normalized as Record<keyof TRow & string, string | number>)[normalizedKey] = trimmedValue;
     hasValue = true;
   }
 
@@ -366,17 +368,17 @@ const normalizeRows = <TRow extends Record<string, unknown>>(
   return rows;
 };
 
-const getAliasesForEntity = (entity: ImportEntity): ColumnAliases<Record<string, unknown>> => {
-  if (entity === 'assets') return COLUMN_ALIASES as ColumnAliases<Record<string, unknown>>;
-  if (entity === 'pms') return PM_ALIASES as ColumnAliases<Record<string, unknown>>;
-  if (entity === 'workOrders') return WORK_ORDER_ALIASES as ColumnAliases<Record<string, unknown>>;
-  return PART_ALIASES as ColumnAliases<Record<string, unknown>>;
+const getAliasesForEntity = <T extends ImportEntity>(entity: T): ColumnAliases<ImportRowMap[T]> => {
+  if (entity === 'assets') return COLUMN_ALIASES;
+  if (entity === 'pms') return PM_ALIASES;
+  if (entity === 'workOrders') return WORK_ORDER_ALIASES;
+  return PART_ALIASES;
 };
 
-export const parseImportFile = (
+export const parseImportFile = <T extends ImportEntity>(
   file: Express.Multer.File,
-  entity: ImportEntity,
-): { rows: Partial<Record<string, unknown>>[]; format: 'csv' | 'xlsx'; columns: string[] } => {
+  entity: T,
+): { rows: Array<Partial<ImportRowMap[T]>>; format: 'csv' | 'xlsx'; columns: string[] } => {
   const format = detectFormat(file);
   const rawRows = format === 'csv' ? parseCsvRows(file) : parseWorkbookRows(file);
   type RawRow = Record<string, unknown>;
@@ -585,9 +587,9 @@ export const validatePartRows = (
   return { errors, valid: validRows };
 };
 
-const validateByEntity = (
-  entity: ImportEntity,
-  rows: Partial<Record<string, unknown>>[],
+const validateByEntity = <T extends ImportEntity>(
+  entity: T,
+  rows: Array<Partial<ImportRowMap[T]>>,
 ): { errors: ImportValidationError[]; valid: ImportPreviewRow[] } => {
   if (entity === 'assets') return validateAssetRows(rows as Array<Partial<ImportAssetRow>>);
   if (entity === 'pms') return validatePmRows(rows as Array<Partial<ImportPmRow>>);

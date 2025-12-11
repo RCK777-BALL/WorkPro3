@@ -4,11 +4,13 @@
 
 import { Router, type Request } from 'express';
 import { randomUUID } from 'crypto';
+import { Types } from 'mongoose';
 import scimAuth from '../middleware/scimAuth';
 import User, { type UserDocument } from '../models/User';
 import { writeAuditLog } from '../utils/audit';
 import logger from '../utils/logger';
 import { getSecurityPolicy } from '../config/securityPolicies';
+import { ROLES, type UserRole } from '../types/auth';
 
 type TenantRequest = Request & { tenantId?: string };
 
@@ -59,7 +61,7 @@ const resolveEmailFromScim = (body: Record<string, unknown>): string | undefined
   return normalizeEmail(primary);
 };
 
-const normalizeRoles = (value: unknown): string[] => {
+const normalizeRoles = (value: unknown): UserRole[] => {
   if (Array.isArray(value)) {
     return value
       .map((entry) =>
@@ -71,12 +73,18 @@ const normalizeRoles = (value: unknown): string[] => {
       )
       .filter((entry): entry is string => typeof entry === 'string')
       .map((entry) => entry.trim().toLowerCase())
-      .filter(Boolean);
+      .filter((entry): entry is UserRole => (ROLES as readonly string[]).includes(entry));
   }
   return [];
 };
 
 const provisionUserFromScim = async (tenantId: string, payload: Record<string, any>) => {
+  if (!Types.ObjectId.isValid(tenantId)) {
+    throw new Error('Invalid tenant id');
+  }
+
+  const tenantObjectId = new Types.ObjectId(tenantId);
+
   const email = resolveEmailFromScim(payload);
   if (!email) {
     throw new Error('SCIM user email is required');
@@ -91,9 +99,10 @@ const provisionUserFromScim = async (tenantId: string, payload: Record<string, a
   const employeeId = typeof payload.externalId === 'string' && payload.externalId.trim()
     ? payload.externalId.trim()
     : payload.id ?? randomUUID();
-  const roles = normalizeRoles(payload.roles ?? payload.groups) || ['tech'];
+  const roles = normalizeRoles(payload.roles ?? payload.groups);
+  const resolvedRoles: UserRole[] = roles.length ? roles : ['tech'];
 
-  let user = await User.findOne({ email: email.toLowerCase(), tenantId }).select(
+  let user = await User.findOne({ email: email.toLowerCase(), tenantId: tenantObjectId }).select(
     '+passwordHash +tenantId +siteId +roles +role +name +employeeId',
   );
 
@@ -101,8 +110,8 @@ const provisionUserFromScim = async (tenantId: string, payload: Record<string, a
     name: displayName,
     email,
     employeeId,
-    tenantId,
-    roles: roles.length ? roles : ['tech'],
+    tenantId: tenantObjectId,
+    roles: resolvedRoles,
     siteId: payload.siteId ?? undefined,
     passwordHash: randomUUID(),
     bootstrapAccount: true,

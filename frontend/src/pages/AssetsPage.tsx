@@ -33,7 +33,7 @@ import { useTranslation } from 'react-i18next';
 import { useScopeContext } from '@/context/ScopeContext';
 import { useToast } from '@/context/ToastContext';
 import { useAuthStore } from '@/store/authStore';
-import { uploadImport } from '@/api/importExport';
+import { uploadImport, type ImportSummary } from '@/api/importExport';
 
 const ASSET_CACHE_KEY = 'offline-assets';
 const FILTER_STORAGE_VERSION = 1;
@@ -113,6 +113,9 @@ const AssetsPage: React.FC = () => {
   const [showWO, setShowWO] = useState(false);
   const [woAsset, setWoAsset] = useState<Asset | null>(null);
   const [conflict, setConflict] = useState<SyncConflict | null>(null);
+  const [showSampleData, setShowSampleData] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
   const isFetching = useRef(false);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const navigate = useNavigate();
@@ -131,6 +134,7 @@ const AssetsPage: React.FC = () => {
   }, [activePlant, assets]);
 
   const filteredAssets = useMemo(() => {
+    const sourceAssets = showSampleData ? SAMPLE_ASSETS : scopedAssets;
     const matchesSearch = (asset: Asset) => {
       if (!search.trim()) return true;
       return Object.values(asset).some((value) =>
@@ -140,7 +144,7 @@ const AssetsPage: React.FC = () => {
       );
     };
 
-    const filtered = scopedAssets.filter((asset) => {
+    const filtered = sourceAssets.filter((asset) => {
       const matchesStatus = !statusFilter || (asset.status ?? '').toLowerCase() === statusFilter.toLowerCase();
       const matchesCriticality =
         !criticalityFilter || (asset.criticality ?? '').toLowerCase() === criticalityFilter.toLowerCase();
@@ -149,7 +153,7 @@ const AssetsPage: React.FC = () => {
     });
 
     return filtered.slice().sort((a, b) => a.name.localeCompare(b.name));
-  }, [criticalityFilter, scopedAssets, search, statusFilter]);
+  }, [criticalityFilter, scopedAssets, search, showSampleData, statusFilter]);
 
   const applySavedView = useCallback(
     (viewId: string) => {
@@ -223,51 +227,6 @@ const AssetsPage: React.FC = () => {
     const unsub = onSyncConflict(setConflict);
     return () => unsub();
   }, []);
-
-  useEffect(() => {
-    const savedFilters = safeLocalStorage.getItem(filterStorageKey);
-    if (!savedFilters) return;
-
-    try {
-      const parsed = JSON.parse(savedFilters) as {
-        search?: string;
-        status?: string;
-        criticality?: string;
-        preset?: string;
-      };
-
-      if (typeof parsed.search === 'string') setSearch(parsed.search);
-      if (typeof parsed.status === 'string') setStatusFilter(parsed.status);
-      if (typeof parsed.criticality === 'string') setCriticalityFilter(parsed.criticality);
-      if (typeof parsed.preset === 'string') setSelectedPreset(parsed.preset);
-    } catch (error) {
-      console.warn('Failed to parse saved asset filters', error);
-    }
-  }, [filterStorageKey]);
-
-  useEffect(() => {
-    const preset = ASSET_VIEW_PRESETS.find((p) => p.id === selectedPreset);
-    const matchesPreset =
-      preset && preset.status === statusFilter && preset.criticality === criticalityFilter;
-
-    if (!preset && selectedPreset !== 'custom') {
-      setSelectedPreset('custom');
-    } else if (!matchesPreset && selectedPreset !== 'custom') {
-      setSelectedPreset('custom');
-    }
-  }, [criticalityFilter, selectedPreset, statusFilter]);
-
-  useEffect(() => {
-    safeLocalStorage.setItem(
-      filterStorageKey,
-      JSON.stringify({
-        search,
-        status: statusFilter,
-        criticality: criticalityFilter,
-        preset: selectedPreset,
-      }),
-    );
-  }, [criticalityFilter, filterStorageKey, search, selectedPreset, statusFilter]);
 
   const resolveConflict = async (choice: 'local' | 'server') => {
     if (!conflict) return;
@@ -423,11 +382,11 @@ const AssetsPage: React.FC = () => {
   };
 
   const stats = useMemo(() => {
-    const total = displayAssets.length;
-    const active = displayAssets.filter((asset) => (asset.status ?? '').toLowerCase() === 'active').length;
-    const critical = displayAssets.filter((asset) => asset.criticality === 'high').length;
+    const total = filteredAssets.length;
+    const active = filteredAssets.filter((asset) => (asset.status ?? '').toLowerCase() === 'active').length;
+    const critical = filteredAssets.filter((asset) => asset.criticality === 'high').length;
     return { total, active, critical };
-  }, [displayAssets]);
+  }, [filteredAssets]);
 
   const canManageAssets = can('hierarchy', 'write');
   const canDeleteAssets = can('hierarchy', 'delete');
@@ -757,7 +716,7 @@ const AssetsPage: React.FC = () => {
           </div>
         )}
 
-        {!isLoading && displayAssets.length === 0 && (
+        {!isLoading && filteredAssets.length === 0 && (
           <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center text-neutral-700 shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
             <p className="text-lg font-semibold">No assets yet</p>
             <p className="max-w-xl text-sm text-neutral-600 dark:text-neutral-300">

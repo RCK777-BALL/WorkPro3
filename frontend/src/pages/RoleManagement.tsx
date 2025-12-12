@@ -46,6 +46,7 @@ const RoleManagementPage = () => {
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [siteId, setSiteId] = useState<string | null>(null);
+  const [viewSiteId, setViewSiteId] = useState<string>('');
   const [selectedPermissions, setSelectedPermissions] = useState<Permission[]>([]);
 
   const editable = can('roles.manage');
@@ -74,14 +75,14 @@ const RoleManagementPage = () => {
   }, [roles, siteOptions]);
 
   const filteredRoles = useMemo(() => {
-    if (!activePlant?.id) return roles;
-    return roles.filter((role) => !role.siteId || role.siteId === activePlant.id);
-  }, [activePlant?.id, roles]);
+    if (!viewSiteId) return roles;
+    return roles.filter((role) => !role.siteId || role.siteId === viewSiteId);
+  }, [roles, viewSiteId]);
 
-  const resetForm = () => {
+  const resetForm = (targetSiteId: string | null = viewSiteId || null) => {
     setSelectedRoleId(null);
     setName('');
-    setSiteId(activePlant?.id ?? null);
+    setSiteId(targetSiteId);
     setSelectedPermissions([]);
   };
 
@@ -103,7 +104,9 @@ const RoleManagementPage = () => {
   }, [loadRoles]);
 
   useEffect(() => {
-    resetForm();
+    const newSiteId = activePlant?.id ?? '';
+    setViewSiteId(newSiteId);
+    resetForm(newSiteId || null);
     loadRoles();
   }, [activePlant?.id, loadRoles]);
 
@@ -118,9 +121,9 @@ const RoleManagementPage = () => {
 
   useEffect(() => {
     if (!selectedRoleId) {
-      setSiteId(activePlant?.id ?? null);
+      setSiteId(viewSiteId || null);
     }
-  }, [activePlant?.id, selectedRoleId]);
+  }, [selectedRoleId, viewSiteId]);
 
   const togglePermission = (permission: Permission) => {
     setSelectedPermissions((prev) =>
@@ -131,6 +134,7 @@ const RoleManagementPage = () => {
   };
 
   const handleSave = async () => {
+    if (!editable || saving) return;
     if (!name.trim()) {
       addToast('Role name is required', 'error');
       return;
@@ -152,6 +156,14 @@ const RoleManagementPage = () => {
       addToast('Could not save role', 'error');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleViewSiteChange = async (value: string) => {
+    setViewSiteId(value);
+    resetForm(value || null);
+    if (value) {
+      await switchPlant(value);
     }
   };
 
@@ -189,8 +201,8 @@ const RoleManagementPage = () => {
           <select
             id="site-filter"
             className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100"
-            value={activePlant?.id ?? ''}
-            onChange={(e) => switchPlant(e.target.value)}
+            value={viewSiteId}
+            onChange={(e) => handleViewSiteChange(e.target.value)}
           >
             {siteOptions.map((option) => (
               <option key={option.value || 'all'} value={option.value}>

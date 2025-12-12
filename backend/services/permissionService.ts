@@ -6,17 +6,22 @@ import { Types } from 'mongoose';
 
 import Role from '../models/Role';
 import UserRoleAssignment from '../models/UserRoleAssignment';
-import permissionsMatrix from '../src/auth/permissions.json';
+import permissionsMatrixJson from '../src/auth/permissions.json';
 import { ALL_PERMISSIONS, formatPermission, type Permission } from '../shared/permissions';
-import type { PermissionsMatrix } from '../types/auth';
+import type { PermissionScope, PermissionsMatrix } from '../../shared/types/auth';
+
+const permissionsMatrix: PermissionsMatrix = permissionsMatrixJson;
 
 const buildRolePermissionMap = (matrix: PermissionsMatrix): Map<string, Set<Permission>> => {
   const map = new Map<string, Set<Permission>>();
 
-  for (const [scope, actions] of Object.entries(matrix)) {
-    for (const [action, roles] of Object.entries(actions)) {
+  for (const [scope, actions] of Object.entries(matrix) as [
+    PermissionScope,
+    PermissionsMatrix[PermissionScope],
+  ][]) {
+    for (const [action, roles] of Object.entries(actions) as [string, string[]][]) {
       const permission = formatPermission(scope, action);
-      roles.forEach((role) => {
+      roles.forEach((role: string) => {
         if (!map.has(role)) {
           map.set(role, new Set());
         }
@@ -28,7 +33,7 @@ const buildRolePermissionMap = (matrix: PermissionsMatrix): Map<string, Set<Perm
   return map;
 };
 
-const ROLE_PERMISSION_MAP = buildRolePermissionMap(permissionsMatrix as PermissionsMatrix);
+const ROLE_PERMISSION_MAP = buildRolePermissionMap(permissionsMatrix);
 
 const toObjectId = (value: unknown): Types.ObjectId | undefined => {
   if (!value) return undefined;

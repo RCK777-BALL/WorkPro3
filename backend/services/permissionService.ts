@@ -6,7 +6,29 @@ import { Types } from 'mongoose';
 
 import Role from '../models/Role';
 import UserRoleAssignment from '../models/UserRoleAssignment';
-import type { Permission } from '../shared/permissions';
+import permissionsMatrix from '../src/auth/permissions.json';
+import { ALL_PERMISSIONS, formatPermission, type Permission } from '../shared/permissions';
+import type { PermissionsMatrix } from '../types/auth';
+
+const buildRolePermissionMap = (matrix: PermissionsMatrix): Map<string, Set<Permission>> => {
+  const map = new Map<string, Set<Permission>>();
+
+  for (const [scope, actions] of Object.entries(matrix)) {
+    for (const [action, roles] of Object.entries(actions)) {
+      const permission = formatPermission(scope, action);
+      roles.forEach((role) => {
+        if (!map.has(role)) {
+          map.set(role, new Set());
+        }
+        map.get(role)!.add(permission);
+      });
+    }
+  }
+
+  return map;
+};
+
+const ROLE_PERMISSION_MAP = buildRolePermissionMap(permissionsMatrix as PermissionsMatrix);
 
 const toObjectId = (value: unknown): Types.ObjectId | undefined => {
   if (!value) return undefined;
@@ -80,6 +102,20 @@ export const resolveUserPermissions = async (
 
   if (roleNames.size === 0 && input.fallbackRoles) {
     input.fallbackRoles.forEach((role) => roleNames.add(role));
+  }
+
+  const fallbackRoles = input.fallbackRoles ?? [];
+  if (fallbackRoles.length > 0) {
+    for (const role of fallbackRoles) {
+      const mappedPermissions = ROLE_PERMISSION_MAP.get(role);
+      if (mappedPermissions) {
+        mappedPermissions.forEach((permission) => permissionSet.add(permission));
+      }
+
+      if (['admin', 'global_admin', 'plant_admin'].includes(role)) {
+        ALL_PERMISSIONS.forEach((permission) => permissionSet.add(permission));
+      }
+    }
   }
 
   return {

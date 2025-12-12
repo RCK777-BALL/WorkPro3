@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import permissionsMatrix from '../../backend/src/auth/permissions.json';
+import permissionsMatrix from '../auth/permissions.json';
 
 export const AUTH_ROLES = [
   'global_admin',

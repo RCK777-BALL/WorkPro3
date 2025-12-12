@@ -6,7 +6,7 @@ import { Types } from 'mongoose';
 
 import Role from '../models/Role';
 import UserRoleAssignment from '../models/UserRoleAssignment';
-import permissionsMatrixJson from '../src/auth/permissions.json';
+import permissionsMatrixJson from '../../shared/auth/permissions.json';
 import { ALL_PERMISSIONS, formatPermission, type Permission } from '../shared/permissions';
 import type { PermissionScope, PermissionsMatrix } from '../../shared/types/auth';
 

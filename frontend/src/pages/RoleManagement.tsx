@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Shield, Trash2 } from 'lucide-react';
 
 import Card from '@/components/common/Card';
@@ -73,6 +73,11 @@ const RoleManagementPage = () => {
     return Array.from(lookup.values());
   }, [roles, siteOptions]);
 
+  const filteredRoles = useMemo(() => {
+    if (!activePlant?.id) return roles;
+    return roles.filter((role) => !role.siteId || role.siteId === activePlant.id);
+  }, [activePlant?.id, roles]);
+
   const resetForm = () => {
     setSelectedRoleId(null);
     setName('');
@@ -80,7 +85,7 @@ const RoleManagementPage = () => {
     setSelectedPermissions([]);
   };
 
-  const loadRoles = async () => {
+  const loadRoles = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await http.get<RoleResponse[]>('/roles');
@@ -91,11 +96,16 @@ const RoleManagementPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [addToast]);
 
   useEffect(() => {
     loadRoles();
-  }, []);
+  }, [loadRoles]);
+
+  useEffect(() => {
+    resetForm();
+    loadRoles();
+  }, [activePlant?.id, loadRoles]);
 
   useEffect(() => {
     if (!selectedRoleId) return;
@@ -224,11 +234,11 @@ const RoleManagementPage = () => {
           </div>
           {loading ? (
             <p className="py-6 text-sm text-slate-400">Loading roles…</p>
-          ) : roles.length === 0 ? (
+          ) : filteredRoles.length === 0 ? (
             <p className="py-6 text-sm text-slate-400">No roles available for this site.</p>
           ) : (
             <ul className="divide-y divide-slate-800">
-              {roles.map((role) => (
+              {filteredRoles.map((role) => (
                 <li
                   key={role._id}
                   className={`flex items-center justify-between gap-3 py-3 transition hover:bg-slate-900/40 ${

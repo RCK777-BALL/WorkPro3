@@ -88,4 +88,26 @@ describe('requireRoles middleware', () => {
       .set('Authorization', `Bearer ${tokenPlanner}`)
       .expect(403);
   });
+
+  it('allows admin users to access any tenant', async () => {
+    const otherTenantId = new mongoose.Types.ObjectId().toString();
+
+    const res = await request(app)
+      .get('/protected')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .set('x-tenant-id', otherTenantId)
+      .expect(200);
+
+    expect(res.body.ok).toBe(true);
+  });
+
+  it('blocks equivalent roles when tenant does not match', async () => {
+    const otherTenantId = new mongoose.Types.ObjectId().toString();
+
+    await request(app)
+      .get('/protected')
+      .set('Authorization', `Bearer ${tokenGeneralManager}`)
+      .set('x-tenant-id', otherTenantId)
+      .expect(403);
+  });
 });

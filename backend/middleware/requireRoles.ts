@@ -34,6 +34,7 @@ const requireRoles =
     }
 
     const userRoles: UserRole[] = req.user.roles ?? [];
+    const isAdmin = userRoles.includes('admin');
     const allowedRoles = expandRoles(roles);
     if (allowedRoles.length > 0 && !allowedRoles.some((role) => userRoles.includes(role))) {
       res.status(403).json({ message: 'Forbidden' });
@@ -43,6 +44,7 @@ const requireRoles =
     const tenantParam =
       req.params.tenantId || req.header('x-tenant-id') || req.tenantId;
     if (
+      !isAdmin &&
       tenantParam &&
       req.user.tenantId &&
       tenantParam !== req.user.tenantId

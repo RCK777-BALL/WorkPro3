@@ -43,6 +43,7 @@ const ManageAssets = () => {
   const [bulkSite, setBulkSite] = useState('');
   const [bulkTenant, setBulkTenant] = useState('');
   const [qrPreviewAsset, setQrPreviewAsset] = useState<Asset | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const isLoadingRef = useRef(false);
 
   useEffect(() => {
@@ -61,24 +62,32 @@ const ManageAssets = () => {
   const loadCachedAssets = useCallback(() => {
     const cached = safeLocalStorage.getItem(ASSET_CACHE_KEY);
     if (cached) {
-      setAssets(JSON.parse(cached));
-      addToast('Showing cached assets', 'error');
-      return true;
+      try {
+        setAssets(JSON.parse(cached));
+        addToast('Showing cached assets', 'error');
+        return true;
+      } catch (err) {
+        console.error('Failed to read cached assets', err);
+        safeLocalStorage.removeItem(ASSET_CACHE_KEY);
+      }
     }
     return false;
   }, [addToast, setAssets]);
 
   const fetchAssets = useCallback(async () => {
     if (isLoadingRef.current) return;
+    isLoadingRef.current = true;
+    setIsLoading(true);
     if (!navigator.onLine) {
       if (!loadCachedAssets()) {
         setError('Failed to load assets while offline');
       }
+      isLoadingRef.current = false;
+      setIsLoading(false);
       return;
     }
 
     try {
-      isLoadingRef.current = true;
       interface AssetResponse extends Partial<Asset> { _id?: string; id?: string }
       const res = await http.get<AssetResponse[]>('/assets');
       const normalized: Asset[] = Array.isArray(res.data)
@@ -106,6 +115,7 @@ const ManageAssets = () => {
       }
     } finally {
       isLoadingRef.current = false;
+      setIsLoading(false);
     }
   }, [loadCachedAssets, setAssets]);
 

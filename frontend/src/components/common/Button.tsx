@@ -18,14 +18,20 @@ type ButtonVariant =
 
 type ButtonSize = 'sm' | 'md' | 'lg';
 
-type ButtonProps = {
+type ButtonOwnProps = {
+  as?: React.ElementType;
   variant?: ButtonVariant;
   size?: ButtonSize;
   fullWidth?: boolean;
   icon?: React.ReactNode;
   iconPosition?: 'left' | 'right';
   loading?: boolean;
-} & React.ButtonHTMLAttributes<HTMLButtonElement>;
+};
+
+type ButtonProps<C extends React.ElementType = 'button'> = ButtonOwnProps &
+  Omit<React.ComponentPropsWithoutRef<C>, keyof ButtonOwnProps | 'color' | 'disabled'> & {
+    disabled?: boolean;
+  };
 
 const baseClasses =
   'inline-flex items-center justify-center rounded-md font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-neutral-900';
@@ -55,8 +61,8 @@ const sizeClasses: Record<ButtonSize, string> = {
   lg: 'px-5 py-2.5 text-base',
 };
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  (
+const Button = React.forwardRef(
+  <C extends React.ElementType = 'button'>(
     {
       children,
       className,
@@ -67,17 +73,20 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       iconPosition = 'left',
       loading = false,
       disabled,
-      type = 'button',
+      as,
+      type,
       ...rest
-    },
-    ref,
+    }: ButtonProps<C>,
+    ref: React.Ref<React.ElementRef<C>>,
   ) => {
+    const Component = (as ?? 'button') as React.ElementType;
+    const isButton = Component === 'button';
     const isDisabled = Boolean(disabled || loading);
 
     return (
-      <button
+      <Component
         ref={ref}
-        type={type}
+        type={isButton ? (type ?? 'button') : undefined}
         className={cn(
           baseClasses,
           variantClasses[variant],
@@ -86,9 +95,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           isDisabled && 'cursor-not-allowed opacity-60',
           className,
         )}
-        disabled={isDisabled}
         aria-disabled={isDisabled}
         aria-busy={loading}
+        {...(isButton ? { disabled: isDisabled } : {})}
         {...rest}
       >
         {loading && (
@@ -126,7 +135,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {icon && iconPosition === 'right' ? (
           <span className="ml-2 flex items-center">{icon}</span>
         ) : null}
-      </button>
+      </Component>
     );
   },
 );

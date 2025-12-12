@@ -3,7 +3,7 @@
  */
 
 import React from "react";
-import { getStatusColor, getPriorityColor } from "@/utils/colors";
+import { colors, getStatusColor, getPriorityColor } from "@/utils/colors";
 
 // Convert a hex color code to an rgba string with the provided alpha value
 const hexToRgba = (hex: string, alpha: number): string => {
@@ -15,11 +15,22 @@ const hexToRgba = (hex: string, alpha: number): string => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
+type BadgeType =
+  | "status"
+  | "priority"
+  | "default"
+  | "success"
+  | "warning"
+  | "error"
+  | "info";
+
 interface BadgeProps {
   text: string;
-  type?: "status" | "priority" | "default";
+  type?: BadgeType;
   size?: "sm" | "md";
   className?: string;
+  /** Override the resolved color with an explicit value */
+  color?: string;
 }
 
 const Badge: React.FC<BadgeProps> = ({
@@ -27,12 +38,18 @@ const Badge: React.FC<BadgeProps> = ({
   type = "default",
   size = "md",
   className = "",
+  color,
 }) => {
   const baseColor = React.useMemo(() => {
+    if (color) return color;
     if (type === "status") return getStatusColor(text);
     if (type === "priority") return getPriorityColor(text);
+    if (type === "success") return colors.success[500];
+    if (type === "warning") return colors.warning[500];
+    if (type === "error") return colors.error[600];
+    if (type === "info") return colors.primary[600];
     return "";
-  }, [text, type]);
+  }, [color, text, type]);
 
   const sizeClasses = {
     sm: "text-xs px-2 py-0.5",

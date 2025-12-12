@@ -97,14 +97,15 @@ describe('AssetModal form submission', () => {
 
   it('updates an existing asset with PUT /assets/:id', async () => {
     mockPut.mockResolvedValue({ data: { _id: 'asset-2', name: 'Updated Asset' } });
-    const onUpdate = vi.fn();
-    const existing: Asset = {
-      id: 'asset-2',
-      name: 'Existing Asset',
-      type: 'Electrical',
-      status: 'Active',
-      criticality: 'medium',
-    };
+      const onUpdate = vi.fn();
+      const existing: Asset = {
+        id: 'asset-2',
+        tenantId: 'tenant-1',
+        name: 'Existing Asset',
+        type: 'Electrical',
+        status: 'Active',
+        criticality: 'medium',
+      };
 
     render(
       <AssetModal isOpen={true} onClose={() => {}} asset={existing} onUpdate={onUpdate} />,

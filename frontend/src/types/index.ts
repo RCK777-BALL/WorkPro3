@@ -29,7 +29,7 @@ export interface PermissionAssignment {
 }
 
 export type { Asset as SharedAsset } from '../../../shared/types/asset';
-export type { WorkOrder as SharedWorkOrder } from '@backend-shared/workorder';
+export type { WorkOrder as SharedWorkOrder } from '../../../shared/types/workOrder';
 export type {
   InventoryItem,
   InventoryLocation,
@@ -45,25 +45,25 @@ export type {
   PartUsageReport,
   InventoryTransfer,
   InventoryTransferPayload,
-} from '@backend-shared/inventory';
+} from '../../../shared/types/inventory';
 export type { CustomReportResponse, ReportQueryRequest, ReportTemplate, ReportTemplateInput } from '@backend-shared/reports';
 export type { Vendor } from './vendor';
-export type { UploadedFile, UploadResponse } from '@backend-shared/uploads';
-export type { ApiResult, PaginatedResult, SortDirection, TenantScoped } from '@backend-shared/http';
+export type { UploadedFile, UploadResponse } from '../../../shared/types/uploads';
+export type { ApiResult, PaginatedResult, SortDirection, TenantScoped } from '../../../shared/types/http';
 export type {
   OnboardingState,
   OnboardingStep,
   OnboardingStepKey,
   PMTemplateLibraryItem,
   InspectionFormTemplate,
-} from '@backend-shared/onboarding';
+} from '../../../shared/types/onboarding';
 export type {
   PMTemplate,
   PMTemplateAssignment,
   PMTemplateChecklistItem,
   PMTemplateRequiredPart,
   PMTemplateUpsertInput,
-} from '@backend-shared/pmTemplates';
+} from '../../../shared/types/pmTemplates';
 export type {
   Permit,
   PermitHistoryEntry,
@@ -122,9 +122,7 @@ export interface Asset {
   /** Hours of downtime accumulated in the recent reporting window */
   recentDowntimeHours?: number;
   warrantyExpiry?: string;
-  openWorkOrders?: number;
   openWorkOrderCount?: number;
-  recentDowntimeHours?: number;
   downtimeHours?: number;
   documents?: File[];
   reliability?: { mttrHours: number; mtbfHours: number };
@@ -183,18 +181,8 @@ export interface WorkOrder {
   siteId?: string;
   plantId?: string;
 
-  /** Tenant context for the work order */
-  tenantId: string;
-
-  /** Optional site context for the work order */
-  siteId?: string;
-
   /** Optional plant context */
   plant?: string;
-
-  /** Tenant and site scoping */
-  tenantId?: string;
-  siteId?: string;
 
   /** Human readable title */
   title: string;
@@ -286,7 +274,6 @@ export interface WorkOrder {
   /** Additional metadata */
   note?: string;
   completedBy?: string;
-  attachments?: any[];
   parts?: { partId: string; qty: number; cost: number }[];
 }
 

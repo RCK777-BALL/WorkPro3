@@ -63,6 +63,7 @@ import {
   requestPortalRoutes,
   requestsRoutes,
   globalRoutes,
+  roleRoutes,
   ssoRoutes,
   statusRoutes,
   StationRoutes,
@@ -297,6 +298,7 @@ app.use("/api/assets", assetsRoutes);
 app.use("/api/downtime-logs", downtimeLogRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/assets", assetInsightsRouter);
+app.use("/api/roles", roleRoutes);
 app.use("/api/meters", meterReadingsRouter);
 app.use("/api/meters", meterRoutes);
 app.use("/api/tenants", TenantRoutes);

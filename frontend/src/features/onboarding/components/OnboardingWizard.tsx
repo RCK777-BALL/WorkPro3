@@ -52,6 +52,7 @@ const StepperItem = ({
 
 const StepContent = ({ step }: { step: OnboardingStep }) => {
   const actionLabel = useStepActionLabel(step.key);
+  const href = step.href.startsWith('/') ? step.href : `/${step.href}`;
   if (step.key === 'pmTemplates') {
     return (
       <div className="mt-4">
@@ -60,7 +61,7 @@ const StepContent = ({ step }: { step: OnboardingStep }) => {
         </p>
         <TemplateLibrary />
         <Link
-          to={step.href}
+          to={href}
           className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/30 px-4 py-2 text-sm text-white/90 transition hover:bg-white/10"
         >
           Manage templates
@@ -74,7 +75,7 @@ const StepContent = ({ step }: { step: OnboardingStep }) => {
     <div className="mt-4 space-y-4">
       <p className="text-sm text-white/70">{step.description}</p>
       <Link
-        to={step.href}
+        to={href}
         className="inline-flex items-center gap-2 rounded-full border border-white/30 px-4 py-2 text-sm text-white/90 transition hover:bg-white/10"
       >
         {actionLabel}

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Shield, Trash2 } from 'lucide-react';
 
 import Card from '@/components/common/Card';
@@ -80,7 +80,7 @@ const RoleManagementPage = () => {
     setSelectedPermissions([]);
   };
 
-  const loadRoles = async () => {
+  const loadRoles = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await http.get<RoleResponse[]>('/roles');
@@ -91,11 +91,16 @@ const RoleManagementPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [addToast]);
 
   useEffect(() => {
     loadRoles();
-  }, []);
+  }, [loadRoles]);
+
+  useEffect(() => {
+    resetForm();
+    loadRoles();
+  }, [activePlant?.id, loadRoles]);
 
   useEffect(() => {
     if (!selectedRoleId) return;

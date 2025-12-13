@@ -20,6 +20,7 @@ import type {
   StockHistoryEntry,
   StockItem as StockItemResponse,
   InventoryTransfer,
+  InventoryTransactionRecord,
   VendorSummary,
 } from '../../../../shared/types/inventory';
 import type { PaginatedResult, SortDirection } from '../../../../shared/types/http';
@@ -39,6 +40,11 @@ import type {
   PurchaseOrderInput,
   PurchaseOrderStatusInput,
   StockAdjustmentInput,
+  ReceiveInventoryInput,
+  IssueInventoryInput,
+  AdjustInventoryInput,
+  TransferInventoryInput,
+  StockCountInput,
   VendorInput,
   InventoryTransferInput,
 } from './schemas';
@@ -48,6 +54,8 @@ export interface InventoryContext {
   tenantId: string;
   siteId?: string;
   userId?: string;
+  roles?: string[];
+  permissions?: string[];
 }
 
 export interface PartUsageFilters {
@@ -105,6 +113,48 @@ export class InventoryError extends Error {
     this.status = status;
   }
 }
+
+const ROLE_ORDER = [
+  'warehouse-clerk',
+  'operator',
+  'supervisor',
+  'manager',
+  'admin',
+  'planner',
+  'team_leader',
+  'area_leader',
+  'assistant_department_leader',
+  'department_leader',
+  'operations_manager',
+  'assistant_general_manager',
+  'general_manager',
+  'plant_admin',
+  'global_admin',
+];
+
+const ROLE_RANK = new Map(ROLE_ORDER.map((role, index) => [role, index]));
+
+const getRoleRank = (role: string): number => {
+  const normalized = role.toLowerCase();
+  return ROLE_RANK.get(normalized) ?? -1;
+};
+
+const hasRequiredRole = (context: InventoryContext, minimumRole: string): boolean => {
+  const minRank = getRoleRank(minimumRole);
+  if (minRank < 0) return true;
+  const permissions = context.permissions ?? [];
+  if (permissions.some((permission) => permission.includes('inventory'))) {
+    return true;
+  }
+  const roles = context.roles ?? [];
+  return roles.some((role) => getRoleRank(role) >= minRank);
+};
+
+const assertRoleLevel = (context: InventoryContext, minimumRole: string) => {
+  if (!hasRequiredRole(context, minimumRole)) {
+    throw new InventoryError('Forbidden', 403);
+  }
+};
 
 const AUTO_REORDER_COOLDOWN_MS = 1000 * 60 * 60 * 6;
 
@@ -632,16 +682,104 @@ const ensureLocation = async (
   locationId: string,
   session?: ClientSession,
 ): Promise<LocationDocument> => {
-  const location = await LocationModel.findOne(
-    { _id: locationId, tenantId: context.tenantId },
-    undefined,
-    session ? { session } : undefined,
-  );
+  const query: FilterQuery<LocationDocument> = {
+    _id: toObjectId(locationId, 'location id'),
+    tenantId: toObjectId(context.tenantId, 'tenant id'),
+  };
+
+  if (context.siteId) {
+    query.$or = [{ siteId: maybeObjectId(context.siteId) }, { siteId: null }, { siteId: { $exists: false } }];
+  }
+
+  const location = await LocationModel.findOne(query, undefined, session ? { session } : undefined);
   if (!location) {
     throw new InventoryError('Location not found', 404);
   }
+
+  if (context.siteId && location.siteId && location.siteId.toString() !== context.siteId) {
+    throw new InventoryError('Location not available for this site', 403);
+  }
   return location;
 };
+
+const ensurePart = async (
+  context: InventoryContext,
+  partId: Types.ObjectId,
+  session?: ClientSession,
+): Promise<PartDocument> => {
+  const query: FilterQuery<PartDocument> = {
+    _id: partId,
+    tenantId: toObjectId(context.tenantId, 'tenant id'),
+  };
+
+  if (context.siteId) {
+    query.$or = [{ siteId: maybeObjectId(context.siteId) }, { siteId: null }, { siteId: { $exists: false } }];
+  }
+
+  const part = await PartModel.findOne(query, undefined, session ? { session } : undefined);
+  if (!part) {
+    throw new InventoryError('Part not found', 404);
+  }
+  if (context.siteId && part.siteId && part.siteId.toString() !== context.siteId) {
+    throw new InventoryError('Part not available for this site', 403);
+  }
+  return part;
+};
+
+const buildStockQuery = (
+  tenantId: Types.ObjectId,
+  partId: Types.ObjectId,
+  locationId: Types.ObjectId,
+  siteId?: string,
+): FilterQuery<StockItemDocument> => {
+  const query: FilterQuery<StockItemDocument> = {
+    tenantId,
+    part: partId,
+    location: locationId,
+  };
+
+  if (siteId) {
+    query.siteId = maybeObjectId(siteId);
+  }
+
+  return query;
+};
+
+const findTransactionByKey = async (
+  tenantId: Types.ObjectId,
+  idempotencyKey: string,
+  session?: ClientSession,
+) =>
+  InventoryTransactionModel.findOne(
+    { tenantId, idempotencyKey },
+    undefined,
+    session ? { session } : undefined,
+  );
+
+const serializeTransactionRecord = (
+  transaction: InventoryTransactionDocument,
+): InventoryTransactionRecord => ({
+  id: (transaction._id as Types.ObjectId).toString(),
+  tenantId: (transaction.tenantId as Types.ObjectId).toString(),
+  siteId: transaction.siteId ? (transaction.siteId as Types.ObjectId).toString() : undefined,
+  type: transaction.type,
+  partId: transaction.part.toString(),
+  quantity: transaction.quantity,
+  delta: transaction.delta,
+  idempotencyKey: transaction.idempotencyKey,
+  locationId: transaction.location ? transaction.location.toString() : undefined,
+  fromLocationId: transaction.fromLocation ? transaction.fromLocation.toString() : undefined,
+  toLocationId: transaction.toLocation ? transaction.toLocation.toString() : undefined,
+  onHandQuantity: transaction.locationQuantityAfter,
+  fromOnHandQuantity: transaction.fromLocationQuantityAfter,
+  toOnHandQuantity: transaction.toLocationQuantityAfter,
+  partQuantityAfter: transaction.partQuantityAfter,
+  metadata: (transaction.metadata as Record<string, unknown>) ?? undefined,
+  createdAt:
+    transaction.createdAt instanceof Date
+      ? transaction.createdAt.toISOString()
+      : new Date().toISOString(),
+});
 
 export const listStockItems = async (context: InventoryContext): Promise<StockItemResponse[]> => {
   const tenantId = toObjectId(context.tenantId, 'tenant id');
@@ -691,6 +829,429 @@ const recordStockHistory = async (
   );
 
   return history;
+};
+
+const withIdempotentTransaction = async (
+  tenantId: Types.ObjectId,
+  idempotencyKey: string,
+  session: ClientSession,
+  operation: () => Promise<InventoryTransactionDocument>,
+): Promise<InventoryTransactionDocument> => {
+  const existing = await findTransactionByKey(tenantId, idempotencyKey, session);
+  if (existing) return existing;
+  return operation();
+};
+
+export const receiveInventory = async (
+  context: InventoryContext,
+  input: ReceiveInventoryInput,
+): Promise<InventoryTransactionRecord> => {
+  assertRoleLevel(context, 'warehouse-clerk');
+
+  const tenantId = toObjectId(context.tenantId, 'tenant id');
+  const partId = toObjectId(input.partId, 'part id');
+  const locationId = toObjectId(input.locationId, 'location id');
+  const session = await InventoryTransactionModel.startSession();
+
+  try {
+    let transaction: InventoryTransactionDocument | null = null;
+    await session.withTransaction(async () => {
+      transaction = await withIdempotentTransaction(tenantId, input.idempotencyKey, session, async () => {
+        const part = await ensurePart(context, partId, session);
+        const location = await ensureLocation(context, locationId.toString(), session);
+        const stockQuery = buildStockQuery(tenantId, part._id as Types.ObjectId, location._id as Types.ObjectId, context.siteId);
+        let stock = await StockItemModel.findOne(stockQuery, undefined, { session });
+        if (!stock) {
+          stock = new StockItemModel({ ...stockQuery, quantity: 0 });
+        }
+
+        stock.quantity += input.quantity;
+        await stock.save({ session });
+
+        part.quantity = Math.max(0, (part.quantity ?? 0) + input.quantity);
+        part.lastRestockDate = new Date();
+        await part.save({ session });
+
+        await recordStockHistory(context, stock, input.quantity, input.metadata?.reason ?? 'Receive', session);
+
+        const [created] = await InventoryTransactionModel.create(
+          [
+            {
+              tenantId,
+              siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
+              part: part._id,
+              location: location._id,
+              type: 'receive',
+              quantity: input.quantity,
+              delta: input.quantity,
+              idempotencyKey: input.idempotencyKey,
+              metadata: input.metadata,
+              createdBy: context.userId ? toObjectId(context.userId, 'user id') : undefined,
+              locationQuantityAfter: stock.quantity,
+              partQuantityAfter: part.quantity,
+            },
+          ],
+          { session },
+        );
+
+        return created;
+      });
+    });
+
+    if (!transaction) {
+      throw new InventoryError('Unable to record transaction', 500);
+    }
+
+    return serializeTransactionRecord(transaction);
+  } finally {
+    await session.endSession();
+  }
+};
+
+export const issueInventory = async (
+  context: InventoryContext,
+  input: IssueInventoryInput,
+): Promise<InventoryTransactionRecord> => {
+  assertRoleLevel(context, 'operator');
+
+  const tenantId = toObjectId(context.tenantId, 'tenant id');
+  const partId = toObjectId(input.partId, 'part id');
+  const locationId = toObjectId(input.locationId, 'location id');
+  const session = await InventoryTransactionModel.startSession();
+
+  try {
+    let transaction: InventoryTransactionDocument | null = null;
+    await session.withTransaction(async () => {
+      transaction = await withIdempotentTransaction(tenantId, input.idempotencyKey, session, async () => {
+        const part = await ensurePart(context, partId, session);
+        const location = await ensureLocation(context, locationId.toString(), session);
+        const stockQuery = buildStockQuery(tenantId, part._id as Types.ObjectId, location._id as Types.ObjectId, context.siteId);
+        const stock = await StockItemModel.findOne(stockQuery, undefined, { session });
+
+        if (!stock) {
+          throw new InventoryError('Stock not found for requested location', 404);
+        }
+        if (stock.quantity < input.quantity) {
+          throw new InventoryError('Insufficient stock at requested location', 400);
+        }
+        if ((part.quantity ?? 0) < input.quantity) {
+          throw new InventoryError('Insufficient on-hand quantity for part', 400);
+        }
+
+        stock.quantity -= input.quantity;
+        await stock.save({ session });
+
+        part.quantity = (part.quantity ?? 0) - input.quantity;
+        await part.save({ session });
+
+        await recordStockHistory(context, stock, -input.quantity, input.metadata?.reason ?? 'Issue', session);
+
+        const [created] = await InventoryTransactionModel.create(
+          [
+            {
+              tenantId,
+              siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
+              part: part._id,
+              location: location._id,
+              type: 'issue',
+              quantity: input.quantity,
+              delta: -input.quantity,
+              idempotencyKey: input.idempotencyKey,
+              metadata: input.metadata,
+              createdBy: context.userId ? toObjectId(context.userId, 'user id') : undefined,
+              locationQuantityAfter: stock.quantity,
+              partQuantityAfter: part.quantity,
+            },
+          ],
+          { session },
+        );
+
+        return created;
+      });
+    });
+
+    if (!transaction) {
+      throw new InventoryError('Unable to record transaction', 500);
+    }
+
+    return serializeTransactionRecord(transaction);
+  } finally {
+    await session.endSession();
+  }
+};
+
+export const adjustInventory = async (
+  context: InventoryContext,
+  input: AdjustInventoryInput,
+): Promise<InventoryTransactionRecord> => {
+  assertRoleLevel(context, 'supervisor');
+
+  const tenantId = toObjectId(context.tenantId, 'tenant id');
+  const partId = toObjectId(input.partId, 'part id');
+  const locationId = toObjectId(input.locationId, 'location id');
+  const session = await InventoryTransactionModel.startSession();
+
+  try {
+    let transaction: InventoryTransactionDocument | null = null;
+    await session.withTransaction(async () => {
+      transaction = await withIdempotentTransaction(tenantId, input.idempotencyKey, session, async () => {
+        const part = await ensurePart(context, partId, session);
+        const location = await ensureLocation(context, locationId.toString(), session);
+        const stockQuery = buildStockQuery(tenantId, part._id as Types.ObjectId, location._id as Types.ObjectId, context.siteId);
+        let stock = await StockItemModel.findOne(stockQuery, undefined, { session });
+
+        if (!stock && input.delta < 0) {
+          throw new InventoryError('Cannot apply negative adjustment to missing stock', 400);
+        }
+
+        if (!stock) {
+          stock = new StockItemModel({ ...stockQuery, quantity: 0 });
+        }
+
+        const newQuantity = stock.quantity + input.delta;
+        if (newQuantity < 0) {
+          throw new InventoryError('Adjustment would result in negative stock', 400);
+        }
+
+        const newPartQuantity = (part.quantity ?? 0) + input.delta;
+        if (newPartQuantity < 0) {
+          throw new InventoryError('Adjustment would result in negative on-hand quantity', 400);
+        }
+
+        stock.quantity = newQuantity;
+        await stock.save({ session });
+
+        part.quantity = newPartQuantity;
+        await part.save({ session });
+
+        await recordStockHistory(
+          context,
+          stock,
+          input.delta,
+          input.metadata?.reason ?? 'Adjustment',
+          session,
+        );
+
+        const [created] = await InventoryTransactionModel.create(
+          [
+            {
+              tenantId,
+              siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
+              part: part._id,
+              location: location._id,
+              type: 'adjust',
+              quantity: Math.abs(input.delta),
+              delta: input.delta,
+              idempotencyKey: input.idempotencyKey,
+              metadata: input.metadata,
+              createdBy: context.userId ? toObjectId(context.userId, 'user id') : undefined,
+              locationQuantityAfter: stock.quantity,
+              partQuantityAfter: part.quantity,
+            },
+          ],
+          { session },
+        );
+
+        return created;
+      });
+    });
+
+    if (!transaction) {
+      throw new InventoryError('Unable to record transaction', 500);
+    }
+
+    return serializeTransactionRecord(transaction);
+  } finally {
+    await session.endSession();
+  }
+};
+
+export const transferInventory = async (
+  context: InventoryContext,
+  input: TransferInventoryInput,
+): Promise<InventoryTransactionRecord> => {
+  assertRoleLevel(context, 'supervisor');
+
+  const tenantId = toObjectId(context.tenantId, 'tenant id');
+  const partId = toObjectId(input.partId, 'part id');
+  const fromLocationId = toObjectId(input.fromLocationId, 'from location id');
+  const toLocationId = toObjectId(input.toLocationId, 'to location id');
+
+  if (fromLocationId.equals(toLocationId)) {
+    throw new InventoryError('Source and destination locations must differ', 400);
+  }
+
+  const session = await InventoryTransactionModel.startSession();
+
+  try {
+    let transaction: InventoryTransactionDocument | null = null;
+    await session.withTransaction(async () => {
+      transaction = await withIdempotentTransaction(tenantId, input.idempotencyKey, session, async () => {
+        const part = await ensurePart(context, partId, session);
+        const [fromLocation, toLocation] = await Promise.all([
+          ensureLocation(context, fromLocationId.toString(), session),
+          ensureLocation(context, toLocationId.toString(), session),
+        ]);
+
+        const fromQuery = buildStockQuery(
+          tenantId,
+          part._id as Types.ObjectId,
+          fromLocation._id as Types.ObjectId,
+          context.siteId,
+        );
+        const toQuery = buildStockQuery(
+          tenantId,
+          part._id as Types.ObjectId,
+          toLocation._id as Types.ObjectId,
+          context.siteId,
+        );
+
+        const fromStock = await StockItemModel.findOne(fromQuery, undefined, { session });
+        if (!fromStock) {
+          throw new InventoryError('Source stock not found', 404);
+        }
+        if (fromStock.quantity < input.quantity) {
+          throw new InventoryError('Insufficient stock at source location', 400);
+        }
+
+        fromStock.quantity -= input.quantity;
+        await fromStock.save({ session });
+
+        let toStock = await StockItemModel.findOne(toQuery, undefined, { session });
+        if (!toStock) {
+          toStock = new StockItemModel({ ...toQuery, quantity: 0 });
+        }
+        toStock.quantity += input.quantity;
+        await toStock.save({ session });
+
+        await recordStockHistory(
+          context,
+          fromStock,
+          -input.quantity,
+          `Transfer to ${formatLocationLabel(toLocation)}`,
+          session,
+        );
+        await recordStockHistory(
+          context,
+          toStock,
+          input.quantity,
+          `Transfer from ${formatLocationLabel(fromLocation)}`,
+          session,
+        );
+
+        const [created] = await InventoryTransactionModel.create(
+          [
+            {
+              tenantId,
+              siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
+              part: part._id,
+              fromLocation: fromLocation._id,
+              toLocation: toLocation._id,
+              type: 'transfer',
+              quantity: input.quantity,
+              delta: 0,
+              idempotencyKey: input.idempotencyKey,
+              metadata: input.metadata,
+              createdBy: context.userId ? toObjectId(context.userId, 'user id') : undefined,
+              fromLocationQuantityAfter: fromStock.quantity,
+              toLocationQuantityAfter: toStock.quantity,
+              partQuantityAfter: part.quantity,
+            },
+          ],
+          { session },
+        );
+
+        return created;
+      });
+    });
+
+    if (!transaction) {
+      throw new InventoryError('Unable to record transaction', 500);
+    }
+
+    return serializeTransactionRecord(transaction);
+  } finally {
+    await session.endSession();
+  }
+};
+
+export const recordStockCount = async (
+  context: InventoryContext,
+  input: StockCountInput,
+): Promise<InventoryTransactionRecord> => {
+  assertRoleLevel(context, 'supervisor');
+
+  const tenantId = toObjectId(context.tenantId, 'tenant id');
+  const partId = toObjectId(input.partId, 'part id');
+  const locationId = toObjectId(input.locationId, 'location id');
+  const session = await InventoryTransactionModel.startSession();
+
+  try {
+    let transaction: InventoryTransactionDocument | null = null;
+    await session.withTransaction(async () => {
+      transaction = await withIdempotentTransaction(tenantId, input.idempotencyKey, session, async () => {
+        const part = await ensurePart(context, partId, session);
+        const location = await ensureLocation(context, locationId.toString(), session);
+        const stockQuery = buildStockQuery(tenantId, part._id as Types.ObjectId, location._id as Types.ObjectId, context.siteId);
+        let stock = await StockItemModel.findOne(stockQuery, undefined, { session });
+        if (!stock) {
+          stock = new StockItemModel({ ...stockQuery, quantity: 0 });
+        }
+
+        const delta = input.quantity - stock.quantity;
+        const newPartQuantity = (part.quantity ?? 0) + delta;
+        if (newPartQuantity < 0) {
+          throw new InventoryError('Stock count would result in negative on-hand', 400);
+        }
+
+        stock.quantity = input.quantity;
+        await stock.save({ session });
+
+        part.quantity = newPartQuantity;
+        await part.save({ session });
+
+        if (delta !== 0) {
+          await recordStockHistory(
+            context,
+            stock,
+            delta,
+            input.metadata?.reason ?? 'Stock count',
+            session,
+          );
+        }
+
+        const [created] = await InventoryTransactionModel.create(
+          [
+            {
+              tenantId,
+              siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
+              part: part._id,
+              location: location._id,
+              type: 'stock_count',
+              quantity: input.quantity,
+              delta,
+              idempotencyKey: input.idempotencyKey,
+              metadata: input.metadata,
+              createdBy: context.userId ? toObjectId(context.userId, 'user id') : undefined,
+              locationQuantityAfter: stock.quantity,
+              partQuantityAfter: part.quantity,
+            },
+          ],
+          { session },
+        );
+
+        return created;
+      });
+    });
+
+    if (!transaction) {
+      throw new InventoryError('Unable to record transaction', 500);
+    }
+
+    return serializeTransactionRecord(transaction);
+  } finally {
+    await session.endSession();
+  }
 };
 
 export const adjustStock = async (

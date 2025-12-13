@@ -31,6 +31,8 @@ import AssetDetails from "@/pages/AssetDetails";
 import Inventory from "@/pages/Inventory";
 import InventoryLocations from "@/pages/InventoryLocations";
 import InventoryParts from "@/pages/InventoryParts";
+import InventoryList from "@/pages/inventory/InventoryList";
+import InventoryPartDetail from "@/pages/inventory/InventoryPartDetail";
 import InventoryAnalytics from "@/pages/InventoryAnalytics";
 import IotMonitoring from "@/pages/IotMonitoring";
 import VendorsPage from "@/pages/VendorsPage";

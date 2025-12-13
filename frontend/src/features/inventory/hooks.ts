@@ -10,6 +10,7 @@ import {
   fetchInventoryAlerts,
   fetchLocations,
   fetchPartUsageReport,
+  fetchPart,
   fetchParts,
   type PartQueryParams,
   fetchStockHistory,
@@ -20,6 +21,7 @@ import {
 import type { InventoryTransferPayload, PurchaseOrderPayload } from '@/types';
 
 export const INVENTORY_PARTS_QUERY_KEY = ['inventory', 'v2', 'parts'] as const;
+export const INVENTORY_PART_QUERY_KEY = ['inventory', 'v2', 'part'] as const;
 export const INVENTORY_VENDORS_QUERY_KEY = ['inventory', 'v2', 'vendors'] as const;
 export const INVENTORY_ALERTS_QUERY_KEY = ['inventory', 'v2', 'alerts'] as const;
 export const INVENTORY_LOCATIONS_QUERY_KEY = ['inventory', 'v2', 'locations'] as const;
@@ -33,6 +35,14 @@ export const usePartsQuery = (params: PartQueryParams = {}) =>
     queryFn: () => fetchParts(params),
     staleTime: 30_000,
     keepPreviousData: true,
+  });
+
+export const usePartQuery = (partId?: string) =>
+  useQuery({
+    enabled: Boolean(partId),
+    queryKey: [...INVENTORY_PART_QUERY_KEY, partId],
+    queryFn: () => fetchPart(partId ?? ''),
+    staleTime: 30_000,
   });
 
 export const useVendorsQuery = () =>

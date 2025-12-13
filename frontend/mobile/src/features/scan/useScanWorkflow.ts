@@ -3,13 +3,13 @@
  */
 
 import { useCallback, useState } from 'react';
-import http from '../../../src/lib/http';
+import http from '../../../../src/lib/http';
 
 type ScanStep = 'scan' | 'asset' | 'workorder' | 'complete';
 
-type QrPayload = { type: 'asset' | 'part'; id: string };
+export type QrPayload = { type: 'asset' | 'part'; id: string };
 
-const parseQrValue = (value: string): QrPayload | null => {
+export const parseQrValue = (value: string): QrPayload | null => {
   try {
     const parsed = JSON.parse(value) as Partial<QrPayload>;
     if (!parsed.id || !parsed.type) return null;
@@ -28,15 +28,34 @@ export const useScanWorkflow = () => {
 
   const startFromQr = useCallback(async (qrValue: string) => {
     const parsed = parseQrValue(qrValue);
-    if (!parsed || parsed.type !== 'asset') {
-      setError('QR code is not linked to an asset');
+    if (!parsed) {
+      setError('Unable to read QR code. Try again or enter the code manually.');
+      return;
+    }
+    if (parsed.type !== 'asset') {
+      setError(`QR code type "${parsed.type}" is not supported for this workflow.`);
       return;
     }
 
-    const res = await http.get(`/assets/${parsed.id}`);
-    setAsset(res.data as Record<string, any>);
-    setError(null);
-    setStep('asset');
+    try {
+      const res = await http.get(`/assets/${parsed.id}`);
+      const record = res.data as Record<string, any> | null;
+      const recordId = (record as any)?.id ?? (record as any)?._id;
+      if (!record || !recordId) {
+        setError('Asset record not found or missing required fields.');
+        setAsset(null);
+        setStep('scan');
+        return;
+      }
+      setAsset({ ...record, id: recordId });
+      setError(null);
+      setStep('asset');
+    } catch (err) {
+      console.error(err);
+      setError('Unable to load asset from QR code. Check connectivity or try again.');
+      setAsset(null);
+      setStep('scan');
+    }
   }, []);
 
   const createWorkOrder = useCallback(

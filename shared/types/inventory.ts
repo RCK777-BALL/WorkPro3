@@ -203,7 +203,7 @@ export interface InventoryTransactionRecord extends TenantScoped {
   partId: string;
   quantity: number;
   delta: number;
-  idempotencyKey: string;
+  idempotencyKey?: string | undefined;
   locationId?: string | undefined;
   fromLocationId?: string | undefined;
   toLocationId?: string | undefined;

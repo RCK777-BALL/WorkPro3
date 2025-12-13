@@ -10,7 +10,7 @@ import PurchaseOrderModel from '../modules/inventory/models/PurchaseOrder';
 import StockItemModel from '../modules/inventory/models/StockItem';
 import ReorderSuggestionModel from '../modules/inventory/models/ReorderSuggestion';
 import { determineReorderQuantity } from '../modules/inventory/service';
-import logger from '../utils/logger';
+import logger from '../../utils/logger';
 
 const SOURCE_TYPE = 'low_stock_scan';
 const ACTIVE_PO_STATUSES = ['pending', 'approved', 'ordered'];

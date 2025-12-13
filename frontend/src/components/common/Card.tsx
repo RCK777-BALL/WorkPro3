@@ -4,6 +4,13 @@
 
 import React from 'react';
 
+type CardComponent = React.FC<CardProps> & {
+  Header: React.FC<React.HTMLAttributes<HTMLDivElement>>;
+  Title: React.FC<React.HTMLAttributes<HTMLHeadingElement>>;
+  Description: React.FC<React.HTMLAttributes<HTMLParagraphElement>>;
+  Content: React.FC<React.HTMLAttributes<HTMLDivElement>>;
+};
+
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   title?: string | undefined;
   subtitle?: string | undefined;
@@ -15,7 +22,7 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   noPadding?: boolean | undefined;
 }
 
-const Card: React.FC<CardProps> = ({
+const Card: CardComponent = ({
   title,
   subtitle,
   headerActions,
@@ -24,7 +31,7 @@ const Card: React.FC<CardProps> = ({
   className = '',
   noPadding = false,
   ...rest
-}) => {
+}: CardProps) => {
   return (
     <div
       {...rest}
@@ -46,5 +53,34 @@ const Card: React.FC<CardProps> = ({
     </div>
   );
 };
+
+const Header: CardComponent['Header'] = ({ children, className = '', ...rest }) => (
+  <div className={`space-y-1 ${className}`} {...rest}>
+    {children}
+  </div>
+);
+
+const Title: CardComponent['Title'] = ({ children, className = '', ...rest }) => (
+  <h3 className={`text-lg font-semibold text-slate-100 ${className}`} {...rest}>
+    {children}
+  </h3>
+);
+
+const Description: CardComponent['Description'] = ({ children, className = '', ...rest }) => (
+  <p className={`text-sm text-slate-300 ${className}`} {...rest}>
+    {children}
+  </p>
+);
+
+const Content: CardComponent['Content'] = ({ children, className = '', ...rest }) => (
+  <div className={className} {...rest}>
+    {children}
+  </div>
+);
+
+Card.Header = Header;
+Card.Title = Title;
+Card.Description = Description;
+Card.Content = Content;
 
 export default Card;

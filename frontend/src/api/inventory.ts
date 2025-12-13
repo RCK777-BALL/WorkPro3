@@ -37,11 +37,12 @@ export const fetchParts = async (params: PartQueryParams = {}): Promise<Paginate
 };
 
 export const upsertPart = async (payload: Partial<Part> & { name: string; id?: string }): Promise<Part> => {
-  if (payload.id) {
-    const res = await http.put<Part>(`${BASE_PATH}/parts/${payload.id}`, payload);
+  const normalized = payload.barcode ? { ...payload, barcode: payload.barcode.trim() } : payload;
+  if (normalized.id) {
+    const res = await http.put<Part>(`${BASE_PATH}/parts/${normalized.id}`, normalized);
     return res.data;
   }
-  const res = await http.post<Part>(`${BASE_PATH}/parts`, payload);
+  const res = await http.post<Part>(`${BASE_PATH}/parts`, normalized);
   return res.data;
 };
 
@@ -112,11 +113,12 @@ export const fetchLocations = async (): Promise<InventoryLocation[]> => {
 export const upsertLocation = async (
   payload: Partial<InventoryLocation> & { store: string; id?: string },
 ): Promise<InventoryLocation> => {
-  if (payload.id) {
-    const res = await http.put<InventoryLocation>(`${BASE_PATH}/locations/${payload.id}`, payload);
+  const normalized = payload.barcode ? { ...payload, barcode: payload.barcode.trim() } : payload;
+  if (normalized.id) {
+    const res = await http.put<InventoryLocation>(`${BASE_PATH}/locations/${normalized.id}`, normalized);
     return res.data;
   }
-  const res = await http.post<InventoryLocation>(`${BASE_PATH}/locations`, payload);
+  const res = await http.post<InventoryLocation>(`${BASE_PATH}/locations`, normalized);
   return res.data;
 };
 

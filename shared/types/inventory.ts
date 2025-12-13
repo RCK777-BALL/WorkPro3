@@ -47,6 +47,7 @@ export interface VendorSummary {
 export interface Part extends TenantScoped {
   id: string;
   qrCode?: string | undefined;
+  barcode?: string | undefined;
   commentsCount?: number | undefined;
   name: string;
   partNo?: string | undefined;
@@ -145,6 +146,7 @@ export interface InventoryLocation extends TenantScoped {
   store: string;
   room?: string | undefined;
   bin?: string | undefined;
+  barcode?: string | undefined;
 }
 
 export interface StockItem extends TenantScoped {

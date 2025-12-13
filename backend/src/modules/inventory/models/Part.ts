@@ -8,6 +8,7 @@ export interface PartDocument extends Document {
   tenantId: Types.ObjectId;
   siteId?: Types.ObjectId;
   name: string;
+  barcode?: string;
   partNo?: string;
   description?: string;
   category?: string;
@@ -44,6 +45,7 @@ const partSchema = new Schema<PartDocument>(
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
     siteId: { type: Schema.Types.ObjectId, ref: 'Site', index: true },
     name: { type: String, required: true, trim: true },
+    barcode: { type: String, trim: true, index: true },
     partNo: { type: String, index: true },
     description: String,
     category: String,
@@ -79,5 +81,6 @@ const partSchema = new Schema<PartDocument>(
 
 partSchema.index({ tenantId: 1, sku: 1 });
 partSchema.index({ tenantId: 1, name: 1 });
+partSchema.index({ tenantId: 1, barcode: 1 }, { unique: true, sparse: true });
 
 export default model<PartDocument>('InventoryPart', partSchema);

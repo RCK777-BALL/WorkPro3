@@ -5,9 +5,16 @@
 import { z } from 'zod';
 
 const objectId = z.string().min(1, 'Identifier is required');
+const barcodeSchema = z
+  .string()
+  .trim()
+  .min(3, 'Barcode must be at least 3 characters')
+  .max(128, 'Barcode is too long')
+  .regex(/^[\w.-]+$/, 'Use letters, numbers, dashes, underscores, or dots');
 
 export const partInputSchema = z.object({
   name: z.string().min(1, 'Name is required'),
+  barcode: barcodeSchema.optional(),
   partNo: z.string().optional(),
   description: z.string().optional(),
   category: z.string().optional(),
@@ -68,6 +75,7 @@ export const locationInputSchema = z.object({
   store: z.string().min(1, 'Store is required'),
   room: z.string().optional(),
   bin: z.string().optional(),
+  barcode: barcodeSchema.optional(),
 });
 
 export const stockAdjustmentSchema = z.object({

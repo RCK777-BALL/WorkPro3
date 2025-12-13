@@ -20,6 +20,7 @@ const formatLocation = (location?: { store?: string; room?: string; bin?: string
 const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string }) => Promise<void> }) => {
   const [form, setForm] = useState<Partial<Part> & { name: string }>({
     name: '',
+    barcode: '',
     partNo: '',
     unit: '',
     reorderPoint: 0,
@@ -27,6 +28,8 @@ const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string
     maxLevel: 0,
   });
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ barcode?: string }>({});
   const { can } = usePermissions();
   const canManageInventory = useMemo(() => can('inventory.manage'), [can]);
   const disableEdits = !canManageInventory;
@@ -35,12 +38,42 @@ const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const validate = () => {
+    const errors: { barcode?: string } = {};
+    if (form.barcode) {
+      const trimmed = form.barcode.trim();
+      if (/\s/.test(form.barcode)) {
+        errors.barcode = 'Barcode cannot include spaces';
+      } else if (trimmed.length < 3) {
+        errors.barcode = 'Barcode must be at least 3 characters';
+      } else if (!/^[\w.-]+$/.test(trimmed)) {
+        errors.barcode = 'Use letters, numbers, dashes, or dots.';
+      }
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const extractErrorMessage = (err: unknown): string => {
+    if (err && typeof err === 'object' && 'response' in err) {
+      const response = (err as { response?: { data?: { message?: string } } }).response;
+      if (response?.data?.message) return response.data.message;
+    }
+    if (err instanceof Error && err.message) return err.message;
+    return 'Unable to save part';
+  };
+
   const submit = async () => {
     if (disableEdits) return;
+    setFormError(null);
+    if (!validate()) return;
     setSaving(true);
     try {
-      await onSave(form);
-      setForm({ name: '', partNo: '', unit: '', reorderPoint: 0, minLevel: 0, maxLevel: 0 });
+      await onSave({ ...form, barcode: form.barcode?.trim() || undefined });
+      setForm({ name: '', barcode: '', partNo: '', unit: '', reorderPoint: 0, minLevel: 0, maxLevel: 0 });
+      setFieldErrors({});
+    } catch (err) {
+      setFormError(extractErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -69,6 +102,16 @@ const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string
           onChange={(e) => handleChange('unit', e.target.value)}
         />
       </div>
+      <Input
+        label="Barcode"
+        value={form.barcode ?? ''}
+        disabled={disableEdits}
+        description="Scanner-friendly identifier. Avoid spaces; use letters, numbers, dashes, or dots."
+        error={fieldErrors.barcode}
+        pattern="^[\\w.-]+$"
+        inputMode="text"
+        onChange={(e) => handleChange('barcode', e.target.value)}
+      />
       <div className="grid gap-3 md:grid-cols-3">
         <Input
           label="Cost"
@@ -115,6 +158,7 @@ const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string
         disabled={disableEdits}
         onChange={(e) => setForm((prev) => ({ ...prev, reorderPoint: Number(e.target.value) }))}
       />
+      {formError && <p className="text-sm text-error-600">{formError}</p>}
       <Button
         type="button"
         className="w-full"

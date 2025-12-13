@@ -10,6 +10,7 @@ export interface LocationDocument extends Document {
   store: string;
   room?: string | undefined;
   bin?: string | undefined;
+  barcode?: string | undefined;
 }
 
 const locationSchema = new Schema<LocationDocument>(
@@ -19,10 +20,12 @@ const locationSchema = new Schema<LocationDocument>(
     store: { type: String, required: true, trim: true },
     room: { type: String, trim: true },
     bin: { type: String, trim: true },
+    barcode: { type: String, trim: true, index: true },
   },
   { timestamps: true },
 );
 
 locationSchema.index({ tenantId: 1, siteId: 1, store: 1, room: 1, bin: 1 }, { unique: true });
+locationSchema.index({ tenantId: 1, barcode: 1 }, { unique: true, sparse: true });
 
 export default model<LocationDocument>('InventoryLocation', locationSchema);

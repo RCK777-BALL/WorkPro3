@@ -6,7 +6,7 @@ import { z } from 'zod';
 import logger from '../utils/logger';
 
 const envSchema = z.object({
-  JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
+  JWT_SECRET: z.string().optional(),
   MONGO_URI: z
     .string()
     .default('mongodb://localhost:27017/workpro'),
@@ -38,7 +38,8 @@ const envSchema = z.object({
   REORDER_SUGGESTION_LEAD_TIME_BUFFER: z.string().default('0'),
 });
 
-export type EnvVars = z.infer<typeof envSchema>;
+type ParsedEnv = z.infer<typeof envSchema>;
+export type EnvVars = ParsedEnv & { JWT_SECRET: string };
 
 export function validateEnv(): EnvVars {
   const parsed = envSchema.safeParse(process.env);
@@ -50,6 +51,22 @@ export function validateEnv(): EnvVars {
     logger.error('❌ Invalid environment variables:', errors);
     throw new Error('Missing or invalid environment variables');
   }
-  return parsed.data;
+
+  const env = parsed.data;
+
+  if (!env.JWT_SECRET) {
+    if (env.NODE_ENV === 'production') {
+      throw new Error('JWT_SECRET environment variable is required in production');
+    }
+
+    logger.warn(
+      'Using default JWT secret for development. Set JWT_SECRET to override the default value.',
+    );
+  }
+
+  return {
+    ...env,
+    JWT_SECRET: env.JWT_SECRET ?? 'development-secret',
+  };
 }
 

@@ -53,11 +53,7 @@ export const recordScanHistory = async (input: RecordScanInput) => {
     action: 'mobile.scan.recorded',
     entityType: input.decodedEntity?.type ?? 'Scan',
     entityId: input.decodedEntity?.id ?? doc._id,
-    entity: {
-      type: input.decodedEntity?.type ?? 'Scan',
-      id: input.decodedEntity?.id ?? undefined,
-      label: input.decodedEntity?.label ?? undefined,
-    },
+    entityLabel: input.decodedEntity?.label ?? undefined,
     after: {
       rawValue: input.rawValue,
       navigationTarget: input.navigationTarget ?? null,

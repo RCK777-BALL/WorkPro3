@@ -4,7 +4,7 @@
 
 import { IncomingWebhook } from '@slack/webhook';
 import nodemailer from 'nodemailer';
-import twilio, { type Twilio } from 'twilio';
+import twilio from 'twilio';
 
 import logger from '../../../utils/logger';
 
@@ -81,11 +81,13 @@ const providerMeta: Record<NotificationProvider, { label: string; docsUrl: strin
   },
 };
 
-let cachedTwilio: Twilio | null = null;
+type TwilioClient = ReturnType<typeof twilio>;
+
+let cachedTwilio: TwilioClient | null = null;
 let cachedTwilioSid: string | null = null;
 let cachedTwilioToken: string | null = null;
 
-const getTwilioClient = (sid: string, token: string): Twilio => {
+const getTwilioClient = (sid: string, token: string): TwilioClient => {
   if (!cachedTwilio || cachedTwilioSid !== sid || cachedTwilioToken !== token) {
     cachedTwilio = twilio(sid, token);
     cachedTwilioSid = sid;

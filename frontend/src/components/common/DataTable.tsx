@@ -9,6 +9,11 @@ interface Column<T> {
   header: string;
   accessor: keyof T | ((row: T) => React.ReactNode);
   className?: string;
+  /**
+   * Stable identifier used for ordering, persistence, and sort tracking.
+   * Falls back to the header value when omitted to preserve backward compatibility.
+   */
+  id?: string;
 }
 
 type DataTableVariant = 'default' | 'dark';
@@ -22,6 +27,17 @@ interface DataTableProps<T> {
   emptyMessage?: string;
   className?: string;
   variant?: DataTableVariant;
+  /**
+   * Optional controlled sort state. When provided, the table will respect the
+   * supplied column identifier and direction instead of managing its own state.
+   */
+  sortState?: { columnId: string | null; direction: 'asc' | 'desc' };
+  /**
+   * Initial sort to apply when the table first renders. Ignored when a
+   * controlled sortState is provided.
+   */
+  initialSort?: { columnId: string; direction: 'asc' | 'desc' };
+  onSortChange?: (state: { columnId: string; direction: 'asc' | 'desc' } | null) => void;
 }
 
 function DataTable<T>({
@@ -33,9 +49,54 @@ function DataTable<T>({
   emptyMessage = 'No data available',
   className = '',
   variant = 'default',
+  sortState,
+  onSortChange,
+  initialSort,
 }: DataTableProps<T>) {
-  const [sortColumn, setSortColumn] = useState<keyof T | null>(null);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const columnIdMap = React.useMemo(
+    () =>
+      columns.reduce<Record<string, Column<T>>>(
+        (acc, column) => {
+          const id = column.id ?? column.header;
+          acc[id] = column;
+          return acc;
+        },
+        {},
+      ),
+    [columns],
+  );
+
+  const resolveSortableAccessor = (columnId: string | null): keyof T | null => {
+    if (!columnId) return null;
+    const column = columnIdMap[columnId];
+    if (!column || typeof column.accessor === 'function') return null;
+    return column.accessor;
+  };
+
+  const [internalSort, setInternalSort] = useState<{
+    columnId: string | null;
+    direction: 'asc' | 'desc';
+  }>(() => {
+    if (initialSort) {
+      const accessor = resolveSortableAccessor(initialSort.columnId);
+      if (accessor) {
+        return { columnId: initialSort.columnId, direction: initialSort.direction };
+      }
+    }
+    return { columnId: null, direction: 'asc' };
+  });
+
+  React.useEffect(() => {
+    if (!initialSort) return;
+    const accessor = resolveSortableAccessor(initialSort.columnId);
+    if (!accessor) return;
+    setInternalSort((prev) => {
+      if (prev.columnId === initialSort.columnId && prev.direction === initialSort.direction) {
+        return prev;
+      }
+      return { columnId: initialSort.columnId, direction: initialSort.direction };
+    });
+  }, [initialSort?.columnId, initialSort?.direction]);
 
   React.useEffect(() => {
     const headers = columns.map((col) => col.header);
@@ -61,14 +122,20 @@ function DataTable<T>({
     }
   };
 
-  const handleSort = (column: keyof T | ((row: T) => React.ReactNode)) => {
+  const handleSort = (column: keyof T | ((row: T) => React.ReactNode), columnId?: string) => {
     if (typeof column === 'function') return;
-    
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortColumn(column);
-      setSortDirection('asc');
+
+    const resolvedId = columnId ?? String(column);
+    const currentSort = sortState ?? internalSort;
+    const nextDirection =
+      currentSort.columnId === resolvedId && currentSort.direction === 'asc' ? 'desc' : 'asc';
+    const nextSort = { columnId: resolvedId, direction: nextDirection as 'asc' | 'desc' };
+
+    if (onSortChange) {
+      onSortChange(nextSort);
+    }
+    if (!sortState) {
+      setInternalSort(nextSort);
     }
   };
 
@@ -79,22 +146,25 @@ function DataTable<T>({
     return row[accessor];
   };
 
+  const activeSort = sortState ?? internalSort;
+  const sortAccessor = resolveSortableAccessor(activeSort.columnId);
+
   const sortedData = React.useMemo(() => {
-    if (!sortColumn) return data;
-    
+    if (!sortAccessor) return data;
+
     return [...data].sort((a, b) => {
-      const aValue = a[sortColumn];
-      const bValue = b[sortColumn];
-      
+      const aValue = a[sortAccessor];
+      const bValue = b[sortAccessor];
+
       if (aValue === bValue) return 0;
-      
+
       if (aValue === null || aValue === undefined) return 1;
       if (bValue === null || bValue === undefined) return -1;
-      
+
       const comparison = String(aValue).localeCompare(String(bValue));
-      return sortDirection === 'asc' ? comparison : -comparison;
+      return activeSort.direction === 'asc' ? comparison : -comparison;
     });
-  }, [data, sortColumn, sortDirection]);
+  }, [data, sortAccessor, activeSort.direction]);
 
   const variants: Record<DataTableVariant, {
     container: string;
@@ -156,38 +226,46 @@ function DataTable<T>({
       <table className={clsx('min-w-full text-sm', styles.table)}>
         <thead className={styles.header}>
           <tr>
-            {columns.map((column) => (
-              <th
-                key={column.header}
-                scope="col"
-                className={clsx(
-                  styles.headerCell,
-                  typeof column.accessor !== 'function'
-                    ? 'cursor-pointer focus-visible:ring-2 focus-visible:ring-primary-500 dark:focus-visible:ring-primary-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900'
-                    : 'cursor-default',
-                  column.className,
-                )}
-                onClick={() => typeof column.accessor !== 'function' && handleSort(column.accessor)}
-                tabIndex={typeof column.accessor !== 'function' ? 0 : undefined}
-                onKeyDown={(e) => handleHeaderKeyDown(e, column.accessor)}
-                aria-sort={
-                  sortColumn === column.accessor
-                    ? sortDirection === 'asc'
-                      ? 'ascending'
-                      : 'descending'
-                    : 'none'
-                }
-              >
-                <div className="flex items-center space-x-1">
-                  <span>{column.header}</span>
-                  {sortColumn === column.accessor && (
-                    <span className={styles.sortIndicator}>
-                      {sortDirection === 'asc' ? '↑' : '↓'}
-                    </span>
+            {columns.map((column) => {
+              const columnId = column.id ?? column.header;
+              const isSortable = typeof column.accessor !== 'function';
+              const isSorted = activeSort.columnId === columnId;
+
+              return (
+                <th
+                  key={columnId}
+                  scope="col"
+                  className={clsx(
+                    styles.headerCell,
+                    isSortable
+                      ? 'cursor-pointer focus-visible:ring-2 focus-visible:ring-primary-500 dark:focus-visible:ring-primary-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900'
+                      : 'cursor-default',
+                    column.className,
                   )}
-                </div>
-              </th>
-            ))}
+                  onClick={() => isSortable && handleSort(column.accessor, columnId)}
+                  tabIndex={isSortable ? 0 : undefined}
+                  onKeyDown={(e) => handleHeaderKeyDown(e, column.accessor)}
+                  aria-sort={
+                    isSortable
+                      ? isSorted
+                        ? activeSort.direction === 'asc'
+                          ? 'ascending'
+                          : 'descending'
+                        : 'none'
+                      : undefined
+                  }
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>{column.header}</span>
+                    {isSorted && (
+                      <span className={styles.sortIndicator}>
+                        {activeSort.direction === 'asc' ? '↑' : '↓'}
+                      </span>
+                    )}
+                  </div>
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody className={styles.body}>
@@ -206,7 +284,7 @@ function DataTable<T>({
               >
                 {columns.map((column) => (
                   <td
-                    key={column.header}
+                    key={column.id ?? column.header}
                     className={clsx(styles.cell, column.className)}
                   >
                     {getCellValue(row, column.accessor) as React.ReactNode}

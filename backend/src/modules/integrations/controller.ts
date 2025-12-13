@@ -3,6 +3,7 @@
  */
 
 import type { Response, NextFunction } from 'express';
+import { ZodError } from 'zod';
 
 import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
 import { fail } from '../../lib/http';
@@ -11,8 +12,11 @@ import {
   listNotificationProviders,
   sendNotificationTest,
   type NotificationTestInput,
+  syncCostsWithAccounting,
+  syncPurchaseOrdersWithAccounting,
+  syncVendorsWithAccounting,
 } from './service';
-import { notificationTestSchema } from './schemas';
+import { accountingProviderSchema, accountingSyncSchema, notificationTestSchema } from './schemas';
 
 const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
   if (!req.tenantId) {
@@ -29,6 +33,10 @@ const send = (res: Response, data: unknown, status = 200) => {
 const handleError = (err: unknown, res: Response, next: NextFunction) => {
   if (err instanceof IntegrationError) {
     fail(res, err.message, err.status);
+    return;
+  }
+  if (err instanceof ZodError) {
+    fail(res, err.errors.map((issue) => issue.message).join(', '), 400);
     return;
   }
   next(err);
@@ -54,6 +62,44 @@ export const sendNotificationTestHandler: AuthedRequestHandler = async (req, res
   try {
     const result = await sendNotificationTest(parse.data as NotificationTestInput);
     send(res, result, 201);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+const parseProvider = (value: string | undefined) => accountingProviderSchema.parse(value);
+
+export const syncVendorsHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    const provider = parseProvider(req.params.provider);
+    const payload = accountingSyncSchema.parse({ provider, payload: req.body }).payload;
+    const result = syncVendorsWithAccounting(provider, payload);
+    send(res, result, 202);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const syncPurchaseOrdersHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    const provider = parseProvider(req.params.provider);
+    const payload = accountingSyncSchema.parse({ provider, payload: req.body }).payload;
+    const result = syncPurchaseOrdersWithAccounting(provider, payload);
+    send(res, result, 202);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const syncCostsHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    const provider = parseProvider(req.params.provider);
+    const payload = accountingSyncSchema.parse({ provider, payload: req.body }).payload;
+    const result = syncCostsWithAccounting(provider, payload);
+    send(res, result, 202);
   } catch (err) {
     handleError(err, res, next);
   }

@@ -24,8 +24,8 @@ export type AdminSettingStatus =
 export interface SiteNode {
   id: string;
   name: string;
-  parentId?: string | null;
-  manager?: string;
+  parentId?: string | null | undefined;
+  manager?: string | undefined;
 }
 
 export interface SiteConfiguration {
@@ -37,7 +37,7 @@ export interface SiteConfiguration {
   lastImport?: {
     at: string;
     by: string;
-  };
+  } | undefined;
 }
 
 export type RolePermissionModule = "assets" | "workOrders" | "pm" | "inventory";
@@ -50,6 +50,14 @@ export interface RolePermission {
   remove: boolean;
 }
 
+export interface PermissionGrant {
+  permission: string;
+  tenantId: string;
+  siteId?: string | undefined;
+  grantedBy?: string | undefined;
+  grantedAt?: string | undefined;
+}
+
 export interface RoleDefinition {
   key: string;
   label: string;
@@ -57,11 +65,19 @@ export interface RoleDefinition {
   permissions: RolePermission[];
 }
 
+export interface RoleAssignment {
+  role: string;
+  tenantId: string;
+  siteId?: string | undefined;
+  permissions?: PermissionGrant[] | undefined;
+  expiresAt?: string | undefined;
+}
+
 export interface RolePermissionsConfig {
   roles: RoleDefinition[];
   enforceLeastPrivilege: boolean;
   requireMfaForAdmins: boolean;
-  lastReviewAt?: string;
+  lastReviewAt?: string | undefined;
 }
 
 export interface AuthenticationConfig {
@@ -75,7 +91,7 @@ export interface AuthenticationConfig {
     methods: Array<"totp" | "email">;
     trustedDevices: boolean;
     issuer: string;
-    secretMasked?: string | null;
+    secretMasked?: string | null | undefined;
   };
   session: {
     durationMinutes: number;
@@ -94,7 +110,7 @@ export interface AuditComplianceConfig {
   monitoredModules: string[];
   exports: {
     frequency: "daily" | "weekly" | "monthly";
-    lastExportAt?: string;
+    lastExportAt?: string | undefined;
   };
 }
 
@@ -108,7 +124,7 @@ export interface IntegrationWebhook {
 export interface IntegrationConfig {
   scopesCatalog: string[];
   webhooks: IntegrationWebhook[];
-  lastKeyRotation?: string;
+  lastKeyRotation?: string | undefined;
 }
 
 export interface EscalationRule {
@@ -135,7 +151,7 @@ export interface NotificationRulesConfig {
 export interface ModelStatus {
   name: string;
   status: "training" | "ready" | "error";
-  accuracy?: number;
+  accuracy?: number | undefined;
 }
 
 export interface AiAutomationConfig {
@@ -144,7 +160,7 @@ export interface AiAutomationConfig {
   autoCreateWorkOrders: boolean;
   rootCauseLearning: boolean;
   models: ModelStatus[];
-  lastTrainingRun?: string;
+  lastTrainingRun?: string | undefined;
 }
 
 export interface GatewayMapping {
@@ -174,16 +190,16 @@ export interface BackupConfig {
     schedule: "hourly" | "daily" | "weekly";
   };
   retentionDays: number;
-  lastBackupAt?: string;
+  lastBackupAt?: string | undefined;
   lastRestore?: {
     at: string;
     by: string;
-  };
+  } | undefined;
   snapshots: BackupSnapshot[];
 }
 
 export interface BrandingConfig {
-  logoUrl?: string | null;
+  logoUrl?: string | null | undefined;
   primaryColor: string;
   accentColor: string;
   currency: string;
@@ -222,11 +238,11 @@ export type AdminSettingDetailMap = {
     title: string;
     description: string;
     status: AdminSettingStatus;
-    updatedAt?: string;
-    updatedBy?: string;
-    updatedByName?: string;
+    updatedAt?: string | undefined;
+    updatedBy?: string | undefined;
+    updatedByName?: string | undefined;
     config: AdminSettingConfigs[Section];
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, unknown> | undefined;
   };
 };
 
@@ -239,9 +255,9 @@ export interface ApiKeySummary {
   scopes: string[];
   status: "active" | "revoked";
   createdAt: string;
-  createdBy?: string;
-  createdByName?: string;
-  expiresAt?: string;
+  createdBy?: string | undefined;
+  createdByName?: string | undefined;
+  expiresAt?: string | undefined;
 }
 
 export interface AdminSettingsPayload {
@@ -256,9 +272,9 @@ export interface CreateApiKeyResponse {
 }
 
 export type AdminSettingsUpdatePayload<Section extends AdminSettingSection = AdminSettingSection> = {
-  status?: AdminSettingStatus;
-  config?: AdminSettingConfigs[Section];
-  reset?: boolean;
+  status?: AdminSettingStatus | undefined;
+  config?: AdminSettingConfigs[Section] | undefined;
+  reset?: boolean | undefined;
 };
 
 export const ADMIN_SETTING_TEMPLATES: ReadonlyArray<AdminSettingTemplate<AdminSettingSection>> = [

@@ -14,6 +14,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import * as speakeasy from 'speakeasy';
 import { z } from 'zod';
+import { Types } from 'mongoose';
 
 import User, { type UserDocument } from '../models/User';
 import { loginSchema, registerSchema } from '../validators/authValidators';
@@ -28,11 +29,19 @@ import { me, refresh, logout } from '../controllers/authController';
 import sendResponse from '../utils/sendResponse';
 import { configureOAuth } from '../auth/oauth';
 import { configureOIDC, type Provider as OIDCProvider } from '../auth/oidc';
+import { getOidcProviderConfigs, type OIDCProviderConfig } from '../config/ssoProviders';
+import { getSamlMetadata, samlAcsPlaceholder, samlRedirectPlaceholder } from '../auth/saml';
+import { isIdentityProviderAllowed } from '../services/identityProviderService';
+import { isFeatureEnabled, isOidcEnabled } from '../config/featureFlags';
 import { validatePasswordStrength } from '../auth/passwordPolicy';
 import { writeAuditLog } from '../utils/audit';
+import type { AuthedRequest } from '../types/http';
+import { getSecurityPolicy } from '../config/securityPolicies';
 
 configureOAuth();
-configureOIDC();
+if (isFeatureEnabled('oidc')) {
+  configureOIDC();
+}
 
 const ROLE_PRIORITY = [
   'general_manager',
@@ -95,6 +104,14 @@ const toStringId = (value: unknown): string | undefined => {
   return undefined;
 };
 
+const resolveRequestTenant = (req: Request): string | undefined => {
+  const headerTenant = req.header('x-tenant-id');
+  if (typeof headerTenant === 'string' && headerTenant.trim()) {
+    return headerTenant.trim();
+  }
+  return (req as AuthedRequest).tenantId;
+};
+
 const sanitizeRedirect = (value: string | undefined): string | undefined => {
   if (!value) {
     return undefined;
@@ -123,6 +140,38 @@ const getRequestedState = (req: Request): string | undefined => {
     return req.query.redirect;
   }
   return undefined;
+};
+
+const recordAuthEvent = async ({
+  user,
+  action,
+  tenantId,
+  details,
+}: {
+  user?: UserDocument | null;
+  action: string;
+  tenantId?: string;
+  details?: Record<string, unknown>;
+}) => {
+  const resolvedTenantId = tenantId ?? toStringId(user?.tenantId);
+  if (!resolvedTenantId) return;
+
+  await writeAuditLog({
+    tenantId: resolvedTenantId,
+    siteId: user?.siteId,
+    userId: user?._id,
+    actor: user
+      ? {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+        }
+      : undefined,
+    action,
+    entityType: 'authentication',
+    entityId: toStringId(user?._id) ?? tenantId,
+    after: details,
+  });
 };
 
 const buildRedirectUrl = (
@@ -195,11 +244,27 @@ const registerLimiter = rateLimit({
 });
 
 const OAUTH_PROVIDERS: readonly OAuthProvider[] = ['google', 'github'];
-const OIDC_PROVIDERS: readonly OIDCProvider[] = ['okta', 'azure'];
+const OIDC_PROVIDER_CONFIGS: readonly OIDCProviderConfig[] = getOidcProviderConfigs();
+const OIDC_PROVIDERS: readonly OIDCProvider[] = OIDC_PROVIDER_CONFIGS.map((provider) => provider.name);
+
+const isStaticOidcProvider = (provider: string): provider is OIDCProvider =>
+  (OIDC_PROVIDERS as readonly string[]).includes(provider);
+
+const isAllowedOidcProvider = async (provider: string): Promise<boolean> => {
+  if (!isOidcEnabled()) {
+    return false;
+  }
+
+  if (isStaticOidcProvider(provider)) {
+    return true;
+  }
+
+  return isIdentityProviderAllowed(provider, 'oidc');
+};
 
 const registerBodySchema = registerSchema.extend({
   name: z.string().min(1, 'Name is required'),
-  tenantId: z.string().min(1, 'Tenant is required'),
+  tenantId: z.string().min(1, 'Tenant is required').optional(),
   employeeId: z.string().min(1, 'Employee ID is required'),
 });
 
@@ -222,8 +287,9 @@ const FAKE_PASSWORD_HASH = bcrypt.hashSync('invalid-password', 10);
 
 const AUTH_COOKIE_NAME = 'auth';
 const TOKEN_TTL = '7d';
-const SHORT_SESSION_MS = 1000 * 60 * 60 * 8;
-const LONG_SESSION_MS = 1000 * 60 * 60 * 24 * 30;
+const SECURITY_POLICY = getSecurityPolicy();
+const SHORT_SESSION_MS = SECURITY_POLICY.sessions.shortTtlMs;
+const LONG_SESSION_MS = SECURITY_POLICY.sessions.longTtlMs;
 const ROTATION_TOKEN_PURPOSE = 'bootstrap-rotation';
 
 type AuthUser = {
@@ -371,6 +437,11 @@ const validateMfaToken = async (
     });
 
     if (!valid) {
+      await recordAuthEvent({
+        user,
+        action: 'mfa_failed',
+        details: { reason: 'invalid_token' },
+      });
       sendResponse(res, null, 'Invalid MFA token', 400);
       return;
     }
@@ -400,6 +471,12 @@ const validateMfaToken = async (
       secret,
       { expiresIn: TOKEN_TTL },
     );
+
+    await recordAuthEvent({
+      user,
+      action: 'mfa_validated',
+      details: { method: 'totp' },
+    });
 
     sendAuthSuccess(res, authUser, signed, remember);
   } catch (err) {
@@ -432,6 +509,18 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
       return;
     }
 
+    const requestTenantId = resolveRequestTenant(req);
+    const userTenantId = toStringId(user.tenantId);
+    if (requestTenantId && userTenantId && requestTenantId !== userTenantId) {
+      sendResponse(res, null, 'Invalid tenant for user', 403);
+      return;
+    }
+
+    if (requestTenantId && !userTenantId) {
+      user.tenantId = new Types.ObjectId(requestTenantId);
+      await user.save();
+    }
+
     const hashed = user.passwordHash;
     if (!hashed) {
       await bcrypt.compare(password, FAKE_PASSWORD_HASH);
@@ -441,6 +530,11 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
 
     const valid = await bcrypt.compare(password, hashed);
     if (!valid) {
+      await recordAuthEvent({
+        user,
+        action: 'login_failed',
+        details: { reason: 'invalid_credentials', email: normalizedEmail },
+      });
       sendResponse(res, null, 'Invalid email or password.', 400);
       return;
     }
@@ -456,6 +550,11 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
       await user.save();
 
       const rotationToken = signRotationToken(user._id.toString());
+      await recordAuthEvent({
+        user,
+        action: 'password_rotation_required',
+        details: { email: user.email },
+      });
       sendResponse(
         res,
         {
@@ -472,7 +571,12 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
       return;
     }
 
-    if (user.mfaEnabled) {
+    if (user.mfaEnabled || (SECURITY_POLICY.mfa.enforced && !user.mfaEnabled)) {
+      await recordAuthEvent({
+        user,
+        action: 'mfa_challenge',
+        details: { enforced: SECURITY_POLICY.mfa.enforced },
+      });
       sendResponse(
         res,
         {
@@ -507,6 +611,12 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
       secret,
       { expiresIn: TOKEN_TTL },
     );
+
+    await recordAuthEvent({
+      user,
+      action: 'login_success',
+      details: { remember, method: 'password' },
+    });
 
     sendAuthSuccess(res, authUser, token, remember);
   } catch (err) {
@@ -603,8 +713,19 @@ router.post('/register', registerLimiter, async (req: Request, res: Response, ne
 
   const { name, email, password, tenantId, employeeId } = parsed.data;
   const normalizedEmail = email.trim().toLowerCase();
+  const resolvedTenant = tenantId ?? resolveRequestTenant(req);
 
   try {
+    if (!resolvedTenant) {
+      sendResponse(res, null, 'Tenant is required', 400);
+      return;
+    }
+
+    if (tenantId && resolvedTenant !== tenantId) {
+      sendResponse(res, null, 'Cross-tenant registration is not allowed', 403);
+      return;
+    }
+
     const existing = await User.findOne({ email: normalizedEmail });
     if (existing) {
       sendResponse(res, null, 'Email already in use', 400);
@@ -615,7 +736,7 @@ router.post('/register', registerLimiter, async (req: Request, res: Response, ne
       name,
       email: normalizedEmail,
       passwordHash: password,
-      tenantId,
+      tenantId: resolvedTenant,
       employeeId,
     });
 
@@ -665,10 +786,49 @@ router.get('/oauth/:provider', async (req: Request, res: Response, next: NextFun
   }
 });
 
-router.get('/oidc/:provider', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/oidc/:provider/metadata', async (req: Request, res: Response) => {
+  if (!isFeatureEnabled('oidc')) {
+    sendResponse(res, null, 'OIDC is disabled', 404);
+    return;
+  }
+
   const provider = req.params.provider as OIDCProvider;
-  if (!OIDC_PROVIDERS.includes(provider)) {
+  const config = OIDC_PROVIDER_CONFIGS.find((item) => item.name === provider);
+  if (!config) {
     sendResponse(res, null, 'Unsupported provider', 400);
+    return;
+  }
+
+  sendResponse(
+    res,
+    {
+      issuer: config.issuer,
+      authorizationEndpoint: config.authorizationUrl ?? `${config.issuer.replace(/\/$/, '')}/authorize`,
+      tokenEndpoint: config.tokenUrl ?? `${config.issuer.replace(/\/$/, '')}/token`,
+      callbackPath: config.callbackPath,
+    },
+    null,
+    200,
+    'OIDC metadata',
+  );
+});
+
+router.get('/oidc/:provider', async (req: Request, res: Response, next: NextFunction) => {
+  const provider = req.params.provider;
+  const allowed = await isAllowedOidcProvider(provider);
+  if (!allowed) {
+    sendResponse(res, null, 'Unsupported provider', 400);
+    return;
+  }
+
+  if (!isStaticOidcProvider(provider)) {
+    sendResponse(
+      res,
+      { provider },
+      null,
+      202,
+      'OIDC provider registered but no passport strategy bound',
+    );
     return;
   }
 
@@ -684,6 +844,24 @@ router.get('/oidc/:provider', async (req: Request, res: Response, next: NextFunc
     next(err);
   }
 });
+
+router.get('/saml/:tenantId/metadata', async (req: Request, res: Response) => {
+  if (!isFeatureEnabled('saml')) {
+    sendResponse(res, null, 'SAML is disabled', 404);
+    return;
+  }
+
+  try {
+    const metadata = await getSamlMetadata(req.params.tenantId);
+    res.type('application/xml').send(metadata);
+  } catch (err) {
+    logger.error('Failed to build SAML metadata', err);
+    sendResponse(res, null, 'Unable to generate SAML metadata', 500);
+  }
+});
+
+router.post('/saml/:tenantId/acs', samlAcsPlaceholder);
+router.get('/saml/:tenantId/redirect', samlRedirectPlaceholder);
 
 const handlePassportCallback = (
   req: Request,
@@ -737,6 +915,12 @@ const handlePassportCallback = (
         expiresIn: TOKEN_TTL,
       });
 
+      void recordAuthEvent({
+        action: 'sso_login_success',
+        tenantId,
+        details: { provider, email, roles, userId },
+      });
+
       const stateValue =
         typeof req.query.state === 'string'
           ? req.query.state
@@ -778,9 +962,21 @@ router.get(
 router.get(
   '/oidc/:provider/callback',
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const provider = req.params.provider as OIDCProvider;
-    if (!OIDC_PROVIDERS.includes(provider)) {
+    const provider = req.params.provider;
+    const allowed = await isAllowedOidcProvider(provider);
+    if (!allowed) {
       sendResponse(res, null, 'Unsupported provider', 400);
+      return;
+    }
+
+    if (!isStaticOidcProvider(provider)) {
+      sendResponse(
+        res,
+        { provider },
+        null,
+        202,
+        'OIDC provider registered but callback handling is not configured',
+      );
       return;
     }
 

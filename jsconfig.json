@@ -3,8 +3,9 @@
     "checkJs": false
   },
   "exclude": [
-    "backend-legacy",
-    "backend/dist",
-    "backend/**/*.js"
+    "node_modules",
+    "**/dist/**",
+    "**/Backend/**/*.js",
+    "**/backend/**/*.js"
   ]
 }

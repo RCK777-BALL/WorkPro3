@@ -5,8 +5,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
 import PDFDocument from 'pdfkit';
+import { sendResponse } from '../utils';
 
-import { sendResponse } from '../utils/sendResponse';
 
 import Asset from '../models/Asset';
 import WorkOrder from '../models/WorkOrder';
@@ -627,7 +627,7 @@ const resolveEntityLink = (log: any): string | null => {
   return null;
 };
 
-export const getDashboardOverview = async (req: Request, res: Response, next: NextFunction) => {
+const getDashboardOverview = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = resolveTenantId(req);
     const tenantMatch = buildTenantMatch(tenantId);
@@ -658,7 +658,7 @@ export const getDashboardOverview = async (req: Request, res: Response, next: Ne
   }
 };
 
-export const getDashboardLivePulse = async (req: Request, res: Response, next: NextFunction) => {
+const getDashboardLivePulse = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = resolveTenantId(req);
     const tenantMatch = buildTenantMatch(tenantId);
@@ -670,7 +670,7 @@ export const getDashboardLivePulse = async (req: Request, res: Response, next: N
   }
 };
 
-export const getDashboardWorkOrders = async (req: Request, res: Response, next: NextFunction) => {
+const getDashboardWorkOrders = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = resolveTenantId(req);
     const tenantMatch = buildTenantMatch(tenantId);
@@ -703,7 +703,7 @@ export const getDashboardWorkOrders = async (req: Request, res: Response, next: 
   }
 };
 
-export const getDashboardRecentActivity = async (
+const getDashboardRecentActivity = async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -744,7 +744,7 @@ export const getDashboardRecentActivity = async (
   }
 };
 
-export const getDashboardPermits = async (req: Request, res: Response, next: NextFunction) => {
+const getDashboardPermits = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = resolveTenantId(req);
     const tenantMatch = buildTenantMatch(tenantId);
@@ -772,7 +772,7 @@ export const getDashboardPermits = async (req: Request, res: Response, next: Nex
   }
 };
 
-export const getDashboardExportPdf = async (req: Request, res: Response, next: NextFunction) => {
+const getDashboardExportPdf = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = resolveTenantId(req);
     const tenantMatch = buildTenantMatch(tenantId);
@@ -898,7 +898,7 @@ export const getDashboardExportPdf = async (req: Request, res: Response, next: N
   }
 };
 
-export const postDashboardImportSync = async (req: Request, res: Response, next: NextFunction) => {
+const postDashboardImportSync = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = resolveTenantId(req);
     if (!tenantId) {
@@ -942,7 +942,7 @@ export const postDashboardImportSync = async (req: Request, res: Response, next:
   }
 };
 
-export const postLaunchPlanner = async (req: Request, res: Response, next: NextFunction) => {
+const postLaunchPlanner = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = resolveTenantId(req);
     if (tenantId) {
@@ -971,3 +971,14 @@ export const postLaunchPlanner = async (req: Request, res: Response, next: NextF
   }
 };
 
+
+export {
+  getDashboardOverview,
+  getDashboardLivePulse,
+  getDashboardWorkOrders,
+  getDashboardRecentActivity,
+  getDashboardPermits,
+  getDashboardExportPdf,
+  postDashboardImportSync,
+  postLaunchPlanner,
+};

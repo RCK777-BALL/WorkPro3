@@ -1,4 +1,11 @@
-export type OnboardingStepKey = 'site' | 'assets' | 'pmTemplates' | 'team';
+export type OnboardingStepKey =
+  | 'site'
+  | 'roles'
+  | 'departments'
+  | 'assets'
+  | 'starterData'
+  | 'pmTemplates'
+  | 'users';
 
 export interface OnboardingStep {
   key: OnboardingStepKey;
@@ -6,15 +13,15 @@ export interface OnboardingStep {
   description: string;
   href: string;
   completed: boolean;
-  completedAt?: string;
+  completedAt?: string | undefined;
 }
 
 export interface OnboardingState {
   steps: OnboardingStep[];
   pendingReminder: boolean;
-  reminderMessage?: string;
-  lastReminderAt?: string;
-  nextStepKey?: OnboardingStepKey | null;
+  reminderMessage?: string | undefined;
+  lastReminderAt?: string | undefined;
+  nextStepKey?: OnboardingStepKey | null | undefined;
 }
 
 export interface OnboardingReminderResponse {
@@ -23,9 +30,9 @@ export interface OnboardingReminderResponse {
 
 export interface PMTemplateLibraryRule {
   type: 'calendar' | 'meter';
-  cron?: string;
-  meterName?: string;
-  threshold?: number;
+  cron?: string | undefined;
+  meterName?: string | undefined;
+  threshold?: number | undefined;
 }
 
 export interface PMTemplateLibraryItem {
@@ -37,4 +44,13 @@ export interface PMTemplateLibraryItem {
   checklist: string[];
   impact: string;
   rule: PMTemplateLibraryRule;
+  estimatedMinutes?: number | undefined;
+}
+
+export interface InspectionFormTemplate {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  sections: Array<{ heading: string; items: string[] }>;
 }

@@ -13,16 +13,25 @@ import { safeLocalStorage } from "@/utils/safeLocalStorage";
 const DEFAULT_API_BASE_URL = "http://localhost:5010/api";
 
 const resolveBaseUrl = (value?: string) => {
-  const raw = (value ?? DEFAULT_API_BASE_URL).trim();
+  const browserOrigin = typeof window !== "undefined" ? window.location.origin : "";
+  const raw = (value ?? browserOrigin ?? DEFAULT_API_BASE_URL).trim();
+
   if (!raw) return DEFAULT_API_BASE_URL;
+
   const normalized = raw.replace(/\/+$/, "");
+
+  if (/^\//.test(normalized)) {
+    return normalized || "/api";
+  }
+
   if (/\/api(?:\b|\/)/.test(normalized)) {
     return normalized;
   }
+
   return `${normalized}/api`;
 };
 
-const baseURL = resolveBaseUrl(import.meta.env.VITE_API_BASE_URL);
+const baseURL = resolveBaseUrl(import.meta.env.VITE_API_URL ?? import.meta.env.VITE_API_BASE_URL);
 
 const clearAuthStorage = () => {
   [TOKEN_KEY, TENANT_KEY, SITE_KEY, FALLBACK_TOKEN_KEY, USER_STORAGE_KEY].forEach((key) => {

@@ -16,6 +16,20 @@ import {
   createPurchaseOrderHandler,
   listPurchaseOrdersHandler,
   exportPurchaseOrdersHandler,
+  listLocationsHandler,
+  saveLocationHandler,
+  listStockItemsHandler,
+  receiveInventoryHandler,
+  issueInventoryHandler,
+  adjustInventoryHandler,
+  transferInventoryHandler,
+  stockCountHandler,
+  adjustStockHandler,
+  listReorderSuggestionsHandler,
+  transferStockHandler,
+  listStockHistoryHandler,
+  transitionPurchaseOrderHandler,
+  partUsageReportHandler,
 } from './controller';
 
 const router = Router();
@@ -32,10 +46,35 @@ router.post('/vendors', requirePermission('inventory', 'manage'), saveVendorHand
 router.put('/vendors/:vendorId', requirePermission('inventory', 'manage'), saveVendorHandler);
 
 router.get('/alerts', requirePermission('inventory', 'read'), listAlertsHandler);
+router.get(
+  '/reorder-suggestions',
+  requirePermission('inventory', 'read'),
+  listReorderSuggestionsHandler,
+);
 router.post(
   '/purchase-orders',
   requirePermission('inventory', 'purchase'),
   createPurchaseOrderHandler,
 );
+router.post(
+  '/purchase-orders/:purchaseOrderId/status',
+  requirePermission('inventory', 'purchase'),
+  transitionPurchaseOrderHandler,
+);
+
+router.get('/locations', requirePermission('inventory', 'read'), listLocationsHandler);
+router.post('/locations', requirePermission('inventory', 'manage'), saveLocationHandler);
+router.put('/locations/:locationId', requirePermission('inventory', 'manage'), saveLocationHandler);
+
+router.get('/stock', requirePermission('inventory', 'read'), listStockItemsHandler);
+router.post('/stock/transactions/receive', requirePermission('inventory', 'manage'), receiveInventoryHandler);
+router.post('/stock/transactions/issue', requirePermission('inventory', 'manage'), issueInventoryHandler);
+router.post('/stock/transactions/adjust', requirePermission('inventory', 'manage'), adjustInventoryHandler);
+router.post('/stock/transactions/transfer', requirePermission('inventory', 'manage'), transferInventoryHandler);
+router.post('/stock/count', requirePermission('inventory', 'manage'), stockCountHandler);
+router.post('/stock/adjust', requirePermission('inventory', 'manage'), adjustStockHandler);
+router.post('/transfers', requirePermission('inventory', 'manage'), transferStockHandler);
+router.get('/stock/history', requirePermission('inventory', 'read'), listStockHistoryHandler);
+router.get('/analytics/usage', requirePermission('inventory', 'read'), partUsageReportHandler);
 
 export default router;

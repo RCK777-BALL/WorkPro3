@@ -16,13 +16,27 @@ export interface Meter {
   currentValue: number;
   pmInterval: number;
   lastWOValue: number;
+  thresholds?: {
+    warning?: number;
+    critical?: number;
+  };
   tenantId: Types.ObjectId;
   siteId?: Types.ObjectId;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export type MeterDocument = HydratedDocument<Meter>;
 
-const meterSchema = new Schema<Meter>(
+const meterSchema = new Schema<
+  Meter,
+  Model<Meter>,
+  Record<string, never>,
+  Record<string, never>,
+  Record<string, never>,
+  Record<string, never>,
+  { createdAt: Date; updatedAt: Date }
+>(
   {
     asset: { type: Schema.Types.ObjectId, ref: 'Asset', required: true },
     name: { type: String, required: true },
@@ -30,6 +44,10 @@ const meterSchema = new Schema<Meter>(
     currentValue: { type: Number, default: 0 },
     pmInterval: { type: Number, required: true },
     lastWOValue: { type: Number, default: 0 },
+    thresholds: {
+      warning: { type: Number },
+      critical: { type: Number },
+    },
     tenantId: {
       type: Schema.Types.ObjectId,
       ref: 'Tenant',

@@ -5,13 +5,21 @@
 import mongoose, { Schema, type Model, type Types } from 'mongoose';
 import { computeEtag } from '../utils/versioning';
 
-export type MobileOfflineActionStatus = 'pending' | 'processed' | 'failed';
+export type MobileOfflineActionStatus =
+  | 'pending'
+  | 'in-progress'
+  | 'retrying'
+  | 'synced'
+  | 'failed';
 
 export interface MobileOfflineAction {
   _id: Types.ObjectId;
   tenantId: Types.ObjectId;
   userId: Types.ObjectId;
-  type: string;
+  entityType: string;
+  entityId?: Types.ObjectId;
+  operation: 'create' | 'update' | 'delete' | string;
+  type?: string;
   payload: Record<string, unknown>;
   status: MobileOfflineActionStatus;
   version?: number;
@@ -31,11 +39,15 @@ const MobileOfflineActionSchema = new Schema<MobileOfflineAction>(
   {
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    type: { type: String, required: true, trim: true },
+    entityType: { type: String, required: true, trim: true, index: true },
+    entityId: { type: Schema.Types.ObjectId },
+    operation: { type: String, required: true, trim: true, index: true },
+    // deprecated alias retained for backward compatibility
+    type: { type: String, trim: true },
     payload: { type: Schema.Types.Mixed, default: {} },
     status: {
       type: String,
-      enum: ['pending', 'processed', 'failed'],
+      enum: ['pending', 'in-progress', 'retrying', 'synced', 'failed'],
       default: 'pending',
       index: true,
     },

@@ -4,39 +4,45 @@
 
 import mongoose, { Schema, Types, Document } from 'mongoose';
 
-export interface IPurchaseOrderItem {
-  item: Types.ObjectId;
-  quantity: number;
-  uom?: Types.ObjectId;
-  unitCost?: number;
-  received: number;
+export interface IPurchaseOrderLine {
+  part: Types.ObjectId;
+  qtyOrdered: number;
+  qtyReceived: number;
+  price: number;
+  _id?: Types.ObjectId;
 }
 
 export interface IPurchaseOrder extends Document {
   _id: Types.ObjectId;
   tenantId: Types.ObjectId;
-  vendor: Types.ObjectId;
-  items: IPurchaseOrderItem[];
-  status: 'open' | 'acknowledged' | 'shipped' | 'closed';
+  siteId?: Types.ObjectId;
+  poNumber?: string;
+  vendorId?: Types.ObjectId;
+  vendor?: Types.ObjectId;
+  lines: IPurchaseOrderLine[];
+  status: 'Draft' | 'Pending' | 'Approved' | 'Ordered' | 'Received' | 'Closed';
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const purchaseOrderSchema = new Schema<IPurchaseOrder>(
   {
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
-    vendor: { type: Schema.Types.ObjectId, ref: 'Vendor', required: true },
-    items: [
+    siteId: { type: Schema.Types.ObjectId, ref: 'Site', index: true },
+    poNumber: { type: String, index: true },
+    vendorId: { type: Schema.Types.ObjectId, ref: 'Vendor' },
+    lines: [
       {
-        item: { type: Schema.Types.ObjectId, ref: 'InventoryItem', required: true },
-        quantity: { type: Number, required: true },
-        uom: { type: Schema.Types.ObjectId, ref: 'unitOfMeasure' },
-        unitCost: Number,
-        received: { type: Number, default: 0 },
+        part: { type: Schema.Types.ObjectId, ref: 'Part', required: true },
+        qtyOrdered: { type: Number, required: true },
+        qtyReceived: { type: Number, default: 0 },
+        price: { type: Number, default: 0 },
       },
     ],
     status: {
       type: String,
-      enum: ['open', 'acknowledged', 'shipped', 'closed'],
-      default: 'open',
+      enum: ['Draft', 'Pending', 'Approved', 'Ordered', 'Received', 'Closed'],
+      default: 'Draft',
     },
   },
   { timestamps: true }

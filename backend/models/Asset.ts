@@ -8,6 +8,7 @@ export interface AssetDoc extends Document {
   _id: Types.ObjectId;
   name: string;
   type: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface';
+  qrCode?: string;
   location?: string;
   departmentId?: Types.ObjectId;
   department?: string;
@@ -25,10 +26,24 @@ export interface AssetDoc extends Document {
   modelName?: string;
   manufacturer?: string;
   purchaseDate?: Date;
+  warrantyStart?: Date;
+  warrantyEnd?: Date;
+  purchaseCost?: number;
+  expectedLifeMonths?: number;
+  replacementDate?: Date;
   installationDate?: Date;
   lastServiced?: Date;
+  lastInspection?: {
+    recordId?: Types.ObjectId;
+    templateName?: string;
+    status?: 'draft' | 'in-progress' | 'completed' | 'archived';
+    completedAt?: Date;
+    summary?: string;
+  };
   criticality?: string;
   documents?: Types.Array<Types.ObjectId>;
+  pmTemplateIds?: Types.Array<Types.ObjectId>;
+  customFields?: Record<string, unknown>;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -55,12 +70,18 @@ const assetSchema = new Schema<AssetDoc>(
     modelName: { type: String },
     manufacturer: { type: String },
     purchaseDate: { type: Date },
+    warrantyStart: { type: Date },
+    warrantyEnd: { type: Date },
+    purchaseCost: { type: Number, min: 0 },
+    expectedLifeMonths: { type: Number, min: 1 },
+    replacementDate: { type: Date },
     installationDate: { type: Date },
     lastServiced: { type: Date },
     line: { type: String },
     station: { type: String },
     lineId: { type: Schema.Types.ObjectId, ref: 'Line', index: true },
     stationId: { type: Schema.Types.ObjectId, ref: 'Station', index: true },
+    qrCode: { type: String },
     tenantId: {
       type: Schema.Types.ObjectId,
       ref: 'Tenant',
@@ -78,17 +99,27 @@ const assetSchema = new Schema<AssetDoc>(
       ref: 'Site',
       index: true,
     },
+    lastInspection: {
+      recordId: { type: Schema.Types.ObjectId, ref: 'InspectionRecord' },
+      templateName: { type: String },
+      status: { type: String, enum: ['draft', 'in-progress', 'completed', 'archived'] },
+      completedAt: { type: Date },
+      summary: { type: String },
+      _id: false,
+    },
     criticality: {
       type: String,
       enum: ['high', 'medium', 'low'],
       default: 'medium',
     },
     documents: [{ type: Schema.Types.ObjectId, ref: 'Document' }],
+    pmTemplateIds: [{ type: Schema.Types.ObjectId, ref: 'PmTask', index: true }],
+    customFields: { type: Schema.Types.Mixed, default: {} },
   },
   { timestamps: true }
 );
 
-assetSchema.pre('validate', function (next) {
+assetSchema.pre('validate', function (this: AssetDoc, next) {
   if (!this.plant && this.siteId) {
     this.plant = this.siteId as Types.ObjectId;
   }

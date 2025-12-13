@@ -3,9 +3,16 @@ declare module 'passport-openidconnect' {
 
   export interface StrategyOptions {
     issuer: string;
+    authorizationURL: string;
+    tokenURL: string;
+    userInfoURL?: string;
     clientID: string;
     clientSecret: string;
     callbackURL: string;
+    scope?: string | string[];
+    response_type?: string;
+    passReqToCallback?: boolean;
+    prompt?: string;
   }
 
   export interface VerifyCallback {

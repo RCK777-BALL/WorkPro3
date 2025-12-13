@@ -2,17 +2,22 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Router } from 'express';
+import { Router, type Request } from 'express';
+import { Types } from 'mongoose';
 import { requireAuth } from '../middleware/authMiddleware';
 import tenantScope from '../middleware/tenantScope';
+import { writeAuditLog } from '../utils/audit';
 
 interface SafetyTemplate {
   id: string;
   name: string;
-  siteId?: string;
+  siteId?: string | undefined;
   version: number;
-  retentionDays?: number;
+  retentionDays?: number | undefined;
   checklists: string[];
+  permitType?: 'hot-work' | 'confined-space' | 'general';
+  category: 'checklist' | 'loto' | 'hot-work' | 'confined-space';
+  lotoSteps?: string[];
   updatedAt: string;
   createdAt: string;
 }
@@ -20,8 +25,8 @@ interface SafetyTemplate {
 interface InspectionSchedule {
   id: string;
   templateId: string;
-  workOrderId?: string;
-  siteId?: string;
+  workOrderId?: string | undefined;
+  siteId?: string | undefined;
   scheduledFor: string;
   status: 'scheduled' | 'completed' | 'canceled';
 }
@@ -31,9 +36,11 @@ interface ChecklistCompletion {
   templateId: string;
   completedBy: string;
   completedAt: string;
+  status: 'pending' | 'approved' | 'rejected';
   signatures: string[];
   documents: string[];
-  status: 'pending' | 'approved' | 'rejected';
+  lockoutVerified?: boolean;
+  permitType?: SafetyTemplate['permitType'];
 }
 
 interface WorkOrderSafetyState {
@@ -43,10 +50,21 @@ interface WorkOrderSafetyState {
   completions: ChecklistCompletion[];
 }
 
+interface SafetyHistoryEntry {
+  id: string;
+  action: string;
+  templateId?: string;
+  workOrderId?: string;
+  notes?: string;
+  actor?: string;
+  at: string;
+}
+
 interface SafetyState {
   templates: SafetyTemplate[];
   inspections: InspectionSchedule[];
   workOrders: Record<string, WorkOrderSafetyState>;
+  history: SafetyHistoryEntry[];
 }
 
 const tenantSafetyState = new Map<string, SafetyState>();
@@ -62,17 +80,45 @@ const buildState = (tenantId: string): SafetyState => {
       templates: [],
       inspections: [],
       workOrders: {},
+      history: [],
     });
   }
   return tenantSafetyState.get(tenantId)!;
 };
 
+type SafetyRequest = Request & { tenantId?: string; siteId?: string; user?: { _id?: string | Types.ObjectId } };
+
+const logHistory = async (
+  req: SafetyRequest,
+  state: SafetyState,
+  entry: Omit<SafetyHistoryEntry, 'id' | 'at'> & { at?: string },
+) => {
+  const record: SafetyHistoryEntry = {
+    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    at: entry.at ?? new Date().toISOString(),
+    ...entry,
+  };
+  state.history.unshift(record);
+  await writeAuditLog({
+    tenantId: req.tenantId!,
+    siteId: req.siteId,
+    userId: req.user?._id,
+    action: `safety-${entry.action}`,
+    entityType: 'safety-template',
+    entityId: entry.templateId ?? entry.workOrderId,
+    entityLabel: entry.notes,
+    after: record,
+  });
+};
+
 router.get('/templates', (req, res) => {
-  const state = buildState(req.tenantId);
-  const { siteId } = req.query;
-  const filtered = siteId
-    ? state.templates.filter((template) => template.siteId === siteId)
-    : state.templates;
+  const state = buildState(req.tenantId!);
+  const { siteId, category } = req.query;
+  const filtered = state.templates.filter((template) => {
+    const matchesSite = siteId ? template.siteId === siteId : true;
+    const matchesCategory = category ? template.category === category : true;
+    return matchesSite && matchesCategory;
+  });
 
   res.json({
     success: true,
@@ -80,15 +126,32 @@ router.get('/templates', (req, res) => {
   });
 });
 
-router.post('/templates', (req, res) => {
-  const state = buildState(req.tenantId);
+router.get('/templates/work-permits', (req, res) => {
+  const state = buildState(req.tenantId!);
+  const permits = state.templates.filter((tpl) => tpl.category === 'hot-work' || tpl.category === 'confined-space');
+  res.json({ success: true, data: permits });
+});
+
+router.post('/templates', async (req, res) => {
+  const state = buildState(req.tenantId!);
   const now = new Date().toISOString();
   const {
     name,
     siteId,
     retentionDays,
     checklists = [],
-  }: { name: string; siteId?: string; retentionDays?: number; checklists?: string[] } = req.body || {};
+    permitType,
+    category = 'checklist',
+    lotoSteps = [],
+  }: {
+    name: string;
+    siteId?: string;
+    retentionDays?: number;
+    checklists?: string[];
+    permitType?: SafetyTemplate['permitType'];
+    category?: SafetyTemplate['category'];
+    lotoSteps?: string[];
+  } = req.body || {};
 
   if (!name) {
     return res.status(400).json({ success: false, message: 'Template name is required.' });
@@ -107,12 +170,20 @@ router.post('/templates', (req, res) => {
     siteId,
     retentionDays,
     checklists,
+    permitType,
+    category,
+    lotoSteps,
     version: latestVersion + 1,
     createdAt: now,
     updatedAt: now,
   };
 
   state.templates.push(template);
+  await logHistory(req, state, {
+    action: 'template-created',
+    templateId: template.id,
+    notes: `${template.name} v${template.version}`,
+  });
 
   res.status(201).json({
     success: true,
@@ -120,8 +191,8 @@ router.post('/templates', (req, res) => {
   });
 });
 
-router.post('/templates/:templateId/schedule', (req, res) => {
-  const state = buildState(req.tenantId);
+router.post('/templates/:templateId/schedule', async (req, res) => {
+  const state = buildState(req.tenantId!);
   const { templateId } = req.params;
   const template = state.templates.find((tpl) => tpl.id === templateId);
   if (!template) {
@@ -144,6 +215,12 @@ router.post('/templates/:templateId/schedule', (req, res) => {
   };
 
   state.inspections.push(schedule);
+  await logHistory(req, state, {
+    action: 'inspection-scheduled',
+    templateId,
+    workOrderId,
+    notes: `Inspection scheduled for ${scheduledFor}`,
+  });
 
   res.status(201).json({
     success: true,
@@ -152,8 +229,8 @@ router.post('/templates/:templateId/schedule', (req, res) => {
 });
 
 router.get('/inspections', (req, res) => {
-  const state = buildState(req.tenantId);
-  const { status, siteId } = req.query;
+  const state = buildState(req.tenantId!);
+  const { status, siteId } = req.query as { status?: string; siteId?: string };
 
   const filtered = state.inspections.filter((inspection) => {
     const matchesStatus = status ? inspection.status === status : true;
@@ -164,8 +241,8 @@ router.get('/inspections', (req, res) => {
   res.json({ success: true, data: filtered });
 });
 
-router.post('/inspections/:inspectionId/complete', (req, res) => {
-  const state = buildState(req.tenantId);
+router.post('/inspections/:inspectionId/complete', async (req, res) => {
+  const state = buildState(req.tenantId!);
   const { inspectionId } = req.params;
   const inspection = state.inspections.find((item) => item.id === inspectionId);
 
@@ -174,12 +251,18 @@ router.post('/inspections/:inspectionId/complete', (req, res) => {
   }
 
   inspection.status = 'completed';
+  await logHistory(req, state, {
+    action: 'inspection-completed',
+    templateId: inspection.templateId,
+    workOrderId: inspection.workOrderId,
+    notes: 'Inspection marked complete',
+  });
 
   res.json({ success: true, data: inspection });
 });
 
-router.post('/work-orders/:workOrderId/link-template', (req, res) => {
-  const state = buildState(req.tenantId);
+router.post('/work-orders/:workOrderId/link-template', async (req, res) => {
+  const state = buildState(req.tenantId!);
   const { workOrderId } = req.params;
   const { templateId } = req.body as { templateId: string };
 
@@ -205,14 +288,21 @@ router.post('/work-orders/:workOrderId/link-template', (req, res) => {
     state.workOrders[workOrderId].linkedTemplates.push(templateId);
   }
 
+  await logHistory(req, state, {
+    action: 'template-linked',
+    templateId,
+    workOrderId,
+    notes: `${template.name} attached to work order`,
+  });
+
   res.json({
     success: true,
     data: state.workOrders[workOrderId],
   });
 });
 
-router.post('/work-orders/:workOrderId/completions', (req, res) => {
-  const state = buildState(req.tenantId);
+router.post('/work-orders/:workOrderId/completions', async (req, res) => {
+  const state = buildState(req.tenantId!);
   const { workOrderId } = req.params;
   const body = req.body as {
     templateId: string;
@@ -220,6 +310,7 @@ router.post('/work-orders/:workOrderId/completions', (req, res) => {
     signatures?: string[];
     documents?: string[];
     status?: 'pending' | 'approved' | 'rejected';
+    lockoutVerified?: boolean;
   };
 
   if (!state.workOrders[workOrderId]) {
@@ -231,6 +322,7 @@ router.post('/work-orders/:workOrderId/completions', (req, res) => {
     };
   }
 
+  const template = state.templates.find((tpl) => tpl.id === body.templateId);
   const completion: ChecklistCompletion = {
     id: `${Date.now()}`,
     templateId: body.templateId,
@@ -239,15 +331,23 @@ router.post('/work-orders/:workOrderId/completions', (req, res) => {
     signatures: body.signatures ?? [],
     documents: body.documents ?? [],
     status: body.status ?? 'pending',
+    lockoutVerified: body.lockoutVerified ?? false,
+    permitType: template?.permitType,
   };
 
   state.workOrders[workOrderId].completions.push(completion);
+  await logHistory(req, state, {
+    action: 'checklist-completed',
+    templateId: completion.templateId,
+    workOrderId,
+    notes: `Completed by ${completion.completedBy}`,
+  });
 
   res.status(201).json({ success: true, data: completion });
 });
 
-router.post('/work-orders/:workOrderId/approvals', (req, res) => {
-  const state = buildState(req.tenantId);
+router.post('/work-orders/:workOrderId/approvals', async (req, res) => {
+  const state = buildState(req.tenantId!);
   const { workOrderId } = req.params;
   const { approver, status } = req.body as {
     approver: string;
@@ -269,11 +369,17 @@ router.post('/work-orders/:workOrderId/approvals', (req, res) => {
     at: new Date().toISOString(),
   });
 
+  await logHistory(req, state, {
+    action: 'approval-recorded',
+    workOrderId,
+    notes: `${approver} set status to ${status}`,
+  });
+
   res.status(201).json({ success: true, data: state.workOrders[workOrderId] });
 });
 
 router.get('/work-orders/:workOrderId/status', (req, res) => {
-  const state = buildState(req.tenantId);
+  const state = buildState(req.tenantId!);
   const { workOrderId } = req.params;
   const safety = state.workOrders[workOrderId];
 
@@ -294,7 +400,7 @@ router.get('/work-orders/:workOrderId/status', (req, res) => {
   );
 
   const rejectedApprovals = safety.approvals.filter((approval) => approval.status === 'rejected');
-  const hasPendingApprovals = safety.approvals.every((approval) => approval.status === 'approved');
+  const hasAllApprovals = safety.approvals.length === 0 ? false : safety.approvals.every((approval) => approval.status === 'approved');
 
   const missing: string[] = [];
   if (pendingTemplates.length > 0) {
@@ -303,11 +409,34 @@ router.get('/work-orders/:workOrderId/status', (req, res) => {
   if (rejectedApprovals.length > 0) {
     missing.push('A safety approver rejected this work order');
   }
-  if (!hasPendingApprovals) {
+  if (!hasAllApprovals) {
     missing.push('Awaiting safety approvals');
   }
 
-  const canStart = safety.linkedTemplates.length > 0;
+  const templates = state.templates.filter((tpl) => safety.linkedTemplates.includes(tpl.id));
+  const lotoTemplates = templates.filter((tpl) => tpl.category === 'loto');
+  const permitTemplates = templates.filter((tpl) => tpl.category === 'hot-work' || tpl.category === 'confined-space');
+
+  if (lotoTemplates.length > 0) {
+    const unverified = lotoTemplates.filter((template) =>
+      !safety.completions.some((completion) => completion.templateId === template.id && completion.lockoutVerified),
+    );
+    if (unverified.length > 0) {
+      missing.push('LOTO steps are not verified');
+    }
+  }
+
+  if (permitTemplates.length > 0) {
+    const permitIds = permitTemplates.map((tpl) => tpl.permitType ?? tpl.category);
+    const permitCompletions = safety.completions.filter((completion) =>
+      permitIds.includes(completion.permitType ?? 'general'),
+    );
+    if (permitCompletions.length < permitTemplates.length) {
+      missing.push('Work permit templates require completion');
+    }
+  }
+
+  const canStart = safety.linkedTemplates.length > 0 && missing.length === 0;
   const canClose = missing.length === 0 && safety.linkedTemplates.length > 0;
 
   res.json({
@@ -324,6 +453,11 @@ router.get('/work-orders/:workOrderId/status', (req, res) => {
       },
     },
   });
+});
+
+router.get('/history', (req, res) => {
+  const state = buildState(req.tenantId!);
+  res.json({ success: true, data: state.history.slice(0, 100) });
 });
 
 export default router;

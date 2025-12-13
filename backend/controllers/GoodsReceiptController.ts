@@ -2,25 +2,20 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { sendResponse } from '../utils/sendResponse';
 
 import GoodsReceipt, { type IGoodsReceipt } from '../models/GoodsReceipt';
 import PurchaseOrder, {
   type IPurchaseOrder,
-  type IPurchaseOrderItem,
+  type IPurchaseOrderLine,
 } from '../models/PurchaseOrder';
 import Vendor from '../models/Vendor';
 import { addStock } from '../services/inventory';
 import nodemailer from 'nodemailer';
-import { assertEmail } from '../utils/assert';
-import { writeAuditLog } from '../utils/audit';
-import { toEntityId } from '../utils/ids';
-import logger from '../utils/logger';
-import { enqueueEmailRetry } from '../utils/emailQueue';
 import type { HydratedDocument } from 'mongoose';
 import { Types } from 'mongoose';
 import type { AuthedRequestHandler } from '../types/http';
 import type { ParamsDictionary } from 'express-serve-static-core';
+import { sendResponse, assertEmail, writeAuditLog, toEntityId, logger, enqueueEmailRetry } from '../utils';
 
 interface GoodsReceiptItemPayload {
   item: string;
@@ -76,27 +71,21 @@ const createGoodsReceiptHandler: AuthedRequestHandler<
         throw new Error('Invalid inventory item identifier');
       }
       await addStock(itemId, grItem.quantity, uomId);
-      const poItem = purchaseOrder.items?.find(
-        (item: IPurchaseOrderItem) => item.item.toString() === grItem.item,
+      const poLine = purchaseOrder.lines?.find(
+        (line: IPurchaseOrderLine) => line.part.toString() === grItem.item,
       );
       let qty = grItem.quantity;
-      if (grItem.uom && poItem?.uom && grItem.uom.toString() !== poItem.uom.toString()) {
-        const conv = await db
-          .collection('conversions')
-          .findOne({ from: grItem.uom, to: poItem.uom });
-        if (conv) qty = qty * conv.factor;
-      }
-      if (poItem) {
-        poItem.received += qty;
+      if (poLine) {
+        poLine.qtyReceived += qty;
       }
     }
 
     if (
-      purchaseOrder.items?.every(
-        (item: IPurchaseOrderItem) => item.received >= item.quantity,
+      purchaseOrder.lines?.every(
+        (line: IPurchaseOrderLine) => line.qtyReceived >= line.qtyOrdered,
       )
     ) {
-      purchaseOrder.status = 'closed';
+      purchaseOrder.status = 'Closed';
     }
 
     await purchaseOrder.save();
@@ -132,7 +121,7 @@ const createGoodsReceiptHandler: AuthedRequestHandler<
       });
     }
 
-    const vendor = await Vendor.findById(purchaseOrder.vendor).lean();
+    const vendor = await Vendor.findById(purchaseOrder.vendorId).lean();
     if (vendor?.email) {
       assertEmail(vendor.email);
       const transporter = nodemailer.createTransport({ jsonTransport: true });

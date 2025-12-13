@@ -3,29 +3,27 @@
  */
 
 import type { ReactNode } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-
-import type { PermissionScope, PermissionAction } from './permissions';
+import {
+  formatPermission,
+  type Permission,
+  type PermissionAction,
+  type PermissionCategory,
+} from '@backend-shared/permissions';
 import { usePermissions } from './usePermissions';
-import { useAuth } from '@/context/AuthContext';
 
 interface RequirePermissionProps {
-  scope: PermissionScope;
-  action: PermissionAction;
+  permission?: Permission;
+  scope?: PermissionCategory;
+  action?: PermissionAction;
   children: ReactNode;
 }
 
-export const RequirePermission = ({ scope, action, children }: RequirePermissionProps) => {
+export const RequirePermission = ({ permission, scope, action, children }: RequirePermissionProps) => {
   const { can } = usePermissions();
-  const { loading } = useAuth();
-  const location = useLocation();
+  const permissionKey = permission ?? (scope && action ? formatPermission(scope, action) : undefined);
 
-  if (loading) {
+  if (!permissionKey || !can(permissionKey)) {
     return null;
-  }
-
-  if (!can(scope, action)) {
-    return <Navigate to="/dashboard" replace state={{ from: location }} />;
   }
 
   return <>{children}</>;

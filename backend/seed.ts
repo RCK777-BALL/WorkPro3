@@ -7,6 +7,9 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import logger from './utils/logger';
+import Role from './models/Role';
+import UserRoleAssignment from './models/UserRoleAssignment';
+import { ALL_PERMISSIONS, PERMISSIONS } from '../shared/types/permissions';
 
 const envPath = path.resolve(__dirname, '.env');
 if (fs.existsSync(envPath)) {
@@ -25,6 +28,7 @@ import Notification from './models/Notifications';
 import Tenant from './models/Tenant';
 import AuditLog from './models/AuditLog';
 import Site from './models/Site';
+import Plant from './models/Plant';
 import SensorReading from './models/SensorReading';
 import ProductionRecord from './models/ProductionRecord';
 
@@ -40,6 +44,54 @@ if (!mongoUri) {
   );
   process.exit(1);
 }
+
+const seedRoleDefinitions: Array<{ name: string; permissions: string[] }> = [
+  { name: 'admin', permissions: ALL_PERMISSIONS },
+  { name: 'planner', permissions: [PERMISSIONS.workRequests.read, PERMISSIONS.pm.read, PERMISSIONS.pm.write] },
+  {
+    name: 'tech',
+    permissions: [
+      PERMISSIONS.workRequests.read,
+      PERMISSIONS.hierarchy.read,
+      PERMISSIONS.inventory.read,
+      PERMISSIONS.pm.read,
+    ],
+  },
+];
+
+const ensureSeedRoles = async () => {
+  const roles = new Map<string, mongoose.Types.ObjectId>();
+  for (const definition of seedRoleDefinitions) {
+    const role = await Role.findOneAndUpdate(
+      { name: definition.name },
+      { $set: { permissions: definition.permissions } },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    ).lean();
+
+    if (role?._id) {
+      roles.set(definition.name, role._id as mongoose.Types.ObjectId);
+    }
+  }
+  return roles;
+};
+
+const assignRole = async (
+  assignments: Map<string, mongoose.Types.ObjectId>,
+  userId: mongoose.Types.ObjectId,
+  tenantId: mongoose.Types.ObjectId,
+  siteId?: mongoose.Types.ObjectId,
+  ...roleNames: string[]
+) => {
+  for (const roleName of roleNames) {
+    const roleId = assignments.get(roleName);
+    if (!roleId) continue;
+    await UserRoleAssignment.updateOne(
+      { userId, roleId, tenantId, siteId: siteId ?? null },
+      {},
+      { upsert: true }
+    );
+  }
+};
 
 mongoose.connect(mongoUri).then(async () => {
   logger.info('Connected to MongoDB');
@@ -58,10 +110,20 @@ mongoose.connect(mongoUri).then(async () => {
   await AuditLog.deleteMany({});
 
   // Seed Tenant
-  await Tenant.create({ _id: tenantId, name: 'Default Tenant' });
+  await Tenant.create({
+    _id: tenantId,
+    name: 'Default Tenant',
+    domain: 'default.local',
+    branding: {
+      primaryColor: '#0f766e',
+      accentColor: '#ec4899',
+    },
+  });
 
   // Seed Site for analytics
-  const mainSite = await Site.create({ name: 'Main Plant', tenantId });
+  const mainSite = await Site.create({ name: 'Main Plant', slug: 'main-plant', tenantId });
+
+  const seededRoles = await ensureSeedRoles();
 
   // Seed Users
   const admin = await User.create({
@@ -71,7 +133,9 @@ mongoose.connect(mongoUri).then(async () => {
     roles: ['admin'],
     tenantId,
     employeeId: 'ADM001',
+    siteId: mainSite._id,
   });
+  await assignRole(seededRoles, admin._id, tenantId, mainSite._id, 'admin');
   const tech = await User.create({
     name: 'Tech',
     email: 'tech@example.com',
@@ -79,7 +143,9 @@ mongoose.connect(mongoUri).then(async () => {
     roles: ['tech'],
     tenantId,
     employeeId: 'TECH001',
+    siteId: mainSite._id,
   });
+  await assignRole(seededRoles, tech._id, tenantId, mainSite._id, 'tech');
 
   // Additional employee hierarchy
   const departmentLeader = await User.create({
@@ -89,8 +155,10 @@ mongoose.connect(mongoUri).then(async () => {
     roles: ['supervisor'],
     employeeId: 'DL001',
     tenantId,
+    siteId: mainSite._id,
     managerId: admin._id,
   });
+  await assignRole(seededRoles, departmentLeader._id, tenantId, mainSite._id, 'admin');
 
   const areaLeader = await User.create({
     name: 'Area Leader',
@@ -99,8 +167,10 @@ mongoose.connect(mongoUri).then(async () => {
     roles: ['supervisor'],
     employeeId: 'AL001',
     tenantId,
+    siteId: mainSite._id,
     managerId: departmentLeader._id,
   });
+  await assignRole(seededRoles, areaLeader._id, tenantId, mainSite._id, 'admin');
 
   const teamLeader = await User.create({
     name: 'Team Leader',
@@ -109,8 +179,10 @@ mongoose.connect(mongoUri).then(async () => {
     roles: ['supervisor'],
     employeeId: 'TL001',
     tenantId,
+    siteId: mainSite._id,
     managerId: areaLeader._id,
   });
+  await assignRole(seededRoles, teamLeader._id, tenantId, mainSite._id, 'planner');
 
   await User.insertMany([
     {
@@ -120,6 +192,7 @@ mongoose.connect(mongoUri).then(async () => {
       roles: ['tech'],
       employeeId: 'TM001',
       tenantId,
+      siteId: mainSite._id,
       managerId: teamLeader._id,
     },
     {
@@ -129,6 +202,7 @@ mongoose.connect(mongoUri).then(async () => {
       roles: ['tech'],
       employeeId: 'TM002',
       tenantId,
+      siteId: mainSite._id,
       managerId: teamLeader._id,
     },
     {
@@ -138,12 +212,24 @@ mongoose.connect(mongoUri).then(async () => {
       roles: ['tech'],
       employeeId: 'TM003',
       tenantId,
+      siteId: mainSite._id,
       managerId: teamLeader._id,
     },
   ]);
 
+  const members = await User.find({ managerId: teamLeader._id }).select('_id');
+  for (const member of members) {
+    await assignRole(seededRoles, member._id as mongoose.Types.ObjectId, tenantId, mainSite._id, 'tech');
+  }
+
   // Seed Department hierarchy
-  const dept = await Department.create({ name: 'Production', lines: [] });
+  const dept = await Department.create({
+    name: 'Production',
+    lines: [],
+    tenantId,
+    plant: mainSite._id,
+    siteId: mainSite._id,
+  });
 
   const line = { name: 'Line A', stations: [] } as any;
   line.stations.push({ name: 'Station 1' });
@@ -161,6 +247,7 @@ mongoose.connect(mongoUri).then(async () => {
     departmentId: dept._id,
     lineId,
     stationId,
+    plant: mainSite._id,
     status: 'Active',
     description: 'Main conveyor belt for packaging line',
     tenantId,
@@ -183,6 +270,7 @@ mongoose.connect(mongoUri).then(async () => {
     lastGeneratedAt: new Date(),
     notes: 'Check oil level and apply grease.',
     tenantId,
+    siteId: mainSite._id,
   });
 
   const analyticsBase = new Date();
@@ -204,6 +292,7 @@ mongoose.connect(mongoUri).then(async () => {
     importance: 'low',
     dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
     tenantId,
+    siteId: mainSite._id,
   });
 
   await WorkOrder.insertMany([
@@ -216,6 +305,7 @@ mongoose.connect(mongoUri).then(async () => {
       completedAt: new Date(day1.getTime() + 7.5 * 60 * 60 * 1000),
       timeSpentMin: 90,
       failureCode: 'mechanical',
+      siteId: mainSite._id,
     },
     {
       title: 'Sensor fault reset',
@@ -226,6 +316,7 @@ mongoose.connect(mongoUri).then(async () => {
       completedAt: new Date(day2.getTime() + 12 * 60 * 60 * 1000),
       timeSpentMin: 60,
       failureCode: 'electrical',
+      siteId: mainSite._id,
     },
   ]);
 
@@ -311,18 +402,27 @@ mongoose.connect(mongoUri).then(async () => {
   await Notification.insertMany([
     {
       tenantId,
+      title: 'Line A failure',
       message: 'Critical system failure on Line A',
       type: 'critical',
+      category: 'overdue',
+      deliveryState: 'sent',
     },
     {
       tenantId,
+      title: 'PM Due Soon',
       message: 'Pending maintenance due this week',
       type: 'warning',
+      category: 'pm_due',
+      deliveryState: 'queued',
     },
     {
       tenantId,
+      title: 'System Check',
       message: 'System check completed successfully',
       type: 'info',
+      category: 'updated',
+      deliveryState: 'delivered',
     },
   ]);
 

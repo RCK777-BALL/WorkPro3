@@ -1,0 +1,345 @@
+/*
+ * SPDX-License-Identifier: MIT
+ */
+
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  AlertTriangle,
+  ArrowRightCircle,
+  Check,
+  Download,
+  Fingerprint,
+  Home,
+  Radio,
+  ScanLine,
+  ShieldCheck,
+  Wifi,
+  WifiOff,
+} from 'lucide-react';
+
+import { fetchTechnicianWorkOrders, normalizeTechnicianWorkOrder } from '@/api/technician';
+import Button from '@/components/common/Button';
+import Badge from '@/components/common/Badge';
+import QrScanner from '@/components/qr/QrScanner';
+import { useSyncStore } from '@/store/syncStore';
+import { cacheWorkOrders, getCachedWorkOrders } from '@/store/dataStore';
+import { addToQueue, loadQueue, onQueueChange } from '@/utils/offlineQueue';
+import { syncManager } from '@/utils/syncManager';
+import PwaCapturePad from '@/features/technician/PwaCapturePad';
+import { registerSWIfAvailable } from '@/pwa';
+import {
+  confirmEntityExists,
+  logScanNavigationOutcome,
+  parseScanPayload,
+  type ScanResolution,
+} from '@/utils/scanRouting';
+import type { WorkOrder } from '@/types';
+import http from '@/lib/http';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+const PwaTechnicianShell: React.FC = () => {
+  const [cachedOrders, setCachedOrders] = useState<WorkOrder[]>([]);
+  const [queueSize, setQueueSize] = useState(loadQueue().length);
+  const [lastMessage, setLastMessage] = useState<string | null>(null);
+  const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
+  const [scanResult, setScanResult] = useState<string | null>(null);
+  const [detectedWorkOrder, setDetectedWorkOrder] = useState<WorkOrder | null>(null);
+  const [detectedAssetId, setDetectedAssetId] = useState<string | null>(null);
+  const [warmingCache, setWarmingCache] = useState(false);
+  const syncState = useSyncStore();
+  const cacheWarmTimeout = useRef<ReturnType<typeof setTimeout>>();
+
+  const offline = syncState.offline;
+
+  useEffect(() => {
+    registerSWIfAvailable({ immediate: true }).catch(() => {
+      // ignore registration errors in dev
+    });
+    syncManager.init();
+    const unsubscribeQueue = onQueueChange((size) => setQueueSize(size));
+    return () => {
+      syncManager.teardown();
+      unsubscribeQueue();
+      if (cacheWarmTimeout.current) clearTimeout(cacheWarmTimeout.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      event.preventDefault();
+      setInstallEvent(event as BeforeInstallPromptEvent);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  useEffect(() => {
+    void loadCachedAssignments();
+  }, []);
+
+  const loadCachedAssignments = async () => {
+    const cached = (await getCachedWorkOrders()) as WorkOrder[];
+    setCachedOrders(cached);
+  };
+
+  const refreshAssignments = async () => {
+    try {
+      const response = await fetchTechnicianWorkOrders();
+      const normalized = response.map((item) => normalizeTechnicianWorkOrder(item));
+      setCachedOrders(normalized);
+      await cacheWorkOrders(normalized);
+      setLastMessage('Cached the latest assignments for offline use.');
+    } catch {
+      setLastMessage('Unable to refresh from the network; showing cached assignments.');
+      await loadCachedAssignments();
+    }
+  };
+
+  const requestInstall = async () => {
+    if (!installEvent) return;
+    await installEvent.prompt();
+    await installEvent.userChoice;
+    setInstallEvent(null);
+  };
+
+  const warmOfflineCaches = async () => {
+    setWarmingCache(true);
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      registration.active?.postMessage({
+        type: 'CACHE_OFFLINE_DATA',
+        payload: { urls: ['/api/workorders/offline', '/api/pm/offline', '/api/assets'] },
+      });
+      cacheWarmTimeout.current = setTimeout(() => setWarmingCache(false), 1200);
+      setLastMessage('Requested offline cache for work orders, PM tasks, and assets.');
+    } catch (err) {
+      console.error(err);
+      setLastMessage('Unable to talk to the service worker to cache data.');
+      setWarmingCache(false);
+    }
+  };
+
+  const handleScan = async (raw: string) => {
+    const resolution = parseScanPayload(raw);
+    setScanResult(raw);
+    setDetectedAssetId(null);
+    setDetectedWorkOrder(null);
+
+    if ('error' in resolution) {
+      setLastMessage(resolution.error);
+      logScanNavigationOutcome({ outcome: 'failure', error: resolution.error, source: 'pwa-shell' });
+      return;
+    }
+
+    const exists = await confirmEntityExists(resolution, { cachedWorkOrders: cachedOrders });
+    if (!exists) {
+      setLastMessage('Entity not found online; check connectivity or rescan.');
+      logScanNavigationOutcome({ outcome: 'failure', resolution, error: 'Entity not found', source: 'pwa-shell' });
+      return;
+    }
+
+    logScanNavigationOutcome({ outcome: 'success', resolution, source: 'pwa-shell' });
+
+    if (resolution.type === 'workOrder') {
+      const fromCache = cachedOrders.find((order) => order.id === resolution.id);
+      if (fromCache) setDetectedWorkOrder(fromCache);
+      try {
+        const response = await http.get(`/workorders/${resolution.id}`);
+        setDetectedWorkOrder(response.data as WorkOrder);
+        setLastMessage('Found work order from scan.');
+      } catch {
+        setLastMessage('Work order not found online; using cached data when available.');
+      }
+      return;
+    }
+
+    if (resolution.type === 'asset') {
+      setDetectedAssetId(resolution.id);
+      setLastMessage('Asset located; open from the asset page.');
+    }
+
+    if (resolution.type === 'location' || resolution.type === 'part') {
+      setLastMessage('Scan resolved to an inventory record; open the web app for full details.');
+    }
+  };
+
+  const checkInFromScan = () => {
+    if (!detectedAssetId && !detectedWorkOrder?.id) return;
+    const entityId = detectedWorkOrder?.id ?? detectedAssetId ?? 'unknown';
+    addToQueue({
+      method: 'post',
+      url: detectedWorkOrder ? `/workorders/${entityId}/check-in` : `/assets/${entityId}/check-in`,
+      data: { scannedAt: Date.now(), source: 'pwa-shell' },
+      meta: { entityType: detectedWorkOrder ? 'workorder' : 'asset', entityId },
+    });
+    setQueueSize(loadQueue().length);
+    setLastMessage('Check-in queued for sync.');
+  };
+
+  const queueAnnotatedNote = (payload: { image: string | null; note: string }) => {
+    addToQueue({
+      method: 'post',
+      url: '/offline/notes',
+      data: { ...payload, createdAt: Date.now(), workOrderId: detectedWorkOrder?.id ?? null },
+      meta: { entityType: 'workorder', entityId: detectedWorkOrder?.id },
+    });
+    setQueueSize(loadQueue().length);
+    setLastMessage('Saved note to offline queue.');
+  };
+
+  const queueStatus = useMemo(() => {
+    if (syncState.status === 'syncing') return 'Syncing offline updates…';
+    if (syncState.status === 'conflicted') return 'Conflicts need review.';
+    if (queueSize > 0) return `${queueSize} change(s) waiting to sync.`;
+    return 'All caught up.';
+  }, [queueSize, syncState.status]);
+
+  return (
+    <div className="space-y-5 p-4 md:p-6">
+      <header className="space-y-2 rounded-2xl bg-gradient-to-r from-primary-900 via-primary-800 to-primary-600 px-5 py-6 text-white shadow-lg">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-primary-200">PWA shell</p>
+            <h1 className="text-2xl font-bold">Technician mobile workspace</h1>
+            <p className="max-w-2xl text-sm text-primary-100">
+              Touch-first dashboard with offline cache, QR check-ins, photo markup, and install-ready service worker.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <Badge text={offline ? 'Offline' : 'Online'} type={offline ? 'error' : 'success'} />
+            <Badge text={queueStatus} type="status" />
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button size="sm" variant="outline" onClick={() => void refreshAssignments()} className="flex items-center gap-2 text-white">
+            <Download className="h-4 w-4" /> Refresh & cache WOs
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => void syncManager.sync()} className="flex items-center gap-2 text-white/90">
+            <Radio className="h-4 w-4" /> Sync now
+          </Button>
+          <Button size="sm" variant="ghost" onClick={warmOfflineCaches} disabled={warmingCache} className="flex items-center gap-2 text-white/90">
+            <ShieldCheck className="h-4 w-4" /> {warmingCache ? 'Caching…' : 'Cache PM / assets'}
+          </Button>
+          {installEvent && (
+            <Button size="sm" onClick={() => void requestInstall()} className="flex items-center gap-2">
+              <Home className="h-4 w-4" /> Install app
+            </Button>
+          )}
+        </div>
+      </header>
+
+      {lastMessage && (
+        <div className="flex items-start gap-2 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-sm text-primary-900 dark:border-primary-900/30 dark:bg-primary-900/40 dark:text-primary-50">
+          <AlertTriangle className="mt-0.5 h-4 w-4" />
+          <span>{lastMessage}</span>
+        </div>
+      )}
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <section className="space-y-3 rounded-xl border border-neutral-200 bg-white/80 p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900/60 lg:col-span-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-primary-500">Camera</p>
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">QR / barcode scan for assets & WOs</h2>
+            </div>
+            <Badge text={scanResult ? 'Scan detected' : 'Waiting…'} type={scanResult ? 'success' : 'info'} />
+          </div>
+          <QrScanner onDetected={handleScan} onError={(message) => setLastMessage(message ?? 'Camera error')} />
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="rounded-lg border border-neutral-200 bg-neutral-50/70 p-3 dark:border-neutral-800 dark:bg-neutral-900/50">
+              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">Detected asset</p>
+              <p className="text-sm text-neutral-900 dark:text-neutral-100">{detectedAssetId ?? '—'}</p>
+              <Button size="sm" variant="ghost" className="mt-2 flex items-center gap-2" onClick={checkInFromScan}>
+                <Fingerprint className="h-4 w-4" /> Queue check-in
+              </Button>
+            </div>
+            <div className="rounded-lg border border-neutral-200 bg-neutral-50/70 p-3 dark:border-neutral-800 dark:bg-neutral-900/50">
+              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">Detected work order</p>
+              {detectedWorkOrder ? (
+                <div className="space-y-1 text-sm text-neutral-900 dark:text-neutral-100">
+                  <p className="font-semibold">{detectedWorkOrder.title}</p>
+                  <p className="text-xs text-neutral-500">Status: {detectedWorkOrder.status}</p>
+                  <p className="text-xs text-neutral-500">Priority: {detectedWorkOrder.priority}</p>
+                </div>
+              ) : (
+                <p className="text-sm text-neutral-500">—</p>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="space-y-3 rounded-xl border border-neutral-200 bg-white/80 p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900/60">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-primary-500">Sync state</p>
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">Offline queue</h3>
+            </div>
+            <Badge text={`${queueSize} queued`} type={queueSize > 0 ? 'warning' : 'success'} />
+          </div>
+          <div className="space-y-2 text-sm text-neutral-700 dark:text-neutral-200">
+            <p className="flex items-center gap-2">
+              {offline ? <WifiOff className="h-4 w-4" /> : <Wifi className="h-4 w-4" />} {offline ? 'Offline' : 'Online'}
+            </p>
+            <p className="flex items-center gap-2">
+              <Radio className="h-4 w-4" /> {queueStatus}
+            </p>
+            {syncState.conflict && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/40 dark:text-amber-100">
+                <p className="font-semibold">Conflict on {syncState.conflict.url}</p>
+                <p>Review server vs local changes before retrying.</p>
+              </div>
+            )}
+          </div>
+          <div className="rounded-lg border border-neutral-200 bg-neutral-50/70 p-3 text-sm dark:border-neutral-800 dark:bg-neutral-900/60">
+            <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">Cached work orders</p>
+            <ul className="mt-2 space-y-2">
+              {cachedOrders.slice(0, 3).map((order) => (
+                <li key={order.id} className="flex items-center justify-between rounded-md bg-white/80 px-3 py-2 text-xs shadow-sm dark:bg-neutral-950/60">
+                  <div>
+                    <p className="font-semibold text-neutral-900 dark:text-neutral-100">{order.title}</p>
+                    <p className="text-neutral-500">{order.asset?.name ?? 'Unlinked asset'}</p>
+                  </div>
+                  <Badge text={order.status} type="status" size="sm" />
+                </li>
+              ))}
+              {cachedOrders.length === 0 && <li className="text-xs text-neutral-500">No cached assignments yet.</li>}
+            </ul>
+          </div>
+        </section>
+      </div>
+
+      <section className="space-y-3 rounded-xl border border-neutral-200 bg-white/80 p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900/60">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-primary-500">Touch cards</p>
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">Tap-friendly technician shortcuts</h3>
+          </div>
+          <Badge text="Packaged for offline" type="success" />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[{ title: 'Assignments', description: 'Work offline from cached WOs.', icon: Download },
+            { title: 'Start job', description: 'Check in from a scan.', icon: ScanLine },
+            { title: 'Mark complete', description: 'Queue completion for sync.', icon: Check },
+            { title: 'Navigate asset', description: 'Open asset details in one tap.', icon: ArrowRightCircle },
+          ].map((card) => (
+            <div key={card.title} className="rounded-xl border border-neutral-200 bg-neutral-50/80 p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-primary-400 dark:border-neutral-800 dark:bg-neutral-900/60">
+              <div className="flex items-center gap-2 text-primary-600 dark:text-primary-300">
+                <card.icon className="h-4 w-4" />
+                <p className="text-xs font-semibold uppercase tracking-wide">{card.title}</p>
+              </div>
+              <p className="mt-2 text-sm text-neutral-700 dark:text-neutral-200">{card.description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <PwaCapturePad onSave={queueAnnotatedNote} />
+    </div>
+  );
+};
+
+export default PwaTechnicianShell;

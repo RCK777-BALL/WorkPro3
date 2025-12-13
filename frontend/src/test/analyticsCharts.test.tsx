@@ -22,34 +22,36 @@ beforeAll(() => {
     },
   });
 
-  HTMLCanvasElement.prototype.getContext = () =>
-    ({
-      canvas: document.createElement('canvas'),
-      fillRect: () => {},
-      clearRect: () => {},
-      getImageData: () => ({ data: new Uint8ClampedArray(), width: 0, height: 0 } as ImageData),
-      putImageData: () => {},
-      createImageData: () => new ImageData(1, 1),
-      setTransform: () => {},
-      drawImage: () => {},
-      save: () => {},
-      fillText: () => {},
-      restore: () => {},
-      beginPath: () => {},
-      moveTo: () => {},
-      lineTo: () => {},
-      closePath: () => {},
-      stroke: () => {},
-      translate: () => {},
-      scale: () => {},
-      rotate: () => {},
-      arc: () => {},
-      fill: () => {},
-      measureText: () => ({ width: 0 } as TextMetrics),
-      transform: () => {},
-      rect: () => {},
-      clip: () => {},
-    } as unknown as CanvasRenderingContext2D);
+  HTMLCanvasElement.prototype.getContext = ((contextId: '2d') =>
+    contextId === '2d'
+        ? ({
+          canvas: document.createElement('canvas'),
+          fillRect: () => {},
+          clearRect: () => {},
+          getImageData: () => ({ data: new Uint8ClampedArray(), width: 0, height: 0 } as ImageData),
+          putImageData: () => {},
+          createImageData: () => new ImageData(1, 1),
+          setTransform: () => {},
+          drawImage: () => {},
+          save: () => {},
+          fillText: () => {},
+          restore: () => {},
+          beginPath: () => {},
+          moveTo: () => {},
+          lineTo: () => {},
+          closePath: () => {},
+          stroke: () => {},
+          translate: () => {},
+          scale: () => {},
+          rotate: () => {},
+          arc: () => {},
+          fill: () => {},
+          measureText: () => ({ width: 0 } as TextMetrics),
+          transform: () => {},
+          rect: () => {},
+          clip: () => {},
+        } as unknown as CanvasRenderingContext2D)
+        : null) as HTMLCanvasElement['getContext'];
 });
 
 import Analytics from '@/pages/Analytics';

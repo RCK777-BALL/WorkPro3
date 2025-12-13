@@ -13,8 +13,8 @@ import WorkHistory from '../models/WorkHistory';
 import User from '../models/User';
 import TimeSheet from '../models/TimeSheet';
 import { LABOR_RATE } from '../config/env';
-import { sendResponse } from '../utils/sendResponse';
 import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
+import { sendResponse } from '../utils';
 
 interface AnalyticsStats {
   workOrderCompletionRate: number;
@@ -302,7 +302,7 @@ const downloadReport: AuthedRequestHandler = async (req, res, next) => {
         ],
       });
       doc.moveDown(14);
-      const latestCost = trends.at(-1)?.maintenanceCost ?? 0;
+      const latestCost = trends.length ? trends[trends.length - 1].maintenanceCost : 0;
       doc
         .fontSize(12)
         .text(`Latest maintenance cost: ${currencyFormatter.format(latestCost)}`, { align: 'left' });
@@ -475,8 +475,8 @@ const generateAiSummary = (trends: LongTermTrendPoint[]): AiSummaryPayload => {
     };
   }
 
-  const latest = trends.at(-1)!;
-  const previous = trends.length > 1 ? trends.at(-2) : undefined;
+  const latest = trends[trends.length - 1]!;
+  const previous = trends.length > 1 ? trends[trends.length - 2] : undefined;
   const downtimeChange = describeChange(latest.downtimeHours, previous?.downtimeHours, 'h');
   const complianceChange = describeChange(latest.compliance, previous?.compliance, '%');
   const reliabilityChange = describeChange(latest.reliability, previous?.reliability, '%');

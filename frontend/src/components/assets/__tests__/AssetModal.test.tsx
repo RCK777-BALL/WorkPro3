@@ -118,7 +118,7 @@ describe("AssetModal", () => {
       <AssetModal
         isOpen
         onClose={onClose}
-        asset={{ id: "asset-1", name: "Existing Asset" }}
+        asset={{ id: "asset-1", name: "Existing Asset", tenantId: "tenant-1" }}
         onUpdate={onUpdate}
       />
     );

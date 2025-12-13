@@ -3,7 +3,7 @@
  */
 
 import path from 'path';
-import { Express } from 'express';
+import { Express, type RequestHandler } from 'express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import logger from './logger';
@@ -19,13 +19,23 @@ const swaggerDefinition = {
 
 const options = {
   definition: swaggerDefinition,
-  apis: [path.join(__dirname, '../controllers/**/*.ts')],
+  apis: [
+    path.join(__dirname, '../controllers/**/*.ts'),
+    path.join(__dirname, '../routes/**/*.ts'),
+    path.join(__dirname, '../src/**/*.ts'),
+  ],
 };
 
 export const swaggerSpec = swaggerJsdoc(options);
 
-export const setupSwagger = (app: Express) => {
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+export const setupSwagger = (
+  app: Express,
+  path = '/api/docs/ui',
+  middleware: RequestHandler[] = [],
+) => {
+  const handlers = Array.isArray(middleware) ? middleware : [middleware];
+  app.use(path, ...handlers, swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  app.get(`${path}.json`, ...handlers, (_req, res) => res.json(swaggerSpec));
 };
 
 if (require.main === module) {

@@ -477,7 +477,7 @@ const Settings: React.FC = () => {
       setTheme: setThemeState,
     } = useSettingsStore.getState();
 
-    const applyPartialUpdate = <T extends Record<string, unknown>>(
+    const applyPartialUpdate = <T extends object>(
       current: T,
       updates: Partial<T> | undefined,
       setter: (value: Partial<T>) => void,
@@ -523,13 +523,16 @@ const Settings: React.FC = () => {
         applyPartialUpdate(currentEmail, payload?.email, setEmailState);
 
         if (payload?.theme) {
-          const { mode, colorScheme, ...restTheme } = payload.theme;
+          const themePayload = payload.theme as Partial<ThemeSettings> & {
+            mode?: 'light' | 'dark' | 'system';
+          };
+          const { mode, colorScheme } = themePayload;
           const themePatch: Partial<ThemeSettings> = {};
 
-          (Object.keys(restTheme) as Array<keyof typeof restTheme>).forEach((key) => {
-            const value = restTheme[key];
-            if (value !== undefined && currentTheme[key as keyof ThemeSettings] !== value) {
-              themePatch[key as keyof ThemeSettings] = value as ThemeSettings[keyof ThemeSettings];
+          (['sidebarCollapsed', 'denseMode', 'highContrast'] as const).forEach((key) => {
+            const value = themePayload[key];
+            if (value !== undefined && currentTheme[key] !== value) {
+              themePatch[key] = value;
             }
           });
 

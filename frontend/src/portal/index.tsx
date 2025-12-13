@@ -177,7 +177,7 @@ const RequestConfirmation: React.FC = () => {
   );
 };
 
-const RequestWork = lazy(() => import('../pages/RequestWork'));
+const RequestWork = lazy(() => import('../pages/RequestPortal'));
 const RequestStatus = lazy(() => import('../pages/RequestStatus'));
 
 const routes: RouteObject[] = [

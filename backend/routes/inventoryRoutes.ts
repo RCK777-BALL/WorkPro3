@@ -9,6 +9,7 @@ import { requireAuth } from "../middleware/authMiddleware";
 import tenantScope from "../middleware/tenantScope";
 import InventoryItem from "../models/InventoryItem";
 import type { AuthedRequest } from "../types/http";
+import { ensureQrCode, generateQrCodeValue } from "../services/qrCode";
 
 const router = Router();
 
@@ -116,7 +117,9 @@ router.get("/low-stock", async (req, res, next) => {
       $expr: { $lte: ["$quantity", { $ifNull: ["$reorderThreshold", 0] }] },
     });
 
-    res.json(items);
+    const withQr = items.map((item) => ensureQrCode(item, 'part'));
+
+    res.json(withQr);
   } catch (err) {
     next(err);
   }
@@ -145,7 +148,9 @@ router.get("/search", async (req, res, next) => {
       .limit(10)
       .lean();
 
-    res.json(results);
+    const withQr = results.map((item) => ensureQrCode(item, 'part'));
+
+    res.json(withQr);
   } catch (err) {
     next(err);
   }
@@ -160,7 +165,8 @@ router.get("/", async (req, res, next) => {
     }
 
     const items = await InventoryItem.find(scope).lean();
-    res.json(items);
+    const withQr = items.map((item) => ensureQrCode(item, 'part'));
+    res.json(withQr);
   } catch (err) {
     next(err);
   }
@@ -189,8 +195,9 @@ router.get("/:id", async (req, res, next) => {
     const quantity = Number(item.quantity ?? 0);
     const threshold = Number(item.reorderThreshold ?? 0);
     const payload = item.toObject();
+    const withQr = ensureQrCode(payload, 'part');
 
-    res.json({ ...payload, status: quantity <= threshold ? "low" : "ok" });
+    res.json({ ...withQr, status: quantity <= threshold ? "low" : "ok" });
   } catch (err) {
     next(err);
   }
@@ -210,6 +217,15 @@ router.post("/", async (req, res, next) => {
       tenantId: scope.tenantId,
       siteId: scope.siteId,
     });
+
+    if (!created.qrCode) {
+      created.qrCode = generateQrCodeValue({
+        type: 'part',
+        id: created._id.toString(),
+        tenantId: scope.tenantId.toString(),
+      });
+      await created.save();
+    }
 
     res.status(201).json(created);
   } catch (err) {
@@ -232,6 +248,7 @@ router.patch("/:id", async (req, res, next) => {
     }
 
     const payload = parseBody(req.body as Record<string, unknown> | undefined);
+    payload.qrCode = generateQrCodeValue({ type: 'part', id, tenantId: scope.tenantId.toString() });
     const updated = await InventoryItem.findOneAndUpdate(
       { ...scope, _id: id },
       payload,

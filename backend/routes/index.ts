@@ -3,6 +3,7 @@
  */
 
 export { default as analyticsRoutes } from './analyticsRoutes';
+export { default as analyticsDashboardRoutes } from './analyticsDashboardRoutes';
 export { default as analyticsAIRoutes } from './analyticsAI';
 export { default as copilotRoutes } from './copilotRoutes';
 export { default as goodsReceiptRoutes } from './GoodsReceiptRoutes';
@@ -18,6 +19,7 @@ export { default as iotRoutes } from './iotRoutes';
 export { default as timeSheetRoutes } from './TimeSheetRoutes';
 export { default as calendarRoutes } from './CalendarRoutes';
 export { default as inventoryRoutes } from './inventoryRoutes';
+export { default as inventoryV2Routes } from './inventoryV2Routes';
 export { default as partsRoutes } from './PartsRoutes';
 export { default as auditRoutes } from './AuditRoutes';
 export { default as roleRoutes } from './RoleRoutes';
@@ -28,6 +30,8 @@ export { default as LineRoutes } from './LineRoutes';
 export { default as StationRoutes } from './StationRoutes';
 export { default as vendorRoutes } from './vendorRoutes';
 export { default as requestPortalRoutes } from './RequestPortalRoutes';
+export { default as requestRoutes } from './requestRoutes';
+export { default as downtimeLogRoutes } from './DowntimeLogRoutes';
 export { default as conditionRuleRoutes } from './ConditionRuleRoutes';
 export { default as meterRoutes } from './meterRoutes';
 export { default as teamMemberRoutes } from './TeamMemberRoutes';
@@ -48,6 +52,8 @@ export { default as predictiveRoutes } from './PredictiveRoutes';
 export { default as attachmentRoutes } from './AttachmentRoutes';
 export { default as TenantRoutes } from './TenantRoutes';
 export { default as workOrdersRoutes } from './workOrdersRoutes';
+export { default as requestsRoutes } from './requests';
+export { default as ssoRoutes } from './ssoRoutes';
 export { default as webhooksRoutes } from './WebhooksRoutes';
 export { default as publicRequestRoutes } from './publicRequestRoutes';
 export { default as permitRoutes } from './permitRoutes';
@@ -56,9 +62,13 @@ export { default as laborRoutes } from './laborRoutes';
 export { default as complianceRoutes } from './complianceRoutes';
 export { default as adminRoutes } from './adminRoutes';
 export { default as mobileSyncAdminRoutes } from './mobileSyncAdmin';
+export { default as mobileSyncRoutes } from './mobileSync';
 export { default as dashboardRoutes } from './DashboardRoutes';
 export { default as statusRoutes } from './StatusRoutes';
 export { default as settingsRoutes } from './settingsRoutes';
 export { default as alertRoutes } from './alertRoutes';
 export { default as technicianRoutes } from './technicianRoutes';
 export { default as calibrationRoutes } from './calibration';
+export { default as commentRoutes } from './comments';
+export { default as inspectionRoutes } from './inspectionRoutes';
+

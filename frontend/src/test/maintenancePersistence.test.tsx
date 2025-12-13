@@ -19,17 +19,14 @@ vi.mock('react-hot-toast', () => {
 
 vi.mock('uuid', () => ({ v4: () => 'temp-id' }));
 
-const fetchMaintenanceSchedules = vi.fn<[], Promise<MaintenanceSchedule[]>>();
-const createMaintenanceSchedule = vi.fn<[
-  MaintenanceSchedule
-], Promise<MaintenanceSchedule>>();
-const updateMaintenanceSchedule = vi.fn<[
-  string,
-  MaintenanceSchedule
-], Promise<MaintenanceSchedule>>();
-const deleteMaintenanceSchedule = vi.fn<[
-  string
-], Promise<void>>();
+const fetchMaintenanceSchedules = vi.fn<() => Promise<MaintenanceSchedule[]>>();
+const createMaintenanceSchedule = vi.fn<
+  (schedule: MaintenanceSchedule) => Promise<MaintenanceSchedule>
+>();
+const updateMaintenanceSchedule = vi.fn<
+  (id: string, schedule: MaintenanceSchedule) => Promise<MaintenanceSchedule>
+>();
+const deleteMaintenanceSchedule = vi.fn<(id: string) => Promise<void>>();
 
 vi.mock('@/api/maintenanceSchedules', () => ({
   fetchMaintenanceSchedules,

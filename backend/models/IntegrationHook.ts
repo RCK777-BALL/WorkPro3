@@ -7,7 +7,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 export interface IntegrationHookDocument extends Document {
   name: string;
   type: 'webhook' | 'sap' | 'powerbi';
-  url?: string;
+  url?: string | undefined;
   events: string[];
   createdAt: Date;
 }

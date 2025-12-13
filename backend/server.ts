@@ -18,10 +18,14 @@ import { initKafka, sendKafkaEvent } from "./utils/kafka";
 import { initMQTTFromConfig } from "./iot/mqttClient";
 import logger from "./utils/logger";
 import requestLog from "./middleware/requestLog";
+import tenantResolver from "./middleware/tenantResolver";
+import auditLogMiddleware from "./middleware/auditLogMiddleware";
+import customReportsRouter from "./src/modules/custom-reports";
 
 import {
   adminRoutes,
   analyticsRoutes,
+  analyticsDashboardRoutes,
   analyticsAIRoutes,
   copilotRoutes,
   alertRoutes,
@@ -43,19 +47,24 @@ import {
   kbRoutes,
   laborRoutes,
   LineRoutes,
+  pmRoutes,
   maintenanceScheduleRoutes,
   meterRoutes,
   notificationsRoutes,
+  inventoryV2Routes,
   plantRoutes,
   contractorRoutes,
+  commentRoutes,
   permitRoutes,
-  pmRoutes,
   pmTasksRoutes,
   publicRequestRoutes,
   settingsRoutes,
   reportsRoutes,
   requestPortalRoutes,
+  requestsRoutes,
   globalRoutes,
+  roleRoutes,
+  ssoRoutes,
   statusRoutes,
   StationRoutes,
   summaryRoutes,
@@ -63,10 +72,14 @@ import {
   technicianRoutes,
   TenantRoutes,
   ThemeRoutes,
+  downtimeLogRoutes,
   vendorPortalRoutes,
   vendorRoutes,
   webhooksRoutes,
   workOrdersRoutes,
+  mobileSyncRoutes,
+  inspectionRoutes,
+
 } from "./routes";
 import mobileRoutes from "./routes/mobileRoutes";
 import mobileSyncAdminRoutes from "./routes/mobileSyncAdmin";
@@ -76,6 +89,7 @@ import systemSummaryRouter from "./src/routes/summary";
 import hierarchyRouter from "./src/modules/hierarchy";
 import importExportRouter from "./src/modules/importExport";
 import inventoryModuleRouter from "./src/modules/inventory";
+import purchaseOrdersRouter from "./src/modules/purchase-orders";
 import integrationsModuleRouter from "./src/modules/integrations";
 import workRequestsRouter from "./src/modules/work-requests";
 import pmTemplatesRouter from "./src/modules/pm";
@@ -83,10 +97,17 @@ import templatesRouter from "./src/modules/templates";
 import onboardingRouter from "./src/modules/onboarding";
 import assetInsightsRouter from "./src/modules/assets";
 import executiveRouter from "./src/modules/executive";
+import analyticsModuleRouter from "./src/modules/analytics";
+import meterReadingsRouter from "./src/modules/meters";
+import workOrdersModuleRouter from "./src/modules/work-orders";
+import { startWorkOrderReminderJobs } from "./src/modules/work-orders/jobs";
+import { startWorkRequestReminderJobs } from "./src/modules/work-requests/jobs";
 
 import { startPMScheduler } from "./utils/PMScheduler";
 import { startCopilotSummaryJob } from "./tasks/copilotSummaries";
 import { startExecutiveReportScheduler } from "./tasks/executiveReports";
+import { startAnalyticsWarehouseScheduler } from "./tasks/analyticsWarehouse";
+import { startLowStockScanner } from "./src/jobs/lowStockScan";
 import { setupSwagger } from "./utils/swagger";
 import mongoose from "mongoose";
 import errorHandler from "./middleware/errorHandler";
@@ -95,11 +116,13 @@ import { initChatSocket } from "./socket/chatSocket";
 import User from "./models/User";
 import { requireAuth } from "./middleware/authMiddleware";
 import tenantScope from "./middleware/tenantScope";
+import { apiAccessMiddleware } from "./middleware/apiAccess";
 import type {
   WorkOrderUpdatePayload,
   InventoryUpdatePayload,
   NotificationPayload,
 } from "./types/Payloads";
+import scimRoutes from "./routes/scimRoutes";
 
 dotenv.config();
 
@@ -121,19 +144,25 @@ const MONGO_URI = env.MONGO_URI;
 const RATE_LIMIT_WINDOW_MS = parseInt(env.RATE_LIMIT_WINDOW_MS, 10);
 const RATE_LIMIT_MAX = parseInt(env.RATE_LIMIT_MAX, 10);
 
+const normalizeOrigin = (origin: string | undefined) => origin?.trim().replace(/\/+$/, "").toLowerCase();
+
 const allowedOrigins = new Set<string>(
   env.CORS_ORIGIN
     .split(",")
-    .map((origin: string) => origin.trim())
-    .filter((origin: string) => origin.length > 0),
+    .map((origin: string) => normalizeOrigin(origin))
+    .filter((origin: string | undefined): origin is string => Boolean(origin)),
 );
-allowedOrigins.add("http://localhost:5173");
+
+const devOrigins = ["http://localhost:5173", "http://127.0.0.1:5173", "http://0.0.0.0:5173"];
+devOrigins.forEach((origin) => allowedOrigins.add(normalizeOrigin(origin) as string));
 
 type CorsOriginCallback = (err: Error | null, allow?: boolean) => void;
 
 const corsOptions: CorsOptions = {
   origin: (origin: string | undefined, callback: CorsOriginCallback) => {
-    if (!origin || allowedOrigins.has(origin)) {
+    const normalized = normalizeOrigin(origin);
+
+    if (!origin || (normalized && allowedOrigins.has(normalized))) {
       callback(null, true);
     } else {
       callback(new Error("Not allowed by CORS"));
@@ -160,9 +189,14 @@ app.use(corsMiddleware);
 app.options("*", corsMiddleware);
 app.use(helmet());
 app.use(requestLog);
+app.use(tenantResolver);
+app.use(auditLogMiddleware);
 app.use(express.json({ limit: "1mb" }));
 app.use(mongoSanitize());
-setupSwagger(app);
+setupSwagger(app, "/api/docs/ui", apiAccessMiddleware);
+app.get("/api-docs", (_req: Request, res: Response) => {
+  res.redirect(301, "/api/docs/ui");
+});
 
 const dev = env.NODE_ENV !== "production";
 
@@ -226,33 +260,47 @@ app.use("/api/health", healthRouter);
 app.use("/api/hierarchy", hierarchyRouter);
 app.use("/api", workRequestsRouter);
 app.use("/api/import-export", importExportRouter);
+app.use("/api/inventory/v2", inventoryV2Routes);
 app.use("/api/inventory/v2", inventoryModuleRouter);
 app.use("/api/integrations/v2", integrationsModuleRouter);
+app.use("/api/sso", ssoRoutes);
+app.use("/api/scim/v2", scimRoutes);
 
 // --- Routes (order matters for the limiter) ---
 app.use("/api/auth", authRoutes);
+app.use("/api/scim", scimRoutes);
 
-// Protect all remaining /api routes except /api/auth and /api/public
-app.use(/^\/api(?!\/(auth|public))/, requireAuth, tenantScope);
+// Protect all remaining /api routes except /api/auth, /api/public, /api/sso, and /api/scim
+app.use(/^\/api(?!\/(auth|public|sso|scim|docs))/, requireAuth, tenantScope);
 
 app.use("/api/mobile", mobileLimiter, mobileRoutes);
 app.use("/api/mobile", mobileLimiter, mobileSyncAdminRoutes);
+app.use("/api/mobile", mobileLimiter, mobileSyncRoutes);
 
 app.use("/api/notifications", burstFriendly, notificationsRoutes);
 // Apply limiter to the rest of protected /api routes
 app.use(/^\/api(?!\/(auth|public))/, generalLimiter);
 
+app.use("/api/po", purchaseOrdersRouter);
 app.use("/api/pm/templates", pmTemplatesRouter);
 app.use("/api/templates", templatesRouter);
 app.use("/api/onboarding", onboardingRouter);
 app.use("/api/executive", executiveRouter);
+app.use("/api/analytics/v2", analyticsModuleRouter);
+app.use("/api/custom-reports", customReportsRouter);
+app.use("/api/work-orders", workOrdersModuleRouter);
 
 app.use("/api/departments", departmentRoutes);
 app.use("/api/departments", departmentRoutes);
 app.use("/api/workorders", workOrdersRoutes);
 app.use("/api/permits", permitRoutes);
+app.use("/api/inspections", inspectionRoutes);
 app.use("/api/assets", assetsRoutes);
+app.use("/api/downtime-logs", downtimeLogRoutes);
+app.use("/api/comments", commentRoutes);
 app.use("/api/assets", assetInsightsRouter);
+app.use("/api/roles", roleRoutes);
+app.use("/api/meters", meterReadingsRouter);
 app.use("/api/meters", meterRoutes);
 app.use("/api/tenants", TenantRoutes);
 app.use("/api/pm-tasks", pmTasksRoutes);
@@ -272,6 +320,7 @@ app.use("/api/knowledge-base", kbRoutes);
 app.use("/api/plants", plantRoutes);
 
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/analytics/dashboard", analyticsDashboardRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
 app.use("/api/ai", analyticsAIRoutes);
 app.use("/api/ai", copilotRoutes);
@@ -282,6 +331,8 @@ app.use("/api/alerts", alertRoutes);
 app.use("/api/global", globalRoutes);
 app.use("/api/technician", technicianRoutes);
 app.use("/api/request-portal", requestPortalRoutes);
+app.use("/api/requests", requestsRoutes);
+app.use("/api/work-requests", requestsRoutes);
 
 // Vendor portal routes
 app.use("/api/vendor-portal", vendorPortalRoutes);
@@ -331,6 +382,10 @@ if (env.NODE_ENV !== "test") {
       });
       startCopilotSummaryJob();
       startExecutiveReportScheduler(env.EXECUTIVE_REPORT_CRON);
+      startAnalyticsWarehouseScheduler();
+      startLowStockScanner(env.REORDER_SUGGESTION_CRON);
+      startWorkOrderReminderJobs();
+      startWorkRequestReminderJobs();
     })
     .catch((err) => {
       logger.error("MongoDB connection error:", err);

@@ -3,10 +3,15 @@
  */
 
 import http from '@/lib/http';
-import type { PMTemplate, PMTemplateLibraryItem } from '@/types';
+import type { InspectionFormTemplate, PMTemplate, PMTemplateLibraryItem } from '@/types';
 
 export const fetchTemplateLibrary = async (): Promise<PMTemplateLibraryItem[]> => {
   const res = await http.get<PMTemplateLibraryItem[]>('/templates/library');
+  return res.data;
+};
+
+export const fetchInspectionForms = async (): Promise<InspectionFormTemplate[]> => {
+  const res = await http.get<InspectionFormTemplate[]>('/templates/library/inspections');
   return res.data;
 };
 

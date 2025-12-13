@@ -99,10 +99,10 @@ const TechnicianWorkspace = () => {
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
 
-  const partsQuery = usePartsQuery();
+  const partsQuery = usePartsQuery({ pageSize: 200, sortBy: 'name' });
   const partLookup = useMemo(() => {
     const lookup = new Map<string, Part>();
-    (partsQuery.data ?? []).forEach((part) => {
+    (partsQuery.data?.items ?? []).forEach((part) => {
       lookup.set(part.id, part);
     });
     return lookup;
@@ -531,7 +531,7 @@ const TechnicianWorkspace = () => {
                     }
                   >
                     <option value="">Select part</option>
-                    {(partsQuery.data ?? []).map((part) => (
+                    {(partsQuery.data?.items ?? []).map((part) => (
                       <option key={part.id} value={part.id}>
                         {part.name}
                       </option>

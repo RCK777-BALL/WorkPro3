@@ -5,10 +5,9 @@
 import type { Request, Response, NextFunction } from "express";
 import { Types, isValidObjectId } from "mongoose";
 import InventoryItem, { type IInventoryItem } from "../models/InventoryItem";
-import logger from "../utils/logger";
-import { auditAction } from "../utils/audit";
-import { toEntityId } from "../utils/ids";
-import { sendResponse } from "../utils/sendResponse";
+import { ensureQrCode, generateQrCodeValue } from "../services/qrCode";
+import { notifyLowStock } from "../services/notificationService";
+import { logger, auditAction, toEntityId, sendResponse } from '../utils';
 
 // Narrow helper to scope queries by tenant/site
 function scopedQuery<T extends Record<string, unknown>>(req: Request, base?: T) {
@@ -78,14 +77,14 @@ function buildInventoryPayload(body: Record<string, unknown>) {
 
 type InventorySummaryProjection = Pick<IInventoryItem, "name" | "quantity" | "reorderThreshold">;
 
-const toPlainObject = (value: unknown): Record<string, unknown> => {
+const toPlainObject = <T>(value: unknown): T => {
   if (value && typeof (value as any).toObject === "function") {
-    return (value as any).toObject();
+    return (value as any).toObject() as T;
   }
   if (value && typeof value === "object") {
-    return value as Record<string, unknown>;
+    return value as T;
   }
-  return {};
+  return {} as T;
 };
 
 // —— GET /inventory/summary (name, stock, status) ————————————————————————
@@ -129,7 +128,8 @@ export async function getAllInventoryItems(
     const itemsQuery = InventoryItem.find(query);
     itemsQuery.lean<IInventoryItem>();
     const items = await itemsQuery.exec();
-    sendResponse(res, items);
+    const withQr = items.map((item) => ensureQrCode(item as IInventoryItem, 'part'));
+    sendResponse(res, withQr);
   } catch (err) {
     next(err);
     return;
@@ -150,7 +150,8 @@ export async function getLowStockItems(
     const itemsQuery = InventoryItem.find(query);
     itemsQuery.populate("vendor");
     const items = await itemsQuery.exec();
-    sendResponse(res, items);
+    const withQr = items.map((item) => ensureQrCode(toPlainObject<IInventoryItem>(item), 'part'));
+    sendResponse(res, withQr);
   } catch (err) {
     next(err);
     return;
@@ -179,8 +180,9 @@ export async function getInventoryItemById(
 
     const qty = Number(item.quantity ?? 0);
     const threshold = Number(item.reorderThreshold ?? 0);
-    const plainItem = toPlainObject(item);
-    sendResponse(res, { ...plainItem, status: qty <= threshold ? "low" : "ok" });
+    const plainItem = toPlainObject<IInventoryItem>(item);
+    const withQr = ensureQrCode(plainItem, 'part');
+    sendResponse(res, { ...withQr, status: qty <= threshold ? "low" : "ok" });
   } catch (err) {
     next(err);
     return;
@@ -205,8 +207,18 @@ export async function createInventoryItem(
 
     const payload: Partial<IInventoryItem> = scopedQuery(req, data);
     const saved = await new InventoryItem(payload).save();
+    const qrCode = generateQrCodeValue({
+      type: 'part',
+      id: saved._id.toString(),
+      tenantId: saved.tenantId?.toString?.(),
+    });
+    if (!saved.qrCode || saved.qrCode !== qrCode) {
+      saved.qrCode = qrCode;
+      await saved.save();
+    }
     const savedPlain = toPlainObject(saved);
     await auditAction(req, "create", "InventoryItem", toEntityId(saved._id) ?? saved._id, undefined, savedPlain);
+    await notifyLowStock(saved);
     sendResponse(res, saved, null, 201);
   } catch (err) {
     logger.error("Error creating inventory item", err);
@@ -249,6 +261,13 @@ export async function updateInventoryItem(
       new: true,
       runValidators: true,
     });
+    if (updateQuery.getUpdate()) {
+      (updateQuery.getUpdate() as Record<string, unknown>).qrCode = generateQrCodeValue({
+        type: 'part',
+        id,
+        tenantId: tenantId.toString(),
+      });
+    }
     const updated = await updateQuery.exec();
 
     if (!updated) {
@@ -259,6 +278,7 @@ export async function updateInventoryItem(
     const before = toPlainObject(existing);
     const after = toPlainObject(updated);
     await auditAction(req, "update", "InventoryItem", toEntityId(id) ?? id, before, after);
+    await notifyLowStock(updated);
     sendResponse(res, updated);
   } catch (err) {
     logger.error("Error updating inventory item", err);
@@ -383,7 +403,8 @@ export async function searchInventoryItems(
     itemsQuery.limit(10);
     itemsQuery.lean<IInventoryItem>();
     const items = await itemsQuery.exec();
-    sendResponse(res, items);
+    const withQr = items.map((item) => ensureQrCode(item as IInventoryItem, 'part'));
+    sendResponse(res, withQr);
   } catch (err) {
     next(err);
     return;

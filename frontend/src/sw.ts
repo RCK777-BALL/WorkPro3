@@ -7,7 +7,6 @@
 import { precacheAndRoute } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
 import { CacheFirst, NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies';
-import { emitToast } from './context/ToastContext';
 
 
 interface QueueItem {
@@ -27,6 +26,18 @@ declare global {
 
 const DB_NAME = 'offline-queue';
 const STORE_NAME = 'requests';
+const API_CACHE_NAME = 'offline-api';
+const RUNTIME_CACHE_NAME = 'offline-runtime';
+const DATA_ENDPOINTS = [
+  '/api/workorders',
+  '/api/workorders/offline',
+  '/api/workorders/mobile',
+  '/api/pm',
+  '/api/pm/offline',
+  '/api/checklists',
+  '/api/parts',
+  '/api/assets',
+];
 let offlineQueue: QueueItem[] = [];
 
 async function openDB() {
@@ -40,7 +51,7 @@ async function openDB() {
   });
 }
  
- async function loadQueue() {
+async function loadQueue() {
   try {
     const db = await openDB();
     const tx = db.transaction(STORE_NAME, 'readonly');
@@ -51,11 +62,10 @@ async function openDB() {
       request.onerror = () => reject(request.error);
     });
     offlineQueue = result;
-  } catch {
-    emitToast('Failed to load queue from storage', 'error');
-
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Failed to load queue from storage', err);
     offlineQueue = [];
- 
   }
 }
 
@@ -71,7 +81,7 @@ async function saveQueue() {
   });
 }
 
-(async () => {
+void (async () => {
   try {
     const db = await openDB();
     const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -80,9 +90,9 @@ async function saveQueue() {
       tx.oncomplete = () => resolve(undefined);
       tx.onerror = () => reject(tx.error);
     });
-  } catch {
-    emitToast('Failed to save queue to storage', 'error');
-
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Failed to seed offline queue store', err);
   }
 })();
 
@@ -119,6 +129,19 @@ registerRoute(
   new CacheFirst({ cacheName: 'images' })
 );
 
+// Cache key API endpoints required for worker mode usage
+registerRoute(
+  ({ url, request }) =>
+    request.method === 'GET' &&
+    DATA_ENDPOINTS.some((path) => url.pathname.startsWith(path)),
+  new NetworkFirst({ cacheName: API_CACHE_NAME })
+);
+
+registerRoute(
+  ({ request }) => request.destination === 'font' || request.destination === 'audio',
+  new StaleWhileRevalidate({ cacheName: RUNTIME_CACHE_NAME })
+);
+
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') {
     self.skipWaiting();
@@ -138,6 +161,9 @@ self.addEventListener('message', (event) => {
       console.error('Failed to save queue to storage', err);
       void notifyClients('SAVE_QUEUE_ERROR', err);
     });
+  }
+  if (event.data?.type === 'CACHE_OFFLINE_DATA') {
+    event.waitUntil(cacheOfflineData(event.data.payload?.urls ?? DATA_ENDPOINTS));
   }
 });
 
@@ -164,6 +190,30 @@ async function processQueue() {
       await notifyClients('SAVE_QUEUE_ERROR', err);
       break;
     }
+  }
+}
+
+async function cacheOfflineData(urls: string[]) {
+  try {
+    const cache = await caches.open(API_CACHE_NAME);
+    await Promise.all(
+      urls.map(async (url) => {
+        try {
+          const response = await fetch(url);
+          if (response.ok) {
+            await cache.put(url, response.clone());
+          }
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.warn('Failed to cache offline data', err);
+        }
+      })
+    );
+    await notifyClients('OFFLINE_CACHE_READY', { urls });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Failed to warm offline cache', err);
+    await notifyClients('OFFLINE_CACHE_ERROR', err);
   }
 }
 

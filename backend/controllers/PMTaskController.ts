@@ -9,7 +9,6 @@ import WorkOrder from '../models/WorkOrder';
 import Meter from '../models/Meter';
 import { nextCronOccurrenceWithin } from '../services/PMScheduler';
 import type { AuthedRequestHandler } from '../types/http';
-import { sendResponse } from '../utils/sendResponse';
 
 import type {
   PMTaskParams,
@@ -21,8 +20,7 @@ import type {
   PMTaskGenerateWOResponse,
 } from '../types/pmTask';
 import type { ParamsDictionary } from 'express-serve-static-core';
-import { auditAction } from '../utils/audit';
-import { toEntityId } from '../utils/ids';
+import { sendResponse, auditAction, toEntityId } from '../utils';
 
 
 export const getAllPMTasks: AuthedRequestHandler<ParamsDictionary, PMTaskListResponse> = async (
@@ -70,9 +68,12 @@ export const getPMTaskById: AuthedRequestHandler<PMTaskParams, PMTaskResponse> =
       return;
     }
 
+    const siteFilter = req.siteId ? { siteId: req.siteId } : {};
+
     const task = await PMTask.findOne({
       _id: req.params.id,
       tenantId,
+      ...siteFilter,
     });
 
     if (!task) {
@@ -143,13 +144,14 @@ export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | n
       return;
     }
 
-    const existing = await PMTask.findOne({ _id: req.params.id, tenantId });
+    const siteFilter = req.siteId ? { siteId: req.siteId } : {};
+    const existing = await PMTask.findOne({ _id: req.params.id, tenantId, ...siteFilter });
     if (!existing) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
     const task = await PMTask.findOneAndUpdate(
-      { _id: req.params.id, tenantId },
+      { _id: req.params.id, tenantId, ...siteFilter },
       req.body,
       { new: true, runValidators: true },
     );
@@ -192,9 +194,11 @@ export const deletePMTask: AuthedRequestHandler<PMTaskParams, PMTaskDeleteRespon
       return;
     }
 
+    const siteFilter = req.siteId ? { siteId: req.siteId } : {};
     const task = await PMTask.findOneAndDelete({
       _id: req.params.id,
       tenantId,
+      ...siteFilter,
     });
 
     if (!task) {

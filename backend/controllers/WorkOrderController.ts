@@ -9,18 +9,19 @@ import type { ParsedQs } from 'qs';
 import type { AuthedRequest } from '../types/http';
 
 import WorkOrder, { WorkOrderDocument } from '../models/WorkOrder';
+import InventoryItem from '../models/InventoryItem';
+import StockHistory from '../models/StockHistory';
 import Permit, { type PermitDocument } from '../models/Permit';
 import { emitWorkOrderUpdate } from '../server';
-import notifyUser from '../utils/notify';
+import { applyWorkflowToWorkOrder } from '../services/workflowEngine';
+import { notifySlaBreach, notifyWorkOrderAssigned } from '../services/notificationService';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
-import { auditAction } from '../utils/audit';
 
 import type { WorkOrderType, WorkOrderInput } from '../types/workOrder';
+import { notifyUser, auditAction, normalizePartUsageCosts, sendResponse, validateItems } from '../utils';
 
-import { sendResponse } from '../utils/sendResponse';
-import { validateItems } from '../utils/validateItems';
 import {
   workOrderCreateSchema,
   workOrderUpdateSchema,
@@ -61,6 +62,7 @@ const workOrderCreateFields = [
   'assignedTo',
   'assignees',
   'checklists',
+  'checklist',
   'partsUsed',
   'signatures',
   'timeSpentMin',
@@ -68,6 +70,9 @@ const workOrderCreateFields = [
   'failureCode',
   'causeCode',
   'actionCode',
+  'failureCause',
+  'failureAction',
+  'failureResult',
   'pmTask',
   'department',
 
@@ -82,13 +87,16 @@ const workOrderCreateFields = [
   'laborCost',
   'partsCost',
   'miscCost',
+  'miscellaneousCost',
   'totalCost',
   'attachments',
   'timeline',
   'dueDate',
+  'slaHours',
   'completedAt',
   'permits',
   'requiredPermitTypes',
+  'customFields',
 ];
 
 const workOrderUpdateFields = [...workOrderCreateFields];
@@ -232,7 +240,7 @@ interface LocationScope {
   siteId?: string | undefined;
 }
 
-const resolveLocationScope = (req: { plantId?: string; siteId?: string }): LocationScope => ({
+const resolveLocationScope = (req: { plantId?: string | undefined; siteId?: string | undefined }): LocationScope => ({
   plantId: req.plantId ?? req.siteId ?? undefined,
   siteId: req.siteId ?? req.plantId ?? undefined,
 });
@@ -621,6 +629,7 @@ export async function createWorkOrder(
       plant: plantId,
       siteId: scope.siteId ?? plantId,
     });
+    await applyWorkflowToWorkOrder(newItem);
     const saved = await newItem.save();
     const userObjectId = resolveUserObjectId(req);
     if (permitDocs.length) {
@@ -729,7 +738,13 @@ export async function updateWorkOrder(
         'part',
       );
       if (!validParts) return;
-      update.partsUsed = mapPartsUsed(validParts);
+      const mappedParts = mapPartsUsed(validParts);
+      const normalizedUsage = await normalizePartUsageCosts(
+        tenantId,
+        mappedParts as Array<{ partId: Types.ObjectId; qty?: number; cost?: number }>,
+      );
+      update.partsUsed = normalizedUsage.parts;
+      update.partsCost = normalizedUsage.partsCost;
     }
     if (update.assignees && update.assignees.length) {
       const assigneeIds = update.assignees.map((id) =>
@@ -829,11 +844,87 @@ export async function updateWorkOrder(
     }
     await auditAction(req as unknown as Request, 'update', 'WorkOrder', new Types.ObjectId(req.params.id), existing.toObject(), updated.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(updated));
+    await notifySlaBreach(updated);
     sendResponse(res, updated);
     return;
   } catch (err) {
     next(err);
     return;
+  }
+}
+
+export async function bulkUpdateWorkOrders(
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const scope = resolveLocationScope(req);
+    const { workOrderIds, updates } = (req.body ?? {}) as {
+      workOrderIds?: string[];
+      updates?: Record<string, unknown>;
+    };
+
+    if (!Array.isArray(workOrderIds) || workOrderIds.length === 0) {
+      sendResponse(res, null, 'workOrderIds array is required', 400);
+      return;
+    }
+
+    if (!updates || typeof updates !== 'object') {
+      sendResponse(res, null, 'updates payload is required', 400);
+      return;
+    }
+
+    const normalizedIds = workOrderIds
+      .filter((id) => Types.ObjectId.isValid(id))
+      .map((id) => new Types.ObjectId(id));
+
+    if (!normalizedIds.length) {
+      sendResponse(res, null, 'No valid work order IDs provided', 400);
+      return;
+    }
+
+    const allowedFields = new Set([
+      'status',
+      'priority',
+      'assignees',
+      'department',
+      'line',
+      'station',
+      'dueDate',
+      'customFields',
+    ]);
+
+    const updateBody: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(updates)) {
+      if (!allowedFields.has(key)) continue;
+      if (['department', 'line', 'station'].includes(key)) {
+        updateBody[key] = value ? toOptionalObjectId(value as string) : undefined;
+      } else if (key === 'assignees' && Array.isArray(value)) {
+        const validAssignees = value.filter((id) => Types.ObjectId.isValid(String(id)));
+        updateBody.assignees = mapAssignees(validAssignees as string[]);
+      } else if (key === 'customFields' && typeof value === 'object') {
+        updateBody.customFields = value as Record<string, unknown>;
+      } else {
+        updateBody[key] = value;
+      }
+    }
+
+    const filter = withLocationScope({ _id: { $in: normalizedIds }, tenantId }, scope);
+    const result = await WorkOrder.updateMany(filter, { $set: updateBody });
+
+    sendResponse(res, {
+      matched: (result as any).matchedCount ?? (result as any).n,
+      modified: (result as any).modifiedCount ?? (result as any).nModified,
+    });
+  } catch (err) {
+    next(err);
   }
 }
 
@@ -889,6 +980,39 @@ export async function deleteWorkOrder(
   }
 }
 
+export async function updateWorkOrderChecklist(
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const tenantId = req.tenantId;
+    const scope = resolveLocationScope(req);
+    if (!tenantId || !scope.plantId) {
+      sendResponse(res, null, 'Active tenant and plant required', 400);
+      return;
+    }
+    const { checklist } = req.body as { checklist?: unknown[] };
+    if (!Array.isArray(checklist)) {
+      sendResponse(res, null, 'Checklist array required', 400);
+      return;
+    }
+    const updated = await WorkOrder.findOneAndUpdate(
+      withLocationScope({ _id: req.params.id, tenantId }, scope),
+      { checklist },
+      { new: true },
+    );
+    if (!updated) {
+      sendResponse(res, null, 'Not found', 404);
+      return;
+    }
+    emitWorkOrderUpdate(toWorkOrderUpdatePayload(updated));
+    sendResponse(res, updated);
+  } catch (err) {
+    next(err);
+  }
+}
+
 /**
  * @openapi
  * /api/workorders/{id}/approve:
@@ -936,7 +1060,7 @@ export async function approveWorkOrder(
       sendResponse(res, null, 'Not authenticated', 401);
       return;
     }
-    const { status } = req.body as { status?: ApprovalStatus };
+    const { status, note } = req.body as { status?: ApprovalStatus; note?: string };
 
     if (!status || !APPROVAL_STATUS_VALUES.includes(status)) {
       sendResponse(res, null, 'Invalid status', 400);
@@ -971,10 +1095,18 @@ export async function approveWorkOrder(
     workOrder.approvalStatus = status;
 
     if (status === 'pending') {
+      workOrder.status = 'pending_approval';
       if (userObjectId) workOrder.approvalRequestedBy = userObjectId;
     } else if (userObjectId) {
       workOrder.approvedBy = userObjectId;
+      workOrder.status = status === 'approved' ? 'approved' : workOrder.status;
     }
+    const approvalLog = workOrder.approvalLog ?? (workOrder.approvalLog = [] as any);
+    approvalLog.push({
+      approvedBy: userObjectId,
+      approvedAt: new Date(),
+      note,
+    });
 
     const saved = await workOrder.save();
     await auditAction(req as unknown as Request, 'approve', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
@@ -1069,6 +1201,9 @@ export async function assignWorkOrder(
     }
     const saved = await workOrder.save();
     await auditAction(req as unknown as Request, 'assign', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
+    if (saved.assignees && saved.assignees.length) {
+      await notifyWorkOrderAssigned(saved, saved.assignees as unknown as Types.ObjectId[]);
+    }
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved);
     return;
@@ -1222,7 +1357,42 @@ export async function completeWorkOrder(
     if (Array.isArray(body.photos)) workOrder.set('photos', body.photos);
     if (body.failureCode !== undefined) workOrder.failureCode = body.failureCode;
 
+    if (Array.isArray(workOrder.partsUsed) && workOrder.partsUsed.length) {
+      const { parts, partsCost } = await normalizePartUsageCosts(
+        tenantId,
+        workOrder.partsUsed as unknown as Array<{ partId: Types.ObjectId; qty?: number; cost?: number }>,
+      );
+      workOrder.set('partsUsed', parts);
+      workOrder.partsCost = partsCost;
+    } else {
+      workOrder.partsCost = 0;
+    }
+
     const saved = await workOrder.save();
+
+    if (Array.isArray(workOrder.partsUsed) && workOrder.partsUsed.length) {
+      await Promise.all(
+        workOrder.partsUsed.map(async (usage) => {
+          const partId = (usage as any).partId as Types.ObjectId | undefined;
+          if (!partId) return;
+          const part = await InventoryItem.findOne({ _id: partId, tenantId });
+          if (!part) return;
+          const delta = -Math.abs(Number((usage as any).qty ?? 0));
+          part.quantity = Math.max(0, Number(part.quantity ?? 0) + delta);
+          await part.save();
+          await StockHistory.create({
+            tenantId,
+            siteId: req.siteId ? new Types.ObjectId(req.siteId) : undefined,
+            stockItem: part._id,
+            part: part.sharedPartId ?? part._id,
+            delta,
+            reason: `Consumed on WO ${workOrder.title}`,
+            userId: resolveUserObjectId(req),
+            balance: part.quantity,
+          });
+        }),
+      );
+    }
     const userObjectId = resolveUserObjectId(req);
     if (readiness.permits.length) {
       await Promise.all(

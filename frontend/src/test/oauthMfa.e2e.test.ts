@@ -13,7 +13,7 @@ import User from '../../../backend/models/User';
 
 const app = express();
 app.use(express.json());
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRoutes as unknown as express.Router);
 
 declare const testDb: any;
 

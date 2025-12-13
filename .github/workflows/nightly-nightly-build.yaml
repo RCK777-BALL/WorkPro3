@@ -1,0 +1,46 @@
+name: Nightly Build
+
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+env:
+  REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+  REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+  NIGHTLY_ENVIRONMENT: ${{ vars.NIGHTLY_ENVIRONMENT }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build backend
+        working-directory: backend
+        run: npm run build --if-present
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build --if-present

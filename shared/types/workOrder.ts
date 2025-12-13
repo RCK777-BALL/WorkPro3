@@ -4,14 +4,14 @@
 
 export interface ChecklistItem {
   description: string;
-  completed?: boolean;
-  status?: 'not_started' | 'in_progress' | 'done' | 'blocked';
-  photos?: string[];
+  completed?: boolean | undefined;
+  status?: 'not_started' | 'in_progress' | 'done' | 'blocked' | undefined;
+  photos?: string[] | undefined;
 }
 
 export interface WorkOrderSignature {
   userId: string;
-  signedAt?: string;
+  signedAt?: string | undefined;
 }
 
 export interface WorkOrderPartLine {
@@ -30,54 +30,55 @@ export type WorkOrderStatus =
 export interface WorkOrder {
   _id: string;
   tenantId: string;
-  siteId?: string;
-  plantId?: string;
+  siteId?: string | undefined;
+  plantId?: string | undefined;
   title: string;
-  assetId?: string;
-  description?: string;
-  copilotSummary?: string;
-  copilotSummaryUpdatedAt?: string;
+  assetId?: string | undefined;
+  description?: string | undefined;
+  copilotSummary?: string | undefined;
+  copilotSummaryUpdatedAt?: string | undefined;
   priority: 'low' | 'medium' | 'high' | 'critical';
   status: WorkOrderStatus;
   type: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
-  approvalStatus?: 'draft' | 'pending' | 'approved' | 'rejected';
-  approvedBy?: string;
-  approvedAt?: string;
-  requestedBy?: string;
-  requestedAt?: string;
-  slaDueAt?: string;
-  failureModeTags?: string[];
-  assignees?: string[];
-  checklists?: ChecklistItem[];
-  partsUsed?: WorkOrderPartLine[];
-  signatures?: WorkOrderSignature[];
-  timeSpentMin?: number;
-  photos?: string[];
-  failureCode?: string;
-  causeCode?: string;
-  actionCode?: string;
-  downtimeMinutes?: number;
-  laborHours?: number;
-  laborCost?: number;
-  partsCost?: number;
-  miscCost?: number;
-  totalCost?: number;
-  attachments?: { url: string; name?: string; uploadedBy?: string; uploadedAt?: string }[];
-  timeline?: { label: string; notes?: string; createdAt?: string; createdBy?: string; type?: 'status' | 'comment' | 'approval' | 'sla' }[];
-  permits?: string[];
-  requiredPermitTypes?: string[];
-  pmTask?: string;
-  department?: string;
-  line?: string;
-  station?: string;
-  teamMemberName?: string;
-  importance?: 'low' | 'medium' | 'high' | 'severe';
-  complianceProcedureId?: string;
-  calibrationIntervalDays?: number;
-  dueDate?: string;
-  completedAt?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  approvalStatus?: 'draft' | 'pending' | 'approved' | 'rejected' | undefined;
+  approvedBy?: string | undefined;
+  approvedAt?: string | undefined;
+  requestedBy?: string | undefined;
+  requestedAt?: string | undefined;
+  slaDueAt?: string | undefined;
+  failureModeTags?: string[] | undefined;
+  assignees?: string[] | undefined;
+  checklists?: ChecklistItem[] | undefined;
+  partsUsed?: WorkOrderPartLine[] | undefined;
+  signatures?: WorkOrderSignature[] | undefined;
+  timeSpentMin?: number | undefined;
+  photos?: string[] | undefined;
+  failureCode?: string | undefined;
+  causeCode?: string | undefined;
+  actionCode?: string | undefined;
+  downtimeMinutes?: number | undefined;
+  laborHours?: number | undefined;
+  laborCost?: number | undefined;
+  partsCost?: number | undefined;
+  miscCost?: number | undefined;
+  totalCost?: number | undefined;
+  attachments?: { url: string; name?: string | undefined; uploadedBy?: string | undefined; uploadedAt?: string | undefined }[] | undefined;
+  timeline?: { label: string; notes?: string | undefined; createdAt?: string | undefined; createdBy?: string | undefined; type?: 'status' | 'comment' | 'approval' | 'sla' | undefined }[] | undefined;
+  permits?: string[] | undefined;
+  requiredPermitTypes?: string[] | undefined;
+  pmTask?: string | undefined;
+  department?: string | undefined;
+  line?: string | undefined;
+  station?: string | undefined;
+  teamMemberName?: string | undefined;
+  importance?: 'low' | 'medium' | 'high' | 'severe' | undefined;
+  complianceProcedureId?: string | undefined;
+  calibrationIntervalDays?: number | undefined;
+  customFields?: Record<string, unknown> | undefined;
+  dueDate?: string | undefined;
+  completedAt?: string | undefined;
+  createdAt?: string | undefined;
+  updatedAt?: string | undefined;
 }
 
 

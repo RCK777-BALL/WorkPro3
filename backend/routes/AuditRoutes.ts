@@ -3,22 +3,14 @@
  */
 
 import { Router } from 'express';
+import { Types } from 'mongoose';
 import type { FilterQuery } from 'mongoose';
 
 import { requireAuth } from '../middleware/authMiddleware';
-// Local fallback for requirePermission if ../auth/permissions is missing.
-// Replace this with the real implementation or restore the import when available.
-import type { Request, Response, NextFunction } from 'express';
-const requirePermission = (resource: string, action: string) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    // NOTE: This placeholder allows all requests; implement proper permission checks here.
-    next();
-  };
-};
-import tenantScope from '../middleware/tenantScope';
 import validateObjectId from '../middleware/validateObjectId';
 import AuditLog, { type AuditLogDocument, type AuditLogDiffEntry } from '../models/AuditLog';
 import type { AuthedRequest } from '../types/http';
+import { ensureTenantContext, scopeQueryToTenant, withPolicyGuard } from '../src/auth/accessControl';
 
 const MAX_LIMIT = 200;
 
@@ -43,8 +35,16 @@ const parseDate = (value: unknown): Date | undefined => {
 
 const sanitizeSearch = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+const toObjectId = (value: unknown) => {
+  if (!value) return undefined;
+  if (value instanceof Types.ObjectId) return value;
+  if (typeof value === 'string' && Types.ObjectId.isValid(value)) return new Types.ObjectId(value);
+  return undefined;
+};
+
 const buildMatch = (req: AuthedRequest): FilterQuery<AuditLogDocument> => {
-  const match: FilterQuery<AuditLogDocument> = { tenantId: req.tenantId };
+  const tenantId = ensureTenantContext(req);
+  const match: FilterQuery<AuditLogDocument> = tenantId ? scopeQueryToTenant({}, tenantId, req.siteId) : {};
   const entityTypes = toStringArray(req.query?.entityType);
   if (entityTypes.length) {
     match.entityType = entityTypes.length === 1 ? entityTypes[0] : { $in: entityTypes };
@@ -73,6 +73,11 @@ const buildMatch = (req: AuthedRequest): FilterQuery<AuditLogDocument> => {
   if (actorSearch) {
     const regex = new RegExp(sanitizeSearch(actorSearch), 'i');
     match.$or = [{ 'actor.name': regex }, { 'actor.email': regex }];
+  }
+
+  const siteId = toObjectId(req.query?.siteId);
+  if (siteId) {
+    match.siteId = siteId;
   }
 
   return match;
@@ -122,8 +127,7 @@ const toCsv = (logs: Array<Pick<AuditLogDocument, 'ts' | 'entityType' | 'entityI
 const router = Router();
 
 router.use(requireAuth);
-router.use(tenantScope);
-router.use(requirePermission('audit', 'read'));
+router.use(...withPolicyGuard({ permissions: 'audit.read' }));
 
 router.get('/', async (req, res, next) => {
   try {

@@ -20,20 +20,34 @@ import {
 } from "@/lib/http";
 import Dashboard from "@/pages/Dashboard";
 import Analytics from "@/pages/Analytics";
+import AnalyticsDashboardV2 from "@/pages/AnalyticsDashboardV2";
+import AnalyticsWarehousePage from "@/pages/AnalyticsWarehouse";
 import WorkOrders from "@/pages/WorkOrders";
+import WorkOrderDetail from "@/pages/workorders/WorkOrderDetail";
 import WorkRequestDashboard from "@/pages/WorkRequestDashboard";
 import Maintenance from "@/pages/Maintenance";
 import AssetsPage from "@/pages/AssetsPage";
 import AssetDetails from "@/pages/AssetDetails";
 import Inventory from "@/pages/Inventory";
+import InventoryLocations from "@/pages/InventoryLocations";
+import InventoryParts from "@/pages/InventoryParts";
+import InventoryList from "@/pages/inventory/InventoryList";
+import InventoryPartDetail from "@/pages/inventory/InventoryPartDetail";
+import InventoryAnalytics from "@/pages/InventoryAnalytics";
 import IotMonitoring from "@/pages/IotMonitoring";
 import VendorsPage from "@/pages/VendorsPage";
+import VendorEditor from "@/pages/vendors/VendorEditor";
 import Reports from "@/pages/Reports";
 import Notifications from "@/pages/Notifications";
+import NotificationSettings from "@/pages/NotificationSettings";
+import WorkflowRulesAdmin from "@/pages/WorkflowRulesAdmin";
 import Messages from "@/pages/Messages";
+import RoleManagementPage from "@/pages/RoleManagement";
 import Documentation from "@/pages/Documentation";
 import AssetManagementGuide from "@/pages/AssetManagementGuide";
 import AssetManagementAssetsGuide from "@/pages/AssetManagementAssetsGuide";
+import AddAssetsToStationsGuide from "@/pages/AddAssetsToStationsGuide";
+import ManageAssets from "@/pages/ManageAssets";
 import Departments from "@/pages/Departments";
 import Lines from "@/pages/Lines";
 import Stations from "@/pages/Stations";
@@ -47,6 +61,8 @@ import Settings from "@/pages/Settings";
 import TimeSheets from "@/pages/TimeSheets";
 import PMScheduler from "@/pages/PMScheduler";
 import PMTasksPage from "@/pages/PMTasksPage";
+import PMTemplateList from "@/pages/PMTemplateList";
+import PMTemplateEditor from "@/pages/PMTemplateEditor";
 import AdminTenants from "@/pages/AdminTenants";
 import Imports from "@/pages/Imports";
 import Plants from "@/pages/Plants";
@@ -54,12 +70,18 @@ import GlobalAnalyticsDashboard from "@/pages/GlobalAnalyticsDashboard";
 import AIDashboard from "@/pages/AIDashboard";
 import TechnicianConsole from "@/pages/TechnicianConsole";
 import Login from "@/pages/Login";
+import PMAnalytics from "@/pages/PMAnalytics";
 import RegisterPage from "@/pages/RegisterPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import BootstrapSetupPage from "@/modules/admin/setup";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
 import PublicRequestPage from "@/public/request";
 import RequestStatus from "@/pages/RequestStatus";
+import SubmitRequest from "@/pages/requests/SubmitRequest";
+import RequestTriage from "@/pages/requests/RequestTriage";
+import AssetScan from "@/pages/AssetScan";
+import MobileWorkOrder from "@/pages/mobile/MobileWorkOrder";
+import PwaTechnicianShell from "@/pages/PwaTechnicianShell";
 
 export default function App() {
   const navigate = useNavigate();
@@ -100,12 +122,15 @@ export default function App() {
           <Route index element={<Navigate to="/dashboard" />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/analytics/dashboard/v2" element={<AnalyticsDashboardV2 />} />
+          <Route path="/analytics/operations" element={<AnalyticsWarehousePage />} />
+          <Route path="/analytics/pm" element={<PMAnalytics />} />
           <Route path="/analytics/global" element={<GlobalAnalyticsDashboard />} />
           <Route path="/analytics/ai" element={<AIDashboard />} />
           <Route
             path="/executive"
             element={
-              <RequirePermission scope="executive" action="read">
+              <RequirePermission permission="executive.read">
                 <ExecutiveInsightsPage />
               </RequirePermission>
             }
@@ -113,28 +138,71 @@ export default function App() {
           <Route path="/iot" element={<IotMonitoring />} />
           <Route path="/work-orders" element={<WorkOrders />} />
           <Route path="/workorders" element={<WorkOrders />} />
+          <Route path="/workorders/:id" element={<WorkOrderDetail />} />
+          <Route path="/work-orders/:id" element={<WorkOrderDetail />} />
+          <Route path="/m/wo/:id" element={<MobileWorkOrder />} />
           <Route
             path="/work-requests"
             element={
-              <RequirePermission scope="workRequests" action="read">
+              <RequirePermission permission="workRequests.read">
                 <WorkRequestDashboard />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/requests/submit"
+            element={
+              <RequirePermission permission="workRequests.read">
+                <SubmitRequest />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/requests/triage"
+            element={
+              <RequirePermission permission="workRequests.read">
+                <RequestTriage />
               </RequirePermission>
             }
           />
           <Route path="/maintenance" element={<Maintenance />} />
           <Route path="/permits" element={<PermitsPage />} />
           <Route
+            path="/settings/roles"
+            element={
+              <RequirePermission permission="roles.read">
+                <RoleManagementPage />
+              </RequirePermission>
+            }
+          />
+          <Route
             path="/assets"
             element={
-              <RequirePermission scope="hierarchy" action="read">
+              <RequirePermission permission="hierarchy.read">
                 <AssetsPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/assets/scan"
+            element={
+              <RequirePermission permission="hierarchy.read">
+                <AssetScan />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/assets/manage"
+            element={
+              <RequirePermission permission="hierarchy.read">
+                <ManageAssets />
               </RequirePermission>
             }
           />
           <Route
             path="/assets/explorer"
             element={
-              <RequirePermission scope="hierarchy" action="read">
+              <RequirePermission permission="hierarchy.read">
                 <AssetExplorerPage />
               </RequirePermission>
             }
@@ -142,7 +210,7 @@ export default function App() {
           <Route
             path="/assets/:assetId"
             element={
-              <RequirePermission scope="hierarchy" action="read">
+              <RequirePermission permission="hierarchy.read">
                 <AssetDetails />
               </RequirePermission>
             }
@@ -150,20 +218,93 @@ export default function App() {
           <Route
             path="/inventory"
             element={
-              <RequirePermission scope="inventory" action="read">
+              <RequirePermission permission="inventory.read">
                 <Inventory />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/inventory/analytics"
+            element={
+              <RequirePermission permission="inventory.read">
+                <InventoryAnalytics />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/inventory/locations"
+            element={
+              <RequirePermission permission="inventory.read">
+                <InventoryLocations />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/inventory/locations/:locationId"
+            element={
+              <RequirePermission permission="inventory.read">
+                <InventoryLocations />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/locations/:locationId"
+            element={
+              <RequirePermission permission="inventory.read">
+                <InventoryLocations />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/inventory/parts"
+            element={
+              <RequirePermission permission="inventory.read">
+                <InventoryParts />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/inventory/parts/:partId"
+            element={
+              <RequirePermission permission="inventory.read">
+                <InventoryParts />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/parts/:partId"
+            element={
+              <RequirePermission permission="inventory.read">
+                <InventoryParts />
               </RequirePermission>
             }
           />
           <Route
             path="/vendors"
             element={
-              <RequirePermission scope="inventory" action="read">
+              <RequirePermission permission="inventory.read">
                 <VendorsPage />
               </RequirePermission>
             }
           />
+          <Route
+            path="/vendors/new"
+            element={
+              <RequirePermission permission="inventory.read">
+                <VendorEditor />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/vendors/:vendorId"
+            element={
+              <RequirePermission permission="inventory.read">
+                <VendorEditor />
+              </RequirePermission>
+            }
+          />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/notifications/settings" element={<NotificationSettings />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/documentation" element={<Documentation />} />
@@ -172,25 +313,58 @@ export default function App() {
             path="/documentation/asset-management/assets"
             element={<AssetManagementAssetsGuide />}
           />
+          <Route
+            path="/documentation/asset-management/assets/add-to-stations"
+            element={<AddAssetsToStationsGuide />}
+          />
+          <Route
+            path="/documentation/asset-management/assets/manage"
+            element={<Navigate to="/assets/manage" replace />}
+          />
           <Route path="/departments" element={<Departments />} />
           <Route path="/lines" element={<Lines />} />
           <Route path="/stations" element={<Stations />} />
           <Route path="/teams" element={<Teams />} />
           <Route path="/plants" element={<Plants />} />
           <Route path="/technician" element={<TechnicianConsole />} />
+          <Route path="/pwa/technician" element={<PwaTechnicianShell />} />
           <Route path="/team-members/:teamMemberId" element={<TeamMemberProfile />} />
           <Route
             path="/pm/scheduler"
             element={
-              <RequirePermission scope="pm" action="read">
+              <RequirePermission permission="pm.read">
                 <PMScheduler />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/pm/templates"
+            element={
+              <RequirePermission permission="pm.read">
+                <PMTemplateList />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/pm/templates/new"
+            element={
+              <RequirePermission permission="pm.write">
+                <PMTemplateEditor />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/pm/templates/:templateId/edit"
+            element={
+              <RequirePermission permission="pm.write">
+                <PMTemplateEditor />
               </RequirePermission>
             }
           />
           <Route
             path="/pm/tasks"
             element={
-              <RequirePermission scope="pm" action="read">
+              <RequirePermission permission="pm.read">
                 <PMTasksPage />
               </RequirePermission>
             }
@@ -200,15 +374,23 @@ export default function App() {
           <Route
             path="/imports"
             element={
-              <RequirePermission scope="importExport" action="import">
+              <RequirePermission permission="importExport.import">
                 <Imports />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/admin/workflow"
+            element={
+              <RequirePermission permission="roles.manage">
+                <WorkflowRulesAdmin />
               </RequirePermission>
             }
           />
           <Route
             path="/admin/audit"
             element={
-              <RequirePermission scope="audit" action="read">
+              <RequirePermission permission="audit.read">
                 <AuditLogsPage />
               </RequirePermission>
             }

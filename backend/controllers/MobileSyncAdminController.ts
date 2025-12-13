@@ -10,7 +10,7 @@ import MobileSyncConflict from '../models/MobileSyncConflict';
 import MobileDeviceTelemetry from '../models/MobileDeviceTelemetry';
 import { resolveConflictWithPolicy, upsertDeviceTelemetry } from '../services/mobileSyncAdminService';
 import { computeListEtag, handleConditionalListRequest } from '../services/mobileSyncService';
-import { writeAuditLog } from '../utils/audit';
+import { writeAuditLog } from '../utils';
 
 const parseString = (value: unknown): string | undefined =>
   typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;

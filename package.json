@@ -9,7 +9,7 @@
   },
   "scripts": {
     "test": "jest",
-    "postinstall": "npm ci --silent --prefix backend",
+    "postinstall": "npm ci --silent --prefix backend && npm ci --silent --prefix frontend",
     "fix:backend": "node fixWorkPro.js backend",
     "fix:frontend": "node fixWorkPro.js frontend",
     "fix:all": "node fixWorkPro.js all"
@@ -33,6 +33,7 @@
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "@types/node": "^24.10.1",
     "jest": "^30.2.0",
     "mongodb-memory-server": "^10.2.3",
     "supertest": "^7.1.4",

@@ -12,7 +12,12 @@ export const duplicateAsset = (asset: Asset): Asset => {
   
   delete newAsset.lastServiced;
   delete newAsset.warrantyExpiry;
-  
+  delete newAsset.warrantyStart;
+  delete newAsset.warrantyEnd;
+  delete newAsset.purchaseCost;
+  delete newAsset.expectedLifeMonths;
+  delete newAsset.replacementDate;
+
   return newAsset;
 };
 

@@ -5,8 +5,8 @@
 import type { Types } from 'mongoose';
 import MobileDeviceTelemetry from '../models/MobileDeviceTelemetry';
 import MobileSyncConflict, { type MobileConflictResolution } from '../models/MobileSyncConflict';
-import type { AuditActor } from '../utils/audit';
-import { writeAuditLog } from '../utils/audit';
+import type { AuditActor } from '../utils';
+import { writeAuditLog } from '../utils';
 
 export interface DeviceTelemetryInput {
   tenantId: Types.ObjectId;

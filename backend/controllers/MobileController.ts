@@ -9,7 +9,7 @@ import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import WorkOrder, { type WorkOrder as WorkOrderEntity } from '../models/WorkOrder';
 import Asset, { type AssetDoc } from '../models/Asset';
 import MobileOfflineAction, { type MobileOfflineAction as MobileOfflineActionDoc } from '../models/MobileOfflineAction';
-import { writeAuditLog, type AuditActor } from '../utils/audit';
+import type { MobileScanOutcome } from '../models/MobileScanHistory';
 import {
   computeBackoffSeconds,
   ensureMatchHeader,
@@ -18,7 +18,10 @@ import {
   setEntityVersionHeaders,
 } from '../services/mobileSyncService';
 import { emitTelemetry } from '../services/telemetryService';
-import { upsertDeviceTelemetry } from '../services/mobileSyncAdminService';
+import { upsertDeviceTelemetry, type DeviceTelemetryInput } from '../services/mobileSyncAdminService';
+import { listScanHistory, recordScanHistory } from '../services/mobileScanHistoryService';
+import { writeAuditLog, type AuditActor } from '../utils';
+import type { MobileOfflineActionStatus } from '../models/MobileOfflineAction';
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
@@ -100,6 +103,17 @@ const serializeOfflineAction = (action: any) => ({
   createdAt: action.createdAt,
 });
 
+const serializeOfflineActionStatus = (action: any) => ({
+  id: action._id?.toString(),
+  status: action.status as MobileOfflineActionStatus,
+  attempts: action.attempts,
+  maxAttempts: action.maxAttempts,
+  nextAttemptAt: action.nextAttemptAt,
+  backoffSeconds: action.backoffSeconds,
+  lastError: action.lastError,
+  lastSyncedAt: action.lastSyncedAt,
+});
+
 const offlineActionSchema = z.object({
   type: z.string().trim().min(1),
   payload: z.record(z.any()).optional().default({}),
@@ -108,6 +122,35 @@ const offlineActionSchema = z.object({
 const offlineActionFailureSchema = z.object({
   message: z.string().trim().min(1).optional(),
   retryable: z.boolean().optional().default(true),
+});
+
+const SCAN_OUTCOMES = ['resolved', 'missing', 'invalid', 'error'] as const satisfies readonly MobileScanOutcome[];
+
+const decodedEntitySchema = z.object({
+  type: z.string().trim().optional(),
+  id: z.string().trim().optional(),
+  label: z.string().trim().optional(),
+});
+
+const scanRecordSchema = z.object({
+  rawValue: z.string().trim().min(1),
+  decodedEntity: decodedEntitySchema.optional(),
+  navigationTarget: z.string().trim().optional(),
+  outcome: z.enum(SCAN_OUTCOMES),
+  errorMessage: z.string().trim().optional(),
+});
+
+const serializeScanHistory = (scan: any) => ({
+  id: scan._id?.toString?.() ?? scan._id,
+  rawValue: scan.rawValue,
+  decodedType: scan.decodedType ?? null,
+  decodedId: scan.decodedId ?? null,
+  decodedLabel: scan.decodedLabel ?? null,
+  navigationTarget: scan.navigationTarget ?? null,
+  outcome: scan.outcome,
+  errorMessage: scan.errorMessage ?? null,
+  exportState: scan.exportState ?? null,
+  createdAt: scan.createdAt ?? scan.updatedAt ?? undefined,
 });
 
 export const listMobileWorkOrders: AuthedRequestHandler = async (req, res) => {
@@ -214,6 +257,64 @@ export const uploadMobileAttachment: AuthedRequestHandler = async (req, res) => 
   });
 };
 
+export const recordMobileScan: AuthedRequestHandler = async (req, res) => {
+  const tenantId = req.tenantId;
+  const userId = req.user?._id ?? req.user?.id;
+
+  if (!tenantId || !userId) {
+    res.status(400).json({ message: 'Tenant and user are required' });
+    return;
+  }
+
+  const parsed = scanRecordSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    res.status(400).json({ message: 'Invalid payload', errors: parsed.error.flatten() });
+    return;
+  }
+
+  const actor = toAuditActor(req.user);
+
+  const record = await recordScanHistory({
+    tenantId: new Types.ObjectId(tenantId),
+    userId: new Types.ObjectId(String(userId)),
+    rawValue: parsed.data.rawValue,
+    decodedEntity: parsed.data.decodedEntity,
+    navigationTarget: parsed.data.navigationTarget ?? null,
+    outcome: parsed.data.outcome,
+    errorMessage: parsed.data.errorMessage ?? null,
+    ...(actor ? { actor } : {}),
+  });
+
+  res.status(201).json({ data: serializeScanHistory(record) });
+};
+
+export const listRecentMobileScans: AuthedRequestHandler = async (req, res) => {
+  const tenantId = req.tenantId;
+  const userId = req.user?._id ?? req.user?.id;
+
+  if (!tenantId || !userId) {
+    res.status(400).json({ message: 'Tenant and user are required' });
+    return;
+  }
+
+  const page = parseNumber(req.query.page, DEFAULT_PAGE);
+  const limit = Math.min(parseNumber(req.query.limit, DEFAULT_LIMIT), MAX_LIMIT);
+
+  const result = await listScanHistory({
+    tenantId: new Types.ObjectId(tenantId),
+    userId: new Types.ObjectId(String(userId)),
+    page,
+    limit,
+  });
+
+  res.json({
+    data: {
+      items: result.items.map(serializeScanHistory),
+      pagination: result.pagination,
+    },
+  });
+};
+
 export const getOfflineQueue: AuthedRequestHandler = async (req, res) => {
   const tenantId = req.tenantId;
   const userId = req.user?._id ?? req.user?.id;
@@ -267,20 +368,26 @@ export const enqueueOfflineAction: AuthedRequestHandler = async (req, res) => {
     tenantId,
     userId,
     type: parsed.data.type.trim(),
+    entityType: parsed.data.type.trim(),
+    operation: parsed.data.type.trim(),
     payload: parsed.data.payload,
     nextAttemptAt: new Date(),
+    status: 'pending',
   });
 
   const device = getDeviceContext(req);
   if (device.deviceId) {
-    await upsertDeviceTelemetry({
+    const telemetry: DeviceTelemetryInput = {
       tenantId: new Types.ObjectId(tenantId),
       userId: new Types.ObjectId(userId),
       deviceId: device.deviceId,
-      platform: device.platform,
-      appVersion: device.appVersion,
       pendingDelta: 1,
-    });
+    };
+
+    if (device.platform) telemetry.platform = device.platform;
+    if (device.appVersion) telemetry.appVersion = device.appVersion;
+
+    await upsertDeviceTelemetry(telemetry);
   }
 
   emitTelemetry('mobile.offlineAction.created', {
@@ -336,21 +443,24 @@ export const completeOfflineAction: AuthedRequestHandler = async (req, res) => {
   }
 
   const before = existing.toObject();
-  existing.status = 'processed';
+  existing.status = 'synced';
   existing.processedAt = new Date();
   existing.lastSyncedAt = new Date();
   await existing.save();
 
   const device = getDeviceContext(req);
   if (device.deviceId) {
-    await upsertDeviceTelemetry({
+    const telemetry: DeviceTelemetryInput = {
       tenantId: new Types.ObjectId(tenantId),
       userId: new Types.ObjectId(userId),
       deviceId: device.deviceId,
-      platform: device.platform,
-      appVersion: device.appVersion,
       pendingDelta: -1,
-    });
+    };
+
+    if (device.platform) telemetry.platform = device.platform;
+    if (device.appVersion) telemetry.appVersion = device.appVersion;
+
+    await upsertDeviceTelemetry(telemetry);
   }
 
   emitTelemetry('mobile.offlineAction.completed', {
@@ -423,7 +533,7 @@ export const recordOfflineActionFailure: AuthedRequestHandler = async (req, res)
     const backoffSeconds = computeBackoffSeconds(attempts);
     existing.backoffSeconds = backoffSeconds;
     existing.nextAttemptAt = new Date(Date.now() + backoffSeconds * 1000);
-    existing.status = 'pending';
+    existing.status = 'retrying';
   } else {
     existing.status = 'failed';
     existing.set('nextAttemptAt', undefined);
@@ -434,15 +544,18 @@ export const recordOfflineActionFailure: AuthedRequestHandler = async (req, res)
 
   const device = getDeviceContext(req);
   if (device.deviceId) {
-    await upsertDeviceTelemetry({
+    const telemetry: DeviceTelemetryInput = {
       tenantId: new Types.ObjectId(tenantId),
       userId: new Types.ObjectId(userId),
       deviceId: device.deviceId,
-      platform: device.platform,
-      appVersion: device.appVersion,
       failedDelta: existing.status === 'failed' ? 1 : 0,
-      lastFailureReason: parsed.data.message,
-    });
+    };
+
+    if (device.platform) telemetry.platform = device.platform;
+    if (device.appVersion) telemetry.appVersion = device.appVersion;
+    if (parsed.data.message) telemetry.lastFailureReason = parsed.data.message;
+
+    await upsertDeviceTelemetry(telemetry);
   }
 
   emitTelemetry('mobile.offlineAction.failed', {
@@ -469,4 +582,30 @@ export const recordOfflineActionFailure: AuthedRequestHandler = async (req, res)
 
   setEntityVersionHeaders(res, existing);
   res.json({ data: serializeOfflineAction(existing) });
+};
+
+export const getOfflineActionStatus: AuthedRequestHandler = async (req, res) => {
+  const tenantId = req.tenantId;
+  const userId = req.user?._id ?? req.user?.id;
+  const actionId = sanitizeSearch(req.params?.id);
+
+  if (!tenantId || !userId) {
+    res.status(400).json({ message: 'Tenant and user are required' });
+    return;
+  }
+
+  if (!actionId || !Types.ObjectId.isValid(actionId)) {
+    res.status(400).json({ message: 'A valid action id is required' });
+    return;
+  }
+
+  const action = await MobileOfflineAction.findOne({ _id: actionId, tenantId, userId }).lean();
+
+  if (!action) {
+    res.status(404).json({ message: 'Offline action not found' });
+    return;
+  }
+
+  setEntityVersionHeaders(res, action);
+  res.json({ data: serializeOfflineActionStatus(action) });
 };

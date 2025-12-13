@@ -9,6 +9,10 @@ import ConditionRule from '../models/ConditionRule';
 import WorkOrder from '../models/WorkOrder';
 import Alert from '../models/Alert';
 import Asset from '../models/Asset';
+import Meter from '../models/Meter';
+import MeterReading from '../models/MeterReading';
+import PMTask from '../models/PMTask';
+import SensorDevice from '../models/SensorDevice';
 
 const ACTIVE_WORK_ORDER_STATUSES = ['requested', 'assigned', 'in_progress'];
 const ANOMALY_LOOKBACK = 20;
@@ -27,6 +31,7 @@ type ConditionRuleLean = {
 export type IoTReadingInput = {
   assetId?: string;
   asset?: string;
+  deviceId?: string;
   metric?: string;
   value?: number | string;
   timestamp?: string | Date;
@@ -49,6 +54,31 @@ export interface IngestSummary {
   savedCount: number;
   triggeredRules: RuleTriggerResult[];
   anomalies: AnomalyResult[];
+  meterUpdates?: MeterUpdateResult[];
+  meterPmWorkOrders?: MeterPmTriggerResult[];
+  deviceUpdates?: DeviceUpdateResult[];
+}
+
+export interface MeterUpdateResult {
+  meterId: string;
+  value: number;
+  readingId?: string;
+}
+
+export interface MeterPmTriggerResult {
+  pmTaskId: string;
+  meterId: string;
+  workOrderId: string;
+  triggeredAt: string;
+}
+
+export interface DeviceUpdateResult {
+  deviceId: string;
+  status: 'online' | 'offline' | 'unknown';
+  lastSeenAt?: string;
+  assetId?: string;
+  metric?: string;
+  value?: number;
 }
 
 const normalizeTimestamp = (value?: string | Date): Date => {
@@ -198,15 +228,38 @@ const detectAnomaly = async (
   };
 };
 
-const sanitizeReadings = (readings: IoTReadingInput[]): {
+type SanitizedReading = {
   assetId: string;
   metric: string;
   value: number;
   timestamp: Date;
-}[] => {
+  deviceId?: string;
+};
+
+const sanitizeReadings = async (
+  tenantId: string,
+  readings: IoTReadingInput[],
+): Promise<SanitizedReading[]> => {
+  const deviceIds = Array.from(
+    new Set(
+      readings
+        .map((reading) => (typeof reading.deviceId === 'string' ? reading.deviceId.trim() : ''))
+        .filter((id) => id.length > 0),
+    ),
+  );
+  const devices = deviceIds.length
+    ? await SensorDevice.find({ tenantId, deviceId: { $in: deviceIds } })
+        .select('asset deviceId')
+        .lean()
+    : [];
+  const deviceMap = new Map<string, { assetId?: string }>(
+    devices.map((device) => [device.deviceId ?? '', { assetId: device.asset?.toString() }]),
+  );
+
   return readings
-    .map((reading) => {
-      const assetId = reading.assetId ?? reading.asset;
+    .map<SanitizedReading | null>((reading) => {
+      const deviceId = typeof reading.deviceId === 'string' ? reading.deviceId.trim() : undefined;
+      const assetId = reading.assetId ?? reading.asset ?? (deviceId ? deviceMap.get(deviceId)?.assetId : undefined);
       const metric = typeof reading.metric === 'string' ? reading.metric.trim() : '';
       const value = normalizeValue(reading.value);
       if (!assetId || !metric || value == null) {
@@ -216,25 +269,79 @@ const sanitizeReadings = (readings: IoTReadingInput[]): {
         assetId,
         metric,
         value,
+        ...(deviceId ? { deviceId } : {}),
         timestamp: normalizeTimestamp(reading.timestamp),
       };
     })
-    .filter((entry): entry is { assetId: string; metric: string; value: number; timestamp: Date } =>
-      entry !== null,
+    .filter(
+      (entry): entry is SanitizedReading => entry !== null,
     );
+};
+
+const triggerMeterPmFromMeter = async (
+  meter: (typeof Meter)['prototype'],
+  observedAt: Date,
+): Promise<MeterPmTriggerResult[]> => {
+  const pmTasks = await PMTask.find({
+    tenantId: meter.tenantId,
+    active: true,
+    'rule.type': 'meter',
+    'rule.meterName': meter.name,
+  });
+
+  const results: MeterPmTriggerResult[] = [];
+
+  for (const task of pmTasks) {
+    const threshold = task.rule?.threshold ?? meter.pmInterval ?? 0;
+    const delta = meter.currentValue - (meter.lastWOValue || 0);
+    if (!Number.isFinite(threshold) || threshold <= 0 || delta < threshold) {
+      continue;
+    }
+
+    const workOrder = await WorkOrder.create({
+      title: `Meter PM: ${task.title}`,
+      description: task.notes || '',
+      status: 'open',
+      asset: meter.asset,
+      pmTask: task._id,
+      department: task.department,
+      dueDate: observedAt,
+      priority: 'medium',
+      tenantId: task.tenantId,
+    });
+
+    meter.lastWOValue = meter.currentValue;
+    task.lastGeneratedAt = observedAt;
+    await task.save();
+
+    results.push({
+      pmTaskId: task._id.toString(),
+      meterId: meter._id.toString(),
+      workOrderId: workOrder._id.toString(),
+      triggeredAt: observedAt.toISOString(),
+    });
+  }
+
+  if (results.length > 0) {
+    await meter.save();
+  }
+
+  return results;
 };
 
 export async function ingestTelemetryBatch({
   tenantId,
   readings,
   source,
+  triggerMeterPm,
 }: {
   tenantId: string;
   readings: IoTReadingInput[];
   source?: 'http' | 'mqtt';
+  triggerMeterPm?: boolean;
 }): Promise<IngestSummary> {
   void source; // reserved for future logging
-  const sanitized = sanitizeReadings(readings);
+  const sanitized = await sanitizeReadings(tenantId, readings);
   if (!sanitized.length) {
     throw new Error('No valid readings provided');
   }
@@ -244,6 +351,7 @@ export async function ingestTelemetryBatch({
       asset: entry.assetId,
       metric: entry.metric,
       value: entry.value,
+      deviceId: entry.deviceId,
       timestamp: entry.timestamp,
       tenantId,
     })),
@@ -252,13 +360,31 @@ export async function ingestTelemetryBatch({
 
   const triggeredRules: RuleTriggerResult[] = [];
   const anomalies: AnomalyResult[] = [];
+  const meterUpdates: MeterUpdateResult[] = [];
+  const meterPmWorkOrders: MeterPmTriggerResult[] = [];
+  const deviceUpdates: DeviceUpdateResult[] = [];
+  const latestByDevice = new Map<string, { assetId: string; metric: string; value: number; timestamp: Date }>();
 
   const ruleCache = new Map<string, ConditionRuleLean[]>();
 
   for (const doc of docs) {
     const assetId = (doc.asset as Types.ObjectId | undefined)?.toString();
     const metric = doc.metric;
+    const deviceId = typeof (doc as any).deviceId === 'string' ? (doc as any).deviceId : undefined;
     if (!assetId || !metric) continue;
+
+    if (deviceId) {
+      const current = latestByDevice.get(deviceId);
+      if (!current || current.timestamp < doc.timestamp) {
+        latestByDevice.set(deviceId, {
+          assetId,
+          metric,
+          value: doc.value,
+          timestamp: doc.timestamp ?? new Date(),
+        });
+      }
+    }
+
     const cacheKey = `${tenantId}:${assetId}:${metric}`;
     if (!ruleCache.has(cacheKey)) {
       const query: FilterQuery<Record<string, unknown>> = {
@@ -297,9 +423,83 @@ export async function ingestTelemetryBatch({
     }
   }
 
+  if (triggerMeterPm) {
+    const latestByMeter = new Map<
+      string,
+      { assetId: string; metric: string; value: number; timestamp: Date }
+    >();
+
+    for (const reading of sanitized) {
+      const key = `${reading.assetId}:${reading.metric}`;
+      const current = latestByMeter.get(key);
+      if (!current || current.timestamp < reading.timestamp) {
+        latestByMeter.set(key, reading);
+      }
+    }
+
+    for (const reading of latestByMeter.values()) {
+      const meter = await Meter.findOne({
+        tenantId,
+        asset: reading.assetId,
+        name: reading.metric,
+      });
+
+      if (!meter) continue;
+
+      const meterReading = await MeterReading.create({
+        meter: meter._id,
+        value: reading.value,
+        timestamp: reading.timestamp,
+        tenantId,
+      });
+
+      meter.currentValue = reading.value;
+      await meter.save();
+
+      meterUpdates.push({
+        meterId: meter._id.toString(),
+        value: reading.value,
+        readingId: meterReading._id.toString(),
+      });
+
+      const pmTriggers = await triggerMeterPmFromMeter(meter, reading.timestamp);
+      meterPmWorkOrders.push(...pmTriggers);
+    }
+  }
+
+  if (latestByDevice.size) {
+    for (const [deviceId, reading] of latestByDevice.entries()) {
+      const updated = await SensorDevice.findOneAndUpdate(
+        { tenantId, deviceId },
+        {
+          $set: {
+            asset: reading.assetId,
+            lastSeenAt: reading.timestamp,
+            lastMetric: reading.metric,
+            lastValue: reading.value,
+            status: 'online',
+          },
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true },
+      );
+
+      deviceUpdates.push({
+        deviceId,
+        status: (updated.status as DeviceUpdateResult['status']) ?? 'online',
+        lastSeenAt: reading.timestamp.toISOString(),
+        assetId: reading.assetId,
+        metric: reading.metric,
+        value: reading.value,
+      });
+    }
+  }
+
   return {
     savedCount: docs.length,
     triggeredRules,
     anomalies,
+    ...(meterUpdates.length ? { meterUpdates } : {}),
+    ...(meterPmWorkOrders.length ? { meterPmWorkOrders } : {}),
+    ...(deviceUpdates.length ? { deviceUpdates } : {}),
   };
 }

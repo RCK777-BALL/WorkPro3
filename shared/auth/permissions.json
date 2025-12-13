@@ -1,0 +1,229 @@
+{
+  "hierarchy": {
+    "read": [
+      "global_admin",
+      "plant_admin",
+      "general_manager",
+      "assistant_general_manager",
+      "operations_manager",
+      "department_leader",
+      "assistant_department_leader",
+      "area_leader",
+      "team_leader",
+      "admin",
+      "team_member",
+      "technical_team_member",
+      "manager",
+      "supervisor",
+      "planner",
+      "tech",
+      "technician",
+      "viewer"
+    ],
+    "write": [
+      "global_admin",
+      "plant_admin",
+      "general_manager",
+      "assistant_general_manager",
+      "operations_manager",
+      "department_leader",
+      "assistant_department_leader",
+      "area_leader",
+      "team_leader",
+      "manager",
+      "supervisor",
+      "admin"
+    ],
+    "delete": [
+      "global_admin",
+      "plant_admin",
+      "general_manager",
+      "operations_manager",
+      "department_leader",
+      "manager",
+      "admin"
+    ]
+  },
+  "inventory": {
+    "read": [
+      "global_admin",
+      "plant_admin",
+      "general_manager",
+      "assistant_general_manager",
+      "operations_manager",
+      "department_leader",
+      "assistant_department_leader",
+      "area_leader",
+      "team_leader",
+      "manager",
+      "supervisor",
+      "planner",
+      "tech",
+      "technician",
+      "team_member",
+      "technical_team_member"
+    ],
+    "manage": [
+      "global_admin",
+      "plant_admin",
+      "general_manager",
+      "assistant_general_manager",
+      "operations_manager",
+      "department_leader",
+      "assistant_department_leader",
+      "area_leader",
+      "team_leader",
+      "manager",
+      "supervisor",
+      "planner",
+      "admin"
+    ],
+    "purchase": [
+      "global_admin",
+      "plant_admin",
+      "general_manager",
+      "operations_manager",
+      "manager",
+      "supervisor",
+      "planner",
+      "admin"
+    ]
+  },
+  "workRequests": {
+    "read": [
+      "global_admin",
+      "plant_admin",
+      "general_manager",
+      "assistant_general_manager",
+      "operations_manager",
+      "department_leader",
+      "assistant_department_leader",
+      "area_leader",
+      "team_leader",
+      "team_member",
+      "manager",
+      "supervisor",
+      "planner",
+      "tech",
+      "technician"
+    ],
+    "convert": [
+      "global_admin",
+      "plant_admin",
+      "general_manager",
+      "assistant_general_manager",
+      "operations_manager",
+      "department_leader",
+      "manager",
+      "supervisor",
+      "admin"
+    ]
+  },
+  "pm": {
+    "read": [
+      "global_admin",
+      "plant_admin",
+      "general_manager",
+      "assistant_general_manager",
+      "operations_manager",
+      "department_leader",
+      "assistant_department_leader",
+      "area_leader",
+      "team_leader",
+      "manager",
+      "supervisor",
+      "planner",
+      "tech",
+      "technician"
+    ],
+    "write": [
+      "global_admin",
+      "plant_admin",
+      "general_manager",
+      "assistant_general_manager",
+      "operations_manager",
+      "department_leader",
+      "assistant_department_leader",
+      "area_leader",
+      "team_leader",
+      "manager",
+      "supervisor",
+      "planner",
+      "admin"
+    ],
+    "delete": [
+      "global_admin",
+      "plant_admin",
+      "general_manager",
+      "operations_manager",
+      "manager",
+      "supervisor",
+      "admin"
+    ]
+  },
+  "importExport": {
+    "export": [
+      "global_admin",
+      "plant_admin",
+      "general_manager",
+      "assistant_general_manager",
+      "operations_manager",
+      "department_leader",
+      "assistant_department_leader",
+      "area_leader",
+      "team_leader",
+      "manager",
+      "supervisor",
+      "planner",
+      "admin"
+    ],
+    "import": [
+      "global_admin",
+      "plant_admin",
+      "general_manager",
+      "assistant_general_manager",
+      "operations_manager",
+      "department_leader",
+      "assistant_department_leader",
+      "area_leader",
+      "team_leader",
+      "manager",
+      "supervisor",
+      "admin"
+    ]
+  },
+  "executive": {
+    "read": [
+      "global_admin",
+      "plant_admin",
+      "general_manager",
+      "assistant_general_manager",
+      "operations_manager",
+      "department_leader",
+      "assistant_department_leader"
+    ],
+    "manage": [
+      "global_admin",
+      "plant_admin",
+      "general_manager",
+      "assistant_general_manager",
+      "operations_manager"
+    ]
+  },
+  "audit": {
+    "read": [
+      "global_admin",
+      "plant_admin",
+      "general_manager",
+      "assistant_general_manager",
+      "operations_manager",
+      "department_leader",
+      "assistant_department_leader",
+      "area_leader",
+      "team_leader",
+      "manager",
+      "supervisor",
+      "admin"
+    ]
+  }
+}

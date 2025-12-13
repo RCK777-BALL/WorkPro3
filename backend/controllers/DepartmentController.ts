@@ -8,7 +8,7 @@ import type { ParamsDictionary } from 'express-serve-static-core';
 
 import Department, { type DepartmentDoc } from '../models/Department';
 import type { AuthedRequestHandler } from '../types/http';
-import { sendResponse } from '../utils/sendResponse';
+import { sendResponse } from '../utils';
 
 
 interface DepartmentListQuery extends ParsedQs {
@@ -41,7 +41,7 @@ const buildDepartmentFilter = (
 };
 
 
-export const listDepartments: AuthedRequestHandler<
+const listDepartments: AuthedRequestHandler<
   ParamsDictionary,
   DepartmentListResponse,
   unknown,
@@ -69,4 +69,6 @@ export const listDepartments: AuthedRequestHandler<
     return;
   }
 };
+
+export { listDepartments };
 

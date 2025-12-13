@@ -6,8 +6,9 @@ import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import type { ParamsDictionary, User as ExpressUser } from 'express-serve-static-core';
 import type { ParsedQs } from 'qs';
 import type { Types } from 'mongoose';
+import type { PermissionAssignment } from '../../shared/types/auth';
 
-export type { ApiResult } from '@shared/http';
+export type { ApiResult } from '../../shared/types/http';
 
 export type AuthedRequest<
   P extends ParamsDictionary = ParamsDictionary,
@@ -23,11 +24,15 @@ export type AuthedRequest<
         _id?: string | Types.ObjectId | undefined;
         scopes?: string[] | undefined;
         client?: string | undefined;
+        roles?: string[] | undefined;
+        permissions?: string[] | undefined;
       })
     | undefined;
   tenantId?: string | undefined;
+  tenantDomain?: string | undefined;
   siteId?: string | undefined;
   plantId?: string | undefined;
+  permissions?: string[] | undefined;
 };
 
 export interface AuthedRequestHandler<

@@ -2,21 +2,29 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ChangeEvent, MouseEvent } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import http from '@/lib/http';
-import { addToQueue, onSyncConflict, type SyncConflict } from '@/utils/offlineQueue';
+import {
+  addToQueue,
+  enqueueWorkOrderUpdate,
+  onSyncConflict,
+  type SyncConflict,
+} from '@/utils/offlineQueue';
 import ConflictResolver from '@/components/offline/ConflictResolver';
 import DataTable from '@/components/common/DataTable';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
-import { Search } from 'lucide-react';
+import { Scan, Search } from 'lucide-react';
+import TableLayoutControls from '@/components/common/TableLayoutControls';
 import NewWorkOrderModal from '@/components/work-orders/NewWorkOrderModal';
 import WorkOrderReviewModal from '@/components/work-orders/WorkOrderReviewModal';
 import type { WorkOrder } from '@/types';
 import { mapChecklistsFromApi, mapSignaturesFromApi } from '@/utils/workOrderTransforms';
 import { safeLocalStorage } from '@/utils/safeLocalStorage';
+import { useTableLayout } from '@/hooks/useTableLayout';
+import { useAuth } from '@/context/AuthContext';
 
 const LOCAL_KEY = 'offline-workorders';
 const OPTIONAL_WORK_ORDER_KEYS: (keyof WorkOrder)[] = [
@@ -91,6 +99,8 @@ function assignIfDefined<T, K extends keyof T>(target: T, key: K, value: T[K] | 
 export default function WorkOrders() {
   const [searchParams, setSearchParams] = useSearchParams();
   const searchKey = searchParams.toString();
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -104,6 +114,58 @@ export default function WorkOrders() {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<WorkOrder | null>(null);
   const [conflict, setConflict] = useState<SyncConflict | null>(null);
+
+  const columnMetadata = useMemo(
+    () => [
+      { id: 'title', label: 'Title' },
+      { id: 'priority', label: 'Priority' },
+      { id: 'status', label: 'Status' },
+      { id: 'assignees', label: 'Assignees' },
+      { id: 'dueDate', label: 'Due Date' },
+      { id: 'actions', label: 'Actions' },
+    ],
+    [],
+  );
+
+  const currentFilters = useMemo(
+    () => ({
+      search,
+      status: statusFilter,
+      priority: priorityFilter,
+      startDate,
+      endDate,
+    }),
+    [endDate, priorityFilter, search, startDate, statusFilter],
+  );
+
+  const tableLayout = useTableLayout({
+    tableKey: 'workorders-table',
+    columnIds: columnMetadata.map((col) => col.id),
+    userId: user?.id,
+    defaultFilters: currentFilters,
+  });
+  const applySharedLayoutState = tableLayout.applySharedLayout;
+  const updateLayoutFilters = tableLayout.updateFilters;
+
+  const applyLayoutFilters = useCallback(
+    (filters?: Record<string, string>) => {
+      if (!filters) return;
+
+      setSearch(filters.search ?? '');
+      setStatusFilter(filters.status ?? '');
+      setPriorityFilter(filters.priority ?? '');
+      setStartDate(filters.startDate ?? '');
+      setEndDate(filters.endDate ?? '');
+
+      const params = new URLSearchParams();
+      if (filters.status) params.set('status', filters.status);
+      if (filters.priority) params.set('priority', filters.priority);
+      if (filters.startDate) params.set('startDate', filters.startDate);
+      if (filters.endDate) params.set('endDate', filters.endDate);
+      setSearchParams(params);
+    },
+    [setSearchParams],
+  );
 
   useEffect(() => {
     const unsub = onSyncConflict(setConflict);
@@ -124,9 +186,29 @@ export default function WorkOrders() {
     setConflict(null);
   };
 
+  useEffect(() => {
+    updateLayoutFilters(currentFilters);
+  }, [currentFilters, updateLayoutFilters]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchKey);
+    const sharedLayout = params.get('layout');
+    if (!sharedLayout) return;
+
+    const applied = applySharedLayoutState(sharedLayout);
+    if (applied?.filters) {
+      applyLayoutFilters(applied.filters);
+    }
+  }, [applyLayoutFilters, applySharedLayoutState, searchKey]);
+
   const fetchWorkOrders = useCallback(
     async (
-      filters?: { status?: string; priority?: string; startDate?: string; endDate?: string },
+      filters?: {
+        status?: string | undefined;
+        priority?: string | undefined;
+        startDate?: string | undefined;
+        endDate?: string | undefined;
+      },
     ) => {
       if (!navigator.onLine) {
         const cached = safeLocalStorage.getItem(LOCAL_KEY);
@@ -179,7 +261,7 @@ export default function WorkOrders() {
   ) => {
     const update = { status };
     if (!navigator.onLine) {
-      addToQueue({ method: 'put', url: `/workorders/${id}`, data: update });
+      enqueueWorkOrderUpdate(id, update);
       const updated = workOrders.map((wo) =>
         wo.id === id ? { ...wo, status } : wo
       );
@@ -191,7 +273,7 @@ export default function WorkOrders() {
       await http.put(`/workorders/${id}`, update);
       fetchWorkOrders();
     } catch {
-      addToQueue({ method: 'put', url: `/workorders/${id}`, data: update });
+      enqueueWorkOrderUpdate(id, update);
     }
   };
 
@@ -236,65 +318,66 @@ export default function WorkOrders() {
         return;
       }
 
-      addToQueue({
-        method: isEdit ? 'put' : 'post',
-        url: isEdit ? `/workorders/${existingId}` : '/workorders',
-        data: payload,
-      });
+      const queueAction =
+        isEdit && existingId
+          ? () => enqueueWorkOrderUpdate(existingId, payload as Record<string, unknown>)
+          : () => addToQueue({ method: 'post', url: '/workorders', data: payload });
+      queueAction();
 
       setWorkOrders((prev) => {
-        const recordPayload = payload as Record<string, unknown>;
-        if (isEdit && existingId) {
-          const updated = prev.map((wo) => {
-            if (wo.id !== existingId) {
-              return wo;
-            }
-            const departmentValue = (recordPayload.department as string)
-              ?? (recordPayload.departmentId as string)
-              ?? wo.department;
-            const rawChecklists = (recordPayload as { checklists?: unknown }).checklists;
-            const rawSignatures = (recordPayload as { signatures?: unknown }).signatures;
-            const merged: WorkOrder = {
-              ...wo,
-              ...recordPayload,
-              department: departmentValue,
-            } as WorkOrder;
-            delete (merged as Record<string, unknown>).departmentId;
-            if (rawChecklists !== undefined) {
-              merged.checklists = mapChecklistsFromApi(rawChecklists);
-            }
-            if (rawSignatures !== undefined) {
-              merged.signatures = mapSignaturesFromApi(rawSignatures);
-            }
-            return merged;
+          const recordPayload = payload as unknown as Partial<WorkOrder> & {
+            departmentId?: string;
+            checklists?: unknown;
+            signatures?: unknown;
+          } & Record<string, unknown>;
+          if (isEdit && existingId) {
+            const updated = prev.map((wo) => {
+              if (wo.id !== existingId) {
+                return wo;
+              }
+              const { departmentId, checklists, signatures, ...restPayload } = recordPayload;
+              const departmentValue = (recordPayload.department as string)
+                ?? departmentId
+                ?? wo.department;
+              const merged: WorkOrder = {
+                ...wo,
+                ...restPayload,
+                department: departmentValue,
+              } as WorkOrder;
+              if (checklists !== undefined) {
+                merged.checklists = mapChecklistsFromApi(checklists);
+              }
+              if (signatures !== undefined) {
+                merged.signatures = mapSignaturesFromApi(signatures);
+              }
+              return merged;
+            });
+            safeLocalStorage.setItem(LOCAL_KEY, JSON.stringify(updated));
+            return updated;
+          }
+
+          const { departmentId, checklists, signatures } = recordPayload;
+          const departmentValue = (recordPayload.department as string) ?? departmentId ?? 'General';
+
+          const temp: WorkOrder = {
+            id: Date.now().toString(),
+            title: (recordPayload.title as string) ?? 'Untitled Work Order',
+            priority: (recordPayload.priority as WorkOrder['priority']) ?? 'medium',
+            status: (recordPayload.status as WorkOrder['status']) ?? 'requested',
+            type: (recordPayload.type as WorkOrder['type']) ?? 'corrective',
+            department: departmentValue,
+          } as WorkOrder;
+
+          OPTIONAL_WORK_ORDER_KEYS.forEach((key) => {
+            const value = (recordPayload as Record<string, unknown>)[key as string];
+            assignIfDefined(temp, key, value as WorkOrder[typeof key] | undefined);
           });
-          safeLocalStorage.setItem(LOCAL_KEY, JSON.stringify(updated));
-          return updated;
-        }
-
-        const departmentValue = (recordPayload.department as string)
-          ?? (recordPayload.departmentId as string)
-          ?? 'General';
-
-        const temp: WorkOrder = {
-          id: Date.now().toString(),
-          title: (recordPayload.title as string) ?? 'Untitled Work Order',
-          priority: (recordPayload.priority as WorkOrder['priority']) ?? 'medium',
-          status: (recordPayload.status as WorkOrder['status']) ?? 'requested',
-          type: (recordPayload.type as WorkOrder['type']) ?? 'corrective',
-          department: departmentValue,
-        } as WorkOrder;
-
-        OPTIONAL_WORK_ORDER_KEYS.forEach((key) => {
-          const value = recordPayload[key as string];
-          assignIfDefined(temp, key, value as WorkOrder[typeof key] | undefined);
-        });
-        if (recordPayload.checklists !== undefined) {
-          temp.checklists = mapChecklistsFromApi(recordPayload.checklists);
-        }
-        if (recordPayload.signatures !== undefined) {
-          temp.signatures = mapSignaturesFromApi(recordPayload.signatures);
-        }
+          if (checklists !== undefined) {
+            temp.checklists = mapChecklistsFromApi(checklists);
+          }
+          if (signatures !== undefined) {
+            temp.signatures = mapSignaturesFromApi(signatures);
+          }
 
         const updated = [...prev, temp];
         safeLocalStorage.setItem(LOCAL_KEY, JSON.stringify(updated));
@@ -419,196 +502,247 @@ export default function WorkOrders() {
       setSearchParams(params);
     }
   };
-
-  const columns = [
-    { header: 'Title', accessor: 'title' as keyof WorkOrder },
-    {
-      header: 'Priority',
-      accessor: (row: WorkOrder) => (
-        <Badge text={row.priority} type="priority" size="sm" />
-      ),
-    },
-    {
-      header: 'Status',
-      accessor: (row: WorkOrder) => (
-        <Badge text={row.status} type="status" size="sm" />
-      ),
-    },
-    {
-      header: 'Assignees',
-      accessor: (row: WorkOrder) => row.assignees?.join(', ') || 'N/A',
-    },
-    {
-      header: 'Due Date',
-      accessor: (row: WorkOrder) =>
-        row.dueDate ? new Date(row.dueDate).toLocaleDateString() : 'N/A',
-    },
-    {
-      header: 'Actions',
-      accessor: (row: WorkOrder) => {
-        const handleTransition = (
-          event: MouseEvent<HTMLButtonElement>,
-          action: 'assign' | 'start' | 'complete' | 'cancel',
-        ) => {
-          event.stopPropagation();
-          transition(row.id, action);
-        };
-
-        const handleEdit = (event: MouseEvent<HTMLButtonElement>) => {
-          event.stopPropagation();
-          openEditModal(row);
-        };
-
-        const handleView = (event: MouseEvent<HTMLButtonElement>) => {
-          event.stopPropagation();
-          openReview(row);
-        };
-
-        const handleDelete = (event: MouseEvent<HTMLButtonElement>) => {
-          event.stopPropagation();
-          if (window.confirm('Are you sure you want to delete this work order?')) {
-            deleteWorkOrder(row.id);
-          }
-        };
-
-        switch (row.status) {
-          case 'requested':
-            return (
-              <div className="flex justify-end gap-2">
-                <Button variant="ghost" size="sm" onClick={handleView}>
-                  View
-                </Button>
-                <Button variant="ghost" size="sm" onClick={handleEdit}>
-                  Edit
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(event) => handleTransition(event, 'assign')}
-                >
-                  Assign
-                </Button>
-                <Button variant="destructive" size="sm" onClick={handleDelete}>
-                  Delete
-                </Button>
-              </div>
-            );
-          case 'assigned':
-            return (
-              <div className="flex justify-end gap-2">
-                <Button variant="ghost" size="sm" onClick={handleView}>
-                  View
-                </Button>
-                <Button variant="ghost" size="sm" onClick={handleEdit}>
-                  Edit
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(event) => handleTransition(event, 'start')}
-                >
-                  Start
-                </Button>
-                <Button variant="destructive" size="sm" onClick={handleDelete}>
-                  Delete
-                </Button>
-              </div>
-            );
-          case 'in_progress':
-            return (
-              <div className="flex justify-end gap-2">
-                <Button variant="ghost" size="sm" onClick={handleView}>
-                  View
-                </Button>
-                <Button variant="ghost" size="sm" onClick={handleEdit}>
-                  Edit
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(event) => handleTransition(event, 'complete')}
-                >
-                  Complete
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(event) => handleTransition(event, 'cancel')}
-                >
-                  Cancel
-                </Button>
-                <Button variant="destructive" size="sm" onClick={handleDelete}>
-                  Delete
-                </Button>
-              </div>
-            );
-          case 'paused':
-            return (
-              <div className="flex justify-end gap-2">
-                <Button variant="ghost" size="sm" onClick={handleView}>
-                  View
-                </Button>
-                <Button variant="ghost" size="sm" onClick={handleEdit}>
-                  Edit
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(event) => handleTransition(event, 'start')}
-                >
-                  Resume
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(event) => handleTransition(event, 'complete')}
-                >
-                  Complete
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(event) => handleTransition(event, 'cancel')}
-                >
-                  Cancel
-                </Button>
-                <Button variant="destructive" size="sm" onClick={handleDelete}>
-                  Delete
-                </Button>
-              </div>
-            );
-          default:
-            return (
-              <div className="flex justify-end gap-2">
-                <Button variant="ghost" size="sm" onClick={handleView}>
-                  View
-                </Button>
-                <Button variant="ghost" size="sm" onClick={handleEdit}>
-                  Edit
-                </Button>
-                <Button variant="destructive" size="sm" onClick={handleDelete}>
-                  Delete
-                </Button>
-              </div>
-            );
-        }
+  const columns = useMemo(
+    () => [
+      { id: 'title', header: 'Title', accessor: 'title' as keyof WorkOrder },
+      {
+        id: 'priority',
+        header: 'Priority',
+        accessor: (row: WorkOrder) => (
+          <Badge text={row.priority} type="priority" size="sm" />
+        ),
       },
-      className: 'text-right',
-    },
-  ];
+      {
+        id: 'status',
+        header: 'Status',
+        accessor: (row: WorkOrder) => (
+          <Badge text={row.status} type="status" size="sm" />
+        ),
+      },
+      {
+        id: 'assignees',
+        header: 'Assignees',
+        accessor: (row: WorkOrder) => row.assignees?.join(', ') || 'N/A',
+      },
+      {
+        id: 'dueDate',
+        header: 'Due Date',
+        accessor: (row: WorkOrder) =>
+          row.dueDate ? new Date(row.dueDate).toLocaleDateString() : 'N/A',
+      },
+      {
+        id: 'actions',
+        header: 'Actions',
+        accessor: (row: WorkOrder) => {
+          const handleTransition = (
+            event: MouseEvent<HTMLButtonElement>,
+            action: 'assign' | 'start' | 'complete' | 'cancel',
+          ) => {
+            event.stopPropagation();
+            transition(row.id, action);
+          };
+
+          const handleEdit = (event: MouseEvent<HTMLButtonElement>) => {
+            event.stopPropagation();
+            openEditModal(row);
+          };
+
+          const handleView = (event: MouseEvent<HTMLButtonElement>) => {
+            event.stopPropagation();
+            openReview(row);
+          };
+
+          const handleDelete = (event: MouseEvent<HTMLButtonElement>) => {
+            event.stopPropagation();
+            if (window.confirm('Are you sure you want to delete this work order?')) {
+              deleteWorkOrder(row.id);
+            }
+          };
+
+          switch (row.status) {
+            case 'requested':
+              return (
+                <div className="flex justify-end gap-2">
+                  <Button variant="ghost" size="sm" onClick={handleView}>
+                    View
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={handleEdit}>
+                    Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(event) => handleTransition(event, 'assign')}
+                  >
+                    Assign
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={handleDelete}>
+                    Delete
+                  </Button>
+                </div>
+              );
+            case 'assigned':
+              return (
+                <div className="flex justify-end gap-2">
+                  <Button variant="ghost" size="sm" onClick={handleView}>
+                    View
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={handleEdit}>
+                    Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(event) => handleTransition(event, 'start')}
+                  >
+                    Start
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={handleDelete}>
+                    Delete
+                  </Button>
+                </div>
+              );
+            case 'in_progress':
+              return (
+                <div className="flex justify-end gap-2">
+                  <Button variant="ghost" size="sm" onClick={handleView}>
+                    View
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={handleEdit}>
+                    Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(event) => handleTransition(event, 'complete')}
+                  >
+                    Complete
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(event) => handleTransition(event, 'cancel')}
+                  >
+                    Cancel
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={handleDelete}>
+                    Delete
+                  </Button>
+                </div>
+              );
+            case 'paused':
+              return (
+                <div className="flex justify-end gap-2">
+                  <Button variant="ghost" size="sm" onClick={handleView}>
+                    View
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={handleEdit}>
+                    Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(event) => handleTransition(event, 'start')}
+                  >
+                    Resume
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(event) => handleTransition(event, 'complete')}
+                  >
+                    Complete
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(event) => handleTransition(event, 'cancel')}
+                  >
+                    Cancel
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={handleDelete}>
+                    Delete
+                  </Button>
+                </div>
+              );
+            default:
+              return (
+                <div className="flex justify-end gap-2">
+                  <Button variant="ghost" size="sm" onClick={handleView}>
+                    View
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={handleEdit}>
+                    Edit
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={handleDelete}>
+                    Delete
+                  </Button>
+                </div>
+              );
+          }
+        },
+        className: 'text-right',
+      },
+    ],
+    [deleteWorkOrder, openEditModal, openReview, transition],
+  );
+
+  const columnLookup = useMemo(
+    () => new Map(columns.map((column) => [column.id ?? column.header, column])),
+    [columns],
+  );
+
+  const visibleColumns = useMemo(
+    () =>
+      tableLayout.visibleColumnOrder
+        .map((id) => columnLookup.get(id))
+        .filter(Boolean) as typeof columns,
+    [columnLookup, tableLayout.visibleColumnOrder],
+  );
+
+  const handleApplySavedLayout = (layoutId: string) => {
+    const applied = tableLayout.applyLayout(layoutId);
+    if (applied?.filters) {
+      applyLayoutFilters(applied.filters);
+    }
+  };
+
+  const handleSaveLayout = (name: string) =>
+    tableLayout.saveLayout(name, {
+      ...currentFilters,
+    });
+
+  const shareLayoutLink = (layoutId?: string) => {
+    const targetState = layoutId
+      ? tableLayout.savedLayouts.find((layout) => layout.id === layoutId)?.state
+      : tableLayout.preferences;
+    return tableLayout.getShareableLink(targetState ?? tableLayout.preferences);
+  };
 
   return (
     <>
       <div className="space-y-6 p-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-2xl font-bold">Work Orders</h1>
-          <Button
-            variant="primary"
-            onClick={openCreateModal}
-            className="border border-primary-700"
-          >
-            Create Work Order
-          </Button>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <Button
+              variant="primary"
+              size="lg"
+              className="w-full sm:w-auto"
+              onClick={() => navigate('/assets/scan')}
+            >
+              <Scan className="mr-2 h-5 w-5" />
+              Scan QR/Barcode
+            </Button>
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={openCreateModal}
+              className="w-full border border-primary-700 sm:w-auto"
+            >
+              Create Work Order
+            </Button>
+          </div>
         </div>
 
         {error && <p className="text-red-600">{error}</p>}
@@ -668,12 +802,28 @@ export default function WorkOrders() {
           </Button>
         </div>
 
+        <TableLayoutControls
+          columns={columnMetadata}
+          columnOrder={tableLayout.columnOrder}
+          hiddenColumns={tableLayout.hiddenColumns}
+          onToggleColumn={tableLayout.toggleColumn}
+          onMoveColumn={tableLayout.moveColumn}
+          onReset={tableLayout.resetLayout}
+          onSaveLayout={handleSaveLayout}
+          savedLayouts={tableLayout.savedLayouts}
+          onApplyLayout={handleApplySavedLayout}
+          onShareLayout={shareLayoutLink}
+          activeLayoutId={tableLayout.activeLayoutId}
+        />
+
         <DataTable<WorkOrder>
-          columns={columns}
+          columns={visibleColumns}
           data={filteredOrders}
           keyField="id"
           onRowClick={openReview}
           emptyMessage="No work orders available."
+          sortState={tableLayout.sort ?? undefined}
+          onSortChange={(state) => tableLayout.setSort(state ?? null)}
         />
         <NewWorkOrderModal
           isOpen={isModalOpen}

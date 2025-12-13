@@ -4,11 +4,9 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { Types, type FilterQuery } from 'mongoose';
-import { sendResponse } from '../utils/sendResponse';
 
 import WorkHistory, { type WorkHistoryDocument } from '../models/WorkHistory';
-import { writeAuditLog } from '../utils/audit';
-import { toEntityId } from '../utils/ids';
+import { sendResponse, writeAuditLog, toEntityId } from '../utils';
 
 export const getAllWorkHistories = async (
   req: Request,

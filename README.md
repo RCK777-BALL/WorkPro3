@@ -2,16 +2,17 @@
 
 This repository contains a small full‑stack app split into two folders:
 
-- **backend** – Express API server with a MongoDB database and Socket.IO.
+- **backend** – Express API server with a MongoDB database and Socket.IO. This is the canonical backend path used by contributors and CI. Any other backend directories in the repo are archived for reference only.
 - **frontend** – React client built with Vite.
 
 ## Project structure
 
 ```
 WorkPro/
- backend/   Express API and tests
- frontend/  React client and tests
- dev-server/  Lightweight API for frontend development
+ backend/      Express API and tests (source of truth)
+ frontend/     React client and tests
+ dev-server/   Lightweight API for frontend development
+ archives/     Historical backends kept for reference only
  playground-1.mongodb.js  Sample MongoDB script
 ```
 
@@ -25,7 +26,7 @@ not committed to the repository.
 
 ## backend setup
 
-1. `cd backend`
+1. `cd backend` (the canonical backend directory)
 2. Copy `../.env.sample` to `.env`:
    ```bash
    cp ../.env.sample .env

@@ -9,6 +9,7 @@ import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
 import { useToast } from '@/context/ToastContext';
 import { ExecutiveTrendCard } from './components/ExecutiveTrendCard';
+import { type ExecutiveTrendPoint } from './api';
 import {
   useDownloadExecutiveReport,
   useExecutiveSchedule,
@@ -23,8 +24,10 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 });
 
-const formatLineData = (points: { period: string; [key: string]: number }[], key: string) =>
-  points.map((point) => ({ label: point.period, value: Number(point[key]?.toFixed(2) ?? 0) }));
+type TrendMetricKey = Exclude<keyof ExecutiveTrendPoint, 'period'>;
+
+const formatLineData = (points: ExecutiveTrendPoint[], key: TrendMetricKey) =>
+  points.map((point) => ({ label: point.period, value: Number(point[key] ?? 0) }));
 
 const parseFilename = (header?: string): string => {
   if (!header) return 'executive-report.pdf';
@@ -79,9 +82,9 @@ export default function ExecutiveInsightsPage() {
       anchor.click();
       anchor.remove();
       window.URL.revokeObjectURL(url);
-      addToast({ type: 'success', title: 'Report generated', message: 'Executive PDF downloaded.' });
+      addToast('Executive PDF downloaded.', 'success');
     } catch (err) {
-      addToast({ type: 'error', title: 'Export failed', message: 'Unable to generate the PDF right now.' });
+      addToast('Unable to generate the PDF right now.', 'error');
     }
   };
 
@@ -95,10 +98,10 @@ export default function ExecutiveInsightsPage() {
     };
     saveSchedule.mutate(payload, {
       onSuccess: () => {
-        addToast({ type: 'success', title: 'Schedule saved', message: 'Monthly delivery settings updated.' });
+        addToast('Monthly delivery settings updated.', 'success');
       },
       onError: () => {
-        addToast({ type: 'error', title: 'Unable to save', message: 'Check your inputs and try again.' });
+        addToast('Check your inputs and try again.', 'error');
       },
     });
   };

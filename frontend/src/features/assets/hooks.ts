@@ -3,9 +3,10 @@
  */
 
 import { useMemo } from 'react';
-import { useQuery } from 'react-query';
+import { useMutation, useQuery } from 'react-query';
 
 import { fetchAssetDetails, fetchHierarchy, type HierarchyAsset, type HierarchyResponse } from '@/api/hierarchy';
+import { createMeterReading, fetchMeters, type CreateMeterReadingInput, type MeterReading } from '@/api/meters';
 
 export const HIERARCHY_QUERY_KEY = ['hierarchy', 'tree'] as const;
 
@@ -16,6 +17,21 @@ export const useAssetDetails = (assetId?: string) =>
   useQuery({
     queryKey: ['hierarchy', 'asset', assetId],
     queryFn: () => fetchAssetDetails(assetId!),
+    enabled: Boolean(assetId),
+    staleTime: 30_000,
+  });
+
+export type MeterType = 'runtimeHours' | 'cycles';
+
+export const useCreateMeterReading = () =>
+  useMutation<MeterReading, Error, CreateMeterReadingInput>({
+    mutationFn: createMeterReading,
+  });
+
+export const useAssetMeters = (assetId?: string) =>
+  useQuery({
+    queryKey: ['hierarchy', 'asset', assetId, 'meters'],
+    queryFn: () => fetchMeters(assetId),
     enabled: Boolean(assetId),
     staleTime: 30_000,
   });

@@ -4,6 +4,7 @@
 
 import { Types } from 'mongoose';
 import WorkOrder, { WorkOrder as WorkOrderType } from '../models/WorkOrder';
+import WorkHistory from '../models/WorkHistory';
 import SensorReading from '../models/SensorReading';
 import ProductionRecord from '../models/ProductionRecord';
 import Asset from '../models/Asset';
@@ -57,6 +58,24 @@ export interface TrendResult {
   quality: TrendPoint[];
   energy: TrendPoint[];
   downtime: TrendPoint[];
+}
+
+export interface MetricWithTrend {
+  value: number;
+  trend: TrendPoint[];
+}
+
+export interface PmComplianceMetric {
+  total: number;
+  completed: number;
+  percentage: number;
+  trend: TrendPoint[];
+}
+
+export interface WorkOrderVolumeMetric {
+  total: number;
+  byStatus: { status: WorkOrderType['status']; count: number }[];
+  trend: TrendPoint[];
 }
 
 export interface BenchmarkEntry {
@@ -113,6 +132,11 @@ interface AnalyticsSources {
     timestamp: Date;
     value: number;
     metric: string;
+  }>;
+  workHistory: Array<{
+    asset?: ObjectIdLike | null;
+    completedAt?: Date | null;
+    timeSpentHours?: number | null;
   }>;
 }
 
@@ -224,6 +248,11 @@ function buildDateRange(filters: AnalyticsFilters): { $gte?: Date; $lte?: Date }
   return range;
 }
 
+function bucketByDay(date?: Date | null): string | null {
+  if (!date) return null;
+  return date.toISOString().slice(0, 10);
+}
+
 function safeDivide(numerator: number, denominator: number): number {
   if (!denominator) return 0;
   return numerator / denominator;
@@ -254,6 +283,38 @@ function calculateMTBF(workOrders: { completedAt?: Date | null }[]): number {
     total += failures[i].completedAt!.getTime() - failures[i - 1].completedAt!.getTime();
   }
   return safeDivide(total, failures.length - 1) / 36e5;
+}
+
+function calculateHistoryReliability(
+  history: AnalyticsSources['workHistory'],
+): { mttrHours: number; mtbfHours: number } {
+  const completed = history.filter((item) => item.completedAt);
+  if (!completed.length) {
+    return { mttrHours: 0, mtbfHours: 0 };
+  }
+
+  const mttrHours = (() => {
+    const durations = completed
+      .map((item) => item.timeSpentHours)
+      .filter((value): value is number => typeof value === 'number' && value >= 0);
+    if (!durations.length) return 0;
+    const total = durations.reduce((sum, value) => sum + value, 0);
+    return safeDivide(total, durations.length);
+  })();
+
+  const mtbfHours = (() => {
+    const failures = [...completed].sort(
+      (a, b) => (a.completedAt?.getTime() ?? 0) - (b.completedAt?.getTime() ?? 0),
+    );
+    if (failures.length < 2) return 0;
+    let delta = 0;
+    for (let i = 1; i < failures.length; i += 1) {
+      delta += (failures[i].completedAt?.getTime() ?? 0) - (failures[i - 1].completedAt?.getTime() ?? 0);
+    }
+    return safeDivide(delta, failures.length - 1) / 36e5;
+  })();
+
+  return { mttrHours, mtbfHours };
 }
 
 function calculateBacklog(workOrders: { status: string }[]): number {
@@ -349,9 +410,18 @@ async function loadSources(tenantId: string, filters: AnalyticsFilters): Promise
     ];
   }
   if (assetFilter) workOrderQuery.assetId = { $in: assetFilter };
+  if (siteFilter) workOrderQuery.siteId = { $in: siteFilter };
 
   const workOrders = await WorkOrder.find(workOrderQuery)
     .select('createdAt completedAt status failureCode timeSpentMin assetId')
+    .lean();
+
+  const historyQuery: Record<string, unknown> = { tenantId: tenantFilter };
+  if (dateRange) historyQuery.completedAt = dateRange;
+  if (assetFilter) historyQuery.asset = { $in: assetFilter };
+
+  const workHistory = await WorkHistory.find(historyQuery)
+    .select('asset completedAt timeSpentHours')
     .lean();
 
   const sensorQuery: Record<string, unknown> = { tenantId: tenantFilter, metric: ENERGY_METRIC };
@@ -362,7 +432,7 @@ async function loadSources(tenantId: string, filters: AnalyticsFilters): Promise
     .select('asset timestamp value metric')
     .lean();
 
-  return { workOrders, production, sensorReadings };
+  return { workOrders, production, sensorReadings, workHistory };
 }
 
 function buildBenchmark(
@@ -611,9 +681,13 @@ export async function getKPIs(tenantId: string, filters: AnalyticsFilters = {}):
   const assetBenchmarks = buildBenchmark(sources.production, (record) => record.asset, assetNames);
   const siteBenchmarks = buildBenchmark(sources.production, (record) => record.site ?? assetSite.get(record.asset?.toString() ?? ''), siteNames);
 
+  const reliability = calculateHistoryReliability(sources.workHistory);
+  const mttr = reliability.mttrHours || calculateMTTR(sources.workOrders);
+  const mtbf = reliability.mtbfHours || calculateMTBF(sources.workOrders);
+
   return {
-    mttr: calculateMTTR(sources.workOrders),
-    mtbf: calculateMTBF(sources.workOrders),
+    mttr,
+    mtbf,
     backlog: calculateBacklog(sources.workOrders),
     availability,
     performance,
@@ -662,40 +736,75 @@ function createEmptyDashboardKpiResult(): DashboardKpiResult {
   };
 }
 
-export async function getDashboardKpiSummary(
+type DashboardWorkOrderFields = {
+  status: WorkOrderType['status'];
+  dueDate?: Date | null;
+  pmTask?: Types.ObjectId | null;
+  completedAt?: Date | null;
+  createdAt?: Date;
+  downtime?: number | null;
+  partsUsed?: Array<{ cost?: number | null; qty?: number | null }>;
+  siteId?: Types.ObjectId | null;
+  assetId?: Types.ObjectId | null;
+};
+
+type DashboardFilterContext = {
+  tenantFilter: Types.ObjectId | string;
+  dateRange: ReturnType<typeof buildDateRange>;
+  assetFilter?: Types.ObjectId[];
+  siteFilter?: Types.ObjectId[];
+  isEmpty: boolean;
+};
+
+async function buildDashboardFilterContext(
   tenantId: string,
-  filters: AnalyticsFilters = {},
-): Promise<DashboardKpiResult> {
+  filters: AnalyticsFilters,
+): Promise<DashboardFilterContext> {
   const tenantFilter = toObjectId(tenantId);
   const dateRange = buildDateRange(filters);
-  let assetFilter = normalizeIdList(filters.assetIds);
-  const siteFilter = normalizeIdList(filters.siteIds);
+  let assetFilter = normalizeIdList(filters.assetIds) ?? [];
+  const siteFilter = normalizeIdList(filters.siteIds) ?? [];
 
-  if (siteFilter && siteFilter.length) {
+  if (siteFilter.length) {
     const assetsForSites: Array<{ _id: Types.ObjectId }> = await Asset.find({
       tenantId: tenantFilter,
       siteId: { $in: siteFilter },
     })
       .select('_id')
       .lean();
-    if (!assetsForSites.length) {
-      return createEmptyDashboardKpiResult();
-    }
     const siteAssetIds = assetsForSites.map((doc) => doc._id);
-    if (assetFilter && assetFilter.length) {
+    if (assetFilter.length) {
       const allowed = new Set(siteAssetIds.map((id) => id.toString()));
       assetFilter = assetFilter.filter((id) => allowed.has(id.toString()));
       if (!assetFilter.length) {
-        return createEmptyDashboardKpiResult();
+        return { tenantFilter, dateRange, assetFilter, siteFilter, isEmpty: true };
       }
-    } else {
+    } else if (siteAssetIds.length) {
       assetFilter = siteAssetIds;
     }
   }
 
+  const context: DashboardFilterContext = { tenantFilter, dateRange, isEmpty: false };
+  if (assetFilter.length) context.assetFilter = assetFilter;
+  if (siteFilter.length) context.siteFilter = siteFilter;
+
+  return context;
+}
+
+async function fetchDashboardWorkOrders<
+  T extends DashboardWorkOrderFields = DashboardWorkOrderFields,
+>(tenantId: string, filters: AnalyticsFilters, select: string, context?: DashboardFilterContext): Promise<T[]> {
+  const { tenantFilter, dateRange, assetFilter, siteFilter, isEmpty } =
+    context ?? (await buildDashboardFilterContext(tenantId, filters));
+
+  if (isEmpty) return [];
+
   const workOrderMatch: Record<string, unknown> = { tenantId: tenantFilter };
   if (assetFilter && assetFilter.length) {
     workOrderMatch.assetId = { $in: assetFilter };
+  }
+  if (siteFilter && siteFilter.length) {
+    workOrderMatch.siteId = { $in: siteFilter };
   }
   if (dateRange) {
     workOrderMatch.$or = [
@@ -705,7 +814,37 @@ export async function getDashboardKpiSummary(
     ];
   }
 
-  const workOrders: Array<{
+  const workOrders = await WorkOrder.find(workOrderMatch).select(select).lean<T[]>();
+  return workOrders;
+}
+
+function filterOrdersByDate<T>(
+  orders: T[],
+  filters: AnalyticsFilters,
+  selector: (order: T) => Date | null | undefined,
+): T[] {
+  const range = buildDateRange(filters);
+  if (!range) return orders;
+
+  return orders.filter((order) => {
+    const date = selector(order);
+    if (!date) return false;
+    if (range.$gte && date < range.$gte) return false;
+    if (range.$lte && date > range.$lte) return false;
+    return true;
+  });
+}
+
+export async function getDashboardKpiSummary(
+  tenantId: string,
+  filters: AnalyticsFilters = {},
+): Promise<DashboardKpiResult> {
+  const filterContext = await buildDashboardFilterContext(tenantId, filters);
+  if (filterContext.isEmpty) {
+    return createEmptyDashboardKpiResult();
+  }
+
+  const workOrders = await fetchDashboardWorkOrders<{
     status: WorkOrderType['status'];
     dueDate?: Date | null;
     pmTask?: Types.ObjectId | null;
@@ -713,8 +852,20 @@ export async function getDashboardKpiSummary(
     createdAt?: Date;
     downtime?: number | null;
     partsUsed?: Array<{ cost?: number | null; qty?: number | null }>;
-  }> = await WorkOrder.find(workOrderMatch)
-    .select('status dueDate pmTask completedAt createdAt downtime partsUsed')
+  }>(tenantId, filters, 'status dueDate pmTask completedAt createdAt downtime partsUsed', filterContext);
+
+  const { tenantFilter, assetFilter, dateRange } = filterContext;
+
+  const historyMatch: Record<string, unknown> = { tenantId: tenantFilter };
+  if (assetFilter && assetFilter.length) {
+    historyMatch.asset = { $in: assetFilter };
+  }
+  if (dateRange) {
+    historyMatch.completedAt = dateRange;
+  }
+
+  const workHistory = await WorkHistory.find(historyMatch)
+    .select('asset completedAt timeSpentHours')
     .lean();
 
   if (!workOrders.length) {
@@ -737,6 +888,10 @@ export async function getDashboardKpiSummary(
   let downtimeHours = 0;
   let pmTotal = 0;
   let pmCompleted = 0;
+
+  const reliability = calculateHistoryReliability(workHistory);
+  const mttr = reliability.mttrHours || calculateMTTR(workOrders);
+  const mtbf = reliability.mtbfHours || calculateMTBF(workOrders);
 
   workOrders.forEach((wo) => {
     if (wo.pmTask) {
@@ -762,8 +917,121 @@ export async function getDashboardKpiSummary(
     pmCompliance: { total: pmTotal, completed: pmCompleted, percentage: pmPercentage },
     downtimeHours,
     maintenanceCost,
-    mttr: calculateMTTR(workOrders),
-    mtbf: calculateMTBF(workOrders),
+    mttr,
+    mtbf,
+  };
+}
+
+function buildMtbfTrend(workOrders: Array<{ completedAt?: Date | null }>): TrendPoint[] {
+  const grouped = new Map<string, typeof workOrders>();
+  workOrders.forEach((order) => {
+    const bucket = bucketByDay(order.completedAt ?? null);
+    if (!bucket) return;
+    if (!grouped.has(bucket)) {
+      grouped.set(bucket, []);
+    }
+    grouped.get(bucket)!.push(order);
+  });
+
+  return Array.from(grouped.entries())
+    .map(([period, orders]) => ({ period, value: Number(calculateMTBF(orders).toFixed(2)) }))
+    .sort((a, b) => (a.period < b.period ? -1 : 1));
+}
+
+function buildPmComplianceTrend(
+  workOrders: Array<{ pmTask?: Types.ObjectId | null; status: WorkOrderType['status']; completedAt?: Date | null }>,
+): TrendPoint[] {
+  const grouped = new Map<string, { total: number; completed: number }>();
+  workOrders.forEach((order) => {
+    const bucket = bucketByDay(order.completedAt ?? null);
+    if (!bucket || !order.pmTask) return;
+    const current = grouped.get(bucket) ?? { total: 0, completed: 0 };
+    current.total += 1;
+    if (order.status === 'completed') {
+      current.completed += 1;
+    }
+    grouped.set(bucket, current);
+  });
+
+  return Array.from(grouped.entries())
+    .map(([period, counts]) => ({
+      period,
+      value: counts.total ? Number(((counts.completed / counts.total) * 100).toFixed(1)) : 0,
+    }))
+    .sort((a, b) => (a.period < b.period ? -1 : 1));
+}
+
+function buildWorkOrderVolumeTrend(workOrders: Array<{ createdAt?: Date }>): TrendPoint[] {
+  const grouped = new Map<string, number>();
+  workOrders.forEach((order) => {
+    const bucket = bucketByDay(order.createdAt ?? null);
+    if (!bucket) return;
+    grouped.set(bucket, (grouped.get(bucket) ?? 0) + 1);
+  });
+
+  return normalizeTrend(grouped);
+}
+
+export async function getDashboardMtbf(
+  tenantId: string,
+  filters: AnalyticsFilters = {},
+): Promise<MetricWithTrend> {
+  const workOrders = await fetchDashboardWorkOrders<{ completedAt?: Date | null; status: WorkOrderType['status'] }>(
+    tenantId,
+    filters,
+    'completedAt',
+  );
+  const scoped = filterOrdersByDate(workOrders, filters, (order) => order.completedAt ?? null);
+  return {
+    value: Number(calculateMTBF(scoped).toFixed(2)),
+    trend: buildMtbfTrend(scoped),
+  };
+}
+
+export async function getDashboardPmCompliance(
+  tenantId: string,
+  filters: AnalyticsFilters = {},
+): Promise<PmComplianceMetric> {
+  const workOrders = await fetchDashboardWorkOrders<{
+    pmTask?: Types.ObjectId | null;
+    status: WorkOrderType['status'];
+    completedAt?: Date | null;
+  }>(tenantId, filters, 'pmTask status completedAt');
+
+  const scoped = filterOrdersByDate(workOrders, filters, (order) => order.completedAt ?? null);
+
+  const pmTotal = scoped.filter((wo) => Boolean(wo.pmTask)).length;
+  const pmCompleted = scoped.filter((wo) => wo.pmTask && wo.status === 'completed').length;
+  const percentage = pmTotal ? (pmCompleted / pmTotal) * 100 : 0;
+
+  return {
+    total: pmTotal,
+    completed: pmCompleted,
+    percentage,
+    trend: buildPmComplianceTrend(scoped),
+  };
+}
+
+export async function getDashboardWorkOrderVolume(
+  tenantId: string,
+  filters: AnalyticsFilters = {},
+): Promise<WorkOrderVolumeMetric> {
+  const workOrders = await fetchDashboardWorkOrders<{
+    status: WorkOrderType['status'];
+    createdAt?: Date;
+  }>(tenantId, filters, 'status createdAt');
+
+  const scopedOrders = filterOrdersByDate(workOrders, filters, (order) => order.createdAt ?? null);
+
+  const statusCounts = new Map<WorkOrderType['status'], number>();
+  scopedOrders.forEach((order) => {
+    statusCounts.set(order.status, (statusCounts.get(order.status) ?? 0) + 1);
+  });
+
+  return {
+    total: scopedOrders.length,
+    byStatus: WORK_ORDER_STATUS_ORDER.map((status) => ({ status, count: statusCounts.get(status) ?? 0 })),
+    trend: buildWorkOrderVolumeTrend(scopedOrders),
   };
 }
 
@@ -781,6 +1049,16 @@ export async function getCorporateSiteSummaries(
   }
   const siteDocs = await Site.find(siteQuery).select('name tenantId').lean();
   const siteNames = new Map(siteDocs.map((site) => [site._id.toString(), site.name]));
+
+  const assetSiteQuery: Record<string, unknown> = { tenantId: tenantFilter };
+  if (siteFilter && siteFilter.length) {
+    assetSiteQuery.siteId = { $in: siteFilter };
+  }
+  const assetSites: Array<{ _id: Types.ObjectId; siteId?: Types.ObjectId | null }> = await Asset.find(assetSiteQuery)
+    .select('_id siteId')
+    .lean();
+  const assetSiteMap = new Map(assetSites.map((asset) => [asset._id.toString(), asset.siteId?.toString()]));
+  const allowedSites = siteFilter ? new Set(siteFilter.map((id) => id.toString())) : null;
 
   const workOrderMatch: Record<string, unknown> = { tenantId: tenantFilter };
   if (siteFilter && siteFilter.length) {
@@ -804,6 +1082,20 @@ export async function getCorporateSiteSummaries(
     .select('siteId status completedAt createdAt pmTask')
     .lean();
 
+  const historyMatch: Record<string, unknown> = { tenantId: tenantFilter };
+  if (dateRange) {
+    historyMatch.completedAt = dateRange;
+  }
+  if (siteFilter && siteFilter.length && !assetSites.length) {
+    historyMatch.asset = { $in: [] };
+  } else if (assetSites.length) {
+    historyMatch.asset = { $in: assetSites.map((asset) => asset._id) };
+  }
+
+  const workHistory = await WorkHistory.find(historyMatch)
+    .select('asset completedAt timeSpentHours')
+    .lean();
+
   const grouped = new Map<string, typeof workOrders>();
   workOrders.forEach((order) => {
     const key = order.siteId ? order.siteId.toString() : 'unassigned';
@@ -820,6 +1112,18 @@ export async function getCorporateSiteSummaries(
     }
   });
 
+  const historyBySite = new Map<string, typeof workHistory>();
+  workHistory.forEach((entry) => {
+    const assetId = entry.asset ? entry.asset.toString() : null;
+    const siteId = assetId ? assetSiteMap.get(assetId) : undefined;
+    const key = siteId ?? 'unassigned';
+    if (allowedSites && siteId && !allowedSites.has(siteId)) return;
+    if (!historyBySite.has(key)) {
+      historyBySite.set(key, []);
+    }
+    historyBySite.get(key)!.push(entry);
+  });
+
   const summaries: CorporateSiteSummary[] = [];
   grouped.forEach((orders, siteId) => {
     const total = orders.length;
@@ -829,6 +1133,9 @@ export async function getCorporateSiteSummaries(
     const pmTotal = orders.filter((order) => Boolean(order.pmTask)).length;
     const pmCompleted = orders.filter((order) => order.pmTask && order.status === 'completed').length;
     const pmPercentage = pmTotal ? (pmCompleted / pmTotal) * 100 : 0;
+    const reliability = calculateHistoryReliability(historyBySite.get(siteId) ?? []);
+    const mttrHours = reliability.mttrHours || calculateMTTR(orders);
+    const mtbfHours = reliability.mtbfHours || calculateMTBF(orders);
     summaries.push({
       siteId,
       siteName: siteNames.get(siteId) ?? (siteId === 'unassigned' ? 'Unassigned' : undefined),
@@ -837,8 +1144,8 @@ export async function getCorporateSiteSummaries(
       openWorkOrders: open,
       completedWorkOrders: completed,
       backlog,
-      mttrHours: calculateMTTR(orders),
-      mtbfHours: calculateMTBF(orders),
+      mttrHours,
+      mtbfHours,
       pmCompliance: { total: pmTotal, completed: pmCompleted, percentage: pmPercentage },
     });
   });

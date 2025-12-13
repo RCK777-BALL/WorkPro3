@@ -25,8 +25,10 @@ import StatusBadge from "@/components/common/StatusBadge";
 import Button from "@common/Button";
 import AlertBanner from "@/components/layout/AlertBanner";
 import { DashboardAnalyticsPanel } from "@/features/dashboards";
+import { HelpCenterViewer } from "@/features/help-center";
 import { OnboardingWizard } from "@/features/onboarding";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
+import { usePmCompletionAnalytics } from "@/hooks/usePmAnalytics";
 
 type SummaryResponse = {
   openWorkOrders: number;
@@ -1204,36 +1206,56 @@ export default function Dashboard() {
     navigate(path);
   };
 
+  const pmAnalyticsQuery = usePmCompletionAnalytics(6);
+  const pmTrend = pmAnalyticsQuery.data?.trend ?? [];
+  const pmTotals = pmAnalyticsQuery.data?.totals;
+  const pmCompletionSparkline = useMemo(() => pmTrend.map((point) => Number(point.completionRate ?? 0)), [pmTrend]);
+
   const summaryCards = useMemo(() => {
-    const trends = summaryTrends ?? {
-      pmCompliance: [],
-      woBacklog: [],
-      downtimeThisMonth: [],
-      costMTD: [],
-      cmVsPmRatio: [],
-      wrenchTimePct: [],
-      mttr: [],
-      slaCompliance: [],
+    const trends: SummaryTrends = {
+      pmCompliance: Array.isArray(summaryTrends?.pmCompliance)
+        ? summaryTrends?.pmCompliance
+        : SUMMARY_TRENDS_FALLBACK.pmCompliance,
+      woBacklog: Array.isArray(summaryTrends?.woBacklog)
+        ? summaryTrends?.woBacklog
+        : SUMMARY_TRENDS_FALLBACK.woBacklog,
+      downtimeThisMonth: Array.isArray(summaryTrends?.downtimeThisMonth)
+        ? summaryTrends?.downtimeThisMonth
+        : SUMMARY_TRENDS_FALLBACK.downtimeThisMonth,
+      costMTD: Array.isArray(summaryTrends?.costMTD)
+        ? summaryTrends?.costMTD
+        : SUMMARY_TRENDS_FALLBACK.costMTD,
+      cmVsPmRatio: Array.isArray(summaryTrends?.cmVsPmRatio)
+        ? summaryTrends?.cmVsPmRatio
+        : SUMMARY_TRENDS_FALLBACK.cmVsPmRatio,
+      wrenchTimePct: Array.isArray(summaryTrends?.wrenchTimePct)
+        ? summaryTrends?.wrenchTimePct
+        : SUMMARY_TRENDS_FALLBACK.wrenchTimePct,
+      mttr: Array.isArray(summaryTrends?.mttr) ? summaryTrends?.mttr : SUMMARY_TRENDS_FALLBACK.mttr,
+      slaCompliance: Array.isArray(summaryTrends?.slaCompliance)
+        ? summaryTrends?.slaCompliance
+        : SUMMARY_TRENDS_FALLBACK.slaCompliance,
     };
-    const data = summary ?? {
-      openWorkOrders: 0,
-      overdueWorkOrders: 0,
-      completedWorkOrders: 0,
-      pmDueNext7Days: 0,
-      permitsOpen: 0,
-      complianceScore: 0,
-      assetAvailability: 0,
-      assetAvailabilityCritical: 0,
-      activePmTasks: 0,
-      pmCompliance: 0,
-      woBacklog: 0,
-      downtimeThisMonth: 0,
-      costMTD: 0,
-      cmVsPmRatio: 0,
-      wrenchTimePct: 0,
-      mttr: 0,
-      slaCompliance: 0,
-    };
+    const data = {
+      openWorkOrders: summary?.openWorkOrders ?? SUMMARY_FALLBACK.openWorkOrders,
+      overdueWorkOrders: summary?.overdueWorkOrders ?? SUMMARY_FALLBACK.overdueWorkOrders,
+      completedWorkOrders: summary?.completedWorkOrders ?? SUMMARY_FALLBACK.completedWorkOrders,
+      pmDueNext7Days: summary?.pmDueNext7Days ?? SUMMARY_FALLBACK.pmDueNext7Days,
+      permitsOpen: summary?.permitsOpen ?? SUMMARY_FALLBACK.permitsOpen,
+      complianceScore: summary?.complianceScore ?? SUMMARY_FALLBACK.complianceScore,
+      assetAvailability: summary?.assetAvailability ?? SUMMARY_FALLBACK.assetAvailability,
+      assetAvailabilityCritical:
+        summary?.assetAvailabilityCritical ?? SUMMARY_FALLBACK.assetAvailabilityCritical,
+      activePmTasks: summary?.activePmTasks ?? SUMMARY_FALLBACK.activePmTasks,
+      pmCompliance: summary?.pmCompliance ?? SUMMARY_FALLBACK.pmCompliance,
+      woBacklog: summary?.woBacklog ?? SUMMARY_FALLBACK.woBacklog,
+      downtimeThisMonth: summary?.downtimeThisMonth ?? SUMMARY_FALLBACK.downtimeThisMonth,
+      costMTD: summary?.costMTD ?? SUMMARY_FALLBACK.costMTD,
+      cmVsPmRatio: summary?.cmVsPmRatio ?? SUMMARY_FALLBACK.cmVsPmRatio,
+      wrenchTimePct: summary?.wrenchTimePct ?? SUMMARY_FALLBACK.wrenchTimePct,
+      mttr: summary?.mttr ?? SUMMARY_FALLBACK.mttr,
+      slaCompliance: summary?.slaCompliance ?? SUMMARY_FALLBACK.slaCompliance,
+    } satisfies SummaryResponse;
     return [
       {
         key: "open",
@@ -1325,7 +1347,10 @@ export default function Dashboard() {
 
         <AlertBanner />
 
-        <OnboardingWizard />
+        <div className="grid gap-4 lg:grid-cols-[2fr,1fr]">
+          <OnboardingWizard />
+          <HelpCenterViewer />
+        </div>
 
         <DashboardFilters
           filters={filters}
@@ -1350,7 +1375,7 @@ export default function Dashboard() {
               title={card.title}
               description={card.description}
               value={card.value}
-              suffix={card.suffix}
+              {...(card.suffix ? { suffix: card.suffix } : {})}
               icon={card.icon}
               gradient={card.gradient}
               trend={card.trend}
@@ -1442,6 +1467,48 @@ export default function Dashboard() {
                   color="rgba(255,255,255,0.8)"
                   className="mt-4 h-16 w-full"
                 />
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-xs uppercase tracking-widest text-white/60">PM completion</p>
+                    <div className="mt-3 flex items-baseline gap-2">
+                      <span className="text-2xl font-semibold">
+                        {pmTotals ? `${pmTotals.completionRate.toFixed(1)}%` : "–"}
+                      </span>
+                      <span className="text-xs text-white/60">last 6 months</span>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="rounded-full bg-white/10 text-white hover:bg-white/20"
+                    onClick={() => navigateTo("/analytics/pm")}
+                  >
+                    View
+                    <ArrowUpRight className="ml-1 h-4 w-4" />
+                  </Button>
+                </div>
+                <Sparkline
+                  data={pmCompletionSparkline}
+                  color="rgba(59, 130, 246, 0.9)"
+                  className="mt-4 h-16 w-full"
+                />
+                <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-white/70">
+                  <div>
+                    <span className="block text-[11px] uppercase text-white/50">On-time</span>
+                    <span className="font-semibold">{pmTotals?.onTime ?? 0}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[11px] uppercase text-white/50">Late</span>
+                    <span className="font-semibold">{pmTotals?.late ?? 0}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[11px] uppercase text-white/50">Missed</span>
+                    <span className="font-semibold">{pmTotals?.missed ?? 0}</span>
+                  </div>
+                </div>
               </div>
               <AssetAvailabilityWidget
                 overall={summary?.assetAvailability ?? 0}

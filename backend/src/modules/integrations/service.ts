@@ -9,6 +9,7 @@ import twilio, { type Twilio } from 'twilio';
 import logger from '../../../utils/logger';
 
 export type NotificationProvider = 'twilio' | 'smtp' | 'slack' | 'teams';
+export type AccountingProvider = 'quickbooks' | 'xero';
 
 export interface NotificationTestInput {
   provider: NotificationProvider;
@@ -30,6 +31,14 @@ export interface NotificationResult {
   provider: NotificationProvider;
   deliveredAt: string;
   target?: string;
+}
+
+export interface AccountingSyncResult {
+  provider: AccountingProvider;
+  target: 'vendors' | 'purchaseOrders' | 'costs';
+  status: 'stubbed';
+  itemsProcessed: number;
+  message: string;
 }
 
 export class IntegrationError extends Error {
@@ -213,3 +222,46 @@ export const listNotificationProviders = (): ProviderStatus[] => [
     configured: Boolean(process.env.TEAMS_WEBHOOK_URL),
   },
 ];
+
+const buildAccountingResult = (
+  provider: AccountingProvider,
+  target: AccountingSyncResult['target'],
+  payload?: unknown,
+): AccountingSyncResult => {
+  const itemsProcessed = Array.isArray((payload as any)?.items)
+    ? (payload as any).items.length
+    : Array.isArray(payload)
+      ? payload.length
+      : 0;
+
+  const message =
+    target === 'vendors'
+      ? 'Vendor sync stub executed'
+      : target === 'purchaseOrders'
+        ? 'Purchase order sync stub executed'
+        : 'Cost sync stub executed';
+
+  logger.info('[Integrations] %s %s sync stub invoked', provider, target);
+  return {
+    provider,
+    target,
+    status: 'stubbed',
+    itemsProcessed,
+    message,
+  };
+};
+
+export const syncVendorsWithAccounting = (
+  provider: AccountingProvider,
+  payload?: unknown,
+): AccountingSyncResult => buildAccountingResult(provider, 'vendors', payload);
+
+export const syncPurchaseOrdersWithAccounting = (
+  provider: AccountingProvider,
+  payload?: unknown,
+): AccountingSyncResult => buildAccountingResult(provider, 'purchaseOrders', payload);
+
+export const syncCostsWithAccounting = (
+  provider: AccountingProvider,
+  payload?: unknown,
+): AccountingSyncResult => buildAccountingResult(provider, 'costs', payload);

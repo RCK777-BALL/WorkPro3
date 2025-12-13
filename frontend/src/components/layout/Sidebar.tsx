@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   ClipboardList,
   Cpu,
+  ListChecks,
   Factory,
   FileStack,
   FolderKanban,
@@ -22,11 +23,13 @@ import {
   LayoutDashboard,
   LogIn,
   LogOut,
+  Bell,
   MapPin,
   MessageSquare,
   ScrollText,
   Scan,
   Settings,
+  TrendingUp,
   Users,
   Warehouse,
 } from "lucide-react";
@@ -36,7 +39,7 @@ import clsx from "clsx";
 
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/auth/usePermissions";
-import type { PermissionScope, PermissionAction } from "@/auth/permissions";
+import type { Permission } from "@/auth/permissions";
 import {
   defaultOrder,
   useNavigationStore,
@@ -73,7 +76,7 @@ type NavItem = {
   to: string;
   icon: LucideIcon;
   section: NavSection;
-  permission?: { scope: PermissionScope; action: PermissionAction };
+  permission?: Permission;
 };
 
 const sections: { id: NavSection; title: string }[] = [
@@ -104,7 +107,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/work-requests",
     icon: Inbox,
     section: "operations",
-    permission: { scope: "workRequests", action: "read" },
+    permission: "workRequests.read",
   },
   permits: {
     id: "permits",
@@ -112,6 +115,14 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/permits",
     icon: CheckCircle2,
     section: "operations",
+  },
+  "pm-templates": {
+    id: "pm-templates",
+    label: "PM Templates",
+    to: "/pm/templates",
+    icon: ListChecks,
+    section: "operations",
+    permission: "pm.read",
   },
   maintenance: {
     id: "maintenance",
@@ -126,7 +137,15 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/assets",
     icon: Warehouse,
     section: "plant",
-    permission: { scope: "hierarchy", action: "read" },
+    permission: "hierarchy.read",
+  },
+  "asset-scan": {
+    id: "asset-scan",
+    label: "Scan Assets",
+    to: "/assets/scan",
+    icon: Scan,
+    section: "operations",
+    permission: "hierarchy.read",
   },
   departments: {
     id: "departments",
@@ -134,7 +153,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/departments",
     icon: Building2,
     section: "plant",
-    permission: { scope: "hierarchy", action: "read" },
+    permission: "hierarchy.read",
   },
   lines: {
     id: "lines",
@@ -142,7 +161,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/lines",
     icon: GitBranch,
     section: "plant",
-    permission: { scope: "hierarchy", action: "read" },
+    permission: "hierarchy.read",
   },
   stations: {
     id: "stations",
@@ -150,7 +169,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/stations",
     icon: Scan,
     section: "plant",
-    permission: { scope: "hierarchy", action: "read" },
+    permission: "hierarchy.read",
   },
   inventory: {
     id: "inventory",
@@ -158,7 +177,15 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/inventory",
     icon: MapPin,
     section: "operations",
-    permission: { scope: "inventory", action: "read" },
+    permission: "inventory.read",
+  },
+  "inventory-analytics": {
+    id: "inventory-analytics",
+    label: "Inventory Analytics",
+    to: "/inventory/analytics",
+    icon: BarChart3,
+    section: "operations",
+    permission: "inventory.read",
   },
   teams: {
     id: "teams",
@@ -166,13 +193,20 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/teams",
     icon: Users,
     section: "plant",
-    permission: { scope: "hierarchy", action: "read" },
+    permission: "hierarchy.read",
   },
   analytics: {
     id: "analytics",
     label: "Plant Analytics",
     to: "/analytics",
     icon: BarChart3,
+    section: "analytics",
+  },
+  "pm-analytics": {
+    id: "pm-analytics",
+    label: "PM Analytics",
+    to: "/analytics/pm",
+    icon: TrendingUp,
     section: "analytics",
   },
   "iot-monitoring": {
@@ -202,7 +236,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/executive",
     icon: Factory,
     section: "analytics",
-    permission: { scope: "executive", action: "read" },
+    permission: "executive.read",
   },
   reports: {
     id: "reports",
@@ -217,7 +251,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/vendors",
     icon: Briefcase,
     section: "management",
-    permission: { scope: "inventory", action: "read" },
+    permission: "inventory.read",
   },
   messages: {
     id: "messages",
@@ -247,13 +281,20 @@ const navItems: Record<NavItemId, NavItem> = {
     icon: Settings,
     section: "management",
   },
+  "notification-settings": {
+    id: "notification-settings",
+    label: "Notification Settings",
+    to: "/notifications/settings",
+    icon: Bell,
+    section: "management",
+  },
   imports: {
     id: "imports",
     label: "Imports",
     to: "/imports",
     icon: Activity,
     section: "management",
-    permission: { scope: "importExport", action: "import" },
+    permission: "importExport.import",
   },
   audit: {
     id: "audit",
@@ -261,7 +302,7 @@ const navItems: Record<NavItemId, NavItem> = {
     to: "/admin/audit",
     icon: ScrollText,
     section: "management",
-    permission: { scope: "audit", action: "read" },
+    permission: "audit.read",
   },
 };
 
@@ -298,7 +339,7 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
         .map((id) => navItems[id])
         .filter((item) => item && item.section === section.id)
         .filter((item): item is NavItem =>
-          Boolean(item) && (!item.permission || can(item.permission.scope, item.permission.action)),
+          Boolean(item) && (!item.permission || can(item.permission)),
         ),
     }));
   }, [sidebarOrder, can]);
@@ -461,7 +502,7 @@ function SortableSidebarItem({ item, collapsed, isActive }: SortableSidebarItemP
             collapsed ? "justify-center" : "gap-3",
             linkActive
               ? "bg-primary-600 text-white shadow"
-              : "text-neutral-600 hover:bg-primary-50 hover:text-primary-700 dark:text-neutral-300 dark:hover:bg-primary-500/10 dark:hover:text-primary-100",
+              : "text-white hover:bg-white/10 dark:text-white dark:hover:bg-white/10",
             (isDragging || isActive) && "ring-2 ring-primary-400 dark:ring-primary-500",
           )
         }

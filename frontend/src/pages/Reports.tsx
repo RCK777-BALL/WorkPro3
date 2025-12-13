@@ -7,6 +7,7 @@ import Card from '@/components/common/Card';
 import KpiWidget from '@/components/kpi/KpiWidget';
 import KpiExportButtons from '@/components/kpi/KpiExportButtons';
 import http from '@/lib/http';
+import CustomReportBuilder from '@/features/reports/CustomReportBuilder';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -512,6 +513,8 @@ export default function Reports() {
           </div>
         </div>
       </div>
+
+      <CustomReportBuilder />
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <KpiExportButtons query={query} />

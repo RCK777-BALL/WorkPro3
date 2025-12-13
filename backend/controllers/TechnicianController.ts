@@ -9,12 +9,11 @@ import type { Express, Response } from 'express';
 
 import WorkOrder, { type WorkOrderDocument, type WorkOrder as WorkOrderModel } from '../models/WorkOrder';
 import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
-import sendResponse from '../utils/sendResponse';
 import { technicianStateSchema, technicianPartUsageSchema } from '../src/schemas/technician';
-import { writeAuditLog } from '../utils/audit';
 import { emitWorkOrderUpdate } from '../server';
 import type { WorkOrderUpdatePayload } from '../types/Payloads';
-import type { UploadedFile } from '@shared/uploads';
+import type { UploadedFile } from '../../shared/types/uploads';
+import { sendResponse, writeAuditLog, normalizePartUsageCosts } from '../utils';
 
 const resolvePlantId = (
   req: Pick<AuthedRequest, 'plantId' | 'siteId'>,
@@ -406,7 +405,9 @@ export const recordTechnicianPartUsage: AuthedRequestHandler<{ id: string }> = a
       map.set(key, existing);
     });
 
-    workOrder.set('partsUsed', Array.from(map.values()));
+    const normalizedUsage = await normalizePartUsageCosts(tenantId, Array.from(map.values()));
+    workOrder.set('partsUsed', normalizedUsage.parts);
+    workOrder.partsCost = normalizedUsage.partsCost;
     const saved = await workOrder.save();
 
     await writeAuditLog({

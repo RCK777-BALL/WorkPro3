@@ -2,14 +2,19 @@
   "compilerOptions": {
     "strict": true,
     "noImplicitAny": true,
-    "exactOptionalPropertyTypes": true,
+    "exactOptionalPropertyTypes": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "moduleResolution": "node",
     "target": "ES2020",
+    "lib": ["ES2022"],
     "module": "commonjs",
     "baseUrl": ".",
     "resolveJsonModule": true,
+    "typeRoots": [
+      "./node_modules/@types",
+      "./backend/node_modules/@types"
+    ],
     "paths": {
       "@shared/*": ["shared/types/*"]
     }

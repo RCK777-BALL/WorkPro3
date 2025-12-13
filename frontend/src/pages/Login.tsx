@@ -62,8 +62,8 @@ export default function Login() {
       email: normalizedEmail,
       role: primaryRole,
       roles: roles.length > 0 ? Array.from(new Set<AuthRole>(roles)) : [primaryRole],
-      tenantId,
-      siteId,
+      ...(tenantId ? { tenantId } : {}),
+      ...(siteId ? { siteId } : {}),
     };
 
     safeLocalStorage.setItem(TOKEN_KEY, token);

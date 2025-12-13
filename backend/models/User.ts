@@ -20,11 +20,14 @@ export interface UserDocument extends Document {
   passwordHash: string;
   roles: UserRole[];
   tenantId: Types.ObjectId;
+  siteId?: Types.ObjectId;
   plant?: Types.ObjectId;
   employeeId: string;
   managerId?: Types.ObjectId;
   theme?: 'light' | 'dark' | 'system';
   colorScheme?: string;
+  notifyByEmail?: boolean;
+  notifyBySms?: boolean;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
   passwordExpired?: boolean;
@@ -59,6 +62,7 @@ const userSchema = new Schema<UserDocument>(
       required: true,
       index: true,
     } as SchemaDefinitionProperty<Types.ObjectId, UserDocument>,
+    siteId: { type: Schema.Types.ObjectId, ref: 'Site', index: true },
     plant: { type: Schema.Types.ObjectId, ref: 'Plant', index: true },
     employeeId: { type: String, required: true, unique: true },
     managerId: { type: Schema.Types.ObjectId, ref: 'User' },
@@ -78,6 +82,9 @@ const userSchema = new Schema<UserDocument>(
       type: String,
       default: 'default',
     },
+
+    notifyByEmail: { type: Boolean, default: true },
+    notifyBySms: { type: Boolean, default: false },
 
     mfaEnabled: { type: Boolean, default: false },
     mfaSecret: { type: String },

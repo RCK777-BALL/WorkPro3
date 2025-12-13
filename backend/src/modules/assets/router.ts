@@ -7,7 +7,12 @@ import { Router } from 'express';
 import { requireAuth } from '../../../middleware/authMiddleware';
 import tenantScope from '../../../middleware/tenantScope';
 import { requirePermission } from '../../auth/permissions';
-import { getAssetDetailsHandler } from './controller';
+import {
+  createAssetMeterHandler,
+  getAssetDetailsHandler,
+  ingestMeterReadingsHandler,
+  listAssetMetersHandler,
+} from './controller';
 
 const router = Router();
 
@@ -15,5 +20,12 @@ router.use(requireAuth);
 router.use(tenantScope);
 
 router.get('/:assetId/details', requirePermission('hierarchy', 'read'), getAssetDetailsHandler);
+router.get('/:assetId/meters', requirePermission('hierarchy', 'read'), listAssetMetersHandler);
+router.post('/:assetId/meters', requirePermission('hierarchy', 'write'), createAssetMeterHandler);
+router.post(
+  '/:assetId/meters/readings',
+  requirePermission('hierarchy', 'write'),
+  ingestMeterReadingsHandler,
+);
 
 export default router;

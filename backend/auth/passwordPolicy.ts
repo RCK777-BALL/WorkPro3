@@ -2,13 +2,28 @@
  * SPDX-License-Identifier: MIT
  */
 
-const COMPLEXITY_RULES = [
-  { regex: /.{12,}/, message: 'Password must be at least 12 characters long' },
-  { regex: /[a-z]/, message: 'Password must include a lowercase letter' },
-  { regex: /[A-Z]/, message: 'Password must include an uppercase letter' },
-  { regex: /\d/, message: 'Password must include a number' },
-  { regex: /[^A-Za-z0-9]/, message: 'Password must include a symbol' },
-];
+import { getSecurityPolicy } from '../config/securityPolicies';
+
+const buildComplexityRules = () => {
+  const policy = getSecurityPolicy().password;
+  const rules: Array<{ regex: RegExp; message: string }> = [];
+  if (policy.minLength > 0) {
+    rules.push({ regex: new RegExp(`.{${policy.minLength},}`), message: `Password must be at least ${policy.minLength} characters long` });
+  }
+  if (policy.requireLowercase) {
+    rules.push({ regex: /[a-z]/, message: 'Password must include a lowercase letter' });
+  }
+  if (policy.requireUppercase) {
+    rules.push({ regex: /[A-Z]/, message: 'Password must include an uppercase letter' });
+  }
+  if (policy.requireNumber) {
+    rules.push({ regex: /\d/, message: 'Password must include a number' });
+  }
+  if (policy.requireSymbol) {
+    rules.push({ regex: /[^A-Za-z0-9]/, message: 'Password must include a symbol' });
+  }
+  return rules;
+};
 
 export interface PasswordValidationResult {
   valid: boolean;
@@ -16,7 +31,9 @@ export interface PasswordValidationResult {
 }
 
 export function validatePasswordStrength(password: string): PasswordValidationResult {
-  const errors = COMPLEXITY_RULES.filter((rule) => !rule.regex.test(password)).map((rule) => rule.message);
+  const errors = buildComplexityRules()
+    .filter((rule) => !rule.regex.test(password))
+    .map((rule) => rule.message);
   return { valid: errors.length === 0, errors };
 }
 

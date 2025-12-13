@@ -52,6 +52,7 @@ const StepperItem = ({
 
 const StepContent = ({ step }: { step: OnboardingStep }) => {
   const actionLabel = useStepActionLabel(step.key);
+  const href = step.href.startsWith('/') ? step.href : `/${step.href}`;
   if (step.key === 'pmTemplates') {
     return (
       <div className="mt-4">
@@ -60,7 +61,7 @@ const StepContent = ({ step }: { step: OnboardingStep }) => {
         </p>
         <TemplateLibrary />
         <Link
-          to={step.href}
+          to={href}
           className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/30 px-4 py-2 text-sm text-white/90 transition hover:bg-white/10"
         >
           Manage templates
@@ -74,7 +75,7 @@ const StepContent = ({ step }: { step: OnboardingStep }) => {
     <div className="mt-4 space-y-4">
       <p className="text-sm text-white/70">{step.description}</p>
       <Link
-        to={step.href}
+        to={href}
         className="inline-flex items-center gap-2 rounded-full border border-white/30 px-4 py-2 text-sm text-white/90 transition hover:bg-white/10"
       >
         {actionLabel}
@@ -92,6 +93,7 @@ export const OnboardingWizard = () => {
   const steps = data?.steps ?? [];
   const remaining = steps.filter((step) => !step.completed).length;
   const showWizard = steps.some((step) => !step.completed);
+  const completionPct = steps.length ? Math.round(((steps.length - remaining) / steps.length) * 100) : 0;
 
   useEffect(() => {
     if (!steps.length) {
@@ -169,6 +171,13 @@ export const OnboardingWizard = () => {
               </button>
             ) : null}
           </div>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full rounded-full bg-emerald-400 transition-all"
+              style={{ width: `${completionPct}%` }}
+            />
+          </div>
+          <p className="mt-1 text-xs text-white/60">{completionPct}% complete</p>
           <p className="mt-2 text-sm text-white/70">
             {data?.reminderMessage ?? 'Complete these guided steps to unlock the full workspace.'}
           </p>

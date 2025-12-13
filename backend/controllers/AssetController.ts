@@ -5,24 +5,27 @@
 import type { NextFunction, Response } from 'express';
 import type { AuthedRequest } from '../types/http';
 import type { ParsedQs } from 'qs';
-import mongoose, { Error as MongooseError, Types } from 'mongoose';
+import mongoose, { Error as MongooseError, FlattenMaps, Types } from 'mongoose';
 import Asset, { type AssetDoc } from '../models/Asset';
+import WorkHistory, { type WorkHistoryDocument } from '../models/WorkHistory';
+import DowntimeLog from '../models/DowntimeLog';
+import WorkOrderModel, { type WorkOrder } from '../models/WorkOrder';
 import Site from '../models/Site';
 import Department from '../models/Department';
 import Line from '../models/Line';
 import Station, { type StationDoc } from '../models/Station';
 import { validationResult, ValidationError } from 'express-validator';
-import logger from '../utils/logger';
-import { filterFields } from '../utils/filterFields';
-import { auditAction } from '../utils/audit';
-import { toEntityId, toObjectId } from '../utils/ids';
-import { sendResponse } from '../utils/sendResponse';
 import type { ParamsDictionary } from 'express-serve-static-core';
+import { ensureQrCode, generateQrCodeValue } from '../services/qrCode';
+import { logger, filterFields, auditAction, toEntityId, toObjectId, sendResponse } from '../utils';
 
 type AssetParams = ParamsDictionary & { id: string };
 type AssetBody = Record<string, unknown> & { name?: string };
 type AssetUpdateBody = Record<string, unknown>;
 type SearchAssetsQuery = ParsedQs & { q?: string };
+
+type LeanWorkHistory = FlattenMaps<WorkHistoryDocument>;
+type LeanWorkOrderReliability = FlattenMaps<WorkOrderReliability>;
 
 const assetCreateFields = [
   'name',
@@ -37,6 +40,11 @@ const assetCreateFields = [
   'modelName',
   'manufacturer',
   'purchaseDate',
+  'warrantyStart',
+  'warrantyEnd',
+  'purchaseCost',
+  'expectedLifeMonths',
+  'replacementDate',
   'installationDate',
   'line',
   'lineId',
@@ -45,6 +53,7 @@ const assetCreateFields = [
   'siteId',
   'criticality',
   'documents',
+  'customFields',
 ];
 
 const assetUpdateFields = [...assetCreateFields];
@@ -67,6 +76,136 @@ const normalizeId = (value?: MaybeObjectId): Types.ObjectId | undefined => {
   if (value instanceof Types.ObjectId) return value;
   if (typeof value === 'string') return toObjectId(value);
   return undefined;
+};
+
+type WorkOrderReliability = Pick<WorkOrder, 'assetId' | 'createdAt' | 'completedAt' | 'timeSpentMin'>;
+
+const calculateMttrFromOrders = (orders: WorkOrderReliability[]): number => {
+  const completed = orders.filter((order) => order.completedAt);
+  if (!completed.length) return 0;
+
+  const totalHours = completed.reduce((sum, order) => {
+    const end = order.completedAt?.getTime() ?? 0;
+    const start = order.createdAt?.getTime() ?? end;
+    const durationHours =
+      typeof order.timeSpentMin === 'number' && order.timeSpentMin > 0
+        ? order.timeSpentMin / 60
+        : Math.max(end - start, 0) / 36e5;
+    return sum + durationHours;
+  }, 0);
+
+  return totalHours / completed.length;
+};
+
+const calculateMtbfFromOrders = (orders: WorkOrderReliability[]): number => {
+  const failures = [...orders]
+    .filter((order) => order.completedAt)
+    .sort((a, b) => (a.completedAt?.getTime() ?? 0) - (b.completedAt?.getTime() ?? 0));
+  if (failures.length < 2) return 0;
+  let total = 0;
+  for (let idx = 1; idx < failures.length; idx += 1) {
+    total += (failures[idx].completedAt?.getTime() ?? 0) - (failures[idx - 1].completedAt?.getTime() ?? 0);
+  }
+  return total / (failures.length - 1) / 36e5;
+};
+
+const calculateReliabilityFromHistory = (
+  history: LeanWorkHistory[],
+): { mttrHours: number; mtbfHours: number } => {
+  const completed = history.filter((entry) => entry.completedAt);
+  if (!completed.length) {
+    return { mtbfHours: 0, mttrHours: 0 };
+  }
+
+  const mttrHours = (() => {
+    const durations = completed
+      .map((entry) => entry.timeSpentHours)
+      .filter((value): value is number => typeof value === 'number' && value >= 0);
+    if (!durations.length) return 0;
+    const total = durations.reduce((sum, value) => sum + value, 0);
+    return total / durations.length;
+  })();
+
+  const mtbfHours = (() => {
+    const failures = [...completed].sort(
+      (a, b) => (a.completedAt?.getTime() ?? 0) - (b.completedAt?.getTime() ?? 0),
+    );
+    if (failures.length < 2) return 0;
+    let delta = 0;
+    for (let idx = 1; idx < failures.length; idx += 1) {
+      delta += (failures[idx].completedAt?.getTime() ?? 0) - (failures[idx - 1].completedAt?.getTime() ?? 0);
+    }
+    return delta / (failures.length - 1) / 36e5;
+  })();
+
+  return { mtbfHours, mttrHours };
+};
+
+const buildReliabilitySummary = (
+  history: LeanWorkHistory[],
+  orders: LeanWorkOrderReliability[],
+): { mttrHours: number; mtbfHours: number } => {
+  const historyMetrics = calculateReliabilityFromHistory(history);
+  const mttrHours = historyMetrics.mttrHours || calculateMttrFromOrders(orders);
+  const mtbfHours = historyMetrics.mtbfHours || calculateMtbfFromOrders(orders);
+  return { mttrHours, mtbfHours };
+};
+
+const collectAssetReliability = async (
+  tenantId: string,
+  assetIds: Types.ObjectId[],
+): Promise<Map<string, { mttrHours: number; mtbfHours: number; downtimeCount: number }>> => {
+  if (!assetIds.length) return new Map();
+
+  const [historyRaw, ordersRaw, downtimeLogs]: [
+    LeanWorkHistory[],
+    LeanWorkOrderReliability[],
+    Array<{ assetId?: Types.ObjectId }>,
+  ] = await Promise.all([
+    WorkHistory.find({ tenantId, asset: { $in: assetIds } })
+      .select('asset completedAt timeSpentHours')
+      .lean<LeanWorkHistory[]>(),
+    WorkOrderModel.find({ tenantId, assetId: { $in: assetIds } })
+      .select('assetId createdAt completedAt timeSpentMin')
+      .lean<LeanWorkOrderReliability[]>(),
+    DowntimeLog.find({ tenantId, assetId: { $in: assetIds } })
+      .select('assetId')
+      .lean<Array<{ assetId?: Types.ObjectId }>>(),
+  ]);
+
+  const historyByAsset = new Map<string, LeanWorkHistory[]>();
+  historyRaw.forEach((entry: LeanWorkHistory) => {
+    const key = entry.asset?.toString();
+    if (!key) return;
+    const list = historyByAsset.get(key) ?? [];
+    list.push(entry);
+    historyByAsset.set(key, list);
+  });
+
+  const ordersByAsset = new Map<string, LeanWorkOrderReliability[]>();
+  ordersRaw.forEach((order: LeanWorkOrderReliability) => {
+    const key = order.assetId?.toString();
+    if (!key) return;
+    const list = ordersByAsset.get(key) ?? [];
+    list.push(order);
+    ordersByAsset.set(key, list);
+  });
+
+  const downtimeCounts = new Map<string, number>();
+  downtimeLogs.forEach((log: { assetId?: Types.ObjectId }) => {
+    const key = log.assetId?.toString();
+    if (!key) return;
+    downtimeCounts.set(key, (downtimeCounts.get(key) ?? 0) + 1);
+  });
+
+  const metrics = new Map<string, { mttrHours: number; mtbfHours: number; downtimeCount: number }>();
+  assetIds.forEach((assetId) => {
+    const id = assetId.toString();
+    const reliability = buildReliabilitySummary(historyByAsset.get(id) ?? [], ordersByAsset.get(id) ?? []);
+    metrics.set(id, { ...reliability, downtimeCount: downtimeCounts.get(id) ?? 0 });
+  });
+
+  return metrics;
 };
 
 type AssetLike = Record<string, unknown>;
@@ -101,6 +240,8 @@ const toAssetResponse = (asset: unknown): AssetLike | null => {
   if (rawTenant instanceof Types.ObjectId) {
     response.tenantId = rawTenant.toString();
   }
+
+  ensureQrCode(response as { _id?: MaybeObjectId; tenantId?: MaybeObjectId; qrCode?: string }, 'asset');
 
   return response;
 };
@@ -206,7 +347,7 @@ const locationKey = ({ departmentId, lineId, stationId }: AssetHierarchyLocation
   return `${department}::${line}::${station}`;
 };
 
-export async function getAllAssets(
+async function getAllAssets(
   req: AuthedRequest,
   res: Response,
   next: NextFunction,
@@ -217,7 +358,30 @@ export async function getAllAssets(
     if (plantId) filter.plant = plantId;
     if (req.siteId) filter.siteId = req.siteId;
     const assets = await Asset.find(filter).lean();
-    const payload = assets.map((asset) => toAssetResponse(asset)).filter(isAssetLike);
+    const assetIds = assets
+      .map((asset) => {
+        if (asset._id instanceof Types.ObjectId) return asset._id;
+        if (typeof asset._id === 'string') return toObjectId(asset._id);
+        return undefined;
+      })
+      .filter((id): id is Types.ObjectId => id instanceof Types.ObjectId);
+    const reliabilityMap = req.tenantId ? await collectAssetReliability(req.tenantId, assetIds) : new Map();
+
+    const payload = assets
+      .map((asset) => {
+        const response = toAssetResponse(asset);
+        if (!response) return null;
+
+        const assetId = typeof response.id === 'string' ? response.id : response._id;
+        const metrics = typeof assetId === 'string' ? reliabilityMap.get(assetId) : undefined;
+        if (metrics) {
+          response.reliability = { mttrHours: metrics.mttrHours, mtbfHours: metrics.mtbfHours };
+          response.downtimeCount = metrics.downtimeCount;
+        }
+
+        return response;
+      })
+      .filter(isAssetLike);
     sendResponse(res, payload);
     return;
   } catch (err) {
@@ -232,7 +396,7 @@ export async function getAllAssets(
   }
 }
 
-export async function getAssetById(
+async function getAssetById(
   req: AuthedRequest<AssetParams>,
   res: Response,
   next: NextFunction,
@@ -271,7 +435,7 @@ export async function getAssetById(
   }
 }
 
-export async function createAsset(
+async function createAsset(
   req: AuthedRequest<ParamsDictionary, unknown, AssetBody>,
   res: Response,
   next: NextFunction,
@@ -361,6 +525,13 @@ export async function createAsset(
     if (req.siteId && !payload.siteId) payload.siteId = req.siteId;
 
     const newAsset = await Asset.create(payload);
+    ensureQrCode(newAsset, 'asset');
+    if (!newAsset.qrCode) {
+      newAsset.qrCode = generateQrCodeValue({ type: 'asset', id: newAsset._id.toString(), tenantId: tenantId.toString() });
+    }
+    if (newAsset.isModified('qrCode')) {
+      await newAsset.save();
+    }
     await addAssetToHierarchy({
       tenantId,
       departmentId: newAsset.departmentId as MaybeObjectId,
@@ -405,7 +576,7 @@ export async function createAsset(
   }
 }
 
-export async function updateAsset(
+async function updateAsset(
   req: AuthedRequest<AssetParams, unknown, AssetUpdateBody>,
   res: Response,
   next: NextFunction,
@@ -499,6 +670,7 @@ export async function updateAsset(
       sendResponse(res, null, 'Not found', 404);
       return;
     }
+    update.qrCode = generateQrCodeValue({ type: 'asset', id, tenantId: tenantId.toString() });
     update.plant = plantId;
     const asset = await Asset.findOneAndUpdate(filter, update, {
       new: true,
@@ -595,7 +767,7 @@ export async function updateAsset(
   }
 }
 
-export async function deleteAsset(
+async function deleteAsset(
   req: AuthedRequest<AssetParams>,
   res: Response,
   next: NextFunction,
@@ -655,7 +827,7 @@ export async function deleteAsset(
   }
 }
 
-export async function searchAssets(
+async function searchAssets(
   req: AuthedRequest<ParamsDictionary, unknown, unknown, SearchAssetsQuery>,
   res: Response,
   next: NextFunction,
@@ -692,7 +864,7 @@ export async function searchAssets(
   }
 }
 
-export async function getAssetTree(
+async function getAssetTree(
   req: AuthedRequest,
   res: Response,
   next: NextFunction,
@@ -782,7 +954,11 @@ export async function getAssetTree(
       station.assets.push({
         id: a._id.toString(),
         name: a.name,
-        qr: JSON.stringify({ type: 'asset', id: a._id.toString() }),
+        qr: a.qrCode ?? generateQrCodeValue({
+          type: 'asset',
+          id: a._id.toString(),
+          ...(req.tenantId ? { tenantId: req.tenantId } : {}),
+        }),
       });
     });
 
@@ -813,4 +989,88 @@ export async function getAssetTree(
     return;
   }
 }
+
+async function bulkUpdateAssets(
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const { assetIds, updates } = (req.body ?? {}) as {
+      assetIds?: string[];
+      updates?: Record<string, unknown>;
+    };
+
+    if (!Array.isArray(assetIds) || assetIds.length === 0) {
+      sendResponse(res, null, 'assetIds array is required', 400);
+      return;
+    }
+
+    if (!updates || typeof updates !== 'object') {
+      sendResponse(res, null, 'updates payload is required', 400);
+      return;
+    }
+
+    const normalizedIds = assetIds
+      .filter((id) => Types.ObjectId.isValid(id))
+      .map((id) => new Types.ObjectId(id));
+
+    if (!normalizedIds.length) {
+      sendResponse(res, null, 'No valid asset IDs provided', 400);
+      return;
+    }
+
+    const allowedFields = new Set([
+      'status',
+      'departmentId',
+      'lineId',
+      'stationId',
+      'notes',
+      'location',
+      'criticality',
+      'customFields',
+    ]);
+
+    const updateBody: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(updates)) {
+      if (!allowedFields.has(key)) continue;
+      if (['departmentId', 'lineId', 'stationId'].includes(key)) {
+        updateBody[key] = value ? toObjectId(value as string) : undefined;
+      } else if (key === 'customFields' && typeof value === 'object') {
+        updateBody.customFields = value as Record<string, unknown>;
+      } else {
+        updateBody[key] = value;
+      }
+    }
+
+    const result = await Asset.updateMany(
+      { _id: { $in: normalizedIds }, tenantId },
+      { $set: updateBody },
+    );
+
+    sendResponse(res, {
+      matched: (result as any).matchedCount ?? (result as any).n,
+      modified: (result as any).modifiedCount ?? (result as any).nModified,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export {
+  getAllAssets,
+  getAssetById,
+  createAsset,
+  updateAsset,
+  deleteAsset,
+  searchAssets,
+  getAssetTree,
+  bulkUpdateAssets,
+};
 

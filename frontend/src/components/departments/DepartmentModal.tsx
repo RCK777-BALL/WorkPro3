@@ -453,7 +453,7 @@ const DepartmentModal = ({
                       <Button
                         type="button"
                         variant="ghost"
-                        size="xs"
+                        size="sm"
                         onClick={() => handleAddStation(index)}
                         disabled={loading}
                       >
@@ -481,7 +481,7 @@ const DepartmentModal = ({
                               <Button
                                 type="button"
                                 variant="ghost"
-                                size="xs"
+                                size="sm"
                                 onClick={() => handleRemoveStation(index, stationIndex)}
                                 disabled={loading}
                               >

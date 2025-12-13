@@ -11,9 +11,17 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@common/*": ["src/components/common/*"]
+      "@common/*": ["src/components/common/*"],
+      "@backend-shared/*": ["../backend/shared/*"]
     },
-    "types": ["vite/client", "react", "react-dom"]
+    "types": [
+      "vite/client",
+      "react",
+      "react-dom",
+      "@testing-library/jest-dom",
+      "vitest",
+      "node"
+    ]
   },
   "include": ["src", "src/types/globals.d.ts"]
 }

@@ -1,15 +1,12 @@
 {
   "extends": "./tsconfig.app.json",
   "compilerOptions": {
-    "strict": true,
-    "noImplicitAny": true,
-    "exactOptionalPropertyTypes": true,
-    "resolveJsonModule": true,
+    "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
       "@common/*": ["src/components/common/*"],
-      "@shared/*": ["../shared/types/*"]
+      "@backend-shared/*": ["../backend/shared/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "analytics"]
 }

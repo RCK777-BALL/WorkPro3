@@ -18,18 +18,18 @@ describe('DepartmentHierarchyGrid', () => {
         id: 'l1',
         name: 'Line1',
         department: 'd1',
-        stations: [
-          {
-            id: 's1',
-            name: 'Station1',
-            line: 'l1',
-            assets: [
-              { id: 'a1', name: 'Pump', type: 'Mechanical' },
-              { id: 'a2', name: 'Motor', type: 'Electrical' },
+            stations: [
+              {
+                id: 's1',
+                name: 'Station1',
+                line: 'l1',
+                assets: [
+                { id: 'a1', name: 'Pump', type: 'Mechanical', tenantId: 't1' },
+                { id: 'a2', name: 'Motor', type: 'Electrical', tenantId: 't1' },
+                ],
+              },
             ],
           },
-        ],
-      },
     ],
   };
 

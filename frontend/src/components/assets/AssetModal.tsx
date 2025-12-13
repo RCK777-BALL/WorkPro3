@@ -9,6 +9,7 @@ import { X, Upload, Download } from "lucide-react";
 import Button from "@common/Button";
 import http from "@/lib/http";
 import { useToast } from "@/context/ToastContext";
+import { useScopeContext } from "@/context/ScopeContext";
 import { useDepartmentStore } from "@/store/departmentStore";
 import { useAuthStore, type AuthState } from "@/store/authStore";
 import type { Asset, Department, Line, Station } from "@/types";
@@ -30,6 +31,11 @@ export interface AssetFormValues {
   modelName: string;
   manufacturer: string;
   purchaseDate: string;
+  warrantyStart: string;
+  warrantyEnd: string;
+  purchaseCost: string;
+  expectedLifeMonths: string;
+  replacementDate: string;
   installationDate: string;
   location: string;
   department: string;
@@ -48,6 +54,11 @@ const defaultAssetState: AssetFormValues = {
   modelName: "",
   manufacturer: "",
   purchaseDate: new Date().toISOString().split("T")[0],
+  warrantyStart: "",
+  warrantyEnd: "",
+  purchaseCost: "",
+  expectedLifeMonths: "",
+  replacementDate: "",
   installationDate: new Date().toISOString().split("T")[0],
   location: "",
   department: "",
@@ -71,6 +82,11 @@ const toFormValues = (source: Asset | null): AssetFormValues => {
   }
 
   const assetWithHierarchy = source as AssetWithHierarchy;
+  const toInputDate = (value?: string | Date) => {
+    if (!value) return "";
+    if (value instanceof Date) return value.toISOString().split("T")[0];
+    return value.split("T")[0];
+  };
 
   return {
     ...defaultAssetState,
@@ -79,8 +95,15 @@ const toFormValues = (source: Asset | null): AssetFormValues => {
     serialNumber: source.serialNumber ?? defaultAssetState.serialNumber,
     modelName: source.modelName ?? defaultAssetState.modelName,
     manufacturer: source.manufacturer ?? defaultAssetState.manufacturer,
-    purchaseDate: source.purchaseDate ?? defaultAssetState.purchaseDate,
-    installationDate: source.installationDate ?? defaultAssetState.installationDate,
+    purchaseDate: toInputDate(source.purchaseDate) || defaultAssetState.purchaseDate,
+    warrantyStart: toInputDate(source.warrantyStart),
+    warrantyEnd: toInputDate(source.warrantyEnd ?? source.warrantyExpiry),
+    purchaseCost:
+      source.purchaseCost !== undefined ? String(source.purchaseCost) : defaultAssetState.purchaseCost,
+    expectedLifeMonths:
+      source.expectedLifeMonths !== undefined ? String(source.expectedLifeMonths) : defaultAssetState.expectedLifeMonths,
+    replacementDate: toInputDate(source.replacementDate),
+    installationDate: toInputDate(source.installationDate) || defaultAssetState.installationDate,
     location: source.location ?? defaultAssetState.location,
     department: source.department ?? defaultAssetState.department,
     type: source.type ?? defaultAssetState.type,
@@ -130,6 +153,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
   const stations = lineId ? stationsMap[lineId] || [] : [];
   const [error, setError] = useState<string | null>(null);
   const { addToast } = useToast();
+  const { activePlant } = useScopeContext();
 
   useEffect(() => {
     reset(toFormValues(asset));
@@ -191,9 +215,18 @@ const AssetModal: React.FC<AssetModalProps> = ({
 
     const payload: Record<string, any> = {
       ...rest,
+      purchaseCost: rest.purchaseCost ? Number(rest.purchaseCost) : undefined,
+      expectedLifeMonths: rest.expectedLifeMonths ? Number(rest.expectedLifeMonths) : undefined,
+      warrantyStart: rest.warrantyStart || undefined,
+      warrantyEnd: rest.warrantyEnd || undefined,
+      replacementDate: rest.replacementDate || undefined,
+      purchaseDate: rest.purchaseDate || undefined,
+      installationDate: rest.installationDate || undefined,
       departmentId: formDepartmentId || undefined,
       lineId: formLineId || undefined,
       stationId: formStationId || undefined,
+      plantId: activePlant?.id ?? asset?.plantId ?? undefined,
+      siteId: activePlant?.id ?? asset?.siteId ?? undefined,
       ...(tenantId ? { tenantId } : {}),
     };
 
@@ -207,7 +240,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
 
       const fallback: Partial<Asset> = {
         ...(asset ?? {}),
-        ...(data as Partial<Asset>),
+        ...(payload as Partial<Asset>),
       };
 
       const normalized = normalizeAssetData(raw, fallback);
@@ -331,6 +364,68 @@ const AssetModal: React.FC<AssetModalProps> = ({
                 {...register("installationDate")}
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+                Warranty Start
+              </label>
+              <input
+                type="date"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                {...register("warrantyStart")}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+                Warranty End
+              </label>
+              <input
+                type="date"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                {...register("warrantyEnd")}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+                Purchase Cost
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                {...register("purchaseCost")}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+                Expected Life (months)
+              </label>
+              <input
+                type="number"
+                min="1"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                {...register("expectedLifeMonths")}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+              Planned Replacement Date
+            </label>
+            <input
+              type="date"
+              className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+              {...register("replacementDate")}
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

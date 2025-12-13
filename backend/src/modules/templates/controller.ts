@@ -8,7 +8,7 @@ import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
 import { fail } from '../../lib/http';
 import type { PMContext } from '../pm/service';
 import { PMTemplateError } from '../pm/service';
-import { cloneTemplateFromLibrary, listTemplateLibrary } from './service';
+import { cloneTemplateFromLibrary, listInspectionForms, listTemplateLibrary } from './service';
 
 const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
   if (!req.tenantId) {
@@ -49,6 +49,10 @@ const handleError = (err: unknown, res: Response, next: NextFunction) => {
 
 export const listTemplateLibraryHandler: AuthedRequestHandler = (_req, res) => {
   send(res, listTemplateLibrary());
+};
+
+export const listInspectionFormLibraryHandler: AuthedRequestHandler = (_req, res) => {
+  send(res, listInspectionForms());
 };
 
 export const cloneTemplateHandler: AuthedRequestHandler<{ templateId: string }> = async (req, res, next) => {

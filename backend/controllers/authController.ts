@@ -8,15 +8,16 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import Tenant from '../models/Tenant';
 import User from '../models/User';
-import logger from '../utils/logger';
 import {
   type JwtUser,
   clearAuthCookies,
   setAuthCookies,
   signAccess,
   signRefresh,
-} from '../utils/jwt';
+  logger,
+} from '../utils';
 import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
+import { resolveUserPermissions } from '../services/permissionService';
 
 const DEFAULT_TENANT_NAME = 'Default Tenant';
 
@@ -224,8 +225,8 @@ export const login: ExpressRequestHandler = requestHandler(async (req, res) => {
   }
 
   const normalizedRoles = normalizeRoles(user.roles ?? []);
-  const primaryRole = derivePrimaryRole((user as any).role, normalizedRoles);
-  const roles = Array.from(new Set([primaryRole, ...normalizedRoles]));
+  const primaryRoleFromUser = derivePrimaryRole((user as any).role, normalizedRoles);
+  const fallbackRoles = Array.from(new Set([primaryRoleFromUser, ...normalizedRoles]));
 
   const client = normalizeClient(rawClient);
   const scopes = scopesForClient(client);
@@ -245,6 +246,24 @@ export const login: ExpressRequestHandler = requestHandler(async (req, res) => {
       : rawSiteId && typeof (rawSiteId as { toString?: () => string }).toString === 'function'
       ? (rawSiteId as { toString(): string }).toString()
       : undefined;
+
+  const permissionInput: Parameters<typeof resolveUserPermissions>[0] = {
+    userId: user._id,
+    fallbackRoles,
+  };
+
+  if (tenantId) {
+    permissionInput.tenantId = tenantId;
+  }
+
+  if (siteId) {
+    permissionInput.siteId = siteId;
+  }
+
+  const { roles: resolvedRoles, permissions } = await resolveUserPermissions(permissionInput);
+
+  const roles = resolvedRoles.length > 0 ? resolvedRoles : fallbackRoles;
+  const primaryRole = derivePrimaryRole((user as any).role, roles);
 
   const jwtOptions: JwtPayloadOptions = { scopes };
   if (client) {
@@ -278,6 +297,7 @@ export const login: ExpressRequestHandler = requestHandler(async (req, res) => {
       roles,
       scopes,
       client,
+      permissions,
     },
   });
 }, 'login');

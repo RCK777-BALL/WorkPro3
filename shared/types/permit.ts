@@ -17,50 +17,52 @@ export type PermitApprovalStepStatus =
 export interface PermitApprovalStep {
   sequence: number;
   role: string;
-  user?: string;
+  user?: string | undefined;
   status: PermitApprovalStepStatus;
-  approvedAt?: string;
-  actedBy?: string;
-  notes?: string;
-  escalateAfterHours?: number;
-  escalateAt?: string | null;
+  approvedAt?: string | undefined;
+  actedBy?: string | undefined;
+  notes?: string | undefined;
+  escalateAfterHours?: number | undefined;
+  escalateAt?: string | null | undefined;
 }
 
 export interface PermitIsolationStep {
   index: number;
   description: string;
-  completed?: boolean;
-  completedAt?: string;
-  completedBy?: string;
-  verificationNotes?: string;
+  completed?: boolean | undefined;
+  completedAt?: string | undefined;
+  completedBy?: string | undefined;
+  verificationNotes?: string | undefined;
 }
 
 export interface PermitHistoryEntry {
   action: string;
-  by?: string;
+  by?: string | undefined;
   at: string;
-  notes?: string;
+  notes?: string | undefined;
 }
 
 export interface Permit {
-  _id?: string;
-  id?: string;
+  _id?: string | undefined;
+  id?: string | undefined;
+  tenantId: string;
+  siteId?: string | undefined;
   permitNumber: string;
   type: string;
-  description?: string;
+  description?: string | undefined;
   status: PermitStatus;
   requestedBy: string;
-  workOrder?: string;
+  workOrder?: string | undefined;
   approvalChain: PermitApprovalStep[];
   isolationSteps: PermitIsolationStep[];
   watchers: string[];
   history: PermitHistoryEntry[];
-  validFrom?: string;
-  validTo?: string;
-  riskLevel?: 'low' | 'medium' | 'high' | 'critical';
-  incidents?: string[];
-  createdAt?: string;
-  updatedAt?: string;
+  validFrom?: string | undefined;
+  validTo?: string | undefined;
+  riskLevel?: 'low' | 'medium' | 'high' | 'critical' | undefined;
+  incidents?: string[] | undefined;
+  createdAt?: string | undefined;
+  updatedAt?: string | undefined;
 }
 
 export type SafetyIncidentSeverity = 'minor' | 'moderate' | 'major' | 'critical';
@@ -68,24 +70,26 @@ export type SafetyIncidentStatus = 'open' | 'investigating' | 'resolved' | 'clos
 
 export interface SafetyIncidentAction {
   description: string;
-  assignedTo?: string;
-  dueDate?: string;
-  completedAt?: string;
+  assignedTo?: string | undefined;
+  dueDate?: string | undefined;
+  completedAt?: string | undefined;
 }
 
 export interface SafetyIncidentLogEntry {
   at: string;
-  by?: string;
+  by?: string | undefined;
   message: string;
 }
 
 export interface SafetyIncident {
-  _id?: string;
-  id?: string;
-  permit?: string;
-  workOrder?: string;
+  _id?: string | undefined;
+  id?: string | undefined;
+  tenantId?: string | undefined;
+  siteId?: string | undefined;
+  permit?: string | undefined;
+  workOrder?: string | undefined;
   title: string;
-  description?: string;
+  description?: string | undefined;
   severity: SafetyIncidentSeverity;
   status: SafetyIncidentStatus;
   reportedBy: string;
@@ -106,7 +110,7 @@ export interface PermitActivityHistoryEntry {
   permitNumber: string;
   action: string;
   at: string;
-  notes?: string;
+  notes?: string | undefined;
 }
 
 export interface PermitActivitySummary {

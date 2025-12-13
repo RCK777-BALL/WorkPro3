@@ -8,7 +8,7 @@ import multer from 'multer';
 
 import { requireAuth } from '../../../middleware/authMiddleware';
 import tenantScope from '../../../middleware/tenantScope';
-import { exportAssets, importAssets } from './controller';
+import { exportAssets, importEntities } from './controller';
 import { ImportExportError } from './service';
 import { requirePermission } from '../../auth/permissions';
 
@@ -36,10 +36,10 @@ router.use(tenantScope);
 
 router.get('/assets/export', requirePermission('importExport', 'export'), exportAssets);
 router.post(
-  '/assets/import',
+  '/:entity/import',
   requirePermission('importExport', 'import'),
   upload.single('file'),
-  importAssets,
+  importEntities,
 );
 
 export default router;

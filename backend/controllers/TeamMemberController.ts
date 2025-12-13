@@ -5,9 +5,7 @@
 import TeamMember, { ITeamMember } from '../models/TeamMember';
 import type { Request, Response, NextFunction } from 'express';
 import { Error as MongooseError, Types } from 'mongoose';
-import { writeAuditLog } from '../utils/audit';
-import { toEntityId } from '../utils/ids';
-import { sendResponse } from '../utils/sendResponse';
+import { writeAuditLog, toEntityId, sendResponse } from '../utils';
 
 type TeamRole =
   | 'general_manager'

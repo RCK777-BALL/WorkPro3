@@ -70,7 +70,8 @@ const quickLinks = [
   { label: 'Departments', to: '/departments' },
   { label: 'Lines', to: '/lines' },
   { label: 'Stations', to: '/stations' },
-  { label: 'Assets', to: '/documentation/asset-management/assets' },
+  { label: 'Assets', to: '/assets' },
+  { label: 'Add Assets to Stations Guide', to: '/documentation/asset-management/assets/add-to-stations' },
 ];
 
 const AssetManagementGuide: React.FC = () => (
@@ -89,9 +90,9 @@ const AssetManagementGuide: React.FC = () => (
       </div>
       <div className="flex flex-wrap gap-3">
         {quickLinks.map((link) => (
-          <Button key={link.to} asChild variant="outline">
-            <Link to={link.to}>{link.label}</Link>
-          </Button>
+          <Link key={link.to} to={link.to} className="inline-flex">
+            <Button variant="outline">{link.label}</Button>
+          </Link>
         ))}
       </div>
     </div>

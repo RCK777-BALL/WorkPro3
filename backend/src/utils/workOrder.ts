@@ -6,21 +6,21 @@ import { Types } from 'mongoose';
 
 export interface RawPart {
   partId: Types.ObjectId | string;
-  qty?: number;
-  cost?: number;
+  qty?: number | undefined;
+  cost?: number | undefined;
 }
 
 export interface RawChecklist {
   description: string;
-  done?: boolean;
-  status?: 'not_started' | 'in_progress' | 'done' | 'blocked';
-  photos?: string[];
+  done?: boolean | undefined;
+  status?: 'not_started' | 'in_progress' | 'done' | 'blocked' | undefined;
+  photos?: string[] | undefined;
 }
 
 export interface RawSignature {
   userId: Types.ObjectId | string;
-  signedAt?: string | Date;
-  name?: string;
+  signedAt?: string | Date | undefined;
+  name?: string | undefined;
 }
 
 export const mapAssignees = (values: (string | Types.ObjectId)[]): Types.ObjectId[] =>
@@ -39,7 +39,12 @@ export const mapPartsUsed = (
 
 export const mapChecklists = (
   items: RawChecklist[],
-): { text: string; done: boolean; status?: RawChecklist['status']; photos?: string[] }[] =>
+): {
+  text: string;
+  done: boolean;
+  status?: RawChecklist['status'] | undefined;
+  photos?: string[] | undefined;
+}[] =>
   items.map((item) => ({
     text: item.description,
     done: Boolean(item.done),
@@ -49,7 +54,7 @@ export const mapChecklists = (
 
 export const mapSignatures = (
   signatures: RawSignature[],
-): { by: Types.ObjectId; ts: Date; name?: string }[] =>
+): { by: Types.ObjectId; ts: Date; name?: string | undefined }[] =>
   signatures.map((signature) => ({
     by:
       signature.userId instanceof Types.ObjectId

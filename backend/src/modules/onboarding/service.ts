@@ -13,6 +13,9 @@ import Site from '../../../models/Site';
 import Asset from '../../../models/Asset';
 import PMTask from '../../../models/PMTask';
 import User from '../../../models/User';
+import Department from '../../../models/Department';
+import Role from '../../../models/Role';
+import InventoryItem from '../../../models/InventoryItem';
 
 const REMINDER_COOLDOWN_MS = 1000 * 60 * 60 * 12; // 12 hours
 
@@ -23,7 +26,7 @@ export interface OnboardingStepDefinition {
   href: string;
 }
 
-const STEP_DEFINITIONS: OnboardingStepDefinition[] = [
+export const STEP_DEFINITIONS: OnboardingStepDefinition[] = [
   {
     key: 'site',
     title: 'Add your first site',
@@ -31,9 +34,27 @@ const STEP_DEFINITIONS: OnboardingStepDefinition[] = [
     href: '/plants',
   },
   {
+    key: 'roles',
+    title: 'Configure access roles',
+    description: 'Set up tenant and site roles so users land with the right permissions.',
+    href: '/settings/roles',
+  },
+  {
+    key: 'departments',
+    title: 'Define departments and lines',
+    description: 'Stand up production areas to organize work and assets.',
+    href: '/departments',
+  },
+  {
     key: 'assets',
     title: 'Import assets',
     description: 'Upload asset data or add equipment manually to build your registry.',
+    href: '/imports',
+  },
+  {
+    key: 'starterData',
+    title: 'Load starter data',
+    description: 'Bring in PMs, work orders, and parts with the bulk importer to jump-start your workspace.',
     href: '/imports',
   },
   {
@@ -43,7 +64,7 @@ const STEP_DEFINITIONS: OnboardingStepDefinition[] = [
     href: '/pm/tasks',
   },
   {
-    key: 'team',
+    key: 'users',
     title: 'Invite your team',
     description: 'Add technicians and supervisors so work can be assigned.',
     href: '/teams',
@@ -62,9 +83,12 @@ const ensureState = (state?: TenantOnboardingState): TenantOnboardingState => {
   const next = {
     steps: {
       site: state?.steps?.site ?? { completed: false },
+      roles: state?.steps?.roles ?? { completed: false },
+      departments: state?.steps?.departments ?? { completed: false },
       assets: state?.steps?.assets ?? { completed: false },
+      starterData: state?.steps?.starterData ?? { completed: false },
       pmTemplates: state?.steps?.pmTemplates ?? { completed: false },
-      team: state?.steps?.team ?? { completed: false },
+      users: state?.steps?.users ?? { completed: false },
     },
     lastReminderAt: state?.lastReminderAt,
     reminderDismissedAt: state?.reminderDismissedAt,
@@ -73,17 +97,23 @@ const ensureState = (state?: TenantOnboardingState): TenantOnboardingState => {
 };
 
 const collectSignals = async (tenantId: Types.ObjectId) => {
-  const [hasSite, hasAsset, hasPmTask, userCount] = await Promise.all([
+  const [hasSite, hasDepartment, hasAsset, hasPmTask, userCount, roleCount, hasInventory] = await Promise.all([
     Site.exists({ tenantId }),
+    Department.exists({ tenantId }),
     Asset.exists({ tenantId }),
     PMTask.exists({ tenantId }),
     User.countDocuments({ tenantId }),
+    Role.countDocuments({ tenantId }),
+    InventoryItem.exists({ tenantId }),
   ]);
   return {
     site: Boolean(hasSite),
+    roles: (roleCount ?? 0) > 0,
+    departments: Boolean(hasDepartment),
     assets: Boolean(hasAsset),
+    starterData: Boolean(hasPmTask || hasInventory),
     pmTemplates: Boolean(hasPmTask),
-    team: (userCount ?? 0) > 1,
+    users: (userCount ?? 0) > 1,
   } satisfies Record<OnboardingStepKey, boolean>;
 };
 

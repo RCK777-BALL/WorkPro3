@@ -9,18 +9,27 @@ export interface IInventoryItem extends Document {
   _id: Types.ObjectId;                 // <- make required (not optional)
   tenantId: Types.ObjectId;
   name: string;
+  qrCode?: string;
   description?: string;
   partNumber?: string;
+  partNo?: string;
   sku?: string;
   category?: string;
   quantity: number;                     // kept required in the interface
   unitCost?: number;
+  cost?: number;
   unit?: string;
   uom?: Types.ObjectId;
   location?: string;
+  store?: string;
+  room?: string;
+  bin?: string;
   minThreshold?: number;
+  minQty?: number;
+  maxQty?: number;
   reorderThreshold?: number;
   reorderPoint?: number;
+  leadTime?: number;
   lastRestockDate?: Date;
   lastOrderDate?: Date;
   vendor?: Types.ObjectId;
@@ -35,18 +44,27 @@ const inventoryItemSchema = new Schema<IInventoryItem>(
   {
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
     name: { type: String, required: true },
+    qrCode: { type: String },
     description: String,
     partNumber: String,
+    partNo: { type: String, index: true },
     sku: { type: String, index: true },
     category: String,
     quantity: { type: Number, required: true, default: 0 },   // <- default prevents “possibly undefined”
     unitCost: { type: Number, default: 0 },
+    cost: { type: Number, default: 0 },
     unit: String,
     uom: { type: Schema.Types.ObjectId, ref: 'unitOfMeasure' },
     location: String,
+    store: String,
+    room: String,
+    bin: String,
     minThreshold: { type: Number, default: 0 },
+    minQty: { type: Number, default: 0 },
+    maxQty: { type: Number, default: 0 },
     reorderThreshold: { type: Number, default: 0 },
     reorderPoint: { type: Number, default: 0 },
+    leadTime: { type: Number, default: 0 },
     lastRestockDate: Date,
     lastOrderDate: Date,
     vendor: { type: Schema.Types.ObjectId, ref: 'Vendor' },

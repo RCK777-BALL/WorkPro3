@@ -1,19 +1,69 @@
-export type { Asset as SharedAsset } from '@shared/asset';
-export type { WorkOrder as SharedWorkOrder } from '@shared/workOrder';
+import type { Asset as SharedAssetType } from '../../../shared/types/asset';
+import type { PermissionGrant, RoleAssignment } from '../../../shared/types/admin';
+
+export type AuthRole =
+  | 'global_admin'
+  | 'plant_admin'
+  | 'general_manager'
+  | 'assistant_general_manager'
+  | 'operations_manager'
+  | 'department_leader'
+  | 'assistant_department_leader'
+  | 'area_leader'
+  | 'team_leader'
+  | 'team_member'
+  | 'technical_team_member'
+  | 'admin'
+  | 'supervisor'
+  | 'manager'
+  | 'planner'
+  | 'tech'
+  | 'technician'
+  | 'viewer';
+
+export interface PermissionAssignment {
+  name: string;
+  scope?: string | null;
+  grantedBy?: string;
+  grantedAt?: string;
+}
+
+export type { Asset as SharedAsset } from '../../../shared/types/asset';
+export type { WorkOrder as SharedWorkOrder } from '../../../shared/types/workOrder';
 export type {
   InventoryItem,
+  InventoryLocation,
   InventoryUpdatePayload,
   Part,
   VendorSummary,
   PurchaseOrder,
   PurchaseOrderPayload,
   InventoryAlert,
-} from '@shared/inventory';
-
-export type Vendor = VendorSummary;
-export type { UploadedFile, UploadResponse } from '@shared/uploads';
-export type { ApiResult } from '@shared/http';
-export type { OnboardingState, OnboardingStep, OnboardingStepKey, PMTemplateLibraryItem } from '@shared/onboarding';
+  StockHistoryEntry,
+  StockAdjustment,
+  StockItem,
+  PartUsageReport,
+  InventoryTransfer,
+  InventoryTransferPayload,
+} from '../../../shared/types/inventory';
+export type { CustomReportResponse, ReportQueryRequest, ReportTemplate, ReportTemplateInput } from '@backend-shared/reports';
+export type { Vendor } from './vendor';
+export type { UploadedFile, UploadResponse } from '../../../shared/types/uploads';
+export type { ApiResult, PaginatedResult, SortDirection, TenantScoped } from '../../../shared/types/http';
+export type {
+  OnboardingState,
+  OnboardingStep,
+  OnboardingStepKey,
+  PMTemplateLibraryItem,
+  InspectionFormTemplate,
+} from '../../../shared/types/onboarding';
+export type {
+  PMTemplate,
+  PMTemplateAssignment,
+  PMTemplateChecklistItem,
+  PMTemplateRequiredPart,
+  PMTemplateUpsertInput,
+} from '../../../shared/types/pmTemplates';
 export type {
   Permit,
   PermitHistoryEntry,
@@ -22,7 +72,8 @@ export type {
   SafetyIncident,
   SafetyKpiResponse,
   PermitActivitySummary,
-} from '@shared/permit';
+} from '../../../shared/types/permit';
+export type { PermissionGrant, RoleAssignment } from '../../../shared/types/admin';
 
 /**
  * Defines the allowed maintenance categories for upcoming maintenance tasks.
@@ -31,11 +82,16 @@ export type MaintenanceType = 'preventive' | 'corrective' | 'inspection';
 
 export interface Asset {
   id: string;
+  tenantId: string;
+  siteId?: string;
+  plantId?: string;
   name: string;
   type?: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface';
+  qrCode?: string;
   location?: string;
   notes?: string;
   department?: string;
+  departmentId?: string;
   category?: string;
   status?: 'Active' | 'Offline' | 'In Repair';
   description?: string;
@@ -44,18 +100,33 @@ export interface Asset {
   modelName?: string;
   manufacturer?: string;
   purchaseDate?: string;
+  warrantyStart?: string;
+  warrantyEnd?: string;
+  purchaseCost?: number;
+  expectedLifeMonths?: number;
+  replacementDate?: string;
   installationDate?: string;
   line?: string;
   station?: string;
   /** Identifier of the station the asset belongs to */
   stationId?: string;
   criticality?: 'high' | 'medium' | 'low';
+  /** Optional health indicator for the asset */
+  health?: string;
   lastPmDate?: string;
   lastServiced?: string;
+  /** Timestamp of the most recent maintenance completed for the asset */
+  lastMaintenanceDate?: string;
+  /** Count of open work orders tied to the asset */
+  openWorkOrders?: number;
+  /** Hours of downtime accumulated in the recent reporting window */
+  recentDowntimeHours?: number;
   warrantyExpiry?: string;
+  openWorkOrderCount?: number;
+  downtimeHours?: number;
   documents?: File[];
-  createdAt?: string;
-  updatedAt?: string;
+  reliability?: { mttrHours: number; mtbfHours: number };
+  downtimeCount?: number;
 }
 
 export type AssetStatusMap = Record<string, number>;
@@ -106,6 +177,12 @@ export interface DepartmentHierarchy extends Department {
 export interface WorkOrder {
   /** Unique identifier */
   id: string;
+  tenantId: string;
+  siteId?: string;
+  plantId?: string;
+
+  /** Optional plant context */
+  plant?: string;
 
   /** Human readable title */
   title: string;
@@ -197,7 +274,6 @@ export interface WorkOrder {
   /** Additional metadata */
   note?: string;
   completedBy?: string;
-  attachments?: any[];
   parts?: { partId: string; qty: number; cost: number }[];
 }
 
@@ -247,40 +323,6 @@ export interface PMTask {
   department?: string;
 }
 
-export interface PMTemplateChecklistItem {
-  id: string;
-  description: string;
-  required?: boolean;
-}
-
-export interface PMTemplateRequiredPart {
-  id: string;
-  partId: string;
-  partName?: string;
-  quantity?: number;
-}
-
-export interface PMTemplateAssignment {
-  id: string;
-  assetId: string;
-  assetName?: string;
-  interval: string;
-  usageMetric?: 'runHours' | 'cycles';
-  usageTarget?: number;
-  usageLookbackDays?: number;
-  nextDue?: string;
-  checklist: PMTemplateChecklistItem[];
-  requiredParts: PMTemplateRequiredPart[];
-}
-
-export interface PMTemplate {
-  id: string;
-  title: string;
-  notes?: string;
-  active: boolean;
-  assignments: PMTemplateAssignment[];
-}
-
 export interface Channel {
   id: string;
   name: string;
@@ -328,34 +370,34 @@ export interface Message {
   reactions: Reaction[];
 }
 
-export type AuthRole =
-  | 'global_admin'
-  | 'plant_admin'
-  | 'general_manager'
-  | 'assistant_general_manager'
-  | 'operations_manager'
-  | 'assistant_department_leader'
-  | 'technical_team_member'
-  | 'admin'
-  | 'supervisor'
-  | 'manager'
-  | 'planner'
-  | 'tech'
-  | 'technician'
-  | 'team_member'
-  | 'team_leader'
-  | 'area_leader'
-  | 'department_leader'
-  | 'viewer';
-
 export interface User {
   id: string;
   name: string;
   email: string;
   role: AuthRole;
   roles?: AuthRole[];
+  tenantId?: string;
+  siteId?: string | null;
   department: string;
   avatar?: string;
+}
+
+export interface CommentUser {
+  id: string;
+  name?: string;
+  email?: string;
+  avatar?: string;
+}
+
+export interface Comment {
+  id: string;
+  threadId: string;
+  parentId?: string;
+  content: string;
+  mentions?: string[];
+  user?: CommentUser;
+  createdAt: string | Date;
+  updatedAt?: string | Date;
 }
 
 export interface TeamMember {
@@ -363,11 +405,13 @@ export interface TeamMember {
   name: string;
   email: string;
   role: AuthRole;
-  department?: string;
+  tenantId?: string;
+  siteId?: string | null;
+  department?: string | undefined;
   /** Unique employee identifier */
-  employeeId?: string;
+  employeeId?: string | undefined;
   /** Identifier of the member this person reports to */
-  managerId?: string | null;
+  managerId?: string | null | undefined;
   avatar?: string;
 }
 
@@ -378,6 +422,8 @@ export interface TeamMemberResponse {
   name: string;
   email: string;
   role: AuthRole;
+  tenantId?: string;
+  siteId?: string | null;
   department?: string;
   employeeId?: string;
   managerId?: string | null;
@@ -392,10 +438,13 @@ export interface AuthUser {
   email: string;
   role: AuthRole;
   roles?: AuthRole[];
+  permissions?: string[];
   /** Identifier for the user's tenant */
   tenantId?: string;
   /** Optional site identifier associated with the user */
-  siteId?: string;
+  siteId?: string | null;
+  /** Optional fine-grained permissions for scoped enforcement */
+  permissionAssignments?: PermissionAssignment[];
   /** Optional JWT token used for authenticated requests */
   token?: string;
   /** Optional URL for the user's avatar */
@@ -441,8 +490,13 @@ export interface Notification {
   title: string;
   message: string;
   type: 'critical' | 'warning' | 'info';
+  category: 'assigned' | 'updated' | 'overdue' | 'pm_due' | 'comment' | 'request_submitted';
+  deliveryState: 'pending' | 'queued' | 'sent' | 'failed' | 'delivered';
   read: boolean;
   createdAt: string;
+  workOrderId?: string;
+  inventoryItemId?: string;
+  pmTaskId?: string;
 }
 
 export interface NotificationType {
@@ -450,8 +504,13 @@ export interface NotificationType {
   title: string;
   message: string;
   type: 'info' | 'warning' | 'critical';
+  category: 'assigned' | 'updated' | 'overdue' | 'pm_due' | 'comment' | 'request_submitted';
+  deliveryState: 'pending' | 'queued' | 'sent' | 'failed' | 'delivered';
   createdAt: string;
   read: boolean;
+  workOrderId?: string;
+  inventoryItemId?: string;
+  pmTaskId?: string;
 }
 
 export interface WorkOrderUpdatePayload {

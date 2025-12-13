@@ -10,22 +10,13 @@ import { usePermissions } from '@/auth/usePermissions';
 import QrScanner from '@/components/qr/QrScanner';
 import WorkOrderModal from '@/components/work-orders/WorkOrderModal';
 import http from '@/lib/http';
+import {
+  confirmEntityExists,
+  logScanNavigationOutcome,
+  parseScanPayload,
+  type ScanResolution,
+} from '@/utils/scanRouting';
 import type { WorkOrder } from '@/types';
-
-const parseScanValue = (raw: string): { assetId?: string; raw: string } => {
-  try {
-    const parsed = JSON.parse(raw) as { id?: string; assetId?: string; type?: string };
-    if (parsed.type === 'asset' && parsed.id) {
-      return { assetId: parsed.id, raw };
-    }
-    if (parsed.assetId || parsed.id) {
-      return { assetId: parsed.assetId ?? parsed.id, raw };
-    }
-  } catch (err) {
-    // not JSON
-  }
-  return { assetId: raw.trim() || undefined, raw };
-};
 
 const AssetScan: React.FC = () => {
   const navigate = useNavigate();
@@ -53,11 +44,12 @@ const AssetScan: React.FC = () => {
   };
 
   const handleScan = async (rawValue: string) => {
-    const { assetId } = parseScanValue(rawValue);
+    const parsed = parseScanPayload(rawValue);
     setScanError(null);
 
-    if (!assetId) {
-      setScanError('The QR code did not include an asset id.');
+    if ('error' in parsed) {
+      setScanError(parsed.error);
+      logScanNavigationOutcome({ outcome: 'failure', error: parsed.error, source: 'asset-scan' });
       if (canCreateWorkOrders) {
         setWorkOrderDefaults({
           title: 'Work order from QR scan',
@@ -68,21 +60,36 @@ const AssetScan: React.FC = () => {
       return;
     }
 
-    try {
-      await http.get(`/assets/${assetId}`);
-      navigate(`/assets/${assetId}`);
-    } catch (err) {
-      console.warn('Asset lookup failed for scanned value', err);
-      setScanError('No matching asset was found. You can still open a work order from this scan.');
+    const resolution: ScanResolution = parsed;
+    if (resolution.type !== 'asset') {
+      setScanError('This QR code does not reference an asset.');
+      logScanNavigationOutcome({
+        outcome: 'failure',
+        resolution,
+        error: 'Unsupported scan type for this tool',
+        source: 'asset-scan',
+      });
+      return;
+    }
+
+    const exists = await confirmEntityExists(resolution);
+    if (!exists) {
+      const detail = 'No matching asset was found. You can still open a work order from this scan.';
+      setScanError(detail);
+      logScanNavigationOutcome({ outcome: 'failure', resolution, error: detail, source: 'asset-scan' });
       if (canCreateWorkOrders) {
         setWorkOrderDefaults({
-          assetId,
+          assetId: resolution.id,
           title: 'Work order from QR scan',
-          description: `Reported via QR scan for asset ${assetId}.`,
+          description: `Reported via QR scan for asset ${resolution.id}.`,
         });
         setShowWorkOrder(true);
       }
+      return;
     }
+
+    logScanNavigationOutcome({ outcome: 'success', resolution, source: 'asset-scan' });
+    navigate(resolution.path);
   };
 
   return (

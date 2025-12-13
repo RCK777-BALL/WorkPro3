@@ -26,10 +26,12 @@ import {
   adjustStock,
   transferStock,
   listStockHistory,
+  listReorderSuggestions,
   transitionPurchaseOrder,
   InventoryError,
   type InventoryContext,
   type PartUsageFilters,
+  type ReorderSuggestionFilters,
   type PurchaseOrderExportFormat,
   getPartUsageReport,
 } from './service';
@@ -192,6 +194,20 @@ export const listAlertsHandler: AuthedRequestHandler = async (req, res, next) =>
   if (!ensureTenant(req, res)) return;
   try {
     const data = await listAlerts(buildContext(req));
+    send(res, data);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const listReorderSuggestionsHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    const filters: ReorderSuggestionFilters = {
+      siteId: typeof req.query.siteId === 'string' ? req.query.siteId : undefined,
+      partId: typeof req.query.partId === 'string' ? req.query.partId : undefined,
+    };
+    const data = await listReorderSuggestions(buildContext(req), filters);
     send(res, data);
   } catch (err) {
     handleError(err, res, next);

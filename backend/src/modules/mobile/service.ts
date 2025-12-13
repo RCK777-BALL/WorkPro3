@@ -9,6 +9,7 @@ import PMTask from '../../../models/PMTask';
 import WorkOrder from '../../../models/WorkOrder';
 import MobileOfflineAction from '../../../models/MobileOfflineAction';
 import ConflictLog from '../../../services/conflicts/ConflictLog';
+import { resolveConflict, type VectorClock } from './conflictResolution';
 
 export interface LastSyncInput {
   workOrders?: string | undefined;
@@ -22,6 +23,9 @@ export interface OfflineActionInput {
   operation: 'create' | 'update' | 'delete' | string;
   payload?: Record<string, unknown>;
   version?: number;
+  vector?: VectorClock;
+  fieldTimestamps?: Record<string, number>;
+  clientId?: string;
   userId: Types.ObjectId;
   tenantId: Types.ObjectId;
 }
@@ -78,16 +82,13 @@ export const fetchDeltas = async (
 
 const findModel = (entityType: string): Model<any> | undefined => entityModelMap[entityType];
 
-const isNewer = (existing?: Date, incoming?: number | Date): boolean => {
-  if (!existing) return false;
-  if (!incoming) return true;
-  const incomingDate = typeof incoming === 'number' ? new Date(incoming) : incoming;
-  return existing.getTime() > incomingDate.getTime();
-};
-
 export const applyOfflineActions = async (
   actions: OfflineActionInput[],
-): Promise<{ processed: string[]; conflicts: ReturnType<ConflictLog['all']> }> => {
+): Promise<{
+  processed: string[];
+  conflicts: ReturnType<ConflictLog['all']>;
+  resolutions: ReturnType<ConflictLog['all']>;
+}> => {
   const conflictLog = new ConflictLog();
   const processed: string[] = [];
 
@@ -122,7 +123,7 @@ export const applyOfflineActions = async (
 
     if (!targetId) continue;
 
-    const existing = await model.findOne({ _id: targetId, tenantId: action.tenantId });
+    const existing = await model.findOne({ _id: targetId, tenantId: action.tenantId }).lean<Record<string, any>>();
     if (!existing) {
       if (action.operation === 'update') {
         const created = await model.create({ _id: targetId, ...payload });
@@ -132,29 +133,42 @@ export const applyOfflineActions = async (
       continue;
     }
 
-    const existingUpdatedAt: Date | undefined = existing.updatedAt ?? undefined;
-    if (isNewer(existingUpdatedAt, action.version)) {
-      conflictLog.add({
-        entityType: action.entityType,
-        entityId: String(targetId),
-        serverTimestamp: existingUpdatedAt ?? new Date(),
-        ...(action.version !== undefined ? { clientVersion: action.version } : {}),
-        resolvedWith: 'server',
-      });
+    const clientTimestamp = action.version !== undefined ? new Date(action.version) : undefined;
+    const resolution = resolveConflict({
+      existing,
+      incoming: payload,
+      entityType: action.entityType,
+      entityId: targetId,
+      clientTimestamp,
+      clientVector: action.vector,
+      clientId: action.clientId ?? action.userId?.toString(),
+      fieldTimestamps: action.fieldTimestamps,
+    });
+
+    if (!resolution.applyChange) {
+      conflictLog.add(resolution.metadata);
       continue;
     }
 
     if (action.operation === 'delete') {
       await model.deleteOne({ _id: targetId, tenantId: action.tenantId });
+      conflictLog.add({
+        ...resolution.metadata,
+        resolvedWith: 'client',
+        appliedFields: [...new Set([...resolution.metadata.appliedFields, 'delete'])],
+      });
       processed.push(String(targetId));
       continue;
     }
 
-    await model.updateOne({ _id: targetId, tenantId: action.tenantId }, { $set: payload });
+    const mergedPayload = { ...resolution.merged, updatedAt: payload.updatedAt ?? new Date() };
+    await model.updateOne({ _id: targetId, tenantId: action.tenantId }, { $set: mergedPayload });
+    conflictLog.add(resolution.metadata);
     processed.push(String(targetId));
   }
 
-  return { processed, conflicts: conflictLog.all() };
+  const resolutions = conflictLog.all();
+  return { processed, conflicts: resolutions, resolutions };
 };
 
 export default {

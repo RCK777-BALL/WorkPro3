@@ -3,7 +3,7 @@
  */
 
 import { create } from 'zustand';
-import type { SyncConflict } from '@/utils/offlineQueue';
+import type { SyncConflict, SyncItemStatus } from '@/utils/offlineQueue';
 
 export type SyncStatus = 'idle' | 'syncing' | 'error' | 'conflicted';
 
@@ -12,6 +12,7 @@ interface SyncState {
   queued: number;
   processed: number;
   status: SyncStatus;
+  itemStatuses: Record<string, SyncItemStatus>;
   lastSyncedAt?: number;
   error?: string | null;
   conflict?: SyncConflict | null;
@@ -20,6 +21,9 @@ interface SyncState {
   setStatus: (status: SyncStatus, error?: string | null) => void;
   setLastSynced: (timestamp: number) => void;
   setConflict: (conflict: SyncConflict | null) => void;
+  setItemStatus: (id: string, status: SyncItemStatus) => void;
+  clearItemStatus: (id: string) => void;
+  hydrateItemStatuses: (items: Record<string, SyncItemStatus>) => void;
 }
 
 export const useSyncStore = create<SyncState>((set) => ({
@@ -27,6 +31,7 @@ export const useSyncStore = create<SyncState>((set) => ({
   queued: 0,
   processed: 0,
   status: 'idle',
+  itemStatuses: {},
   lastSyncedAt: undefined,
   error: null,
   conflict: null,
@@ -35,4 +40,13 @@ export const useSyncStore = create<SyncState>((set) => ({
   setStatus: (status, error = null) => set({ status, error }),
   setLastSynced: (timestamp) => set({ lastSyncedAt: timestamp }),
   setConflict: (conflict) => set({ conflict, status: conflict ? 'conflicted' : 'idle' }),
+  setItemStatus: (id, status) =>
+    set((current) => ({ itemStatuses: { ...current.itemStatuses, [id]: status } })),
+  clearItemStatus: (id) =>
+    set((current) => {
+      const next = { ...current.itemStatuses };
+      delete next[id];
+      return { itemStatuses: next };
+    }),
+  hydrateItemStatuses: (items) => set({ itemStatuses: items }),
 }));

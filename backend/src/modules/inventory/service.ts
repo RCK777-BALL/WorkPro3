@@ -31,7 +31,9 @@ import LocationModel, { type LocationDocument } from './models/Location';
 import StockItemModel, { type StockItemDocument } from './models/StockItem';
 import StockHistoryModel, { type StockHistoryDocument } from './models/StockHistory';
 import InventoryTransferModel, { type InventoryTransferDocument } from './models/Transfer';
-import InventoryTransactionModel, { type InventoryTransactionDocument } from './models/InventoryTransaction';
+import ReorderSuggestionModel, {
+  type ReorderSuggestionDocument,
+} from './models/ReorderSuggestion';
 import type {
   LocationInput,
   PartInput,
@@ -70,6 +72,36 @@ export interface ListPartsOptions {
   vendorId?: string;
   sortBy?: string;
   sortDirection?: SortDirection;
+}
+
+export interface ReorderSuggestionFilters {
+  partId?: string;
+  siteId?: string;
+}
+
+export interface ReorderSuggestionSummary {
+  id: string;
+  partId: string;
+  partName: string;
+  suggestedQty: number;
+  siteId?: string;
+  location?: {
+    id: string;
+    store?: string;
+    room?: string;
+    bin?: string;
+  };
+  onHand: number;
+  onOrder: number;
+  threshold: number;
+  leadTimeDays?: number;
+  source: {
+    type: string;
+    runId?: string;
+    generatedAt?: string;
+    criteria?: ReorderSuggestionDocument['source']['criteria'];
+  };
+  createdAt?: string;
 }
 
 export class InventoryError extends Error {
@@ -167,6 +199,23 @@ type VendorRecord = Pick<
   VendorDocument,
   'tenantId' | 'name' | 'contact' | 'address' | 'leadTimeDays' | 'notes' | 'preferredSkus' | 'partsSupplied'
 > & { _id: Types.ObjectId };
+
+type ReorderSuggestionRecord = {
+  _id: Types.ObjectId;
+  tenantId: Types.ObjectId;
+  siteId?: Types.ObjectId;
+  part: Types.ObjectId;
+  targetLocation?: Types.ObjectId;
+  suggestedQty: number;
+  onHand: number;
+  onOrder: number;
+  threshold: number;
+  leadTimeDays?: number;
+  source: ReorderSuggestionDocument['source'];
+  status: 'open' | 'dismissed';
+  createdAt?: Date;
+  updatedAt?: Date;
+};
 
 const toObjectId = (value: Types.ObjectId | string, label: string): Types.ObjectId => {
   if (value instanceof Types.ObjectId) {
@@ -1391,6 +1440,92 @@ export const listStockHistory = async (context: InventoryContext): Promise<Stock
   }));
 };
 
+export const listReorderSuggestions = async (
+  context: InventoryContext,
+  filters: ReorderSuggestionFilters = {},
+): Promise<ReorderSuggestionSummary[]> => {
+  const tenantId = toObjectId(context.tenantId, 'tenant id');
+  const query: FilterQuery<ReorderSuggestionDocument> = { tenantId };
+
+  const siteFilter = filters.siteId ?? context.siteId;
+  if (siteFilter) {
+    const siteId = maybeObjectId(siteFilter);
+    query.$or = [{ siteId }, { siteId: { $exists: false } }, { siteId: null }];
+  }
+
+  if (filters.partId) {
+    query.part = toObjectId(filters.partId, 'part id');
+  }
+
+  const suggestions = await ReorderSuggestionModel.find(query)
+    .sort({ createdAt: -1 })
+    .lean<ReorderSuggestionRecord[]>();
+
+  if (!suggestions.length) {
+    return [];
+  }
+
+  const partIds = suggestions.map((suggestion) => suggestion.part);
+  const locationIds = suggestions
+    .map((suggestion) => suggestion.targetLocation)
+    .filter((id): id is Types.ObjectId => Boolean(id));
+
+  const [parts, locations] = await Promise.all([
+    PartModel.find({ tenantId, _id: { $in: partIds } })
+      .select('name siteId location minLevel reorderPoint leadTime')
+      .lean<PartRecord[]>(),
+    locationIds.length
+      ? LocationModel.find({ tenantId, _id: { $in: locationIds } })
+          .select('store room bin')
+          .lean<LocationDocument[]>()
+      : [],
+  ]);
+
+  const partMap = new Map<string, PartRecord>();
+  parts.forEach((part) => partMap.set(part._id.toString(), part));
+
+  const locationMap = new Map<string, LocationDocument>();
+  locations.forEach((location) => locationMap.set(location._id.toString(), location));
+
+  return suggestions.map((suggestion) => {
+    const partId = suggestion.part.toString();
+    const part = partMap.get(partId);
+    const location = suggestion.targetLocation
+      ? locationMap.get(suggestion.targetLocation.toString())
+      : undefined;
+
+    const response: ReorderSuggestionSummary = {
+      id: (suggestion._id as Types.ObjectId).toString(),
+      partId,
+      partName: part?.name ?? 'Unknown part',
+      suggestedQty: suggestion.suggestedQty,
+      siteId: suggestion.siteId?.toString() ?? part?.siteId?.toString(),
+      onHand: suggestion.onHand,
+      onOrder: suggestion.onOrder,
+      threshold: suggestion.threshold,
+      leadTimeDays: suggestion.leadTimeDays,
+      source: {
+        type: suggestion.source?.type ?? 'low_stock_scan',
+        runId: suggestion.source?.runId?.toString(),
+        generatedAt: suggestion.source?.generatedAt?.toISOString(),
+        criteria: suggestion.source?.criteria,
+      },
+      createdAt: suggestion.createdAt?.toISOString(),
+    };
+
+    if (location) {
+      response.location = {
+        id: (location._id as Types.ObjectId).toString(),
+        store: location.store,
+        room: location.room,
+        bin: location.bin,
+      };
+    }
+
+    return response;
+  });
+};
+
 const buildPartPayload = (input: PartInput): Partial<PartDocument> => {
   const payload: Partial<PartDocument> = {};
 
@@ -1457,7 +1592,7 @@ const ensureVendor = async (context: InventoryContext, vendorId: string): Promis
   return vendor;
 };
 
-const determineReorderQuantity = (part: PartDocument): number => {
+export const determineReorderQuantity = (part: PartDocument): number => {
   if (part.reorderQty && part.reorderQty > 0) {
     return part.reorderQty;
   }

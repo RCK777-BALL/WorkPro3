@@ -1602,7 +1602,12 @@ const ensureVendor = async (context: InventoryContext, vendorId: string): Promis
   return vendor;
 };
 
-export const determineReorderQuantity = (part: PartDocument): number => {
+type ReorderQuantityInput = Pick<
+  PartDocument,
+  'reorderQty' | 'minLevel' | 'minStock' | 'quantity' | 'reorderPoint'
+>;
+
+export const determineReorderQuantity = (part: ReorderQuantityInput): number => {
   if (part.reorderQty && part.reorderQty > 0) {
     return part.reorderQty;
   }

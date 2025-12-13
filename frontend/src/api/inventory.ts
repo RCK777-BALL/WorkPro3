@@ -36,6 +36,11 @@ export const fetchParts = async (params: PartQueryParams = {}): Promise<Paginate
   return res.data;
 };
 
+export const fetchPart = async (partId: string): Promise<Part> => {
+  const res = await http.get<Part>(`${BASE_PATH}/parts/${partId}`);
+  return res.data;
+};
+
 export const upsertPart = async (payload: Partial<Part> & { name: string; id?: string }): Promise<Part> => {
   if (payload.id) {
     const res = await http.put<Part>(`${BASE_PATH}/parts/${payload.id}`, payload);

@@ -5,4 +5,6 @@ export { default as PdfExportPanel } from './PdfExportPanel';
 export { default as PurchaseOrderExportPanel } from './PurchaseOrderExportPanel';
 export { default as AlertsPanel } from './AlertsPanel';
 export * from './AlertIndicators';
+export { default as StockHistoryList } from './StockHistoryList';
+export { formatInventoryLocation } from './location';
 export * from './hooks';

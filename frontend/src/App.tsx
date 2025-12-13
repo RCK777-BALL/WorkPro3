@@ -31,6 +31,8 @@ import AssetDetails from "@/pages/AssetDetails";
 import Inventory from "@/pages/Inventory";
 import InventoryLocations from "@/pages/InventoryLocations";
 import InventoryParts from "@/pages/InventoryParts";
+import InventoryList from "@/pages/inventory/InventoryList";
+import InventoryPartDetail from "@/pages/inventory/InventoryPartDetail";
 import InventoryAnalytics from "@/pages/InventoryAnalytics";
 import IotMonitoring from "@/pages/IotMonitoring";
 import VendorsPage from "@/pages/VendorsPage";
@@ -241,6 +243,22 @@ export default function App() {
             element={
               <RequirePermission permission="inventory.read">
                 <InventoryParts />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/inventory/items"
+            element={
+              <RequirePermission permission="inventory.read">
+                <InventoryList />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/inventory/items/:partId"
+            element={
+              <RequirePermission permission="inventory.read">
+                <InventoryPartDetail />
               </RequirePermission>
             }
           />

@@ -10,7 +10,7 @@ import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
 import Input from '@/components/common/Input';
 import SlideOver from '@/components/common/SlideOver';
-import type { InventoryLocation, InventoryTransferPayload, StockHistoryEntry, StockItem } from '@/types';
+import type { InventoryLocation, InventoryTransferPayload, StockItem } from '@/types';
 import {
   INVENTORY_HISTORY_QUERY_KEY,
   INVENTORY_LOCATIONS_QUERY_KEY,
@@ -20,11 +20,7 @@ import {
   useStockItemsQuery,
   useTransferInventory,
 } from '@/features/inventory';
-
-const formatLocation = (location: Pick<InventoryLocation, 'store' | 'room' | 'bin'>) => {
-  const parts = [location.store, location.room, location.bin].filter(Boolean);
-  return parts.length ? parts.join(' • ') : 'Unassigned';
-};
+import { StockHistoryList, formatInventoryLocation } from '@/features/inventory';
 
 const LocationForm = ({
   onSave,
@@ -86,7 +82,7 @@ const StockTable = ({ items }: { items: StockItem[] }) => (
           <tr key={item.id}>
             <td className="px-3 py-2 text-neutral-900">{item.part?.name ?? item.partId}</td>
             <td className="px-3 py-2 text-neutral-700">
-              {item.location ? formatLocation(item.location) : item.locationId}
+              {item.location ? formatInventoryLocation(item.location) : item.locationId}
             </td>
             <td className="px-3 py-2 text-neutral-700">{item.quantity}</td>
             <td className="px-3 py-2 text-neutral-700">{item.unit ?? '—'}</td>
@@ -94,31 +90,6 @@ const StockTable = ({ items }: { items: StockItem[] }) => (
         ))}
       </tbody>
     </table>
-  </div>
-);
-
-const HistoryList = ({ entries }: { entries: StockHistoryEntry[] }) => (
-  <div className="space-y-2">
-    {entries.map((entry) => (
-      <div key={entry.id} className="rounded-md border border-neutral-200 p-3">
-        <div className="flex items-center justify-between text-sm text-neutral-700">
-          <span>
-            {entry.delta > 0 ? '+' : ''}
-            {entry.delta} on {entry.partId}
-          </span>
-          <span className="text-xs text-neutral-500">{entry.createdAt ? new Date(entry.createdAt).toLocaleString() : '—'}</span>
-        </div>
-        <p className="text-xs text-neutral-500">
-          {formatLocation({
-            store: entry.location.store ?? 'Unassigned',
-            room: entry.location.room,
-            bin: entry.location.bin,
-          })}
-        </p>
-        {entry.reason && <p className="text-xs text-neutral-500">{entry.reason}</p>}
-      </div>
-    ))}
-    {!entries.length && <p className="text-sm text-neutral-500">No stock movements logged yet.</p>}
   </div>
 );
 
@@ -352,7 +323,7 @@ export default function InventoryLocations() {
                         onClick={() => setSelected(loc)}
                         className="rounded-md border border-neutral-200 p-3 text-left hover:border-neutral-400"
                       >
-                        <p className="font-medium text-neutral-900">{formatLocation(loc)}</p>
+                        <p className="font-medium text-neutral-900">{formatInventoryLocation(loc)}</p>
                         <p className="text-xs text-neutral-500">{loc.bin ? `Bin ${loc.bin}` : 'No bin set'}</p>
                       </button>
                     ))}
@@ -404,7 +375,7 @@ export default function InventoryLocations() {
         <Card.Content>
           {historyQuery.isLoading && <p className="text-sm text-neutral-500">Loading history…</p>}
           {historyQuery.error && <p className="text-sm text-error-600">Unable to load stock history.</p>}
-          {!historyQuery.isLoading && !historyQuery.error && <HistoryList entries={history} />}
+          {!historyQuery.isLoading && !historyQuery.error && <StockHistoryList entries={history} />}
         </Card.Content>
       </Card>
 

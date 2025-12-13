@@ -21,7 +21,7 @@ type ScanHistoryItem = {
 
 type QrPayload = { type: 'asset' | 'part'; id: string };
 
-const parseQrValue = (value: string): QrPayload | null => {
+export const parseQrValue = (value: string): QrPayload | null => {
   try {
     const parsed = JSON.parse(value) as Partial<QrPayload>;
     if (!parsed.id || !parsed.type) return null;

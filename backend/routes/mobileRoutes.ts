@@ -11,10 +11,11 @@ import {
   completeOfflineAction,
   enqueueOfflineAction,
   getOfflineQueue,
-  getOfflineActionStatus,
+  listRecentMobileScans,
   recordOfflineActionFailure,
   listMobileWorkOrders,
   lookupAsset,
+  recordMobileScan,
   uploadMobileAttachment,
 } from '../controllers/MobileController';
 
@@ -55,6 +56,7 @@ router.get('/v1/offline-queue', getOfflineQueue);
 router.post('/v1/offline-queue', enqueueOfflineAction);
 router.post('/v1/offline-queue/:id/fail', recordOfflineActionFailure);
 router.post('/v1/offline-queue/:id/complete', completeOfflineAction);
-router.get('/v1/offline-queue/:id/status', getOfflineActionStatus);
+router.get('/v1/scans', listRecentMobileScans);
+router.post('/v1/scans', recordMobileScan);
 
 export default router;

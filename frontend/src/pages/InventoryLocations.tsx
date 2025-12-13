@@ -4,6 +4,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from 'react-query';
+import { useParams } from 'react-router-dom';
 
 import { upsertLocation } from '@/api/inventory';
 import Button from '@/components/common/Button';
@@ -284,9 +285,11 @@ const TransferModal = ({
 };
 
 export default function InventoryLocations() {
+  const { locationId } = useParams<{ locationId?: string }>();
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<InventoryLocation | null>(null);
   const [transferOpen, setTransferOpen] = useState(false);
+  const [focusedLocationId, setFocusedLocationId] = useState<string | undefined>(locationId ?? undefined);
 
   const locationsQuery = useLocationsQuery();
   const stockQuery = useStockItemsQuery();
@@ -321,8 +324,26 @@ export default function InventoryLocations() {
     setTransferOpen(false);
   };
 
+  useEffect(() => {
+    setFocusedLocationId(locationId ?? undefined);
+  }, [locationId]);
+
   return (
     <div className="space-y-6">
+      {focusedLocationId && (
+        <div className="flex items-start gap-3 rounded-lg border border-primary-200 bg-primary-50 p-3 text-sm text-primary-900">
+          <div className="mt-0.5 h-3 w-3 rounded-full bg-primary-500" />
+          <div>
+            <p className="font-semibold">Deep link detected</p>
+            <p>
+              Showing inventory data for location <strong>{focusedLocationId}</strong>. Scroll down to confirm stock.
+            </p>
+            {!locations.some((loc) => loc.id === focusedLocationId) && (
+              <p className="text-xs text-primary-800">This location is not present in the current list.</p>
+            )}
+          </div>
+        </div>
+      )}
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold text-neutral-900">Inventory locations</h1>
         <p className="text-sm text-neutral-500">

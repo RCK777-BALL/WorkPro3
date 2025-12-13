@@ -9,6 +9,7 @@ import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import WorkOrder, { type WorkOrder as WorkOrderEntity } from '../models/WorkOrder';
 import Asset, { type AssetDoc } from '../models/Asset';
 import MobileOfflineAction, { type MobileOfflineAction as MobileOfflineActionDoc } from '../models/MobileOfflineAction';
+import type { MobileScanOutcome } from '../models/MobileScanHistory';
 import {
   computeBackoffSeconds,
   ensureMatchHeader,
@@ -18,6 +19,7 @@ import {
 } from '../services/mobileSyncService';
 import { emitTelemetry } from '../services/telemetryService';
 import { upsertDeviceTelemetry, type DeviceTelemetryInput } from '../services/mobileSyncAdminService';
+import { listScanHistory, recordScanHistory } from '../services/mobileScanHistoryService';
 import { writeAuditLog, type AuditActor } from '../utils';
 import type { MobileOfflineActionStatus } from '../models/MobileOfflineAction';
 
@@ -122,6 +124,35 @@ const offlineActionFailureSchema = z.object({
   retryable: z.boolean().optional().default(true),
 });
 
+const SCAN_OUTCOMES = ['resolved', 'missing', 'invalid', 'error'] as const satisfies readonly MobileScanOutcome[];
+
+const decodedEntitySchema = z.object({
+  type: z.string().trim().optional(),
+  id: z.string().trim().optional(),
+  label: z.string().trim().optional(),
+});
+
+const scanRecordSchema = z.object({
+  rawValue: z.string().trim().min(1),
+  decodedEntity: decodedEntitySchema.optional(),
+  navigationTarget: z.string().trim().optional(),
+  outcome: z.enum(SCAN_OUTCOMES),
+  errorMessage: z.string().trim().optional(),
+});
+
+const serializeScanHistory = (scan: any) => ({
+  id: scan._id?.toString?.() ?? scan._id,
+  rawValue: scan.rawValue,
+  decodedType: scan.decodedType ?? null,
+  decodedId: scan.decodedId ?? null,
+  decodedLabel: scan.decodedLabel ?? null,
+  navigationTarget: scan.navigationTarget ?? null,
+  outcome: scan.outcome,
+  errorMessage: scan.errorMessage ?? null,
+  exportState: scan.exportState ?? null,
+  createdAt: scan.createdAt ?? scan.updatedAt ?? undefined,
+});
+
 export const listMobileWorkOrders: AuthedRequestHandler = async (req, res) => {
   const tenantId = req.tenantId;
   if (!tenantId) {
@@ -222,6 +253,64 @@ export const uploadMobileAttachment: AuthedRequestHandler = async (req, res) => 
       mimeType: file.mimetype,
       size: file.size,
       originalName: file.originalname,
+    },
+  });
+};
+
+export const recordMobileScan: AuthedRequestHandler = async (req, res) => {
+  const tenantId = req.tenantId;
+  const userId = req.user?._id ?? req.user?.id;
+
+  if (!tenantId || !userId) {
+    res.status(400).json({ message: 'Tenant and user are required' });
+    return;
+  }
+
+  const parsed = scanRecordSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    res.status(400).json({ message: 'Invalid payload', errors: parsed.error.flatten() });
+    return;
+  }
+
+  const actor = toAuditActor(req.user);
+
+  const record = await recordScanHistory({
+    tenantId: new Types.ObjectId(tenantId),
+    userId: new Types.ObjectId(String(userId)),
+    rawValue: parsed.data.rawValue,
+    decodedEntity: parsed.data.decodedEntity,
+    navigationTarget: parsed.data.navigationTarget ?? null,
+    outcome: parsed.data.outcome,
+    errorMessage: parsed.data.errorMessage ?? null,
+    ...(actor ? { actor } : {}),
+  });
+
+  res.status(201).json({ data: serializeScanHistory(record) });
+};
+
+export const listRecentMobileScans: AuthedRequestHandler = async (req, res) => {
+  const tenantId = req.tenantId;
+  const userId = req.user?._id ?? req.user?.id;
+
+  if (!tenantId || !userId) {
+    res.status(400).json({ message: 'Tenant and user are required' });
+    return;
+  }
+
+  const page = parseNumber(req.query.page, DEFAULT_PAGE);
+  const limit = Math.min(parseNumber(req.query.limit, DEFAULT_LIMIT), MAX_LIMIT);
+
+  const result = await listScanHistory({
+    tenantId: new Types.ObjectId(tenantId),
+    userId: new Types.ObjectId(String(userId)),
+    page,
+    limit,
+  });
+
+  res.json({
+    data: {
+      items: result.items.map(serializeScanHistory),
+      pagination: result.pagination,
     },
   });
 };

@@ -6,20 +6,20 @@ import { FileSpreadsheet, FileText } from 'lucide-react';
 import { useState } from 'react';
 
 import Button from '@/components/common/Button';
-import { downloadPurchaseOrderExport, type PurchaseOrderExportFormat } from '@/api/inventory';
+import { downloadPurchaseOrderExport, type InventoryExportFormat } from '@/api/inventory';
 import { triggerFileDownload } from '@/utils/download';
 
-const statusLabel = (format: PurchaseOrderExportFormat | null) => {
+const statusLabel = (format: InventoryExportFormat | null) => {
   if (format === 'csv') return 'Preparing CSV…';
   if (format === 'pdf') return 'Rendering PDF…';
   return null;
 };
 
 const PurchaseOrderExportPanel = () => {
-  const [activeFormat, setActiveFormat] = useState<PurchaseOrderExportFormat | null>(null);
+  const [activeFormat, setActiveFormat] = useState<InventoryExportFormat | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  const handleExport = async (format: PurchaseOrderExportFormat) => {
+  const handleExport = async (format: InventoryExportFormat) => {
     setActiveFormat(format);
     setStatusMessage(null);
     try {

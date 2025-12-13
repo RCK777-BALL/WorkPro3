@@ -10,6 +10,7 @@ const metadataSchema = z.record(z.any()).optional();
 
 export const partInputSchema = z.object({
   name: z.string().min(1, 'Name is required'),
+  barcode: barcodeSchema.optional(),
   partNo: z.string().optional(),
   description: z.string().optional(),
   category: z.string().optional(),
@@ -70,6 +71,7 @@ export const locationInputSchema = z.object({
   store: z.string().min(1, 'Store is required'),
   room: z.string().optional(),
   bin: z.string().optional(),
+  barcode: barcodeSchema.optional(),
 });
 
 export const stockAdjustmentSchema = z.object({

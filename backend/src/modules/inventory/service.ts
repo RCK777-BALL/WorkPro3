@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+import { MongoServerError } from 'mongodb';
 import { Types, type ClientSession, type FilterQuery } from 'mongoose';
 import { Parser as Json2csvParser } from 'json2csv';
 import PDFDocument from 'pdfkit';
@@ -161,6 +162,7 @@ const AUTO_REORDER_COOLDOWN_MS = 1000 * 60 * 60 * 6;
 type PartRecord = Pick<
   PartDocument,
   | 'name'
+  | 'barcode'
   | 'partNo'
   | 'description'
   | 'category'
@@ -361,6 +363,7 @@ const serializePart = (
     id: part._id.toString(),
     tenantId: part.tenantId.toString(),
     name: part.name,
+    ...(part.barcode ? { barcode: part.barcode } : {}),
     quantity: part.quantity,
     reorderPoint: part.reorderPoint,
     autoReorder: part.autoReorder ?? false,
@@ -494,6 +497,7 @@ const serializeLocation = (location: LocationDocument): InventoryLocation => {
   if (location.siteId) response.siteId = location.siteId.toString();
   if (location.room) response.room = location.room;
   if (location.bin) response.bin = location.bin;
+  if (location.barcode) response.barcode = location.barcode;
   return response;
 };
 
@@ -608,26 +612,36 @@ export const saveLocation = async (
 ): Promise<InventoryLocation> => {
   const tenantId = toObjectId(context.tenantId, 'tenant id');
   let location: LocationDocument | null;
-  if (locationId) {
-    location = await LocationModel.findOne({ _id: locationId, tenantId });
-    if (!location) {
-      throw new InventoryError('Location not found', 404);
+  try {
+    if (locationId) {
+      location = await LocationModel.findOne({ _id: locationId, tenantId });
+      if (!location) {
+        throw new InventoryError('Location not found', 404);
+      }
+      location.set({
+        store: input.store,
+        room: input.room,
+        bin: input.bin,
+        barcode: input.barcode?.trim(),
+        siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
+      });
+      await location.save();
+    } else {
+      location = await LocationModel.create({
+        tenantId,
+        siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
+        store: input.store,
+        room: input.room,
+        bin: input.bin,
+        barcode: input.barcode?.trim(),
+      });
     }
-    location.set({
-      store: input.store,
-      room: input.room,
-      bin: input.bin,
-      siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
-    });
-    await location.save();
-  } else {
-    location = await LocationModel.create({
-      tenantId,
-      siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
-      store: input.store,
-      room: input.room,
-      bin: input.bin,
-    });
+  } catch (err) {
+    const duplicateField = (err as MongoServerError)?.keyPattern;
+    if ((err as MongoServerError)?.code === 11000 && duplicateField?.barcode) {
+      throw new InventoryError('Location barcode must be unique per tenant', 409);
+    }
+    throw err;
   }
   return serializeLocation(location);
 };
@@ -1530,6 +1544,7 @@ const buildPartPayload = (input: PartInput): Partial<PartDocument> => {
   const payload: Partial<PartDocument> = {};
 
   if (input.description !== undefined) payload.description = input.description;
+  if (input.barcode !== undefined) payload.barcode = input.barcode?.trim();
   if (input.partNo !== undefined) payload.partNo = input.partNo;
   if (input.category !== undefined) payload.category = input.category;
   if (input.sku !== undefined) payload.sku = input.sku;
@@ -1652,20 +1667,28 @@ export const savePart = async (
 ): Promise<PartResponse> => {
   const tenantId = toObjectId(context.tenantId, 'tenant id');
   let part: PartDocument;
-  if (partId) {
-    part = await ensurePart(context, partId);
-    part.set({
-      ...buildPartPayload(input),
-      name: input.name ?? part.name,
-    });
-    await part.save();
-  } else {
-    part = await PartModel.create({
-      tenantId,
-      siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
-      name: input.name,
-      ...buildPartPayload(input),
-    });
+  try {
+    if (partId) {
+      part = await ensurePart(context, partId);
+      part.set({
+        ...buildPartPayload(input),
+        name: input.name ?? part.name,
+      });
+      await part.save();
+    } else {
+      part = await PartModel.create({
+        tenantId,
+        siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
+        name: input.name,
+        ...buildPartPayload(input),
+      });
+    }
+  } catch (err) {
+    const duplicateField = (err as MongoServerError)?.keyPattern;
+    if ((err as MongoServerError)?.code === 11000 && duplicateField?.barcode) {
+      throw new InventoryError('Barcode must be unique per tenant', 409);
+    }
+    throw err;
   }
   await triggerAutoReorder(context, part);
   const plainPart = part.toObject() as PartRecord;

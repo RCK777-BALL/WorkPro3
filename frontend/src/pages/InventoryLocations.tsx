@@ -34,20 +34,55 @@ const LocationForm = ({
   const [room, setRoom] = useState(initial?.room ?? '');
   const [bin, setBin] = useState(initial?.bin ?? '');
   const [saving, setSaving] = useState(false);
+  const [barcode, setBarcode] = useState(initial?.barcode ?? '');
+  const [formError, setFormError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ barcode?: string }>({});
 
   useEffect(() => {
     setStore(initial?.store ?? '');
     setRoom(initial?.room ?? '');
     setBin(initial?.bin ?? '');
+    setBarcode(initial?.barcode ?? '');
   }, [initial]);
 
+  const validate = () => {
+    const errors: { barcode?: string } = {};
+    if (barcode) {
+      const trimmed = barcode.trim();
+      if (/\s/.test(barcode)) {
+        errors.barcode = 'Barcode cannot include spaces';
+      } else if (trimmed.length < 3) {
+        errors.barcode = 'Barcode must be at least 3 characters';
+      } else if (!/^[\w.-]+$/.test(trimmed)) {
+        errors.barcode = 'Use letters, numbers, dashes, or dots.';
+      }
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const extractErrorMessage = (err: unknown): string => {
+    if (err && typeof err === 'object' && 'response' in err) {
+      const response = (err as { response?: { data?: { message?: string } } }).response;
+      if (response?.data?.message) return response.data.message;
+    }
+    if (err instanceof Error && err.message) return err.message;
+    return 'Unable to save location';
+  };
+
   const submit = async () => {
+    setFormError(null);
+    if (!validate()) return;
     setSaving(true);
     try {
-      await onSave({ id: initial?.id, store, room, bin });
+      await onSave({ id: initial?.id, store, room, bin, barcode: barcode?.trim() || undefined });
       setStore('');
       setRoom('');
       setBin('');
+      setBarcode('');
+      setFieldErrors({});
+    } catch (err) {
+      setFormError(extractErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -60,6 +95,16 @@ const LocationForm = ({
         <Input label="Room" value={room} onChange={(e) => setRoom(e.target.value)} />
         <Input label="Bin" value={bin} onChange={(e) => setBin(e.target.value)} />
       </div>
+      <Input
+        label="Barcode"
+        value={barcode}
+        description="Scanner-friendly identifier. Avoid spaces; use letters, numbers, dashes, or dots."
+        error={fieldErrors.barcode}
+        pattern="^[\\w.-]+$"
+        inputMode="text"
+        onChange={(e) => setBarcode(e.target.value)}
+      />
+      {formError && <p className="text-sm text-error-600">{formError}</p>}
       <Button onClick={submit} loading={saving} disabled={!store}>
         {initial ? 'Update location' : 'Create location'}
       </Button>

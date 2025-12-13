@@ -4,6 +4,13 @@
 
 import React from 'react';
 
+type CardComponent = React.FC<CardProps> & {
+  Header: React.FC<React.HTMLAttributes<HTMLDivElement>>;
+  Title: React.FC<React.HTMLAttributes<HTMLHeadingElement>>;
+  Description: React.FC<React.HTMLAttributes<HTMLParagraphElement>>;
+  Content: React.FC<React.HTMLAttributes<HTMLDivElement>>;
+};
+
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   title?: string | undefined;
   subtitle?: string | undefined;
@@ -31,7 +38,7 @@ const CardRoot: React.FC<CardProps> = ({
   className = '',
   noPadding = false,
   ...rest
-}) => {
+}: CardProps) => {
   return (
     <div
       {...rest}

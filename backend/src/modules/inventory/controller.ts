@@ -18,6 +18,11 @@ import {
   listLocations,
   saveLocation,
   listStockItems,
+  receiveInventory,
+  issueInventory,
+  adjustInventory,
+  transferInventory,
+  recordStockCount,
   adjustStock,
   transferStock,
   listStockHistory,
@@ -34,6 +39,11 @@ import {
   purchaseOrderInputSchema,
   purchaseOrderStatusSchema,
   stockAdjustmentSchema,
+  receiveInventorySchema,
+  issueInventorySchema,
+  adjustInventorySchema,
+  transferInventorySchema,
+  stockCountSchema,
   inventoryTransferSchema,
   vendorInputSchema,
 } from './schemas';
@@ -61,6 +71,15 @@ const buildContext = (req: AuthedRequest): InventoryContext => {
     if (userId) {
       context.userId = userId;
     }
+    const roles = (req.user as { roles?: unknown }).roles;
+    if (Array.isArray(roles)) {
+      context.roles = roles.filter((role): role is string => typeof role === 'string');
+    }
+  }
+
+  const permissionsFromRequest = req.permissions ?? (req.user as { permissions?: unknown })?.permissions;
+  if (Array.isArray(permissionsFromRequest)) {
+    context.permissions = permissionsFromRequest.filter((permission): permission is string => typeof permission === 'string');
   }
 
   return context;
@@ -235,6 +254,86 @@ export const listStockItemsHandler: AuthedRequestHandler = async (req, res, next
   try {
     const data = await listStockItems(buildContext(req));
     send(res, data);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const receiveInventoryHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  const rawBody = (typeof req.body === 'object' && req.body !== null ? req.body : {}) as Record<string, unknown>;
+  const parse = receiveInventorySchema.safeParse(rawBody);
+  if (!parse.success) {
+    fail(res, parse.error.errors.map((error) => error.message).join(', '), 400);
+    return;
+  }
+  try {
+    const data = await receiveInventory(buildContext(req), parse.data);
+    send(res, data, 201);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const issueInventoryHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  const rawBody = (typeof req.body === 'object' && req.body !== null ? req.body : {}) as Record<string, unknown>;
+  const parse = issueInventorySchema.safeParse(rawBody);
+  if (!parse.success) {
+    fail(res, parse.error.errors.map((error) => error.message).join(', '), 400);
+    return;
+  }
+  try {
+    const data = await issueInventory(buildContext(req), parse.data);
+    send(res, data, 200);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const adjustInventoryHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  const rawBody = (typeof req.body === 'object' && req.body !== null ? req.body : {}) as Record<string, unknown>;
+  const parse = adjustInventorySchema.safeParse(rawBody);
+  if (!parse.success) {
+    fail(res, parse.error.errors.map((error) => error.message).join(', '), 400);
+    return;
+  }
+  try {
+    const data = await adjustInventory(buildContext(req), parse.data);
+    send(res, data, 200);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const transferInventoryHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  const rawBody = (typeof req.body === 'object' && req.body !== null ? req.body : {}) as Record<string, unknown>;
+  const parse = transferInventorySchema.safeParse(rawBody);
+  if (!parse.success) {
+    fail(res, parse.error.errors.map((error) => error.message).join(', '), 400);
+    return;
+  }
+  try {
+    const data = await transferInventory(buildContext(req), parse.data);
+    send(res, data, 201);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const stockCountHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  const rawBody = (typeof req.body === 'object' && req.body !== null ? req.body : {}) as Record<string, unknown>;
+  const parse = stockCountSchema.safeParse(rawBody);
+  if (!parse.success) {
+    fail(res, parse.error.errors.map((error) => error.message).join(', '), 400);
+    return;
+  }
+  try {
+    const data = await recordStockCount(buildContext(req), parse.data);
+    send(res, data, 200);
   } catch (err) {
     handleError(err, res, next);
   }

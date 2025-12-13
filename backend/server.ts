@@ -365,15 +365,12 @@ if (env.NODE_ENV !== "test") {
     .connect(MONGO_URI)
     .then(async () => {
       logger.info("MongoDB connected");
-      try {
-        await User.syncIndexes();
-        logger.info("User indexes synchronized");
-      } catch (indexErr) {
-        logger.error("User index sync error", indexErr);
-      }
       httpServer.listen(PORT, () =>
         logger.info(`Server listening on http://localhost:${PORT}`),
       );
+      void User.syncIndexes()
+        .then(() => logger.info("User indexes synchronized"))
+        .catch((indexErr) => logger.error("User index sync error", indexErr));
       initKafka(io).catch((err) => logger.error("Kafka init error:", err));
       initMQTTFromConfig();
       startPMScheduler("default", {

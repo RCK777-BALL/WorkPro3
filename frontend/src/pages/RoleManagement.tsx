@@ -7,6 +7,7 @@ import { CheckCircle2, Shield, Trash2 } from 'lucide-react';
 
 import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
+import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { usePermissions } from '@/auth/usePermissions';
 import { PERMISSIONS, type Permission } from '@/auth/permissions';
@@ -38,6 +39,7 @@ const permissionOptions = flattenPermissions();
 
 const RoleManagementPage = () => {
   const { addToast } = useToast();
+  const { user } = useAuth();
   const { can } = usePermissions();
   const { plants, activePlant, switchPlant } = useScopeContext();
   const [roles, setRoles] = useState<RoleResponse[]>([]);
@@ -49,7 +51,11 @@ const RoleManagementPage = () => {
   const [viewSiteId, setViewSiteId] = useState<string>('');
   const [selectedPermissions, setSelectedPermissions] = useState<Permission[]>([]);
 
-  const editable = can('roles.manage');
+  const editable = useMemo(() => {
+    const elevatedRoles = new Set(['global_admin', 'plant_admin', 'admin']);
+    const hasElevatedRole = (user?.roles ?? []).some((role) => elevatedRoles.has(role));
+    return can('roles.manage') || hasElevatedRole;
+  }, [can, user?.roles]);
 
   const siteOptions = useMemo(
     () => [{ value: '', label: 'All sites' }, ...plants.map((plant) => ({ value: plant.id, label: plant.name }))],

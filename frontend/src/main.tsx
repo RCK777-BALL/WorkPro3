@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+import "./polyfills/regexLookbehind";
 import "./polyfills/globalize";
 import React from "react";
 import ReactDOM from "react-dom/client";

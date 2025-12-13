@@ -3,15 +3,18 @@
  */
 
 import { useMemo, useState } from 'react';
-import { MessageSquare, Paperclip, Plus, RefreshCcw } from 'lucide-react';
+import { FileSpreadsheet, FileText, MessageSquare, Paperclip, Plus, RefreshCcw } from 'lucide-react';
 import { useMutation, useQueryClient } from 'react-query';
 
 import Button from '@/components/common/Button';
 import TextArea from '@/components/common/TextArea';
-import { upsertPart } from '@/api/inventory';
+import { downloadInventoryExport, type InventoryExportFormat, upsertPart } from '@/api/inventory';
 import type { Part } from '@/types';
 import { INVENTORY_PARTS_QUERY_KEY, usePartsQuery, useVendorsQuery } from './hooks';
 import { QrLabel } from '@/components/qr';
+import { useToast } from '@/context/ToastContext';
+import { INVENTORY_REPORTING_COLUMNS } from '@/utils/reportingFormat';
+import { triggerFileDownload } from '@/utils/download';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
@@ -42,6 +45,7 @@ const severityClass: Record<string, string> = {
 };
 
 const PartsTableView = () => {
+  const { addToast } = useToast();
   const vendorsQuery = useVendorsQuery();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
@@ -52,6 +56,9 @@ const PartsTableView = () => {
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [noteTargetId, setNoteTargetId] = useState<string | null>(null);
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
+  const [exportingFormat, setExportingFormat] = useState<InventoryExportFormat | null>(null);
+
+  const reportingColumns = useMemo(() => INVENTORY_REPORTING_COLUMNS.map((col) => col.header), []);
 
   const noteMutation = useMutation({
     mutationFn: ({ partId, notes }: { partId: string; notes: string }) => upsertPart({ id: partId, notes }),
@@ -76,6 +83,29 @@ const PartsTableView = () => {
   const vendorOptions = vendorsQuery.data ?? [];
 
   const filteredParts = useMemo(() => parts, [parts]);
+
+  const handleExport = async (format: InventoryExportFormat) => {
+    setExportingFormat(format);
+    try {
+      const file = await downloadInventoryExport(format, {
+        search: search.trim() || undefined,
+        vendorId: vendorFilter !== 'all' ? vendorFilter : undefined,
+        sortBy,
+        sortDirection,
+        page,
+        pageSize,
+        reportingColumns,
+      });
+      const blob = new Blob([file.data], { type: file.mimeType });
+      triggerFileDownload(blob, file.fileName);
+      addToast(`Downloaded ${file.fileName}`, 'success');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unable to export inventory. Please try again.';
+      addToast(message, 'error');
+    } finally {
+      setExportingFormat(null);
+    }
+  };
 
   const handleSort = (key: string) => {
     const nextDirection = sortBy === key && sortDirection === 'asc' ? 'desc' : 'asc';
@@ -146,6 +176,26 @@ const PartsTableView = () => {
               }}
             />
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<FileSpreadsheet className="h-4 w-4" />}
+            loading={exportingFormat === 'csv'}
+            disabled={exportingFormat !== null}
+            onClick={() => handleExport('csv')}
+          >
+            Export CSV
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<FileText className="h-4 w-4" />}
+            loading={exportingFormat === 'pdf'}
+            disabled={exportingFormat !== null}
+            onClick={() => handleExport('pdf')}
+          >
+            Export PDF
+          </Button>
           <Button
             variant="outline"
             size="sm"

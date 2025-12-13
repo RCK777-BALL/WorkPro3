@@ -2,12 +2,24 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useCallback, useState } from 'react';
-import http from '../../../../src/lib/http';
+import { useCallback, useEffect, useState } from 'react';
+import http from '../../../src/lib/http';
 
 type ScanStep = 'scan' | 'asset' | 'workorder' | 'complete';
 
-export type QrPayload = { type: 'asset' | 'part'; id: string };
+type ScanHistoryItem = {
+  id: string;
+  rawValue: string;
+  decodedType?: string | null;
+  decodedId?: string | null;
+  decodedLabel?: string | null;
+  navigationTarget?: string | null;
+  outcome: string;
+  errorMessage?: string | null;
+  createdAt?: string | null;
+};
+
+type QrPayload = { type: 'asset' | 'part'; id: string };
 
 export const parseQrValue = (value: string): QrPayload | null => {
   try {
@@ -25,38 +37,100 @@ export const useScanWorkflow = () => {
   const [asset, setAsset] = useState<Record<string, any> | null>(null);
   const [workOrderId, setWorkOrderId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [recentScans, setRecentScans] = useState<ScanHistoryItem[]>([]);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+  const loadHistory = useCallback(async () => {
+    setIsLoadingHistory(true);
+    try {
+      const res = await http.get('/mobile/v1/scans', { params: { limit: 10 } });
+      const payload = res.data as { items?: ScanHistoryItem[] };
+      setRecentScans(payload.items ?? []);
+      setHistoryError(null);
+    } catch (err) {
+      setHistoryError('Unable to load recent scans');
+      // eslint-disable-next-line no-console
+      console.error(err);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadHistory();
+  }, [loadHistory]);
+
+  const recordScan = useCallback(
+    async (payload: {
+      rawValue: string;
+      decodedType?: string;
+      decodedId?: string;
+      decodedLabel?: string;
+      navigationTarget?: string | null;
+      outcome: 'resolved' | 'missing' | 'invalid' | 'error';
+      errorMessage?: string | null;
+    }) => {
+      try {
+        await http.post('/mobile/v1/scans', {
+          rawValue: payload.rawValue,
+          decodedEntity: {
+            type: payload.decodedType,
+            id: payload.decodedId,
+            label: payload.decodedLabel,
+          },
+          navigationTarget: payload.navigationTarget,
+          outcome: payload.outcome,
+          errorMessage: payload.errorMessage,
+        });
+        await loadHistory();
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('Unable to record scan', err);
+      }
+    },
+    [loadHistory],
+  );
 
   const startFromQr = useCallback(async (qrValue: string) => {
+    setAsset(null);
+    setWorkOrderId(null);
     const parsed = parseQrValue(qrValue);
-    if (!parsed) {
-      setError('Unable to read QR code. Try again or enter the code manually.');
-      return;
-    }
-    if (parsed.type !== 'asset') {
-      setError(`QR code type "${parsed.type}" is not supported for this workflow.`);
+    if (!parsed || parsed.type !== 'asset') {
+      setError('QR code is not linked to an asset');
+      await recordScan({
+        rawValue: qrValue,
+        outcome: 'invalid',
+        errorMessage: 'QR code is not linked to an asset',
+      });
       return;
     }
 
     try {
       const res = await http.get(`/assets/${parsed.id}`);
-      const record = res.data as Record<string, any> | null;
-      const recordId = (record as any)?.id ?? (record as any)?._id;
-      if (!record || !recordId) {
-        setError('Asset record not found or missing required fields.');
-        setAsset(null);
-        setStep('scan');
-        return;
-      }
-      setAsset({ ...record, id: recordId });
+      setAsset(res.data as Record<string, any>);
       setError(null);
       setStep('asset');
+      await recordScan({
+        rawValue: qrValue,
+        decodedType: 'Asset',
+        decodedId: parsed.id,
+        decodedLabel: (res.data as any)?.name,
+        navigationTarget: `/assets/${parsed.id}`,
+        outcome: 'resolved',
+      });
     } catch (err) {
-      console.error(err);
-      setError('Unable to load asset from QR code. Check connectivity or try again.');
-      setAsset(null);
-      setStep('scan');
+      setError('Asset not found or unavailable');
+      await recordScan({
+        rawValue: qrValue,
+        decodedType: 'Asset',
+        decodedId: parsed.id,
+        navigationTarget: `/assets/${parsed.id}`,
+        outcome: 'missing',
+        errorMessage: err instanceof Error ? err.message : 'Lookup failed',
+      });
     }
-  }, []);
+  }, [recordScan]);
 
   const createWorkOrder = useCallback(
     async ({ title, description }: { title: string; description?: string }) => {
@@ -87,6 +161,26 @@ export const useScanWorkflow = () => {
     setStep('complete');
   }, [workOrderId]);
 
-  return { step, asset, workOrderId, error, startFromQr, createWorkOrder, completeWorkOrder } as const;
+  const reopenScan = useCallback(
+    async (rawValue: string) => {
+      await startFromQr(rawValue);
+    },
+    [startFromQr],
+  );
+
+  return {
+    step,
+    asset,
+    workOrderId,
+    error,
+    recentScans,
+    historyError,
+    isLoadingHistory,
+    startFromQr,
+    createWorkOrder,
+    completeWorkOrder,
+    reloadHistory: loadHistory,
+    reopenScan,
+  } as const;
 };
 

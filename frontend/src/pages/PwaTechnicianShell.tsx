@@ -27,6 +27,12 @@ import { addToQueue, loadQueue, onQueueChange } from '@/utils/offlineQueue';
 import { syncManager } from '@/utils/syncManager';
 import PwaCapturePad from '@/features/technician/PwaCapturePad';
 import { registerSWIfAvailable } from '@/pwa';
+import {
+  confirmEntityExists,
+  logScanNavigationOutcome,
+  parseScanPayload,
+  type ScanResolution,
+} from '@/utils/scanRouting';
 import type { WorkOrder } from '@/types';
 import http from '@/lib/http';
 
@@ -34,26 +40,6 @@ interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
-
-const parseCode = (
-  raw: string,
-): { assetId?: string; workOrderId?: string; raw: string } => {
-  try {
-    const payload = JSON.parse(raw) as { assetId?: string; workOrderId?: string; id?: string; type?: string };
-    if (payload.type === 'workorder' && payload.id) {
-      return { workOrderId: payload.id, raw };
-    }
-    if (payload.assetId) return { assetId: payload.assetId, raw };
-    if (payload.workOrderId) return { workOrderId: payload.workOrderId, raw };
-    if (payload.id) return { assetId: payload.id, raw };
-  } catch {
-    // ignore
-  }
-  if (raw.toLowerCase().startsWith('wo-')) {
-    return { workOrderId: raw.replace(/^wo-/i, ''), raw };
-  }
-  return { assetId: raw.trim() || undefined, raw };
-};
 
 const PwaTechnicianShell: React.FC = () => {
   const [cachedOrders, setCachedOrders] = useState<WorkOrder[]>([]);
@@ -138,15 +124,31 @@ const PwaTechnicianShell: React.FC = () => {
   };
 
   const handleScan = async (raw: string) => {
-    const { assetId, workOrderId } = parseCode(raw);
+    const resolution = parseScanPayload(raw);
     setScanResult(raw);
-    setDetectedAssetId(assetId ?? null);
+    setDetectedAssetId(null);
     setDetectedWorkOrder(null);
-    if (workOrderId) {
-      const fromCache = cachedOrders.find((order) => order.id === workOrderId);
+
+    if ('error' in resolution) {
+      setLastMessage(resolution.error);
+      logScanNavigationOutcome({ outcome: 'failure', error: resolution.error, source: 'pwa-shell' });
+      return;
+    }
+
+    const exists = await confirmEntityExists(resolution, { cachedWorkOrders: cachedOrders });
+    if (!exists) {
+      setLastMessage('Entity not found online; check connectivity or rescan.');
+      logScanNavigationOutcome({ outcome: 'failure', resolution, error: 'Entity not found', source: 'pwa-shell' });
+      return;
+    }
+
+    logScanNavigationOutcome({ outcome: 'success', resolution, source: 'pwa-shell' });
+
+    if (resolution.type === 'workOrder') {
+      const fromCache = cachedOrders.find((order) => order.id === resolution.id);
       if (fromCache) setDetectedWorkOrder(fromCache);
       try {
-        const response = await http.get(`/workorders/${workOrderId}`);
+        const response = await http.get(`/workorders/${resolution.id}`);
         setDetectedWorkOrder(response.data as WorkOrder);
         setLastMessage('Found work order from scan.');
       } catch {
@@ -154,13 +156,14 @@ const PwaTechnicianShell: React.FC = () => {
       }
       return;
     }
-    if (assetId) {
-      try {
-        await http.get(`/assets/${assetId}`);
-        setLastMessage('Asset located; open from the asset page.');
-      } catch {
-        setLastMessage('Asset not found online; you can still queue a check-in.');
-      }
+
+    if (resolution.type === 'asset') {
+      setDetectedAssetId(resolution.id);
+      setLastMessage('Asset located; open from the asset page.');
+    }
+
+    if (resolution.type === 'location' || resolution.type === 'part') {
+      setLastMessage('Scan resolved to an inventory record; open the web app for full details.');
     }
   };
 

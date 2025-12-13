@@ -3,6 +3,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
+import { useParams } from 'react-router-dom';
 
 import { fetchParts, upsertPart } from '@/api/inventory';
 import { usePermissions } from '@/auth/usePermissions';
@@ -173,11 +174,17 @@ const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string
 };
 
 export default function InventoryParts() {
+  const { partId } = useParams<{ partId?: string }>();
   const [parts, setParts] = useState<Part[]>([]);
+  const [focusedPartId, setFocusedPartId] = useState<string | undefined>();
 
   useEffect(() => {
     fetchParts({ pageSize: 200, sortBy: 'name' }).then((response) => setParts(response.items));
   }, []);
+
+  useEffect(() => {
+    setFocusedPartId(partId ?? undefined);
+  }, [partId]);
 
   const handleSave = async (payload: Partial<Part> & { name: string }) => {
     const saved = await upsertPart(payload);
@@ -187,6 +194,20 @@ export default function InventoryParts() {
 
   return (
     <div className="space-y-6">
+      {focusedPartId && (
+        <div className="flex items-start gap-3 rounded-lg border border-primary-200 bg-primary-50 p-3 text-sm text-primary-900">
+          <div className="mt-0.5 h-3 w-3 rounded-full bg-primary-500" />
+          <div>
+            <p className="font-semibold">Deep link detected</p>
+            <p>
+              Showing catalog entry for part <strong>{focusedPartId}</strong>. Use the list below to confirm details.
+            </p>
+            {!parts.some((part) => part.id === focusedPartId) && (
+              <p className="text-xs text-primary-800">We could not find this part in the current list.</p>
+            )}
+          </div>
+        </div>
+      )}
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold text-neutral-900">Parts library</h1>
         <p className="text-sm text-neutral-500">Part records include unit, costing, and reorder limits.</p>
@@ -223,8 +244,15 @@ export default function InventoryParts() {
                 </thead>
                 <tbody className="divide-y divide-neutral-200">
                   {parts.map((part) => (
-                    <tr key={part.id}>
-                      <td className="px-3 py-2 text-neutral-900">{part.name}</td>
+                  <tr key={part.id}>
+                      <td className="px-3 py-2 text-neutral-900">
+                        {part.name}
+                        {focusedPartId === part.id && (
+                          <span className="ml-2 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-800">
+                            Selected
+                          </span>
+                        )}
+                      </td>
                       <td className="px-3 py-2 text-neutral-700">{part.partNo ?? part.partNumber ?? '—'}</td>
                       <td className="px-3 py-2 text-neutral-700">{part.quantity}</td>
                       <td className="px-3 py-2 text-neutral-700">

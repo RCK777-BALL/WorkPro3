@@ -13,6 +13,7 @@ export interface PartDocument extends Document {
   description?: string;
   category?: string;
   sku?: string;
+  unit_of_measure?: string;
   partNumber?: string;
   location?: string;
   quantity: number;
@@ -38,6 +39,11 @@ export interface PartDocument extends Document {
   lastAlertAt?: Date;
   lastAutoReorderAt?: Date;
   lastAutoPurchaseOrderId?: Types.ObjectId;
+  status?: string;
+  created_at?: Date;
+  updated_at?: Date;
+  created_by?: Types.ObjectId;
+  updated_by?: Types.ObjectId;
 }
 
 const partSchema = new Schema<PartDocument>(
@@ -50,6 +56,7 @@ const partSchema = new Schema<PartDocument>(
     description: String,
     category: String,
     sku: { type: String, index: true },
+    unit_of_measure: { type: String, trim: true },
     partNumber: String,
     location: String,
     quantity: { type: Number, default: 0 },
@@ -75,8 +82,11 @@ const partSchema = new Schema<PartDocument>(
     lastAlertAt: Date,
     lastAutoReorderAt: Date,
     lastAutoPurchaseOrderId: { type: Schema.Types.ObjectId, ref: 'InventoryPurchaseOrder' },
+    status: { type: String, enum: ['active', 'inactive', 'archived'], default: 'active', index: true },
+    created_by: { type: Schema.Types.ObjectId, ref: 'User' },
+    updated_by: { type: Schema.Types.ObjectId, ref: 'User' },
   },
-  { timestamps: true },
+  { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } },
 );
 
 partSchema.index({ tenantId: 1, sku: 1 });

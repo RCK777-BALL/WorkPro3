@@ -22,7 +22,14 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   noPadding?: boolean | undefined;
 }
 
-const Card: CardComponent = ({
+type CardComponent = React.FC<CardProps> & {
+  Header: React.FC<{ children: React.ReactNode }>;
+  Content: React.FC<{ children: React.ReactNode; className?: string }>;
+  Title: React.FC<{ children: React.ReactNode }>;
+  Description: React.FC<{ children: React.ReactNode }>;
+};
+
+const CardRoot: React.FC<CardProps> = ({
   title,
   subtitle,
   headerActions,
@@ -38,9 +45,9 @@ const Card: CardComponent = ({
       className={`rounded-lg border border-slate-800 bg-slate-900 text-slate-100 shadow-sm ${noPadding ? 'p-0' : 'p-6'} ${className}`}
     >
       {(title || subtitle || headerActions || icon) && (
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex items-start">
-            {icon && <span className="mr-2 mt-0.5">{icon}</span>}
+        <div className="mb-4 flex items-start justify-between">
+          <div className="flex items-start gap-2">
+            {icon && <span className="mt-0.5">{icon}</span>}
             <div>
               {title && <h3 className="text-lg font-semibold text-slate-100">{title}</h3>}
               {subtitle && <p className="text-sm text-slate-300">{subtitle}</p>}
@@ -54,33 +61,26 @@ const Card: CardComponent = ({
   );
 };
 
-const Header: CardComponent['Header'] = ({ children, className = '', ...rest }) => (
-  <div className={`space-y-1 ${className}`} {...rest}>
-    {children}
-  </div>
+const CardHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="mb-3 flex flex-col gap-1 border-b border-slate-800 pb-3">{children}</div>
 );
 
-const Title: CardComponent['Title'] = ({ children, className = '', ...rest }) => (
-  <h3 className={`text-lg font-semibold text-slate-100 ${className}`} {...rest}>
-    {children}
-  </h3>
+const CardContent: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
+  <div className={className}>{children}</div>
 );
 
-const Description: CardComponent['Description'] = ({ children, className = '', ...rest }) => (
-  <p className={`text-sm text-slate-300 ${className}`} {...rest}>
-    {children}
-  </p>
+const CardTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <h3 className="text-lg font-semibold text-slate-100">{children}</h3>
 );
 
-const Content: CardComponent['Content'] = ({ children, className = '', ...rest }) => (
-  <div className={className} {...rest}>
-    {children}
-  </div>
+const CardDescription: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <p className="text-sm text-slate-300">{children}</p>
 );
 
-Card.Header = Header;
-Card.Title = Title;
-Card.Description = Description;
-Card.Content = Content;
+const Card = CardRoot as CardComponent;
+Card.Header = CardHeader;
+Card.Content = CardContent;
+Card.Title = CardTitle;
+Card.Description = CardDescription;
 
 export default Card;

@@ -36,6 +36,11 @@ export const fetchParts = async (params: PartQueryParams = {}): Promise<Paginate
   return res.data;
 };
 
+export const fetchPart = async (partId: string): Promise<Part> => {
+  const res = await http.get<Part>(`${BASE_PATH}/parts/${partId}`);
+  return res.data;
+};
+
 export const upsertPart = async (payload: Partial<Part> & { name: string; id?: string }): Promise<Part> => {
   const normalized = payload.barcode ? { ...payload, barcode: payload.barcode.trim() } : payload;
   if (normalized.id) {
@@ -81,18 +86,18 @@ const extractFileName = (value?: string): string | undefined => {
   return decodeURIComponent(match[1] ?? match[2] ?? '').replace(/\/+/, '');
 };
 
-export type PurchaseOrderExportFormat = 'csv' | 'pdf';
+export type InventoryExportFormat = 'csv' | 'pdf';
 
-export interface PurchaseOrderExportDownload {
+export interface FileExportDownload {
   data: ArrayBuffer;
   fileName: string;
   mimeType: string;
 }
 
 export const downloadPurchaseOrderExport = async (
-  format: PurchaseOrderExportFormat,
+  format: InventoryExportFormat,
   purchaseOrderId?: string,
-): Promise<PurchaseOrderExportDownload> => {
+): Promise<FileExportDownload> => {
   const res = await http.get<ArrayBuffer>(`${BASE_PATH}/purchase-orders/export`, {
     params: { format, purchaseOrderId },
     responseType: 'arraybuffer',
@@ -102,6 +107,28 @@ export const downloadPurchaseOrderExport = async (
     `purchase-orders.${format === 'pdf' ? 'pdf' : 'csv'}`;
   const mimeType = (res.headers['content-type'] as string | undefined) ??
     (format === 'pdf' ? 'application/pdf' : 'text/csv');
+  return { data: res.data, fileName, mimeType };
+};
+
+export interface InventoryExportParams extends PartQueryParams {
+  reportingColumns?: string[];
+}
+
+export const downloadInventoryExport = async (
+  format: InventoryExportFormat,
+  params: InventoryExportParams = {},
+): Promise<FileExportDownload> => {
+  const res = await http.get<ArrayBuffer>('/inventory/export', {
+    params: { format, ...params },
+    responseType: 'arraybuffer',
+  });
+
+  const fileName =
+    extractFileName((res.headers['content-disposition'] as string | undefined) ?? undefined) ??
+    `inventory.${format === 'pdf' ? 'pdf' : 'csv'}`;
+  const mimeType =
+    (res.headers['content-type'] as string | undefined) ?? (format === 'pdf' ? 'application/pdf' : 'text/csv');
+
   return { data: res.data, fileName, mimeType };
 };
 

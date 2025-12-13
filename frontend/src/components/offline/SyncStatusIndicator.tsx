@@ -18,7 +18,18 @@ const formatTime = (timestamp?: number) => {
 };
 
 const SyncStatusIndicator = () => {
-  const { offline, queued, processed, status, lastSyncedAt, conflict, error } = useSyncStore();
+  const { offline, queued, processed, status, lastSyncedAt, conflict, error, itemStatuses } =
+    useSyncStore();
+
+  const breakdown = useMemo(() => {
+    return Object.values(itemStatuses).reduce(
+      (acc, current) => {
+        acc[current] = (acc[current] ?? 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+  }, [itemStatuses]);
   const progressLabel = useMemo(() => {
     if (status === 'syncing') {
       const total = queued + processed;
@@ -30,11 +41,17 @@ const SyncStatusIndicator = () => {
     if (status === 'error') {
       return error ?? 'Sync failed';
     }
+    if ((breakdown.retrying ?? 0) > 0) {
+      return `${breakdown.retrying} retrying soon`;
+    }
+    if ((breakdown.failed ?? 0) > 0) {
+      return `${breakdown.failed} failed`;
+    }
     if (queued > 0) {
       return `${queued} item${queued === 1 ? '' : 's'} queued`;
     }
     return 'All changes are synced';
-  }, [queued, processed, status, error]);
+  }, [queued, processed, status, error, breakdown]);
 
   const statusClasses = useMemo(() => {
     if (status === 'syncing') return 'bg-amber-500/10 text-amber-100 border-amber-400/40';
@@ -62,6 +79,18 @@ const SyncStatusIndicator = () => {
         <span className="flex items-center gap-1 text-[11px] text-slate-200/80">
           <Clock4 className="h-3 w-3" />
           {formatTime(lastSyncedAt)}
+        </span>
+      )}
+      {(breakdown.retrying ?? 0) > 0 && (
+        <span className="text-[11px] text-amber-100/80">
+          {(breakdown.retrying ?? 0) === 1
+            ? '1 retry scheduled'
+            : `${breakdown.retrying} retries scheduled`}
+        </span>
+      )}
+      {(breakdown.failed ?? 0) > 0 && (
+        <span className="text-[11px] text-rose-100/80">
+          {(breakdown.failed ?? 0) === 1 ? '1 sync failed' : `${breakdown.failed} syncs failed`}
         </span>
       )}
       {conflict && <span className="text-[11px]">Conflicts pending</span>}

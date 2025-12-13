@@ -33,6 +33,9 @@ const envSchema = z.object({
   API_ACCESS_KEYS: z.string().optional(),
   API_RATE_LIMIT_WINDOW_MS: z.string().default('60000'),
   API_RATE_LIMIT_MAX: z.string().default('60'),
+  REORDER_SUGGESTION_CRON: z.string().default('30 * * * *'),
+  REORDER_SUGGESTION_INCLUDE_OPEN_POS: z.string().default('true'),
+  REORDER_SUGGESTION_LEAD_TIME_BUFFER: z.string().default('0'),
 });
 
 export type EnvVars = z.infer<typeof envSchema>;

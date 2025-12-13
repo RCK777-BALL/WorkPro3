@@ -5,12 +5,8 @@
 import { z } from 'zod';
 
 const objectId = z.string().min(1, 'Identifier is required');
-const barcodeSchema = z
-  .string()
-  .trim()
-  .min(3, 'Barcode must be at least 3 characters')
-  .max(128, 'Barcode is too long')
-  .regex(/^[\w.-]+$/, 'Use letters, numbers, dashes, underscores, or dots');
+const idempotencyKey = z.string().min(1, 'Idempotency key is required');
+const metadataSchema = z.record(z.any()).optional();
 
 export const partInputSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -84,6 +80,47 @@ export const stockAdjustmentSchema = z.object({
   reason: z.string().optional(),
 });
 
+export const receiveInventorySchema = z.object({
+  partId: objectId,
+  locationId: objectId,
+  quantity: z.number().positive('Quantity must be positive'),
+  idempotencyKey,
+  metadata: metadataSchema,
+});
+
+export const issueInventorySchema = z.object({
+  partId: objectId,
+  locationId: objectId,
+  quantity: z.number().positive('Quantity must be positive'),
+  idempotencyKey,
+  metadata: metadataSchema,
+});
+
+export const adjustInventorySchema = z.object({
+  partId: objectId,
+  locationId: objectId,
+  delta: z.number().refine((value) => value !== 0, 'Delta must be non-zero'),
+  idempotencyKey,
+  metadata: metadataSchema,
+});
+
+export const transferInventorySchema = z.object({
+  partId: objectId,
+  fromLocationId: objectId,
+  toLocationId: objectId,
+  quantity: z.number().positive('Quantity must be positive'),
+  idempotencyKey,
+  metadata: metadataSchema,
+});
+
+export const stockCountSchema = z.object({
+  partId: objectId,
+  locationId: objectId,
+  quantity: z.number().min(0, 'Quantity cannot be negative'),
+  idempotencyKey,
+  metadata: metadataSchema,
+});
+
 export const purchaseOrderStatusSchema = z.object({
   status: z.enum(['pending', 'approved', 'ordered', 'received', 'closed']),
   receipts: z
@@ -135,6 +172,11 @@ export type VendorInput = z.infer<typeof vendorInputSchema>;
 export type PurchaseOrderInput = z.infer<typeof purchaseOrderInputSchema>;
 export type LocationInput = z.infer<typeof locationInputSchema>;
 export type StockAdjustmentInput = z.infer<typeof stockAdjustmentSchema>;
+export type ReceiveInventoryInput = z.infer<typeof receiveInventorySchema>;
+export type IssueInventoryInput = z.infer<typeof issueInventorySchema>;
+export type AdjustInventoryInput = z.infer<typeof adjustInventorySchema>;
+export type TransferInventoryInput = z.infer<typeof transferInventorySchema>;
+export type StockCountInput = z.infer<typeof stockCountSchema>;
 export type PurchaseOrderStatusInput = z.infer<typeof purchaseOrderStatusSchema>;
 export type InventoryTransferInput = z.infer<typeof inventoryTransferSchema>;
 export type VendorPriceInput = z.infer<typeof vendorPriceSchema>;

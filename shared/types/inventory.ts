@@ -195,6 +195,26 @@ export interface StockHistoryEntry {
   };
 }
 
+export type InventoryTransactionType = 'receive' | 'issue' | 'adjust' | 'transfer' | 'stock_count';
+
+export interface InventoryTransactionRecord extends TenantScoped {
+  id: string;
+  type: InventoryTransactionType;
+  partId: string;
+  quantity: number;
+  delta: number;
+  idempotencyKey: string;
+  locationId?: string | undefined;
+  fromLocationId?: string | undefined;
+  toLocationId?: string | undefined;
+  onHandQuantity?: number | undefined;
+  fromOnHandQuantity?: number | undefined;
+  toOnHandQuantity?: number | undefined;
+  partQuantityAfter?: number | undefined;
+  metadata?: Record<string, unknown> | undefined;
+  createdAt: string;
+}
+
 export interface InventoryTransfer extends TenantScoped {
   id: string;
   partId: string;

@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 
 import { useAuth } from '@/context/AuthContext';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface RequireAuthProps {
   children: ReactNode;
@@ -25,8 +26,11 @@ export const RequireAuth = ({ children }: RequireAuthProps) => {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-black text-white">
-        Checking access…
+      <div className="flex min-h-screen w-full items-center justify-center bg-slate-950 text-slate-100">
+        <div className="flex flex-col items-center gap-3">
+          <LoadingSpinner size="lg" />
+          <span className="text-sm text-slate-300">Checking access…</span>
+        </div>
       </div>
     );
   }

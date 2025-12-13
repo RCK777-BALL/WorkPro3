@@ -24,20 +24,6 @@ This document summarizes WorkPro3's current strengths and the remaining product 
     - Scan results deep-link into asset/work order detail.
     - Scan history is logged per user/session for auditability.
 
-#### Delivery Tasks for Epic 1
-- Mobile shell + navigation
-  - Create responsive layout components for phone/tablet breakpoints; validate with dashboard acceptance tests.
-  - Implement work order and asset detail screens with offline queue integration for create/update flows.
-  - Add touch-first checklist, notes, and media upload components with optimistic UI and sync conflict handling.
-- Offline + sync plumbing
-  - Extend offline queue to cover attachments and large payload retries with backoff.
-  - Add retry telemetry and user-visible sync status indicators.
-  - Build conflict resolution rules (last-writer wins + field-level merges for notes/checklists).
-- Scanning experience
-  - Integrate mobile camera scanner supporting QR and Code128 formats with fallback to manual entry.
-  - Map scan payloads to deep links (asset, work order, location, part) with guardrails for missing records.
-  - Persist per-user scan history with timestamp, result, and linked entity for audit/export.
-
 ### Epic 2: Inventory, Parts, and Purchasing
 - **Story 2.1:** Inventory lifecycle management.
   - **Acceptance Criteria:**
@@ -49,20 +35,6 @@ This document summarizes WorkPro3's current strengths and the remaining product 
     - Purchase request → approval → PO creation workflow with status tracking.
     - Supplier records with lead time, pricing tiers, and preferred vendor flags.
     - PO export/email and receipt matching against deliveries.
-
-#### Delivery Tasks for Epic 2
-- Inventory domain + data model
-  - Define entities for parts, stock levels, bins/locations, and transactions with audit metadata.
-  - Implement APIs for receipts, issues, adjustments, transfers, and stock counts; ensure idempotency and role checks.
-  - Add low-stock threshold evaluation and reorder suggestion logic with scheduled jobs.
-- Inventory UI + alerts
-  - Build inventory list/detail views with site/bin filters and transaction history.
-  - Surface low-stock alerts in dashboard widgets and notifications; enable CSV/PDF export of current inventory.
-  - Add barcode association to parts/locations for scanning compatibility.
-- Purchasing + suppliers
-  - Implement purchase request to approval to PO workflow with status transitions, SLA timers, and audit logs.
-  - Create supplier profiles capturing lead time, pricing tiers, preferred flags, and attachment support for contracts.
-  - Enable PO export/email (PDF/CSV) and receiving screens with tolerance checks and mismatch alerts.
 
 ### Epic 3: Workflow Engine (Requests, Approvals, SLA, Notifications)
 - **Story 3.1:** Configurable request intake and routing.

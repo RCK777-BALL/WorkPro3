@@ -20,6 +20,7 @@ import {
   AlertTriangle,
   PieChart as PieChartIcon,
 } from "lucide-react";
+import { LowStockSummaryWidget } from "./widgets";
 
 /** ---- Types ---- */
 type Summary = {
@@ -226,6 +227,7 @@ export default function DashboardHome() {
 
         <div className="space-y-6 mt-6 lg:mt-0">
           <EmailPreferencesCard />
+          <LowStockSummaryWidget />
           <RecentActivity
             logs={activityLogs}
             loading={activityLoading}

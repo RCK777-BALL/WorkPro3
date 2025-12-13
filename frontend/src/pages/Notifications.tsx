@@ -4,7 +4,16 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, Bell, Filter, Mail, MessageSquare, Phone, Settings as SettingsIcon } from 'lucide-react';
+import {
+  AlertTriangle,
+  Bell,
+  CheckCircle2,
+  Filter,
+  Mail,
+  MessageSquare,
+  Phone,
+  Settings as SettingsIcon,
+} from 'lucide-react';
 
 import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
@@ -15,8 +24,10 @@ import {
 import http from '@/lib/http';
 import { useSettingsStore } from '@/store/settingsStore';
 import type { NotificationSettings } from '@/store/settingsStore';
+import { useNotifications } from '@/store/notificationsSlice';
 import type { NotificationType } from '@/types';
 import { getNotificationsSocket, closeNotificationsSocket } from '@/utils/notificationsSocket';
+import type { LowStockAlert } from '@/store/notificationsSlice';
 
 type Notification = NotificationType & { assetId?: string };
 
@@ -46,6 +57,21 @@ const Notifications = () => {
   const limit = 10;
   const notificationSettings = useSettingsStore((state) => state.notifications);
   const setNotificationSettings = useSettingsStore((state) => state.setNotifications);
+  const {
+    lowStockAlerts,
+    alertsLoading,
+    alertsError,
+    fetchLowStock,
+    acknowledge,
+    clear,
+  } = useNotifications((state) => ({
+    lowStockAlerts: state.lowStockAlerts,
+    alertsLoading: state.alertsLoading,
+    alertsError: state.alertsError,
+    fetchLowStock: state.fetchLowStock,
+    acknowledge: state.acknowledge,
+    clear: state.clear,
+  }));
 
   type ToggleKey = {
     [K in keyof NotificationSettings]: NotificationSettings[K] extends boolean ? K : never;
@@ -151,6 +177,10 @@ const Notifications = () => {
   }, [page]);
 
   useEffect(() => {
+    void fetchLowStock();
+  }, [fetchLowStock]);
+
+  useEffect(() => {
     const socket = getNotificationsSocket();
     const handleIncoming = (payload: NotificationType) => {
       setNotifications((prev) => [normalizeNotification(payload), ...prev]);
@@ -208,6 +238,18 @@ const Notifications = () => {
     if (notification.workOrderId) return `/work-orders/${notification.workOrderId}`;
     if (notification.inventoryItemId) return `/inventory/${notification.inventoryItemId}`;
     return undefined;
+  };
+
+  const lowStockSeverity = (alert: Pick<LowStockAlert, 'quantity' | 'reorderPoint'>) => {
+    if (alert.quantity <= 0) return 'critical' as const;
+    if (alert.quantity <= alert.reorderPoint) return 'warning' as const;
+    return 'ok' as const;
+  };
+
+  const severityClasses: Record<'ok' | 'warning' | 'critical', string> = {
+    ok: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    warning: 'bg-amber-100 text-amber-700 border-amber-200',
+    critical: 'bg-rose-100 text-rose-700 border-rose-200',
   };
 
   return (
@@ -297,6 +339,70 @@ const Notifications = () => {
           </div>
         </Card>
       </div>
+
+      <Card
+        title="Low stock alerts"
+        subtitle="Acknowledgable alerts for parts hitting configured reorder points"
+      >
+        {alertsError ? (
+          <div className="mb-3 flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            <span>{alertsError}</span>
+            <Button size="xs" variant="ghost" onClick={() => fetchLowStock()}>
+              Retry
+            </Button>
+          </div>
+        ) : null}
+
+        {alertsLoading ? (
+          <p className="text-sm text-neutral-500">Loading low stock alerts…</p>
+        ) : lowStockAlerts.length === 0 ? (
+          <p className="text-sm text-neutral-500">No inventory alerts at the moment.</p>
+        ) : (
+          <ul className="space-y-3">
+            {lowStockAlerts.map((alert) => {
+              const severity = lowStockSeverity(alert);
+              return (
+                <li
+                  key={alert.id}
+                  className="flex items-start justify-between rounded-lg border border-neutral-200 bg-white/80 p-3 text-sm dark:border-neutral-700 dark:bg-neutral-800"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${severityClasses[severity]}`}
+                      >
+                        {severity === 'critical' ? 'Critical' : severity === 'warning' ? 'Low' : 'Healthy'}
+                      </span>
+                      <span className="font-semibold text-neutral-800 dark:text-neutral-100">{alert.partName}</span>
+                      {alert.acknowledged ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
+                          <CheckCircle2 className="h-3 w-3" /> Acknowledged
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                      On hand: {alert.quantity} • Reorder point: {alert.reorderPoint}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <Button
+                      size="xs"
+                      variant="secondary"
+                      onClick={() => acknowledge(alert.id)}
+                      disabled={alert.acknowledged}
+                    >
+                      Ack
+                    </Button>
+                    <Button size="xs" variant="ghost" tone="danger" onClick={() => clear(alert.id)}>
+                      Clear
+                    </Button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Card>
 
       <Card
         title="Notification Feed"

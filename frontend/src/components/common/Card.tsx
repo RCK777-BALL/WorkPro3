@@ -4,13 +4,6 @@
 
 import React from 'react';
 
-type CardComponent = React.FC<CardProps> & {
-  Header: React.FC<React.HTMLAttributes<HTMLDivElement>>;
-  Title: React.FC<React.HTMLAttributes<HTMLHeadingElement>>;
-  Description: React.FC<React.HTMLAttributes<HTMLParagraphElement>>;
-  Content: React.FC<React.HTMLAttributes<HTMLDivElement>>;
-};
-
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   title?: string | undefined;
   subtitle?: string | undefined;
@@ -23,10 +16,10 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 type CardComponent = React.FC<CardProps> & {
-  Header: React.FC<{ children: React.ReactNode }>;
-  Content: React.FC<{ children: React.ReactNode; className?: string }>;
-  Title: React.FC<{ children: React.ReactNode }>;
-  Description: React.FC<{ children: React.ReactNode }>;
+  Header: React.FC<React.HTMLAttributes<HTMLDivElement>>;
+  Title: React.FC<React.HTMLAttributes<HTMLHeadingElement>>;
+  Description: React.FC<React.HTMLAttributes<HTMLParagraphElement>>;
+  Content: React.FC<React.HTMLAttributes<HTMLDivElement>>;
 };
 
 const CardRoot: React.FC<CardProps> = ({
@@ -61,20 +54,47 @@ const CardRoot: React.FC<CardProps> = ({
   );
 };
 
-const CardHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="mb-3 flex flex-col gap-1 border-b border-slate-800 pb-3">{children}</div>
+const CardHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
+  children,
+  className = '',
+  ...rest
+}) => (
+  <div
+    {...rest}
+    className={`mb-3 flex flex-col gap-1 border-b border-slate-800 pb-3 ${className}`.trim()}
+  >
+    {children}
+  </div>
 );
 
-const CardContent: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <div className={className}>{children}</div>
+const CardContent: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
+  children,
+  className = '',
+  ...rest
+}) => (
+  <div {...rest} className={className}>
+    {children}
+  </div>
 );
 
-const CardTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <h3 className="text-lg font-semibold text-slate-100">{children}</h3>
+const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({
+  children,
+  className = '',
+  ...rest
+}) => (
+  <h3 {...rest} className={`text-lg font-semibold text-slate-100 ${className}`.trim()}>
+    {children}
+  </h3>
 );
 
-const CardDescription: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <p className="text-sm text-slate-300">{children}</p>
+const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement>> = ({
+  children,
+  className = '',
+  ...rest
+}) => (
+  <p {...rest} className={`text-sm text-slate-300 ${className}`.trim()}>
+    {children}
+  </p>
 );
 
 const Card = CardRoot as CardComponent;

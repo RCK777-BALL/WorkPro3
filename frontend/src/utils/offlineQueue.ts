@@ -4,7 +4,10 @@ import { safeLocalStorage } from '@/utils/safeLocalStorage';
 import type { TechnicianPartUsagePayload, TechnicianStatePayload } from '@/api/technician';
  
 
+export type SyncItemStatus = 'pending' | 'in-progress' | 'synced' | 'retrying' | 'failed';
+
 export interface QueuedRequest<T = unknown> {
+  id?: string;
   method: 'post' | 'put' | 'delete';
   url: string;
   data?: T;
@@ -23,6 +26,26 @@ export interface QueuedRequest<T = unknown> {
 
 const QUEUE_KEY = 'offline-queue';
 export const MAX_QUEUE_RETRIES = 5;
+export interface SyncStatusUpdate {
+  status: SyncItemStatus;
+  nextAttempt?: number;
+  error?: string;
+}
+
+const statusListeners = new Set<(id: string, update: SyncStatusUpdate) => void>();
+export const onItemStatusChange = (listener: (id: string, update: SyncStatusUpdate) => void) => {
+  statusListeners.add(listener);
+  return () => statusListeners.delete(listener);
+};
+
+const notifyStatus = (id: string, update: SyncStatusUpdate) => {
+  statusListeners.forEach((cb) => cb(id, update));
+};
+
+const generateRequestId = () =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 const queueListeners = new Set<(size: number) => void>();
 export const onQueueChange = (listener: (size: number) => void) => {
@@ -37,7 +60,18 @@ const notifyQueue = <T = unknown>(queue: QueuedRequest<T>[]) => {
 export const loadQueue = <T = unknown>(): QueuedRequest<T>[] => {
   try {
     const raw = safeLocalStorage.getItem(QUEUE_KEY);
-    return raw ? (JSON.parse(raw) as QueuedRequest<T>[]) : [];
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as QueuedRequest<T>[];
+    let needsSave = false;
+    const withIds = parsed.map((entry) => {
+      if (entry.id) return entry;
+      needsSave = true;
+      return { ...entry, id: generateRequestId() };
+    });
+    if (needsSave) {
+      saveQueue(withIds);
+    }
+    return withIds;
   } catch {
     return [];
   }
@@ -86,7 +120,7 @@ const saveQueue = <T = unknown>(queue: QueuedRequest<T>[]) => {
 
 export const addToQueue = <T = unknown>(req: QueuedRequest<T>) => {
   const queue = loadQueue<T>();
-  queue.push({ ...req, retries: req.retries ?? 0 });
+  queue.push({ ...req, id: req.id ?? generateRequestId(), retries: req.retries ?? 0 });
   saveQueue(queue);
 };
 
@@ -305,11 +339,17 @@ export const flushQueue = async (
 
     for (let i = 0; i < queue.length; i += 1) {
       const req = queue[i];
+      const requestId = req.id ?? generateRequestId();
+      if (!req.id) {
+        req.id = requestId;
+      }
       if (useBackoff && req.nextAttempt && req.nextAttempt > now) {
         remaining.push(req);
+        notifyStatus(requestId, { status: 'retrying', nextAttempt: req.nextAttempt, error: req.error });
         onProgress?.(processed, remaining.length + (queue.length - i - 1));
         continue;
       }
+      notifyStatus(requestId, { status: 'in-progress' });
       try {
         await httpClient({ method: req.method, url: req.url, data: req.data });
       } catch (err: unknown) {
@@ -336,12 +376,18 @@ export const flushQueue = async (
         const { nextAttempt: _discardedNextAttempt, ...rest } = req;
         const retryRequest: QueuedRequest = {
           ...rest,
+          id: requestId,
           retries,
           error: String(err),
         };
         if (useBackoff) {
           retryRequest.nextAttempt = now + backoff;
         }
+        notifyStatus(requestId, {
+          status: retries >= MAX_QUEUE_RETRIES ? 'failed' : 'retrying',
+          nextAttempt: retryRequest.nextAttempt,
+          error: retryRequest.error,
+        });
         remaining.push(retryRequest);
         processed += 1;
         onProgress?.(processed, remaining.length + (queue.length - i - 1));
@@ -349,6 +395,7 @@ export const flushQueue = async (
 
       }
 
+      notifyStatus(requestId, { status: 'synced' });
       const toPersist = [...remaining, ...queue.slice(i + 1)];
       if (toPersist.length > 0) {
         saveQueue(toPersist);

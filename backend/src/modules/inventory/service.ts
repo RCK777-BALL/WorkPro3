@@ -31,6 +31,9 @@ import PurchaseOrderModel, { type PurchaseOrderDocument } from './models/Purchas
 import LocationModel, { type LocationDocument } from './models/Location';
 import StockItemModel, { type StockItemDocument } from './models/StockItem';
 import StockHistoryModel, { type StockHistoryDocument } from './models/StockHistory';
+import InventoryTransactionModel, {
+  type InventoryTransactionDocument,
+} from './models/InventoryTransaction';
 import InventoryTransferModel, { type InventoryTransferDocument } from './models/Transfer';
 import ReorderSuggestionModel, {
   type ReorderSuggestionDocument,
@@ -622,7 +625,7 @@ export const saveLocation = async (
         store: input.store,
         room: input.room,
         bin: input.bin,
-        barcode: input.barcode?.trim(),
+        barcode: typeof input.barcode === 'string' ? input.barcode.trim() : undefined,
         siteId: context.siteId ? maybeObjectId(context.siteId) : undefined,
       });
       await location.save();
@@ -633,7 +636,7 @@ export const saveLocation = async (
         store: input.store,
         room: input.room,
         bin: input.bin,
-        barcode: input.barcode?.trim(),
+        barcode: typeof input.barcode === 'string' ? input.barcode.trim() : undefined,
       });
     }
   } catch (err) {
@@ -718,11 +721,11 @@ const ensureLocation = async (
 
 const ensurePart = async (
   context: InventoryContext,
-  partId: Types.ObjectId,
+  partId: Types.ObjectId | string,
   session?: ClientSession,
 ): Promise<PartDocument> => {
   const query: FilterQuery<PartDocument> = {
-    _id: partId,
+    _id: toObjectId(partId, 'part id'),
     tenantId: toObjectId(context.tenantId, 'tenant id'),
   };
 
@@ -1543,14 +1546,14 @@ export const listReorderSuggestions = async (
 const buildPartPayload = (input: PartInput): Partial<PartDocument> => {
   const payload: Partial<PartDocument> = {};
 
-  if (input.description !== undefined) payload.description = input.description;
-  if (input.barcode !== undefined) payload.barcode = input.barcode?.trim();
-  if (input.partNo !== undefined) payload.partNo = input.partNo;
-  if (input.category !== undefined) payload.category = input.category;
-  if (input.sku !== undefined) payload.sku = input.sku;
-  if (input.partNumber !== undefined) payload.partNumber = input.partNumber;
-  if (input.location !== undefined) payload.location = input.location;
-  if (input.notes !== undefined) payload.notes = input.notes;
+  if (typeof input.description === 'string') payload.description = input.description;
+  if (typeof input.barcode === 'string') payload.barcode = input.barcode.trim();
+  if (typeof input.partNo === 'string') payload.partNo = input.partNo;
+  if (typeof input.category === 'string') payload.category = input.category;
+  if (typeof input.sku === 'string') payload.sku = input.sku;
+  if (typeof input.partNumber === 'string') payload.partNumber = input.partNumber;
+  if (typeof input.location === 'string') payload.location = input.location;
+  if (typeof input.notes === 'string') payload.notes = input.notes;
   if (typeof input.quantity === 'number') payload.quantity = input.quantity;
   if (typeof input.unitCost === 'number') payload.unitCost = input.unitCost;
   if (typeof input.cost === 'number') payload.cost = input.cost;
@@ -1565,38 +1568,30 @@ const buildPartPayload = (input: PartInput): Partial<PartDocument> => {
   if (typeof input.reorderThreshold === 'number') payload.reorderThreshold = input.reorderThreshold;
   if (typeof input.leadTime === 'number') payload.leadTime = input.leadTime;
   if (typeof input.autoReorder === 'boolean') payload.autoReorder = input.autoReorder;
-  if (input.assetIds !== undefined) {
+  if (Array.isArray(input.assetIds)) {
     payload.assetIds = input.assetIds.map((id) => toObjectId(id, 'asset id'));
   }
-  if (input.pmTemplateIds !== undefined) {
+  if (Array.isArray(input.pmTemplateIds)) {
     payload.pmTemplateIds = input.pmTemplateIds.map((id) => toObjectId(id, 'template id'));
   }
-  if (input.lastRestockDate) {
+  if (typeof input.lastRestockDate === 'string') {
     const lastRestockDate = normalizeDate(input.lastRestockDate);
     if (lastRestockDate) {
       payload.lastRestockDate = lastRestockDate;
     }
   }
-  if (input.lastOrderDate) {
+  if (typeof input.lastOrderDate === 'string') {
     const lastOrderDate = normalizeDate(input.lastOrderDate);
     if (lastOrderDate) {
       payload.lastOrderDate = lastOrderDate;
     }
   }
-  if (input.vendorId) {
+  if (typeof input.vendorId === 'string') {
     payload.vendor = toObjectId(input.vendorId, 'vendor id');
   } else if (input.vendorId === null) {
     delete payload.vendor;
   }
   return payload;
-};
-
-const ensurePart = async (context: InventoryContext, partId: string): Promise<PartDocument> => {
-  const part = await PartModel.findOne({ _id: partId, tenantId: context.tenantId });
-  if (!part) {
-    throw new InventoryError('Part not found', 404);
-  }
-  return part;
 };
 
 const ensureVendor = async (context: InventoryContext, vendorId: string): Promise<VendorDocument> => {

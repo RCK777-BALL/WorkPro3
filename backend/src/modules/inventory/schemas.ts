@@ -7,6 +7,7 @@ import { z } from 'zod';
 const objectId = z.string().min(1, 'Identifier is required');
 const idempotencyKey = z.string().min(1, 'Idempotency key is required');
 const metadataSchema = z.record(z.any()).optional();
+const barcodeSchema = z.string().min(1, 'Barcode is required');
 
 export const partInputSchema = z.object({
   name: z.string().min(1, 'Name is required'),

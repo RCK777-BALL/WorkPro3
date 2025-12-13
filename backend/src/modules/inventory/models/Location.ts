@@ -12,6 +12,7 @@ export interface LocationDocument extends Document {
   store: string;
   room?: string | undefined;
   bin?: string | undefined;
+  barcode?: string;
   capacity?: number;
   notes?: string;
   created_at?: Date;
@@ -29,6 +30,7 @@ const locationSchema = new Schema<LocationDocument>(
     store: { type: String, required: true, trim: true },
     room: { type: String, trim: true },
     bin: { type: String, trim: true },
+    barcode: { type: String, trim: true },
     capacity: { type: Number },
     notes: { type: String },
     created_by: { type: Schema.Types.ObjectId, ref: 'User' },
@@ -40,5 +42,6 @@ const locationSchema = new Schema<LocationDocument>(
 locationSchema.index({ tenantId: 1, code: 1 }, { unique: true });
 locationSchema.index({ tenantId: 1, siteId: 1, store: 1, room: 1, bin: 1 }, { unique: true });
 locationSchema.index({ tenantId: 1, warehouse: 1 });
+locationSchema.index({ tenantId: 1, barcode: 1 }, { unique: true, partialFilterExpression: { barcode: { $exists: true } } });
 
 export default model<LocationDocument>('InventoryLocation', locationSchema);

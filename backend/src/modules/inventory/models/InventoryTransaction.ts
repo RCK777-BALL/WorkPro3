@@ -4,7 +4,12 @@
 
 import { Schema, Types, model, type Document } from 'mongoose';
 
-export type InventoryTransactionType = 'receipt' | 'issue' | 'adjustment' | 'transfer' | 'count';
+export type InventoryTransactionType =
+  | 'receive'
+  | 'issue'
+  | 'adjust'
+  | 'transfer'
+  | 'stock_count';
 
 export interface InventoryTransactionDocument extends Document {
   tenantId: Types.ObjectId;
@@ -12,45 +17,57 @@ export interface InventoryTransactionDocument extends Document {
   type: InventoryTransactionType;
   part: Types.ObjectId;
   quantity: number;
-  from_bin?: Types.ObjectId;
-  to_bin?: Types.ObjectId;
+  delta: number;
+  location?: Types.ObjectId;
+  fromLocation?: Types.ObjectId;
+  toLocation?: Types.ObjectId;
   reference?: string;
-  idempotency_key?: string;
-  created_at?: Date;
-  updated_at?: Date;
-  created_by?: Types.ObjectId;
-  updated_by?: Types.ObjectId;
-  performed_by?: Types.ObjectId;
-  source_document_ref?: string;
+  idempotencyKey?: string;
+  metadata?: Record<string, unknown>;
+  createdBy?: Types.ObjectId;
+  updatedBy?: Types.ObjectId;
+  performedBy?: Types.ObjectId;
+  sourceDocumentRef?: string;
+  locationQuantityAfter?: number;
+  fromLocationQuantityAfter?: number;
+  toLocationQuantityAfter?: number;
+  partQuantityAfter?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const transactionSchema = new Schema<InventoryTransactionDocument>(
   {
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
     siteId: { type: Schema.Types.ObjectId, ref: 'Site', index: true },
-    type: { type: String, enum: ['receipt', 'issue', 'adjustment', 'transfer', 'count'], required: true },
+    type: { type: String, enum: ['receive', 'issue', 'adjust', 'transfer', 'stock_count'], required: true },
     part: { type: Schema.Types.ObjectId, ref: 'InventoryPart', required: true, index: true },
     quantity: { type: Number, required: true },
-    from_bin: { type: Schema.Types.ObjectId, ref: 'InventoryLocation', index: true },
-    to_bin: { type: Schema.Types.ObjectId, ref: 'InventoryLocation', index: true },
+    delta: { type: Number, required: true },
+    location: { type: Schema.Types.ObjectId, ref: 'InventoryLocation', index: true },
+    fromLocation: { type: Schema.Types.ObjectId, ref: 'InventoryLocation', index: true },
+    toLocation: { type: Schema.Types.ObjectId, ref: 'InventoryLocation', index: true },
     reference: { type: String, trim: true },
-    idempotency_key: { type: String, trim: true },
-    created_by: { type: Schema.Types.ObjectId, ref: 'User' },
-    updated_by: { type: Schema.Types.ObjectId, ref: 'User' },
-    performed_by: { type: Schema.Types.ObjectId, ref: 'User' },
-    source_document_ref: { type: String, trim: true },
+    idempotencyKey: { type: String, trim: true },
+    metadata: { type: Schema.Types.Mixed },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    performedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    sourceDocumentRef: { type: String, trim: true },
+    locationQuantityAfter: { type: Number },
+    fromLocationQuantityAfter: { type: Number },
+    toLocationQuantityAfter: { type: Number },
+    partQuantityAfter: { type: Number },
   },
-  {
-    timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
-  },
+  { timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' } },
 );
 
 transactionSchema.index(
-  { tenantId: 1, idempotency_key: 1 },
-  { unique: true, partialFilterExpression: { idempotency_key: { $exists: true } } },
+  { tenantId: 1, idempotencyKey: 1 },
+  { unique: true, partialFilterExpression: { idempotencyKey: { $exists: true } } },
 );
-transactionSchema.index({ tenantId: 1, part: 1, created_at: -1 });
-transactionSchema.index({ tenantId: 1, from_bin: 1, created_at: -1 });
-transactionSchema.index({ tenantId: 1, to_bin: 1, created_at: -1 });
+transactionSchema.index({ tenantId: 1, part: 1, createdAt: -1 });
+transactionSchema.index({ tenantId: 1, fromLocation: 1, createdAt: -1 });
+transactionSchema.index({ tenantId: 1, toLocation: 1, createdAt: -1 });
 
 export default model<InventoryTransactionDocument>('InventoryTransaction', transactionSchema);

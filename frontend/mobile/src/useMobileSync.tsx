@@ -20,6 +20,7 @@ interface MobileSyncState {
   enqueue: (action: OfflineAction) => void;
   markSynced: (ids: string[]) => void;
   recordConflict: (action: OfflineAction) => void;
+  resolveConflict: (actionId: string, acceptLocal: boolean) => void;
 }
 
 const StorageKey = 'mobile-sync-queue';
@@ -80,9 +81,22 @@ export const MobileSyncProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setConflicts((prev) => [...prev, action]);
   }, []);
 
+  const resolveConflict = useCallback(
+    (actionId: string, acceptLocal: boolean) => {
+      setConflicts((prev) => prev.filter((item) => item.id !== actionId));
+      if (acceptLocal) {
+        const conflicted = conflicts.find((item) => item.id === actionId);
+        if (conflicted) {
+          enqueue({ ...conflicted, version: Date.now() });
+        }
+      }
+    },
+    [conflicts, enqueue],
+  );
+
   const value = useMemo(
-    () => ({ queue, enqueue, markSynced, conflicts, recordConflict, cursors }),
-    [queue, enqueue, markSynced, conflicts, recordConflict, cursors],
+    () => ({ queue, enqueue, markSynced, conflicts, recordConflict, resolveConflict, cursors }),
+    [queue, enqueue, markSynced, conflicts, recordConflict, resolveConflict, cursors],
   );
 
   return <MobileSyncContext.Provider value={value}>{children}</MobileSyncContext.Provider>;

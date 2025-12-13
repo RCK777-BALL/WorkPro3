@@ -73,6 +73,16 @@ npx ts-node --files scripts/seedDepartments.ts
 
 This script reads `SEED_TENANT_ID` (and optional `SEED_SITE_ID`) from the environment and inserts a few sample department documents.
 
+## Inventory reorder suggestions
+
+A background cron job scans inventory parts with defined `reorderPoint`/`minLevel` thresholds and writes `InventoryReorderSuggestion` records for items that fall below the computed buffer. The scanner skips overlapping runs, records the last run metadata in memory, and prunes stale suggestions so clients always receive the most recent recommendations.
+
+Tunables for the scanner:
+
+- `REORDER_SUGGESTION_CRON` – cron expression for the scan cadence (default `30 * * * *`).
+- `REORDER_SUGGESTION_INCLUDE_OPEN_POS` – when set to `false`, open purchase orders are ignored when deciding whether a part is understocked (default `true`).
+- `REORDER_SUGGESTION_LEAD_TIME_BUFFER` – quantity buffer added to the reorder threshold when a part has a lead time defined (default `0`).
+
 
 ### Seeded employees
 

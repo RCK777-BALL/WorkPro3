@@ -20,6 +20,7 @@ import {
   saveLocationHandler,
   listStockItemsHandler,
   adjustStockHandler,
+  listReorderSuggestionsHandler,
   transferStockHandler,
   listStockHistoryHandler,
   transitionPurchaseOrderHandler,
@@ -40,6 +41,11 @@ router.post('/vendors', requirePermission('inventory', 'manage'), saveVendorHand
 router.put('/vendors/:vendorId', requirePermission('inventory', 'manage'), saveVendorHandler);
 
 router.get('/alerts', requirePermission('inventory', 'read'), listAlertsHandler);
+router.get(
+  '/reorder-suggestions',
+  requirePermission('inventory', 'read'),
+  listReorderSuggestionsHandler,
+);
 router.post(
   '/purchase-orders',
   requirePermission('inventory', 'purchase'),

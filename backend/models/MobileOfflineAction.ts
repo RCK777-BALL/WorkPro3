@@ -5,7 +5,12 @@
 import mongoose, { Schema, type Model, type Types } from 'mongoose';
 import { computeEtag } from '../utils/versioning';
 
-export type MobileOfflineActionStatus = 'pending' | 'processed' | 'failed';
+export type MobileOfflineActionStatus =
+  | 'pending'
+  | 'in-progress'
+  | 'retrying'
+  | 'synced'
+  | 'failed';
 
 export interface MobileOfflineAction {
   _id: Types.ObjectId;
@@ -42,7 +47,7 @@ const MobileOfflineActionSchema = new Schema<MobileOfflineAction>(
     payload: { type: Schema.Types.Mixed, default: {} },
     status: {
       type: String,
-      enum: ['pending', 'processed', 'failed'],
+      enum: ['pending', 'in-progress', 'retrying', 'synced', 'failed'],
       default: 'pending',
       index: true,
     },

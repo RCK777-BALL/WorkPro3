@@ -7,9 +7,13 @@ import {
   flushQueue,
   getQueueLength,
   loadQueue,
+  MAX_QUEUE_RETRIES,
   onQueueChange,
+  onItemStatusChange,
   onSyncConflict,
   type SyncConflict,
+  type SyncItemStatus,
+  type SyncStatusUpdate,
 } from '@/utils/offlineQueue';
 import { useSyncStore } from '@/store/syncStore';
 
@@ -17,18 +21,78 @@ class SyncManager {
   private syncing = false;
   private initialized = false;
   private unsubscribers: Array<() => void> = [];
+  private toastCooldowns = new Map<string, number>();
+  private clearTimers = new Map<string, number>();
+
+  private hydrateQueueState() {
+    const queue = loadQueue();
+    const statusMap = queue.reduce<Record<string, SyncItemStatus>>((acc, item) => {
+      const status: SyncItemStatus =
+        item.nextAttempt && item.nextAttempt > Date.now() ? 'retrying' : 'pending';
+      if (item.id) {
+        acc[item.id] = status;
+      }
+      return acc;
+    }, {});
+    useSyncStore.getState().setQueueState(queue.length);
+    useSyncStore.getState().hydrateItemStatuses(statusMap);
+  }
+
+  private maybeToast(key: string, message: string, variant: 'info' | 'error' | 'success' = 'info') {
+    const now = Date.now();
+    const last = this.toastCooldowns.get(key) ?? 0;
+    if (now - last < 3500) return;
+    this.toastCooldowns.set(key, now);
+    emitToast(message, variant);
+  }
+
+  private handleStatusUpdate(id: string, update: SyncStatusUpdate) {
+    useSyncStore.getState().setItemStatus(id, update.status);
+
+    if (update.status === 'retrying') {
+      const delayMs = update.nextAttempt ? Math.max(update.nextAttempt - Date.now(), 0) : 0;
+      const seconds = Math.ceil(delayMs / 1000);
+      const delayLabel = seconds ? ` in ${seconds}s` : '';
+      this.maybeToast(`retry-${id}`, `Retry scheduled${delayLabel}`);
+    }
+
+    if (update.status === 'failed') {
+      this.maybeToast(
+        `fail-${id}`,
+        update.error
+          ? `Sync failed: ${update.error}`
+          : `Sync failed after ${MAX_QUEUE_RETRIES} attempts`,
+        'error',
+      );
+    }
+
+    if (update.status === 'synced') {
+      const existing = this.clearTimers.get(id);
+      if (existing) {
+        window.clearTimeout(existing);
+      }
+      const timer = window.setTimeout(() => {
+        useSyncStore.getState().clearItemStatus(id);
+        this.clearTimers.delete(id);
+      }, 1500);
+      this.clearTimers.set(id, timer);
+    }
+  }
 
   init() {
     if (this.initialized) return;
     this.initialized = true;
-    useSyncStore.getState().setQueueState(getQueueLength());
+    this.hydrateQueueState();
     useSyncStore.getState().setOffline(!navigator.onLine);
 
     const handleOnline = () => {
       useSyncStore.getState().setOffline(false);
       void this.sync();
     };
-    const handleOffline = () => useSyncStore.getState().setOffline(true);
+    const handleOffline = () => {
+      useSyncStore.getState().setOffline(true);
+      this.hydrateQueueState();
+    };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
@@ -40,6 +104,11 @@ class SyncManager {
       useSyncStore.getState().setQueueState(size, processed > size ? size : processed);
     });
     this.unsubscribers.push(unsubQueue);
+
+    const unsubStatuses = onItemStatusChange((id: string, update: SyncStatusUpdate) => {
+      this.handleStatusUpdate(id, update);
+    });
+    this.unsubscribers.push(unsubStatuses);
 
     const unsubConflict = onSyncConflict((conflict: SyncConflict) => {
       useSyncStore.getState().setConflict(conflict);

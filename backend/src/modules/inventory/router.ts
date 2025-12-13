@@ -19,7 +19,13 @@ import {
   listLocationsHandler,
   saveLocationHandler,
   listStockItemsHandler,
+  receiveInventoryHandler,
+  issueInventoryHandler,
+  adjustInventoryHandler,
+  transferInventoryHandler,
+  stockCountHandler,
   adjustStockHandler,
+  listReorderSuggestionsHandler,
   transferStockHandler,
   listStockHistoryHandler,
   transitionPurchaseOrderHandler,
@@ -40,6 +46,11 @@ router.post('/vendors', requirePermission('inventory', 'manage'), saveVendorHand
 router.put('/vendors/:vendorId', requirePermission('inventory', 'manage'), saveVendorHandler);
 
 router.get('/alerts', requirePermission('inventory', 'read'), listAlertsHandler);
+router.get(
+  '/reorder-suggestions',
+  requirePermission('inventory', 'read'),
+  listReorderSuggestionsHandler,
+);
 router.post(
   '/purchase-orders',
   requirePermission('inventory', 'purchase'),
@@ -56,6 +67,11 @@ router.post('/locations', requirePermission('inventory', 'manage'), saveLocation
 router.put('/locations/:locationId', requirePermission('inventory', 'manage'), saveLocationHandler);
 
 router.get('/stock', requirePermission('inventory', 'read'), listStockItemsHandler);
+router.post('/stock/transactions/receive', requirePermission('inventory', 'manage'), receiveInventoryHandler);
+router.post('/stock/transactions/issue', requirePermission('inventory', 'manage'), issueInventoryHandler);
+router.post('/stock/transactions/adjust', requirePermission('inventory', 'manage'), adjustInventoryHandler);
+router.post('/stock/transactions/transfer', requirePermission('inventory', 'manage'), transferInventoryHandler);
+router.post('/stock/count', requirePermission('inventory', 'manage'), stockCountHandler);
 router.post('/stock/adjust', requirePermission('inventory', 'manage'), adjustStockHandler);
 router.post('/transfers', requirePermission('inventory', 'manage'), transferStockHandler);
 router.get('/stock/history', requirePermission('inventory', 'read'), listStockHistoryHandler);

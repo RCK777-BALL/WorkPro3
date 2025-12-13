@@ -2,13 +2,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-export interface ConflictEntry {
-  entityType: string;
-  entityId: string;
-  serverTimestamp: Date;
-  clientVersion?: number;
-  resolvedWith: 'server' | 'client';
-}
+import type { ResolutionMetadata } from '../../src/modules/mobile/conflictResolution';
+
+export type ConflictEntry = ResolutionMetadata;
 
 class ConflictLog {
   private conflicts: ConflictEntry[] = [];
@@ -19,6 +15,10 @@ class ConflictLog {
 
   all(): ConflictEntry[] {
     return this.conflicts;
+  }
+
+  byEntity(entityType: string, entityId: string): ConflictEntry[] {
+    return this.conflicts.filter((conflict) => conflict.entityType === entityType && conflict.entityId === entityId);
   }
 }
 

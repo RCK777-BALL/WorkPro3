@@ -73,6 +73,16 @@ npx ts-node --files scripts/seedDepartments.ts
 
 This script reads `SEED_TENANT_ID` (and optional `SEED_SITE_ID`) from the environment and inserts a few sample department documents.
 
+## Inventory reorder suggestions
+
+A background cron job scans inventory parts with defined `reorderPoint`/`minLevel` thresholds and writes `InventoryReorderSuggestion` records for items that fall below the computed buffer. The scanner skips overlapping runs, records the last run metadata in memory, and prunes stale suggestions so clients always receive the most recent recommendations.
+
+Tunables for the scanner:
+
+- `REORDER_SUGGESTION_CRON` – cron expression for the scan cadence (default `30 * * * *`).
+- `REORDER_SUGGESTION_INCLUDE_OPEN_POS` – when set to `false`, open purchase orders are ignored when deciding whether a part is understocked (default `true`).
+- `REORDER_SUGGESTION_LEAD_TIME_BUFFER` – quantity buffer added to the reorder threshold when a part has a lead time defined (default `0`).
+
 
 ### Seeded employees
 
@@ -377,6 +387,13 @@ below along with its default value if one exists.
 | `MESSAGING_QUEUE_LIMIT` | Maximum buffered events before backpressure drops the oldest payloads to a dead-letter log. | `1000` |
 | `MESSAGING_MAX_ATTEMPTS` | Retry attempts before dead-lettering a message. | `5` |
 | `MESSAGING_RETRY_BACKOFF_MS` | Base backoff in milliseconds between retry attempts (multiplied by the attempt count). | `500` |
+| `MESSAGING_RETRY_MAX_BACKOFF_MS` | Ceiling for exponential retry backoff before giving up on a message. | `15000` |
+| `MESSAGING_RETRY_JITTER_RATIO` | Jitter ratio applied to retry backoff to stagger retries. | `0.25` |
+| `MESSAGING_RETRY_POLL_INTERVAL_MS` | Interval for the retry worker to scan the queue for ready messages. | `250` |
+| `MESSAGING_RETRY_STATE_PATH` | File used to persist in-flight retry state across restarts. | system temp dir |
+| `MESSAGING_CHUNK_SIZE` | Maximum payload size in bytes before a message is chunked for transport. | `50000` |
+| `MESSAGING_CHUNK_DIR` | Temporary directory for staging chunk files while reassembling large payloads. | system temp dir |
+| `MESSAGING_CHUNK_TTL_MS` | Maximum age for incomplete chunk assemblies before they are discarded. | `900000` |
 | `SEED_TENANT_ID` | Tenant id used when running the seed scripts. | *(generated)* |
 | `DEFAULT_TENANT_ID` | Tenant id assigned to new users and records when none is provided. | *(none)* |
 | `ADMIN_DEFAULT_PASSWORD` | Password assigned to the seeded admin user. | `admin123` |

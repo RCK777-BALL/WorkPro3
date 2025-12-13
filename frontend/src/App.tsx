@@ -139,6 +139,7 @@ export default function App() {
           <Route path="/work-orders" element={<WorkOrders />} />
           <Route path="/workorders" element={<WorkOrders />} />
           <Route path="/workorders/:id" element={<WorkOrderDetail />} />
+          <Route path="/work-orders/:id" element={<WorkOrderDetail />} />
           <Route path="/m/wo/:id" element={<MobileWorkOrder />} />
           <Route
             path="/work-requests"
@@ -239,6 +240,22 @@ export default function App() {
             }
           />
           <Route
+            path="/inventory/locations/:locationId"
+            element={
+              <RequirePermission permission="inventory.read">
+                <InventoryLocations />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/locations/:locationId"
+            element={
+              <RequirePermission permission="inventory.read">
+                <InventoryLocations />
+              </RequirePermission>
+            }
+          />
+          <Route
             path="/inventory/parts"
             element={
               <RequirePermission permission="inventory.read">
@@ -247,18 +264,18 @@ export default function App() {
             }
           />
           <Route
-            path="/inventory/items"
+            path="/inventory/parts/:partId"
             element={
               <RequirePermission permission="inventory.read">
-                <InventoryList />
+                <InventoryParts />
               </RequirePermission>
             }
           />
           <Route
-            path="/inventory/items/:partId"
+            path="/parts/:partId"
             element={
               <RequirePermission permission="inventory.read">
-                <InventoryPartDetail />
+                <InventoryParts />
               </RequirePermission>
             }
           />

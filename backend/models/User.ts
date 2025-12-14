@@ -34,6 +34,7 @@ export interface UserDocument extends Document {
   bootstrapAccount?: boolean;
   mfaEnabled: boolean;
   mfaSecret?: string;
+  active: boolean;
   tokenVersion: number;
   comparePassword(candidate: string): Promise<boolean>;
 }
@@ -88,6 +89,7 @@ const userSchema = new Schema<UserDocument>(
 
     mfaEnabled: { type: Boolean, default: false },
     mfaSecret: { type: String },
+    active: { type: Boolean, default: true, index: true },
     tokenVersion: { type: Number, default: 0 },
   },
   { timestamps: true }

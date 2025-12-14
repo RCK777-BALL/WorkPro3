@@ -11,6 +11,7 @@ import type { UserDocument, UserRole } from '../models/User';
 import type { AuthedRequest } from '../types/http';
 import { resolveUserPermissions } from '../services/permissionService';
 import type { Permission } from '../shared/permissions';
+import { isSessionBindingValid, type SessionBinding } from '../utils/sessionBinding';
 
 type DecodedToken = {
   id?: string;
@@ -19,6 +20,7 @@ type DecodedToken = {
   siteId?: string;
   scopes?: unknown;
   client?: string;
+  session?: SessionBinding;
 };
 
 const normalizeScopes = (input: unknown): string[] => {
@@ -98,9 +100,14 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    const user = await User.findById(decoded.id).select('+roles +role +tenantId +siteId +email +name');
+    if (!isSessionBindingValid(decoded.session, req)) {
+      res.status(401).json({ message: 'Session binding failed' });
+      return;
+    }
 
-    if (!user) {
+    const user = await User.findById(decoded.id).select('+roles +role +tenantId +siteId +email +name +active');
+
+    if (!user || user.active === false) {
       res.status(401).json({ message: 'User not found' });
       return;
     }

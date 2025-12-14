@@ -71,4 +71,5 @@ export { default as technicianRoutes } from './technicianRoutes';
 export { default as calibrationRoutes } from './calibration';
 export { default as commentRoutes } from './comments';
 export { default as inspectionRoutes } from './inspectionRoutes';
+export { default as notificationAdminRoutes } from './notificationAdminRoutes';
 

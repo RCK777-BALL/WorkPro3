@@ -3,6 +3,8 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
+import { Types } from 'mongoose';
+import { z } from 'zod';
 
 import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
 import { fail } from '../../lib/http';
@@ -17,6 +19,8 @@ import {
   convertWorkRequestToWorkOrder,
 } from './service';
 import { publicWorkRequestSchema, workRequestConversionSchema } from './schemas';
+import RequestType from '../../../models/RequestType';
+import RequestForm from '../../../models/RequestForm';
 
 const ensureTenant = (
   req: AuthedRequest,
@@ -45,6 +49,48 @@ const handleError = (err: unknown, res: Response, next: NextFunction) => {
   }
   next(err);
 };
+
+const attachmentDefinitionSchema = z.object({
+  key: z.string().trim().min(1),
+  label: z.string().trim().min(1),
+  required: z.boolean().optional(),
+  accept: z.array(z.string().trim().min(1)).optional(),
+  maxFiles: z.number().int().positive().optional(),
+});
+
+const fieldDefinitionSchema = z.object({
+  key: z.string().trim().min(1),
+  label: z.string().trim().min(1),
+  type: z.enum(['text', 'textarea', 'select', 'number', 'checkbox']).optional(),
+  required: z.boolean().optional(),
+  options: z.array(z.string().trim().min(1)).optional(),
+  validation: z
+    .object({
+      minLength: z.number().int().positive().optional(),
+      maxLength: z.number().int().positive().optional(),
+      pattern: z.string().optional(),
+    })
+    .optional(),
+});
+
+const requestTypeInputSchema = z.object({
+  name: z.string().trim().min(2),
+  slug: z.string().trim().min(2),
+  category: z.string().trim().min(2),
+  description: z.string().trim().optional(),
+  requiredFields: z.array(z.string().trim().min(1)).default([]),
+  attachments: z.array(attachmentDefinitionSchema).default([]),
+  fields: z.array(fieldDefinitionSchema).default([]),
+  defaultPriority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+});
+
+const requestFormInputSchema = z.object({
+  name: z.string().trim().min(2),
+  description: z.string().trim().optional(),
+  requestType: z.string().trim().optional(),
+  fields: z.array(fieldDefinitionSchema).default([]),
+  attachments: z.array(attachmentDefinitionSchema).default([]),
+});
 
 export const submitPublicRequestHandler = async (req: Request, res: Response, next: NextFunction) => {
   const parse = publicWorkRequestSchema.safeParse(req.body);
@@ -115,6 +161,81 @@ export const convertWorkRequestHandler: AuthedRequestHandler<{ requestId: string
   try {
     const result = await convertWorkRequestToWorkOrder(buildContext(req), req.params.requestId, parse.data);
     send(res, result);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const listRequestTypesHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    const tenantId = new Types.ObjectId(req.tenantId);
+    const query: Record<string, unknown> = { tenantId };
+    if (req.siteId && Types.ObjectId.isValid(req.siteId)) {
+      query.siteId = new Types.ObjectId(req.siteId);
+    }
+    const items = await RequestType.find(query).sort({ name: 1 }).lean();
+    send(res, items);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const createRequestTypeHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  const parse = requestTypeInputSchema.safeParse(req.body ?? {});
+  if (!parse.success) {
+    fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
+    return;
+  }
+  try {
+    const tenantId = new Types.ObjectId(req.tenantId);
+    const siteId = req.siteId && Types.ObjectId.isValid(req.siteId) ? new Types.ObjectId(req.siteId) : undefined;
+    const created = await RequestType.create({
+      ...parse.data,
+      tenantId,
+      ...(siteId ? { siteId } : {}),
+    });
+    send(res, created, 201);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const saveRequestFormHandler: AuthedRequestHandler<{ formSlug: string }> = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  const parse = requestFormInputSchema.safeParse(req.body ?? {});
+  if (!parse.success) {
+    fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
+    return;
+  }
+  try {
+    const tenantId = new Types.ObjectId(req.tenantId);
+    const siteId = req.siteId && Types.ObjectId.isValid(req.siteId) ? new Types.ObjectId(req.siteId) : undefined;
+    const requestTypeId =
+      parse.data.requestType && Types.ObjectId.isValid(parse.data.requestType)
+        ? new Types.ObjectId(parse.data.requestType)
+        : undefined;
+    const payload = {
+      name: parse.data.name,
+      description: parse.data.description,
+      requestType: requestTypeId,
+      fields: parse.data.fields,
+      attachments: parse.data.attachments,
+      schema: {
+        fields: parse.data.fields,
+        attachments: parse.data.attachments,
+        requestType: requestTypeId,
+      },
+      tenantId,
+      ...(siteId ? { siteId } : {}),
+    } satisfies Record<string, unknown>;
+    const saved = await RequestForm.findOneAndUpdate(
+      { slug: req.params.formSlug, tenantId },
+      { $set: payload, $setOnInsert: { slug: req.params.formSlug, tenantId } },
+      { new: true, upsert: true },
+    );
+    send(res, saved, 200);
   } catch (err) {
     handleError(err, res, next);
   }

@@ -9,7 +9,9 @@ import { Types } from 'mongoose';
 import type { Express } from 'express';
 
 import WorkRequest, { type WorkRequestDocument, type WorkRequestStatus } from '../../../models/WorkRequest';
-import RequestForm from '../../../models/RequestForm';
+import RequestForm, { type RequestFormSchema } from '../../../models/RequestForm';
+import RequestType, { type RequestAttachmentDefinition } from '../../../models/RequestType';
+import { evaluateRoutingRules } from './routing';
 import Site from '../../../models/Site';
 import WorkOrder from '../../../models/WorkOrder';
 import type { PublicWorkRequestInput, WorkRequestConversionInput } from './schemas';
@@ -70,10 +72,21 @@ const createUniqueToken = async (): Promise<string> => {
   throw new WorkRequestError('Unable to assign a request token. Please retry.', 500);
 };
 
-const resolveFormContext = async (
-  slug: string,
-): Promise<{ siteId: Types.ObjectId; tenantId: Types.ObjectId; requestFormId: Types.ObjectId }> => {
-  const form = await RequestForm.findOne({ slug }).lean<{ _id: Types.ObjectId; siteId?: Types.ObjectId }>();
+type FormContext = {
+  siteId: Types.ObjectId;
+  tenantId: Types.ObjectId;
+  requestFormId: Types.ObjectId;
+  requestTypeId?: Types.ObjectId;
+  formSchema?: RequestFormSchema;
+};
+
+const resolveFormContext = async (slug: string): Promise<FormContext> => {
+  const form = await RequestForm.findOne({ slug }).lean<{
+    _id: Types.ObjectId;
+    siteId?: Types.ObjectId;
+    requestType?: Types.ObjectId;
+    schema?: RequestFormSchema;
+  }>();
   if (!form) {
     throw new WorkRequestError('Request form not found', 404);
   }
@@ -89,7 +102,78 @@ const resolveFormContext = async (
   if (!tenantId) {
     throw new WorkRequestError('Tenant configuration is invalid for this request form.', 400);
   }
-  return { siteId, tenantId, requestFormId: form._id };
+  return {
+    siteId,
+    tenantId,
+    requestFormId: form._id,
+    requestTypeId: form.requestType ?? undefined,
+    formSchema: form.schema as RequestFormSchema,
+  };
+};
+
+const getRequestType = async (requestTypeId?: Types.ObjectId) => {
+  if (!requestTypeId) return undefined;
+  const requestType = await RequestType.findById(requestTypeId).lean();
+  if (!requestType) {
+    throw new WorkRequestError('Request type configuration not found for this form.', 400);
+  }
+  return requestType;
+};
+
+const ensureRequiredFields = (input: Record<string, unknown>, requiredFields: string[]) => {
+  if (!requiredFields.length) return;
+  const missing = requiredFields.filter((field) => {
+    const value = input[field];
+    if (value === undefined || value === null) return true;
+    if (typeof value === 'string' && !value.trim()) return true;
+    return false;
+  });
+  if (missing.length) {
+    throw new WorkRequestError(`Missing required fields: ${missing.join(', ')}`, 400);
+  }
+};
+
+const enforceAttachmentRequirements = (
+  files: Express.Multer.File[],
+  definitions: RequestAttachmentDefinition[],
+) => {
+  if (!definitions.length) return;
+  const list = files ?? [];
+  definitions.forEach((definition) => {
+    if (definition.required && list.length === 0) {
+      throw new WorkRequestError(`Attachment "${definition.label}" is required.`, 400);
+    }
+    if (definition.maxFiles && list.length > definition.maxFiles) {
+      throw new WorkRequestError(
+        `Attach no more than ${definition.maxFiles} file(s) for ${definition.label}.`,
+        400,
+      );
+    }
+    if (definition.accept?.length) {
+      const invalid = list.find((file) =>
+        !definition.accept!.some(
+          (allowed) => file.mimetype?.includes(allowed) || file.originalname.toLowerCase().endsWith(allowed),
+        ),
+      );
+      if (invalid) {
+        throw new WorkRequestError(
+          `Attachment ${invalid.originalname} does not match accepted types for ${definition.label}.`,
+          400,
+        );
+      }
+    }
+  });
+};
+
+const mapAttachments = (files: Express.Multer.File[], definitions: RequestAttachmentDefinition[]) => {
+  const paths = (files ?? []).map((file) => toRelativePath(file.path));
+  if (!paths.length) return [] as WorkRequestDocument['attachments'];
+  const keys = definitions.length ? definitions.map((definition) => definition.key) : ['upload'];
+  return keys.map((key) => ({
+    key,
+    files: files.map((file) => file.mimetype ?? file.originalname),
+    paths,
+  })) as WorkRequestDocument['attachments'];
 };
 
 export interface PublicSubmissionResult {
@@ -102,9 +186,17 @@ export const submitPublicRequest = async (
   input: PublicWorkRequestInput,
   files: Express.Multer.File[],
 ): Promise<PublicSubmissionResult> => {
-  const { siteId, tenantId, requestFormId } = await resolveFormContext(input.formSlug);
+  const { siteId, tenantId, requestFormId, requestTypeId, formSchema } = await resolveFormContext(input.formSlug);
+  const requestType = await getRequestType(requestTypeId ?? formSchema?.requestType);
+  const attachmentDefinitions = requestType?.attachments ?? formSchema?.attachments ?? [];
+
+  ensureRequiredFields(input as Record<string, unknown>, requestType?.requiredFields ?? []);
+  enforceAttachmentRequirements(files, attachmentDefinitions);
+
   const token = await createUniqueToken();
   const photoPaths = (files ?? []).map((file) => toRelativePath(file.path));
+  const priority = input.priority ?? requestType?.defaultPriority ?? 'medium';
+  const attachments = mapAttachments(files, attachmentDefinitions);
   const request = await WorkRequest.create({
     token,
     title: input.title,
@@ -114,12 +206,34 @@ export const submitPublicRequest = async (
     requesterPhone: input.requesterPhone,
     location: input.location,
     assetTag: input.assetTag,
-    priority: input.priority ?? 'medium',
+    priority,
     siteId,
     tenantId,
     requestForm: requestFormId,
+    requestType: requestType?._id,
+    category: requestType?.category,
     photos: photoPaths,
+    attachments,
   });
+  const routingDecision = requestType
+    ? await evaluateRoutingRules({
+        tenantId,
+        siteId,
+        requestType: requestType._id,
+        assetTag: input.assetTag,
+        priority,
+        category: requestType.category,
+      })
+    : undefined;
+  if (routingDecision) {
+    request.routing = {
+      ruleId: routingDecision.ruleId,
+      destinationType: routingDecision.destination.destinationType,
+      destinationId: routingDecision.destination.destinationId,
+      queue: routingDecision.destination.queue,
+    };
+    request.status = 'reviewing';
+  }
   await applyWorkflowToRequest(request);
   await request.save();
   await writeAuditLog({
@@ -136,7 +250,7 @@ export const submitPublicRequest = async (
     after: {
       title: input.title,
       description: input.description,
-      priority: input.priority ?? 'medium',
+      priority,
       location: input.location,
     },
   });
@@ -291,6 +405,8 @@ export const convertWorkRequestToWorkOrder = async (
     status: 'requested',
     type: input.workOrderType ?? 'corrective',
     plant: ctx.siteId ? toObjectId(ctx.siteId) : undefined,
+    siteId: request.siteId,
+    requestId: request._id,
   });
   request.status = 'converted';
   request.workOrder = workOrder._id;

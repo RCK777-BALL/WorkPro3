@@ -82,6 +82,7 @@ import RequestTriage from "@/pages/requests/RequestTriage";
 import AssetScan from "@/pages/AssetScan";
 import MobileWorkOrder from "@/pages/mobile/MobileWorkOrder";
 import PwaTechnicianShell from "@/pages/PwaTechnicianShell";
+import RequestFormBuilder from "@/pages/RequestFormBuilder";
 
 export default function App() {
   const navigate = useNavigate();
@@ -162,6 +163,14 @@ export default function App() {
             element={
               <RequirePermission permission="workRequests.read">
                 <RequestTriage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/requests/forms"
+            element={
+              <RequirePermission permission="workRequests.update">
+                <RequestFormBuilder />
               </RequirePermission>
             }
           />

@@ -18,6 +18,9 @@ import {
   getWorkRequestHandler,
   getWorkRequestSummaryHandler,
   convertWorkRequestHandler,
+  listRequestTypesHandler,
+  createRequestTypeHandler,
+  saveRequestFormHandler,
 } from './controller';
 
 const uploadDir = path.join(process.cwd(), 'uploads', 'work-requests');
@@ -60,6 +63,9 @@ adminRouter.post(
   validateObjectId('requestId'),
   convertWorkRequestHandler,
 );
+adminRouter.get('/types', requirePermission('workRequests', 'read'), listRequestTypesHandler);
+adminRouter.post('/types', requirePermission('workRequests', 'update'), createRequestTypeHandler);
+adminRouter.put('/forms/:formSlug', requirePermission('workRequests', 'update'), saveRequestFormHandler);
 
 router.use('/public/work-requests', publicRouter);
 router.use('/work-requests', adminRouter);

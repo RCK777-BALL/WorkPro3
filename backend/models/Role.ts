@@ -13,6 +13,8 @@ export interface RoleDocument extends Document {
   permissions: string[];
   tenantId?: Types.ObjectId;
   siteId?: Types.ObjectId | null;
+  departmentId?: Types.ObjectId | null;
+  inheritsFrom?: string[];
 }
 
 const roleSchema = new Schema<RoleDocument>(
@@ -24,12 +26,14 @@ const roleSchema = new Schema<RoleDocument>(
     permissions: { type: [String], required: true, default: [] },
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', index: true },
     siteId: { type: Schema.Types.ObjectId, ref: 'Site', index: true, default: null },
+    departmentId: { type: Schema.Types.ObjectId, ref: 'Department', index: true, default: null },
+    inheritsFrom: { type: [String], default: void 0 },
   },
   { timestamps: true }
 );
 
-roleSchema.index({ tenantId: 1, siteId: 1, name: 1 }, { unique: true });
-roleSchema.index({ tenantId: 1, siteId: 1 });
+roleSchema.index({ tenantId: 1, siteId: 1, departmentId: 1, name: 1 }, { unique: true });
+roleSchema.index({ tenantId: 1, siteId: 1, departmentId: 1 });
 
 const Role: Model<RoleDocument> = mongoose.model<RoleDocument>('Role', roleSchema);
 export default Role;

@@ -14,7 +14,10 @@ import type { UserRole } from '../../types/auth';
 
 export type TenantScopedRequest = AuthedRequest & {
   siteId?: string | null;
-  user?: (NonNullable<AuthedRequest['user']> & { siteId?: string | null; roles?: UserRole[] }) | undefined;
+  departmentId?: string | null;
+  user?:
+    | (NonNullable<AuthedRequest['user']> & { siteId?: string | null; roles?: UserRole[] })
+    | undefined;
 };
 
 type PermissionGuard = Permission | Permission[] | RequestHandler;
@@ -23,6 +26,7 @@ interface PolicyOptions {
   roles?: UserRole[];
   permissions?: PermissionGuard;
   siteScoped?: boolean;
+  departmentScoped?: boolean;
 }
 
 const normalizeTenantId = (value?: string | null): string | undefined => {
@@ -96,6 +100,18 @@ export const withPolicyGuard = (options: PolicyOptions = {}): RequestHandler[] =
         return;
       }
       req.siteId = String(siteId);
+      next();
+    });
+  }
+
+  if (options.departmentScoped) {
+    handlers.push((req, res, next) => {
+      const departmentId = (req as TenantScopedRequest).departmentId ?? null;
+      if (!departmentId) {
+        res.status(400).json({ message: 'Department context is required' });
+        return;
+      }
+      (req as TenantScopedRequest).departmentId = String(departmentId);
       next();
     });
   }

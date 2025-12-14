@@ -9,6 +9,7 @@ export interface UserRoleAssignmentDocument extends Document {
   roleId: Types.ObjectId;
   tenantId: Types.ObjectId;
   siteId?: Types.ObjectId | null | undefined;
+  departmentId?: Types.ObjectId | null | undefined;
 }
 
 const userRoleAssignmentSchema = new Schema<UserRoleAssignmentDocument>(
@@ -17,12 +18,13 @@ const userRoleAssignmentSchema = new Schema<UserRoleAssignmentDocument>(
     roleId: { type: Schema.Types.ObjectId, ref: 'Role', required: true, index: true },
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
     siteId: { type: Schema.Types.ObjectId, ref: 'Site', index: true, default: null },
+    departmentId: { type: Schema.Types.ObjectId, ref: 'Department', index: true, default: null },
   },
   { timestamps: true },
 );
 
 userRoleAssignmentSchema.index(
-  { userId: 1, roleId: 1, tenantId: 1, siteId: 1 },
+  { userId: 1, roleId: 1, tenantId: 1, siteId: 1, departmentId: 1 },
   {
     unique: true,
     partialFilterExpression: {

@@ -244,7 +244,7 @@ export default function InventoryParts() {
                 </thead>
                 <tbody className="divide-y divide-neutral-200">
                   {parts.map((part) => (
-                  <tr key={part.id}>
+                    <tr key={part.id}>
                       <td className="px-3 py-2 text-neutral-900">
                         {part.name}
                         {focusedPartId === part.id && (

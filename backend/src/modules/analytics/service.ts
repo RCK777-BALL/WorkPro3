@@ -171,17 +171,22 @@ const getCostTotal = (workOrder: WorkOrder) => {
 };
 
 const computeResponseMet = (workOrder: WorkOrder): { response: boolean; resolve: boolean; candidates: number } => {
-  const dueAt = workOrder.slaDueAt;
-  const startedAt = workOrder.requestedAt ?? workOrder.createdAt ?? workOrder.completedAt;
-  const completedAt = workOrder.completedAt ?? workOrder.updatedAt ?? null;
-  if (!dueAt || !startedAt || !completedAt) {
-    return { response: false, resolve: false, candidates: 0 };
-  }
-  const slaHours = typeof workOrder.slaHours === 'number' ? workOrder.slaHours : undefined;
-  const responseDeadline = slaHours ? new Date(startedAt.getTime() + slaHours * 60 * 60 * 1000) : dueAt;
-  const responseMet = startedAt.getTime() <= responseDeadline.getTime();
-  const resolveMet = completedAt.getTime() <= dueAt.getTime();
-  return { response: responseMet, resolve: resolveMet, candidates: 1 };
+  const startedAt = workOrder.requestedAt ?? workOrder.createdAt ?? workOrder.completedAt ?? null;
+  const resolvedAt = workOrder.slaResolvedAt ?? workOrder.completedAt ?? null;
+  const respondedAt = workOrder.slaRespondedAt ?? resolvedAt ?? workOrder.updatedAt ?? null;
+
+  const responseDeadline = workOrder.slaResponseDueAt ?? (workOrder.slaHours
+    ? startedAt && new Date(startedAt.getTime() + workOrder.slaHours * 60 * 60 * 1000)
+    : workOrder.slaDueAt);
+  const resolveDeadline = workOrder.slaResolveDueAt ?? workOrder.slaDueAt;
+
+  const hasCandidate = Boolean(responseDeadline || resolveDeadline);
+  if (!hasCandidate || !startedAt) return { response: false, resolve: false, candidates: 0 };
+
+  const responseMet = responseDeadline ? Boolean(respondedAt && respondedAt.getTime() <= responseDeadline.getTime()) : false;
+  const resolveMet = resolveDeadline ? Boolean(resolvedAt && resolvedAt.getTime() <= resolveDeadline.getTime()) : false;
+
+  return { response: responseDeadline ? responseMet : false, resolve: resolveDeadline ? resolveMet : false, candidates: 1 };
 };
 
 const updateBucketFromWorkOrder = (

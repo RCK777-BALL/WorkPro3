@@ -47,12 +47,15 @@ export interface WorkOrder {
   slaRespondedAt?: Date;
   slaResolvedAt?: Date;
   slaBreachAt?: Date;
+  slaPolicyId?: Types.ObjectId;
   slaEscalations?: Types.Array<{
     trigger: 'response' | 'resolve';
     thresholdMinutes?: number;
     escalateTo?: Types.Array<Types.ObjectId>;
     escalatedAt?: Date;
     channel?: 'email' | 'push';
+    priority?: 'low' | 'medium' | 'high' | 'critical';
+    reassign?: boolean;
     maxRetries?: number;
     retryBackoffMinutes?: number;
     retryCount?: number;
@@ -222,6 +225,7 @@ const workOrderSchema = new Schema<WorkOrder>(
     slaRespondedAt: { type: Date },
     slaResolvedAt: { type: Date },
     slaBreachAt: { type: Date },
+    slaPolicyId: { type: Schema.Types.ObjectId, ref: 'SlaPolicy' },
     slaEscalations: {
       type: [
         {
@@ -230,6 +234,8 @@ const workOrderSchema = new Schema<WorkOrder>(
           escalateTo: [{ type: Schema.Types.ObjectId, ref: 'User' }],
           escalatedAt: { type: Date },
           channel: { type: String, enum: ['email', 'push', 'sms'], default: 'email' },
+          priority: { type: String, enum: ['low', 'medium', 'high', 'critical'] },
+          reassign: { type: Boolean, default: false },
           maxRetries: { type: Number, default: 0 },
           retryBackoffMinutes: { type: Number, default: 30 },
           retryCount: { type: Number, default: 0 },

@@ -9,6 +9,7 @@ import type { WorkOrderDocument } from '../models/WorkOrder';
 import type { WorkRequestDocument } from '../models/WorkRequest';
 import { notifyUser } from '../utils';
 import { createNotification } from './notificationService';
+import { applySlaPolicyToWorkOrder } from './slaPolicyService';
 
 const resolveRuleQuery = (tenantId: Types.ObjectId, siteId: Types.ObjectId | undefined, scope: WorkflowScope) => ({
   tenantId,
@@ -85,10 +86,12 @@ const applySlaTimers = (
 
 export const applyWorkflowToWorkOrder = async (workOrder: WorkOrderDocument) => {
   const rule = await getActiveWorkflowRule(workOrder.tenantId as Types.ObjectId, workOrder.siteId as Types.ObjectId, 'work_order');
-  if (!rule) return;
+  if (rule) {
+    applyApprovalSteps(workOrder, rule);
+    applySlaTimers(workOrder, rule);
+  }
 
-  applyApprovalSteps(workOrder, rule);
-  applySlaTimers(workOrder, rule);
+  await applySlaPolicyToWorkOrder(workOrder);
 };
 
 export const applyWorkflowToRequest = async (workRequest: WorkRequestDocument) => {

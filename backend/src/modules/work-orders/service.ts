@@ -10,6 +10,7 @@ import WorkOrderTemplateModel, { type WorkOrderTemplate } from './templateModel'
 import type { ApprovalStepUpdate, StatusTransition, WorkOrderContext, WorkOrderTemplateInput } from './types';
 import { resolveUserId } from './middleware';
 import { notifyUser } from '../../../utils';
+import { applySlaPolicyToWorkOrder } from '../../../services/slaPolicyService';
 
 const ensureTimeline = (
   workOrder: WorkOrderDocument,
@@ -123,6 +124,20 @@ export const acknowledgeSla = async (
   return workOrder;
 };
 
+export const markSlaBreach = async (workOrder: WorkOrderDocument, trigger: 'response' | 'resolve') => {
+  if (!workOrder.slaBreachAt) {
+    workOrder.slaBreachAt = new Date();
+    const timeline = ensureTimeline(workOrder);
+    timeline.push({
+      label: `${trigger === 'response' ? 'Response' : 'Resolution'} SLA breached`,
+      createdAt: new Date(),
+      type: 'sla',
+    });
+  }
+
+  return escalateIfNeeded(workOrder);
+};
+
 export const createTemplate = async (input: WorkOrderTemplateInput) => {
   return WorkOrderTemplateModel.create(input);
 };
@@ -189,13 +204,33 @@ export const escalateIfNeeded = async (workOrder: WorkOrderDocument) => {
     if (rule.retryBackoffMinutes && rule.maxRetries && rule.retryCount < rule.maxRetries) {
       rule.nextAttemptAt = new Date(Date.now() + rule.retryBackoffMinutes * 60 * 1000);
     }
+    if (rule.priority) {
+      workOrder.priority = rule.priority;
+    }
+    if (rule.reassign && rule.escalateTo?.length) {
+      const reassignee = typeof rule.escalateTo[0] === 'string' ? new Types.ObjectId(rule.escalateTo[0]) : rule.escalateTo[0];
+      workOrder.assignedTo = reassignee;
+    }
     (rule.escalateTo ?? []).forEach((userId) => {
       notifyUser(userId, `${workOrder.title} breached the ${rule.trigger} threshold`, {
         title: 'SLA escalation',
       }).catch(() => undefined);
     });
+
+    const timeline = ensureTimeline(workOrder);
+    timeline.push({
+      label: 'SLA escalated',
+      notes: rule.priority ? `Priority set to ${rule.priority}` : undefined,
+      createdAt: new Date(),
+      type: 'sla',
+    });
   });
 
   await workOrder.save();
   return true;
+};
+
+export const refreshSlaPolicy = async (workOrder: WorkOrderDocument) => {
+  await applySlaPolicyToWorkOrder(workOrder);
+  return workOrder.save();
 };

@@ -212,17 +212,26 @@ export const calculateSummary = async (
             $match: {
               ...baseWorkOrderMatch,
               status: { $in: pmCompletedStatuses.length ? pmCompletedStatuses : ['completed'] },
-              dueDate: { $ne: null },
-              completedAt: { $ne: null },
+              $or: [
+                { slaResolveDueAt: { $ne: null } },
+                { dueDate: { $ne: null } },
+              ],
             },
           },
+          {
+            $project: {
+              due: { $ifNull: ['$slaResolveDueAt', '$dueDate'] },
+              resolvedAt: { $ifNull: ['$slaResolvedAt', '$completedAt'] },
+            },
+          },
+          { $match: { due: { $ne: null }, resolvedAt: { $ne: null } } },
           {
             $group: {
               _id: null,
               total: { $sum: 1 },
               onTime: {
                 $sum: {
-                  $cond: [{ $lte: ['$completedAt', '$dueDate'] }, 1, 0],
+                  $cond: [{ $lte: ['$resolvedAt', '$due'] }, 1, 0],
                 },
               },
             },

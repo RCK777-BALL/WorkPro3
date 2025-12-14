@@ -146,6 +146,9 @@ export interface DashboardKpiResult {
   pmCompliance: { total: number; completed: number; percentage: number };
   downtimeHours: number;
   maintenanceCost: number;
+  partsSpend: number;
+  backlogAgingDays: number;
+  laborUtilization: number;
   mttr: number;
   mtbf: number;
 }
@@ -731,6 +734,9 @@ function createEmptyDashboardKpiResult(): DashboardKpiResult {
     pmCompliance: { total: 0, completed: 0, percentage: 0 },
     downtimeHours: 0,
     maintenanceCost: 0,
+    partsSpend: 0,
+    backlogAgingDays: 0,
+    laborUtilization: 0,
     mttr: 0,
     mtbf: 0,
   };
@@ -885,9 +891,12 @@ export async function getDashboardKpiSummary(
   }).length;
 
   let maintenanceCost = 0;
+  let partsSpend = 0;
   let downtimeHours = 0;
   let pmTotal = 0;
   let pmCompleted = 0;
+  let backlogAgeAccumulator = 0;
+  let backlogCount = 0;
 
   const reliability = calculateHistoryReliability(workHistory);
   const mttr = reliability.mttrHours || calculateMTTR(workOrders);
@@ -907,9 +916,24 @@ export async function getDashboardKpiSummary(
       return sum + cost * qty;
     }, 0);
     maintenanceCost += partsCost;
+    partsSpend += partsCost;
+
+    if (wo.status !== 'completed' && wo.status !== 'cancelled' && wo.createdAt) {
+      const ageDays = (now.getTime() - wo.createdAt.getTime()) / (1000 * 60 * 60 * 24);
+      backlogAgeAccumulator += Math.max(0, ageDays);
+      backlogCount += 1;
+    }
   });
 
   const pmPercentage = pmTotal ? (pmCompleted / pmTotal) * 100 : 0;
+  const backlogAgingDays = backlogCount ? backlogAgeAccumulator / backlogCount : 0;
+
+  const totalLaborHours = workHistory.reduce((sum, entry) => sum + Number(entry.timeSpentHours ?? 0), 0);
+  const windowDays = dateRange
+    ? Math.max(1, Math.ceil(((dateRange.$lte ?? now).getTime() - (dateRange.$gte ?? now).getTime()) / (1000 * 60 * 60 * 24)))
+    : 30;
+  const laborCapacity = windowDays * 8;
+  const laborUtilization = laborCapacity > 0 ? Math.min(100, (totalLaborHours / laborCapacity) * 100) : 0;
 
   return {
     statuses: WORK_ORDER_STATUS_ORDER.map((status) => ({ status, count: statusTotals.get(status) ?? 0 })),
@@ -917,6 +941,9 @@ export async function getDashboardKpiSummary(
     pmCompliance: { total: pmTotal, completed: pmCompleted, percentage: pmPercentage },
     downtimeHours,
     maintenanceCost,
+    partsSpend,
+    backlogAgingDays,
+    laborUtilization,
     mttr,
     mtbf,
   };

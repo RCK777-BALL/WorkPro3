@@ -9,8 +9,7 @@ import { requireAuth } from '../middleware/authMiddleware';
 import { requireRole } from '../middleware/authMiddleware';
 import tenantScope from '../middleware/tenantScope';
 import WorkflowRule from '../models/WorkflowRule';
-import IdentityProviderConfig from '../models/IdentityProviderConfig';
-import { writeAuditLog } from '../utils/audit';
+import SlaPolicy from '../models/SlaPolicy';
 
 const router = Router();
 
@@ -116,6 +115,41 @@ router.put('/workflow-rules/:id', async (req, res, next) => {
         { _id: { $ne: updated._id }, tenantId: req.tenantId, scope: updated.scope, siteId: updated.siteId },
         { isDefault: false },
       );
+    }
+    res.json({ success: true, data: updated });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/sla-policies', async (req, res, next) => {
+  try {
+    const policies = await SlaPolicy.find({ tenantId: req.tenantId }).sort({ updatedAt: -1 });
+    res.json({ success: true, data: policies });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/sla-policies', async (req, res, next) => {
+  try {
+    const created = await SlaPolicy.create({ ...req.body, tenantId: req.tenantId });
+    res.status(201).json({ success: true, data: created });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.put('/sla-policies/:id', async (req, res, next) => {
+  try {
+    const updated = await SlaPolicy.findOneAndUpdate(
+      { _id: req.params.id, tenantId: req.tenantId },
+      req.body,
+      { new: true },
+    );
+    if (!updated) {
+      res.status(404).json({ success: false, error: 'Not found' });
+      return;
     }
     res.json({ success: true, data: updated });
   } catch (err) {

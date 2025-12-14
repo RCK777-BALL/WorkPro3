@@ -1,6 +1,7 @@
 // shared/reports.ts
 
 import type { TenantScoped } from '../../shared/types/http';
+import type { AuthRole } from '../../shared/types/auth';
 
 export type ReportField =
   | 'title'
@@ -8,6 +9,12 @@ export type ReportField =
   | 'priority'
   | 'type'
   | 'assetName'
+  | 'assetStatus'
+  | 'assetLocation'
+  | 'assetCriticality'
+  | 'assetType'
+  | 'assetPurchaseCost'
+  | 'assetPurchaseDate'
   | 'assigneeName'
   | 'createdAt'
   | 'dueDate'
@@ -15,7 +22,20 @@ export type ReportField =
   | 'totalCost'
   | 'downtimeMinutes'
   | 'laborHours'
+  | 'laborCost'
+  | 'partName'
+  | 'partNumber'
+  | 'partCategory'
+  | 'partQuantity'
+  | 'partUnitCost'
+  | 'iotMetric'
+  | 'iotValue'
+  | 'iotDeviceId'
+  | 'iotTimestamp'
+  | 'iotAssetName'
   | 'siteId';
+
+export type ReportModel = 'workOrders' | 'assets' | 'labor' | 'parts' | 'iotEvents';
 
 export type ReportFilterOperator = 'eq' | 'ne' | 'in' | 'contains' | 'gte' | 'lte';
 
@@ -30,12 +50,25 @@ export interface ReportDateRange {
   to?: string | Date;
 }
 
+export interface ReportCalculation {
+  operation: 'count' | 'sum' | 'avg';
+  field?: ReportField;
+  as?: string;
+}
+
+export interface ReportVisibility {
+  scope: 'private' | 'tenant' | 'roles';
+  roles?: AuthRole[];
+}
+
 export interface ReportQueryRequest extends TenantScoped {
   fields: ReportField[];
   filters?: ReportFilter[];
   groupBy?: ReportField[];
   dateRange?: ReportDateRange;
   limit?: number;
+  model?: ReportModel;
+  calculations?: ReportCalculation[];
 }
 
 export interface ReportColumn {
@@ -55,11 +88,14 @@ export interface CustomReportResponse {
   total: number;
   groupBy: ReportField[];
   filters: ReportFilter[];
+  calculations: ReportCalculation[];
 }
 
 export interface ReportTemplateInput extends ReportQueryRequest {
   name: string;
   description?: string;
+  visibility?: ReportVisibility;
+  shareId?: string;
 }
 
 export interface ReportTemplate extends ReportTemplateInput {

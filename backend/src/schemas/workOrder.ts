@@ -102,6 +102,7 @@ const baseSchema = z.object({
   slaRespondedAt: z.union([z.string(), z.date()]).optional(),
   slaResolvedAt: z.union([z.string(), z.date()]).optional(),
   slaBreachAt: z.union([z.string(), z.date()]).optional(),
+  slaPolicyId: objectId.optional(),
   slaEscalations: z
     .array(
       z.object({
@@ -110,6 +111,13 @@ const baseSchema = z.object({
         escalateTo: z.array(objectId).optional(),
         escalatedAt: z.union([z.string(), z.date()]).optional(),
         channel: z.enum(['email', 'push']).optional(),
+        priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+        reassign: z.boolean().optional(),
+        maxRetries: z.number().optional(),
+        retryBackoffMinutes: z.number().optional(),
+        retryCount: z.number().optional(),
+        nextAttemptAt: z.union([z.string(), z.date()]).optional(),
+        templateKey: z.string().optional(),
       }),
     )
     .optional(),

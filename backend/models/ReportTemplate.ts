@@ -3,11 +3,14 @@
  */
 
 import mongoose, { Schema, type Document, type Types } from 'mongoose';
+import { nanoid } from 'nanoid';
 
 import type {
   ReportDateRange,
   ReportFilter,
   ReportField,
+  ReportModel,
+  ReportVisibility,
   ReportTemplateInput,
 } from '../shared/reports';
 
@@ -18,6 +21,10 @@ export interface ReportTemplateDoc extends Document {
   filters: ReportFilter[];
   groupBy: ReportField[];
   dateRange?: ReportDateRange;
+  model: ReportModel;
+  calculations?: ReportTemplateInput['calculations'];
+  visibility?: ReportVisibility;
+  shareId?: string;
   tenantId: Types.ObjectId;
   ownerId: Types.ObjectId;
   createdAt?: Date;
@@ -49,6 +56,14 @@ const reportTemplateSchema = new Schema<ReportTemplateDoc>(
     filters: { type: [reportFilterSchema], default: [] },
     groupBy: { type: [String], default: [] },
     dateRange: { type: reportDateRangeSchema, required: false },
+    model: { type: String, default: 'workOrders' },
+    calculations: { type: [Schema.Types.Mixed], default: [] },
+    visibility: {
+      scope: { type: String, enum: ['private', 'tenant', 'roles'], default: 'private' },
+      roles: { type: [String], default: [] },
+      _id: false,
+    },
+    shareId: { type: String, default: nanoid },
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
     ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   },
@@ -60,19 +75,31 @@ reportTemplateSchema.index({ tenantId: 1, ownerId: 1, name: 1 }, { unique: false
 export const serializeTemplate = (
   doc: ReportTemplateDoc,
   tenantId?: string,
-): ReportTemplateInput & { id: string; ownerId: string; tenantId: string; createdAt?: string; updatedAt?: string } => {
+): ReportTemplateInput & {
+  id: string;
+  ownerId: string;
+  tenantId: string;
+  createdAt?: string;
+  updatedAt?: string;
+  shareId: string;
+} => {
   const serialized: ReportTemplateInput & {
     id: string;
     ownerId: string;
     tenantId: string;
     createdAt?: string;
     updatedAt?: string;
+    shareId: string;
   } = {
     id: doc._id.toString(),
     name: doc.name,
     fields: doc.fields,
     filters: doc.filters,
     groupBy: doc.groupBy,
+    model: doc.model,
+    calculations: doc.calculations,
+    visibility: doc.visibility,
+    shareId: doc.shareId ?? '',
     tenantId: tenantId ?? doc.tenantId.toString(),
     ownerId: doc.ownerId.toString(),
   };

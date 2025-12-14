@@ -5,12 +5,12 @@
 import mongoose from 'mongoose';
 import WorkOrder from '../../../models/WorkOrder';
 import { notifyUser } from '../../../utils';
-import { escalateIfNeeded } from './service';
+import { markSlaBreach } from './service';
 
 const UPCOMING_WINDOW_MINUTES = 30;
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
 
-const notifyUpcomingDeadlines = async () => {
+export const detectUpcomingDeadlines = async () => {
   const now = Date.now();
   const windowEnd = new Date(now + UPCOMING_WINDOW_MINUTES * 60 * 1000);
 
@@ -33,13 +33,31 @@ const notifyUpcomingDeadlines = async () => {
           title: 'SLA deadline approaching',
         }).catch(() => undefined);
       }
-      await escalateIfNeeded(wo);
+    }),
+  );
+};
+
+export const processBreachedSlas = async () => {
+  const now = new Date();
+
+  const breached = await WorkOrder.find({
+    $or: [
+      { slaResponseDueAt: { $lte: now }, slaRespondedAt: { $exists: false } },
+      { slaResolveDueAt: { $lte: now }, slaResolvedAt: { $exists: false }, status: { $ne: 'completed' } },
+    ],
+  }).limit(100);
+
+  await Promise.all(
+    breached.map(async (wo) => {
+      const trigger: 'response' | 'resolve' = wo.slaResponseDueAt && !wo.slaRespondedAt ? 'response' : 'resolve';
+      await markSlaBreach(wo, trigger);
     }),
   );
 };
 
 export const startWorkOrderReminderJobs = () => {
   setInterval(() => {
-    notifyUpcomingDeadlines().catch(() => undefined);
+    detectUpcomingDeadlines().catch(() => undefined);
+    processBreachedSlas().catch(() => undefined);
   }, POLL_INTERVAL_MS);
 };

@@ -4,6 +4,8 @@
 
 import mongoose, { Schema, type Document, type Model, type Types } from 'mongoose';
 
+import WorkOrder from './WorkOrder';
+
 export type WorkRequestStatus = 'new' | 'reviewing' | 'converted' | 'closed';
 
 export interface WorkRequestDocument extends Document {
@@ -48,8 +50,17 @@ export interface WorkRequestDocument extends Document {
   siteId: Types.ObjectId;
   tenantId: Types.ObjectId;
   requestForm: Types.ObjectId;
+  requestType?: Types.ObjectId;
+  category?: string;
   workOrder?: Types.ObjectId;
   photos: Types.Array<string>;
+  attachments?: Types.Array<{ key: string; files: string[]; paths: string[] }>;
+  routing?: {
+    ruleId?: Types.ObjectId;
+    destinationType?: 'team' | 'user' | 'queue';
+    destinationId?: Types.ObjectId;
+    queue?: string;
+  };
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -125,10 +136,49 @@ const workRequestSchema = new Schema<WorkRequestDocument>(
     siteId: { type: Schema.Types.ObjectId, ref: 'Site', required: true, index: true },
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
     requestForm: { type: Schema.Types.ObjectId, ref: 'RequestForm', required: true, index: true },
+    requestType: { type: Schema.Types.ObjectId, ref: 'RequestType', index: true },
+    category: { type: String },
     workOrder: { type: Schema.Types.ObjectId, ref: 'WorkOrder' },
+    attachments: [
+      {
+        key: { type: String, required: true },
+        files: [{ type: String }],
+        paths: [{ type: String }],
+      },
+    ],
+    routing: {
+      ruleId: { type: Schema.Types.ObjectId, ref: 'RequestRoutingRule' },
+      destinationType: { type: String, enum: ['team', 'user', 'queue'] },
+      destinationId: { type: Schema.Types.ObjectId },
+      queue: { type: String },
+    },
   },
   { timestamps: true },
 );
+
+workRequestSchema.pre('save', async function handleAutoConversion(next) {
+  if (this.isModified('approvalStatus') && this.approvalStatus === 'approved' && !this.workOrder) {
+    try {
+      const workOrder = await WorkOrder.create({
+        title: this.title,
+        description: this.description,
+        tenantId: this.tenantId,
+        priority: this.priority ?? 'medium',
+        status: 'requested',
+        type: 'corrective',
+        plant: this.siteId,
+        siteId: this.siteId,
+        requestId: this._id,
+      });
+      this.workOrder = workOrder._id;
+      this.status = 'converted';
+    } catch (err) {
+      next(err as Error);
+      return;
+    }
+  }
+  next();
+});
 
 const WorkRequest: Model<WorkRequestDocument> = mongoose.model<WorkRequestDocument>(
   'WorkRequest',

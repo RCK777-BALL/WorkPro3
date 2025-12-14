@@ -11,14 +11,17 @@ vi.mock('../middleware/authMiddleware', () => ({
 
 const getKPIs = vi.fn();
 const getTrendDatasets = vi.fn();
+const getDashboardKpiSummary = vi.fn();
 vi.mock('../services/analytics', () => ({
   getKPIs: (...args: any[]) => getKPIs(...args),
   getTrendDatasets: (...args: any[]) => getTrendDatasets(...args),
+  getDashboardKpiSummary: (...args: any[]) => getDashboardKpiSummary(...args),
 }));
 
 import AnalyticsRoutes from '../routes/analyticsRoutes';
 
 const app = express();
+app.use(express.json());
 app.use('/api/v1/analytics', AnalyticsRoutes);
 
 function binaryParser(res: any, callback: any) {
@@ -33,6 +36,7 @@ function binaryParser(res: any, callback: any) {
 beforeEach(() => {
   getKPIs.mockReset();
   getTrendDatasets.mockReset();
+  getDashboardKpiSummary.mockReset();
   getKPIs.mockResolvedValue({
     mttr: 1,
     mtbf: 5,
@@ -54,6 +58,18 @@ beforeEach(() => {
     quality: [],
     energy: [],
     downtime: [],
+  });
+  getDashboardKpiSummary.mockResolvedValue({
+    statuses: [],
+    overdue: 1,
+    pmCompliance: { total: 2, completed: 1, percentage: 50 },
+    downtimeHours: 4,
+    maintenanceCost: 100,
+    partsSpend: 60,
+    backlogAgingDays: 5,
+    laborUtilization: 75,
+    mttr: 1,
+    mtbf: 3,
   });
 });
 
@@ -117,5 +133,23 @@ describe('Analytics routes', () => {
       .expect(200);
     expect(pdfRes.headers['content-type']).toBe('application/pdf');
     expect(pdfRes.body.slice(0, 4).toString()).toBe('%PDF');
+  });
+
+  it('schedules dashboard exports', async () => {
+    const res = await request(app)
+      .post('/api/v1/analytics/dashboard/exports/schedule')
+      .send({ format: 'pdf', recipients: ['ops@example.com'], cron: '0 6 * * 1' })
+      .expect(201);
+
+    expect(res.body.data.format).toBe('pdf');
+    expect(res.body.data.recipients).toEqual(['ops@example.com']);
+    expect(res.body.data.status).toBe('scheduled');
+  });
+
+  it('returns dashboard KPIs with extended metrics', async () => {
+    const res = await request(app).get('/api/v1/analytics/dashboard/kpis').expect(200);
+    expect(res.body.data.backlogAgingDays).toBe(5);
+    expect(res.body.data.laborUtilization).toBe(75);
+    expect(getDashboardKpiSummary).toHaveBeenCalledWith('tenant123', {});
   });
 });

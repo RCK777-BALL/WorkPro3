@@ -12,6 +12,9 @@ export type DashboardKpiResponse = {
   pmCompliance: { total: number; completed: number; percentage: number };
   downtimeHours: number;
   maintenanceCost: number;
+  partsSpend: number;
+  backlogAgingDays: number;
+  laborUtilization: number;
   mttr: number;
   mtbf: number;
 };

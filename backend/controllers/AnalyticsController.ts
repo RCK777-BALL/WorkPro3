@@ -7,6 +7,7 @@ import { Parser as Json2csvParser } from 'json2csv';
 import PDFDocument from 'pdfkit';
 import type { Readable } from 'stream';
 import { escapeXml, sendResponse } from '../utils';
+import { scheduleDashboardExport } from '../services/dashboardExportScheduler';
 import {
   getKPIs,
   getTrendDatasets,
@@ -97,6 +98,9 @@ function flattenDashboardKpiForExport(data: DashboardKpiResult) {
     pmComplianceTotal: data.pmCompliance.total,
     downtimeHours: data.downtimeHours,
     maintenanceCost: data.maintenanceCost,
+    partsSpend: data.partsSpend,
+    backlogAgingDays: data.backlogAgingDays,
+    laborUtilization: data.laborUtilization,
     mttr: data.mttr,
     mtbf: data.mtbf,
   };
@@ -360,6 +364,28 @@ export const dashboardKpiPdf = async (
       doc.text(` • ${entry.status}: ${entry.count}`);
     });
     doc.end();
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const scheduleDashboardExportHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { format, recipients, cron } = req.body as {
+      format?: 'csv' | 'pdf';
+      recipients?: string[];
+      cron?: string;
+    };
+    if (!format || !recipients || !recipients.length || !cron) {
+      res.status(400).json({ message: 'format, recipients, and cron are required' });
+      return;
+    }
+    const schedule = scheduleDashboardExport(format, recipients, cron);
+    sendResponse(res, schedule, 201);
   } catch (err) {
     next(err);
   }

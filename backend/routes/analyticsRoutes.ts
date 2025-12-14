@@ -17,6 +17,7 @@ import {
   dashboardKpiCsv,
   dashboardKpiXlsx,
   dashboardKpiPdf,
+  scheduleDashboardExportHandler,
   dashboardMtbfJson,
   dashboardPmComplianceJson,
   dashboardWorkOrderVolumeJson,
@@ -51,6 +52,7 @@ router.get('/dashboard/kpis', dashboardKpiJson);
 router.get('/dashboard/kpis.csv', dashboardKpiCsv);
 router.get('/dashboard/kpis.xlsx', dashboardKpiXlsx);
 router.get('/dashboard/kpis.pdf', dashboardKpiPdf);
+router.post('/dashboard/exports/schedule', scheduleDashboardExportHandler);
 router.get('/dashboard/mtbf', dashboardMtbfJson);
 router.get('/dashboard/pm-compliance', dashboardPmComplianceJson);
 router.get('/dashboard/work-order-volume', dashboardWorkOrderVolumeJson);

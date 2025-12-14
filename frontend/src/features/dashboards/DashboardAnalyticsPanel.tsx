@@ -4,6 +4,7 @@
 
 import { useMemo, useState } from 'react';
 import clsx from 'clsx';
+import { ArrowUpRight } from 'lucide-react';
 import { saveAs } from 'file-saver';
 
 import Card from '@/components/common/Card';
@@ -48,6 +49,8 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
   const { data, loading, error, params, refetch } = useDashboardAnalytics(range);
   const [exporting, setExporting] = useState<ExportFormat | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [scheduleEmail, setScheduleEmail] = useState('ops@example.com');
+  const [scheduleMessage, setScheduleMessage] = useState<string | null>(null);
 
   const kpis = data?.kpis;
   const pmCompliance = data?.pmCompliance;
@@ -68,6 +71,8 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
       { label: 'Downtime (h)', value: Number(kpis.downtimeHours.toFixed(1)), color: '#fbbf24' },
       { label: 'MTTR (h)', value: Number(kpis.mttr.toFixed(2)), color: '#34d399' },
       { label: 'MTBF (h)', value: Number(kpis.mtbf.toFixed(2)), color: '#60a5fa' },
+      { label: 'Labor util. (%)', value: Number(kpis.laborUtilization.toFixed(1)), color: '#a78bfa' },
+      { label: 'Backlog aging (d)', value: Number(kpis.backlogAgingDays.toFixed(1)), color: '#f472b6' },
     ];
   }, [kpis]);
 
@@ -81,8 +86,11 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
       },
       { label: 'Downtime hours', value: kpis.downtimeHours.toFixed(1) },
       { label: 'Maintenance cost', value: currencyFormatter.format(kpis.maintenanceCost) },
+      { label: 'Parts spend', value: currencyFormatter.format(kpis.partsSpend) },
       { label: 'MTTR', value: `${kpis.mttr.toFixed(2)} h` },
       { label: 'MTBF', value: `${kpis.mtbf.toFixed(2)} h` },
+      { label: 'Backlog aging', value: `${kpis.backlogAgingDays.toFixed(1)} days` },
+      { label: 'Labor utilization', value: `${kpis.laborUtilization.toFixed(1)}%` },
     ];
   }, [kpis]);
 
@@ -136,6 +144,22 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
     }
   };
 
+  const handleSchedule = async () => {
+    setScheduleMessage(null);
+    try {
+      await http.post('/analytics/dashboard/exports/schedule', {
+        format: 'pdf',
+        recipients: [scheduleEmail],
+        cron: '0 6 * * 1',
+      });
+      setScheduleMessage('Weekly PDF delivery scheduled');
+    } catch (err) {
+      // eslint-disable-next-line no-console -- surfaced for observability during development
+      console.error('Failed to schedule dashboard export', err);
+      setScheduleMessage('Unable to schedule delivery');
+    }
+  };
+
   const controls = (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
       <label className="flex items-center gap-2 text-sm text-slate-300">
@@ -164,6 +188,17 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
             Export {format.label}
           </Button>
         ))}
+        <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-white/80">
+          <input
+            value={scheduleEmail}
+            onChange={(event) => setScheduleEmail(event.target.value)}
+            className="w-44 rounded bg-transparent px-2 py-1 text-xs focus:outline-none"
+            placeholder="delivery@example.com"
+          />
+          <Button size="xs" variant="primary" onClick={handleSchedule}>
+            Schedule PDF
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -176,6 +211,7 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
       className={clsx('border-white/10 bg-slate-900/80 text-white backdrop-blur', className)}
     >
       {exportError ? <p className="mb-4 text-sm text-red-300">{exportError}</p> : null}
+      {scheduleMessage ? <p className="mb-4 text-xs text-emerald-200">{scheduleMessage}</p> : null}
       {error ? (
         <div className="flex flex-col gap-3 rounded-xl border border-red-400/50 bg-red-500/10 p-4 text-sm text-red-100">
           <p>{error}</p>
@@ -267,6 +303,76 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
             </p>
           </div>
         ) : null}
+      </section>
+      <section className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-wider text-white/60">Drill-down links</p>
+            <p className="text-sm text-white/80">Open filtered work orders or tasks from each widget</p>
+          </div>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Button
+            asChild
+            variant="secondary"
+            size="sm"
+            className="justify-between"
+            title="Show corrective work driving MTTR"
+          >
+            <a href="/workorders?type=corrective&status=completed&sort=duration_desc">
+              MTTR work orders
+              <ArrowUpRight className="ml-2 h-4 w-4" />
+            </a>
+          </Button>
+          <Button
+            asChild
+            variant="secondary"
+            size="sm"
+            className="justify-between"
+            title="Review failure spacing for MTBF"
+          >
+            <a href="/workorders?type=corrective&status=completed&sort=completedAt_desc">
+              MTBF timeline
+              <ArrowUpRight className="ml-2 h-4 w-4" />
+            </a>
+          </Button>
+          <Button
+            asChild
+            variant="secondary"
+            size="sm"
+            className="justify-between"
+            title="Inspect aging backlog and overdue risk"
+          >
+            <a href="/workorders?status=open,overdue&sort=age_desc">
+              Backlog aging
+              <ArrowUpRight className="ml-2 h-4 w-4" />
+            </a>
+          </Button>
+          <Button
+            asChild
+            variant="secondary"
+            size="sm"
+            className="justify-between"
+            title="Show labor entries contributing to utilization"
+          >
+            <a href="/workorders?status=completed&view=timesheets">
+              Labor utilization
+              <ArrowUpRight className="ml-2 h-4 w-4" />
+            </a>
+          </Button>
+          <Button
+            asChild
+            variant="secondary"
+            size="sm"
+            className="justify-between"
+            title="Parts spend by order"
+          >
+            <a href="/workorders?status=completed&sort=parts_cost_desc">
+              Parts spend
+              <ArrowUpRight className="ml-2 h-4 w-4" />
+            </a>
+          </Button>
+        </div>
       </section>
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <section className="rounded-2xl border border-white/10 bg-white/5 p-4">

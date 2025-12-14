@@ -132,6 +132,7 @@ export interface WorkOrder {
   miscellaneousCost?: number;
   totalCost?: number;
   attachments?: Types.Array<{ url: string; name?: string; uploadedBy?: Types.ObjectId; uploadedAt?: Date }>;
+  requestId?: Types.ObjectId;
   timeline?: Types.Array<{
     label: string;
     notes?: string;
@@ -343,6 +344,7 @@ const workOrderSchema = new Schema<WorkOrder>(
     tenantId: tenantRef,
     plant: { type: Schema.Types.ObjectId, ref: 'Plant', index: true },
     siteId: { type: Schema.Types.ObjectId, ref: 'Site', index: true },
+    requestId: { type: Schema.Types.ObjectId, ref: 'WorkRequest', index: true },
     downtimeMinutes: { type: Number, default: 0 },
     laborHours: { type: Number, default: 0 },
     laborCost: { type: Number, default: 0 },

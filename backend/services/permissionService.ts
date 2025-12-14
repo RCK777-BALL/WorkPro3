@@ -7,12 +7,19 @@ import { Types } from 'mongoose';
 import Role from '../models/Role';
 import UserRoleAssignment from '../models/UserRoleAssignment';
 import permissionsMatrixJson from '../../shared/auth/permissions.json';
+import roleHierarchy from '../../shared/auth/roleHierarchy.json';
 import { ALL_PERMISSIONS, formatPermission, type Permission } from '../shared/permissions';
-import type { PermissionScope, PermissionsMatrix } from '../../shared/types/auth';
+import type { PermissionScope, PermissionsMatrix, RoleHierarchy } from '../../shared/types/auth';
 
 const permissionsMatrix: PermissionsMatrix = permissionsMatrixJson;
 
-const buildRolePermissionMap = (matrix: PermissionsMatrix): Map<string, Set<Permission>> => {
+const normalizePermission = (permission: string): Permission =>
+  permission.trim().toLowerCase() as Permission;
+
+const buildRolePermissionMap = (
+  matrix: PermissionsMatrix,
+  hierarchy: RoleHierarchy,
+): Map<string, Set<Permission>> => {
   const map = new Map<string, Set<Permission>>();
 
   for (const [scope, actions] of Object.entries(matrix) as [
@@ -30,10 +37,33 @@ const buildRolePermissionMap = (matrix: PermissionsMatrix): Map<string, Set<Perm
     }
   }
 
+  const resolveHierarchyPermissions = (role: string, visited: Set<string>): Set<Permission> => {
+    if (visited.has(role)) return new Set();
+    visited.add(role);
+    const def = hierarchy[role];
+    const inherited = new Set<Permission>();
+    if (def?.inherits) {
+      for (const parent of def.inherits) {
+        const parentPerms = resolveHierarchyPermissions(parent, visited);
+        parentPerms.forEach((perm) => inherited.add(perm));
+      }
+    }
+    if (def?.permissions) {
+      def.permissions.map(normalizePermission).forEach((perm) => inherited.add(perm));
+    }
+    return inherited;
+  };
+
+  for (const role of Object.keys(hierarchy)) {
+    const existing = map.get(role) ?? new Set<Permission>();
+    resolveHierarchyPermissions(role, new Set()).forEach((perm) => existing.add(perm));
+    map.set(role, existing);
+  }
+
   return map;
 };
 
-const ROLE_PERMISSION_MAP = buildRolePermissionMap(permissionsMatrix);
+const ROLE_PERMISSION_MAP = buildRolePermissionMap(permissionsMatrix, roleHierarchy);
 
 const toObjectId = (value: unknown): Types.ObjectId | undefined => {
   if (!value) return undefined;
@@ -44,13 +74,11 @@ const toObjectId = (value: unknown): Types.ObjectId | undefined => {
   return undefined;
 };
 
-const normalizePermission = (permission: string): Permission =>
-  permission.trim().toLowerCase() as Permission;
-
 export interface PermissionResolutionInput {
   userId: string | Types.ObjectId;
   tenantId?: string | Types.ObjectId;
   siteId?: string | Types.ObjectId | null;
+  departmentId?: string | Types.ObjectId | null;
   fallbackRoles?: string[];
 }
 
@@ -65,6 +93,7 @@ export const resolveUserPermissions = async (
   const userId = toObjectId(input.userId);
   const tenantId = toObjectId(input.tenantId);
   const siteId = toObjectId(input.siteId);
+  const departmentId = toObjectId(input.departmentId);
 
   if (!userId || !tenantId) {
     return {
@@ -74,9 +103,15 @@ export const resolveUserPermissions = async (
   }
 
   const match: Record<string, unknown> = { userId, tenantId };
-  match.$or = [{ siteId: { $exists: false } }, { siteId: null }];
+  match.$or = [
+    { siteId: { $exists: false }, departmentId: { $exists: false } },
+    { siteId: null, departmentId: null },
+  ];
   if (siteId) {
-    (match.$or as unknown[]).push({ siteId });
+    (match.$or as unknown[]).push({ siteId, departmentId: { $exists: false } }, { siteId, departmentId: null });
+  }
+  if (departmentId) {
+    (match.$or as unknown[]).push({ departmentId, ...(siteId ? { siteId } : {}) });
   }
 
   const assignments = await UserRoleAssignment.find(match).lean();
@@ -85,8 +120,18 @@ export const resolveUserPermissions = async (
     .filter((value): value is Types.ObjectId => Boolean(value));
 
   const roleFilter: Record<string, unknown> = { _id: { $in: roleIds }, tenantId };
+  const roleScope: Record<string, unknown>[] = [
+    { siteId: { $exists: false }, departmentId: { $exists: false } },
+    { siteId: null, departmentId: null },
+  ];
   if (siteId) {
-    roleFilter.$or = [{ siteId: { $exists: false } }, { siteId: null }, { siteId }];
+    roleScope.push({ siteId, departmentId: { $exists: false } }, { siteId, departmentId: null });
+  }
+  if (departmentId) {
+    roleScope.push({ departmentId, ...(siteId ? { siteId } : {}) });
+  }
+  if (roleScope.length > 0) {
+    roleFilter.$or = roleScope;
   }
 
   const roles = roleIds.length > 0 ? await Role.find(roleFilter).lean() : [];
@@ -94,15 +139,41 @@ export const resolveUserPermissions = async (
   const permissionSet = new Set<Permission>();
   const roleNames = new Set<string>();
 
+  const roleByName = new Map<string, typeof roles[number]>();
   for (const role of roles) {
     if (role.name) {
       roleNames.add(role.name);
+      roleByName.set(role.name, role);
     }
 
     for (const permission of role.permissions ?? []) {
       const normalized = normalizePermission(String(permission));
       permissionSet.add(normalized);
     }
+  }
+
+  const resolveInherited = (roleName: string, visited: Set<string>) => {
+    if (visited.has(roleName)) return;
+    visited.add(roleName);
+    const definition = roleHierarchy[roleName];
+    const doc = roleByName.get(roleName);
+    const inherits = new Set<string>(definition?.inherits ?? []);
+    (doc?.inheritsFrom ?? []).forEach((name) => inherits.add(name));
+    inherits.forEach((parent) => {
+      const inheritedPermissions = ROLE_PERMISSION_MAP.get(parent);
+      if (inheritedPermissions) {
+        inheritedPermissions.forEach((perm) => permissionSet.add(perm));
+      }
+      const parentDoc = roleByName.get(parent);
+      parentDoc?.permissions?.forEach((perm) => permissionSet.add(normalizePermission(String(perm))));
+      resolveInherited(parent, visited);
+    });
+  };
+
+  for (const roleName of roleNames) {
+    const inheritedPermissions = ROLE_PERMISSION_MAP.get(roleName);
+    inheritedPermissions?.forEach((perm) => permissionSet.add(perm));
+    resolveInherited(roleName, new Set());
   }
 
   if (roleNames.size === 0 && input.fallbackRoles) {

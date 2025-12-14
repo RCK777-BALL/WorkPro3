@@ -37,12 +37,14 @@ const resolvePermissionsForRequest = async (
 
   const tenantId = req.tenantId ?? req.user.tenantId;
   const siteId = req.siteId ?? (req.user as { siteId?: string | null }).siteId;
+  const departmentId = (req as AuthedRequest).departmentId;
   const fallbackRoles = (req.user as { roles?: string[] }).roles;
 
   const result = await resolveUserPermissions({
     userId: req.user.id,
     ...(tenantId ? { tenantId } : {}),
     ...(siteId ? { siteId } : {}),
+    ...(departmentId ? { departmentId } : {}),
     ...(fallbackRoles ? { fallbackRoles } : {}),
   });
 
@@ -106,5 +108,7 @@ export default {
   requirePermission,
   assertPermission,
 };
+
+export { hasPermission } from '../../services/permissionService';
 
 export type { Permission } from '../../shared/permissions';

@@ -1,0 +1,47 @@
+{
+  "asset_viewer": {
+    "permissions": ["assets.read"]
+  },
+  "asset_coordinator": {
+    "inherits": ["asset_viewer"],
+    "permissions": ["assets.write"]
+  },
+  "workorder_requester": {
+    "permissions": ["workorders.read"]
+  },
+  "workorder_supervisor": {
+    "inherits": ["workorder_requester"],
+    "permissions": ["workorders.write", "workorders.approve"]
+  },
+  "inventory_controller": {
+    "permissions": ["inventory.read", "inventory.manage", "inventory.purchase"]
+  },
+  "report_builder": {
+    "permissions": ["reports.read", "reports.build", "reports.export"]
+  },
+  "site_supervisor": {
+    "inherits": [
+      "asset_coordinator",
+      "workorder_supervisor",
+      "inventory_controller",
+      "report_builder"
+    ]
+  },
+  "department_tech": {
+    "inherits": ["asset_viewer", "workorder_requester"],
+    "permissions": ["inventory.read"]
+  },
+  "admin": {
+    "inherits": ["site_supervisor"],
+    "permissions": ["*"],
+    "description": "Legacy admin retains full access to preserve backwards compatibility"
+  },
+  "global_admin": {
+    "inherits": ["admin"],
+    "permissions": ["*"]
+  },
+  "plant_admin": {
+    "inherits": ["admin"],
+    "permissions": ["*"]
+  }
+}

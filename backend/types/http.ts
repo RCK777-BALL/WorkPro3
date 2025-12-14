@@ -31,6 +31,7 @@ export type AuthedRequest<
   tenantId?: string | undefined;
   tenantDomain?: string | undefined;
   siteId?: string | undefined;
+  departmentId?: string | undefined;
   plantId?: string | undefined;
   permissions?: string[] | undefined;
 };

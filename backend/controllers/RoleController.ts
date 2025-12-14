@@ -7,6 +7,7 @@ import { Types } from 'mongoose';
 
 import Role from '../models/Role';
 import { writeAuditLog, sendResponse, toObjectId, toEntityId } from '../utils';
+import { recordPermissionChange } from '../services/permissionAuditService';
 
 const buildScopedFilter = (tenantId: Types.ObjectId, siteId?: Types.ObjectId | null) => {
   const filter: Record<string, unknown> = { tenantId };
@@ -79,6 +80,17 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
       entityId,
       after: role.toObject(),
     });
+
+    await recordPermissionChange({
+      tenantId,
+      siteId,
+      departmentId: role.departmentId ?? null,
+      roleId: role._id as Types.ObjectId,
+      roleName: role.name,
+      before: [],
+      after: role.permissions,
+      actor: auditUserId ? { id: auditUserId } : undefined,
+    });
     sendResponse(res, role, null, 201);
   } catch (err) {
     next(err);
@@ -109,6 +121,9 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
     if ('siteId' in payload) {
       payload.siteId = toObjectId(payload.siteId as string) ?? null;
     }
+    if ('departmentId' in payload) {
+      payload.departmentId = toObjectId(payload.departmentId as string) ?? null;
+    }
     const role = await Role.findOneAndUpdate(filter, payload, {
       new: true,
       runValidators: true,
@@ -122,6 +137,17 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
       entityId,
       before: existing.toObject(),
       after: role?.toObject(),
+    });
+
+    await recordPermissionChange({
+      tenantId,
+      siteId: role?.siteId ?? null,
+      departmentId: role?.departmentId ?? null,
+      roleId: roleId as Types.ObjectId,
+      roleName: role?.name,
+      before: existing.permissions,
+      after: role?.permissions,
+      actor: auditUserId ? { id: auditUserId } : undefined,
     });
     sendResponse(res, role);
   } catch (err) {
@@ -159,6 +185,17 @@ export const deleteRole = async (req: Request, res: Response, next: NextFunction
       entityType: 'Role',
       entityId,
       before: role.toObject(),
+    });
+
+    await recordPermissionChange({
+      tenantId,
+      siteId: role.siteId ?? null,
+      departmentId: role.departmentId ?? null,
+      roleId: roleId as Types.ObjectId,
+      roleName: role.name,
+      before: role.permissions,
+      after: [],
+      actor: auditUserId ? { id: auditUserId } : undefined,
     });
     sendResponse(res, { message: 'Deleted successfully' });
   } catch (err) {

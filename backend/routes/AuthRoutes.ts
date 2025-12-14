@@ -30,13 +30,15 @@ import sendResponse from '../utils/sendResponse';
 import { configureOAuth } from '../auth/oauth';
 import { configureOIDC, type Provider as OIDCProvider } from '../auth/oidc';
 import { getOidcProviderConfigs, type OIDCProviderConfig } from '../config/ssoProviders';
-import { getSamlMetadata, samlAcsPlaceholder, samlRedirectPlaceholder } from '../auth/saml';
+import { getSamlMetadata, samlRedirectPlaceholder, samlResponseHandler } from '../auth/saml';
 import { isIdentityProviderAllowed } from '../services/identityProviderService';
 import { isFeatureEnabled, isOidcEnabled } from '../config/featureFlags';
 import { validatePasswordStrength } from '../auth/passwordPolicy';
 import { writeAuditLog } from '../utils/audit';
 import type { AuthedRequest } from '../types/http';
 import { getSecurityPolicy } from '../config/securityPolicies';
+import { buildSessionBinding } from '../utils/sessionBinding';
+import { provisionUserFromIdentity } from '../services/jitProvisioningService';
 
 configureOAuth();
 if (isFeatureEnabled('oidc')) {
@@ -467,6 +469,7 @@ const validateMfaToken = async (
         email: emailForToken,
         tenantId: authUser.tenantId,
         tokenVersion: user.tokenVersion,
+        session: buildSessionBinding(req),
       },
       secret,
       { expiresIn: TOKEN_TTL },
@@ -500,10 +503,10 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
 
   try {
     const user = await User.findOne({ email: normalizedEmail }).select(
-      '+passwordHash +mfaEnabled +tenantId +tokenVersion +email +name +roles +role +siteId +passwordExpired +bootstrapAccount +mfaSecret',
+      '+passwordHash +mfaEnabled +tenantId +tokenVersion +email +name +roles +role +siteId +passwordExpired +bootstrapAccount +mfaSecret +active',
     );
 
-    if (!user) {
+    if (!user || user.active === false) {
       await bcrypt.compare(password, FAKE_PASSWORD_HASH);
       sendResponse(res, null, 'Invalid email or password.', 400);
       return;
@@ -607,6 +610,7 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
         email: emailForToken,
         tenantId: authUser.tenantId,
         tokenVersion: user.tokenVersion,
+        session: buildSessionBinding(req),
       },
       secret,
       { expiresIn: TOKEN_TTL },
@@ -860,7 +864,71 @@ router.get('/saml/:tenantId/metadata', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/saml/:tenantId/acs', samlAcsPlaceholder);
+router.post('/saml/:tenantId/acs', async (req: Request, res: Response, next: NextFunction) => {
+  if (!isFeatureEnabled('saml')) {
+    res.status(404).json({ message: 'SAML is not enabled' });
+    return;
+  }
+
+  const { tenantId } = req.params;
+  try {
+    const assertion = samlResponseHandler(req);
+    const { user } = await provisionUserFromIdentity(
+      {
+        tenantId,
+        email: assertion.email,
+        name: assertion.name,
+        roles: assertion.roles,
+        skipMfa: SECURITY_POLICY.mfa.optionalForSso,
+      },
+      { force: true },
+    );
+
+    if (!user.active) {
+      sendResponse(res, null, 'User is disabled', 403);
+      return;
+    }
+
+    const tokenPayload = {
+      id: user._id.toString(),
+      email: user.email,
+      tenantId,
+      roles: user.roles,
+      tokenVersion: user.tokenVersion,
+      session: buildSessionBinding(req),
+    } as const;
+
+    const token = jwt.sign(tokenPayload, getJwtSecret(), { expiresIn: TOKEN_TTL });
+
+    await recordAuthEvent({
+      user,
+      action: 'saml_login_success',
+      details: { relayState: assertion.relayState },
+    });
+
+    const redirectUrl = buildRedirectUrl(token, {
+      email: user.email,
+      tenantId,
+      siteId: toStringId(user.siteId),
+      roles: user.roles,
+      userId: user._id.toString(),
+      redirect: sanitizeRedirect(assertion.relayState),
+    });
+
+    sendResponse(
+      res,
+      {
+        token,
+        redirectUrl,
+      },
+      null,
+      200,
+      'SAML assertion accepted',
+    );
+  } catch (err) {
+    next(err);
+  }
+});
 router.get('/saml/:tenantId/redirect', samlRedirectPlaceholder);
 
 const handlePassportCallback = (
@@ -897,28 +965,53 @@ const handlePassportCallback = (
       const userId = extractPassportId(user);
       const roles = extractPassportRoles(user);
 
-      const tokenPayload: Record<string, unknown> = { email };
-      if (tenantId) {
-        tokenPayload.tenantId = tenantId;
-      }
-      if (siteId) {
-        tokenPayload.siteId = siteId;
-      }
-      if (userId) {
-        tokenPayload.id = userId;
-      }
-      if (roles.length > 0) {
-        tokenPayload.roles = roles;
+      if (!tenantId) {
+        sendResponse(res, null, 'Tenant resolution failed for SSO user', 400);
+        return;
       }
 
-      const token = jwt.sign(tokenPayload, secret, {
-        expiresIn: TOKEN_TTL,
-      });
+      const { user: provisionedUser, created } = await provisionUserFromIdentity(
+        {
+          tenantId,
+          email,
+          roles,
+          siteId,
+          name: (user as { name?: string }).name,
+          skipMfa: SECURITY_POLICY.mfa.optionalForSso,
+        },
+        { force: true },
+      );
+
+      if (!provisionedUser.active) {
+        sendResponse(res, null, 'User is disabled', 403);
+        return;
+      }
+
+      const tokenPayload: Record<string, unknown> = {
+        email,
+        tenantId,
+        id: provisionedUser._id.toString(),
+        roles: provisionedUser.roles,
+        siteId: toStringId(provisionedUser.siteId) ?? siteId,
+        tokenVersion: provisionedUser.tokenVersion,
+      };
+
+      const token = jwt.sign(
+        {
+          ...tokenPayload,
+          session: buildSessionBinding(req),
+        },
+        secret,
+        {
+          expiresIn: TOKEN_TTL,
+        },
+      );
 
       void recordAuthEvent({
         action: 'sso_login_success',
         tenantId,
-        details: { provider, email, roles, userId },
+        user: provisionedUser,
+        details: { provider, email, roles: provisionedUser.roles, created },
       });
 
       const stateValue =

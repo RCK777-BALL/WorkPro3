@@ -174,6 +174,106 @@ router.post('/Users', async (req, res, next) => {
   }
 });
 
+router.patch('/Users/:id', async (req, res, next) => {
+  try {
+    const tenantId = (req as TenantRequest).tenantId;
+    if (!tenantId) {
+      res.status(400).json({ message: 'Missing tenant identifier' });
+      return;
+    }
+
+    const user = await User.findOne({ _id: req.params.id, tenantId }).select(
+      '+tenantId +roles +role +email +name +employeeId +active',
+    );
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    const updatedRoles = normalizeRoles(req.body?.roles ?? req.body?.groups);
+    if (updatedRoles.length) {
+      user.roles = updatedRoles;
+    }
+    const email = resolveEmailFromScim(req.body ?? {});
+    if (email) {
+      user.email = email;
+    }
+    if (typeof req.body?.displayName === 'string') {
+      user.name = req.body.displayName;
+    }
+    if (typeof req.body?.active === 'boolean') {
+      user.active = req.body.active;
+      if (!req.body.active) {
+        user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+      }
+    }
+
+    await user.save();
+
+    await writeAuditLog({
+      tenantId,
+      userId: user._id,
+      action: 'scim_user_updated',
+      entityType: 'user',
+      entityId: user._id.toString(),
+      after: {
+        email: user.email,
+        roles: user.roles,
+        active: user.active,
+      },
+    });
+
+    res.json({
+      schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
+      id: user._id.toString(),
+      userName: user.email,
+      name: { formatted: user.name },
+      active: user.active,
+      roles: user.roles,
+      emails: [{ value: user.email, primary: true }],
+      externalId: user.employeeId,
+      meta: buildMeta('User', tenantId, user._id.toString()),
+    });
+  } catch (err) {
+    logger.error('SCIM user update failed', err);
+    next(err);
+  }
+});
+
+router.delete('/Users/:id', async (req, res, next) => {
+  try {
+    const tenantId = (req as TenantRequest).tenantId;
+    if (!tenantId) {
+      res.status(400).json({ message: 'Missing tenant identifier' });
+      return;
+    }
+
+    const user = await User.findOne({ _id: req.params.id, tenantId }).select('+tokenVersion +active');
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    user.active = false;
+    user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+    await user.save();
+
+    await writeAuditLog({
+      tenantId,
+      userId: user._id,
+      action: 'scim_user_deactivated',
+      entityType: 'user',
+      entityId: user._id.toString(),
+      after: { active: user.active },
+    });
+
+    res.status(204).send();
+  } catch (err) {
+    logger.error('SCIM user deactivation failed', err);
+    next(err);
+  }
+});
+
 router.post('/Groups', async (req, res, next) => {
   try {
     const tenantId = (req as TenantRequest).tenantId;

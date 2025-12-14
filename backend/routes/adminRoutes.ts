@@ -3,6 +3,8 @@
  */
 
 import { Router } from 'express';
+import { z } from 'zod';
+
 import { requireAuth } from '../middleware/authMiddleware';
 import { requireRole } from '../middleware/authMiddleware';
 import tenantScope from '../middleware/tenantScope';
@@ -17,6 +19,59 @@ router.use(requireRole('admin'));
 
 router.get('/health', (_req, res) => {
   res.json({ success: true, data: { status: 'ok' } });
+});
+
+router.get('/auth-config', async (req, res, next) => {
+  try {
+    const configs = await IdentityProviderConfig.find({ tenantId: req.tenantId }).lean();
+    res.json({ success: true, data: configs });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const authConfigSchema = z.object({
+  protocol: z.enum(['saml', 'oidc']),
+  provider: z.string().min(1),
+  displayName: z.string().optional(),
+  issuer: z.string().optional(),
+  clientId: z.string().optional(),
+  clientSecret: z.string().optional(),
+  metadataUrl: z.string().optional(),
+  metadataXml: z.string().optional(),
+  redirectUri: z.string().optional(),
+  acsUrl: z.string().optional(),
+  enabled: z.boolean().optional(),
+});
+
+router.put('/auth-config/:provider', async (req, res, next) => {
+  try {
+    const parsed = authConfigSchema.safeParse({ ...req.body, provider: req.params.provider });
+    if (!parsed.success) {
+      res.status(400).json({ success: false, error: 'Invalid configuration' });
+      return;
+    }
+
+    const payload = { ...parsed.data, tenantId: req.tenantId };
+    const updated = await IdentityProviderConfig.findOneAndUpdate(
+      { tenantId: req.tenantId, protocol: payload.protocol, provider: payload.provider },
+      payload,
+      { new: true, upsert: true },
+    );
+
+    await writeAuditLog({
+      tenantId: req.tenantId,
+      userId: req.user?._id,
+      action: 'auth_config_updated',
+      entityType: 'identity_provider_config',
+      entityId: updated._id.toString(),
+      after: payload,
+    });
+
+    res.json({ success: true, data: updated });
+  } catch (err) {
+    next(err);
+  }
 });
 
 router.get('/workflow-rules', async (req, res, next) => {

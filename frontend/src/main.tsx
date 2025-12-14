@@ -56,8 +56,12 @@ const routerFutureConfig = {
   v7_relativeSplatPath: true,
 } as const;
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
+const RootApp = () => (
   <React.StrictMode>
     <RouterProvider router={router} future={routerFutureConfig} />
-  </React.StrictMode>,
+  </React.StrictMode>
 );
+
+export default RootApp;
+
+ReactDOM.createRoot(document.getElementById("root")!).render(<RootApp />);

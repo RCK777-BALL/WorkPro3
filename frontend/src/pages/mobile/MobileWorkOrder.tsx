@@ -74,12 +74,12 @@ const MobileWorkOrder = () => {
         setError(null);
         const cachePayload = {
           workOrder: normalized,
-          checklist: res.data.checklist ?? checklist,
+          checklist: res.data.checklists ?? checklist,
           updatedAt: res.data.updatedAt ?? null,
         };
         safeLocalStorage.setItem(`${CACHE_PREFIX}${id}`, JSON.stringify(cachePayload));
         setServerVersion(res.data.updatedAt ?? null);
-        setChecklist((res.data.checklist as string[] | undefined) ?? checklist);
+        setChecklist((res.data.checklists as string[] | undefined) ?? checklist);
       } catch (err) {
         console.error(err);
         setError('Working offline; showing cached work order.');

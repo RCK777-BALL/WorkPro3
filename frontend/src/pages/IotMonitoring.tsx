@@ -77,11 +77,11 @@ const flattenAssetOptions = (
     });
   };
   hierarchy.departments.forEach((department) => {
-    department.assets.forEach((asset) => pushAsset(asset, department.name));
+    department.assets.forEach((asset: HierarchyAsset) => pushAsset(asset, department.name));
     department.lines.forEach((line) => {
-      line.assets.forEach((asset) => pushAsset(asset, `${line.name}`));
+      line.assets.forEach((asset: HierarchyAsset) => pushAsset(asset, `${line.name}`));
       line.stations.forEach((station) => {
-        station.assets.forEach((asset) => pushAsset(asset, `${station.name}`));
+        station.assets.forEach((asset: HierarchyAsset) => pushAsset(asset, `${station.name}`));
       });
     });
   });
@@ -197,7 +197,7 @@ const IotMonitoring = () => {
     } catch (err) {
       console.error(err);
       enqueueMeterReading(meterFilter, value);
-      emitToast('Unable to send reading now; queued for sync.', 'warning');
+      emitToast('Unable to send reading now; queued for sync.', 'error');
     } finally {
       setMeterSubmitting(false);
     }
@@ -447,9 +447,8 @@ const IotMonitoring = () => {
                       <p className="text-xs text-slate-400">{rule.workOrderTitle}</p>
                     </div>
                     <span
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${
-                        rule.active ? 'bg-emerald-900/40 text-emerald-200' : 'bg-slate-800 text-slate-300'
-                      }`}
+                      className={`rounded-full px-3 py-1 text-xs font-medium ${rule.active ? 'bg-emerald-900/40 text-emerald-200' : 'bg-slate-800 text-slate-300'
+                        }`}
                     >
                       {rule.active ? 'Active' : 'Paused'}
                     </span>

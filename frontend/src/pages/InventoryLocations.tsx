@@ -376,9 +376,9 @@ export default function InventoryLocations() {
           <Card.Content>
             <div className="space-y-4">
               {locationsQuery.isLoading && <p className="text-sm text-neutral-500">Loading locations…</p>}
-              {locationsQuery.error && (
+              {locationsQuery.error ? (
                 <p className="text-sm text-error-600">Unable to load locations. Please try again.</p>
-              )}
+              ) : null}
               {Object.entries(grouped).map(([store, list]) => (
                 <div key={store} className="space-y-2">
                   <p className="text-xs font-semibold uppercase text-neutral-500">{store}</p>
@@ -428,7 +428,7 @@ export default function InventoryLocations() {
         </Card.Header>
         <Card.Content>
           {stockQuery.isLoading && <p className="text-sm text-neutral-500">Loading stock…</p>}
-          {stockQuery.error && <p className="text-sm text-error-600">Unable to load stock.</p>}
+          {stockQuery.error ? <p className="text-sm text-error-600">Unable to load stock.</p> : null}
           {!stockQuery.isLoading && !stockQuery.error && <StockTable items={stock} />}
         </Card.Content>
       </Card>
@@ -440,7 +440,7 @@ export default function InventoryLocations() {
         </Card.Header>
         <Card.Content>
           {historyQuery.isLoading && <p className="text-sm text-neutral-500">Loading history…</p>}
-          {historyQuery.error && <p className="text-sm text-error-600">Unable to load stock history.</p>}
+          {historyQuery.error ? <p className="text-sm text-error-600">Unable to load stock history.</p> : null}
           {!historyQuery.isLoading && !historyQuery.error && <StockHistoryList entries={history} />}
         </Card.Content>
       </Card>

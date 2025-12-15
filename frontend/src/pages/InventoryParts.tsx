@@ -36,7 +36,7 @@ const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string
   const disableEdits = !canManageInventory;
 
   const handleChange = (key: keyof Part, value: string | number) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm((prev: Partial<Part> & { name: string }) => ({ ...prev, [key]: value }));
   };
 
   const validate = () => {
@@ -114,26 +114,26 @@ const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string
         onChange={(e) => handleChange('barcode', e.target.value)}
       />
       <div className="grid gap-3 md:grid-cols-3">
-        <Input
+          <Input
           label="Cost"
           type="number"
           value={form.cost ?? ''}
           disabled={disableEdits}
-          onChange={(e) => setForm((prev) => ({ ...prev, cost: Number(e.target.value) }))}
+          onChange={(e) => setForm((prev: Partial<Part> & { name: string }) => ({ ...prev, cost: Number(e.target.value) }))}
         />
         <Input
           label="Min qty"
           type="number"
           value={form.minQty ?? ''}
           disabled={disableEdits}
-          onChange={(e) => setForm((prev) => ({ ...prev, minQty: Number(e.target.value) }))}
+          onChange={(e) => setForm((prev: Partial<Part> & { name: string }) => ({ ...prev, minQty: Number(e.target.value) }))}
         />
         <Input
           label="Max qty"
           type="number"
           value={form.maxQty ?? ''}
           disabled={disableEdits}
-          onChange={(e) => setForm((prev) => ({ ...prev, maxQty: Number(e.target.value) }))}
+          onChange={(e) => setForm((prev: Partial<Part> & { name: string }) => ({ ...prev, maxQty: Number(e.target.value) }))}
         />
       </div>
       <div className="grid gap-3 md:grid-cols-2">
@@ -142,14 +142,14 @@ const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string
           type="number"
           value={form.minLevel ?? ''}
           disabled={disableEdits}
-          onChange={(e) => setForm((prev) => ({ ...prev, minLevel: Number(e.target.value) }))}
+          onChange={(e) => setForm((prev: Partial<Part> & { name: string }) => ({ ...prev, minLevel: Number(e.target.value) }))}
         />
         <Input
           label="Max level"
           type="number"
           value={form.maxLevel ?? ''}
           disabled={disableEdits}
-          onChange={(e) => setForm((prev) => ({ ...prev, maxLevel: Number(e.target.value) }))}
+          onChange={(e) => setForm((prev: Partial<Part> & { name: string }) => ({ ...prev, maxLevel: Number(e.target.value) }))}
         />
       </div>
       <Input
@@ -157,7 +157,7 @@ const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string
         type="number"
         value={form.reorderPoint ?? 0}
         disabled={disableEdits}
-        onChange={(e) => setForm((prev) => ({ ...prev, reorderPoint: Number(e.target.value) }))}
+        onChange={(e) => setForm((prev: Partial<Part> & { name: string }) => ({ ...prev, reorderPoint: Number(e.target.value) }))}
       />
       {formError && <p className="text-sm text-error-600">{formError}</p>}
       <Button

@@ -159,13 +159,27 @@ const normalizePermissions = (permissions: unknown): string[] => {
   if (!permissions) return [];
   const list = Array.isArray(permissions) ? permissions : [permissions];
   const normalized: string[] = [];
+
   for (const permission of list) {
-    if (typeof permission !== 'string') continue;
-    const candidate = permission.toLowerCase();
+    let raw: string | undefined;
+
+    if (typeof permission === 'string') {
+      raw = permission;
+    } else if (permission && typeof permission === 'object' && 'permission' in permission) {
+      const candidate = (permission as { permission?: unknown }).permission;
+      if (typeof candidate === 'string') {
+        raw = candidate;
+      }
+    }
+
+    if (!raw) continue;
+
+    const candidate = raw.toLowerCase();
     if (!normalized.includes(candidate)) {
       normalized.push(candidate);
     }
   }
+
   return normalized;
 };
 

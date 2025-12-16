@@ -16,16 +16,25 @@ import { useAuth } from '@/context/AuthContext';
 import { SITE_KEY, TENANT_KEY } from '@/lib/http';
 import { safeLocalStorage } from '@/utils/safeLocalStorage';
 
-const normalizePermissions = (permissions?: string[]): Permission[] => {
+const normalizePermissions = (permissions?: Array<string | PermissionGrant>): Permission[] => {
   if (!Array.isArray(permissions)) return [];
   const normalized: Permission[] = [];
+
   for (const permission of permissions) {
-    if (typeof permission !== 'string') continue;
-    const key = permission.trim().toLowerCase() as Permission;
+    const raw =
+      typeof permission === 'string'
+        ? permission
+        : typeof permission === 'object'
+          ? (permission as { permission?: unknown }).permission
+          : undefined;
+
+    if (typeof raw !== 'string') continue;
+    const key = raw.trim().toLowerCase() as Permission;
     if (!normalized.includes(key)) {
       normalized.push(key);
     }
   }
+
   return normalized;
 };
 
@@ -47,8 +56,9 @@ export const usePermissions = () => {
   }, [user]);
 
   const explicitPermissions = useMemo(() => {
-    if (!user?.permissions?.length) return null;
-    return new Set(user.permissions.map((permission) => permission.toLowerCase()));
+    const normalized = normalizePermissions(user?.permissions as Array<string | PermissionGrant>);
+    if (!normalized.length) return null;
+    return new Set(normalized);
   }, [user]);
 
   const tenantId = useMemo(

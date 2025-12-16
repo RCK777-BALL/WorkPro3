@@ -96,7 +96,17 @@ export default function PermitsPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedPermitId, setSelectedPermitId] = useState<string | null>(null);
-  const [builder, setBuilder] = useState({
+  type BuilderState = {
+    permitNumber: string;
+    type: string;
+    riskLevel?: Permit['riskLevel'];
+    approvals: string[];
+    isolationSteps: string[];
+    watchers: string;
+    description: string;
+  };
+
+  const [builder, setBuilder] = useState<BuilderState>({
     permitNumber: '',
     type: 'Hot work',
     riskLevel: 'medium',
@@ -317,15 +327,15 @@ export default function PermitsPage() {
             <label className="text-sm text-neutral-700 dark:text-neutral-200">
               Risk level
               <select
-                className="mt-1 w-full rounded border border-neutral-200 p-2 dark:border-neutral-700"
-                value={builder.riskLevel}
-                onChange={(e) => setBuilder((prev) => ({ ...prev, riskLevel: e.target.value }))}
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
-              </select>
+                  className="mt-1 w-full rounded border border-neutral-200 p-2 dark:border-neutral-700"
+                  value={builder.riskLevel}
+                  onChange={(e) => setBuilder((prev) => ({ ...prev, riskLevel: e.target.value as Permit['riskLevel'] }))}
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="critical">Critical</option>
+                </select>
             </label>
             <label className="text-sm text-neutral-700 dark:text-neutral-200">
               Watchers (comma separated)

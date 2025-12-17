@@ -21,7 +21,42 @@ import {
   useStockItemsQuery,
   useTransferInventory,
 } from '@/features/inventory';
-import { StockHistoryList, formatInventoryLocation } from '@/features/inventory';
+
+/* Local StockHistoryList component: the features/inventory module doesn't export this,
+   so we provide a simple view here that matches the usage in this page. */
+const StockHistoryList = ({ entries }: { entries: any[] }) => (
+  <div className="space-y-2">
+    {!entries || entries.length === 0 ? (
+      <p className="text-sm text-neutral-500">No history yet.</p>
+    ) : (
+      entries.map((entry, idx) => (
+        <div
+          key={entry.id ?? idx}
+          className="flex items-start justify-between gap-3 rounded-md border border-neutral-200 p-3"
+        >
+          <div>
+            <p className="text-sm font-medium text-neutral-900">{entry.part?.name ?? entry.partId ?? '—'}</p>
+            <p className="text-xs text-neutral-500">
+              {(entry.type ?? 'Adjustment')} — {entry.quantity ?? '—'} {entry.unit ?? ''}
+              {entry.location ? ` • ${formatInventoryLocation(entry.location)}` : ''}
+            </p>
+            {entry.note && <p className="text-xs text-neutral-500 mt-1">{entry.note}</p>}
+          </div>
+          <div className="text-right text-xs text-neutral-500">
+            {entry.timestamp ? new Date(entry.timestamp).toLocaleString() : ''}
+          </div>
+        </div>
+      ))
+    )}
+  </div>
+);
+
+const formatInventoryLocation = (loc: InventoryLocation) => {
+  if (!loc) return '';
+  if (loc.name) return loc.name;
+  const parts = [loc.store, loc.room, loc.bin].filter(Boolean);
+  return parts.length ? parts.join(' • ') : loc.id;
+};
 
 const LocationForm = ({
   onSave,
@@ -405,7 +440,7 @@ export default function InventoryLocations() {
 
         <Card>
           <Card.Header>
-          <Card.Title>{selected ? 'Edit location' : 'New location'}</Card.Title>
+            <Card.Title>{selected ? 'Edit location' : 'New location'}</Card.Title>
             <Card.Description>Define store, room, and bin to support multi-level stock.</Card.Description>
           </Card.Header>
           <Card.Content>

@@ -1295,7 +1295,10 @@ export default function Dashboard() {
         suffix: "%",
         icon: ShieldCheckIcon,
         gradient: "from-emerald-900 via-emerald-700 to-emerald-500",
-        trend: trends.pmCompliance.map((value) => Number((value * 100).toFixed(1))),
+        trend: trends.pmCompliance.map((value) => {
+          const numericValue = typeof value === "number" ? value : 0;
+          return Number((numericValue * 100).toFixed(1));
+        }),
         decimals: 1,
         href: "/analytics/compliance",
       },
@@ -1435,7 +1438,10 @@ export default function Dashboard() {
                   <span className="text-xs text-white/60">last 10 periods</span>
                 </div>
                 <Sparkline
-                  data={(summaryTrends?.pmCompliance ?? []).map((value) => Number((value * 100).toFixed(1)))}
+                  data={(summaryTrends?.pmCompliance ?? []).map((value) => {
+                    const numericValue = typeof value === "number" ? value : 0;
+                    return Number((numericValue * 100).toFixed(1));
+                  })}
                   color="rgba(255,255,255,0.8)"
                   className="mt-4 h-16 w-full"
                 />
@@ -1444,7 +1450,9 @@ export default function Dashboard() {
                 <p className="text-xs uppercase tracking-widest text-white/60">SLA compliance</p>
                 <div className="mt-3 flex items-baseline gap-2">
                   <span className="text-2xl font-semibold">
-                    {summary ? `${summary.slaCompliance.toFixed(1)}%` : "–"}
+                    {summary
+                      ? `${(summary.slaCompliance ?? SUMMARY_FALLBACK.slaCompliance).toFixed(1)}%`
+                      : "–"}
                   </span>
                   <span className="text-xs text-white/60">on-time commitments</span>
                 </div>
@@ -1458,7 +1466,9 @@ export default function Dashboard() {
                 <p className="text-xs uppercase tracking-widest text-white/60">Wrench time %</p>
                 <div className="mt-3 flex items-baseline gap-2">
                   <span className="text-2xl font-semibold">
-                    {summary ? `${summary.wrenchTimePct.toFixed(1)}%` : "–"}
+                    {summary
+                      ? `${(summary.wrenchTimePct ?? SUMMARY_FALLBACK.wrenchTimePct).toFixed(1)}%`
+                      : "–"}
                   </span>
                   <span className="text-xs text-white/60">labor utilisation</span>
                 </div>
@@ -1474,7 +1484,7 @@ export default function Dashboard() {
                     <p className="text-xs uppercase tracking-widest text-white/60">PM completion</p>
                     <div className="mt-3 flex items-baseline gap-2">
                       <span className="text-2xl font-semibold">
-                        {pmTotals ? `${pmTotals.completionRate.toFixed(1)}%` : "–"}
+                        {pmTotals ? `${(pmTotals.completionRate ?? 0).toFixed(1)}%` : "–"}
                       </span>
                       <span className="text-xs text-white/60">last 6 months</span>
                     </div>

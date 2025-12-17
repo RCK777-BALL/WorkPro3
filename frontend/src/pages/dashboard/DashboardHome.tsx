@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 import http from "@/lib/http";
 import { useToast } from "@/context/ToastContext";
 import RecentActivity from "@/components/dashboard/RecentActivity";
-import type { AuditLog, AuditLogPage } from "@/features/audit";
+import type { AuditLog } from "@/features/audit";
 import EmailPreferencesCard from "@/components/dashboard/EmailPreferencesCard";
 import { Sparkline } from "@/components/charts/Sparkline";
 import {
@@ -41,6 +41,16 @@ type RecentWorkOrder = {
   priority: "Low" | "Medium" | "High" | "Critical";
   status: "Open" | "In Progress" | "On Hold" | "Completed";
   updatedAt: string; // ISO
+};
+
+type DashboardActivity = {
+  id: string;
+  type: string;
+  action: string;
+  ref?: string | null;
+  user?: string;
+  time?: string;
+  link?: string | null;
 };
 
 export default function DashboardHome() {
@@ -92,8 +102,26 @@ export default function DashboardHome() {
     try {
       setActivityError(null);
       setActivityLoading(true);
-      const res = await http.get<AuditLogPage>("/audit", { params: { limit: 10 } });
-      setActivityLogs(res.data?.items ?? []);
+      const res = await http.get<DashboardActivity[]>("/dashboard/recent-activity", {
+        params: { limit: 10 },
+      });
+
+      const items: AuditLog[] = Array.isArray(res.data)
+        ? res.data.map((item) => ({
+            _id: item.id,
+            entityType: item.type,
+            entityId: item.ref ?? undefined,
+            entity: item.ref ? { type: item.type, id: item.ref, label: item.ref } : undefined,
+            action: item.action,
+            actor: item.user ? { name: item.user } : undefined,
+            before: null,
+            after: null,
+            diff: null,
+            ts: item.time ?? new Date().toISOString(),
+          }))
+        : [];
+
+      setActivityLogs(items);
     } catch (e) {
       setActivityError("Failed to load activity");
       addToast("Failed to load activity", "error");

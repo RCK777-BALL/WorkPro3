@@ -9,16 +9,23 @@ import UserRoleAssignment from '../models/UserRoleAssignment';
 import permissionsMatrixJson from '../../shared/auth/permissions.json';
 import roleHierarchy from '../../shared/auth/roleHierarchy.json';
 import { ALL_PERMISSIONS, formatPermission, type Permission } from '../shared/permissions';
-import type { PermissionScope, PermissionsMatrix, RoleHierarchy } from '../../shared/types/auth';
+import type {
+  PermissionScope,
+  PermissionsMatrix,
+  RoleHierarchy,
+  RoleHierarchyEntry,
+} from '../../shared/types/auth';
 
 const permissionsMatrix: PermissionsMatrix = permissionsMatrixJson;
+type RoleHierarchyMap = RoleHierarchy & Record<string, RoleHierarchyEntry | undefined>;
+const roleHierarchyMap: RoleHierarchyMap = roleHierarchy;
 
 const normalizePermission = (permission: string): Permission =>
   permission.trim().toLowerCase() as Permission;
 
 const buildRolePermissionMap = (
   matrix: PermissionsMatrix,
-  hierarchy: RoleHierarchy,
+  hierarchy: RoleHierarchyMap,
 ): Map<string, Set<Permission>> => {
   const map = new Map<string, Set<Permission>>();
 
@@ -49,7 +56,9 @@ const buildRolePermissionMap = (
       }
     }
     if (def?.permissions) {
-      def.permissions.map(normalizePermission).forEach((perm) => inherited.add(perm));
+      def.permissions
+        .map(normalizePermission)
+        .forEach((perm: Permission) => inherited.add(perm));
     }
     return inherited;
   };
@@ -63,7 +72,7 @@ const buildRolePermissionMap = (
   return map;
 };
 
-const ROLE_PERMISSION_MAP = buildRolePermissionMap(permissionsMatrix, roleHierarchy);
+const ROLE_PERMISSION_MAP = buildRolePermissionMap(permissionsMatrix, roleHierarchyMap);
 
 const toObjectId = (value: unknown): Types.ObjectId | undefined => {
   if (!value) return undefined;
@@ -155,7 +164,7 @@ export const resolveUserPermissions = async (
   const resolveInherited = (roleName: string, visited: Set<string>) => {
     if (visited.has(roleName)) return;
     visited.add(roleName);
-    const definition = roleHierarchy[roleName];
+    const definition = roleHierarchyMap[roleName];
     const doc = roleByName.get(roleName);
     const inherits = new Set<string>(definition?.inherits ?? []);
     (doc?.inheritsFrom ?? []).forEach((name) => inherits.add(name));

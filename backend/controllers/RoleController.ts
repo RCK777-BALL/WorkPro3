@@ -65,7 +65,7 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
     }
     const rawUserId = (req.user as any)?._id ?? (req.user as any)?.id;
     const auditUserId = rawUserId
-      ? toEntityId(rawUserId as string | Types.ObjectId)
+      ? toObjectId(rawUserId as string | Types.ObjectId)
       : undefined;
 
     const siteId = toObjectId((req.body as { siteId?: string }).siteId ?? req.siteId) ?? null;
@@ -107,7 +107,7 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
 
     const rawUserId = (req.user as any)?._id ?? (req.user as any)?.id;
     const auditUserId = rawUserId
-      ? toEntityId(rawUserId as string | Types.ObjectId)
+      ? toObjectId(rawUserId as string | Types.ObjectId)
       : undefined;
     const { id } = req.params;
     const roleId = toObjectId(id);
@@ -165,7 +165,7 @@ export const deleteRole = async (req: Request, res: Response, next: NextFunction
 
     const rawUserId = (req.user as any)?._id ?? (req.user as any)?.id;
     const auditUserId = rawUserId
-      ? toEntityId(rawUserId as string | Types.ObjectId)
+      ? toObjectId(rawUserId as string | Types.ObjectId)
       : undefined;
     const { id } = req.params;
     const roleId = toObjectId(id);

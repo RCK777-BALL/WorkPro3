@@ -385,7 +385,7 @@ export const scheduleDashboardExportHandler = async (
       return;
     }
     const schedule = scheduleDashboardExport(format, recipients, cron);
-    sendResponse(res, schedule, 201);
+    sendResponse(res, schedule, null, 201);
   } catch (err) {
     next(err);
   }
@@ -455,4 +455,3 @@ export const trendPdf = async (req: Request, res: Response, next: NextFunction):
     next(err);
   }
 };
-

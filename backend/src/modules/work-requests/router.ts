@@ -64,8 +64,8 @@ adminRouter.post(
   convertWorkRequestHandler,
 );
 adminRouter.get('/types', requirePermission('workRequests', 'read'), listRequestTypesHandler);
-adminRouter.post('/types', requirePermission('workRequests', 'update'), createRequestTypeHandler);
-adminRouter.put('/forms/:formSlug', requirePermission('workRequests', 'update'), saveRequestFormHandler);
+adminRouter.post('/types', requirePermission('workRequests', 'convert'), createRequestTypeHandler);
+adminRouter.put('/forms/:formSlug', requirePermission('workRequests', 'convert'), saveRequestFormHandler);
 
 router.use('/public/work-requests', publicRouter);
 router.use('/work-requests', adminRouter);

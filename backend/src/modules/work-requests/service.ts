@@ -165,15 +165,19 @@ const enforceAttachmentRequirements = (
   });
 };
 
-const mapAttachments = (files: Express.Multer.File[], definitions: RequestAttachmentDefinition[]) => {
-  const paths = (files ?? []).map((file) => toRelativePath(file.path));
-  if (!paths.length) return [] as WorkRequestDocument['attachments'];
+const mapAttachments = (
+  files: Express.Multer.File[],
+  definitions: RequestAttachmentDefinition[],
+): Array<{ key: string; files: string[]; paths: string[] }> => {
+  const fileList = files ?? [];
+  const paths = fileList.map((file) => toRelativePath(file.path));
+  if (!paths.length) return [];
   const keys = definitions.length ? definitions.map((definition) => definition.key) : ['upload'];
   return keys.map((key) => ({
     key,
-    files: files.map((file) => file.mimetype ?? file.originalname),
+    files: fileList.map((file) => file.mimetype ?? file.originalname),
     paths,
-  })) as WorkRequestDocument['attachments'];
+  }));
 };
 
 export interface PublicSubmissionResult {
@@ -187,7 +191,7 @@ export const submitPublicRequest = async (
   files: Express.Multer.File[],
 ): Promise<PublicSubmissionResult> => {
   const { siteId, tenantId, requestFormId, requestTypeId, formSchema } = await resolveFormContext(input.formSlug);
-  const requestType = await getRequestType(requestTypeId ?? formSchema?.requestType);
+  const requestType = await getRequestType(requestTypeId);
   const attachmentDefinitions = requestType?.attachments ?? formSchema?.attachments ?? [];
 
   ensureRequiredFields(input as Record<string, unknown>, requestType?.requiredFields ?? []);

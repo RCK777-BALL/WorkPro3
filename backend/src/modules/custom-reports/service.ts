@@ -4,7 +4,7 @@
 
 import PDFDocument from 'pdfkit';
 import { Parser as Json2csvParser } from 'json2csv';
-import type { PipelineStage, FilterQuery, Model as MongooseModel } from 'mongoose';
+import type { AccumulatorOperator, PipelineStage, FilterQuery, Model as MongooseModel } from 'mongoose';
 import { Types } from 'mongoose';
 
 import WorkOrder from '../../../models/WorkOrder';
@@ -367,22 +367,25 @@ const aggregateCustomReport = async (
 
   if (groupBy.length > 0 || resolvedCalculations.length > 0) {
     const groupingFields = groupBy.filter((field) => modelConfig.fields[field]);
-    const groupStage: PipelineStage.Group['$group'] = {
+    type GroupAccumulator = {
+      _id: PipelineStage.Group['$group']['_id'];
+      [key: string]: PipelineStage.Group['$group']['_id'] | AccumulatorOperator;
+    };
+    const groupStage: GroupAccumulator = {
       _id: groupingFields.length
         ? Object.fromEntries(groupingFields.map((field) => [field, `$${modelConfig.fields[field]?.path ?? field}`]))
         : null,
     };
-    const accumulatorStage = groupStage as typeof groupStage & Record<string, PipelineStage.Group['$group'][string]>;
 
     resolvedCalculations.forEach((calc) => {
       const key = calc.as ?? calc.operation;
       if (calc.operation === 'count') {
-        accumulatorStage[key] = { $sum: 1 };
+        groupStage[key] = { $sum: 1 };
       }
       if ((calc.operation === 'sum' || calc.operation === 'avg') && calc.field) {
         const path = modelConfig.fields[calc.field]?.path ?? calc.field;
         const op = calc.operation === 'sum' ? '$sum' : '$avg';
-        accumulatorStage[key] = { [op]: { $ifNull: [`$${path}`, 0] } } as never;
+        groupStage[key] = { [op]: { $ifNull: [`$${path}`, 0] } };
       }
     });
 

@@ -14,7 +14,7 @@ import type {
   ReportTemplateInput,
 } from '../shared/reports';
 
-export interface ReportTemplateDoc extends Document {
+export interface ReportTemplateDoc extends Omit<Document, 'model'> {
   name: string;
   description?: string;
   fields: ReportField[];

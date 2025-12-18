@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import mongoose, { Schema, type Document, type Types } from 'mongoose';
+import mongoose, { Schema, type HydratedDocument, type Types } from 'mongoose';
 import { nanoid } from 'nanoid';
 
 import type {
@@ -12,9 +12,10 @@ import type {
   ReportModel,
   ReportVisibility,
   ReportTemplateInput,
+  ReportCalculation,
 } from '../shared/reports';
 
-export interface ReportTemplateDoc extends Omit<Document, 'model'> {
+export interface ReportTemplate {
   name: string;
   description?: string;
   fields: ReportField[];
@@ -30,6 +31,8 @@ export interface ReportTemplateDoc extends Omit<Document, 'model'> {
   createdAt?: Date;
   updatedAt?: Date;
 }
+
+export type ReportTemplateDoc = HydratedDocument<ReportTemplate>;
 
 const reportFilterSchema = new Schema<ReportFilter>(
   {
@@ -48,7 +51,16 @@ const reportDateRangeSchema = new Schema<ReportDateRange>(
   { _id: false },
 );
 
-const reportTemplateSchema = new Schema<ReportTemplateDoc>(
+const reportCalculationSchema = new Schema<ReportCalculation>(
+  {
+    operation: { type: String, enum: ['count', 'sum', 'avg'], required: true },
+    field: { type: String },
+    as: { type: String },
+  },
+  { _id: false },
+);
+
+const reportTemplateSchema = new Schema<ReportTemplate>(
   {
     name: { type: String, required: true },
     description: { type: String },
@@ -57,7 +69,7 @@ const reportTemplateSchema = new Schema<ReportTemplateDoc>(
     groupBy: { type: [String], default: [] },
     dateRange: { type: reportDateRangeSchema, required: false },
     model: { type: String, default: 'workOrders' },
-    calculations: { type: [Schema.Types.Mixed], default: [] },
+    calculations: { type: [reportCalculationSchema], default: [] },
     visibility: {
       scope: { type: String, enum: ['private', 'tenant', 'roles'], default: 'private' },
       roles: { type: [String], default: [] },
@@ -123,4 +135,4 @@ export const serializeTemplate = (
   return serialized;
 };
 
-export default mongoose.model<ReportTemplateDoc>('ReportTemplate', reportTemplateSchema);
+export default mongoose.model<ReportTemplate>('ReportTemplate', reportTemplateSchema);

@@ -937,104 +937,108 @@ const handlePassportCallback = (
   next: NextFunction,
   provider: string,
 ) => {
+  const processCallback = async (err: Error | null, user: unknown) => {
+    try {
+      if (err || !user) {
+        if (err) {
+          logger.error(`OAuth ${provider} callback error:`, err);
+        }
+        sendResponse(res, null, 'Authentication failed', 400);
+        return;
+      }
+
+      let secret: string;
+      try {
+        secret = getJwtSecret();
+      } catch {
+        sendResponse(res, null, 'Server configuration issue', 500);
+        return;
+      }
+
+      const email = (user as { email?: unknown }).email;
+      assertEmail(email);
+
+      const tenantId = toStringId((user as { tenantId?: unknown }).tenantId);
+      const siteId = toStringId((user as { siteId?: unknown }).siteId);
+      const userId = extractPassportId(user);
+      const roles = extractPassportRoles(user);
+
+      if (!tenantId) {
+        sendResponse(res, null, 'Tenant resolution failed for SSO user', 400);
+        return;
+      }
+
+      const { user: provisionedUser, created } = await provisionUserFromIdentity(
+        {
+          tenantId,
+          email,
+          roles,
+          siteId,
+          name: (user as { name?: string }).name,
+          skipMfa: SECURITY_POLICY.mfa.optionalForSso,
+        },
+        { force: true },
+      );
+
+      if (!provisionedUser.active) {
+        sendResponse(res, null, 'User is disabled', 403);
+        return;
+      }
+
+      const tokenPayload: Record<string, unknown> = {
+        email,
+        tenantId,
+        id: provisionedUser._id.toString(),
+        roles: provisionedUser.roles,
+        siteId: toStringId(provisionedUser.siteId) ?? siteId,
+        tokenVersion: provisionedUser.tokenVersion,
+      };
+
+      const token = jwt.sign(
+        {
+          ...tokenPayload,
+          session: buildSessionBinding(req),
+        },
+        secret,
+        {
+          expiresIn: TOKEN_TTL,
+        },
+      );
+
+      void recordAuthEvent({
+        action: 'sso_login_success',
+        tenantId,
+        user: provisionedUser,
+        details: { provider, email, roles: provisionedUser.roles, created },
+      });
+
+      const stateValue =
+        typeof req.query.state === 'string'
+          ? req.query.state
+          : typeof req.query.redirect === 'string'
+            ? req.query.redirect
+            : undefined;
+      const redirectHint = sanitizeRedirect(stateValue);
+
+      const redirectUrl = buildRedirectUrl(token, {
+        email,
+        tenantId,
+        siteId,
+        roles,
+        userId,
+        redirect: redirectHint,
+      });
+      res.redirect(redirectUrl);
+    } catch (error) {
+      next(error);
+    }
+  };
+
   passport.authenticate(
     provider,
     { session: false },
-    async (err: Error | null, user: unknown) => {
-      try {
-        if (err || !user) {
-          if (err) {
-            logger.error(`OAuth ${provider} callback error:`, err);
-          }
-          sendResponse(res, null, 'Authentication failed', 400);
-          return;
-        }
-
-        let secret: string;
-        try {
-          secret = getJwtSecret();
-        } catch {
-          sendResponse(res, null, 'Server configuration issue', 500);
-          return;
-        }
-
-        const email = (user as { email?: unknown }).email;
-        assertEmail(email);
-
-        const tenantId = toStringId((user as { tenantId?: unknown }).tenantId);
-        const siteId = toStringId((user as { siteId?: unknown }).siteId);
-        const userId = extractPassportId(user);
-        const roles = extractPassportRoles(user);
-
-        if (!tenantId) {
-          sendResponse(res, null, 'Tenant resolution failed for SSO user', 400);
-          return;
-        }
-
-        const { user: provisionedUser, created } = await provisionUserFromIdentity(
-          {
-            tenantId,
-            email,
-            roles,
-            siteId,
-            name: (user as { name?: string }).name,
-            skipMfa: SECURITY_POLICY.mfa.optionalForSso,
-          },
-          { force: true },
-        );
-
-        if (!provisionedUser.active) {
-          sendResponse(res, null, 'User is disabled', 403);
-          return;
-        }
-
-        const tokenPayload: Record<string, unknown> = {
-          email,
-          tenantId,
-          id: provisionedUser._id.toString(),
-          roles: provisionedUser.roles,
-          siteId: toStringId(provisionedUser.siteId) ?? siteId,
-          tokenVersion: provisionedUser.tokenVersion,
-        };
-
-        const token = jwt.sign(
-          {
-            ...tokenPayload,
-            session: buildSessionBinding(req),
-          },
-          secret,
-          {
-            expiresIn: TOKEN_TTL,
-          },
-        );
-
-        void recordAuthEvent({
-          action: 'sso_login_success',
-          tenantId,
-          user: provisionedUser,
-          details: { provider, email, roles: provisionedUser.roles, created },
-        });
-
-        const stateValue =
-          typeof req.query.state === 'string'
-            ? req.query.state
-            : typeof req.query.redirect === 'string'
-              ? req.query.redirect
-              : undefined;
-        const redirectHint = sanitizeRedirect(stateValue);
-
-        const redirectUrl = buildRedirectUrl(token, {
-          email,
-          tenantId,
-          siteId,
-          roles,
-          userId,
-          redirect: redirectHint,
-        });
-        res.redirect(redirectUrl);
-      } catch (error) {
-        next(error);
-      }
+    (err: Error | null, user: unknown) => {
+      void processCallback(err, user);
     },
   )(req, res, next);
 };

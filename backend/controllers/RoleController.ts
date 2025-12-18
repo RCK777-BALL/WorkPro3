@@ -6,6 +6,7 @@ import { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
 
 import Role from '../models/Role';
+import type { PermissionChangeActor } from '../models/PermissionChangeLog';
 import { writeAuditLog, sendResponse, toObjectId, toEntityId } from '../utils';
 import { recordPermissionChange } from '../services/permissionAuditService';
 
@@ -67,7 +68,9 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
     const auditUserId = rawUserId
       ? toObjectId(rawUserId as string | Types.ObjectId)
       : undefined;
-
+    const permissionActor: PermissionChangeActor | undefined = auditUserId
+      ? { id: auditUserId }
+      : undefined;
     const siteId = toObjectId((req.body as { siteId?: string }).siteId ?? req.siteId) ?? null;
     const role = await Role.create({ ...req.body, tenantId, siteId });
     const entityId = toEntityId(role._id as Types.ObjectId) ?? (role._id as Types.ObjectId);
@@ -89,7 +92,7 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
       roleName: role.name,
       before: [],
       after: role.permissions,
-      actor: auditUserId ? { id: auditUserId } : undefined,
+      actor: permissionActor,
     });
     sendResponse(res, role, null, 201);
   } catch (err) {
@@ -108,6 +111,9 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
     const rawUserId = (req.user as any)?._id ?? (req.user as any)?.id;
     const auditUserId = rawUserId
       ? toObjectId(rawUserId as string | Types.ObjectId)
+      : undefined;
+    const permissionActor: PermissionChangeActor | undefined = auditUserId
+      ? { id: auditUserId }
       : undefined;
     const { id } = req.params;
     const roleId = toObjectId(id);
@@ -147,7 +153,7 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
       roleName: role?.name,
       before: existing.permissions,
       after: role?.permissions,
-      actor: auditUserId ? { id: auditUserId } : undefined,
+      actor: permissionActor,
     });
     sendResponse(res, role);
   } catch (err) {
@@ -166,6 +172,9 @@ export const deleteRole = async (req: Request, res: Response, next: NextFunction
     const rawUserId = (req.user as any)?._id ?? (req.user as any)?.id;
     const auditUserId = rawUserId
       ? toObjectId(rawUserId as string | Types.ObjectId)
+      : undefined;
+    const permissionActor: PermissionChangeActor | undefined = auditUserId
+      ? { id: auditUserId }
       : undefined;
     const { id } = req.params;
     const roleId = toObjectId(id);
@@ -195,7 +204,7 @@ export const deleteRole = async (req: Request, res: Response, next: NextFunction
       roleName: role.name,
       before: role.permissions,
       after: [],
-      actor: auditUserId ? { id: auditUserId } : undefined,
+      actor: permissionActor,
     });
     sendResponse(res, { message: 'Deleted successfully' });
   } catch (err) {

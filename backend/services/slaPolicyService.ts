@@ -14,9 +14,10 @@ const toObjectId = (value: Types.ObjectId | undefined | null) => {
 };
 
 const buildPolicyMatch = (tenantId: Types.ObjectId, siteId?: Types.ObjectId, assetCategory?: string) => {
-  const match: Record<string, unknown> = { tenantId };
-
-  match.$and = [];
+  const match: { tenantId: Types.ObjectId; $and: Array<Record<string, unknown>> } = {
+    tenantId,
+    $and: [],
+  };
   if (siteId) {
     match.$and.push({ $or: [{ siteId }, { siteId: { $exists: false } }, { siteId: null }] });
   } else {

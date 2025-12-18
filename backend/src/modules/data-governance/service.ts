@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Types } from 'mongoose';
+import { Types, type FlattenMaps } from 'mongoose';
 
 import TenantDataPolicy, { type TenantDataPolicyDocument } from '../../../models/TenantDataPolicy';
 import AuditLog from '../../../models/AuditLog';
@@ -63,7 +63,9 @@ const toObjectIdOrThrow = (value: EntityIdLike | undefined, message: string): Ty
   return asObjectId;
 };
 
-const toPolicySnapshot = (policy: TenantDataPolicyDocument | null): PolicySnapshot => {
+type TenantPolicyLean = FlattenMaps<TenantDataPolicyDocument> & { _id: Types.ObjectId };
+
+const toPolicySnapshot = (policy: TenantPolicyLean | TenantDataPolicyDocument | null): PolicySnapshot => {
   if (!policy) {
     return {
       residency: { region: DEFAULT_RESIDENCY },
@@ -90,7 +92,7 @@ export const getTenantDataPolicy = async (tenantId: EntityIdLike): Promise<Polic
     throw new PartitionViolationError('Tenant context is required');
   }
   const doc = await TenantDataPolicy.findOne({ tenantId: tenantObjectId }).lean();
-  return toPolicySnapshot(doc as TenantDataPolicyDocument | null);
+  return toPolicySnapshot(doc);
 };
 
 export const updateTenantResidencyAndRetention = async (

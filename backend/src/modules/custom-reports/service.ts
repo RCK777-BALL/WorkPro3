@@ -367,21 +367,22 @@ const aggregateCustomReport = async (
 
   if (groupBy.length > 0 || resolvedCalculations.length > 0) {
     const groupingFields = groupBy.filter((field) => modelConfig.fields[field]);
-    const groupStage: PipelineStage.Group['$group'] & Record<string, PipelineStage.Group['$group'][string]> = {
+    const groupStage: PipelineStage.Group['$group'] = {
       _id: groupingFields.length
         ? Object.fromEntries(groupingFields.map((field) => [field, `$${modelConfig.fields[field]?.path ?? field}`]))
         : null,
     };
+    const accumulatorStage = groupStage as typeof groupStage & Record<string, PipelineStage.Group['$group'][string]>;
 
     resolvedCalculations.forEach((calc) => {
       const key = calc.as ?? calc.operation;
       if (calc.operation === 'count') {
-        groupStage[key] = { $sum: 1 };
+        accumulatorStage[key] = { $sum: 1 };
       }
       if ((calc.operation === 'sum' || calc.operation === 'avg') && calc.field) {
         const path = modelConfig.fields[calc.field]?.path ?? calc.field;
         const op = calc.operation === 'sum' ? '$sum' : '$avg';
-        groupStage[key] = { [op]: { $ifNull: [`$${path}`, 0] } } as never;
+        accumulatorStage[key] = { [op]: { $ifNull: [`$${path}`, 0] } } as never;
       }
     });
 

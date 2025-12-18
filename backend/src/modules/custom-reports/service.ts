@@ -334,11 +334,11 @@ const buildGroupedRows = (
   calculations: ReportCalculation[],
 ): Array<Record<string, string | number | null>> => {
   return results.map((row) => {
-    const base = groupBy.length
-      ? groupBy.reduce(
-          (acc, field) => ({ ...acc, [field]: formatRowValue((row._id as Record<string, unknown>)[field]) }),
-          {},
-        )
+    const base: Record<string, string | number | null> = groupBy.length
+      ? groupBy.reduce<Record<string, string | number | null>>((acc, field) => {
+          acc[field] = formatRowValue((row._id as Record<string, unknown>)[field]);
+          return acc;
+        }, {})
       : {};
 
     calculations.forEach((calc) => {
@@ -367,7 +367,7 @@ const aggregateCustomReport = async (
 
   if (groupBy.length > 0 || resolvedCalculations.length > 0) {
     const groupingFields = groupBy.filter((field) => modelConfig.fields[field]);
-    const groupStage: PipelineStage.Group['$group'] = {
+    const groupStage: PipelineStage.Group['$group'] & Record<string, PipelineStage.Group['$group'][string]> = {
       _id: groupingFields.length
         ? Object.fromEntries(groupingFields.map((field) => [field, `$${modelConfig.fields[field]?.path ?? field}`]))
         : null,

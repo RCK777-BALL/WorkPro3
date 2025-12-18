@@ -3,7 +3,7 @@
  */
 
 import permissionsMatrix from '../auth/permissions.json';
-import roleHierarchy from '../auth/roleHierarchy.json';
+import roleHierarchyJson from '../auth/roleHierarchy.json';
 
 export const AUTH_ROLES = [
   'global_admin',
@@ -40,8 +40,14 @@ export type PermissionsMatrix = typeof permissionsMatrix;
 export type PermissionScope = keyof PermissionsMatrix;
 export type PermissionAction<S extends PermissionScope = PermissionScope> = keyof PermissionsMatrix[S];
 
-export type RoleHierarchy = typeof roleHierarchy;
-export type RoleHierarchyEntry = RoleHierarchy[keyof RoleHierarchy];
+export interface RoleHierarchyEntry {
+  inherits?: string[];
+  permissions?: string[];
+  description?: string;
+}
+
+export type RoleHierarchy = Record<string, RoleHierarchyEntry>;
+export const roleHierarchy: RoleHierarchy = roleHierarchyJson;
 
 export interface PermissionAssignment {
   scope: PermissionScope;

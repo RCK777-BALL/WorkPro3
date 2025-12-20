@@ -32,7 +32,7 @@ export interface ReportTemplate {
   updatedAt?: Date;
 }
 
-export type ReportTemplateDoc = HydratedDocument<ReportTemplate>;
+export type ReportTemplateDoc = Omit<HydratedDocument<ReportTemplate>, 'model'> & { model: ReportModel };
 
 const reportFilterSchema = new Schema<ReportFilter>(
   {

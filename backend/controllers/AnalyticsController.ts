@@ -385,7 +385,7 @@ export const scheduleDashboardExportHandler = async (
       return;
     }
     const schedule = scheduleDashboardExport(format, recipients, cron);
-    sendResponse(res, schedule, null, 201);
+    res.status(201).json({ success: true, data: schedule });
   } catch (err) {
     next(err);
   }

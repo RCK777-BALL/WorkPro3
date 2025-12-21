@@ -910,11 +910,16 @@ export async function getDashboardKpiSummary(
       }
     }
     downtimeHours += wo.downtime ?? 0;
-    const partsCost = (wo.partsUsed ?? []).reduce((sum, part) => {
-      const qty = typeof part.qty === 'number' ? part.qty : 1;
-      const cost = typeof part.cost === 'number' ? part.cost : 0;
-      return sum + cost * qty;
-    }, 0);
+    const partsCost =
+      typeof wo.partsCostTotal === 'number'
+        ? wo.partsCostTotal
+        : typeof wo.partsCost === 'number'
+          ? wo.partsCost
+          : (wo.partsUsed ?? []).reduce((sum, part) => {
+              const qty = typeof part.qty === 'number' ? part.qty : 1;
+              const cost = typeof part.cost === 'number' ? part.cost : 0;
+              return sum + cost * qty;
+            }, 0);
     maintenanceCost += partsCost;
     partsSpend += partsCost;
 

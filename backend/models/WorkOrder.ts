@@ -127,6 +127,7 @@ export interface WorkOrder {
   downtimeMinutes?: number;
   laborHours?: number;
   laborCost?: number;
+  partsCostTotal?: number;
   partsCost?: number;
   miscCost?: number;
   miscellaneousCost?: number;
@@ -348,6 +349,7 @@ const workOrderSchema = new Schema<WorkOrder>(
     downtimeMinutes: { type: Number, default: 0 },
     laborHours: { type: Number, default: 0 },
     laborCost: { type: Number, default: 0 },
+    partsCostTotal: { type: Number, default: 0 },
     partsCost: { type: Number, default: 0 },
     miscCost: { type: Number, default: 0 },
     miscellaneousCost: { type: Number, default: 0 },
@@ -394,12 +396,14 @@ workOrderSchema.pre('save', function handleCosts(next) {
   if (
     this.isModified('laborCost') ||
     this.isModified('partsCost') ||
+    this.isModified('partsCostTotal') ||
     this.isModified('miscCost') ||
     this.isModified('miscellaneousCost') ||
     this.isModified('laborHours')
   ) {
     const labor = this.laborCost ?? 0;
-    const parts = this.partsCost ?? 0;
+    const parts = this.partsCostTotal ?? this.partsCost ?? 0;
+    this.partsCost = parts;
     const misc = this.miscellaneousCost ?? this.miscCost ?? 0;
     this.miscCost = this.miscCost ?? this.miscellaneousCost ?? 0;
     this.totalCost = labor + parts + misc;

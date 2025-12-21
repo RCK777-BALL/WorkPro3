@@ -59,6 +59,7 @@ export interface WorkOrder {
   downtimeMinutes?: number | undefined;
   laborHours?: number | undefined;
   laborCost?: number | undefined;
+  partsCostTotal?: number | undefined;
   partsCost?: number | undefined;
   miscCost?: number | undefined;
   totalCost?: number | undefined;

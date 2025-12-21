@@ -31,6 +31,9 @@ import Site from './models/Site';
 import Plant from './models/Plant';
 import SensorReading from './models/SensorReading';
 import ProductionRecord from './models/ProductionRecord';
+import WorkRequest from './models/WorkRequest';
+import RequestForm from './models/RequestForm';
+import RequestType from './models/RequestType';
 
 // Tenant id used for all seeded records
 const tenantId = process.env.SEED_TENANT_ID
@@ -106,6 +109,9 @@ mongoose.connect(mongoUri).then(async () => {
   await ProductionRecord.deleteMany({});
   await SensorReading.deleteMany({});
   await Notification.deleteMany({});
+  await WorkRequest.deleteMany({});
+  await RequestType.deleteMany({});
+  await RequestForm.deleteMany({});
   await Tenant.deleteMany({});
   await AuditLog.deleteMany({});
 
@@ -369,6 +375,94 @@ mongoose.connect(mongoUri).then(async () => {
       timestamp: new Date(day2.getTime() + 12 * 60 * 60 * 1000),
     },
   ]);
+
+  const requestType = await RequestType.create({
+    name: 'Maintenance Request',
+    slug: 'maintenance-request',
+    category: 'maintenance',
+    description: 'Default maintenance request type',
+    requiredFields: ['title', 'requesterName'],
+    fields: [
+      { key: 'title', label: 'Title', required: true },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'priority', label: 'Priority', type: 'select', options: ['low', 'medium', 'high'] },
+    ],
+    attachments: [],
+    defaultPriority: 'medium',
+    tenantId,
+    siteId: mainSite._id,
+  });
+
+  const requestForm = await RequestForm.create({
+    slug: 'default-maintenance-request',
+    name: 'Default Maintenance Request',
+    description: 'Capture maintenance requests from operators',
+    requestType: requestType._id,
+    schema: { fields: requestType.fields },
+    fields: requestType.fields,
+    attachments: [],
+    tenantId,
+    siteId: mainSite._id,
+  });
+
+  await WorkRequest.create({
+    token: 'REQ-SUBMITTED-001',
+    title: 'Noise from conveyor belt',
+    description: 'Operators reported unusual noise coming from the conveyor belt.',
+    requesterName: 'Line Operator',
+    requesterEmail: 'operator@example.com',
+    priority: 'high',
+    status: 'reviewing',
+    siteId: mainSite._id,
+    tenantId,
+    requestForm: requestForm._id,
+    requestType: requestType._id,
+    category: requestType.category,
+    location: asset.location,
+    assetTag: asset.name,
+    photos: [],
+  });
+
+  const convertedRequest = await WorkRequest.create({
+    token: 'REQ-CONVERTED-001',
+    title: 'Replace worn belt section',
+    description: 'A section of the conveyor belt is fraying and needs replacement.',
+    requesterName: 'Shift Supervisor',
+    requesterEmail: 'supervisor@example.com',
+    priority: 'medium',
+    status: 'reviewing',
+    siteId: mainSite._id,
+    tenantId,
+    requestForm: requestForm._id,
+    requestType: requestType._id,
+    category: requestType.category,
+    location: asset.location,
+    assetTag: asset.name,
+    photos: [],
+  });
+
+  const convertedWorkOrder = await WorkOrder.create({
+    title: convertedRequest.title,
+    asset: asset._id,
+    description: convertedRequest.description,
+    priority: 'high',
+    status: 'open',
+    assignedTo: tech._id,
+    teamMemberName: 'Tech',
+    line: lineId,
+    station: stationId,
+    department: dept._id,
+    importance: 'medium',
+    dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+    tenantId,
+    siteId: mainSite._id,
+    requestId: convertedRequest._id,
+  });
+
+  convertedRequest.status = 'converted';
+  convertedRequest.workOrder = convertedWorkOrder._id;
+  convertedRequest.decision = { convertedWorkOrderId: convertedWorkOrder._id };
+  await convertedRequest.save();
 
   // Seed sample Audit Logs
   await AuditLog.insertMany([

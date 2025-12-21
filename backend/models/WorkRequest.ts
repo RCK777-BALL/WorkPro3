@@ -61,6 +61,9 @@ export interface WorkRequestDocument extends Document {
     destinationId?: Types.ObjectId;
     queue?: string;
   };
+  decision?: {
+    convertedWorkOrderId?: Types.ObjectId;
+  };
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -151,6 +154,9 @@ const workRequestSchema = new Schema<WorkRequestDocument>(
       destinationType: { type: String, enum: ['team', 'user', 'queue'] },
       destinationId: { type: Schema.Types.ObjectId },
       queue: { type: String },
+    },
+    decision: {
+      convertedWorkOrderId: { type: Schema.Types.ObjectId, ref: 'WorkOrder' },
     },
   },
   { timestamps: true },

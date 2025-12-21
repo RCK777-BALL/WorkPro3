@@ -7,6 +7,7 @@ import { Types } from 'mongoose';
 
 import { requireAuth } from '../middleware/authMiddleware';
 import tenantScope from '../middleware/tenantScope';
+import { requireRoles } from '../middleware/requireRoles';
 import Location from '../models/Location';
 import Part from '../models/Part';
 import PurchaseOrder from '../models/PurchaseOrder';
@@ -17,6 +18,7 @@ import { writeAuditLog } from '../utils/audit';
 import sendResponse from '../utils/sendResponse';
 
 const router = Router();
+const INVENTORY_ACCESS_ROLES = ['inventory_controller', 'manager', 'admin'] as const;
 
 const toObjectId = (value: unknown): Types.ObjectId | undefined => {
   if (typeof value !== 'string') return undefined;
@@ -54,6 +56,7 @@ const mapPart = (doc: any) => ({
 
 router.use(requireAuth);
 router.use(tenantScope);
+router.use(requireRoles([...INVENTORY_ACCESS_ROLES]));
 
 router.get('/parts', async (req, res, next) => {
   try {

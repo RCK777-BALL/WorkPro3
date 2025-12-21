@@ -224,12 +224,14 @@ export const submitPublicRequest = async (
     requesterPhone: input.requesterPhone,
     location: input.location,
     assetTag: input.assetTag,
+    asset: toObjectId(input.asset),
+    tags: input.tags,
     priority,
     siteId,
     tenantId,
     requestForm: requestFormId,
     requestType: requestType?._id,
-    category: requestType?.category,
+    category: input.category ?? requestType?.category,
     photos: photoPaths,
     attachments,
     tags: input.tags ?? [],
@@ -271,6 +273,8 @@ export const submitPublicRequest = async (
       description: input.description,
       priority,
       location: input.location,
+      category: input.category ?? requestType?.category,
+      tags: input.tags,
     },
   });
   await notifyDispatchers(
@@ -296,6 +300,8 @@ const describeRequestStatus = (status: WorkRequestStatus) => {
       return 'Under review by the maintenance team';
     case 'converted':
       return 'Converted to a work order for technicians to handle';
+    case 'rejected':
+      return 'Rejected and will not be converted';
     case 'closed':
     default:
       return 'Closed';
@@ -448,6 +454,42 @@ export const getWorkRequestSummary = async (ctx: WorkRequestContext) => {
     statusCounts,
     recent,
   };
+};
+
+export const updateWorkRequestStatus = async (
+  ctx: WorkRequestContext,
+  requestId: string,
+  input: WorkRequestStatusUpdateInput,
+  actorId?: string,
+) => {
+  const request = await WorkRequest.findOne({ ...buildTenantFilter(ctx), _id: toObjectId(requestId) });
+  if (!request) {
+    throw new WorkRequestError('Request not found', 404);
+  }
+  if (input.status === 'rejected' && !input.reason) {
+    throw new WorkRequestError('Please include a reason when rejecting a request.', 400);
+  }
+  const before = request.toObject();
+  request.status = input.status;
+  request.rejectionReason = input.status === 'rejected' ? input.reason : undefined;
+  request.triagedAt = new Date();
+  request.triagedBy = toObjectId(actorId);
+  if (input.note) {
+    request.set('triageNote', input.note, { strict: false });
+  }
+  await request.save();
+  await writeAuditLog({
+    tenantId: ctx.tenantId,
+    siteId: ctx.siteId,
+    userId: actorId,
+    action: 'update',
+    entityType: 'WorkRequest',
+    entityId: request._id,
+    entityLabel: request.title,
+    before,
+    after: request.toObject(),
+  });
+  return request.toObject();
 };
 
 export const convertWorkRequestToWorkOrder = async (

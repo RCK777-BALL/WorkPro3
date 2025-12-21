@@ -23,6 +23,7 @@ const workRequestStatuses = [
   'reviewing',
   'converted',
   'closed',
+  'rejected',
 ] as const satisfies readonly [WorkRequestStatus, ...WorkRequestStatus[]];
 
 const statusUpdateSchema = z.object({

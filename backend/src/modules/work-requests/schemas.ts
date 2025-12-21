@@ -21,6 +21,20 @@ export const publicWorkRequestSchema = z.object({
   requesterPhone: optionalString,
   location: optionalString,
   assetTag: optionalString,
+  asset: optionalString,
+  category: optionalString,
+  tags: z
+    .preprocess(
+      (value) => {
+        if (Array.isArray(value)) return value;
+        if (typeof value === 'string') return [value];
+        return [];
+      },
+      z.array(z.string().trim().min(2)),
+    )
+    .max(6, 'Please limit to 6 tags')
+    .optional()
+    .transform((list) => (list?.length ? list : undefined)),
   priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
   tags: z
     .array(z.string().trim())

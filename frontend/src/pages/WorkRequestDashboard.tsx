@@ -14,6 +14,7 @@ const statusLabels: Record<WorkRequestStatus, string> = {
   reviewing: 'Reviewing',
   converted: 'Converted',
   closed: 'Closed',
+  rejected: 'Rejected',
 };
 
 const statusColors: Record<WorkRequestStatus, string> = {
@@ -21,6 +22,7 @@ const statusColors: Record<WorkRequestStatus, string> = {
   reviewing: 'bg-amber-100 text-amber-800',
   converted: 'bg-emerald-100 text-emerald-800',
   closed: 'bg-gray-200 text-gray-800',
+  rejected: 'bg-rose-100 text-rose-800',
 };
 
 const priorityColors: Record<WorkRequestItem['priority'], string> = {
@@ -117,11 +119,12 @@ export default function WorkRequestDashboard() {
       {error && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
       <section>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <SummaryCard title="Total" value={summary?.total ?? 0} subtitle="All recorded requests" />
           <SummaryCard title="Open" value={summary?.open ?? 0} subtitle="Awaiting review" />
           <SummaryCard title="Converted" value={summary?.statusCounts.converted ?? 0} subtitle="Promoted to work orders" />
           <SummaryCard title="Closed" value={summary?.statusCounts.closed ?? 0} subtitle="Marked as complete" />
+          <SummaryCard title="Rejected" value={summary?.statusCounts.rejected ?? 0} subtitle="Declined during triage" />
         </div>
       </section>
 

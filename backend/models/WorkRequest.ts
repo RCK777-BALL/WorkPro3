@@ -25,8 +25,13 @@ export interface WorkRequestDocument extends Document {
   requesterPhone?: string;
   location?: string;
   assetTag?: string;
+  asset?: Types.ObjectId;
+  tags?: Types.Array<string>;
   priority: 'low' | 'medium' | 'high' | 'critical';
   status: WorkRequestStatus;
+  rejectionReason?: string;
+  triagedBy?: Types.ObjectId;
+  triagedAt?: Date;
   approvalStatus?: 'draft' | 'pending' | 'approved' | 'rejected';
   approvalSteps?: Types.Array<{
     step: number;
@@ -109,6 +114,9 @@ const workRequestSchema = new Schema<WorkRequestDocument>(
       default: 'new',
       index: true,
     },
+    rejectionReason: { type: String },
+    triagedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    triagedAt: { type: Date },
     approvalStatus: {
       type: String,
       enum: ['draft', 'pending', 'approved', 'rejected'],
@@ -155,6 +163,8 @@ const workRequestSchema = new Schema<WorkRequestDocument>(
       default: [],
     },
     photos: [{ type: String }],
+    tags: [{ type: String }],
+    asset: { type: Schema.Types.ObjectId, ref: 'Asset' },
     siteId: { type: Schema.Types.ObjectId, ref: 'Site', required: true, index: true },
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
     requestForm: { type: Schema.Types.ObjectId, ref: 'RequestForm', required: true, index: true },

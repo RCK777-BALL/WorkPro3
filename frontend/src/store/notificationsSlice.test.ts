@@ -12,7 +12,16 @@ vi.mock('@/api/alerts');
 vi.mock('@/api/inventory');
 
 const mockLowStock = [
-  { partId: 'p1', partName: 'Bolt', quantity: 1, reorderPoint: 3, assetNames: [], pmTemplateTitles: [] },
+  {
+    id: 'a1',
+    partId: 'p1',
+    partName: 'Bolt',
+    quantity: 1,
+    reorderPoint: 3,
+    status: 'open',
+    assetNames: [],
+    pmTemplateTitles: [],
+  },
 ];
 
 describe('notificationsSlice', () => {
@@ -25,7 +34,14 @@ describe('notificationsSlice', () => {
   });
 
   it('loads low stock alerts using configured thresholds', async () => {
-    vi.mocked(fetchInventoryAlerts).mockResolvedValue(mockLowStock as any);
+    vi.mocked(fetchInventoryAlerts).mockResolvedValue({
+      items: mockLowStock as any,
+      total: 1,
+      page: 1,
+      pageSize: 10,
+      totalPages: 1,
+      openCount: 1,
+    } as any);
 
     await useNotificationsStore.getState().fetchLowStock();
 
@@ -41,7 +57,7 @@ describe('notificationsSlice', () => {
     useNotificationsStore.setState({
       lowStockAlerts: [{ id: 'p1', partId: 'p1', partName: 'Bolt', quantity: 1, reorderPoint: 3, assetNames: [], pmTemplateTitles: [] } as any],
     });
-    vi.mocked(acknowledgeAlert).mockResolvedValue({ success: true } as any);
+    vi.mocked(acknowledgeAlert).mockResolvedValue({ ...mockLowStock[0], status: 'approved' } as any);
 
     await useNotificationsStore.getState().acknowledge('p1');
 
@@ -51,7 +67,16 @@ describe('notificationsSlice', () => {
   it('reverts clear when API fails', async () => {
     useNotificationsStore.setState({
       lowStockAlerts: [
-        { id: 'p1', partId: 'p1', partName: 'Bolt', quantity: 1, reorderPoint: 3, assetNames: [], pmTemplateTitles: [] } as any,
+        {
+          id: 'p1',
+          partId: 'p1',
+          status: 'open',
+          partName: 'Bolt',
+          quantity: 1,
+          reorderPoint: 3,
+          assetNames: [],
+          pmTemplateTitles: [],
+        } as any,
       ],
     });
     vi.mocked(clearAlert).mockRejectedValue(new Error('nope'));

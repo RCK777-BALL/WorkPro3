@@ -128,7 +128,10 @@ export interface PurchaseOrder extends TenantScoped {
   items: PurchaseOrderItem[];
 }
 
+export type ReorderAlertStatus = 'open' | 'approved' | 'skipped' | 'resolved';
+
 export interface InventoryAlert extends TenantScoped {
+  id: string;
   partId: string;
   partName: string;
   quantity: number;
@@ -138,6 +141,8 @@ export interface InventoryAlert extends TenantScoped {
   assetNames: string[];
   pmTemplateTitles: string[];
   lastTriggeredAt?: string | undefined;
+  status: ReorderAlertStatus;
+  locationId?: string | undefined;
 }
 
 export interface InventoryLocation extends TenantScoped {

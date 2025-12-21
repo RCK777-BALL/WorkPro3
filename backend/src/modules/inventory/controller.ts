@@ -31,9 +31,11 @@ import {
   InventoryError,
   type InventoryContext,
   type PartUsageFilters,
+  type ReorderAlertFilters,
   type ReorderSuggestionFilters,
   type PurchaseOrderExportFormat,
   getPartUsageReport,
+  transitionAlertStatus,
 } from './service';
 import {
   locationInputSchema,
@@ -193,7 +195,33 @@ export const saveVendorHandler: AuthedRequestHandler<{ vendorId?: string }> = as
 export const listAlertsHandler: AuthedRequestHandler = async (req, res, next) => {
   if (!ensureTenant(req, res)) return;
   try {
-    const data = await listAlerts(buildContext(req));
+    const filters: ReorderAlertFilters = {
+      status: typeof req.query.status === 'string' ? (req.query.status as any) : undefined,
+      page: req.query.page ? Number(req.query.page) : undefined,
+      pageSize: req.query.pageSize ? Number(req.query.pageSize) : undefined,
+      siteId: typeof req.query.siteId === 'string' ? req.query.siteId : undefined,
+      partId: typeof req.query.partId === 'string' ? req.query.partId : undefined,
+    };
+    const data = await listAlerts(buildContext(req), filters);
+    send(res, data);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const transitionAlertHandler: AuthedRequestHandler<{ alertId: string }> = async (
+  req,
+  res,
+  next,
+) => {
+  if (!ensureTenant(req, res)) return;
+  const action = typeof req.body?.action === 'string' ? req.body.action : undefined;
+  if (!action || !['approve', 'skip', 'resolve'].includes(action)) {
+    fail(res, 'Invalid alert action. Expected approve, skip, or resolve.', 400);
+    return;
+  }
+  try {
+    const data = await transitionAlertStatus(buildContext(req), req.params.alertId, action as any);
     send(res, data);
   } catch (err) {
     handleError(err, res, next);

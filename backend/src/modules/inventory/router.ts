@@ -13,6 +13,7 @@ import {
   listVendorsHandler,
   saveVendorHandler,
   listAlertsHandler,
+  transitionAlertHandler,
   createPurchaseOrderHandler,
   listPurchaseOrdersHandler,
   exportPurchaseOrdersHandler,
@@ -46,6 +47,7 @@ router.post('/vendors', requirePermission('inventory', 'manage'), saveVendorHand
 router.put('/vendors/:vendorId', requirePermission('inventory', 'manage'), saveVendorHandler);
 
 router.get('/alerts', requirePermission('inventory', 'read'), listAlertsHandler);
+router.post('/alerts/:alertId/status', requirePermission('inventory', 'manage'), transitionAlertHandler);
 router.get(
   '/reorder-suggestions',
   requirePermission('inventory', 'read'),

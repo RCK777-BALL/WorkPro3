@@ -38,7 +38,7 @@ const Inventory = () => {
   const { can } = usePermissions();
 
   const partsCount = partsQuery.data?.total ?? 0;
-  const lowStockCount = alertsQuery.data?.length ?? 0;
+  const lowStockCount = alertsQuery.data?.openCount ?? alertsQuery.data?.items?.length ?? 0;
   const linkedAssets = (partsQuery.data?.items ?? []).reduce(
     (sum, part) => sum + (part.assets?.length ?? 0),
     0,

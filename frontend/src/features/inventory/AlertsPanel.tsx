@@ -8,7 +8,8 @@ import { useAlertsQuery } from './hooks';
 
 const AlertsPanel = () => {
   const { data, isLoading, error } = useAlertsQuery();
-  const alerts = data ?? [];
+  const alerts = data?.items ?? [];
+  const alertCount = data?.openCount ?? alerts.length;
   const thresholdForAlert = (alert: (typeof alerts)[number]) =>
     alert.minLevel && alert.minLevel > 0 ? alert.minLevel : alert.reorderPoint;
 
@@ -21,7 +22,7 @@ const AlertsPanel = () => {
         </div>
         <span className="inline-flex items-center gap-1 rounded-full bg-warning-50 px-3 py-1 text-xs font-semibold text-warning-700">
           <AlertTriangle size={14} />
-          {alerts.length}
+          {alertCount}
         </span>
       </div>
       {isLoading && <p className="py-4 text-sm text-neutral-500">Checking current inventory…</p>}
@@ -34,7 +35,7 @@ const AlertsPanel = () => {
       {!isLoading && !error && alerts.length > 0 && (
         <ul className="divide-y divide-neutral-100">
           {alerts.map((alert) => (
-            <li key={alert.partId} className="py-3 text-sm">
+            <li key={alert.id} className="py-3 text-sm">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium text-neutral-900">{alert.partName}</p>

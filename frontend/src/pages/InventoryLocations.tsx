@@ -351,6 +351,18 @@ export default function InventoryLocations() {
   const stock = stockQuery.data ?? [];
   const history = historyQuery.data ?? [];
 
+  const locationTree = useMemo(() => {
+    const tree: Record<string, Record<string, InventoryLocation[]>> = {};
+    locations.forEach((loc) => {
+      const storeKey = loc.store || 'Default';
+      const roomKey = loc.room || 'General';
+      if (!tree[storeKey]) tree[storeKey] = {};
+      if (!tree[storeKey][roomKey]) tree[storeKey][roomKey] = [];
+      tree[storeKey][roomKey].push(loc);
+    });
+    return tree;
+  }, [locations]);
+
   const grouped = useMemo(
     () =>
       locations.reduce<Record<string, InventoryLocation[]>>((acc, loc) => {
@@ -401,6 +413,59 @@ export default function InventoryLocations() {
           Organize stock across stores, rooms, and bins with a full audit history of adjustments.
         </p>
       </header>
+
+      <Card>
+        <Card.Header>
+          <Card.Title>Location tree</Card.Title>
+          <Card.Description>Browse nested stores, rooms, and bins and see assigned parts.</Card.Description>
+        </Card.Header>
+        <Card.Content className="space-y-3">
+          {Object.entries(locationTree).map(([store, rooms]) => (
+            <div key={store} className="space-y-2 rounded-md border border-neutral-200 p-3">
+              <div className="flex items-center justify-between">
+                <p className="font-semibold text-neutral-900">{store}</p>
+                <span className="text-xs text-neutral-500">{Object.values(rooms).flat().length} locations</span>
+              </div>
+              <div className="space-y-2 pl-3">
+                {Object.entries(rooms).map(([room, bins]) => (
+                  <div key={room} className="space-y-1">
+                    <p className="text-sm font-medium text-neutral-800">Room: {room}</p>
+                    <div className="space-y-2 pl-4">
+                      {bins.map((loc) => {
+                        const items = stock.filter((item) => item.locationId === loc.id);
+                        return (
+                          <div key={loc.id} className="rounded border border-neutral-200 bg-neutral-50 p-2">
+                            <div className="flex items-center justify-between text-sm text-neutral-800">
+                              <span>{formatInventoryLocation(loc)}</span>
+                              <button className="text-xs text-blue-600" onClick={() => setSelected(loc)}>
+                                Edit
+                              </button>
+                            </div>
+                            <div className="pl-2 text-xs text-neutral-600">
+                              {items.length ? (
+                                <ul className="list-inside list-disc">
+                                  {items.map((item) => (
+                                    <li key={item.id}>
+                                      {item.part?.name ?? item.partId} — {item.quantity}
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <p>No parts assigned</p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+          {!locations.length && <p className="text-sm text-neutral-500">No locations defined yet.</p>}
+        </Card.Content>
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-[2fr,1fr]">
         <Card>

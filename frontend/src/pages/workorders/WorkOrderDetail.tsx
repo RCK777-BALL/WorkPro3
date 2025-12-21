@@ -9,6 +9,12 @@ import http from '@/lib/http';
 import type { WorkOrder } from '@/types';
 import CommentThread from '@/components/comments/CommentThread';
 import Badge from '@/components/common/Badge';
+import Card from '@/components/common/Card';
+import Button from '@/components/common/Button';
+import Input from '@/components/common/Input';
+import Modal from '@/components/common/Modal';
+import { usePartsQuery, useStockItemsQuery } from '@/features/inventory';
+import { useToast } from '@/context/ToastContext';
 
 interface WorkOrderResponse extends Partial<WorkOrder> {
   _id?: string;
@@ -36,6 +42,16 @@ const WorkOrderDetail = () => {
   const [workOrder, setWorkOrder] = useState<WorkOrder | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { addToast } = useToast();
+
+  const partsQuery = usePartsQuery({ pageSize: 50 });
+  const stockQuery = useStockItemsQuery();
+  const [partLines, setPartLines] = useState<
+    { partId: string; reserved: number; issued: number; name: string }
+  >([]);
+  const [actionModal, setActionModal] = useState<
+    { type: 'reserve' | 'issue' | 'return' | 'unreserve'; partId: string; quantity: number } | null
+  >(null);
 
   useEffect(() => {
     const load = async () => {
@@ -56,6 +72,64 @@ const WorkOrderDetail = () => {
 
     void load();
   }, [id]);
+
+  const availableStock = (partId: string) =>
+    (stockQuery.data ?? []).filter((item) => item.partId === partId).reduce((sum, item) => sum + item.quantity, 0);
+
+  const openAction = (type: 'reserve' | 'issue' | 'return' | 'unreserve', partId: string) => {
+    setActionModal({ type, partId, quantity: 1 });
+  };
+
+  const applyAction = () => {
+    if (!actionModal) return;
+    const { partId, type, quantity } = actionModal;
+    const line = partLines.find((entry) => entry.partId === partId) ?? {
+      partId,
+      reserved: 0,
+      issued: 0,
+      name: partsQuery.data?.items.find((p) => p.id === partId)?.name ?? partId,
+    };
+    const stock = availableStock(partId);
+    const updated = { ...line };
+
+    if (quantity <= 0) {
+      addToast('Quantity must be greater than zero', 'error');
+      return;
+    }
+
+    if (type === 'reserve') {
+      const availableForReserve = stock - (line.reserved + line.issued);
+      if (quantity > availableForReserve) {
+        addToast('Cannot reserve more than available stock', 'error');
+        return;
+      }
+      updated.reserved += quantity;
+    }
+
+    if (type === 'issue') {
+      const availableToIssue = stock - line.issued;
+      if (quantity > availableToIssue) {
+        addToast('Cannot issue more than available stock', 'error');
+        return;
+      }
+      updated.issued += quantity;
+      updated.reserved = Math.max(0, updated.reserved - quantity);
+    }
+
+    if (type === 'return') {
+      updated.issued = Math.max(0, updated.issued - quantity);
+    }
+
+    if (type === 'unreserve') {
+      updated.reserved = Math.max(0, updated.reserved - quantity);
+    }
+
+    setPartLines((prev) => {
+      const without = prev.filter((entry) => entry.partId !== partId);
+      return [...without, updated];
+    });
+    setActionModal(null);
+  };
 
   const header = useMemo(() => {
     if (loading) {
@@ -109,6 +183,117 @@ const WorkOrderDetail = () => {
           </p>
         </div>
       )}
+
+      <Card>
+        <Card.Header>
+          <div className="flex items-center justify-between">
+            <div>
+              <Card.Title>Parts</Card.Title>
+              <Card.Description>Reserve, issue, and track quantities against available stock.</Card.Description>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const firstPart = partsQuery.data?.items[0];
+                if (firstPart) openAction('reserve', firstPart.id);
+              }}
+            >
+              Add part
+            </Button>
+          </div>
+        </Card.Header>
+        <Card.Content>
+          {partsQuery.isLoading && <p className="text-sm text-neutral-500">Loading parts…</p>}
+          {partsQuery.error && <p className="text-sm text-rose-500">Unable to load parts.</p>}
+          {!partsQuery.isLoading && (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-neutral-800/50 text-sm">
+                <thead>
+                  <tr>
+                    <th className="px-3 py-2 text-left font-medium text-neutral-200">Part</th>
+                    <th className="px-3 py-2 text-left font-medium text-neutral-200">Reserved</th>
+                    <th className="px-3 py-2 text-left font-medium text-neutral-200">Issued</th>
+                    <th className="px-3 py-2 text-left font-medium text-neutral-200">Available</th>
+                    <th className="px-3 py-2 text-left font-medium text-neutral-200">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-800/40">
+                  {partLines.map((line) => (
+                    <tr key={line.partId}>
+                      <td className="px-3 py-2 text-neutral-50">{line.name}</td>
+                      <td className="px-3 py-2 text-neutral-200">{line.reserved}</td>
+                      <td className="px-3 py-2 text-neutral-200">{line.issued}</td>
+                      <td className="px-3 py-2 text-neutral-200">{availableStock(line.partId)}</td>
+                      <td className="px-3 py-2">
+                        <div className="flex flex-wrap gap-2">
+                          <Button size="xs" variant="outline" onClick={() => openAction('reserve', line.partId)}>
+                            Reserve
+                          </Button>
+                          <Button size="xs" variant="outline" onClick={() => openAction('issue', line.partId)}>
+                            Issue
+                          </Button>
+                          <Button size="xs" variant="ghost" onClick={() => openAction('return', line.partId)}>
+                            Return
+                          </Button>
+                          <Button size="xs" variant="ghost" onClick={() => openAction('unreserve', line.partId)}>
+                            Unreserve
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {!partLines.length && (
+                    <tr>
+                      <td className="px-3 py-4 text-center text-neutral-400" colSpan={5}>
+                        No parts reserved yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card.Content>
+      </Card>
+
+      <Modal
+        open={Boolean(actionModal)}
+        onClose={() => setActionModal(null)}
+        title={`${actionModal?.type ?? ''} part`}
+      >
+        <div className="space-y-3">
+          <label className="text-sm font-medium text-neutral-800">Part</label>
+          <select
+            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            value={actionModal?.partId ?? ''}
+            onChange={(event) =>
+              setActionModal((prev) => (prev ? { ...prev, partId: event.target.value } : prev))
+            }
+          >
+            {partsQuery.data?.items.map((part) => (
+              <option key={part.id} value={part.id}>
+                {part.name}
+              </option>
+            ))}
+          </select>
+          <Input
+            type="number"
+            label="Quantity"
+            min={1}
+            value={actionModal?.quantity ?? 1}
+            onChange={(event) =>
+              setActionModal((prev) => (prev ? { ...prev, quantity: Number(event.target.value) } : prev))
+            }
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setActionModal(null)}>
+              Cancel
+            </Button>
+            <Button onClick={applyAction}>Apply</Button>
+          </div>
+        </div>
+      </Modal>
 
       {id ? (
         <CommentThread entityType="WO" entityId={id} />

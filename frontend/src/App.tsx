@@ -83,6 +83,7 @@ import AssetScan from "@/pages/AssetScan";
 import MobileWorkOrder from "@/pages/mobile/MobileWorkOrder";
 import PwaTechnicianShell from "@/pages/PwaTechnicianShell";
 import RequestFormBuilder from "@/pages/RequestFormBuilder";
+import ReorderAlerts from "@/pages/ReorderAlerts";
 
 export default function App() {
   const navigate = useNavigate();
@@ -233,6 +234,22 @@ export default function App() {
             }
           />
           <Route
+            path="/inventory/items"
+            element={
+              <RequirePermission permission="inventory.read">
+                <InventoryList />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/inventory/items/:partId"
+            element={
+              <RequirePermission permission="inventory.read">
+                <InventoryPartDetail />
+              </RequirePermission>
+            }
+          />
+          <Route
             path="/inventory/analytics"
             element={
               <RequirePermission permission="inventory.read">
@@ -269,6 +286,14 @@ export default function App() {
             element={
               <RequirePermission permission="inventory.read">
                 <InventoryParts />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/inventory/alerts"
+            element={
+              <RequirePermission permission="inventory.read">
+                <ReorderAlerts />
               </RequirePermission>
             }
           />

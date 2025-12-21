@@ -24,6 +24,7 @@ const baseFields = {
   title: 'Safety alert',
   description: 'Chemical smell near the mixing station',
   requesterName: 'Jordan',
+  requesterEmail: 'jordan@example.com',
 };
 
 const seedCore = async () => {

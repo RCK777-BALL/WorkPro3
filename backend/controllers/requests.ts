@@ -204,7 +204,7 @@ export const convertRequestToWorkOrder: AuthedRequestHandler = async (
       { tenantId, siteId: req.siteId },
       req.params.id,
       parse.data,
-      req.user?._id?.toString(),
+      req.user?._id,
     );
 
     await Notification.create({

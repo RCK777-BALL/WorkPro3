@@ -36,6 +36,10 @@ export const publicWorkRequestSchema = z.object({
     .optional()
     .transform((list) => (list?.length ? list : undefined)),
   priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+  tags: z
+    .array(z.string().trim())
+    .max(10, 'Use at most 10 tags')
+    .optional(),
 });
 
 export const workRequestConversionSchema = z.object({
@@ -43,12 +47,24 @@ export const workRequestConversionSchema = z.object({
   workOrderType: z.enum(['corrective', 'preventive', 'inspection', 'calibration', 'safety']).optional(),
 });
 
-export const workRequestStatusUpdateSchema = z.object({
-  status: z.enum(['new', 'reviewing', 'converted', 'closed', 'rejected']),
-  reason: optionalString,
-  note: optionalString,
+export const workRequestDecisionSchema = z.object({
+  status: z.enum(['accepted', 'rejected']),
+  note: z.string().trim().max(2000).optional(),
+  reason: z.string().trim().max(200).optional(),
+});
+
+export const listWorkRequestQuerySchema = z.object({
+  status: z.string().trim().optional(),
+  priority: z.string().trim().optional(),
+  search: z.string().trim().optional(),
+  requestType: z.string().trim().optional(),
+  siteId: z.string().trim().optional(),
+  page: z.coerce.number().int().positive().optional(),
+  pageSize: z.coerce.number().int().positive().max(200).optional(),
+  includeDeleted: z.coerce.boolean().optional(),
 });
 
 export type PublicWorkRequestInput = z.infer<typeof publicWorkRequestSchema>;
 export type WorkRequestConversionInput = z.infer<typeof workRequestConversionSchema>;
-export type WorkRequestStatusUpdateInput = z.infer<typeof workRequestStatusUpdateSchema>;
+export type WorkRequestDecisionInput = z.infer<typeof workRequestDecisionSchema>;
+export type ListWorkRequestQuery = z.infer<typeof listWorkRequestQuerySchema>;

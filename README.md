@@ -21,6 +21,7 @@ WorkPro/
 - [AI Copilot API](docs/ai-copilot.md) – request/response schemas, upstream data sources, and security notes for `/ai/copilot`.
 - [IoT Gateway Ingestion](docs/iot-gateway.md) – MQTT/HTTP payload formats, storage pipeline, and automated alert/work-order flows for `/iot/ingest`.
 - [Work Request Portal](docs/work-requests.md) – public intake, triage, and convert-to-work-order endpoints plus testing guidance.
+- [Inventory module](docs/inventory.md) – models, endpoints, permissions, costing, and test walkthrough for stock control and reorder alerts.
 
 Run `npm install` inside each folder before development. Node modules are
 not committed to the repository.

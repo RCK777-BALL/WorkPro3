@@ -17,6 +17,7 @@ export const AUTH_ROLES = [
   'asset_coordinator',
   'workorder_requester',
   'workorder_supervisor',
+  'dispatcher',
   'inventory_controller',
   'report_builder',
   'site_supervisor',

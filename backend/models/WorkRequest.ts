@@ -6,7 +6,14 @@ import mongoose, { Schema, type Document, type Model, type Types } from 'mongoos
 
 import WorkOrder from './WorkOrder';
 
-export type WorkRequestStatus = 'new' | 'reviewing' | 'converted' | 'closed';
+export type WorkRequestStatus =
+  | 'new'
+  | 'reviewing'
+  | 'accepted'
+  | 'rejected'
+  | 'converted'
+  | 'closed'
+  | 'deleted';
 
 export interface WorkRequestDocument extends Document {
   _id: Types.ObjectId;
@@ -55,15 +62,27 @@ export interface WorkRequestDocument extends Document {
   workOrder?: Types.ObjectId;
   photos: Types.Array<string>;
   attachments?: Types.Array<{ key: string; files: string[]; paths: string[] }>;
+  tags?: Types.Array<string>;
+  decision?: {
+    status?: 'accepted' | 'rejected';
+    decidedBy?: Types.ObjectId;
+    decidedAt?: Date;
+    note?: string;
+    reason?: string;
+  };
+  audit?: {
+    createdBy?: Types.ObjectId;
+    updatedBy?: Types.ObjectId;
+    deletedBy?: Types.ObjectId;
+    deletedAt?: Date;
+  };
   routing?: {
     ruleId?: Types.ObjectId;
     destinationType?: 'team' | 'user' | 'queue';
     destinationId?: Types.ObjectId;
     queue?: string;
   };
-  decision?: {
-    convertedWorkOrderId?: Types.ObjectId;
-  };
+  deletedAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -86,7 +105,7 @@ const workRequestSchema = new Schema<WorkRequestDocument>(
     },
     status: {
       type: String,
-      enum: ['new', 'reviewing', 'converted', 'closed'],
+      enum: ['new', 'reviewing', 'accepted', 'rejected', 'converted', 'closed', 'deleted'],
       default: 'new',
       index: true,
     },
@@ -142,6 +161,7 @@ const workRequestSchema = new Schema<WorkRequestDocument>(
     requestType: { type: Schema.Types.ObjectId, ref: 'RequestType', index: true },
     category: { type: String },
     workOrder: { type: Schema.Types.ObjectId, ref: 'WorkOrder' },
+    tags: [{ type: String, trim: true }],
     attachments: [
       {
         key: { type: String, required: true },
@@ -156,11 +176,28 @@ const workRequestSchema = new Schema<WorkRequestDocument>(
       queue: { type: String },
     },
     decision: {
-      convertedWorkOrderId: { type: Schema.Types.ObjectId, ref: 'WorkOrder' },
+      status: { type: String, enum: ['accepted', 'rejected'] },
+      decidedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+      decidedAt: { type: Date },
+      note: { type: String },
+      reason: { type: String },
     },
+    audit: {
+      createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+      updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+      deletedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+      deletedAt: { type: Date },
+    },
+    deletedAt: { type: Date },
   },
   { timestamps: true },
 );
+
+workRequestSchema.index({ tenantId: 1, status: 1, createdAt: -1 });
+workRequestSchema.index({ tenantId: 1, requestType: 1, createdAt: -1 });
+workRequestSchema.index({ tenantId: 1, siteId: 1, createdAt: -1 });
+workRequestSchema.index({ tenantId: 1, workOrder: 1 });
+workRequestSchema.index({ title: 'text', description: 'text', category: 'text' });
 
 workRequestSchema.pre('save', async function handleAutoConversion(next) {
   if (this.isModified('approvalStatus') && this.approvalStatus === 'approved' && !this.workOrder) {

@@ -199,7 +199,12 @@ export const convertRequestToWorkOrder: AuthedRequestHandler = async (
       return;
     }
 
-    const result = await convertWorkRequestToWorkOrder({ tenantId, siteId: req.siteId }, req.params.id, parse.data);
+    const result = await convertWorkRequestToWorkOrder(
+      { tenantId, siteId: req.siteId },
+      req.params.id,
+      parse.data,
+      req.user?._id,
+    );
 
     await Notification.create({
       tenantId: toObjectId(tenantId),

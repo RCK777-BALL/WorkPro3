@@ -11,6 +11,7 @@ import { requireAuth } from '../../../middleware/authMiddleware';
 import tenantScope from '../../../middleware/tenantScope';
 import validateObjectId from '../../../middleware/validateObjectId';
 import { requirePermission } from '../../auth/permissions';
+import { requireRoles } from '../../../middleware/requireRoles';
 import {
   submitPublicRequestHandler,
   getPublicStatusHandler,
@@ -18,6 +19,8 @@ import {
   getWorkRequestHandler,
   getWorkRequestSummaryHandler,
   convertWorkRequestHandler,
+  updateWorkRequestStatusHandler,
+  softDeleteWorkRequestHandler,
   listRequestTypesHandler,
   createRequestTypeHandler,
   saveRequestFormHandler,
@@ -59,9 +62,21 @@ adminRouter.get(
 );
 adminRouter.post(
   '/:requestId/convert',
-  requirePermission('workRequests', 'convert'),
+  requireRoles(['admin', 'dispatcher']),
   validateObjectId('requestId'),
   convertWorkRequestHandler,
+);
+adminRouter.patch(
+  '/:requestId/status',
+  requireRoles(['admin', 'dispatcher']),
+  validateObjectId('requestId'),
+  updateWorkRequestStatusHandler,
+);
+adminRouter.delete(
+  '/:requestId',
+  requireRoles(['admin', 'dispatcher']),
+  validateObjectId('requestId'),
+  softDeleteWorkRequestHandler,
 );
 adminRouter.get('/types', requirePermission('workRequests', 'read'), listRequestTypesHandler);
 adminRouter.post('/types', requirePermission('workRequests', 'convert'), createRequestTypeHandler);

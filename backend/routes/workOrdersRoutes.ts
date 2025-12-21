@@ -25,6 +25,14 @@ import {
   updateWorkOrderChecklist,
   bulkUpdateWorkOrders,
 } from '../controllers/WorkOrderController';
+import {
+  deleteWorkOrderPartLineItem,
+  issueWorkOrderPart,
+  listWorkOrderParts,
+  reserveWorkOrderPart,
+  returnIssuedWorkOrderPart,
+  unreserveWorkOrderPart,
+} from '../controllers/WorkOrderPartsController';
 
 const router = Router();
 
@@ -44,5 +52,37 @@ router.post('/:id/complete', validateObjectId('id'), requirePermission('workorde
 router.post('/:id/cancel', validateObjectId('id'), requirePermission('workorders.write'), cancelWorkOrder);
 router.put('/:id/checklist', validateObjectId('id'), requirePermission('workorders.write'), updateWorkOrderChecklist);
 router.get('/:id/assist', validateObjectId('id'), requirePermission('workorders.read'), assistWorkOrder);
+router.get('/:id/parts', validateObjectId('id'), requirePermission('workorders.read'), listWorkOrderParts);
+router.post(
+  '/:id/parts/reserve',
+  validateObjectId('id'),
+  requirePermission('workorders.write'),
+  reserveWorkOrderPart,
+);
+router.post(
+  '/:id/parts/unreserve',
+  validateObjectId('id'),
+  requirePermission('workorders.write'),
+  unreserveWorkOrderPart,
+);
+router.post(
+  '/:id/parts/issue',
+  validateObjectId('id'),
+  requirePermission('workorders.write'),
+  issueWorkOrderPart,
+);
+router.post(
+  '/:id/parts/return',
+  validateObjectId('id'),
+  requirePermission('workorders.write'),
+  returnIssuedWorkOrderPart,
+);
+router.delete(
+  '/:id/parts/:lineItemId',
+  validateObjectId('id'),
+  validateObjectId('lineItemId'),
+  requirePermission('workorders.write'),
+  deleteWorkOrderPartLineItem,
+);
 
 export default router;

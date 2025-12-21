@@ -39,6 +39,7 @@ export type {
   PurchaseOrder,
   PurchaseOrderPayload,
   InventoryAlert,
+  ReorderAlertStatus,
   StockHistoryEntry,
   StockAdjustment,
   StockItem,

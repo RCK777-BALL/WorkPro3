@@ -8,6 +8,7 @@ import type {
   InventoryLocation,
   PaginatedResult,
   Part,
+  ReorderAlertStatus,
   PurchaseOrder,
   PurchaseOrderPayload,
   PartUsageReport,
@@ -56,8 +57,22 @@ export const fetchVendors = async (): Promise<VendorSummary[]> => {
   return res.data;
 };
 
-export const fetchInventoryAlerts = async (): Promise<InventoryAlert[]> => {
-  const res = await http.get<InventoryAlert[]>(`${BASE_PATH}/alerts`);
+export interface ReorderAlertQueryParams {
+  status?: ReorderAlertStatus;
+  page?: number;
+  pageSize?: number;
+  siteId?: string;
+  partId?: string;
+}
+
+export interface ReorderAlertResult extends PaginatedResult<InventoryAlert> {
+  openCount: number;
+}
+
+export const fetchInventoryAlerts = async (
+  params: ReorderAlertQueryParams = { status: 'open' },
+): Promise<ReorderAlertResult> => {
+  const res = await http.get<ReorderAlertResult>(`${BASE_PATH}/alerts`, { params });
   return res.data;
 };
 

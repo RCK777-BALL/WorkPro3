@@ -47,8 +47,10 @@ const initialState: Pick<
 
 const normalizeLowStockAlert = (alert: InventoryAlert): LowStockAlert => ({
   ...alert,
-  id: alert.partId,
+  id: alert.id ?? alert.partId,
   reorderPoint: alert.reorderPoint ?? alert.minLevel ?? 0,
+  status: alert.status ?? 'open',
+  acknowledged: (alert.status ?? 'open') !== 'open',
 });
 
 export const useNotificationsStore = create<NotificationsState>((set, get) => ({
@@ -82,7 +84,8 @@ export const useNotificationsStore = create<NotificationsState>((set, get) => ({
           return fetchStockAlerts();
         }
       })();
-      set({ lowStockAlerts: alerts.map(normalizeLowStockAlert) });
+      const items = Array.isArray(alerts) ? alerts : alerts.items ?? [];
+      set({ lowStockAlerts: items.map(normalizeLowStockAlert) });
     } catch (err) {
       console.error('Failed to load low stock alerts', err);
       set({ alertsError: 'Unable to load low stock alerts' });
@@ -116,7 +119,7 @@ export const useNotificationsStore = create<NotificationsState>((set, get) => ({
   acknowledge: async (id) => {
     const prev = get().lowStockAlerts;
     const next = prev.map((alert) =>
-      alert.id === id ? { ...alert, acknowledged: true } : alert,
+      alert.id === id ? { ...alert, acknowledged: true, status: 'approved' as const } : alert,
     );
     set({ lowStockAlerts: next });
     try {

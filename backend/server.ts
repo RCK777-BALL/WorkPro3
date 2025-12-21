@@ -109,6 +109,7 @@ import { startCopilotSummaryJob } from "./tasks/copilotSummaries";
 import { startExecutiveReportScheduler } from "./tasks/executiveReports";
 import { startAnalyticsWarehouseScheduler } from "./tasks/analyticsWarehouse";
 import { startLowStockScanner } from "./src/jobs/lowStockScan";
+import { startReorderAlertScanner } from "./src/jobs/reorderAlertScan";
 import { setupSwagger } from "./utils/swagger";
 import mongoose from "mongoose";
 import errorHandler from "./middleware/errorHandler";
@@ -383,6 +384,7 @@ if (env.NODE_ENV !== "test") {
       startExecutiveReportScheduler(env.EXECUTIVE_REPORT_CRON);
       startAnalyticsWarehouseScheduler();
       startLowStockScanner(env.REORDER_SUGGESTION_CRON);
+      startReorderAlertScanner(env.REORDER_ALERT_CRON);
       startWorkOrderReminderJobs();
       startWorkRequestReminderJobs();
     })

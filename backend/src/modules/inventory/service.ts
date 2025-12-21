@@ -38,6 +38,10 @@ import InventoryTransferModel, { type InventoryTransferDocument } from './models
 import ReorderSuggestionModel, {
   type ReorderSuggestionDocument,
 } from './models/ReorderSuggestion';
+import ReorderAlertModel, {
+  type ReorderAlertDocument,
+  type ReorderAlertStatus,
+} from './models/ReorderAlert';
 import type {
   LocationInput,
   PartInput,
@@ -69,6 +73,14 @@ export interface PartUsageFilters {
   siteIds?: string[];
 }
 
+export interface ReorderAlertFilters {
+  status?: ReorderAlertStatus;
+  page?: number;
+  pageSize?: number;
+  partId?: string;
+  siteId?: string;
+}
+
 export interface ListPartsOptions {
   page?: number;
   pageSize?: number;
@@ -76,6 +88,10 @@ export interface ListPartsOptions {
   vendorId?: string;
   sortBy?: string;
   sortDirection?: SortDirection;
+}
+
+export interface ReorderAlertList extends PaginatedResult<InventoryAlert> {
+  openCount: number;
 }
 
 export interface ReorderSuggestionFilters {
@@ -2039,67 +2055,159 @@ export const exportPurchaseOrders = async (
   };
 };
 
-export const listAlerts = async (context: InventoryContext): Promise<InventoryAlert[]> => {
+export const listAlerts = async (
+  context: InventoryContext,
+  filters: ReorderAlertFilters = {},
+): Promise<ReorderAlertList> => {
   const tenantId = toObjectId(context.tenantId, 'tenant id');
-  const match: FilterQuery<PartDocument> = {
-    tenantId,
-    $expr: {
-      $and: [
-        {
-          $gt: [
-            {
-              $cond: [{ $gt: ['$minLevel', 0] }, '$minLevel', '$reorderPoint'],
-            },
-            0,
-          ],
-        },
-        {
-          $lte: [
-            '$quantity',
-            {
-              $cond: [{ $gt: ['$minLevel', 0] }, '$minLevel', '$reorderPoint'],
-            },
-          ],
-        },
-      ],
-    },
-  };
+  const pageRaw = Number(filters.page ?? 1);
+  const page = Number.isFinite(pageRaw) ? Math.max(1, pageRaw) : 1;
+  const pageSizeRaw = Number(filters.pageSize ?? 20);
+  const pageSize = Number.isFinite(pageSizeRaw) ? Math.min(100, Math.max(1, pageSizeRaw)) : 20;
+
+  const query: FilterQuery<ReorderAlertDocument> = { tenantId };
   if (context.siteId) {
-    match.siteId = maybeObjectId(context.siteId);
+    query.siteId = maybeObjectId(context.siteId);
   }
-  const parts: PartRecord[] = await PartModel.find(match).lean<PartRecord[]>();
+  if (filters.siteId) {
+    query.siteId = maybeObjectId(filters.siteId);
+  }
+  if (filters.partId) {
+    query.part = toObjectId(filters.partId, 'part id');
+  }
+  if (filters.status) {
+    query.status = filters.status;
+  }
+
+  const [alerts, total, openCount] = await Promise.all([
+    ReorderAlertModel.find(query)
+      .sort({ triggeredAt: -1 })
+      .skip((page - 1) * pageSize)
+      .limit(pageSize)
+      .lean<ReorderAlertDocument[]>(),
+    ReorderAlertModel.countDocuments(query),
+    ReorderAlertModel.countDocuments({ tenantId, status: 'open' }),
+  ]);
+
+  const partIds = Array.from(new Set(alerts.map((alert) => alert.part.toString())));
+  const parts = partIds.length
+    ? await PartModel.find({ _id: { $in: partIds } }).lean<PartRecord[]>()
+    : [];
   const refs = await resolveReferenceMaps(parts);
-  return parts.map((part) => {
-    const alert: InventoryAlert = {
-      tenantId: part.tenantId.toString(),
-      partId: part._id.toString(),
-      partName: part.name,
-      quantity: part.quantity,
-      reorderPoint: part.reorderPoint,
-      minLevel: part.minLevel,
-      assetNames: (part.assetIds ?? [])
-        .map((assetId: Types.ObjectId) => refs.assets.get(assetId.toString()))
-        .filter((name: string | undefined): name is string => Boolean(name)),
-      pmTemplateTitles: (part.pmTemplateIds ?? [])
-        .map((templateId: Types.ObjectId) => refs.templates.get(templateId.toString()))
-        .filter((title: string | undefined): title is string => Boolean(title)),
+  const partMap = new Map(parts.map((part) => [part._id.toString(), part]));
+
+  const items: InventoryAlert[] = alerts.map((alert) => {
+    const part = partMap.get(alert.part.toString());
+    const response: InventoryAlert = {
+      id: alert._id.toString(),
+      tenantId: alert.tenantId.toString(),
+      partId: alert.part.toString(),
+      partName: part?.name ?? 'Unknown part',
+      quantity: alert.quantity,
+      reorderPoint: alert.threshold,
+      minLevel: part?.minLevel,
+      assetNames:
+        part?.assetIds?.map((assetId: Types.ObjectId) => refs.assets.get(assetId.toString()))
+          .filter((name): name is string => Boolean(name)) ?? [],
+      pmTemplateTitles:
+        part?.pmTemplateIds
+          ?.map((templateId: Types.ObjectId) => refs.templates.get(templateId.toString()))
+          .filter((title): title is string => Boolean(title)) ?? [],
+      status: alert.status,
     };
 
-    if (part.siteId) {
-      alert.siteId = part.siteId.toString();
-    }
-    if (part.vendor) {
-      const vendorName = refs.vendors.get(part.vendor.toString())?.name;
-      if (vendorName) {
-        alert.vendorName = vendorName;
-      }
-    }
-    if (part.lastAlertAt) {
-      alert.lastTriggeredAt = part.lastAlertAt.toISOString();
+    if (alert.location) {
+      response.locationId = alert.location.toString();
     }
 
-    return alert;
+    if (part?.siteId || alert.siteId) {
+      response.siteId = (alert.siteId ?? part?.siteId)?.toString();
+    }
+    if (part?.vendor) {
+      response.vendorName = refs.vendors.get(part.vendor.toString())?.name;
+    }
+    if (part?.lastAlertAt || alert.triggeredAt) {
+      response.lastTriggeredAt = (part?.lastAlertAt ?? alert.triggeredAt).toISOString();
+    }
+
+    return response;
   });
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  return {
+    items,
+    total,
+    page,
+    pageSize,
+    totalPages,
+    sortBy: 'triggeredAt',
+    sortDirection: 'desc',
+    openCount,
+  };
+};
+
+export const transitionAlertStatus = async (
+  context: InventoryContext,
+  alertId: string,
+  action: 'approve' | 'skip' | 'resolve',
+): Promise<InventoryAlert> => {
+  const tenantId = toObjectId(context.tenantId, 'tenant id');
+  const _id = toObjectId(alertId, 'alert id');
+  const alert = await ReorderAlertModel.findOne({ _id, tenantId });
+  if (!alert) {
+    throw new InventoryError('Alert not found', 404);
+  }
+
+  const now = new Date();
+  if (action === 'approve') {
+    alert.status = 'approved';
+    alert.approvedAt = now;
+  } else if (action === 'skip') {
+    alert.status = 'skipped';
+    alert.skippedAt = now;
+  } else {
+    alert.status = 'resolved';
+    alert.resolvedAt = now;
+  }
+
+  await alert.save();
+
+  const part = await PartModel.findById(alert.part).lean<PartRecord | null>();
+  const refs = part ? await resolveReferenceMaps([part]) : await resolveReferenceMaps([]);
+
+  const response: InventoryAlert = {
+    id: alert._id.toString(),
+    tenantId: alert.tenantId.toString(),
+    partId: alert.part.toString(),
+    partName: part?.name ?? 'Unknown part',
+    quantity: alert.quantity,
+    reorderPoint: alert.threshold,
+    minLevel: part?.minLevel,
+    assetNames:
+      part?.assetIds?.map((assetId: Types.ObjectId) => refs.assets.get(assetId.toString()))
+        .filter((name): name is string => Boolean(name)) ?? [],
+    pmTemplateTitles:
+      part?.pmTemplateIds
+        ?.map((templateId: Types.ObjectId) => refs.templates.get(templateId.toString()))
+        .filter((title): title is string => Boolean(title)) ?? [],
+    status: alert.status,
+  };
+
+  if (alert.location) {
+    response.locationId = alert.location.toString();
+  }
+  if (part?.siteId || alert.siteId) {
+    response.siteId = (alert.siteId ?? part?.siteId)?.toString();
+  }
+  if (part?.vendor) {
+    response.vendorName = refs.vendors.get(part.vendor.toString())?.name;
+  }
+  if (part?.lastAlertAt || alert.triggeredAt) {
+    response.lastTriggeredAt = (part?.lastAlertAt ?? alert.triggeredAt).toISOString();
+  }
+
+  return response;
 };
 
 export const getPartUsageReport = async (

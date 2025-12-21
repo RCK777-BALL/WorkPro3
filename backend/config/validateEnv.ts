@@ -36,6 +36,8 @@ const envSchema = z.object({
   REORDER_SUGGESTION_CRON: z.string().default('30 * * * *'),
   REORDER_SUGGESTION_INCLUDE_OPEN_POS: z.string().default('true'),
   REORDER_SUGGESTION_LEAD_TIME_BUFFER: z.string().default('0'),
+  REORDER_ALERT_CRON: z.string().default('*/20 * * * *'),
+  REORDER_ALERT_NOTIFICATIONS: z.string().default('false'),
 });
 
 type ParsedEnv = z.infer<typeof envSchema>;

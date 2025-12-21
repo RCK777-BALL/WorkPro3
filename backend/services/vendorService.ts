@@ -4,12 +4,14 @@
 
 import { Types, type HydratedDocument } from 'mongoose';
 
-import Vendor from '../models/Vendor';
+import Vendor, { type VendorDocument } from '../models/Vendor';
 
 export interface VendorInput {
   name: string;
   email?: string | null;
   phone?: string | null;
+  tags?: string[];
+  isActive?: boolean;
 }
 
 export interface VendorResponse {
@@ -18,6 +20,9 @@ export interface VendorResponse {
   name: string;
   email?: string;
   phone?: string;
+  tags: string[];
+  isActive: boolean;
+  deletedAt?: string;
 }
 
 export class VendorNotFoundError extends Error {
@@ -34,28 +39,51 @@ const toObjectId = (value: string, label: string): Types.ObjectId => {
   return new Types.ObjectId(value);
 };
 
-const serializeVendor = (vendor: HydratedDocument<any>): VendorResponse => {
+const serializeVendor = (vendor: HydratedDocument<VendorDocument>): VendorResponse => {
   const payload: VendorResponse = {
     id: vendor._id.toString(),
     tenantId: vendor.tenantId.toString(),
     name: vendor.name,
+    tags: vendor.tags ?? [],
+    isActive: vendor.isActive,
   };
 
   if (vendor.email) payload.email = vendor.email;
   if (vendor.phone) payload.phone = vendor.phone;
+  if (vendor.deletedAt) payload.deletedAt = vendor.deletedAt.toISOString();
 
   return payload;
 };
 
-export const listVendors = async (tenantId: string): Promise<VendorResponse[]> => {
+const buildFilters = (tenantId: string, includeDeleted = false) => {
   const scope = toObjectId(tenantId, 'tenant id');
-  const vendors = await Vendor.find({ tenantId: scope }).sort({ name: 1 });
+  const filter: Record<string, unknown> = { tenantId: scope };
+  if (!includeDeleted) {
+    filter.$or = [{ deletedAt: { $exists: false } }, { deletedAt: null }];
+  }
+  return filter;
+};
+
+export const listVendors = async (
+  tenantId: string,
+  includeDeleted = false,
+): Promise<VendorResponse[]> => {
+  const filter = buildFilters(tenantId, includeDeleted);
+  const vendors = await Vendor.find(filter).sort({ name: 1 });
   return vendors.map((vendor) => serializeVendor(vendor));
 };
 
-export const getVendor = async (tenantId: string, vendorId: string): Promise<VendorResponse> => {
+export const getVendor = async (
+  tenantId: string,
+  vendorId: string,
+  includeDeleted = false,
+): Promise<VendorResponse> => {
   const scope = toObjectId(tenantId, 'tenant id');
-  const vendor = await Vendor.findOne({ _id: toObjectId(vendorId, 'vendor id'), tenantId: scope });
+  const vendor = await Vendor.findOne({
+    _id: toObjectId(vendorId, 'vendor id'),
+    tenantId: scope,
+    ...(includeDeleted ? {} : { deletedAt: { $in: [null, undefined] } }),
+  });
   if (!vendor) {
     throw new VendorNotFoundError();
   }
@@ -69,6 +97,8 @@ export const createVendor = async (tenantId: string, input: VendorInput): Promis
     name: input.name,
     email: input.email ?? undefined,
     phone: input.phone ?? undefined,
+    tags: input.tags ?? [],
+    isActive: input.isActive ?? true,
   });
   return serializeVendor(vendor);
 };
@@ -80,11 +110,13 @@ export const updateVendor = async (
 ): Promise<VendorResponse> => {
   const scope = toObjectId(tenantId, 'tenant id');
   const vendor = await Vendor.findOneAndUpdate(
-    { _id: toObjectId(vendorId, 'vendor id'), tenantId: scope },
+    { _id: toObjectId(vendorId, 'vendor id'), tenantId: scope, deletedAt: { $in: [null, undefined] } },
     {
       name: input.name,
       email: input.email ?? undefined,
       phone: input.phone ?? undefined,
+      tags: input.tags ?? [],
+      ...(typeof input.isActive === 'boolean' ? { isActive: input.isActive } : {}),
     },
     { new: true, runValidators: true },
   );
@@ -96,10 +128,14 @@ export const updateVendor = async (
 
 export const deleteVendor = async (tenantId: string, vendorId: string): Promise<void> => {
   const scope = toObjectId(tenantId, 'tenant id');
-  const deleted = await Vendor.findOneAndDelete({
-    _id: toObjectId(vendorId, 'vendor id'),
-    tenantId: scope,
-  });
+  const deleted = await Vendor.findOneAndUpdate(
+    {
+      _id: toObjectId(vendorId, 'vendor id'),
+      tenantId: scope,
+      deletedAt: { $in: [null, undefined] },
+    },
+    { deletedAt: new Date(), isActive: false },
+  );
   if (!deleted) {
     throw new VendorNotFoundError();
   }

@@ -2,290 +2,318 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { CheckCircle, Package, Search, Warehouse } from "lucide-react";
+import { useQueryClient } from "react-query";
 
-import { fetchParts, upsertPart } from '@/api/inventory';
-import { usePermissions } from '@/auth/usePermissions';
-import Button from '@/components/common/Button';
-import Card from '@/components/common/Card';
-import Input from '@/components/common/Input';
-import type { Part } from '@/types';
+import { adjustStockLevel, upsertPart } from "@/api/inventory";
+import { usePermissions } from "@/auth/usePermissions";
+import Badge from "@/components/common/Badge";
+import Button from "@/components/common/Button";
+import Card from "@/components/common/Card";
+import Input from "@/components/common/Input";
+import Modal from "@/components/common/Modal";
+import Tag from "@/components/common/Tag";
+import { useToast } from "@/context/ToastContext";
+import type { Part, StockItem } from "@/types";
+import {
+  INVENTORY_HISTORY_QUERY_KEY,
+  INVENTORY_PARTS_QUERY_KEY,
+  INVENTORY_STOCK_QUERY_KEY,
+  usePartsQuery,
+  useStockItemsQuery,
+} from "@/features/inventory";
 
-const formatLocation = (location?: { store?: string; room?: string; bin?: string }) => {
-  if (!location) return 'Unassigned';
-  const parts = [location.store, location.room, location.bin].filter(Boolean);
-  return parts.length ? parts.join(' • ') : 'Unassigned';
-};
+const PAGE_SIZE = 10;
 
-const PartForm = ({ onSave }: { onSave: (payload: Partial<Part> & { name: string }) => Promise<void> }) => {
-  const [form, setForm] = useState<Partial<Part> & { name: string }>({
-    name: '',
-    barcode: '',
-    partNo: '',
-    unit: '',
-    reorderPoint: 0,
-    minLevel: 0,
-    maxLevel: 0,
-  });
-  const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<{ barcode?: string }>({});
-  const { can } = usePermissions();
-  const canManageInventory = useMemo(() => can('inventory.manage'), [can]);
-  const disableEdits = !canManageInventory;
+const ReceiveStockModal = ({
+  open,
+  onClose,
+  part,
+  stockItems,
+}: {
+  open: boolean;
+  onClose: () => void;
+  part: Part | null;
+  stockItems: StockItem[];
+}) => {
+  const queryClient = useQueryClient();
+  const { addToast } = useToast();
+  const [stockItemId, setStockItemId] = useState("");
+  const [quantity, setQuantity] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleChange = (key: keyof Part, value: string | number) => {
-    setForm((prev: Partial<Part> & { name: string }) => ({ ...prev, [key]: value }));
+  const locationsForPart = useMemo(() => stockItems.filter((item) => item.partId === part?.id), [stockItems, part?.id]);
+
+  const reset = () => {
+    setStockItemId("");
+    setQuantity(1);
+    setError(null);
   };
 
-  const validate = () => {
-    const errors: { barcode?: string } = {};
-    if (form.barcode) {
-      const trimmed = form.barcode.trim();
-      if (/\s/.test(form.barcode)) {
-        errors.barcode = 'Barcode cannot include spaces';
-      } else if (trimmed.length < 3) {
-        errors.barcode = 'Barcode must be at least 3 characters';
-      } else if (!/^[\w.-]+$/.test(trimmed)) {
-        errors.barcode = 'Use letters, numbers, dashes, or dots.';
-      }
+  const handleSubmit = async () => {
+    if (!stockItemId || !part) return;
+    if (quantity <= 0) {
+      setError("Quantity must be greater than zero");
+      return;
     }
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const extractErrorMessage = (err: unknown): string => {
-    if (err && typeof err === 'object' && 'response' in err) {
-      const response = (err as { response?: { data?: { message?: string } } }).response;
-      if (response?.data?.message) return response.data.message;
-    }
-    if (err instanceof Error && err.message) return err.message;
-    return 'Unable to save part';
-  };
-
-  const submit = async () => {
-    if (disableEdits) return;
-    setFormError(null);
-    if (!validate()) return;
-    setSaving(true);
+    setLoading(true);
+    setError(null);
     try {
-      await onSave({ ...form, barcode: form.barcode?.trim() || undefined });
-      setForm({ name: '', barcode: '', partNo: '', unit: '', reorderPoint: 0, minLevel: 0, maxLevel: 0 });
-      setFieldErrors({});
+      await adjustStockLevel({ stockItemId, delta: quantity, reason: "Receive" });
+      addToast(`Received ${quantity} into ${part.name}`, "success");
+      await Promise.all([
+        queryClient.invalidateQueries(INVENTORY_STOCK_QUERY_KEY),
+        queryClient.invalidateQueries(INVENTORY_HISTORY_QUERY_KEY),
+        queryClient.invalidateQueries(INVENTORY_PARTS_QUERY_KEY),
+      ]);
+      reset();
+      onClose();
     } catch (err) {
-      setFormError(extractErrorMessage(err));
+      const message = err instanceof Error ? err.message : "Unable to receive stock";
+      setError(message);
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="space-y-3">
-      <Input
-        label="Name"
-        value={form.name}
-        required
-        disabled={disableEdits}
-        onChange={(e) => handleChange('name', e.target.value)}
-      />
-      <div className="grid gap-3 md:grid-cols-2">
+    <Modal open={open} onClose={onClose} title="Receive stock">
+      <div className="space-y-3">
+        {part ? (
+          <p className="text-sm text-neutral-600">Add quantity to an existing location for {part.name}.</p>
+        ) : (
+          <p className="text-sm text-neutral-600">Select a part to receive stock.</p>
+        )}
+        <label className="text-sm font-medium text-neutral-800">Location</label>
+        <select
+          value={stockItemId}
+          onChange={(event) => setStockItemId(event.target.value)}
+          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+          disabled={!part || !locationsForPart.length}
+        >
+          <option value="">Select location</option>
+          {locationsForPart.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.location?.store ?? "Store"} / {item.location?.room ?? "Room"} / {item.location?.bin ?? "Bin"}
+            </option>
+          ))}
+        </select>
+        {!locationsForPart.length && <p className="text-xs text-warning-700">No locations exist for this part yet.</p>}
         <Input
-          label="Part #"
-          value={form.partNo ?? ''}
-          disabled={disableEdits}
-          onChange={(e) => handleChange('partNo', e.target.value)}
+          type="number"
+          label="Quantity"
+          min={1}
+          value={quantity}
+          onChange={(event) => setQuantity(Number(event.target.value))}
         />
-        <Input
-          label="Unit"
-          value={form.unit ?? ''}
-          disabled={disableEdits}
-          onChange={(e) => handleChange('unit', e.target.value)}
-        />
+        {error && <p className="text-sm text-error-600">{error}</p>}
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={onClose} disabled={loading}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} loading={loading} disabled={!stockItemId || !part}>
+            Receive
+          </Button>
+        </div>
       </div>
-      <Input
-        label="Barcode"
-        value={form.barcode ?? ''}
-        disabled={disableEdits}
-        description="Scanner-friendly identifier. Avoid spaces; use letters, numbers, dashes, or dots."
-        error={fieldErrors.barcode}
-        pattern="^[\\w.-]+$"
-        inputMode="text"
-        onChange={(e) => handleChange('barcode', e.target.value)}
-      />
-      <div className="grid gap-3 md:grid-cols-3">
-          <Input
-          label="Cost"
-          type="number"
-          value={form.cost ?? ''}
-          disabled={disableEdits}
-          onChange={(e) => setForm((prev: Partial<Part> & { name: string }) => ({ ...prev, cost: Number(e.target.value) }))}
-        />
-        <Input
-          label="Min qty"
-          type="number"
-          value={form.minQty ?? ''}
-          disabled={disableEdits}
-          onChange={(e) => setForm((prev: Partial<Part> & { name: string }) => ({ ...prev, minQty: Number(e.target.value) }))}
-        />
-        <Input
-          label="Max qty"
-          type="number"
-          value={form.maxQty ?? ''}
-          disabled={disableEdits}
-          onChange={(e) => setForm((prev: Partial<Part> & { name: string }) => ({ ...prev, maxQty: Number(e.target.value) }))}
-        />
-      </div>
-      <div className="grid gap-3 md:grid-cols-2">
-        <Input
-          label="Min level (alert)"
-          type="number"
-          value={form.minLevel ?? ''}
-          disabled={disableEdits}
-          onChange={(e) => setForm((prev: Partial<Part> & { name: string }) => ({ ...prev, minLevel: Number(e.target.value) }))}
-        />
-        <Input
-          label="Max level"
-          type="number"
-          value={form.maxLevel ?? ''}
-          disabled={disableEdits}
-          onChange={(e) => setForm((prev: Partial<Part> & { name: string }) => ({ ...prev, maxLevel: Number(e.target.value) }))}
-        />
-      </div>
-      <Input
-        label="Reorder point"
-        type="number"
-        value={form.reorderPoint ?? 0}
-        disabled={disableEdits}
-        onChange={(e) => setForm((prev: Partial<Part> & { name: string }) => ({ ...prev, reorderPoint: Number(e.target.value) }))}
-      />
-      {formError && <p className="text-sm text-error-600">{formError}</p>}
-      <Button
-        type="button"
-        className="w-full"
-        onClick={submit}
-        disabled={!form.name || disableEdits}
-        loading={saving}
-      >
-        {disableEdits ? 'View only' : 'Save part'}
-      </Button>
-    </div>
+    </Modal>
   );
 };
 
 export default function InventoryParts() {
-  const { partId } = useParams<{ partId?: string }>();
-  const [parts, setParts] = useState<Part[]>([]);
-  const [focusedPartId, setFocusedPartId] = useState<string | undefined>();
+  const navigate = useNavigate();
+  const { can } = usePermissions();
+  const { addToast } = useToast();
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [tagFilter, setTagFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [receiveTarget, setReceiveTarget] = useState<Part | null>(null);
 
-  useEffect(() => {
-    fetchParts({ pageSize: 200, sortBy: 'name' }).then((response) => setParts(response.items));
-  }, []);
+  const partsQuery = usePartsQuery({ page, pageSize: PAGE_SIZE, search: search.trim() || undefined });
+  const stockQuery = useStockItemsQuery();
 
-  useEffect(() => {
-    setFocusedPartId(partId ?? undefined);
-  }, [partId]);
+  const parts = partsQuery.data?.items ?? [];
+  const totalPages = partsQuery.data?.totalPages ?? 1;
+
+  const filteredParts = useMemo(() => {
+    if (tagFilter === "all") return parts;
+    return parts.filter((part) => (part.alertState?.severity ?? "ok") === tagFilter);
+  }, [parts, tagFilter]);
 
   const handleSave = async (payload: Partial<Part> & { name: string }) => {
     const saved = await upsertPart(payload);
-    const next = parts.filter((p) => p.id !== saved.id);
-    setParts([...next, saved]);
+    addToast("Part saved", "success");
+    await queryClient.invalidateQueries(INVENTORY_PARTS_QUERY_KEY);
+    return saved;
   };
 
   return (
-    <div className="space-y-6">
-      {focusedPartId && (
-        <div className="flex items-start gap-3 rounded-lg border border-primary-200 bg-primary-50 p-3 text-sm text-primary-900">
-          <div className="mt-0.5 h-3 w-3 rounded-full bg-primary-500" />
-          <div>
-            <p className="font-semibold">Deep link detected</p>
-            <p>
-              Showing catalog entry for part <strong>{focusedPartId}</strong>. Use the list below to confirm details.
-            </p>
-            {!parts.some((part) => part.id === focusedPartId) && (
-              <p className="text-xs text-primary-800">We could not find this part in the current list.</p>
-            )}
-          </div>
+    <div className="space-y-4">
+      <header className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+        <div>
+          <p className="text-sm text-neutral-500">Inventory</p>
+          <h1 className="text-2xl font-semibold text-neutral-900">Parts library</h1>
+          <p className="text-sm text-neutral-600">Search, filter, and manage stock across all stores.</p>
         </div>
-      )}
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-neutral-900">Parts library</h1>
-        <p className="text-sm text-neutral-500">Part records include unit, costing, and reorder limits.</p>
+        <div className="flex flex-wrap gap-2">
+          <Button icon={<Package className="h-4 w-4" />} onClick={() => navigate("/inventory/items")}>View stock</Button>
+          <Button
+            variant="outline"
+            icon={<Warehouse className="h-4 w-4" />}
+            onClick={() => navigate("/inventory/locations")}
+          >
+            Locations
+          </Button>
+        </div>
       </header>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr,1.2fr]">
-        <Card>
-          <Card.Header>
-            <Card.Title>Add / update parts</Card.Title>
-            <Card.Description>Capture enterprise-grade details for planning and procurement.</Card.Description>
-          </Card.Header>
-          <Card.Content>
-            <PartForm onSave={handleSave} />
-          </Card.Content>
-        </Card>
-
-        <Card>
-          <Card.Header>
-            <Card.Title>Parts catalog</Card.Title>
-            <Card.Description>Live quantities with min/max safeguards.</Card.Description>
-          </Card.Header>
-          <Card.Content>
+      <Card>
+        <Card.Header>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                }}
+                placeholder="Search parts, vendors, tags"
+                className="min-w-[220px] rounded-md border border-neutral-300 px-3 py-2 pl-8 text-sm"
+              />
+            </div>
+            <label className="text-sm text-neutral-700">
+              <span className="mr-2 font-medium">Tag</span>
+              <select
+                className="rounded-md border border-neutral-300 px-2 py-1 text-sm"
+                value={tagFilter}
+                onChange={(event) => {
+                  setTagFilter(event.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="all">All</option>
+                <option value="ok">OK</option>
+                <option value="warning">Warning</option>
+                <option value="critical">Critical</option>
+              </select>
+            </label>
+          </div>
+        </Card.Header>
+        <Card.Content>
+          {partsQuery.isLoading ? (
+            <p className="text-sm text-neutral-500">Loading parts…</p>
+          ) : partsQuery.error ? (
+            <p className="text-sm text-error-600">Unable to load parts.</p>
+          ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-neutral-200 text-sm">
                 <thead className="bg-neutral-50">
                   <tr>
                     <th className="px-3 py-2 text-left font-medium text-neutral-700">Part</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Part #</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Qty</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Locations</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Reorder</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Lead time</th>
+                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Number</th>
+                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Stock</th>
+                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Reorder point</th>
+                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Status</th>
+                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-neutral-200">
-                  {parts.map((part) => (
-                    <tr key={part.id}>
-                      <td className="px-3 py-2 text-neutral-900">
-                        {part.name}
-                        {focusedPartId === part.id && (
-                          <span className="ml-2 rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-800">
-                            Selected
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2 text-neutral-700">{part.partNo ?? part.partNumber ?? '—'}</td>
-                      <td className="px-3 py-2 text-neutral-700">{part.quantity}</td>
-                      <td className="px-3 py-2 text-neutral-700">
-                        {part.stockByLocation?.length ? (
-                          <ul className="space-y-1 text-xs text-neutral-700">
-                            {part.stockByLocation.map((stock) => (
-                              <li key={stock.stockItemId} className="flex items-center justify-between gap-2">
-                                <span>{formatLocation(stock.location)}</span>
-                                <span className="text-neutral-500">{stock.quantity}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <span className="text-xs text-neutral-400">No location data</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2 text-neutral-700">{part.reorderPoint}</td>
-                      <td className="px-3 py-2 text-neutral-700">{part.leadTime ?? '—'} days</td>
-                    </tr>
-                  ))}
-                  {!parts.length && (
+                <tbody className="divide-y divide-neutral-100">
+                  {filteredParts.map((part) => {
+                    const severity = part.alertState?.severity ?? "ok";
+                    const badgeColor = severity === "critical" ? "error" : severity === "warning" ? "warning" : "success";
+                    return (
+                      <tr key={part.id} className="hover:bg-neutral-50">
+                        <td className="px-3 py-2 text-neutral-900">
+                          <div className="font-semibold">{part.name}</div>
+                          <p className="text-xs text-neutral-500">Vendor: {part.vendor?.name ?? "—"}</p>
+                        </td>
+                        <td className="px-3 py-2 text-neutral-700">{part.partNo ?? part.partNumber ?? "—"}</td>
+                        <td className="px-3 py-2 text-neutral-700">{part.quantity}</td>
+                        <td className="px-3 py-2 text-neutral-700">{part.reorderPoint}</td>
+                        <td className="px-3 py-2 text-neutral-700">
+                          <div className="flex flex-wrap gap-2">
+                            <Badge text={severity} color={badgeColor} />
+                            {part.alertState?.needsReorder && (
+                              <Tag color="red" label="Needs reorder" />
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-3 py-2 text-neutral-700">
+                          <div className="flex flex-wrap gap-2">
+                            <Button size="sm" variant="outline" onClick={() => navigate(`/inventory/items/${part.id}`)}>
+                              View
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setReceiveTarget(part)}
+                              disabled={!can("inventory.manage")}
+                            >
+                              Receive
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {!filteredParts.length && (
                     <tr>
                       <td className="px-3 py-6 text-center text-neutral-500" colSpan={6}>
-                        No parts found.
+                        No parts match the selected filters.
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </div>
-          </Card.Content>
-        </Card>
-      </div>
+          )}
+        </Card.Content>
+        <Card.Footer className="flex items-center justify-between text-sm text-neutral-700">
+          <div>
+            Page {page} of {totalPages}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Next
+            </Button>
+          </div>
+        </Card.Footer>
+      </Card>
+
+      <Card>
+        <Card.Header>
+          <Card.Title>Quick add</Card.Title>
+          <Card.Description>Capture new parts with reorder thresholds.</Card.Description>
+        </Card.Header>
+        <Card.Content className="grid gap-3 md:grid-cols-2">
+          <Input
+            label="Name"
+            placeholder="Spare part"
+            required
+            onBlur={(event) => event.target.value && handleSave({ name: event.target.value })}
+          />
+          <div className="flex items-center gap-2 text-sm text-neutral-600">
+            <CheckCircle className="h-4 w-4 text-success-600" />
+            <span>Save a name to create the record, then enrich details on the detail page.</span>
+          </div>
+        </Card.Content>
+      </Card>
+
+      <ReceiveStockModal open={Boolean(receiveTarget)} onClose={() => setReceiveTarget(null)} part={receiveTarget} stockItems={stockQuery.data ?? []} />
     </div>
   );
 }

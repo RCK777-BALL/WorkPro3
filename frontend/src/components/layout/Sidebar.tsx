@@ -14,6 +14,7 @@ import {
   ClipboardList,
   Cpu,
   ListChecks,
+  Package,
   Factory,
   FileStack,
   FolderKanban,
@@ -24,6 +25,7 @@ import {
   LogIn,
   LogOut,
   Bell,
+  AlertTriangle,
   MapPin,
   MessageSquare,
   ScrollText,
@@ -46,6 +48,7 @@ import {
   useNavigationStore,
   type NavItemId,
 } from "@/store/navigationStore";
+import { useAlertsQuery } from "@/features/inventory";
 import {
   DndContext,
   closestCenter,
@@ -78,6 +81,7 @@ type NavItem = {
   icon: LucideIcon;
   section: NavSection;
   permission?: Permission;
+  badge?: number;
 };
 
 const sections: { id: NavSection; title: string }[] = [
@@ -117,6 +121,22 @@ const navItems: Record<NavItemId, NavItem> = {
     icon: Send,
     section: "operations",
     permission: "workRequests.read",
+  },
+  parts: {
+    id: "parts",
+    label: "Parts",
+    to: "/inventory/parts",
+    icon: Package,
+    section: "operations",
+    permission: "inventory.read",
+  },
+  "inventory-locations": {
+    id: "inventory-locations",
+    label: "Locations",
+    to: "/inventory/locations",
+    icon: MapPin,
+    section: "operations",
+    permission: "inventory.read",
   },
   permits: {
     id: "permits",
@@ -193,6 +213,14 @@ const navItems: Record<NavItemId, NavItem> = {
     label: "Inventory Analytics",
     to: "/inventory/analytics",
     icon: BarChart3,
+    section: "operations",
+    permission: "inventory.read",
+  },
+  "reorder-alerts": {
+    id: "reorder-alerts",
+    label: "Reorder Alerts",
+    to: "/inventory/alerts",
+    icon: AlertTriangle,
     section: "operations",
     permission: "inventory.read",
   },
@@ -321,6 +349,7 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
   const isAuthenticated = Boolean(user);
   const { sidebarOrder, moveSidebarItem } = useNavigationStore();
   const { can } = usePermissions();
+  const alertsQuery = useAlertsQuery();
 
   const [activeId, setActiveId] = useState<NavItemId | null>(null);
 
@@ -332,6 +361,12 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   );
+
+  const navBadges: Partial<Record<NavItemId, number>> = useMemo(() => {
+    const alerts = alertsQuery.data ?? [];
+    const openAlerts = alerts.filter((alert) => ((alert as { status?: string }).status ?? "open") === "open");
+    return { "reorder-alerts": openAlerts.length };
+  }, [alertsQuery.data]);
 
   const groups = useMemo(() => {
     const order = sidebarOrder.filter((id): id is NavItemId => Boolean(navItems[id]));
@@ -345,13 +380,13 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
     return sections.map((section) => ({
       ...section,
       items: completedOrder
-        .map((id) => navItems[id])
+        .map((id) => ({ ...navItems[id], badge: navBadges[id] }))
         .filter((item) => item && item.section === section.id)
         .filter((item): item is NavItem =>
           Boolean(item) && (!item.permission || can(item.permission)),
         ),
     }));
-  }, [sidebarOrder, can]);
+  }, [sidebarOrder, can, navBadges]);
 
   const containerClasses = clsx(
     "hidden shrink-0 border-r border-neutral-200 bg-white/60 backdrop-blur-lg transition-all duration-300 dark:border-neutral-800 dark:bg-neutral-900/60 lg:flex",
@@ -517,7 +552,14 @@ function SortableSidebarItem({ item, collapsed, isActive }: SortableSidebarItemP
         }
       >
         <item.icon className="h-5 w-5" />
-        {!collapsed && <span className="font-medium">{item.label}</span>}
+        {!collapsed && (
+          <span className="flex items-center gap-2 font-medium">
+            {item.label}
+            {item.badge ? (
+              <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold text-white">{item.badge}</span>
+            ) : null}
+          </span>
+        )}
       </NavLink>
     </li>
   );

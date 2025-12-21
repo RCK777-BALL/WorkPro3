@@ -9,7 +9,6 @@ import { z } from 'zod';
 import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
 import { fail } from '../../lib/http';
 import {
-  WorkRequestError,
   type WorkRequestContext,
   submitPublicRequest,
   getPublicRequestStatus,
@@ -17,8 +16,16 @@ import {
   getWorkRequestById,
   getWorkRequestSummary,
   convertWorkRequestToWorkOrder,
+  updateWorkRequestStatus,
+  softDeleteWorkRequest,
 } from './service';
-import { publicWorkRequestSchema, workRequestConversionSchema } from './schemas';
+import { WorkRequestError } from './errors';
+import {
+  publicWorkRequestSchema,
+  workRequestConversionSchema,
+  workRequestDecisionSchema,
+  listWorkRequestQuerySchema,
+} from './schemas';
 import RequestType from '../../../models/RequestType';
 import RequestForm from '../../../models/RequestForm';
 
@@ -123,8 +130,13 @@ export const getPublicStatusHandler = async (req: Request, res: Response, next: 
 
 export const listWorkRequestsHandler: AuthedRequestHandler = async (req, res, next) => {
   if (!ensureTenant(req, res)) return;
+  const parseQuery = listWorkRequestQuerySchema.safeParse(req.query ?? {});
+  if (!parseQuery.success) {
+    fail(res, parseQuery.error.errors.map((issue) => issue.message).join(', '), 400);
+    return;
+  }
   try {
-    const items = await listWorkRequests(buildContext(req));
+    const items = await listWorkRequests(buildContext(req), parseQuery.data);
     send(res, items);
   } catch (err) {
     handleError(err, res, next);
@@ -159,8 +171,47 @@ export const convertWorkRequestHandler: AuthedRequestHandler<{ requestId: string
     return;
   }
   try {
-    const result = await convertWorkRequestToWorkOrder(buildContext(req), req.params.requestId, parse.data);
+    const actorId =
+      req.user?._id && Types.ObjectId.isValid(req.user._id) ? new Types.ObjectId(req.user._id) : undefined;
+    const result = await convertWorkRequestToWorkOrder(buildContext(req), req.params.requestId, parse.data, actorId);
     send(res, result);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const updateWorkRequestStatusHandler: AuthedRequestHandler<{ requestId: string }> = async (
+  req,
+  res,
+  next,
+) => {
+  if (!ensureTenant(req, res)) return;
+  const parse = workRequestDecisionSchema.safeParse(req.body ?? {});
+  if (!parse.success) {
+    fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
+    return;
+  }
+  try {
+    const actorId =
+      req.user?._id && Types.ObjectId.isValid(req.user._id) ? new Types.ObjectId(req.user._id) : undefined;
+    const updated = await updateWorkRequestStatus(buildContext(req), req.params.requestId, parse.data, actorId);
+    send(res, updated);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const softDeleteWorkRequestHandler: AuthedRequestHandler<{ requestId: string }> = async (
+  req,
+  res,
+  next,
+) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    const actorId =
+      req.user?._id && Types.ObjectId.isValid(req.user._id) ? new Types.ObjectId(req.user._id) : undefined;
+    const deleted = await softDeleteWorkRequest(buildContext(req), req.params.requestId, actorId);
+    send(res, deleted);
   } catch (err) {
     handleError(err, res, next);
   }

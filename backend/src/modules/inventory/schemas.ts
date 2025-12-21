@@ -4,10 +4,17 @@
 
 import { z } from 'zod';
 
+import normalizeTags from './utils/tagHelpers';
+
 const objectId = z.string().min(1, 'Identifier is required');
 const idempotencyKey = z.string().min(1, 'Idempotency key is required');
 const metadataSchema = z.record(z.any()).optional();
 const barcodeSchema = z.string().min(1, 'Barcode is required');
+const nameSchema = z.string().trim().min(1, 'Name is required').max(120, 'Name is too long');
+const skuSchema = z.string().trim().min(1, 'SKU is required').max(64, 'SKU must be 64 characters or fewer');
+const codeSchema = z.string().trim().min(1, 'Code is required').max(64, 'Code must be 64 characters or fewer');
+const nonNegativeNumber = z.number().min(0, 'Value cannot be negative');
+const tagsSchema = z.array(z.string().trim().min(1)).optional().transform(normalizeTags);
 
 export const partInputSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -122,6 +129,58 @@ export const stockCountSchema = z.object({
   metadata: metadataSchema,
 });
 
+export const partDefinitionSchema = z.object({
+  name: nameSchema,
+  sku: skuSchema,
+  barcode: barcodeSchema.optional(),
+  description: z.string().max(1024).optional(),
+  tags: tagsSchema,
+  unit: z.string().max(32).optional(),
+  unitCost: nonNegativeNumber.optional(),
+  reorderPoint: nonNegativeNumber.optional(),
+  reorderQty: nonNegativeNumber.optional(),
+});
+
+export const stockLocationSchema = z.object({
+  name: nameSchema,
+  code: codeSchema,
+  parentId: objectId.optional(),
+  barcode: barcodeSchema.optional(),
+  tags: tagsSchema,
+});
+
+export const partStockSchema = z.object({
+  partId: objectId,
+  locationId: objectId,
+  quantity: nonNegativeNumber,
+  reserved: nonNegativeNumber.optional(),
+  reorderPoint: nonNegativeNumber.optional(),
+  reorderQty: nonNegativeNumber.optional(),
+  unitCost: nonNegativeNumber.optional(),
+  tags: tagsSchema,
+});
+
+export const inventoryMovementSchema = z.object({
+  partId: objectId,
+  locationId: objectId,
+  partStockId: objectId.optional(),
+  type: z.enum(['receive', 'issue', 'adjust', 'transfer', 'count']),
+  quantity: nonNegativeNumber,
+  unitCost: nonNegativeNumber.optional(),
+  reason: z.string().max(256).optional(),
+  idempotencyKey: idempotencyKey.optional(),
+  metadata: metadataSchema,
+  tags: tagsSchema,
+});
+
+export const reorderAlertSchema = z.object({
+  partId: objectId,
+  partStockId: objectId.optional(),
+  quantityOnHand: nonNegativeNumber.optional(),
+  reorderPoint: nonNegativeNumber.optional(),
+  status: z.enum(['open', 'pending', 'resolved']).optional(),
+});
+
 export const purchaseOrderStatusSchema = z.object({
   status: z.enum(['pending', 'approved', 'ordered', 'received', 'closed']),
   receipts: z
@@ -178,6 +237,11 @@ export type IssueInventoryInput = z.infer<typeof issueInventorySchema>;
 export type AdjustInventoryInput = z.infer<typeof adjustInventorySchema>;
 export type TransferInventoryInput = z.infer<typeof transferInventorySchema>;
 export type StockCountInput = z.infer<typeof stockCountSchema>;
+export type PartDefinitionInput = z.infer<typeof partDefinitionSchema>;
+export type StockLocationInput = z.infer<typeof stockLocationSchema>;
+export type PartStockInput = z.infer<typeof partStockSchema>;
+export type InventoryMovementInput = z.infer<typeof inventoryMovementSchema>;
+export type ReorderAlertInput = z.infer<typeof reorderAlertSchema>;
 export type PurchaseOrderStatusInput = z.infer<typeof purchaseOrderStatusSchema>;
 export type InventoryTransferInput = z.infer<typeof inventoryTransferSchema>;
 export type VendorPriceInput = z.infer<typeof vendorPriceSchema>;

@@ -17,6 +17,7 @@ export type NavItemId =
   | 'reports'
   | 'work-orders'
   | 'work-requests'
+  | 'work-request-portal'
   | 'permits'
   | 'pm-templates'
   | 'maintenance'
@@ -48,6 +49,7 @@ const defaultOrder: NavItemId[] = [
   'reports',
   'work-orders',
   'work-requests',
+  'work-request-portal',
   'permits',
   'pm-templates',
   'maintenance',

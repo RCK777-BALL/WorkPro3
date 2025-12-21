@@ -14,9 +14,10 @@ import RequestType, { type RequestAttachmentDefinition } from '../../../models/R
 import { evaluateRoutingRules } from './routing';
 import Site from '../../../models/Site';
 import WorkOrder from '../../../models/WorkOrder';
-import type { PublicWorkRequestInput, WorkRequestConversionInput } from './schemas';
+import type { PublicWorkRequestInput, WorkRequestConversionInput, WorkRequestStatusUpdateInput } from './schemas';
 import { writeAuditLog } from '../../../utils/audit';
 import { applyWorkflowToRequest } from '../../../services/workflowEngine';
+import { getIO } from '../../../socket';
 
 const UPLOAD_ROOT = path.join(process.cwd(), 'uploads');
 const WORK_REQUEST_UPLOAD_DIR = path.join(UPLOAD_ROOT, 'work-requests');
@@ -210,12 +211,14 @@ export const submitPublicRequest = async (
     requesterPhone: input.requesterPhone,
     location: input.location,
     assetTag: input.assetTag,
+    asset: toObjectId(input.asset),
+    tags: input.tags,
     priority,
     siteId,
     tenantId,
     requestForm: requestFormId,
     requestType: requestType?._id,
-    category: requestType?.category,
+    category: input.category ?? requestType?.category,
     photos: photoPaths,
     attachments,
   });
@@ -256,8 +259,27 @@ export const submitPublicRequest = async (
       description: input.description,
       priority,
       location: input.location,
+      category: input.category ?? requestType?.category,
+      tags: input.tags,
     },
   });
+  try {
+    const io = getIO();
+    io.emit('workRequestCreated', {
+      id: request._id.toString(),
+      title: request.title,
+      priority: request.priority,
+      status: request.status,
+      tenantId: tenantId.toString(),
+      siteId: siteId.toString(),
+    });
+  } catch (err) {
+    // Socket server may not be initialized in all environments; ignore emission errors
+    if (process.env.NODE_ENV !== 'test') {
+      // eslint-disable-next-line no-console
+      console.warn('Unable to emit workRequestCreated event', err);
+    }
+  }
   return { requestId: request._id.toString(), token: request.token, status: request.status };
 };
 
@@ -276,6 +298,8 @@ const describeRequestStatus = (status: WorkRequestStatus) => {
       return 'Under review by the maintenance team';
     case 'converted':
       return 'Converted to a work order for technicians to handle';
+    case 'rejected':
+      return 'Rejected and will not be converted';
     case 'closed':
     default:
       return 'Closed';
@@ -350,8 +374,43 @@ export const getPublicRequestStatus = async (token: string) => {
   };
 };
 
-export const listWorkRequests = async (ctx: WorkRequestContext) => {
-  const filter = buildTenantFilter(ctx);
+export const listWorkRequests = async (
+  ctx: WorkRequestContext,
+  filters?: {
+    status?: WorkRequestStatus;
+    priority?: WorkRequestDocument['priority'];
+    asset?: string;
+    location?: string;
+    tag?: string;
+    search?: string;
+  },
+) => {
+  const filter: Record<string, unknown> = buildTenantFilter(ctx);
+  if (filters?.status && filters.status !== 'all') {
+    filter.status = filters.status;
+  }
+  if (filters?.priority && filters.priority !== 'all') {
+    filter.priority = filters.priority;
+  }
+  if (filters?.location) {
+    filter.location = { $regex: filters.location, $options: 'i' };
+  }
+  if (filters?.asset) {
+    const assetId = toObjectId(filters.asset);
+    filter.$or = [
+      { assetTag: { $regex: filters.asset, $options: 'i' } },
+      ...(assetId ? [{ asset: assetId }] : []),
+    ];
+  }
+  if (filters?.tag) {
+    filter.tags = { $elemMatch: { $regex: filters.tag, $options: 'i' } };
+  }
+  if (filters?.search) {
+    const query = { $regex: filters.search, $options: 'i' };
+    filter.$and = [
+      { $or: [{ title: query }, { description: query }, { requesterName: query }, { requesterEmail: query }] },
+    ];
+  }
   const items = await WorkRequest.find(filter).sort({ createdAt: -1 }).lean<WorkRequestDocument[]>();
   return items;
 };
@@ -367,20 +426,22 @@ export const getWorkRequestById = async (ctx: WorkRequestContext, requestId: str
 
 export const getWorkRequestSummary = async (ctx: WorkRequestContext) => {
   const filter = buildTenantFilter(ctx);
-  const [recent, newCount, reviewingCount, convertedCount, closedCount] = await Promise.all([
+  const [recent, newCount, reviewingCount, convertedCount, closedCount, rejectedCount] = await Promise.all([
     WorkRequest.find(filter).sort({ createdAt: -1 }).limit(10).lean<WorkRequestDocument[]>(),
     WorkRequest.countDocuments({ ...filter, status: 'new' as WorkRequestStatus }),
     WorkRequest.countDocuments({ ...filter, status: 'reviewing' as WorkRequestStatus }),
     WorkRequest.countDocuments({ ...filter, status: 'converted' as WorkRequestStatus }),
     WorkRequest.countDocuments({ ...filter, status: 'closed' as WorkRequestStatus }),
+    WorkRequest.countDocuments({ ...filter, status: 'rejected' as WorkRequestStatus }),
   ]);
   const statusCounts = {
     new: newCount,
     reviewing: reviewingCount,
     converted: convertedCount,
     closed: closedCount,
+    rejected: rejectedCount,
   } satisfies Record<WorkRequestStatus, number>;
-  const total = newCount + reviewingCount + convertedCount + closedCount;
+  const total = newCount + reviewingCount + convertedCount + closedCount + rejectedCount;
   return {
     total,
     open: newCount + reviewingCount,
@@ -389,10 +450,47 @@ export const getWorkRequestSummary = async (ctx: WorkRequestContext) => {
   };
 };
 
+export const updateWorkRequestStatus = async (
+  ctx: WorkRequestContext,
+  requestId: string,
+  input: WorkRequestStatusUpdateInput,
+  actorId?: string,
+) => {
+  const request = await WorkRequest.findOne({ ...buildTenantFilter(ctx), _id: toObjectId(requestId) });
+  if (!request) {
+    throw new WorkRequestError('Request not found', 404);
+  }
+  if (input.status === 'rejected' && !input.reason) {
+    throw new WorkRequestError('Please include a reason when rejecting a request.', 400);
+  }
+  const before = request.toObject();
+  request.status = input.status;
+  request.rejectionReason = input.status === 'rejected' ? input.reason : undefined;
+  request.triagedAt = new Date();
+  request.triagedBy = toObjectId(actorId);
+  if (input.note) {
+    request.set('triageNote', input.note, { strict: false });
+  }
+  await request.save();
+  await writeAuditLog({
+    tenantId: ctx.tenantId,
+    siteId: ctx.siteId,
+    userId: actorId,
+    action: 'update',
+    entityType: 'WorkRequest',
+    entityId: request._id,
+    entityLabel: request.title,
+    before,
+    after: request.toObject(),
+  });
+  return request.toObject();
+};
+
 export const convertWorkRequestToWorkOrder = async (
   ctx: WorkRequestContext,
   requestId: string,
   input: WorkRequestConversionInput,
+  actorId?: string,
 ) => {
   const request = await WorkRequest.findOne({ ...buildTenantFilter(ctx), _id: toObjectId(requestId) });
   if (!request) {
@@ -415,5 +513,15 @@ export const convertWorkRequestToWorkOrder = async (
   request.status = 'converted';
   request.workOrder = workOrder._id;
   await request.save();
+  await writeAuditLog({
+    tenantId: ctx.tenantId,
+    siteId: ctx.siteId,
+    userId: actorId,
+    action: 'convert',
+    entityType: 'WorkRequest',
+    entityId: request._id,
+    entityLabel: request.title,
+    after: { workOrder: workOrder._id, status: request.status },
+  });
   return { workOrderId: workOrder._id.toString(), request: request.toObject() };
 };

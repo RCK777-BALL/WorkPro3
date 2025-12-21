@@ -23,6 +23,7 @@ const workRequestStatuses = [
   'reviewing',
   'converted',
   'closed',
+  'rejected',
 ] as const satisfies readonly [WorkRequestStatus, ...WorkRequestStatus[]];
 
 const statusUpdateSchema = z.object({
@@ -199,7 +200,12 @@ export const convertRequestToWorkOrder: AuthedRequestHandler = async (
       return;
     }
 
-    const result = await convertWorkRequestToWorkOrder({ tenantId, siteId: req.siteId }, req.params.id, parse.data);
+    const result = await convertWorkRequestToWorkOrder(
+      { tenantId, siteId: req.siteId },
+      req.params.id,
+      parse.data,
+      req.user?._id?.toString(),
+    );
 
     await Notification.create({
       tenantId: toObjectId(tenantId),

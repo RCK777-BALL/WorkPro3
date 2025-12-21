@@ -18,6 +18,7 @@ import {
   getWorkRequestHandler,
   getWorkRequestSummaryHandler,
   convertWorkRequestHandler,
+  updateWorkRequestStatusHandler,
   listRequestTypesHandler,
   createRequestTypeHandler,
   saveRequestFormHandler,
@@ -62,6 +63,12 @@ adminRouter.post(
   requirePermission('workRequests', 'convert'),
   validateObjectId('requestId'),
   convertWorkRequestHandler,
+);
+adminRouter.patch(
+  '/:requestId/status',
+  requirePermission('workRequests', 'update'),
+  validateObjectId('requestId'),
+  updateWorkRequestStatusHandler,
 );
 adminRouter.get('/types', requirePermission('workRequests', 'read'), listRequestTypesHandler);
 adminRouter.post('/types', requirePermission('workRequests', 'convert'), createRequestTypeHandler);

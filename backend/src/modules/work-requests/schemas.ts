@@ -21,6 +21,20 @@ export const publicWorkRequestSchema = z.object({
   requesterPhone: optionalString,
   location: optionalString,
   assetTag: optionalString,
+  asset: optionalString,
+  category: optionalString,
+  tags: z
+    .preprocess(
+      (value) => {
+        if (Array.isArray(value)) return value;
+        if (typeof value === 'string') return [value];
+        return [];
+      },
+      z.array(z.string().trim().min(2)),
+    )
+    .max(6, 'Please limit to 6 tags')
+    .optional()
+    .transform((list) => (list?.length ? list : undefined)),
   priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
 });
 
@@ -29,5 +43,12 @@ export const workRequestConversionSchema = z.object({
   workOrderType: z.enum(['corrective', 'preventive', 'inspection', 'calibration', 'safety']).optional(),
 });
 
+export const workRequestStatusUpdateSchema = z.object({
+  status: z.enum(['new', 'reviewing', 'converted', 'closed', 'rejected']),
+  reason: optionalString,
+  note: optionalString,
+});
+
 export type PublicWorkRequestInput = z.infer<typeof publicWorkRequestSchema>;
 export type WorkRequestConversionInput = z.infer<typeof workRequestConversionSchema>;
+export type WorkRequestStatusUpdateInput = z.infer<typeof workRequestStatusUpdateSchema>;

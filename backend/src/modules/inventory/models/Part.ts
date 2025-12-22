@@ -31,6 +31,8 @@ export interface PartDocument extends Document {
   reorderThreshold?: number;
   leadTime?: number;
   autoReorder: boolean;
+  lastCost?: number;
+  averageCost?: number;
   vendor?: Types.ObjectId;
   assetIds: Types.ObjectId[];
   pmTemplateIds: Types.ObjectId[];
@@ -77,6 +79,8 @@ const partSchema = new Schema<PartDocument>(
     reorderThreshold: { type: Number, default: 0 },
     leadTime: { type: Number, default: 0 },
     autoReorder: { type: Boolean, default: false },
+    lastCost: { type: Number, default: 0 },
+    averageCost: { type: Number, default: 0 },
     vendor: { type: Schema.Types.ObjectId, ref: 'InventoryVendor', index: true },
     assetIds: [{ type: Schema.Types.ObjectId, ref: 'Asset' }],
     pmTemplateIds: [{ type: Schema.Types.ObjectId, ref: 'PMTask' }],

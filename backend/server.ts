@@ -91,7 +91,7 @@ import hierarchyRouter from "./src/modules/hierarchy";
 import importExportRouter from "./src/modules/importExport";
 import inventoryModuleRouter from "./src/modules/inventory";
 import inventoryFoundationsRouter from "./src/modules/inventory-foundations";
-import purchaseOrdersRouter from "./src/modules/purchase-orders";
+import purchaseOrdersModuleRouter from "./src/modules/purchase-orders";
 import integrationsModuleRouter from "./src/modules/integrations";
 import workRequestsRouter from "./src/modules/work-requests";
 import pmTemplatesRouter from "./src/modules/pm";
@@ -102,6 +102,7 @@ import executiveRouter from "./src/modules/executive";
 import analyticsModuleRouter from "./src/modules/analytics";
 import meterReadingsRouter from "./src/modules/meters";
 import workOrdersModuleRouter from "./src/modules/work-orders";
+import purchaseOrdersApiRouter from "./src/routes/purchaseOrders";
 import { startWorkOrderReminderJobs } from "./src/modules/work-orders/jobs";
 import { startWorkRequestReminderJobs } from "./src/modules/work-requests/jobs";
 
@@ -286,7 +287,8 @@ app.use("/api/notifications", burstFriendly, notificationsRoutes);
 // Apply limiter to the rest of protected /api routes
 app.use(/^\/api(?!\/(auth|public))/, generalLimiter);
 
-app.use("/api/po", purchaseOrdersRouter);
+app.use("/api/po", purchaseOrdersModuleRouter);
+app.use("/api/purchase-orders", purchaseOrdersApiRouter);
 app.use("/api/pm/templates", pmTemplatesRouter);
 app.use("/api/templates", templatesRouter);
 app.use("/api/onboarding", onboardingRouter);

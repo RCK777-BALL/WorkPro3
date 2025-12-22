@@ -62,6 +62,24 @@ const deriveCompliance = (
   };
 };
 
+const computeChecklistCompliance = (
+  checklistHistory: Array<WorkOrderChecklistLogDocument | (WorkOrderChecklistLogDocument & { recordedAt: Date })>,
+): { complianceStatus: 'pending' | 'complete' | 'not_required'; complianceCompletedAt?: Date } => {
+  if (!Array.isArray(checklistHistory) || checklistHistory.length === 0) {
+    return { complianceStatus: 'pending' };
+  }
+
+  const allPassed = checklistHistory.every((entry) => entry.passed !== false);
+  if (allPassed) {
+    return {
+      complianceStatus: 'complete',
+      complianceCompletedAt: checklistHistory[0].recordedAt,
+    };
+  }
+
+  return { complianceStatus: 'pending' };
+};
+
 
 
 const workOrderCreateFields = [
@@ -149,6 +167,8 @@ type UpdateWorkOrderBody = Partial<
   permits?: (Types.ObjectId | string)[];
   requiredPermitTypes?: string[];
   plant?: Types.ObjectId | string;
+  complianceStatus?: WorkOrderDocument['complianceStatus'];
+  complianceCompletedAt?: WorkOrderDocument['complianceCompletedAt'];
 };
 
 interface CompleteWorkOrderBody extends WorkOrderComplete {

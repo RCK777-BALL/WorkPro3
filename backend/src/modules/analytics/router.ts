@@ -13,6 +13,7 @@ import {
   rebuildSnapshotHandler,
   previewOnDemandHandler,
 } from './controller';
+import { backlogMetricsHandler, pmComplianceHandler, reliabilityMetricsHandler } from './metricsController';
 import {
   metricsRollupCsv,
   metricsRollupDetailsJson,
@@ -34,5 +35,8 @@ router.get('/metrics/rollups', metricsRollupJson);
 router.get('/metrics/rollups.csv', metricsRollupCsv);
 router.get('/metrics/rollups.pdf', metricsRollupPdf);
 router.get('/metrics/rollups/details', metricsRollupDetailsJson);
+router.get('/metrics/reliability', reliabilityMetricsHandler);
+router.get('/metrics/backlog', backlogMetricsHandler);
+router.get('/metrics/pm-compliance', pmComplianceHandler);
 
 export default router;

@@ -7,6 +7,7 @@ import { Router } from 'express';
 import { requireAuth } from '../../../middleware/authMiddleware';
 import tenantScope from '../../../middleware/tenantScope';
 import {
+  exportSnapshotCsvHandler,
   getSnapshotHandler,
   getLeaderboardHandler,
   getComparisonHandler,
@@ -27,6 +28,7 @@ router.use(requireAuth);
 router.use(tenantScope);
 
 router.get('/metrics', getSnapshotHandler);
+router.get('/metrics.csv', exportSnapshotCsvHandler);
 router.get('/metrics/preview', previewOnDemandHandler);
 router.post('/metrics/rebuild', rebuildSnapshotHandler);
 router.get('/metrics/leaderboard', getLeaderboardHandler);

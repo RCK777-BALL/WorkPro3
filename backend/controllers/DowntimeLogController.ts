@@ -3,6 +3,7 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
+import { Parser as Json2csvParser } from 'json2csv';
 import { Types } from 'mongoose';
 
 import { sendResponse, writeAuditLog, toEntityId } from '../utils';
@@ -13,6 +14,18 @@ import {
   listDowntimeLogs,
   updateDowntimeLog,
 } from '../services/downtimeLogs';
+
+const parseDate = (value: unknown): Date | undefined => {
+  if (typeof value !== 'string') return undefined;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+};
+
+const buildFiltersFromRequest = (req: Request) => ({
+  assetId: typeof req.query.assetId === 'string' ? req.query.assetId : undefined,
+  start: parseDate(req.query.start),
+  end: parseDate(req.query.end),
+});
 
 export const getDowntimeLogsHandler = async (
   req: Request,
@@ -26,12 +39,57 @@ export const getDowntimeLogsHandler = async (
       return;
     }
 
-    const assetId = typeof req.query.assetId === 'string' ? req.query.assetId : undefined;
-    const start = typeof req.query.start === 'string' ? new Date(req.query.start) : undefined;
-    const end = typeof req.query.end === 'string' ? new Date(req.query.end) : undefined;
-
-    const logs = await listDowntimeLogs(tenantId, { assetId, start, end });
+    const filters = buildFiltersFromRequest(req);
+    const logs = await listDowntimeLogs(tenantId, filters);
     sendResponse(res, logs);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const exportDowntimeLogsHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<Response | void> => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const filters = buildFiltersFromRequest(req);
+    const logs = await listDowntimeLogs(tenantId, filters);
+
+    const parser = new Json2csvParser({
+      fields: [
+        { label: 'Asset ID', value: 'assetId' },
+        { label: 'Start', value: 'start' },
+        { label: 'End', value: 'end' },
+        { label: 'Duration (minutes)', value: 'durationMinutes' },
+        { label: 'Reason', value: 'reason' },
+      ],
+    });
+
+    const rows = logs.map((log) => {
+      const start = log.start ? new Date(log.start) : undefined;
+      const end = log.end ? new Date(log.end) : undefined;
+      const durationMinutes = start && end ? Number(((end.getTime() - start.getTime()) / 60000).toFixed(2)) : '';
+
+      return {
+        assetId: log.assetId?.toString?.() ?? '',
+        start: start?.toISOString() ?? '',
+        end: end?.toISOString() ?? '',
+        durationMinutes,
+        reason: log.reason ?? '',
+      };
+    });
+
+    const csv = parser.parse(rows);
+    res.header('Content-Type', 'text/csv');
+    res.attachment('downtime-logs.csv');
+    res.send(csv);
   } catch (err) {
     next(err);
   }

@@ -175,6 +175,21 @@ export interface DepartmentHierarchy extends Department {
   lines: LineWithStations[];
 }
 
+export interface WorkOrderChecklistItem {
+  id?: string;
+  text: string;
+  type?: 'checkbox' | 'numeric' | 'text' | 'pass_fail';
+  required?: boolean;
+  evidenceRequired?: boolean;
+  completedValue?: string | number | boolean;
+  completedAt?: string;
+  completedBy?: string;
+  evidence?: string[];
+  photos?: string[];
+  status?: 'not_started' | 'in_progress' | 'done' | 'blocked';
+  done?: boolean;
+}
+
 export interface WorkOrder {
   /** Unique identifier */
   id: string;
@@ -229,6 +244,7 @@ export interface WorkOrder {
     status?: 'not_started' | 'in_progress' | 'done' | 'blocked';
     photos?: string[];
   }[];
+  checklist?: WorkOrderChecklistItem[];
   partsUsed?: { partId: string; qty: number; cost: number }[];
   signatures?: { by: string; ts: string }[];
   timeSpentMin?: number;

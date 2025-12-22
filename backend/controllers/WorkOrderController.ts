@@ -34,8 +34,22 @@ import {
   cancelWorkOrderSchema,
   type WorkOrderComplete,
   type WorkOrderUpdate,
-  checklistItemSchema,
 } from '../src/schemas/workOrder';
+
+const checklistItemSchema = z.object({
+  id: z.string().optional(),
+  description: z.string(),
+  type: z.string().optional(),
+  required: z.boolean().optional(),
+  evidenceRequired: z.boolean().optional(),
+  completedValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
+  done: z.boolean().optional(),
+  status: z.string().optional(),
+  photos: z.array(z.string()).optional(),
+  evidence: z.array(z.string()).optional(),
+  completedAt: z.preprocess((val) => (typeof val === 'string' ? new Date(val) : val), z.date().optional()),
+  completedBy: z.string().optional(),
+});
 import {
   mapAssignees,
   mapPartsUsed,

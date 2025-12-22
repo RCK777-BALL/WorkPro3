@@ -32,4 +32,4 @@ const inventoryMovementSchema = new Schema<InventoryMovementDocument>(
 
 inventoryMovementSchema.index({ tenantId: 1, stockId: 1, created_at: -1 });
 
-export default model<InventoryMovementDocument>('InventoryMovement', inventoryMovementSchema);
+export default model<InventoryMovementDocument>('InventoryMovementV2', inventoryMovementSchema);

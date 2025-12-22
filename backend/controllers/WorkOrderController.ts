@@ -16,6 +16,7 @@ import { emitWorkOrderUpdate } from '../server';
 import { applyWorkflowToWorkOrder } from '../services/workflowEngine';
 import { notifySlaBreach, notifyWorkOrderAssigned } from '../services/notificationService';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
+import { closeOpenDowntimeEventsForWorkOrder } from '../services/downtimeEvents';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
 
@@ -1410,6 +1411,11 @@ export async function completeWorkOrder(
         }),
       );
     }
+    await closeOpenDowntimeEventsForWorkOrder(
+      tenantId,
+      workOrder._id,
+      saved.completedAt ?? new Date(),
+    );
     await auditAction(req as unknown as Request, 'complete', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved);

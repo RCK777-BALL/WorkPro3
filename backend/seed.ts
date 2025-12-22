@@ -41,6 +41,17 @@ import StockItem from './models/StockItem';
 import PurchaseOrder from './models/PurchaseOrder';
 import StockHistory from './models/StockHistory';
 import { writeAuditLog } from './utils';
+import InspectionTemplate from './models/InspectionTemplate';
+import MaintenanceSchedule from './models/MaintenanceSchedule';
+import ConditionRule from './models/ConditionRule';
+import {
+  inspectionTemplates,
+  inspectionChecklistIds,
+  iotRuleFixture,
+  latestInspectionTemplateVersion,
+  pmScheduleFixture,
+  workOrderWithChecklistFixture,
+} from './seedFixtures';
 
 // Tenant id used for all seeded records
 const tenantId = process.env.SEED_TENANT_ID
@@ -127,6 +138,9 @@ mongoose.connect(mongoUri).then(async () => {
   await StockItem.deleteMany({});
   await StockHistory.deleteMany({});
   await PurchaseOrder.deleteMany({});
+  await InspectionTemplate.deleteMany({});
+  await MaintenanceSchedule.deleteMany({});
+  await ConditionRule.deleteMany({});
 
   // Seed Tenant
   await Tenant.create({
@@ -292,6 +306,36 @@ mongoose.connect(mongoUri).then(async () => {
     siteId: mainSite._id,
   });
 
+  const insertedInspectionTemplates = await InspectionTemplate.insertMany(
+    inspectionTemplates.map((template) => ({
+      ...template,
+      tenantId,
+      siteId: mainSite._id,
+      createdBy: admin._id,
+    })),
+  );
+  const latestInspectionTemplate = insertedInspectionTemplates.reduce((latest, current) =>
+    current.version > latest.version ? current : latest,
+  );
+
+  const pmScheduleNextDue = new Date();
+  pmScheduleNextDue.setDate(pmScheduleNextDue.getDate() + 7);
+
+  await MaintenanceSchedule.create({
+    tenantId,
+    siteId: mainSite._id,
+    assetId: asset._id.toString(),
+    title: pmScheduleFixture.title,
+    description: pmScheduleFixture.description,
+    frequency: pmScheduleFixture.frequency,
+    nextDue: pmScheduleNextDue,
+    estimatedDuration: pmScheduleFixture.estimatedDuration,
+    instructions: `${pmScheduleFixture.instructions} Tracking ${latestInspectionTemplate.name} v${latestInspectionTemplateVersion}.`,
+    type: pmScheduleFixture.type,
+    repeatConfig: pmScheduleFixture.repeatConfig,
+    parts: inspectionChecklistIds,
+  });
+
   const analyticsBase = new Date();
   const day1 = new Date(analyticsBase.getTime() - 2 * 24 * 60 * 60 * 1000);
   const day2 = new Date(analyticsBase.getTime() - 1 * 24 * 60 * 60 * 1000);
@@ -312,6 +356,16 @@ mongoose.connect(mongoUri).then(async () => {
     dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
     tenantId,
     siteId: mainSite._id,
+  });
+
+  const completedChecklistWorkOrder = await WorkOrder.create({
+    ...workOrderWithChecklistFixture,
+    tenantId,
+    siteId: mainSite._id,
+    asset: asset._id,
+    pmTask: pmTask._id,
+    templateKey: `${latestInspectionTemplate.name}-v${latestInspectionTemplate.version}`,
+    type: 'preventive',
   });
 
   await WorkOrder.insertMany([
@@ -388,6 +442,12 @@ mongoose.connect(mongoUri).then(async () => {
       timestamp: new Date(day2.getTime() + 12 * 60 * 60 * 1000),
     },
   ]);
+
+  await ConditionRule.create({
+    ...iotRuleFixture,
+    tenantId,
+    asset: asset._id,
+  });
 
   const requestType = await RequestType.create({
     name: 'Maintenance Request',

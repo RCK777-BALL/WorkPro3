@@ -13,12 +13,13 @@ import Meter from '../models/Meter';
 import MeterReading from '../models/MeterReading';
 import PMTask from '../models/PMTask';
 import SensorDevice from '../models/SensorDevice';
+import PMTemplate from '../models/PMTemplate';
 
 const ACTIVE_WORK_ORDER_STATUSES = ['requested', 'assigned', 'in_progress'];
 const ANOMALY_LOOKBACK = 20;
 const ANOMALY_COOLDOWN_MINUTES = 15;
 
-type ConditionRuleLean = {
+export type ConditionRuleLean = {
   _id?: Types.ObjectId;
   asset?: Types.ObjectId;
   metric?: string;
@@ -26,6 +27,21 @@ type ConditionRuleLean = {
   threshold?: number;
   workOrderTitle?: string;
   workOrderDescription?: string;
+  pmTemplateId?: Types.ObjectId;
+};
+
+type TemplateAssignmentLean = {
+  asset?: Types.ObjectId;
+  checklist?: { description: string; required?: boolean }[];
+  requiredParts?: { partId?: Types.ObjectId; quantity?: number }[];
+};
+
+type TemplateLean = {
+  _id?: Types.ObjectId;
+  name?: string;
+  description?: string;
+  tasks?: string[];
+  assignments?: TemplateAssignmentLean[];
 };
 
 export type IoTReadingInput = {
@@ -121,6 +137,13 @@ const createWorkOrderFromRule = async (
   assetId: string,
   metric: string,
   value: number,
+  context?: {
+    source?: 'http' | 'mqtt';
+    readingId?: Types.ObjectId;
+    timestamp?: Date;
+    payload?: SanitizedReading;
+    template?: TemplateLean | null;
+  },
 ): Promise<RuleTriggerResult | null> => {
   if (!rule?._id) return null;
   const existing = await WorkOrder.findOne({
@@ -138,16 +161,58 @@ const createWorkOrderFromRule = async (
       created: false,
     };
   }
+
+  const template = context?.template ?? null;
+  const assignment = template?.assignments?.find(
+    (item) => (item.asset as Types.ObjectId | undefined)?.toString() === assetId,
+  );
+  const title =
+    rule.workOrderTitle ??
+    (template?.name ? `PM: ${template.name}` : `Auto-generated from ${metric}`);
+  const description =
+    rule.workOrderDescription ??
+    template?.description ??
+    (template?.tasks?.length ? template.tasks.join('\n') : undefined) ??
+    `Auto-generated from ${metric} reading (${value.toFixed(2)})`;
+  const checklists = assignment?.checklist?.map((item) => ({
+    text: item.description,
+    done: false,
+    required: item.required ?? true,
+  }));
+  const partsUsed = assignment?.requiredParts?.map((part) => ({
+    partId: part.partId,
+    qty: part.quantity ?? 1,
+    cost: 0,
+  }));
+
   const created = await WorkOrder.create({
     tenantId,
     assetId,
-    title: rule.workOrderTitle,
-    description:
-      rule.workOrderDescription ??
-      `Auto-generated from ${metric} reading (${value.toFixed(2)})`,
+    title,
+    description,
     priority: 'high',
-    type: 'corrective',
+    type: template ? 'preventive' : 'corrective',
     status: 'requested',
+    ...(template?._id ? { pmTemplate: template._id } : {}),
+    ...(checklists?.length ? { checklists } : {}),
+    ...(partsUsed?.length ? { partsUsed } : {}),
+    iotEvent: {
+      ruleId: rule._id,
+      source: context?.source,
+      readingId: context?.readingId,
+      metric,
+      value,
+      timestamp: context?.timestamp ?? new Date(),
+      payload: context?.payload
+        ? {
+            assetId: context.payload.assetId,
+            metric: context.payload.metric,
+            value: context.payload.value,
+            timestamp: context.payload.timestamp?.toISOString?.() ?? context.payload.timestamp,
+            ...(context.payload.deviceId ? { deviceId: context.payload.deviceId } : {}),
+          }
+        : undefined,
+    },
   });
   return {
     ruleId: rule._id.toString(),
@@ -340,7 +405,6 @@ export async function ingestTelemetryBatch({
   source?: 'http' | 'mqtt';
   triggerMeterPm?: boolean;
 }): Promise<IngestSummary> {
-  void source; // reserved for future logging
   const sanitized = await sanitizeReadings(tenantId, readings);
   if (!sanitized.length) {
     throw new Error('No valid readings provided');
@@ -364,8 +428,17 @@ export async function ingestTelemetryBatch({
   const meterPmWorkOrders: MeterPmTriggerResult[] = [];
   const deviceUpdates: DeviceUpdateResult[] = [];
   const latestByDevice = new Map<string, { assetId: string; metric: string; value: number; timestamp: Date }>();
+  const readingPayloads = new Map<string, SanitizedReading>();
 
   const ruleCache = new Map<string, ConditionRuleLean[]>();
+  const templateCache = new Map<string, TemplateLean | null>();
+
+  docs.forEach((doc, index) => {
+    const payload = sanitized[index];
+    if (doc?._id && payload) {
+      readingPayloads.set(doc._id.toString(), payload);
+    }
+  });
 
   for (const doc of docs) {
     const assetId = (doc.asset as Types.ObjectId | undefined)?.toString();
@@ -406,12 +479,30 @@ export async function ingestTelemetryBatch({
       ) {
         continue;
       }
+      let template: TemplateLean | null = null;
+      if (rule.pmTemplateId) {
+        const templateKey = rule.pmTemplateId.toString();
+        if (!templateCache.has(templateKey)) {
+          const found = await PMTemplate.findOne({ _id: rule.pmTemplateId, tenantId })
+            .select('name description tasks assignments')
+            .lean();
+          templateCache.set(templateKey, (found as TemplateLean | null) ?? null);
+        }
+        template = templateCache.get(templateKey) ?? null;
+      }
       const result = await createWorkOrderFromRule(
         rule,
         tenantId,
         assetId,
         metric,
         doc.value,
+        {
+          source,
+          readingId: doc._id as Types.ObjectId,
+          timestamp: doc.timestamp ?? new Date(),
+          payload: readingPayloads.get(doc._id?.toString?.() ?? ''),
+          template,
+        },
       );
       if (result) {
         triggeredRules.push(result);

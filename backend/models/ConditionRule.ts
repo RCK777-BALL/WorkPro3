@@ -16,6 +16,7 @@ const conditionRuleSchema = new mongoose.Schema(
     threshold: { type: Number, required: true },
     workOrderTitle: { type: String, required: true },
     workOrderDescription: String,
+    pmTemplateId: { type: mongoose.Schema.Types.ObjectId, ref: 'PMTemplate' },
     active: { type: Boolean, default: true },
     tenantId: {
       type: mongoose.Schema.Types.ObjectId,

@@ -7,6 +7,7 @@ import { validationResult } from 'express-validator';
 import PMTask, { PMTaskDocument } from '../models/PMTask';
 import WorkOrder from '../models/WorkOrder';
 import Meter from '../models/Meter';
+import WorkOrderTemplateModel from '../src/modules/work-orders/templateModel';
 import { nextCronOccurrenceWithin } from '../services/PMScheduler';
 import type { AuthedRequestHandler } from '../types/http';
 
@@ -21,6 +22,37 @@ import type {
 } from '../types/pmTask';
 import type { ParamsDictionary } from 'express-serve-static-core';
 import { sendResponse, auditAction, toEntityId } from '../utils';
+
+const resolveTemplateVersion = async (templateId?: Types.ObjectId | string | null) => {
+  if (!templateId || !Types.ObjectId.isValid(templateId)) return undefined;
+  const template = await WorkOrderTemplateModel.findById(templateId).select('version tenantId');
+  return template?.version;
+};
+
+const resolveTemplateDefaults = async (task: PMTaskDocument) => {
+  if (!task.workOrderTemplateId) {
+    return { checklists: undefined, templateVersion: task.templateVersion, status: 'not_required' as const };
+  }
+
+  const template = await WorkOrderTemplateModel.findOne({
+    _id: task.workOrderTemplateId,
+    tenantId: task.tenantId,
+  }).lean();
+
+  const templateVersion = template?.version ?? task.templateVersion;
+  const checklists = template?.defaults?.checklists?.map((item) => ({
+    text: item.text,
+    done: false,
+    status: 'not_started' as const,
+  }));
+
+  return {
+    checklists,
+    templateVersion,
+    status: checklists?.length ? ('pending' as const) : ('not_required' as const),
+    templateId: template?._id,
+  };
+};
 
 
 export const getAllPMTasks: AuthedRequestHandler<ParamsDictionary, PMTaskListResponse> = async (
@@ -108,7 +140,13 @@ export const createPMTask: AuthedRequestHandler<ParamsDictionary, PMTaskResponse
       sendResponse(res, null, { errors: errors.array() }, 400);
       return;
     }
-    const payload = { ...req.body, tenantId, siteId: req.siteId };
+    const templateVersion = await resolveTemplateVersion(req.body.workOrderTemplateId);
+    const payload = {
+      ...req.body,
+      tenantId,
+      siteId: req.siteId,
+      ...(templateVersion ? { templateVersion } : {}),
+    };
     const task: PMTaskDocument = await PMTask.create(payload);
     const targetId: string | Types.ObjectId = (toEntityId(task._id as Types.ObjectId) ?? task._id) as string | Types.ObjectId;
     await auditAction(req as any, 'create', 'PMTask', targetId, undefined, task.toObject());
@@ -150,9 +188,13 @@ export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | n
       sendResponse(res, null, 'Not found', 404);
       return;
     }
+    const templateVersion = await resolveTemplateVersion(req.body.workOrderTemplateId);
     const task = await PMTask.findOneAndUpdate(
       { _id: req.params.id, tenantId, ...siteFilter },
-      req.body,
+      {
+        ...req.body,
+        ...(templateVersion ? { templateVersion } : {}),
+      },
       { new: true, runValidators: true },
     );
     if (!task) {
@@ -239,6 +281,7 @@ export const generatePMWorkOrders: AuthedRequestHandler<ParamsDictionary, PMTask
     const tasks = await PMTask.find({ tenantId, active: true });
     let count = 0;
     for (const task of tasks) {
+      const templateDefaults = await resolveTemplateDefaults(task);
       if (task.rule?.type === 'calendar' && task.rule.cron) {
         const next = nextCronOccurrenceWithin(task.rule.cron, now, 7);
         if (next) {
@@ -253,6 +296,11 @@ export const generatePMWorkOrders: AuthedRequestHandler<ParamsDictionary, PMTask
             dueDate: next,
             priority: 'medium',
             tenantId: task.tenantId,
+            ...(templateDefaults.templateId ? { workOrderTemplateId: templateDefaults.templateId } : {}),
+            ...(templateDefaults.templateVersion ? { templateVersion: templateDefaults.templateVersion } : {}),
+            ...(templateDefaults.checklists ? { checklists: templateDefaults.checklists } : {}),
+            complianceStatus: templateDefaults.status,
+            ...(templateDefaults.status === 'not_required' ? { complianceCompletedAt: new Date() } : {}),
           });
           task.lastGeneratedAt = now;
           await task.save();
@@ -277,6 +325,11 @@ export const generatePMWorkOrders: AuthedRequestHandler<ParamsDictionary, PMTask
             dueDate: now,
             priority: 'medium',
             tenantId: task.tenantId,
+            ...(templateDefaults.templateId ? { workOrderTemplateId: templateDefaults.templateId } : {}),
+            ...(templateDefaults.templateVersion ? { templateVersion: templateDefaults.templateVersion } : {}),
+            ...(templateDefaults.checklists ? { checklists: templateDefaults.checklists } : {}),
+            complianceStatus: templateDefaults.status,
+            ...(templateDefaults.status === 'not_required' ? { complianceCompletedAt: new Date() } : {}),
           });
           meter.lastWOValue = meter.currentValue;
           await meter.save();

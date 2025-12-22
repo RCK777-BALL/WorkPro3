@@ -26,7 +26,6 @@ export interface WorkRequestDocument extends Document {
   location?: string;
   assetTag?: string;
   asset?: Types.ObjectId;
-  tags?: Types.Array<string>;
   priority: 'low' | 'medium' | 'high' | 'critical';
   status: WorkRequestStatus;
   rejectionReason?: string;
@@ -74,6 +73,7 @@ export interface WorkRequestDocument extends Document {
     decidedAt?: Date;
     note?: string;
     reason?: string;
+    convertedWorkOrderId?: Types.ObjectId;
   };
   audit?: {
     createdBy?: Types.ObjectId;
@@ -163,7 +163,6 @@ const workRequestSchema = new Schema<WorkRequestDocument>(
       default: [],
     },
     photos: [{ type: String }],
-    tags: [{ type: String }],
     asset: { type: Schema.Types.ObjectId, ref: 'Asset' },
     siteId: { type: Schema.Types.ObjectId, ref: 'Site', required: true, index: true },
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
@@ -191,6 +190,7 @@ const workRequestSchema = new Schema<WorkRequestDocument>(
       decidedAt: { type: Date },
       note: { type: String },
       reason: { type: String },
+      convertedWorkOrderId: { type: Schema.Types.ObjectId, ref: 'WorkOrder' },
     },
     audit: {
       createdBy: { type: Schema.Types.ObjectId, ref: 'User' },

@@ -2,8 +2,8 @@ import type { Response, NextFunction } from 'express';
 import mongoose, { Types } from 'mongoose';
 
 import type { AuthedRequest } from '../types/http';
-import WorkOrder from '../models/WorkOrder';
-import PartStock from '../models/PartStock';
+import WorkOrder, { type WorkOrderDocument } from '../models/WorkOrder';
+import PartStock, { type PartStockDocument } from '../models/PartStock';
 import InventoryMovement from '../models/InventoryMovement';
 import WorkOrderPartLineItem, { type WorkOrderPartLineItemDocument } from '../models/WorkOrderPartLineItem';
 import InventoryPart from '../src/modules/inventory/models/Part';
@@ -30,10 +30,21 @@ const assertPositiveQuantity = (quantity: unknown): number | null => {
   return parsed;
 };
 
+const parsePartRequestBody = (
+  body: unknown,
+): { quantity: number | null; stockId: string | null; unitCost?: number } => {
+  const payload = (body ?? {}) as Record<string, unknown>;
+  return {
+    quantity: assertPositiveQuantity(payload.quantity),
+    stockId: typeof payload.stockId === 'string' ? payload.stockId : null,
+    unitCost: typeof payload.unitCost === 'number' ? payload.unitCost : undefined,
+  };
+};
+
 const findWorkOrder = async (
   tenantId: Types.ObjectId,
   workOrderId: string,
-): Promise<Awaited<ReturnType<typeof WorkOrder.findOne>> | null> => {
+): Promise<WorkOrderDocument | null> => {
   if (!Types.ObjectId.isValid(workOrderId)) return null;
   return WorkOrder.findOne({ _id: workOrderId, tenantId });
 };
@@ -68,7 +79,7 @@ const recordMovement = async (
   tenantId: Types.ObjectId,
   workOrderId: Types.ObjectId,
   partId: Types.ObjectId,
-  stock: Awaited<ReturnType<typeof PartStock.findOne>>,
+  stock: PartStockDocument,
   type: 'reserve' | 'unreserve' | 'issue' | 'return',
   quantity: number,
   session: mongoose.ClientSession,
@@ -95,7 +106,7 @@ const recordMovement = async (
 };
 
 const refreshWorkOrderTotals = async (
-  workOrder: Awaited<ReturnType<typeof WorkOrder.findOne>>,
+  workOrder: WorkOrderDocument | null,
   session: mongoose.ClientSession,
 ) => {
   if (!workOrder) return;
@@ -118,7 +129,7 @@ const validateStockForTenant = async (
   tenantId: Types.ObjectId,
   stockId: string,
   session: mongoose.ClientSession,
-) => {
+): Promise<PartStockDocument | null> => {
   if (!Types.ObjectId.isValid(stockId)) return null;
   return PartStock.findOne({ _id: stockId, tenantId }, undefined, { session });
 };
@@ -145,14 +156,18 @@ export const listWorkOrderParts = async (req: AuthedRequest, res: Response, next
 export const reserveWorkOrderPart = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   const session = await mongoose.startSession();
   try {
+    const { quantity, stockId, unitCost } = parsePartRequestBody(req.body);
     const tenantId = req.tenantId ? toObjectId(req.tenantId) : null;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const quantity = assertPositiveQuantity(req.body.quantity);
     if (!quantity) {
       sendResponse(res, null, 'Quantity must be positive', 400);
+      return;
+    }
+    if (!stockId) {
+      sendResponse(res, null, 'Stock ID is required', 400);
       return;
     }
 
@@ -163,7 +178,7 @@ export const reserveWorkOrderPart = async (req: AuthedRequest, res: Response, ne
     }
 
     await session.withTransaction(async () => {
-      const stock = await validateStockForTenant(tenantId, req.body.stockId, session);
+      const stock = await validateStockForTenant(tenantId, stockId, session);
       if (!stock) {
         throw new Error('Part stock not found');
       }
@@ -177,7 +192,7 @@ export const reserveWorkOrderPart = async (req: AuthedRequest, res: Response, ne
         stock.partId as Types.ObjectId,
         stock._id as Types.ObjectId,
         session,
-        typeof req.body.unitCost === 'number' ? req.body.unitCost : undefined,
+        unitCost,
       );
 
       stock.onHand -= quantity;
@@ -214,14 +229,18 @@ export const reserveWorkOrderPart = async (req: AuthedRequest, res: Response, ne
 export const unreserveWorkOrderPart = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   const session = await mongoose.startSession();
   try {
+    const { quantity, stockId } = parsePartRequestBody(req.body);
     const tenantId = req.tenantId ? toObjectId(req.tenantId) : null;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const quantity = assertPositiveQuantity(req.body.quantity);
     if (!quantity) {
       sendResponse(res, null, 'Quantity must be positive', 400);
+      return;
+    }
+    if (!stockId) {
+      sendResponse(res, null, 'Stock ID is required', 400);
       return;
     }
 
@@ -232,7 +251,7 @@ export const unreserveWorkOrderPart = async (req: AuthedRequest, res: Response, 
     }
 
     await session.withTransaction(async () => {
-      const stock = await validateStockForTenant(tenantId, req.body.stockId, session);
+      const stock = await validateStockForTenant(tenantId, stockId, session);
       if (!stock) {
         throw new Error('Part stock not found');
       }
@@ -285,14 +304,18 @@ export const unreserveWorkOrderPart = async (req: AuthedRequest, res: Response, 
 export const issueWorkOrderPart = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   const session = await mongoose.startSession();
   try {
+    const { quantity, stockId, unitCost } = parsePartRequestBody(req.body);
     const tenantId = req.tenantId ? toObjectId(req.tenantId) : null;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const quantity = assertPositiveQuantity(req.body.quantity);
     if (!quantity) {
       sendResponse(res, null, 'Quantity must be positive', 400);
+      return;
+    }
+    if (!stockId) {
+      sendResponse(res, null, 'Stock ID is required', 400);
       return;
     }
 
@@ -303,7 +326,7 @@ export const issueWorkOrderPart = async (req: AuthedRequest, res: Response, next
     }
 
     await session.withTransaction(async () => {
-      const stock = await validateStockForTenant(tenantId, req.body.stockId, session);
+      const stock = await validateStockForTenant(tenantId, stockId, session);
       if (!stock) {
         throw new Error('Part stock not found');
       }
@@ -314,7 +337,7 @@ export const issueWorkOrderPart = async (req: AuthedRequest, res: Response, next
         stock.partId as Types.ObjectId,
         stock._id as Types.ObjectId,
         session,
-        typeof req.body.unitCost === 'number' ? req.body.unitCost : undefined,
+        unitCost,
       );
 
       if (lineItem.qtyReserved < quantity || stock.reserved < quantity) {
@@ -355,14 +378,18 @@ export const issueWorkOrderPart = async (req: AuthedRequest, res: Response, next
 export const returnIssuedWorkOrderPart = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   const session = await mongoose.startSession();
   try {
+    const { quantity, stockId } = parsePartRequestBody(req.body);
     const tenantId = req.tenantId ? toObjectId(req.tenantId) : null;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const quantity = assertPositiveQuantity(req.body.quantity);
     if (!quantity) {
       sendResponse(res, null, 'Quantity must be positive', 400);
+      return;
+    }
+    if (!stockId) {
+      sendResponse(res, null, 'Stock ID is required', 400);
       return;
     }
 
@@ -373,7 +400,7 @@ export const returnIssuedWorkOrderPart = async (req: AuthedRequest, res: Respons
     }
 
     await session.withTransaction(async () => {
-      const stock = await validateStockForTenant(tenantId, req.body.stockId, session);
+      const stock = await validateStockForTenant(tenantId, stockId, session);
       if (!stock) {
         throw new Error('Part stock not found');
       }

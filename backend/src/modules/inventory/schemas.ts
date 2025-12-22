@@ -178,7 +178,7 @@ export const reorderAlertSchema = z.object({
   partStockId: objectId.optional(),
   quantityOnHand: nonNegativeNumber.optional(),
   reorderPoint: nonNegativeNumber.optional(),
-  status: z.enum(['open', 'pending', 'resolved']).optional(),
+  status: z.enum(['open', 'approved', 'skipped', 'resolved']).optional(),
 });
 
 export const purchaseOrderStatusSchema = z.object({

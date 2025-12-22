@@ -215,7 +215,8 @@ export const transitionAlertHandler: AuthedRequestHandler<{ alertId: string }> =
   next,
 ) => {
   if (!ensureTenant(req, res)) return;
-  const action = typeof req.body?.action === 'string' ? req.body.action : undefined;
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const action = typeof body.action === 'string' ? body.action : undefined;
   if (!action || !['approve', 'skip', 'resolve'].includes(action)) {
     fail(res, 'Invalid alert action. Expected approve, skip, or resolve.', 400);
     return;

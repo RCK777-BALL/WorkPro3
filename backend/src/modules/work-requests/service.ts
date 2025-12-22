@@ -103,7 +103,10 @@ type FormContext = {
   formSchema?: RequestFormSchema;
 };
 
-const resolveFormContext = async (slug: string): Promise<FormContext> => {
+const resolveFormContext = async (slug?: string): Promise<FormContext> => {
+  if (!slug) {
+    throw new WorkRequestError('Request form slug is required.', 400);
+  }
   const form = await RequestForm.findOne({ slug }).lean<{
     _id: Types.ObjectId;
     siteId?: Types.ObjectId;
@@ -234,7 +237,6 @@ export const submitPublicRequest = async (
     category: input.category ?? requestType?.category,
     photos: photoPaths,
     attachments,
-    tags: input.tags ?? [],
   });
   const routingDecision = requestType
     ? await evaluateRoutingRules({
@@ -454,42 +456,6 @@ export const getWorkRequestSummary = async (ctx: WorkRequestContext) => {
     statusCounts,
     recent,
   };
-};
-
-export const updateWorkRequestStatus = async (
-  ctx: WorkRequestContext,
-  requestId: string,
-  input: WorkRequestStatusUpdateInput,
-  actorId?: string,
-) => {
-  const request = await WorkRequest.findOne({ ...buildTenantFilter(ctx), _id: toObjectId(requestId) });
-  if (!request) {
-    throw new WorkRequestError('Request not found', 404);
-  }
-  if (input.status === 'rejected' && !input.reason) {
-    throw new WorkRequestError('Please include a reason when rejecting a request.', 400);
-  }
-  const before = request.toObject();
-  request.status = input.status;
-  request.rejectionReason = input.status === 'rejected' ? input.reason : undefined;
-  request.triagedAt = new Date();
-  request.triagedBy = toObjectId(actorId);
-  if (input.note) {
-    request.set('triageNote', input.note, { strict: false });
-  }
-  await request.save();
-  await writeAuditLog({
-    tenantId: ctx.tenantId,
-    siteId: ctx.siteId,
-    userId: actorId,
-    action: 'update',
-    entityType: 'WorkRequest',
-    entityId: request._id,
-    entityLabel: request.title,
-    before,
-    after: request.toObject(),
-  });
-  return request.toObject();
 };
 
 export const convertWorkRequestToWorkOrder = async (

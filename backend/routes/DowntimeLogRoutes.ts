@@ -9,6 +9,7 @@ import tenantScope from '../middleware/tenantScope';
 import {
   createDowntimeLogHandler,
   deleteDowntimeLogHandler,
+  exportDowntimeLogsHandler,
   getDowntimeLogHandler,
   getDowntimeLogsHandler,
   updateDowntimeLogHandler,
@@ -20,6 +21,7 @@ router.use(requireAuth);
 router.use(tenantScope);
 
 router.get('/', getDowntimeLogsHandler);
+router.get('/export.csv', exportDowntimeLogsHandler);
 router.get('/:id', getDowntimeLogHandler);
 router.post('/', createDowntimeLogHandler);
 router.put('/:id', updateDowntimeLogHandler);

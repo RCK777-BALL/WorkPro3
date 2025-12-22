@@ -9,6 +9,7 @@ import type { ParsedQs } from 'qs';
 import type { AuthedRequest } from '../types/http';
 
 import WorkOrder, { WorkOrderDocument } from '../models/WorkOrder';
+import WorkOrderChecklistLog, { type WorkOrderChecklistLogDocument } from '../models/WorkOrderChecklistLog';
 import InventoryItem from '../models/InventoryItem';
 import StockHistory from '../models/StockHistory';
 import Permit, { type PermitDocument } from '../models/Permit';
@@ -158,6 +159,21 @@ const resolveUserObjectId = (
 ): Types.ObjectId | undefined => {
   const raw = req.user?._id ?? req.user?.id;
   return raw ? toOptionalObjectId(raw) : undefined;
+};
+
+const computeChecklistCompliance = (
+  history: Pick<WorkOrderChecklistLogDocument, 'passed'>[],
+): { totalChecks: number; passedChecks: number; passRate: number; status: 'unknown' | 'compliant' | 'at_risk' | 'failing' } => {
+  const totalChecks = history.length;
+  const passedChecks = history.filter((entry) => entry.passed === true).length;
+  const passRate = totalChecks ? Number(((passedChecks / totalChecks) * 100).toFixed(1)) : 0;
+  let status: 'unknown' | 'compliant' | 'at_risk' | 'failing' = 'unknown';
+
+  if (totalChecks) {
+    status = passRate >= 90 ? 'compliant' : passRate >= 70 ? 'at_risk' : 'failing';
+  }
+
+  return { totalChecks, passedChecks, passRate, status };
 };
 
 const getQueryString = (value: unknown): string | undefined => {
@@ -494,7 +510,20 @@ export async function getWorkOrderById(
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    sendResponse(res, item);
+    const checklistHistory = await WorkOrderChecklistLog.find({
+      workOrderId: req.params.id,
+      tenantId,
+    })
+      .sort({ recordedAt: -1 })
+      .lean();
+
+    const compliance = computeChecklistCompliance(checklistHistory);
+
+    sendResponse(res, {
+      ...item,
+      checklistHistory,
+      checklistCompliance: compliance,
+    });
     return;
   } catch (err) {
     next(err);
@@ -992,22 +1021,64 @@ export async function updateWorkOrderChecklist(
       sendResponse(res, null, 'Active tenant and plant required', 400);
       return;
     }
-    const { checklist } = req.body as { checklist?: unknown[] };
+    const { checklist, history } = req.body as { checklist?: unknown[]; history?: unknown[] };
     if (!Array.isArray(checklist)) {
       sendResponse(res, null, 'Checklist array required', 400);
       return;
     }
-    const updated = await WorkOrder.findOneAndUpdate(
-      withLocationScope({ _id: req.params.id, tenantId }, scope),
-      { checklist },
-      { new: true },
-    );
+
+    const resolvedHistory = (Array.isArray(history) ? history : [])
+      .map((entry) => {
+        if (!entry || typeof entry !== 'object') return undefined;
+        const cast = entry as Record<string, unknown>;
+        if (typeof cast.checklistItemId !== 'string' || !cast.checklistItemId.trim()) return undefined;
+
+        const reading =
+          typeof cast.reading === 'string' || typeof cast.reading === 'number' || typeof cast.reading === 'boolean'
+            ? cast.reading
+            : typeof cast.reading === 'object' && cast.reading === null
+              ? null
+              : undefined;
+
+        const evidenceUrls = Array.isArray(cast.evidenceUrls)
+          ? cast.evidenceUrls.filter((url): url is string => typeof url === 'string')
+          : [];
+
+        return {
+          tenantId,
+          workOrderId: req.params.id,
+          checklistItemId: cast.checklistItemId,
+          checklistItemLabel: typeof cast.checklistItemLabel === 'string' ? cast.checklistItemLabel : undefined,
+          passed: typeof cast.passed === 'boolean' ? cast.passed : undefined,
+          reading,
+          evidenceUrls,
+          recordedAt: cast.recordedAt ? new Date(cast.recordedAt as string) : new Date(),
+          recordedBy: resolveUserObjectId(req),
+        };
+      })
+      .filter((entry): entry is Parameters<typeof WorkOrderChecklistLog.insertMany>[0] => Boolean(entry));
+
+    const [updated] = await Promise.all([
+      WorkOrder.findOneAndUpdate(withLocationScope({ _id: req.params.id, tenantId }, scope), { checklist }, { new: true }),
+      resolvedHistory.length ? WorkOrderChecklistLog.insertMany(resolvedHistory) : undefined,
+    ]);
     if (!updated) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
+    const checklistHistory = await WorkOrderChecklistLog.find({
+      workOrderId: req.params.id,
+      tenantId,
+    })
+      .sort({ recordedAt: -1 })
+      .lean();
+
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(updated));
-    sendResponse(res, updated);
+    sendResponse(res, {
+      ...updated.toObject(),
+      checklistHistory,
+      checklistCompliance: computeChecklistCompliance(checklistHistory),
+    });
   } catch (err) {
     next(err);
   }

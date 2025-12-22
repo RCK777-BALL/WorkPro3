@@ -12,6 +12,7 @@ import Asset from '../models/Asset';
 import WorkHistory from '../models/WorkHistory';
 import User from '../models/User';
 import TimeSheet from '../models/TimeSheet';
+import WorkOrderChecklistLog from '../models/WorkOrderChecklistLog';
 import { LABOR_RATE } from '../config/env';
 import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import { sendResponse } from '../utils';
@@ -319,6 +320,14 @@ interface TrendDataPoint {
   assetDowntime: number;
 }
 
+interface ChecklistCompliancePoint {
+  period: string;
+  totalChecks: number;
+  passedChecks: number;
+  passRate: number;
+  complianceStatus: 'compliant' | 'at_risk' | 'failing' | 'unknown';
+}
+
 const aggregateTrends = async (tenantId: TenantId): Promise<TrendDataPoint[]> => {
   const results = await WorkHistory.aggregate<{
     _id: string;
@@ -343,11 +352,78 @@ const aggregateTrends = async (tenantId: TenantId): Promise<TrendDataPoint[]> =>
   }));
 };
 
+const aggregateChecklistCompliance = async (tenantId: TenantId): Promise<ChecklistCompliancePoint[]> => {
+  const results = await WorkOrderChecklistLog.aggregate<{
+    _id: string;
+    totalChecks: number;
+    passedChecks: number;
+  }>([
+    { $match: { tenantId } },
+    {
+      $group: {
+        _id: { $dateToString: { format: '%Y-%m', date: '$recordedAt' } },
+        totalChecks: { $sum: 1 },
+        passedChecks: { $sum: { $cond: ['$passed', 1, 0] } },
+      },
+    },
+    { $sort: { _id: 1 } },
+  ]);
+
+  return results.map((result) => {
+    const passRate = result.totalChecks ? Number(((result.passedChecks / result.totalChecks) * 100).toFixed(1)) : 0;
+    const complianceStatus = result.totalChecks
+      ? passRate >= 90
+        ? 'compliant'
+        : passRate >= 70
+          ? 'at_risk'
+          : 'failing'
+      : 'unknown';
+
+    return {
+      period: result._id,
+      totalChecks: result.totalChecks,
+      passedChecks: result.passedChecks,
+      passRate,
+      complianceStatus,
+    };
+  });
+};
+
+const mergeTrendCompliance = (
+  trends: TrendDataPoint[],
+  compliance: ChecklistCompliancePoint[],
+): Array<TrendDataPoint & {
+  checklistChecks: number;
+  checklistPassRate: number;
+  complianceStatus: ChecklistCompliancePoint['complianceStatus'];
+}> => {
+  const periods = new Set([...trends.map((point) => point.period), ...compliance.map((point) => point.period)]);
+
+  return Array.from(periods)
+    .sort()
+    .map((period) => {
+      const trend = trends.find((point) => point.period === period);
+      const status = compliance.find((point) => point.period === period);
+
+      return {
+        period,
+        maintenanceCost: trend?.maintenanceCost ?? 0,
+        assetDowntime: trend?.assetDowntime ?? 0,
+        checklistChecks: status?.totalChecks ?? 0,
+        checklistPassRate: status?.passRate ?? 0,
+        complianceStatus: status?.complianceStatus ?? 'unknown',
+      };
+    });
+};
+
 const getTrendData: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = resolveTenantId(req);
-    const data = await aggregateTrends(tenantId);
-    sendResponse(res, data);
+    const [trends, compliance] = await Promise.all([
+      aggregateTrends(tenantId),
+      aggregateChecklistCompliance(tenantId),
+    ]);
+    sendResponse(res, mergeTrendCompliance(trends, compliance));
   } catch (err) {
     next(err);
   }
@@ -357,7 +433,11 @@ const exportTrendData: AuthedRequestHandler = async (req, res, next) => {
   try {
     const format = String(req.query.format ?? 'json').toLowerCase();
     const tenantId = resolveTenantId(req);
-    const data = await aggregateTrends(tenantId);
+    const [trends, compliance] = await Promise.all([
+      aggregateTrends(tenantId),
+      aggregateChecklistCompliance(tenantId),
+    ]);
+    const data = mergeTrendCompliance(trends, compliance);
 
     if (format === 'csv') {
       const parser = new Json2csvParser();

@@ -2127,7 +2127,10 @@ export const listAlerts = async (
       response.vendorName = refs.vendors.get(part.vendor.toString())?.name;
     }
     if (part?.lastAlertAt || alert.triggeredAt) {
-      response.lastTriggeredAt = (part?.lastAlertAt ?? alert.triggeredAt).toISOString();
+      const lastTriggeredAt = part?.lastAlertAt ?? alert.triggeredAt;
+      if (lastTriggeredAt) {
+        response.lastTriggeredAt = lastTriggeredAt.toISOString();
+      }
     }
 
     return response;
@@ -2204,7 +2207,10 @@ export const transitionAlertStatus = async (
     response.vendorName = refs.vendors.get(part.vendor.toString())?.name;
   }
   if (part?.lastAlertAt || alert.triggeredAt) {
-    response.lastTriggeredAt = (part?.lastAlertAt ?? alert.triggeredAt).toISOString();
+    const lastTriggeredAt = part?.lastAlertAt ?? alert.triggeredAt;
+    if (lastTriggeredAt) {
+      response.lastTriggeredAt = lastTriggeredAt.toISOString();
+    }
   }
 
   return response;

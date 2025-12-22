@@ -62,7 +62,7 @@ const inspectionTemplateSchema = new Schema<InspectionTemplateDocument>(
     siteId: { type: Schema.Types.ObjectId, ref: 'Site', index: true },
     name: { type: String, required: true },
     description: { type: String },
-    version: { type: Number, default: 1 },
+    version: { type: Number, default: 1, immutable: true },
     categories: { type: [String], default: [] },
     retentionDays: { type: Number },
     sections: { type: [checklistSectionSchema], default: [] },

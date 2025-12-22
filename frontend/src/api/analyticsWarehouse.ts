@@ -62,6 +62,25 @@ export interface ComparisonResponse {
   comparisons: ComparisonRow[];
 }
 
+export interface ReliabilityByAssetPoint {
+  assetId?: string;
+  assetName?: string;
+  mttrHours: number;
+  mtbfHours: number;
+}
+
+export interface BacklogBurndownPoint {
+  period: string;
+  open: number;
+  completed: number;
+  agingDays: number;
+}
+
+export interface PmComplianceTrendPoint {
+  period: string;
+  compliance: number;
+}
+
 interface QueryParams {
   from?: string;
   to?: string;
@@ -71,6 +90,25 @@ interface QueryParams {
 
 export const fetchSnapshots = async (params: QueryParams): Promise<SnapshotResponse> => {
   const response = await http.get<SnapshotResponse>('/analytics/v2/metrics', { params });
+  return response.data;
+};
+
+export const fetchReliabilityByAsset = async (
+  params: QueryParams,
+): Promise<ReliabilityByAssetPoint[]> => {
+  const response = await http.get<ReliabilityByAssetPoint[]>('/analytics/v2/metrics/reliability/assets', { params });
+  return response.data;
+};
+
+export const fetchBacklogBurndown = async (params: QueryParams): Promise<BacklogBurndownPoint[]> => {
+  const response = await http.get<BacklogBurndownPoint[]>('/analytics/v2/metrics/backlog/burndown', { params });
+  return response.data;
+};
+
+export const fetchPmComplianceTrend = async (
+  params: QueryParams,
+): Promise<PmComplianceTrendPoint[]> => {
+  const response = await http.get<PmComplianceTrendPoint[]>('/analytics/v2/metrics/pm-compliance/trend', { params });
   return response.data;
 };
 
@@ -87,6 +125,30 @@ export const fetchComparisons = async (params: QueryParams): Promise<ComparisonR
 export const rebuildSnapshots = async (months: number): Promise<SnapshotResponse> => {
   const response = await http.post<SnapshotResponse>('/analytics/v2/metrics/rebuild', { months });
   return response.data;
+};
+
+export const exportReliabilitySnapshot = async (params: QueryParams): Promise<Blob> => {
+  const response = await http.get('/analytics/v2/metrics/reliability/assets/export', {
+    params,
+    responseType: 'blob',
+  });
+  return response.data as Blob;
+};
+
+export const exportBacklogBurndown = async (params: QueryParams): Promise<Blob> => {
+  const response = await http.get('/analytics/v2/metrics/backlog/burndown/export', {
+    params,
+    responseType: 'blob',
+  });
+  return response.data as Blob;
+};
+
+export const exportPmComplianceTrend = async (params: QueryParams): Promise<Blob> => {
+  const response = await http.get('/analytics/v2/metrics/pm-compliance/trend/export', {
+    params,
+    responseType: 'blob',
+  });
+  return response.data as Blob;
 };
 
 export interface MetricsRollupFilters {

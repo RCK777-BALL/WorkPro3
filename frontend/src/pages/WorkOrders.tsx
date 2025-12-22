@@ -55,6 +55,8 @@ const OPTIONAL_WORK_ORDER_KEYS: (keyof WorkOrder)[] = [
   'completedBy',
   'attachments',
   'parts',
+  'checklistHistory',
+  'checklistCompliance',
 ];
 
 type WorkOrderResponse = Partial<WorkOrder> & { _id?: string; id?: string };

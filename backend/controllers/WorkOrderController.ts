@@ -9,6 +9,7 @@ import type { ParsedQs } from 'qs';
 import type { AuthedRequest } from '../types/http';
 
 import WorkOrder, { WorkOrderDocument } from '../models/WorkOrder';
+import WorkOrderChecklistLog, { type WorkOrderChecklistLogDocument } from '../models/WorkOrderChecklistLog';
 import InventoryItem from '../models/InventoryItem';
 import StockHistory from '../models/StockHistory';
 import Permit, { type PermitDocument } from '../models/Permit';
@@ -16,11 +17,13 @@ import { emitWorkOrderUpdate } from '../server';
 import { applyWorkflowToWorkOrder } from '../services/workflowEngine';
 import { notifySlaBreach, notifyWorkOrderAssigned } from '../services/notificationService';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
+import { closeOpenDowntimeEventsForWorkOrder } from '../services/downtimeEvents';
 import { Types } from 'mongoose';
 import { WorkOrderUpdatePayload } from '../types/Payloads';
 
 import type { WorkOrderType, WorkOrderInput } from '../types/workOrder';
 import { notifyUser, auditAction, normalizePartUsageCosts, sendResponse, validateItems } from '../utils';
+import { z } from 'zod';
 
 import {
   workOrderCreateSchema,
@@ -31,6 +34,7 @@ import {
   cancelWorkOrderSchema,
   type WorkOrderComplete,
   type WorkOrderUpdate,
+  checklistItemSchema,
 } from '../src/schemas/workOrder';
 import {
   mapAssignees,
@@ -42,6 +46,21 @@ import {
   type RawSignature,
 } from '../src/utils/workOrder';
 
+
+
+const deriveCompliance = (
+  checklists?: ReturnType<typeof mapChecklists>,
+): { complianceStatus: 'pending' | 'complete' | 'not_required'; complianceCompletedAt?: Date } => {
+  const hasChecklists = Array.isArray(checklists) && checklists.length > 0;
+  if (!hasChecklists) {
+    return { complianceStatus: 'not_required', complianceCompletedAt: new Date() };
+  }
+  const allDone = checklists.every((item) => item.done);
+  return {
+    complianceStatus: allDone ? 'complete' : 'pending',
+    ...(allDone ? { complianceCompletedAt: new Date() } : {}),
+  };
+};
 
 
 
@@ -153,11 +172,108 @@ function toOptionalObjectId(value?: Types.ObjectId | string): Types.ObjectId | u
 
 type RequestWithOptionalUser = Pick<AuthedRequest, 'user'>;
 
+type ChecklistItemInput = z.infer<typeof checklistItemSchema>;
+
+type ChecklistEntry = {
+  id?: string;
+  text: string;
+  type?: RawChecklist['type'];
+  completedValue?: string | number | boolean;
+  completedAt?: Date;
+  completedBy?: Types.ObjectId;
+  required?: boolean;
+  evidenceRequired?: boolean;
+  evidence?: string[];
+  photos?: string[];
+  status?: RawChecklist['status'];
+  done?: boolean;
+};
+
 const resolveUserObjectId = (
   req: RequestWithOptionalUser,
 ): Types.ObjectId | undefined => {
   const raw = req.user?._id ?? req.user?.id;
   return raw ? toOptionalObjectId(raw) : undefined;
+};
+
+const hasChecklistValue = (value: unknown): boolean => {
+  if (value === undefined || value === null) return false;
+  if (typeof value === 'string') return value.trim().length > 0;
+  return true;
+};
+
+const isChecklistItemComplete = (item: ChecklistEntry): boolean => {
+  if (item.status === 'done') return true;
+  if (hasChecklistValue(item.completedValue)) return true;
+  return typeof item.done === 'boolean' ? item.done : false;
+};
+
+const finalizeChecklistEntries = (entries: ChecklistEntry[], userId?: Types.ObjectId): ChecklistEntry[] => {
+  const now = new Date();
+  return entries.map((entry) => {
+    const complete = isChecklistItemComplete(entry);
+    const normalized: ChecklistEntry = {
+      ...entry,
+      id: entry.id ?? new Types.ObjectId().toString(),
+    };
+
+    if (complete) {
+      normalized.status = 'done';
+      normalized.done = true;
+      normalized.completedAt = normalized.completedAt ?? now;
+      if (!normalized.completedBy && userId) normalized.completedBy = userId;
+    }
+
+    return normalized;
+  });
+};
+
+const buildChecklistPayload = (items: ChecklistItemInput[], userId?: Types.ObjectId): ChecklistEntry[] => {
+  const rawItems: RawChecklist[] = items.map((item) => ({
+    id: item.id ?? new Types.ObjectId().toString(),
+    description: item.description,
+    type: item.type,
+    required: item.required,
+    evidenceRequired: item.evidenceRequired,
+    completedValue: item.completedValue ?? item.done,
+    done: item.done,
+    status: item.status,
+    photos: item.photos,
+    evidence: item.evidence,
+    completedAt: item.completedAt,
+    completedBy: item.completedBy,
+  }));
+
+  const normalized = mapChecklists(rawItems);
+  return finalizeChecklistEntries(normalized as ChecklistEntry[], userId);
+};
+
+const normalizeExistingChecklistEntries = (
+  entries: unknown[] | undefined,
+  userId?: Types.ObjectId,
+): ChecklistEntry[] => {
+  if (!Array.isArray(entries)) return [];
+  const mapped = entries.map((entry) => {
+    const value = typeof (entry as any).toObject === 'function' ? (entry as any).toObject() : entry;
+    return {
+      ...value,
+      id: (value as { id?: string }).id ?? (value as { _id?: Types.ObjectId })._id?.toString?.(),
+    } as ChecklistEntry;
+  });
+  return finalizeChecklistEntries(mapped, userId);
+};
+
+const findChecklistBlockingItems = (entries: ChecklistEntry[]) => {
+  const evidenceSatisfied = (entry: ChecklistEntry) => {
+    const evidenceCount = (entry.evidence?.length ?? 0) + (entry.photos?.length ?? 0);
+    return evidenceCount > 0;
+  };
+
+  const missingRequired = entries.filter((entry) => entry.required && !isChecklistItemComplete(entry));
+  const missingEvidence = entries.filter(
+    (entry) => entry.required && entry.evidenceRequired && !evidenceSatisfied(entry),
+  );
+  return { missingRequired, missingEvidence };
 };
 
 const getQueryString = (value: unknown): string | undefined => {
@@ -494,7 +610,20 @@ export async function getWorkOrderById(
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    sendResponse(res, item);
+    const checklistHistory = await WorkOrderChecklistLog.find({
+      workOrderId: req.params.id,
+      tenantId,
+    })
+      .sort({ recordedAt: -1 })
+      .lean();
+
+    const compliance = computeChecklistCompliance(checklistHistory);
+
+    sendResponse(res, {
+      ...item,
+      checklistHistory,
+      checklistCompliance: compliance,
+    });
     return;
   } catch (err) {
     next(err);
@@ -768,6 +897,9 @@ export async function updateWorkOrder(
       );
       if (!validChecklists) return;
       update.checklists = mapChecklists(validChecklists);
+      const compliance = deriveCompliance(update.checklists);
+      update.complianceStatus = compliance.complianceStatus;
+      update.complianceCompletedAt = compliance.complianceCompletedAt;
     }
     if (update.signatures) {
       const validSignatures = validateItems<RawSignature>(
@@ -993,21 +1125,35 @@ export async function updateWorkOrderChecklist(
       return;
     }
     const { checklist } = req.body as { checklist?: unknown[] };
-    if (!Array.isArray(checklist)) {
-      sendResponse(res, null, 'Checklist array required', 400);
+    const parsed = z.array(checklistItemSchema).safeParse(checklist);
+    if (!parsed.success) {
+      sendResponse(res, null, parsed.error.flatten(), 400);
       return;
     }
+
+    const normalizedChecklist = buildChecklistPayload(parsed.data, resolveUserObjectId(req));
     const updated = await WorkOrder.findOneAndUpdate(
       withLocationScope({ _id: req.params.id, tenantId }, scope),
-      { checklist },
+      { checklist: normalizedChecklist },
       { new: true },
     );
     if (!updated) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
+    const checklistHistory = await WorkOrderChecklistLog.find({
+      workOrderId: req.params.id,
+      tenantId,
+    })
+      .sort({ recordedAt: -1 })
+      .lean();
+
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(updated));
-    sendResponse(res, updated);
+    sendResponse(res, {
+      ...updated.toObject(),
+      checklistHistory,
+      checklistCompliance: computeChecklistCompliance(checklistHistory),
+    });
   } catch (err) {
     next(err);
   }
@@ -1319,7 +1465,30 @@ export async function completeWorkOrder(
       sendResponse(res, null, readiness.message ?? 'Permits are not approved for work start', 409);
       return;
     }
-    const body = req.body as CompleteWorkOrderBody;
+    const body = parsed.data as CompleteWorkOrderBody;
+    const userObjectId = resolveUserObjectId(req);
+
+    let checklistEntries: ChecklistEntry[] = [];
+    if (Array.isArray(body.checklist)) {
+      checklistEntries = buildChecklistPayload(body.checklist, userObjectId);
+    } else if (Array.isArray(workOrder.checklist) && workOrder.checklist.length) {
+      checklistEntries = normalizeExistingChecklistEntries(workOrder.checklist as unknown[], userObjectId);
+    }
+
+    if (checklistEntries.length) {
+      workOrder.set('checklist', checklistEntries);
+    }
+
+    const { missingRequired, missingEvidence } = findChecklistBlockingItems(checklistEntries);
+    if (missingRequired.length || missingEvidence.length) {
+      sendResponse(
+        res,
+        null,
+        'Required checklist items must be completed with evidence before closure',
+        409,
+      );
+      return;
+    }
     const before = workOrder.toObject();
     workOrder.status = 'completed';
     if (body.timeSpentMin !== undefined) workOrder.timeSpentMin = body.timeSpentMin;
@@ -1393,7 +1562,6 @@ export async function completeWorkOrder(
         }),
       );
     }
-    const userObjectId = resolveUserObjectId(req);
     if (readiness.permits.length) {
       await Promise.all(
         readiness.permits.map(async (permit) => {
@@ -1410,6 +1578,11 @@ export async function completeWorkOrder(
         }),
       );
     }
+    await closeOpenDowntimeEventsForWorkOrder(
+      tenantId,
+      workOrder._id,
+      saved.completedAt ?? new Date(),
+    );
     await auditAction(req as unknown as Request, 'complete', 'WorkOrder', new Types.ObjectId(req.params.id), before, saved.toObject());
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(saved));
     sendResponse(res, saved);

@@ -3,10 +3,36 @@
  */
 
 export interface ChecklistItem {
+  /** Stable identifier for the checklist line item */
+  id?: string;
   description: string;
+  type?: 'checkbox' | 'numeric' | 'text' | 'pass_fail';
+  required?: boolean;
+  evidenceRequired?: boolean;
+  completedValue?: string | number | boolean | undefined;
+  completedAt?: string | undefined;
+  completedBy?: string | undefined;
   completed?: boolean | undefined;
   status?: 'not_started' | 'in_progress' | 'done' | 'blocked' | undefined;
   photos?: string[] | undefined;
+  evidence?: string[] | undefined;
+}
+
+export interface ChecklistHistoryEntry {
+  checklistItemId: string;
+  checklistItemLabel?: string;
+  reading?: string | number | boolean | null;
+  passed?: boolean;
+  evidenceUrls?: string[];
+  recordedAt?: string;
+  recordedBy?: string;
+}
+
+export interface ChecklistCompliance {
+  totalChecks: number;
+  passedChecks: number;
+  passRate: number;
+  status: 'unknown' | 'compliant' | 'at_risk' | 'failing';
 }
 
 export interface WorkOrderSignature {
@@ -40,6 +66,10 @@ export interface WorkOrder {
   priority: 'low' | 'medium' | 'high' | 'critical';
   status: WorkOrderStatus;
   type: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
+  workOrderTemplateId?: string | undefined;
+  templateVersion?: number | undefined;
+  complianceStatus?: 'pending' | 'complete' | 'not_required' | undefined;
+  complianceCompletedAt?: string | undefined;
   approvalStatus?: 'draft' | 'pending' | 'approved' | 'rejected' | undefined;
   approvedBy?: string | undefined;
   approvedAt?: string | undefined;
@@ -49,6 +79,7 @@ export interface WorkOrder {
   failureModeTags?: string[] | undefined;
   assignees?: string[] | undefined;
   checklists?: ChecklistItem[] | undefined;
+  checklist?: ChecklistItem[] | undefined;
   partsUsed?: WorkOrderPartLine[] | undefined;
   signatures?: WorkOrderSignature[] | undefined;
   timeSpentMin?: number | undefined;
@@ -68,6 +99,7 @@ export interface WorkOrder {
   permits?: string[] | undefined;
   requiredPermitTypes?: string[] | undefined;
   pmTask?: string | undefined;
+  pmTemplate?: string | undefined;
   department?: string | undefined;
   line?: string | undefined;
   station?: string | undefined;
@@ -80,6 +112,15 @@ export interface WorkOrder {
   completedAt?: string | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
+  iotEvent?: {
+    ruleId?: string;
+    source?: string;
+    readingId?: string;
+    metric?: string;
+    value?: number;
+    timestamp?: string;
+    payload?: Record<string, unknown>;
+  };
 }
 
 

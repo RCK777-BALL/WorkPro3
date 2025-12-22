@@ -15,7 +15,6 @@ import { evaluateRoutingRules } from './routing';
 import Site from '../../../models/Site';
 import WorkOrder from '../../../models/WorkOrder';
 import type {
-  ListWorkRequestQuery,
   PublicWorkRequestInput,
   WorkRequestConversionInput,
   WorkRequestDecisionInput,
@@ -34,6 +33,17 @@ export interface WorkRequestContext {
   tenantId: string;
   siteId?: string | undefined;
 }
+
+export type ListWorkRequestQuery = {
+  includeDeleted?: boolean;
+  status?: WorkRequestStatus;
+  priority?: string;
+  requestType?: string;
+  siteId?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+};
 
 const toObjectId = (value: unknown): Types.ObjectId | undefined => {
   if (!value) return undefined;

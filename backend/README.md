@@ -65,6 +65,13 @@ Run `npm run seed` to populate the database with sample records. Run `npm run se
 
 Ensure the tenant and admin are created before running the main seed script. After users and departments are seeded, the script also adds three notifications (critical, warning, and info) linked to the seeded tenant.
 
+The seed script also plants a few richer demo records:
+
+- Two revisions of the "Line Clearance Checklist" inspection template (v1 and v2).
+- A PM schedule linked to the latest template version so planners can see version-aware scheduling.
+- A generated work order that already includes a completed checklist so QA can verify closure flows.
+- An IoT condition rule configured to auto-create work orders when temperature spikes are ingested.
+
 To seed only departments for a specific tenant, use:
 
 ```bash

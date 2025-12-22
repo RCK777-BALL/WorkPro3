@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import clsx from 'clsx';
 import http from '@/lib/http';
-import type { WorkOrder } from '@/types';
+import type { WorkOrder, WorkOrderChecklistItem } from '@/types';
 import CommentThread from '@/components/comments/CommentThread';
 import Badge from '@/components/common/Badge';
 import Card from '@/components/common/Card';
@@ -15,16 +15,57 @@ import Input from '@/components/common/Input';
 import Modal from '@/components/common/Modal';
 import { usePartsQuery, useStockItemsQuery } from '@/features/inventory';
 import { useToast } from '@/context/ToastContext';
+import { useAuthStore } from '@/store/authStore';
 
 interface WorkOrderResponse extends Partial<WorkOrder> {
   _id?: string;
   id?: string;
+  checklist?: unknown;
 }
+
+const createClientId = () => {
+  const globalCrypto = globalThis.crypto;
+  if (globalCrypto?.randomUUID) return globalCrypto.randomUUID();
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
+
+const normalizeChecklistFromApi = (items: unknown): WorkOrderChecklistItem[] => {
+  if (!Array.isArray(items)) return [];
+
+  return (items as Array<Record<string, unknown>>).map((item, index) => {
+    const fallbackText = item.description ?? item.text;
+    const id =
+      (item.id as string | undefined)
+      ?? (item._id as string | undefined)
+      ?? (typeof fallbackText === 'string' ? `${fallbackText}-${index}` : undefined)
+      ?? createClientId();
+
+    const completedValue =
+      (item.completedValue as string | number | boolean | undefined)
+      ?? (item.done as boolean | undefined);
+
+    return {
+      id,
+      text: (item.text as string | undefined) ?? (item.description as string | undefined) ?? 'Checklist item',
+      type: (item.type as WorkOrderChecklistItem['type']) ?? 'checkbox',
+      required: Boolean(item.required),
+      evidenceRequired: Boolean(item.evidenceRequired),
+      evidence: (item.evidence as string[] | undefined) ?? (item.photos as string[] | undefined),
+      photos: item.photos as string[] | undefined,
+      completedValue,
+      completedAt: (item.completedAt as string | undefined) ?? (item.completed_at as string | undefined),
+      completedBy: item.completedBy as string | undefined,
+      status: (item.status as WorkOrderChecklistItem['status'])
+        ?? (completedValue !== undefined ? 'done' : 'not_started'),
+      done: Boolean(item.done ?? (completedValue !== undefined)),
+    } satisfies WorkOrderChecklistItem;
+  });
+};
 
 const normalizeWorkOrder = (data: WorkOrderResponse): WorkOrder | null => {
   const id = data._id ?? data.id;
   if (!id) return null;
-  return {
+  const normalized: WorkOrder = {
     id,
     title: data.title ?? 'Work Order',
     status: data.status ?? 'requested',
@@ -34,7 +75,20 @@ const normalizeWorkOrder = (data: WorkOrderResponse): WorkOrder | null => {
     assetId: data.assetId,
     asset: data.asset,
     department: data.department ?? '',
+    workOrderTemplateId: data.workOrderTemplateId,
+    templateVersion: data.templateVersion,
+    complianceStatus: data.complianceStatus,
+    complianceCompletedAt: data.complianceCompletedAt,
   } as WorkOrder;
+
+  if (data.checklistHistory) {
+    normalized.checklistHistory = data.checklistHistory;
+  }
+  if (data.checklistCompliance) {
+    normalized.checklistCompliance = data.checklistCompliance;
+  }
+
+  return normalized;
 };
 
 const WorkOrderDetail = () => {
@@ -43,15 +97,39 @@ const WorkOrderDetail = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { addToast } = useToast();
+  const user = useAuthStore((state) => state.user);
 
   const partsQuery = usePartsQuery({ pageSize: 50 });
   const stockQuery = useStockItemsQuery();
+  const [checklist, setChecklist] = useState<WorkOrderChecklistItem[]>([]);
+  const [checklistSaving, setChecklistSaving] = useState(false);
+  const [checklistError, setChecklistError] = useState<string | null>(null);
+  const [evidenceDrafts, setEvidenceDrafts] = useState<Record<string, string>>({});
   const [partLines, setPartLines] = useState<
     { partId: string; reserved: number; issued: number; name: string }
   >([]);
   const [actionModal, setActionModal] = useState<
     { type: 'reserve' | 'issue' | 'return' | 'unreserve'; partId: string; quantity: number } | null
   >(null);
+
+  const checklistHistory = workOrder?.checklistHistory ?? [];
+
+  const checklistCompliance = useMemo(() => {
+    if (workOrder?.checklistCompliance) return workOrder.checklistCompliance;
+
+    const totalChecks = checklistHistory.length;
+    const passedChecks = checklistHistory.filter((entry) => entry.passed).length;
+    const passRate = totalChecks ? Number(((passedChecks / totalChecks) * 100).toFixed(1)) : 0;
+    const status = totalChecks ? (passRate >= 90 ? 'compliant' : passRate >= 70 ? 'at_risk' : 'failing') : 'unknown';
+
+    return { totalChecks, passedChecks, passRate, status };
+  }, [checklistHistory, workOrder?.checklistCompliance]);
+
+  const formatReading = (value: unknown) => {
+    if (value === null || value === undefined) return '—';
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    return String(value);
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -61,6 +139,8 @@ const WorkOrderDetail = () => {
         const res = await http.get<WorkOrderResponse>(`/workorders/${id}`);
         const normalized = normalizeWorkOrder(res.data);
         setWorkOrder(normalized);
+        setChecklist(normalized?.checklist ?? []);
+        setChecklistError(null);
         setError(null);
       } catch (err) {
         console.error(err);
@@ -131,6 +211,88 @@ const WorkOrderDetail = () => {
     setActionModal(null);
   };
 
+  const isValueProvided = (value: string | number | boolean | undefined) => {
+    if (value === undefined) return false;
+    if (typeof value === 'string') return value.trim().length > 0;
+    return true;
+  };
+
+  const updateChecklistValue = (itemId: string, value: string | number | boolean | undefined) => {
+    const now = new Date().toISOString();
+    setChecklist((prev) =>
+      prev.map((item) => {
+        if (item.id !== itemId) return item;
+        const hasValue = isValueProvided(value);
+        return {
+          ...item,
+          completedValue: value,
+          status: hasValue ? 'done' : 'not_started',
+          done: hasValue,
+          completedAt: hasValue ? now : undefined,
+          completedBy: hasValue ? item.completedBy ?? user?.id : item.completedBy,
+        };
+      }),
+    );
+  };
+
+  const addEvidence = (itemId: string) => {
+    const draft = evidenceDrafts[itemId]?.trim();
+    if (!draft) return;
+    setChecklist((prev) =>
+      prev.map((item) =>
+        item.id === itemId
+          ? { ...item, evidence: [...(item.evidence ?? []), draft], completedBy: item.completedBy ?? user?.id }
+          : item,
+      ),
+    );
+    setEvidenceDrafts((prev) => ({ ...prev, [itemId]: '' }));
+  };
+
+  const removeEvidence = (itemId: string, evidence: string) => {
+    setChecklist((prev) =>
+      prev.map((item) =>
+        item.id === itemId
+          ? { ...item, evidence: (item.evidence ?? []).filter((ref) => ref !== evidence) }
+          : item,
+      ),
+    );
+  };
+
+  const persistChecklist = async () => {
+    if (!id || !checklist.length) return;
+    setChecklistSaving(true);
+    try {
+      const payload = checklist.map((item) => ({
+        id: item.id ?? createClientId(),
+        description: item.text,
+        type: item.type ?? 'checkbox',
+        required: item.required,
+        evidenceRequired: item.evidenceRequired,
+        completedValue: item.completedValue,
+        status: item.status,
+        done: item.done,
+        evidence: item.evidence,
+        photos: item.photos,
+        completedAt: item.completedAt,
+        completedBy: item.completedBy,
+      }));
+
+      const res = await http.put<WorkOrderResponse>(`/workorders/${id}/checklist`, { checklist: payload });
+      const normalized = normalizeWorkOrder(res.data);
+      if (normalized) {
+        setWorkOrder(normalized);
+        setChecklist(normalized.checklist ?? []);
+      }
+      setChecklistError(null);
+      addToast('Checklist updated', 'success');
+    } catch (err) {
+      console.error(err);
+      setChecklistError('Unable to save checklist updates.');
+    } finally {
+      setChecklistSaving(false);
+    }
+  };
+
   const header = useMemo(() => {
     if (loading) {
       return <p className="text-sm text-neutral-500">Loading work order...</p>;
@@ -183,6 +345,306 @@ const WorkOrderDetail = () => {
           </p>
         </div>
       )}
+
+      {workOrder && (
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card>
+            <Card.Header>
+              <Card.Title>Template & compliance</Card.Title>
+              <Card.Description>Trace the preventive template used for this work order.</Card.Description>
+            </Card.Header>
+            <Card.Content className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-neutral-400">Compliance</span>
+                <Badge
+                  text={workOrder.complianceStatus ?? 'not_required'}
+                  color={
+                    workOrder.complianceStatus === 'complete'
+                      ? 'green'
+                      : workOrder.complianceStatus === 'pending'
+                        ? 'blue'
+                        : undefined
+                  }
+                />
+              </div>
+              {workOrder.complianceCompletedAt && (
+                <p className="text-xs text-neutral-400">
+                  Completed at {new Date(workOrder.complianceCompletedAt).toLocaleString()}
+                </p>
+              )}
+              <div className="text-sm text-neutral-300">
+                <p className="font-medium text-neutral-200">Template</p>
+                {workOrder.workOrderTemplateId ? (
+                  <p className="text-xs text-neutral-400">
+                    {workOrder.workOrderTemplateId}
+                    {workOrder.templateVersion ? ` · v${workOrder.templateVersion}` : ''}
+                  </p>
+                ) : (
+                  <p className="text-xs text-neutral-500">No template linked</p>
+                )}
+              </div>
+            </Card.Content>
+          </Card>
+        </div>
+      )}
+
+      <Card>
+        <Card.Header>
+          <div className="flex items-center justify-between">
+            <div>
+              <Card.Title>Checklist</Card.Title>
+              <Card.Description>
+                Record pass/fail results, readings, and upload evidence before closing the work order.
+              </Card.Description>
+            </div>
+            <Button size="sm" onClick={persistChecklist} disabled={checklistSaving || !checklist.length}>
+              {checklistSaving ? 'Saving…' : 'Save checklist'}
+            </Button>
+          </div>
+        </Card.Header>
+        <Card.Content>
+          {!checklist.length && <p className="text-sm text-neutral-500">No checklist items configured.</p>}
+
+          <div className="space-y-4">
+            {checklist.map((item) => {
+              const completionLabel = item.completedAt
+                ? new Date(item.completedAt).toLocaleString()
+                : undefined;
+              const statusLabel = item.status ?? (isValueProvided(item.completedValue) ? 'done' : 'not_started');
+              return (
+                <div key={item.id} className="rounded-2xl border border-neutral-800/60 bg-neutral-950/60 p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-semibold text-white">{item.text}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-neutral-400">
+                        <span className="rounded-full bg-neutral-800 px-2 py-1 capitalize text-neutral-200">{item.type ?? 'checkbox'}</span>
+                        {item.required && (
+                          <span className="rounded-full bg-amber-500/10 px-2 py-1 text-amber-300">Required</span>
+                        )}
+                        {item.evidenceRequired && (
+                          <span className="rounded-full bg-sky-500/10 px-2 py-1 text-sky-300">Evidence required</span>
+                        )}
+                        <span
+                          className={clsx(
+                            'rounded-full px-2 py-1 capitalize',
+                            statusLabel === 'done'
+                              ? 'bg-emerald-500/10 text-emerald-300'
+                              : 'bg-neutral-800 text-neutral-300',
+                          )}
+                        >
+                          {statusLabel.replace('_', ' ')}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right text-xs text-neutral-400">
+                      {completionLabel && <p>Completed at {completionLabel}</p>}
+                      {item.completedBy && (
+                        <p>
+                          Signed by {item.completedBy === user?.id ? 'you' : item.completedBy}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-3 space-y-3">
+                    {item.type === 'numeric' && (
+                      <Input
+                        type="number"
+                        label="Reading"
+                        value={typeof item.completedValue === 'number' ? item.completedValue : ''}
+                        onChange={(event) =>
+                          updateChecklistValue(
+                            item.id ?? createClientId(),
+                            event.target.value === '' ? undefined : Number(event.target.value),
+                          )
+                        }
+                      />
+                    )}
+
+                    {item.type === 'text' && (
+                      <div className="space-y-1">
+                        <label className="text-sm font-medium text-neutral-200">Notes</label>
+                        <textarea
+                          className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100"
+                          placeholder="Enter response"
+                          value={typeof item.completedValue === 'string' ? item.completedValue : ''}
+                          onChange={(event) => updateChecklistValue(item.id ?? createClientId(), event.target.value)}
+                        />
+                      </div>
+                    )}
+
+                    {(item.type === 'checkbox' || item.type === 'pass_fail' || !item.type) && (
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          variant={item.completedValue === true ? 'success' : 'outline'}
+                          onClick={() => updateChecklistValue(item.id ?? createClientId(), true)}
+                        >
+                          Pass
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={item.completedValue === false ? 'destructive' : 'outline'}
+                          onClick={() => updateChecklistValue(item.id ?? createClientId(), false)}
+                        >
+                          Fail
+                        </Button>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          label="Evidence URL or reference"
+                          value={evidenceDrafts[item.id ?? ''] ?? ''}
+                          onChange={(event) =>
+                            setEvidenceDrafts((prev) => ({ ...prev, [item.id ?? '']: event.target.value }))
+                          }
+                          placeholder="Link to photo or document"
+                        />
+                        <Button size="sm" variant="secondary" onClick={() => addEvidence(item.id ?? createClientId())}>
+                          Add
+                        </Button>
+                      </div>
+                      {(item.evidence ?? []).length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {item.evidence?.map((ref) => (
+                            <span
+                              key={ref}
+                              className="inline-flex items-center gap-2 rounded-full bg-neutral-800 px-3 py-1 text-xs text-neutral-100"
+                            >
+                              {ref}
+                              <button
+                                type="button"
+                                className="text-neutral-400 hover:text-white"
+                                onClick={() => removeEvidence(item.id ?? createClientId(), ref)}
+                                aria-label={`Remove evidence ${ref}`}
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {checklistError && <p className="mt-3 text-sm text-rose-400">{checklistError}</p>}
+        </Card.Content>
+      </Card>
+
+      <Card>
+        <Card.Header>
+          <div className="flex items-center justify-between">
+            <div>
+              <Card.Title>Checklist history</Card.Title>
+              <Card.Description>Review per-item readings, evidence, and compliance status.</Card.Description>
+            </div>
+            <Badge
+              text={
+                checklistCompliance.status === 'unknown'
+                  ? 'No data'
+                  : checklistCompliance.status === 'compliant'
+                    ? 'Compliant'
+                    : checklistCompliance.status === 'at_risk'
+                      ? 'At risk'
+                      : 'Failing'
+              }
+              color={
+                checklistCompliance.status === 'compliant'
+                  ? 'green'
+                  : checklistCompliance.status === 'at_risk'
+                    ? 'amber'
+                    : checklistCompliance.status === 'failing'
+                      ? 'red'
+                      : undefined
+              }
+            />
+          </div>
+        </Card.Header>
+        <Card.Content>
+          <div className="mb-4 grid grid-cols-2 gap-4 md:grid-cols-4">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-neutral-500">Checks logged</p>
+              <p className="text-2xl font-semibold text-neutral-100">{checklistCompliance.totalChecks}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-neutral-500">Passed</p>
+              <p className="text-2xl font-semibold text-neutral-100">{checklistCompliance.passedChecks}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-neutral-500">Pass rate</p>
+              <p className="text-2xl font-semibold text-neutral-100">{checklistCompliance.passRate}%</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-neutral-500">Last recorded</p>
+              <p className="text-2xl font-semibold text-neutral-100">
+                {checklistHistory[0]?.recordedAt
+                  ? new Date(checklistHistory[0].recordedAt).toLocaleString()
+                  : '—'}
+              </p>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-neutral-800/60 text-sm">
+              <thead>
+                <tr>
+                  <th className="px-3 py-2 text-left font-medium text-neutral-200">Item</th>
+                  <th className="px-3 py-2 text-left font-medium text-neutral-200">Reading</th>
+                  <th className="px-3 py-2 text-left font-medium text-neutral-200">Status</th>
+                  <th className="px-3 py-2 text-left font-medium text-neutral-200">Evidence</th>
+                  <th className="px-3 py-2 text-left font-medium text-neutral-200">Recorded at</th>
+                  <th className="px-3 py-2 text-left font-medium text-neutral-200">Recorded by</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-800/40">
+                {checklistHistory.map((entry, index) => (
+                  <tr key={`${entry.checklistItemId}-${index}`}>
+                    <td className="px-3 py-2 text-neutral-50">{entry.checklistItemLabel ?? entry.checklistItemId}</td>
+                    <td className="px-3 py-2 text-neutral-200">{formatReading(entry.reading)}</td>
+                    <td className="px-3 py-2">
+                      <Badge
+                        text={entry.passed === undefined ? 'N/A' : entry.passed ? 'Pass' : 'Fail'}
+                        color={entry.passed === undefined ? undefined : entry.passed ? 'green' : 'red'}
+                      />
+                    </td>
+                    <td className="px-3 py-2 text-neutral-200">
+                      {entry.evidenceUrls?.length ? (
+                        <ul className="space-y-1">
+                          {entry.evidenceUrls.map((url) => (
+                            <li key={url}>
+                              <a className="text-indigo-300 hover:text-indigo-200" href={url} target="_blank" rel="noreferrer">
+                                {url}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="text-neutral-500">—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-neutral-200">
+                      {entry.recordedAt ? new Date(entry.recordedAt).toLocaleString() : '—'}
+                    </td>
+                    <td className="px-3 py-2 text-neutral-200">{entry.recordedBy ?? '—'}</td>
+                  </tr>
+                ))}
+                {!checklistHistory.length && (
+                  <tr>
+                    <td className="px-3 py-4 text-center text-neutral-500" colSpan={6}>
+                      No checklist activity recorded yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card.Content>
+      </Card>
 
       <Card>
         <Card.Header>

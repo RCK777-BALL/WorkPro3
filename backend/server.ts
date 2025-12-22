@@ -100,6 +100,7 @@ import onboardingRouter from "./src/modules/onboarding";
 import assetInsightsRouter from "./src/modules/assets";
 import executiveRouter from "./src/modules/executive";
 import analyticsModuleRouter from "./src/modules/analytics";
+import downtimeRouter from "./src/modules/downtime";
 import meterReadingsRouter from "./src/modules/meters";
 import workOrdersModuleRouter from "./src/modules/work-orders";
 import purchaseOrdersApiRouter from "./src/routes/purchaseOrders";
@@ -294,6 +295,7 @@ app.use("/api/templates", templatesRouter);
 app.use("/api/onboarding", onboardingRouter);
 app.use("/api/executive", executiveRouter);
 app.use("/api/analytics/v2", analyticsModuleRouter);
+app.use("/api/downtime", downtimeRouter);
 app.use("/api/custom-reports", customReportsRouter);
 app.use("/api/work-orders", workOrdersModuleRouter);
 

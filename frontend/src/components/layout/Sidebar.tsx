@@ -282,6 +282,14 @@ const navItems: Record<NavItemId, NavItem> = {
     icon: FileStack,
     section: "plant",
   },
+  downtime: {
+    id: "downtime",
+    label: "Downtime",
+    to: "/downtime",
+    icon: Activity,
+    section: "operations",
+    permission: "workOrders.read",
+  },
   'purchase-orders': {
     id: 'purchase-orders',
     label: 'Purchase Orders',

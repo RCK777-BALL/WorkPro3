@@ -9,8 +9,15 @@ export default function GoodsReceiptPage() {
   const [po, setPo] = useState('');
   const [item, setItem] = useState('');
   const [qty, setQty] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   const submit = async () => {
+    if (!po || !item || qty <= 0) {
+      setError('PO, item, and quantity are required');
+      return;
+    }
+
+    setError(null);
     await createGoodsReceipt({ purchaseOrder: po, items: [{ item, quantity: qty }] });
     setPo('');
     setItem('');
@@ -37,6 +44,7 @@ export default function GoodsReceiptPage() {
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQty(Number(e.target.value))}
       />
       <button onClick={submit}>Receive</button>
+      {error && <p className="text-sm text-error-600">{error}</p>}
     </div>
   );
 }

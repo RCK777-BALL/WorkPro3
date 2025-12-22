@@ -282,12 +282,20 @@ const navItems: Record<NavItemId, NavItem> = {
     icon: FileStack,
     section: "plant",
   },
+  'purchase-orders': {
+    id: 'purchase-orders',
+    label: 'Purchase Orders',
+    to: '/purchasing/purchase-orders',
+    icon: Package,
+    section: 'operations',
+    permission: 'inventory.read',
+  },
   vendors: {
     id: "vendors",
     label: "Vendors",
     to: "/vendors",
     icon: Briefcase,
-    section: "management",
+    section: "operations",
     permission: "inventory.read",
   },
   messages: {

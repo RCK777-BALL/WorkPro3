@@ -50,6 +50,13 @@ const ACTIONS: SearchAction[] = [
     href: "/vendors",
     shortcut: "V",
   },
+  {
+    id: "purchase-orders",
+    label: "Purchase Orders",
+    description: "List and track purchasing workflows",
+    href: "/purchasing/purchase-orders",
+    shortcut: "P",
+  },
 ];
 
 export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {

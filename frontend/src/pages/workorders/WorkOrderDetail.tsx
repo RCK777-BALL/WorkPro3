@@ -65,7 +65,7 @@ const normalizeChecklistFromApi = (items: unknown): WorkOrderChecklistItem[] => 
 const normalizeWorkOrder = (data: WorkOrderResponse): WorkOrder | null => {
   const id = data._id ?? data.id;
   if (!id) return null;
-  return {
+  const normalized: WorkOrder = {
     id,
     title: data.title ?? 'Work Order',
     status: data.status ?? 'requested',
@@ -80,6 +80,15 @@ const normalizeWorkOrder = (data: WorkOrderResponse): WorkOrder | null => {
     complianceStatus: data.complianceStatus,
     complianceCompletedAt: data.complianceCompletedAt,
   } as WorkOrder;
+
+  if (data.checklistHistory) {
+    normalized.checklistHistory = data.checklistHistory;
+  }
+  if (data.checklistCompliance) {
+    normalized.checklistCompliance = data.checklistCompliance;
+  }
+
+  return normalized;
 };
 
 const WorkOrderDetail = () => {
@@ -102,6 +111,25 @@ const WorkOrderDetail = () => {
   const [actionModal, setActionModal] = useState<
     { type: 'reserve' | 'issue' | 'return' | 'unreserve'; partId: string; quantity: number } | null
   >(null);
+
+  const checklistHistory = workOrder?.checklistHistory ?? [];
+
+  const checklistCompliance = useMemo(() => {
+    if (workOrder?.checklistCompliance) return workOrder.checklistCompliance;
+
+    const totalChecks = checklistHistory.length;
+    const passedChecks = checklistHistory.filter((entry) => entry.passed).length;
+    const passRate = totalChecks ? Number(((passedChecks / totalChecks) * 100).toFixed(1)) : 0;
+    const status = totalChecks ? (passRate >= 90 ? 'compliant' : passRate >= 70 ? 'at_risk' : 'failing') : 'unknown';
+
+    return { totalChecks, passedChecks, passRate, status };
+  }, [checklistHistory, workOrder?.checklistCompliance]);
+
+  const formatReading = (value: unknown) => {
+    if (value === null || value === undefined) return '—';
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    return String(value);
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -506,6 +534,115 @@ const WorkOrderDetail = () => {
           </div>
 
           {checklistError && <p className="mt-3 text-sm text-rose-400">{checklistError}</p>}
+        </Card.Content>
+      </Card>
+
+      <Card>
+        <Card.Header>
+          <div className="flex items-center justify-between">
+            <div>
+              <Card.Title>Checklist history</Card.Title>
+              <Card.Description>Review per-item readings, evidence, and compliance status.</Card.Description>
+            </div>
+            <Badge
+              text={
+                checklistCompliance.status === 'unknown'
+                  ? 'No data'
+                  : checklistCompliance.status === 'compliant'
+                    ? 'Compliant'
+                    : checklistCompliance.status === 'at_risk'
+                      ? 'At risk'
+                      : 'Failing'
+              }
+              color={
+                checklistCompliance.status === 'compliant'
+                  ? 'green'
+                  : checklistCompliance.status === 'at_risk'
+                    ? 'amber'
+                    : checklistCompliance.status === 'failing'
+                      ? 'red'
+                      : undefined
+              }
+            />
+          </div>
+        </Card.Header>
+        <Card.Content>
+          <div className="mb-4 grid grid-cols-2 gap-4 md:grid-cols-4">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-neutral-500">Checks logged</p>
+              <p className="text-2xl font-semibold text-neutral-100">{checklistCompliance.totalChecks}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-neutral-500">Passed</p>
+              <p className="text-2xl font-semibold text-neutral-100">{checklistCompliance.passedChecks}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-neutral-500">Pass rate</p>
+              <p className="text-2xl font-semibold text-neutral-100">{checklistCompliance.passRate}%</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-neutral-500">Last recorded</p>
+              <p className="text-2xl font-semibold text-neutral-100">
+                {checklistHistory[0]?.recordedAt
+                  ? new Date(checklistHistory[0].recordedAt).toLocaleString()
+                  : '—'}
+              </p>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-neutral-800/60 text-sm">
+              <thead>
+                <tr>
+                  <th className="px-3 py-2 text-left font-medium text-neutral-200">Item</th>
+                  <th className="px-3 py-2 text-left font-medium text-neutral-200">Reading</th>
+                  <th className="px-3 py-2 text-left font-medium text-neutral-200">Status</th>
+                  <th className="px-3 py-2 text-left font-medium text-neutral-200">Evidence</th>
+                  <th className="px-3 py-2 text-left font-medium text-neutral-200">Recorded at</th>
+                  <th className="px-3 py-2 text-left font-medium text-neutral-200">Recorded by</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-800/40">
+                {checklistHistory.map((entry, index) => (
+                  <tr key={`${entry.checklistItemId}-${index}`}>
+                    <td className="px-3 py-2 text-neutral-50">{entry.checklistItemLabel ?? entry.checklistItemId}</td>
+                    <td className="px-3 py-2 text-neutral-200">{formatReading(entry.reading)}</td>
+                    <td className="px-3 py-2">
+                      <Badge
+                        text={entry.passed === undefined ? 'N/A' : entry.passed ? 'Pass' : 'Fail'}
+                        color={entry.passed === undefined ? undefined : entry.passed ? 'green' : 'red'}
+                      />
+                    </td>
+                    <td className="px-3 py-2 text-neutral-200">
+                      {entry.evidenceUrls?.length ? (
+                        <ul className="space-y-1">
+                          {entry.evidenceUrls.map((url) => (
+                            <li key={url}>
+                              <a className="text-indigo-300 hover:text-indigo-200" href={url} target="_blank" rel="noreferrer">
+                                {url}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="text-neutral-500">—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-neutral-200">
+                      {entry.recordedAt ? new Date(entry.recordedAt).toLocaleString() : '—'}
+                    </td>
+                    <td className="px-3 py-2 text-neutral-200">{entry.recordedBy ?? '—'}</td>
+                  </tr>
+                ))}
+                {!checklistHistory.length && (
+                  <tr>
+                    <td className="px-3 py-4 text-center text-neutral-500" colSpan={6}>
+                      No checklist activity recorded yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </Card.Content>
       </Card>
 

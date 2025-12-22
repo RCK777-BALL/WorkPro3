@@ -18,6 +18,23 @@ export interface ChecklistItem {
   evidence?: string[] | undefined;
 }
 
+export interface ChecklistHistoryEntry {
+  checklistItemId: string;
+  checklistItemLabel?: string;
+  reading?: string | number | boolean | null;
+  passed?: boolean;
+  evidenceUrls?: string[];
+  recordedAt?: string;
+  recordedBy?: string;
+}
+
+export interface ChecklistCompliance {
+  totalChecks: number;
+  passedChecks: number;
+  passRate: number;
+  status: 'unknown' | 'compliant' | 'at_risk' | 'failing';
+}
+
 export interface WorkOrderSignature {
   userId: string;
   signedAt?: string | undefined;

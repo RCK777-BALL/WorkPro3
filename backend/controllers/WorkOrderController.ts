@@ -9,6 +9,7 @@ import type { ParsedQs } from 'qs';
 import type { AuthedRequest } from '../types/http';
 
 import WorkOrder, { WorkOrderDocument } from '../models/WorkOrder';
+import WorkOrderChecklistLog, { type WorkOrderChecklistLogDocument } from '../models/WorkOrderChecklistLog';
 import InventoryItem from '../models/InventoryItem';
 import StockHistory from '../models/StockHistory';
 import Permit, { type PermitDocument } from '../models/Permit';
@@ -608,7 +609,20 @@ export async function getWorkOrderById(
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    sendResponse(res, item);
+    const checklistHistory = await WorkOrderChecklistLog.find({
+      workOrderId: req.params.id,
+      tenantId,
+    })
+      .sort({ recordedAt: -1 })
+      .lean();
+
+    const compliance = computeChecklistCompliance(checklistHistory);
+
+    sendResponse(res, {
+      ...item,
+      checklistHistory,
+      checklistCompliance: compliance,
+    });
     return;
   } catch (err) {
     next(err);
@@ -1126,8 +1140,19 @@ export async function updateWorkOrderChecklist(
       sendResponse(res, null, 'Not found', 404);
       return;
     }
+    const checklistHistory = await WorkOrderChecklistLog.find({
+      workOrderId: req.params.id,
+      tenantId,
+    })
+      .sort({ recordedAt: -1 })
+      .lean();
+
     emitWorkOrderUpdate(toWorkOrderUpdatePayload(updated));
-    sendResponse(res, updated);
+    sendResponse(res, {
+      ...updated.toObject(),
+      checklistHistory,
+      checklistCompliance: computeChecklistCompliance(checklistHistory),
+    });
   } catch (err) {
     next(err);
   }

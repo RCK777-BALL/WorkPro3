@@ -2,17 +2,57 @@
  * SPDX-License-Identifier: MIT
  */
 
-import PMTask, { type PMTaskAssignmentDocument } from '../models/PMTask';
+import PMTask, { type PMTaskAssignmentDocument, type PMTaskDocument } from '../models/PMTask';
 import WorkOrder from '../models/WorkOrder';
 import Meter from '../models/Meter';
 import MeterReading from '../models/MeterReading';
 import ConditionRule from '../models/ConditionRule';
 import SensorReading from '../models/SensorReading';
 import ProductionRecord from '../models/ProductionRecord';
+import WorkOrderTemplateModel from '../src/modules/work-orders/templateModel';
 import { notifyPmDue } from './notificationService';
 import { logger } from '../utils';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+const buildTemplatePayload = async (task: PMTaskDocument) => {
+  if (!task.workOrderTemplateId) {
+    return { templateId: undefined, templateVersion: task.templateVersion, checklists: undefined, status: 'not_required' as const };
+  }
+
+  const template = await WorkOrderTemplateModel.findOne({
+    _id: task.workOrderTemplateId,
+    tenantId: task.tenantId,
+  }).lean();
+
+  const checklists = template?.defaults?.checklists?.map((item) => ({
+    text: item.text,
+    done: false,
+    status: 'not_started' as const,
+  }));
+
+  return {
+    templateId: template?._id,
+    templateVersion: template?.version ?? task.templateVersion,
+    checklists,
+    status: checklists?.length ? ('pending' as const) : ('not_required' as const),
+  };
+};
+
+const mergeChecklists = (
+  assignment: PMTaskAssignmentDocument,
+  templateChecklists?: { text: string; done: boolean; status: 'not_started' }[],
+) => {
+  const assignmentChecklists = assignment.checklist?.map((item) => ({
+    description: item.description,
+    done: false,
+  }));
+
+  return [
+    ...(templateChecklists ?? []),
+    ...(assignmentChecklists?.map((item) => ({ text: item.description, done: item.done ?? false })) ?? []),
+  ];
+};
 
 function compare(value: number, operator: string, threshold: number): boolean {
   switch (operator) {
@@ -66,6 +106,7 @@ export async function runPMScheduler(): Promise<void> {
   const tasks = await PMTask.find({ active: true });
   for (const task of tasks) {
     try {
+      const templateDefaults = await buildTemplatePayload(task);
       if (Array.isArray(task.assignments) && task.assignments.length > 0) {
         let touched = false;
         for (const assignment of task.assignments) {
@@ -87,6 +128,7 @@ export async function runPMScheduler(): Promise<void> {
             const sinceLast = currentValue - (meter.lastWOValue || 0);
 
             if (sinceLast >= threshold) {
+              const checklists = mergeChecklists(assignment, templateDefaults.checklists);
               await WorkOrder.create({
                 title: `PM: ${task.title}`,
                 description: task.notes || '',
@@ -97,10 +139,13 @@ export async function runPMScheduler(): Promise<void> {
                 dueDate: now,
                 priority: 'medium',
                 tenantId: task.tenantId,
-                checklists: assignment.checklist?.map((item) => ({
-                  description: item.description,
-                  done: false,
-                })),
+                checklists,
+                ...(templateDefaults.templateId ? { workOrderTemplateId: templateDefaults.templateId } : {}),
+                ...(templateDefaults.templateVersion ? { templateVersion: templateDefaults.templateVersion } : {}),
+                complianceStatus: checklists.length ? 'pending' : templateDefaults.status,
+                ...(checklists.length === 0 && templateDefaults.status === 'not_required'
+                  ? { complianceCompletedAt: new Date() }
+                  : {}),
                 partsUsed: assignment.requiredParts?.map((part) => ({
                   partId: part.partId,
                   qty: part.quantity,
@@ -131,6 +176,7 @@ export async function runPMScheduler(): Promise<void> {
             }
           }
           if (assignment.nextDue && assignment.nextDue <= now) {
+            const checklists = mergeChecklists(assignment, templateDefaults.checklists);
             await WorkOrder.create({
               title: `PM: ${task.title}`,
               description: task.notes || '',
@@ -141,10 +187,13 @@ export async function runPMScheduler(): Promise<void> {
               dueDate: assignment.nextDue,
               priority: 'medium',
               tenantId: task.tenantId,
-              checklists: assignment.checklist?.map((item) => ({
-                description: item.description,
-                done: false,
-              })),
+              checklists,
+              ...(templateDefaults.templateId ? { workOrderTemplateId: templateDefaults.templateId } : {}),
+              ...(templateDefaults.templateVersion ? { templateVersion: templateDefaults.templateVersion } : {}),
+              complianceStatus: checklists.length ? 'pending' : templateDefaults.status,
+              ...(checklists.length === 0 && templateDefaults.status === 'not_required'
+                ? { complianceCompletedAt: new Date() }
+                : {}),
               partsUsed: assignment.requiredParts?.map((part) => ({
                 partId: part.partId,
                 qty: part.quantity,

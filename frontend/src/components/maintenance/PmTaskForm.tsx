@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import http from '@/lib/http';
 import Button from '@common/Button';
 import { useToast } from '@/context/ToastContext';
@@ -21,8 +21,12 @@ const PmTaskForm: React.FC<Props> = ({ task, onSuccess }) => {
     nextDue: task?.nextDue ? task.nextDue.split('T')[0] : '',
     notes: task?.notes || '',
     asset: task?.asset || '',
-    department: task?.department || ''
+    department: task?.department || '',
+    workOrderTemplateId: task?.workOrderTemplateId || ''
   });
+
+  const [templateOptions, setTemplateOptions] = useState<Array<{ id: string; name: string; version?: number }>>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -31,6 +35,29 @@ const PmTaskForm: React.FC<Props> = ({ task, onSuccess }) => {
     setForm(prev => ({ ...prev, [field]: value }));
 
   const { addToast } = useToast();
+
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        setLoadingTemplates(true);
+        const res = await http.get<{ _id?: string; id?: string; name: string; version?: number }[]>(
+          '/work-orders/templates',
+        );
+        const normalized = (res.data ?? []).map((template) => ({
+          id: template._id ?? template.id ?? '',
+          name: template.name,
+          version: template.version,
+        }));
+        setTemplateOptions(normalized);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingTemplates(false);
+      }
+    };
+
+    void fetchTemplates();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +71,7 @@ const PmTaskForm: React.FC<Props> = ({ task, onSuccess }) => {
         nextDue: nextDue || undefined,
         active,
         notes: notes || undefined,
+        ...(form.workOrderTemplateId ? { workOrderTemplateId: form.workOrderTemplateId } : {}),
       };
       let res;
       if (task) {
@@ -93,6 +121,23 @@ const PmTaskForm: React.FC<Props> = ({ task, onSuccess }) => {
           <option value="monthly">Monthly</option>
           <option value="quarterly">Quarterly</option>
           <option value="annually">Annually</option>
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-medium mb-1">Work order template</label>
+        <select
+          className="w-full px-3 py-2 border border-neutral-300 rounded-md"
+          value={form.workOrderTemplateId}
+          onChange={(e) => update('workOrderTemplateId', e.target.value)}
+          disabled={loadingTemplates}
+        >
+          <option value="">No template linked</option>
+          {templateOptions.map((template) => (
+            <option key={template.id} value={template.id}>
+              {template.name}
+              {template.version ? ` (v${template.version})` : ''}
+            </option>
+          ))}
         </select>
       </div>
       <div>

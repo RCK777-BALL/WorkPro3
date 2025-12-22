@@ -49,6 +49,10 @@ export interface WorkOrder {
   priority: 'low' | 'medium' | 'high' | 'critical';
   status: WorkOrderStatus;
   type: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
+  workOrderTemplateId?: string | undefined;
+  templateVersion?: number | undefined;
+  complianceStatus?: 'pending' | 'complete' | 'not_required' | undefined;
+  complianceCompletedAt?: string | undefined;
   approvalStatus?: 'draft' | 'pending' | 'approved' | 'rejected' | undefined;
   approvedBy?: string | undefined;
   approvedAt?: string | undefined;

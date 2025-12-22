@@ -1,23 +1,44 @@
 {
   "asset_viewer": {
-    "permissions": ["assets.read"]
+    "permissions": [
+      "assets.read"
+    ]
   },
   "asset_coordinator": {
-    "inherits": ["asset_viewer"],
-    "permissions": ["assets.write"]
+    "inherits": [
+      "asset_viewer"
+    ],
+    "permissions": [
+      "assets.write"
+    ]
   },
   "workorder_requester": {
-    "permissions": ["workorders.read"]
+    "permissions": [
+      "workorders.read"
+    ]
   },
   "workorder_supervisor": {
-    "inherits": ["workorder_requester"],
-    "permissions": ["workorders.write", "workorders.approve"]
+    "inherits": [
+      "workorder_requester"
+    ],
+    "permissions": [
+      "workorders.write",
+      "workorders.approve"
+    ]
   },
   "inventory_controller": {
-    "permissions": ["inventory.read", "inventory.manage", "inventory.purchase"]
+    "permissions": [
+      "inventory.read",
+      "inventory.manage",
+      "inventory.purchase"
+    ]
   },
   "report_builder": {
-    "permissions": ["reports.read", "reports.build", "reports.export"]
+    "permissions": [
+      "reports.read",
+      "reports.build",
+      "reports.export"
+    ]
   },
   "site_supervisor": {
     "inherits": [
@@ -28,20 +49,49 @@
     ]
   },
   "department_tech": {
-    "inherits": ["asset_viewer", "workorder_requester"],
-    "permissions": ["inventory.read"]
+    "inherits": [
+      "asset_viewer",
+      "workorder_requester"
+    ],
+    "permissions": [
+      "inventory.read"
+    ]
   },
   "admin": {
-    "inherits": ["site_supervisor"],
-    "permissions": ["*"],
+    "inherits": [
+      "site_supervisor"
+    ],
+    "permissions": [
+      "*"
+    ],
     "description": "Legacy admin retains full access to preserve backwards compatibility"
   },
   "global_admin": {
-    "inherits": ["admin"],
-    "permissions": ["*"]
+    "inherits": [
+      "admin"
+    ],
+    "permissions": [
+      "*"
+    ]
   },
   "plant_admin": {
-    "inherits": ["admin"],
-    "permissions": ["*"]
+    "inherits": [
+      "admin"
+    ],
+    "permissions": [
+      "*"
+    ]
+  },
+  "buyer": {
+    "permissions": [
+      "inventory.purchase",
+      "inventory.read"
+    ]
+  },
+  "finance": {
+    "permissions": [
+      "reports.read",
+      "inventory.read"
+    ]
   }
 }

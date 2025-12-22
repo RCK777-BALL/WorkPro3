@@ -33,6 +33,8 @@ export const AUTH_ROLES = [
   'area_leader',
   'department_leader',
   'viewer',
+  'buyer',
+  'finance',
 ] as const;
 
 export type AuthRole = (typeof AUTH_ROLES)[number];

@@ -19,7 +19,7 @@ const ACTIVE_WORK_ORDER_STATUSES = ['requested', 'assigned', 'in_progress'];
 const ANOMALY_LOOKBACK = 20;
 const ANOMALY_COOLDOWN_MINUTES = 15;
 
-type ConditionRuleLean = {
+export type ConditionRuleLean = {
   _id?: Types.ObjectId;
   asset?: Types.ObjectId;
   metric?: string;

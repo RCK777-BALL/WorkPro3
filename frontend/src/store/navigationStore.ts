@@ -32,6 +32,7 @@ export type NavItemId =
   | 'analytics-global'
   | 'analytics-ai'
   | 'executive'
+  | 'purchase-orders'
   | 'vendors'
   | 'messages'
   | 'documentation-getting-started'
@@ -67,6 +68,7 @@ const defaultOrder: NavItemId[] = [
   'analytics-global',
   'analytics-ai',
   'executive',
+  'purchase-orders',
   'vendors',
   'messages',
   'documentation-getting-started',

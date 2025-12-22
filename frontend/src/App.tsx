@@ -37,6 +37,8 @@ import InventoryAnalytics from "@/pages/InventoryAnalytics";
 import IotMonitoring from "@/pages/IotMonitoring";
 import VendorsPage from "@/pages/VendorsPage";
 import VendorEditor from "@/pages/vendors/VendorEditor";
+import PurchaseOrderListPage from "@/pages/purchasing/PurchaseOrderListPage";
+import PurchaseOrderDetailPage from "@/pages/purchasing/PurchaseOrderDetailPage";
 import Reports from "@/pages/Reports";
 import Notifications from "@/pages/Notifications";
 import NotificationSettings from "@/pages/NotificationSettings";
@@ -334,6 +336,30 @@ export default function App() {
             element={
               <RequirePermission permission="inventory.read">
                 <VendorEditor />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/purchasing/purchase-orders"
+            element={
+              <RequirePermission permission="inventory.read">
+                <PurchaseOrderListPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/purchasing/purchase-orders/new"
+            element={
+              <RequirePermission permission="inventory.read">
+                <PurchaseOrderDetailPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/purchasing/purchase-orders/:poId"
+            element={
+              <RequirePermission permission="inventory.read">
+                <PurchaseOrderDetailPage />
               </RequirePermission>
             }
           />

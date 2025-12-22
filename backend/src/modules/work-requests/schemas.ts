@@ -30,16 +30,11 @@ export const publicWorkRequestSchema = z.object({
         if (typeof value === 'string') return [value];
         return [];
       },
-      z.array(z.string().trim().min(2)),
+      z.array(z.string().trim().min(2)).max(6, 'Please limit to 6 tags'),
     )
-    .max(6, 'Please limit to 6 tags')
     .optional()
     .transform((list) => (list?.length ? list : undefined)),
   priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
-  tags: z
-    .array(z.string().trim())
-    .max(10, 'Use at most 10 tags')
-    .optional(),
 });
 
 export const workRequestConversionSchema = z.object({

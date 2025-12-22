@@ -857,8 +857,15 @@ export async function getDashboardKpiSummary(
     completedAt?: Date | null;
     createdAt?: Date;
     downtime?: number | null;
+    partsCostTotal?: number | null;
+    partsCost?: number | null;
     partsUsed?: Array<{ cost?: number | null; qty?: number | null }>;
-  }>(tenantId, filters, 'status dueDate pmTask completedAt createdAt downtime partsUsed', filterContext);
+  }>(
+    tenantId,
+    filters,
+    'status dueDate pmTask completedAt createdAt downtime partsUsed partsCost partsCostTotal',
+    filterContext,
+  );
 
   const { tenantFilter, assetFilter, dateRange } = filterContext;
 

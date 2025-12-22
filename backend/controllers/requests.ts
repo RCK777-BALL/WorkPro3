@@ -10,7 +10,11 @@ import WorkRequest, { type WorkRequestStatus } from '../models/WorkRequest';
 import Notification from '../models/Notifications';
 import { nanoid } from 'nanoid';
 import { convertWorkRequestToWorkOrder, listWorkRequests, getWorkRequestSummary } from '../src/modules/work-requests/service';
-import { publicWorkRequestSchema, workRequestConversionSchema } from '../src/modules/work-requests/schemas';
+import {
+  publicWorkRequestSchema,
+  workRequestConversionSchema,
+  type PublicWorkRequestInput,
+} from '../src/modules/work-requests/schemas';
 import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import { writeAuditLog, toObjectId, type EntityIdLike } from '../utils';
 
@@ -54,7 +58,9 @@ export const createRequest: AuthedRequestHandler = async (
       return;
     }
 
-    const requestForm = await resolveFormId(parse.data);
+    const submission: PublicWorkRequestInput & { requestFormId?: string } = parse.data;
+
+    const requestForm = await resolveFormId(submission);
     if (!requestForm) {
       res.status(400).json({ message: 'A request form is required to capture submissions.' });
       return;
@@ -204,7 +210,7 @@ export const convertRequestToWorkOrder: AuthedRequestHandler = async (
       { tenantId, siteId: req.siteId },
       req.params.id,
       parse.data,
-      req.user?._id,
+      toObjectId(req.user?._id),
     );
 
     await Notification.create({

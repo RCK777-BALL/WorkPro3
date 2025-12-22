@@ -182,7 +182,7 @@ const scanTenantAlerts = async (
         quantity: stockItem.quantity,
         threshold,
         triggeredAt: runStartedAt,
-        source: { type: 'stock_scan' },
+        source: 'stock_scan',
       },
       openMap,
     );
@@ -208,7 +208,7 @@ const scanTenantAlerts = async (
         quantity: part.quantity,
         threshold,
         triggeredAt: runStartedAt,
-        source: { type: 'stock_scan' },
+        source: 'stock_scan',
       },
       openMap,
     );

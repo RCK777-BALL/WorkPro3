@@ -42,6 +42,7 @@ import PurchaseOrderDetailPage from "@/pages/purchasing/PurchaseOrderDetailPage"
 import Reports from "@/pages/Reports";
 import Notifications from "@/pages/Notifications";
 import NotificationSettings from "@/pages/NotificationSettings";
+import DowntimeLogsPage from "@/pages/DowntimeLogsPage";
 import WorkflowRulesAdmin from "@/pages/WorkflowRulesAdmin";
 import Messages from "@/pages/Messages";
 import RoleManagementPage from "@/pages/RoleManagement";
@@ -130,6 +131,14 @@ export default function App() {
           <Route path="/analytics/operations" element={<AnalyticsWarehousePage />} />
           <Route path="/analytics/pm" element={<PMAnalytics />} />
           <Route path="/analytics/global" element={<GlobalAnalyticsDashboard />} />
+          <Route
+            path="/downtime"
+            element={
+              <RequirePermission permission="workOrders.read">
+                <DowntimeLogsPage />
+              </RequirePermission>
+            }
+          />
           <Route path="/analytics/ai" element={<AIDashboard />} />
           <Route
             path="/executive"

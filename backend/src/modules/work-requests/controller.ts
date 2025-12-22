@@ -25,7 +25,7 @@ import {
   publicWorkRequestSchema,
   workRequestConversionSchema,
   workRequestDecisionSchema,
-  listWorkRequestQuerySchema,
+  listWorkRequestsQuerySchema as listWorkRequestQuerySchema,
 } from './schemas';
 import RequestType from '../../../models/RequestType';
 import RequestForm from '../../../models/RequestForm';

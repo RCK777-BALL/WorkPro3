@@ -25,7 +25,7 @@ import {
   publicWorkRequestSchema,
   workRequestConversionSchema,
   workRequestDecisionSchema,
-  listWorkRequestsQuerySchema as listWorkRequestQuerySchema,
+  listWorkRequestQuerySchema,
 } from './schemas';
 import RequestType from '../../../models/RequestType';
 import RequestForm from '../../../models/RequestForm';
@@ -49,6 +49,8 @@ const buildContext = (req: AuthedRequest): WorkRequestContext => ({
 const send = (res: Response, data: unknown, status = 200) => {
   res.status(status).json({ success: true, data });
 };
+
+const formatZodErrors = (issues: z.ZodIssue[]) => issues.map((issue) => issue.message).join(', ');
 
 const handleError = (err: unknown, res: Response, next: NextFunction) => {
   if (err instanceof WorkRequestError) {
@@ -103,7 +105,7 @@ const requestFormInputSchema = z.object({
 export const submitPublicRequestHandler = async (req: Request, res: Response, next: NextFunction) => {
   const parse = publicWorkRequestSchema.safeParse(req.body);
   if (!parse.success) {
-    fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
+    fail(res, formatZodErrors(parse.error.errors), 400);
     return;
   }
   try {
@@ -133,7 +135,7 @@ export const listWorkRequestsHandler: AuthedRequestHandler = async (req, res, ne
   if (!ensureTenant(req, res)) return;
   const parseQuery = listWorkRequestQuerySchema.safeParse(req.query ?? {});
   if (!parseQuery.success) {
-    fail(res, parseQuery.error.errors.map((issue) => issue.message).join(', '), 400);
+    fail(res, formatZodErrors(parseQuery.error.errors), 400);
     return;
   }
   try {
@@ -168,7 +170,7 @@ export const convertWorkRequestHandler: AuthedRequestHandler<{ requestId: string
   if (!ensureTenant(req, res)) return;
   const parse = workRequestConversionSchema.safeParse(req.body ?? {});
   if (!parse.success) {
-    fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
+    fail(res, formatZodErrors(parse.error.errors), 400);
     return;
   }
   try {
@@ -189,7 +191,7 @@ export const updateWorkRequestStatusHandler: AuthedRequestHandler<{ requestId: s
   if (!ensureTenant(req, res)) return;
   const parse = workRequestDecisionSchema.safeParse(req.body ?? {});
   if (!parse.success) {
-    fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
+    fail(res, formatZodErrors(parse.error.errors), 400);
     return;
   }
   try {
@@ -237,7 +239,7 @@ export const createRequestTypeHandler: AuthedRequestHandler = async (req, res, n
   if (!ensureTenant(req, res)) return;
   const parse = requestTypeInputSchema.safeParse(req.body ?? {});
   if (!parse.success) {
-    fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
+    fail(res, formatZodErrors(parse.error.errors), 400);
     return;
   }
   try {
@@ -258,7 +260,7 @@ export const saveRequestFormHandler: AuthedRequestHandler<{ formSlug: string }> 
   if (!ensureTenant(req, res)) return;
   const parse = requestFormInputSchema.safeParse(req.body ?? {});
   if (!parse.success) {
-    fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
+    fail(res, formatZodErrors(parse.error.errors), 400);
     return;
   }
   try {

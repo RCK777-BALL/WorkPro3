@@ -16,6 +16,21 @@ import {
   upsertAssignmentHandler,
   deleteAssignmentHandler,
 } from './controller';
+import {
+  listCategoriesHandler,
+  createCategoryHandler,
+  listProcedureTemplatesHandler,
+  createProcedureTemplateHandler,
+  getProcedureTemplateHandler,
+  updateProcedureTemplateHandler,
+  deleteProcedureTemplateHandler,
+  listVersionsHandler,
+  createVersionHandler,
+  getVersionHandler,
+  updateVersionHandler,
+  deleteVersionHandler,
+  publishVersionHandler,
+} from './procedureController';
 
 const router = Router();
 
@@ -42,5 +57,21 @@ router.delete(
   requirePermission('pm', 'delete'),
   deleteAssignmentHandler,
 );
+
+router.get('/categories', requirePermission('pm', 'read'), listCategoriesHandler);
+router.post('/categories', requirePermission('pm', 'write'), createCategoryHandler);
+
+router.get('/procedures', requirePermission('pm', 'read'), listProcedureTemplatesHandler);
+router.post('/procedures', requirePermission('pm', 'write'), createProcedureTemplateHandler);
+router.get('/procedures/:templateId', requirePermission('pm', 'read'), getProcedureTemplateHandler);
+router.put('/procedures/:templateId', requirePermission('pm', 'write'), updateProcedureTemplateHandler);
+router.delete('/procedures/:templateId', requirePermission('pm', 'delete'), deleteProcedureTemplateHandler);
+
+router.get('/procedures/:templateId/versions', requirePermission('pm', 'read'), listVersionsHandler);
+router.post('/procedures/:templateId/versions', requirePermission('pm', 'write'), createVersionHandler);
+router.get('/versions/:versionId', requirePermission('pm', 'read'), getVersionHandler);
+router.put('/versions/:versionId', requirePermission('pm', 'write'), updateVersionHandler);
+router.delete('/versions/:versionId', requirePermission('pm', 'delete'), deleteVersionHandler);
+router.post('/versions/:versionId/publish', requirePermission('pm', 'write'), publishVersionHandler);
 
 export default router;

@@ -389,3 +389,114 @@ Use the following slices to open tracker tickets. Each item is grouped by API, V
 - **Data Access**: Staging tables for inbound files, audit trails for row-level changes, and job history with file references in object storage (`shared/data-pipelines`).
 - **UI**: Job wizard to define schedules, mappings, dry-run previews, and delivery channels (email/SFTP/HTTP); include quick-start templates for Zapier and Power Automate (`frontend/src/modules/integrations/data-pipelines`).
 - **Tests**: E2E import/export flows with sample files, SFTP connection mocks, and regression coverage for mapping templates.
+
+## Enterprise RBAC and Audit (BGT-051 → BGT-055)
+
+### BGT-051: Role/permission matrix and enforcement middleware
+- **API**: Role/permission CRUD endpoints with tenant scoping and module/action granularity (`backend/security/routes/roles.ts`).
+- **Validation**: Ensure permissions align to the documented matrix; enforce feature-flagged module disablement per tenant.
+- **Data Access**: Permission tables keyed by tenant, role, module, and action; caching layer for middleware reads (`shared/security/permissions`).
+- **UI**: None beyond surfaced errors; leverage shared error copy for forbidden responses.
+- **Tests**: Middleware integration tests across critical endpoints (create/update/delete/convert/receive/reserve) asserting 403s and allow paths.
+
+### BGT-052: Append-only audit log schema and emission coverage
+- **API**: Audit ingest helper callable from controllers/services capturing actor, tenant, action, target type/ID, diffs/snapshots, and request metadata (`backend/security/auditLogger.ts`).
+- **Validation**: Prevent mutation of stored audit records; retention configuration and PII scrubbing checks.
+- **Data Access**: Dedicated append-only audit collection/table with write-only pathways and retention jobs (`backend/db/audit`).
+- **UI**: N/A.
+- **Tests**: Serialization/unit tests for audit entries; integration ensuring all critical write endpoints emit audit events and background jobs (e.g., reorder alerts) log meaningful entries.
+
+### BGT-053: RBAC admin UI with effective permission preview
+- **API**: Effective-permission resolution endpoint combining role grants and feature flags (`backend/security/routes/effectivePermissions.ts`).
+- **Validation**: Input validation for role assignment and per-tenant scope changes.
+- **Data Access**: Role assignment mappings per user/tenant with seed defaults (Admin, Dispatcher, Technician, Viewer) plus sample audit entries.
+- **UI**: RBAC admin screen to assign roles and preview effective permissions for a user (`frontend/src/modules/security/rbac-admin`).
+- **Tests**: UI regression tests for assignment flows and previews; API tests ensuring resolution matches the permission matrix.
+
+### BGT-054: Audit log explorer with filtering and CSV export
+- **API**: Audit query endpoints with filters (tenant/user/action/target/date) and CSV export (`backend/security/routes/audit.ts`).
+- **Validation**: Pagination bounds, filter sanitization, and export size limits with background job fallback.
+- **Data Access**: Indexes on audit collection for common filters; export job artifacts with retention configuration.
+- **UI**: Admin page to view/filter audit logs with CSV export controls and request metadata toggle (`frontend/src/modules/security/audit-log`).
+- **Tests**: UI filter/export flows, pagination snapshots, and export contract tests.
+
+### BGT-055: Permission matrix documentation and testing guide
+- **API**: Expose permission matrix via reference endpoint for API/UI consumers (`backend/security/routes/permissionMatrix.ts`).
+- **Validation**: Ensure matrix reflects feature-flagged modules and default roles; doc generation checks in CI.
+- **Data Access**: Stored permission matrix definitions synchronized with seed data.
+- **UI**: Documentation page/link rendering matrix table (`docs/security/permission-matrix.md`).
+- **Tests**: “How to test” coverage ensuring enforcement failures return correct codes and corresponding audit visibility, including forbidden attempt logging where applicable.
+
+## Notifications and SLA Escalations (BGT-056 → BGT-060)
+
+### BGT-056: Notification model and delivery pipelines
+- **API**: Notification CRUD/read-state endpoints with tenant scoping and feature flag for email delivery (`backend/notifications/routes.ts`).
+- **Validation**: Channel configuration checks, recipient validation, and retry/backoff policies for delivery.
+- **Data Access**: Notification tables/queues storing category, message, CTA link, recipients, delivery channels, and read/unread state; dead-letter handling for failures.
+- **UI**: None (delivery focused) beyond API docs.
+- **Tests**: Unit tests for notification creation, retry logic, and channel selection; integration tests for WebSocket push delivery.
+
+### BGT-057: SLA rule engine and escalation workflows
+- **API**: SLA rule CRUD endpoints with thresholds and escalation paths per module (work requests, WOs, POs) (`backend/sla/routes.ts`).
+- **Validation**: Rule invariants, escalation ordering, and feature-flag enforcement for modules.
+- **Data Access**: Rule storage with escalation targets, timers, and audit of rule changes; background job hooks for overdue detection.
+- **UI**: SLA rule management screens with rule builder and escalation preview (`frontend/src/modules/sla/rules`).
+- **Tests**: Rule evaluation unit tests; integration tests for breach detection triggering notifications.
+
+### BGT-058: Notifications inbox and UX flows
+- **API**: Inbox list/filter endpoints with pagination and bulk mark-as-read operations (`backend/notifications/inbox.ts`).
+- **Validation**: Filter bounds (unread/category/SLA) and bulk operation constraints.
+- **Data Access**: Query indexes optimized for inbox filters; sample seed notifications including an escalated item.
+- **UI**: Notifications dropdown plus dedicated inbox with filters, bulk mark-as-read, and pagination (`frontend/src/modules/notifications`).
+- **Tests**: UI tests for inbox interactions and read-state sync; accessibility snapshot tests.
+
+### BGT-059: Notification hooks for workflow events
+- **API**: Event emitters for key workflows (new work request, conversion to WO, part reorder alert, PO received, PM generated, downtime logged) wired into notification service (`backend/notifications/hooks.ts`).
+- **Validation**: Ensure tenant and recipient scoping with idempotent emission guards.
+- **Data Access**: Delivery log entries with topic, status, latency, retries, and dead-letter references.
+- **UI**: N/A.
+- **Tests**: Integration tests asserting notifications fire for each hook; e2e that unauthorized actions still log attempts when appropriate.
+
+### BGT-060: Seed data and documentation for notifications/SLA
+- **API**: Seed loader for sample notifications and SLA rules (`dev-server/fixtures/notifications.ts`).
+- **Validation**: Feature flag defaults and retention policies validated during seeding.
+- **Data Access**: Seeded inbox entries, SLA rules, and one escalated item for demo tenants.
+- **UI**: Documentation updates covering API schema, feature flag behavior, and testing instructions for websocket/email toggle and SLA escalation (`docs/notifications/README.md`).
+- **Tests**: Seed verification tests ensuring demo data loads and appears in UI/inbox flows.
+
+## Integrations, Webhooks, and Exports (BGT-061 → BGT-065)
+
+### BGT-061: Scoped API keys with rate limiting and allowlists
+- **API**: API key create/rotate/revoke endpoints with scope definitions (read/write per module) and optional IP allowlist (`backend/integrations/api-keys.ts`).
+- **Validation**: Scope validation, rotation invariants, and per-key rate limit enforcement with informative errors.
+- **Data Access**: API key storage with hashed secrets, scope metadata, rate-limit counters, and audit hooks; sample seeded key for demo tenants.
+- **UI**: API key management screens to create, rotate, revoke, and copy keys (`frontend/src/modules/integrations/api-keys`).
+- **Tests**: Unit tests for signature/rate-limit helpers; integration tests ensuring scoped access and IP allowlist enforcement.
+
+### BGT-062: Webhook subscription and delivery framework
+- **API**: Webhook registration endpoints per tenant with topics (work orders, work requests, parts, POs, downtime, notifications), HMAC signing, and replay support (`backend/integrations/webhooks.ts`).
+- **Validation**: Payload signature verification helpers, exponential backoff retry policies, and dead-letter handling on repeated failures.
+- **Data Access**: Delivery logs capturing status, latency, retries, and payload digests; DLQ storage and replay audit entries (`backend/integrations/webhook-jobs`).
+- **UI**: Admin screens to manage endpoints, view delivery logs, retries, and copy signing secrets (`frontend/src/modules/integrations/webhooks`).
+- **Tests**: Integration tests for retry/backoff, signature validation (including clock skew), and replay endpoint behaviors.
+
+### BGT-063: Export job pipeline with CSV/XLSX outputs
+- **API**: Export endpoints for WOs/assets/parts with filter parity to list endpoints and long-running job orchestration (`backend/exports/routes.ts`).
+- **Validation**: Filter validation, export size limits, and background job fallback; signed URLs or download tokens for completed exports.
+- **Data Access**: Export job tables storing status, filters, file references, and audit trail; sample export job records for demo tenants.
+- **UI**: Export buttons with progress indicators and download links in relevant list pages (`frontend/src/modules/exports`).
+- **Tests**: Integration tests for export filters and job lifecycle; UI tests for download flows.
+
+### BGT-064: Observability and delivery dashboards
+- **API**: Delivery log query endpoints for webhooks and export jobs with pagination and filter options (`backend/integrations/observability.ts`).
+- **Validation**: Pagination bounds and filter sanitization; ensure sensitive data is redacted in logs.
+- **Data Access**: Aggregated metrics (status, latency, retry counts) stored for observability; background jobs for cleanup.
+- **UI**: Admin UI to view delivery logs, export job status, and webhook performance with charts (`frontend/src/modules/integrations/observability`).
+- **Tests**: UI snapshot tests for dashboard views; contract tests for log query endpoints.
+
+### BGT-065: Security guidance and testing documentation
+- **API**: Documentation endpoints or static pages detailing signature verification and rate-limit defaults (`docs/integrations/security.md`).
+- **Validation**: CI check to ensure docs stay in sync with scope/rate-limit defaults and webhook signing headers.
+- **Data Access**: Sample payload fixtures and verification snippets stored for reference.
+- **UI**: Developer documentation linking to API key and webhook screens plus “How to test” covering key creation, webhook verification, and export download.
+- **Tests**: Documentation lints and links validation; ensure seed data for API key/webhook/export jobs is referenced in docs.

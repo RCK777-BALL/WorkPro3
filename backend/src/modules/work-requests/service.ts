@@ -427,17 +427,18 @@ export const getWorkRequestById = async (ctx: WorkRequestContext, requestId: str
 };
 
 export const getWorkRequestSummary = async (ctx: WorkRequestContext) => {
-  const filter = { ...buildTenantFilter(ctx), deletedAt: { $exists: false } } as Record<string, unknown>;
+  const baseFilter = buildTenantFilter(ctx);
+  const activeFilter = { ...baseFilter, deletedAt: { $exists: false } } as Record<string, unknown>;
   const [recent, newCount, reviewingCount, convertedCount, closedCount, rejectedCount, acceptedCount, deletedCount] =
     await Promise.all([
-      WorkRequest.find(filter).sort({ createdAt: -1 }).limit(10).lean<WorkRequestDocument[]>(),
-      WorkRequest.countDocuments({ ...filter, status: 'new' as WorkRequestStatus }),
-      WorkRequest.countDocuments({ ...filter, status: 'reviewing' as WorkRequestStatus }),
-      WorkRequest.countDocuments({ ...filter, status: 'converted' as WorkRequestStatus }),
-      WorkRequest.countDocuments({ ...filter, status: 'closed' as WorkRequestStatus }),
-      WorkRequest.countDocuments({ ...filter, status: 'rejected' as WorkRequestStatus }),
-      WorkRequest.countDocuments({ ...filter, status: 'accepted' as WorkRequestStatus }),
-      WorkRequest.countDocuments({ ...filter, status: 'deleted' as WorkRequestStatus }),
+      WorkRequest.find(activeFilter).sort({ createdAt: -1 }).limit(10).lean<WorkRequestDocument[]>(),
+      WorkRequest.countDocuments({ ...baseFilter, status: 'new' as WorkRequestStatus }),
+      WorkRequest.countDocuments({ ...baseFilter, status: 'reviewing' as WorkRequestStatus }),
+      WorkRequest.countDocuments({ ...baseFilter, status: 'converted' as WorkRequestStatus }),
+      WorkRequest.countDocuments({ ...baseFilter, status: 'closed' as WorkRequestStatus }),
+      WorkRequest.countDocuments({ ...baseFilter, status: 'rejected' as WorkRequestStatus }),
+      WorkRequest.countDocuments({ ...baseFilter, status: 'accepted' as WorkRequestStatus }),
+      WorkRequest.countDocuments({ ...baseFilter, status: 'deleted' as WorkRequestStatus }),
     ]);
   const statusCounts = {
     new: newCount,

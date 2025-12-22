@@ -366,7 +366,7 @@ const triggerMeterPmFromMeter = async (
     const workOrder = await WorkOrder.create({
       title: `Meter PM: ${task.title}`,
       description: task.notes || '',
-      status: 'open',
+      status: 'requested',
       asset: meter.asset,
       pmTask: task._id,
       department: task.department,

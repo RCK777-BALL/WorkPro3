@@ -73,9 +73,13 @@ export interface WorkOrder {
   checklist?: Types.Array<{
     id: string;
     text: string;
-    type: 'checkbox' | 'numeric' | 'text';
+    type: 'checkbox' | 'numeric' | 'text' | 'pass_fail';
     completedValue?: string | number | boolean;
+    completedAt?: Date;
+    completedBy?: Types.ObjectId;
     required?: boolean;
+    evidenceRequired?: boolean;
+    evidence?: string[];
   }>;
   partsUsed: Types.Array<{ partId: Types.ObjectId; qty: number; cost: number }>;
   signatures: Types.Array<{ by: Types.ObjectId; ts: Date }>;
@@ -269,9 +273,13 @@ const workOrderSchema = new Schema<WorkOrder>(
       {
         id: { type: String, required: true },
         text: { type: String, required: true },
-        type: { type: String, enum: ['checkbox', 'numeric', 'text'], default: 'checkbox' },
+        type: { type: String, enum: ['checkbox', 'numeric', 'text', 'pass_fail'], default: 'checkbox' },
         completedValue: { type: Schema.Types.Mixed },
+        completedAt: { type: Date },
+        completedBy: { type: Schema.Types.ObjectId, ref: 'User' },
         required: { type: Boolean, default: false },
+        evidenceRequired: { type: Boolean, default: false },
+        evidence: [{ type: String }],
       },
     ],
     partsUsed: [

@@ -3,10 +3,19 @@
  */
 
 export interface ChecklistItem {
+  /** Stable identifier for the checklist line item */
+  id?: string;
   description: string;
+  type?: 'checkbox' | 'numeric' | 'text' | 'pass_fail';
+  required?: boolean;
+  evidenceRequired?: boolean;
+  completedValue?: string | number | boolean | undefined;
+  completedAt?: string | undefined;
+  completedBy?: string | undefined;
   completed?: boolean | undefined;
   status?: 'not_started' | 'in_progress' | 'done' | 'blocked' | undefined;
   photos?: string[] | undefined;
+  evidence?: string[] | undefined;
 }
 
 export interface WorkOrderSignature {
@@ -53,6 +62,7 @@ export interface WorkOrder {
   failureModeTags?: string[] | undefined;
   assignees?: string[] | undefined;
   checklists?: ChecklistItem[] | undefined;
+  checklist?: ChecklistItem[] | undefined;
   partsUsed?: WorkOrderPartLine[] | undefined;
   signatures?: WorkOrderSignature[] | undefined;
   timeSpentMin?: number | undefined;

@@ -6,14 +6,22 @@ import { z } from 'zod';
 
 const objectId = z.string().min(1, 'Identifier is required');
 
-const checklistItem = z.object({
+export const checklistItemSchema = z.object({
+  id: z.string().optional(),
   description: z.string().min(1, 'Checklist description is required'),
+  type: z.enum(['checkbox', 'numeric', 'text', 'pass_fail']).optional(),
+  required: z.boolean().optional(),
+  evidenceRequired: z.boolean().optional(),
+  completedValue: z.union([z.boolean(), z.string(), z.number()]).optional(),
+  completedAt: z.union([z.string(), z.date()]).optional(),
+  completedBy: objectId.optional(),
   done: z.boolean().optional(),
   status: z
     .enum(['not_started', 'in_progress', 'done', 'blocked'])
     .optional()
     .default('not_started'),
   photos: z.array(z.string()).optional(),
+  evidence: z.array(z.string()).optional(),
 });
 
 const attachmentItem = z.object({
@@ -125,7 +133,8 @@ const baseSchema = z.object({
   assignees: z.array(objectId).optional(),
   approvalSteps: z.array(approvalStepItem).optional(),
   currentApprovalStep: z.number().int().positive().optional(),
-  checklists: z.array(checklistItem).optional(),
+  checklists: z.array(checklistItemSchema).optional(),
+  checklist: z.array(checklistItemSchema).optional(),
   partsUsed: z.array(partItem).optional(),
   signatures: z.array(signatureItem).optional(),
   permits: z.array(objectId).optional(),
@@ -173,7 +182,8 @@ export const startWorkOrderSchema = z.object({});
 export const completeWorkOrderSchema = z.object({
   timeSpentMin: z.number().int().nonnegative().optional(),
   partsUsed: z.array(partItem).optional(),
-  checklists: z.array(checklistItem).optional(),
+  checklists: z.array(checklistItemSchema).optional(),
+  checklist: z.array(checklistItemSchema).optional(),
   signatures: z.array(signatureItem).optional(),
   photos: z.array(z.string()).optional(),
   failureCode: z.string().optional(),

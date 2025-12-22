@@ -107,6 +107,10 @@ export interface WorkOrder {
   customFields?: Record<string, unknown>;
 
   /** Optional relationships */
+  workOrderTemplateId?: Types.ObjectId;
+  templateVersion?: number;
+  complianceStatus?: 'pending' | 'complete' | 'not_required';
+  complianceCompletedAt?: Date;
   pmTask?: Types.ObjectId;
   department?: Types.ObjectId;
   line?: Types.ObjectId;
@@ -329,6 +333,10 @@ const workOrderSchema = new Schema<WorkOrder>(
     copilotSummaryUpdatedAt: { type: Date },
 
     /** Optional relationships */
+    workOrderTemplateId: { type: Schema.Types.ObjectId, ref: 'WorkOrderTemplate' },
+    templateVersion: { type: Number },
+    complianceStatus: { type: String, enum: ['pending', 'complete', 'not_required'] },
+    complianceCompletedAt: { type: Date },
     pmTask: { type: Schema.Types.ObjectId, ref: 'PMTask' },
     department: { type: Schema.Types.ObjectId, ref: 'Department' },
     line: { type: Schema.Types.ObjectId, ref: 'Line' },

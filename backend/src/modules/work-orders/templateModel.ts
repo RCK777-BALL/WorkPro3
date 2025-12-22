@@ -9,6 +9,7 @@ export interface WorkOrderTemplate {
   description?: string;
   tenantId: Types.ObjectId;
   siteId?: Types.ObjectId;
+  version?: number;
   defaults?: {
     priority?: string;
     type?: string;
@@ -23,11 +24,12 @@ export interface WorkOrderTemplate {
 
 const templateSchema = new Schema<WorkOrderTemplate>(
   {
-    name: { type: String, required: true },
-    description: { type: String },
-    tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
-    siteId: { type: Schema.Types.ObjectId, ref: 'Site', index: true },
-    defaults: {
+  name: { type: String, required: true },
+  description: { type: String },
+  tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
+  siteId: { type: Schema.Types.ObjectId, ref: 'Site', index: true },
+  version: { type: Number, default: 1 },
+  defaults: {
       priority: { type: String },
       type: { type: String },
       assignedTo: { type: Schema.Types.ObjectId, ref: 'User' },
@@ -48,6 +50,13 @@ const templateSchema = new Schema<WorkOrderTemplate>(
   },
   { timestamps: true }
 );
+
+templateSchema.pre('save', function bumpVersion(next) {
+  if (!this.isNew && this.isModified()) {
+    this.version = (this.version ?? 1) + 1;
+  }
+  next();
+});
 
 const WorkOrderTemplateModel = mongoose.model<WorkOrderTemplate>('WorkOrderTemplate', templateSchema);
 

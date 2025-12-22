@@ -44,6 +44,21 @@ import {
 
 
 
+const deriveCompliance = (
+  checklists?: ReturnType<typeof mapChecklists>,
+): { complianceStatus: 'pending' | 'complete' | 'not_required'; complianceCompletedAt?: Date } => {
+  const hasChecklists = Array.isArray(checklists) && checklists.length > 0;
+  if (!hasChecklists) {
+    return { complianceStatus: 'not_required', complianceCompletedAt: new Date() };
+  }
+  const allDone = checklists.every((item) => item.done);
+  return {
+    complianceStatus: allDone ? 'complete' : 'pending',
+    ...(allDone ? { complianceCompletedAt: new Date() } : {}),
+  };
+};
+
+
 
 const workOrderCreateFields = [
   'title',
@@ -768,6 +783,9 @@ export async function updateWorkOrder(
       );
       if (!validChecklists) return;
       update.checklists = mapChecklists(validChecklists);
+      const compliance = deriveCompliance(update.checklists);
+      update.complianceStatus = compliance.complianceStatus;
+      update.complianceCompletedAt = compliance.complianceCompletedAt;
     }
     if (update.signatures) {
       const validSignatures = validateItems<RawSignature>(

@@ -189,12 +189,7 @@ export const updateWorkRequestStatusHandler: AuthedRequestHandler<{ requestId: s
   next,
 ) => {
   if (!ensureTenant(req, res)) return;
-  const decisionSchema = z.object({
-    status: z.string().trim().min(1).optional(),
-    comment: z.string().trim().optional(),
-    notify: z.boolean().optional(),
-  });
-  const parse = decisionSchema.safeParse(req.body ?? {});
+  const parse = workRequestDecisionSchema.safeParse(req.body ?? {});
   if (!parse.success) {
     fail(res, formatZodErrors(parse.error.errors), 400);
     return;

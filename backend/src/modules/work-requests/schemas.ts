@@ -4,6 +4,8 @@
 
 import { z } from 'zod';
 
+import type { WorkRequestStatus } from '../../../models/WorkRequest';
+
 const optionalString = z
   .union([z.string(), z.undefined(), z.null()])
   .transform((value) => {
@@ -48,8 +50,18 @@ export const workRequestDecisionSchema = z.object({
   reason: z.string().trim().max(200).optional(),
 });
 
+const workRequestStatuses: readonly [WorkRequestStatus, ...WorkRequestStatus[]] = [
+  'new',
+  'reviewing',
+  'accepted',
+  'rejected',
+  'converted',
+  'closed',
+  'deleted',
+];
+
 export const listWorkRequestQuerySchema = z.object({
-  status: z.string().trim().optional(),
+  status: z.enum(workRequestStatuses).optional(),
   priority: z.string().trim().optional(),
   search: z.string().trim().optional(),
   requestType: z.string().trim().optional(),

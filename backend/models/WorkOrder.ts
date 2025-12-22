@@ -108,6 +108,7 @@ export interface WorkOrder {
 
   /** Optional relationships */
   pmTask?: Types.ObjectId;
+  pmTemplate?: Types.ObjectId;
   department?: Types.ObjectId;
   line?: Types.ObjectId;
   station?: Types.ObjectId;
@@ -149,6 +150,16 @@ export interface WorkOrder {
   updatedAt?: Date;
   downtime?: number;
   wrenchTime?: number;
+
+  iotEvent?: {
+    ruleId?: Types.ObjectId;
+    source?: 'http' | 'mqtt' | string;
+    readingId?: Types.ObjectId;
+    metric?: string;
+    value?: number;
+    timestamp?: Date;
+    payload?: Record<string, unknown>;
+  };
 }
 
 export type WorkOrderDocument = HydratedDocument<WorkOrder>;
@@ -330,6 +341,7 @@ const workOrderSchema = new Schema<WorkOrder>(
 
     /** Optional relationships */
     pmTask: { type: Schema.Types.ObjectId, ref: 'PMTask' },
+    pmTemplate: { type: Schema.Types.ObjectId, ref: 'PMTemplate' },
     department: { type: Schema.Types.ObjectId, ref: 'Department' },
     line: { type: Schema.Types.ObjectId, ref: 'Line' },
     station: { type: Schema.Types.ObjectId, ref: 'Station' },
@@ -380,6 +392,17 @@ const workOrderSchema = new Schema<WorkOrder>(
     ],
     downtime: { type: Number },
     wrenchTime: { type: Number },
+
+    iotEvent: {
+      ruleId: { type: Schema.Types.ObjectId, ref: 'ConditionRule' },
+      source: { type: String },
+      readingId: { type: Schema.Types.ObjectId, ref: 'SensorReading' },
+      metric: { type: String },
+      value: { type: Number },
+      timestamp: { type: Date },
+      payload: { type: Schema.Types.Mixed },
+      _id: false,
+    },
 
     version: { type: Number, default: 1, min: 1 },
     etag: { type: String, index: true },

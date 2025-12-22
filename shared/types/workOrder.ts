@@ -68,6 +68,7 @@ export interface WorkOrder {
   permits?: string[] | undefined;
   requiredPermitTypes?: string[] | undefined;
   pmTask?: string | undefined;
+  pmTemplate?: string | undefined;
   department?: string | undefined;
   line?: string | undefined;
   station?: string | undefined;
@@ -80,6 +81,15 @@ export interface WorkOrder {
   completedAt?: string | undefined;
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
+  iotEvent?: {
+    ruleId?: string;
+    source?: string;
+    readingId?: string;
+    metric?: string;
+    value?: number;
+    timestamp?: string;
+    payload?: Record<string, unknown>;
+  };
 }
 
 

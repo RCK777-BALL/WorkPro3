@@ -37,7 +37,17 @@ type PurchaseOrderResponse = {
 };
 
 const mapVendor = (value: unknown): VendorResponse | undefined => {
-  const vendor = value as { _id?: Types.ObjectId; id?: string; name?: string; email?: string; phone?: string } | undefined;
+  const vendor = value as
+    | {
+        _id?: Types.ObjectId;
+        id?: string;
+        name?: string;
+        email?: string;
+        phone?: string;
+        tags?: string[];
+        isActive?: boolean;
+      }
+    | undefined;
   if (!vendor) return undefined;
   const id = vendor.id ?? vendor._id?.toString();
   if (!id || !vendor.name) return undefined;
@@ -47,6 +57,8 @@ const mapVendor = (value: unknown): VendorResponse | undefined => {
       ? String((vendor as { tenantId?: Types.ObjectId | string }).tenantId)
       : '',
     name: vendor.name,
+    tags: Array.isArray(vendor.tags) ? vendor.tags : [],
+    isActive: typeof vendor.isActive === 'boolean' ? vendor.isActive : true,
   };
   if (vendor.email) result.email = vendor.email;
   if (vendor.phone) result.phone = vendor.phone;

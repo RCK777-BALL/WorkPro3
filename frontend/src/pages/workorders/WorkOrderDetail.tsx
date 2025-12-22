@@ -34,6 +34,10 @@ const normalizeWorkOrder = (data: WorkOrderResponse): WorkOrder | null => {
     assetId: data.assetId,
     asset: data.asset,
     department: data.department ?? '',
+    workOrderTemplateId: data.workOrderTemplateId,
+    templateVersion: data.templateVersion,
+    complianceStatus: data.complianceStatus,
+    complianceCompletedAt: data.complianceCompletedAt,
   } as WorkOrder;
 };
 
@@ -181,6 +185,48 @@ const WorkOrderDetail = () => {
           <p className="mt-2 whitespace-pre-line text-sm leading-6 text-neutral-200">
             {workOrder.description ?? 'No description provided.'}
           </p>
+        </div>
+      )}
+
+      {workOrder && (
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card>
+            <Card.Header>
+              <Card.Title>Template & compliance</Card.Title>
+              <Card.Description>Trace the preventive template used for this work order.</Card.Description>
+            </Card.Header>
+            <Card.Content className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-neutral-400">Compliance</span>
+                <Badge
+                  text={workOrder.complianceStatus ?? 'not_required'}
+                  color={
+                    workOrder.complianceStatus === 'complete'
+                      ? 'green'
+                      : workOrder.complianceStatus === 'pending'
+                        ? 'blue'
+                        : undefined
+                  }
+                />
+              </div>
+              {workOrder.complianceCompletedAt && (
+                <p className="text-xs text-neutral-400">
+                  Completed at {new Date(workOrder.complianceCompletedAt).toLocaleString()}
+                </p>
+              )}
+              <div className="text-sm text-neutral-300">
+                <p className="font-medium text-neutral-200">Template</p>
+                {workOrder.workOrderTemplateId ? (
+                  <p className="text-xs text-neutral-400">
+                    {workOrder.workOrderTemplateId}
+                    {workOrder.templateVersion ? ` · v${workOrder.templateVersion}` : ''}
+                  </p>
+                ) : (
+                  <p className="text-xs text-neutral-500">No template linked</p>
+                )}
+              </div>
+            </Card.Content>
+          </Card>
         </div>
       )}
 

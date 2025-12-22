@@ -213,6 +213,12 @@ export interface WorkOrder {
   /** Type of work such as corrective or preventive */
   type: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
 
+  /** Template reference captured when generated */
+  workOrderTemplateId?: string;
+  templateVersion?: number;
+  complianceStatus?: 'pending' | 'complete' | 'not_required';
+  complianceCompletedAt?: string;
+
   /** Optional compliance procedure identifier */
   complianceProcedureId?: string;
 
@@ -322,6 +328,8 @@ export interface PMTask {
   notes?: string;
   asset?: string;
   department?: string;
+  workOrderTemplateId?: string;
+  templateVersion?: number;
 }
 
 export interface Channel {

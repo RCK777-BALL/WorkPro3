@@ -41,6 +41,8 @@ import StockItem from './models/StockItem';
 import PurchaseOrder from './models/PurchaseOrder';
 import StockHistory from './models/StockHistory';
 import { writeAuditLog } from './utils';
+import DowntimeLog from './models/DowntimeLog';
+import MetricsRollup from './models/MetricsRollup';
 
 // Tenant id used for all seeded records
 const tenantId = process.env.SEED_TENANT_ID
@@ -127,6 +129,8 @@ mongoose.connect(mongoUri).then(async () => {
   await StockItem.deleteMany({});
   await StockHistory.deleteMany({});
   await PurchaseOrder.deleteMany({});
+  await DowntimeLog.deleteMany({});
+  await MetricsRollup.deleteMany({});
 
   // Seed Tenant
   await Tenant.create({
@@ -258,7 +262,7 @@ mongoose.connect(mongoUri).then(async () => {
   const lineId = dept.lines[0]._id;
   const stationId = dept.lines[0].stations[0]._id;
 
-  // Seed Asset
+  // Seed Assets
   const assetData = {
     name: 'Conveyor Belt',
     type: 'Mechanical',
@@ -274,11 +278,17 @@ mongoose.connect(mongoUri).then(async () => {
   };
 
   const asset = await Asset.create(assetData);
+  const assetB = await Asset.create({
+    ...assetData,
+    name: 'Packaging Robot',
+    description: 'Robotic arm handling packaging and case sealing',
+    type: 'Automation',
+  });
 
-  // Also store the asset reference inside the station hierarchy
+  // Also store the asset references inside the station hierarchy
   // ensure the station has an assets array (cast to any to satisfy TS)
   (dept.lines[0].stations[0] as any).assets = (dept.lines[0].stations[0] as any).assets || [];
-  (dept.lines[0].stations[0] as any).assets.push(asset._id);
+  (dept.lines[0].stations[0] as any).assets.push(asset._id, assetB._id);
   await dept.save();
 
   // Seed PM Task
@@ -337,6 +347,17 @@ mongoose.connect(mongoUri).then(async () => {
       failureCode: 'electrical',
       siteId: mainSite._id,
     },
+    {
+      title: 'Robot gripper jam',
+      asset: assetB._id,
+      tenantId,
+      status: 'completed',
+      createdAt: new Date(day1.getTime() + 3 * 60 * 60 * 1000),
+      completedAt: new Date(day1.getTime() + 4.5 * 60 * 60 * 1000),
+      timeSpentMin: 90,
+      failureCode: 'mechanical',
+      siteId: mainSite._id,
+    },
   ]);
 
   await ProductionRecord.insertMany([
@@ -370,6 +391,36 @@ mongoose.connect(mongoUri).then(async () => {
       downtimeReason: 'changeover',
       energyConsumedKwh: 78,
     },
+    {
+      tenantId,
+      asset: assetB._id,
+      site: mainSite._id,
+      recordedAt: day1,
+      plannedUnits: 900,
+      actualUnits: 840,
+      goodUnits: 820,
+      idealCycleTimeSec: 18,
+      plannedTimeMinutes: 720,
+      runTimeMinutes: 640,
+      downtimeMinutes: 80,
+      downtimeReason: 'robot-adjustment',
+      energyConsumedKwh: 65,
+    },
+    {
+      tenantId,
+      asset: assetB._id,
+      site: mainSite._id,
+      recordedAt: day2,
+      plannedUnits: 950,
+      actualUnits: 900,
+      goodUnits: 885,
+      idealCycleTimeSec: 18,
+      plannedTimeMinutes: 720,
+      runTimeMinutes: 675,
+      downtimeMinutes: 45,
+      downtimeReason: 'sensor-realignment',
+      energyConsumedKwh: 70,
+    },
   ]);
 
   await SensorReading.insertMany([
@@ -386,6 +437,100 @@ mongoose.connect(mongoUri).then(async () => {
       metric: 'energy_kwh',
       value: 47,
       timestamp: new Date(day2.getTime() + 12 * 60 * 60 * 1000),
+    },
+    {
+      tenantId,
+      asset: assetB._id,
+      metric: 'energy_kwh',
+      value: 38,
+      timestamp: new Date(day1.getTime() + 11 * 60 * 60 * 1000),
+    },
+    {
+      tenantId,
+      asset: assetB._id,
+      metric: 'energy_kwh',
+      value: 36,
+      timestamp: new Date(day2.getTime() + 11 * 60 * 60 * 1000),
+    },
+  ]);
+
+  await DowntimeLog.insertMany([
+    {
+      tenantId,
+      assetId: asset._id,
+      start: new Date(day1.getTime() + 1.5 * 60 * 60 * 1000),
+      end: new Date(day1.getTime() + 2.25 * 60 * 60 * 1000),
+      reason: 'belt-alignment',
+    },
+    {
+      tenantId,
+      assetId: asset._id,
+      start: new Date(day2.getTime() + 9 * 60 * 60 * 1000),
+      end: new Date(day2.getTime() + 9.5 * 60 * 60 * 1000),
+      reason: 'sensor-trip',
+    },
+    {
+      tenantId,
+      assetId: assetB._id,
+      start: new Date(day1.getTime() + 5 * 60 * 60 * 1000),
+      end: new Date(day1.getTime() + 6.75 * 60 * 60 * 1000),
+      reason: 'gripper-jam',
+    },
+    {
+      tenantId,
+      assetId: assetB._id,
+      start: new Date(day2.getTime() + 7 * 60 * 60 * 1000),
+      end: new Date(day2.getTime() + 7.25 * 60 * 60 * 1000),
+      reason: 'camera-calibration',
+    },
+  ]);
+
+  await MetricsRollup.insertMany([
+    {
+      tenantId,
+      siteId: mainSite._id,
+      assetId: asset._id,
+      assetName: asset.name,
+      period: new Date(day1.toISOString().slice(0, 10)),
+      granularity: 'day',
+      workOrders: 2,
+      completedWorkOrders: 2,
+      mttrHours: 1.5,
+      mtbfHours: 24,
+      pmTotal: 1,
+      pmCompleted: 1,
+      pmCompliance: 100,
+      downtimeMinutes: 105,
+    },
+    {
+      tenantId,
+      siteId: mainSite._id,
+      assetId: assetB._id,
+      assetName: assetB.name,
+      period: new Date(day1.toISOString().slice(0, 10)),
+      granularity: 'day',
+      workOrders: 1,
+      completedWorkOrders: 1,
+      mttrHours: 1.2,
+      mtbfHours: 18,
+      pmTotal: 1,
+      pmCompleted: 0,
+      pmCompliance: 0,
+      downtimeMinutes: 135,
+    },
+    {
+      tenantId,
+      siteId: mainSite._id,
+      period: new Date(day2.toISOString().slice(0, 10)),
+      granularity: 'day',
+      workOrders: 2,
+      completedWorkOrders: 2,
+      mttrHours: 1.25,
+      mtbfHours: 20,
+      pmTotal: 2,
+      pmCompleted: 1,
+      pmCompliance: 50,
+      downtimeMinutes: 75,
     },
   ]);
 

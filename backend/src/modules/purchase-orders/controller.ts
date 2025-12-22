@@ -7,9 +7,12 @@ import type { Response, NextFunction } from 'express';
 import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
 import { fail } from '../../lib/http';
 import {
+  cancelPurchaseOrder,
+  closePurchaseOrder,
   listPurchaseOrders,
   receivePurchaseOrder,
   savePurchaseOrder,
+  sendPurchaseOrder,
   transitionPurchaseOrder,
   PurchaseOrderError,
   type PurchaseOrderContext,
@@ -42,6 +45,8 @@ const handleError = (err: unknown, res: Response, next: NextFunction): void => {
 
 const buildContext = (req: AuthedRequest): PurchaseOrderContext => ({
   tenantId: req.tenantId!,
+  userId: (req.user as any)?._id?.toString() ?? (req.user as any)?.id,
+  siteId: req.siteId,
 });
 
 export const listPurchaseOrdersHandler: AuthedRequestHandler = async (req, res, next) => {
@@ -86,6 +91,36 @@ export const transitionPurchaseOrderHandler: AuthedRequestHandler<{ purchaseOrde
   }
   try {
     const data = await transitionPurchaseOrder(buildContext(req), req.params.purchaseOrderId, parse.data.status);
+    send(res, data, 200);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const sendPurchaseOrderHandler: AuthedRequestHandler<{ purchaseOrderId: string }> = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    const data = await sendPurchaseOrder(buildContext(req), req.params.purchaseOrderId, (req.body as any)?.note);
+    send(res, data, 200);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const closePurchaseOrderHandler: AuthedRequestHandler<{ purchaseOrderId: string }> = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    const data = await closePurchaseOrder(buildContext(req), req.params.purchaseOrderId);
+    send(res, data, 200);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const cancelPurchaseOrderHandler: AuthedRequestHandler<{ purchaseOrderId: string }> = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    const data = await cancelPurchaseOrder(buildContext(req), req.params.purchaseOrderId);
     send(res, data, 200);
   } catch (err) {
     handleError(err, res, next);

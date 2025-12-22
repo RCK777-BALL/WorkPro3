@@ -34,6 +34,13 @@ import ProductionRecord from './models/ProductionRecord';
 import WorkRequest from './models/WorkRequest';
 import RequestForm from './models/RequestForm';
 import RequestType from './models/RequestType';
+import Vendor from './models/Vendor';
+import Location from './models/Location';
+import Part from './models/Part';
+import StockItem from './models/StockItem';
+import PurchaseOrder from './models/PurchaseOrder';
+import StockHistory from './models/StockHistory';
+import { writeAuditLog } from './utils';
 
 // Tenant id used for all seeded records
 const tenantId = process.env.SEED_TENANT_ID
@@ -114,6 +121,12 @@ mongoose.connect(mongoUri).then(async () => {
   await RequestForm.deleteMany({});
   await Tenant.deleteMany({});
   await AuditLog.deleteMany({});
+  await Vendor.deleteMany({});
+  await Location.deleteMany({});
+  await Part.deleteMany({});
+  await StockItem.deleteMany({});
+  await StockHistory.deleteMany({});
+  await PurchaseOrder.deleteMany({});
 
   // Seed Tenant
   await Tenant.create({
@@ -459,15 +472,194 @@ mongoose.connect(mongoUri).then(async () => {
     requestId: convertedRequest._id,
   });
 
-  convertedRequest.status = 'converted';
-  convertedRequest.workOrder = convertedWorkOrder._id;
-  convertedRequest.decision = { convertedWorkOrderId: convertedWorkOrder._id };
-  await convertedRequest.save();
+    convertedRequest.status = 'converted';
+    convertedRequest.workOrder = convertedWorkOrder._id;
+    convertedRequest.decision = { convertedWorkOrderId: convertedWorkOrder._id };
+    await convertedRequest.save();
 
-  // Seed sample Audit Logs
-  await AuditLog.insertMany([
-    {
+    // Seed inventory vendors, locations, parts, and purchase orders
+    const [acmeIndustrial, northwind] = await Vendor.insertMany([
+      {
+        tenantId,
+        name: 'ACME Industrial',
+        email: 'orders@acme-industrial.test',
+        phone: '+1-555-555-1001',
+      },
+      {
+        tenantId,
+        name: 'Northwind Supplies',
+        email: 'sales@northwind.test',
+        phone: '+1-555-555-2002',
+      },
+    ]);
+
+    const [mainWarehouse, lineACabinet] = await Location.insertMany([
+      { tenantId, siteId: mainSite._id, name: 'Main Warehouse', store: 'A', room: '100', bin: 'A-01' },
+      { tenantId, siteId: mainSite._id, name: 'Line A Cabinet', store: 'Line A', room: 'Cabinet', bin: 'Shelf 2' },
+    ]);
+
+    const [bearing, belt] = await Part.insertMany([
+      {
+        tenantId,
+        siteId: mainSite._id,
+        partNo: 'BRG-6203',
+        description: '6203 sealed bearing',
+        unit: 'each',
+        cost: 12.5,
+        reorderPoint: 10,
+        leadTime: 5,
+      },
+      {
+        tenantId,
+        siteId: mainSite._id,
+        partNo: 'BLT-500',
+        description: '500mm drive belt',
+        unit: 'each',
+        cost: 45,
+        reorderPoint: 4,
+        leadTime: 7,
+      },
+    ]);
+
+    const [bearingStock, beltStock] = await StockItem.insertMany([
+      {
+        tenantId,
+        siteId: mainSite._id,
+        part: bearing._id,
+        location: mainWarehouse._id,
+        quantity: 25,
+        unitCost: 12.5,
+      },
+      {
+        tenantId,
+        siteId: mainSite._id,
+        part: belt._id,
+        location: lineACabinet._id,
+        quantity: 4,
+        unitCost: 45,
+      },
+    ]);
+
+    const draftPo = await PurchaseOrder.create({
       tenantId,
+      siteId: mainSite._id,
+      poNumber: 'PO-1001',
+      vendorId: acmeIndustrial._id,
+      status: 'Draft',
+      lines: [
+        { part: bearing._id, qtyOrdered: 8, qtyReceived: 0, price: 12.5 },
+        { part: belt._id, qtyOrdered: 3, qtyReceived: 0, price: 45 },
+      ],
+    });
+
+    await writeAuditLog({
+      tenantId,
+      siteId: mainSite._id,
+      userId: admin._id,
+      action: 'create',
+      entityType: 'PurchaseOrder',
+      entityId: draftPo._id,
+      after: draftPo.toObject(),
+      entityLabel: draftPo.poNumber,
+    });
+
+    const sentPo = await PurchaseOrder.create({
+      tenantId,
+      siteId: mainSite._id,
+      poNumber: 'PO-1002',
+      vendorId: northwind._id,
+      status: 'Approved',
+      lines: [
+        { part: bearing._id, qtyOrdered: 15, qtyReceived: 0, price: 11.75 },
+        { part: belt._id, qtyOrdered: 6, qtyReceived: 0, price: 42 },
+      ],
+    });
+
+    await writeAuditLog({
+      tenantId,
+      siteId: mainSite._id,
+      userId: admin._id,
+      action: 'create',
+      entityType: 'PurchaseOrder',
+      entityId: sentPo._id,
+      after: sentPo.toObject(),
+      entityLabel: sentPo.poNumber,
+    });
+
+    const sendBefore = sentPo.toObject();
+    sentPo.status = 'Ordered';
+    await sentPo.save();
+    await writeAuditLog({
+      tenantId,
+      siteId: mainSite._id,
+      userId: admin._id,
+      action: 'update',
+      entityType: 'PurchaseOrder',
+      entityId: sentPo._id,
+      before: sendBefore,
+      after: sentPo.toObject(),
+      entityLabel: sentPo.poNumber,
+      diff: [{ path: 'status', before: sendBefore.status, after: sentPo.status }],
+    });
+
+    const receiptBefore = sentPo.toObject();
+    const partialBearingReceipt = 6;
+    const partialBeltReceipt = 2;
+    sentPo.lines = sentPo.lines.map((line) => {
+      if (line.part.toString() === bearing._id.toString()) {
+        return { ...line, qtyReceived: partialBearingReceipt };
+      }
+      if (line.part.toString() === belt._id.toString()) {
+        return { ...line, qtyReceived: partialBeltReceipt };
+      }
+      return line;
+    });
+    await sentPo.save();
+
+    bearingStock.quantity += partialBearingReceipt;
+    beltStock.quantity += partialBeltReceipt;
+    await bearingStock.save();
+    await beltStock.save();
+
+    await StockHistory.insertMany([
+      {
+        tenantId,
+        siteId: mainSite._id,
+        stockItem: bearingStock._id,
+        part: bearingStock.part,
+        delta: partialBearingReceipt,
+        reason: `PO ${sentPo.poNumber} receipt`,
+        userId: admin._id,
+        balance: bearingStock.quantity,
+      },
+      {
+        tenantId,
+        siteId: mainSite._id,
+        stockItem: beltStock._id,
+        part: beltStock.part,
+        delta: partialBeltReceipt,
+        reason: `PO ${sentPo.poNumber} receipt`,
+        userId: admin._id,
+        balance: beltStock.quantity,
+      },
+    ]);
+
+    await writeAuditLog({
+      tenantId,
+      siteId: mainSite._id,
+      userId: admin._id,
+      action: 'receive',
+      entityType: 'PurchaseOrder',
+      entityId: sentPo._id,
+      before: receiptBefore,
+      after: sentPo.toObject(),
+      entityLabel: sentPo.poNumber,
+    });
+
+    // Seed sample Audit Logs
+    await AuditLog.insertMany([
+      {
+        tenantId,
       userId: admin._id,
       actor: { id: admin._id, name: admin.name, email: admin.email },
       action: 'create',

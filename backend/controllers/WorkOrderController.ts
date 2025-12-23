@@ -39,12 +39,12 @@ import {
 const checklistItemSchema = z.object({
   id: z.string().optional(),
   description: z.string(),
-  type: z.string().optional(),
+  type: z.enum(['checkbox', 'numeric', 'text', 'pass_fail']).optional(),
   required: z.boolean().optional(),
   evidenceRequired: z.boolean().optional(),
   completedValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
   done: z.boolean().optional(),
-  status: z.string().optional(),
+  status: z.enum(['not_started', 'in_progress', 'done', 'blocked']).optional(),
   photos: z.array(z.string()).optional(),
   evidence: z.array(z.string()).optional(),
   completedAt: z.preprocess((val) => (typeof val === 'string' ? new Date(val) : val), z.date().optional()),
@@ -76,8 +76,10 @@ const deriveCompliance = (
   };
 };
 
+type ChecklistHistoryEntry = Pick<WorkOrderChecklistLogDocument, 'passed'> & { recordedAt: Date };
+
 const computeChecklistCompliance = (
-  checklistHistory: Array<WorkOrderChecklistLogDocument | (WorkOrderChecklistLogDocument & { recordedAt: Date })>,
+  checklistHistory: ChecklistHistoryEntry[],
 ): { complianceStatus: 'pending' | 'complete' | 'not_required'; complianceCompletedAt?: Date } => {
   if (!Array.isArray(checklistHistory) || checklistHistory.length === 0) {
     return { complianceStatus: 'pending' };
@@ -651,7 +653,12 @@ export async function getWorkOrderById(
       .sort({ recordedAt: -1 })
       .lean();
 
-    const compliance = computeChecklistCompliance(checklistHistory);
+    const compliance = computeChecklistCompliance(
+      checklistHistory.map((entry) => ({
+        ...entry,
+        recordedAt: new Date(entry.recordedAt),
+      })),
+    );
 
     sendResponse(res, {
       ...item,
@@ -1186,7 +1193,12 @@ export async function updateWorkOrderChecklist(
     sendResponse(res, {
       ...updated.toObject(),
       checklistHistory,
-      checklistCompliance: computeChecklistCompliance(checklistHistory),
+      checklistCompliance: computeChecklistCompliance(
+        checklistHistory.map((entry) => ({
+          ...entry,
+          recordedAt: new Date(entry.recordedAt),
+        })),
+      ),
     });
   } catch (err) {
     next(err);

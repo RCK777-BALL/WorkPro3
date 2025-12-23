@@ -103,7 +103,7 @@ const serializeCategory = (doc: Pick<PMTemplateCategoryDocument, '_id' | 'name' 
 export const listCategories = async (context: PMProcedureContext) => {
   const categories = await PMTemplateCategory.find({ tenantId: context.tenantId })
     .sort({ name: 1 })
-    .lean<Pick<PMTemplateCategoryDocument, '_id' | 'name' | 'description'>>();
+    .lean<Array<Pick<PMTemplateCategoryDocument, '_id' | 'name' | 'description'>>>();
   return categories.map((category) => serializeCategory(category));
 };
 

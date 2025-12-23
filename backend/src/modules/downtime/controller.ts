@@ -3,6 +3,7 @@
  */
 
 import type { Response, NextFunction } from 'express';
+import { Types } from 'mongoose';
 import type { AuthedRequest } from '../../../types/http';
 import { fail } from '../../lib/http';
 import { downtimeCreateSchema, downtimeListQuerySchema, downtimeUpdateSchema } from './schemas';
@@ -14,6 +15,14 @@ const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest &
     return false;
   }
   return true;
+};
+
+const parseObjectId = (value: string, res: Response, label: string): Types.ObjectId | null => {
+  if (!Types.ObjectId.isValid(value)) {
+    fail(res, `Invalid ${label}`, 400);
+    return null;
+  }
+  return new Types.ObjectId(value);
 };
 
 export const listDowntimeHandler = async (req: AuthedRequest, res: Response, next: NextFunction) => {
@@ -43,7 +52,9 @@ export const createDowntimeHandler = async (req: AuthedRequest, res: Response, n
   if (!ensureTenant(req, res)) return;
 
   try {
-    const created = await createDowntimeLog(req.tenantId, parsed.data);
+    const assetId = parseObjectId(parsed.data.assetId, res, 'asset id');
+    if (!assetId) return;
+    const created = await createDowntimeLog(req.tenantId, { ...parsed.data, assetId });
     res.status(201).json({ success: true, data: created });
   } catch (err) {
     next(err);
@@ -60,7 +71,13 @@ export const updateDowntimeHandler = async (req: AuthedRequest, res: Response, n
   if (!ensureTenant(req, res)) return;
 
   try {
-    const updated = await updateDowntimeLog(req.tenantId, req.params.id, parsed.data);
+    const assetId = parsed.data.assetId ? parseObjectId(parsed.data.assetId, res, 'asset id') : undefined;
+    if (parsed.data.assetId && !assetId) return;
+    const payload = {
+      ...parsed.data,
+      ...(assetId ? { assetId } : {}),
+    };
+    const updated = await updateDowntimeLog(req.tenantId, req.params.id, payload);
     if (!updated) {
       fail(res, 'Not found', 404);
       return;

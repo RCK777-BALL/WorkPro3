@@ -113,7 +113,7 @@ purchaseOrderSchema.pre('validate', function preValidate(next) {
   }
   if (!this.isNew && this.isModified('status')) {
     const previousStatus = (this.$locals?.originalStatus ?? 'draft') as PurchaseOrderStatus;
-    assertValidStatusTransition(previousStatus, this.status);
+    assertValidStatusTransition(previousStatus, this.status as PurchaseOrderStatus);
   }
   next();
 });

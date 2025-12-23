@@ -14,7 +14,9 @@ export type DowntimeLogFilters = {
   end?: Date;
 };
 
-export type DowntimeLogPayload = Pick<DowntimeLogDocument, 'assetId' | 'start' | 'end' | 'reason'>;
+export type DowntimeLogPayload = Omit<Pick<DowntimeLogDocument, 'assetId' | 'start' | 'end' | 'reason'>, 'assetId'> & {
+  assetId: Types.ObjectId | string;
+};
 
 export const listDowntimeLogs = async (
   tenantId: string,

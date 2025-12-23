@@ -34,6 +34,8 @@ import ProductionRecord from './models/ProductionRecord';
 import WorkRequest from './models/WorkRequest';
 import RequestForm from './models/RequestForm';
 import RequestType from './models/RequestType';
+import DowntimeLog from './models/DowntimeLog';
+import MetricsRollup from './models/MetricsRollup';
 import Vendor from './models/Vendor';
 import Location from './models/Location';
 import Part from './models/Part';

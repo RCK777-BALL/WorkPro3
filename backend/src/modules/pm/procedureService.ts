@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Types } from 'mongoose';
+import { type LeanDocument, Types } from 'mongoose';
 
 import InventoryItem from '../../../models/InventoryItem';
 import PMProcedureTemplate, { type PMProcedureTemplateDocument } from '../../../models/PMProcedureTemplate';
@@ -94,7 +94,7 @@ const ensureParts = async (
   return partMap;
 };
 
-const serializeCategory = (doc: PMTemplateCategoryDocument) => ({
+const serializeCategory = (doc: PMTemplateCategoryDocument | LeanDocument<PMTemplateCategoryDocument>) => ({
   id: doc._id.toString(),
   name: doc.name,
   description: doc.description ?? undefined,
@@ -103,8 +103,8 @@ const serializeCategory = (doc: PMTemplateCategoryDocument) => ({
 export const listCategories = async (context: PMProcedureContext) => {
   const categories = await PMTemplateCategory.find({ tenantId: context.tenantId })
     .sort({ name: 1 })
-    .lean();
-  return categories.map((category) => serializeCategory(category as PMTemplateCategoryDocument));
+    .lean<PMTemplateCategoryDocument>();
+  return categories.map((category) => serializeCategory(category));
 };
 
 export const createCategory = async (context: PMProcedureContext, payload: CategoryInput) => {

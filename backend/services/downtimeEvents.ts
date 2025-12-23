@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { FilterQuery, LeanDocument, UpdateWriteOpResult } from 'mongoose';
+import type { FilterQuery, UpdateWriteOpResult } from 'mongoose';
 import { Types } from 'mongoose';
 import DowntimeEvent, { type DowntimeEventDocument } from '../models/DowntimeEvent';
 
@@ -65,14 +65,14 @@ const assertRequiredFields = (payload: DowntimeEventPayload) => {
 export const listDowntimeEvents = async (
   tenantId: string,
   filters: DowntimeEventFilters = {},
-): Promise<Array<LeanDocument<DowntimeEventDocument>>> => {
+): Promise<DowntimeEventDocument[]> => {
   const query: FilterQuery<DowntimeEventDocument> = { tenantId };
 
   if (filters.assetId) query.assetId = toObjectId(filters.assetId);
   if (filters.workOrderId) query.workOrderId = toObjectId(filters.workOrderId);
   if (filters.activeOnly) query.end = { $exists: false } as any;
 
-  return DowntimeEvent.find(query).sort({ start: -1 }).lean().exec();
+  return DowntimeEvent.find(query).sort({ start: -1 }).exec();
 };
 
 export const createDowntimeEvent = async (

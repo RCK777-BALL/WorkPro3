@@ -52,7 +52,8 @@ export const reliabilityMetricsHandler = async (req: AuthedRequest, res: Respons
   if (!ensureTenant(req, res)) return;
 
   try {
-    const result = await calculateReliabilityMetrics(req.tenantId, parsed.window);
+    const tenantId = req.tenantId;
+    const result = await calculateReliabilityMetrics(tenantId, parsed.window);
     res.json({ success: true, data: result });
   } catch (err) {
     next(err);
@@ -69,7 +70,8 @@ export const backlogMetricsHandler = async (req: AuthedRequest, res: Response, n
   if (!ensureTenant(req, res)) return;
 
   try {
-    const result = await calculateBacklogMetrics(req.tenantId, parsed.window);
+    const tenantId = req.tenantId;
+    const result = await calculateBacklogMetrics(tenantId, parsed.window);
     res.json({ success: true, data: result });
   } catch (err) {
     next(err);
@@ -86,7 +88,8 @@ export const pmComplianceHandler = async (req: AuthedRequest, res: Response, nex
   if (!ensureTenant(req, res)) return;
 
   try {
-    const result = await calculatePmCompliance(req.tenantId, parsed.window);
+    const tenantId = req.tenantId;
+    const result = await calculatePmCompliance(tenantId, parsed.window);
     res.json({ success: true, data: result });
   } catch (err) {
     next(err);

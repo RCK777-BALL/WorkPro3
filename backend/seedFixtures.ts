@@ -5,6 +5,7 @@
 import type { MaintenanceScheduleRepeatConfig } from './models/MaintenanceSchedule';
 import type { InspectionTemplateDocument } from './models/InspectionTemplate';
 import type { WorkOrderDocument } from './models/WorkOrder';
+import { Types } from 'mongoose';
 import type { ConditionRuleLean } from './services/iotIngestionService';
 
 export type SeedInspectionTemplate = Pick<InspectionTemplateDocument, 'name' | 'description' | 'version' | 'categories' | 'sections'>;
@@ -95,16 +96,16 @@ export const workOrderWithChecklistFixture: Pick<
   importance: 'medium',
   completedAt: new Date(),
   timeSpentMin: 75,
-  checklists: [
+  checklists: new Types.Array([
     { text: 'Lockout/Tagout applied', done: true, status: 'done' },
     { text: 'Greased drive components', done: true, status: 'done' },
     { text: 'Re-tensioned belt', done: true, status: 'done' },
-  ],
-  checklist: [
+  ]),
+  checklist: new Types.Array([
     { id: 'guard', text: 'Safety guards verified', type: 'checkbox', completedValue: true, required: true },
     { id: 'torque', text: 'Torque logged', type: 'numeric', completedValue: 12, required: false },
     { id: 'notes', text: 'Notes', type: 'text', completedValue: 'All clear' },
-  ],
+  ]),
 };
 
 export const iotRuleFixture: ConditionRuleLean = {

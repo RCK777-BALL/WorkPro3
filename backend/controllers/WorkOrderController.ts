@@ -1516,7 +1516,12 @@ export async function completeWorkOrder(
 
     let checklistEntries: ChecklistEntry[] = [];
     if (Array.isArray(body.checklist)) {
-      checklistEntries = buildChecklistPayload(body.checklist, userObjectId);
+      const parsedChecklist = z.array(checklistItemSchema).safeParse(body.checklist);
+      if (!parsedChecklist.success) {
+        sendResponse(res, null, parsedChecklist.error.flatten(), 400);
+        return;
+      }
+      checklistEntries = buildChecklistPayload(parsedChecklist.data, userObjectId);
     } else if (Array.isArray(workOrder.checklist) && workOrder.checklist.length) {
       checklistEntries = normalizeExistingChecklistEntries(workOrder.checklist as unknown[], userObjectId);
     }

@@ -96,12 +96,18 @@ export const workOrderWithChecklistFixture: Pick<
   importance: 'medium',
   completedAt: new Date(),
   timeSpentMin: 75,
-  checklists: new Types.Array([
+  checklists: new Types.Array<{ text: string; done: boolean; status?: 'not_started' | 'in_progress' | 'done' | 'blocked' }>([
     { text: 'Lockout/Tagout applied', done: true, status: 'done' },
     { text: 'Greased drive components', done: true, status: 'done' },
     { text: 'Re-tensioned belt', done: true, status: 'done' },
   ]),
-  checklist: new Types.Array([
+  checklist: new Types.Array<{
+    id: string;
+    text: string;
+    type: 'checkbox' | 'numeric' | 'text' | 'pass_fail';
+    completedValue?: string | number | boolean;
+    required?: boolean;
+  }>([
     { id: 'guard', text: 'Safety guards verified', type: 'checkbox', completedValue: true, required: true },
     { id: 'torque', text: 'Torque logged', type: 'numeric', completedValue: 12, required: false },
     { id: 'notes', text: 'Notes', type: 'text', completedValue: 'All clear' },

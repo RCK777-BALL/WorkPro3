@@ -34,12 +34,12 @@ const parseQuery = (req: AuthedRequest) => {
   return { window } as const;
 };
 
-const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
+const ensureTenant = (req: AuthedRequest, res: Response): string | null => {
   if (!req.tenantId) {
     fail(res, 'Tenant context is required', 400);
-    return false;
+    return null;
   }
-  return true;
+  return req.tenantId;
 };
 
 export const reliabilityMetricsHandler = async (req: AuthedRequest, res: Response, next: NextFunction) => {
@@ -49,10 +49,10 @@ export const reliabilityMetricsHandler = async (req: AuthedRequest, res: Respons
     return;
   }
 
-  if (!ensureTenant(req, res)) return;
+  const tenantId = ensureTenant(req, res);
+  if (!tenantId) return;
 
   try {
-    const tenantId = req.tenantId;
     const result = await calculateReliabilityMetrics(tenantId, parsed.window);
     res.json({ success: true, data: result });
   } catch (err) {
@@ -67,10 +67,10 @@ export const backlogMetricsHandler = async (req: AuthedRequest, res: Response, n
     return;
   }
 
-  if (!ensureTenant(req, res)) return;
+  const tenantId = ensureTenant(req, res);
+  if (!tenantId) return;
 
   try {
-    const tenantId = req.tenantId;
     const result = await calculateBacklogMetrics(tenantId, parsed.window);
     res.json({ success: true, data: result });
   } catch (err) {
@@ -85,10 +85,10 @@ export const pmComplianceHandler = async (req: AuthedRequest, res: Response, nex
     return;
   }
 
-  if (!ensureTenant(req, res)) return;
+  const tenantId = ensureTenant(req, res);
+  if (!tenantId) return;
 
   try {
-    const tenantId = req.tenantId;
     const result = await calculatePmCompliance(tenantId, parsed.window);
     res.json({ success: true, data: result });
   } catch (err) {

@@ -51,8 +51,9 @@ The optimized bundle is written to the `dist` folder.
 The following variables from `.env.sample` configure the frontend:
 
 - `VITE_API_URL` – Base URL for API requests. Defaults to `http://localhost:5010`.
-- `VITE_WS_URL` – WebSocket server URL for real‑time updates. Defaults to `ws://localhost:5010`.
-- `VITE_SOCKET_PATH` – WebSocket endpoint path. Defaults to `/socket.io`.
+- `VITE_SOCKET_URL` – Base URL for Socket.IO (use `http://` or `https://`). Defaults to `VITE_API_URL`.
+- `VITE_WS_URL` – Legacy Socket.IO base URL (also `http://` or `https://`). Kept for backward compatibility.
+- `VITE_SOCKET_PATH` – Socket.IO endpoint path. Defaults to `/socket.io`.
 
 After updating `.env.local`, restart the development server to apply the changes.
 
@@ -70,7 +71,7 @@ WebSocket reconnects. The queued requests are then flushed automatically.
 npx ts-node dev-server/server.ts
 ```
 
-The server reads `MONGO_URI` and `CORS_ORIGIN` from `dev-server/.env`. These variables match those used by the main backend—see `.env.sample` for reference. Ensure `CORS_ORIGIN` matches the Vite dev server URL (e.g. `http://localhost:5173`) and update `VITE_API_URL`, `VITE_WS_URL`, and `VITE_SOCKET_PATH` if the API runs on a different host or port.
+The server reads `MONGO_URI` and `CORS_ORIGIN` from `dev-server/.env`. These variables match those used by the main backend—see `.env.sample` for reference. Ensure `CORS_ORIGIN` matches the Vite dev server URL (e.g. `http://localhost:5173`) and update `VITE_API_URL`, `VITE_SOCKET_URL` (or legacy `VITE_WS_URL`), and `VITE_SOCKET_PATH` if the API runs on a different host or port.
 
 ### Inventory route example
 

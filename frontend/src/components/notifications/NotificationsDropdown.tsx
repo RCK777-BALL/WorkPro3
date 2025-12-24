@@ -8,10 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { markNotificationRead } from '../../api/notifications';
 import type { NotificationType } from '../../types';
 import Card from '../common/Card';
-import {
-  getNotificationsSocket,
-  closeNotificationsSocket,
-} from '../../utils/notificationsSocket';
+import { getNotificationsSocket } from '../../utils/notificationsSocket';
 import { useToast } from '../../context/ToastContext';
 
  
@@ -74,7 +71,6 @@ const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
     s.on('notification', handleCreate);
     return () => {
       s.off('notification', handleCreate);
-      closeNotificationsSocket();
     };
   }, [liveData]);
 

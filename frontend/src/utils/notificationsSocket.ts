@@ -44,7 +44,12 @@ function createSocket(): Socket {
     realtimeStatus.setStreaming();
   });
   s.on('disconnect', handleDegraded);
-  s.on('connect_error', handleDegraded);
+  s.on('connect_error', (err) => {
+    handleDegraded();
+    if (import.meta.env.DEV) {
+      console.info('Notifications socket connect error', err?.message ?? err);
+    }
+  });
   s.onAny(() => realtimeStatus.markDelivery());
 
   return s;
@@ -77,4 +82,3 @@ export function stopNotificationsPoll(): void {
     poll = null;
   }
 }
-

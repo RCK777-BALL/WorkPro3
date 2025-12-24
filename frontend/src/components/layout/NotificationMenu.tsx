@@ -13,7 +13,7 @@ import {
   markNotificationRead,
 } from "@/api/notifications";
 import { type NotificationType } from "@/types";
-import { getNotificationsSocket, closeNotificationsSocket } from "@/utils/notificationsSocket";
+import { getNotificationsSocket } from "@/utils/notificationsSocket";
 
 type NotificationMenuProps = {
   open: boolean;
@@ -96,7 +96,6 @@ export default function NotificationMenu({ open, onOpenChange }: NotificationMen
     socket.on('notification', handleIncoming);
     return () => {
       socket.off('notification', handleIncoming);
-      closeNotificationsSocket();
     };
   }, []);
 

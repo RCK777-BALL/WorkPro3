@@ -6,14 +6,14 @@ import type { Request, Response, NextFunction } from 'express';
 import { Parser as Json2csvParser } from 'json2csv';
 import { Types } from 'mongoose';
 
-import { escapeXml, sendResponse, writeAuditLog, toEntityId } from '../utils';
+import { escapeXml, sendResponse, toEntityId, writeAuditLog } from '../utils';
 import {
-  createDowntimeLog,
-  deleteDowntimeLog,
-  getDowntimeLog,
-  listDowntimeLogs,
-  updateDowntimeLog,
-} from '../services/downtimeLogs';
+  createDowntimeEvent,
+  deleteDowntimeEvent,
+  getDowntimeEvent,
+  listDowntimeEvents,
+  updateDowntimeEvent,
+} from '../services/downtimeEvents';
 
 const parseDate = (value: unknown): Date | undefined => {
   if (typeof value !== 'string') return undefined;
@@ -21,13 +21,41 @@ const parseDate = (value: unknown): Date | undefined => {
   return Number.isNaN(parsed.getTime()) ? undefined : parsed;
 };
 
+const parseBoolean = (value: unknown): boolean | undefined => {
+  if (value === 'true' || value === true) return true;
+  if (value === 'false' || value === false) return false;
+  return undefined;
+};
+
 const buildFiltersFromRequest = (req: Request) => ({
   assetId: typeof req.query.assetId === 'string' ? req.query.assetId : undefined,
+  workOrderId: typeof req.query.workOrderId === 'string' ? req.query.workOrderId : undefined,
+  causeCode: typeof req.query.causeCode === 'string' ? req.query.causeCode : undefined,
+  activeOnly: parseBoolean(req.query.activeOnly),
   start: parseDate(req.query.start),
   end: parseDate(req.query.end),
 });
 
-export const getDowntimeLogsHandler = async (
+const toExportRows = (events: any[]) =>
+  events.map((event) => {
+    const start = event.start ? new Date(event.start) : undefined;
+    const end = event.end ? new Date(event.end) : undefined;
+    const durationMinutes =
+      start && end ? Number(((end.getTime() - start.getTime()) / 60000).toFixed(2)) : '';
+
+    return {
+      assetId: event.assetId?.toString?.() ?? '',
+      workOrderId: event.workOrderId?.toString?.() ?? '',
+      start: start?.toISOString() ?? '',
+      end: end?.toISOString() ?? '',
+      causeCode: event.causeCode ?? '',
+      reason: event.reason ?? '',
+      impactMinutes: event.impactMinutes ?? '',
+      durationMinutes,
+    };
+  });
+
+export const getDowntimeEventsHandler = async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -40,14 +68,14 @@ export const getDowntimeLogsHandler = async (
     }
 
     const filters = buildFiltersFromRequest(req);
-    const logs = await listDowntimeLogs(tenantId, filters);
-    sendResponse(res, logs);
+    const events = await listDowntimeEvents(tenantId, filters);
+    sendResponse(res, events);
   } catch (err) {
     next(err);
   }
 };
 
-export const exportDowntimeLogsHandler = async (
+export const exportDowntimeEventsCsvHandler = async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -60,42 +88,30 @@ export const exportDowntimeLogsHandler = async (
     }
 
     const filters = buildFiltersFromRequest(req);
-    const logs = await listDowntimeLogs(tenantId, filters);
-
+    const events = await listDowntimeEvents(tenantId, filters);
     const parser = new Json2csvParser({
       fields: [
         { label: 'Asset ID', value: 'assetId' },
+        { label: 'Work Order ID', value: 'workOrderId' },
         { label: 'Start', value: 'start' },
         { label: 'End', value: 'end' },
-        { label: 'Duration (minutes)', value: 'durationMinutes' },
+        { label: 'Cause Code', value: 'causeCode' },
         { label: 'Reason', value: 'reason' },
+        { label: 'Impact Minutes', value: 'impactMinutes' },
+        { label: 'Duration (minutes)', value: 'durationMinutes' },
       ],
     });
 
-    const rows = logs.map((log) => {
-      const start = log.start ? new Date(log.start) : undefined;
-      const end = log.end ? new Date(log.end) : undefined;
-      const durationMinutes = start && end ? Number(((end.getTime() - start.getTime()) / 60000).toFixed(2)) : '';
-
-      return {
-        assetId: log.assetId?.toString?.() ?? '',
-        start: start?.toISOString() ?? '',
-        end: end?.toISOString() ?? '',
-        durationMinutes,
-        reason: log.reason ?? '',
-      };
-    });
-
-    const csv = parser.parse(rows);
+    const csv = parser.parse(toExportRows(events));
     res.header('Content-Type', 'text/csv');
-    res.attachment('downtime-logs.csv');
+    res.attachment('downtime-events.csv');
     res.send(csv);
   } catch (err) {
     next(err);
   }
 };
 
-export const exportDowntimeLogsXlsxHandler = async (
+export const exportDowntimeEventsXlsxHandler = async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -108,45 +124,39 @@ export const exportDowntimeLogsXlsxHandler = async (
     }
 
     const filters = buildFiltersFromRequest(req);
-    const logs = await listDowntimeLogs(tenantId, filters);
-
-    const rows = logs
-      .map((log) => {
-        const start = log.start ? new Date(log.start) : undefined;
-        const end = log.end ? new Date(log.end) : undefined;
-        const durationMinutes =
-          start && end ? Number(((end.getTime() - start.getTime()) / 60000).toFixed(2)) : '';
-
-        return [
-          log.assetId?.toString?.() ?? '',
-          start?.toISOString() ?? '',
-          end?.toISOString() ?? '',
-          durationMinutes,
-          log.reason ?? '',
-        ];
-      })
-      .map(
-        (cells) =>
-          `<Row>${cells
-            .map((value) => `<Cell><Data ss:Type="String">${escapeXml(String(value))}</Data></Cell>`)
-            .join('')}</Row>`,
+    const events = await listDowntimeEvents(tenantId, filters);
+    const rows = toExportRows(events)
+      .map((row) =>
+        `<Row>${[
+          row.assetId,
+          row.workOrderId,
+          row.start,
+          row.end,
+          row.causeCode,
+          row.reason,
+          row.impactMinutes,
+          row.durationMinutes,
+        ]
+          .map((value) => `<Cell><Data ss:Type="String">${escapeXml(String(value))}</Data></Cell>`)
+          .join('')}</Row>`,
       )
       .join('');
 
-    const headerRow = ['Asset ID', 'Start', 'End', 'Duration (minutes)', 'Reason']
+    const headers = ['Asset ID', 'Work Order ID', 'Start', 'End', 'Cause Code', 'Reason', 'Impact Minutes', 'Duration (minutes)'];
+    const headerRow = headers
       .map((label) => `<Cell><Data ss:Type="String">${escapeXml(label)}</Data></Cell>`)
       .join('');
+    const xml = `<?xml version="1.0"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Downtime Events"><Table><Row>${headerRow}</Row>${rows}</Table></Worksheet></Workbook>`;
 
-    const xml = `<?xml version="1.0"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Downtime Logs"><Table><Row>${headerRow}</Row>${rows}</Table></Worksheet></Workbook>`;
     res.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.attachment('downtime-logs.xlsx');
+    res.attachment('downtime-events.xlsx');
     res.send(xml);
   } catch (err) {
     next(err);
   }
 };
 
-export const getDowntimeLogHandler = async (
+export const getDowntimeEventHandler = async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -157,18 +167,20 @@ export const getDowntimeLogHandler = async (
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const log = await getDowntimeLog(tenantId, req.params.id);
-    if (!log) {
+
+    const event = await getDowntimeEvent(tenantId, req.params.id);
+    if (!event) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
-    sendResponse(res, log);
+
+    sendResponse(res, event);
   } catch (err) {
     next(err);
   }
 };
 
-export const createDowntimeLogHandler = async (
+export const createDowntimeEventHandler = async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -180,18 +192,18 @@ export const createDowntimeLogHandler = async (
       return;
     }
 
-    if (!req.body?.assetId || !req.body?.start) {
-      sendResponse(res, null, 'assetId and start are required', 400);
+    if (!req.body?.assetId || !req.body?.start || !req.body?.causeCode || !req.body?.reason) {
+      sendResponse(res, null, 'assetId, start, causeCode, and reason are required', 400);
       return;
     }
 
     const userId = (req.user as any)?._id || (req.user as any)?.id;
-    const created = await createDowntimeLog(tenantId, req.body);
+    const created = await createDowntimeEvent(tenantId, req.body);
     await writeAuditLog({
       tenantId,
       userId,
       action: 'create',
-      entityType: 'DowntimeLog',
+      entityType: 'DowntimeEvent',
       entityId: toEntityId(created._id as Types.ObjectId),
       after: created.toObject(),
     });
@@ -201,7 +213,7 @@ export const createDowntimeLogHandler = async (
   }
 };
 
-export const updateDowntimeLogHandler = async (
+export const updateDowntimeEventHandler = async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -214,21 +226,21 @@ export const updateDowntimeLogHandler = async (
     }
 
     const userId = (req.user as any)?._id || (req.user as any)?.id;
-    const before = await getDowntimeLog(tenantId, req.params.id);
+    const before = await getDowntimeEvent(tenantId, req.params.id);
     if (!before) {
       sendResponse(res, null, 'Not found', 404);
       return;
     }
 
-    const updated = await updateDowntimeLog(tenantId, req.params.id, req.body);
+    const updated = await updateDowntimeEvent(tenantId, req.params.id, req.body);
     await writeAuditLog({
       tenantId,
       userId,
       action: 'update',
-      entityType: 'DowntimeLog',
+      entityType: 'DowntimeEvent',
       entityId: toEntityId(new Types.ObjectId(req.params.id)),
-      before: before,
-      after: updated ?? undefined,
+      before: before.toObject?.() ?? before,
+      after: updated?.toObject?.() ?? updated ?? undefined,
     });
 
     sendResponse(res, updated);
@@ -237,7 +249,7 @@ export const updateDowntimeLogHandler = async (
   }
 };
 
-export const deleteDowntimeLogHandler = async (
+export const deleteDowntimeEventHandler = async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -250,7 +262,7 @@ export const deleteDowntimeLogHandler = async (
     }
 
     const userId = (req.user as any)?._id || (req.user as any)?.id;
-    const deleted = await deleteDowntimeLog(tenantId, req.params.id);
+    const deleted = await deleteDowntimeEvent(tenantId, req.params.id);
     if (!deleted) {
       sendResponse(res, null, 'Not found', 404);
       return;
@@ -260,9 +272,9 @@ export const deleteDowntimeLogHandler = async (
       tenantId,
       userId,
       action: 'delete',
-      entityType: 'DowntimeLog',
+      entityType: 'DowntimeEvent',
       entityId: toEntityId(new Types.ObjectId(req.params.id)),
-      before: deleted,
+      before: deleted.toObject?.() ?? deleted,
     });
 
     sendResponse(res, { message: 'Deleted successfully' });

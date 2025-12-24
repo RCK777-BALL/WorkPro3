@@ -35,6 +35,7 @@ import WorkRequest from './models/WorkRequest';
 import RequestForm from './models/RequestForm';
 import RequestType from './models/RequestType';
 import DowntimeLog from './models/DowntimeLog';
+import DowntimeEvent from './models/DowntimeEvent';
 import MetricsRollup from './models/MetricsRollup';
 import Vendor from './models/Vendor';
 import Location from './models/Location';
@@ -534,6 +535,37 @@ mongoose.connect(mongoUri).then(async () => {
       start: new Date(day2.getTime() + 7 * 60 * 60 * 1000),
       end: new Date(day2.getTime() + 7.25 * 60 * 60 * 1000),
       reason: 'camera-calibration',
+    },
+  ]);
+
+  await DowntimeEvent.insertMany([
+    {
+      tenantId,
+      assetId: asset._id,
+      workOrderId: workOrder._id,
+      start: new Date(day1.getTime() + 2 * 60 * 60 * 1000),
+      end: new Date(day1.getTime() + 3 * 60 * 60 * 1000),
+      causeCode: 'alignment',
+      reason: 'Align conveyor belt',
+      impactMinutes: 60,
+    },
+    {
+      tenantId,
+      assetId: asset._id,
+      start: new Date(day2.getTime() + 4 * 60 * 60 * 1000),
+      end: new Date(day2.getTime() + 4.5 * 60 * 60 * 1000),
+      causeCode: 'sensor',
+      reason: 'Sensor recalibration',
+      impactMinutes: 30,
+    },
+    {
+      tenantId,
+      assetId: assetB._id,
+      start: new Date(day1.getTime() + 6 * 60 * 60 * 1000),
+      end: new Date(day1.getTime() + 7.5 * 60 * 60 * 1000),
+      causeCode: 'mechanical',
+      reason: 'Gripper jam cleared',
+      impactMinutes: 90,
     },
   ]);
 

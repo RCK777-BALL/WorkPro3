@@ -22,6 +22,7 @@ import Dashboard from "@/pages/Dashboard";
 import Analytics from "@/pages/Analytics";
 import AnalyticsDashboardV2 from "@/pages/AnalyticsDashboardV2";
 import AnalyticsWarehousePage from "@/pages/AnalyticsWarehouse";
+import AnalyticsMaintenanceDashboard from "@/pages/AnalyticsMaintenanceDashboard";
 import WorkOrders from "@/pages/WorkOrders";
 import WorkOrderDetail from "@/pages/workorders/WorkOrderDetail";
 import WorkRequestDashboard from "@/pages/WorkRequestDashboard";
@@ -43,6 +44,7 @@ import Reports from "@/pages/Reports";
 import Notifications from "@/pages/Notifications";
 import NotificationSettings from "@/pages/NotificationSettings";
 import DowntimeLogsPage from "@/pages/DowntimeLogsPage";
+import DowntimeEventsPage from "@/pages/DowntimeEventsPage";
 import WorkflowRulesAdmin from "@/pages/WorkflowRulesAdmin";
 import Messages from "@/pages/Messages";
 import RoleManagementPage from "@/pages/RoleManagement";
@@ -127,6 +129,7 @@ export default function App() {
           <Route index element={<Navigate to="/dashboard" />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/analytics/maintenance" element={<AnalyticsMaintenanceDashboard />} />
           <Route path="/analytics/dashboard/v2" element={<AnalyticsDashboardV2 />} />
           <Route path="/analytics/operations" element={<AnalyticsWarehousePage />} />
           <Route path="/analytics/pm" element={<PMAnalytics />} />
@@ -136,6 +139,14 @@ export default function App() {
             element={
               <RequirePermission permission="workOrders.read">
                 <DowntimeLogsPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/downtime/events"
+            element={
+              <RequirePermission permission="workOrders.read">
+                <DowntimeEventsPage />
               </RequirePermission>
             }
           />

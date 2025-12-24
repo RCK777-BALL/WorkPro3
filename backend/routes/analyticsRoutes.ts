@@ -24,6 +24,9 @@ import {
   pmWhatIfSimulationsJson,
   corporateSitesJson,
   corporateOverviewJson,
+  maintenanceMetricsCsv,
+  maintenanceMetricsJson,
+  maintenanceMetricsXlsx,
 } from '../controllers/AnalyticsController';
 import Site from '../models/Site';
 import WorkOrder from '../models/WorkOrder';
@@ -47,6 +50,10 @@ router.get('/kpis.pdf', kpiPdf);
 router.get('/trends', trendJson);
 router.get('/trends.csv', trendCsv);
 router.get('/trends.pdf', trendPdf);
+
+router.get('/maintenance', maintenanceMetricsJson);
+router.get('/maintenance.csv', maintenanceMetricsCsv);
+router.get('/maintenance.xlsx', maintenanceMetricsXlsx);
 
 router.get('/dashboard/kpis', dashboardKpiJson);
 router.get('/dashboard/kpis.csv', dashboardKpiCsv);

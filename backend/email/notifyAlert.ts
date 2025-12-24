@@ -3,6 +3,7 @@
  */
 
 import nodemailer from 'nodemailer';
+import { isNotificationEmailEnabled } from '../config/featureFlags';
 
 const smtpUser = process.env.SMTP_USER;
 const smtpPass = process.env.SMTP_PASS;
@@ -20,6 +21,9 @@ const transporter = isEmailConfigured
   : null;
 
 export async function sendAlertEmail(to: string, subject: string, body: string) {
+  if (!isNotificationEmailEnabled()) {
+    return;
+  }
   if (!transporter) {
     return;
   }

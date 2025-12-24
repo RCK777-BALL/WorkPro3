@@ -24,7 +24,7 @@ import Department from './models/Department';
 import Asset from './models/Asset';
 import PMTask from './models/PMTask';
 import WorkOrder from './models/WorkOrder';
-import Notification from './models/Notifications';
+import Notification from './models/Notification';
 import Tenant from './models/Tenant';
 import AuditLog from './models/AuditLog';
 import Site from './models/Site';
@@ -46,6 +46,7 @@ import { writeAuditLog } from './utils';
 import InspectionTemplate from './models/InspectionTemplate';
 import MaintenanceSchedule from './models/MaintenanceSchedule';
 import ConditionRule from './models/ConditionRule';
+import SlaRule from './models/SlaRule';
 import {
   inspectionTemplates,
   inspectionChecklistIds,
@@ -143,6 +144,7 @@ mongoose.connect(mongoUri).then(async () => {
   await InspectionTemplate.deleteMany({});
   await MaintenanceSchedule.deleteMany({});
   await ConditionRule.deleteMany({});
+  await SlaRule.deleteMany({});
 
   // Seed Tenant
   await Tenant.create({
@@ -181,6 +183,27 @@ mongoose.connect(mongoUri).then(async () => {
     siteId: mainSite._id,
   });
   await assignRole(seededRoles, tech._id, tenantId, mainSite._id, 'tech');
+
+  await SlaRule.create({
+    tenantId,
+    siteId: mainSite._id,
+    name: 'Default response SLA',
+    scope: 'work_order',
+    responseMinutes: 60,
+    resolveMinutes: 240,
+    priority: 'high',
+    isDefault: true,
+  });
+
+  await Notification.create({
+    tenantId,
+    user: admin._id,
+    title: 'Welcome to WorkPro',
+    message: 'Your notification inbox is ready.',
+    type: 'info',
+    category: 'updated',
+    deliveryState: 'sent',
+  });
 
   // Additional employee hierarchy
   const departmentLeader = await User.create({

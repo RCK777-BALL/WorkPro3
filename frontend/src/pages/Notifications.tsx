@@ -19,6 +19,7 @@ import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
 import {
   fetchNotifications,
+  markAllNotificationsRead,
   markNotificationRead,
 } from '@/api/notifications';
 import http from '@/lib/http';
@@ -161,7 +162,7 @@ const Notifications = () => {
     try {
       setLoading(true);
       const res = await fetchNotifications({ page: pageNum, limit });
-      const data = Array.isArray(res) ? res : (res as any).items || [];
+      const data = res?.items ?? [];
       const mapped: Notification[] = data.map((n: Partial<Notification>) => normalizeNotification(n));
       setNotifications((prev) => (pageNum === 1 ? mapped : [...prev, ...mapped]));
       setHasMore(data.length === limit);
@@ -210,9 +211,12 @@ const Notifications = () => {
   };
 
   const markAll = async () => {
-    const unread = notifications.filter((n) => !n.read);
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    await Promise.all(unread.map((n) => markNotificationRead(n.id)));
+    try {
+      await markAllNotificationsRead();
+    } catch (err) {
+      console.error('Failed to mark notifications as read', err);
+    }
   };
 
   const filteredNotifications = useMemo(

@@ -8,7 +8,7 @@ import Notification, {
   NotificationDeliveryState,
   NotificationDocument,
   NotificationType,
-} from '../models/Notifications';
+} from '../models/Notification';
 import User from '../models/User';
 import nodemailer from 'nodemailer';
 
@@ -16,6 +16,7 @@ import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import type { ParamsDictionary } from 'express-serve-static-core';
 import type { Response, NextFunction } from 'express';
 import { sendResponse, assertEmail, writeAuditLog, toEntityId, logger, enqueueEmailRetry } from '../utils';
+import { isNotificationEmailEnabled } from '../config/featureFlags';
 
 type IdParams = { id: string };
 
@@ -26,11 +27,29 @@ interface NotificationCreateBody {
   category: NotificationCategory;
   assetId?: string;
   user?: string;
+  workOrderId?: string;
+  inventoryItemId?: string;
+  pmTaskId?: string;
   deliveryState?: NotificationDeliveryState;
   read?: boolean;
 }
 
 type NotificationUpdateBody = Partial<NotificationCreateBody>;
+
+interface NotificationInboxQuery {
+  page?: string;
+  limit?: string;
+  read?: string;
+  category?: NotificationCategory;
+}
+
+type NotificationInboxResponse = {
+  items: NotificationDocument[];
+  page: number;
+  limit: number;
+  total: number;
+  unreadCount: number;
+};
 
 const toPlainObject = (
   value: unknown,
@@ -43,6 +62,117 @@ const toPlainObject = (
     return value as Record<string, unknown>;
   }
   return undefined;
+};
+
+const parseNumber = (value: unknown, fallback: number) => {
+  if (typeof value !== 'string') return fallback;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isNaN(parsed) ? fallback : parsed;
+};
+
+const resolveUserScope = (tenantId: Types.ObjectId, userId?: Types.ObjectId | string) => {
+  if (userId && Types.ObjectId.isValid(userId)) {
+    const normalized = new Types.ObjectId(userId);
+    return {
+      tenantId,
+      $or: [{ user: normalized }, { user: { $exists: false } }, { user: null }],
+    };
+  }
+  return { tenantId };
+};
+
+export const getNotificationInbox: AuthedRequestHandler<
+  ParamsDictionary,
+  NotificationInboxResponse | { message: string },
+  unknown,
+  NotificationInboxQuery
+> = async (
+  req,
+  res: Response,
+  next: NextFunction,
+) => {
+  const authedReq = req as AuthedRequest<
+    ParamsDictionary,
+    NotificationInboxResponse | { message: string },
+    unknown,
+    NotificationInboxQuery
+  >;
+
+  try {
+    const tenantId = authedReq.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+    if (!Types.ObjectId.isValid(tenantId)) {
+      sendResponse(res, null, 'Invalid tenant ID', 400);
+      return;
+    }
+    const tenantObjectId = new Types.ObjectId(tenantId);
+    const page = Math.max(parseNumber(authedReq.query.page, 1), 1);
+    const limit = Math.min(Math.max(parseNumber(authedReq.query.limit, 20), 1), 100);
+    const skip = (page - 1) * limit;
+    const read = authedReq.query.read;
+    const category = authedReq.query.category;
+    const userId = toEntityId((authedReq.user as any)?._id ?? (authedReq.user as any)?.id);
+    const baseFilter = resolveUserScope(tenantObjectId, userId);
+    const filter = {
+      ...baseFilter,
+      ...(read === 'true' ? { read: true } : {}),
+      ...(read === 'false' ? { read: false } : {}),
+      ...(category ? { category } : {}),
+    };
+
+    const [items, total, unreadCount] = await Promise.all([
+      Notification.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Notification.countDocuments(filter),
+      Notification.countDocuments({ ...baseFilter, read: false }),
+    ]);
+
+    sendResponse(res, { items, page, limit, total, unreadCount });
+    return;
+  } catch (err) {
+    next(err);
+    return;
+  }
+};
+
+export const markAllNotificationsRead: AuthedRequestHandler<
+  ParamsDictionary,
+  { updated: number } | { message: string }
+> = async (
+  req,
+  res: Response,
+  next: NextFunction,
+) => {
+  const authedReq = req as AuthedRequest<
+    ParamsDictionary,
+    { updated: number } | { message: string }
+  >;
+
+  try {
+    const tenantId = authedReq.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+    if (!Types.ObjectId.isValid(tenantId)) {
+      sendResponse(res, null, 'Invalid tenant ID', 400);
+      return;
+    }
+    const tenantObjectId = new Types.ObjectId(tenantId);
+    const userId = toEntityId((authedReq.user as any)?._id ?? (authedReq.user as any)?.id);
+    const filter = resolveUserScope(tenantObjectId, userId);
+    const result = await Notification.updateMany(
+      { ...filter, read: false },
+      { $set: { read: true } },
+    );
+    sendResponse(res, { updated: result.modifiedCount });
+    return;
+  } catch (err) {
+    next(err);
+    return;
+  }
 };
 
 export const getAllNotifications: AuthedRequestHandler<
@@ -143,7 +273,7 @@ export const createNotification: AuthedRequestHandler<
       return;
     }
     const tenantObjectId = new Types.ObjectId(tenantId);
-    const { title, message, type, category, assetId, user, deliveryState, read } =
+    const { title, message, type, category, assetId, user, workOrderId, inventoryItemId, pmTaskId, deliveryState, read } =
       authedReq.body;
     const saved = (await Notification.create({
       title,
@@ -153,6 +283,9 @@ export const createNotification: AuthedRequestHandler<
       tenantId: tenantObjectId,
       ...(assetId ? { assetId } : {}),
       ...(user ? { user } : {}),
+      ...(workOrderId ? { workOrderId } : {}),
+      ...(inventoryItemId ? { inventoryItemId } : {}),
+      ...(pmTaskId ? { pmTaskId } : {}),
       ...(deliveryState ? { deliveryState } : {}),
       ...(read !== undefined ? { read } : {}),
     })) as HydratedDocument<NotificationDocument>;
@@ -169,7 +302,7 @@ export const createNotification: AuthedRequestHandler<
     const io = authedReq.app.get('io');
     io?.emit('notification', saved);
 
-    if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    if (isNotificationEmailEnabled() && process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
       const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: parseInt(process.env.SMTP_PORT || '587', 10),
@@ -378,4 +511,3 @@ export const deleteNotification: AuthedRequestHandler<
     return;
   }
 };
-

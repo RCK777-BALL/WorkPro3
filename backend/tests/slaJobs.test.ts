@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
 
 import WorkOrder from '../models/WorkOrder';
 import User from '../models/User';
-import Notification from '../models/Notifications';
+import Notification from '../models/Notification';
 import { processBreachedSlas } from '../src/modules/work-orders/jobs';
 
 let mongo: MongoMemoryServer | null = null;

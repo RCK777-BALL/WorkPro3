@@ -4,7 +4,6 @@
 
 import mongoose, { Schema, Document, Model, Types } from 'mongoose';
 
- 
 export type NotificationType = 'info' | 'warning' | 'critical';
 
 export type NotificationCategory =
@@ -25,6 +24,7 @@ export interface NotificationDocument extends Document {
   category: NotificationCategory;
   assetId?: Types.ObjectId;
   tenantId: Types.ObjectId;
+  user?: Types.ObjectId;
   workOrderId?: Types.ObjectId;
   inventoryItemId?: Types.ObjectId;
   pmTaskId?: Types.ObjectId;
@@ -45,6 +45,7 @@ const notificationSchema = new Schema<NotificationDocument>({
   },
   assetId: { type: Schema.Types.ObjectId, ref: 'Asset' },
   tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true },
+  user: { type: Schema.Types.ObjectId, ref: 'User' },
   workOrderId: { type: Schema.Types.ObjectId, ref: 'WorkOrder' },
   inventoryItemId: { type: Schema.Types.ObjectId, ref: 'InventoryItem' },
   pmTaskId: { type: Schema.Types.ObjectId, ref: 'PMTask' },
@@ -62,6 +63,7 @@ notificationSchema.index({ read: 1 });
 notificationSchema.index({ workOrderId: 1 });
 notificationSchema.index({ inventoryItemId: 1 });
 notificationSchema.index({ pmTaskId: 1 });
+notificationSchema.index({ user: 1 });
 
 const Notification: Model<NotificationDocument> = mongoose.model<NotificationDocument>(
   'Notification',
@@ -69,4 +71,3 @@ const Notification: Model<NotificationDocument> = mongoose.model<NotificationDoc
 );
 
 export default Notification;
- 

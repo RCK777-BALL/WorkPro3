@@ -9,7 +9,7 @@ import Notification, {
   type NotificationCategory,
   type NotificationDocument,
   type NotificationType,
-} from '../models/Notifications';
+} from '../models/Notification';
 import NotificationTemplate, { type NotificationChannel } from '../models/NotificationTemplate';
 import NotificationSubscription, { type NotificationSubscriptionDocument } from '../models/NotificationSubscription';
 import NotificationDeliveryLog from '../models/NotificationDeliveryLog';
@@ -20,6 +20,7 @@ import type { IInventoryItem } from '../models/InventoryItem';
 import type { PMTaskDocument } from '../models/PMTask';
 import { getIO } from '../socket';
 import { logger, assertEmail, enqueueEmailRetry, writeAuditLog } from '../utils';
+import { isNotificationEmailEnabled } from '../config/featureFlags';
 
 export interface NotificationChannels {
   email?: string;
@@ -167,6 +168,9 @@ const resolveChannelsForSubscription = (
 };
 
 const sendEmail = async (to: string, subject: string, text: string) => {
+  if (!isNotificationEmailEnabled()) {
+    return;
+  }
   if (!process.env.SMTP_HOST || !(process.env.SMTP_FROM || process.env.SMTP_USER)) {
     return;
   }
@@ -282,6 +286,18 @@ const deliver = async (
     }
 
     if (normalized === 'email') {
+      if (!isNotificationEmailEnabled()) {
+        await recordDeliveryLog({
+          notificationId: notification._id,
+          tenantId: notification.tenantId,
+          subscriptionId: options?.subscription?._id,
+          channel: 'email',
+          status: 'failed',
+          errorMessage: 'Email delivery disabled',
+        });
+        results.push('failed');
+        continue;
+      }
       if (!channels?.email) {
         await recordDeliveryLog({
           notificationId: notification._id,

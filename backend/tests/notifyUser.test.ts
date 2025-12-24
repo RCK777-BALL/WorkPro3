@@ -7,7 +7,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import notifyUser from '../utils/notify';
 import User from '../models/User';
-import Notification from '../models/Notifications';
+import Notification from '../models/Notification';
 
 let mongo: MongoMemoryServer;
 let userId: mongoose.Types.ObjectId;

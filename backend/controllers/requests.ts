@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 import RequestForm from '../models/RequestForm';
 import WorkRequest, { type WorkRequestStatus } from '../models/WorkRequest';
-import Notification from '../models/Notifications';
+import Notification from '../models/Notification';
 import { nanoid } from 'nanoid';
 import { convertWorkRequestToWorkOrder, listWorkRequests, getWorkRequestSummary } from '../src/modules/work-requests/service';
 import {

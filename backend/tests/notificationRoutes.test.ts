@@ -7,7 +7,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 
 import notificationRoutes from '../routes/notificationsRoutes';
-import Notification from '../models/Notifications';
+import Notification from '../models/Notification';
 import User, { type UserDocument } from '../models/User';
 import type { MockIO } from './testUtils';
 import { castFixture } from './testUtils';

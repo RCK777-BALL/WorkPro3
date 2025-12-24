@@ -7,7 +7,7 @@ import { Types } from 'mongoose';
 import PMTemplate, { type PMTemplateDocument } from '../../../models/PMTemplate';
 import Asset, { type AssetDoc } from '../../../models/Asset';
 import InventoryItem, { type IInventoryItem } from '../../../models/InventoryItem';
-import Notification from '../../../models/Notifications';
+import Notification from '../../../models/Notification';
 import { calcNextDue } from '../../../services/PMScheduler';
 
 import type { AssignmentInput } from './schemas';

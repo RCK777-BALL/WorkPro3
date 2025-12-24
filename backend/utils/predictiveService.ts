@@ -4,7 +4,7 @@
 
 import Asset from '../models/Asset';
 import SensorReading from '../models/SensorReading';
-import Notification from '../models/Notifications';
+import Notification from '../models/Notification';
 import Prediction from '../models/Prediction';
 import WorkOrder from '../models/WorkOrder';
 import config from '../config/default';

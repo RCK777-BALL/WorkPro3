@@ -21,6 +21,7 @@ The application uses the following environment variables. All names use `UPPER_S
 | `ENABLE_OIDC_SSO` | Enable built-in OIDC providers (Okta/Azure) | `true` |
 | `ENABLE_SAML_SSO` | Enable SAML endpoints | `false` |
 | `ENABLE_SCIM_API` | Enable SCIM provisioning endpoints | `false` |
+| `ENABLE_NOTIFICATION_EMAIL` | Enable notification email delivery | `true` |
 | `SCIM_BEARER_TOKEN` | Token expected in `Authorization: Bearer` for SCIM | optional |
 
 ## Frontend
@@ -33,4 +34,3 @@ The application uses the following environment variables. All names use `UPPER_S
 | `VITE_HTTP_ORIGIN` | (optional) HTTP origin override |
 | `VITE_SUPABASE_URL` | (optional) Supabase URL |
 | `VITE_SUPABASE_ANON_KEY` | (optional) Supabase anonymous key |
-

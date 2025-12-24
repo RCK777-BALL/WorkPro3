@@ -71,10 +71,11 @@ export const updateDowntimeHandler = async (req: AuthedRequest, res: Response, n
   if (!ensureTenant(req, res)) return;
 
   try {
-    const assetId = parsed.data.assetId ? parseObjectId(parsed.data.assetId, res, 'asset id') : undefined;
-    if (parsed.data.assetId && !assetId) return;
+    const { assetId: assetIdRaw, ...rest } = parsed.data;
+    const assetId = assetIdRaw ? parseObjectId(assetIdRaw, res, 'asset id') : undefined;
+    if (assetIdRaw && !assetId) return;
     const payload = {
-      ...parsed.data,
+      ...rest,
       ...(assetId ? { assetId } : {}),
     };
     const updated = await updateDowntimeLog(req.tenantId, req.params.id, payload);

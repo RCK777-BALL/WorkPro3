@@ -35,6 +35,7 @@ import {
   authRoutes,
   calendarRoutes,
   chatRoutes,
+  featureFlagRoutes,
   partsRoutes,
   complianceRoutes,
   conditionRuleRoutes,
@@ -73,6 +74,7 @@ import {
   technicianRoutes,
   TenantRoutes,
   ThemeRoutes,
+  downtimeEventRoutes,
   downtimeLogRoutes,
   vendorPortalRoutes,
   vendorRoutes,
@@ -314,6 +316,7 @@ app.use("/api/onboarding", onboardingRouter);
 app.use("/api/executive", executiveRouter);
 app.use("/api/analytics/v2", analyticsModuleRouter);
 app.use("/api/downtime", downtimeRouter);
+app.use("/api/downtime-events", downtimeEventRoutes);
 app.use("/api/custom-reports", customReportsRouter);
 app.use("/api/work-orders", workOrdersModuleRouter);
 
@@ -327,6 +330,7 @@ app.use("/api/downtime-logs", downtimeLogRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/assets", assetInsightsRouter);
 app.use("/api/roles", roleRoutes);
+app.use("/api/feature-flags", featureFlagRoutes);
 app.use("/api/meters", meterReadingsRouter);
 app.use("/api/meters", meterRoutes);
 app.use("/api/tenants", TenantRoutes);

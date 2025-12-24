@@ -8,6 +8,7 @@ import PMTemplate, { type PMTemplateDocument } from '../../../models/PMTemplate'
 import Asset, { type AssetDoc } from '../../../models/Asset';
 import InventoryItem, { type IInventoryItem } from '../../../models/InventoryItem';
 import Notification from '../../../models/Notifications';
+import ProcedureTemplate, { type ProcedureTemplateDocument } from '../../../models/ProcedureTemplate';
 import { calcNextDue } from '../../../services/PMScheduler';
 
 import type { AssignmentInput } from './schemas';
@@ -53,6 +54,7 @@ interface AssignmentLean {
   usageTarget?: number;
   usageLookbackDays?: number;
   trigger?: PMTriggerConfig;
+  procedureTemplateId?: Types.ObjectId;
   checklist?: ChecklistItemLean[];
   requiredParts?: RequiredPartLean[];
   nextDue?: Date;
@@ -96,6 +98,21 @@ const ensureAsset = async (context: PMContext, assetId: string): Promise<AssetDo
     throw new PMTemplateError('Asset not found', 404);
   }
   return asset;
+};
+
+const ensureProcedureTemplate = async (
+  context: PMContext,
+  templateId?: string,
+): Promise<ProcedureTemplateDocument | undefined> => {
+  if (!templateId) return undefined;
+  if (!Types.ObjectId.isValid(templateId)) {
+    throw new PMTemplateError('Invalid procedure template id', 400);
+  }
+  const template = await ProcedureTemplate.findOne({ _id: templateId, tenantId: context.tenantId });
+  if (!template) {
+    throw new PMTemplateError('Procedure template not found', 404);
+  }
+  return template;
 };
 
 const ensureParts = async (
@@ -173,6 +190,7 @@ const serializeAssignment = (
   refs: {
     assetNames: Map<string, string>;
     partNames: Map<string, string>;
+    procedureTemplates: Map<string, string>;
   },
 ) => ({
   id: assignment._id?.toString() ?? '',
@@ -183,6 +201,10 @@ const serializeAssignment = (
   usageTarget: assignment.usageTarget ?? undefined,
   usageLookbackDays: assignment.usageLookbackDays ?? undefined,
   trigger: assignment.trigger ?? { type: 'time' },
+  procedureTemplateId: assignment.procedureTemplateId?.toString() ?? undefined,
+  procedureTemplateName: assignment.procedureTemplateId
+    ? refs.procedureTemplates.get(assignment.procedureTemplateId.toString())
+    : undefined,
   nextDue: assignment.nextDue?.toISOString(),
   checklist: (assignment.checklist ?? []).map((item) => ({
     id: item._id?.toString() ?? '',
@@ -202,13 +224,18 @@ const collectReferenceNames = async (
 ): Promise<{
   assetNames: Map<string, string>;
   partNames: Map<string, string>;
+  procedureTemplates: Map<string, string>;
 }> => {
   const assetIds = new Set<string>();
   const partIds = new Set<string>();
+  const procedureTemplateIds = new Set<string>();
   for (const template of templates) {
     for (const assignment of template.assignments ?? []) {
       if (assignment.asset) {
         assetIds.add(assignment.asset.toString());
+      }
+      if (assignment.procedureTemplateId) {
+        procedureTemplateIds.add(assignment.procedureTemplateId.toString());
       }
       for (const part of assignment.requiredParts ?? []) {
         if (part.partId) {
@@ -217,7 +244,7 @@ const collectReferenceNames = async (
       }
     }
   }
-  const [assets, parts] = await Promise.all([
+  const [assets, parts, procedureTemplates] = await Promise.all([
     assetIds.size
       ? Asset.find({ _id: { $in: Array.from(assetIds) } })
           .select('name')
@@ -228,10 +255,18 @@ const collectReferenceNames = async (
           .select('name')
           .lean()
       : [],
+    procedureTemplateIds.size
+      ? ProcedureTemplate.find({ _id: { $in: Array.from(procedureTemplateIds) } })
+          .select('name')
+          .lean()
+      : [],
   ]);
   return {
     assetNames: new Map((assets as AssetDoc[]).map((asset) => [asset._id.toString(), asset.name])),
     partNames: new Map((parts as IInventoryItem[]).map((part) => [part._id.toString(), part.name])),
+    procedureTemplates: new Map(
+      (procedureTemplates as ProcedureTemplateDocument[]).map((template) => [template._id.toString(), template.name]),
+    ),
   };
 };
 
@@ -380,6 +415,7 @@ export const upsertAssignment = async (
 ) => {
   const task = await ensureTemplate(context, templateId);
   const asset = await ensureAsset(context, payload.assetId);
+  const procedureTemplate = await ensureProcedureTemplate(context, payload.procedureTemplateId);
   const normalizedChecklist = normalizeChecklist(payload.checklist);
   const normalizedParts = normalizeParts(payload.requiredParts);
   const partNames = await ensureParts(
@@ -407,6 +443,7 @@ export const upsertAssignment = async (
       assignment?.usageLookbackDays ??
       (resolvedUsageMetric ? 30 : undefined),
     trigger: resolvedTrigger,
+    procedureTemplateId: procedureTemplate?._id,
     checklist: normalizedChecklist,
     requiredParts: normalizedParts,
     nextDue: resolvedTrigger.type === 'time' && payload.interval ? calcNextDue(now, payload.interval) : undefined,
@@ -426,6 +463,9 @@ export const upsertAssignment = async (
   return serializeAssignment(assignment, {
     assetNames: new Map([[asset._id.toString(), asset.name]]),
     partNames,
+    procedureTemplates: new Map(
+      procedureTemplate ? [[procedureTemplate._id.toString(), procedureTemplate.name]] : [],
+    ),
   });
 };
 

@@ -7,6 +7,7 @@ import type { ParamsDictionary } from 'express-serve-static-core';
 import type { ParsedQs } from 'qs';
 import type { Types } from 'mongoose';
 
+import AuditEvent from '../models/AuditEvent';
 import AuditLog, { type AuditLogDiffEntry } from '../models/AuditLog';
 import logger from './logger';
 import { toEntityId, toObjectId, type EntityIdLike } from './ids';
@@ -154,6 +155,18 @@ export async function writeAuditLog({
       diff: resolvedDiff,
       ts: ts ?? new Date(),
       expiresAt: expiration,
+    });
+
+    await AuditEvent.create({
+      tenantId: tenantObjectId,
+      siteId: toObjectId(siteId) ?? undefined,
+      userId: toObjectId(userId ?? actor?.id) ?? undefined,
+      action,
+      details: {
+        entityType,
+        entityId: toEntityId(entityId),
+        entityLabel: label,
+      },
     });
   } catch (err) {
     logger.error('writeAuditLog error', err);

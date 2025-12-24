@@ -6,6 +6,7 @@ import { Router } from 'express';
 
 import { requireAuth } from '../../../middleware/authMiddleware';
 import tenantScope from '../../../middleware/tenantScope';
+import { requirePermission } from '../../auth/permissions';
 import { enforceSafetyControls } from './middleware';
 import {
   acknowledgeSlaHandler,
@@ -24,14 +25,30 @@ const router = Router();
 router.use(requireAuth);
 router.use(tenantScope);
 
-router.patch('/:workOrderId/status', workOrderParamValidator, enforceSafetyControls, updateStatusHandler);
-router.post('/:workOrderId/approvals/advance', workOrderParamValidator, advanceApprovalHandler);
-router.post('/:workOrderId/sla', workOrderParamValidator, acknowledgeSlaHandler);
+router.patch(
+  '/:workOrderId/status',
+  requirePermission('workorders.write'),
+  workOrderParamValidator,
+  enforceSafetyControls,
+  updateStatusHandler,
+);
+router.post(
+  '/:workOrderId/approvals/advance',
+  requirePermission('workorders.approve'),
+  workOrderParamValidator,
+  advanceApprovalHandler,
+);
+router.post(
+  '/:workOrderId/sla',
+  requirePermission('workorders.write'),
+  workOrderParamValidator,
+  acknowledgeSlaHandler,
+);
 
-router.post('/templates', createTemplateHandler);
-router.get('/templates', listTemplatesHandler);
-router.get('/templates/:templateId', getTemplateHandler);
-router.put('/templates/:templateId', updateTemplateHandler);
-router.delete('/templates/:templateId', deleteTemplateHandler);
+router.post('/templates', requirePermission('workorders.write'), createTemplateHandler);
+router.get('/templates', requirePermission('workorders.read'), listTemplatesHandler);
+router.get('/templates/:templateId', requirePermission('workorders.read'), getTemplateHandler);
+router.put('/templates/:templateId', requirePermission('workorders.write'), updateTemplateHandler);
+router.delete('/templates/:templateId', requirePermission('workorders.write'), deleteTemplateHandler);
 
 export default router;

@@ -5,13 +5,13 @@
 import { Types } from 'mongoose';
 
 import InventoryItem from '../../../models/InventoryItem';
-import PMProcedureTemplate, { type PMProcedureTemplateDocument } from '../../../models/PMProcedureTemplate';
+import ProcedureTemplate, { type ProcedureTemplateDocument } from '../../../models/ProcedureTemplate';
 import PMTemplateCategory, { type PMTemplateCategoryDocument } from '../../../models/PMTemplateCategory';
-import PMTemplateVersion, {
-  type PMTemplateVersionDocument,
-  type PMTemplateVersionRequiredPart,
-  type PMTemplateVersionRequiredTool,
-} from '../../../models/PMTemplateVersion';
+import ProcedureTemplateVersion, {
+  type ProcedureTemplateVersionDocument,
+  type ProcedureTemplateVersionRequiredPart,
+  type ProcedureTemplateVersionRequiredTool,
+} from '../../../models/ProcedureTemplateVersion';
 import type { CategoryInput, ProcedureTemplateInput, ProcedureVersionInput } from './procedureSchemas';
 
 export interface PMProcedureContext {
@@ -54,8 +54,8 @@ const ensureCategory = async (
 const ensureTemplate = async (
   context: PMProcedureContext,
   templateId: string,
-): Promise<PMProcedureTemplateDocument> => {
-  const template = await PMProcedureTemplate.findOne({ _id: templateId, tenantId: context.tenantId });
+): Promise<ProcedureTemplateDocument> => {
+  const template = await ProcedureTemplate.findOne({ _id: templateId, tenantId: context.tenantId });
   if (!template) {
     throw new PMProcedureError('Template not found', 404);
   }
@@ -65,8 +65,11 @@ const ensureTemplate = async (
 const ensureVersion = async (
   context: PMProcedureContext,
   versionId: string,
-): Promise<PMTemplateVersionDocument> => {
-  const version = await PMTemplateVersion.findById(versionId);
+): Promise<ProcedureTemplateVersionDocument> => {
+  const version = await ProcedureTemplateVersion.findOne({
+    _id: versionId,
+    tenantId: context.tenantId,
+  });
   if (!version) {
     throw new PMProcedureError('Version not found', 404);
   }
@@ -118,7 +121,7 @@ export const createCategory = async (context: PMProcedureContext, payload: Categ
 };
 
 const serializeTemplate = (
-  doc: PMProcedureTemplateDocument & { latestVersionNumber?: number },
+  doc: ProcedureTemplateDocument & { latestVersionNumber?: number },
   categoryName?: string,
 ) => ({
   id: doc._id.toString(),
@@ -133,11 +136,11 @@ const serializeTemplate = (
 });
 
 export const listProcedureTemplates = async (context: PMProcedureContext) => {
-  const templates = await PMProcedureTemplate.aggregate([
+  const templates = await ProcedureTemplate.aggregate([
     { $match: { tenantId: toObjectId(context.tenantId, 'tenant id') } },
     {
       $lookup: {
-        from: 'pm_template_versions',
+        from: 'procedure_template_versions',
         localField: 'latestPublishedVersion',
         foreignField: '_id',
         as: 'publishedVersion',
@@ -162,7 +165,10 @@ export const listProcedureTemplates = async (context: PMProcedureContext) => {
   ]);
 
   return templates.map((template) =>
-    serializeTemplate(template as PMProcedureTemplateDocument & { latestVersionNumber?: number }, template.categoryName),
+    serializeTemplate(
+      template as ProcedureTemplateDocument & { latestVersionNumber?: number },
+      template.categoryName,
+    ),
   );
 };
 
@@ -172,7 +178,7 @@ export const createProcedureTemplate = async (
 ) => {
   const tenantId = toObjectId(context.tenantId, 'tenant id');
   const categoryId = await ensureCategory(context, payload.category);
-  const doc = await PMProcedureTemplate.create({
+  const doc = await ProcedureTemplate.create({
     name: payload.name,
     description: payload.description,
     category: categoryId,
@@ -214,14 +220,14 @@ export const updateProcedureTemplate = async (
 
 export const deleteProcedureTemplate = async (context: PMProcedureContext, templateId: string) => {
   const template = await ensureTemplate(context, templateId);
-  await PMTemplateVersion.deleteMany({ templateId: template._id });
+  await ProcedureTemplateVersion.deleteMany({ templateId: template._id, tenantId: context.tenantId });
   await template.deleteOne();
   return { id: templateId };
 };
 
 const normalizeParts = (
   parts: ProcedureVersionInput['requiredParts'],
-): PMTemplateVersionRequiredPart[] =>
+): ProcedureTemplateVersionRequiredPart[] =>
   (parts ?? []).map((part) => ({
     partId: toObjectId(part.partId, 'part id'),
     quantity: part.quantity && part.quantity > 0 ? part.quantity : 1,
@@ -229,14 +235,14 @@ const normalizeParts = (
 
 const normalizeTools = (
   tools: ProcedureVersionInput['requiredTools'],
-): PMTemplateVersionRequiredTool[] =>
+): ProcedureTemplateVersionRequiredTool[] =>
   (tools ?? []).map((tool) => ({
     toolName: tool.toolName.trim(),
     quantity: tool.quantity && tool.quantity > 0 ? tool.quantity : 1,
   }));
 
 const serializeVersion = (
-  version: PMTemplateVersionDocument,
+  version: ProcedureTemplateVersionDocument,
   partNames: Map<string, string>,
 ): {
   id: string;
@@ -275,7 +281,7 @@ const serializeVersion = (
   updatedAt: version.updatedAt?.toISOString?.(),
 });
 
-const validateDraft = (version: PMTemplateVersionDocument) => {
+const validateDraft = (version: ProcedureTemplateVersionDocument) => {
   if (version.status === 'published') {
     throw new PMProcedureError('Published versions cannot be modified', 409);
   }
@@ -283,7 +289,7 @@ const validateDraft = (version: PMTemplateVersionDocument) => {
 
 const ensureVersionParts = async (
   context: PMProcedureContext,
-  parts: PMTemplateVersionRequiredPart[],
+  parts: ProcedureTemplateVersionRequiredPart[],
 ): Promise<Map<string, string>> => {
   const partIds = parts.map((part) => part.partId);
   return ensureParts(context, partIds);
@@ -291,7 +297,9 @@ const ensureVersionParts = async (
 
 export const listVersions = async (context: PMProcedureContext, templateId: string) => {
   const template = await ensureTemplate(context, templateId);
-  const versions = await PMTemplateVersion.find({ templateId: template._id }).sort({ versionNumber: -1 });
+  const versions = await ProcedureTemplateVersion.find({ templateId: template._id, tenantId: context.tenantId }).sort({
+    versionNumber: -1,
+  });
   const partIds = versions.flatMap((version) => version.requiredParts.map((part) => part.partId));
   const partNames = await ensureParts(context, partIds as unknown as Types.ObjectId[]);
   return versions.map((version) => serializeVersion(version, partNames));
@@ -306,11 +314,12 @@ export const createVersion = async (
   const normalizedParts = normalizeParts(payload.requiredParts);
   const partNames = await ensureVersionParts(context, normalizedParts);
   const normalizedTools = normalizeTools(payload.requiredTools);
-  const latest = await PMTemplateVersion.findOne({ templateId: template._id })
+  const latest = await ProcedureTemplateVersion.findOne({ templateId: template._id, tenantId: context.tenantId })
     .sort({ versionNumber: -1 })
     .lean();
   const nextVersion = (latest?.versionNumber ?? 0) + 1;
-  const version = await PMTemplateVersion.create({
+  const version = await ProcedureTemplateVersion.create({
+    tenantId: toObjectId(context.tenantId, 'tenant id'),
     templateId: template._id,
     versionNumber: nextVersion,
     status: 'draft',
@@ -375,7 +384,7 @@ export const publishVersion = async (context: PMProcedureContext, versionId: str
 
   version.status = 'published';
   await version.save();
-  await PMProcedureTemplate.updateOne(
+  await ProcedureTemplate.updateOne(
     { _id: version.templateId },
     { latestPublishedVersion: version._id },
   );

@@ -24,6 +24,7 @@ export interface ChecklistHistoryEntry {
   reading?: string | number | boolean | null;
   passed?: boolean;
   evidenceUrls?: string[];
+  evidenceFileIds?: string[];
   recordedAt?: string;
   recordedBy?: string;
 }
@@ -100,6 +101,8 @@ export interface WorkOrder {
   requiredPermitTypes?: string[] | undefined;
   pmTask?: string | undefined;
   pmTemplate?: string | undefined;
+  procedureTemplateId?: string | undefined;
+  procedureTemplateVersionId?: string | undefined;
   department?: string | undefined;
   line?: string | undefined;
   station?: string | undefined;
@@ -114,6 +117,7 @@ export interface WorkOrder {
   updatedAt?: string | undefined;
   iotEvent?: {
     ruleId?: string;
+    triggerId?: string;
     source?: string;
     readingId?: string;
     metric?: string;
@@ -122,6 +126,5 @@ export interface WorkOrder {
     payload?: Record<string, unknown>;
   };
 }
-
 
 

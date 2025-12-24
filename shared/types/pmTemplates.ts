@@ -23,6 +23,8 @@ export interface PMTemplateAssignment {
   usageMetric?: 'runHours' | 'cycles';
   usageTarget?: number;
   usageLookbackDays?: number;
+  procedureTemplateId?: string;
+  procedureTemplateName?: string;
   nextDue?: string;
   checklist: PMTemplateChecklistItem[];
   requiredParts: PMTemplateRequiredPart[];

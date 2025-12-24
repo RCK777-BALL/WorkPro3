@@ -12,6 +12,7 @@ export interface WorkOrderChecklistLogDocument extends Document {
   reading?: string | number | boolean | null;
   passed?: boolean;
   evidenceUrls?: string[];
+  evidenceFileIds?: Types.ObjectId[];
   recordedAt: Date;
   recordedBy?: Types.ObjectId;
 }
@@ -25,6 +26,7 @@ const workOrderChecklistLogSchema = new Schema<WorkOrderChecklistLogDocument>(
     reading: { type: Schema.Types.Mixed },
     passed: { type: Boolean },
     evidenceUrls: { type: [String], default: [] },
+    evidenceFileIds: { type: [Schema.Types.ObjectId], ref: 'EvidenceFile', default: [] },
     recordedAt: { type: Date, default: () => new Date(), index: true },
     recordedBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },

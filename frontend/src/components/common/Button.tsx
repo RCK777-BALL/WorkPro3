@@ -77,7 +77,7 @@ const Button = React.forwardRef(
       type,
       ...rest
     }: ButtonProps<C>,
-    ref: React.Ref<React.ElementRef<C>>,
+    ref: React.ForwardedRef<any>,
   ) => {
     const Component = (as ?? 'button') as React.ElementType;
     const isButton = Component === 'button';
@@ -138,7 +138,9 @@ const Button = React.forwardRef(
       </Component>
     );
   },
-);
+) as <C extends React.ElementType = 'button'>(
+  props: ButtonProps<C> & { ref?: React.ForwardedRef<React.ElementRef<C>> },
+) => JSX.Element;
 
 Button.displayName = 'Button';
 

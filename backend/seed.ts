@@ -61,6 +61,10 @@ import {
   pmScheduleFixture,
   workOrderWithChecklistFixture,
 } from './seedFixtures';
+import { generateApiKey } from 'utils/apiKeys';
+import ApiKey from 'models/ApiKey';
+import WebhookSubscription from 'models/WebhookSubscription';
+import ExportJob from 'models/ExportJob';
 
 // Tenant id used for all seeded records
 const tenantId = process.env.SEED_TENANT_ID

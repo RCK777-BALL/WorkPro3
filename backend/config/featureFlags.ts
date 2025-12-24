@@ -25,3 +25,5 @@ export const getFeatureFlags = (): Record<FeatureFlagKey, boolean> => ({
 export const isFeatureEnabled = (flag: FeatureFlagKey): boolean => getFeatureFlags()[flag];
 
 export const getScimToken = (): string | undefined => process.env.SCIM_BEARER_TOKEN;
+
+

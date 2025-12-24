@@ -3,7 +3,7 @@
  */
 
 import nodemailer from 'nodemailer';
-import { isNotificationEmailEnabled } from '../config/featureFlags';
+import * as featureFlags from '../config/featureFlags';
 
 const smtpUser = process.env.SMTP_USER;
 const smtpPass = process.env.SMTP_PASS;
@@ -12,16 +12,16 @@ const isEmailConfigured = Boolean(smtpUser && smtpPass);
 
 const transporter = isEmailConfigured
   ? nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
-    })
+    service: 'gmail',
+    auth: {
+      user: smtpUser,
+      pass: smtpPass,
+    },
+  })
   : null;
 
 export async function sendAlertEmail(to: string, subject: string, body: string) {
-  if (!isNotificationEmailEnabled()) {
+  if (featureFlags.isNotificationEmailEnabled?.() === false) {
     return;
   }
   if (!transporter) {

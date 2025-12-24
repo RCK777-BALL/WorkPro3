@@ -21,9 +21,9 @@ const download = (filename: string, content: string) => {
   URL.revokeObjectURL(url);
 };
 
-const toCsv = (rows: Record<string, unknown>[]) => {
+const toCsv = (rows: unknown[]) => {
   if (!rows.length) return '';
-  const headers = Object.keys(rows[0]);
+  const headers = Object.keys(rows[0] as Record<string, unknown>);
   const escape = (value: unknown) => {
     if (value == null) return '';
     const str = String(value).replace(/"/g, '""');
@@ -31,7 +31,8 @@ const toCsv = (rows: Record<string, unknown>[]) => {
   };
   const lines = [headers.join(',')];
   rows.forEach((row) => {
-    lines.push(headers.map((header) => escape(row[header])).join(','));
+    const r = row as Record<string, unknown>;
+    lines.push(headers.map((header) => escape(r[header])).join(','));
   });
   return lines.join('\n');
 };

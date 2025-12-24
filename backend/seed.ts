@@ -278,6 +278,34 @@ mongoose.connect(mongoUri).then(async () => {
   });
   await assignRole(seededRoles, tech._id, tenantId, mainSite._id, 'tech');
 
+  const generatedKey = generateApiKey();
+  await ApiKey.create({
+    name: 'Default Integration Key',
+    keyHash: generatedKey.keyHash,
+    prefix: generatedKey.prefix,
+    tenantId,
+    createdBy: admin._id,
+    rateLimitMax: 120,
+  });
+
+  await WebhookSubscription.create({
+    name: 'Sample Work Order Webhook',
+    url: 'https://example.com/webhooks/workorders',
+    events: ['WO.created', 'WO.updated'],
+    secret: generateApiKey().key,
+    tenantId,
+    active: true,
+    maxAttempts: 3,
+  });
+
+  await ExportJob.create({
+    tenantId,
+    requestedBy: admin._id,
+    type: 'workOrders',
+    format: 'csv',
+    status: 'queued',
+  });
+
   // Additional employee hierarchy
   const departmentLeader = await User.create({
     name: 'Department Leader',

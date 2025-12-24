@@ -10,9 +10,12 @@ describe('Integrations page', () => {
   it('registers a hook', async () => {
     const fetchMock = vi
       .fn()
-      // first call for initial GraphQL fetch
+      // initial data calls
       .mockResolvedValueOnce({ json: () => Promise.resolve({ data: { integrationHooks: [] } }) })
-      // second call for registering hook
+      .mockResolvedValueOnce({ json: () => Promise.resolve({ data: [] }) })
+      .mockResolvedValueOnce({ json: () => Promise.resolve({ data: [] }) })
+      .mockResolvedValueOnce({ json: () => Promise.resolve({ data: [] }) })
+      // register hook
       .mockResolvedValueOnce({ json: () => Promise.resolve({ _id: '1', name: 'Test', type: 'webhook' }) });
     vi.stubGlobal('fetch', fetchMock);
 
@@ -23,7 +26,7 @@ describe('Integrations page', () => {
     fireEvent.click(screen.getByText('Register'));
 
     await screen.findByText('Test - webhook');
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(5);
 
     vi.unstubAllGlobals();
   });

@@ -59,18 +59,21 @@ const AssetTable: React.FC<AssetTableProps> = ({
   onCreateWorkOrder,
   onViewMaintenance,
   onViewQrCode,
-  selectedIds = [],
+  selectedIds,
   onSelectionChange,
   canEdit = true,
   canDelete = true,
   canCreateWorkOrder = true,
   readOnlyReason,
 }) => {
-  const [internalSelection, setInternalSelection] = useState<string[]>(selectedIds);
+  const isSelectionControlled = selectedIds !== undefined;
+  const [internalSelection, setInternalSelection] = useState<string[]>(() => selectedIds ?? []);
 
   useEffect(() => {
-    setInternalSelection(selectedIds);
-  }, [selectedIds]);
+    if (isSelectionControlled) {
+      setInternalSelection(selectedIds ?? []);
+    }
+  }, [isSelectionControlled, selectedIds]);
 
   const filteredAssets = useMemo(() => {
     const normalizedSearch = search.toLowerCase();
@@ -86,21 +89,28 @@ const AssetTable: React.FC<AssetTableProps> = ({
     });
   }, [assets, criticalityFilter, search, statusFilter]);
 
-  const selectedSet = useMemo(() => new Set(internalSelection), [internalSelection]);
+  const activeSelection = isSelectionControlled ? selectedIds ?? [] : internalSelection;
+  const selectedSet = useMemo(() => new Set(activeSelection), [activeSelection]);
 
   const toggleRow = (id: string) => {
     const nextSelection = selectedSet.has(id)
-      ? internalSelection.filter((item) => item !== id)
-      : [...internalSelection, id];
-    setInternalSelection(nextSelection);
+      ? activeSelection.filter((item) => item !== id)
+      : [...activeSelection, id];
+    if (!isSelectionControlled) {
+      setInternalSelection(nextSelection);
+    }
     onSelectionChange?.(nextSelection);
   };
 
   const toggleAll = () => {
     const ids = filteredAssets.map((asset) => asset.id);
     const allSelected = ids.every((id) => selectedSet.has(id));
-    const nextSelection = allSelected ? internalSelection.filter((id) => !ids.includes(id)) : Array.from(new Set([...internalSelection, ...ids]));
-    setInternalSelection(nextSelection);
+    const nextSelection = allSelected
+      ? activeSelection.filter((id) => !ids.includes(id))
+      : Array.from(new Set([...activeSelection, ...ids]));
+    if (!isSelectionControlled) {
+      setInternalSelection(nextSelection);
+    }
     onSelectionChange?.(nextSelection);
   };
 

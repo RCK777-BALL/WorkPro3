@@ -12,10 +12,12 @@ vi.mock('../middleware/authMiddleware', () => ({
 const getKPIs = vi.fn();
 const getTrendDatasets = vi.fn();
 const getDashboardKpiSummary = vi.fn();
+const getMaintenanceMetrics = vi.fn();
 vi.mock('../services/analytics', () => ({
   getKPIs: (...args: any[]) => getKPIs(...args),
   getTrendDatasets: (...args: any[]) => getTrendDatasets(...args),
   getDashboardKpiSummary: (...args: any[]) => getDashboardKpiSummary(...args),
+  getMaintenanceMetrics: (...args: any[]) => getMaintenanceMetrics(...args),
 }));
 
 import AnalyticsRoutes from '../routes/analyticsRoutes';
@@ -37,6 +39,7 @@ beforeEach(() => {
   getKPIs.mockReset();
   getTrendDatasets.mockReset();
   getDashboardKpiSummary.mockReset();
+  getMaintenanceMetrics.mockReset();
   getKPIs.mockResolvedValue({
     mttr: 1,
     mtbf: 5,
@@ -70,6 +73,13 @@ beforeEach(() => {
     laborUtilization: 75,
     mttr: 1,
     mtbf: 3,
+  });
+  getMaintenanceMetrics.mockResolvedValue({
+    mttr: 1.5,
+    mtbf: 6.5,
+    backlog: 4,
+    pmCompliance: { total: 12, completed: 10, percentage: 83.3 },
+    range: { start: undefined, end: undefined },
   });
 });
 
@@ -151,5 +161,27 @@ describe('Analytics routes', () => {
     expect(res.body.data.backlogAgingDays).toBe(5);
     expect(res.body.data.laborUtilization).toBe(75);
     expect(getDashboardKpiSummary).toHaveBeenCalledWith('tenant123', {});
+  });
+
+  it('returns maintenance metrics with exports', async () => {
+    const res = await request(app).get('/api/v1/analytics/maintenance').expect(200);
+    expect(res.body.data).toMatchObject({
+      mttr: 1.5,
+      mtbf: 6.5,
+      backlog: 4,
+      pmCompliance: { total: 12, completed: 10, percentage: 83.3 },
+    });
+    expect(getMaintenanceMetrics).toHaveBeenCalledWith('tenant123', {});
+
+    const csvRes = await request(app).get('/api/v1/analytics/maintenance.csv').expect(200);
+    expect(csvRes.headers['content-type']).toContain('text/csv');
+
+    const xlsxRes = await request(app)
+      .get('/api/v1/analytics/maintenance.xlsx')
+      .buffer()
+      .parse(binaryParser)
+      .expect(200);
+    expect(xlsxRes.headers['content-type']).toContain('spreadsheet');
+    expect(xlsxRes.body.length).toBeGreaterThan(0);
   });
 });

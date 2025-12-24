@@ -16,10 +16,12 @@ export type PMTaskGenerateWOResponse = unknown;
 
 export interface PMTaskCreateBody {
   workOrderTemplateId?: Types.ObjectId | string | null;
+  procedureTemplateId?: Types.ObjectId | string | null;
   [key: string]: unknown;
 }
 
 export interface PMTaskUpdateBody {
   workOrderTemplateId?: Types.ObjectId | string | null;
+  procedureTemplateId?: Types.ObjectId | string | null;
   [key: string]: unknown;
 }

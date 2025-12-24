@@ -38,6 +38,7 @@ import WorkRequest from './models/WorkRequest';
 import RequestForm from './models/RequestForm';
 import RequestType from './models/RequestType';
 import DowntimeLog from './models/DowntimeLog';
+import DowntimeEvent from './models/DowntimeEvent';
 import MetricsRollup from './models/MetricsRollup';
 import Vendor from './models/Vendor';
 import Location from './models/Location';
@@ -49,6 +50,9 @@ import { writeAuditLog } from './utils';
 import InspectionTemplate from './models/InspectionTemplate';
 import MaintenanceSchedule from './models/MaintenanceSchedule';
 import ConditionRule from './models/ConditionRule';
+import ProcedureTemplate from './models/ProcedureTemplate';
+import ProcedureTemplateVersion from './models/ProcedureTemplateVersion';
+import PMTemplateCategory from './models/PMTemplateCategory';
 import {
   inspectionTemplates,
   inspectionChecklistIds,
@@ -200,6 +204,9 @@ mongoose.connect(mongoUri).then(async () => {
   await InspectionTemplate.deleteMany({});
   await MaintenanceSchedule.deleteMany({});
   await ConditionRule.deleteMany({});
+  await ProcedureTemplate.deleteMany({});
+  await ProcedureTemplateVersion.deleteMany({});
+  await PMTemplateCategory.deleteMany({});
 
   // Seed Tenant
   await Tenant.create({
@@ -393,12 +400,40 @@ mongoose.connect(mongoUri).then(async () => {
   await dept.save();
 
   // Seed PM Task
+  const procedureCategory = await PMTemplateCategory.create({
+    name: 'Safety',
+    description: 'Safety-related procedures',
+    tenantId,
+    siteId: mainSite._id,
+  });
+  const procedureTemplate = await ProcedureTemplate.create({
+    name: 'Lubrication Procedure',
+    description: 'Monthly lubrication and inspection steps.',
+    category: procedureCategory._id,
+    tenantId,
+    siteId: mainSite._id,
+  });
+  const procedureVersion = await ProcedureTemplateVersion.create({
+    tenantId,
+    templateId: procedureTemplate._id,
+    versionNumber: 1,
+    status: 'published',
+    durationMinutes: 30,
+    safetySteps: ['Lock out power and confirm zero energy.'],
+    steps: ['Apply grease to bearings.', 'Check oil level and top off.'],
+    requiredParts: [],
+    requiredTools: [{ toolName: 'Grease gun', quantity: 1 }],
+    notes: 'Record any abnormalities observed.',
+  });
+  procedureTemplate.latestPublishedVersion = procedureVersion._id;
+  await procedureTemplate.save();
   const pmTask = await PMTask.create({
     title: 'Monthly Lubrication',
     asset: asset._id,
     rule: { type: 'calendar', cron: '0 0 1 * *' },
     lastGeneratedAt: new Date(),
     notes: 'Check oil level and apply grease.',
+    procedureTemplateId: procedureTemplate._id,
     tenantId,
     siteId: mainSite._id,
   });
@@ -623,6 +658,37 @@ mongoose.connect(mongoUri).then(async () => {
       start: new Date(day2.getTime() + 7 * 60 * 60 * 1000),
       end: new Date(day2.getTime() + 7.25 * 60 * 60 * 1000),
       reason: 'camera-calibration',
+    },
+  ]);
+
+  await DowntimeEvent.insertMany([
+    {
+      tenantId,
+      assetId: asset._id,
+      workOrderId: workOrder._id,
+      start: new Date(day1.getTime() + 2 * 60 * 60 * 1000),
+      end: new Date(day1.getTime() + 3 * 60 * 60 * 1000),
+      causeCode: 'alignment',
+      reason: 'Align conveyor belt',
+      impactMinutes: 60,
+    },
+    {
+      tenantId,
+      assetId: asset._id,
+      start: new Date(day2.getTime() + 4 * 60 * 60 * 1000),
+      end: new Date(day2.getTime() + 4.5 * 60 * 60 * 1000),
+      causeCode: 'sensor',
+      reason: 'Sensor recalibration',
+      impactMinutes: 30,
+    },
+    {
+      tenantId,
+      assetId: assetB._id,
+      start: new Date(day1.getTime() + 6 * 60 * 60 * 1000),
+      end: new Date(day1.getTime() + 7.5 * 60 * 60 * 1000),
+      causeCode: 'mechanical',
+      reason: 'Gripper jam cleared',
+      impactMinutes: 90,
     },
   ]);
 

@@ -117,6 +117,8 @@ export interface WorkOrder {
   complianceCompletedAt?: Date;
   pmTask?: Types.ObjectId;
   pmTemplate?: Types.ObjectId;
+  procedureTemplateId?: Types.ObjectId;
+  procedureTemplateVersionId?: Types.ObjectId;
   department?: Types.ObjectId;
   line?: Types.ObjectId;
   station?: Types.ObjectId;
@@ -161,6 +163,7 @@ export interface WorkOrder {
 
   iotEvent?: {
     ruleId?: Types.ObjectId;
+    triggerId?: Types.ObjectId;
     source?: 'http' | 'mqtt' | string;
     readingId?: Types.ObjectId;
     metric?: string;
@@ -358,6 +361,8 @@ const workOrderSchema = new Schema<WorkOrder>(
     complianceCompletedAt: { type: Date },
     pmTask: { type: Schema.Types.ObjectId, ref: 'PMTask' },
     pmTemplate: { type: Schema.Types.ObjectId, ref: 'PMTemplate' },
+    procedureTemplateId: { type: Schema.Types.ObjectId, ref: 'ProcedureTemplate' },
+    procedureTemplateVersionId: { type: Schema.Types.ObjectId, ref: 'ProcedureTemplateVersion' },
     department: { type: Schema.Types.ObjectId, ref: 'Department' },
     line: { type: Schema.Types.ObjectId, ref: 'Line' },
     station: { type: Schema.Types.ObjectId, ref: 'Station' },
@@ -411,6 +416,7 @@ const workOrderSchema = new Schema<WorkOrder>(
 
     iotEvent: {
       ruleId: { type: Schema.Types.ObjectId, ref: 'ConditionRule' },
+      triggerId: { type: Schema.Types.ObjectId, ref: 'IoTTriggerConfig' },
       source: { type: String },
       readingId: { type: Schema.Types.ObjectId, ref: 'SensorReading' },
       metric: { type: String },
@@ -491,5 +497,3 @@ workOrderSchema.pre('save', function handleVersioning(next) {
 const WorkOrder: Model<WorkOrder> = mongoose.model<WorkOrder>('WorkOrder', workOrderSchema);
 
 export default WorkOrder;
-
-

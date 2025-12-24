@@ -10,6 +10,7 @@ import {
   createDowntimeLogHandler,
   deleteDowntimeLogHandler,
   exportDowntimeLogsHandler,
+  exportDowntimeLogsXlsxHandler,
   getDowntimeLogHandler,
   getDowntimeLogsHandler,
   updateDowntimeLogHandler,
@@ -22,6 +23,7 @@ router.use(tenantScope);
 
 router.get('/', getDowntimeLogsHandler);
 router.get('/export.csv', exportDowntimeLogsHandler);
+router.get('/export.xlsx', exportDowntimeLogsXlsxHandler);
 router.get('/:id', getDowntimeLogHandler);
 router.post('/', createDowntimeLogHandler);
 router.put('/:id', updateDowntimeLogHandler);

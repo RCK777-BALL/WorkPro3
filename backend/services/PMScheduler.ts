@@ -12,6 +12,7 @@ import ProductionRecord from '../models/ProductionRecord';
 import WorkOrderTemplateModel from '../src/modules/work-orders/templateModel';
 import { notifyPmDue } from './notificationService';
 import { logger } from '../utils';
+import { resolveProcedureChecklist } from './procedureTemplateService';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
@@ -37,6 +38,48 @@ const buildTemplatePayload = async (task: PMTaskDocument) => {
     checklists,
     status: checklists?.length ? ('pending' as const) : ('not_required' as const),
   };
+};
+
+const buildProcedurePayload = async (task: PMTaskDocument) => {
+  if (!task.procedureTemplateId) {
+    return { procedureChecklist: undefined, procedureSnapshot: undefined };
+  }
+  const { snapshot, checklist } = await resolveProcedureChecklist(
+    task.tenantId.toString(),
+    task.procedureTemplateId,
+  );
+  return {
+    procedureChecklist: checklist,
+    procedureSnapshot: snapshot,
+  };
+};
+
+const mergePartsUsed = (
+  assignmentParts?: { partId: any; quantity?: number }[],
+  procedureParts?: { partId: any; quantity: number }[],
+) => {
+  const combined = new Map<string, { partId: any; qty: number; cost: number }>();
+  (assignmentParts ?? []).forEach((part) => {
+    if (!part.partId) return;
+    const key = part.partId.toString();
+    const existing = combined.get(key);
+    const qty = part.quantity ?? 1;
+    combined.set(key, {
+      partId: part.partId,
+      qty: (existing?.qty ?? 0) + qty,
+      cost: 0,
+    });
+  });
+  (procedureParts ?? []).forEach((part) => {
+    const key = part.partId.toString();
+    const existing = combined.get(key);
+    combined.set(key, {
+      partId: part.partId,
+      qty: (existing?.qty ?? 0) + part.quantity,
+      cost: 0,
+    });
+  });
+  return Array.from(combined.values());
 };
 
 const mergeChecklists = (
@@ -107,6 +150,7 @@ export async function runPMScheduler(): Promise<void> {
   for (const task of tasks) {
     try {
       const templateDefaults = await buildTemplatePayload(task);
+      const procedurePayload = await buildProcedurePayload(task);
       if (Array.isArray(task.assignments) && task.assignments.length > 0) {
         let touched = false;
         for (const assignment of task.assignments) {
@@ -129,6 +173,10 @@ export async function runPMScheduler(): Promise<void> {
 
             if (sinceLast >= threshold) {
               const checklists = mergeChecklists(assignment, templateDefaults.checklists);
+              const partsUsed = mergePartsUsed(
+                assignment.requiredParts as unknown as { partId: any; quantity?: number }[],
+                procedurePayload.procedureSnapshot?.requiredParts,
+              );
               await WorkOrder.create({
                 title: `PM: ${task.title}`,
                 description: task.notes || '',
@@ -140,16 +188,20 @@ export async function runPMScheduler(): Promise<void> {
                 priority: 'medium',
                 tenantId: task.tenantId,
                 checklists,
+                ...(procedurePayload.procedureChecklist ? { checklist: procedurePayload.procedureChecklist } : {}),
+                ...(procedurePayload.procedureSnapshot
+                  ? {
+                      procedureTemplateId: procedurePayload.procedureSnapshot.templateId,
+                      procedureTemplateVersionId: procedurePayload.procedureSnapshot.versionId,
+                    }
+                  : {}),
                 ...(templateDefaults.templateId ? { workOrderTemplateId: templateDefaults.templateId } : {}),
                 ...(templateDefaults.templateVersion ? { templateVersion: templateDefaults.templateVersion } : {}),
                 complianceStatus: checklists.length ? 'pending' : templateDefaults.status,
                 ...(checklists.length === 0 && templateDefaults.status === 'not_required'
                   ? { complianceCompletedAt: new Date() }
                   : {}),
-                partsUsed: assignment.requiredParts?.map((part) => ({
-                  partId: part.partId,
-                  qty: part.quantity,
-                })),
+                partsUsed,
               });
               meter.lastWOValue = currentValue;
               await meter.save();
@@ -177,6 +229,10 @@ export async function runPMScheduler(): Promise<void> {
           }
           if (assignment.nextDue && assignment.nextDue <= now) {
             const checklists = mergeChecklists(assignment, templateDefaults.checklists);
+            const partsUsed = mergePartsUsed(
+              assignment.requiredParts as unknown as { partId: any; quantity?: number }[],
+              procedurePayload.procedureSnapshot?.requiredParts,
+            );
             await WorkOrder.create({
               title: `PM: ${task.title}`,
               description: task.notes || '',
@@ -188,16 +244,20 @@ export async function runPMScheduler(): Promise<void> {
               priority: 'medium',
               tenantId: task.tenantId,
               checklists,
+              ...(procedurePayload.procedureChecklist ? { checklist: procedurePayload.procedureChecklist } : {}),
+              ...(procedurePayload.procedureSnapshot
+                ? {
+                    procedureTemplateId: procedurePayload.procedureSnapshot.templateId,
+                    procedureTemplateVersionId: procedurePayload.procedureSnapshot.versionId,
+                  }
+                : {}),
               ...(templateDefaults.templateId ? { workOrderTemplateId: templateDefaults.templateId } : {}),
               ...(templateDefaults.templateVersion ? { templateVersion: templateDefaults.templateVersion } : {}),
               complianceStatus: checklists.length ? 'pending' : templateDefaults.status,
               ...(checklists.length === 0 && templateDefaults.status === 'not_required'
                 ? { complianceCompletedAt: new Date() }
                 : {}),
-              partsUsed: assignment.requiredParts?.map((part) => ({
-                partId: part.partId,
-                qty: part.quantity,
-              })),
+              partsUsed,
             });
             if (assignment.nextDue) {
               await notifyPmDue(task, assignment.nextDue);
@@ -217,6 +277,7 @@ export async function runPMScheduler(): Promise<void> {
       if (task.rule?.type === 'calendar' && task.rule.cron) {
         const next = nextCronOccurrenceWithin(task.rule.cron, now, 7);
         if (next) {
+          const partsUsed = mergePartsUsed(undefined, procedurePayload.procedureSnapshot?.requiredParts);
           await WorkOrder.create({
             title: `PM: ${task.title}`,
             description: task.notes || '',
@@ -227,6 +288,14 @@ export async function runPMScheduler(): Promise<void> {
             dueDate: next,
             priority: 'medium',
             tenantId: task.tenantId,
+            ...(procedurePayload.procedureChecklist ? { checklist: procedurePayload.procedureChecklist } : {}),
+            ...(procedurePayload.procedureSnapshot
+              ? {
+                  procedureTemplateId: procedurePayload.procedureSnapshot.templateId,
+                  procedureTemplateVersionId: procedurePayload.procedureSnapshot.versionId,
+                }
+              : {}),
+            ...(partsUsed.length ? { partsUsed } : {}),
           });
           await notifyPmDue(task, next);
           task.lastGeneratedAt = now;
@@ -240,6 +309,7 @@ export async function runPMScheduler(): Promise<void> {
         if (!meter) continue;
         const sinceLast = meter.currentValue - (meter.lastWOValue || 0);
         if (sinceLast >= (task.rule.threshold || 0)) {
+          const partsUsed = mergePartsUsed(undefined, procedurePayload.procedureSnapshot?.requiredParts);
           await WorkOrder.create({
             title: `Meter PM: ${task.title}`,
             description: task.notes || '',
@@ -250,6 +320,14 @@ export async function runPMScheduler(): Promise<void> {
             dueDate: now,
             priority: 'medium',
             tenantId: task.tenantId,
+            ...(procedurePayload.procedureChecklist ? { checklist: procedurePayload.procedureChecklist } : {}),
+            ...(procedurePayload.procedureSnapshot
+              ? {
+                  procedureTemplateId: procedurePayload.procedureSnapshot.templateId,
+                  procedureTemplateVersionId: procedurePayload.procedureSnapshot.versionId,
+                }
+              : {}),
+            ...(partsUsed.length ? { partsUsed } : {}),
           });
           await notifyPmDue(task, now);
           meter.lastWOValue = meter.currentValue;

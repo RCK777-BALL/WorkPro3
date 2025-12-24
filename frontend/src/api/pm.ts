@@ -18,6 +18,7 @@ export interface AssignmentPayload {
   usageMetric?: 'runHours' | 'cycles';
   usageTarget?: number;
   usageLookbackDays?: number;
+  procedureTemplateId?: string;
   checklist?: Array<Omit<PMTemplateChecklistItem, 'id'>>;
   requiredParts?: Array<Omit<PMTemplateRequiredPart, 'id' | 'partName'>>;
 }
@@ -70,4 +71,3 @@ export const deletePmAssignment = async (templateId: string, assignmentId: strin
   const res = await http.delete<{ id: string }>(`/pm/templates/${templateId}/assignments/${assignmentId}`);
   return res.data;
 };
-

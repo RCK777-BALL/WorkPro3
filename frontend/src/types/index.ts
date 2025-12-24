@@ -66,6 +66,10 @@ export type {
   PMTemplateUpsertInput,
 } from '../../../shared/types/pmTemplates';
 export type {
+  ProcedureTemplateSummary,
+  ProcedureTemplateVersion,
+} from '../../../shared/types/procedures';
+export type {
   Permit,
   PermitHistoryEntry,
   PermitApprovalStep,
@@ -694,4 +698,3 @@ export interface WorkHistory {
   metrics: WorkHistoryMetrics;
   recentWork: WorkHistoryEntry[];
 }
-

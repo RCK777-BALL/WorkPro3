@@ -74,6 +74,7 @@ import {
   technicianRoutes,
   TenantRoutes,
   ThemeRoutes,
+  downtimeEventRoutes,
   downtimeLogRoutes,
   vendorPortalRoutes,
   vendorRoutes,
@@ -314,6 +315,7 @@ app.use("/api/onboarding", onboardingRouter);
 app.use("/api/executive", executiveRouter);
 app.use("/api/analytics/v2", analyticsModuleRouter);
 app.use("/api/downtime", downtimeRouter);
+app.use("/api/downtime-events", downtimeEventRoutes);
 app.use("/api/custom-reports", customReportsRouter);
 app.use("/api/work-orders", workOrdersModuleRouter);
 

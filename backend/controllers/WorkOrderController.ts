@@ -979,6 +979,22 @@ export async function updateWorkOrder(
       sendResponse(res, null, 'Not found', 404);
       return;
     }
+    if (update.status === 'completed') {
+      const userObjectId = resolveUserObjectId(req);
+      const checklistEntries = normalizeExistingChecklistEntries(existing.checklist as unknown[], userObjectId);
+      if (checklistEntries.length) {
+        const { missingRequired, missingEvidence } = findChecklistBlockingItems(checklistEntries);
+        if (missingRequired.length || missingEvidence.length) {
+          sendResponse(
+            res,
+            null,
+            'Required checklist items must be completed with evidence before closure',
+            409,
+          );
+          return;
+        }
+      }
+    }
     update.plant = plantId;
     if (scope.siteId) {
       update.siteId = scope.siteId;

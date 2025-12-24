@@ -27,6 +27,7 @@ export interface PMTemplateAssignment extends Document {
     type: 'time' | 'meter';
     meterThreshold?: number;
   };
+  procedureTemplateId?: Types.ObjectId;
   checklist: Types.DocumentArray<PMTemplateChecklistItem>;
   requiredParts: Types.DocumentArray<PMTemplateRequiredPart>;
   nextDue?: Date;
@@ -78,6 +79,7 @@ const assignmentSchema = new Schema<PMTemplateAssignment>(
       meterThreshold: { type: Number },
       _id: false,
     },
+    procedureTemplateId: { type: Schema.Types.ObjectId, ref: 'ProcedureTemplate' },
     checklist: { type: [checklistSchema], default: [] },
     requiredParts: { type: [requiredPartSchema], default: [] },
     nextDue: { type: Date },

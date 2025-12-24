@@ -8,7 +8,10 @@ import fs from 'fs';
 import path from 'path';
 import logger from './utils/logger';
 import Role from './models/Role';
+import Permission from './models/Permission';
+import RolePermission from './models/RolePermission';
 import UserRoleAssignment from './models/UserRoleAssignment';
+import FeatureFlag from './models/FeatureFlag';
 import { ALL_PERMISSIONS, PERMISSIONS } from '../shared/types/permissions';
 
 const envPath = path.resolve(__dirname, '.env');
@@ -82,6 +85,38 @@ const seedRoleDefinitions: Array<{ name: string; permissions: string[] }> = [
   },
 ];
 
+const permissionCatalog = Object.entries(PERMISSIONS).flatMap(([category, actions]) =>
+  Object.entries(actions).map(([action, key]) => ({
+    key,
+    category,
+    label: action,
+  })),
+);
+
+const ensureSeedPermissions = async () => {
+  const permissions = new Map<string, mongoose.Types.ObjectId>();
+  for (const entry of permissionCatalog) {
+    const permission = await Permission.findOneAndUpdate(
+      { key: entry.key, tenantId },
+      {
+        $set: {
+          key: entry.key,
+          category: entry.category,
+          label: entry.label,
+          tenantId,
+          isSystem: true,
+        },
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    ).lean();
+
+    if (permission?._id) {
+      permissions.set(entry.key, permission._id as mongoose.Types.ObjectId);
+    }
+  }
+  return permissions;
+};
+
 const ensureSeedRoles = async () => {
   const roles = new Map<string, mongoose.Types.ObjectId>();
   for (const definition of seedRoleDefinitions) {
@@ -96,6 +131,25 @@ const ensureSeedRoles = async () => {
     }
   }
   return roles;
+};
+
+const ensureRolePermissions = async (
+  roles: Map<string, mongoose.Types.ObjectId>,
+  permissions: Map<string, mongoose.Types.ObjectId>,
+) => {
+  for (const definition of seedRoleDefinitions) {
+    const roleId = roles.get(definition.name);
+    if (!roleId) continue;
+    for (const permissionKey of definition.permissions) {
+      const permissionId = permissions.get(permissionKey);
+      if (!permissionId) continue;
+      await RolePermission.updateOne(
+        { roleId, permissionId, tenantId, siteId: null, departmentId: null },
+        {},
+        { upsert: true },
+      );
+    }
+  }
 };
 
 const assignRole = async (
@@ -134,6 +188,9 @@ mongoose.connect(mongoUri).then(async () => {
   await RequestForm.deleteMany({});
   await Tenant.deleteMany({});
   await AuditLog.deleteMany({});
+  await Permission.deleteMany({});
+  await RolePermission.deleteMany({});
+  await FeatureFlag.deleteMany({});
   await Vendor.deleteMany({});
   await Location.deleteMany({});
   await Part.deleteMany({});
@@ -158,7 +215,39 @@ mongoose.connect(mongoUri).then(async () => {
   // Seed Site for analytics
   const mainSite = await Site.create({ name: 'Main Plant', slug: 'main-plant', tenantId });
 
+  const seededPermissions = await ensureSeedPermissions();
   const seededRoles = await ensureSeedRoles();
+  await ensureRolePermissions(seededRoles, seededPermissions);
+
+  await FeatureFlag.updateOne(
+    { tenantId, siteId: null, key: 'rbac_admin' },
+    {
+      $set: {
+        key: 'rbac_admin',
+        name: 'RBAC Administration',
+        description: 'Enable role and permission administration screens.',
+        enabled: true,
+        tenantId,
+        siteId: null,
+      },
+    },
+    { upsert: true },
+  );
+
+  await FeatureFlag.updateOne(
+    { tenantId, siteId: null, key: 'audit_log_export' },
+    {
+      $set: {
+        key: 'audit_log_export',
+        name: 'Audit Log Export',
+        description: 'Enable CSV export for audit logs.',
+        enabled: true,
+        tenantId,
+        siteId: null,
+      },
+    },
+    { upsert: true },
+  );
 
   // Seed Users
   const admin = await User.create({

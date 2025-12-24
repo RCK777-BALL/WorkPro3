@@ -8,7 +8,9 @@ import Button from '@/components/common/Button';
 import FailureInsightCard from '@/components/ai/FailureInsightCard';
 import { useFailurePrediction } from '@/hooks/useAiInsights';
 import { useToast } from '@/context/ToastContext';
-import type { PMTemplateAssignment } from '@/types';
+import type { PMTemplateAssignment, ProcedureTemplateSummary } from '@/types';
+import { useQuery } from 'react-query';
+import { fetchProcedureTemplates } from '@/api/pmProcedures';
 import { useUpsertAssignment } from './hooks';
 
 interface ChecklistFormItem {
@@ -45,6 +47,7 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
   const [interval, setInterval] = useState(assignment?.interval ?? 'monthly');
   const [triggerType, setTriggerType] = useState<'time' | 'meter'>(assignment?.trigger?.type ?? 'time');
   const [meterThreshold, setMeterThreshold] = useState<number | ''>(assignment?.trigger?.meterThreshold ?? '');
+  const [procedureTemplateId, setProcedureTemplateId] = useState(assignment?.procedureTemplateId ?? '');
   const [checklist, setChecklist] = useState<ChecklistFormItem[]>(
     assignment?.checklist.map((item) => ({
       id: item.id || newId(),
@@ -59,6 +62,7 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
       quantity: part.quantity ?? 1,
     })) ?? [],
   );
+  const procedureTemplatesQuery = useQuery(['pm', 'procedures'], fetchProcedureTemplates);
   const aiPrediction = useFailurePrediction({ assetId });
 
   const resolveIntervalFromDays = (days?: number) => {
@@ -99,6 +103,7 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
     setInterval(assignment?.interval ?? 'monthly');
     setTriggerType(assignment?.trigger?.type ?? 'time');
     setMeterThreshold(assignment?.trigger?.meterThreshold ?? '');
+    setProcedureTemplateId(assignment?.procedureTemplateId ?? '');
     setChecklist(
       assignment?.checklist.map((item) => ({
         id: item.id || newId(),
@@ -147,6 +152,7 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
             type: triggerType,
             ...(triggerType === 'meter' && meterThreshold ? { meterThreshold } : {}),
           },
+          procedureTemplateId: procedureTemplateId || undefined,
           checklist: checklist
             .filter((item) => item.description.trim().length > 0)
             .map((item) => ({ description: item.description.trim(), required: item.required })),
@@ -206,6 +212,24 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
             </option>
           ))}
         </select>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-neutral-700">Procedure template</label>
+        <select
+          className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2"
+          value={procedureTemplateId}
+          onChange={(event) => setProcedureTemplateId(event.target.value)}
+        >
+          <option value="">No procedure attached</option>
+          {(procedureTemplatesQuery.data ?? []).map((template: ProcedureTemplateSummary) => (
+            <option key={template.id} value={template.id}>
+              {template.name}
+            </option>
+          ))}
+        </select>
+        {procedureTemplatesQuery.isError && (
+          <p className="mt-1 text-xs text-error-500">Unable to load procedure templates.</p>
+        )}
       </div>
       <div>
         <label className="block text-sm font-medium text-neutral-700">Trigger type</label>

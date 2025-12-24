@@ -104,6 +104,11 @@ const TemplateAssignmentsView = () => {
                           ? `Meter trigger: +${assignment.trigger.meterThreshold ?? '–'}`
                           : `Interval: ${assignment.interval ?? 'Not set'}${assignment.nextDue ? ` · Next due ${new Date(assignment.nextDue).toLocaleDateString()}` : ''}`}
                       </p>
+                      {assignment.procedureTemplateName && (
+                        <p className="text-xs text-neutral-500">
+                          Procedure: {assignment.procedureTemplateName}
+                        </p>
+                      )}
                       <p className="text-xs text-neutral-500">
                         Checklist items: {assignment.checklist.length} · Parts: {assignment.requiredParts.length}
                       </p>

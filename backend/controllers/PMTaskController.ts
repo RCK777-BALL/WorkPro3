@@ -9,6 +9,7 @@ import WorkOrder from '../models/WorkOrder';
 import Meter from '../models/Meter';
 import WorkOrderTemplateModel from '../src/modules/work-orders/templateModel';
 import { nextCronOccurrenceWithin } from '../services/PMScheduler';
+import { resolveProcedureChecklist } from '../services/procedureTemplateService';
 import type { AuthedRequestHandler } from '../types/http';
 
 import type {
@@ -53,6 +54,22 @@ const resolveTemplateDefaults = async (task: PMTaskDocument) => {
     templateId: template?._id,
   };
 };
+
+const resolveProcedureDefaults = async (task: PMTaskDocument) => {
+  if (!task.procedureTemplateId) {
+    return { procedureChecklist: undefined, procedureSnapshot: undefined };
+  }
+  return resolveProcedureChecklist(task.tenantId.toString(), task.procedureTemplateId);
+};
+
+const mergePartsUsed = (
+  procedureParts?: { partId: any; quantity: number }[],
+) =>
+  (procedureParts ?? []).map((part) => ({
+    partId: part.partId,
+    qty: part.quantity,
+    cost: 0,
+  }));
 
 
 export const getAllPMTasks: AuthedRequestHandler<ParamsDictionary, PMTaskListResponse> = async (
@@ -282,9 +299,11 @@ export const generatePMWorkOrders: AuthedRequestHandler<ParamsDictionary, PMTask
     let count = 0;
     for (const task of tasks) {
       const templateDefaults = await resolveTemplateDefaults(task);
+      const procedureDefaults = await resolveProcedureDefaults(task);
       if (task.rule?.type === 'calendar' && task.rule.cron) {
         const next = nextCronOccurrenceWithin(task.rule.cron, now, 7);
         if (next) {
+          const partsUsed = mergePartsUsed(procedureDefaults.procedureSnapshot?.requiredParts);
           await WorkOrder.create({
             title: `PM: ${task.title}`,
             description: task.notes || '',
@@ -296,6 +315,14 @@ export const generatePMWorkOrders: AuthedRequestHandler<ParamsDictionary, PMTask
             dueDate: next,
             priority: 'medium',
             tenantId: task.tenantId,
+            ...(procedureDefaults.procedureChecklist ? { checklist: procedureDefaults.procedureChecklist } : {}),
+            ...(procedureDefaults.procedureSnapshot
+              ? {
+                  procedureTemplateId: procedureDefaults.procedureSnapshot.templateId,
+                  procedureTemplateVersionId: procedureDefaults.procedureSnapshot.versionId,
+                }
+              : {}),
+            ...(partsUsed.length ? { partsUsed } : {}),
             ...(templateDefaults.templateId ? { workOrderTemplateId: templateDefaults.templateId } : {}),
             ...(templateDefaults.templateVersion ? { templateVersion: templateDefaults.templateVersion } : {}),
             ...(templateDefaults.checklists ? { checklists: templateDefaults.checklists } : {}),
@@ -314,6 +341,7 @@ export const generatePMWorkOrders: AuthedRequestHandler<ParamsDictionary, PMTask
         if (!meter) continue;
         const sinceLast = meter.currentValue - (meter.lastWOValue || 0);
         if (sinceLast >= (task.rule.threshold || 0)) {
+          const partsUsed = mergePartsUsed(procedureDefaults.procedureSnapshot?.requiredParts);
           await WorkOrder.create({
             title: `Meter PM: ${task.title}`,
             description: task.notes || '',
@@ -325,6 +353,14 @@ export const generatePMWorkOrders: AuthedRequestHandler<ParamsDictionary, PMTask
             dueDate: now,
             priority: 'medium',
             tenantId: task.tenantId,
+            ...(procedureDefaults.procedureChecklist ? { checklist: procedureDefaults.procedureChecklist } : {}),
+            ...(procedureDefaults.procedureSnapshot
+              ? {
+                  procedureTemplateId: procedureDefaults.procedureSnapshot.templateId,
+                  procedureTemplateVersionId: procedureDefaults.procedureSnapshot.versionId,
+                }
+              : {}),
+            ...(partsUsed.length ? { partsUsed } : {}),
             ...(templateDefaults.templateId ? { workOrderTemplateId: templateDefaults.templateId } : {}),
             ...(templateDefaults.templateVersion ? { templateVersion: templateDefaults.templateVersion } : {}),
             ...(templateDefaults.checklists ? { checklists: templateDefaults.checklists } : {}),

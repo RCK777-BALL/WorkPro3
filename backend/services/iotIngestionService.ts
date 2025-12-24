@@ -14,6 +14,9 @@ import MeterReading from '../models/MeterReading';
 import PMTask from '../models/PMTask';
 import SensorDevice from '../models/SensorDevice';
 import PMTemplate from '../models/PMTemplate';
+import IoTTriggerConfig from '../models/IoTTriggerConfig';
+import IoTEvent from '../models/IoTEvent';
+import { resolveProcedureChecklist } from './procedureTemplateService';
 
 const ACTIVE_WORK_ORDER_STATUSES = ['requested', 'assigned', 'in_progress'];
 const ANOMALY_LOOKBACK = 20;
@@ -28,6 +31,17 @@ export type ConditionRuleLean = {
   workOrderTitle?: string;
   workOrderDescription?: string;
   pmTemplateId?: Types.ObjectId;
+};
+
+export type IoTTriggerConfigLean = {
+  _id?: Types.ObjectId;
+  asset?: Types.ObjectId;
+  metric?: string;
+  operator?: '>' | '<' | '>=' | '<=' | '==';
+  threshold?: number;
+  procedureTemplateId?: Types.ObjectId;
+  cooldownMinutes?: number;
+  lastTriggeredAt?: Date;
 };
 
 type TemplateAssignmentLean = {
@@ -216,6 +230,93 @@ const createWorkOrderFromRule = async (
   });
   return {
     ruleId: rule._id.toString(),
+    workOrderId: created._id.toString(),
+    created: true,
+  };
+};
+
+const createWorkOrderFromTrigger = async (
+  trigger: IoTTriggerConfigLean | null,
+  tenantId: string,
+  assetId: string,
+  metric: string,
+  value: number,
+  context?: {
+    source?: 'http' | 'mqtt';
+    readingId?: Types.ObjectId;
+    timestamp?: Date;
+    payload?: SanitizedReading;
+  },
+): Promise<RuleTriggerResult | null> => {
+  if (!trigger?._id || !trigger.procedureTemplateId) return null;
+  const existing = await WorkOrder.findOne({
+    tenantId,
+    assetId,
+    status: { $in: ACTIVE_WORK_ORDER_STATUSES },
+    procedureTemplateId: trigger.procedureTemplateId,
+  })
+    .select('_id')
+    .lean();
+  if (existing?._id) {
+    return {
+      ruleId: trigger._id.toString(),
+      workOrderId: existing._id.toString(),
+      created: false,
+    };
+  }
+
+  const { snapshot, checklist } = await resolveProcedureChecklist(tenantId, trigger.procedureTemplateId);
+  if (!snapshot || !checklist) return null;
+
+  const partsUsed = (snapshot.requiredParts ?? []).map((part) => ({
+    partId: part.partId,
+    qty: part.quantity,
+    cost: 0,
+  }));
+
+  const created = await WorkOrder.create({
+    tenantId,
+    assetId,
+    title: `IoT-triggered PM`,
+    description: `Auto-generated from ${metric} reading (${value.toFixed(2)})`,
+    priority: 'high',
+    type: 'preventive',
+    status: 'requested',
+    checklist,
+    ...(snapshot ? { procedureTemplateId: snapshot.templateId, procedureTemplateVersionId: snapshot.versionId } : {}),
+    ...(partsUsed.length ? { partsUsed } : {}),
+    iotEvent: {
+      triggerId: trigger._id,
+      source: context?.source,
+      readingId: context?.readingId,
+      metric,
+      value,
+      timestamp: context?.timestamp ?? new Date(),
+      payload: context?.payload
+        ? {
+            assetId: context.payload.assetId,
+            metric: context.payload.metric,
+            value: context.payload.value,
+            timestamp: context.payload.timestamp?.toISOString?.() ?? context.payload.timestamp,
+            ...(context.payload.deviceId ? { deviceId: context.payload.deviceId } : {}),
+          }
+        : undefined,
+    },
+  });
+
+  await IoTEvent.create({
+    tenantId,
+    triggerId: trigger._id,
+    workOrderId: created._id,
+    asset: created.assetId ?? created.asset,
+    metric,
+    value,
+    triggeredAt: context?.timestamp ?? new Date(),
+    payload: context?.payload ? { ...context.payload } : undefined,
+  });
+
+  return {
+    ruleId: trigger._id.toString(),
     workOrderId: created._id.toString(),
     created: true,
   };
@@ -431,6 +532,7 @@ export async function ingestTelemetryBatch({
   const readingPayloads = new Map<string, SanitizedReading>();
 
   const ruleCache = new Map<string, ConditionRuleLean[]>();
+  const triggerCache = new Map<string, IoTTriggerConfigLean[]>();
   const templateCache = new Map<string, TemplateLean | null>();
 
   docs.forEach((doc, index) => {
@@ -506,6 +608,56 @@ export async function ingestTelemetryBatch({
       );
       if (result) {
         triggeredRules.push(result);
+      }
+    }
+
+    if (!triggerCache.has(cacheKey)) {
+      const query: FilterQuery<Record<string, unknown>> = {
+        tenantId,
+        asset: doc.asset,
+        metric,
+        active: true,
+      };
+      triggerCache.set(
+        cacheKey,
+        (await IoTTriggerConfig.find(query).lean()) as IoTTriggerConfigLean[],
+      );
+    }
+    const triggers = triggerCache.get(cacheKey) ?? [];
+    for (const trigger of triggers) {
+      if (
+        trigger?.threshold == null ||
+        !matchesRule(doc.value, trigger.operator ?? '>', trigger.threshold)
+      ) {
+        continue;
+      }
+      const lastTriggeredAt = trigger.lastTriggeredAt ? new Date(trigger.lastTriggeredAt) : null;
+      const cooldownMinutes = trigger.cooldownMinutes ?? ANOMALY_COOLDOWN_MINUTES;
+      if (lastTriggeredAt && doc.timestamp) {
+        const diffMinutes = (doc.timestamp.getTime() - lastTriggeredAt.getTime()) / 60000;
+        if (diffMinutes < cooldownMinutes) {
+          continue;
+        }
+      }
+      const result = await createWorkOrderFromTrigger(
+        trigger,
+        tenantId,
+        assetId,
+        metric,
+        doc.value,
+        {
+          source,
+          readingId: doc._id as Types.ObjectId,
+          timestamp: doc.timestamp ?? new Date(),
+          payload: readingPayloads.get(doc._id?.toString?.() ?? ''),
+        },
+      );
+      if (result) {
+        triggeredRules.push(result);
+        await IoTTriggerConfig.updateOne(
+          { _id: trigger._id },
+          { lastTriggeredAt: doc.timestamp ?? new Date() },
+        );
       }
     }
     const anomaly = await detectAnomaly(doc);

@@ -27,6 +27,7 @@ export const pmTaskValidators = [
   body('asset').optional().isMongoId(),
   body('workOrderTemplateId').optional().isMongoId(),
   body('templateVersion').optional().isInt({ min: 1 }),
+  body('procedureTemplateId').optional().isMongoId(),
   body('notes').optional().isString(),
   body('department').optional().isString(),
 ];

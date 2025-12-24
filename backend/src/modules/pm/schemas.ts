@@ -30,6 +30,7 @@ export const assignmentInputSchema = z
     usageMetric: z.enum(['runHours', 'cycles']).optional(),
     usageTarget: z.number().positive().optional(),
     usageLookbackDays: z.number().int().positive().max(365).optional(),
+    procedureTemplateId: objectId.optional(),
     checklist: z.array(checklistItem).optional(),
     requiredParts: z.array(requiredPartItem).optional(),
     trigger: triggerSchema.optional(),

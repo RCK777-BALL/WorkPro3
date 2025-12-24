@@ -66,6 +66,7 @@ import PMScheduler from "@/pages/PMScheduler";
 import PMTasksPage from "@/pages/PMTasksPage";
 import PMTemplateList from "@/pages/PMTemplateList";
 import PMTemplateEditor from "@/pages/PMTemplateEditor";
+import PMProcedureTemplates from "@/pages/PMProcedureTemplates";
 import AdminTenants from "@/pages/AdminTenants";
 import Imports from "@/pages/Imports";
 import Plants from "@/pages/Plants";
@@ -427,6 +428,14 @@ export default function App() {
             element={
               <RequirePermission permission="pm.write">
                 <PMTemplateEditor />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/pm/procedures"
+            element={
+              <RequirePermission permission="pm.read">
+                <PMProcedureTemplates />
               </RequirePermission>
             }
           />

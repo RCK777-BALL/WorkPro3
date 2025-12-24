@@ -49,6 +49,7 @@ export interface PMTaskDocument extends Document {
   siteId?: Types.ObjectId;
   workOrderTemplateId?: Types.ObjectId;
   templateVersion?: number;
+  procedureTemplateId?: Types.ObjectId;
   notes?: string;
   asset?: mongoose.Schema.Types.ObjectId;
   department?: string; // optional, for summary use
@@ -106,6 +107,7 @@ const PmTaskSchema = new Schema<PMTaskDocument>(
     siteId: { type: Schema.Types.ObjectId, ref: 'Site', index: true },
     workOrderTemplateId: { type: Schema.Types.ObjectId, ref: 'WorkOrderTemplate' },
     templateVersion: { type: Number },
+    procedureTemplateId: { type: Schema.Types.ObjectId, ref: 'ProcedureTemplate' },
     notes: String,
     asset: { type: mongoose.Schema.Types.ObjectId, ref: 'Asset' },
     department: String,

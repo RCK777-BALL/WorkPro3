@@ -46,6 +46,9 @@ import { writeAuditLog } from './utils';
 import InspectionTemplate from './models/InspectionTemplate';
 import MaintenanceSchedule from './models/MaintenanceSchedule';
 import ConditionRule from './models/ConditionRule';
+import ProcedureTemplate from './models/ProcedureTemplate';
+import ProcedureTemplateVersion from './models/ProcedureTemplateVersion';
+import PMTemplateCategory from './models/PMTemplateCategory';
 import {
   inspectionTemplates,
   inspectionChecklistIds,
@@ -143,6 +146,9 @@ mongoose.connect(mongoUri).then(async () => {
   await InspectionTemplate.deleteMany({});
   await MaintenanceSchedule.deleteMany({});
   await ConditionRule.deleteMany({});
+  await ProcedureTemplate.deleteMany({});
+  await ProcedureTemplateVersion.deleteMany({});
+  await PMTemplateCategory.deleteMany({});
 
   // Seed Tenant
   await Tenant.create({
@@ -304,12 +310,40 @@ mongoose.connect(mongoUri).then(async () => {
   await dept.save();
 
   // Seed PM Task
+  const procedureCategory = await PMTemplateCategory.create({
+    name: 'Safety',
+    description: 'Safety-related procedures',
+    tenantId,
+    siteId: mainSite._id,
+  });
+  const procedureTemplate = await ProcedureTemplate.create({
+    name: 'Lubrication Procedure',
+    description: 'Monthly lubrication and inspection steps.',
+    category: procedureCategory._id,
+    tenantId,
+    siteId: mainSite._id,
+  });
+  const procedureVersion = await ProcedureTemplateVersion.create({
+    tenantId,
+    templateId: procedureTemplate._id,
+    versionNumber: 1,
+    status: 'published',
+    durationMinutes: 30,
+    safetySteps: ['Lock out power and confirm zero energy.'],
+    steps: ['Apply grease to bearings.', 'Check oil level and top off.'],
+    requiredParts: [],
+    requiredTools: [{ toolName: 'Grease gun', quantity: 1 }],
+    notes: 'Record any abnormalities observed.',
+  });
+  procedureTemplate.latestPublishedVersion = procedureVersion._id;
+  await procedureTemplate.save();
   const pmTask = await PMTask.create({
     title: 'Monthly Lubrication',
     asset: asset._id,
     rule: { type: 'calendar', cron: '0 0 1 * *' },
     lastGeneratedAt: new Date(),
     notes: 'Check oil level and apply grease.',
+    procedureTemplateId: procedureTemplate._id,
     tenantId,
     siteId: mainSite._id,
   });

@@ -34,6 +34,7 @@ import {
   authRoutes,
   calendarRoutes,
   chatRoutes,
+  featureFlagRoutes,
   partsRoutes,
   complianceRoutes,
   conditionRuleRoutes,
@@ -72,6 +73,7 @@ import {
   technicianRoutes,
   TenantRoutes,
   ThemeRoutes,
+  downtimeEventRoutes,
   downtimeLogRoutes,
   vendorPortalRoutes,
   vendorRoutes,
@@ -105,6 +107,7 @@ import workOrdersModuleRouter from "./src/modules/work-orders";
 import purchaseOrdersApiRouter from "./src/routes/purchaseOrders";
 import { startWorkOrderReminderJobs } from "./src/modules/work-orders/jobs";
 import { startWorkRequestReminderJobs } from "./src/modules/work-requests/jobs";
+import { startExportWorker } from "./workers/exportWorker";
 
 import { startPMScheduler } from "./utils/PMScheduler";
 import { startCopilotSummaryJob } from "./tasks/copilotSummaries";
@@ -306,6 +309,7 @@ app.use("/api/onboarding", onboardingRouter);
 app.use("/api/executive", executiveRouter);
 app.use("/api/analytics/v2", analyticsModuleRouter);
 app.use("/api/downtime", downtimeRouter);
+app.use("/api/downtime-events", downtimeEventRoutes);
 app.use("/api/custom-reports", customReportsRouter);
 app.use("/api/work-orders", workOrdersModuleRouter);
 
@@ -319,6 +323,7 @@ app.use("/api/downtime-logs", downtimeLogRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/assets", assetInsightsRouter);
 app.use("/api/roles", roleRoutes);
+app.use("/api/feature-flags", featureFlagRoutes);
 app.use("/api/meters", meterReadingsRouter);
 app.use("/api/meters", meterRoutes);
 app.use("/api/tenants", TenantRoutes);
@@ -403,6 +408,7 @@ if (env.NODE_ENV !== "test") {
       startReorderAlertScanner(env.REORDER_ALERT_CRON);
       startWorkOrderReminderJobs();
       startWorkRequestReminderJobs();
+      startExportWorker();
     })
     .catch((err) => {
       logger.error("MongoDB connection error:", err);

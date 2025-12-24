@@ -9,6 +9,7 @@ import { requireAuth } from '../middleware/authMiddleware';
 import Settings from '../models/Settings';
 import { auditAction } from '../utils/audit';
 import User from '../models/User';
+import { requirePermission } from '../src/auth/permissions';
 
 interface GeneralSettings {
   companyName: string;
@@ -91,7 +92,7 @@ const router = express.Router();
 
 router.use(requireAuth);
 
-router.get('/', async (req, res, next) => {
+router.get('/', requirePermission('sites.read'), async (req, res, next) => {
   try {
     const query = req.tenantId ? { tenantId: req.tenantId } : {};
     const doc = await Settings.findOne(query).lean();
@@ -125,7 +126,7 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-router.post('/', async (req, res, next) => {
+router.post('/', requirePermission('sites.manage'), async (req, res, next) => {
   try {
     const previousState = JSON.parse(JSON.stringify(settingsState));
     const payload = (req.body ?? {}) as Partial<SettingsState & { activePlant?: string }>;
@@ -194,7 +195,7 @@ router.post('/', async (req, res, next) => {
   }
 });
 
-router.post('/notifications/preferences', async (req, res, next) => {
+router.post('/notifications/preferences', requirePermission('sites.manage'), async (req, res, next) => {
   try {
     const userId = req.user?._id;
     if (!userId) {

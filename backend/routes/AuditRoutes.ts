@@ -11,6 +11,7 @@ import validateObjectId from '../middleware/validateObjectId';
 import AuditLog, { type AuditLogDocument, type AuditLogDiffEntry } from '../models/AuditLog';
 import type { AuthedRequest } from '../types/http';
 import { ensureTenantContext, scopeQueryToTenant, withPolicyGuard } from '../src/auth/accessControl';
+import { requirePermission } from '../src/auth/permissions';
 
 const MAX_LIMIT = 200;
 
@@ -127,6 +128,7 @@ const toCsv = (logs: Array<Pick<AuditLogDocument, 'ts' | 'entityType' | 'entityI
 const router = Router();
 
 router.use(requireAuth);
+router.use(requirePermission('audit.read'));
 router.use(...withPolicyGuard({ permissions: 'audit.read' }));
 
 router.get('/', async (req, res, next) => {

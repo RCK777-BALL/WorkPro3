@@ -6,7 +6,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { Parser as Json2csvParser } from 'json2csv';
 import { Types } from 'mongoose';
 
-import { sendResponse, writeAuditLog, toEntityId } from '../utils';
+import { escapeXml, sendResponse, writeAuditLog, toEntityId } from '../utils';
 import {
   createDowntimeLog,
   deleteDowntimeLog,
@@ -91,6 +91,57 @@ export const exportDowntimeLogsHandler = async (
     res.header('Content-Type', 'text/csv');
     res.attachment('downtime-logs.csv');
     res.send(csv);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const exportDowntimeLogsXlsxHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<Response | void> => {
+  try {
+    const tenantId = req.tenantId;
+    if (!tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+
+    const filters = buildFiltersFromRequest(req);
+    const logs = await listDowntimeLogs(tenantId, filters);
+
+    const rows = logs
+      .map((log) => {
+        const start = log.start ? new Date(log.start) : undefined;
+        const end = log.end ? new Date(log.end) : undefined;
+        const durationMinutes =
+          start && end ? Number(((end.getTime() - start.getTime()) / 60000).toFixed(2)) : '';
+
+        return [
+          log.assetId?.toString?.() ?? '',
+          start?.toISOString() ?? '',
+          end?.toISOString() ?? '',
+          durationMinutes,
+          log.reason ?? '',
+        ];
+      })
+      .map(
+        (cells) =>
+          `<Row>${cells
+            .map((value) => `<Cell><Data ss:Type="String">${escapeXml(String(value))}</Data></Cell>`)
+            .join('')}</Row>`,
+      )
+      .join('');
+
+    const headerRow = ['Asset ID', 'Start', 'End', 'Duration (minutes)', 'Reason']
+      .map((label) => `<Cell><Data ss:Type="String">${escapeXml(label)}</Data></Cell>`)
+      .join('');
+
+    const xml = `<?xml version="1.0"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Downtime Logs"><Table><Row>${headerRow}</Row>${rows}</Table></Worksheet></Workbook>`;
+    res.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.attachment('downtime-logs.xlsx');
+    res.send(xml);
   } catch (err) {
     next(err);
   }

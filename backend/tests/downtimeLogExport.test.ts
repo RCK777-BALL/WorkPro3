@@ -73,4 +73,13 @@ describe('Downtime log exports', () => {
     expect(records[0]['Duration (minutes)']).toBe('45');
     expect(records[0].Reason).toBe('Power outage');
   });
+
+  it('exports downtime logs as XLSX', async () => {
+    listDowntimeLogs.mockResolvedValue([]);
+
+    const res = await request(app).get('/api/downtime-logs/export.xlsx').expect(200);
+
+    expect(res.headers['content-type']).toContain('spreadsheet');
+    expect(res.text).toContain('<Workbook');
+  });
 });

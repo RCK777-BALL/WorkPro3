@@ -17,6 +17,9 @@ export type DowntimeEventFilters = Partial<{
   assetId: Types.ObjectId | string;
   workOrderId: Types.ObjectId | string;
   activeOnly: boolean;
+  start: Date;
+  end: Date;
+  causeCode: string;
 }>;
 
 const toObjectId = (value?: Types.ObjectId | string): Types.ObjectId | undefined =>
@@ -71,6 +74,12 @@ export const listDowntimeEvents = async (
   if (filters.assetId) query.assetId = toObjectId(filters.assetId);
   if (filters.workOrderId) query.workOrderId = toObjectId(filters.workOrderId);
   if (filters.activeOnly) query.end = { $exists: false } as any;
+  if (filters.causeCode) query.causeCode = filters.causeCode;
+  if (filters.start || filters.end) {
+    query.start = {} as any;
+    if (filters.start) query.start.$gte = filters.start;
+    if (filters.end) query.start.$lte = filters.end;
+  }
 
   return DowntimeEvent.find(query).sort({ start: -1 }).exec();
 };
@@ -110,6 +119,16 @@ export const updateDowntimeEvent = async (
 
   return event.save();
 };
+
+export const getDowntimeEvent = async (
+  tenantId: string,
+  id: string,
+): Promise<DowntimeEventDocument | null> => DowntimeEvent.findOne({ _id: id, tenantId }).exec();
+
+export const deleteDowntimeEvent = async (
+  tenantId: string,
+  id: string,
+): Promise<DowntimeEventDocument | null> => DowntimeEvent.findOneAndDelete({ _id: id, tenantId }).exec();
 
 export const closeOpenDowntimeEventsForWorkOrder = async (
   tenantId: string,

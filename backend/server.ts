@@ -34,7 +34,6 @@ import {
   authRoutes,
   calendarRoutes,
   chatRoutes,
-  featureFlagRoutes,
   partsRoutes,
   complianceRoutes,
   conditionRuleRoutes,
@@ -85,6 +84,7 @@ import {
 } from "./routes";
 import mobileRoutes from "./routes/mobileRoutes";
 import mobileSyncAdminRoutes from "./routes/mobileSyncAdmin";
+import featureFlagRoutes from "./routes/featureFlagRoutes";
 import uiRoutes from "./routes/uiRoutes";
 import healthRouter from "./src/routes/health";
 import systemSummaryRouter from "./src/routes/summary";

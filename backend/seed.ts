@@ -46,6 +46,10 @@ import { writeAuditLog } from './utils';
 import InspectionTemplate from './models/InspectionTemplate';
 import MaintenanceSchedule from './models/MaintenanceSchedule';
 import ConditionRule from './models/ConditionRule';
+import ApiKey from './models/ApiKey';
+import WebhookSubscription from './models/WebhookSubscription';
+import ExportJob from './models/ExportJob';
+import { generateApiKey } from './utils/apiKeys';
 import {
   inspectionTemplates,
   inspectionChecklistIds,
@@ -143,6 +147,9 @@ mongoose.connect(mongoUri).then(async () => {
   await InspectionTemplate.deleteMany({});
   await MaintenanceSchedule.deleteMany({});
   await ConditionRule.deleteMany({});
+  await ApiKey.deleteMany({});
+  await WebhookSubscription.deleteMany({});
+  await ExportJob.deleteMany({});
 
   // Seed Tenant
   await Tenant.create({
@@ -181,6 +188,34 @@ mongoose.connect(mongoUri).then(async () => {
     siteId: mainSite._id,
   });
   await assignRole(seededRoles, tech._id, tenantId, mainSite._id, 'tech');
+
+  const generatedKey = generateApiKey();
+  await ApiKey.create({
+    name: 'Default Integration Key',
+    keyHash: generatedKey.keyHash,
+    prefix: generatedKey.prefix,
+    tenantId,
+    createdBy: admin._id,
+    rateLimitMax: 120,
+  });
+
+  await WebhookSubscription.create({
+    name: 'Sample Work Order Webhook',
+    url: 'https://example.com/webhooks/workorders',
+    events: ['WO.created', 'WO.updated'],
+    secret: generateApiKey().key,
+    tenantId,
+    active: true,
+    maxAttempts: 3,
+  });
+
+  await ExportJob.create({
+    tenantId,
+    requestedBy: admin._id,
+    type: 'workOrders',
+    format: 'csv',
+    status: 'queued',
+  });
 
   // Additional employee hierarchy
   const departmentLeader = await User.create({

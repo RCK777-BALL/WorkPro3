@@ -5,6 +5,9 @@
 import { useEffect, useState } from 'react';
 import HookForm from './HookForm';
 import type { IntegrationHook } from './types';
+import ApiKeysPanel from './ApiKeysPanel';
+import WebhookSubscriptionsPanel from './WebhookSubscriptionsPanel';
+import ExportsPanel from './ExportsPanel';
 
 export default function Integrations() {
   const [hooks, setHooks] = useState<IntegrationHook[]>([]);
@@ -22,14 +25,20 @@ export default function Integrations() {
   return (
     <div>
       <h1>Integrations</h1>
-      <HookForm onCreated={(hook) => setHooks([...hooks, hook])} />
-      <ul>
-        {hooks.map((h) => (
-          <li key={h._id}>
-            {h.name} - {h.type}
-          </li>
-        ))}
-      </ul>
+      <ApiKeysPanel />
+      <WebhookSubscriptionsPanel />
+      <ExportsPanel />
+      <section>
+        <h2>Integration Hooks</h2>
+        <HookForm onCreated={(hook) => setHooks([...hooks, hook])} />
+        <ul>
+          {hooks.map((h) => (
+            <li key={h._id}>
+              {h.name} - {h.type}
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 }

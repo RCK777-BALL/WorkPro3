@@ -106,6 +106,7 @@ import workOrdersModuleRouter from "./src/modules/work-orders";
 import purchaseOrdersApiRouter from "./src/routes/purchaseOrders";
 import { startWorkOrderReminderJobs } from "./src/modules/work-orders/jobs";
 import { startWorkRequestReminderJobs } from "./src/modules/work-requests/jobs";
+import { startExportWorker } from "./workers/exportWorker";
 
 import { startPMScheduler } from "./utils/PMScheduler";
 import { startCopilotSummaryJob } from "./tasks/copilotSummaries";
@@ -410,6 +411,7 @@ if (env.NODE_ENV !== "test") {
       startReorderAlertScanner(env.REORDER_ALERT_CRON);
       startWorkOrderReminderJobs();
       startWorkRequestReminderJobs();
+      startExportWorker();
     })
     .catch((err) => {
       logger.error("MongoDB connection error:", err);

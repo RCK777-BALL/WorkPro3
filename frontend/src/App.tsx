@@ -48,6 +48,7 @@ import DowntimeEventsPage from "@/pages/DowntimeEventsPage";
 import WorkflowRulesAdmin from "@/pages/WorkflowRulesAdmin";
 import Messages from "@/pages/Messages";
 import RoleManagementPage from "@/pages/RoleManagement";
+import FeatureFlagsPage from "@/pages/FeatureFlags";
 import Documentation from "@/pages/Documentation";
 import AssetManagementGuide from "@/pages/AssetManagementGuide";
 import AssetManagementAssetsGuide from "@/pages/AssetManagementAssetsGuide";
@@ -473,6 +474,14 @@ export default function App() {
             element={
               <RequirePermission permission="roles.manage">
                 <WorkflowRulesAdmin />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/admin/feature-flags"
+            element={
+              <RequirePermission permission="roles.manage">
+                <FeatureFlagsPage />
               </RequirePermission>
             }
           />

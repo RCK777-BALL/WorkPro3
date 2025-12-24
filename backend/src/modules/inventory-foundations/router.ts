@@ -6,6 +6,7 @@ import { Router } from 'express';
 
 import { requireAuth } from '../../../middleware/authMiddleware';
 import tenantScope from '../../../middleware/tenantScope';
+import { requirePermission } from '../../auth/permissions';
 import {
   adjustStockHandler,
   deleteLocationHandler,
@@ -28,25 +29,25 @@ const router = Router();
 router.use(requireAuth);
 router.use(tenantScope);
 
-router.get('/parts', listPartsHandler);
-router.get('/parts/:partId', getPartHandler);
-router.post('/parts', savePartHandler);
-router.put('/parts/:partId', savePartHandler);
-router.delete('/parts/:partId', deletePartHandler);
+router.get('/parts', requirePermission('inventory.read'), listPartsHandler);
+router.get('/parts/:partId', requirePermission('inventory.read'), getPartHandler);
+router.post('/parts', requirePermission('inventory.manage'), savePartHandler);
+router.put('/parts/:partId', requirePermission('inventory.manage'), savePartHandler);
+router.delete('/parts/:partId', requirePermission('inventory.manage'), deletePartHandler);
 
-router.get('/locations', listLocationsHandler);
-router.get('/locations/:locationId', getLocationHandler);
-router.post('/locations', saveLocationHandler);
-router.put('/locations/:locationId', saveLocationHandler);
-router.delete('/locations/:locationId', deleteLocationHandler);
+router.get('/locations', requirePermission('inventory.read'), listLocationsHandler);
+router.get('/locations/:locationId', requirePermission('inventory.read'), getLocationHandler);
+router.post('/locations', requirePermission('inventory.manage'), saveLocationHandler);
+router.put('/locations/:locationId', requirePermission('inventory.manage'), saveLocationHandler);
+router.delete('/locations/:locationId', requirePermission('inventory.manage'), deleteLocationHandler);
 
-router.get('/stocks', listPartStocksHandler);
-router.get('/stocks/:stockId', getPartStockHandler);
-router.post('/stocks', savePartStockHandler);
-router.put('/stocks/:stockId', savePartStockHandler);
-router.delete('/stocks/:stockId', deletePartStockHandler);
+router.get('/stocks', requirePermission('inventory.read'), listPartStocksHandler);
+router.get('/stocks/:stockId', requirePermission('inventory.read'), getPartStockHandler);
+router.post('/stocks', requirePermission('inventory.manage'), savePartStockHandler);
+router.put('/stocks/:stockId', requirePermission('inventory.manage'), savePartStockHandler);
+router.delete('/stocks/:stockId', requirePermission('inventory.manage'), deletePartStockHandler);
 
-router.post('/stocks/:stockId/adjust', adjustStockHandler);
-router.post('/stocks/:stockId/receive', receiveStockHandler);
+router.post('/stocks/:stockId/adjust', requirePermission('inventory.manage'), adjustStockHandler);
+router.post('/stocks/:stockId/receive', requirePermission('inventory.manage'), receiveStockHandler);
 
 export default router;

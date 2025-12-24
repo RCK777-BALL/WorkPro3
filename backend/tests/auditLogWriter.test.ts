@@ -6,6 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
+import AuditEvent from '../models/AuditEvent';
 import AuditLog from '../models/AuditLog';
 import { writeAuditLog } from '../utils/audit';
 
@@ -50,9 +51,15 @@ describe('writeAuditLog', () => {
     });
 
     const log = await AuditLog.findOne({ tenantId }).lean();
+    const event = await AuditEvent.findOne({ tenantId }).lean();
     expect(log?.tenantId?.toString()).toBe(tenantId.toString());
     expect(log?.siteId?.toString()).toBe(siteId.toString());
     expect(log?.userId?.toString()).toBe(userId.toString());
     expect(log?.diff?.[0]?.path).toBe('name');
+    expect(event?.action).toBe('update');
+    expect(event?.details).toMatchObject({
+      entityType: 'Asset',
+      entityId: 'asset-1',
+    });
   });
 });

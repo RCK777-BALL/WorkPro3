@@ -163,16 +163,18 @@ devOrigins.forEach((origin) => allowedOrigins.add(normalizeOrigin(origin) as str
 
 type CorsOriginCallback = (err: Error | null, allow?: boolean) => void;
 
-const corsOptions: CorsOptions = {
-  origin: (origin: string | undefined, callback: CorsOriginCallback) => {
-    const normalized = normalizeOrigin(origin);
+const checkCorsOrigin = (origin: string | undefined, callback: CorsOriginCallback) => {
+  const normalized = normalizeOrigin(origin);
 
-    if (!origin || (normalized && allowedOrigins.has(normalized))) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
+  if (!origin || (normalized && allowedOrigins.has(normalized))) {
+    callback(null, true);
+  } else {
+    callback(new Error("Not allowed by CORS"));
+  }
+};
+
+const corsOptions: CorsOptions = {
+  origin: checkCorsOrigin,
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: [
@@ -232,7 +234,12 @@ const burstFriendly = rateLimit({
 });
 
 export const io = new Server(httpServer, {
-  cors: { origin: true, credentials: true },
+  path: "/socket.io",
+  cors: {
+    origin: checkCorsOrigin,
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
 });
 
 app.set('io', io);
@@ -240,12 +247,22 @@ app.set('io', io);
 initChatSocket(io);
 
 io.on("connection", (socket) => {
-  logger.info("connected", socket.id);
+  logger.info("socket connected", {
+    id: socket.id,
+    origin: socket.handshake.headers.origin,
+  });
   socket.on("ping", () => socket.emit("pong"));
+  socket.on("disconnect", (reason) => {
+    logger.info("socket disconnected", { id: socket.id, reason });
+  });
 });
 
 app.get("/", (_req: Request, res: Response) => {
   res.send("PLTCMMS backend is running");
+});
+
+app.get("/health", (_req: Request, res: Response) => {
+  res.status(200).json({ ok: true, port: PORT, timestamp: new Date().toISOString() });
 });
 
 app.use("/static/uploads", express.static(path.join(process.cwd(), "uploads")));

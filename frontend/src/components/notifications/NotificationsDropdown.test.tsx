@@ -14,12 +14,9 @@ import type { NotificationType } from '@/types';
 import { markNotificationRead } from '@/api/notifications';
 
 let socketClient: any;
- 
-const closeSocketMock = vi.fn();
+
 vi.mock('../../utils/notificationsSocket', () => ({
   getNotificationsSocket: () => socketClient,
-  closeNotificationsSocket: () => closeSocketMock(),
- 
 }));
 
 vi.mock('../../api/notifications', () => ({
@@ -92,12 +89,6 @@ describe('NotificationsDropdown', () => {
     expect(screen.getByTestId('unread-count').textContent).toBe('1');
   });
 
-  it('cleans up socket on unmount', () => {
-    const { unmount } = setup();
-    unmount();
-    expect(closeSocketMock).toHaveBeenCalled();
-  });
-
   it('does not subscribe when liveData is false', () => {
     const { socketServer } = setup([], { liveData: false });
     act(() => {
@@ -111,4 +102,3 @@ describe('NotificationsDropdown', () => {
     expect(screen.getByTestId('unread-count').textContent).toBe('0');
   });
 });
-

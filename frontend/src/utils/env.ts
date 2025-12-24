@@ -11,7 +11,7 @@ export const config = {
   apiUrl: getEnvVar('VITE_API_URL') ?? 'http://localhost:5010',
   // Optional explicit origins/urls
   httpOrigin: getEnvVar('VITE_HTTP_ORIGIN'),
-  wsUrl: getEnvVar('VITE_WS_URL'),
+  socketUrl: getEnvVar('VITE_SOCKET_URL') ?? getEnvVar('VITE_WS_URL'),
   // Socket.IO path (backend default is '/socket.io')
   socketPath: getEnvVar('VITE_SOCKET_PATH') ?? '/socket.io',
 } as const;
@@ -28,7 +28,9 @@ function stripApiSuffix(url: string) {
 
 // Normalize origins (no trailing slash)
 const httpOrigin = (config.httpOrigin ?? stripApiSuffix(config.apiUrl)).replace(/\/$/, '');
-const socketOrigin = (config.wsUrl ?? httpOrigin).replace(/^http/i, 'ws');
+const socketOrigin = (config.socketUrl ?? httpOrigin)
+  .replace(/^ws/i, 'http')
+  .replace(/\/$/, '');
 
 export const endpoints = {
   httpOrigin,

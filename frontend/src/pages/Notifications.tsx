@@ -26,7 +26,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import type { NotificationSettings } from '@/store/settingsStore';
 import { useNotifications } from '@/store/notificationsSlice';
 import type { NotificationType } from '@/types';
-import { getNotificationsSocket, closeNotificationsSocket } from '@/utils/notificationsSocket';
+import { getNotificationsSocket } from '@/utils/notificationsSocket';
 import type { LowStockAlert } from '@/store/notificationsSlice';
 
 type Notification = NotificationType & { assetId?: string };
@@ -188,7 +188,6 @@ const Notifications = () => {
     socket.on('notification', handleIncoming);
     return () => {
       socket.off('notification', handleIncoming);
-      closeNotificationsSocket();
     };
   }, []);
 
@@ -482,4 +481,3 @@ const Notifications = () => {
 };
 
 export default Notifications;
-

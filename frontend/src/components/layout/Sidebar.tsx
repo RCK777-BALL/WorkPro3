@@ -239,6 +239,13 @@ const navItems: Record<NavItemId, NavItem> = {
     icon: BarChart3,
     section: "analytics",
   },
+  "analytics-maintenance": {
+    id: "analytics-maintenance",
+    label: "Maintenance Dashboard",
+    to: "/analytics/maintenance",
+    icon: BarChart3,
+    section: "analytics",
+  },
   "pm-analytics": {
     id: "pm-analytics",
     label: "PM Analytics",
@@ -286,6 +293,14 @@ const navItems: Record<NavItemId, NavItem> = {
     id: "downtime",
     label: "Downtime",
     to: "/downtime",
+    icon: Activity,
+    section: "operations",
+    permission: "workOrders.read",
+  },
+  "downtime-events": {
+    id: "downtime-events",
+    label: "Downtime Events",
+    to: "/downtime/events",
     icon: Activity,
     section: "operations",
     permission: "workOrders.read",

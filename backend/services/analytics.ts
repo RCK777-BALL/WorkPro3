@@ -46,6 +46,14 @@ export interface KPIResult {
   range: { start?: string; end?: string };
 }
 
+export interface MaintenanceMetrics {
+  mttr: number;
+  mtbf: number;
+  backlog: number;
+  pmCompliance: { total: number; completed: number; percentage: number };
+  range: { start?: string; end?: string };
+}
+
 export interface TrendPoint {
   period: string;
   value: number;
@@ -958,6 +966,24 @@ export async function getDashboardKpiSummary(
     laborUtilization,
     mttr,
     mtbf,
+  };
+}
+
+export async function getMaintenanceMetrics(
+  tenantId: string,
+  filters: AnalyticsFilters = {},
+): Promise<MaintenanceMetrics> {
+  const [kpis, dashboard] = await Promise.all([
+    getKPIs(tenantId, filters),
+    getDashboardKpiSummary(tenantId, filters),
+  ]);
+
+  return {
+    mttr: kpis.mttr,
+    mtbf: kpis.mtbf,
+    backlog: kpis.backlog,
+    pmCompliance: dashboard.pmCompliance,
+    range: kpis.range,
   };
 }
 

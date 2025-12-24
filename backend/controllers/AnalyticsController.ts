@@ -18,10 +18,12 @@ import {
   getDashboardMtbf,
   getDashboardPmCompliance,
   getDashboardWorkOrderVolume,
+  getMaintenanceMetrics,
   type AnalyticsFilters,
   type KPIResult,
   type TrendResult,
   type DashboardKpiResult,
+  type MaintenanceMetrics,
   type PmOptimizationWhatIfResponse,
   type MetricWithTrend,
   type PmComplianceMetric,
@@ -103,6 +105,19 @@ function flattenDashboardKpiForExport(data: DashboardKpiResult) {
     laborUtilization: data.laborUtilization,
     mttr: data.mttr,
     mtbf: data.mtbf,
+  };
+}
+
+function flattenMaintenanceMetricsForExport(data: MaintenanceMetrics) {
+  return {
+    mttr: data.mttr,
+    mtbf: data.mtbf,
+    backlog: data.backlog,
+    pmCompliancePercentage: data.pmCompliance.percentage,
+    pmComplianceCompleted: data.pmCompliance.completed,
+    pmComplianceTotal: data.pmCompliance.total,
+    rangeStart: data.range.start ?? null,
+    rangeEnd: data.range.end ?? null,
   };
 }
 
@@ -451,6 +466,62 @@ export const trendPdf = async (req: Request, res: Response, next: NextFunction):
       doc.moveDown();
     });
     doc.end();
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const maintenanceMetricsJson = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const filters = parseFilters(req);
+    const data = await getMaintenanceMetrics(req.tenantId!, filters);
+    sendResponse(res, data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const maintenanceMetricsCsv = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const filters = parseFilters(req);
+    const data = await getMaintenanceMetrics(req.tenantId!, filters);
+    const parser = new Json2csvParser();
+    const csv = parser.parse([flattenMaintenanceMetricsForExport(data)]);
+    res.header('Content-Type', 'text/csv');
+    res.attachment('maintenance-metrics.csv');
+    res.send(csv);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const maintenanceMetricsXlsx = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const filters = parseFilters(req);
+    const data = await getMaintenanceMetrics(req.tenantId!, filters);
+    const flat = flattenMaintenanceMetricsForExport(data);
+    const rows = Object.entries(flat)
+      .map(
+        ([k, v]) =>
+          `<Row><Cell><Data ss:Type="String">${escapeXml(k)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(String(v))}</Data></Cell></Row>`,
+      )
+      .join('');
+    const xml = `<?xml version="1.0"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Maintenance Metrics"><Table><Row><Cell><Data ss:Type="String">Metric</Data></Cell><Cell><Data ss:Type="String">Value</Data></Cell></Row>${rows}</Table></Worksheet></Workbook>`;
+    res.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.attachment('maintenance-metrics.xlsx');
+    res.send(xml);
   } catch (err) {
     next(err);
   }

@@ -32,6 +32,7 @@ export { default as vendorRoutes } from './vendorRoutes';
 export { default as requestPortalRoutes } from './RequestPortalRoutes';
 export { default as requestRoutes } from './requestRoutes';
 export { default as downtimeLogRoutes } from './DowntimeLogRoutes';
+export { default as downtimeEventRoutes } from './DowntimeEventRoutes';
 export { default as conditionRuleRoutes } from './ConditionRuleRoutes';
 export { default as meterRoutes } from './meterRoutes';
 export { default as teamMemberRoutes } from './TeamMemberRoutes';
@@ -72,4 +73,3 @@ export { default as calibrationRoutes } from './calibration';
 export { default as commentRoutes } from './comments';
 export { default as inspectionRoutes } from './inspectionRoutes';
 export { default as notificationAdminRoutes } from './notificationAdminRoutes';
-

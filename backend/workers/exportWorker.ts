@@ -23,7 +23,7 @@ const buildDataset = async (jobType: string, tenantId: string) => {
   switch (jobType) {
     case 'assets': {
       const assets = await Asset.find({ tenantId }).select('name status category locationId').lean();
-      return assets.map((asset) => ({
+      return (assets as any[]).map((asset: any) => ({
         id: asset._id?.toString(),
         name: asset.name,
         status: asset.status,

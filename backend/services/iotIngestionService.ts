@@ -308,7 +308,7 @@ const createWorkOrderFromTrigger = async (
     tenantId,
     triggerId: trigger._id,
     workOrderId: created._id,
-    asset: created.assetId ?? created.asset,
+    asset: created.assetId ?? created.set,
     metric,
     value,
     triggeredAt: context?.timestamp ?? new Date(),

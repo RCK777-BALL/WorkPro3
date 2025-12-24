@@ -83,7 +83,7 @@ import {
 } from "./routes";
 import mobileRoutes from "./routes/mobileRoutes";
 import mobileSyncAdminRoutes from "./routes/mobileSyncAdmin";
-import featureFlagRoutes from "./routes/featureFlagRoutes";
+import featureFlagRoutes from "./routes/FeatureFlagRoutes";
 import uiRoutes from "./routes/uiRoutes";
 import healthRouter from "./src/routes/health";
 import systemSummaryRouter from "./src/routes/summary";

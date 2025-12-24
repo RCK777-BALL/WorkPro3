@@ -14,9 +14,10 @@ import nodemailer from 'nodemailer';
 
 import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import type { ParamsDictionary } from 'express-serve-static-core';
+import type { ParsedQs } from 'qs';
 import type { Response, NextFunction } from 'express';
 import { sendResponse, assertEmail, writeAuditLog, toEntityId, logger, enqueueEmailRetry } from '../utils';
-import { isNotificationEmailEnabled } from '../config/featureFlags';
+import * as featureFlags from '../config/featureFlags';
 
 type IdParams = { id: string };
 
@@ -36,7 +37,7 @@ interface NotificationCreateBody {
 
 type NotificationUpdateBody = Partial<NotificationCreateBody>;
 
-interface NotificationInboxQuery {
+interface NotificationInboxQuery extends ParsedQs {
   page?: string;
   limit?: string;
   read?: string;
@@ -91,51 +92,51 @@ export const getNotificationInbox: AuthedRequestHandler<
   res: Response,
   next: NextFunction,
 ) => {
-  const authedReq = req as AuthedRequest<
-    ParamsDictionary,
-    NotificationInboxResponse | { message: string },
-    unknown,
-    NotificationInboxQuery
-  >;
+    const authedReq = req as AuthedRequest<
+      ParamsDictionary,
+      NotificationInboxResponse | { message: string },
+      unknown,
+      NotificationInboxQuery
+    >;
 
-  try {
-    const tenantId = authedReq.tenantId;
-    if (!tenantId) {
-      sendResponse(res, null, 'Tenant ID required', 400);
+    try {
+      const tenantId = authedReq.tenantId;
+      if (!tenantId) {
+        sendResponse(res, null, 'Tenant ID required', 400);
+        return;
+      }
+      if (!Types.ObjectId.isValid(tenantId)) {
+        sendResponse(res, null, 'Invalid tenant ID', 400);
+        return;
+      }
+      const tenantObjectId = new Types.ObjectId(tenantId);
+      const page = Math.max(parseNumber(authedReq.query.page, 1), 1);
+      const limit = Math.min(Math.max(parseNumber(authedReq.query.limit, 20), 1), 100);
+      const skip = (page - 1) * limit;
+      const read = authedReq.query.read;
+      const category = authedReq.query.category;
+      const userId = toEntityId((authedReq.user as any)?._id ?? (authedReq.user as any)?.id);
+      const baseFilter = resolveUserScope(tenantObjectId, userId);
+      const filter = {
+        ...baseFilter,
+        ...(read === 'true' ? { read: true } : {}),
+        ...(read === 'false' ? { read: false } : {}),
+        ...(category ? { category } : {}),
+      };
+
+      const [items, total, unreadCount] = await Promise.all([
+        Notification.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+        Notification.countDocuments(filter),
+        Notification.countDocuments({ ...baseFilter, read: false }),
+      ]);
+
+      sendResponse(res, { items, page, limit, total, unreadCount });
+      return;
+    } catch (err) {
+      next(err);
       return;
     }
-    if (!Types.ObjectId.isValid(tenantId)) {
-      sendResponse(res, null, 'Invalid tenant ID', 400);
-      return;
-    }
-    const tenantObjectId = new Types.ObjectId(tenantId);
-    const page = Math.max(parseNumber(authedReq.query.page, 1), 1);
-    const limit = Math.min(Math.max(parseNumber(authedReq.query.limit, 20), 1), 100);
-    const skip = (page - 1) * limit;
-    const read = authedReq.query.read;
-    const category = authedReq.query.category;
-    const userId = toEntityId((authedReq.user as any)?._id ?? (authedReq.user as any)?.id);
-    const baseFilter = resolveUserScope(tenantObjectId, userId);
-    const filter = {
-      ...baseFilter,
-      ...(read === 'true' ? { read: true } : {}),
-      ...(read === 'false' ? { read: false } : {}),
-      ...(category ? { category } : {}),
-    };
-
-    const [items, total, unreadCount] = await Promise.all([
-      Notification.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
-      Notification.countDocuments(filter),
-      Notification.countDocuments({ ...baseFilter, read: false }),
-    ]);
-
-    sendResponse(res, { items, page, limit, total, unreadCount });
-    return;
-  } catch (err) {
-    next(err);
-    return;
-  }
-};
+  };
 
 export const markAllNotificationsRead: AuthedRequestHandler<
   ParamsDictionary,
@@ -145,35 +146,35 @@ export const markAllNotificationsRead: AuthedRequestHandler<
   res: Response,
   next: NextFunction,
 ) => {
-  const authedReq = req as AuthedRequest<
-    ParamsDictionary,
-    { updated: number } | { message: string }
-  >;
+    const authedReq = req as AuthedRequest<
+      ParamsDictionary,
+      { updated: number } | { message: string }
+    >;
 
-  try {
-    const tenantId = authedReq.tenantId;
-    if (!tenantId) {
-      sendResponse(res, null, 'Tenant ID required', 400);
+    try {
+      const tenantId = authedReq.tenantId;
+      if (!tenantId) {
+        sendResponse(res, null, 'Tenant ID required', 400);
+        return;
+      }
+      if (!Types.ObjectId.isValid(tenantId)) {
+        sendResponse(res, null, 'Invalid tenant ID', 400);
+        return;
+      }
+      const tenantObjectId = new Types.ObjectId(tenantId);
+      const userId = toEntityId((authedReq.user as any)?._id ?? (authedReq.user as any)?.id);
+      const filter = resolveUserScope(tenantObjectId, userId);
+      const result = await Notification.updateMany(
+        { ...filter, read: false },
+        { $set: { read: true } },
+      );
+      sendResponse(res, { updated: result.modifiedCount });
+      return;
+    } catch (err) {
+      next(err);
       return;
     }
-    if (!Types.ObjectId.isValid(tenantId)) {
-      sendResponse(res, null, 'Invalid tenant ID', 400);
-      return;
-    }
-    const tenantObjectId = new Types.ObjectId(tenantId);
-    const userId = toEntityId((authedReq.user as any)?._id ?? (authedReq.user as any)?.id);
-    const filter = resolveUserScope(tenantObjectId, userId);
-    const result = await Notification.updateMany(
-      { ...filter, read: false },
-      { $set: { read: true } },
-    );
-    sendResponse(res, { updated: result.modifiedCount });
-    return;
-  } catch (err) {
-    next(err);
-    return;
-  }
-};
+  };
 
 export const getAllNotifications: AuthedRequestHandler<
   ParamsDictionary,
@@ -183,29 +184,29 @@ export const getAllNotifications: AuthedRequestHandler<
   res: Response,
   next: NextFunction,
 ) => {
-  const authedReq = req as AuthedRequest<
-    ParamsDictionary,
-    NotificationDocument[] | { message: string }
-  >;
-  try {
-    const tenantId = authedReq.tenantId;
-    if (!tenantId) {
-      sendResponse(res, null, 'Tenant ID required', 400);
+    const authedReq = req as AuthedRequest<
+      ParamsDictionary,
+      NotificationDocument[] | { message: string }
+    >;
+    try {
+      const tenantId = authedReq.tenantId;
+      if (!tenantId) {
+        sendResponse(res, null, 'Tenant ID required', 400);
+        return;
+      }
+      if (!Types.ObjectId.isValid(tenantId)) {
+        sendResponse(res, null, 'Invalid tenant ID', 400);
+        return;
+      }
+      const tenantObjectId = new Types.ObjectId(tenantId);
+      const items = await Notification.find({ tenantId: tenantObjectId });
+      sendResponse(res, items);
+      return;
+    } catch (err) {
+      next(err);
       return;
     }
-    if (!Types.ObjectId.isValid(tenantId)) {
-      sendResponse(res, null, 'Invalid tenant ID', 400);
-      return;
-    }
-    const tenantObjectId = new Types.ObjectId(tenantId);
-    const items = await Notification.find({ tenantId: tenantObjectId });
-    sendResponse(res, items);
-    return;
-  } catch (err) {
-    next(err);
-    return;
-  }
-};
+  };
 
 export const getNotificationById: AuthedRequestHandler<
   IdParams,
@@ -215,37 +216,37 @@ export const getNotificationById: AuthedRequestHandler<
   res: Response,
   next: NextFunction,
 ) => {
-  const authedReq = req as AuthedRequest<
-    IdParams,
-    NotificationDocument | { message: string }
-  >;
+    const authedReq = req as AuthedRequest<
+      IdParams,
+      NotificationDocument | { message: string }
+    >;
 
-  try {
-    const tenantId = authedReq.tenantId;
-    if (!tenantId) {
-      sendResponse(res, null, 'Tenant ID required', 400);
+    try {
+      const tenantId = authedReq.tenantId;
+      if (!tenantId) {
+        sendResponse(res, null, 'Tenant ID required', 400);
+        return;
+      }
+      if (!Types.ObjectId.isValid(tenantId)) {
+        sendResponse(res, null, 'Invalid tenant ID', 400);
+        return;
+      }
+      const tenantObjectId = new Types.ObjectId(tenantId);
+      const item = await Notification.findOne({
+        _id: authedReq.params.id,
+        tenantId: tenantObjectId,
+      });
+      if (!item) {
+        sendResponse(res, null, 'Not found', 404);
+        return;
+      }
+      sendResponse(res, item);
+      return;
+    } catch (err) {
+      next(err);
       return;
     }
-    if (!Types.ObjectId.isValid(tenantId)) {
-      sendResponse(res, null, 'Invalid tenant ID', 400);
-      return;
-    }
-    const tenantObjectId = new Types.ObjectId(tenantId);
-    const item = await Notification.findOne({
-      _id: authedReq.params.id,
-      tenantId: tenantObjectId,
-    });
-    if (!item) {
-      sendResponse(res, null, 'Not found', 404);
-      return;
-    }
-    sendResponse(res, item);
-    return;
-  } catch (err) {
-    next(err);
-    return;
-  }
-};
+  };
 
 export const createNotification: AuthedRequestHandler<
   ParamsDictionary,
@@ -256,89 +257,92 @@ export const createNotification: AuthedRequestHandler<
   res: Response,
   next: NextFunction,
 ) => {
-  const authedReq = req as AuthedRequest<
-    ParamsDictionary,
-    NotificationDocument | { message: string },
-    NotificationCreateBody
-  >;
+    const authedReq = req as AuthedRequest<
+      ParamsDictionary,
+      NotificationDocument | { message: string },
+      NotificationCreateBody
+    >;
 
-  try {
-    const tenantId = authedReq.tenantId;
-    if (!tenantId) {
-      sendResponse(res, null, 'Tenant ID required', 400);
-      return;
-    }
-    if (!Types.ObjectId.isValid(tenantId)) {
-      sendResponse(res, null, 'Invalid tenant ID', 400);
-      return;
-    }
-    const tenantObjectId = new Types.ObjectId(tenantId);
-    const { title, message, type, category, assetId, user, workOrderId, inventoryItemId, pmTaskId, deliveryState, read } =
-      authedReq.body;
-    const saved = (await Notification.create({
-      title,
-      message,
-      type,
-      category,
-      tenantId: tenantObjectId,
-      ...(assetId ? { assetId } : {}),
-      ...(user ? { user } : {}),
-      ...(workOrderId ? { workOrderId } : {}),
-      ...(inventoryItemId ? { inventoryItemId } : {}),
-      ...(pmTaskId ? { pmTaskId } : {}),
-      ...(deliveryState ? { deliveryState } : {}),
-      ...(read !== undefined ? { read } : {}),
-    })) as HydratedDocument<NotificationDocument>;
-    const userId = toEntityId((authedReq.user as any)?._id ?? (authedReq.user as any)?.id);
-    await writeAuditLog({
-      tenantId: tenantObjectId,
-      ...(userId ? { userId } : {}),
-      action: 'create',
-      entityType: 'Notification',
-      entityId: toEntityId(saved._id),
-      after: toPlainObject(saved),
-    });
-
-    const io = authedReq.app.get('io');
-    io?.emit('notification', saved);
-
-    if (isNotificationEmailEnabled() && process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-      const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT || '587', 10),
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
+    try {
+      const tenantId = authedReq.tenantId;
+      if (!tenantId) {
+        sendResponse(res, null, 'Tenant ID required', 400);
+        return;
+      }
+      if (!Types.ObjectId.isValid(tenantId)) {
+        sendResponse(res, null, 'Invalid tenant ID', 400);
+        return;
+      }
+      const tenantObjectId = new Types.ObjectId(tenantId);
+      const { title, message, type, category, assetId, user, workOrderId, inventoryItemId, pmTaskId, deliveryState, read } =
+        authedReq.body;
+      const saved = (await Notification.create({
+        title,
+        message,
+        type,
+        category,
+        tenantId: tenantObjectId,
+        ...(assetId ? { assetId } : {}),
+        ...(user ? { user } : {}),
+        ...(workOrderId ? { workOrderId } : {}),
+        ...(inventoryItemId ? { inventoryItemId } : {}),
+        ...(pmTaskId ? { pmTaskId } : {}),
+        ...(deliveryState ? { deliveryState } : {}),
+        ...(read !== undefined ? { read } : {}),
+      })) as HydratedDocument<NotificationDocument>;
+      const userId = toEntityId((authedReq.user as any)?._id ?? (authedReq.user as any)?.id);
+      await writeAuditLog({
+        tenantId: tenantObjectId,
+        ...(userId ? { userId } : {}),
+        action: 'create',
+        entityType: 'Notification',
+        entityId: toEntityId(saved._id),
+        after: toPlainObject(saved),
       });
 
-      if (saved.user) {
-        const userRecord = await User.findById(saved.user);
-        if (userRecord?.email) {
-          assertEmail(userRecord.email);
-          const mailOptions = {
-            from: process.env.SMTP_FROM || process.env.SMTP_USER,
-            to: userRecord.email,
-            subject: 'New Notification',
-            text: saved.message || '',
-          };
-          try {
-            await transporter.sendMail(mailOptions);
-          } catch (err) {
-            logger.error('Failed to send notification email', err);
-            void enqueueEmailRetry(mailOptions);
+      const io = authedReq.app.get('io');
+      io?.emit('notification', saved);
+
+      if ((featureFlags as any).isNotificationEmailEnabled?.() && process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+        const transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST,
+          port: parseInt(process.env.SMTP_PORT || '587', 10),
+          auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+          },
+        });
+
+        {
+          const savedUserId = (saved as any).user;
+          if (savedUserId) {
+            const userRecord = await User.findById(savedUserId);
+            if (userRecord?.email) {
+              assertEmail(userRecord.email);
+              const mailOptions = {
+                from: process.env.SMTP_FROM || process.env.SMTP_USER,
+                to: userRecord.email,
+                subject: 'New Notification',
+                text: saved.message || '',
+              };
+              try {
+                await transporter.sendMail(mailOptions);
+              } catch (err) {
+                logger.error('Failed to send notification email', err);
+                void enqueueEmailRetry(mailOptions);
+              }
+            }
           }
         }
       }
-    }
 
-    sendResponse(res, saved, null, 201);
-    return;
-  } catch (err) {
-    next(err);
-    return;
-  }
-};
+      sendResponse(res, saved, null, 201);
+      return;
+    } catch (err) {
+      next(err);
+      return;
+    }
+  };
 
 export const markNotificationRead: AuthedRequestHandler<
   IdParams,
@@ -348,53 +352,53 @@ export const markNotificationRead: AuthedRequestHandler<
   res: Response,
   next: NextFunction,
 ) => {
-  const authedReq = req as AuthedRequest<
-    IdParams,
-    NotificationDocument | { message: string }
-  >;
+    const authedReq = req as AuthedRequest<
+      IdParams,
+      NotificationDocument | { message: string }
+    >;
 
-  if (!Types.ObjectId.isValid(authedReq.params.id)) {
-    sendResponse(res, null, 'Invalid ID', 400);
-    return;
-  }
+    if (!Types.ObjectId.isValid(authedReq.params.id)) {
+      sendResponse(res, null, 'Invalid ID', 400);
+      return;
+    }
 
-  try {
-    const tenantId = authedReq.tenantId;
-    if (!tenantId) {
-      sendResponse(res, null, 'Tenant ID required', 400);
+    try {
+      const tenantId = authedReq.tenantId;
+      if (!tenantId) {
+        sendResponse(res, null, 'Tenant ID required', 400);
+        return;
+      }
+      if (!Types.ObjectId.isValid(tenantId)) {
+        sendResponse(res, null, 'Invalid tenant ID', 400);
+        return;
+      }
+      const tenantObjectId = new Types.ObjectId(tenantId);
+      const updated = await Notification.findOneAndUpdate(
+        { _id: authedReq.params.id, tenantId: tenantObjectId },
+        { read: true },
+        { new: true },
+      ).exec();
+      if (!updated) {
+        sendResponse(res, null, 'Not found', 404);
+        return;
+      }
+      const userId = toEntityId((authedReq.user as any)?._id ?? (authedReq.user as any)?.id);
+      await writeAuditLog({
+        tenantId: tenantObjectId,
+        ...(userId ? { userId } : {}),
+        action: 'markRead',
+        entityType: 'Notification',
+        entityId: toEntityId(new Types.ObjectId(authedReq.params.id)),
+        before: null,
+        after: toPlainObject(updated),
+      });
+      sendResponse(res, updated);
+      return;
+    } catch (err) {
+      next(err);
       return;
     }
-    if (!Types.ObjectId.isValid(tenantId)) {
-      sendResponse(res, null, 'Invalid tenant ID', 400);
-      return;
-    }
-    const tenantObjectId = new Types.ObjectId(tenantId);
-    const updated = await Notification.findOneAndUpdate(
-      { _id: authedReq.params.id, tenantId: tenantObjectId },
-      { read: true },
-      { new: true },
-    ).exec();
-    if (!updated) {
-      sendResponse(res, null, 'Not found', 404);
-      return;
-    }
-    const userId = toEntityId((authedReq.user as any)?._id ?? (authedReq.user as any)?.id);
-    await writeAuditLog({
-      tenantId: tenantObjectId,
-      ...(userId ? { userId } : {}),
-      action: 'markRead',
-      entityType: 'Notification',
-      entityId: toEntityId(new Types.ObjectId(authedReq.params.id)),
-      before: null,
-      after: toPlainObject(updated),
-    });
-    sendResponse(res, updated);
-    return;
-  } catch (err) {
-    next(err);
-    return;
-  }
-};
+  };
 
 export const updateNotification: AuthedRequestHandler<
   IdParams,
@@ -405,62 +409,62 @@ export const updateNotification: AuthedRequestHandler<
   res: Response,
   next: NextFunction,
 ) => {
-  const authedReq = req as AuthedRequest<
-    IdParams,
-    NotificationDocument | { message: string },
-    NotificationUpdateBody
-  >;
+    const authedReq = req as AuthedRequest<
+      IdParams,
+      NotificationDocument | { message: string },
+      NotificationUpdateBody
+    >;
 
-  if (!Types.ObjectId.isValid(authedReq.params.id)) {
-    sendResponse(res, null, 'Invalid ID', 400);
-    return;
-  }
-  try {
-    const tenantId = authedReq.tenantId;
-    if (!tenantId) {
-      sendResponse(res, null, 'Tenant ID required', 400);
+    if (!Types.ObjectId.isValid(authedReq.params.id)) {
+      sendResponse(res, null, 'Invalid ID', 400);
       return;
     }
-    if (!Types.ObjectId.isValid(tenantId)) {
-      sendResponse(res, null, 'Invalid tenant ID', 400);
+    try {
+      const tenantId = authedReq.tenantId;
+      if (!tenantId) {
+        sendResponse(res, null, 'Tenant ID required', 400);
+        return;
+      }
+      if (!Types.ObjectId.isValid(tenantId)) {
+        sendResponse(res, null, 'Invalid tenant ID', 400);
+        return;
+      }
+      const tenantObjectId = new Types.ObjectId(tenantId);
+      const userId = toEntityId((authedReq.user as any)?._id ?? (authedReq.user as any)?.id);
+      const existing = await Notification.findOne({
+        _id: authedReq.params.id,
+        tenantId: tenantObjectId,
+      });
+      if (!existing) {
+        sendResponse(res, null, 'Not found', 404);
+        return;
+      }
+      const updated = await Notification.findOneAndUpdate(
+        { _id: authedReq.params.id, tenantId: tenantObjectId },
+        authedReq.body ?? {},
+        {
+          new: true,
+          runValidators: true,
+        },
+      ).exec();
+      const before = toPlainObject(existing);
+      const after = toPlainObject(updated);
+      await writeAuditLog({
+        tenantId: tenantObjectId,
+        ...(userId ? { userId } : {}),
+        action: 'update',
+        entityType: 'Notification',
+        entityId: toEntityId(new Types.ObjectId(authedReq.params.id)),
+        before,
+        after,
+      });
+      sendResponse(res, updated);
+      return;
+    } catch (err) {
+      next(err);
       return;
     }
-    const tenantObjectId = new Types.ObjectId(tenantId);
-    const userId = toEntityId((authedReq.user as any)?._id ?? (authedReq.user as any)?.id);
-    const existing = await Notification.findOne({
-      _id: authedReq.params.id,
-      tenantId: tenantObjectId,
-    });
-    if (!existing) {
-      sendResponse(res, null, 'Not found', 404);
-      return;
-    }
-    const updated = await Notification.findOneAndUpdate(
-      { _id: authedReq.params.id, tenantId: tenantObjectId },
-      authedReq.body ?? {},
-      {
-        new: true,
-        runValidators: true,
-      },
-    ).exec();
-    const before = toPlainObject(existing);
-    const after = toPlainObject(updated);
-    await writeAuditLog({
-      tenantId: tenantObjectId,
-      ...(userId ? { userId } : {}),
-      action: 'update',
-      entityType: 'Notification',
-      entityId: toEntityId(new Types.ObjectId(authedReq.params.id)),
-      before,
-      after,
-    });
-    sendResponse(res, updated);
-    return;
-  } catch (err) {
-    next(err);
-    return;
-  }
-};
+  };
 
 export const deleteNotification: AuthedRequestHandler<
   IdParams,
@@ -470,44 +474,44 @@ export const deleteNotification: AuthedRequestHandler<
   res: Response,
   next: NextFunction,
 ) => {
-  const authedReq = req as AuthedRequest<IdParams, { message: string }>;
+    const authedReq = req as AuthedRequest<IdParams, { message: string }>;
 
-  if (!Types.ObjectId.isValid(authedReq.params.id)) {
-    sendResponse(res, null, 'Invalid ID', 400);
-    return;
-  }
-  try {
-    const tenantId = authedReq.tenantId;
-    if (!tenantId) {
-      sendResponse(res, null, 'Tenant ID required', 400);
+    if (!Types.ObjectId.isValid(authedReq.params.id)) {
+      sendResponse(res, null, 'Invalid ID', 400);
       return;
     }
-    if (!Types.ObjectId.isValid(tenantId)) {
-      sendResponse(res, null, 'Invalid tenant ID', 400);
+    try {
+      const tenantId = authedReq.tenantId;
+      if (!tenantId) {
+        sendResponse(res, null, 'Tenant ID required', 400);
+        return;
+      }
+      if (!Types.ObjectId.isValid(tenantId)) {
+        sendResponse(res, null, 'Invalid tenant ID', 400);
+        return;
+      }
+      const tenantObjectId = new Types.ObjectId(tenantId);
+      const userId = toEntityId((authedReq.user as any)?._id ?? (authedReq.user as any)?.id);
+      const deleted = await Notification.findOneAndDelete({
+        _id: authedReq.params.id,
+        tenantId: tenantObjectId,
+      });
+      if (!deleted) {
+        sendResponse(res, null, 'Not found', 404);
+        return;
+      }
+      await writeAuditLog({
+        tenantId: tenantObjectId,
+        ...(userId ? { userId } : {}),
+        action: 'delete',
+        entityType: 'Notification',
+        entityId: toEntityId(new Types.ObjectId(authedReq.params.id)),
+        before: toPlainObject(deleted),
+      });
+      sendResponse(res, { message: 'Deleted successfully' });
+      return;
+    } catch (err) {
+      next(err);
       return;
     }
-    const tenantObjectId = new Types.ObjectId(tenantId);
-    const userId = toEntityId((authedReq.user as any)?._id ?? (authedReq.user as any)?.id);
-    const deleted = await Notification.findOneAndDelete({
-      _id: authedReq.params.id,
-      tenantId: tenantObjectId,
-    });
-    if (!deleted) {
-      sendResponse(res, null, 'Not found', 404);
-      return;
-    }
-    await writeAuditLog({
-      tenantId: tenantObjectId,
-      ...(userId ? { userId } : {}),
-      action: 'delete',
-      entityType: 'Notification',
-      entityId: toEntityId(new Types.ObjectId(authedReq.params.id)),
-      before: toPlainObject(deleted),
-    });
-    sendResponse(res, { message: 'Deleted successfully' });
-    return;
-  } catch (err) {
-    next(err);
-    return;
-  }
-};
+  };

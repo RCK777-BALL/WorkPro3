@@ -246,11 +246,11 @@ router.get('/exports/:id/download', async (req, res, next) => {
   try {
     const tenantId = (req as any).tenantId;
     const job = await ExportJob.findOne({ _id: req.params.id, tenantId }).lean();
-    if (!job || !job.filePath || job.status !== 'completed') {
+    if (!job || !job.filePath || !job.fileName || job.status !== 'completed') {
       res.status(404).json({ success: false, message: 'Export not ready' });
       return;
     }
-    res.download(job.filePath, job.fileName);
+    res.download(job.filePath!, job.fileName!);
   } catch (err) {
     next(err);
   }

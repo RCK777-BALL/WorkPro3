@@ -27,7 +27,7 @@ import Department from './models/Department';
 import Asset from './models/Asset';
 import PMTask from './models/PMTask';
 import WorkOrder from './models/WorkOrder';
-import Notification from './models/Notifications';
+import Notification from './models/Notification';
 import Tenant from './models/Tenant';
 import AuditLog from './models/AuditLog';
 import Site from './models/Site';

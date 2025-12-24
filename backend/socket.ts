@@ -5,12 +5,17 @@
 import type { Server as HttpServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 
+type SocketOrigin =
+  | string[]
+  | ((origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => void);
+
 let io: SocketIOServer;
 
-export function initSocket(server: HttpServer, allowedOrigins: string[]): SocketIOServer {
+export function initSocket(server: HttpServer, origin: SocketOrigin): SocketIOServer {
   io = new SocketIOServer(server, {
     cors: {
-      origin: allowedOrigins,
+      origin,
+      methods: ['GET', 'POST'],
       credentials: true,
     },
   });

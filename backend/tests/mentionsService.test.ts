@@ -7,7 +7,7 @@ import mongoose, { Types } from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { notifyMentionedUsers, parseMentions } from '../services/mentions';
 import { buildThreadId, createComment } from '../services/comments';
-import Notification from '../models/Notifications';
+import Notification from '../models/Notification';
 import User from '../models/User';
 import Asset from '../models/Asset';
 

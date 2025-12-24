@@ -23,11 +23,22 @@ export interface NotificationTestResult {
   target?: string;
 }
 
+export interface NotificationInboxResponse {
+  items: NotificationType[];
+  page: number;
+  limit: number;
+  total: number;
+  unreadCount: number;
+}
+
 export const fetchNotifications = (params?: Record<string, unknown>) =>
-  http.get<NotificationType[]>('/notifications', { params }).then((res) => res.data);
+  http.get<NotificationInboxResponse>('/notifications/inbox', { params }).then((res) => res.data);
 
 export const markNotificationRead = (id: string) =>
   http.post<NotificationType>(`/notifications/${id}/read`).then((res) => res.data);
+
+export const markAllNotificationsRead = () =>
+  http.post<{ updated: number }>('/notifications/read-all').then((res) => res.data);
 
 export const listNotificationProviders = () =>
   http
@@ -41,4 +52,3 @@ export const sendNotificationTest = (payload: NotificationTestInput) =>
       payload,
     )
     .then((res) => (res.data as any).data ?? (res.data as any));
-

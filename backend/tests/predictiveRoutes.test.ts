@@ -13,7 +13,7 @@ import predictiveRoutes from '../routes/PredictiveRoutes';
 import User from '../models/User';
 import Asset from '../models/Asset';
 import SensorReading from '../models/SensorReading';
-import Notification from '../models/Notifications';
+import Notification from '../models/Notification';
 import WorkOrder from '../models/WorkOrder';
 
 const app = express();
@@ -116,4 +116,3 @@ describe('Predictive Routes', () => {
     expect(safetyFiltered.body.length).toBe(0);
   });
 });
-

@@ -9,7 +9,6 @@ import cookieParser from "cookie-parser";
 import mongoSanitize from "./middleware/mongoSanitize";
 import dotenv from "dotenv";
 import { createServer } from "http";
-import { Server } from "socket.io";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import path from "path";
@@ -121,6 +120,7 @@ import mongoose from "mongoose";
 import errorHandler from "./middleware/errorHandler";
 import { validateEnv, type EnvVars } from "./config/validateEnv";
 import { initChatSocket } from "./socket/chatSocket";
+import { initSocket } from "./socket";
 import User from "./models/User";
 import { requireAuth } from "./middleware/authMiddleware";
 import tenantScope from "./middleware/tenantScope";
@@ -236,14 +236,7 @@ const burstFriendly = rateLimit({
   legacyHeaders: false,
 });
 
-export const io = new Server(httpServer, {
-  path: "/socket.io",
-  cors: {
-    origin: checkCorsOrigin,
-    methods: ["GET", "POST"],
-    credentials: true,
-  },
-});
+export const io = initSocket(httpServer, checkCorsOrigin);
 
 app.set('io', io);
 

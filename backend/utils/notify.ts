@@ -5,12 +5,13 @@
 import mongoose from 'mongoose';
 import Notification, {
   type NotificationCategory,
-} from '../models/Notifications';
+} from '../models/Notification';
 import User from '../models/User';
 import nodemailer from 'nodemailer';
 import { assertEmail } from './assert';
 import logger from './logger';
 import { enqueueEmailRetry } from './emailQueue';
+import { isNotificationEmailEnabled } from '../config/featureFlags';
 
 export const notifyUser = async (
   userId: mongoose.Types.ObjectId | string,
@@ -29,7 +30,7 @@ export const notifyUser = async (
 
   await Notification.create({ tenantId: user.tenantId, user: normalizedId, message, title, category });
 
-  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+  if (isNotificationEmailEnabled() && process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
     if (user.email) {
       assertEmail(user.email);
       const transporter = nodemailer.createTransport({

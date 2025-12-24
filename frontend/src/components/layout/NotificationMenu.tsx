@@ -10,6 +10,7 @@ import clsx from "clsx";
 
 import {
   fetchNotifications,
+  markAllNotificationsRead,
   markNotificationRead,
 } from "@/api/notifications";
 import { type NotificationType } from "@/types";
@@ -45,6 +46,7 @@ export default function NotificationMenu({ open, onOpenChange }: NotificationMen
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const [items, setItems] = useState<NotificationType[]>([]);
   const [loading, setLoading] = useState(false);
+  const [serverUnreadCount, setServerUnreadCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -78,8 +80,9 @@ export default function NotificationMenu({ open, onOpenChange }: NotificationMen
       setLoading(true);
       try {
         const response = await fetchNotifications({ limit: 10 });
-        const list = Array.isArray(response) ? response : (response as any).items ?? [];
+        const list = response?.items ?? [];
         setItems(list.map((entry) => normalizeNotification(entry)));
+        setServerUnreadCount(response?.unreadCount ?? null);
       } finally {
         setLoading(false);
       }
@@ -91,6 +94,7 @@ export default function NotificationMenu({ open, onOpenChange }: NotificationMen
   useEffect(() => {
     const socket = getNotificationsSocket();
     const handleIncoming = (notification: NotificationType) => {
+      setServerUnreadCount((prev) => (prev === null ? prev : prev + 1));
       setItems((prev) => [normalizeNotification(notification), ...prev].slice(0, 10));
     };
     socket.on('notification', handleIncoming);
@@ -99,10 +103,25 @@ export default function NotificationMenu({ open, onOpenChange }: NotificationMen
     };
   }, []);
 
-  const unreadCount = useMemo(() => items.filter((item) => !item.read).length, [items]);
+  const unreadCount = useMemo(() => {
+    const localUnread = items.filter((item) => !item.read).length;
+    return serverUnreadCount ?? localUnread;
+  }, [items, serverUnreadCount]);
 
   const markOne = async (id: string) => {
-    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, read: true } : item)));
+    let shouldDecrement = false;
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        if (!item.read) {
+          shouldDecrement = true;
+        }
+        return { ...item, read: true };
+      }),
+    );
+    if (shouldDecrement) {
+      setServerUnreadCount((prev) => (prev === null ? prev : Math.max(prev - 1, 0)));
+    }
     try {
       await markNotificationRead(id);
     } catch (err) {
@@ -111,9 +130,13 @@ export default function NotificationMenu({ open, onOpenChange }: NotificationMen
   };
 
   const markAll = async () => {
-    const unreadIds = items.filter((item) => !item.read).map((item) => item.id);
     setItems((prev) => prev.map((item) => ({ ...item, read: true })));
-    await Promise.all(unreadIds.map((id) => markNotificationRead(id)));
+    setServerUnreadCount(0);
+    try {
+      await markAllNotificationsRead();
+    } catch (err) {
+      console.error('Failed to mark notifications as read', err);
+    }
     onOpenChange(false);
   };
 

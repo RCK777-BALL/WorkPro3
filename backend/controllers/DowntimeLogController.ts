@@ -14,6 +14,7 @@ import {
   listDowntimeLogs,
   updateDowntimeLog,
 } from '../services/downtimeLogs';
+import { createNotification } from '../services/notificationService';
 
 const parseDate = (value: unknown): Date | undefined => {
   if (typeof value !== 'string') return undefined;
@@ -187,6 +188,16 @@ export const createDowntimeLogHandler = async (
 
     const userId = (req.user as any)?._id || (req.user as any)?.id;
     const created = await createDowntimeLog(tenantId, req.body);
+    if (Types.ObjectId.isValid(tenantId)) {
+      await createNotification({
+        tenantId: new Types.ObjectId(tenantId),
+        assetId: created.assetId as Types.ObjectId | undefined,
+        category: 'updated',
+        type: 'warning',
+        title: 'Downtime logged',
+        message: `Downtime recorded${created.assetId ? ' for asset' : ''}.`,
+      });
+    }
     await writeAuditLog({
       tenantId,
       userId,

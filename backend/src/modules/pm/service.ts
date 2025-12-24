@@ -72,7 +72,7 @@ type PMTemplateLean = Pick<
   | 'updatedAt'
 > & { assignments?: AssignmentLean[] };
 
-type AssignmentObject = PMTemplateDocument['assignments'][number] | AssignmentLean;
+type AssignmentObject = (PMTemplateDocument['assignments'][number] & { procedureTemplateId?: Types.ObjectId }) | AssignmentLean;
 
 const toObjectId = (value: string | Types.ObjectId, label: string): Types.ObjectId => {
   if (value instanceof Types.ObjectId) {
@@ -247,18 +247,18 @@ const collectReferenceNames = async (
   const [assets, parts, procedureTemplates] = await Promise.all([
     assetIds.size
       ? Asset.find({ _id: { $in: Array.from(assetIds) } })
-          .select('name')
-          .lean()
+        .select('name')
+        .lean()
       : [],
     partIds.size
       ? InventoryItem.find({ _id: { $in: Array.from(partIds) } })
-          .select('name')
-          .lean()
+        .select('name')
+        .lean()
       : [],
     procedureTemplateIds.size
       ? ProcedureTemplate.find({ _id: { $in: Array.from(procedureTemplateIds) } })
-          .select('name')
-          .lean()
+        .select('name')
+        .lean()
       : [],
   ]);
   return {
@@ -415,7 +415,10 @@ export const upsertAssignment = async (
 ) => {
   const task = await ensureTemplate(context, templateId);
   const asset = await ensureAsset(context, payload.assetId);
-  const procedureTemplate = await ensureProcedureTemplate(context, payload.procedureTemplateId);
+  const procedureTemplate = await ensureProcedureTemplate(
+    context,
+    (payload as { procedureTemplateId?: string | undefined }).procedureTemplateId,
+  );
   const normalizedChecklist = normalizeChecklist(payload.checklist);
   const normalizedParts = normalizeParts(payload.requiredParts);
   const partNames = await ensureParts(

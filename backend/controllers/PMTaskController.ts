@@ -59,7 +59,11 @@ const resolveProcedureDefaults = async (task: PMTaskDocument) => {
   if (!task.procedureTemplateId) {
     return { procedureChecklist: undefined, procedureSnapshot: undefined };
   }
-  return resolveProcedureChecklist(task.tenantId.toString(), task.procedureTemplateId);
+  const resolved = await resolveProcedureChecklist(task.tenantId.toString(), task.procedureTemplateId);
+  return {
+    procedureChecklist: resolved?.checklist ?? undefined,
+    procedureSnapshot: resolved?.snapshot ?? undefined,
+  };
 };
 
 const mergePartsUsed = (

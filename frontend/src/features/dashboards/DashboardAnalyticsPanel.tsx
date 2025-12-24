@@ -313,64 +313,59 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
         </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Button
-            asChild
+            as="a"
             variant="secondary"
             size="sm"
             className="justify-between"
             title="Show corrective work driving MTTR"
+            href="/workorders?type=corrective&status=completed&sort=duration_desc"
           >
-            <a href="/workorders?type=corrective&status=completed&sort=duration_desc">
-              MTTR work orders
-              <ArrowUpRight className="ml-2 h-4 w-4" />
-            </a>
+            MTTR work orders
+            <ArrowUpRight className="ml-2 h-4 w-4" />
           </Button>
           <Button
-            asChild
+            as="a"
             variant="secondary"
             size="sm"
             className="justify-between"
             title="Review failure spacing for MTBF"
+            href="/workorders?type=corrective&status=completed&sort=completedAt_desc"
           >
-            <a href="/workorders?type=corrective&status=completed&sort=completedAt_desc">
-              MTBF timeline
-              <ArrowUpRight className="ml-2 h-4 w-4" />
-            </a>
+            MTBF timeline
+            <ArrowUpRight className="ml-2 h-4 w-4" />
           </Button>
           <Button
-            asChild
+            as="a"
             variant="secondary"
             size="sm"
             className="justify-between"
             title="Inspect aging backlog and overdue risk"
+            href="/workorders?status=open,overdue&sort=age_desc"
           >
-            <a href="/workorders?status=open,overdue&sort=age_desc">
-              Backlog aging
-              <ArrowUpRight className="ml-2 h-4 w-4" />
-            </a>
+            Backlog aging
+            <ArrowUpRight className="ml-2 h-4 w-4" />
           </Button>
           <Button
-            asChild
+            as="a"
             variant="secondary"
             size="sm"
             className="justify-between"
             title="Show labor entries contributing to utilization"
+            href="/workorders?status=completed&view=timesheets"
           >
-            <a href="/workorders?status=completed&view=timesheets">
-              Labor utilization
-              <ArrowUpRight className="ml-2 h-4 w-4" />
-            </a>
+            Labor utilization
+            <ArrowUpRight className="ml-2 h-4 w-4" />
           </Button>
           <Button
-            asChild
+            as="a"
             variant="secondary"
             size="sm"
             className="justify-between"
             title="Parts spend by order"
+            href="/workorders?status=completed&sort=parts_cost_desc"
           >
-            <a href="/workorders?status=completed&sort=parts_cost_desc">
-              Parts spend
-              <ArrowUpRight className="ml-2 h-4 w-4" />
-            </a>
+            Parts spend
+            <ArrowUpRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
       </section>

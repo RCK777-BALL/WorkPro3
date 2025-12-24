@@ -45,7 +45,7 @@ const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest &
 export const reliabilityMetricsHandler = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   const parsed = parseQuery(req);
   if ('error' in parsed) {
-    fail(res, parsed.error, 400);
+    fail(res, parsed.error ?? 'Invalid request', 400);
     return;
   }
 
@@ -62,7 +62,7 @@ export const reliabilityMetricsHandler = async (req: AuthedRequest, res: Respons
 export const backlogMetricsHandler = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   const parsed = parseQuery(req);
   if ('error' in parsed) {
-    fail(res, parsed.error, 400);
+    fail(res, parsed.error ?? 'Invalid request', 400);
     return;
   }
 
@@ -79,7 +79,7 @@ export const backlogMetricsHandler = async (req: AuthedRequest, res: Response, n
 export const pmComplianceHandler = async (req: AuthedRequest, res: Response, next: NextFunction) => {
   const parsed = parseQuery(req);
   if ('error' in parsed) {
-    fail(res, parsed.error, 400);
+    fail(res, parsed.error ?? 'Invalid request', 400);
     return;
   }
 

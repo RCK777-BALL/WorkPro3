@@ -698,3 +698,19 @@ export interface WorkHistory {
   metrics: WorkHistoryMetrics;
   recentWork: WorkHistoryEntry[];
 }
+
+export interface Vendor {
+  _id: string;
+  name: string;
+  contactPerson?: string;
+  email?: string;
+  phone?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    province?: string;
+    country?: string;
+  };
+  createdAt?: string;
+  updatedAt?: string;
+}

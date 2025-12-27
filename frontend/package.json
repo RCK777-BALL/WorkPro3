@@ -53,6 +53,7 @@
     "react-chartjs-2": "^5.2.0",
     "react-countup": "^6.5.3",
     "react-dom": "^18.2.0",
+    "react-d3-tree": "^3.6.1",
     "react-dropzone": "^14.3.8",
     "react-error-boundary": "6.0.0",
     "react-grid-layout": "^1.5.2",

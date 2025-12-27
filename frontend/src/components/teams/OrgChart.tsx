@@ -3,7 +3,7 @@
  */
 
 import React, { useMemo, useRef, useState } from 'react';
-import Tree, { RawNodeDatum, RenderCustomNodeElementFn } from 'react-d3-tree';
+import Tree, { RawNodeDatum, RenderCustomNodeElementFn, TreeNodeDatum } from 'react-d3-tree';
 import { useTeamMembers } from '@/store/useTeamMembers';
 import type { TeamMember } from '@/types';
 import { getTeamRoleLabel } from '@/constants/teamRoles';
@@ -64,19 +64,20 @@ const OrgChart: React.FC<OrgChartProps> = ({ onSelect }) => {
     onSelect(node.member);
   };
 
-  const renderNode: RenderCustomNodeElementFn<TreeNode> = ({ nodeDatum }) => {
-    const isSelected = nodeDatum.member.id === selectedId;
+  const renderNode: RenderCustomNodeElementFn = ({ nodeDatum }) => {
+    const typedNode = nodeDatum as TreeNodeDatum & { member: TeamMember };
+    const isSelected = typedNode.member.id === selectedId;
     const fill = isSelected ? '#3b82f6' : '#fff';
     const textColor = isSelected ? '#1e40af' : '#000';
 
     return (
-      <g onClick={() => handleClick(nodeDatum)}>
+      <g onClick={() => handleClick(typedNode)}>
         <circle r={15} fill={fill} stroke="#3b82f6" strokeWidth={2} />
         <text x={20} dy={-5} fill={textColor} fontSize={12}>
-          {nodeDatum.member.name}
+          {typedNode.member.name}
         </text>
         <text x={20} dy={15} fill={textColor} fontSize={10}>
-          {getTeamRoleLabel(nodeDatum.member.role)}
+          {getTeamRoleLabel(typedNode.member.role)}
         </text>
       </g>
     );
@@ -105,4 +106,3 @@ const OrgChart: React.FC<OrgChartProps> = ({ onSelect }) => {
 };
 
 export default OrgChart;
-

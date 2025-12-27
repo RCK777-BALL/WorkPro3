@@ -4,8 +4,9 @@
 
 import type { AxiosRequestConfig } from 'axios';
 
-import http from '@/lib/http';
+import http, { SITE_KEY, TENANT_KEY } from '@/lib/http';
 import type { Asset, DepartmentHierarchy, LineWithStations, PlantSummary, StationWithAssets } from '@/types';
+import { safeLocalStorage } from '@/utils/safeLocalStorage';
 
 export type DepartmentPayload = {
   name: string;
@@ -23,6 +24,8 @@ export type DepartmentImportSummary = {
 
 type AssetResponse = {
   _id: string;
+  tenantId?: string;
+  siteId?: string;
   name: string;
   type: Asset['type'];
   status?: Asset['status'];
@@ -86,19 +89,26 @@ const toPlantSummary = (plant?: PlantSummaryResponse | string): PlantSummary => 
 const toAsset = (
   asset: AssetResponse,
   context: { departmentName: string; lineName: string; stationName: string },
-): Asset => ({
-  id: asset._id,
-  name: asset.name,
-  type: asset.type,
-  status: asset.status ?? 'Active',
-  description: asset.description,
-  notes: asset.notes,
-  location: asset.location,
-  lastServiced: asset.lastServiced,
-  department: context.departmentName,
-  line: context.lineName,
-  station: context.stationName,
-});
+): Asset => {
+  const tenantId = asset.tenantId ?? safeLocalStorage.getItem(TENANT_KEY) ?? 'unknown-tenant';
+  const siteId = asset.siteId ?? safeLocalStorage.getItem(SITE_KEY) ?? undefined;
+
+  return {
+    id: asset._id,
+    tenantId,
+    ...(siteId ? { siteId } : {}),
+    name: asset.name,
+    type: asset.type,
+    status: asset.status ?? 'Active',
+    description: asset.description,
+    notes: asset.notes,
+    location: asset.location,
+    lastServiced: asset.lastServiced,
+    department: context.departmentName,
+    line: context.lineName,
+    station: context.stationName,
+  };
+};
 
 const toStation = (
   station: StationResponse,

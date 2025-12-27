@@ -1,3 +1,5 @@
+import { api } from "@/lib/api";
+
 // Vendors
 export const fetchVendors = async () => {
   const res = await api.get("/vendors");

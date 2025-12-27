@@ -1,5 +1,6 @@
 declare module 'passport-google-oauth20' {
   import { Strategy as PassportStrategy } from 'passport';
+  import type { User as ExpressUser } from 'express-serve-static-core';
 
   export interface StrategyOptions {
     clientID: string;
@@ -11,7 +12,7 @@ declare module 'passport-google-oauth20' {
     accessToken: string,
     refreshToken: string,
     profile: any,
-    done: (err: any, user?: any) => void,
+    done: (err: any, user?: ExpressUser | false, info?: any) => void,
   ) => void;
 
   export class Strategy extends PassportStrategy {

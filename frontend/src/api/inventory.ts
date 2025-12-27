@@ -88,7 +88,7 @@ export const fetchPurchaseOrders = async (): Promise<PurchaseOrder[]> => {
 
 export const updatePurchaseOrderStatus = async (
   purchaseOrderId: string,
-  payload: { status: 'pending' | 'approved' | 'ordered' | 'received' | 'closed'; receipts?: Array<{ partId: string; quantity: number }>; },
+  payload: { status: PurchaseOrder['status']; receipts?: Array<{ partId: string; quantity: number }> },
 ): Promise<PurchaseOrder> => {
   const res = await http.post<PurchaseOrder>(`${BASE_PATH}/purchase-orders/${purchaseOrderId}/status`, payload);
   return res.data;

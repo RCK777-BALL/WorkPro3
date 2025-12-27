@@ -194,7 +194,7 @@ export default function App() {
           <Route
             path="/requests/forms"
             element={
-              <RequirePermission permission="workRequests.update">
+              <RequirePermission permission="workRequests.convert">
                 <RequestFormBuilder />
               </RequirePermission>
             }

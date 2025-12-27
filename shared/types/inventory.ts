@@ -46,6 +46,7 @@ export interface VendorSummary {
 
 export interface Part extends TenantScoped {
   id: string;
+  siteId?: string | undefined;
   qrCode?: string | undefined;
   barcode?: string | undefined;
   commentsCount?: number | undefined;
@@ -118,6 +119,7 @@ export interface PurchaseOrderItem {
 
 export interface PurchaseOrder extends TenantScoped {
   id: string;
+  siteId?: string | undefined;
   vendor?: VendorSummary | undefined;
   poNumber?: string | undefined;
   status: 'Draft' | 'Pending' | 'Approved' | 'Ordered' | 'Received' | 'Closed';
@@ -132,6 +134,7 @@ export type ReorderAlertStatus = 'open' | 'approved' | 'skipped' | 'resolved';
 
 export interface InventoryAlert extends TenantScoped {
   id: string;
+  siteId?: string | undefined;
   partId: string;
   partName: string;
   quantity: number;

@@ -18,8 +18,8 @@ export const PERMISSIONS = {
     approve: 'workorders.approve',
   },
   workRequests: {
-    read: 'workRequests.read',
-    convert: 'workRequests.convert',
+    read: 'workrequests.read',
+    convert: 'workrequests.convert',
   },
   roles: {
     read: 'roles.read',
@@ -41,8 +41,8 @@ export const PERMISSIONS = {
     delete: 'pm.delete',
   },
   importExport: {
-    import: 'importExport.import',
-    export: 'importExport.export',
+    import: 'importexport.import',
+    export: 'importexport.export',
   },
   executive: {
     read: 'executive.read',

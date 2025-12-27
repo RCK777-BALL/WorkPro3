@@ -102,6 +102,14 @@ const CommentThread = ({ entityId, entityType }: CommentThreadProps) => {
       (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     );
 
+  const ensureThreadNode = (comment: Comment | ThreadNode): ThreadNode => {
+    if ('replies' in comment && Array.isArray(comment.replies)) {
+      return comment;
+    }
+
+    return { ...comment, replies: [] };
+  };
+
   const loadUsers = async () => {
     try {
       const res = await http.get('/users');
@@ -153,7 +161,7 @@ const CommentThread = ({ entityId, entityType }: CommentThreadProps) => {
   const threadedComments = useMemo<ThreadNode[]>(() => {
     const nodes = new Map<string, ThreadNode>();
     sortByCreatedAt(comments).forEach((comment) => {
-      nodes.set(comment.id, { ...comment, replies: [] });
+      nodes.set(comment.id, ensureThreadNode(comment));
     });
 
     const roots: ThreadNode[] = [];
@@ -226,19 +234,20 @@ const CommentThread = ({ entityId, entityType }: CommentThreadProps) => {
     return date.toLocaleString();
   };
 
-  const renderCommentNode = (comment: ThreadNode, depth = 0): JSX.Element => {
-    const initials = (comment.user?.name ?? comment.user?.email ?? 'U').slice(0, 1).toUpperCase();
+  const renderCommentNode = (comment: Comment | ThreadNode, depth = 0): JSX.Element => {
+    const node = ensureThreadNode(comment);
+    const initials = (node.user?.name ?? node.user?.email ?? 'U').slice(0, 1).toUpperCase();
 
     return (
-      <article key={comment.id} className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+      <article key={node.id} className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
         <header className="mb-2 flex items-center justify-between gap-2 text-sm text-neutral-600">
           <div className="flex items-center gap-2">
             <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
               {initials}
             </span>
             <div className="leading-tight">
-              <p className="font-semibold text-neutral-900">{comment.user?.name ?? 'Unknown user'}</p>
-              <p className="text-xs text-neutral-500">{comment.user?.email}</p>
+              <p className="font-semibold text-neutral-900">{node.user?.name ?? 'Unknown user'}</p>
+              <p className="text-xs text-neutral-500">{node.user?.email}</p>
               {depth > 0 && (
                 <span className="mt-1 inline-flex items-center gap-1 text-[11px] text-neutral-500">
                   <CornerDownRight className="h-3 w-3" /> Reply
@@ -246,23 +255,23 @@ const CommentThread = ({ entityId, entityType }: CommentThreadProps) => {
               )}
             </div>
           </div>
-          <time className="text-xs text-neutral-500" dateTime={renderTimestamp(comment.createdAt)}>
-            {renderTimestamp(comment.createdAt)}
+          <time className="text-xs text-neutral-500" dateTime={renderTimestamp(node.createdAt)}>
+            {renderTimestamp(node.createdAt)}
           </time>
         </header>
-        <p className="text-sm text-neutral-800">{formatCommentBody(comment.content)}</p>
+        <p className="text-sm text-neutral-800">{formatCommentBody(node.content)}</p>
         <div className="mt-2 flex items-center gap-4 text-xs text-neutral-500">
           <button
             type="button"
             className="font-semibold text-indigo-600 hover:text-indigo-700"
-            onClick={() => handleReply(comment)}
+            onClick={() => handleReply(node)}
           >
             Reply
           </button>
         </div>
-        {comment.replies.length > 0 && (
+        {node.replies.length > 0 && (
           <div className="mt-3 space-y-3 border-l border-neutral-200 pl-4">
-            {comment.replies.map((child) => (
+            {node.replies.map((child) => (
               <div key={child.id} className="pt-2">
                 {renderCommentNode(child, depth + 1)}
               </div>

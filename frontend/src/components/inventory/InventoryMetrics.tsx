@@ -13,7 +13,7 @@ interface InventoryMetricsProps {
 
 const InventoryMetrics: React.FC<InventoryMetricsProps> = ({ parts }) => {
   const totalParts = parts.length;
-  const totalValue = parts.reduce((sum, part) => sum + (part.quantity * part.unitCost), 0);
+  const totalValue = parts.reduce((sum, part) => sum + (part.quantity * (part.unitCost ?? 0)), 0);
   const lowStockParts = parts.filter(part => part.quantity <= part.reorderPoint).length;
   const stockTurnover = 12; // This would typically be calculated based on historical data
 

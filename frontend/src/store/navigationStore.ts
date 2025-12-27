@@ -16,6 +16,7 @@ export type NavItemId =
   | 'teams'
   | 'reports'
   | 'downtime'
+  | 'downtime-events'
   | 'work-orders'
   | 'work-requests'
   | 'work-request-portal'
@@ -28,6 +29,7 @@ export type NavItemId =
   | 'inventory'
   | 'inventory-analytics'
   | 'analytics'
+  | 'analytics-maintenance'
   | 'pm-analytics'
   | 'iot-monitoring'
   | 'analytics-global'
@@ -53,6 +55,7 @@ const defaultOrder: NavItemId[] = [
   'teams',
   'reports',
   'downtime',
+  'downtime-events',
   'work-orders',
   'work-requests',
   'work-request-portal',
@@ -65,6 +68,7 @@ const defaultOrder: NavItemId[] = [
   'inventory',
   'inventory-analytics',
   'analytics',
+  'analytics-maintenance',
   'pm-analytics',
   'iot-monitoring',
   'analytics-global',

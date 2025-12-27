@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { BrowserQRCodeReader } from '@zxing/browser';
 import { emitToast } from '@/context/ToastContext';
 
 interface Props {
@@ -13,6 +14,7 @@ const BarcodeScanner: React.FC<Props> = ({ onDetected, onError, paused }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const fallbackReaderRef = useRef<BrowserQRCodeReader | null>(null);
 
   useEffect(() => {
     const start = async () => {
@@ -61,18 +63,24 @@ const BarcodeScanner: React.FC<Props> = ({ onDetected, onError, paused }) => {
           canvas.height = video.videoHeight;
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
-          if (imageData) {
-            try {
-              const jsqr = await import('jsqr');
-              const result = jsqr.default(imageData.data, imageData.width, imageData.height);
-              if (result?.data) {
-                onDetected(result.data);
-                return;
+          const reader = fallbackReaderRef.current ?? new BrowserQRCodeReader();
+          fallbackReaderRef.current = reader;
+          try {
+            const result = reader.decodeFromCanvas(canvas);
+            if (result?.getText()) {
+              onDetected(result.getText());
+              return;
+            }
+          } catch (err) {
+            if (err instanceof Error) {
+              const ignoredErrors = ['NotFoundException', 'ChecksumException', 'FormatException'];
+              if (ignoredErrors.includes(err.name)) {
+                // Ignore expected decode failures while scanning frames.
+              } else {
+                onError?.(err.message);
               }
-            } catch (err) {
-              const message = err instanceof Error ? err.message : 'Barcode fallback failed';
-              onError?.(message);
+            } else {
+              onError?.('Barcode fallback failed');
             }
           }
         }
@@ -81,7 +89,11 @@ const BarcodeScanner: React.FC<Props> = ({ onDetected, onError, paused }) => {
       }
     };
     raf = requestAnimationFrame(detect);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      fallbackReaderRef.current?.reset?.();
+      fallbackReaderRef.current = null;
+    };
   }, [paused, onDetected, onError]);
 
   return (

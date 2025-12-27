@@ -3,18 +3,14 @@
  */
 
 import http from '@/lib/http';
+import type { Asset } from '@/types';
 import type { TenantScoped } from '@backend-shared/http';
 
-export type HierarchyAsset = TenantScoped & {
-  id: string;
-  name: string;
-  status?: string;
-  type?: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface';
-  criticality?: string;
-  departmentId?: string;
-  lineId?: string;
-  stationId?: string;
-};
+export type HierarchyAsset = TenantScoped &
+  Pick<
+    Asset,
+    'id' | 'tenantId' | 'name' | 'status' | 'type' | 'criticality' | 'departmentId' | 'lineId' | 'stationId'
+  >;
 
 export type HierarchyStation = TenantScoped & {
   id: string;
@@ -51,28 +47,29 @@ export type HierarchyResponse = {
 };
 
 export type AssetDetailResponse = {
-  asset: {
-    id: string;
-    tenantId: string;
-    name: string;
-    description?: string;
-    status?: string;
-    type?: HierarchyAsset['type'];
-    criticality?: string;
-    location?: string;
-    serialNumber?: string;
-    purchaseDate?: string;
-    warrantyStart?: string;
-    warrantyEnd?: string;
-    purchaseCost?: number;
-    expectedLifeMonths?: number;
-    replacementDate?: string;
-    siteId?: string;
-    plantId?: string;
-    lineId?: string;
-    stationId?: string;
-    departmentId?: string;
-  };
+  asset: Pick<
+    Asset,
+    | 'id'
+    | 'tenantId'
+    | 'name'
+    | 'description'
+    | 'status'
+    | 'type'
+    | 'criticality'
+    | 'location'
+    | 'serialNumber'
+    | 'purchaseDate'
+    | 'warrantyStart'
+    | 'warrantyEnd'
+    | 'purchaseCost'
+    | 'expectedLifeMonths'
+    | 'replacementDate'
+    | 'siteId'
+    | 'plantId'
+    | 'lineId'
+    | 'stationId'
+    | 'departmentId'
+  >;
   history: Array<{
     id: string;
     date: string;

@@ -16,6 +16,8 @@ interface Props {
 const formatPercent = (value: number) => `${Math.round(value * 100)}%`;
 
 const FailureInsightCard = ({ title = 'AI insights', insight, loading, error, onRetry }: Props) => {
+  const hasError = Boolean(error);
+
   return (
     <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="flex items-center justify-between gap-2">
@@ -35,10 +37,10 @@ const FailureInsightCard = ({ title = 'AI insights', insight, loading, error, on
         )}
       </div>
       {loading && <p className="mt-3 text-sm text-neutral-500">Loading AI insights…</p>}
-      {error && !loading && (
+      {hasError && !loading && (
         <p className="mt-3 text-sm text-error-600">Unable to load AI insights. Try again later.</p>
       )}
-      {!loading && !error && insight && (
+      {!loading && !hasError && insight && (
         <div className="mt-3 space-y-3">
           <div className="flex items-center gap-3">
             <div className="flex-1">
@@ -149,4 +151,3 @@ const FailureInsightCard = ({ title = 'AI insights', insight, loading, error, on
 };
 
 export default FailureInsightCard;
-

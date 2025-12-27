@@ -124,7 +124,7 @@ describe('WorkRequestDashboard triage actions', () => {
     mockedFetchSummary.mockResolvedValue({
       total: 1,
       open: 1,
-      statusCounts: { new: 1, reviewing: 0, converted: 0, closed: 0 },
+      statusCounts: { new: 1, reviewing: 0, converted: 0, closed: 0, rejected: 0 },
       recent: [sampleRequest],
     });
     mockedFetchRequests.mockResolvedValue([sampleRequest]);

@@ -2,11 +2,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { render, screen, fireEvent } from '@testing-library/react';
-import { vi } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { beforeEach, vi } from 'vitest';
 import type { Emoji } from '@emoji-mart/react';
 
 import ChatInput from './ChatInput';
+
+const mockAddToast = vi.fn();
 
 vi.mock('@emoji-mart/react', () => {
   return {
@@ -17,12 +19,30 @@ vi.mock('@emoji-mart/react', () => {
   };
 });
 
-describe('ChatInput', () => {
-  it('adds emoji to message on selection', () => {
-    render(<ChatInput onSendMessage={() => {}} onUploadFiles={() => {}} />);
-    fireEvent.click(screen.getByRole('button', { name: /insert emoji/i }));
-    fireEvent.click(screen.getByTestId('picker'));
-    expect(screen.getByPlaceholderText('Type a message...')).toHaveValue('😀');
+vi.mock('@/context/ToastContext', () => ({
+  useToast: () => ({ addToast: mockAddToast }),
+}));
+
+beforeEach(() => {
+  mockAddToast.mockReset();
+  const fetchMock = vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      categories: [],
+      emojis: {},
+      aliases: {},
+      sheet: { cols: 1, rows: 1 },
+    }),
   });
+  vi.stubGlobal('fetch', fetchMock);
 });
 
+describe('ChatInput', () => {
+  it('adds emoji to message on selection', async () => {
+    render(<ChatInput onSendMessage={() => {}} onUploadFiles={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: /insert emoji/i }));
+    await waitFor(() => expect(screen.getByTestId('picker')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('picker'));
+    expect(screen.getByPlaceholderText('Type a message')).toHaveValue('😀');
+  });
+});

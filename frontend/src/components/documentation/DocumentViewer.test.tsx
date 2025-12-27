@@ -60,6 +60,7 @@ describe('DocumentViewer share flow', () => {
     metadata: {
       title: 'Test Document',
       type: 'pdf' as const,
+      mimeType: 'application/pdf',
       size: 1024,
       lastModified: new Date(),
     },
@@ -75,7 +76,7 @@ describe('DocumentViewer share flow', () => {
     });
 
     render(<DocumentViewer {...defaultProps} />);
-    await userEvent.click(screen.getByRole('button', { name: /^share$/i }));
+    await userEvent.click(screen.getByRole('button', { name: /share document/i }));
 
     await waitFor(() => {
       expect(shareMock).toHaveBeenCalledWith(expect.objectContaining({
@@ -97,7 +98,7 @@ describe('DocumentViewer share flow', () => {
     });
 
     render(<DocumentViewer {...defaultProps} />);
-    await userEvent.click(screen.getByRole('button', { name: /^share$/i }));
+    await userEvent.click(screen.getByRole('button', { name: /share document/i }));
 
     await waitFor(() => {
       expect(writeTextMock).toHaveBeenCalledWith(expect.stringMatching(/documentation$/));

@@ -9,7 +9,7 @@ import type {
   AxiosError,
 } from 'axios';
 import { safeLocalStorage } from '@/utils/safeLocalStorage';
-import { unwrapApiPayload, type ApiPayload } from '@/utils/api';
+import { unwrapApiPayload, type ApiPayload } from '@/utils/apiPayload';
 
 const DEFAULT_API_BASE_URL = 'http://localhost:5010/api';
 

@@ -6,7 +6,6 @@ import { useCallback, useMemo } from 'react';
 
 import {
   formatPermission,
-  type PermissionScope,
   type Permission,
   type PermissionAction,
   type PermissionCategory,
@@ -46,7 +45,13 @@ const normalizePermissionKey = (
   return formatPermission(String(permissionOrScope), action as string | undefined);
 };
 
-export const usePermissions = () => {
+export interface UsePermissionsResult {
+  can: (permissionOrScope: Permission | PermissionCategory, action?: PermissionAction) => boolean;
+  canAny: (permissions: Array<Permission | [PermissionCategory, PermissionAction]>) => boolean;
+  permissions: Permission[];
+}
+
+export const usePermissions = (): UsePermissionsResult => {
   const { user } = useAuth();
 
   const permissionSet = useMemo(() => {
@@ -69,20 +74,6 @@ export const usePermissions = () => {
   const siteId = useMemo(
     () => user?.siteId ?? safeLocalStorage.getItem(SITE_KEY) ?? undefined,
     [user?.siteId],
-  );
-
-  const hasScopedPermission = useCallback(
-    (scope: PermissionScope, action: PermissionAction) => {
-      if (!user?.permissions?.length) return false;
-      return (user.permissions as PermissionGrant[]).some((grant) => {
-        if (grant.scope !== scope) return false;
-        if (!grant.actions.includes(action)) return false;
-        if (grant.tenantId && tenantId && grant.tenantId !== tenantId) return false;
-        if (grant.siteId && siteId && grant.siteId !== siteId) return false;
-        return true;
-      });
-    },
-    [siteId, tenantId, user?.permissions],
   );
 
   const can = useCallback(

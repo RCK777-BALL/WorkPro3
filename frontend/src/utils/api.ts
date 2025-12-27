@@ -1,27 +1,15 @@
-/*
- * SPDX-License-Identifier: MIT
- */
+// Vendors
+export const fetchVendors = async () => {
+  const res = await api.get("/vendors");
+  return res.data;
+};
 
-import type { ApiResult } from '@/types';
+export const createVendor = async (data: any) => {
+  const res = await api.post("/vendors", data);
+  return res.data;
+};
 
-export type ApiPayload<T> = ApiResult<T> | T;
-
-export const unwrapApiPayload = <T>(payload: ApiPayload<T>): T => {
-  if (!payload || typeof payload !== 'object') {
-    return payload as T;
-  }
-
-  const hasDataKey = Object.prototype.hasOwnProperty.call(payload, 'data');
-  const hasErrorKey = Object.prototype.hasOwnProperty.call(payload, 'error');
-
-  if (!hasDataKey && !hasErrorKey) {
-    return payload as T;
-  }
-
-  const { data, error } = payload as ApiResult<T>;
-  if (error) {
-    throw new Error(error);
-  }
-
-  return data as T;
+export const updateVendor = async (id: string, data: any) => {
+  const res = await api.put(`/vendors/${id}`, data);
+  return res.data;
 };

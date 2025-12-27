@@ -28,9 +28,10 @@ describe('QrLabel', () => {
     expect(screen.getByText('Line 1')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /print qr label/i }));
+    fireEvent.click(screen.getByRole('button', { name: /print selected format/i }));
 
     await waitFor(() => {
-      expect(mockedBuild).toHaveBeenCalled();
+      expect(mockedBuild).toHaveBeenCalledWith(expect.objectContaining({ format: 'standard' }));
       expect(printWindow.document.write).toHaveBeenCalled();
     });
   });

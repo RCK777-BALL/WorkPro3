@@ -1,4 +1,5 @@
 import axios, { AxiosHeaders } from "axios";
+import type { AxiosResponse } from "axios";
 
 import {
   FALLBACK_TOKEN_KEY,
@@ -9,6 +10,7 @@ import {
   triggerUnauthorized,
 } from "./http";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
+import { unwrapApiPayload, type ApiPayload } from "@/utils/api";
 
 const DEFAULT_API_BASE_URL = "http://localhost:5010/api";
 
@@ -85,7 +87,11 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  (response) => response,
+  <T>(response: AxiosResponse<ApiPayload<T>>): AxiosResponse<T> => {
+    const typedResponse = response as AxiosResponse<T>;
+    typedResponse.data = unwrapApiPayload(response.data);
+    return typedResponse;
+  },
   (error) => {
     if (error.response?.status === 401) {
       clearAuthStorage();

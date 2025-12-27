@@ -124,10 +124,24 @@ describe('WorkRequestDashboard triage actions', () => {
     mockedFetchSummary.mockResolvedValue({
       total: 1,
       open: 1,
-      statusCounts: { new: 1, reviewing: 0, converted: 0, closed: 0 },
+      statusCounts: {
+        new: 1,
+        reviewing: 0,
+        accepted: 0,
+        rejected: 0,
+        converted: 0,
+        closed: 0,
+        deleted: 0,
+      },
       recent: [sampleRequest],
     });
-    mockedFetchRequests.mockResolvedValue([sampleRequest]);
+    mockedFetchRequests.mockResolvedValue({
+      items: [sampleRequest],
+      total: 1,
+      page: 1,
+      pageSize: 200,
+      totalPages: 1,
+    });
   });
 
   it('loads requests and allows conversion', async () => {

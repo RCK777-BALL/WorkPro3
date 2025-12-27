@@ -14,6 +14,8 @@ export type HierarchyAsset = TenantScoped & {
   departmentId?: string;
   lineId?: string;
   stationId?: string;
+  siteId?: string;
+  plantId?: string;
 };
 
 export type HierarchyStation = TenantScoped & {
@@ -24,6 +26,7 @@ export type HierarchyStation = TenantScoped & {
   lineId: string;
   assetCount: number;
   assets: HierarchyAsset[];
+  siteId?: string;
 };
 
 export type HierarchyLine = TenantScoped & {
@@ -34,6 +37,7 @@ export type HierarchyLine = TenantScoped & {
   assetCount: number;
   assets: HierarchyAsset[];
   stations: HierarchyStation[];
+  siteId?: string;
 };
 
 export type HierarchyDepartment = TenantScoped & {
@@ -44,6 +48,7 @@ export type HierarchyDepartment = TenantScoped & {
   assetCount: number;
   assets: HierarchyAsset[];
   lines: HierarchyLine[];
+  siteId?: string;
 };
 
 export type HierarchyResponse = {
@@ -99,7 +104,7 @@ export type AssetDetailResponse = {
     templateId: string;
     assignmentId: string;
     title: string;
-    interval: string;
+    interval?: string;
     active: boolean;
     nextDue?: string;
     usageMetric?: string;

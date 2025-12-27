@@ -64,7 +64,7 @@ const BarcodeScanner: React.FC<Props> = ({ onDetected, onError, paused }) => {
           const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
           if (imageData) {
             try {
-              const jsqr = await import('jsqr');
+              const jsqr = await import(/* @vite-ignore */ 'https://cdn.skypack.dev/jsqr');
               const result = jsqr.default(imageData.data, imageData.width, imageData.height);
               if (result?.data) {
                 onDetected(result.data);

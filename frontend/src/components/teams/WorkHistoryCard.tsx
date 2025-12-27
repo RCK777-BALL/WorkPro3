@@ -99,9 +99,21 @@ const WorkHistoryCard: React.FC<WorkHistoryCardProps> = ({
     'mt-1 w-full rounded-md border border-neutral-300 bg-white p-2 text-sm text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100';
   const labelClasses = 'text-sm font-medium text-neutral-700 dark:text-neutral-300';
 
-  const handleMetricNumberChange = (
-    section: keyof WorkHistoryMetrics,
-    field: keyof WorkHistoryMetrics[keyof WorkHistoryMetrics],
+  type MetricNumberFields = {
+    safety: 'incidentRate' | 'safetyCompliance' | 'nearMisses' | 'safetyMeetingsAttended';
+    people: 'trainingHours' | 'teamCollaboration' | 'attendanceRate' | 'mentorshipHours';
+    productivity: 'completedTasks' | 'onTimeCompletion' | 'overtimeHours' | 'taskEfficiencyRate';
+    improvement: 'suggestionsSubmitted' | 'suggestionsImplemented' | 'processImprovements' | 'costSavings';
+  };
+
+  type MetricStringFields = {
+    safety: 'lastIncidentDate';
+    productivity: 'averageResponseTime';
+  };
+
+  const handleMetricNumberChange = <S extends keyof MetricNumberFields>(
+    section: S,
+    field: MetricNumberFields[S],
     value: string,
   ) => {
     const parsedValue = Number(value);
@@ -114,9 +126,9 @@ const WorkHistoryCard: React.FC<WorkHistoryCardProps> = ({
     }));
   };
 
-  const handleMetricStringChange = (
-    section: keyof WorkHistoryMetrics,
-    field: keyof WorkHistoryMetrics[keyof WorkHistoryMetrics],
+  const handleMetricStringChange = <S extends keyof MetricStringFields>(
+    section: S,
+    field: MetricStringFields[S],
     value: string,
   ) => {
     setDraftMetrics((prev) => ({

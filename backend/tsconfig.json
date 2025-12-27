@@ -12,7 +12,8 @@
     "baseUrl": ".",
     "resolveJsonModule": true,
     "paths": { 
-      "@shared/*": ["../shared/types/*"]
+      "@shared/*": ["../shared/types/*"],
+      "@backend-shared/*": ["shared/*"]
     }
   },
   "include": [

@@ -16,7 +16,8 @@
       "./backend/node_modules/@types"
     ],
     "paths": {
-      "@shared/*": ["shared/types/*"]
+      "@shared/*": ["shared/types/*"],
+      "@backend-shared/*": ["backend/shared/*"]
     }
   },
   "include": [

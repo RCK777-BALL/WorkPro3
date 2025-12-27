@@ -11,11 +11,12 @@ import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
 import Input from '@/components/common/Input';
 import SlideOver from '@/components/common/SlideOver';
-import type { InventoryLocation, InventoryTransferPayload, StockItem } from '@/types';
+import type { InventoryLocation, InventoryTransferPayload, StockHistoryEntry, StockItem } from '@/types';
 import {
   INVENTORY_HISTORY_QUERY_KEY,
   INVENTORY_LOCATIONS_QUERY_KEY,
   INVENTORY_STOCK_QUERY_KEY,
+  formatInventoryLocation,
   useLocationsQuery,
   useStockHistoryQuery,
   useStockItemsQuery,
@@ -24,39 +25,48 @@ import {
 
 /* Local StockHistoryList component: the features/inventory module doesn't export this,
    so we provide a simple view here that matches the usage in this page. */
-const StockHistoryList = ({ entries }: { entries: any[] }) => (
+const StockHistoryList = ({
+  entries,
+  locationMap,
+  partNames,
+}: {
+  entries: StockHistoryEntry[];
+  locationMap: Map<string, InventoryLocation>;
+  partNames: Map<string, string>;
+}) => (
   <div className="space-y-2">
     {!entries || entries.length === 0 ? (
       <p className="text-sm text-neutral-500">No history yet.</p>
     ) : (
-      entries.map((entry, idx) => (
-        <div
-          key={entry.id ?? idx}
-          className="flex items-start justify-between gap-3 rounded-md border border-neutral-200 p-3"
-        >
-          <div>
-            <p className="text-sm font-medium text-neutral-900">{entry.part?.name ?? entry.partId ?? '—'}</p>
-            <p className="text-xs text-neutral-500">
-              {(entry.type ?? 'Adjustment')} — {entry.quantity ?? '—'} {entry.unit ?? ''}
-              {entry.location ? ` • ${formatInventoryLocation(entry.location)}` : ''}
-            </p>
-            {entry.note && <p className="text-xs text-neutral-500 mt-1">{entry.note}</p>}
+      entries.map((entry, idx) => {
+        const fallbackLocation = locationMap.get(entry.location.locationId);
+        const locationLabel = formatInventoryLocation({
+          store: entry.location.store ?? fallbackLocation?.store,
+          room: entry.location.room ?? fallbackLocation?.room,
+          bin: entry.location.bin ?? fallbackLocation?.bin,
+        });
+        return (
+          <div
+            key={entry.id ?? idx}
+            className="flex items-start justify-between gap-3 rounded-md border border-neutral-200 p-3"
+          >
+            <div>
+              <p className="text-sm font-medium text-neutral-900">{partNames.get(entry.partId) ?? entry.partId}</p>
+              <p className="text-xs text-neutral-500">
+                {entry.delta > 0 ? '+' : ''}
+                {entry.delta} • {locationLabel}
+              </p>
+              {entry.reason && <p className="mt-1 text-xs text-neutral-500">{entry.reason}</p>}
+            </div>
+            <div className="text-right text-xs text-neutral-500">
+              {entry.createdAt ? new Date(entry.createdAt).toLocaleString() : ''}
+            </div>
           </div>
-          <div className="text-right text-xs text-neutral-500">
-            {entry.timestamp ? new Date(entry.timestamp).toLocaleString() : ''}
-          </div>
-        </div>
-      ))
+        );
+      })
     )}
   </div>
 );
-
-const formatInventoryLocation = (loc: InventoryLocation) => {
-  if (!loc) return '';
-  if (loc.name) return loc.name;
-  const parts = [loc.store, loc.room, loc.bin].filter(Boolean);
-  return parts.length ? parts.join(' • ') : loc.id;
-};
 
 const LocationForm = ({
   onSave,
@@ -197,6 +207,8 @@ const TransferModal = ({
   const [quantity, setQuantity] = useState<number>(1);
   const [formError, setFormError] = useState<string | null>(null);
 
+  const locationMap = useMemo(() => new Map(locations.map((loc) => [loc.id, loc])), [locations]);
+
   const partOptions = useMemo(() => {
     const map = new Map<string, string>();
     for (const stock of stockItems) {
@@ -295,7 +307,12 @@ const TransferModal = ({
             <option value="">Select source</option>
             {sourceOptions.map((stock) => (
               <option key={stock.id} value={stock.locationId}>
-                {stock.location?.name ?? stock.locationId} (Qty {stock.quantity})
+                {(stock.location
+                  ? formatInventoryLocation(stock.location)
+                  : locationMap.has(stock.locationId)
+                    ? formatInventoryLocation(locationMap.get(stock.locationId))
+                    : stock.locationId)}{' '}
+                (Qty {stock.quantity})
               </option>
             ))}
           </select>
@@ -312,7 +329,7 @@ const TransferModal = ({
             <option value="">Select destination</option>
             {locations.map((loc) => (
               <option key={loc.id} value={loc.id}>
-                {loc.name} {[loc.store, loc.room, loc.bin].filter(Boolean).join(' • ')}
+                {formatInventoryLocation(loc)}
               </option>
             ))}
           </select>
@@ -350,6 +367,17 @@ export default function InventoryLocations() {
   const locations = locationsQuery.data ?? [];
   const stock = stockQuery.data ?? [];
   const history = historyQuery.data ?? [];
+
+  const locationMap = useMemo(() => new Map(locations.map((loc) => [loc.id, loc])), [locations]);
+  const partNames = useMemo(() => {
+    const map = new Map<string, string>();
+    stock.forEach((item) => {
+      if (item.part?.name) {
+        map.set(item.partId, item.part.name);
+      }
+    });
+    return map;
+  }, [stock]);
 
   const locationTree = useMemo(() => {
     const tree: Record<string, Record<string, InventoryLocation[]>> = {};
@@ -541,7 +569,9 @@ export default function InventoryLocations() {
         <Card.Content>
           {historyQuery.isLoading && <p className="text-sm text-neutral-500">Loading history…</p>}
           {historyQuery.error ? <p className="text-sm text-error-600">Unable to load stock history.</p> : null}
-          {!historyQuery.isLoading && !historyQuery.error && <StockHistoryList entries={history} />}
+          {!historyQuery.isLoading && !historyQuery.error && (
+            <StockHistoryList entries={history} locationMap={locationMap} partNames={partNames} />
+          )}
         </Card.Content>
       </Card>
 

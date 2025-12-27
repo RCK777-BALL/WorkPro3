@@ -1,5 +1,6 @@
 declare module 'passport-openidconnect' {
   import { Strategy as PassportStrategy } from 'passport';
+  import type { User as ExpressUser } from 'express-serve-static-core';
 
   export interface StrategyOptions {
     issuer: string;
@@ -24,7 +25,7 @@ declare module 'passport-openidconnect' {
       accessToken: string,
       refreshToken: string,
       params: any,
-      done: (err: any, user?: any) => void,
+      done: (err: any, user?: ExpressUser | false, info?: any) => void,
     ): void;
   }
 

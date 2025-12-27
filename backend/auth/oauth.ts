@@ -6,6 +6,7 @@ import passport from 'passport';
 import type { Strategy as PassportStrategy } from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as GithubStrategy } from 'passport-github2';
+import type { User as ExpressUser } from 'express-serve-static-core';
 
 import type { OAuthProvider } from '../config/oauthScopes';
 import { resolveTenantContext } from './tenantContext';
@@ -17,7 +18,7 @@ interface OAuthProfile {
   _json?: Record<string, unknown>;
 }
 
-type DoneCallback = (err: unknown, user?: { email?: string; tenantId?: string; siteId?: string; roles?: string[]; id?: string }, info?: unknown) => void;
+type DoneCallback = (err: unknown, user?: ExpressUser | false, info?: unknown) => void;
 
 const getProfileDomain = (profile: OAuthProfile | undefined): string | null => {
   const domainCandidate = profile?._json?.hd;

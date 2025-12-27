@@ -4,8 +4,14 @@
 
 import passport from 'passport';
 import type { Strategy as PassportStrategy } from 'passport';
-import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { Strategy as GithubStrategy } from 'passport-github2';
+import {
+  Strategy as GoogleStrategy,
+  type StrategyOptions as GoogleStrategyOptions,
+} from 'passport-google-oauth20';
+import {
+  Strategy as GithubStrategy,
+  type StrategyOptions as GithubStrategyOptions,
+} from 'passport-github2';
 import type { User as ExpressUser } from 'express-serve-static-core';
 
 import type { OAuthProvider } from '../config/oauthScopes';
@@ -19,13 +25,20 @@ interface OAuthProfile {
 }
 
 type DoneCallback = (err: unknown, user?: ExpressUser | false, info?: unknown) => void;
+type OAuthVerifier = (
+  accessToken: string,
+  refreshToken: string,
+  profile: OAuthProfile,
+  done: DoneCallback,
+) => void | Promise<void>;
 
 const getProfileDomain = (profile: OAuthProfile | undefined): string | null => {
   const domainCandidate = profile?._json?.hd;
   return typeof domainCandidate === 'string' ? domainCandidate : null;
 };
 
-const createOAuthVerifier = (provider: OAuthProvider) =>
+const createOAuthVerifier =
+  (provider: OAuthProvider): OAuthVerifier =>
   async (_accessToken: string, _refreshToken: string, profile: OAuthProfile, done: DoneCallback) => {
     try {
       const email = profile?.emails?.[0]?.value;
@@ -65,14 +78,15 @@ export const configureOAuth = () => {
   const googleId = process.env.GOOGLE_CLIENT_ID;
   const googleSecret = process.env.GOOGLE_CLIENT_SECRET;
   if (googleId && googleSecret) {
+    const googleOptions: GoogleStrategyOptions = {
+      clientID: googleId,
+      clientSecret: googleSecret,
+      callbackURL: '/api/auth/oauth/google/callback',
+    };
     passport.use(
       'google',
       new GoogleStrategy(
-        {
-          clientID: googleId,
-          clientSecret: googleSecret,
-          callbackURL: '/api/auth/oauth/google/callback',
-        },
+        googleOptions,
         createOAuthVerifier('google'),
       ) as unknown as PassportStrategy,
     );
@@ -81,14 +95,15 @@ export const configureOAuth = () => {
   const githubId = process.env.GITHUB_CLIENT_ID;
   const githubSecret = process.env.GITHUB_CLIENT_SECRET;
   if (githubId && githubSecret) {
+    const githubOptions: GithubStrategyOptions = {
+      clientID: githubId,
+      clientSecret: githubSecret,
+      callbackURL: '/api/auth/oauth/github/callback',
+    };
     passport.use(
       'github',
       new GithubStrategy(
-        {
-          clientID: githubId,
-          clientSecret: githubSecret,
-          callbackURL: '/api/auth/oauth/github/callback',
-        },
+        githubOptions,
         createOAuthVerifier('github'),
       ) as unknown as PassportStrategy,
     );

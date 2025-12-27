@@ -36,6 +36,23 @@ const defaultPartState = {
   lastOrderDate: new Date().toISOString().split('T')[0],
 };
 
+type PartFormState = typeof defaultPartState & Partial<Part>;
+
+const normalizePartFormState = (data?: Partial<Part> | null): PartFormState => {
+  const vendorValue =
+    typeof data?.vendor === 'string'
+      ? data.vendor
+      : data?.vendor?.name ?? '';
+
+  return {
+    ...defaultPartState,
+    ...data,
+    vendor: vendorValue,
+    lastRestockDate: data?.lastRestockDate ?? defaultPartState.lastRestockDate,
+    lastOrderDate: data?.lastOrderDate ?? defaultPartState.lastOrderDate,
+  };
+};
+
 const InventoryModal: React.FC<InventoryModalProps> = ({
   isOpen,
   onClose,
@@ -44,8 +61,8 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
   error,
   initialData,
 }) => {
-  const [formData, setFormData] = useState(() =>
-    part ? { ...defaultPartState, ...part } : { ...defaultPartState, ...initialData }
+  const [formData, setFormData] = useState<PartFormState>(() =>
+    normalizePartFormState(part ?? initialData)
   );
   const [partImage, setPartImage] = useState<File | null>(null);
 
@@ -67,9 +84,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
     });
 
   useEffect(() => {
-    setFormData(
-      part ? { ...defaultPartState, ...part } : { ...defaultPartState, ...initialData }
-    );
+    setFormData(normalizePartFormState(part ?? initialData));
     setPartImage(null);
   }, [part, isOpen, initialData]);
 

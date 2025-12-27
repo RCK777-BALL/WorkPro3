@@ -23,7 +23,7 @@ const radioButtonVariants = cva(
 );
 
 export interface RadioButtonProps
-  extends React.InputHTMLAttributes<HTMLInputElement>,
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'color'>,
     VariantProps<typeof radioButtonVariants> {}
 
 const RadioButton = React.forwardRef<HTMLInputElement, RadioButtonProps>(

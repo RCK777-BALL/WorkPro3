@@ -4,7 +4,7 @@
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { beforeEach, vi } from 'vitest';
-import type { Emoji } from '@emoji-mart/react';
+import type { Emoji } from '@emoji-mart/data';
 
 import ChatInput from './ChatInput';
 

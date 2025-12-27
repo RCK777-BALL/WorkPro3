@@ -2,8 +2,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { NextFunction, Request, RequestHandler, Response } from 'express';
-import type { ParamsDictionary, User as ExpressUser } from 'express-serve-static-core';
+import type { NextFunction, Request, RequestHandler, Response, User as ExpressUser } from 'express';
+import type { ParamsDictionary } from 'express-serve-static-core';
 import type { ParsedQs } from 'qs';
 export type { ApiResult } from '../../shared/types/http';
 

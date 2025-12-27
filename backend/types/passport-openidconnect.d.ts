@@ -1,5 +1,6 @@
 declare module 'passport-openidconnect' {
   import { Strategy as PassportStrategy } from 'passport';
+  import type { Profile as PassportProfile } from 'passport';
   import type { User as ExpressUser } from 'express-serve-static-core';
 
   export interface StrategyOptions {
@@ -16,21 +17,26 @@ declare module 'passport-openidconnect' {
     prompt?: string;
   }
 
-  export interface VerifyCallback {
-    (
-      issuer: string,
-      sub: string,
-      profile: any,
-      jwtClaims: any,
-      accessToken: string,
-      refreshToken: string,
-      params: any,
-      done: (err: any, user?: ExpressUser | false, info?: any) => void,
-    ): void;
+  export interface Profile extends PassportProfile {
+    emails?: Array<{ value: string }>;
+    _json?: Record<string, unknown>;
   }
 
+  export type VerifyCallback = (err?: Error | null, user?: ExpressUser | false, info?: unknown) => void;
+
+  export type VerifyFunction = (
+    issuer: string,
+    sub: string,
+    profile: Profile,
+    jwtClaims: object | string,
+    accessToken: string | object,
+    refreshToken: string,
+    params: unknown,
+    done: VerifyCallback,
+  ) => void | Promise<void>;
+
   export class Strategy extends PassportStrategy {
-    constructor(options: StrategyOptions, verify: VerifyCallback);
+    constructor(options: StrategyOptions, verify: VerifyFunction);
   }
 
   export default Strategy;

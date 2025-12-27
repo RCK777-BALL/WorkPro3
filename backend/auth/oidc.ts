@@ -4,7 +4,7 @@
 
 import passport, { Strategy as PassportStrategy } from 'passport';
 import { Strategy as OIDCStrategy } from 'passport-openidconnect';
-import type { VerifyCallback } from 'passport-openidconnect';
+import type { Profile, VerifyCallback, VerifyFunction } from 'passport-openidconnect';
 
 import { resolveTenantContext } from './tenantContext';
 import { getOidcProviderConfigs } from '../config/ssoProviders';
@@ -18,10 +18,19 @@ interface OIDCStrategyOptions {
   callbackURL: string;
 }
 
-interface OIDCProfile {
-  emails?: Array<{ value: string }>;
+type OidcIssuer = Parameters<VerifyFunction>[0];
+type OidcSubject = Parameters<VerifyFunction>[1];
+type OidcIdToken = Parameters<VerifyFunction>[3];
+type OidcAccessToken = Parameters<VerifyFunction>[4];
+type OidcRefreshToken = Parameters<VerifyFunction>[5];
+type OidcParams = Parameters<VerifyFunction>[6];
+type OidcVerifyCallback = VerifyCallback;
+
+type OidcProfile = Profile & {
   _json?: { groups?: string[] };
-}
+};
+
+type OidcVerifyFunction = VerifyFunction;
 
 // OIDC authentication relies on Passport and the passport-openidconnect strategy.
 // These modules are regular dependencies and are imported directly.
@@ -35,16 +44,16 @@ export const mapRoles = (groups: string[] = []): string => {
   return 'planner';
 };
 
-const createOidcVerifier = (provider: Provider): VerifyCallback =>
+const createOidcVerifier = (provider: Provider): OidcVerifyFunction =>
   async (
-    _issuer,
-    _sub,
-    profile,
-    jwtClaims,
-    _accessToken,
-    _refreshToken,
-    _params,
-    done,
+    _issuer: OidcIssuer,
+    _sub: OidcSubject,
+    profile: OidcProfile,
+    jwtClaims: OidcIdToken,
+    _accessToken: OidcAccessToken,
+    _refreshToken: OidcRefreshToken,
+    _params: OidcParams,
+    done: OidcVerifyCallback,
   ) => {
     try {
       const email = profile?.emails?.[0]?.value;
@@ -55,11 +64,15 @@ const createOidcVerifier = (provider: Provider): VerifyCallback =>
 
       const groups = profile?._json?.groups || [];
       const mappedRole = mapRoles(groups);
+      const claims =
+        typeof jwtClaims === 'object' && jwtClaims !== null
+          ? (jwtClaims as Record<string, unknown>)
+          : undefined;
 
       const tenantContext = await resolveTenantContext({
         provider,
         email,
-        claims: jwtClaims,
+        claims,
         ...(profile?._json ? { profile: profile._json } : {}),
       });
 

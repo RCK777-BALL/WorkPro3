@@ -6,6 +6,5 @@ import { api } from '@/lib/api';
 
 export const updateNotificationPreferences = async (payload: { notifyByEmail?: boolean; notifyBySms?: boolean }) => {
   const { data } = await api.post('/api/settings/notifications/preferences', payload);
-  return data?.data;
+  return data;
 };
-

@@ -127,7 +127,13 @@ describe('WorkRequestDashboard triage actions', () => {
       statusCounts: { new: 1, reviewing: 0, converted: 0, closed: 0, rejected: 0 },
       recent: [sampleRequest],
     });
-    mockedFetchRequests.mockResolvedValue([sampleRequest]);
+    mockedFetchRequests.mockResolvedValue({
+      items: [sampleRequest],
+      total: 1,
+      page: 1,
+      pageSize: 200,
+      totalPages: 1,
+    });
   });
 
   it('loads requests and allows conversion', async () => {

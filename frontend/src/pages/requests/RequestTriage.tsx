@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
-import type { WorkRequestItem, WorkRequestStatus } from "@/api/workRequests";
+import type { WorkRequestDecisionStatus, WorkRequestItem, WorkRequestStatus } from "@/api/workRequests";
 import {
   convertWorkRequest,
   fetchWorkRequests,
@@ -30,6 +30,7 @@ const statusFilters: Array<{
   { value: "all", label: "All" },
   { value: "new", label: "New" },
   { value: "reviewing", label: "Reviewing" },
+  { value: "accepted", label: "Accepted" },
   { value: "converted", label: "Converted" },
   { value: "rejected", label: "Rejected" },
   { value: "closed", label: "Closed" },
@@ -49,9 +50,11 @@ const priorityFilters: Array<{
 const statusBadges: Record<WorkRequestStatus, string> = {
   new: "bg-blue-100 text-blue-800",
   reviewing: "bg-amber-100 text-amber-800",
+  accepted: "bg-emerald-100 text-emerald-800",
   converted: "bg-emerald-100 text-emerald-800",
   closed: "bg-neutral-200 text-neutral-800",
   rejected: "bg-rose-100 text-rose-800",
+  deleted: "bg-neutral-200 text-neutral-500",
 };
 
 const priorityAccent: Record<WorkRequestItem["priority"], string> = {
@@ -97,12 +100,17 @@ export default function RequestTriage() {
   const loadRequests = async (activeFilters = filters) => {
     setLoading(true);
     try {
-      const data = await fetchWorkRequests(activeFilters);
-      setRequests(data);
-      if (data.length) {
-        const firstId = data[0]._id;
+      const data = await fetchWorkRequests({
+        status: activeFilters.status,
+        priority: activeFilters.priority,
+        search: activeFilters.search,
+      });
+      const items = data.items;
+      setRequests(items);
+      if (items.length) {
+        const firstId = items[0]._id;
         const stillSelected =
-          selectedId && data.some((item) => item._id === selectedId);
+          selectedId && items.some((item) => item._id === selectedId);
         setSelectedId(stillSelected ? selectedId : firstId);
       } else {
         setSelectedId(null);
@@ -144,14 +152,35 @@ export default function RequestTriage() {
 
   const filteredRequests = useMemo(() => {
     const query = filters.search.toLowerCase();
-    if (!query) return requests;
-    return requests.filter(
-      (request) =>
-        request.title.toLowerCase().includes(query) ||
-        (request.description ?? "").toLowerCase().includes(query) ||
-        (request.requesterName ?? "").toLowerCase().includes(query),
-    );
-  }, [filters.search, requests]);
+    const assetQuery = filters.asset.toLowerCase();
+    const locationQuery = filters.location.toLowerCase();
+    const tagQuery = filters.tag.toLowerCase();
+
+    if (!query && !assetQuery && !locationQuery && !tagQuery) return requests;
+
+    return requests.filter((request) => {
+      const matchesQuery = !query
+        ? true
+        : request.title.toLowerCase().includes(query) ||
+          (request.description ?? "").toLowerCase().includes(query) ||
+          (request.requesterName ?? "").toLowerCase().includes(query);
+
+      const matchesAsset = !assetQuery
+        ? true
+        : (request.assetTag ?? "").toLowerCase().includes(assetQuery) ||
+          (request.asset ?? "").toLowerCase().includes(assetQuery);
+
+      const matchesLocation = !locationQuery
+        ? true
+        : (request.location ?? "").toLowerCase().includes(locationQuery);
+
+      const matchesTag = !tagQuery
+        ? true
+        : (request.tags ?? []).some((tag) => tag.toLowerCase().includes(tagQuery));
+
+      return matchesQuery && matchesAsset && matchesLocation && matchesTag;
+    });
+  }, [filters.asset, filters.location, filters.search, filters.tag, requests]);
 
   const updateFilter = (key: keyof FilterState, value: string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -159,7 +188,7 @@ export default function RequestTriage() {
 
   const updateStatus = async (
     requestId: string,
-    status: WorkRequestStatus,
+    status: WorkRequestDecisionStatus,
     reason?: string,
   ) => {
     setActionTarget(requestId);
@@ -528,7 +557,7 @@ export default function RequestTriage() {
                 <div className="grid gap-2 sm:grid-cols-2">
                   <button
                     type="button"
-                    onClick={() => updateStatus(selected._id, "reviewing")}
+                    onClick={() => updateStatus(selected._id, "accepted")}
                     disabled={actionTarget === selected._id}
                     className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-60"
                   >

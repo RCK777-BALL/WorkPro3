@@ -25,16 +25,15 @@ export interface WorkflowRuleInput {
 
 export const listWorkflowRules = async () => {
   const { data } = await api.get('/api/admin/workflow-rules');
-  return data?.data ?? [];
+  return data ?? [];
 };
 
 export const createWorkflowRule = async (input: WorkflowRuleInput) => {
   const { data } = await api.post('/api/admin/workflow-rules', input);
-  return data?.data;
+  return data;
 };
 
 export const updateWorkflowRule = async (id: string, input: Partial<WorkflowRuleInput>) => {
   const { data } = await api.put(`/api/admin/workflow-rules/${id}`, input);
-  return data?.data;
+  return data;
 };
-

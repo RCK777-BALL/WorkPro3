@@ -56,6 +56,7 @@ export type DepartmentResponse = {
   notes?: string;
   lines?: LineResponse[];
   plant?: PlantSummaryResponse | string;
+  assetCount?: number;
 };
 
 type PlantSummaryResponse = {

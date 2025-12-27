@@ -8,9 +8,8 @@ import type {
   AxiosResponse,
   AxiosError,
 } from 'axios';
-import type { ApiResult } from '@backend-shared/http';
-
 import { safeLocalStorage } from '@/utils/safeLocalStorage';
+import { unwrapApiPayload, type ApiPayload } from '@/utils/api';
 
 const DEFAULT_API_BASE_URL = 'http://localhost:5010/api';
 
@@ -92,27 +91,9 @@ http.interceptors.request.use((config) => {
 });
 
 http.interceptors.response.use(
-  <T>(response: AxiosResponse<ApiResult<T> | T>): AxiosResponse<T> => {
-    const payload = response.data as ApiResult<T> | T | undefined;
-
-    if (!payload || typeof payload !== 'object') {
-      return response as AxiosResponse<T>;
-    }
-
-    const hasDataKey = Object.prototype.hasOwnProperty.call(payload, 'data');
-    const hasErrorKey = Object.prototype.hasOwnProperty.call(payload, 'error');
-
-    if (!hasDataKey && !hasErrorKey) {
-      return response as AxiosResponse<T>;
-    }
-
-    const { data, error } = payload as ApiResult<T>;
-    if (error) {
-      throw new Error(error);
-    }
-
+  <T>(response: AxiosResponse<ApiPayload<T>>): AxiosResponse<T> => {
     const typedResponse = response as AxiosResponse<T>;
-    typedResponse.data = data as T;
+    typedResponse.data = unwrapApiPayload(response.data);
     return typedResponse;
   },
   (err: AxiosError) => {

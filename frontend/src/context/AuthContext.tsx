@@ -312,9 +312,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       setLoading(true);
       try {
-        const { data } = await api.get<{ data?: { user?: RawAuthUser | null } }>('/auth/me');
+        const { data } = await api.get<{ user?: RawAuthUser | null }>('/auth/me');
         if (!cancelled) {
-          const payload = data?.data?.user;
+          const payload = data?.user;
           handleSetUser(payload ? toAuthUser(payload) : null);
         }
       } catch (err) {
@@ -455,4 +455,3 @@ export const useAuth = () => {
   if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
-

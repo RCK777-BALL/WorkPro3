@@ -12,17 +12,21 @@ import { convertWorkRequest, fetchWorkRequestSummary, fetchWorkRequests } from '
 const statusLabels: Record<WorkRequestStatus, string> = {
   new: 'New',
   reviewing: 'Reviewing',
+  accepted: 'Accepted',
   converted: 'Converted',
   closed: 'Closed',
   rejected: 'Rejected',
+  deleted: 'Deleted',
 };
 
 const statusColors: Record<WorkRequestStatus, string> = {
   new: 'bg-blue-100 text-blue-800',
   reviewing: 'bg-amber-100 text-amber-800',
+  accepted: 'bg-emerald-100 text-emerald-800',
   converted: 'bg-emerald-100 text-emerald-800',
   closed: 'bg-gray-200 text-gray-800',
   rejected: 'bg-rose-100 text-rose-800',
+  deleted: 'bg-neutral-200 text-neutral-500',
 };
 
 const priorityColors: Record<WorkRequestItem['priority'], string> = {
@@ -60,7 +64,7 @@ export default function WorkRequestDashboard() {
     try {
       const [summaryData, listData] = await Promise.all([fetchWorkRequestSummary(), fetchWorkRequests()]);
       setSummary(summaryData);
-      setRequests(listData);
+      setRequests(listData.items);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unable to load work requests.';
       setError(message);
@@ -97,7 +101,10 @@ export default function WorkRequestDashboard() {
     }
   };
 
-  const openRequests = useMemo(() => requests.filter((item) => item.status === 'new' || item.status === 'reviewing'), [requests]);
+  const openRequests = useMemo(
+    () => requests.filter((item) => item.status === 'new' || item.status === 'reviewing' || item.status === 'accepted'),
+    [requests],
+  );
 
   return (
     <div className="space-y-6">

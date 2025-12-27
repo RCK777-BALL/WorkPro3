@@ -9,11 +9,15 @@ import Button from './Button';
 interface DuplicateButtonProps {
   onClick: () => void;
   label?: string;
+  disabled?: boolean;
+  'aria-label'?: string;
 }
 
-const DuplicateButton: React.FC<DuplicateButtonProps> = ({ 
-  onClick, 
-  label = 'Duplicate'
+const DuplicateButton: React.FC<DuplicateButtonProps> = ({
+  onClick,
+  label = 'Duplicate',
+  disabled = false,
+  'aria-label': ariaLabel,
 }) => {
   return (
     <Button
@@ -21,6 +25,8 @@ const DuplicateButton: React.FC<DuplicateButtonProps> = ({
       size="sm"
       icon={<Copy size={16} />}
       onClick={onClick}
+      disabled={disabled}
+      aria-label={ariaLabel}
     >
       {label}
     </Button>

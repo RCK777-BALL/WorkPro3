@@ -23,10 +23,13 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
   onDuplicate,
 }) => {
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount?: number) => {
+    if (amount == null) {
+      return '—';
+    }
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'USD',
     }).format(amount);
   };
 

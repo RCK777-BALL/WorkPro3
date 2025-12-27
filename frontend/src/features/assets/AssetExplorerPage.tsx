@@ -16,7 +16,7 @@ type AssetRow = {
   stationName?: string;
 };
 
-const statusBadgeClass = (status?: string) => {
+const statusBadgeClass = (status?: HierarchyAsset['status']) => {
   switch (status?.toLowerCase()) {
     case 'offline':
       return 'bg-amber-500/20 text-amber-400';
@@ -27,7 +27,7 @@ const statusBadgeClass = (status?: string) => {
   }
 };
 
-const criticalityDotClass = (criticality?: string) => {
+const criticalityDotClass = (criticality?: HierarchyAsset['criticality']) => {
   switch (criticality) {
     case 'high':
       return 'bg-rose-500';

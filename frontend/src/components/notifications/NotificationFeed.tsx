@@ -32,8 +32,11 @@ const NotificationFeed: React.FC = () => {
           title: 'Work Order Update',
           message: `Work order update: ${data.title || data._id}`,
           type: 'info',
+          category: 'updated',
+          deliveryState: 'sent',
           createdAt: new Date().toISOString(),
           read: false,
+          workOrderId: data._id,
         },
       ]);
       markDelivery();
@@ -47,8 +50,11 @@ const NotificationFeed: React.FC = () => {
           title: 'Inventory Update',
           message: `Inventory update: ${data.name || data._id}`,
           type: 'warning',
+          category: 'updated',
+          deliveryState: 'sent',
           createdAt: new Date().toISOString(),
           read: false,
+          inventoryItemId: data._id,
         },
       ]);
       markDelivery();

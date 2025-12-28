@@ -2,6 +2,8 @@
  * SPDX-License-Identifier: MIT
  */
 
+import { Types } from 'mongoose';
+
 import Asset from '../../../models/Asset';
 import DocumentModel, { type DocumentDoc } from '../../../models/Document';
 import InventoryItem, { type IInventoryItem } from '../../../models/InventoryItem';
@@ -9,6 +11,7 @@ import PMTask, { type PMTaskDocument } from '../../../models/PMTask';
 import WorkHistory, { type WorkHistoryDocument } from '../../../models/WorkHistory';
 import DowntimeLog, { type DowntimeLogDocument } from '../../../models/DowntimeLog';
 import WorkOrderModel, { type WorkOrder } from '../../../models/WorkOrder';
+import { parseQrCodeValue } from '../../../services/qrCode';
 
 export class AssetInsightsError extends Error {
   status: number;
@@ -136,6 +139,67 @@ export type AssetInsightsResponse = {
   costRollups: AssetCostRollup;
   downtimeLogs: AssetDowntimeLog[];
   reliability: AssetReliabilitySummary;
+};
+
+export type AssetScanResolution = {
+  id: string;
+  name: string;
+  qrCode?: string;
+};
+
+const buildAssetScanQuery = (context: AssetInsightsContext, value: string) => {
+  const orFilters: Record<string, unknown>[] = [
+    { qrCode: value },
+    { name: value },
+    { serialNumber: value },
+    { 'customFields.assetTag': value },
+    { 'customFields.asset_tag': value },
+  ];
+
+  if (Types.ObjectId.isValid(value)) {
+    orFilters.unshift({ _id: new Types.ObjectId(value) });
+  }
+
+  return {
+    tenantId: context.tenantId,
+    ...(context.siteId ? { siteId: new Types.ObjectId(context.siteId) } : {}),
+    ...(context.plantId ? { plant: new Types.ObjectId(context.plantId) } : {}),
+    $or: orFilters,
+  };
+};
+
+export const resolveAssetScanValue = async (
+  context: AssetInsightsContext,
+  value: string,
+): Promise<AssetScanResolution | null> => {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const parsed = parseQrCodeValue(trimmed);
+  if (parsed?.type === 'asset' && parsed.id) {
+    const asset = await Asset.findOne({
+      _id: parsed.id,
+      tenantId: context.tenantId,
+      ...(context.siteId ? { siteId: context.siteId } : {}),
+      ...(context.plantId ? { plant: context.plantId } : {}),
+    }).lean();
+    if (asset) {
+      return {
+        id: asset._id.toString(),
+        name: asset.name,
+        ...(asset.qrCode ? { qrCode: asset.qrCode } : {}),
+      };
+    }
+  }
+
+  const asset = await Asset.findOne(buildAssetScanQuery(context, trimmed)).lean();
+  if (!asset) return null;
+
+  return {
+    id: asset._id.toString(),
+    name: asset.name,
+    ...(asset.qrCode ? { qrCode: asset.qrCode } : {}),
+  };
 };
 
 const OPEN_WORK_ORDER_STATUSES: ReadonlySet<WorkOrder['status']> = new Set([

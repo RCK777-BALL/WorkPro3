@@ -4,13 +4,15 @@
 
 import type { Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
+import { z } from 'zod';
 
 import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
 import { fail } from '../../lib/http';
 import { approvalAdvanceSchema, slaAcknowledgeSchema, statusUpdateSchema, templateCreateSchema, templateParamSchema, templateUpdateSchema, workOrderParamSchema } from './schemas';
-import { acknowledgeSla, advanceApproval, createTemplate, deleteTemplate, getTemplate, listTemplates, updateTemplate, updateWorkOrderStatus } from './service';
+import { acknowledgeSla, advanceApproval, createTemplate, deleteTemplate, getTemplate, listTemplates, reconcileWorkOrderUpdate, updateTemplate, updateWorkOrderStatus } from './service';
 import type { ApprovalStepUpdate, StatusTransition, WorkOrderContext } from './types';
 import type { WorkOrderTemplate } from './templateModel';
+import { workOrderUpdateSchema } from '../../schemas/workOrder';
 
 type TemplateDefaultsInput = {
   priority?: string;
@@ -68,6 +70,16 @@ const normalizeTemplateDefaults = (
   return normalized;
 };
 
+const reconcileWorkOrderSchema = workOrderUpdateSchema.extend({
+  clientUpdatedAt: z.union([z.string(), z.date(), z.number()]).optional(),
+});
+
+const parseClientUpdatedAt = (value?: string | number | Date) => {
+  if (value === undefined) return undefined;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+};
+
 export const updateStatusHandler: AuthedRequestHandler<{ workOrderId: string }> = async (req, res, next) => {
   const parse = statusUpdateSchema.safeParse(req.body);
   if (!parse.success) {
@@ -81,6 +93,51 @@ export const updateStatusHandler: AuthedRequestHandler<{ workOrderId: string }> 
     };
     const workOrder = await updateWorkOrderStatus(buildContext(req), req.params.workOrderId, payload);
     res.json({ success: true, data: workOrder });
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const reconcileOfflineUpdateHandler: AuthedRequestHandler<{ workOrderId: string }> = async (
+  req,
+  res,
+  next,
+) => {
+  if (!ensureContext(req, res)) return;
+  const parse = reconcileWorkOrderSchema.safeParse(req.body);
+  if (!parse.success) {
+    fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
+    return;
+  }
+
+  const { clientUpdatedAt, ...payload } = parse.data;
+  const parsedTimestamp = parseClientUpdatedAt(clientUpdatedAt);
+  if (clientUpdatedAt !== undefined && !parsedTimestamp) {
+    fail(res, 'Invalid clientUpdatedAt timestamp', 400);
+    return;
+  }
+
+  try {
+    const result = await reconcileWorkOrderUpdate(
+      buildContext(req),
+      req.params.workOrderId,
+      payload,
+      parsedTimestamp,
+    );
+    if (result.status === 'conflict') {
+      res.status(409).json({
+        success: false,
+        message: 'Conflict detected',
+        data: {
+          conflicts: result.conflicts,
+          server: result.snapshot,
+          serverUpdatedAt: result.serverUpdatedAt,
+        },
+      });
+      return;
+    }
+
+    res.json({ success: true, data: result.workOrder, conflicts: result.conflicts });
   } catch (err) {
     handleError(err, res, next);
   }
@@ -103,6 +160,25 @@ export const advanceApprovalHandler: AuthedRequestHandler<{ workOrderId: string 
       approverId: undefined,
     };
     const workOrder = await advanceApproval(buildContext(req), req.params.workOrderId, payload, req.user);
+    res.json({ success: true, data: workOrder });
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const requestApprovalHandler: AuthedRequestHandler<{ workOrderId: string }> = async (
+  req,
+  res,
+  next,
+) => {
+  if (!ensureContext(req, res)) return;
+  const parse = approvalRequestSchema.safeParse(req.body);
+  if (!parse.success) {
+    fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
+    return;
+  }
+  try {
+    const workOrder = await requestApproval(buildContext(req), req.params.workOrderId, parse.data.note, req.user);
     res.json({ success: true, data: workOrder });
   } catch (err) {
     handleError(err, res, next);

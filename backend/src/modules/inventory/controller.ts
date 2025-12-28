@@ -36,6 +36,7 @@ import {
   type PurchaseOrderExportFormat,
   getPartUsageReport,
   transitionAlertStatus,
+  resolvePartScanValue,
 } from './service';
 import {
   locationInputSchema,
@@ -129,6 +130,26 @@ export const listPartsHandler: AuthedRequestHandler = async (req, res, next) => 
       sortBy: typeof req.query.sortBy === 'string' ? req.query.sortBy : undefined,
       sortDirection: req.query.sortDirection === 'desc' ? 'desc' : 'asc',
     });
+    send(res, data);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const resolvePartScanHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  const rawValue = typeof req.query.value === 'string' ? req.query.value.trim() : '';
+  if (!rawValue) {
+    fail(res, 'Scan value is required', 400);
+    return;
+  }
+
+  try {
+    const data = await resolvePartScanValue(buildContext(req), rawValue);
+    if (!data) {
+      fail(res, 'Part not found', 404);
+      return;
+    }
     send(res, data);
   } catch (err) {
     handleError(err, res, next);

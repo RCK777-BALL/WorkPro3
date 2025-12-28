@@ -3,7 +3,7 @@
  */
 
 import { Router } from 'express';
-import { requireAuth } from '../middleware/authMiddleware';
+import { requireAuth, requireRole } from '../middleware/authMiddleware';
 import tenantScope from '../middleware/tenantScope';
 import validateObjectId from '../middleware/validateObjectId';
 import { validate } from '../middleware/validationMiddleware';
@@ -36,6 +36,21 @@ import {
 
 const router = Router();
 
+const APPROVAL_ROLES = [
+  'global_admin',
+  'plant_admin',
+  'general_manager',
+  'assistant_general_manager',
+  'operations_manager',
+  'assistant_department_leader',
+  'workorder_supervisor',
+  'site_supervisor',
+  'department_leader',
+  'manager',
+  'supervisor',
+  'planner',
+] as const;
+
 router.use(requireAuth);
 router.use(tenantScope);
 
@@ -45,7 +60,13 @@ router.get('/:id', validateObjectId('id'), requirePermission('workorders.read'),
 router.post('/', requirePermission('workorders.write'), workOrderValidators, validate, createWorkOrder);
 router.put('/:id', validateObjectId('id'), requirePermission('workorders.write'), updateWorkOrder);
 router.delete('/:id', validateObjectId('id'), requirePermission('workorders.write'), deleteWorkOrder);
-router.post('/:id/approve', validateObjectId('id'), requirePermission('workorders.approve'), approveWorkOrder);
+router.post(
+  '/:id/approve',
+  validateObjectId('id'),
+  requirePermission('workorders.approve'),
+  requireRole(...APPROVAL_ROLES),
+  approveWorkOrder,
+);
 router.post('/:id/assign', validateObjectId('id'), requirePermission('workorders.write'), assignWorkOrder);
 router.post('/:id/start', validateObjectId('id'), requirePermission('workorders.write'), startWorkOrder);
 router.post('/:id/complete', validateObjectId('id'), requirePermission('workorders.write'), completeWorkOrder);

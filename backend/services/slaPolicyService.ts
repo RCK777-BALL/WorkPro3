@@ -104,6 +104,13 @@ export const applySlaPolicyToWorkOrder = async (workOrder: WorkOrderDocument) =>
   if (policy.resolveMinutes && !workOrder.slaResolveDueAt) {
     workOrder.slaResolveDueAt = new Date(now + policy.resolveMinutes * 60 * 1000);
   }
+  workOrder.slaTargets = {
+    responseMinutes: policy.responseMinutes ?? undefined,
+    resolveMinutes: policy.resolveMinutes ?? undefined,
+    responseDueAt: workOrder.slaResponseDueAt ?? undefined,
+    resolveDueAt: workOrder.slaResolveDueAt ?? undefined,
+    source: 'policy',
+  };
 
   if (policy.escalations?.length) {
     workOrder.slaEscalations = mapEscalations(policy.escalations) as any;

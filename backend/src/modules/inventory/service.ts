@@ -42,6 +42,7 @@ import ReorderAlertModel, {
   type ReorderAlertDocument,
   type ReorderAlertStatus,
 } from './models/ReorderAlert';
+import { logAuditEntry } from '../audit';
 import type {
   LocationInput,
   PartInput,
@@ -57,6 +58,8 @@ import type {
   InventoryTransferInput,
 } from './schemas';
 import logger from '../../../utils/logger';
+import { parseQrCodeValue } from '../../../services/qrCode';
+import { normalizeTags } from './utils/tagHelpers';
 
 export interface InventoryContext {
   tenantId: string;
@@ -65,6 +68,68 @@ export interface InventoryContext {
   roles?: string[];
   permissions?: string[];
 }
+
+export type PartScanResolution = {
+  id: string;
+  name: string;
+  barcode?: string;
+};
+
+export const resolvePartScanValue = async (
+  context: InventoryContext,
+  value: string,
+): Promise<PartScanResolution | null> => {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const parsed = parseQrCodeValue(trimmed);
+  if (parsed?.type === 'part') {
+    const part = await PartModel.findOne({
+      _id: parsed.id,
+      tenantId: context.tenantId,
+      ...(context.siteId ? { siteId: context.siteId } : {}),
+      deleted_at: null,
+    }).lean();
+    if (part) {
+      return {
+        id: part._id.toString(),
+        name: part.name ?? part.partNo ?? 'Part',
+        ...(part.barcode ? { barcode: part.barcode } : {}),
+      };
+    }
+  }
+
+  const normalizedTags = normalizeTags([trimmed]);
+  const tag = normalizedTags.length ? normalizedTags[0] : undefined;
+  const orFilters: Record<string, unknown>[] = [
+    { barcode: trimmed },
+    { sku: trimmed },
+    { partNo: trimmed },
+    { partNumber: trimmed },
+  ];
+  if (tag) {
+    orFilters.push({ tags: tag });
+  }
+
+  if (Types.ObjectId.isValid(trimmed)) {
+    orFilters.unshift({ _id: new Types.ObjectId(trimmed) });
+  }
+
+  const part = await PartModel.findOne({
+    tenantId: context.tenantId,
+    ...(context.siteId ? { siteId: context.siteId } : {}),
+    deleted_at: null,
+    $or: orFilters,
+  }).lean();
+
+  if (!part) return null;
+
+  return {
+    id: part._id.toString(),
+    name: part.name ?? part.partNo ?? 'Part',
+    ...(part.barcode ? { barcode: part.barcode } : {}),
+  };
+};
 
 export interface PartUsageFilters {
   startDate?: Date;
@@ -192,6 +257,9 @@ type PartRecord = Pick<
   | 'unitCost'
   | 'unit'
   | 'cost'
+  | 'min'
+  | 'max'
+  | 'reorder'
   | 'minStock'
   | 'minQty'
   | 'maxQty'
@@ -435,6 +503,15 @@ const serializePart = (
   }
   if (typeof part.cost === 'number') {
     response.cost = part.cost;
+  }
+  if (typeof part.min === 'number') {
+    response.min = part.min;
+  }
+  if (typeof part.max === 'number') {
+    response.max = part.max;
+  }
+  if (typeof part.reorder === 'number') {
+    response.reorder = part.reorder;
   }
 
   if (part.siteId) {
@@ -925,6 +1002,25 @@ export const receiveInventory = async (
             },
           ],
           { session },
+        );
+
+        await logAuditEntry(
+          {
+            tenantId: context.tenantId,
+            module: 'inventory',
+            action: 'stock_adjustment',
+            entityType: 'InventoryPart',
+            entityId: part._id.toString(),
+            actorId: context.userId,
+            metadata: {
+              locationId: location._id.toString(),
+              delta: input.delta,
+              quantityAfter: stock.quantity,
+              partQuantityAfter: part.quantity,
+              reason: input.metadata?.reason ?? 'Adjustment',
+            },
+          },
+          session,
         );
 
         return created;

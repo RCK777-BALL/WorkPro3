@@ -227,7 +227,7 @@ export interface WorkOrder {
   priority: 'low' | 'medium' | 'high' | 'critical';
 
   /** Current status */
-  status: 'requested' | 'assigned' | 'in_progress' | 'paused' | 'completed' | 'cancelled';
+  status: 'requested' | 'assigned' | 'in_progress' | 'paused' | 'completed' | 'cancelled' | 'draft' | 'pending_approval' | 'approved';
 
   /** Type of work such as corrective or preventive */
   type: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
@@ -270,13 +270,72 @@ export interface WorkOrder {
   totalCost?: number;
   permits?: string[];
   requiredPermitTypes?: string[];
+  permitRequirements?: {
+    type: string;
+    required?: boolean;
+    requiredBeforeStatus?: 'assigned' | 'in_progress' | 'completed';
+    status?: 'pending' | 'approved' | 'rejected';
+    approvedBy?: string;
+    approvedAt?: string;
+    note?: string;
+  }[];
+  permitApprovals?: {
+    type: string;
+    status?: 'pending' | 'approved' | 'rejected';
+    approvedBy?: string;
+    approvedAt?: string;
+    note?: string;
+  }[];
 
   approvalStatus?: 'draft' | 'pending' | 'approved' | 'rejected';
+  approvalState?: 'draft' | 'pending' | 'approved' | 'rejected' | 'escalated' | 'cancelled';
+  approvalStates?: {
+    state: 'draft' | 'pending' | 'approved' | 'rejected' | 'escalated' | 'cancelled';
+    changedAt?: string;
+    changedBy?: string;
+    note?: string;
+  }[];
+  approvalSteps?: {
+    step: number;
+    name: string;
+    approver?: string;
+    status?: 'pending' | 'approved' | 'rejected' | 'skipped';
+    approvedAt?: string;
+    note?: string;
+    required?: boolean;
+  }[];
+  currentApprovalStep?: number;
   approvedBy?: string;
   approvedAt?: string;
   requestedBy?: string;
   requestedAt?: string;
   slaDueAt?: string;
+  slaResponseDueAt?: string;
+  slaResolveDueAt?: string;
+  slaRespondedAt?: string;
+  slaResolvedAt?: string;
+  slaBreachAt?: string;
+  slaTargets?: {
+    responseMinutes?: number;
+    resolveMinutes?: number;
+    responseDueAt?: string;
+    resolveDueAt?: string;
+    source?: 'policy' | 'manual';
+  };
+  slaEscalations?: {
+    trigger: 'response' | 'resolve';
+    thresholdMinutes?: number;
+    escalateTo?: string[];
+    escalatedAt?: string;
+    channel?: 'email' | 'push' | 'sms';
+    priority?: 'low' | 'medium' | 'high' | 'critical';
+    reassign?: boolean;
+    maxRetries?: number;
+    retryBackoffMinutes?: number;
+    retryCount?: number;
+    nextAttemptAt?: string;
+    templateKey?: string;
+  }[];
 
   attachments?: { url: string; name?: string; uploadedBy?: string; uploadedAt?: string }[];
   timeline?: { label: string; notes?: string; createdAt?: string; createdBy?: string; type?: 'status' | 'comment' | 'approval' | 'sla' }[];

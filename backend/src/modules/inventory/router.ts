@@ -33,6 +33,7 @@ import {
   listStockHistoryHandler,
   transitionPurchaseOrderHandler,
   partUsageReportHandler,
+  resolvePartScanHandler,
 } from './controller';
 
 const router = Router();
@@ -42,6 +43,7 @@ router.use(tenantScope);
 router.use(authorizeTenantSite());
 router.use(auditDataAccess('inventory', { entityIdParams: ['partId', 'vendorId', 'locationId', 'purchaseOrderId'] }));
 
+router.get('/scan/resolve', requirePermission('inventory', 'read'), resolvePartScanHandler);
 router.get('/parts', requirePermission('inventory', 'read'), listPartsHandler);
 router.post('/parts', requirePermission('inventory', 'manage'), savePartHandler);
 router.put('/parts/:partId', requirePermission('inventory', 'manage'), savePartHandler);

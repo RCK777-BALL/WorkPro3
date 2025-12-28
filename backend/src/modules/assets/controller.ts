@@ -6,7 +6,7 @@ import type { Response, NextFunction } from 'express';
 
 import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
 import { fail } from '../../lib/http';
-import { AssetInsightsError, getAssetInsights, type AssetInsightsContext } from './service';
+import { AssetInsightsError, getAssetInsights, resolveAssetScanValue, type AssetInsightsContext } from './service';
 import {
   createMeterConfig,
   ingestMeterReadings,
@@ -87,6 +87,26 @@ export const ingestMeterReadingsHandler: AuthedRequestHandler<
     const payloadArray = Array.isArray(req.body) ? req.body : [req.body];
     const result = await ingestMeterReadings(buildContext(req), req.params.assetId, payloadArray);
     send(res, result, 202);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const resolveAssetScanHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  const rawValue = typeof req.query.value === 'string' ? req.query.value.trim() : '';
+  if (!rawValue) {
+    fail(res, 'Scan value is required', 400);
+    return;
+  }
+
+  try {
+    const data = await resolveAssetScanValue(buildContext(req), rawValue);
+    if (!data) {
+      fail(res, 'Asset not found', 404);
+      return;
+    }
+    send(res, data);
   } catch (err) {
     handleError(err, res, next);
   }

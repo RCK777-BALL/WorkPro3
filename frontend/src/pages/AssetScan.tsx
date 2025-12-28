@@ -7,13 +7,14 @@ import { AlertTriangle, ClipboardList, Scan, Wand2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import { usePermissions } from '@/auth/usePermissions';
-import QrScanner from '@/components/qr/QrScanner';
+import ScanPanel from '@/components/scan/ScanPanel';
 import WorkOrderModal from '@/components/work-orders/WorkOrderModal';
 import http from '@/lib/http';
 import {
   confirmEntityExists,
   logScanNavigationOutcome,
-  parseScanPayload,
+  recordScanHistory,
+  resolveScanValue,
   type ScanResolution,
 } from '@/utils/scanRouting';
 import type { WorkOrder } from '@/types';
@@ -44,12 +45,13 @@ const AssetScan: React.FC = () => {
   };
 
   const handleScan = async (rawValue: string) => {
-    const parsed = parseScanPayload(rawValue);
     setScanError(null);
+    const parsed = await resolveScanValue(rawValue);
 
     if ('error' in parsed) {
       setScanError(parsed.error);
       logScanNavigationOutcome({ outcome: 'failure', error: parsed.error, source: 'asset-scan' });
+      void recordScanHistory({ outcome: 'failure', error: parsed.error, rawValue, source: 'asset-scan' });
       if (canCreateWorkOrders) {
         setWorkOrderDefaults({
           title: 'Work order from QR scan',
@@ -69,6 +71,13 @@ const AssetScan: React.FC = () => {
         error: 'Unsupported scan type for this tool',
         source: 'asset-scan',
       });
+      void recordScanHistory({
+        outcome: 'failure',
+        error: 'Unsupported scan type for this tool',
+        rawValue,
+        resolution,
+        source: 'asset-scan',
+      });
       return;
     }
 
@@ -77,6 +86,13 @@ const AssetScan: React.FC = () => {
       const detail = 'No matching asset was found. You can still open a work order from this scan.';
       setScanError(detail);
       logScanNavigationOutcome({ outcome: 'failure', resolution, error: detail, source: 'asset-scan' });
+      void recordScanHistory({
+        outcome: 'failure',
+        error: detail,
+        rawValue,
+        resolution,
+        source: 'asset-scan',
+      });
       if (canCreateWorkOrders) {
         setWorkOrderDefaults({
           assetId: resolution.id,
@@ -89,6 +105,7 @@ const AssetScan: React.FC = () => {
     }
 
     logScanNavigationOutcome({ outcome: 'success', resolution, source: 'asset-scan' });
+    void recordScanHistory({ outcome: 'success', rawValue, resolution, source: 'asset-scan' });
     navigate(resolution.path);
   };
 
@@ -112,7 +129,7 @@ const AssetScan: React.FC = () => {
         </div>
       )}
 
-      <QrScanner onDetected={handleScan} onError={setScanError} />
+      <ScanPanel title="Scan asset QR code" onDetected={handleScan} onError={setScanError} />
 
       {scanError && (
         <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-100" role="status">

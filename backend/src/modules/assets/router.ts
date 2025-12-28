@@ -12,6 +12,7 @@ import {
   getAssetDetailsHandler,
   ingestMeterReadingsHandler,
   listAssetMetersHandler,
+  resolveAssetScanHandler,
 } from './controller';
 
 const router = Router();
@@ -20,6 +21,7 @@ router.use(requireAuth);
 router.use(tenantScope);
 
 router.get('/:assetId/details', requirePermission('hierarchy', 'read'), getAssetDetailsHandler);
+router.get('/scan/resolve', requirePermission('hierarchy', 'read'), resolveAssetScanHandler);
 router.get('/:assetId/meters', requirePermission('hierarchy', 'read'), listAssetMetersHandler);
 router.post('/:assetId/meters', requirePermission('hierarchy', 'write'), createAssetMeterHandler);
 router.post(

@@ -15,6 +15,10 @@ export interface NotificationDeliveryLogDocument extends Document {
   channel: NotificationChannel;
   attempt: number;
   status: DeliveryStatus;
+  event?: string;
+  target?: string;
+  nextAttemptAt?: Date;
+  metadata?: Record<string, unknown>;
   errorMessage?: string;
   createdAt: Date;
 }
@@ -27,6 +31,10 @@ const notificationDeliveryLogSchema = new Schema<NotificationDeliveryLogDocument
     channel: { type: String, enum: ['email', 'push', 'in_app', 'webhook'], required: true },
     attempt: { type: Number, required: true },
     status: { type: String, enum: ['pending', 'sent', 'failed', 'deferred', 'queued'], required: true },
+    event: { type: String },
+    target: { type: String },
+    nextAttemptAt: { type: Date },
+    metadata: { type: Schema.Types.Mixed },
     errorMessage: { type: String },
   },
   { timestamps: { createdAt: true, updatedAt: false } },

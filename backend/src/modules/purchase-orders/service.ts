@@ -6,6 +6,7 @@ import { Types } from 'mongoose';
 import InventoryMovementModel from '../../../models/InventoryMovement';
 import PartStockModel from '../../../models/PartStock';
 import PartModel from '../inventory/models/Part';
+import { logAuditEntry } from '../audit';
 import type { PurchaseOrder, PurchaseOrderInput, ReceiptInput } from './types';
 import PurchaseOrderModel, {
   type PurchaseOrderAuditEntry,
@@ -75,6 +76,23 @@ const addAudit = (
 const recalcTotals = (po: PurchaseOrderDocument): void => {
   po.subtotal = (po.items ?? []).reduce((sum, item) => sum + item.quantity * (item.unitCost ?? 0), 0);
   po.receivedTotal = (po.items ?? []).reduce((sum, item) => sum + item.received * (item.unitCost ?? 0), 0);
+};
+
+const auditPurchaseOrderTransition = async (
+  context: PurchaseOrderContext,
+  po: PurchaseOrderDocument,
+  action: string,
+  metadata?: Record<string, unknown>,
+): Promise<void> => {
+  await logAuditEntry({
+    tenantId: context.tenantId,
+    module: 'purchasing',
+    action,
+    entityType: 'PurchaseOrder',
+    entityId: (po._id as Types.ObjectId).toString(),
+    actorId: context.userId,
+    metadata,
+  });
 };
 
 const serializePurchaseOrder = (po: PurchaseOrderDocument): PurchaseOrder => ({
@@ -291,6 +309,12 @@ export const receivePurchaseOrder = async (
   recalcTotals(po);
   addAudit(po, 'receive', context.userId, `Received ${validReceipts.length} line(s)`);
   await po.save();
+  if (po.status === 'received') {
+    await auditPurchaseOrderTransition(context, po, 'received', {
+      receipts: validReceipts.length,
+      totalReceived: po.receivedTotal,
+    });
+  }
   return serializePurchaseOrder(po);
 };
 
@@ -307,6 +331,9 @@ export const transitionPurchaseOrder = async (
   po.status = status;
   addAudit(po, status === 'sent' ? 'send' : status === 'closed' ? 'close' : status === 'canceled' ? 'cancel' : 'update', context.userId);
   await po.save();
+  if (['sent', 'received'].includes(status)) {
+    await auditPurchaseOrderTransition(context, po, status, { status });
+  }
   return serializePurchaseOrder(po);
 };
 
@@ -322,6 +349,7 @@ export const sendPurchaseOrder = async (
   po.status = 'sent';
   addAudit(po, 'send', context.userId, note);
   await po.save();
+  await auditPurchaseOrderTransition(context, po, 'sent', { note });
   return serializePurchaseOrder(po);
 };
 

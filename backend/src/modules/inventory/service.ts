@@ -42,6 +42,7 @@ import ReorderAlertModel, {
   type ReorderAlertDocument,
   type ReorderAlertStatus,
 } from './models/ReorderAlert';
+import { logAuditEntry } from '../audit';
 import type {
   LocationInput,
   PartInput,
@@ -256,6 +257,9 @@ type PartRecord = Pick<
   | 'unitCost'
   | 'unit'
   | 'cost'
+  | 'min'
+  | 'max'
+  | 'reorder'
   | 'minStock'
   | 'minQty'
   | 'maxQty'
@@ -499,6 +503,15 @@ const serializePart = (
   }
   if (typeof part.cost === 'number') {
     response.cost = part.cost;
+  }
+  if (typeof part.min === 'number') {
+    response.min = part.min;
+  }
+  if (typeof part.max === 'number') {
+    response.max = part.max;
+  }
+  if (typeof part.reorder === 'number') {
+    response.reorder = part.reorder;
   }
 
   if (part.siteId) {
@@ -989,6 +1002,25 @@ export const receiveInventory = async (
             },
           ],
           { session },
+        );
+
+        await logAuditEntry(
+          {
+            tenantId: context.tenantId,
+            module: 'inventory',
+            action: 'stock_adjustment',
+            entityType: 'InventoryPart',
+            entityId: part._id.toString(),
+            actorId: context.userId,
+            metadata: {
+              locationId: location._id.toString(),
+              delta: input.delta,
+              quantityAfter: stock.quantity,
+              partQuantityAfter: part.quantity,
+              reason: input.metadata?.reason ?? 'Adjustment',
+            },
+          },
+          session,
         );
 
         return created;

@@ -40,6 +40,7 @@ import VendorsPage from "@/pages/VendorsPage";
 import VendorEditor from "@/pages/vendors/VendorEditor";
 import PurchaseOrderListPage from "@/pages/purchasing/PurchaseOrderListPage";
 import PurchaseOrderDetailPage from "@/pages/purchasing/PurchaseOrderDetailPage";
+import PurchaseOrderReceivingPage from "@/pages/purchasing/PurchaseOrderReceivingPage";
 import Reports from "@/pages/Reports";
 import Notifications from "@/pages/Notifications";
 import NotificationSettings from "@/pages/NotificationSettings";
@@ -384,6 +385,14 @@ export default function App() {
             element={
               <RequirePermission permission="inventory.read">
                 <PurchaseOrderDetailPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/purchasing/receiving"
+            element={
+              <RequirePermission permission="inventory.read">
+                <PurchaseOrderReceivingPage />
               </RequirePermission>
             }
           />

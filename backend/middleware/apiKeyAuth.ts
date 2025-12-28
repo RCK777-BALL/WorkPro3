@@ -3,7 +3,7 @@
  */
 
 import type { RequestHandler } from 'express';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import crypto from 'crypto';
 
 import ApiKey, { type ApiKeyDocument } from '../models/ApiKey';
@@ -74,7 +74,7 @@ export const apiKeyRateLimiter = rateLimit({
   max: (req) => req.apiKey?.rateLimitMax ?? defaultMax,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.apiKey?._id?.toString() ?? req.ip ?? 'anonymous',
+  keyGenerator: (req) => req.apiKey?._id?.toString() ?? ipKeyGenerator(req),
 });
 
 export const apiKeyAuthMiddleware: RequestHandler[] = [requireApiKey, apiKeyRateLimiter];

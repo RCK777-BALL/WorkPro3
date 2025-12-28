@@ -52,6 +52,15 @@ import {
   inventoryTransferSchema,
   vendorInputSchema,
 } from './schemas';
+
+const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
+  if (!req.tenantId) {
+    res.status(400).json({ error: 'Tenant context required' });
+    return false;
+  }
+  return true;
+};
+
 const buildContext = (req: AuthedRequest): InventoryContext => {
   const context: InventoryContext = {
     tenantId: req.tenantId!,

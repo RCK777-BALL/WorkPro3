@@ -1014,7 +1014,7 @@ export const receiveInventory = async (
             actorId: context.userId,
             metadata: {
               locationId: location._id.toString(),
-              delta: input.delta,
+              delta: input.quantity,
               quantityAfter: stock.quantity,
               partQuantityAfter: part.quantity,
               reason: input.metadata?.reason ?? 'Adjustment',

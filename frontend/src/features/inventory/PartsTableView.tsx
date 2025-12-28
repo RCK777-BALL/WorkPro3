@@ -81,6 +81,7 @@ const PartsTableView = () => {
   const total = partsQuery.data?.total ?? 0;
   const totalPages = partsQuery.data?.totalPages ?? Math.max(1, Math.ceil(total / pageSize));
   const vendorOptions = vendorsQuery.data ?? [];
+  const hasPartsError = Boolean(partsQuery.error);
 
   const filteredParts = useMemo(() => parts, [parts]);
 
@@ -226,11 +227,11 @@ const PartsTableView = () => {
       </div>
 
       {partsQuery.isLoading && <LoadingSkeleton />}
-      {partsQuery.error && (
+      {hasPartsError && (
         <p className="p-4 text-sm text-error-600">Unable to load inventory. Please try again.</p>
       )}
 
-      {!partsQuery.isLoading && !partsQuery.error && (
+      {!partsQuery.isLoading && !hasPartsError && (
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-neutral-50 text-xs font-semibold uppercase tracking-wide text-neutral-500">
@@ -371,7 +372,7 @@ const PartsTableView = () => {
                       {part.pmTemplates && part.pmTemplates.length > 0 ? (
                         <ul className="list-inside list-disc text-xs text-neutral-600">
                           {part.pmTemplates.map((template) => (
-                            <li key={template.id}>{template.name}</li>
+                            <li key={template.id}>{template.title}</li>
                           ))}
                         </ul>
                       ) : (
@@ -388,9 +389,6 @@ const PartsTableView = () => {
                           >
                             {part.alertState.severity ?? 'ok'}
                           </span>
-                          {part.alertState.message && (
-                            <p className="text-xs text-neutral-500">{part.alertState.message}</p>
-                          )}
                         </div>
                       ) : (
                         <p className="text-neutral-400">No alerts</p>

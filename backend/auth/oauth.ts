@@ -2,35 +2,45 @@
  * SPDX-License-Identifier: MIT
  */
 
-import passport from 'passport';
-import type { Strategy as PassportStrategy } from 'passport';
+import passport, { type Profile as PassportProfile, type Strategy as PassportStrategy } from 'passport';
+import type { VerifyCallback } from 'passport-oauth2';
+import type { Request } from 'express';
 import {
   Strategy as GoogleStrategy,
-  type StrategyOptions as GoogleStrategyOptions,
+  type StrategyOptionsWithRequest as GoogleStrategyOptionsWithRequest,
 } from 'passport-google-oauth20';
 import {
   Strategy as GithubStrategy,
-  type StrategyOptions as GithubStrategyOptions,
+  type StrategyOptionsWithRequest as GithubStrategyOptionsWithRequest,
 } from 'passport-github2';
-import type { User as ExpressUser } from 'express-serve-static-core';
 
 import type { OAuthProvider } from '../config/oauthScopes';
 import { resolveTenantContext } from './tenantContext';
 
 export type { OAuthProvider } from '../config/oauthScopes';
 
-interface OAuthProfile {
+type OAuthProfile = PassportProfile & {
   emails?: Array<{ value?: string }>;
   _json?: Record<string, unknown>;
-}
+};
 
-type DoneCallback = (err: unknown, user?: ExpressUser | false, info?: unknown) => void;
+type DoneCallback = VerifyCallback;
 type OAuthVerifier = (
+  req: Request,
   accessToken: string,
   refreshToken: string,
-  profile: OAuthProfile,
-  done: DoneCallback,
+  paramsOrProfile: OAuthProfile | unknown,
+  profileOrDone: OAuthProfile | DoneCallback,
+  done?: DoneCallback,
 ) => void | Promise<void>;
+
+type OAuthUser = {
+  email: string;
+  tenantId?: string;
+  siteId?: string;
+  roles?: string[];
+  id?: string;
+};
 
 const getProfileDomain = (profile: OAuthProfile | undefined): string | null => {
   const domainCandidate = profile?._json?.hd;
@@ -39,8 +49,26 @@ const getProfileDomain = (profile: OAuthProfile | undefined): string | null => {
 
 const createOAuthVerifier =
   (provider: OAuthProvider): OAuthVerifier =>
-  async (_accessToken: string, _refreshToken: string, profile: OAuthProfile, done: DoneCallback) => {
+  async (
+    _req: Request,
+    _accessToken: string,
+    _refreshToken: string,
+    paramsOrProfile: OAuthProfile | unknown,
+    profileOrDone: OAuthProfile | DoneCallback,
+    doneMaybe?: DoneCallback,
+  ) => {
+    let doneCallback: DoneCallback | undefined;
     try {
+      const [profile, done] =
+        typeof profileOrDone === 'function'
+          ? [paramsOrProfile as OAuthProfile, profileOrDone]
+          : [profileOrDone, doneMaybe];
+
+      if (!done) {
+        return;
+      }
+      doneCallback = done;
+
       const email = profile?.emails?.[0]?.value;
       if (!email) {
         done(null, undefined);
@@ -54,7 +82,7 @@ const createOAuthVerifier =
         ...(profile?._json ? { profile: profile._json } : {}),
       });
 
-      const user: NonNullable<Parameters<DoneCallback>[1]> = { email };
+      const user: OAuthUser = { email };
       if (tenantContext.tenantId) {
         user.tenantId = tenantContext.tenantId;
       }
@@ -68,9 +96,9 @@ const createOAuthVerifier =
         user.id = tenantContext.userId;
       }
 
-      done(null, user);
+      doneCallback(null, user);
     } catch (err) {
-      done(err);
+      doneCallback?.(err);
     }
   };
 
@@ -78,10 +106,11 @@ export const configureOAuth = () => {
   const googleId = process.env.GOOGLE_CLIENT_ID;
   const googleSecret = process.env.GOOGLE_CLIENT_SECRET;
   if (googleId && googleSecret) {
-    const googleOptions: GoogleStrategyOptions = {
+    const googleOptions: GoogleStrategyOptionsWithRequest = {
       clientID: googleId,
       clientSecret: googleSecret,
       callbackURL: '/api/auth/oauth/google/callback',
+      passReqToCallback: true,
     };
     passport.use(
       'google',
@@ -95,10 +124,11 @@ export const configureOAuth = () => {
   const githubId = process.env.GITHUB_CLIENT_ID;
   const githubSecret = process.env.GITHUB_CLIENT_SECRET;
   if (githubId && githubSecret) {
-    const githubOptions: GithubStrategyOptions = {
+    const githubOptions: GithubStrategyOptionsWithRequest = {
       clientID: githubId,
       clientSecret: githubSecret,
       callbackURL: '/api/auth/oauth/github/callback',
+      passReqToCallback: true,
     };
     passport.use(
       'github',

@@ -35,12 +35,12 @@ const buildLocationMap = (locations: InventoryLocation[]) =>
   new Map<string, InventoryLocation>(locations.map((location) => [location.id, location]));
 
 const ReceiveModal = ({
-  open,
+  isOpen,
   onClose,
   partId,
   stockItems,
 }: {
-  open: boolean;
+  isOpen: boolean;
   onClose: () => void;
   partId?: string;
   stockItems: StockItem[];
@@ -56,7 +56,7 @@ const ReceiveModal = ({
     setStockItemId("");
     setQuantity(1);
     setError(null);
-  }, [partId, open]);
+  }, [partId, isOpen]);
 
   const availableLocations = useMemo(
     () => stockItems.filter((item) => item.partId === partId),
@@ -89,7 +89,7 @@ const ReceiveModal = ({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Receive stock">
+    <Modal isOpen={isOpen} onClose={onClose} title="Receive stock">
       <div className="space-y-3">
         <label className="text-sm font-medium text-neutral-800">Location</label>
         <select
@@ -142,6 +142,8 @@ const InventoryPartDetail = () => {
   const stockHistoryQuery = useStockHistoryQuery();
   const stockQuery = useStockItemsQuery();
   const locationsQuery = useLocationsQuery();
+  const hasPartError = Boolean(partQuery.error);
+  const hasHistoryError = Boolean(stockHistoryQuery.error);
 
   const locationMap = useMemo(() => buildLocationMap(locationsQuery.data ?? []), [locationsQuery.data]);
   const [page, setPage] = useState(1);
@@ -226,8 +228,8 @@ const InventoryPartDetail = () => {
               <span>Loading part details…</span>
             </div>
           )}
-          {partQuery.error && <p className="text-sm text-error-600">Unable to load part details.</p>}
-          {!partQuery.isLoading && !partQuery.error && partQuery.data && (
+          {hasPartError && <p className="text-sm text-error-600">Unable to load part details.</p>}
+          {!partQuery.isLoading && !hasPartError && partQuery.data && (
             <div className="grid gap-3 md:grid-cols-3">
               <div>
                 <p className="text-xs uppercase text-neutral-500">Part number</p>
@@ -305,10 +307,10 @@ const InventoryPartDetail = () => {
                   <span>Loading history…</span>
                 </div>
               )}
-              {stockHistoryQuery.error && (
+              {hasHistoryError && (
                 <p className="text-sm text-error-600">Unable to load transaction history.</p>
               )}
-              {!stockHistoryQuery.isLoading && !stockHistoryQuery.error && (
+              {!stockHistoryQuery.isLoading && !hasHistoryError && (
                 <>
                   <StockHistoryList entries={paginatedHistory} />
                   <div className="flex items-center gap-3 text-sm text-neutral-700">
@@ -349,7 +351,7 @@ const InventoryPartDetail = () => {
         </Card.Content>
       </Card>
 
-      <ReceiveModal open={receiveOpen} onClose={() => setReceiveOpen(false)} partId={partId} stockItems={stockQuery.data ?? []} />
+      <ReceiveModal isOpen={receiveOpen} onClose={() => setReceiveOpen(false)} partId={partId} stockItems={stockQuery.data ?? []} />
     </div>
   );
 };

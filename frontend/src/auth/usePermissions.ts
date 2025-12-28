@@ -10,7 +10,7 @@ import {
   type PermissionAction,
   type PermissionCategory,
 } from '@backend-shared/permissions';
-import type { PermissionGrant } from '@backend-shared/admin';
+import type { PermissionGrant } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { SITE_KEY, TENANT_KEY } from '@/lib/http';
 import { safeLocalStorage } from '@/utils/safeLocalStorage';

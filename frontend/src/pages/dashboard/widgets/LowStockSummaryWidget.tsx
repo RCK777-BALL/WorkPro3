@@ -96,8 +96,7 @@ export function LowStockSummaryWidget() {
                     </Button>
                     <Button
                       size="xs"
-                      variant="ghost"
-                      tone="danger"
+                      variant="danger"
                       onClick={() => clear(alert.id)}
                     >
                       <Trash2 className="h-3 w-3" /> Clear

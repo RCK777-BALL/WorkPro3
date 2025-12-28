@@ -55,7 +55,7 @@ const VendorEditor = () => {
         email: data.email ?? '',
         phone: data.phone ?? '',
         status: data.status ?? 'active',
-        address: data.address ?? '',
+        address: data.address ?? {},
         leadTimeDays: data.leadTimeDays,
         spendToDate: data.spendToDate,
       });
@@ -147,8 +147,10 @@ const VendorEditor = () => {
               />
               <Input
                 label="Address"
-                value={form.address ?? ''}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm((prev) => ({ ...prev, address: e.target.value }))}
+                value={form.address?.street ?? ''}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setForm((prev) => ({ ...prev, address: { ...prev.address, street: e.target.value } }))
+                }
               />
               <Input
                 label="Lead time (days)"

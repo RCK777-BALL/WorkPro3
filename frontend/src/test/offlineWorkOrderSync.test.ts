@@ -12,6 +12,7 @@ import {
   setHttpClient,
 } from '@/utils/offlineQueue';
 
+type HttpClient = Parameters<typeof setHttpClient>[0];
 
 type LocalStorageMock = {
   store: Record<string, string>;
@@ -50,7 +51,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  setHttpClient(http as unknown as (args: { method: string; url: string; data?: unknown }) => Promise<unknown>);
+  setHttpClient(http as unknown as HttpClient);
   vi.restoreAllMocks();
 });
 
@@ -59,7 +60,7 @@ describe('offline work order sync', () => {
     const conflictHandler = vi.fn();
     const unsubscribe = onSyncConflict(conflictHandler);
 
-    const httpMock = vi.fn(async ({ method, url }) => {
+    const httpMock: HttpClient = vi.fn(async ({ method, url }) => {
       if (method === 'put' && url === '/work-orders/wo-1/reconcile') {
         throw { response: { status: 409 } };
       }

@@ -49,7 +49,7 @@ export const useVendorsQuery = () =>
   useQuery({ queryKey: INVENTORY_VENDORS_QUERY_KEY, queryFn: fetchVendors, staleTime: 60_000 });
 
 export const useAlertsQuery = () =>
-  useQuery({ queryKey: INVENTORY_ALERTS_QUERY_KEY, queryFn: fetchInventoryAlerts, staleTime: 15_000 });
+  useQuery({ queryKey: INVENTORY_ALERTS_QUERY_KEY, queryFn: () => fetchInventoryAlerts(), staleTime: 15_000 });
 
 export const useLocationsQuery = () =>
   useQuery({ queryKey: INVENTORY_LOCATIONS_QUERY_KEY, queryFn: fetchLocations, staleTime: 60_000 });

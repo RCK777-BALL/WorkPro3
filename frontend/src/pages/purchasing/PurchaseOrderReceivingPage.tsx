@@ -86,7 +86,7 @@ const PurchaseOrderReceivingPage = () => {
         </Card.Content>
       </Card>
 
-      <ReceiveModal purchaseOrder={selected} open={open} onClose={() => setOpen(false)} />
+      <ReceiveModal purchaseOrder={selected} isOpen={open} onClose={() => setOpen(false)} />
     </div>
   );
 };

@@ -29,12 +29,19 @@ export interface VendorNote {
 
 export interface Vendor {
   id: string;
+  _id?: string;
   tenantId?: string;
   name: string;
+  contactPerson?: string;
   email?: string;
   phone?: string;
   status?: 'active' | 'inactive';
-  address?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    province?: string;
+    country?: string;
+  };
   leadTimeDays?: number;
   spendToDate?: number;
   contacts?: VendorContact[];

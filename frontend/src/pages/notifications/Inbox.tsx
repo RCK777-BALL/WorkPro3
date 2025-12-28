@@ -396,7 +396,7 @@ const NotificationsInbox = () => {
                     >
                       Ack
                     </Button>
-                    <Button size="xs" variant="ghost" tone="danger" onClick={() => clear(alert.id)}>
+                    <Button size="xs" variant="danger" onClick={() => clear(alert.id)}>
                       Clear
                     </Button>
                   </div>
@@ -410,7 +410,7 @@ const NotificationsInbox = () => {
       <Card
         title="Notification Feed"
         subtitle="Live updates from the notification service"
-        actions={
+        headerActions={
           <div className="flex items-center gap-2 text-sm">
             <select
               value={filter}

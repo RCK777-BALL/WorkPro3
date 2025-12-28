@@ -9,7 +9,7 @@ import { Plus, RefreshCcw } from 'lucide-react';
 import AssetTable from '@/components/assets/AssetTable';
 import AssetModal from '@/components/assets/AssetModal';
 import Button from '@/components/common/Button';
-import http from '@/lib/http';
+import http, { TENANT_KEY } from '@/lib/http';
 import { useAssetStore } from '@/store/assetStore';
 import type { Asset } from '@/types';
 import { duplicateAsset } from '@/utils/duplicate';
@@ -98,6 +98,7 @@ const ManageAssets = () => {
             const restFields: Partial<Omit<Asset, 'id' | 'name'>> = rest;
             const normalizedAsset: Asset = {
               id: resolvedId,
+              tenantId: restFields.tenantId ?? safeLocalStorage.getItem(TENANT_KEY) ?? 'unknown-tenant',
               name: name ?? 'Unnamed Asset',
               ...restFields,
             };
@@ -404,7 +405,7 @@ const ManageAssets = () => {
               </button>
             </div>
             <div className="mt-4 flex justify-center">
-              <AssetQRCode assetId={qrPreviewAsset.id} value={qrPreviewAsset.qrCode ?? qrPreviewAsset.id} />
+              <AssetQRCode value={qrPreviewAsset.qrCode ?? qrPreviewAsset.id} />
             </div>
           </div>
         </div>

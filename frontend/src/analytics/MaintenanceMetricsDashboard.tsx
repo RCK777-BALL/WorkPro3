@@ -33,7 +33,7 @@ const MaintenanceMetricsDashboard = () => {
 
   const { data, isLoading, error } = useMaintenanceMetricsQuery(appliedFilters);
 
-  const metricsCards = useMemo(
+  const metricsCards = useMemo<Array<{ label: string; value: string; subtext: string }>>(
     () => [
       {
         label: 'MTTR (hrs)',
@@ -81,6 +81,8 @@ const MaintenanceMetricsDashboard = () => {
       addToast('Failed to export maintenance metrics', 'error');
     }
   };
+
+  const hasError = Boolean(error);
 
   return (
     <div className="space-y-6">
@@ -139,7 +141,7 @@ const MaintenanceMetricsDashboard = () => {
         </div>
       </div>
 
-      {error && (
+      {hasError && (
         <Card title="Maintenance metrics" className="border border-rose-500/40 bg-rose-500/10">
           <p className="text-sm text-rose-200">Failed to load metrics. Please try again.</p>
         </Card>

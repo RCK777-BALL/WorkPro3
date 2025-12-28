@@ -47,7 +47,14 @@ export type {
   InventoryTransfer,
   InventoryTransferPayload,
 } from '../../../shared/types/inventory';
-export type { CustomReportResponse, ReportQueryRequest, ReportTemplate, ReportTemplateInput } from '@backend-shared/reports';
+export type {
+  CustomReportResponse,
+  ReportField,
+  ReportFilter,
+  ReportQueryRequest,
+  ReportTemplate,
+  ReportTemplateInput,
+} from '@backend-shared/reports';
 export type { Vendor } from './vendor';
 export type { UploadedFile, UploadResponse } from '../../../shared/types/uploads';
 export type { ApiResult, PaginatedResult, SortDirection, TenantScoped } from '../../../shared/types/http';
@@ -55,6 +62,7 @@ export type {
   OnboardingState,
   OnboardingStep,
   OnboardingStepKey,
+  OnboardingReminderResponse,
   PMTemplateLibraryItem,
   InspectionFormTemplate,
 } from '../../../shared/types/onboarding';
@@ -111,6 +119,7 @@ export interface Asset {
   expectedLifeMonths?: number;
   replacementDate?: string;
   installationDate?: string;
+  lineId?: string;
   line?: string;
   station?: string;
   /** Identifier of the station the asset belongs to */
@@ -132,6 +141,8 @@ export interface Asset {
   documents?: File[];
   reliability?: { mttrHours: number; mtbfHours: number };
   downtimeCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export type AssetStatusMap = Record<string, number>;
@@ -141,6 +152,7 @@ export interface Department {
   name: string;
   notes?: string;
   description?: string;
+  lines?: Line[];
 }
 
 export interface PlantSummary {
@@ -194,6 +206,23 @@ export interface WorkOrderChecklistItem {
   done?: boolean;
 }
 
+export interface WorkOrderChecklistHistoryEntry {
+  checklistItemId?: string;
+  checklistItemLabel?: string;
+  reading?: string | number | boolean | null;
+  passed?: boolean;
+  evidenceUrls?: string[];
+  recordedAt?: string;
+  recordedBy?: string;
+}
+
+export interface WorkOrderChecklistCompliance {
+  totalChecks: number;
+  passedChecks: number;
+  passRate: number;
+  status: 'compliant' | 'at_risk' | 'failing' | 'unknown';
+}
+
 export interface WorkOrder {
   /** Unique identifier */
   id: string;
@@ -221,7 +250,7 @@ export interface WorkOrder {
   assetId?: string;
 
   /** Asset related to this work order */
-  asset?: Asset;
+  asset?: Partial<Asset> & { id: string; name?: string };
 
   /** Priority of the work order */
   priority: 'low' | 'medium' | 'high' | 'critical';
@@ -256,6 +285,8 @@ export interface WorkOrder {
   }[];
   checklist?: WorkOrderChecklistItem[];
   partsUsed?: { partId: string; qty: number; cost: number }[];
+  checklistHistory?: WorkOrderChecklistHistoryEntry[];
+  checklistCompliance?: WorkOrderChecklistCompliance;
   signatures?: { by: string; ts: string }[];
   timeSpentMin?: number;
   photos?: string[];
@@ -309,6 +340,7 @@ export interface WorkOrder {
   approvedAt?: string;
   requestedBy?: string;
   requestedAt?: string;
+  updatedAt?: string;
   slaDueAt?: string;
   slaResponseDueAt?: string;
   slaResolveDueAt?: string;
@@ -756,20 +788,4 @@ export interface WorkHistoryEntry {
 export interface WorkHistory {
   metrics: WorkHistoryMetrics;
   recentWork: WorkHistoryEntry[];
-}
-
-export interface Vendor {
-  _id: string;
-  name: string;
-  contactPerson?: string;
-  email?: string;
-  phone?: string;
-  address?: {
-    street?: string;
-    city?: string;
-    province?: string;
-    country?: string;
-  };
-  createdAt?: string;
-  updatedAt?: string;
 }

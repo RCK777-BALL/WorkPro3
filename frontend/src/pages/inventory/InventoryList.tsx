@@ -20,6 +20,7 @@ const InventoryList = () => {
 
   const locationsQuery = useLocationsQuery();
   const stockQuery = useStockItemsQuery();
+  const hasStockError = Boolean(stockQuery.error);
 
   const locationMap = useMemo(() => buildLocationMap(locationsQuery.data ?? []), [locationsQuery.data]);
 
@@ -124,11 +125,11 @@ const InventoryList = () => {
               <span>Loading inventory…</span>
             </div>
           )}
-          {stockQuery.error && (
+          {hasStockError && (
             <p className="text-sm text-error-600">Unable to load stock. Please try again.</p>
           )}
 
-          {!stockQuery.isLoading && !stockQuery.error && (
+          {!stockQuery.isLoading && !hasStockError && (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-neutral-200 text-sm">
                 <thead className="bg-neutral-50">
@@ -176,4 +177,3 @@ const InventoryList = () => {
 };
 
 export default InventoryList;
-

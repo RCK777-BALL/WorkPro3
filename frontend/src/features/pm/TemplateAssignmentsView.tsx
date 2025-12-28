@@ -100,8 +100,8 @@ const TemplateAssignmentsView = () => {
                     <div>
                       <p className="font-medium text-neutral-800">{assignment.assetName ?? 'Unresolved asset'}</p>
                       <p className="text-sm text-neutral-500">
-                        {assignment.trigger?.type === 'meter'
-                          ? `Meter trigger: +${assignment.trigger.meterThreshold ?? '–'}`
+                        {assignment.usageMetric
+                          ? `Meter trigger: +${assignment.usageTarget ?? '–'}`
                           : `Interval: ${assignment.interval ?? 'Not set'}${assignment.nextDue ? ` · Next due ${new Date(assignment.nextDue).toLocaleDateString()}` : ''}`}
                       </p>
                       {assignment.procedureTemplateName && (

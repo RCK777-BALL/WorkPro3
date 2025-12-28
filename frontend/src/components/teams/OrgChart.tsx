@@ -58,7 +58,7 @@ const OrgChart: React.FC<OrgChartProps> = ({ onSelect }) => {
 
   const treeData = useMemo(() => buildTree(members), [members]);
 
-  const handleClick = (node: TreeNode) => {
+  const handleClick = (node: TreeNodeDatum & { member: TeamMember }) => {
     if (node.member.id === 'root') return;
     setSelectedId(node.member.id);
     onSelect(node.member);

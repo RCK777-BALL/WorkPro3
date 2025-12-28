@@ -9,6 +9,7 @@ import { useVendorsQuery } from './hooks';
 const VendorListPanel = () => {
   const { data, isLoading, error } = useVendorsQuery();
   const vendors = data ?? [];
+  const hasError = Boolean(error);
 
   return (
     <section className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
@@ -20,11 +21,11 @@ const VendorListPanel = () => {
         </div>
       </div>
       {isLoading && <p className="py-4 text-sm text-neutral-500">Loading vendor directory…</p>}
-      {error && <p className="py-4 text-sm text-error-600">Unable to load vendors.</p>}
-      {!isLoading && !error && vendors.length === 0 && (
+      {hasError && <p className="py-4 text-sm text-error-600">Unable to load vendors.</p>}
+      {!isLoading && !hasError && vendors.length === 0 && (
         <p className="py-4 text-sm text-neutral-500">No vendors added yet.</p>
       )}
-      {!isLoading && !error && vendors.length > 0 && (
+      {!isLoading && !hasError && vendors.length > 0 && (
         <ul className="divide-y divide-neutral-100">
           {vendors.map((vendor) => (
             <li key={vendor.id} className="py-3 text-sm">

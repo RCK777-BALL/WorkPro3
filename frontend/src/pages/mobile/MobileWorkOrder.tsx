@@ -104,7 +104,7 @@ const MobileWorkOrder = () => {
       await http.put(`/workorders/${id}`, payload);
     } else {
       enqueueWorkOrderUpdate(id, payload);
-      emitToast('Saved update for background sync', 'info');
+      emitToast('Saved update for background sync', 'success');
     }
   };
 
@@ -145,7 +145,7 @@ const MobileWorkOrder = () => {
     } else {
       addToQueue({ method: 'post', url: `/workorders/${id}/media`, data: payload });
       setPendingMedia([]);
-      emitToast('Media queued for background upload', 'info');
+      emitToast('Media queued for background upload', 'success');
     }
   };
 

@@ -115,6 +115,7 @@ export const configureOIDC = () => {
           callbackURL: provider.callbackPath,
           authorizationURL: provider.authorizationUrl ?? `${issuerBase}/authorize`,
           tokenURL: provider.tokenUrl ?? `${issuerBase}/token`,
+          userInfoURL: `${issuerBase}/userinfo`,
         },
         createOidcVerifier(provider.name),
       ) as unknown as PassportStrategy,

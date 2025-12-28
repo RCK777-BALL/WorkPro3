@@ -35,7 +35,11 @@ const subscriptionEvents = [
   { key: 'request_submitted', label: 'Requests', description: 'New request submissions.' },
 ];
 
-const channelOptions = [
+const channelOptions: Array<{
+  key: NotificationSubscription['channels'][number];
+  label: string;
+  description: string;
+}> = [
   { key: 'in_app', label: 'In-app', description: 'Show alerts in the inbox.' },
   { key: 'email', label: 'Email', description: 'Send alerts to your email.' },
   { key: 'push', label: 'Push', description: 'Browser or device push alerts.' },
@@ -150,7 +154,9 @@ const NotificationSettingsPage = () => {
     try {
       const payload = {
         events: subscription.events ?? [],
-        channels: subscription.channels?.length ? subscription.channels : ['in_app'],
+        channels: subscription.channels?.length
+          ? subscription.channels
+          : (['in_app'] as NotificationSubscription['channels']),
         quietHours: subscription.quietHours,
         digest: subscription.digest,
       };

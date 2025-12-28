@@ -10,6 +10,7 @@ const AlertsPanel = () => {
   const { data, isLoading, error } = useAlertsQuery();
   const alerts = data?.items ?? [];
   const alertCount = data?.openCount ?? alerts.length;
+  const hasError = Boolean(error);
   const thresholdForAlert = (alert: (typeof alerts)[number]) =>
     alert.minLevel && alert.minLevel > 0 ? alert.minLevel : alert.reorderPoint;
 
@@ -26,13 +27,13 @@ const AlertsPanel = () => {
         </span>
       </div>
       {isLoading && <p className="py-4 text-sm text-neutral-500">Checking current inventory…</p>}
-      {error && (
+      {hasError && (
         <p className="py-4 text-sm text-error-600">Unable to load alerts. Please try again later.</p>
       )}
-      {!isLoading && !error && alerts.length === 0 && (
+      {!isLoading && !hasError && alerts.length === 0 && (
         <p className="py-4 text-sm text-neutral-500">All parts are above their reorder points.</p>
       )}
-      {!isLoading && !error && alerts.length > 0 && (
+      {!isLoading && !hasError && alerts.length > 0 && (
         <ul className="divide-y divide-neutral-100">
           {alerts.map((alert) => (
             <li key={alert.id} className="py-3 text-sm">

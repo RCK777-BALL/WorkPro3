@@ -183,7 +183,7 @@ const IotMonitoring = () => {
     setMeterSubmitting(true);
     if (!navigator.onLine) {
       enqueueMeterReading(meterFilter, value);
-      emitToast('Reading queued and will sync when back online.', 'info');
+      emitToast('Reading queued and will sync when back online.', 'success');
       setMeterValue('');
       setMeterSubmitting(false);
       return;

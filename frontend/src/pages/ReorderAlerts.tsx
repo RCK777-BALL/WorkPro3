@@ -9,6 +9,7 @@ import Card from "@/components/common/Card";
 import Badge from "@/components/common/Badge";
 import Button from "@/components/common/Button";
 import { useAlertsQuery } from "@/features/inventory";
+import type { ReorderAlertStatus } from "@/types";
 
 const statusColor: Record<string, string> = {
   open: "bg-warning-50 text-warning-700",
@@ -24,11 +25,12 @@ const statusLabel: Record<string, string> = {
 
 const ReorderAlerts = () => {
   const { data, isLoading, error } = useAlertsQuery();
-  const [decisions, setDecisions] = useState<Record<string, "approved" | "skipped">>({});
+  const [decisions, setDecisions] = useState<Record<string, ReorderAlertStatus>>({});
+  const hasError = Boolean(error);
 
   const alerts = useMemo(
     () =>
-      (data ?? []).map((alert) => ({
+      (data?.items ?? []).map((alert) => ({
         ...alert,
         status: decisions[alert.partId] ?? (alert as any).status ?? "open",
       })),
@@ -58,11 +60,13 @@ const ReorderAlerts = () => {
               <Card.Title>Alerts</Card.Title>
               <Card.Description>Approve to generate a purchase order or skip to silence the alert.</Card.Description>
             </div>
-            <Badge
-              text={`${openAlerts.length} open`}
-              color={openAlerts.length ? "warning" : "success"}
-              icon={<AlertTriangle className="h-4 w-4" />}
-            />
+            <span className="inline-flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-warning-500" />
+              <Badge
+                text={`${openAlerts.length} open`}
+                color={openAlerts.length ? "warning" : "success"}
+              />
+            </span>
           </div>
         </Card.Header>
         <Card.Content>
@@ -72,8 +76,8 @@ const ReorderAlerts = () => {
               Checking inventory…
             </p>
           )}
-          {error && <p className="text-sm text-error-600">Unable to load reorder alerts.</p>}
-          {!isLoading && !error && (
+          {hasError && <p className="text-sm text-error-600">Unable to load reorder alerts.</p>}
+          {!isLoading && !hasError && (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-neutral-200 text-sm">
                 <thead className="bg-neutral-50">
@@ -94,7 +98,11 @@ const ReorderAlerts = () => {
                       <tr key={alert.partId} className="hover:bg-neutral-50">
                         <td className="px-3 py-2 text-neutral-900">
                           <div className="font-semibold">{alert.partName}</div>
-                          <p className="text-xs text-neutral-500">Lead time: {alert.leadTime ?? 0} days</p>
+                          {alert.lastTriggeredAt && (
+                            <p className="text-xs text-neutral-500">
+                              Last triggered {new Date(alert.lastTriggeredAt).toLocaleDateString()}
+                            </p>
+                          )}
                         </td>
                         <td className="px-3 py-2 text-neutral-700">{alert.quantity}</td>
                         <td className="px-3 py-2 text-neutral-700">{alert.reorderPoint}</td>

@@ -12,11 +12,11 @@ import { useToast } from '@/context/ToastContext';
 
 interface ReceiveModalProps {
   purchaseOrder?: PurchaseOrder;
-  open: boolean;
+  isOpen: boolean;
   onClose: () => void;
 }
 
-const ReceiveModal = ({ purchaseOrder, open, onClose }: ReceiveModalProps) => {
+const ReceiveModal = ({ purchaseOrder, isOpen, onClose }: ReceiveModalProps) => {
   const { addToast } = useToast();
   const receiveMutation = useAdvancePurchaseOrder(purchaseOrder?.id);
   const openLines = useMemo(
@@ -33,19 +33,19 @@ const ReceiveModal = ({ purchaseOrder, open, onClose }: ReceiveModalProps) => {
 
     const invalid = receipts.find((receipt) => receipt.quantity + (receipt.line.qtyReceived ?? 0) > receipt.line.qtyOrdered);
     if (invalid) {
-      addToast({ title: 'Cannot receive more than ordered', variant: 'error' });
+      addToast('Cannot receive more than ordered', 'error');
       return;
     }
     await receiveMutation.mutateAsync({
       receipts: receipts.map((receipt) => ({ part: receipt.part, quantity: receipt.quantity })),
     });
-    addToast({ title: 'Goods receipt posted', variant: 'success' });
+    addToast('Goods receipt posted', 'success');
     setQuantities({});
     onClose();
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Receive items">
+    <Modal isOpen={isOpen} onClose={onClose} title="Receive items">
       <div className="space-y-4">
         <p className="text-sm text-neutral-600">Enter quantities for lines that arrived.</p>
         <div className="space-y-3">

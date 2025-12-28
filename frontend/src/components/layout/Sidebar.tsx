@@ -394,8 +394,8 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
   );
 
   const navBadges: Partial<Record<NavItemId, number>> = useMemo(() => {
-    const alerts = alertsQuery.data ?? [];
-    const openAlerts = alerts.filter((alert) => ((alert as { status?: string }).status ?? "open") === "open");
+    const alerts = alertsQuery.data?.items ?? [];
+    const openAlerts = alerts.filter((alert) => (alert.status ?? "open") === "open");
     return { "reorder-alerts": openAlerts.length };
   }, [alertsQuery.data]);
 
@@ -411,11 +411,12 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
     return sections.map((section) => ({
       ...section,
       items: completedOrder
-        .map((id) => ({ ...navItems[id], badge: navBadges[id] }))
+        .map((id) => ({
+          ...navItems[id],
+          ...(navBadges[id] !== undefined ? { badge: navBadges[id] } : {}),
+        }))
         .filter((item) => item && item.section === section.id)
-        .filter((item): item is NavItem =>
-          Boolean(item) && (!item.permission || can(item.permission)),
-        ),
+        .filter((item) => !item.permission || can(item.permission)),
     }));
   }, [sidebarOrder, can, navBadges]);
 

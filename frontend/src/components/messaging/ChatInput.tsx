@@ -5,7 +5,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Smile, Paperclip, Send, Image, AtSign, Hash } from 'lucide-react';
 import Picker from '@emoji-mart/react';
-import type { Emoji } from '@emoji-mart/data';
 import { getChatSocket } from '@/utils/chatSocket';
 import { useToast } from '@/context/ToastContext';
 
@@ -41,6 +40,9 @@ type EmojiMartData = {
   };
 };
 
+type EmojiSelection = {
+  native: string;
+};
  
 
 interface ChatInputProps {
@@ -101,7 +103,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     }
   };
 
-  const handleEmojiSelect = (emoji: Emoji) => {
+  const handleEmojiSelect = (emoji: EmojiSelection) => {
     setMessage((prev) => prev + emoji.native);
     setShowEmojiPicker(false);
   };

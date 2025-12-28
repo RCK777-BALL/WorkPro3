@@ -2,7 +2,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { Part } from '@/types';
+import type { Part, VendorSummary } from '@/types';
+import { TENANT_KEY } from '@/lib/http';
+import { safeLocalStorage } from '@/utils/safeLocalStorage';
 
 type MaybeDate = string | Date | null | undefined;
 
@@ -46,16 +48,20 @@ const toDateInput = (value: MaybeDate): string => {
   return date.toISOString().split('T')[0] ?? '';
 };
 
-const resolveVendorId = (value: unknown): string | undefined => {
+const resolveVendor = (value: unknown): VendorSummary | undefined => {
   if (!value) return undefined;
   if (typeof value === 'string') {
-    return value;
+    return { id: value, name: value };
   }
   if (typeof value === 'object') {
     const obj = value as Record<string, unknown>;
     const candidate = obj.id ?? obj._id;
+    const name = typeof obj.name === 'string' ? obj.name : undefined;
     if (typeof candidate === 'string') {
-      return candidate;
+      return { id: candidate, name: name ?? candidate };
+    }
+    if (name) {
+      return { id: name, name };
     }
   }
   return undefined;
@@ -68,11 +74,13 @@ export const normalizeInventoryItem = (item: InventoryApiItem): Part => {
       ? crypto.randomUUID()
       : Math.random().toString(36).slice(2);
   const id = resolvedId ?? fallbackId;
+  const tenantId = safeLocalStorage.getItem(TENANT_KEY) ?? 'unknown-tenant';
   const name = toOptionalString(item.name) ?? '';
   const sku = toOptionalString(item.sku) ?? toOptionalString(item.partNumber) ?? '';
 
   return {
     id,
+    tenantId,
     name,
     description: toOptionalString(item.description),
     category: toOptionalString(item.category) ?? undefined,
@@ -88,7 +96,7 @@ export const normalizeInventoryItem = (item: InventoryApiItem): Part => {
         ? Number(item.reorderThreshold)
         : undefined,
     lastRestockDate: toDateInput(item.lastRestockDate),
-    vendor: resolveVendorId(item.vendor),
+    vendor: resolveVendor(item.vendor),
     lastOrderDate: toDateInput(item.lastOrderDate),
     image: typeof item.image === 'string' ? item.image : undefined,
   };

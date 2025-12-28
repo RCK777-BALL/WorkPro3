@@ -22,6 +22,24 @@ const ensureTimeline = (
   return workOrder.timeline!;
 };
 
+const recordApprovalState = (
+  workOrder: WorkOrderDocument,
+  state: NonNullable<WorkOrderDocument['approvalState']>,
+  note?: string,
+  user?: AuthedRequest['user'],
+) => {
+  workOrder.approvalState = state;
+  if (!workOrder.approvalStates) {
+    workOrder.approvalStates = [] as unknown as NonNullable<WorkOrderDocument['approvalStates']>;
+  }
+  workOrder.approvalStates.push({
+    state,
+    changedAt: new Date(),
+    changedBy: resolveUserId(user),
+    note,
+  });
+};
+
 export const getWorkOrderById = async (context: WorkOrderContext, workOrderId: string) => {
   if (!isValidObjectId(workOrderId)) throw new Error('Invalid work order id');
   return WorkOrder.findOne({ _id: workOrderId, tenantId: context.tenantId });
@@ -109,6 +127,7 @@ export const advanceApproval = async (
 
   if (!workOrder.approvalSteps?.length) {
     workOrder.approvalStatus = update.approved ? 'approved' : 'rejected';
+    recordApprovalState(workOrder, update.approved ? 'approved' : 'rejected', update.note, user);
     return workOrder.save();
   }
 
@@ -131,6 +150,7 @@ export const advanceApproval = async (
       }
     } else {
       workOrder.approvalStatus = update.approved ? 'approved' : 'rejected';
+      recordApprovalState(workOrder, update.approved ? 'approved' : 'rejected', update.note, user);
     }
 
     const timeline = ensureTimeline(workOrder);
@@ -140,6 +160,45 @@ export const advanceApproval = async (
       createdAt: new Date(),
       type: 'approval',
     createdBy: update.approverId ?? resolveUserId(user),
+  });
+
+  await workOrder.save();
+  return workOrder;
+};
+
+export const requestApproval = async (
+  context: WorkOrderContext,
+  workOrderId: string,
+  note?: string,
+  user?: AuthedRequest['user'],
+) => {
+  const workOrder = await getWorkOrderById(context, workOrderId);
+  if (!workOrder) throw new Error('Work order not found');
+
+  workOrder.approvalStatus = 'pending';
+  workOrder.status = 'pending_approval';
+  workOrder.approvalRequestedBy = resolveUserId(user);
+  workOrder.requestedAt = new Date();
+  recordApprovalState(workOrder, 'pending', note, user);
+
+  if (!workOrder.currentApprovalStep) {
+    workOrder.currentApprovalStep = 1;
+  }
+
+  const firstStep = findActiveApproval(workOrder);
+  if (firstStep?.approver) {
+    notifyUser(firstStep.approver, `Approval required for ${workOrder.title}`, {
+      title: 'Work order approval needed',
+    }).catch(() => undefined);
+  }
+
+  const timeline = ensureTimeline(workOrder);
+  timeline.push({
+    label: 'Approval requested',
+    notes: note,
+    createdAt: new Date(),
+    type: 'approval',
+    createdBy: resolveUserId(user),
   });
 
   await workOrder.save();
@@ -172,6 +231,43 @@ export const acknowledgeSla = async (
   return workOrder;
 };
 
+export const evaluateSla = (
+  workOrder: WorkOrderDocument,
+  now: Date = new Date(),
+) => {
+  const baseTime = workOrder.requestedAt ?? workOrder.createdAt ?? now;
+  const responseDueAt =
+    workOrder.slaResponseDueAt ??
+    workOrder.slaTargets?.responseDueAt ??
+    (workOrder.slaTargets?.responseMinutes
+      ? new Date(baseTime.getTime() + workOrder.slaTargets.responseMinutes * 60 * 1000)
+      : undefined);
+  const resolveDueAt =
+    workOrder.slaResolveDueAt ??
+    workOrder.slaTargets?.resolveDueAt ??
+    (workOrder.slaTargets?.resolveMinutes
+      ? new Date(baseTime.getTime() + workOrder.slaTargets.resolveMinutes * 60 * 1000)
+      : undefined);
+
+  const responseBreached =
+    Boolean(responseDueAt) &&
+    !workOrder.slaRespondedAt &&
+    now.getTime() > (responseDueAt as Date).getTime();
+  const resolveBreached =
+    Boolean(resolveDueAt) &&
+    !workOrder.slaResolvedAt &&
+    workOrder.status !== 'completed' &&
+    now.getTime() > (resolveDueAt as Date).getTime();
+
+  return {
+    responseDueAt,
+    resolveDueAt,
+    responseBreached,
+    resolveBreached,
+    trigger: responseBreached ? 'response' : resolveBreached ? 'resolve' : null,
+  } as const;
+};
+
 export const markSlaBreach = async (workOrder: WorkOrderDocument, trigger: 'response' | 'resolve') => {
   if (!workOrder.slaBreachAt) {
     workOrder.slaBreachAt = new Date();
@@ -181,6 +277,7 @@ export const markSlaBreach = async (workOrder: WorkOrderDocument, trigger: 'resp
       createdAt: new Date(),
       type: 'sla',
     });
+    await notifyWorkOrderSlaBreach(workOrder, trigger);
   }
 
   return escalateIfNeeded(workOrder);
@@ -264,6 +361,7 @@ export const escalateIfNeeded = async (workOrder: WorkOrderDocument) => {
         title: 'SLA escalation',
       }).catch(() => undefined);
     });
+    notifyWorkOrderSlaEscalation(workOrder, rule).catch(() => undefined);
 
     const timeline = ensureTimeline(workOrder);
     timeline.push({

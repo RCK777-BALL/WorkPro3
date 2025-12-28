@@ -177,6 +177,25 @@ export const advanceApprovalHandler: AuthedRequestHandler<{ workOrderId: string 
   }
 };
 
+export const requestApprovalHandler: AuthedRequestHandler<{ workOrderId: string }> = async (
+  req,
+  res,
+  next,
+) => {
+  if (!ensureContext(req, res)) return;
+  const parse = approvalRequestSchema.safeParse(req.body);
+  if (!parse.success) {
+    fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
+    return;
+  }
+  try {
+    const workOrder = await requestApproval(buildContext(req), req.params.workOrderId, parse.data.note, req.user);
+    res.json({ success: true, data: workOrder });
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
 export const acknowledgeSlaHandler: AuthedRequestHandler<{ workOrderId: string }> = async (
   req,
   res,

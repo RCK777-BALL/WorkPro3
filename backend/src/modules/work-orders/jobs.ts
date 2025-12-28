@@ -5,7 +5,7 @@
 import mongoose from 'mongoose';
 import WorkOrder from '../../../models/WorkOrder';
 import { notifyUser } from '../../../utils';
-import { markSlaBreach } from './service';
+import { evaluateSla, markSlaBreach } from './service';
 
 const UPCOMING_WINDOW_MINUTES = 30;
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
@@ -49,8 +49,9 @@ export const processBreachedSlas = async () => {
 
   await Promise.all(
     breached.map(async (wo) => {
-      const trigger: 'response' | 'resolve' = wo.slaResponseDueAt && !wo.slaRespondedAt ? 'response' : 'resolve';
-      await markSlaBreach(wo, trigger);
+      const evaluation = evaluateSla(wo, now);
+      if (!evaluation.trigger) return;
+      await markSlaBreach(wo, evaluation.trigger);
     }),
   );
 };

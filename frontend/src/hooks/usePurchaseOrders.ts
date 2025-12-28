@@ -58,7 +58,7 @@ export const useUpdatePurchaseOrder = (id?: string) => {
 export const useAdvancePurchaseOrder = (id?: string) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { status: PurchaseOrderStatus; receipts?: Array<{ part: string; quantity: number }> }) =>
+    mutationFn: (payload: { status?: PurchaseOrderStatus; receipts?: Array<{ part: string; quantity: number }> }) =>
       updatePurchaseOrderStatus(id ?? '', payload),
     onSuccess: (po) => {
       void queryClient.invalidateQueries(PURCHASE_ORDERS_QUERY_KEY);

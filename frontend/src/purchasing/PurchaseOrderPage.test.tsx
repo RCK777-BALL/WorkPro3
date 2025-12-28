@@ -16,8 +16,8 @@ const mockUpdatePurchaseOrderStatus = vi.fn();
 vi.mock('@/api/purchasing', () => ({
   listPurchaseOrders: () => mockListPurchaseOrders(),
   createPurchaseOrder: (payload: any) => mockCreatePurchaseOrder(payload),
-  updatePurchaseOrderStatus: (id: string, status: string) =>
-    mockUpdatePurchaseOrderStatus(id, status),
+  updatePurchaseOrderStatus: (id: string, payload: { status?: string }) =>
+    mockUpdatePurchaseOrderStatus(id, payload),
 }));
 
 vi.mock('@/hooks/useVendors', () => ({
@@ -29,13 +29,13 @@ describe('PurchaseOrderPage', () => {
     mockListPurchaseOrders.mockResolvedValue([]);
     mockCreatePurchaseOrder.mockResolvedValue({
       id: 'po-new',
-      status: 'Draft',
+      status: 'draft',
       vendorId: 'v-1',
       lines: [{ part: 'part-1', qtyOrdered: 2 }],
     });
     mockUpdatePurchaseOrderStatus.mockResolvedValue({
       id: 'po-1',
-      status: 'Pending',
+      status: 'sent',
       vendorId: 'v-1',
       lines: [],
     });
@@ -72,15 +72,17 @@ describe('PurchaseOrderPage', () => {
 
   it('advances status and reflects timeline updates', async () => {
     mockListPurchaseOrders.mockResolvedValue([
-      { id: 'po-1', status: 'Draft', vendorId: 'v-1', lines: [] },
+      { id: 'po-1', status: 'draft', vendorId: 'v-1', lines: [] },
     ]);
 
     render(<PurchaseOrderPage />);
     await waitFor(() => expect(mockListPurchaseOrders).toHaveBeenCalled());
 
-    await userEvent.click(screen.getByRole('button', { name: /move to pending/i }));
+    await userEvent.click(screen.getByRole('button', { name: /move to sent/i }));
 
-    await waitFor(() => expect(mockUpdatePurchaseOrderStatus).toHaveBeenCalledWith('po-1', 'Pending'));
-    expect(await screen.findByText('Pending')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(mockUpdatePurchaseOrderStatus).toHaveBeenCalledWith('po-1', { status: 'sent' }),
+    );
+    expect(await screen.findByText('Sent')).toBeInTheDocument();
   });
 });

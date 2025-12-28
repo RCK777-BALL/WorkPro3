@@ -5,7 +5,7 @@
 import type { Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 
-import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
+import type { AuthedRequestHandler } from '../../../types/http';
 import { fail } from '../../lib/http';
 import {
   IntegrationError,
@@ -17,14 +17,6 @@ import {
   syncVendorsWithAccounting,
 } from './service';
 import { accountingProviderSchema, accountingSyncSchema, notificationTestSchema } from './schemas';
-
-const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
-  if (!req.tenantId) {
-    fail(res, 'Tenant context is required', 400);
-    return false;
-  }
-  return true;
-};
 
 const send = (res: Response, data: unknown, status = 200) => {
   res.status(status).json({ success: true, data });
@@ -43,7 +35,6 @@ const handleError = (err: unknown, res: Response, next: NextFunction) => {
 };
 
 export const listNotificationProvidersHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const providers = listNotificationProviders();
     send(res, providers);
@@ -53,7 +44,6 @@ export const listNotificationProvidersHandler: AuthedRequestHandler = async (req
 };
 
 export const sendNotificationTestHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const parse = notificationTestSchema.safeParse(req.body);
   if (!parse.success) {
     fail(res, parse.error.errors.map((error) => error.message).join(', '), 400);
@@ -70,7 +60,6 @@ export const sendNotificationTestHandler: AuthedRequestHandler = async (req, res
 const parseProvider = (value: string | undefined) => accountingProviderSchema.parse(value);
 
 export const syncVendorsHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const provider = parseProvider(req.params.provider);
     const payload = accountingSyncSchema.parse({ provider, payload: req.body }).payload;
@@ -82,7 +71,6 @@ export const syncVendorsHandler: AuthedRequestHandler = async (req, res, next) =
 };
 
 export const syncPurchaseOrdersHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const provider = parseProvider(req.params.provider);
     const payload = accountingSyncSchema.parse({ provider, payload: req.body }).payload;
@@ -94,7 +82,6 @@ export const syncPurchaseOrdersHandler: AuthedRequestHandler = async (req, res, 
 };
 
 export const syncCostsHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const provider = parseProvider(req.params.provider);
     const payload = accountingSyncSchema.parse({ provider, payload: req.body }).payload;

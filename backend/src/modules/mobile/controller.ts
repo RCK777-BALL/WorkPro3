@@ -15,12 +15,7 @@ export const pullDeltas = async (req: AuthedRequest, res: Response): Promise<voi
     return;
   }
 
-  if (!req.tenantId) {
-    res.status(400).json({ message: 'Tenant is required' });
-    return;
-  }
-
-  const tenantId = new Types.ObjectId(req.tenantId);
+  const tenantId = new Types.ObjectId(req.tenantId!);
 
   const data = await fetchDeltas(tenantId, parsed.data.lastSync);
   res.json({ data });
@@ -33,13 +28,9 @@ export const pushActions = async (req: AuthedRequest, res: Response): Promise<vo
     return;
   }
 
-  if (!req.tenantId || !req.user?._id) {
-    res.status(400).json({ message: 'Tenant and user are required' });
-    return;
-  }
-
-  const userId = new Types.ObjectId(req.user._id);
-  const tenantId = new Types.ObjectId(req.tenantId);
+  const user = req.user as { _id?: string; id?: string } | undefined;
+  const userId = new Types.ObjectId(user?._id ?? user?.id);
+  const tenantId = new Types.ObjectId(req.tenantId!);
 
   const formattedActions = parsed.data.actions.map((action) => ({
     ...action,

@@ -7,6 +7,8 @@ import { Router } from 'express';
 import { requireAuth } from '../../../middleware/authMiddleware';
 import tenantScope from '../../../middleware/tenantScope';
 import { requirePermission } from '../../auth/permissions';
+import authorizeTenantSite from '../../middleware/tenantAuthorization';
+import { auditDataAccess } from '../audit';
 import {
   listTemplatesHandler,
   createTemplateHandler,
@@ -36,6 +38,8 @@ const router = Router();
 
 router.use(requireAuth);
 router.use(tenantScope);
+router.use(authorizeTenantSite());
+router.use(auditDataAccess('pm', { entityIdParams: ['templateId', 'assignmentId', 'versionId'] }));
 
 router.get('/', requirePermission('pm', 'read'), listTemplatesHandler);
 router.post('/', requirePermission('pm', 'write'), createTemplateHandler);

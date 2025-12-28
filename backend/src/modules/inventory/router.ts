@@ -7,6 +7,8 @@ import { Router } from 'express';
 import { requireAuth } from '../../../middleware/authMiddleware';
 import tenantScope from '../../../middleware/tenantScope';
 import { requirePermission } from '../../auth/permissions';
+import authorizeTenantSite from '../../middleware/tenantAuthorization';
+import { auditDataAccess } from '../audit';
 import {
   listPartsHandler,
   savePartHandler,
@@ -38,6 +40,8 @@ const router = Router();
 
 router.use(requireAuth);
 router.use(tenantScope);
+router.use(authorizeTenantSite());
+router.use(auditDataAccess('inventory', { entityIdParams: ['partId', 'vendorId', 'locationId', 'purchaseOrderId'] }));
 
 router.get('/scan/resolve', requirePermission('inventory', 'read'), resolvePartScanHandler);
 router.get('/parts', requirePermission('inventory', 'read'), listPartsHandler);

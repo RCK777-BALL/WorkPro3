@@ -7,6 +7,8 @@ import { Router } from 'express';
 import { requireAuth } from '../../../middleware/authMiddleware';
 import tenantScope from '../../../middleware/tenantScope';
 import { requirePermission } from '../../auth/permissions';
+import authorizeTenantSite from '../../middleware/tenantAuthorization';
+import { auditDataAccess } from '../audit';
 import {
   exportSnapshotCsvHandler,
   getSnapshotHandler,
@@ -43,6 +45,8 @@ const router = Router();
 
 router.use(requireAuth);
 router.use(tenantScope);
+router.use(authorizeTenantSite());
+router.use(auditDataAccess('analytics'));
 
 router.get('/metrics', requirePermission('reports.read'), getSnapshotHandler);
 router.get('/metrics.csv', requirePermission('reports.export'), exportSnapshotCsvHandler);

@@ -4,7 +4,11 @@
 
 import { Router } from 'express';
 
+import { requireAuth } from '../../../middleware/authMiddleware';
+import tenantScope from '../../../middleware/tenantScope';
 import { requirePermission } from '../../auth/permissions';
+import authorizeTenantSite from '../../middleware/tenantAuthorization';
+import { auditDataAccess } from '../audit';
 import {
   createReportTemplateHandler,
   exportCustomReportHandler,
@@ -15,6 +19,11 @@ import {
 } from './controller';
 
 const router = Router();
+
+router.use(requireAuth);
+router.use(tenantScope);
+router.use(authorizeTenantSite());
+router.use(auditDataAccess('custom_reports', { entityIdParams: ['id'] }));
 
 router.post('/query', requirePermission('reports', 'read'), runCustomReportHandler);
 router.post('/export', requirePermission('reports', 'export'), exportCustomReportHandler);

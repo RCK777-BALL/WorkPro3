@@ -7,6 +7,8 @@ import { Router } from 'express';
 import { requireAuth, requireRole } from '../../../middleware/authMiddleware';
 import tenantScope from '../../../middleware/tenantScope';
 import { requirePermission } from '../../auth/permissions';
+import authorizeTenantSite from '../../middleware/tenantAuthorization';
+import { auditDataAccess } from '../audit';
 import { enforceSafetyControls } from './middleware';
 import {
   acknowledgeSlaHandler,
@@ -40,6 +42,8 @@ const APPROVAL_ROLES = [
 
 router.use(requireAuth);
 router.use(tenantScope);
+router.use(authorizeTenantSite());
+router.use(auditDataAccess('work_orders', { entityIdParams: ['workOrderId', 'templateId'] }));
 
 router.patch(
   '/:workOrderId/status',

@@ -19,15 +19,6 @@ import {
   type PMContext,
   type PMTemplateResponse,
 } from './service';
-
-const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
-  if (!req.tenantId) {
-    fail(res, 'Tenant context is required', 400);
-    return false;
-  }
-  return true;
-};
-
 const buildContext = (req: AuthedRequest): PMContext => {
   const user = req.user as { _id?: string; id?: string } | undefined;
   const userId = user?._id ?? user?.id ?? '';
@@ -51,7 +42,6 @@ const handleError = (err: unknown, res: Response, next: NextFunction) => {
 };
 
 export const listTemplatesHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await listTemplates(buildContext(req));
     send(res, data);
@@ -61,7 +51,6 @@ export const listTemplatesHandler: AuthedRequestHandler = async (req, res, next)
 };
 
 export const createTemplateHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const parse = templateInputSchema.safeParse(req.body);
   if (!parse.success) {
     fail(res, parse.error.errors.map((e) => e.message).join(', '), 400);
@@ -92,7 +81,6 @@ export const getTemplateHandler: AuthedRequestHandler<{ templateId: string }> = 
   res,
   next,
 ) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await getTemplate(buildContext(req), req.params.templateId);
     send(res, data);
@@ -106,7 +94,6 @@ export const updateTemplateHandler: AuthedRequestHandler<{ templateId: string }>
   res,
   next,
 ) => {
-  if (!ensureTenant(req, res)) return;
   const parse = templateInputSchema.partial().safeParse(req.body);
   if (!parse.success) {
     fail(res, parse.error.errors.map((e) => e.message).join(', '), 400);
@@ -125,7 +112,6 @@ export const deleteTemplateHandler: AuthedRequestHandler<{ templateId: string }>
   res,
   next,
 ) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await deleteTemplate(buildContext(req), req.params.templateId);
     send(res, data);
@@ -139,7 +125,6 @@ export const upsertAssignmentHandler: AuthedRequestHandler<
   unknown,
   unknown
 > = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const parse = assignmentInputSchema.safeParse(req.body);
   if (!parse.success) {
     fail(res, parse.error.errors.map((e) => e.message).join(', '), 400);
@@ -163,7 +148,6 @@ export const deleteAssignmentHandler: AuthedRequestHandler<{ templateId: string;
   res,
   next,
 ) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await removeAssignment(buildContext(req), req.params.templateId, req.params.assignmentId);
     send(res, data);

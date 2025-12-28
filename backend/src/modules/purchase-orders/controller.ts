@@ -22,15 +22,6 @@ import {
   receivePurchaseOrderSchema,
   statusInputSchema,
 } from './validation';
-
-const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
-  if (!req.tenantId) {
-    fail(res, 'Tenant context is required', 400);
-    return false;
-  }
-  return true;
-};
-
 const send = (res: Response, data: unknown, status = 200) => {
   res.status(status).json(data);
 };
@@ -50,7 +41,6 @@ const buildContext = (req: AuthedRequest): PurchaseOrderContext => ({
 });
 
 export const listPurchaseOrdersHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await listPurchaseOrders(buildContext(req));
     send(res, data);
@@ -64,7 +54,6 @@ export const savePurchaseOrderHandler: AuthedRequestHandler<{ purchaseOrderId?: 
   res,
   next,
 ) => {
-  if (!ensureTenant(req, res)) return;
   const parse = purchaseOrderInputSchema.safeParse(req.body);
   if (!parse.success) {
     fail(res, parse.error.errors.map((error) => error.message).join(', '), 400);
@@ -83,7 +72,6 @@ export const transitionPurchaseOrderHandler: AuthedRequestHandler<{ purchaseOrde
   res,
   next,
 ) => {
-  if (!ensureTenant(req, res)) return;
   const parse = statusInputSchema.safeParse(req.body);
   if (!parse.success) {
     fail(res, parse.error.errors.map((error) => error.message).join(', '), 400);
@@ -98,7 +86,6 @@ export const transitionPurchaseOrderHandler: AuthedRequestHandler<{ purchaseOrde
 };
 
 export const sendPurchaseOrderHandler: AuthedRequestHandler<{ purchaseOrderId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await sendPurchaseOrder(buildContext(req), req.params.purchaseOrderId, (req.body as any)?.note);
     send(res, data, 200);
@@ -108,7 +95,6 @@ export const sendPurchaseOrderHandler: AuthedRequestHandler<{ purchaseOrderId: s
 };
 
 export const closePurchaseOrderHandler: AuthedRequestHandler<{ purchaseOrderId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await closePurchaseOrder(buildContext(req), req.params.purchaseOrderId);
     send(res, data, 200);
@@ -118,7 +104,6 @@ export const closePurchaseOrderHandler: AuthedRequestHandler<{ purchaseOrderId: 
 };
 
 export const cancelPurchaseOrderHandler: AuthedRequestHandler<{ purchaseOrderId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await cancelPurchaseOrder(buildContext(req), req.params.purchaseOrderId);
     send(res, data, 200);
@@ -132,7 +117,6 @@ export const receivePurchaseOrderHandler: AuthedRequestHandler<{ purchaseOrderId
   res,
   next,
 ) => {
-  if (!ensureTenant(req, res)) return;
   const parse = receivePurchaseOrderSchema.safeParse(req.body);
   if (!parse.success) {
     fail(res, parse.error.errors.map((error) => error.message).join(', '), 400);

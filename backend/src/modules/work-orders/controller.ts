@@ -7,8 +7,8 @@ import { Types } from 'mongoose';
 
 import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
 import { fail } from '../../lib/http';
-import { approvalAdvanceSchema, slaAcknowledgeSchema, statusUpdateSchema, templateCreateSchema, templateParamSchema, templateUpdateSchema, workOrderParamSchema } from './schemas';
-import { acknowledgeSla, advanceApproval, createTemplate, deleteTemplate, getTemplate, listTemplates, updateTemplate, updateWorkOrderStatus } from './service';
+import { approvalAdvanceSchema, approvalRequestSchema, slaAcknowledgeSchema, statusUpdateSchema, templateCreateSchema, templateParamSchema, templateUpdateSchema, workOrderParamSchema } from './schemas';
+import { acknowledgeSla, advanceApproval, createTemplate, deleteTemplate, getTemplate, listTemplates, requestApproval, updateTemplate, updateWorkOrderStatus } from './service';
 import type { ApprovalStepUpdate, StatusTransition, WorkOrderContext } from './types';
 import type { WorkOrderTemplate } from './templateModel';
 
@@ -114,6 +114,25 @@ export const advanceApprovalHandler: AuthedRequestHandler<{ workOrderId: string 
       approverId: undefined,
     };
     const workOrder = await advanceApproval(buildContext(req), req.params.workOrderId, payload, req.user);
+    res.json({ success: true, data: workOrder });
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const requestApprovalHandler: AuthedRequestHandler<{ workOrderId: string }> = async (
+  req,
+  res,
+  next,
+) => {
+  if (!ensureContext(req, res)) return;
+  const parse = approvalRequestSchema.safeParse(req.body);
+  if (!parse.success) {
+    fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
+    return;
+  }
+  try {
+    const workOrder = await requestApproval(buildContext(req), req.params.workOrderId, parse.data.note, req.user);
     res.json({ success: true, data: workOrder });
   } catch (err) {
     handleError(err, res, next);

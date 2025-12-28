@@ -41,8 +41,33 @@ const approvalStepItem = z.object({
   required: z.boolean().optional(),
 });
 
+const approvalStateItem = z.object({
+  state: z.enum(['draft', 'pending', 'approved', 'rejected', 'escalated', 'cancelled']),
+  changedAt: z.union([z.string(), z.date()]).optional(),
+  changedBy: objectId.optional(),
+  note: z.string().optional(),
+});
+
+const slaTargetSchema = z.object({
+  responseMinutes: z.number().int().positive().optional(),
+  resolveMinutes: z.number().int().positive().optional(),
+  responseDueAt: z.union([z.string(), z.date()]).optional(),
+  resolveDueAt: z.union([z.string(), z.date()]).optional(),
+  source: z.enum(['policy', 'manual']).optional(),
+});
+
 const permitApprovalItem = z.object({
   type: z.string().min(1, 'Permit type is required'),
+  status: z.enum(['pending', 'approved', 'rejected']).optional(),
+  approvedBy: objectId.optional(),
+  approvedAt: z.union([z.string(), z.date()]).optional(),
+  note: z.string().optional(),
+});
+
+const permitRequirementItem = z.object({
+  type: z.string().min(1, 'Permit type is required'),
+  required: z.boolean().optional(),
+  requiredBeforeStatus: z.enum(['assigned', 'in_progress', 'completed']).optional(),
   status: z.enum(['pending', 'approved', 'rejected']).optional(),
   approvedBy: objectId.optional(),
   approvedAt: z.union([z.string(), z.date()]).optional(),
@@ -99,6 +124,7 @@ const baseSchema = z.object({
   complianceProcedureId: z.string().optional(),
   calibrationIntervalDays: z.number().int().positive().optional(),
   approvalStatus: approvalStatusEnum.optional(),
+  approvalState: z.enum(['draft', 'pending', 'approved', 'rejected', 'escalated', 'cancelled']).optional(),
   approvalRequestedBy: objectId.optional(),
   approvedBy: objectId.optional(),
   approvedAt: z.union([z.string(), z.date()]).optional(),
@@ -110,6 +136,7 @@ const baseSchema = z.object({
   slaRespondedAt: z.union([z.string(), z.date()]).optional(),
   slaResolvedAt: z.union([z.string(), z.date()]).optional(),
   slaBreachAt: z.union([z.string(), z.date()]).optional(),
+  slaTargets: slaTargetSchema.optional(),
   slaPolicyId: objectId.optional(),
   slaEscalations: z
     .array(
@@ -133,12 +160,14 @@ const baseSchema = z.object({
   assignees: z.array(objectId).optional(),
   approvalSteps: z.array(approvalStepItem).optional(),
   currentApprovalStep: z.number().int().positive().optional(),
+  approvalStates: z.array(approvalStateItem).optional(),
   checklists: z.array(checklistItemSchema).optional(),
   checklist: z.array(checklistItemSchema).optional(),
   partsUsed: z.array(partItem).optional(),
   signatures: z.array(signatureItem).optional(),
   permits: z.array(objectId).optional(),
   requiredPermitTypes: z.array(z.string().min(1)).optional(),
+  permitRequirements: z.array(permitRequirementItem).optional(),
   permitApprovals: z.array(permitApprovalItem).optional(),
   lockoutTagout: z.array(lockoutTagoutItem).optional(),
   timeSpentMin: z.number().int().nonnegative().optional(),

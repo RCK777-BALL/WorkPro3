@@ -70,7 +70,7 @@ const normalizePartsResult = (
     });
   }
 
-  const pageSize = params.pageSize ?? items.length || 1;
+  const pageSize = params.pageSize ?? (items.length || 1);
   const page = Math.max(1, params.page ?? 1);
   const start = (page - 1) * pageSize;
   const paginated = items.slice(start, start + pageSize);

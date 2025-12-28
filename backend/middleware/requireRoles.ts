@@ -4,6 +4,7 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import type { UserRole } from '../types/auth';
+import { ROLES } from '../types/auth';
 
 // Middleware to ensure the authenticated user has one of the required roles
 const ROLE_EQUIVALENTS: Partial<Record<UserRole, UserRole[]>> = {
@@ -25,6 +26,12 @@ const expandRoles = (roles: UserRole[]): UserRole[] => {
   return Array.from(expanded);
 };
 
+const isUserRole = (role: string): role is UserRole =>
+  (ROLES as readonly string[]).includes(role);
+
+const normalizeUserRoles = (roles?: Array<UserRole | string>): UserRole[] =>
+  (roles ?? []).filter(isUserRole);
+
 const requireRoles =
   (roles: UserRole[]) =>
   (req: Request, res: Response, next: NextFunction): void => {
@@ -33,7 +40,7 @@ const requireRoles =
       return;
     }
 
-    const userRoles: UserRole[] = req.user.roles ?? [];
+    const userRoles = normalizeUserRoles(req.user.roles);
     const isAdmin = userRoles.includes('admin');
     const allowedRoles = expandRoles(roles);
     if (allowedRoles.length > 0 && !allowedRoles.some((role) => userRoles.includes(role))) {

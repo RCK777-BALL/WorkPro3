@@ -3,6 +3,7 @@
  */
 
 import type { RequestHandler } from 'express';
+import type { Types } from 'mongoose';
 
 import type { AuthedRequest } from '../../types/http';
 import {
@@ -26,7 +27,8 @@ const toPermissionKey = <C extends PermissionCategory>(
 const resolvePermissionsForRequest = async (
   req: AuthedRequest,
 ): Promise<{ permissions: Permission[]; roles: string[] }> => {
-  if (!req.user?.id) {
+  const userId = (req.user as { id?: string | Types.ObjectId } | undefined)?.id;
+  if (!userId) {
     throw Object.assign(new Error('Unauthorized'), { status: 401 });
   }
 
@@ -41,7 +43,7 @@ const resolvePermissionsForRequest = async (
   const fallbackRoles = (req.user as { roles?: string[] }).roles;
 
   const result = await resolveUserPermissions({
-    userId: req.user.id,
+    userId,
     ...(tenantId ? { tenantId } : {}),
     ...(siteId ? { siteId } : {}),
     ...(departmentId ? { departmentId } : {}),

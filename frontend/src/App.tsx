@@ -91,6 +91,7 @@ import MobileWorkOrder from "@/pages/mobile/MobileWorkOrder";
 import PwaTechnicianShell from "@/pages/PwaTechnicianShell";
 import RequestFormBuilder from "@/pages/RequestFormBuilder";
 import ReorderAlerts from "@/pages/ReorderAlerts";
+import ScanDeepLink from "@/routes/ScanDeepLink";
 
 export default function App() {
   const navigate = useNavigate();
@@ -225,6 +226,7 @@ export default function App() {
               </RequirePermission>
             }
           />
+          <Route path="/scan/:type/:id" element={<ScanDeepLink />} />
           <Route
             path="/assets/manage"
             element={

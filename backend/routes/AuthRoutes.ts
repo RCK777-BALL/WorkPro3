@@ -39,6 +39,7 @@ import type { AuthedRequest } from '../types/http';
 import { getSecurityPolicy } from '../config/securityPolicies';
 import { buildSessionBinding } from '../utils/sessionBinding';
 import { provisionUserFromIdentity } from '../services/jitProvisioningService';
+import { writeAuditLog } from '../utils/audit';
 
 configureOAuth();
 if (isFeatureEnabled('oidc')) {

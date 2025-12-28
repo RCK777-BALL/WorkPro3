@@ -9,10 +9,10 @@ import http from '@/lib/http';
 import {
   addToQueue,
   enqueueWorkOrderUpdate,
-  onSyncConflict,
   type SyncConflict,
 } from '@/utils/offlineQueue';
 import ConflictResolver from '@/components/offline/ConflictResolver';
+import WorkOrderQueuePanel from '@/components/offline/WorkOrderQueuePanel';
 import DataTable from '@/components/common/DataTable';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
@@ -20,13 +20,14 @@ import { Scan, Search } from 'lucide-react';
 import TableLayoutControls from '@/components/common/TableLayoutControls';
 import NewWorkOrderModal from '@/components/work-orders/NewWorkOrderModal';
 import WorkOrderReviewModal from '@/components/work-orders/WorkOrderReviewModal';
+import WorkOrderMobileCard from '@/components/work-orders/WorkOrderMobileCard';
 import type { WorkOrder } from '@/types';
 import { mapChecklistsFromApi, mapSignaturesFromApi } from '@/utils/workOrderTransforms';
-import { safeLocalStorage } from '@/utils/safeLocalStorage';
 import { useTableLayout } from '@/hooks/useTableLayout';
 import { useAuth } from '@/context/AuthContext';
+import { loadWorkOrderCache, saveWorkOrderCache } from '@/hooks/useWorkOrderCache';
+import { useSyncStore } from '@/store/syncStore';
 
-const LOCAL_KEY = 'offline-workorders';
 const OPTIONAL_WORK_ORDER_KEYS: (keyof WorkOrder)[] = [
   'description',
   'assetId',
@@ -115,7 +116,8 @@ export default function WorkOrders() {
   const [editingOrder, setEditingOrder] = useState<WorkOrder | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<WorkOrder | null>(null);
-  const [conflict, setConflict] = useState<SyncConflict | null>(null);
+  const conflict = useSyncStore((state) => state.conflict) as SyncConflict | null;
+  const setConflict = useSyncStore((state) => state.setConflict);
 
   const columnMetadata = useMemo(
     () => [
@@ -169,20 +171,17 @@ export default function WorkOrders() {
     [setSearchParams],
   );
 
-  useEffect(() => {
-    const unsub = onSyncConflict(setConflict);
-    return () => {
-      unsub();
-    };
-  }, []);
-
   const resolveConflict = async (choice: 'local' | 'server') => {
     if (!conflict) return;
     if (choice === 'local') {
+      const payload = {
+        ...(conflict.local as Record<string, unknown>),
+        clientUpdatedAt: new Date().toISOString(),
+      };
       await http({
         method: conflict.method,
         url: conflict.url,
-        data: conflict.local,
+        data: payload,
       });
     }
     setConflict(null);
@@ -213,9 +212,9 @@ export default function WorkOrders() {
       },
     ) => {
       if (!navigator.onLine) {
-        const cached = safeLocalStorage.getItem(LOCAL_KEY);
-        if (cached) {
-          setWorkOrders(JSON.parse(cached));
+        const cached = await loadWorkOrderCache();
+        if (cached.length > 0) {
+          setWorkOrders(cached);
           setError('You are offline. Showing cached work orders.');
         } else {
           setError('You are offline. No cached work orders available.');
@@ -241,13 +240,13 @@ export default function WorkOrders() {
             })
           : [];
         setWorkOrders(normalized);
-        safeLocalStorage.setItem(LOCAL_KEY, JSON.stringify(normalized));
+        await saveWorkOrderCache(normalized);
         setError(null);
       } catch (err) {
         console.error(err);
-        const cached = safeLocalStorage.getItem(LOCAL_KEY);
-        if (cached) {
-          setWorkOrders(JSON.parse(cached));
+        const cached = await loadWorkOrderCache();
+        if (cached.length > 0) {
+          setWorkOrders(cached);
           setError('Unable to fetch latest work orders. Showing cached data.');
         } else {
           setError('Failed to load work orders.');
@@ -268,7 +267,7 @@ export default function WorkOrders() {
         wo.id === id ? { ...wo, status } : wo
       );
       setWorkOrders(updated);
-      safeLocalStorage.setItem(LOCAL_KEY, JSON.stringify(updated));
+      await saveWorkOrderCache(updated);
       return;
     }
     try {
@@ -323,7 +322,13 @@ export default function WorkOrders() {
       const queueAction =
         isEdit && existingId
           ? () => enqueueWorkOrderUpdate(existingId, payload as Record<string, unknown>)
-          : () => addToQueue({ method: 'post', url: '/workorders', data: payload });
+          : () =>
+              addToQueue({
+                method: 'post',
+                url: '/workorders',
+                data: payload,
+                meta: { entityType: 'workorder', description: 'Create work order' },
+              });
       queueAction();
 
       setWorkOrders((prev) => {
@@ -354,7 +359,7 @@ export default function WorkOrders() {
               }
               return merged;
             });
-            safeLocalStorage.setItem(LOCAL_KEY, JSON.stringify(updated));
+            void saveWorkOrderCache(updated);
             return updated;
           }
 
@@ -382,7 +387,7 @@ export default function WorkOrders() {
           }
 
         const updated = [...prev, temp];
-        safeLocalStorage.setItem(LOCAL_KEY, JSON.stringify(updated));
+        void saveWorkOrderCache(updated);
         return updated;
       });
       return;
@@ -409,10 +414,14 @@ export default function WorkOrders() {
 
   const deleteWorkOrder = async (id: string) => {
     if (!navigator.onLine) {
-      addToQueue({ method: 'delete', url: `/workorders/${id}` });
+      addToQueue({
+        method: 'delete',
+        url: `/workorders/${id}`,
+        meta: { entityType: 'workorder', entityId: id, description: 'Delete work order' },
+      });
       setWorkOrders((prev) => {
         const updated = prev.filter((wo) => wo.id !== id);
-        safeLocalStorage.setItem(LOCAL_KEY, JSON.stringify(updated));
+        void saveWorkOrderCache(updated);
         return updated;
       });
       return;
@@ -723,9 +732,12 @@ export default function WorkOrders() {
 
   return (
     <>
-      <div className="space-y-6 p-6">
+      <div className="space-y-6 p-4 sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-2xl font-bold">Work Orders</h1>
+          <div>
+            <h1 className="text-2xl font-bold">Work Orders</h1>
+            <p className="text-sm text-neutral-500">Mobile-ready list of active and offline work orders.</p>
+          </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <Button
               variant="primary"
@@ -747,9 +759,11 @@ export default function WorkOrders() {
           </div>
         </div>
 
+        <WorkOrderQueuePanel />
+
         {error && <p className="text-red-600">{error}</p>}
 
-        <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 bg-white p-4 rounded-lg shadow-sm border border-neutral-200">
+        <div className="flex flex-col items-center space-y-2 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm sm:flex-row sm:space-x-4 sm:space-y-0">
           <Search className="text-neutral-500" size={20} />
           <input
             type="text"
@@ -760,9 +774,9 @@ export default function WorkOrders() {
           />
         </div>
 
-        <div className="flex flex-wrap items-end gap-4 bg-white p-4 rounded-lg shadow-sm border border-neutral-200">
+        <div className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-[1.2fr,1fr,1fr,1fr,auto] lg:items-end">
           <select
-            className="border rounded p-2 flex-1"
+            className="w-full rounded border p-2"
             value={statusFilter}
             onChange={(e: ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value)}
           >
@@ -774,7 +788,7 @@ export default function WorkOrders() {
             <option value="cancelled">Cancelled</option>
           </select>
           <select
-            className="border rounded p-2 flex-1"
+            className="w-full rounded border p-2"
             value={priorityFilter}
             onChange={(e: ChangeEvent<HTMLSelectElement>) => setPriorityFilter(e.target.value)}
           >
@@ -786,13 +800,13 @@ export default function WorkOrders() {
           </select>
           <input
             type="date"
-            className="border rounded p-2"
+            className="w-full rounded border p-2"
             value={startDate}
             onChange={(e: ChangeEvent<HTMLInputElement>) => setStartDate(e.target.value)}
           />
           <input
             type="date"
-            className="border rounded p-2"
+            className="w-full rounded border p-2"
             value={endDate}
             onChange={(e: ChangeEvent<HTMLInputElement>) => setEndDate(e.target.value)}
           />
@@ -818,15 +832,39 @@ export default function WorkOrders() {
           activeLayoutId={tableLayout.activeLayoutId}
         />
 
-        <DataTable<WorkOrder>
-          columns={visibleColumns}
-          data={filteredOrders}
-          keyField="id"
-          onRowClick={openReview}
-          emptyMessage="No work orders available."
-          sortState={tableLayout.sort ?? undefined}
-          onSortChange={(state) => tableLayout.setSort(state ?? null)}
-        />
+        <div className="space-y-3 sm:hidden">
+          {filteredOrders.map((order) => (
+            <WorkOrderMobileCard
+              key={order.id}
+              order={order}
+              onView={() => openReview(order)}
+              onEdit={() => openEditModal(order)}
+              onDelete={() => {
+                if (window.confirm('Are you sure you want to delete this work order?')) {
+                  deleteWorkOrder(order.id);
+                }
+              }}
+              onTransition={(action) => transition(order.id, action)}
+            />
+          ))}
+          {filteredOrders.length === 0 && (
+            <p className="rounded-lg border border-dashed border-neutral-200 bg-white px-4 py-6 text-center text-sm text-neutral-500">
+              No work orders available.
+            </p>
+          )}
+        </div>
+
+        <div className="hidden sm:block">
+          <DataTable<WorkOrder>
+            columns={visibleColumns}
+            data={filteredOrders}
+            keyField="id"
+            onRowClick={openReview}
+            emptyMessage="No work orders available."
+            sortState={tableLayout.sort ?? undefined}
+            onSortChange={(state) => tableLayout.setSort(state ?? null)}
+          />
+        </div>
         <NewWorkOrderModal
           isOpen={isModalOpen}
           onClose={() => {

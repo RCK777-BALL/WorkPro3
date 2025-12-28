@@ -4,6 +4,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import Modal from '@/components/modals/Modal';
+import { recordScanHistory } from '@/utils/scanRouting';
 import { scanQRCode } from '@/utils/qr';
 import type { Part } from '@/types';
 
@@ -31,8 +32,15 @@ const InventoryScanModal: React.FC<InventoryScanModalProps> = ({
         try {
           const data = JSON.parse(raw) as Partial<Part>;
           onScanComplete(null, data);
+          void recordScanHistory({ rawValue: raw, outcome: 'success', source: 'inventory-modal' });
         } catch (err) {
           console.error('Invalid QR data', err);
+          void recordScanHistory({
+            rawValue: raw,
+            outcome: 'failure',
+            error: 'Invalid QR data',
+            source: 'inventory-modal',
+          });
         } finally {
           onClose();
         }
@@ -40,6 +48,12 @@ const InventoryScanModal: React.FC<InventoryScanModalProps> = ({
       .catch((err) => {
         if (!cancelled) {
           console.error('QR scan failed', err);
+          void recordScanHistory({
+            rawValue: 'unknown',
+            outcome: 'failure',
+            error: 'QR scan failed',
+            source: 'inventory-modal',
+          });
           onClose();
         }
       });

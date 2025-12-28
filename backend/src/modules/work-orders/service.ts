@@ -11,6 +11,7 @@ import type { ApprovalStepUpdate, StatusTransition, WorkOrderContext, WorkOrderT
 import { resolveUserId } from './middleware';
 import { notifyUser } from '../../../utils';
 import { applySlaPolicyToWorkOrder } from '../../../services/slaPolicyService';
+import { resolveWorkOrderTimestampConflict } from './conflict';
 
 const ensureTimeline = (
   workOrder: WorkOrderDocument,
@@ -24,6 +25,53 @@ const ensureTimeline = (
 export const getWorkOrderById = async (context: WorkOrderContext, workOrderId: string) => {
   if (!isValidObjectId(workOrderId)) throw new Error('Invalid work order id');
   return WorkOrder.findOne({ _id: workOrderId, tenantId: context.tenantId });
+};
+
+export const reconcileWorkOrderUpdate = async (
+  context: WorkOrderContext,
+  workOrderId: string,
+  payload: Record<string, unknown>,
+  clientUpdatedAt?: Date,
+): Promise<
+  | { status: 'applied'; workOrder: WorkOrderDocument; conflicts: string[] }
+  | { status: 'conflict'; conflicts: string[]; snapshot: Record<string, unknown>; serverUpdatedAt: Date }
+> => {
+  const workOrder = await getWorkOrderById(context, workOrderId);
+  if (!workOrder) throw new Error('Work order not found');
+
+  if (clientUpdatedAt) {
+    const serverUpdatedAt = workOrder.updatedAt ?? workOrder.createdAt ?? new Date(0);
+    const resolution = resolveWorkOrderTimestampConflict(
+      {
+        id: workOrderId,
+        updatedAt: serverUpdatedAt,
+        payload: workOrder.toObject(),
+      },
+      {
+        id: workOrderId,
+        clientUpdatedAt,
+        payload,
+      },
+    );
+
+    if (!resolution.applyChange) {
+      return {
+        status: 'conflict',
+        conflicts: resolution.conflicts,
+        snapshot: workOrder.toObject(),
+        serverUpdatedAt,
+      };
+    }
+  }
+
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value !== undefined) {
+      workOrder.set(key, value);
+    }
+  });
+
+  await workOrder.save();
+  return { status: 'applied', workOrder, conflicts: [] };
 };
 
 export const updateWorkOrderStatus = async (

@@ -47,7 +47,7 @@ const normalizeType = (value?: string | null): ScanEntityType | undefined => {
   return undefined;
 };
 
-const buildPath = (type: ScanEntityType, id: string): string => {
+export const buildScanPath = (type: ScanEntityType, id: string): string => {
   switch (type) {
     case 'asset':
       return `/assets/${id}`;
@@ -87,17 +87,17 @@ export const parseScanPayload = (raw: string): ScanResolution | ScanFailure => {
     const decoded = payload.code128 ?? payload.id ?? payload.assetId ?? payload.workOrderId ?? payload.locationId ?? payload.partId;
     const type = normalizeType(payload.type ?? payload.entityType);
     if (type && decoded) {
-      return { type, id: decoded, raw: normalizedRaw, path: buildPath(type, decoded) };
+      return { type, id: decoded, raw: normalizedRaw, path: buildScanPath(type, decoded) };
     }
     if (payload.assetId) {
-      return { type: 'asset', id: payload.assetId, raw: normalizedRaw, path: buildPath('asset', payload.assetId) };
+      return { type: 'asset', id: payload.assetId, raw: normalizedRaw, path: buildScanPath('asset', payload.assetId) };
     }
     if (payload.workOrderId) {
       return {
         type: 'workOrder',
         id: payload.workOrderId,
         raw: normalizedRaw,
-        path: buildPath('workOrder', payload.workOrderId),
+        path: buildScanPath('workOrder', payload.workOrderId),
       };
     }
     if (payload.locationId) {
@@ -105,11 +105,11 @@ export const parseScanPayload = (raw: string): ScanResolution | ScanFailure => {
         type: 'location',
         id: payload.locationId,
         raw: normalizedRaw,
-        path: buildPath('location', payload.locationId),
+        path: buildScanPath('location', payload.locationId),
       };
     }
     if (payload.partId) {
-      return { type: 'part', id: payload.partId, raw: normalizedRaw, path: buildPath('part', payload.partId) };
+      return { type: 'part', id: payload.partId, raw: normalizedRaw, path: buildScanPath('part', payload.partId) };
     }
   } catch {
     // Not JSON – continue to pattern parsing
@@ -120,29 +120,29 @@ export const parseScanPayload = (raw: string): ScanResolution | ScanFailure => {
     const type = normalizeType(patternMatch[1]);
     const id = coerceId(patternMatch[2]);
     if (type && id) {
-      return { type, id, raw: normalizedRaw, path: buildPath(type, id) };
+      return { type, id, raw: normalizedRaw, path: buildScanPath(type, id) };
     }
   }
 
   const lower = normalizedRaw.toLowerCase();
   if (lower.startsWith('wo-') || lower.startsWith('wo')) {
     const id = normalizedRaw.replace(/^wo[-:/]?/i, '');
-    return { type: 'workOrder', id, raw: normalizedRaw, path: buildPath('workOrder', id) };
+    return { type: 'workOrder', id, raw: normalizedRaw, path: buildScanPath('workOrder', id) };
   }
 
   if (lower.startsWith('part-')) {
     const id = normalizedRaw.replace(/^part[-:/]?/i, '');
-    return { type: 'part', id, raw: normalizedRaw, path: buildPath('part', id) };
+    return { type: 'part', id, raw: normalizedRaw, path: buildScanPath('part', id) };
   }
 
   if (lower.startsWith('loc-') || lower.startsWith('location-')) {
     const id = normalizedRaw.replace(/^(loc|location)[-:/]?/i, '');
-    return { type: 'location', id, raw: normalizedRaw, path: buildPath('location', id) };
+    return { type: 'location', id, raw: normalizedRaw, path: buildScanPath('location', id) };
   }
 
   // Default to asset when only an ID is present
   if (normalizedRaw) {
-    return { type: 'asset', id: normalizedRaw, raw: normalizedRaw, path: buildPath('asset', normalizedRaw) };
+    return { type: 'asset', id: normalizedRaw, raw: normalizedRaw, path: buildScanPath('asset', normalizedRaw) };
   }
 
   return { error: 'No scan data was detected.', raw: normalizedRaw };
@@ -194,6 +194,96 @@ export const confirmEntityExists = async (
   }
 };
 
+const resolveAssetScan = async (raw: string): Promise<ScanResolution | null> => {
+  try {
+    const response = await http.get<{ id: string; name?: string }>(`/assets/scan/resolve`, {
+      params: { value: raw },
+    });
+    const data = response.data;
+    if (data?.id) {
+      return {
+        type: 'asset',
+        id: data.id,
+        raw,
+        path: buildScanPath('asset', data.id),
+        label: data.name,
+      };
+    }
+  } catch {
+    return null;
+  }
+  return null;
+};
+
+const resolvePartScan = async (raw: string): Promise<ScanResolution | null> => {
+  try {
+    const response = await http.get<{ id: string; name?: string }>(`/inventory/v2/scan/resolve`, {
+      params: { value: raw },
+    });
+    const data = response.data;
+    if (data?.id) {
+      return {
+        type: 'part',
+        id: data.id,
+        raw,
+        path: buildScanPath('part', data.id),
+        label: data.name,
+      };
+    }
+  } catch {
+    return null;
+  }
+  return null;
+};
+
+export const resolveScanValue = async (raw: string): Promise<ScanResolution | ScanFailure> => {
+  const parsed = parseScanPayload(raw);
+  if ('error' in parsed) return parsed;
+
+  if (parsed.type === 'asset') {
+    const assetResolution = await resolveAssetScan(raw);
+    if (assetResolution) return assetResolution;
+    const partResolution = await resolvePartScan(raw);
+    if (partResolution) return partResolution;
+    return parsed;
+  }
+
+  if (parsed.type === 'part') {
+    const partResolution = await resolvePartScan(raw);
+    if (partResolution) return partResolution;
+    return parsed;
+  }
+
+  return parsed;
+};
+
+export const recordScanHistory = async (entry: {
+  rawValue: string;
+  outcome: 'success' | 'failure';
+  resolution?: ScanResolution;
+  source?: string;
+  error?: string;
+}): Promise<void> => {
+  try {
+    await http.post('/scan-history', {
+      rawValue: entry.rawValue,
+      outcome: entry.outcome,
+      source: entry.source,
+      error: entry.error,
+      resolution: entry.resolution
+        ? {
+            type: entry.resolution.type,
+            id: entry.resolution.id,
+            label: entry.resolution.label,
+            path: entry.resolution.path,
+          }
+        : undefined,
+    });
+  } catch (err) {
+    console.warn('Unable to persist scan history', err);
+  }
+};
+
 export const logScanNavigationOutcome = (entry: ScanNavigationLogEntry): void => {
   const existing = safeLocalStorage.getItem(STORAGE_KEY);
   let parsed: ScanNavigationLogEntry[] = [];
@@ -209,4 +299,3 @@ export const logScanNavigationOutcome = (entry: ScanNavigationLogEntry): void =>
   const trimmed = parsed.slice(0, 50);
   safeLocalStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
 };
-

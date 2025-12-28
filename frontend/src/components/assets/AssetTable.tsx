@@ -118,7 +118,102 @@ const AssetTable: React.FC<AssetTableProps> = ({
 
   return (
     <div className="overflow-hidden rounded-lg border border-slate-800/60 bg-slate-900/70 shadow-xl shadow-slate-950/30">
-      <div className="overflow-x-auto">
+      <div className="md:hidden">
+        {filteredAssets.map((asset) => {
+          const statusText = asset.status?.trim() || 'Unknown';
+          const criticality = asset.criticality ?? 'low';
+          const health = asset.health ?? 'good';
+          const lastMaintenance = asset.lastMaintenanceDate || asset.lastServiced || 'N/A';
+          const openWorkOrders = asset.openWorkOrders ?? 0;
+          const downtime = asset.recentDowntimeHours ?? 0;
+
+          return (
+            <div
+              key={asset.id}
+              className="border-b border-slate-800/80 px-4 py-4"
+              role="button"
+              tabIndex={0}
+              onClick={() => onRowClick(asset)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  onRowClick(asset);
+                }
+              }}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-100">{asset.name}</p>
+                  <p className="text-xs text-slate-400">{asset.type || 'Type not set'}</p>
+                </div>
+                <Badge text={statusText} type="status" size="sm" />
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Badge text={formatCriticality(criticality)} type="priority" size="sm" />
+                <Badge text={formatHealth(health)} type="status" size="sm" />
+                <Badge text={formatLastMaintenance(asset)} size="sm" />
+                <Badge text={formatOpenWorkOrders(openWorkOrders)} size="sm" />
+                <Badge text={formatDowntime(downtime)} size="sm" />
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {onCreateWorkOrder && canCreateWorkOrder && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                      e.stopPropagation();
+                      onCreateWorkOrder(asset);
+                    }}
+                    icon={<Wrench className="h-4 w-4" />}
+                  >
+                    New WO
+                  </Button>
+                )}
+                <DuplicateButton
+                  onClick={() => onDuplicate(asset)}
+                  disabled={!canEdit}
+                  aria-label={canEdit ? 'Duplicate asset' : 'Duplicate disabled - insufficient permissions'}
+                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={!canDelete}
+                  aria-disabled={!canDelete}
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                    e.stopPropagation();
+                    if (!canDelete) return;
+                    onDelete(asset);
+                  }}
+                >
+                  Delete
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={!canEdit}
+                  aria-disabled={!canEdit}
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                    e.stopPropagation();
+                    if (canEdit) onRowClick(asset);
+                  }}
+                >
+                  Edit
+                </Button>
+              </div>
+              <div className="mt-3 text-xs text-slate-400">
+                Location: {asset.location || 'N/A'} · Department: {asset.department || 'N/A'}
+              </div>
+              <div className="mt-1 flex items-center gap-4 text-xs text-slate-400">
+                <span>MTBF {formatHours(asset.reliability?.mtbfHours)}</span>
+                <span>MTTR {formatHours(asset.reliability?.mttrHours)}</span>
+                <span>Downtime {asset.downtimeCount ?? 0}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="hidden overflow-x-auto md:block">
         <table className="min-w-full divide-y divide-slate-800">
           <thead className="bg-slate-900/80">
             <tr>

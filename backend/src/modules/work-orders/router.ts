@@ -15,6 +15,7 @@ import {
   deleteTemplateHandler,
   getTemplateHandler,
   listTemplatesHandler,
+  reconcileOfflineUpdateHandler,
   updateStatusHandler,
   updateTemplateHandler,
   workOrderParamValidator,
@@ -31,6 +32,13 @@ router.patch(
   workOrderParamValidator,
   enforceSafetyControls,
   updateStatusHandler,
+);
+router.put(
+  '/:workOrderId/reconcile',
+  requirePermission('workorders.write'),
+  workOrderParamValidator,
+  enforceSafetyControls,
+  reconcileOfflineUpdateHandler,
 );
 router.post(
   '/:workOrderId/approvals/advance',

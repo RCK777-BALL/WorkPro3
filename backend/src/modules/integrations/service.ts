@@ -256,7 +256,7 @@ export const createApiKey = async ({
     rateLimitMax,
     scopes,
   });
-  const keyPayload = key.toObject() as Record<string, unknown>;
+  const keyPayload = key.toObject() as unknown as Record<string, unknown>;
   delete (keyPayload as { keyHash?: string }).keyHash;
   return {
     apiKey: keyPayload,

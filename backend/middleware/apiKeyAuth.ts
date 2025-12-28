@@ -74,7 +74,10 @@ export const apiKeyRateLimiter = rateLimit({
   max: (req) => req.apiKey?.rateLimitMax ?? defaultMax,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.apiKey?._id?.toString() ?? ipKeyGenerator(req.ip),
+  keyGenerator: (req) => {
+    const ipAddress = req.ip ?? req.socket.remoteAddress ?? 'unknown';
+    return req.apiKey?._id?.toString() ?? ipKeyGenerator(ipAddress);
+  },
 });
 
 export const apiKeyAuthMiddleware: RequestHandler[] = [requireApiKey, apiKeyRateLimiter];

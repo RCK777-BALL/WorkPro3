@@ -20,6 +20,7 @@ type CardComponent = React.FC<CardProps> & {
   Title: React.FC<React.HTMLAttributes<HTMLHeadingElement>>;
   Description: React.FC<React.HTMLAttributes<HTMLParagraphElement>>;
   Content: React.FC<React.HTMLAttributes<HTMLDivElement>>;
+  Footer: React.FC<React.HTMLAttributes<HTMLDivElement>>;
 };
 
 const CardRoot: React.FC<CardProps> = ({
@@ -97,10 +98,21 @@ const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement>> = ({
   </p>
 );
 
+const CardFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
+  children,
+  className = '',
+  ...rest
+}) => (
+  <div {...rest} className={`border-t border-slate-800 pt-3 ${className}`.trim()}>
+    {children}
+  </div>
+);
+
 const Card = CardRoot as CardComponent;
 Card.Header = CardHeader;
 Card.Content = CardContent;
 Card.Title = CardTitle;
 Card.Description = CardDescription;
+Card.Footer = CardFooter;
 
 export default Card;

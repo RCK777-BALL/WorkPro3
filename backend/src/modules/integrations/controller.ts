@@ -5,7 +5,7 @@
 import type { Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 
-import type { AuthedRequestHandler } from '../../../types/http';
+import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
 import { fail } from '../../lib/http';
 import {
   IntegrationError,
@@ -20,6 +20,14 @@ import {
   syncVendorsWithAccounting,
 } from './service';
 import { apiKeySchema, apiKeyScopes, accountingProviderSchema, accountingSyncSchema, notificationTestSchema } from './schemas';
+
+const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
+  if (!req.tenantId) {
+    fail(res, 'Tenant context is required', 400);
+    return false;
+  }
+  return true;
+};
 
 const send = (res: Response, data: unknown, status = 200) => {
   res.status(status).json({ success: true, data });

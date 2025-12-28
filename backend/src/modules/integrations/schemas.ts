@@ -71,7 +71,7 @@ const normalizedScope = z
 export const apiKeySchema = z.object({
   name: z.string().min(1).max(120),
   rateLimitMax: z.number().int().positive().optional(),
-  scopes: z.array(normalizedScope).default([]),
+  scopes: z.array(normalizedScope).default([]).transform((scopes) => scopes as Permission[]),
 });
 
 export type ApiKeyPayload = z.infer<typeof apiKeySchema> & { scopes: Permission[] };

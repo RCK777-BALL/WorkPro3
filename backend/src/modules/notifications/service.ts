@@ -5,7 +5,9 @@
 import { Types } from 'mongoose';
 
 import type { WorkOrderDocument } from '../../../models/WorkOrder';
+import NotificationSubscription from '../../../models/NotificationSubscription';
 import { createNotification } from '../../../services/notificationService';
+import type { NotificationSubscriptionInput } from './schemas';
 
 const buildRecipients = (workOrder: WorkOrderDocument, override?: Types.ObjectId[]) => {
   if (override?.length) return override;
@@ -76,3 +78,30 @@ export const notifyWorkOrderSlaEscalation = async (
     ),
   );
 };
+
+export const listUserSubscriptions = async (tenantId: Types.ObjectId, userId: Types.ObjectId) =>
+  NotificationSubscription.find({ tenantId, userId }).sort({ createdAt: -1 }).lean();
+
+export const upsertUserSubscription = async (
+  tenantId: Types.ObjectId,
+  userId: Types.ObjectId,
+  input: NotificationSubscriptionInput,
+) =>
+  NotificationSubscription.findOneAndUpdate(
+    { tenantId, userId },
+    {
+      tenantId,
+      userId,
+      events: input.events,
+      channels: input.channels,
+      quietHours: input.quietHours,
+      digest: input.digest,
+    },
+    { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: true },
+  );
+
+export const deleteUserSubscription = async (
+  tenantId: Types.ObjectId,
+  userId: Types.ObjectId,
+  id: string,
+) => NotificationSubscription.findOneAndDelete({ _id: id, tenantId, userId });

@@ -5,7 +5,7 @@
 import { z } from 'zod';
 
 import type { NotificationProvider } from './service';
-import { ALL_PERMISSIONS, type Permission } from '../../shared/permissions';
+import { ALL_PERMISSIONS, type Permission } from '../../../shared/permissions';
 
 const providers: [NotificationProvider, NotificationProvider, NotificationProvider, NotificationProvider] = [
   'twilio',

@@ -34,7 +34,7 @@ import { getSamlMetadata, samlRedirectPlaceholder, samlResponseHandler } from '.
 import { isIdentityProviderAllowed } from '../services/identityProviderService';
 import { isFeatureEnabled, isOidcEnabled } from '../config/featureFlags';
 import { validatePasswordStrength } from '../auth/passwordPolicy';
-import { writeAuditLog } from '../utils/audit';
+import { logAuthenticationEvent } from '../src/modules/audit';
 import type { AuthedRequest } from '../types/http';
 import { getSecurityPolicy } from '../config/securityPolicies';
 import { buildSessionBinding } from '../utils/sessionBinding';
@@ -154,27 +154,13 @@ const recordAuthEvent = async ({
   action: string;
   tenantId?: string;
   details?: Record<string, unknown>;
-}) => {
-  const resolvedTenantId = tenantId ?? toStringId(user?.tenantId);
-  if (!resolvedTenantId) return;
-
-  await writeAuditLog({
-    tenantId: resolvedTenantId,
-    siteId: user?.siteId,
-    userId: user?._id,
-    actor: user
-      ? {
-          id: user._id,
-          email: user.email,
-          name: user.name,
-        }
-      : undefined,
+}) =>
+  logAuthenticationEvent({
+    user,
     action,
-    entityType: 'authentication',
-    entityId: toStringId(user?._id) ?? tenantId,
-    after: details,
+    tenantId,
+    details,
   });
-};
 
 const buildRedirectUrl = (
   token: string,

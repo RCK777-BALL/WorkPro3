@@ -20,9 +20,7 @@ export const runCustomReportHandler: AuthedRequestHandler<
   ReportQueryRequest
 > = async (req, res, next) => {
   try {
-    const tenantId = req.tenantId ?? req.user?.tenantId;
-    if (!tenantId) throw new Error('Tenant context is required');
-    const result = await runCustomReport(tenantId, req.body);
+    const result = await runCustomReport(req.tenantId!, req.body);
     sendResponse(res, result);
   } catch (error) {
     next(error);
@@ -35,9 +33,7 @@ export const exportCustomReportHandler: AuthedRequestHandler<
   ReportQueryRequest & { format?: 'csv' | 'pdf' }
 > = async (req, res, next) => {
   try {
-    const tenantId = req.tenantId ?? req.user?.tenantId;
-    if (!tenantId) throw new Error('Tenant context is required');
-    const { buffer, filename, contentType } = await exportCustomReport(tenantId, req.body);
+    const { buffer, filename, contentType } = await exportCustomReport(req.tenantId!, req.body);
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(buffer);

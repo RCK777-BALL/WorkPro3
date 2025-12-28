@@ -106,12 +106,15 @@ const workOrderCreateFields = [
   'status',
   'type',
   'approvalStatus',
+  'approvalState',
+  'approvalStates',
   'approvalRequestedBy',
   'approvedBy',
   'approvedAt',
   'requestedBy',
   'requestedAt',
   'slaDueAt',
+  'slaTargets',
   'assignedTo',
   'assignees',
   'checklists',
@@ -149,6 +152,7 @@ const workOrderCreateFields = [
   'completedAt',
   'permits',
   'requiredPermitTypes',
+  'permitRequirements',
   'customFields',
 ];
 
@@ -166,9 +170,9 @@ type UpdateWorkOrderBody = Partial<
     | 'department'
     | 'line'
     | 'station'
-    | 'permits'
-    | 'requiredPermitTypes'
-    | 'assignees'
+  | 'permits'
+  | 'requiredPermitTypes'
+  | 'assignees'
   >
 > & {
   assignees?: (string | Types.ObjectId)[];
@@ -182,6 +186,7 @@ type UpdateWorkOrderBody = Partial<
   station?: Types.ObjectId | string | undefined;
   permits?: (Types.ObjectId | string)[];
   requiredPermitTypes?: string[];
+  permitRequirements?: WorkOrderDocument['permitRequirements'];
   plant?: Types.ObjectId | string;
   complianceStatus?: WorkOrderDocument['complianceStatus'];
   complianceCompletedAt?: WorkOrderDocument['complianceCompletedAt'];
@@ -1301,6 +1306,7 @@ export async function approveWorkOrder(
 
     const before = workOrder.toObject();
     workOrder.approvalStatus = status;
+    workOrder.approvalState = status;
 
     if (status === 'pending') {
       workOrder.status = 'pending_approval';
@@ -1313,6 +1319,13 @@ export async function approveWorkOrder(
     approvalLog.push({
       approvedBy: userObjectId,
       approvedAt: new Date(),
+      note,
+    });
+    const approvalStates = workOrder.approvalStates ?? (workOrder.approvalStates = [] as any);
+    approvalStates.push({
+      state: status,
+      changedAt: new Date(),
+      changedBy: userObjectId,
       note,
     });
 

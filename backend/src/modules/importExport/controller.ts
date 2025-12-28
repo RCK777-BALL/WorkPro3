@@ -27,14 +27,6 @@ type ImportParams = ParamsDictionary & { entity: ImportEntity };
 
 type ExportQuery = ParsedQs & { format?: string };
 
-const ensureTenant = (req: AuthedRequest, res: Response): string | undefined => {
-  if (!req.tenantId) {
-    fail(res, 'Tenant context is required to perform import/export operations.', 400);
-    return undefined;
-  }
-  return req.tenantId;
-};
-
 const buildContext = (req: AuthedRequest): Context => {
   const context: Context = {
     tenantId: req.tenantId!,
@@ -82,7 +74,6 @@ export const exportAssets: AuthedRequestHandler<ParamsDictionary, unknown, unkno
   res,
   next,
 ) => {
-  if (!ensureTenant(req, res)) return;
   const format = parseFormat(req.query.format as string | undefined);
   if (!format) {
     fail(res, 'Only csv or xlsx exports are supported.', 400);
@@ -104,7 +95,6 @@ export const importEntities: AuthedRequestHandler<ImportParams> = async (
   res,
   next,
 ) => {
-  if (!ensureTenant(req, res)) return;
   const file = (req as UploadRequest).file;
   if (!file) {
     fail(res, 'Please include a CSV or XLSX file in the "file" field.', 400);

@@ -24,15 +24,6 @@ import {
   savePartStock,
   type InventoryFoundationContext,
 } from './service';
-
-const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
-  if (!req.tenantId) {
-    fail(res, 'Tenant context is required', 400);
-    return false;
-  }
-  return true;
-};
-
 const buildContext = (req: AuthedRequest): InventoryFoundationContext => ({
   tenantId: req.tenantId!,
   siteId: req.siteId ?? undefined,
@@ -66,7 +57,6 @@ const parseNumber = (value: unknown): number | undefined => {
 };
 
 export const listPartsHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await listParts(buildContext(req), {
       page: parseNumber(req.query.page),
@@ -82,7 +72,6 @@ export const listPartsHandler: AuthedRequestHandler = async (req, res, next) => 
 };
 
 export const getPartHandler: AuthedRequestHandler<{ partId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await getPart(buildContext(req), req.params.partId, parseBoolean(req.query.includeDeleted));
     res.json(data);
@@ -92,7 +81,6 @@ export const getPartHandler: AuthedRequestHandler<{ partId: string }> = async (r
 };
 
 export const savePartHandler: AuthedRequestHandler<{ partId?: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const body = typeof req.body === 'object' && req.body ? (req.body as Record<string, unknown>) : {};
   if (typeof body.name !== 'string' || !body.name.trim()) {
     fail(res, 'Name is required', 400);
@@ -128,7 +116,6 @@ export const savePartHandler: AuthedRequestHandler<{ partId?: string }> = async 
 };
 
 export const deletePartHandler: AuthedRequestHandler<{ partId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await deletePart(buildContext(req), req.params.partId);
     res.json(data);
@@ -138,7 +125,6 @@ export const deletePartHandler: AuthedRequestHandler<{ partId: string }> = async
 };
 
 export const listLocationsHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const result = await listLocations(buildContext(req), {
       page: parseNumber(req.query.page),
@@ -155,7 +141,6 @@ export const listLocationsHandler: AuthedRequestHandler = async (req, res, next)
 };
 
 export const getLocationHandler: AuthedRequestHandler<{ locationId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await getLocation(buildContext(req), req.params.locationId, parseBoolean(req.query.includeDeleted));
     res.json(data);
@@ -165,7 +150,6 @@ export const getLocationHandler: AuthedRequestHandler<{ locationId: string }> = 
 };
 
 export const saveLocationHandler: AuthedRequestHandler<{ locationId?: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const body = typeof req.body === 'object' && req.body ? (req.body as Record<string, unknown>) : {};
   if (typeof body.name !== 'string' || !body.name.trim()) {
     fail(res, 'Name is required', 400);
@@ -189,7 +173,6 @@ export const saveLocationHandler: AuthedRequestHandler<{ locationId?: string }> 
 };
 
 export const deleteLocationHandler: AuthedRequestHandler<{ locationId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await deleteLocation(buildContext(req), req.params.locationId);
     res.json(data);
@@ -199,7 +182,6 @@ export const deleteLocationHandler: AuthedRequestHandler<{ locationId: string }>
 };
 
 export const listPartStocksHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await listPartStocks(buildContext(req), {
       page: parseNumber(req.query.page),
@@ -215,7 +197,6 @@ export const listPartStocksHandler: AuthedRequestHandler = async (req, res, next
 };
 
 export const getPartStockHandler: AuthedRequestHandler<{ stockId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await getPartStock(buildContext(req), req.params.stockId, parseBoolean(req.query.includeDeleted));
     res.json(data);
@@ -225,7 +206,6 @@ export const getPartStockHandler: AuthedRequestHandler<{ stockId: string }> = as
 };
 
 export const savePartStockHandler: AuthedRequestHandler<{ stockId?: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const body = typeof req.body === 'object' && req.body ? (req.body as Record<string, unknown>) : {};
   if (typeof body.partId !== 'string' || typeof body.locationId !== 'string') {
     fail(res, 'partId and locationId are required', 400);
@@ -252,7 +232,6 @@ export const savePartStockHandler: AuthedRequestHandler<{ stockId?: string }> = 
 };
 
 export const deletePartStockHandler: AuthedRequestHandler<{ stockId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await deletePartStock(buildContext(req), req.params.stockId);
     res.json(data);
@@ -262,7 +241,6 @@ export const deletePartStockHandler: AuthedRequestHandler<{ stockId: string }> =
 };
 
 export const adjustStockHandler: AuthedRequestHandler<{ stockId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const body = typeof req.body === 'object' && req.body ? (req.body as Record<string, unknown>) : {};
   try {
     const data = await adjustStock(
@@ -286,7 +264,6 @@ export const adjustStockHandler: AuthedRequestHandler<{ stockId: string }> = asy
 };
 
 export const receiveStockHandler: AuthedRequestHandler<{ stockId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const body = typeof req.body === 'object' && req.body ? (req.body as Record<string, unknown>) : {};
   const qty = parseNumber(body.quantity);
   if (qty === undefined) {

@@ -2,97 +2,77 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { Types } from 'mongoose';
+import { Types } from 'mongoose';
 
-import Notification from '../../../models/Notification';
-import NotificationDeliveryLog from '../../../models/NotificationDeliveryLog';
-import NotificationSubscription from '../../../models/NotificationSubscription';
-import User from '../../../models/User';
-import type { NotificationSubscriptionDocument } from '../../../models/NotificationSubscription';
-import type { NotificationChannel } from '../../../models/NotificationTemplate';
-import {
-  deliverNotificationChannel,
-  getNextNotificationRetryAt,
-  notificationMaxAttempts,
-} from '../../../services/notificationService';
-import { logger } from '../../../utils';
-import type { NotificationSubscriptionInput } from './schemas';
+import type { WorkOrderDocument } from '../../../models/WorkOrder';
+import { createNotification } from '../../../services/notificationService';
 
-const resolveSubscriptionTarget = async (
-  subscription: NotificationSubscriptionDocument | null,
-  channel: NotificationChannel,
-) => {
-  if (!subscription?.userId) return undefined;
-  const user = await User.findById(subscription.userId).select('email');
-  if (channel === 'email') {
-    return user?.email ?? undefined;
-  }
-  return undefined;
+const buildRecipients = (workOrder: WorkOrderDocument, override?: Types.ObjectId[]) => {
+  if (override?.length) return override;
+  return [workOrder.assignedTo, ...(workOrder.assignees ?? [])].filter(Boolean) as Types.ObjectId[];
 };
 
-export const listUserSubscriptions = async (tenantId: Types.ObjectId, userId: Types.ObjectId) =>
-  NotificationSubscription.find({ tenantId, userId }).sort({ createdAt: -1 });
-
-export const upsertUserSubscription = async (
-  tenantId: Types.ObjectId,
-  userId: Types.ObjectId,
-  payload: NotificationSubscriptionInput,
-) =>
-  NotificationSubscription.findOneAndUpdate(
-    { tenantId, userId },
-    {
-      tenantId,
-      userId,
-      events: payload.events,
-      channels: payload.channels,
-      quietHours: payload.quietHours,
-      digest: payload.digest,
+export const notifyWorkOrderSlaBreach = async (
+  workOrder: WorkOrderDocument,
+  trigger: 'response' | 'resolve',
+) => {
+  const recipients = buildRecipients(workOrder);
+  const title = trigger === 'response' ? 'Response SLA breached' : 'Resolution SLA breached';
+  const message = `Work order "${workOrder.title}" breached its ${trigger} SLA.`;
+  const payload = {
+    tenantId: workOrder.tenantId as Types.ObjectId,
+    workOrderId: workOrder._id as Types.ObjectId,
+    category: 'overdue' as const,
+    type: 'critical' as const,
+    title,
+    message,
+    event: 'sla.breached',
+    templateContext: {
+      workOrderTitle: workOrder.title,
+      trigger,
     },
-    { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: true },
-  );
+  };
 
-export const deleteUserSubscription = async (tenantId: Types.ObjectId, userId: Types.ObjectId, id: string) =>
-  NotificationSubscription.findOneAndDelete({ _id: id, tenantId, userId });
-
-export const retryFailedDeliveries = async (now = new Date()) => {
-  const failedLogs = await NotificationDeliveryLog.find({
-    status: 'failed',
-    attempt: { $lt: notificationMaxAttempts },
-  }).sort({ createdAt: 1 });
-
-  for (const log of failedLogs) {
-    const retryAt = getNextNotificationRetryAt(log.attempt, log.createdAt);
-    if (retryAt > now) continue;
-
-    const notification = await Notification.findById(log.notificationId);
-    if (!notification) continue;
-
-    const subscription = log.subscriptionId
-      ? await NotificationSubscription.findById(log.subscriptionId)
-      : null;
-
-    const target = log.target ?? (await resolveSubscriptionTarget(subscription, log.channel));
-    const result = await deliverNotificationChannel({
-      notification,
-      channel: log.channel,
-      target,
-      event: log.event ?? notification.category,
-      subscription: subscription ?? undefined,
-      attempt: log.attempt + 1,
-      metadata: log.metadata ?? undefined,
-    });
-
-    if (result === 'sent') {
-      notification.deliveryState = 'sent';
-      await notification.save();
-      continue;
-    }
-
-    if (log.attempt + 1 >= notificationMaxAttempts) {
-      notification.deliveryState = 'failed';
-      await notification.save();
-    }
+  if (!recipients.length) {
+    await createNotification(payload);
+    return;
   }
 
-  logger.info('Notification retry cycle completed', { checked: failedLogs.length });
+  await Promise.all(
+    recipients.map((userId) =>
+      createNotification({
+        ...payload,
+        userId,
+      }),
+    ),
+  );
+};
+
+export const notifyWorkOrderSlaEscalation = async (
+  workOrder: WorkOrderDocument,
+  rule: NonNullable<WorkOrderDocument['slaEscalations']>[number],
+) => {
+  const recipients = buildRecipients(workOrder, rule.escalateTo as Types.ObjectId[] | undefined);
+  if (!recipients.length) return;
+
+  const message = `Work order "${workOrder.title}" triggered an SLA escalation (${rule.trigger}).`;
+
+  await Promise.all(
+    recipients.map((userId) =>
+      createNotification({
+        tenantId: workOrder.tenantId as Types.ObjectId,
+        userId,
+        workOrderId: workOrder._id as Types.ObjectId,
+        category: 'overdue',
+        type: 'warning',
+        title: 'SLA escalation',
+        message,
+        event: 'sla.escalated',
+        templateContext: {
+          workOrderTitle: workOrder.title,
+          trigger: rule.trigger,
+        },
+      }),
+    ),
+  );
 };

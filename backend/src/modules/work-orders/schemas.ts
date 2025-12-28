@@ -16,6 +16,10 @@ export const approvalAdvanceSchema = z.object({
   approved: z.boolean().default(true),
 });
 
+export const approvalRequestSchema = z.object({
+  note: z.string().optional(),
+});
+
 export const slaAcknowledgeSchema = z.object({
   kind: z.enum(['response', 'resolve']),
   at: z.union([z.date(), z.string()]).optional(),

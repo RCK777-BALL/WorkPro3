@@ -9,21 +9,12 @@ import { fail } from '../../lib/http';
 import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
 import { createMeterReading, MeterReadingError } from './service';
 
-const ensureTenant = (req: AuthedRequest, res: Response): string | undefined => {
-  if (!req.tenantId) {
-    fail(res, 'Tenant context is required', 400);
-    return undefined;
-  }
-  return req.tenantId;
-};
-
 export const createMeterReadingHandler: AuthedRequestHandler<
   ParamsDictionary,
   unknown,
   { assetId?: string; value?: number }
 > = async (req, res, next) => {
-  const tenantId = ensureTenant(req, res);
-  if (!tenantId) return;
+  const tenantId = req.tenantId!;
 
   try {
     const reading = await createMeterReading(

@@ -12,6 +12,8 @@ import tenantScope from '../../../middleware/tenantScope';
 import validateObjectId from '../../../middleware/validateObjectId';
 import { requirePermission } from '../../auth/permissions';
 import { requireRoles } from '../../../middleware/requireRoles';
+import authorizeTenantSite from '../../middleware/tenantAuthorization';
+import { auditDataAccess } from '../audit';
 import {
   submitPublicRequestHandler,
   getPublicStatusHandler,
@@ -52,6 +54,8 @@ publicRouter.get('/:token', getPublicStatusHandler);
 const adminRouter = Router();
 adminRouter.use(requireAuth);
 adminRouter.use(tenantScope);
+adminRouter.use(authorizeTenantSite());
+adminRouter.use(auditDataAccess('work_requests', { entityIdParams: ['requestId'] }));
 adminRouter.get('/', requirePermission('workRequests', 'read'), listWorkRequestsHandler);
 adminRouter.get('/summary', requirePermission('workRequests', 'read'), getWorkRequestSummaryHandler);
 adminRouter.get(

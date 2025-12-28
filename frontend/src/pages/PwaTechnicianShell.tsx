@@ -30,8 +30,8 @@ import { registerSWIfAvailable } from '@/pwa';
 import {
   confirmEntityExists,
   logScanNavigationOutcome,
-  parseScanPayload,
-  type ScanResolution,
+  recordScanHistory,
+  resolveScanValue,
 } from '@/utils/scanRouting';
 import type { WorkOrder } from '@/types';
 import http from '@/lib/http';
@@ -124,7 +124,7 @@ const PwaTechnicianShell: React.FC = () => {
   };
 
   const handleScan = async (raw: string) => {
-    const resolution = parseScanPayload(raw);
+    const resolution = await resolveScanValue(raw);
     setScanResult(raw);
     setDetectedAssetId(null);
     setDetectedWorkOrder(null);
@@ -132,6 +132,7 @@ const PwaTechnicianShell: React.FC = () => {
     if ('error' in resolution) {
       setLastMessage(resolution.error);
       logScanNavigationOutcome({ outcome: 'failure', error: resolution.error, source: 'pwa-shell' });
+      void recordScanHistory({ outcome: 'failure', error: resolution.error, rawValue: raw, source: 'pwa-shell' });
       return;
     }
 
@@ -139,10 +140,18 @@ const PwaTechnicianShell: React.FC = () => {
     if (!exists) {
       setLastMessage('Entity not found online; check connectivity or rescan.');
       logScanNavigationOutcome({ outcome: 'failure', resolution, error: 'Entity not found', source: 'pwa-shell' });
+      void recordScanHistory({
+        outcome: 'failure',
+        error: 'Entity not found',
+        rawValue: raw,
+        resolution,
+        source: 'pwa-shell',
+      });
       return;
     }
 
     logScanNavigationOutcome({ outcome: 'success', resolution, source: 'pwa-shell' });
+    void recordScanHistory({ outcome: 'success', rawValue: raw, resolution, source: 'pwa-shell' });
 
     if (resolution.type === 'workOrder') {
       const fromCache = cachedOrders.find((order) => order.id === resolution.id);

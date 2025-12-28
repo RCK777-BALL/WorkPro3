@@ -56,6 +56,10 @@ export const PERMISSIONS = {
   audit: {
     read: 'audit.read',
   },
+  integrations: {
+    read: 'integrations.read',
+    manage: 'integrations.manage',
+  },
 } as const;
 
 type KnownPermissionCategory = keyof typeof PERMISSIONS;

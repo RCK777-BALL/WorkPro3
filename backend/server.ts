@@ -93,6 +93,8 @@ import inventoryModuleRouter from "./src/modules/inventory";
 import inventoryFoundationsRouter from "./src/modules/inventory-foundations";
 import purchaseOrdersModuleRouter from "./src/modules/purchase-orders";
 import integrationsModuleRouter from "./src/modules/integrations";
+import exportsModuleRouter from "./src/modules/exports";
+import webhooksModuleRouter from "./src/modules/webhooks";
 import workRequestsRouter from "./src/modules/work-requests";
 import pmTemplatesRouter from "./src/modules/pm";
 import templatesRouter from "./src/modules/templates";
@@ -282,6 +284,8 @@ app.use("/api/inventory/v2", inventoryV2Routes);
 app.use("/api/inventory/v2", inventoryModuleRouter);
 app.use("/api/inventory/v3", inventoryFoundationsRouter);
 app.use("/api/integrations/v2", integrationsModuleRouter);
+app.use("/api/webhooks/v2", webhooksModuleRouter);
+app.use("/api/exports/v2", exportsModuleRouter);
 app.use("/api/sso", ssoRoutes);
 app.use("/api/scim/v2", scimRoutes);
 

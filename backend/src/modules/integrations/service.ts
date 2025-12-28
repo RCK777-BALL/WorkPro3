@@ -6,7 +6,10 @@ import { IncomingWebhook } from '@slack/webhook';
 import nodemailer from 'nodemailer';
 import twilio from 'twilio';
 
+import ApiKey from '../../../models/ApiKey';
 import logger from '../../../utils/logger';
+import { generateApiKey } from '../../../utils/apiKeys';
+import type { Permission } from '../../shared/permissions';
 
 export type NotificationProvider = 'twilio' | 'smtp' | 'slack' | 'teams';
 export type AccountingProvider = 'quickbooks' | 'xero';
@@ -224,6 +227,45 @@ export const listNotificationProviders = (): ProviderStatus[] => [
     configured: Boolean(process.env.TEAMS_WEBHOOK_URL),
   },
 ];
+
+export interface ApiKeyCreateInput {
+  tenantId: string;
+  name: string;
+  createdBy?: string;
+  rateLimitMax?: number;
+  scopes?: Permission[];
+}
+
+export const listApiKeys = async (tenantId: string) =>
+  ApiKey.find({ tenantId }).sort({ createdAt: -1 }).lean();
+
+export const createApiKey = async ({
+  tenantId,
+  name,
+  createdBy,
+  rateLimitMax,
+  scopes,
+}: ApiKeyCreateInput): Promise<{ apiKey: Record<string, unknown>; token: string }> => {
+  const generated = generateApiKey();
+  const key = await ApiKey.create({
+    name,
+    keyHash: generated.keyHash,
+    prefix: generated.prefix,
+    tenantId,
+    createdBy,
+    rateLimitMax,
+    scopes,
+  });
+  const keyPayload = key.toObject();
+  delete (keyPayload as { keyHash?: string }).keyHash;
+  return {
+    apiKey: keyPayload,
+    token: generated.key,
+  };
+};
+
+export const revokeApiKey = async (tenantId: string, id: string) =>
+  ApiKey.findOneAndUpdate({ _id: id, tenantId }, { revokedAt: new Date() }, { new: true });
 
 const buildAccountingResult = (
   provider: AccountingProvider,

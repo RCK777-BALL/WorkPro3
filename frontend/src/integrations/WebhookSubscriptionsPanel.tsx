@@ -5,7 +5,11 @@
 import { useEffect, useState } from 'react';
 import type { WebhookSubscription } from './types';
 
-export default function WebhookSubscriptionsPanel() {
+interface WebhookSubscriptionsPanelProps {
+  apiBase?: string;
+}
+
+export default function WebhookSubscriptionsPanel({ apiBase = '/api/webhooks/v2' }: WebhookSubscriptionsPanelProps) {
   const [hooks, setHooks] = useState<WebhookSubscription[]>([]);
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
@@ -13,14 +17,14 @@ export default function WebhookSubscriptionsPanel() {
   const [newSecret, setNewSecret] = useState<string | null>(null);
 
   const loadHooks = () => {
-    fetch('/api/integrations/webhooks')
+    fetch(`${apiBase}/subscriptions`)
       .then((res) => res.json())
       .then((res) => setHooks(res.data ?? []));
   };
 
   useEffect(() => {
     loadHooks();
-  }, []);
+  }, [apiBase]);
 
   const createHook = async () => {
     const payload = {
@@ -31,15 +35,15 @@ export default function WebhookSubscriptionsPanel() {
         .map((event) => event.trim())
         .filter(Boolean),
     };
-    const res = await fetch('/api/integrations/webhooks', {
+    const res = await fetch(`${apiBase}/subscriptions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     const json = await res.json();
-    if (json?.data) {
-      setHooks([json.data, ...hooks]);
-      setNewSecret(json.secret ?? null);
+    if (json?.data?.subscription) {
+      setHooks([json.data.subscription, ...hooks]);
+      setNewSecret(json.data.secret ?? null);
       setName('');
       setUrl('');
       setEvents('');
@@ -47,7 +51,7 @@ export default function WebhookSubscriptionsPanel() {
   };
 
   const deleteHook = async (id: string) => {
-    const res = await fetch(`/api/integrations/webhooks/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${apiBase}/subscriptions/${id}`, { method: 'DELETE' });
     if (res.ok) {
       setHooks(hooks.filter((hook) => hook._id !== id));
     }

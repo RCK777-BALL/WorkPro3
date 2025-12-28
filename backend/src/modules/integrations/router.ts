@@ -10,7 +10,11 @@ import { requirePermission } from '../../auth/permissions';
 import authorizeTenantSite from '../../middleware/tenantAuthorization';
 import { auditDataAccess } from '../audit';
 import {
+  createApiKeyHandler,
   listNotificationProvidersHandler,
+  listApiKeysHandler,
+  listApiKeyScopesHandler,
+  revokeApiKeyHandler,
   sendNotificationTestHandler,
   syncCostsHandler,
   syncPurchaseOrdersHandler,
@@ -29,5 +33,9 @@ router.post('/notifications/test', requirePermission('sites.manage'), sendNotifi
 router.post('/accounting/:provider/vendors/sync', requirePermission('inventory.manage'), syncVendorsHandler);
 router.post('/accounting/:provider/purchase-orders/sync', requirePermission('inventory.purchase'), syncPurchaseOrdersHandler);
 router.post('/accounting/:provider/costs/sync', requirePermission('inventory.manage'), syncCostsHandler);
+router.get('/api-keys/scopes', requirePermission('integrations.manage'), listApiKeyScopesHandler);
+router.get('/api-keys', requirePermission('integrations.manage'), listApiKeysHandler);
+router.post('/api-keys', requirePermission('integrations.manage'), createApiKeyHandler);
+router.post('/api-keys/:id/revoke', requirePermission('integrations.manage'), revokeApiKeyHandler);
 
 export default router;

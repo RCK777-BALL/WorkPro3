@@ -10,23 +10,27 @@ const exportOptions = [
   { label: 'Assets', value: 'assets' },
 ];
 
-export default function ExportsPanel() {
+interface ExportsPanelProps {
+  apiBase?: string;
+}
+
+export default function ExportsPanel({ apiBase = '/api/exports/v2' }: ExportsPanelProps) {
   const [jobs, setJobs] = useState<ExportJob[]>([]);
   const [type, setType] = useState(exportOptions[0].value);
   const [format, setFormat] = useState('csv');
 
   const loadJobs = () => {
-    fetch('/api/integrations/exports')
+    fetch(`${apiBase}`)
       .then((res) => res.json())
       .then((res) => setJobs(res.data ?? []));
   };
 
   useEffect(() => {
     loadJobs();
-  }, []);
+  }, [apiBase]);
 
   const queueExport = async () => {
-    const res = await fetch('/api/integrations/exports', {
+    const res = await fetch(`${apiBase}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ type, format }),
@@ -61,7 +65,7 @@ export default function ExportsPanel() {
           <li key={job._id}>
             {job.type} ({job.format}) - {job.status}
             {job.status === 'completed' ? (
-              <a href={`/api/integrations/exports/${job._id}/download`}>Download</a>
+              <a href={`${apiBase}/${job._id}/download`}>Download</a>
             ) : null}
           </li>
         ))}

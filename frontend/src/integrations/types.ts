@@ -18,6 +18,7 @@ export interface ApiKey {
   lastUsedAt?: string;
   revokedAt?: string;
   rateLimitMax?: number;
+  scopes?: string[];
 }
 
 export interface WebhookSubscription {

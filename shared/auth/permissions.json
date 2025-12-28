@@ -225,5 +225,36 @@
       "supervisor",
       "admin"
     ]
+  },
+  "integrations": {
+    "read": [
+      "global_admin",
+      "plant_admin",
+      "general_manager",
+      "assistant_general_manager",
+      "operations_manager",
+      "department_leader",
+      "assistant_department_leader",
+      "area_leader",
+      "team_leader",
+      "manager",
+      "supervisor",
+      "planner",
+      "admin"
+    ],
+    "manage": [
+      "global_admin",
+      "plant_admin",
+      "general_manager",
+      "assistant_general_manager",
+      "operations_manager",
+      "department_leader",
+      "assistant_department_leader",
+      "area_leader",
+      "team_leader",
+      "manager",
+      "supervisor",
+      "admin"
+    ]
   }
 }

@@ -7,6 +7,8 @@ import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
 
 import ApiKey, { type ApiKeyDocument } from '../models/ApiKey';
+import { hasPermission } from '../services/permissionService';
+import type { Permission } from '../shared/permissions';
 import { hashApiKey } from '../utils/apiKeys';
 
 declare module 'express-serve-static-core' {
@@ -76,3 +78,16 @@ export const apiKeyRateLimiter = rateLimit({
 });
 
 export const apiKeyAuthMiddleware: RequestHandler[] = [requireApiKey, apiKeyRateLimiter];
+
+export const requireApiKeyScope = (permission: Permission): RequestHandler => (req, res, next) => {
+  const scopes = req.apiKey?.scopes;
+  if (!scopes || scopes.length === 0) {
+    next();
+    return;
+  }
+  if (!hasPermission(scopes as Permission[], permission)) {
+    res.status(403).json({ message: 'Forbidden' });
+    return;
+  }
+  next();
+};

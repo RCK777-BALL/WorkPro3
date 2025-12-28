@@ -481,6 +481,30 @@ export default function App() {
             }
           />
           <Route
+            path="/integrations/api-keys"
+            element={
+              <RequirePermission permission="integrations.manage">
+                <ApiKeysPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/integrations/webhooks"
+            element={
+              <RequirePermission permission="integrations.manage">
+                <WebhooksPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/integrations/exports"
+            element={
+              <RequirePermission permission="importExport.export">
+                <ExportsPage />
+              </RequirePermission>
+            }
+          />
+          <Route
             path="/admin/workflow"
             element={
               <RequirePermission permission="roles.manage">

@@ -9,14 +9,17 @@ import type { AuthedRequestHandler } from '../../../types/http';
 import { fail } from '../../lib/http';
 import {
   IntegrationError,
+  createApiKey,
   listNotificationProviders,
+  listApiKeys,
+  revokeApiKey,
   sendNotificationTest,
   type NotificationTestInput,
   syncCostsWithAccounting,
   syncPurchaseOrdersWithAccounting,
   syncVendorsWithAccounting,
 } from './service';
-import { accountingProviderSchema, accountingSyncSchema, notificationTestSchema } from './schemas';
+import { apiKeySchema, apiKeyScopes, accountingProviderSchema, accountingSyncSchema, notificationTestSchema } from './schemas';
 
 const send = (res: Response, data: unknown, status = 200) => {
   res.status(status).json({ success: true, data });
@@ -87,6 +90,55 @@ export const syncCostsHandler: AuthedRequestHandler = async (req, res, next) => 
     const payload = accountingSyncSchema.parse({ provider, payload: req.body }).payload;
     const result = syncCostsWithAccounting(provider, payload);
     send(res, result, 202);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const listApiKeyScopesHandler: AuthedRequestHandler = async (_req, res) => {
+  send(res, apiKeyScopes);
+};
+
+export const listApiKeysHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    const keys = await listApiKeys(req.tenantId);
+    send(res, keys);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const createApiKeyHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  const parse = apiKeySchema.safeParse(req.body);
+  if (!parse.success) {
+    fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
+    return;
+  }
+  try {
+    const result = await createApiKey({
+      tenantId: req.tenantId,
+      name: parse.data.name,
+      rateLimitMax: parse.data.rateLimitMax,
+      scopes: parse.data.scopes,
+      createdBy: req.user?._id ? String(req.user._id) : undefined,
+    });
+    send(res, { apiKey: result.apiKey, token: result.token }, 201);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const revokeApiKeyHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  try {
+    const key = await revokeApiKey(req.tenantId, req.params.id);
+    if (!key) {
+      fail(res, 'API key not found', 404);
+      return;
+    }
+    send(res, key);
   } catch (err) {
     handleError(err, res, next);
   }

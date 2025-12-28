@@ -96,7 +96,7 @@ import integrationsModuleRouter from "./src/modules/integrations";
 import exportsModuleRouter from "./src/modules/exports";
 import webhooksModuleRouter from "./src/modules/webhooks";
 import workRequestsRouter from "./src/modules/work-requests";
-import notificationsModuleRouter from "./src/modules/notifications";
+import { notificationsModuleRouter } from "./src/modules/notifications";
 import pmTemplatesRouter from "./src/modules/pm";
 import templatesRouter from "./src/modules/templates";
 import onboardingRouter from "./src/modules/onboarding";

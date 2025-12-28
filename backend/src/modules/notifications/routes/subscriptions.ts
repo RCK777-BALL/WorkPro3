@@ -29,7 +29,8 @@ router.get('/', requirePermission('sites.read'), async (req, res, next) => {
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    const subscriptions = await listUserSubscriptions(new Types.ObjectId(tenantId), userId);
+    const userObjectId = new Types.ObjectId(userId);
+    const subscriptions = await listUserSubscriptions(new Types.ObjectId(tenantId), userObjectId);
     sendResponse(res, subscriptions);
   } catch (err) {
     next(err);
@@ -49,7 +50,12 @@ router.put('/', requirePermission('sites.read'), async (req, res, next) => {
       sendResponse(res, null, parsed.error.flatten(), 400);
       return;
     }
-    const subscription = await upsertUserSubscription(new Types.ObjectId(tenantId), userId, parsed.data);
+    const userObjectId = new Types.ObjectId(userId);
+    const subscription = await upsertUserSubscription(
+      new Types.ObjectId(tenantId),
+      userObjectId,
+      parsed.data,
+    );
     sendResponse(res, subscription, null, 200);
   } catch (err) {
     next(err);
@@ -65,7 +71,8 @@ router.delete('/:id', requirePermission('sites.read'), async (req, res, next) =>
       sendResponse(res, null, 'Tenant ID required', 400);
       return;
     }
-    await deleteUserSubscription(new Types.ObjectId(tenantId), userId, id);
+    const userObjectId = new Types.ObjectId(userId);
+    await deleteUserSubscription(new Types.ObjectId(tenantId), userObjectId, id);
     sendResponse(res, { message: 'Deleted' }, null, 200);
   } catch (err) {
     next(err);

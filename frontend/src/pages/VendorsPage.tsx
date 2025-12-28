@@ -17,6 +17,7 @@ const VendorsPage = () => {
   const deleteVendor = useDeleteVendor();
   const [search, setSearch] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const hasError = Boolean(error);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -60,7 +61,7 @@ const VendorsPage = () => {
       </Card>
 
       <Card title="Vendor list" className="space-y-3">
-        {error && <p className="text-sm text-error-600">Unable to load vendors.</p>}
+        {hasError && <p className="text-sm text-error-600">Unable to load vendors.</p>}
         <DataTable<Vendor>
           keyField="id"
           data={filtered}

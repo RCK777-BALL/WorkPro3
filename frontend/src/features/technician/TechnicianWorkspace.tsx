@@ -50,14 +50,14 @@ const mergePartUsage = (
   existing: WorkOrder['partsUsed'] | undefined,
   additions: PartUsageEntry[],
 ): WorkOrder['partsUsed'] => {
-  const map = new Map<string, { partId: string; qty: number; cost?: number }>();
+  const map = new Map<string, { partId: string; qty: number; cost: number }>();
   (existing ?? []).forEach((entry) => {
     if (!entry?.partId) return;
     const key = entry.partId;
-    map.set(key, { partId: key, qty: entry.qty ?? 0, cost: entry.cost });
+    map.set(key, { partId: key, qty: entry.qty ?? 0, cost: entry.cost ?? 0 });
   });
   additions.forEach((entry) => {
-    const current = map.get(entry.partId) ?? { partId: entry.partId, qty: 0 };
+    const current = map.get(entry.partId) ?? { partId: entry.partId, qty: 0, cost: 0 };
     current.qty += entry.qty;
     if (entry.cost !== undefined) {
       current.cost = entry.cost;
@@ -223,7 +223,7 @@ const TechnicianWorkspace = () => {
         if (action === 'log_time' || action === 'complete') {
           setTimeDrafts((drafts) => ({ ...drafts, [order.id]: '' }));
         }
-        emitToast('Action queued and will sync when back online.', 'info');
+        emitToast('Action queued and will sync when back online.', 'success');
         setPendingAction(null);
         return;
       }
@@ -273,7 +273,7 @@ const TechnicianWorkspace = () => {
         const merged = mergePartUsage(order.partsUsed, payload.entries);
         replaceOrder({ ...order, partsUsed: merged });
         setPartDrafts((prev) => ({ ...prev, [order.id]: {} }));
-        emitToast('Part usage queued for sync.', 'info');
+        emitToast('Part usage queued for sync.', 'success');
         setPendingAction(null);
         return;
       }

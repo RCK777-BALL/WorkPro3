@@ -17,6 +17,7 @@ import DowntimeHistory from '@/components/assets/DowntimeHistory';
 import CommentThread from '@/components/comments/CommentThread';
 import AssetLifecycle, { evaluateWarrantyStatus } from '@/components/assets/AssetLifecycle';
 import AssetMetersPanel from '@/components/assets/AssetMetersPanel';
+import { QrLabel } from '@/components/qr';
 
 const tabs = [
   { id: 'overview', label: 'Overview' },

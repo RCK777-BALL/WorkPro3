@@ -45,8 +45,10 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
 
   const [assetId, setAssetId] = useState(assignment?.assetId ?? fixedAssetId ?? '');
   const [interval, setInterval] = useState(assignment?.interval ?? 'monthly');
-  const [triggerType, setTriggerType] = useState<'time' | 'meter'>(assignment?.trigger?.type ?? 'time');
-  const [meterThreshold, setMeterThreshold] = useState<number | ''>(assignment?.trigger?.meterThreshold ?? '');
+  const [triggerType, setTriggerType] = useState<'time' | 'meter'>(
+    assignment?.usageMetric ? 'meter' : 'time',
+  );
+  const [meterThreshold, setMeterThreshold] = useState<number | ''>(assignment?.usageTarget ?? '');
   const [procedureTemplateId, setProcedureTemplateId] = useState(assignment?.procedureTemplateId ?? '');
   const [checklist, setChecklist] = useState<ChecklistFormItem[]>(
     assignment?.checklist.map((item) => ({
@@ -64,6 +66,7 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
   );
   const procedureTemplatesQuery = useQuery(['pm', 'procedures'], fetchProcedureTemplates);
   const aiPrediction = useFailurePrediction({ assetId });
+  const showAiInsight = Boolean(assetId || aiPrediction.isLoading || aiPrediction.error);
 
   const resolveIntervalFromDays = (days?: number) => {
     if (!days) return interval;
@@ -101,8 +104,8 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
   useEffect(() => {
     setAssetId(assignment?.assetId ?? fixedAssetId ?? '');
     setInterval(assignment?.interval ?? 'monthly');
-    setTriggerType(assignment?.trigger?.type ?? 'time');
-    setMeterThreshold(assignment?.trigger?.meterThreshold ?? '');
+    setTriggerType(assignment?.usageMetric ? 'meter' : 'time');
+    setMeterThreshold(assignment?.usageTarget ?? '');
     setProcedureTemplateId(assignment?.procedureTemplateId ?? '');
     setChecklist(
       assignment?.checklist.map((item) => ({
@@ -148,10 +151,8 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
           assignmentId: assignment?.id,
           assetId,
           interval: triggerType === 'time' ? interval : undefined,
-          trigger: {
-            type: triggerType,
-            ...(triggerType === 'meter' && meterThreshold ? { meterThreshold } : {}),
-          },
+          usageMetric: triggerType === 'meter' ? 'runHours' : undefined,
+          usageTarget: triggerType === 'meter' && meterThreshold ? meterThreshold : undefined,
           procedureTemplateId: procedureTemplateId || undefined,
           checklist: checklist
             .filter((item) => item.description.trim().length > 0)
@@ -173,7 +174,7 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       {error && <p className="text-sm text-error-500">{error}</p>}
-      {(assetId || aiPrediction.isLoading || aiPrediction.error) && (
+      {showAiInsight && (
         <div className="space-y-2 rounded-lg border border-neutral-200 bg-white p-3 shadow-sm">
           <FailureInsightCard
             title="AI PM assist"

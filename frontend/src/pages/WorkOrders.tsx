@@ -78,6 +78,7 @@ const normalizeWorkOrder = (
 
   const normalized: WorkOrder = {
     id,
+    tenantId: resolved.tenantId ?? fallback?.tenantId ?? 'unknown-tenant',
     title: resolved.title ?? fallback?.title ?? 'Untitled Work Order',
     priority: resolved.priority ?? fallback?.priority ?? 'medium',
     status: resolved.status ?? fallback?.status ?? 'requested',

@@ -32,7 +32,7 @@ const AssetTemplateAssignments = ({ asset }: AssetTemplateAssignmentsProps) => {
             .filter((assignment) => assignment.assetId === asset.id)
             .map((assignment) => ({ template, assignment })),
         )
-        .sort((a, b) => a.template.title.localeCompare(b.template.title)),
+        .sort((a, b) => a.template.name.localeCompare(b.template.name)),
     [asset.id, templates],
   );
 
@@ -76,7 +76,7 @@ const AssetTemplateAssignments = ({ asset }: AssetTemplateAssignmentsProps) => {
           >
             {(templates ?? []).map((template) => (
               <option key={template.id} value={template.id}>
-                {template.title}
+                {template.name}
               </option>
             ))}
             {!templates?.length && <option value="">No templates available</option>}
@@ -104,7 +104,7 @@ const AssetTemplateAssignments = ({ asset }: AssetTemplateAssignmentsProps) => {
           >
             <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="font-semibold text-white">{template.title}</p>
+                <p className="font-semibold text-white">{template.name}</p>
                 <p className="text-xs text-neutral-400">
                   Interval: {assignment.interval}{' '}
                   {assignment.nextDue ? `· Next due ${new Date(assignment.nextDue).toLocaleDateString()}` : ''}

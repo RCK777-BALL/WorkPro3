@@ -34,7 +34,7 @@
   } as unknown as RegExpConstructor;
 
   Object.setPrototypeOf(SafeRegExp, NativeRegExp);
-  SafeRegExp.prototype = NativeRegExp.prototype;
+  Object.defineProperty(SafeRegExp, 'prototype', { value: NativeRegExp.prototype });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (globalThis as any).RegExp = SafeRegExp;

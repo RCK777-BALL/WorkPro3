@@ -3,7 +3,6 @@
  */
 
 import { create } from 'zustand';
-import { shallow } from 'zustand/shallow';
 
 import { acknowledgeAlert, clearAlert, fetchStockAlerts } from '@/api/alerts';
 import { fetchInventoryAlerts } from '@/api/inventory';
@@ -145,4 +144,4 @@ export const useNotificationsStore = create<NotificationsState>((set, get) => ({
 
 export const useNotifications = <T>(
   selector: (state: NotificationsState) => T = (state) => state as unknown as T,
-) => useNotificationsStore(selector, shallow);
+) => useNotificationsStore(selector);

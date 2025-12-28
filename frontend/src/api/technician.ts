@@ -3,8 +3,7 @@
  */
 
 import http from '@/lib/http';
-import type { WorkOrder } from '@/types';
-import type { UploadResponse } from '@backend-shared/uploads';
+import type { UploadResponse, WorkOrder } from '@/types';
 
 const randomId = (): string => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -48,7 +47,7 @@ export const normalizeTechnicianWorkOrder = (dto: TechnicianWorkOrderDto): WorkO
   timeSpentMin: dto.timeSpentMin,
   dueDate: dto.dueDate,
   updatedAt: dto.updatedAt,
-  partsUsed: dto.partsUsed,
+  partsUsed: dto.partsUsed?.map((entry) => ({ ...entry, cost: entry.cost ?? 0 })),
   photos: dto.photos,
   asset: dto.asset?.id || dto.asset?.name
     ? { id: dto.asset?.id ?? '', name: dto.asset?.name ?? 'Asset' }

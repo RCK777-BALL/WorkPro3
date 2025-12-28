@@ -28,12 +28,12 @@ import {
 const PAGE_SIZE = 10;
 
 const ReceiveStockModal = ({
-  open,
+  isOpen,
   onClose,
   part,
   stockItems,
 }: {
-  open: boolean;
+  isOpen: boolean;
   onClose: () => void;
   part: Part | null;
   stockItems: StockItem[];
@@ -80,7 +80,7 @@ const ReceiveStockModal = ({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Receive stock">
+    <Modal isOpen={isOpen} onClose={onClose} title="Receive stock">
       <div className="space-y-3">
         {part ? (
           <p className="text-sm text-neutral-600">Add quantity to an existing location for {part.name}.</p>
@@ -313,7 +313,7 @@ export default function InventoryParts() {
         </Card.Content>
       </Card>
 
-      <ReceiveStockModal open={Boolean(receiveTarget)} onClose={() => setReceiveTarget(null)} part={receiveTarget} stockItems={stockQuery.data ?? []} />
+      <ReceiveStockModal isOpen={Boolean(receiveTarget)} onClose={() => setReceiveTarget(null)} part={receiveTarget} stockItems={stockQuery.data ?? []} />
     </div>
   );
 }

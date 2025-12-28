@@ -68,7 +68,7 @@ const VendorModal = ({ opened, vendor, onClose, onSaved }: Props) => {
       },
     };
 
-    if (vendor) await updateVendor(vendor._id, payload);
+    if (vendor) await updateVendor(vendor._id ?? vendor.id, payload);
     else await createVendor(payload);
 
     onSaved();

@@ -91,7 +91,10 @@ const BarcodeScanner: React.FC<Props> = ({ onDetected, onError, paused }) => {
     raf = requestAnimationFrame(detect);
     return () => {
       cancelAnimationFrame(raf);
-      fallbackReaderRef.current?.reset?.();
+      const reader = fallbackReaderRef.current;
+      if (reader && 'reset' in reader) {
+        (reader as { reset: () => void }).reset();
+      }
       fallbackReaderRef.current = null;
     };
   }, [paused, onDetected, onError]);

@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import DocumentViewer from './DocumentViewer';
 
-type NavigatorWithShare = Navigator & {
+type NavigatorWithShare = Omit<Navigator, 'share' | 'clipboard'> & {
   share?: (data: ShareData) => Promise<void>;
   clipboard?: Navigator['clipboard'] & { writeText?: (text: string) => Promise<void> };
 };

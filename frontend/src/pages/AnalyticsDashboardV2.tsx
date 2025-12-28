@@ -306,8 +306,10 @@ export default function AnalyticsDashboardV2() {
               renderMetricCard('Completed work orders', `${totalsRow.completedWorkOrders}/${totalsRow.workOrders}`),
               renderMetricCard('Range', `${params.startDate?.slice(0, 10)} → ${params.endDate?.slice(0, 10)}`),
             ]
-          : Array.from({ length: 3 }).map((_, index) => (
-              <Card key={index} className="h-24 animate-pulse bg-neutral-50" />
+            : Array.from({ length: 3 }).map((_, index) => (
+              <Card key={index} className="h-24 animate-pulse bg-neutral-50">
+                <div className="h-full" />
+              </Card>
             ))}
       </div>
 

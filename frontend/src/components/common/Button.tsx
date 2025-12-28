@@ -16,10 +16,10 @@ type ButtonVariant =
   | 'ghost'
   | 'destructive';
 
-type ButtonSize = 'sm' | 'md' | 'lg';
+type ButtonSize = 'xs' | 'sm' | 'md' | 'lg';
 
-type ButtonOwnProps = {
-  as?: React.ElementType;
+type ButtonOwnProps<C extends React.ElementType = 'button'> = {
+  as?: C;
   variant?: ButtonVariant;
   size?: ButtonSize;
   fullWidth?: boolean;
@@ -28,8 +28,8 @@ type ButtonOwnProps = {
   loading?: boolean;
 };
 
-type ButtonProps<C extends React.ElementType = 'button'> = ButtonOwnProps &
-  Omit<React.ComponentPropsWithoutRef<C>, keyof ButtonOwnProps | 'color' | 'disabled'> & {
+type ButtonProps<C extends React.ElementType = 'button'> = ButtonOwnProps<C> &
+  Omit<React.ComponentPropsWithoutRef<C>, keyof ButtonOwnProps<C> | 'color' | 'disabled'> & {
     disabled?: boolean;
   };
 
@@ -56,12 +56,13 @@ const variantClasses: Record<ButtonVariant, string> = {
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
+  xs: 'px-2 py-1 text-xs',
   sm: 'px-3 py-1.5 text-sm',
   md: 'px-4 py-2 text-sm',
   lg: 'px-5 py-2.5 text-base',
 };
 
-const Button = React.forwardRef(
+const ButtonBase = React.forwardRef(
   <C extends React.ElementType = 'button'>(
     {
       children,
@@ -138,10 +139,12 @@ const Button = React.forwardRef(
       </Component>
     );
   },
-) as <C extends React.ElementType = 'button'>(
+);
+
+ButtonBase.displayName = 'Button';
+
+const Button = ButtonBase as <C extends React.ElementType = 'button'>(
   props: ButtonProps<C> & { ref?: React.ForwardedRef<React.ElementRef<C>> },
 ) => JSX.Element;
-
-Button.displayName = 'Button';
 
 export default Button;

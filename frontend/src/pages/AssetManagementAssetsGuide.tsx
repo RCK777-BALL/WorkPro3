@@ -18,7 +18,8 @@ import {
 } from 'lucide-react';
 import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
-import http from '@/lib/http';
+import http, { TENANT_KEY } from '@/lib/http';
+import { safeLocalStorage } from '@/utils/safeLocalStorage';
 import type { Asset } from '@/types';
 
 const readinessChecklist = [
@@ -165,6 +166,7 @@ const AssetManagementAssetsGuide: React.FC = () => {
 
             const parsedAsset: Asset = {
               id: resolvedId,
+              tenantId: asset.tenantId ?? safeLocalStorage.getItem(TENANT_KEY) ?? 'unknown-tenant',
               name: asset.name ?? 'Unnamed Asset',
               ...(asset.type ? { type: asset.type } : {}),
               ...(asset.location ? { location: asset.location } : {}),

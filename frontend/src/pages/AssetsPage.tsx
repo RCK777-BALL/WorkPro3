@@ -20,7 +20,7 @@ import AssetModal from '@/components/assets/AssetModal';
 import WorkOrderModal from '@/components/work-orders/WorkOrderModal';
 import Button from '@/components/common/Button';
 import Badge from '@/components/common/Badge';
-import http from '@/lib/http';
+import http, { TENANT_KEY } from '@/lib/http';
 import { enqueueAssetRequest, onSyncConflict, type SyncConflict } from '@/utils/offlineQueue';
 import { useAssetStore } from '@/store/assetStore';
 import type { Asset } from '@/types';
@@ -237,7 +237,7 @@ const AssetsPage: React.FC = () => {
   };
 
   const blockSampleEdits = (action: string) => {
-    addToast(`Turn off sample data to ${action}.`, 'warning');
+    addToast(`Turn off sample data to ${action}.`, 'error');
   };
 
   const loadCachedAssets = () => {
@@ -282,6 +282,7 @@ const AssetsPage: React.FC = () => {
             const restFields: Partial<Omit<Asset, 'id' | 'name'>> = rest;
             const normalizedAsset: Asset = {
               id: resolvedId,
+              tenantId: restFields.tenantId ?? safeLocalStorage.getItem(TENANT_KEY) ?? 'unknown-tenant',
               name: name ?? 'Unnamed Asset',
               ...restFields,
             };

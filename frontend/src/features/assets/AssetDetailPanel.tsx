@@ -513,7 +513,12 @@ const AssetDetailPanel = ({ assetSummary, assetDetails, hierarchy, isLoading, on
         </SectionCard>
       )}
 
-      <EntityAuditList entityType="Asset" entityId={asset?.id} siteId={asset?.siteId} limit={12} />
+      <EntityAuditList
+        entityType="Asset"
+        entityId={asset?.id ?? undefined}
+        siteId={asset?.siteId ?? undefined}
+        limit={12}
+      />
     </div>
   );
 };

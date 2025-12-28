@@ -10,11 +10,12 @@ import { usePartsQuery } from './hooks';
 
 const PdfExportPanel = () => {
   const { data, isLoading } = usePartsQuery();
+  const items = data?.items ?? [];
 
   const handleExport = () => {
-    if (!data) return;
+    if (!items.length) return;
     exportToPDF(
-      data,
+      items,
       'inventory-parts',
       (part) => ({
         Name: part.name,
@@ -38,7 +39,7 @@ const PdfExportPanel = () => {
           variant="outline"
           icon={<Download size={14} />}
           onClick={handleExport}
-          disabled={!data || data.length === 0}
+          disabled={items.length === 0}
           loading={isLoading}
         >
           Export PDF

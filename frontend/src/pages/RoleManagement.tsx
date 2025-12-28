@@ -246,7 +246,7 @@ const RoleManagementPage = () => {
               <h2 className="text-lg font-semibold text-slate-100">Existing roles</h2>
               <p className="text-sm text-slate-400">Filtered by tenant and active site context.</p>
             </div>
-            <Button onClick={resetForm} variant="outline" disabled={saving}>
+            <Button onClick={() => resetForm()} variant="outline" disabled={saving}>
               New role
             </Button>
           </div>
@@ -379,7 +379,7 @@ const RoleManagementPage = () => {
                 {selectedRoleId ? 'Update role' : 'Create role'}
               </Button>
               {selectedRoleId && (
-                <Button variant="outline" onClick={resetForm} disabled={saving}>
+                <Button variant="outline" onClick={() => resetForm()} disabled={saving}>
                   Cancel
                 </Button>
               )}

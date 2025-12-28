@@ -24,7 +24,6 @@ import { useSyncStore } from '@/store/syncStore';
 interface WorkOrderResponse extends Partial<WorkOrder> {
   _id?: string;
   id?: string;
-  checklist?: unknown;
 }
 
 const createClientId = () => {
@@ -123,7 +122,7 @@ const WorkOrderDetail = () => {
   const [error, setError] = useState<string | null>(null);
   const { addToast } = useToast();
   const user = useAuthStore((state) => state.user);
-  const conflict = useSyncStore((state) => state.conflict);
+  const conflict = useSyncStore((state) => state.conflict ?? null);
   const setConflict = useSyncStore((state) => state.setConflict);
 
   const partsQuery = usePartsQuery({ pageSize: 50 });
@@ -133,13 +132,14 @@ const WorkOrderDetail = () => {
   const [checklistError, setChecklistError] = useState<string | null>(null);
   const [evidenceDrafts, setEvidenceDrafts] = useState<Record<string, string>>({});
   const [partLines, setPartLines] = useState<
-    { partId: string; reserved: number; issued: number; name: string }
+    Array<{ partId: string; reserved: number; issued: number; name: string }>
   >([]);
   const [actionModal, setActionModal] = useState<
     { type: 'reserve' | 'issue' | 'return' | 'unreserve'; partId: string; quantity: number } | null
   >(null);
   const [approvalNote, setApprovalNote] = useState('');
   const [approvalSubmitting, setApprovalSubmitting] = useState(false);
+  const hasPartsError = Boolean(partsQuery.error);
 
   const checklistHistory = workOrder?.checklistHistory ?? [];
 
@@ -328,10 +328,11 @@ const WorkOrderDetail = () => {
     setActionModal(null);
   };
 
-  const isValueProvided = (value: string | number | boolean | undefined) => {
-    if (value === undefined) return false;
+  const isValueProvided = (value: unknown): boolean => {
+    if (value === undefined || value === null) return false;
     if (typeof value === 'string') return value.trim().length > 0;
-    return true;
+    if (typeof value === 'number') return Number.isFinite(value);
+    return typeof value === 'boolean' ? value : true;
   };
 
   const updateChecklistValue = (itemId: string, value: string | number | boolean | undefined) => {
@@ -781,7 +782,7 @@ const WorkOrderDetail = () => {
         </Card.Header>
         <Card.Content>
           {partsQuery.isLoading && <p className="text-sm text-neutral-500">Loading parts…</p>}
-          {partsQuery.error && <p className="text-sm text-rose-500">Unable to load parts.</p>}
+          {hasPartsError && <p className="text-sm text-rose-500">Unable to load parts.</p>}
           {!partsQuery.isLoading && (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-neutral-800/50 text-sm">
@@ -803,16 +804,16 @@ const WorkOrderDetail = () => {
                       <td className="px-3 py-2 text-neutral-200">{availableStock(line.partId)}</td>
                       <td className="px-3 py-2">
                         <div className="flex flex-wrap gap-2">
-                          <Button size="xs" variant="outline" onClick={() => openAction('reserve', line.partId)}>
+                          <Button size="sm" variant="outline" onClick={() => openAction('reserve', line.partId)}>
                             Reserve
                           </Button>
-                          <Button size="xs" variant="outline" onClick={() => openAction('issue', line.partId)}>
+                          <Button size="sm" variant="outline" onClick={() => openAction('issue', line.partId)}>
                             Issue
                           </Button>
-                          <Button size="xs" variant="ghost" onClick={() => openAction('return', line.partId)}>
+                          <Button size="sm" variant="ghost" onClick={() => openAction('return', line.partId)}>
                             Return
                           </Button>
-                          <Button size="xs" variant="ghost" onClick={() => openAction('unreserve', line.partId)}>
+                          <Button size="sm" variant="ghost" onClick={() => openAction('unreserve', line.partId)}>
                             Unreserve
                           </Button>
                         </div>
@@ -834,7 +835,7 @@ const WorkOrderDetail = () => {
       </Card>
 
       <Modal
-        open={Boolean(actionModal)}
+        isOpen={Boolean(actionModal)}
         onClose={() => setActionModal(null)}
         title={`${actionModal?.type ?? ''} part`}
       >

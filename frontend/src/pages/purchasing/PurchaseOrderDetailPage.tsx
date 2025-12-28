@@ -318,7 +318,7 @@ const PurchaseOrderDetailPage = () => {
         </Card>
       </div>
 
-      <ReceiveModal purchaseOrder={purchaseOrder} open={openReceive} onClose={() => setOpenReceive(false)} />
+      <ReceiveModal purchaseOrder={purchaseOrder} isOpen={openReceive} onClose={() => setOpenReceive(false)} />
     </div>
   );
 };

@@ -62,7 +62,8 @@ const normalizePartsResult = (
         if (params.sortBy === 'vendor') {
           return part.vendor?.name ?? '';
         }
-        return (part as Record<string, unknown>)[params.sortBy ?? ''] ?? '';
+        const key = params.sortBy as keyof Part | undefined;
+        return key ? part[key] ?? '' : '';
       };
       const aValue = resolveValue(a);
       const bValue = resolveValue(b);
@@ -94,7 +95,7 @@ export const fetchPart = async (partId: string): Promise<Part> => {
   return res.data;
 };
 
-export const upsertPart = async (payload: Partial<Part> & { name: string; id?: string }): Promise<Part> => {
+export const upsertPart = async (payload: Partial<Part> & { name?: string; id?: string }): Promise<Part> => {
   const normalized = payload.barcode ? { ...payload, barcode: payload.barcode.trim() } : payload;
   if (normalized.id) {
     const res = await http.put<Part>(`${BASE_PATH}/parts/${normalized.id}`, normalized);

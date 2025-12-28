@@ -34,20 +34,20 @@ const QrLabel = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState<QrLabelFormat>('standard');
 
-  const formats = useMemo(
+  const formats = useMemo<Array<{ id: QrLabelFormat; name: string; description: string }>>(
     () => [
       {
-        id: 'standard' satisfies QrLabelFormat,
+        id: 'standard',
         name: 'Standard QR label',
         description: 'Balanced QR and meta for general bins.',
       },
       {
-        id: 'compact' satisfies QrLabelFormat,
+        id: 'compact',
         name: 'Compact shelf label',
         description: 'Slim layout to tuck under shelves or drawers.',
       },
       {
-        id: 'shipping' satisfies QrLabelFormat,
+        id: 'shipping',
         name: 'Print QR / Label',
         description: 'Bold faceplate for carts, kitting, or shipping.',
       },

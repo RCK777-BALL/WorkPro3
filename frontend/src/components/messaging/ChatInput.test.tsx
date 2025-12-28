@@ -4,17 +4,18 @@
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { beforeEach, vi } from 'vitest';
-import type { Emoji } from '@emoji-mart/data';
 
 import ChatInput from './ChatInput';
 
 const mockAddToast = vi.fn();
 
+type EmojiSelection = { native: string };
+
 vi.mock('@emoji-mart/react', () => {
   return {
     __esModule: true,
-    default: ({ onEmojiSelect }: { onEmojiSelect: (emoji: Emoji) => void }) => (
-      <button data-testid="picker" onClick={() => onEmojiSelect({ native: '😀' } as Emoji)} />
+    default: ({ onEmojiSelect }: { onEmojiSelect: (emoji: EmojiSelection) => void }) => (
+      <button data-testid="picker" onClick={() => onEmojiSelect({ native: '😀' })} />
     ),
   };
 });

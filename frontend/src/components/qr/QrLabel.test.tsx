@@ -4,6 +4,7 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
+import type { Mock } from 'vitest';
 import QrLabel from './QrLabel';
 import { buildQrLabelMarkup } from './qrPrint';
 
@@ -20,7 +21,7 @@ describe('QrLabel', () => {
     } as any;
     vi.spyOn(window, 'open').mockReturnValue(printWindow);
 
-    const mockedBuild = buildQrLabelMarkup as unknown as vi.Mock;
+    const mockedBuild = buildQrLabelMarkup as unknown as Mock;
 
     render(<QrLabel name="Pump" qrValue="qr" subtitle="Line 1" description="Test" />);
 

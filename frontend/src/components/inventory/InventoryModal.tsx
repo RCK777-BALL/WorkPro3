@@ -36,7 +36,7 @@ const defaultPartState = {
   lastOrderDate: new Date().toISOString().split('T')[0],
 };
 
-type PartFormState = typeof defaultPartState & Partial<Part>;
+type PartFormState = Omit<Partial<Part>, 'vendor'> & typeof defaultPartState & { vendor: string };
 
 const normalizePartFormState = (data?: Partial<Part> | null): PartFormState => {
   const vendorValue =

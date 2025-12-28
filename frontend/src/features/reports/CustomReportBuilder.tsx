@@ -198,7 +198,9 @@ export default function CustomReportBuilder() {
     });
   };
 
-  const rowsWithIds = useMemo(
+  type CustomReportRow = CustomReportResponse['rows'][number] & { __id: string };
+
+  const rowsWithIds = useMemo<CustomReportRow[]>(
     () =>
       reportData?.rows.map((row, index) => ({
         __id: `row-${index}`,
@@ -207,11 +209,11 @@ export default function CustomReportBuilder() {
     [reportData],
   );
 
-  const columns = useMemo(
+  const columns = useMemo<Array<{ header: string; accessor: keyof CustomReportRow }>>(
     () =>
       (reportData?.columns ?? []).map((column) => ({
         header: column.label,
-        accessor: column.key as keyof (CustomReportResponse['rows'][number] & { __id: string }),
+        accessor: column.key as keyof CustomReportRow,
       })),
     [reportData?.columns],
   );

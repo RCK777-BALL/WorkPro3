@@ -82,7 +82,7 @@ export const INVENTORY_REPORTING_COLUMNS: ReportingColumn<Part>[] = [
     key: 'pmTemplates',
     header: 'PM Templates',
     accessor: (part) =>
-      part.pmTemplates?.map((template) => template.name ?? template.title ?? '').filter(Boolean).join('; ') || '—',
+      part.pmTemplates?.map((template) => template.title).filter(Boolean).join('; ') || '—',
   },
   {
     key: 'autoReorder',

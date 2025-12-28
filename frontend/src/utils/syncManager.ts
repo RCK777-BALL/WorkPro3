@@ -38,7 +38,7 @@ class SyncManager {
     useSyncStore.getState().hydrateItemStatuses(statusMap);
   }
 
-  private maybeToast(key: string, message: string, variant: 'info' | 'error' | 'success' = 'info') {
+  private maybeToast(key: string, message: string, variant: 'success' | 'error' = 'success') {
     const now = Date.now();
     const last = this.toastCooldowns.get(key) ?? 0;
     if (now - last < 3500) return;

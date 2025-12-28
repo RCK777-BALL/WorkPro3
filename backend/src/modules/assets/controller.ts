@@ -6,7 +6,7 @@ import type { Response, NextFunction } from 'express';
 
 import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
 import { fail } from '../../lib/http';
-import { AssetInsightsError, getAssetInsights, type AssetInsightsContext } from './service';
+import { AssetInsightsError, getAssetInsights, resolveAssetScanValue, type AssetInsightsContext } from './service';
 import {
   createMeterConfig,
   ingestMeterReadings,
@@ -14,16 +14,6 @@ import {
   type MeterConfigPayload,
   type MeterReadingPayload,
 } from './meterService';
-
-type Maybe<T> = T | undefined;
-
-const ensureTenant = (req: AuthedRequest, res: Response): Maybe<string> => {
-  if (!req.tenantId) {
-    fail(res, 'Tenant context is required', 400);
-    return undefined;
-  }
-  return req.tenantId;
-};
 
 const buildContext = (req: AuthedRequest): AssetInsightsContext => ({
   tenantId: req.tenantId!,
@@ -44,7 +34,6 @@ const handleError = (err: unknown, res: Response, next: NextFunction) => {
 };
 
 export const getAssetDetailsHandler: AuthedRequestHandler<{ assetId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await getAssetInsights(buildContext(req), req.params.assetId);
     send(res, data);
@@ -54,7 +43,6 @@ export const getAssetDetailsHandler: AuthedRequestHandler<{ assetId: string }> =
 };
 
 export const listAssetMetersHandler: AuthedRequestHandler<{ assetId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await listMetersForAsset(buildContext(req), req.params.assetId);
     send(res, data);
@@ -68,7 +56,6 @@ export const createAssetMeterHandler: AuthedRequestHandler<
   unknown,
   MeterConfigPayload
 > = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const meter = await createMeterConfig(buildContext(req), req.params.assetId, req.body);
     send(res, meter, 201);
@@ -82,11 +69,30 @@ export const ingestMeterReadingsHandler: AuthedRequestHandler<
   unknown,
   MeterReadingPayload | MeterReadingPayload[]
 > = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const payloadArray = Array.isArray(req.body) ? req.body : [req.body];
     const result = await ingestMeterReadings(buildContext(req), req.params.assetId, payloadArray);
     send(res, result, 202);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const resolveAssetScanHandler: AuthedRequestHandler = async (req, res, next) => {
+  if (!ensureTenant(req, res)) return;
+  const rawValue = typeof req.query.value === 'string' ? req.query.value.trim() : '';
+  if (!rawValue) {
+    fail(res, 'Scan value is required', 400);
+    return;
+  }
+
+  try {
+    const data = await resolveAssetScanValue(buildContext(req), rawValue);
+    if (!data) {
+      fail(res, 'Asset not found', 404);
+      return;
+    }
+    send(res, data);
   } catch (err) {
     handleError(err, res, next);
   }

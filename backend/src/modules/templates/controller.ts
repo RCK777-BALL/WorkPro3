@@ -9,15 +9,6 @@ import { fail } from '../../lib/http';
 import type { PMContext } from '../pm/service';
 import { PMTemplateError } from '../pm/service';
 import { cloneTemplateFromLibrary, listInspectionForms, listTemplateLibrary } from './service';
-
-const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
-  if (!req.tenantId) {
-    fail(res, 'Tenant context is required', 400);
-    return false;
-  }
-  return true;
-};
-
 const buildContext = (req: AuthedRequest): PMContext => {
   const user = req.user as { _id?: string; id?: string } | undefined;
   const context: PMContext = {
@@ -56,7 +47,6 @@ export const listInspectionFormLibraryHandler: AuthedRequestHandler = (_req, res
 };
 
 export const cloneTemplateHandler: AuthedRequestHandler<{ templateId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await cloneTemplateFromLibrary(buildContext(req), req.params.templateId);
     send(res, data, 201);

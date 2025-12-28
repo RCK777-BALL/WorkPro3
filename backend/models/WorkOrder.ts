@@ -26,6 +26,13 @@ export interface WorkOrder {
     | 'approved';
   type: 'corrective' | 'preventive' | 'inspection' | 'calibration' | 'safety';
   approvalStatus: 'draft' | 'pending' | 'approved' | 'rejected';
+  approvalState?: 'draft' | 'pending' | 'approved' | 'rejected' | 'escalated' | 'cancelled';
+  approvalStates?: Types.Array<{
+    state: 'draft' | 'pending' | 'approved' | 'rejected' | 'escalated' | 'cancelled';
+    changedAt?: Date;
+    changedBy?: Types.ObjectId;
+    note?: string;
+  }>;
   approvalSteps?: Types.Array<{
     step: number;
     name: string;
@@ -47,6 +54,13 @@ export interface WorkOrder {
   slaRespondedAt?: Date;
   slaResolvedAt?: Date;
   slaBreachAt?: Date;
+  slaTargets?: {
+    responseMinutes?: number;
+    resolveMinutes?: number;
+    responseDueAt?: Date;
+    resolveDueAt?: Date;
+    source?: 'policy' | 'manual';
+  };
   slaPolicyId?: Types.ObjectId;
   slaEscalations?: Types.Array<{
     trigger: 'response' | 'resolve';
@@ -85,6 +99,15 @@ export interface WorkOrder {
   signatures: Types.Array<{ by: Types.ObjectId; ts: Date }>;
   permits: Types.Array<Types.ObjectId>;
   requiredPermitTypes: Types.Array<string>;
+  permitRequirements?: Types.Array<{
+    type: string;
+    required?: boolean;
+    requiredBeforeStatus?: 'assigned' | 'in_progress' | 'completed';
+    status?: 'pending' | 'approved' | 'rejected';
+    approvedBy?: Types.ObjectId;
+    approvedAt?: Date;
+    note?: string;
+  }>;
   permitApprovals?: Types.Array<{
     type: string;
     status: 'pending' | 'approved' | 'rejected';
@@ -219,6 +242,26 @@ const workOrderSchema = new Schema<WorkOrder>(
       enum: ['draft', 'pending', 'approved', 'rejected'],
       default: 'draft',
     },
+    approvalState: {
+      type: String,
+      enum: ['draft', 'pending', 'approved', 'rejected', 'escalated', 'cancelled'],
+      default: 'draft',
+    },
+    approvalStates: {
+      type: [
+        {
+          state: {
+            type: String,
+            enum: ['draft', 'pending', 'approved', 'rejected', 'escalated', 'cancelled'],
+            required: true,
+          },
+          changedAt: { type: Date },
+          changedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+          note: { type: String },
+        },
+      ],
+      default: [],
+    },
     approvalSteps: {
       type: [
         {
@@ -249,6 +292,14 @@ const workOrderSchema = new Schema<WorkOrder>(
     slaRespondedAt: { type: Date },
     slaResolvedAt: { type: Date },
     slaBreachAt: { type: Date },
+    slaTargets: {
+      responseMinutes: { type: Number },
+      resolveMinutes: { type: Number },
+      responseDueAt: { type: Date },
+      resolveDueAt: { type: Date },
+      source: { type: String, enum: ['policy', 'manual'] },
+      _id: false,
+    },
     slaPolicyId: { type: Schema.Types.ObjectId, ref: 'SlaPolicy' },
     slaEscalations: {
       type: [
@@ -313,6 +364,20 @@ const workOrderSchema = new Schema<WorkOrder>(
     ],
     permits: [{ type: Schema.Types.ObjectId, ref: 'Permit' }],
     requiredPermitTypes: [{ type: String }],
+    permitRequirements: {
+      type: [
+        {
+          type: { type: String, required: true },
+          required: { type: Boolean, default: true },
+          requiredBeforeStatus: { type: String, enum: ['assigned', 'in_progress', 'completed'] },
+          status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+          approvedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+          approvedAt: { type: Date },
+          note: { type: String },
+        },
+      ],
+      default: [],
+    },
     permitApprovals: {
       type: [
         {

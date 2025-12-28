@@ -11,6 +11,8 @@ import tenantScope from '../../../middleware/tenantScope';
 import { exportAssets, importEntities } from './controller';
 import { ImportExportError } from './service';
 import { requirePermission } from '../../auth/permissions';
+import authorizeTenantSite from '../../middleware/tenantAuthorization';
+import { auditDataAccess } from '../audit';
 
 const router = Router();
 
@@ -33,6 +35,8 @@ const upload = multer({
 
 router.use(requireAuth);
 router.use(tenantScope);
+router.use(authorizeTenantSite());
+router.use(auditDataAccess('import_export'));
 
 router.get('/assets/export', requirePermission('importExport', 'export'), exportAssets);
 router.post(

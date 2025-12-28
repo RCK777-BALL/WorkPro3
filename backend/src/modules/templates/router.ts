@@ -7,12 +7,16 @@ import { Router } from 'express';
 import { requireAuth } from '../../../middleware/authMiddleware';
 import tenantScope from '../../../middleware/tenantScope';
 import { requirePermission } from '../../auth/permissions';
+import authorizeTenantSite from '../../middleware/tenantAuthorization';
+import { auditDataAccess } from '../audit';
 import { cloneTemplateHandler, listInspectionFormLibraryHandler, listTemplateLibraryHandler } from './controller';
 
 const router = Router();
 
 router.use(requireAuth);
 router.use(tenantScope);
+router.use(authorizeTenantSite());
+router.use(auditDataAccess('templates', { entityIdParams: ['templateId'] }));
 
 // Expose the template library to all authenticated users so onboarding steps
 // can surface curated PM templates even before roles are fully configured.

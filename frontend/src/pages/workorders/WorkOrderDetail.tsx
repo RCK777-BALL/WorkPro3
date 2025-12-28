@@ -13,10 +13,13 @@ import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import Modal from '@/components/common/Modal';
+import ConflictResolver from '@/components/offline/ConflictResolver';
+import WorkOrderQueuePanel from '@/components/offline/WorkOrderQueuePanel';
 import ChecklistExecutionPanel from '@/workorders/ChecklistExecutionPanel';
 import { usePartsQuery, useStockItemsQuery } from '@/features/inventory';
 import { useToast } from '@/context/ToastContext';
 import { useAuthStore } from '@/store/authStore';
+import { useSyncStore } from '@/store/syncStore';
 
 interface WorkOrderResponse extends Partial<WorkOrder> {
   _id?: string;
@@ -80,6 +83,27 @@ const normalizeWorkOrder = (data: WorkOrderResponse): WorkOrder | null => {
     templateVersion: data.templateVersion,
     complianceStatus: data.complianceStatus,
     complianceCompletedAt: data.complianceCompletedAt,
+    permits: data.permits,
+    requiredPermitTypes: data.requiredPermitTypes,
+    permitRequirements: data.permitRequirements,
+    permitApprovals: data.permitApprovals,
+    approvalStatus: data.approvalStatus,
+    approvalState: data.approvalState,
+    approvalStates: data.approvalStates,
+    approvalSteps: data.approvalSteps,
+    currentApprovalStep: data.currentApprovalStep,
+    approvedBy: data.approvedBy,
+    approvedAt: data.approvedAt,
+    requestedBy: data.requestedBy,
+    requestedAt: data.requestedAt,
+    slaDueAt: data.slaDueAt,
+    slaResponseDueAt: data.slaResponseDueAt,
+    slaResolveDueAt: data.slaResolveDueAt,
+    slaRespondedAt: data.slaRespondedAt,
+    slaResolvedAt: data.slaResolvedAt,
+    slaBreachAt: data.slaBreachAt,
+    slaTargets: data.slaTargets,
+    slaEscalations: data.slaEscalations,
   } as WorkOrder;
 
   if (data.checklistHistory) {
@@ -99,6 +123,8 @@ const WorkOrderDetail = () => {
   const [error, setError] = useState<string | null>(null);
   const { addToast } = useToast();
   const user = useAuthStore((state) => state.user);
+  const conflict = useSyncStore((state) => state.conflict);
+  const setConflict = useSyncStore((state) => state.setConflict);
 
   const partsQuery = usePartsQuery({ pageSize: 50 });
   const stockQuery = useStockItemsQuery();
@@ -112,8 +138,26 @@ const WorkOrderDetail = () => {
   const [actionModal, setActionModal] = useState<
     { type: 'reserve' | 'issue' | 'return' | 'unreserve'; partId: string; quantity: number } | null
   >(null);
+  const [approvalNote, setApprovalNote] = useState('');
+  const [approvalSubmitting, setApprovalSubmitting] = useState(false);
 
   const checklistHistory = workOrder?.checklistHistory ?? [];
+
+  const resolveConflict = async (choice: 'local' | 'server') => {
+    if (!conflict) return;
+    if (choice === 'local') {
+      const payload = {
+        ...(conflict.local as Record<string, unknown>),
+        clientUpdatedAt: new Date().toISOString(),
+      };
+      await http({
+        method: conflict.method,
+        url: conflict.url,
+        data: payload,
+      });
+    }
+    setConflict(null);
+  };
 
   const checklistCompliance = useMemo(() => {
     if (workOrder?.checklistCompliance) return workOrder.checklistCompliance;
@@ -125,6 +169,78 @@ const WorkOrderDetail = () => {
 
     return { totalChecks, passedChecks, passRate, status };
   }, [checklistHistory, workOrder?.checklistCompliance]);
+
+  const userRoles = useMemo(() => {
+    const roles = new Set<string>();
+    if (user?.role) roles.add(user.role);
+    (user?.roles ?? []).forEach((role) => roles.add(role));
+    return roles;
+  }, [user?.role, user?.roles]);
+
+  const canApprove = useMemo(() => {
+    const approvalRoles = new Set([
+      'global_admin',
+      'plant_admin',
+      'general_manager',
+      'assistant_general_manager',
+      'operations_manager',
+      'assistant_department_leader',
+      'workorder_supervisor',
+      'site_supervisor',
+      'department_leader',
+      'manager',
+      'supervisor',
+      'planner',
+    ]);
+    return Array.from(userRoles).some((role) => approvalRoles.has(role));
+  }, [userRoles]);
+
+  const submitApproval = async (status: 'pending' | 'approved' | 'rejected') => {
+    if (!id) return;
+    setApprovalSubmitting(true);
+    try {
+      const res = await http.post<WorkOrderResponse>(`/workorders/${id}/approve`, {
+        status,
+        ...(approvalNote.trim() ? { note: approvalNote.trim() } : {}),
+      });
+      const normalized = normalizeWorkOrder(res.data);
+      if (normalized) {
+        setWorkOrder(normalized);
+      }
+      setApprovalNote('');
+      addToast(`Approval ${status === 'pending' ? 'requested' : status}`, 'success');
+    } catch (err) {
+      console.error(err);
+      addToast('Unable to update approval status.', 'error');
+    } finally {
+      setApprovalSubmitting(false);
+    }
+  };
+
+  const formatDateTime = (value?: string) => (value ? new Date(value).toLocaleString() : '—');
+
+  const slaSnapshot = useMemo(() => {
+    if (!workOrder) return null;
+    const now = new Date();
+    const responseDue = workOrder.slaResponseDueAt ?? workOrder.slaTargets?.responseDueAt;
+    const resolveDue = workOrder.slaResolveDueAt ?? workOrder.slaTargets?.resolveDueAt;
+
+    const buildState = (due?: string, completed?: string) => {
+      if (completed) return { label: 'Met', color: 'green' as const };
+      if (due && new Date(due).getTime() < now.getTime()) {
+        return { label: 'Breached', color: 'red' as const };
+      }
+      if (due) return { label: 'Due', color: 'amber' as const };
+      return { label: 'Not set', color: undefined };
+    };
+
+    return {
+      responseDue,
+      resolveDue,
+      responseState: buildState(responseDue, workOrder.slaRespondedAt),
+      resolveState: buildState(resolveDue, workOrder.slaResolvedAt),
+    };
+  }, [workOrder]);
 
   const formatReading = (value: unknown) => {
     if (value === null || value === undefined) return '—';
@@ -308,8 +424,8 @@ const WorkOrderDetail = () => {
   }, [loading, error, workOrder]);
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 p-4 sm:p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs uppercase tracking-wide text-indigo-300">Work order</p>
           <h1 className="text-3xl font-bold text-white">{workOrder?.title ?? 'Work order details'}</h1>
@@ -338,8 +454,10 @@ const WorkOrderDetail = () => {
         </Link>
       </div>
 
+      <WorkOrderQueuePanel workOrderId={id} />
+
       {workOrder && (
-        <div className="rounded-3xl border border-neutral-900/80 bg-neutral-950/60 p-6 text-neutral-100">
+        <div className="rounded-3xl border border-neutral-900/80 bg-neutral-950/60 p-4 text-neutral-100 sm:p-6">
           <h2 className="text-lg font-semibold text-white">Summary</h2>
           <p className="mt-2 whitespace-pre-line text-sm leading-6 text-neutral-200">
             {workOrder.description ?? 'No description provided.'}
@@ -383,6 +501,133 @@ const WorkOrderDetail = () => {
                 ) : (
                   <p className="text-xs text-neutral-500">No template linked</p>
                 )}
+              </div>
+            </Card.Content>
+          </Card>
+          <Card>
+            <Card.Header>
+              <Card.Title>SLA tracking</Card.Title>
+              <Card.Description>Monitor response and resolution targets.</Card.Description>
+            </Card.Header>
+            <Card.Content className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-neutral-200">Response</p>
+                  <p className="text-xs text-neutral-400">Due {formatDateTime(slaSnapshot?.responseDue)}</p>
+                  {workOrder.slaTargets?.responseMinutes && (
+                    <p className="text-xs text-neutral-500">
+                      Target {workOrder.slaTargets.responseMinutes} minutes
+                    </p>
+                  )}
+                </div>
+                <Badge text={slaSnapshot?.responseState.label ?? 'Not set'} color={slaSnapshot?.responseState.color} />
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-neutral-200">Resolution</p>
+                  <p className="text-xs text-neutral-400">Due {formatDateTime(slaSnapshot?.resolveDue)}</p>
+                  {workOrder.slaTargets?.resolveMinutes && (
+                    <p className="text-xs text-neutral-500">
+                      Target {workOrder.slaTargets.resolveMinutes} minutes
+                    </p>
+                  )}
+                </div>
+                <Badge text={slaSnapshot?.resolveState.label ?? 'Not set'} color={slaSnapshot?.resolveState.color} />
+              </div>
+              {workOrder.slaBreachAt && (
+                <p className="text-xs text-rose-400">Breached at {formatDateTime(workOrder.slaBreachAt)}</p>
+              )}
+            </Card.Content>
+          </Card>
+          <Card>
+            <Card.Header>
+              <Card.Title>Approvals</Card.Title>
+              <Card.Description>Track approvals and permit requirements.</Card.Description>
+            </Card.Header>
+            <Card.Content className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-neutral-400">Approval status</span>
+                <Badge text={workOrder.approvalStatus ?? 'draft'} />
+              </div>
+              {workOrder.currentApprovalStep && (
+                <p className="text-xs text-neutral-400">Step {workOrder.currentApprovalStep}</p>
+              )}
+              {workOrder.approvalSteps?.length ? (
+                <ul className="space-y-2 text-xs text-neutral-300">
+                  {workOrder.approvalSteps.map((step) => (
+                    <li key={`${step.step}-${step.name}`} className="flex items-center justify-between">
+                      <span>
+                        {step.step}. {step.name}
+                      </span>
+                      <Badge text={step.status ?? 'pending'} />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-xs text-neutral-500">No approval steps configured.</p>
+              )}
+              {(workOrder.permitRequirements?.length || workOrder.requiredPermitTypes?.length) && (
+                <div className="rounded-xl border border-neutral-800/60 bg-neutral-900/40 p-3 text-xs text-neutral-300">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                    Permit requirements
+                  </p>
+                  <ul className="space-y-1">
+                    {(workOrder.permitRequirements ?? []).map((permit) => (
+                      <li key={permit.type} className="flex items-center justify-between">
+                        <span>{permit.type}</span>
+                        <Badge text={permit.status ?? 'pending'} />
+                      </li>
+                    ))}
+                    {(workOrder.permitRequirements?.length ?? 0) === 0 &&
+                      (workOrder.requiredPermitTypes ?? []).map((type) => (
+                        <li key={type} className="flex items-center justify-between">
+                          <span>{type}</span>
+                          <Badge text="Required" />
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              )}
+              <div className="space-y-2">
+                <Input
+                  label="Approval note"
+                  value={approvalNote}
+                  onChange={(event) => setApprovalNote(event.target.value)}
+                />
+                <div className="flex flex-wrap gap-2">
+                  {workOrder.approvalStatus !== 'pending' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={approvalSubmitting}
+                      onClick={() => submitApproval('pending')}
+                    >
+                      Request approval
+                    </Button>
+                  )}
+                  {workOrder.approvalStatus === 'pending' && (
+                    <>
+                      <Button
+                        size="sm"
+                        disabled={!canApprove || approvalSubmitting}
+                        onClick={() => submitApproval('approved')}
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={!canApprove || approvalSubmitting}
+                        onClick={() => submitApproval('rejected')}
+                      >
+                        Reject
+                      </Button>
+                    </>
+                  )}
+                  {!canApprove && workOrder.approvalStatus === 'pending' && (
+                    <span className="text-xs text-neutral-500">Role required to approve.</span>
+                  )}
+                </div>
               </div>
             </Card.Content>
           </Card>
@@ -631,6 +876,11 @@ const WorkOrderDetail = () => {
       ) : (
         <p className="text-sm text-neutral-500">Work order id required to load comments.</p>
       )}
+      <ConflictResolver
+        conflict={conflict}
+        onResolve={resolveConflict}
+        onClose={() => setConflict(null)}
+      />
     </div>
   );
 };

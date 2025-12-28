@@ -31,6 +31,16 @@ export interface NotificationInboxResponse {
   unreadCount: number;
 }
 
+export interface NotificationSubscription {
+  id: string;
+  events: string[];
+  channels: Array<'email' | 'push' | 'in_app' | 'webhook'>;
+  quietHours?: { start?: string; end?: string };
+  digest?: { enabled?: boolean; frequency?: 'hourly' | 'daily' | 'weekly' };
+}
+
+export type NotificationSubscriptionInput = Omit<NotificationSubscription, 'id'>;
+
 export const fetchNotifications = (params?: Record<string, unknown>) =>
   http.get<NotificationInboxResponse>('/notifications/inbox', { params }).then((res) => res.data);
 
@@ -52,3 +62,27 @@ export const sendNotificationTest = (payload: NotificationTestInput) =>
       payload,
     )
     .then((res) => (res.data as any).data ?? (res.data as any));
+
+const normalizeSubscription = (item: any): NotificationSubscription => ({
+  id: item?._id ?? item?.id ?? crypto.randomUUID(),
+  events: item?.events ?? [],
+  channels: item?.channels ?? [],
+  quietHours: item?.quietHours ?? undefined,
+  digest: item?.digest ?? undefined,
+});
+
+export const fetchNotificationSubscriptions = () =>
+  http
+    .get<{ success?: boolean; data: NotificationSubscription[] }>('/notifications/subscriptions')
+    .then((res) => {
+      const data = Array.isArray(res.data) ? res.data : (res.data as any).data;
+      return Array.isArray(data) ? data.map(normalizeSubscription) : [];
+    });
+
+export const upsertNotificationSubscription = (payload: NotificationSubscriptionInput) =>
+  http
+    .put<{ success?: boolean; data: NotificationSubscription }>('/notifications/subscriptions', payload)
+    .then((res) => normalizeSubscription((res.data as any).data ?? res.data));
+
+export const deleteNotificationSubscription = (id: string) =>
+  http.delete(`/notifications/subscriptions/${id}`).then((res) => res.data);

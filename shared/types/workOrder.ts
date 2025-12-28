@@ -52,7 +52,10 @@ export type WorkOrderStatus =
   | 'in_progress'
   | 'paused'
   | 'completed'
-  | 'cancelled';
+  | 'cancelled'
+  | 'draft'
+  | 'pending_approval'
+  | 'approved';
 
 export interface WorkOrder {
   _id: string;
@@ -72,11 +75,54 @@ export interface WorkOrder {
   complianceStatus?: 'pending' | 'complete' | 'not_required' | undefined;
   complianceCompletedAt?: string | undefined;
   approvalStatus?: 'draft' | 'pending' | 'approved' | 'rejected' | undefined;
+  approvalState?: 'draft' | 'pending' | 'approved' | 'rejected' | 'escalated' | 'cancelled' | undefined;
+  approvalStates?: {
+    state: 'draft' | 'pending' | 'approved' | 'rejected' | 'escalated' | 'cancelled';
+    changedAt?: string | undefined;
+    changedBy?: string | undefined;
+    note?: string | undefined;
+  }[] | undefined;
+  approvalSteps?: {
+    step: number;
+    name: string;
+    approver?: string | undefined;
+    status?: 'pending' | 'approved' | 'rejected' | 'skipped' | undefined;
+    approvedAt?: string | undefined;
+    note?: string | undefined;
+    required?: boolean | undefined;
+  }[] | undefined;
+  currentApprovalStep?: number | undefined;
   approvedBy?: string | undefined;
   approvedAt?: string | undefined;
   requestedBy?: string | undefined;
   requestedAt?: string | undefined;
   slaDueAt?: string | undefined;
+  slaResponseDueAt?: string | undefined;
+  slaResolveDueAt?: string | undefined;
+  slaRespondedAt?: string | undefined;
+  slaResolvedAt?: string | undefined;
+  slaBreachAt?: string | undefined;
+  slaTargets?: {
+    responseMinutes?: number | undefined;
+    resolveMinutes?: number | undefined;
+    responseDueAt?: string | undefined;
+    resolveDueAt?: string | undefined;
+    source?: 'policy' | 'manual' | undefined;
+  } | undefined;
+  slaEscalations?: {
+    trigger: 'response' | 'resolve';
+    thresholdMinutes?: number | undefined;
+    escalateTo?: string[] | undefined;
+    escalatedAt?: string | undefined;
+    channel?: 'email' | 'push' | 'sms' | undefined;
+    priority?: 'low' | 'medium' | 'high' | 'critical' | undefined;
+    reassign?: boolean | undefined;
+    maxRetries?: number | undefined;
+    retryBackoffMinutes?: number | undefined;
+    retryCount?: number | undefined;
+    nextAttemptAt?: string | undefined;
+    templateKey?: string | undefined;
+  }[] | undefined;
   failureModeTags?: string[] | undefined;
   assignees?: string[] | undefined;
   checklists?: ChecklistItem[] | undefined;
@@ -99,6 +145,22 @@ export interface WorkOrder {
   timeline?: { label: string; notes?: string | undefined; createdAt?: string | undefined; createdBy?: string | undefined; type?: 'status' | 'comment' | 'approval' | 'sla' | undefined }[] | undefined;
   permits?: string[] | undefined;
   requiredPermitTypes?: string[] | undefined;
+  permitRequirements?: {
+    type: string;
+    required?: boolean | undefined;
+    requiredBeforeStatus?: 'assigned' | 'in_progress' | 'completed' | undefined;
+    status?: 'pending' | 'approved' | 'rejected' | undefined;
+    approvedBy?: string | undefined;
+    approvedAt?: string | undefined;
+    note?: string | undefined;
+  }[] | undefined;
+  permitApprovals?: {
+    type: string;
+    status?: 'pending' | 'approved' | 'rejected' | undefined;
+    approvedBy?: string | undefined;
+    approvedAt?: string | undefined;
+    note?: string | undefined;
+  }[] | undefined;
   pmTask?: string | undefined;
   pmTemplate?: string | undefined;
   procedureTemplateId?: string | undefined;
@@ -126,5 +188,3 @@ export interface WorkOrder {
     payload?: Record<string, unknown>;
   };
 }
-
-

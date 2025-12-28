@@ -40,14 +40,19 @@ const ChecklistExecutionPanel = ({
 }: ChecklistExecutionPanelProps) => (
   <Card>
     <Card.Header>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <Card.Title>Checklist</Card.Title>
           <Card.Description>
             Record pass/fail results, readings, and upload evidence before closing the work order.
           </Card.Description>
         </div>
-        <Button size="sm" onClick={onSave} disabled={checklistSaving || !checklist.length}>
+        <Button
+          size="sm"
+          className="w-full sm:w-auto"
+          onClick={onSave}
+          disabled={checklistSaving || !checklist.length}
+        >
           {checklistSaving ? 'Saving…' : 'Save checklist'}
         </Button>
       </div>
@@ -61,7 +66,7 @@ const ChecklistExecutionPanel = ({
           const statusLabel = item.status ?? (isValueProvided(item.completedValue) ? 'done' : 'not_started');
           return (
             <div key={item.id} className="rounded-2xl border border-neutral-800/60 bg-neutral-950/60 p-4">
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-sm font-semibold text-white">{item.text}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-neutral-400">
@@ -86,7 +91,7 @@ const ChecklistExecutionPanel = ({
                     </span>
                   </div>
                 </div>
-                <div className="text-right text-xs text-neutral-400">
+                <div className="text-right text-xs text-neutral-400 sm:text-left">
                   {completionLabel && <p>Completed at {completionLabel}</p>}
                   {item.completedBy && <p>Signed by {item.completedBy === userId ? 'you' : item.completedBy}</p>}
                 </div>
@@ -139,14 +144,19 @@ const ChecklistExecutionPanel = ({
                 )}
 
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     <Input
                       label="Evidence URL or reference"
                       value={evidenceDrafts[item.id ?? ''] ?? ''}
                       onChange={(event) => onUpdateDraft(item.id ?? '', event.target.value)}
                       placeholder="Link to photo or document"
                     />
-                    <Button size="sm" variant="secondary" onClick={() => onAddEvidence(item.id ?? createClientId())}>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="w-full sm:w-auto"
+                      onClick={() => onAddEvidence(item.id ?? createClientId())}
+                    >
                       Add
                     </Button>
                   </div>

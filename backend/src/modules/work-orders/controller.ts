@@ -4,13 +4,15 @@
 
 import type { Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
+import { z } from 'zod';
 
 import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
 import { fail } from '../../lib/http';
 import { approvalAdvanceSchema, slaAcknowledgeSchema, statusUpdateSchema, templateCreateSchema, templateParamSchema, templateUpdateSchema, workOrderParamSchema } from './schemas';
-import { acknowledgeSla, advanceApproval, createTemplate, deleteTemplate, getTemplate, listTemplates, updateTemplate, updateWorkOrderStatus } from './service';
+import { acknowledgeSla, advanceApproval, createTemplate, deleteTemplate, getTemplate, listTemplates, reconcileWorkOrderUpdate, updateTemplate, updateWorkOrderStatus } from './service';
 import type { ApprovalStepUpdate, StatusTransition, WorkOrderContext } from './types';
 import type { WorkOrderTemplate } from './templateModel';
+import { workOrderUpdateSchema } from '../../schemas/workOrder';
 
 type TemplateDefaultsInput = {
   priority?: string;
@@ -20,15 +22,6 @@ type TemplateDefaultsInput = {
   parts?: { partId?: string | Types.ObjectId; qty?: number }[];
   status?: string;
 };
-
-const ensureContext = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
-  if (!req.tenantId) {
-    fail(res, 'Tenant context is required', 400);
-    return false;
-  }
-  return true;
-};
-
 const buildContext = (req: AuthedRequest): WorkOrderContext => ({
   tenantId: req.tenantId!,
   ...(req.siteId ? { siteId: req.siteId } : {}),
@@ -77,8 +70,17 @@ const normalizeTemplateDefaults = (
   return normalized;
 };
 
+const reconcileWorkOrderSchema = workOrderUpdateSchema.extend({
+  clientUpdatedAt: z.union([z.string(), z.date(), z.number()]).optional(),
+});
+
+const parseClientUpdatedAt = (value?: string | number | Date) => {
+  if (value === undefined) return undefined;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+};
+
 export const updateStatusHandler: AuthedRequestHandler<{ workOrderId: string }> = async (req, res, next) => {
-  if (!ensureContext(req, res)) return;
   const parse = statusUpdateSchema.safeParse(req.body);
   if (!parse.success) {
     fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
@@ -96,12 +98,56 @@ export const updateStatusHandler: AuthedRequestHandler<{ workOrderId: string }> 
   }
 };
 
-export const advanceApprovalHandler: AuthedRequestHandler<{ workOrderId: string }> = async (
+export const reconcileOfflineUpdateHandler: AuthedRequestHandler<{ workOrderId: string }> = async (
   req,
   res,
   next,
 ) => {
   if (!ensureContext(req, res)) return;
+  const parse = reconcileWorkOrderSchema.safeParse(req.body);
+  if (!parse.success) {
+    fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
+    return;
+  }
+
+  const { clientUpdatedAt, ...payload } = parse.data;
+  const parsedTimestamp = parseClientUpdatedAt(clientUpdatedAt);
+  if (clientUpdatedAt !== undefined && !parsedTimestamp) {
+    fail(res, 'Invalid clientUpdatedAt timestamp', 400);
+    return;
+  }
+
+  try {
+    const result = await reconcileWorkOrderUpdate(
+      buildContext(req),
+      req.params.workOrderId,
+      payload,
+      parsedTimestamp,
+    );
+    if (result.status === 'conflict') {
+      res.status(409).json({
+        success: false,
+        message: 'Conflict detected',
+        data: {
+          conflicts: result.conflicts,
+          server: result.snapshot,
+          serverUpdatedAt: result.serverUpdatedAt,
+        },
+      });
+      return;
+    }
+
+    res.json({ success: true, data: result.workOrder, conflicts: result.conflicts });
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const advanceApprovalHandler: AuthedRequestHandler<{ workOrderId: string }> = async (
+  req,
+  res,
+  next,
+) => {
   const parse = approvalAdvanceSchema.safeParse(req.body);
   if (!parse.success) {
     fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
@@ -120,12 +166,30 @@ export const advanceApprovalHandler: AuthedRequestHandler<{ workOrderId: string 
   }
 };
 
-export const acknowledgeSlaHandler: AuthedRequestHandler<{ workOrderId: string }> = async (
+export const requestApprovalHandler: AuthedRequestHandler<{ workOrderId: string }> = async (
   req,
   res,
   next,
 ) => {
   if (!ensureContext(req, res)) return;
+  const parse = approvalRequestSchema.safeParse(req.body);
+  if (!parse.success) {
+    fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
+    return;
+  }
+  try {
+    const workOrder = await requestApproval(buildContext(req), req.params.workOrderId, parse.data.note, req.user);
+    res.json({ success: true, data: workOrder });
+  } catch (err) {
+    handleError(err, res, next);
+  }
+};
+
+export const acknowledgeSlaHandler: AuthedRequestHandler<{ workOrderId: string }> = async (
+  req,
+  res,
+  next,
+) => {
   const parse = slaAcknowledgeSchema.safeParse(req.body);
   if (!parse.success) {
     fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
@@ -145,7 +209,6 @@ export const acknowledgeSlaHandler: AuthedRequestHandler<{ workOrderId: string }
 };
 
 export const createTemplateHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureContext(req, res)) return;
   const parse = templateCreateSchema.safeParse(req.body);
   if (!parse.success) {
     fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
@@ -166,7 +229,6 @@ export const createTemplateHandler: AuthedRequestHandler = async (req, res, next
 };
 
 export const listTemplatesHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureContext(req, res)) return;
   try {
     const templates = await listTemplates(buildContext(req));
     res.json({ success: true, data: templates });
@@ -176,7 +238,6 @@ export const listTemplatesHandler: AuthedRequestHandler = async (req, res, next)
 };
 
 export const getTemplateHandler: AuthedRequestHandler<{ templateId: string }> = async (req, res, next) => {
-  if (!ensureContext(req, res)) return;
   const parse = templateParamSchema.safeParse(req.params);
   if (!parse.success) {
     fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
@@ -191,7 +252,6 @@ export const getTemplateHandler: AuthedRequestHandler<{ templateId: string }> = 
 };
 
 export const updateTemplateHandler: AuthedRequestHandler<{ templateId: string }> = async (req, res, next) => {
-  if (!ensureContext(req, res)) return;
   const paramParse = templateParamSchema.safeParse(req.params);
   const bodyParse = templateUpdateSchema.safeParse(req.body);
   if (!paramParse.success || !bodyParse.success) {
@@ -211,7 +271,6 @@ export const updateTemplateHandler: AuthedRequestHandler<{ templateId: string }>
 };
 
 export const deleteTemplateHandler: AuthedRequestHandler<{ templateId: string }> = async (req, res, next) => {
-  if (!ensureContext(req, res)) return;
   const parse = templateParamSchema.safeParse(req.params);
   if (!parse.success) {
     fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);

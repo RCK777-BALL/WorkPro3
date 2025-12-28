@@ -7,18 +7,9 @@ import { Types } from 'mongoose';
 
 import Role from '../models/Role';
 import type { PermissionChangeActor } from '../models/PermissionChangeLog';
+import { logPermissionChange } from '../src/modules/audit';
+import { assertSiteScope, buildRoleScopeFilter, normalizeRoleScope } from '../src/modules/rbac';
 import { writeAuditLog, sendResponse, toObjectId, toEntityId } from '../utils';
-import { recordPermissionChange } from '../services/permissionAuditService';
-
-const buildScopedFilter = (tenantId: Types.ObjectId, siteId?: Types.ObjectId | null) => {
-  const filter: Record<string, unknown> = { tenantId };
-
-  if (siteId) {
-    filter.$or = [{ siteId: { $exists: false } }, { siteId: null }, { siteId }];
-  }
-
-  return filter;
-};
 
 export const getAllRoles = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -29,7 +20,7 @@ export const getAllRoles = async (req: Request, res: Response, next: NextFunctio
     }
 
     const siteId = toObjectId(req.siteId);
-    const roles = await Role.find(buildScopedFilter(tenantId, siteId));
+    const roles = await Role.find(buildRoleScopeFilter(tenantId, siteId));
     sendResponse(res, roles);
   } catch (err) {
     next(err);
@@ -49,7 +40,10 @@ export const getRoleById = async (req: Request, res: Response, next: NextFunctio
     if (!roleId) {
       return sendResponse(res, null, 'Invalid id', 400);
     }
-    const role = await Role.findOne({ _id: roleId, ...buildScopedFilter(tenantId, toObjectId(req.siteId)) });
+    const role = await Role.findOne({
+      _id: roleId,
+      ...buildRoleScopeFilter(tenantId, toObjectId(req.siteId)),
+    });
     if (!role) return sendResponse(res, null, 'Not found', 404);
     sendResponse(res, role);
   } catch (err) {
@@ -71,8 +65,22 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
     const permissionActor: PermissionChangeActor | undefined = auditUserId
       ? { id: auditUserId }
       : undefined;
-    const siteId = toObjectId((req.body as { siteId?: string }).siteId ?? req.siteId) ?? null;
-    const role = await Role.create({ ...req.body, tenantId, siteId });
+    const scope = normalizeRoleScope({
+      tenantId,
+      siteId: (req.body as { siteId?: string }).siteId ?? req.siteId,
+      departmentId: (req.body as { departmentId?: string }).departmentId,
+    });
+    if (!scope.tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
+    }
+    await assertSiteScope(scope.tenantId, scope.siteId);
+    const role = await Role.create({
+      ...req.body,
+      tenantId: scope.tenantId,
+      siteId: scope.siteId,
+      departmentId: scope.departmentId,
+    });
     const entityId = toEntityId(role._id as Types.ObjectId) ?? (role._id as Types.ObjectId);
 
     await writeAuditLog({
@@ -84,9 +92,9 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
       after: role.toObject(),
     });
 
-    await recordPermissionChange({
+    await logPermissionChange({
       tenantId,
-      siteId,
+      siteId: scope.siteId,
       departmentId: role.departmentId ?? null,
       roleId: role._id as Types.ObjectId,
       roleName: role.name,
@@ -120,16 +128,29 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
     if (!roleId) {
       return sendResponse(res, null, 'Invalid id', 400);
     }
-    const filter = { _id: roleId as Types.ObjectId, ...buildScopedFilter(tenantId, toObjectId(req.siteId)) };
+    const filter = {
+      _id: roleId as Types.ObjectId,
+      ...buildRoleScopeFilter(tenantId, toObjectId(req.siteId)),
+    };
     const existing = await Role.findOne(filter);
     if (!existing) return sendResponse(res, null, 'Not found', 404);
-    const payload = { ...req.body };
-    if ('siteId' in payload) {
-      payload.siteId = toObjectId(payload.siteId as string) ?? null;
+    const scope = normalizeRoleScope({
+      tenantId,
+      siteId: (req.body as { siteId?: string }).siteId ?? req.siteId,
+      departmentId: (req.body as { departmentId?: string }).departmentId,
+    });
+    if (!scope.tenantId) {
+      sendResponse(res, null, 'Tenant ID required', 400);
+      return;
     }
-    if ('departmentId' in payload) {
-      payload.departmentId = toObjectId(payload.departmentId as string) ?? null;
-    }
+    await assertSiteScope(scope.tenantId, scope.siteId);
+    const payload = {
+      ...req.body,
+      ...(req.body as { siteId?: string }).siteId !== undefined ? { siteId: scope.siteId } : {},
+      ...(req.body as { departmentId?: string }).departmentId !== undefined
+        ? { departmentId: scope.departmentId }
+        : {},
+    };
     const role = await Role.findOneAndUpdate(filter, payload, {
       new: true,
       runValidators: true,
@@ -145,10 +166,10 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
       after: role?.toObject(),
     });
 
-    await recordPermissionChange({
+    await logPermissionChange({
       tenantId,
-      siteId: role?.siteId ?? null,
-      departmentId: role?.departmentId ?? null,
+      siteId: role?.siteId ?? scope.siteId ?? null,
+      departmentId: role?.departmentId ?? scope.departmentId ?? null,
       roleId: roleId as Types.ObjectId,
       roleName: role?.name,
       before: existing.permissions,
@@ -181,7 +202,7 @@ export const deleteRole = async (req: Request, res: Response, next: NextFunction
     if (!roleId) {
       return sendResponse(res, null, 'Invalid id', 400);
     }
-    const filter = { _id: roleId, ...buildScopedFilter(tenantId, toObjectId(req.siteId)) };
+    const filter = { _id: roleId, ...buildRoleScopeFilter(tenantId, toObjectId(req.siteId)) };
     const role = await Role.findOneAndDelete(filter);
     if (!role) {
       return sendResponse(res, null, 'Not found', 404);
@@ -196,7 +217,7 @@ export const deleteRole = async (req: Request, res: Response, next: NextFunction
       before: role.toObject(),
     });
 
-    await recordPermissionChange({
+    await logPermissionChange({
       tenantId,
       siteId: role.siteId ?? null,
       departmentId: role.departmentId ?? null,

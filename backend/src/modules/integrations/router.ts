@@ -7,6 +7,8 @@ import { Router } from 'express';
 import { requireAuth } from '../../../middleware/authMiddleware';
 import tenantScope from '../../../middleware/tenantScope';
 import { requirePermission } from '../../auth/permissions';
+import authorizeTenantSite from '../../middleware/tenantAuthorization';
+import { auditDataAccess } from '../audit';
 import {
   createApiKeyHandler,
   listNotificationProvidersHandler,
@@ -23,6 +25,8 @@ const router = Router();
 
 router.use(requireAuth);
 router.use(tenantScope);
+router.use(authorizeTenantSite());
+router.use(auditDataAccess('integrations'));
 
 router.get('/notifications/providers', requirePermission('sites.read'), listNotificationProvidersHandler);
 router.post('/notifications/test', requirePermission('sites.manage'), sendNotificationTestHandler);

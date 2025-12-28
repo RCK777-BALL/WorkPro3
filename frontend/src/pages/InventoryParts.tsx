@@ -246,7 +246,7 @@ export default function InventoryParts() {
                         </td>
                         <td className="px-3 py-2 text-neutral-700">
                           <div className="flex flex-wrap gap-2">
-                            <Button size="sm" variant="outline" onClick={() => navigate(`/inventory/items/${part.id}`)}>
+                            <Button size="sm" variant="outline" onClick={() => navigate(`/inventory/parts/${part.id}`)}>
                               View
                             </Button>
                             <Button

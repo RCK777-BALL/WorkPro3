@@ -2,78 +2,97 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useState } from "react";
-import { Button, Card, Group, Loader, Text, Title } from "@mantine/core";
-import { IconPlus } from "@tabler/icons-react";
-import VendorList from "./vendors/VendorList";
-import VendorModal from "./vendors/VendorModal";
-import { fetchVendors } from "../utils/api";
-import type { Vendor } from "../types";
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+
+import Button from '@/components/common/Button';
+import Card from '@/components/common/Card';
+import DataTable from '@/components/common/DataTable';
+import Input from '@/components/common/Input';
+import { useDeleteVendor, useVendors } from '@/hooks/useVendors';
+import type { Vendor } from '@/types/vendor';
 
 const VendorsPage = () => {
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [opened, setOpened] = useState(false);
-  const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
+  const { data: vendors = [], isLoading, error } = useVendors();
+  const deleteVendor = useDeleteVendor();
+  const [search, setSearch] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const loadVendors = async () => {
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return vendors;
+    return vendors.filter((vendor) =>
+      [vendor.name, vendor.email, vendor.phone].filter(Boolean).some((value) => value?.toLowerCase().includes(term)),
+    );
+  }, [vendors, search]);
+
+  const handleDelete = async (vendor: Vendor) => {
+    if (deleteVendor.isLoading) return;
+    const confirmed = window.confirm(`Delete vendor ${vendor.name}? This cannot be undone.`);
+    if (!confirmed) return;
+    setDeletingId(vendor.id);
     try {
-      setLoading(true);
-      const data = await fetchVendors();
-      setVendors(data);
+      await deleteVendor.mutateAsync(vendor.id);
     } finally {
-      setLoading(false);
+      setDeletingId(null);
     }
   };
 
-  useEffect(() => {
-    loadVendors();
-  }, []);
-
-  const handleAdd = () => {
-    setEditingVendor(null);
-    setOpened(true);
-  };
-
-  const handleEdit = (vendor: Vendor) => {
-    setEditingVendor(vendor);
-    setOpened(true);
-  };
-
-  const handleSaved = async () => {
-    setOpened(false);
-    await loadVendors();
-  };
-
   return (
-    <div className="p-6 space-y-6">
-      <Group justify="space-between">
-        <Title order={2}>Vendors</Title>
-        <Button leftSection={<IconPlus size={18} />} onClick={handleAdd}>
-          Add Vendor
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-neutral-900">Vendors</h1>
+          <p className="text-sm text-neutral-500">Manage preferred suppliers and keep contact details current.</p>
+        </div>
+        <Button as={Link} to="/vendors/new" variant="primary">
+          Add vendor
         </Button>
-      </Group>
+      </div>
 
-      <Card shadow="sm" p="lg" radius="md" className="bg-white dark:bg-zinc-900">
-        {loading ? (
-          <Group justify="center" className="py-10">
-            <Loader size="lg" />
-          </Group>
-        ) : vendors.length === 0 ? (
-          <Text ta="center" c="dimmed">
-            No vendors added yet.
-          </Text>
-        ) : (
-          <VendorList vendors={vendors} onEdit={handleEdit} />
-        )}
+      <Card title="Filters" className="space-y-3">
+        <Input
+          label="Search"
+          placeholder="Search by name, email, or phone"
+          value={search}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => setSearch(event.target.value)}
+        />
       </Card>
 
-      <VendorModal
-        opened={opened}
-        onClose={() => setOpened(false)}
-        vendor={editingVendor}
-        onSaved={handleSaved}
-      />
+      <Card title="Vendor list" className="space-y-3">
+        {error && <p className="text-sm text-error-600">Unable to load vendors.</p>}
+        <DataTable<Vendor>
+          keyField="id"
+          data={filtered}
+          isLoading={isLoading}
+          emptyMessage="No vendors found."
+          columns={[
+            { id: 'name', header: 'Vendor', accessor: (vendor) => vendor.name },
+            { id: 'email', header: 'Email', accessor: (vendor) => vendor.email ?? '—' },
+            { id: 'phone', header: 'Phone', accessor: (vendor) => vendor.phone ?? '—' },
+            { id: 'status', header: 'Status', accessor: (vendor) => vendor.status ?? 'active' },
+            {
+              id: 'actions',
+              header: 'Actions',
+              accessor: (vendor) => (
+                <div className="flex flex-wrap gap-2">
+                  <Button as={Link} to={`/vendors/${vendor.id}`} size="sm" variant="outline">
+                    Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleDelete(vendor)}
+                    disabled={deleteVendor.isLoading && deletingId === vendor.id}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              ),
+            },
+          ]}
+        />
+      </Card>
     </div>
   );
 };

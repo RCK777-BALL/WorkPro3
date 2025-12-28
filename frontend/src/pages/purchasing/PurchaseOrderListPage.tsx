@@ -15,15 +15,31 @@ import { useVendors } from '@/hooks/useVendors';
 import type { PurchaseOrder } from '@/api/purchasing';
 import { formatDate } from '@/utils/date';
 
-const statusOrder: PurchaseOrder['status'][] = ['Draft', 'Pending', 'Approved', 'Ordered', 'Received', 'Closed'];
+const statusOrder: PurchaseOrder['status'][] = [
+  'draft',
+  'sent',
+  'partially_received',
+  'received',
+  'closed',
+  'canceled',
+];
+
+const statusLabels: Record<PurchaseOrder['status'], string> = {
+  draft: 'Draft',
+  sent: 'Sent',
+  partially_received: 'Partially received',
+  received: 'Received',
+  closed: 'Closed',
+  canceled: 'Canceled',
+};
 
 const statusVariant: Record<PurchaseOrder['status'], 'info' | 'success' | 'warning' | 'default'> = {
-  Draft: 'default',
-  Pending: 'info',
-  Approved: 'success',
-  Ordered: 'info',
-  Received: 'success',
-  Closed: 'default',
+  draft: 'default',
+  sent: 'info',
+  partially_received: 'warning',
+  received: 'success',
+  closed: 'default',
+  canceled: 'warning',
 };
 
 const PurchaseOrderListPage = () => {
@@ -79,7 +95,7 @@ const PurchaseOrderListPage = () => {
               <option value="all">All</option>
               {statusOrder.map((value) => (
                 <option key={value} value={value}>
-                  {value}
+                  {statusLabels[value]}
                 </option>
               ))}
             </select>
@@ -103,7 +119,7 @@ const PurchaseOrderListPage = () => {
             {
               id: 'status',
               header: 'Status',
-              accessor: (po) => <Badge text={po.status} type={statusVariant[po.status]} />,
+              accessor: (po) => <Badge text={statusLabels[po.status]} type={statusVariant[po.status]} />,
             },
             {
               id: 'expected',

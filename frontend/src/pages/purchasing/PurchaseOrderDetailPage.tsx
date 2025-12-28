@@ -17,15 +17,31 @@ import type { PurchaseOrder, PurchaseOrderInput, PurchaseOrderLineInput } from '
 import { formatDate } from '@/utils/date';
 import ReceiveModal from './ReceiveModal';
 
-const statuses: PurchaseOrder['status'][] = ['Draft', 'Pending', 'Approved', 'Ordered', 'Received', 'Closed'];
+const statuses: PurchaseOrder['status'][] = [
+  'draft',
+  'sent',
+  'partially_received',
+  'received',
+  'closed',
+  'canceled',
+];
+
+const statusLabels: Record<PurchaseOrder['status'], string> = {
+  draft: 'Draft',
+  sent: 'Sent',
+  partially_received: 'Partially received',
+  received: 'Received',
+  closed: 'Closed',
+  canceled: 'Canceled',
+};
 
 const statusVariant: Record<PurchaseOrder['status'], 'info' | 'success' | 'warning' | 'default'> = {
-  Draft: 'default',
-  Pending: 'info',
-  Approved: 'success',
-  Ordered: 'info',
-  Received: 'success',
-  Closed: 'default',
+  draft: 'default',
+  sent: 'info',
+  partially_received: 'warning',
+  received: 'success',
+  closed: 'default',
+  canceled: 'warning',
 };
 
 const emptyLine: PurchaseOrderLineInput = { part: '', qtyOrdered: 1, price: 0 };
@@ -39,6 +55,7 @@ const PurchaseOrderDetailPage = () => {
   const create = useCreatePurchaseOrder();
   const update = useUpdatePurchaseOrder(poId);
   const [openReceive, setOpenReceive] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState<PurchaseOrderInput>({ vendorId: '', lines: [emptyLine] });
 
@@ -59,7 +76,7 @@ const PurchaseOrderDetailPage = () => {
     }
   }, [purchaseOrder]);
 
-  const isDraft = purchaseOrder?.status === 'Draft' || isNew;
+  const isDraft = purchaseOrder?.status === 'draft' || isNew;
   const vendorOptions = useMemo(() => vendors ?? [], [vendors]);
 
   const orderedLines = useMemo(() => purchaseOrder?.lines ?? [], [purchaseOrder]);
@@ -83,16 +100,30 @@ const PurchaseOrderDetailPage = () => {
 
   const handleSave = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (isNew) {
-      const created = await create.mutateAsync(form);
-      navigate(`/purchasing/purchase-orders/${created.id}`);
+    setError(null);
+    const hasValidLine = form.lines.some((line) => line.part && line.qtyOrdered > 0);
+    if (!form.vendorId) {
+      setError('Vendor is required.');
       return;
     }
-    await update.mutateAsync(form);
+    if (!hasValidLine) {
+      setError('At least one line item is required.');
+      return;
+    }
+    try {
+      if (isNew) {
+        const created = await create.mutateAsync(form);
+        navigate(`/purchasing/purchase-orders/${created.id}`);
+        return;
+      }
+      await update.mutateAsync(form);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to save purchase order.');
+    }
   };
 
   const timeline = useMemo(() => {
-    const currentStatus = purchaseOrder?.status ?? 'Draft';
+    const currentStatus = purchaseOrder?.status ?? 'draft';
     const currentIndex = statuses.indexOf(currentStatus);
     return statuses.map((status, index) => ({
       status,
@@ -109,8 +140,14 @@ const PurchaseOrderDetailPage = () => {
           <p className="text-sm text-neutral-500">Create or update purchase orders and receive items.</p>
         </div>
         <div className="flex gap-2">
-          {!isNew && <Badge text={purchaseOrder?.status ?? 'Draft'} type={statusVariant[purchaseOrder?.status ?? 'Draft']} />}
-          {purchaseOrder && purchaseOrder.status !== 'Closed' && (
+          {!isNew && (
+            <Badge
+              text={statusLabels[purchaseOrder?.status ?? 'draft']}
+              type={statusVariant[purchaseOrder?.status ?? 'draft']}
+            />
+          )}
+          {purchaseOrder &&
+            ['sent', 'partially_received'].includes(purchaseOrder.status) && (
             <Button variant="outline" onClick={() => setOpenReceive(true)} disabled={!backordered.length}>
               Receive items
             </Button>
@@ -130,7 +167,7 @@ const PurchaseOrderDetailPage = () => {
                   className={`h-3 w-3 rounded-full ${item.done ? 'bg-primary-600' : 'bg-neutral-300'}`}
                   aria-hidden
                 />
-                <span className="text-sm text-neutral-800">{item.status}</span>
+                <span className="text-sm text-neutral-800">{statusLabels[item.status]}</span>
               </div>
             ))}
           </div>
@@ -254,6 +291,7 @@ const PurchaseOrderDetailPage = () => {
                 {isNew ? 'Create PO' : 'Save changes'}
               </Button>
             </div>
+            {error && <p className="text-sm text-error-600">{error}</p>}
           </form>
         </Card>
         <Card title="Line status" subtitle="Ordered vs received" className="space-y-3">

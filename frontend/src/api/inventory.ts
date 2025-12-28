@@ -32,9 +32,61 @@ export interface PartQueryParams {
   sortDirection?: SortDirection;
 }
 
+const normalizePartsResult = (
+  payload: PaginatedResult<Part> | Part[],
+  params: PartQueryParams,
+): PaginatedResult<Part> => {
+  if (!Array.isArray(payload)) {
+    return payload;
+  }
+
+  const searchTerm = params.search?.trim().toLowerCase();
+  let items = payload;
+
+  if (searchTerm) {
+    items = items.filter((part) => {
+      const vendorName = part.vendor?.name ?? '';
+      const partNo = part.partNo ?? part.partNumber ?? '';
+      return [part.name, partNo, vendorName].some((value) => value.toLowerCase().includes(searchTerm));
+    });
+  }
+
+  if (params.vendorId) {
+    items = items.filter((part) => part.vendor?.id === params.vendorId);
+  }
+
+  if (params.sortBy) {
+    const direction = params.sortDirection === 'desc' ? -1 : 1;
+    items = [...items].sort((a, b) => {
+      const resolveValue = (part: Part) => {
+        if (params.sortBy === 'vendor') {
+          return part.vendor?.name ?? '';
+        }
+        return (part as Record<string, unknown>)[params.sortBy ?? ''] ?? '';
+      };
+      const aValue = resolveValue(a);
+      const bValue = resolveValue(b);
+      return String(aValue).localeCompare(String(bValue)) * direction;
+    });
+  }
+
+  const pageSize = params.pageSize ?? items.length || 1;
+  const page = Math.max(1, params.page ?? 1);
+  const start = (page - 1) * pageSize;
+  const paginated = items.slice(start, start + pageSize);
+
+  return {
+    items: paginated,
+    page,
+    pageSize,
+    total: items.length,
+    totalPages: Math.max(1, Math.ceil(items.length / pageSize)),
+  };
+};
+
 export const fetchParts = async (params: PartQueryParams = {}): Promise<PaginatedResult<Part>> => {
-  const res = await http.get<PaginatedResult<Part>>(`${BASE_PATH}/parts`, { params });
-  return res.data;
+  const res = await http.get<PaginatedResult<Part> | Part[]>(`${BASE_PATH}/parts`, { params });
+  return normalizePartsResult(res.data, params);
 };
 
 export const fetchPart = async (partId: string): Promise<Part> => {

@@ -37,7 +37,6 @@ const ReceiveModal = ({ purchaseOrder, open, onClose }: ReceiveModalProps) => {
       return;
     }
     await receiveMutation.mutateAsync({
-      status: 'Received',
       receipts: receipts.map((receipt) => ({ part: receipt.part, quantity: receipt.quantity })),
     });
     addToast({ title: 'Goods receipt posted', variant: 'success' });

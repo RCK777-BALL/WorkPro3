@@ -325,7 +325,7 @@ export default function App() {
             path="/inventory/parts/:partId"
             element={
               <RequirePermission permission="inventory.read">
-                <InventoryParts />
+                <InventoryPartDetail />
               </RequirePermission>
             }
           />
@@ -333,7 +333,7 @@ export default function App() {
             path="/parts/:partId"
             element={
               <RequirePermission permission="inventory.read">
-                <InventoryParts />
+                <InventoryPartDetail />
               </RequirePermission>
             }
           />

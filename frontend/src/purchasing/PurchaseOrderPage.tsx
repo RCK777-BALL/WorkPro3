@@ -15,13 +15,21 @@ import Button from '@/components/common/Button';
 import { useVendors } from '@/hooks/useVendors';
 
 const statusOrder: PurchaseOrderStatus[] = [
-  'Draft',
-  'Pending',
-  'Approved',
-  'Ordered',
-  'Received',
-  'Closed',
+  'draft',
+  'sent',
+  'partially_received',
+  'received',
+  'closed',
 ];
+
+const statusLabels: Record<PurchaseOrderStatus, string> = {
+  draft: 'Draft',
+  sent: 'Sent',
+  partially_received: 'Partially received',
+  received: 'Received',
+  closed: 'Closed',
+  canceled: 'Canceled',
+};
 
 const getNextStatus = (status: PurchaseOrderStatus) => {
   const currentIndex = statusOrder.indexOf(status);
@@ -76,7 +84,7 @@ export default function PurchaseOrderPage() {
 
     setUpdatingId(po.id);
     try {
-      const updated = await updatePurchaseOrderStatus(po.id, next);
+      const updated = await updatePurchaseOrderStatus(po.id, { status: next });
       setOrders((current) => current.map((item) => (item.id === updated.id ? updated : item)));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to update status');
@@ -142,7 +150,7 @@ export default function PurchaseOrderPage() {
                 return (
                   <tr key={po.id}>
                     <td className="px-3 py-2 text-neutral-900">{po.poNumber ?? po.id}</td>
-                    <td className="px-3 py-2 text-neutral-700">{po.status}</td>
+                    <td className="px-3 py-2 text-neutral-700">{statusLabels[po.status]}</td>
                     <td className="px-3 py-2 text-neutral-700">{vendorLookup[po.vendorId ?? ''] ?? po.vendor?.name ?? '—'}</td>
                     <td className="px-3 py-2 text-neutral-700">{po.lines.length}</td>
                     <td className="px-3 py-2 text-right">
@@ -153,7 +161,7 @@ export default function PurchaseOrderPage() {
                           disabled={updatingId === po.id}
                           onClick={() => advanceStatus(po)}
                         >
-                          Move to {nextStatus}
+                          Move to {statusLabels[nextStatus]}
                         </Button>
                       ) : (
                         <span className="text-xs text-neutral-500">Completed</span>

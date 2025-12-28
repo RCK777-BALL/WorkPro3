@@ -61,6 +61,9 @@ export interface Part extends TenantScoped {
   unitCost?: number | undefined;
   cost?: number | undefined;
   unit?: string | undefined;
+  min?: number | undefined;
+  max?: number | undefined;
+  reorder?: number | undefined;
   minStock?: number | undefined;
   minQty?: number | undefined;
   maxQty?: number | undefined;

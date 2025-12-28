@@ -21,6 +21,9 @@ export interface PartDocument extends Document {
   unitCost?: number;
   unit?: string;
   cost?: number;
+  min?: number;
+  max?: number;
+  reorder?: number;
   minStock?: number;
   minQty?: number;
   maxQty?: number;
@@ -69,6 +72,9 @@ const partSchema = new Schema<PartDocument>(
     unitCost: { type: Number, default: 0 },
     unit: String,
     cost: { type: Number, default: 0 },
+    min: { type: Number, default: 0 },
+    max: { type: Number, default: 0 },
+    reorder: { type: Number, default: 0 },
     minStock: { type: Number, default: 0 },
     minQty: { type: Number, default: 0 },
     maxQty: { type: Number, default: 0 },

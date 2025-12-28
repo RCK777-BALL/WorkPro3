@@ -3,6 +3,7 @@
  */
 
 import type { RequestHandler } from 'express';
+import type { Types } from 'mongoose';
 
 import type { AuthedRequest } from '../../types/http';
 import {
@@ -26,22 +27,29 @@ const toPermissionKey = <C extends PermissionCategory>(
 const resolvePermissionsForRequest = async (
   req: AuthedRequest,
 ): Promise<{ permissions: Permission[]; roles: string[] }> => {
-  if (!req.user?.id) {
+  const user = req.user as {
+    id?: string | Types.ObjectId;
+    permissions?: unknown;
+    roles?: string[];
+    tenantId?: string;
+    siteId?: string | null;
+  };
+  if (!user?.id) {
     throw Object.assign(new Error('Unauthorized'), { status: 401 });
   }
 
-  const existing = ensurePermissionList((req.user as { permissions?: unknown }).permissions);
+  const existing = ensurePermissionList(user.permissions);
   if (existing.length > 0) {
-    return { permissions: existing, roles: (req.user as { roles?: string[] }).roles ?? [] };
+    return { permissions: existing, roles: user.roles ?? [] };
   }
 
-  const tenantId = req.tenantId ?? req.user.tenantId;
-  const siteId = req.siteId ?? (req.user as { siteId?: string | null }).siteId;
+  const tenantId = req.tenantId ?? user.tenantId;
+  const siteId = req.siteId ?? user.siteId;
   const departmentId = (req as AuthedRequest).departmentId;
-  const fallbackRoles = (req.user as { roles?: string[] }).roles;
+  const fallbackRoles = user.roles;
 
   const result = await resolveUserPermissions({
-    userId: req.user.id,
+    userId: user.id,
     ...(tenantId ? { tenantId } : {}),
     ...(siteId ? { siteId } : {}),
     ...(departmentId ? { departmentId } : {}),

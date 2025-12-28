@@ -9,7 +9,7 @@ import twilio from 'twilio';
 import ApiKey from '../../../models/ApiKey';
 import logger from '../../../utils/logger';
 import { generateApiKey } from '../../../utils/apiKeys';
-import type { Permission } from '../../shared/permissions';
+import type { Permission } from '../../../shared/permissions';
 
 export type NotificationProvider = 'twilio' | 'smtp' | 'slack' | 'teams';
 export type AccountingProvider = 'quickbooks' | 'xero';
@@ -256,7 +256,7 @@ export const createApiKey = async ({
     rateLimitMax,
     scopes,
   });
-  const keyPayload = key.toObject();
+  const keyPayload = key.toObject() as Record<string, unknown>;
   delete (keyPayload as { keyHash?: string }).keyHash;
   return {
     apiKey: keyPayload,

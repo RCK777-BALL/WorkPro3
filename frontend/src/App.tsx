@@ -40,6 +40,7 @@ import VendorsPage from "@/pages/VendorsPage";
 import VendorEditor from "@/pages/vendors/VendorEditor";
 import PurchaseOrderListPage from "@/pages/purchasing/PurchaseOrderListPage";
 import PurchaseOrderDetailPage from "@/pages/purchasing/PurchaseOrderDetailPage";
+import PurchaseOrderReceivingPage from "@/pages/purchasing/PurchaseOrderReceivingPage";
 import Reports from "@/pages/Reports";
 import Notifications from "@/pages/Notifications";
 import NotificationSettings from "@/pages/NotificationSettings";
@@ -90,7 +91,7 @@ import AssetScan from "@/pages/AssetScan";
 import MobileWorkOrder from "@/pages/mobile/MobileWorkOrder";
 import PwaTechnicianShell from "@/pages/PwaTechnicianShell";
 import RequestFormBuilder from "@/pages/RequestFormBuilder";
-import ReorderAlerts from "@/pages/ReorderAlerts";
+import ReorderAlerts from "@/pages/inventory/ReorderAlertsPage";
 
 export default function App() {
   const navigate = useNavigate();
@@ -382,6 +383,14 @@ export default function App() {
             element={
               <RequirePermission permission="inventory.read">
                 <PurchaseOrderDetailPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/purchasing/receiving"
+            element={
+              <RequirePermission permission="inventory.read">
+                <PurchaseOrderReceivingPage />
               </RequirePermission>
             }
           />

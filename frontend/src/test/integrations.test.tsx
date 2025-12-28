@@ -13,6 +13,7 @@ describe('Integrations page', () => {
       // initial data calls
       .mockResolvedValueOnce({ json: () => Promise.resolve({ data: { integrationHooks: [] } }) })
       .mockResolvedValueOnce({ json: () => Promise.resolve({ data: [] }) })
+      .mockResolvedValueOnce({ json: () => Promise.resolve({ data: ['integrations.manage'] }) })
       .mockResolvedValueOnce({ json: () => Promise.resolve({ data: [] }) })
       .mockResolvedValueOnce({ json: () => Promise.resolve({ data: [] }) })
       // register hook
@@ -26,7 +27,7 @@ describe('Integrations page', () => {
     fireEvent.click(screen.getByText('Register'));
 
     await screen.findByText('Test - webhook');
-    expect(fetchMock).toHaveBeenCalledTimes(5);
+    expect(fetchMock).toHaveBeenCalledTimes(6);
 
     vi.unstubAllGlobals();
   });

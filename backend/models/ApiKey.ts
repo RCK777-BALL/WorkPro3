@@ -8,6 +8,7 @@ export interface ApiKeyDocument extends Document {
   name: string;
   keyHash: string;
   prefix: string;
+  scopes?: string[];
   tenantId: mongoose.Types.ObjectId;
   createdBy?: mongoose.Types.ObjectId;
   lastUsedAt?: Date;
@@ -22,6 +23,7 @@ const apiKeySchema = new Schema<ApiKeyDocument>(
     name: { type: String, required: true },
     keyHash: { type: String, required: true, select: false },
     prefix: { type: String, required: true },
+    scopes: { type: [String], default: [] },
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     lastUsedAt: { type: Date },

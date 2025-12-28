@@ -5,6 +5,7 @@
 import { z } from 'zod';
 
 import type { NotificationProvider } from './service';
+import { ALL_PERMISSIONS, type Permission } from '../../shared/permissions';
 
 const providers: [NotificationProvider, NotificationProvider, NotificationProvider, NotificationProvider] = [
   'twilio',
@@ -46,3 +47,33 @@ export const notificationTestSchema = z
   });
 
 export type NotificationTestPayload = z.infer<typeof notificationTestSchema>;
+
+const permissionScopes = (() => {
+  const scopes = new Set<string>(ALL_PERMISSIONS);
+  ALL_PERMISSIONS.forEach((permission) => {
+    const [scope] = permission.split('.', 1);
+    if (scope) {
+      scopes.add(`${scope}.*`);
+    }
+  });
+  scopes.add('*');
+  return scopes;
+})();
+
+const normalizedScope = z
+  .string()
+  .min(1)
+  .transform((value) => value.trim().toLowerCase())
+  .refine((value) => permissionScopes.has(value), {
+    message: 'Invalid permission scope',
+  });
+
+export const apiKeySchema = z.object({
+  name: z.string().min(1).max(120),
+  rateLimitMax: z.number().int().positive().optional(),
+  scopes: z.array(normalizedScope).default([]),
+});
+
+export type ApiKeyPayload = z.infer<typeof apiKeySchema> & { scopes: Permission[] };
+
+export const apiKeyScopes = Array.from(permissionScopes).sort();

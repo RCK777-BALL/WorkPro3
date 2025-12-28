@@ -91,6 +91,9 @@ import MobileWorkOrder from "@/pages/mobile/MobileWorkOrder";
 import PwaTechnicianShell from "@/pages/PwaTechnicianShell";
 import RequestFormBuilder from "@/pages/RequestFormBuilder";
 import ReorderAlerts from "@/pages/ReorderAlerts";
+import ApiKeysPage from "@/pages/integrations/ApiKeysPage";
+import WebhooksPage from "@/pages/integrations/WebhooksPage";
+import ExportsPage from "@/pages/integrations/ExportsPage";
 
 export default function App() {
   const navigate = useNavigate();
@@ -466,6 +469,30 @@ export default function App() {
             element={
               <RequirePermission permission="importExport.import">
                 <Imports />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/integrations/api-keys"
+            element={
+              <RequirePermission permission="integrations.manage">
+                <ApiKeysPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/integrations/webhooks"
+            element={
+              <RequirePermission permission="integrations.manage">
+                <WebhooksPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/integrations/exports"
+            element={
+              <RequirePermission permission="importExport.export">
+                <ExportsPage />
               </RequirePermission>
             }
           />

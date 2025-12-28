@@ -15,6 +15,14 @@ import {
   type MeterReadingPayload,
 } from './meterService';
 
+const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
+  if (!req.tenantId) {
+    fail(res, 'Tenant context is required', 400);
+    return false;
+  }
+  return true;
+};
+
 const buildContext = (req: AuthedRequest): AssetInsightsContext => ({
   tenantId: req.tenantId!,
   siteId: req.siteId!,

@@ -29,18 +29,6 @@ import {
 } from './schemas';
 import RequestType from '../../../models/RequestType';
 import RequestForm from '../../../models/RequestForm';
-
-const ensureTenant = (
-  req: AuthedRequest,
-  res: Response,
-): req is AuthedRequest & { tenantId: string } => {
-  if (!req.tenantId) {
-    fail(res, 'Tenant context is required', 400);
-    return false;
-  }
-  return true;
-};
-
 const buildContext = (req: AuthedRequest): WorkRequestContext => ({
   tenantId: req.tenantId!,
   ...(req.siteId ? { siteId: req.siteId } : {}),
@@ -132,7 +120,6 @@ export const getPublicStatusHandler = async (req: Request, res: Response, next: 
 };
 
 export const listWorkRequestsHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const parseQuery = listWorkRequestQuerySchema.safeParse(req.query ?? {});
   if (!parseQuery.success) {
     fail(res, formatZodErrors(parseQuery.error.errors), 400);
@@ -147,7 +134,6 @@ export const listWorkRequestsHandler: AuthedRequestHandler = async (req, res, ne
 };
 
 export const getWorkRequestHandler: AuthedRequestHandler<{ requestId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const item = await getWorkRequestById(buildContext(req), req.params.requestId);
     send(res, item);
@@ -157,7 +143,6 @@ export const getWorkRequestHandler: AuthedRequestHandler<{ requestId: string }> 
 };
 
 export const getWorkRequestSummaryHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const summary = await getWorkRequestSummary(buildContext(req));
     send(res, summary);
@@ -167,7 +152,6 @@ export const getWorkRequestSummaryHandler: AuthedRequestHandler = async (req, re
 };
 
 export const convertWorkRequestHandler: AuthedRequestHandler<{ requestId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const parse = workRequestConversionSchema.safeParse(req.body ?? {});
   if (!parse.success) {
     fail(res, formatZodErrors(parse.error.errors), 400);
@@ -188,7 +172,6 @@ export const updateWorkRequestStatusHandler: AuthedRequestHandler<{ requestId: s
   res,
   next,
 ) => {
-  if (!ensureTenant(req, res)) return;
   const parse = workRequestDecisionSchema.safeParse(req.body ?? {});
   if (!parse.success) {
     fail(res, formatZodErrors(parse.error.errors), 400);
@@ -209,7 +192,6 @@ export const softDeleteWorkRequestHandler: AuthedRequestHandler<{ requestId: str
   res,
   next,
 ) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const actorId =
       req.user?._id && Types.ObjectId.isValid(req.user._id) ? new Types.ObjectId(req.user._id) : undefined;
@@ -221,9 +203,8 @@ export const softDeleteWorkRequestHandler: AuthedRequestHandler<{ requestId: str
 };
 
 export const listRequestTypesHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
-    const tenantId = new Types.ObjectId(req.tenantId);
+    const tenantId = new Types.ObjectId(req.tenantId!);
     const query: Record<string, unknown> = { tenantId };
     if (req.siteId && Types.ObjectId.isValid(req.siteId)) {
       query.siteId = new Types.ObjectId(req.siteId);
@@ -236,14 +217,13 @@ export const listRequestTypesHandler: AuthedRequestHandler = async (req, res, ne
 };
 
 export const createRequestTypeHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const parse = requestTypeInputSchema.safeParse(req.body ?? {});
   if (!parse.success) {
     fail(res, formatZodErrors(parse.error.errors), 400);
     return;
   }
   try {
-    const tenantId = new Types.ObjectId(req.tenantId);
+    const tenantId = new Types.ObjectId(req.tenantId!);
     const siteId = req.siteId && Types.ObjectId.isValid(req.siteId) ? new Types.ObjectId(req.siteId) : undefined;
     const created = await RequestType.create({
       ...parse.data,
@@ -257,14 +237,13 @@ export const createRequestTypeHandler: AuthedRequestHandler = async (req, res, n
 };
 
 export const saveRequestFormHandler: AuthedRequestHandler<{ formSlug: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const parse = requestFormInputSchema.safeParse(req.body ?? {});
   if (!parse.success) {
     fail(res, formatZodErrors(parse.error.errors), 400);
     return;
   }
   try {
-    const tenantId = new Types.ObjectId(req.tenantId);
+    const tenantId = new Types.ObjectId(req.tenantId!);
     const siteId = req.siteId && Types.ObjectId.isValid(req.siteId) ? new Types.ObjectId(req.siteId) : undefined;
     const requestTypeId =
       parse.data.requestType && Types.ObjectId.isValid(parse.data.requestType)

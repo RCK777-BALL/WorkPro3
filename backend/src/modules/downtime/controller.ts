@@ -8,15 +8,6 @@ import type { AuthedRequest } from '../../../types/http';
 import { fail } from '../../lib/http';
 import { downtimeCreateSchema, downtimeListQuerySchema, downtimeUpdateSchema } from './schemas';
 import { createDowntimeLog, listDowntimeLogs, updateDowntimeLog } from '../../../services/downtimeLogs';
-
-const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
-  if (!req.tenantId) {
-    fail(res, 'Tenant context is required', 400);
-    return false;
-  }
-  return true;
-};
-
 const parseObjectId = (value: string, res: Response, label: string): Types.ObjectId | null => {
   if (!Types.ObjectId.isValid(value)) {
     fail(res, `Invalid ${label}`, 400);
@@ -32,10 +23,8 @@ export const listDowntimeHandler = async (req: AuthedRequest, res: Response, nex
     return;
   }
 
-  if (!ensureTenant(req, res)) return;
-
   try {
-    const logs = await listDowntimeLogs(req.tenantId, parsed.data);
+    const logs = await listDowntimeLogs(req.tenantId!, parsed.data);
     res.json({ success: true, data: logs });
   } catch (err) {
     next(err);
@@ -49,12 +38,10 @@ export const createDowntimeHandler = async (req: AuthedRequest, res: Response, n
     return;
   }
 
-  if (!ensureTenant(req, res)) return;
-
   try {
     const assetId = parseObjectId(parsed.data.assetId, res, 'asset id');
     if (!assetId) return;
-    const created = await createDowntimeLog(req.tenantId, { ...parsed.data, assetId });
+    const created = await createDowntimeLog(req.tenantId!, { ...parsed.data, assetId });
     res.status(201).json({ success: true, data: created });
   } catch (err) {
     next(err);
@@ -68,8 +55,6 @@ export const updateDowntimeHandler = async (req: AuthedRequest, res: Response, n
     return;
   }
 
-  if (!ensureTenant(req, res)) return;
-
   try {
     const { assetId: assetIdRaw, ...rest } = parsed.data;
     const assetId = assetIdRaw ? parseObjectId(assetIdRaw, res, 'asset id') : undefined;
@@ -78,7 +63,7 @@ export const updateDowntimeHandler = async (req: AuthedRequest, res: Response, n
       ...rest,
       ...(assetId ? { assetId } : {}),
     };
-    const updated = await updateDowntimeLog(req.tenantId, req.params.id, payload);
+    const updated = await updateDowntimeLog(req.tenantId!, req.params.id, payload);
     if (!updated) {
       fail(res, 'Not found', 404);
       return;

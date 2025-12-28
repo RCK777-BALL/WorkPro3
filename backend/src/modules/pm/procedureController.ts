@@ -28,15 +28,6 @@ import {
   PMProcedureError,
   type PMProcedureContext,
 } from './procedureService';
-
-const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
-  if (!req.tenantId) {
-    fail(res, 'Tenant context is required', 400);
-    return false;
-  }
-  return true;
-};
-
 const buildContext = (req: AuthedRequest): PMProcedureContext => ({
   tenantId: req.tenantId!,
   siteId: req.siteId!,
@@ -55,7 +46,6 @@ const handleError = (err: unknown, res: Response, next: NextFunction) => {
 };
 
 export const listCategoriesHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await listCategories(buildContext(req));
     send(res, data);
@@ -65,7 +55,6 @@ export const listCategoriesHandler: AuthedRequestHandler = async (req, res, next
 };
 
 export const createCategoryHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const parse = categoryInputSchema.safeParse(req.body);
   if (!parse.success) {
     fail(res, parse.error.errors.map((e) => e.message).join(', '), 400);
@@ -80,7 +69,6 @@ export const createCategoryHandler: AuthedRequestHandler = async (req, res, next
 };
 
 export const listProcedureTemplatesHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await listProcedureTemplates(buildContext(req));
     send(res, data);
@@ -90,7 +78,6 @@ export const listProcedureTemplatesHandler: AuthedRequestHandler = async (req, r
 };
 
 export const createProcedureTemplateHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const parse = procedureTemplateInputSchema.safeParse(req.body);
   if (!parse.success) {
     fail(res, parse.error.errors.map((e) => e.message).join(', '), 400);
@@ -109,7 +96,6 @@ export const getProcedureTemplateHandler: AuthedRequestHandler<{ templateId: str
   res,
   next,
 ) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await getProcedureTemplate(buildContext(req), req.params.templateId);
     send(res, data);
@@ -123,7 +109,6 @@ export const updateProcedureTemplateHandler: AuthedRequestHandler<{ templateId: 
   res,
   next,
 ) => {
-  if (!ensureTenant(req, res)) return;
   const parse = procedureTemplateInputSchema.partial().safeParse(req.body);
   if (!parse.success) {
     fail(res, parse.error.errors.map((e) => e.message).join(', '), 400);
@@ -142,7 +127,6 @@ export const deleteProcedureTemplateHandler: AuthedRequestHandler<{ templateId: 
   res,
   next,
 ) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await deleteProcedureTemplate(buildContext(req), req.params.templateId);
     send(res, data);
@@ -152,7 +136,6 @@ export const deleteProcedureTemplateHandler: AuthedRequestHandler<{ templateId: 
 };
 
 export const listVersionsHandler: AuthedRequestHandler<{ templateId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await listVersions(buildContext(req), req.params.templateId);
     send(res, data);
@@ -162,7 +145,6 @@ export const listVersionsHandler: AuthedRequestHandler<{ templateId: string }> =
 };
 
 export const createVersionHandler: AuthedRequestHandler<{ templateId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const parse = procedureVersionInputSchema.safeParse(req.body);
   if (!parse.success) {
     fail(res, parse.error.errors.map((e) => e.message).join(', '), 400);
@@ -177,7 +159,6 @@ export const createVersionHandler: AuthedRequestHandler<{ templateId: string }> 
 };
 
 export const getVersionHandler: AuthedRequestHandler<{ versionId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await getVersion(buildContext(req), req.params.versionId);
     send(res, data);
@@ -187,7 +168,6 @@ export const getVersionHandler: AuthedRequestHandler<{ versionId: string }> = as
 };
 
 export const updateVersionHandler: AuthedRequestHandler<{ versionId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const parse = procedureVersionInputSchema.safeParse(req.body);
   if (!parse.success) {
     fail(res, parse.error.errors.map((e) => e.message).join(', '), 400);
@@ -202,7 +182,6 @@ export const updateVersionHandler: AuthedRequestHandler<{ versionId: string }> =
 };
 
 export const deleteVersionHandler: AuthedRequestHandler<{ versionId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await deleteVersion(buildContext(req), req.params.versionId);
     send(res, data);
@@ -216,7 +195,6 @@ export const publishVersionHandler: AuthedRequestHandler<{ versionId: string }> 
   res,
   next,
 ) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await publishVersion(buildContext(req), req.params.versionId);
     send(res, data);

@@ -20,15 +20,6 @@ type TemplateDefaultsInput = {
   parts?: { partId?: string | Types.ObjectId; qty?: number }[];
   status?: string;
 };
-
-const ensureContext = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
-  if (!req.tenantId) {
-    fail(res, 'Tenant context is required', 400);
-    return false;
-  }
-  return true;
-};
-
 const buildContext = (req: AuthedRequest): WorkOrderContext => ({
   tenantId: req.tenantId!,
   ...(req.siteId ? { siteId: req.siteId } : {}),
@@ -78,7 +69,6 @@ const normalizeTemplateDefaults = (
 };
 
 export const updateStatusHandler: AuthedRequestHandler<{ workOrderId: string }> = async (req, res, next) => {
-  if (!ensureContext(req, res)) return;
   const parse = statusUpdateSchema.safeParse(req.body);
   if (!parse.success) {
     fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
@@ -101,7 +91,6 @@ export const advanceApprovalHandler: AuthedRequestHandler<{ workOrderId: string 
   res,
   next,
 ) => {
-  if (!ensureContext(req, res)) return;
   const parse = approvalAdvanceSchema.safeParse(req.body);
   if (!parse.success) {
     fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
@@ -125,7 +114,6 @@ export const acknowledgeSlaHandler: AuthedRequestHandler<{ workOrderId: string }
   res,
   next,
 ) => {
-  if (!ensureContext(req, res)) return;
   const parse = slaAcknowledgeSchema.safeParse(req.body);
   if (!parse.success) {
     fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
@@ -145,7 +133,6 @@ export const acknowledgeSlaHandler: AuthedRequestHandler<{ workOrderId: string }
 };
 
 export const createTemplateHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureContext(req, res)) return;
   const parse = templateCreateSchema.safeParse(req.body);
   if (!parse.success) {
     fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
@@ -166,7 +153,6 @@ export const createTemplateHandler: AuthedRequestHandler = async (req, res, next
 };
 
 export const listTemplatesHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureContext(req, res)) return;
   try {
     const templates = await listTemplates(buildContext(req));
     res.json({ success: true, data: templates });
@@ -176,7 +162,6 @@ export const listTemplatesHandler: AuthedRequestHandler = async (req, res, next)
 };
 
 export const getTemplateHandler: AuthedRequestHandler<{ templateId: string }> = async (req, res, next) => {
-  if (!ensureContext(req, res)) return;
   const parse = templateParamSchema.safeParse(req.params);
   if (!parse.success) {
     fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);
@@ -191,7 +176,6 @@ export const getTemplateHandler: AuthedRequestHandler<{ templateId: string }> = 
 };
 
 export const updateTemplateHandler: AuthedRequestHandler<{ templateId: string }> = async (req, res, next) => {
-  if (!ensureContext(req, res)) return;
   const paramParse = templateParamSchema.safeParse(req.params);
   const bodyParse = templateUpdateSchema.safeParse(req.body);
   if (!paramParse.success || !bodyParse.success) {
@@ -211,7 +195,6 @@ export const updateTemplateHandler: AuthedRequestHandler<{ templateId: string }>
 };
 
 export const deleteTemplateHandler: AuthedRequestHandler<{ templateId: string }> = async (req, res, next) => {
-  if (!ensureContext(req, res)) return;
   const parse = templateParamSchema.safeParse(req.params);
   if (!parse.success) {
     fail(res, parse.error.errors.map((issue) => issue.message).join(', '), 400);

@@ -27,16 +27,6 @@ import {
   getAssetDetail,
 } from './service';
 
-type Maybe<T> = T | undefined;
-
-const ensureTenant = (req: AuthedRequest, res: Response): Maybe<string> => {
-  if (!req.tenantId) {
-    fail(res, 'Tenant context is required', 400);
-    return undefined;
-  }
-  return req.tenantId;
-};
-
 const send = (res: Response, data: unknown, status = 200) => {
   res.status(status).json({ success: true, data });
 };
@@ -96,7 +86,6 @@ const sendDepartment = async (
 };
 
 export const getHierarchy: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await fetchHierarchy(buildContext(req));
     send(res, data);
@@ -106,7 +95,6 @@ export const getHierarchy: AuthedRequestHandler = async (req, res, next) => {
 };
 
 export const getAssetDetails: AuthedRequestHandler<{ assetId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await getAssetDetail(buildContext(req), req.params.assetId);
     send(res, data);
@@ -124,7 +112,6 @@ export const createDepartmentHandler: AuthedRequestHandler<
   res,
   next,
 ) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const payload: { name?: string; notes?: string; siteId?: string } = {};
     if (req.body.name !== undefined) payload.name = req.body.name;
@@ -143,7 +130,6 @@ export const updateDepartmentHandler: AuthedRequestHandler<
   unknown,
   { name?: string; notes?: string }
 > = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const department = await updateDepartment(buildContext(req), req.params.departmentId, req.body);
     send(res, department);
@@ -153,7 +139,6 @@ export const updateDepartmentHandler: AuthedRequestHandler<
 };
 
 export const deleteDepartmentHandler: AuthedRequestHandler<{ departmentId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     await deleteDepartment(buildContext(req), req.params.departmentId);
     send(res, { id: req.params.departmentId });
@@ -167,7 +152,6 @@ export const createLineHandler: AuthedRequestHandler<
   unknown,
   { name?: string; notes?: string; departmentId?: string; siteId?: string }
 > = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const line = await createLine(buildContext(req), req.body);
     send(res, line, 201);
@@ -181,7 +165,6 @@ export const createLineForDepartmentHandler: AuthedRequestHandler<
   unknown,
   { name?: string; notes?: string; siteId?: string }
 > = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     await createLine(buildContext(req), { ...req.body, departmentId: req.params.departmentId });
     await sendDepartment(buildContext(req), req.params.departmentId, res, 201);
@@ -195,7 +178,6 @@ export const updateLineHandler: AuthedRequestHandler<
   unknown,
   { name?: string; notes?: string }
 > = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const line = await updateLine(buildContext(req), req.params.lineId, req.body);
     send(res, line);
@@ -209,7 +191,6 @@ export const updateLineForDepartmentHandler: AuthedRequestHandler<
   unknown,
   { name?: string; notes?: string }
 > = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     await updateLine(buildContext(req), req.params.lineId, req.body);
     await sendDepartment(buildContext(req), req.params.departmentId, res);
@@ -219,7 +200,6 @@ export const updateLineForDepartmentHandler: AuthedRequestHandler<
 };
 
 export const deleteLineHandler: AuthedRequestHandler<{ lineId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     await deleteLine(buildContext(req), req.params.lineId);
     send(res, { id: req.params.lineId });
@@ -231,7 +211,6 @@ export const deleteLineHandler: AuthedRequestHandler<{ lineId: string }> = async
 export const deleteLineForDepartmentHandler: AuthedRequestHandler<
   { departmentId: string; lineId: string }
 > = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     await deleteLine(buildContext(req), req.params.lineId);
     await sendDepartment(buildContext(req), req.params.departmentId, res);
@@ -245,7 +224,6 @@ export const createStationHandler: AuthedRequestHandler<
   unknown,
   { name?: string; notes?: string; lineId?: string; siteId?: string }
 > = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const station = await createStation(buildContext(req), req.body);
     send(res, station, 201);
@@ -259,7 +237,6 @@ export const createStationForLineHandler: AuthedRequestHandler<
   unknown,
   { name?: string; notes?: string; siteId?: string }
 > = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     await createStation(buildContext(req), { ...req.body, lineId: req.params.lineId });
     await sendDepartment(buildContext(req), req.params.departmentId, res, 201);
@@ -273,7 +250,6 @@ export const updateStationHandler: AuthedRequestHandler<
   unknown,
   { name?: string; notes?: string }
 > = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const station = await updateStation(buildContext(req), req.params.stationId, req.body);
     send(res, station);
@@ -287,7 +263,6 @@ export const updateStationForLineHandler: AuthedRequestHandler<
   unknown,
   { name?: string; notes?: string }
 > = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     await updateStation(buildContext(req), req.params.stationId, req.body);
     await sendDepartment(buildContext(req), req.params.departmentId, res);
@@ -297,7 +272,6 @@ export const updateStationForLineHandler: AuthedRequestHandler<
 };
 
 export const deleteStationHandler: AuthedRequestHandler<{ stationId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     await deleteStation(buildContext(req), req.params.stationId);
     send(res, { id: req.params.stationId });
@@ -309,7 +283,6 @@ export const deleteStationHandler: AuthedRequestHandler<{ stationId: string }> =
 export const deleteStationForLineHandler: AuthedRequestHandler<
   { departmentId: string; lineId: string; stationId: string }
 > = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     await deleteStation(buildContext(req), req.params.stationId);
     await sendDepartment(buildContext(req), req.params.departmentId, res);
@@ -335,7 +308,6 @@ type AssetBody = {
 };
 
 export const createAssetHandler: AuthedRequestHandler<ParamsDictionary, unknown, AssetBody> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const asset = await createAsset(buildContext(req), req.body);
     send(res, asset, 201);
@@ -349,7 +321,6 @@ export const createAssetForStationHandler: AuthedRequestHandler<
   unknown,
   AssetBody
 > = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     await createAsset(buildContext(req), { ...req.body, stationId: req.params.stationId });
     await sendDepartment(buildContext(req), req.params.departmentId, res, 201);
@@ -363,7 +334,6 @@ export const updateAssetHandler: AuthedRequestHandler<{ assetId: string }, unkno
   res,
   next,
 ) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const asset = await updateAsset(buildContext(req), req.params.assetId, req.body);
     send(res, asset);
@@ -377,7 +347,6 @@ export const updateAssetForStationHandler: AuthedRequestHandler<
   unknown,
   AssetBody
 > = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     await updateAsset(buildContext(req), req.params.assetId, req.body);
     await sendDepartment(buildContext(req), req.params.departmentId, res);
@@ -387,7 +356,6 @@ export const updateAssetForStationHandler: AuthedRequestHandler<
 };
 
 export const deleteAssetHandler: AuthedRequestHandler<{ assetId: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     await deleteAsset(buildContext(req), req.params.assetId);
     send(res, { id: req.params.assetId });
@@ -399,7 +367,6 @@ export const deleteAssetHandler: AuthedRequestHandler<{ assetId: string }> = asy
 export const deleteAssetForStationHandler: AuthedRequestHandler<
   { departmentId: string; lineId: string; stationId: string; assetId: string }
 > = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     await deleteAsset(buildContext(req), req.params.assetId);
     await sendDepartment(buildContext(req), req.params.departmentId, res);
@@ -413,7 +380,6 @@ export const duplicateAssetHandler: AuthedRequestHandler<{ assetId: string }, un
   res,
   next,
 ) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const payload: { name?: string } = {};
     if (req.body.name !== undefined) payload.name = req.body.name;

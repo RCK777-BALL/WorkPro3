@@ -51,15 +51,6 @@ import {
   inventoryTransferSchema,
   vendorInputSchema,
 } from './schemas';
-
-const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
-  if (!req.tenantId) {
-    fail(res, 'Tenant context is required', 400);
-    return false;
-  }
-  return true;
-};
-
 const buildContext = (req: AuthedRequest): InventoryContext => {
   const context: InventoryContext = {
     tenantId: req.tenantId!,
@@ -125,7 +116,6 @@ const handleError = (err: unknown, res: Response, next: NextFunction) => {
 };
 
 export const listPartsHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const toNumber = (value: unknown, fallback: number) => {
       const parsed = Number(value);
@@ -146,7 +136,6 @@ export const listPartsHandler: AuthedRequestHandler = async (req, res, next) => 
 };
 
 export const savePartHandler: AuthedRequestHandler<{ partId?: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const rawBody = (typeof req.body === 'object' && req.body !== null ? req.body : {}) as Record<string, unknown>;
   const partName =
     typeof rawBody.name === 'string'
@@ -168,7 +157,6 @@ export const savePartHandler: AuthedRequestHandler<{ partId?: string }> = async 
 };
 
 export const listVendorsHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await listVendors(buildContext(req));
     send(res, data);
@@ -178,7 +166,6 @@ export const listVendorsHandler: AuthedRequestHandler = async (req, res, next) =
 };
 
 export const saveVendorHandler: AuthedRequestHandler<{ vendorId?: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const parse = vendorInputSchema.safeParse(req.body);
   if (!parse.success) {
     fail(res, parse.error.errors.map((error) => error.message).join(', '), 400);
@@ -193,7 +180,6 @@ export const saveVendorHandler: AuthedRequestHandler<{ vendorId?: string }> = as
 };
 
 export const listAlertsHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const filters: ReorderAlertFilters = {
       status: typeof req.query.status === 'string' ? (req.query.status as any) : undefined,
@@ -214,7 +200,6 @@ export const transitionAlertHandler: AuthedRequestHandler<{ alertId: string }> =
   res,
   next,
 ) => {
-  if (!ensureTenant(req, res)) return;
   const body = (req.body ?? {}) as Record<string, unknown>;
   const action = typeof body.action === 'string' ? body.action : undefined;
   if (!action || !['approve', 'skip', 'resolve'].includes(action)) {
@@ -230,7 +215,6 @@ export const transitionAlertHandler: AuthedRequestHandler<{ alertId: string }> =
 };
 
 export const listReorderSuggestionsHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const filters: ReorderSuggestionFilters = {
       siteId: typeof req.query.siteId === 'string' ? req.query.siteId : undefined,
@@ -244,7 +228,6 @@ export const listReorderSuggestionsHandler: AuthedRequestHandler = async (req, r
 };
 
 export const createPurchaseOrderHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const parse = purchaseOrderInputSchema.safeParse(req.body);
   if (!parse.success) {
     fail(res, parse.error.errors.map((error) => error.message).join(', '), 400);
@@ -259,7 +242,6 @@ export const createPurchaseOrderHandler: AuthedRequestHandler = async (req, res,
 };
 
 export const listPurchaseOrdersHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await listPurchaseOrders(buildContext(req));
     send(res, data);
@@ -269,7 +251,6 @@ export const listPurchaseOrdersHandler: AuthedRequestHandler = async (req, res, 
 };
 
 export const listLocationsHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await listLocations(buildContext(req));
     send(res, data);
@@ -279,7 +260,6 @@ export const listLocationsHandler: AuthedRequestHandler = async (req, res, next)
 };
 
 export const saveLocationHandler: AuthedRequestHandler<{ locationId?: string }> = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const rawBody = (typeof req.body === 'object' && req.body !== null ? req.body : {}) as Record<string, unknown>;
   const parse = locationInputSchema.safeParse(rawBody);
   if (!parse.success) {
@@ -295,7 +275,6 @@ export const saveLocationHandler: AuthedRequestHandler<{ locationId?: string }> 
 };
 
 export const listStockItemsHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await listStockItems(buildContext(req));
     send(res, data);
@@ -305,7 +284,6 @@ export const listStockItemsHandler: AuthedRequestHandler = async (req, res, next
 };
 
 export const receiveInventoryHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const rawBody = (typeof req.body === 'object' && req.body !== null ? req.body : {}) as Record<string, unknown>;
   const parse = receiveInventorySchema.safeParse(rawBody);
   if (!parse.success) {
@@ -321,7 +299,6 @@ export const receiveInventoryHandler: AuthedRequestHandler = async (req, res, ne
 };
 
 export const issueInventoryHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const rawBody = (typeof req.body === 'object' && req.body !== null ? req.body : {}) as Record<string, unknown>;
   const parse = issueInventorySchema.safeParse(rawBody);
   if (!parse.success) {
@@ -337,7 +314,6 @@ export const issueInventoryHandler: AuthedRequestHandler = async (req, res, next
 };
 
 export const adjustInventoryHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const rawBody = (typeof req.body === 'object' && req.body !== null ? req.body : {}) as Record<string, unknown>;
   const parse = adjustInventorySchema.safeParse(rawBody);
   if (!parse.success) {
@@ -353,7 +329,6 @@ export const adjustInventoryHandler: AuthedRequestHandler = async (req, res, nex
 };
 
 export const transferInventoryHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const rawBody = (typeof req.body === 'object' && req.body !== null ? req.body : {}) as Record<string, unknown>;
   const parse = transferInventorySchema.safeParse(rawBody);
   if (!parse.success) {
@@ -369,7 +344,6 @@ export const transferInventoryHandler: AuthedRequestHandler = async (req, res, n
 };
 
 export const stockCountHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const rawBody = (typeof req.body === 'object' && req.body !== null ? req.body : {}) as Record<string, unknown>;
   const parse = stockCountSchema.safeParse(rawBody);
   if (!parse.success) {
@@ -385,7 +359,6 @@ export const stockCountHandler: AuthedRequestHandler = async (req, res, next) =>
 };
 
 export const adjustStockHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const rawBody = (typeof req.body === 'object' && req.body !== null ? req.body : {}) as Record<string, unknown>;
   const parse = stockAdjustmentSchema.safeParse(rawBody);
   if (!parse.success) {
@@ -401,7 +374,6 @@ export const adjustStockHandler: AuthedRequestHandler = async (req, res, next) =
 };
 
 export const transferStockHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const rawBody = (typeof req.body === 'object' && req.body !== null ? req.body : {}) as Record<string, unknown>;
   const parse = inventoryTransferSchema.safeParse(rawBody);
   if (!parse.success) {
@@ -417,7 +389,6 @@ export const transferStockHandler: AuthedRequestHandler = async (req, res, next)
 };
 
 export const listStockHistoryHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   try {
     const data = await listStockHistory(buildContext(req));
     send(res, data);
@@ -427,7 +398,6 @@ export const listStockHistoryHandler: AuthedRequestHandler = async (req, res, ne
 };
 
 export const partUsageReportHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const filters: PartUsageFilters = {
     startDate: parseDate(req.query.startDate),
     endDate: parseDate(req.query.endDate),
@@ -447,7 +417,6 @@ export const transitionPurchaseOrderHandler: AuthedRequestHandler<{ purchaseOrde
   res,
   next,
 ) => {
-  if (!ensureTenant(req, res)) return;
   const rawBody = (typeof req.body === 'object' && req.body !== null ? req.body : {}) as Record<string, unknown>;
   const parse = purchaseOrderStatusSchema.safeParse(rawBody);
   if (!parse.success) {
@@ -463,7 +432,6 @@ export const transitionPurchaseOrderHandler: AuthedRequestHandler<{ purchaseOrde
 };
 
 export const exportPurchaseOrdersHandler: AuthedRequestHandler = async (req, res, next) => {
-  if (!ensureTenant(req, res)) return;
   const formatInput = req.query.format;
   const normalized = formatInput ? normalizeFormat(formatInput) : 'csv';
   if (!normalized) {

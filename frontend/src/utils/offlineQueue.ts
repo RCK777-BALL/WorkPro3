@@ -161,11 +161,21 @@ export const enqueueWorkOrderUpdate = (
   workOrderId: string,
   data: Record<string, unknown>,
 ) => {
+  const description =
+    typeof data.status === 'string'
+      ? `Status → ${data.status}`
+      : typeof data.priority === 'string'
+        ? `Priority → ${data.priority}`
+        : 'Work order update';
+  const stampedData = {
+    ...data,
+    clientUpdatedAt: data.clientUpdatedAt ?? new Date().toISOString(),
+  };
   addToQueue({
     method: 'put',
-    url: `/workorders/${workOrderId}`,
-    data,
-    meta: { entityType: 'workorder', entityId: workOrderId },
+    url: `/work-orders/${workOrderId}/reconcile`,
+    data: stampedData,
+    meta: { entityType: 'workorder', entityId: workOrderId, description },
   });
 };
 
@@ -296,10 +306,11 @@ export const diffObjects = (
   local: Record<string, unknown>,
   server: Record<string, unknown>
 ): DiffEntry[] => {
+  const ignoredFields = new Set(['clientUpdatedAt']);
   const keys = new Set([
     ...Object.keys(local ?? {}),
     ...Object.keys(server ?? {}),
-  ]);
+  ].filter((key) => !ignoredFields.has(key)));
   const diffs: DiffEntry[] = [];
   keys.forEach((k) => {
     const l = local?.[k];
@@ -321,6 +332,13 @@ export const diffObjects = (
   return diffs;
 };
 let isFlushing = false;
+
+const resolveConflictFetchUrl = (req: QueuedRequest) => {
+  if (req.meta?.entityType === 'workorder' && req.meta.entityId) {
+    return `/workorders/${req.meta.entityId}`;
+  }
+  return req.url;
+};
 
 export const flushQueue = async (
   useBackoff = true,
@@ -355,7 +373,7 @@ export const flushQueue = async (
       } catch (err: unknown) {
         if ((err as { response?: { status?: number } })?.response?.status === 409) {
           try {
-            const serverRes = await httpClient({ method: 'get', url: req.url });
+            const serverRes = await httpClient({ method: 'get', url: resolveConflictFetchUrl(req) });
             const serverData = (serverRes?.data ?? {}) as Record<string, unknown>;
             const diffs = diffObjects(
               req.data as Record<string, unknown>,

@@ -13,10 +13,13 @@ import Card from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import Modal from '@/components/common/Modal';
+import ConflictResolver from '@/components/offline/ConflictResolver';
+import WorkOrderQueuePanel from '@/components/offline/WorkOrderQueuePanel';
 import ChecklistExecutionPanel from '@/workorders/ChecklistExecutionPanel';
 import { usePartsQuery, useStockItemsQuery } from '@/features/inventory';
 import { useToast } from '@/context/ToastContext';
 import { useAuthStore } from '@/store/authStore';
+import { useSyncStore } from '@/store/syncStore';
 
 interface WorkOrderResponse extends Partial<WorkOrder> {
   _id?: string;
@@ -99,6 +102,8 @@ const WorkOrderDetail = () => {
   const [error, setError] = useState<string | null>(null);
   const { addToast } = useToast();
   const user = useAuthStore((state) => state.user);
+  const conflict = useSyncStore((state) => state.conflict);
+  const setConflict = useSyncStore((state) => state.setConflict);
 
   const partsQuery = usePartsQuery({ pageSize: 50 });
   const stockQuery = useStockItemsQuery();
@@ -114,6 +119,22 @@ const WorkOrderDetail = () => {
   >(null);
 
   const checklistHistory = workOrder?.checklistHistory ?? [];
+
+  const resolveConflict = async (choice: 'local' | 'server') => {
+    if (!conflict) return;
+    if (choice === 'local') {
+      const payload = {
+        ...(conflict.local as Record<string, unknown>),
+        clientUpdatedAt: new Date().toISOString(),
+      };
+      await http({
+        method: conflict.method,
+        url: conflict.url,
+        data: payload,
+      });
+    }
+    setConflict(null);
+  };
 
   const checklistCompliance = useMemo(() => {
     if (workOrder?.checklistCompliance) return workOrder.checklistCompliance;
@@ -308,8 +329,8 @@ const WorkOrderDetail = () => {
   }, [loading, error, workOrder]);
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 p-4 sm:p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs uppercase tracking-wide text-indigo-300">Work order</p>
           <h1 className="text-3xl font-bold text-white">{workOrder?.title ?? 'Work order details'}</h1>
@@ -338,8 +359,10 @@ const WorkOrderDetail = () => {
         </Link>
       </div>
 
+      <WorkOrderQueuePanel workOrderId={id} />
+
       {workOrder && (
-        <div className="rounded-3xl border border-neutral-900/80 bg-neutral-950/60 p-6 text-neutral-100">
+        <div className="rounded-3xl border border-neutral-900/80 bg-neutral-950/60 p-4 text-neutral-100 sm:p-6">
           <h2 className="text-lg font-semibold text-white">Summary</h2>
           <p className="mt-2 whitespace-pre-line text-sm leading-6 text-neutral-200">
             {workOrder.description ?? 'No description provided.'}
@@ -631,6 +654,11 @@ const WorkOrderDetail = () => {
       ) : (
         <p className="text-sm text-neutral-500">Work order id required to load comments.</p>
       )}
+      <ConflictResolver
+        conflict={conflict}
+        onResolve={resolveConflict}
+        onClose={() => setConflict(null)}
+      />
     </div>
   );
 };

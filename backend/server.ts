@@ -103,6 +103,7 @@ import analyticsModuleRouter from "./src/modules/analytics";
 import downtimeRouter from "./src/modules/downtime";
 import meterReadingsRouter from "./src/modules/meters";
 import workOrdersModuleRouter from "./src/modules/work-orders";
+import { notificationsModuleRouter } from "./src/modules/notifications";
 import purchaseOrdersApiRouter from "./src/routes/purchaseOrders";
 import { startWorkOrderReminderJobs } from "./src/modules/work-orders/jobs";
 import { startWorkRequestReminderJobs } from "./src/modules/work-requests/jobs";
@@ -295,6 +296,7 @@ app.use("/api/mobile", mobileLimiter, mobileRoutes);
 app.use("/api/mobile", mobileLimiter, mobileSyncAdminRoutes);
 app.use("/api/mobile", mobileLimiter, mobileSyncRoutes);
 
+app.use("/api/notifications", notificationsModuleRouter);
 app.use("/api/notifications/admin", burstFriendly, notificationAdminRoutes);
 app.use("/api/notifications", burstFriendly, notificationsRoutes);
 // Apply limiter to the rest of protected /api routes

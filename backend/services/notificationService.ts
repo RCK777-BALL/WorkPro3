@@ -31,6 +31,14 @@ export interface NotificationChannels {
   pushToken?: string;
 }
 
+export const notificationRetryBackoffMinutes = [5, 30, 120];
+export const notificationMaxAttempts = notificationRetryBackoffMinutes.length + 1;
+
+export const getNextNotificationRetryAt = (attempt: number, from: Date = new Date()) => {
+  const index = Math.max(0, Math.min(attempt - 1, notificationRetryBackoffMinutes.length - 1));
+  return new Date(from.getTime() + notificationRetryBackoffMinutes[index] * 60 * 1000);
+};
+
 interface NotificationInput {
   tenantId: Types.ObjectId;
   userId?: Types.ObjectId;
@@ -99,6 +107,10 @@ const recordDeliveryLog = async (
     channel: NotificationChannel;
     status: 'pending' | 'sent' | 'failed' | 'deferred' | 'queued';
     attempt?: number;
+    event?: string;
+    target?: string;
+    nextAttemptAt?: Date;
+    metadata?: Record<string, unknown>;
     errorMessage?: string;
   },
 ) => {
@@ -120,6 +132,7 @@ const queueDigest = async (
   notification: HydratedDocument<NotificationDocument>,
   subscription: NotificationSubscriptionDocument,
   channel: NotificationChannel,
+  event?: string,
   now = new Date(),
 ) => {
   const deliverAt = computeDigestDeliverAt(subscription.digest?.frequency ?? 'daily', now);
@@ -140,6 +153,7 @@ const queueDigest = async (
     subscriptionId: subscription._id,
     channel,
     status: 'deferred',
+    event,
   });
 };
 
@@ -243,6 +257,237 @@ const postWebhook = async (url: string, payload: unknown) => {
   }
 };
 
+const buildWebhookTargets = (channels?: NotificationChannels) =>
+  [channels?.webhookUrl, channels?.slackWebhookUrl, channels?.teamsWebhookUrl, process.env.SLACK_WEBHOOK_URL, process.env.TEAMS_WEBHOOK_URL].filter(
+    (value): value is string => Boolean(value),
+  );
+
+export const deliverNotificationChannel = async (input: {
+  notification: HydratedDocument<NotificationDocument>;
+  channel: NotificationChannel;
+  target?: string;
+  event?: string;
+  context?: Record<string, string>;
+  subscription?: NotificationSubscriptionDocument;
+  attempt?: number;
+  metadata?: Record<string, unknown>;
+}) => {
+  const {
+    notification,
+    channel,
+    target,
+    event,
+    context,
+    subscription,
+    attempt = 1,
+    metadata,
+  } = input;
+  const normalized = normalizeChannel(channel);
+
+  if (normalized === 'in_app') {
+    try {
+      const io = getIO();
+      io.emit('notification', notification);
+      await recordDeliveryLog({
+        notificationId: notification._id,
+        tenantId: notification.tenantId,
+        subscriptionId: subscription?._id,
+        channel: 'in_app',
+        status: 'sent',
+        attempt,
+        event,
+        target,
+      });
+      return 'sent';
+    } catch (err) {
+      logger.debug('Socket not initialized; skipping notification emit');
+      await recordDeliveryLog({
+        notificationId: notification._id,
+        tenantId: notification.tenantId,
+        subscriptionId: subscription?._id,
+        channel: 'in_app',
+        status: 'failed',
+        attempt,
+        event,
+        target,
+        nextAttemptAt: attempt < notificationMaxAttempts ? getNextNotificationRetryAt(attempt, new Date()) : undefined,
+        errorMessage: (err as Error)?.message,
+      });
+      return 'failed';
+    }
+  }
+
+  if (normalized === 'email') {
+    if (!isNotificationEmailEnabled()) {
+      await recordDeliveryLog({
+        notificationId: notification._id,
+        tenantId: notification.tenantId,
+        subscriptionId: subscription?._id,
+        channel: 'email',
+        status: 'failed',
+        attempt,
+        event,
+        target,
+        nextAttemptAt: attempt < notificationMaxAttempts ? getNextNotificationRetryAt(attempt, new Date()) : undefined,
+        errorMessage: 'Email delivery disabled',
+      });
+      return 'failed';
+    }
+    if (!target) {
+      await recordDeliveryLog({
+        notificationId: notification._id,
+        tenantId: notification.tenantId,
+        subscriptionId: subscription?._id,
+        channel: 'email',
+        status: 'failed',
+        attempt,
+        event,
+        target,
+        nextAttemptAt: attempt < notificationMaxAttempts ? getNextNotificationRetryAt(attempt, new Date()) : undefined,
+        errorMessage: 'Email not configured',
+      });
+      return 'failed';
+    }
+    if (!process.env.SMTP_HOST || !(process.env.SMTP_FROM || process.env.SMTP_USER)) {
+      await recordDeliveryLog({
+        notificationId: notification._id,
+        tenantId: notification.tenantId,
+        subscriptionId: subscription?._id,
+        channel: 'email',
+        status: 'failed',
+        attempt,
+        event,
+        target,
+        nextAttemptAt: attempt < notificationMaxAttempts ? getNextNotificationRetryAt(attempt, new Date()) : undefined,
+        errorMessage: 'SMTP not configured',
+      });
+      return 'failed';
+    }
+    assertEmail(target);
+    const content = await resolveTemplate(
+      notification.tenantId as Types.ObjectId,
+      event,
+      'email',
+      { title: notification.title, message: notification.message },
+      context,
+    );
+    try {
+      await sendEmail(target, content.title, content.message);
+      await recordDeliveryLog({
+        notificationId: notification._id,
+        tenantId: notification.tenantId,
+        subscriptionId: subscription?._id,
+        channel: 'email',
+        status: 'sent',
+        attempt,
+        event,
+        target,
+      });
+      return 'sent';
+    } catch (err) {
+      await recordDeliveryLog({
+        notificationId: notification._id,
+        tenantId: notification.tenantId,
+        subscriptionId: subscription?._id,
+        channel: 'email',
+        status: 'failed',
+        attempt,
+        event,
+        target,
+        nextAttemptAt: attempt < notificationMaxAttempts ? getNextNotificationRetryAt(attempt, new Date()) : undefined,
+        errorMessage: (err as Error)?.message,
+      });
+      return 'failed';
+    }
+  }
+
+  if (normalized === 'push') {
+    const status = target ? 'sent' : 'failed';
+    await recordDeliveryLog({
+      notificationId: notification._id,
+      tenantId: notification.tenantId,
+      subscriptionId: subscription?._id,
+      channel: 'push',
+      status,
+      attempt,
+      event,
+      target,
+      nextAttemptAt:
+        status === 'failed' && attempt < notificationMaxAttempts
+          ? getNextNotificationRetryAt(attempt, new Date())
+          : undefined,
+      errorMessage: target ? undefined : 'Missing push token',
+    });
+    return status;
+  }
+
+  if (normalized === 'webhook') {
+    const webhookPayload = {
+      title: notification.title,
+      message: notification.message,
+      category: notification.category,
+      createdAt: notification.createdAt,
+    };
+    const webhookTargets = (metadata?.webhookUrls as string[] | undefined) ?? buildWebhookTargets();
+    if (webhookTargets.length === 0) {
+      await recordDeliveryLog({
+        notificationId: notification._id,
+        tenantId: notification.tenantId,
+        subscriptionId: subscription?._id,
+        channel: 'webhook',
+        status: 'failed',
+        attempt,
+        event,
+        target,
+        nextAttemptAt: attempt < notificationMaxAttempts ? getNextNotificationRetryAt(attempt, new Date()) : undefined,
+        errorMessage: 'Webhook not configured',
+      });
+      return 'failed';
+    }
+
+    try {
+      for (const url of webhookTargets) {
+        if (url.includes('hooks.slack.com')) {
+          await postWebhook(url, { text: `*[${notification.category}]* ${notification.title}\n${notification.message}` });
+        } else if (url.includes('webhook.office.com')) {
+          await postWebhook(url, { text: `${notification.title}: ${notification.message}` });
+        } else {
+          await postWebhook(url, webhookPayload);
+        }
+      }
+      await recordDeliveryLog({
+        notificationId: notification._id,
+        tenantId: notification.tenantId,
+        subscriptionId: subscription?._id,
+        channel: 'webhook',
+        status: 'sent',
+        attempt,
+        event,
+        target,
+        metadata: { webhookUrls: webhookTargets },
+      });
+      return 'sent';
+    } catch (err) {
+      await recordDeliveryLog({
+        notificationId: notification._id,
+        tenantId: notification.tenantId,
+        subscriptionId: subscription?._id,
+        channel: 'webhook',
+        status: 'failed',
+        attempt,
+        event,
+        target,
+        nextAttemptAt: attempt < notificationMaxAttempts ? getNextNotificationRetryAt(attempt, new Date()) : undefined,
+        metadata: { webhookUrls: webhookTargets },
+        errorMessage: (err as Error)?.message,
+      });
+      return 'failed';
+    }
+  }
+
+  return 'failed';
+};
+
 const deliver = async (
   notification: HydratedDocument<NotificationDocument>,
   channels?: NotificationChannels,
@@ -255,154 +500,56 @@ const deliver = async (
 ) => {
   const channelsToSend = options?.channelsToSend ?? ['in_app'];
   const results: ('sent' | 'failed')[] = [];
+  const webhookTargets = buildWebhookTargets(channels);
 
   for (const channel of channelsToSend) {
     const normalized = normalizeChannel(channel);
-    if (normalized === 'in_app') {
-      try {
-        const io = getIO();
-        io.emit('notification', notification);
-        results.push('sent');
-        await recordDeliveryLog({
-          notificationId: notification._id,
-          tenantId: notification.tenantId,
-          subscriptionId: options?.subscription?._id,
-          channel: 'in_app',
-          status: 'sent',
-        });
-      } catch (err) {
-        logger.debug('Socket not initialized; skipping notification emit');
-        await recordDeliveryLog({
-          notificationId: notification._id,
-          tenantId: notification.tenantId,
-          subscriptionId: options?.subscription?._id,
-          channel: 'in_app',
-          status: 'failed',
-          errorMessage: (err as Error)?.message,
-        });
-        results.push('failed');
-      }
-      continue;
-    }
-
     if (normalized === 'email') {
-      if (!isNotificationEmailEnabled()) {
-        await recordDeliveryLog({
-          notificationId: notification._id,
-          tenantId: notification.tenantId,
-          subscriptionId: options?.subscription?._id,
-          channel: 'email',
-          status: 'failed',
-          errorMessage: 'Email delivery disabled',
-        });
-        results.push('failed');
-        continue;
-      }
-      if (!channels?.email) {
-        await recordDeliveryLog({
-          notificationId: notification._id,
-          tenantId: notification.tenantId,
-          subscriptionId: options?.subscription?._id,
-          channel: 'email',
-          status: 'failed',
-          errorMessage: 'Email not configured',
-        });
-        results.push('failed');
-        continue;
-      }
-      assertEmail(channels.email);
-      const content = await resolveTemplate(
-        notification.tenantId as Types.ObjectId,
-        options?.event,
-        'email',
-        { title: notification.title, message: notification.message },
-        options?.context,
-      );
       let success = false;
       for (let attempt = 1; attempt <= 2; attempt += 1) {
-        try {
-          await sendEmail(channels.email, content.title, content.message);
-          await recordDeliveryLog({
-            notificationId: notification._id,
-            tenantId: notification.tenantId,
-            subscriptionId: options?.subscription?._id,
-            channel: 'email',
-            status: 'sent',
-            attempt,
-          });
+        const result = await deliverNotificationChannel({
+          notification,
+          channel: 'email',
+          target: channels?.email,
+          event: options?.event,
+          context: options?.context,
+          subscription: options?.subscription,
+          attempt,
+        });
+        if (result === 'sent') {
           success = true;
           break;
-        } catch (err) {
-          await recordDeliveryLog({
-            notificationId: notification._id,
-            tenantId: notification.tenantId,
-            subscriptionId: options?.subscription?._id,
-            channel: 'email',
-            status: 'failed',
-            attempt,
-            errorMessage: (err as Error)?.message,
-          });
         }
       }
       results.push(success ? 'sent' : 'failed');
       continue;
     }
 
-    if (normalized === 'push') {
-      await recordDeliveryLog({
-        notificationId: notification._id,
-        tenantId: notification.tenantId,
-        subscriptionId: options?.subscription?._id,
-        channel: 'push',
-        status: channels?.pushToken ? 'sent' : 'failed',
-        errorMessage: channels?.pushToken ? undefined : 'Missing push token',
+    if (normalized === 'webhook') {
+      const result = await deliverNotificationChannel({
+        notification,
+        channel: 'webhook',
+        target: channels?.webhookUrl,
+        event: options?.event,
+        context: options?.context,
+        subscription: options?.subscription,
+        metadata: { webhookUrls: webhookTargets },
       });
-      results.push(channels?.pushToken ? 'sent' : 'failed');
+      results.push(result);
       continue;
     }
 
-    if (normalized === 'webhook') {
-      const webhookPayload = {
-        title: notification.title,
-        message: notification.message,
-        category: notification.category,
-        createdAt: notification.createdAt,
-      };
+    const target = normalized === 'push' ? channels?.pushToken : notification.user?.toString();
 
-      try {
-        if (channels?.webhookUrl) {
-          await postWebhook(channels.webhookUrl, webhookPayload);
-        }
-        if (channels?.slackWebhookUrl || process.env.SLACK_WEBHOOK_URL) {
-          await postWebhook(channels?.slackWebhookUrl ?? process.env.SLACK_WEBHOOK_URL!, {
-            text: `*[${notification.category}]* ${notification.title}\n${notification.message}`,
-          });
-        }
-        if (channels?.teamsWebhookUrl || process.env.TEAMS_WEBHOOK_URL) {
-          await postWebhook(channels?.teamsWebhookUrl ?? process.env.TEAMS_WEBHOOK_URL!, {
-            text: `${notification.title}: ${notification.message}`,
-          });
-        }
-        await recordDeliveryLog({
-          notificationId: notification._id,
-          tenantId: notification.tenantId,
-          subscriptionId: options?.subscription?._id,
-          channel: 'webhook',
-          status: 'sent',
-        });
-        results.push('sent');
-      } catch (err) {
-        await recordDeliveryLog({
-          notificationId: notification._id,
-          tenantId: notification.tenantId,
-          subscriptionId: options?.subscription?._id,
-          channel: 'webhook',
-          status: 'failed',
-          errorMessage: (err as Error)?.message,
-        });
-        results.push('failed');
-      }
-    }
+    const result = await deliverNotificationChannel({
+      notification,
+      channel: normalized,
+      target,
+      event: options?.event,
+      context: options?.context,
+      subscription: options?.subscription,
+    });
+    results.push(result);
   }
 
   return results.includes('sent');
@@ -449,7 +596,7 @@ export const createNotification = async (
     if (isWithinQuietHours(subscription.quietHours, now)) {
       if (subscription.digest?.enabled) {
         for (const channel of subscription.channels) {
-          await queueDigest(doc, subscription, channel, now);
+          await queueDigest(doc, subscription, channel, eventKey, now);
         }
       } else {
         for (const channel of subscription.channels) {
@@ -459,6 +606,7 @@ export const createNotification = async (
             subscriptionId: subscription._id,
             channel,
             status: 'queued',
+            event: eventKey,
           });
         }
       }

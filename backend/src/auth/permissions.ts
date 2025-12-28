@@ -27,14 +27,8 @@ const toPermissionKey = <C extends PermissionCategory>(
 const resolvePermissionsForRequest = async (
   req: AuthedRequest,
 ): Promise<{ permissions: Permission[]; roles: string[] }> => {
-  const user = req.user as {
-    id?: string | Types.ObjectId;
-    permissions?: unknown;
-    roles?: string[];
-    tenantId?: string;
-    siteId?: string | null;
-  };
-  if (!user?.id) {
+  const userId = (req.user as { id?: string | Types.ObjectId } | undefined)?.id;
+  if (!userId) {
     throw Object.assign(new Error('Unauthorized'), { status: 401 });
   }
 
@@ -49,7 +43,7 @@ const resolvePermissionsForRequest = async (
   const fallbackRoles = user.roles;
 
   const result = await resolveUserPermissions({
-    userId: user.id,
+    userId,
     ...(tenantId ? { tenantId } : {}),
     ...(siteId ? { siteId } : {}),
     ...(departmentId ? { departmentId } : {}),

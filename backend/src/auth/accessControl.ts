@@ -41,7 +41,7 @@ const normalizeTenantId = (value?: string | null): string | undefined => {
 
 export const ensureTenantContext = (req: TenantScopedRequest): string | undefined => {
   if (req.tenantId) return req.tenantId;
-  const tenantFromUser = req.user?.tenantId ?? undefined;
+  const tenantFromUser = typeof req.user?.tenantId === 'string' ? req.user.tenantId : undefined;
   const tenantFromHeader = typeof req.header === 'function' ? req.header('x-tenant-id') : undefined;
   const tenantId = normalizeTenantId(tenantFromUser ?? tenantFromHeader ?? null);
   if (tenantId) {

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Router } from "express";
+import { Router, type Request } from "express";
 import { Types, isValidObjectId } from "mongoose";
 
 import { requireAuth } from "../middleware/authMiddleware";
@@ -21,15 +21,16 @@ const resolveTenantId = (raw?: string | null) => {
   return new Types.ObjectId(value);
 };
 
-const buildScope = (req: AuthedRequest) => {
-  const tenant = resolveTenantId(req.tenantId as string | undefined);
+const buildScope = (req: AuthedRequest | Request) => {
+  const authedReq = req as AuthedRequest;
+  const tenant = resolveTenantId(authedReq.tenantId as string | undefined);
   if (!tenant) {
     return null;
   }
 
   const scope: { tenantId: Types.ObjectId; siteId?: Types.ObjectId } = { tenantId: tenant };
-  if (req.siteId && Types.ObjectId.isValid(req.siteId)) {
-    scope.siteId = new Types.ObjectId(req.siteId);
+  if (authedReq.siteId && Types.ObjectId.isValid(authedReq.siteId)) {
+    scope.siteId = new Types.ObjectId(authedReq.siteId);
   }
   return scope;
 };

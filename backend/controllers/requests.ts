@@ -3,6 +3,7 @@
  */
 
 import type { Response, NextFunction } from 'express';
+import { Types } from 'mongoose';
 import { z } from 'zod';
 
 import RequestForm from '../models/RequestForm';
@@ -43,6 +44,20 @@ const resolveFormId = async (input: { formSlug?: string | undefined; requestForm
     if (form?._id) return toObjectId(form._id);
   }
   return undefined;
+};
+
+const resolveUserId = (req: AuthedRequest): EntityIdLike => {
+  const candidate = req.user?._id ?? req.user?.id;
+  if (typeof candidate === 'string' || candidate instanceof Types.ObjectId) {
+    return candidate;
+  }
+  return undefined;
+};
+
+const resolveUserObjectId = (req: AuthedRequest): Types.ObjectId | undefined => {
+  const candidate = resolveUserId(req);
+  if (!candidate) return undefined;
+  return candidate instanceof Types.ObjectId ? candidate : toObjectId(candidate);
 };
 
 export const createRequest: AuthedRequestHandler = async (
@@ -93,7 +108,7 @@ export const createRequest: AuthedRequestHandler = async (
     await writeAuditLog({
       tenantId,
       siteId,
-      userId: req.user?._id,
+      userId: resolveUserId(req),
       action: 'create',
       entityType: 'request',
       entityId: created._id,
@@ -173,7 +188,7 @@ export const updateRequestStatus: AuthedRequestHandler = async (
     await writeAuditLog({
       tenantId,
       siteId: req.siteId,
-      userId: req.user?._id,
+      userId: resolveUserId(req),
       action: 'update',
       entityType: 'request',
       entityId: before._id,
@@ -210,7 +225,7 @@ export const convertRequestToWorkOrder: AuthedRequestHandler = async (
       { tenantId, siteId: req.siteId },
       req.params.id,
       parse.data,
-      toObjectId(req.user?._id),
+      resolveUserObjectId(req),
     );
 
     await Notification.create({
@@ -223,7 +238,7 @@ export const convertRequestToWorkOrder: AuthedRequestHandler = async (
     await writeAuditLog({
       tenantId,
       siteId: req.siteId,
-      userId: req.user?._id,
+      userId: resolveUserId(req),
       action: 'convert',
       entityType: 'request',
       entityId: req.params.id,

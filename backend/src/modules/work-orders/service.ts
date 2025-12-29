@@ -12,6 +12,7 @@ import { resolveUserId } from './middleware';
 import { notifyUser } from '../../../utils';
 import { applySlaPolicyToWorkOrder } from '../../../services/slaPolicyService';
 import { resolveWorkOrderTimestampConflict } from './conflict';
+import { notifyWorkOrderSlaBreach, notifyWorkOrderSlaEscalation } from '../notifications/service';
 
 const ensureTimeline = (
   workOrder: WorkOrderDocument,
@@ -63,7 +64,7 @@ export const reconcileWorkOrderUpdate = async (
       {
         id: workOrderId,
         updatedAt: serverUpdatedAt,
-        payload: workOrder.toObject(),
+        payload: workOrder.toObject() as unknown as Record<string, unknown>,
       },
       {
         id: workOrderId,
@@ -76,7 +77,7 @@ export const reconcileWorkOrderUpdate = async (
       return {
         status: 'conflict',
         conflicts: resolution.conflicts,
-        snapshot: workOrder.toObject(),
+        snapshot: workOrder.toObject() as unknown as Record<string, unknown>,
         serverUpdatedAt,
       };
     }

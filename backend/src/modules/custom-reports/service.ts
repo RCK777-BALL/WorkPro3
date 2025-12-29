@@ -493,7 +493,10 @@ export const exportCustomReport = async (
 
 const resolveTenantId = (req: AuthedRequest): Types.ObjectId | string => {
   if (req.tenantId) return req.tenantId;
-  if (req.user?.tenantId) return req.user.tenantId;
+  const userTenantId = req.user?.tenantId;
+  if (typeof userTenantId === 'string' || userTenantId instanceof Types.ObjectId) {
+    return userTenantId;
+  }
   throw new Error('Tenant context is required for reports');
 };
 

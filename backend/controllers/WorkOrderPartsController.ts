@@ -14,6 +14,15 @@ const activeLineItemFilter = { deletedAt: { $exists: false } } as const;
 const toObjectId = (value: string | Types.ObjectId): Types.ObjectId =>
   value instanceof Types.ObjectId ? value : new Types.ObjectId(value);
 
+const resolveUserObjectId = (req: AuthedRequest): Types.ObjectId | undefined => {
+  const raw = req.user?._id ?? req.user?.id;
+  if (!raw) return undefined;
+  if (raw instanceof Types.ObjectId || typeof raw === 'string') {
+    return toObjectId(raw);
+  }
+  return undefined;
+};
+
 const resolveUnitCost = async (
   tenantId: Types.ObjectId,
   partId: Types.ObjectId,
@@ -211,7 +220,7 @@ export const reserveWorkOrderPart = async (req: AuthedRequest, res: Response, ne
         'reserve',
         quantity,
         session,
-        req.user?._id ? toObjectId(req.user._id) : undefined,
+        resolveUserObjectId(req),
       );
 
       await refreshWorkOrderTotals(workOrder, session);
@@ -286,7 +295,7 @@ export const unreserveWorkOrderPart = async (req: AuthedRequest, res: Response, 
         'unreserve',
         quantity,
         session,
-        req.user?._id ? toObjectId(req.user._id) : undefined,
+        resolveUserObjectId(req),
       );
 
       await refreshWorkOrderTotals(workOrder, session);
@@ -360,7 +369,7 @@ export const issueWorkOrderPart = async (req: AuthedRequest, res: Response, next
         'issue',
         quantity,
         session,
-        req.user?._id ? toObjectId(req.user._id) : undefined,
+        resolveUserObjectId(req),
       );
 
       await refreshWorkOrderTotals(workOrder, session);
@@ -431,7 +440,7 @@ export const returnIssuedWorkOrderPart = async (req: AuthedRequest, res: Respons
         'return',
         quantity,
         session,
-        req.user?._id ? toObjectId(req.user._id) : undefined,
+        resolveUserObjectId(req),
       );
 
       await refreshWorkOrderTotals(workOrder, session);
@@ -484,7 +493,7 @@ export const deleteWorkOrderPartLineItem = async (req: AuthedRequest, res: Respo
             'unreserve',
             lineItem.qtyReserved,
             session,
-            req.user?._id ? toObjectId(req.user._id) : undefined,
+            resolveUserObjectId(req),
           );
         }
       }

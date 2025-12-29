@@ -11,6 +11,7 @@ import {
   listPurchaseOrders,
   receivePurchaseOrder,
   sendPurchaseOrder,
+  type PurchasingInput,
 } from './service';
 
 const objectId = z.string().min(1, 'Identifier is required');
@@ -67,7 +68,8 @@ export const createPurchasingOrderHandler: AuthedRequestHandler = async (req, re
     return;
   }
   try {
-    const data = await createPurchaseOrder(buildContext(req), parsed.data);
+    const payload = parsed.data as PurchasingInput;
+    const data = await createPurchaseOrder(buildContext(req), payload);
     res.status(201).json(data);
   } catch (error) {
     handleError(error, res, next);

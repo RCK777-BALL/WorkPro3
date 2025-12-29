@@ -18,6 +18,7 @@ import {
   getTemplateHandler,
   listTemplatesHandler,
   reconcileOfflineUpdateHandler,
+  requestApprovalHandler,
   updateStatusHandler,
   updateTemplateHandler,
   workOrderParamValidator,

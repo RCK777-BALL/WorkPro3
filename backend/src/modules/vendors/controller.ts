@@ -6,7 +6,7 @@ import type { NextFunction, Response } from 'express';
 
 import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
 import { vendorInputSchema } from './schemas';
-import { createVendor, getVendor, listVendors, updateVendor } from './service';
+import { createVendor, getVendor, listVendors, updateVendor, type VendorInput } from './service';
 
 const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
   if (!req.tenantId) {
@@ -54,7 +54,8 @@ export const createVendorHandler: AuthedRequestHandler = async (req, res, next) 
     return;
   }
   try {
-    const data = await createVendor(buildContext(req), parsed.data);
+    const payload = parsed.data as VendorInput;
+    const data = await createVendor(buildContext(req), payload);
     res.status(201).json(data);
   } catch (error) {
     handleError(error, res, next);
@@ -69,7 +70,8 @@ export const updateVendorHandler: AuthedRequestHandler<{ vendorId: string }> = a
     return;
   }
   try {
-    const data = await updateVendor(buildContext(req), req.params.vendorId, parsed.data);
+    const payload = parsed.data as VendorInput;
+    const data = await updateVendor(buildContext(req), req.params.vendorId, payload);
     res.json(data);
   } catch (error) {
     handleError(error, res, next);

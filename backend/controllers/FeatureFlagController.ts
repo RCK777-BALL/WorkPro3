@@ -3,10 +3,12 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
+import { Types } from 'mongoose';
 
 import FeatureFlag from '../models/FeatureFlag';
 import { writeAuditLog, toEntityId } from '../utils';
 import type { AuthedRequest } from '../types/http';
+import type { EntityIdLike } from '../utils';
 
 const getTenantContext = (req: AuthedRequest) => {
   const tenantId = req.tenantId;
@@ -14,6 +16,14 @@ const getTenantContext = (req: AuthedRequest) => {
     throw Object.assign(new Error('Tenant context required'), { status: 400 });
   }
   return tenantId;
+};
+
+const resolveUserId = (req: AuthedRequest): EntityIdLike => {
+  const candidate = req.user?.id ?? req.user?._id;
+  if (typeof candidate === 'string' || candidate instanceof Types.ObjectId) {
+    return candidate;
+  }
+  return undefined;
 };
 
 export const listFeatureFlags = async (req: Request, res: Response, next: NextFunction) => {
@@ -57,10 +67,10 @@ export const createFeatureFlag = async (req: Request, res: Response, next: NextF
     await writeAuditLog({
       tenantId,
       siteId,
-      userId: (req as AuthedRequest).user?.id,
+      userId: resolveUserId(req as AuthedRequest),
       action: 'featureFlags.create',
       entityType: 'FeatureFlag',
-      entityId: toEntityId(flag._id),
+      entityId: toEntityId(flag._id as EntityIdLike),
       after: flag,
     });
 
@@ -105,10 +115,10 @@ export const updateFeatureFlag = async (req: Request, res: Response, next: NextF
     await writeAuditLog({
       tenantId,
       siteId,
-      userId: (req as AuthedRequest).user?.id,
+      userId: resolveUserId(req as AuthedRequest),
       action: 'featureFlags.update',
       entityType: 'FeatureFlag',
-      entityId: toEntityId(flag._id),
+      entityId: toEntityId(flag._id as EntityIdLike),
       before: existing,
       after: flag,
     });

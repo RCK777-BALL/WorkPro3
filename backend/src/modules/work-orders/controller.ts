@@ -8,8 +8,28 @@ import { z } from 'zod';
 
 import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
 import { fail } from '../../lib/http';
-import { approvalAdvanceSchema, slaAcknowledgeSchema, statusUpdateSchema, templateCreateSchema, templateParamSchema, templateUpdateSchema, workOrderParamSchema } from './schemas';
-import { acknowledgeSla, advanceApproval, createTemplate, deleteTemplate, getTemplate, listTemplates, reconcileWorkOrderUpdate, updateTemplate, updateWorkOrderStatus } from './service';
+import {
+  approvalAdvanceSchema,
+  approvalRequestSchema,
+  slaAcknowledgeSchema,
+  statusUpdateSchema,
+  templateCreateSchema,
+  templateParamSchema,
+  templateUpdateSchema,
+  workOrderParamSchema,
+} from './schemas';
+import {
+  acknowledgeSla,
+  advanceApproval,
+  createTemplate,
+  deleteTemplate,
+  getTemplate,
+  listTemplates,
+  reconcileWorkOrderUpdate,
+  requestApproval,
+  updateTemplate,
+  updateWorkOrderStatus,
+} from './service';
 import type { ApprovalStepUpdate, StatusTransition, WorkOrderContext } from './types';
 import type { WorkOrderTemplate } from './templateModel';
 import { workOrderUpdateSchema } from '../../schemas/workOrder';
@@ -26,6 +46,14 @@ const buildContext = (req: AuthedRequest): WorkOrderContext => ({
   tenantId: req.tenantId!,
   ...(req.siteId ? { siteId: req.siteId } : {}),
 });
+
+const ensureContext = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
+  if (!req.tenantId) {
+    fail(res, 'Tenant context is required', 400);
+    return false;
+  }
+  return true;
+};
 
 const handleError = (err: unknown, res: Response, next: NextFunction) => {
   if (err instanceof Error) {

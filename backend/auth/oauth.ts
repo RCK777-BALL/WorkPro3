@@ -26,12 +26,9 @@ type OAuthProfile = PassportProfile & {
 
 type DoneCallback = VerifyCallback;
 type OAuthVerifier = (
-  req: Request,
-  accessToken: string,
-  refreshToken: string,
-  paramsOrProfile: OAuthProfile | unknown,
-  profileOrDone: OAuthProfile | DoneCallback,
-  done?: DoneCallback,
+  ...args:
+    | [Request, string, string, OAuthProfile, DoneCallback]
+    | [Request, string, string, OAuthProfile | unknown, OAuthProfile, DoneCallback]
 ) => void | Promise<void>;
 
 type OAuthUser = {
@@ -49,20 +46,17 @@ const getProfileDomain = (profile: OAuthProfile | undefined): string | null => {
 
 const createOAuthVerifier =
   (provider: OAuthProvider): OAuthVerifier =>
-  async (
-    _req: Request,
-    _accessToken: string,
-    _refreshToken: string,
-    paramsOrProfile: OAuthProfile | unknown,
-    profileOrDone: OAuthProfile | DoneCallback,
-    doneMaybe?: DoneCallback,
-  ) => {
+  async (...args: Parameters<OAuthVerifier>) => {
     let doneCallback: DoneCallback | undefined;
     try {
-      const [profile, done] =
-        typeof profileOrDone === 'function'
-          ? [paramsOrProfile as OAuthProfile, profileOrDone]
-          : [profileOrDone, doneMaybe];
+      const profile =
+        typeof args[4] === 'function'
+          ? (args[3] as OAuthProfile)
+          : (args[4] as OAuthProfile);
+      const done =
+        typeof args[4] === 'function'
+          ? (args[4] as DoneCallback)
+          : (args[5] as DoneCallback | undefined);
 
       if (!done) {
         return;

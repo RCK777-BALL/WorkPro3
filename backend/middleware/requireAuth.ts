@@ -109,7 +109,7 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
       siteId,
       role: primaryRole,
       roles,
-    } as Express.User;
+    } as Record<string, unknown>;
 
     if (tenantId) {
       req.tenantId = tenantId;

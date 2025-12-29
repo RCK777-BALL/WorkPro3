@@ -40,7 +40,11 @@ const resolveUserObjectId = (
   req: Pick<AuthedRequest, 'user'>,
 ): Types.ObjectId | undefined => {
   const raw = req.user?._id ?? req.user?.id;
-  return raw ? toObjectId(raw) : undefined;
+  if (!raw) return undefined;
+  if (raw instanceof Types.ObjectId || typeof raw === 'string') {
+    return toObjectId(raw);
+  }
+  return undefined;
 };
 
 const isAssignedToUser = (workOrder: WorkOrderDocument, userId: Types.ObjectId): boolean => {

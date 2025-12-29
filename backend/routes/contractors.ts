@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Router } from "express";
+import { Router, type Request } from "express";
 
 import { requireAuth } from "../middleware/authMiddleware";
 import type { AuthedRequest } from "../types/http";
@@ -81,6 +81,12 @@ const vendorContacts: Record<
     phone: "(917) 555-9932",
     email: "rmalik@metroauto.com",
   },
+};
+
+const resolveActor = (req: Request): string => {
+  const authed = req as unknown as AuthedRequest;
+  const email = authed.user?.email;
+  return typeof email === "string" && email.trim() ? email : "system";
 };
 
 const baseContractors: ContractorProfile[] = [
@@ -342,7 +348,7 @@ router.post("/:id/onboarding", (req, res) => {
 
   addAuditLog(contractor, {
     action: "onboarding.completed",
-    actor: (req as AuthedRequest).user?.email || "system",
+    actor: resolveActor(req),
     details: `Requirement ${requirement.title} marked complete`,
   });
 
@@ -370,7 +376,7 @@ router.post("/:id/approve", (req, res) => {
 
   addAuditLog(contractor, {
     action: `approval.${stage}`,
-    actor: approver || (req as AuthedRequest).user?.email || "system",
+    actor: approver || resolveActor(req),
     details: `${stage} approval recorded`,
   });
 
@@ -406,7 +412,7 @@ router.post("/:id/credentials", (req, res) => {
   contractor.credentials.push(credential);
   addAuditLog(contractor, {
     action: "credential.added",
-    actor: (req as AuthedRequest).user?.email || "system",
+    actor: resolveActor(req),
     details: `${credential.type} added with expiry ${credential.expiresOn}`,
   });
 
@@ -433,14 +439,14 @@ router.post("/:id/assignments", (req, res) => {
     contractor.assignmentHistory.push({
       workOrderId,
       assignedAt: new Date().toISOString(),
-      assignedBy: (req as AuthedRequest).user?.email || "system",
+      assignedBy: resolveActor(req),
       status: "rejected",
       reason,
     });
 
     addAuditLog(contractor, {
       action: "assignment.rejected",
-      actor: (req as AuthedRequest).user?.email || "system",
+      actor: resolveActor(req),
       details: `Work order ${workOrderId} blocked: ${reason}`,
     });
 
@@ -451,7 +457,7 @@ router.post("/:id/assignments", (req, res) => {
   const record: Assignment = {
     workOrderId,
     assignedAt: new Date().toISOString(),
-    assignedBy: (req as AuthedRequest).user?.email || "system",
+    assignedBy: resolveActor(req),
     status: "assigned",
   };
 

@@ -21,9 +21,10 @@ import { sendResponse } from '../utils';
  * to the `x-tenant-id` header.
  */
 const getTenantId = (req: AuthedRequest): string | undefined => {
+  const userTenantId = typeof req.user?.tenantId === 'string' ? req.user.tenantId : undefined;
   return (
     req.tenantId ||
-    req.user?.tenantId ||
+    userTenantId ||
     (typeof req.headers['x-tenant-id'] === 'string'
       ? req.headers['x-tenant-id']
       : undefined)
@@ -517,4 +518,3 @@ export const getCriticalAlerts: AuthedRequestHandler = async (
     return next(err);
   }
 };
-

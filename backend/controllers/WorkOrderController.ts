@@ -234,7 +234,11 @@ const resolveUserObjectId = (
   req: RequestWithOptionalUser,
 ): Types.ObjectId | undefined => {
   const raw = req.user?._id ?? req.user?.id;
-  return raw ? toOptionalObjectId(raw) : undefined;
+  if (!raw) return undefined;
+  if (raw instanceof Types.ObjectId || typeof raw === 'string') {
+    return toOptionalObjectId(raw);
+  }
+  return undefined;
 };
 
 const hasChecklistValue = (value: unknown): boolean => {

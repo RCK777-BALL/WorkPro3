@@ -59,7 +59,8 @@ export const createReportTemplateHandler: AuthedRequestHandler<
 > = async (req, res, next) => {
   try {
     const authedReq = req as AuthedRequest;
-    const template = await saveReportTemplate(authedReq, authedReq.body);
+    // ✅ use the typed req.body (ReportTemplateInput), not authedReq.body (unknown)
+    const template = await saveReportTemplate(authedReq, req.body);
     sendResponse(res, template, null, 201);
   } catch (error) {
     next(error);
@@ -73,7 +74,8 @@ export const updateReportTemplateHandler: AuthedRequestHandler<
 > = async (req, res, next) => {
   try {
     const authedReq = req as AuthedRequest;
-    const template = await updateReportTemplate(authedReq, authedReq.params.id, authedReq.body);
+    // ✅ use the typed req.body (ReportTemplateInput), not authedReq.body (unknown)
+    const template = await updateReportTemplate(authedReq, req.params.id, req.body);
     sendResponse(res, template);
   } catch (error) {
     next(error);

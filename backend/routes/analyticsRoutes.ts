@@ -30,7 +30,7 @@ import {
 } from '../controllers/AnalyticsController';
 import Site from '../models/Site';
 import WorkOrder from '../models/WorkOrder';
-import type { AuthedRequest } from '../types/http';
+import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import { Types } from 'mongoose';
 import type { UserRole } from '../models/User';
 import { buildPmCompletionAnalytics } from '../services/pmAnalytics';
@@ -65,7 +65,7 @@ router.get('/dashboard/pm-compliance', dashboardPmComplianceJson);
 router.get('/dashboard/work-order-volume', dashboardWorkOrderVolumeJson);
 router.get('/pm-optimization/what-if', pmWhatIfSimulationsJson);
 
-router.get('/pm/completions', (req: AuthedRequest, res, next) => {
+const pmCompletionsHandler: AuthedRequestHandler = (req: AuthedRequest, res, next) => {
   void (async () => {
     const tenantId = req.tenantId;
     if (!tenantId || !Types.ObjectId.isValid(tenantId)) {
@@ -87,9 +87,11 @@ router.get('/pm/completions', (req: AuthedRequest, res, next) => {
     const analytics = await buildPmCompletionAnalytics(new Types.ObjectId(tenantId), options);
     res.json(analytics);
   })().catch(next);
-});
+};
 
-router.get('/global', (req: AuthedRequest, res, next) => {
+router.get('/pm/completions', pmCompletionsHandler);
+
+const globalAnalyticsHandler: AuthedRequestHandler = (req: AuthedRequest, res, next) => {
   void (async () => {
     const tenantId = req.tenantId;
     if (!tenantId) {
@@ -142,7 +144,9 @@ router.get('/global', (req: AuthedRequest, res, next) => {
     );
     res.json(analytics);
   })().catch(next);
-});
+};
+
+router.get('/global', globalAnalyticsHandler);
 
 router.get(
   '/corporate/sites',

@@ -65,8 +65,8 @@ router.get('/dashboard/pm-compliance', dashboardPmComplianceJson);
 router.get('/dashboard/work-order-volume', dashboardWorkOrderVolumeJson);
 router.get('/pm-optimization/what-if', pmWhatIfSimulationsJson);
 
-router.get('/pm/completions', async (req: AuthedRequest, res, next) => {
-  try {
+router.get('/pm/completions', (req: AuthedRequest, res, next) => {
+  void (async () => {
     const tenantId = req.tenantId;
     if (!tenantId || !Types.ObjectId.isValid(tenantId)) {
       res.status(400).json({ error: 'Tenant context required' });
@@ -86,13 +86,11 @@ router.get('/pm/completions', async (req: AuthedRequest, res, next) => {
 
     const analytics = await buildPmCompletionAnalytics(new Types.ObjectId(tenantId), options);
     res.json(analytics);
-  } catch (err) {
-    next(err);
-  }
+  })().catch(next);
 });
 
-router.get('/global', async (req: AuthedRequest, res, next) => {
-  try {
+router.get('/global', (req: AuthedRequest, res, next) => {
+  void (async () => {
     const tenantId = req.tenantId;
     if (!tenantId) {
       res.status(400).json({ error: 'Tenant context required' });
@@ -143,9 +141,7 @@ router.get('/global', async (req: AuthedRequest, res, next) => {
       }),
     );
     res.json(analytics);
-  } catch (err) {
-    next(err);
-  }
+  })().catch(next);
 });
 
 router.get(

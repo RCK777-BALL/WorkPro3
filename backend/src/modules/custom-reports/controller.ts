@@ -3,7 +3,7 @@
  */
 
 import { sendResponse } from '../../../utils/sendResponse';
-import type { AuthedRequestHandler } from '../../../types/http';
+import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
 import type { ReportQueryRequest, ReportTemplateInput } from '../../../shared/reports';
 import {
   exportCustomReport,
@@ -44,7 +44,8 @@ export const exportCustomReportHandler: AuthedRequestHandler<
 
 export const listReportTemplatesHandler: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const templates = await listReportTemplates(req);
+    const authedReq = req as AuthedRequest;
+    const templates = await listReportTemplates(authedReq);
     sendResponse(res, templates);
   } catch (error) {
     next(error);
@@ -57,7 +58,8 @@ export const createReportTemplateHandler: AuthedRequestHandler<
   ReportTemplateInput
 > = async (req, res, next) => {
   try {
-    const template = await saveReportTemplate(req, req.body);
+    const authedReq = req as AuthedRequest;
+    const template = await saveReportTemplate(authedReq, authedReq.body);
     sendResponse(res, template, null, 201);
   } catch (error) {
     next(error);
@@ -70,7 +72,8 @@ export const updateReportTemplateHandler: AuthedRequestHandler<
   ReportTemplateInput
 > = async (req, res, next) => {
   try {
-    const template = await updateReportTemplate(req, req.params.id, req.body);
+    const authedReq = req as AuthedRequest;
+    const template = await updateReportTemplate(authedReq, authedReq.params.id, authedReq.body);
     sendResponse(res, template);
   } catch (error) {
     next(error);
@@ -79,7 +82,8 @@ export const updateReportTemplateHandler: AuthedRequestHandler<
 
 export const getReportTemplateHandler: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const template = await getReportTemplate(req, req.params.id);
+    const authedReq = req as AuthedRequest;
+    const template = await getReportTemplate(authedReq, authedReq.params.id);
     sendResponse(res, template);
   } catch (error) {
     next(error);

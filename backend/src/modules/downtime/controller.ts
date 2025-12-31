@@ -41,7 +41,17 @@ export const createDowntimeHandler = async (req: AuthedRequest, res: Response, n
   try {
     const assetId = parseObjectId(parsed.data.assetId, res, 'asset id');
     if (!assetId) return;
-    const created = await createDowntimeLog(req.tenantId!, { ...parsed.data, assetId });
+    const { start, end, reason } = parsed.data;
+    if (!start) {
+      fail(res, 'Start time is required', 400);
+      return;
+    }
+    const created = await createDowntimeLog(req.tenantId!, {
+      assetId,
+      start,
+      end,
+      reason,
+    });
     res.status(201).json({ success: true, data: created });
   } catch (err) {
     next(err);

@@ -3,7 +3,7 @@
  */
 
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
-import type { ParamsDictionary } from 'express-serve-static-core';
+import type { ParamsDictionary, User } from 'express-serve-static-core';
 import type { ParsedQs } from 'qs';
 export type { ApiResult } from '../../shared/types/http';
 
@@ -14,7 +14,7 @@ export type AuthedRequest<
   ReqQuery extends ParsedQs = ParsedQs,
   Locals extends Record<string, any> = Record<string, any>,
 > = Omit<Request<P, ResBody, ReqBody, ReqQuery, Locals>, 'user'> & {
-  user?: Record<string, unknown> | undefined;
+  user?: User | undefined;
   tenantId?: string | undefined;
   tenantDomain?: string | undefined;
   siteId?: string | undefined;

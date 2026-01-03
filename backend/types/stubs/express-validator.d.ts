@@ -19,10 +19,22 @@ declare module 'express-validator' {
     isEmail(): ValidationChain;
     isBoolean(): ValidationChain;
     isInt(options?: Record<string, unknown>): ValidationChain;
+    isMongoId(): ValidationChain;
+    isISO8601(): ValidationChain;
+    isFloat(options?: Record<string, unknown>): ValidationChain;
+    isIn(values: readonly unknown[]): ValidationChain;
+    notEmpty(): ValidationChain;
+    bail(): ValidationChain;
+    toDate(): ValidationChain;
+    toFloat(): ValidationChain;
+    toInt(): ValidationChain;
+    custom(
+      validator: (value: unknown, meta: { req: unknown }) => unknown
+    ): ValidationChain;
     withMessage(message: string): ValidationChain;
   }
 
-  export function body(field: string): ValidationChain;
+  export function body(field?: string): ValidationChain;
   export function param(field: string): ValidationChain;
   export function query(field: string): ValidationChain;
 }

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Router } from 'express';
+import { Router, type RequestHandler } from 'express';
 import { requireAuth } from '../middleware/authMiddleware';
 import Alert from '../models/Alert';
 import type { AuthedRequest } from '../types/http';
@@ -19,17 +19,18 @@ const resolveLimit = (raw?: string | string[]) => {
 const router = Router();
 router.use(requireAuth);
 
-router.get('/', async (req: AuthedRequest, res, next) => {
+const listAlertsHandler: RequestHandler = async (req, res, next) => {
   try {
-    const tenantId = req.tenantId;
-    const plantId = req.plantId ?? req.siteId;
+    const authedReq = req as AuthedRequest;
+    const tenantId = authedReq.tenantId;
+    const plantId = authedReq.plantId ?? authedReq.siteId;
     const filter: Record<string, unknown> = {};
     if (tenantId) filter.tenantId = tenantId;
     if (plantId) filter.plant = plantId;
-    if (typeof req.query.type === 'string' && req.query.type !== 'all') {
-      filter.type = req.query.type;
+    if (typeof authedReq.query.type === 'string' && authedReq.query.type !== 'all') {
+      filter.type = authedReq.query.type;
     }
-    const limit = resolveLimit(req.query.limit as string | undefined);
+    const limit = resolveLimit(authedReq.query.limit as string | undefined);
     const alerts = await Alert.find(filter)
       .sort({ createdAt: -1 })
       .limit(limit)
@@ -63,6 +64,8 @@ router.get('/', async (req: AuthedRequest, res, next) => {
   } catch (err) {
     next(err);
   }
-});
+};
+
+router.get('/', listAlertsHandler);
 
 export default router;

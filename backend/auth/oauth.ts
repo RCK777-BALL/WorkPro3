@@ -3,10 +3,14 @@
  */
 
 import type { Request } from 'express';
-import passport from 'passport';
-import type { Profile as OAuthProfile, VerifyCallback } from 'passport-oauth2';
-import { Strategy as GoogleStrategy, type StrategyOptions as GoogleStrategyOptions } from 'passport-google-oauth20';
-import { Strategy as GitHubStrategy, type StrategyOptions as GitHubStrategyOptions } from 'passport-github2';
+import {
+  Strategy as GoogleStrategy,
+  type StrategyOptions as GoogleStrategyOptions,
+} from 'passport-google-oauth20';
+import {
+  Strategy as GithubStrategy,
+  type StrategyOptions as GithubStrategyOptions,
+} from 'passport-github2';
 
 /**
  * IMPORTANT:
@@ -26,13 +30,10 @@ import { Strategy as GitHubStrategy, type StrategyOptions as GitHubStrategyOptio
 // ---- Types ----
 
 type OAuthVerifier = (
-  req: Request,
-  accessToken: string,
-  refreshToken: string,
-  profileOrParams: unknown,
-  maybeProfileOrDone: unknown,
-  maybeDone?: unknown
-) => void;
+  ...args:
+    | [Request, string, string, OAuthProfile, DoneCallback]
+    | [Request, string, string, Record<string, unknown>, OAuthProfile, DoneCallback]
+) => void | Promise<void>;
 
 /**
  * Normalize both possible Passport verify callback signatures:
@@ -93,7 +94,24 @@ const oauthVerifier =
     const { profile, done, params } = normalizeOAuthArgs(profileOrParams, maybeProfileOrDone, maybeDone);
 
     try {
-      const user = await findOrCreateOAuthUser({
+      const profile = (typeof args[4] === 'function' ? args[3] : args[4]) as OAuthProfile;
+      const done =
+        typeof args[4] === 'function'
+          ? (args[4] as DoneCallback)
+          : (args[5] as DoneCallback | undefined);
+
+      if (!done) {
+        return;
+      }
+      doneCallback = done;
+
+      const email = profile?.emails?.[0]?.value;
+      if (!email) {
+        done(null, undefined);
+        return;
+      }
+
+      const tenantContext = await resolveTenantContext({
         provider,
         accessToken,
         refreshToken,
@@ -112,19 +130,14 @@ const oauthVerifier =
     }
   };
 
-// ---- Strategy setup ----
-
-export function setupOAuthStrategies(): void {
-  // GOOGLE
-  const googleClientID = process.env.GOOGLE_CLIENT_ID;
-  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const googleCallbackURL = process.env.GOOGLE_CALLBACK_URL;
-
-  if (googleClientID && googleClientSecret && googleCallbackURL) {
-    const googleOptions: GoogleStrategyOptions = {
-      clientID: googleClientID,
-      clientSecret: googleClientSecret,
-      callbackURL: googleCallbackURL,
+export const configureOAuth = () => {
+  const googleId = process.env.GOOGLE_CLIENT_ID;
+  const googleSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (googleId && googleSecret) {
+    const googleOptions: GoogleStrategyOptions & { passReqToCallback: true } = {
+      clientID: googleId,
+      clientSecret: googleSecret,
+      callbackURL: '/api/auth/oauth/google/callback',
       passReqToCallback: true,
     };
 
@@ -132,16 +145,13 @@ export function setupOAuthStrategies(): void {
     passport.use(new GoogleStrategy(googleOptions, oauthVerifier('google') as any));
   }
 
-  // GITHUB
-  const githubClientID = process.env.GITHUB_CLIENT_ID;
-  const githubClientSecret = process.env.GITHUB_CLIENT_SECRET;
-  const githubCallbackURL = process.env.GITHUB_CALLBACK_URL;
-
-  if (githubClientID && githubClientSecret && githubCallbackURL) {
-    const githubOptions: GitHubStrategyOptions = {
-      clientID: githubClientID,
-      clientSecret: githubClientSecret,
-      callbackURL: githubCallbackURL,
+  const githubId = process.env.GITHUB_CLIENT_ID;
+  const githubSecret = process.env.GITHUB_CLIENT_SECRET;
+  if (githubId && githubSecret) {
+    const githubOptions: GithubStrategyOptions & { passReqToCallback: true } = {
+      clientID: githubId,
+      clientSecret: githubSecret,
+      callbackURL: '/api/auth/oauth/github/callback',
       passReqToCallback: true,
     };
 

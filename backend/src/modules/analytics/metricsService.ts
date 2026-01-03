@@ -57,6 +57,14 @@ export interface TechnicianUtilizationMetrics {
   technicians: TechnicianUtilizationEntry[];
 }
 
+export interface DowntimeCostMetrics {
+  range: { start: string; end: string };
+  totalHours: number;
+  hourlyRate: number;
+  totalCost: number;
+  currency: string;
+}
+
 const buildDateRange = (field: string, window: TimeWindow): Record<string, unknown> => {
   const range: Record<string, unknown> = {};
   if (window.start) range.$gte = window.start;
@@ -426,6 +434,37 @@ export const calculateTechnicianUtilization = async (
     range: { start: start.toISOString(), end: end.toISOString() },
     averageUtilization: Number(averageUtilization.toFixed(1)),
     technicians: utilizationList.sort((a, b) => b.utilizationRate - a.utilizationRate),
+  };
+};
+
+export const calculateDowntimeCost = async (
+  tenantId: Types.ObjectId | string,
+  window: TimeWindow,
+  hourlyRate = 0,
+): Promise<DowntimeCostMetrics> => {
+  const end = window.end ?? new Date();
+  const start = window.start ?? new Date(end.getTime() - 1000 * 60 * 60 * 24 * 30);
+  const filter: FilterQuery<typeof DowntimeLog> = {
+    tenantId,
+    ...applyAssetFilter(window),
+    ...buildDateRange('start', { start, end }),
+  } as FilterQuery<typeof DowntimeLog>;
+
+  const events = await DowntimeLog.find(filter).sort({ start: 1 }).lean().exec();
+  const totalHours = events.reduce((sum, event) => {
+    const eventEnd = event.end ? new Date(event.end) : end;
+    const duration = Math.max(0, (eventEnd.getTime() - new Date(event.start).getTime()) / (1000 * 60 * 60));
+    return sum + duration;
+  }, 0);
+
+  const totalCost = totalHours * hourlyRate;
+
+  return {
+    range: { start: start.toISOString(), end: end.toISOString() },
+    totalHours: Number(totalHours.toFixed(2)),
+    hourlyRate,
+    totalCost: Number(totalCost.toFixed(2)),
+    currency: 'USD',
   };
 };
 

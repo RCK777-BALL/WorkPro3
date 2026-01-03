@@ -45,10 +45,18 @@ const handleError = (error: unknown, res: Response, next: NextFunction) => {
   next(error);
 };
 
-const buildContext = (req: AuthedRequest) => ({
-  tenantId: req.tenantId!,
-  userId: (req.user as any)?._id?.toString() ?? (req.user as any)?.id,
-});
+const buildContext = (req: AuthedRequest) => {
+  const userId =
+    typeof req.user?._id === 'string'
+      ? req.user._id
+      : typeof req.user?.id === 'string'
+        ? req.user.id
+        : undefined;
+  return {
+    tenantId: req.tenantId!,
+    userId,
+  };
+};
 
 export const listPurchasingOrdersHandler: AuthedRequestHandler = async (req, res, next) => {
   if (!ensureTenant(req, res)) return;

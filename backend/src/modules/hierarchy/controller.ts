@@ -49,11 +49,12 @@ const mapDepartment = (department: typeof Department.prototype) => {
   type StationDoc = { _id: { toString(): string }; name: string; notes?: string };
   type LineDoc = { _id: { toString(): string }; name: string; notes?: string; stations?: StationDoc[] };
 
+  const legacyDescription = (department as { description?: string }).description;
   return {
     _id: department._id.toString(),
     name: department.name,
-    description: department.notes ?? (department as any).description,
-    notes: department.notes ?? (department as any).description,
+    description: department.notes ?? legacyDescription,
+    notes: department.notes ?? legacyDescription,
     plant: department.plant?.toString(),
     lines: (department.lines ?? []).map((line: LineDoc) => ({
       _id: line._id.toString(),

@@ -1,37 +1,32 @@
-import type { Types } from 'mongoose';
-import type { UserRole } from './auth';
+/*
+ * SPDX-License-Identifier: MIT
+ */
 
-declare module 'express-serve-static-core' {
-  interface User {
-    _id?: Types.ObjectId | string | undefined;
-    id?: string | undefined;
-    email?: string | undefined;
-    name?: string | undefined;
-    role?: string | undefined;
-    tenantId?: string | undefined;
-    siteId?: string | undefined;
-    plantId?: string | undefined;
-    vendorId?: string | undefined;
-    roles?: UserRole[] | string[] | undefined;
-    scopes?: string[] | undefined;
-    client?: string | undefined;
-    permissions?: string[] | undefined;
-    theme?: 'light' | 'dark' | 'system' | undefined;
-    colorScheme?: string | undefined;
-  }
+import type { Permission } from '../shared/permissions';
 
-  interface Request {
-    // req.user is optional at type level; controllers must guard before using it.
-    user?: User | undefined;
-    tenantId?: string | undefined;
-    tenantDomain?: string | undefined;
-    siteId?: string | undefined;
-    plantId?: string | undefined;
-    departmentId?: string | undefined;
-    vendorId?: string | undefined;
-    vendor?: Record<string, unknown> | undefined;
-    thirdParty?: any | undefined;
-    permissions?: string[] | undefined;
+declare global {
+  namespace Express {
+    interface User {
+      id?: string;
+      _id?: string;
+      tenantId?: string;
+      siteId?: string;
+      plantId?: string;
+      roles?: string[];
+      permissions?: Permission[];
+      scopes?: string[];
+      client?: string;
+    }
+
+    interface Request {
+      user?: User;
+      tenantId?: string;
+      tenantDomain?: string;
+      siteId?: string;
+      departmentId?: string;
+      plantId?: string;
+      permissions?: string[];
+    }
   }
 }
 

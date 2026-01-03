@@ -3,6 +3,7 @@
  */
 
 import type { Permission } from '../shared/permissions';
+import type { UserRole } from '../types/auth';
 
 declare global {
   namespace Express {
@@ -12,7 +13,7 @@ declare global {
       tenantId?: string;
       siteId?: string;
       plantId?: string;
-      roles?: string[];
+      roles?: UserRole[] | string[];
       permissions?: Permission[];
       scopes?: string[];
       client?: string;

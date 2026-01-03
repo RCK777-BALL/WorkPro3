@@ -9,7 +9,6 @@ import type { VerifyCallback } from 'passport-oauth2';
 import type OAuth2Strategy from 'passport-oauth2';
 import {
   Strategy as GoogleStrategy,
-  type GoogleCallbackParameters,
   type StrategyOptions as GoogleStrategyOptions,
 } from 'passport-google-oauth20';
 import {
@@ -37,11 +36,18 @@ import { resolveTenantContext } from './tenantContext';
 
 // ---- Types ----
 
-type OAuthCallbackParams = GoogleCallbackParameters | Record<string, unknown>;
+type OAuthCallbackParams = Record<string, unknown>;
 type OAuthVerifierArgs =
   | [Request, string, string, OAuthProfile, VerifyCallback]
   | [Request, string, string, OAuthCallbackParams, OAuthProfile, VerifyCallback];
 type OAuthVerifier = OAuth2Strategy.VerifyFunctionWithRequest<OAuthProfile, OAuthCallbackParams>;
+
+type OAuthStrategyOptions = {
+  clientID: string;
+  clientSecret: string;
+  callbackURL: string;
+  passReqToCallback: true;
+};
 
 /**
  * Normalize both possible Passport verify callback signatures:
@@ -168,7 +174,7 @@ export const configureOAuth = () => {
   const googleId = process.env.GOOGLE_CLIENT_ID;
   const googleSecret = process.env.GOOGLE_CLIENT_SECRET;
   if (googleId && googleSecret) {
-    const googleOptions: GoogleStrategyOptions & { passReqToCallback: true } = {
+    const googleOptions: OAuthStrategyOptions = {
       clientID: googleId,
       clientSecret: googleSecret,
       callbackURL: '/api/auth/oauth/google/callback',
@@ -176,20 +182,24 @@ export const configureOAuth = () => {
     };
 
     // Some package typings disagree (5 vs 6 args). This cast is the minimal compatibility shim.
-    passport.use(new GoogleStrategy(googleOptions, oauthVerifier('google') as any));
+    passport.use(
+      new GoogleStrategy(googleOptions as GoogleStrategyOptions, oauthVerifier('google') as any)
+    );
   }
 
   const githubId = process.env.GITHUB_CLIENT_ID;
   const githubSecret = process.env.GITHUB_CLIENT_SECRET;
   if (githubId && githubSecret) {
-    const githubOptions: GithubStrategyOptions & { passReqToCallback: true } = {
+    const githubOptions: OAuthStrategyOptions = {
       clientID: githubId,
       clientSecret: githubSecret,
       callbackURL: '/api/auth/oauth/github/callback',
       passReqToCallback: true,
     };
 
-    passport.use(new GitHubStrategy(githubOptions, oauthVerifier('github') as any));
+    passport.use(
+      new GitHubStrategy(githubOptions as GithubStrategyOptions, oauthVerifier('github') as any)
+    );
   }
 
   // If your project uses sessions:

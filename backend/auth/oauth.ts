@@ -60,7 +60,7 @@ const normalizeOAuthArgs = (
   maybeDone?: VerifyCallback
 ): { profile: OAuthProfile; done: VerifyCallback; params: OAuthCallbackParams | null } => {
   const hasParams = typeof maybeDone === 'function';
-  const params = hasParams ? profileOrParams : null;
+  const params = hasParams ? (profileOrParams as OAuthCallbackParams) : null;
   const profile = (hasParams ? maybeProfileOrDone : profileOrParams) as OAuthProfile;
   const done = (hasParams ? maybeDone : maybeProfileOrDone) as VerifyCallback;
   return { profile, done, params };
@@ -183,7 +183,10 @@ export const configureOAuth = () => {
 
     // Some package typings disagree (5 vs 6 args). This cast is the minimal compatibility shim.
     passport.use(
-      new GoogleStrategy(googleOptions as GoogleStrategyOptions, oauthVerifier('google') as any)
+      new GoogleStrategy(
+        googleOptions as unknown as GoogleStrategyOptions,
+        oauthVerifier('google') as any
+      )
     );
   }
 
@@ -198,7 +201,10 @@ export const configureOAuth = () => {
     };
 
     passport.use(
-      new GitHubStrategy(githubOptions as GithubStrategyOptions, oauthVerifier('github') as any)
+      new GitHubStrategy(
+        githubOptions as unknown as GithubStrategyOptions,
+        oauthVerifier('github') as any
+      )
     );
   }
 

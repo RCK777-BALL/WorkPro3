@@ -237,8 +237,8 @@ const deleteLine: AuthedRequestHandler<{ id: string }> = async (req, res, next) 
 
 router.get('/', listLines);
 router.get('/:id', getLine);
-router.post('/', lineValidators, validate, createLine);
-router.put('/:id', lineUpdateValidators, validate, updateLine);
+router.post('/', ...lineValidators, validate, createLine);
+router.put('/:id', ...lineUpdateValidators, validate, updateLine);
 router.delete('/:id', deleteLine);
 
 export { listLines, getLine, createLine, updateLine, deleteLine };

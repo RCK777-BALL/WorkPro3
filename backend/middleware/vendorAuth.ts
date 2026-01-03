@@ -14,7 +14,7 @@ interface VendorTokenPayload {
  * Authenticate vendor requests using a Bearer JWT.
  * - Verifies token with VENDOR_JWT_SECRET (fallback: JWT_SECRET)
  * - Loads the vendor document
- * - Attaches `req.vendor` and `req.vendorId`
+ * - Attaches `req.vendorId`
  */
 export const requireVendorAuth = async (
   req: Request,
@@ -43,7 +43,6 @@ export const requireVendorAuth = async (
       return;
     }
 
-    req.vendor = vendor;
     req.vendorId = vendor._id?.toString?.() ?? id;
 
     next();

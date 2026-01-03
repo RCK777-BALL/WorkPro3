@@ -4,8 +4,8 @@
 
 import type { Express } from 'express';
 import type { FilterQuery } from 'mongoose';
+import ExcelJS from 'exceljs';
 import Papa from 'papaparse';
-import XLSX from 'xlsx';
 
 import Asset, { type AssetDoc } from '../../../models/Asset';
 
@@ -294,12 +294,14 @@ export const generateAssetExport = async (
     };
   }
 
-  const worksheet = XLSX.utils.json_to_sheet(rows, {
-    header: EXPORT_HEADERS.map((header) => header.label),
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Assets');
+  const headers = EXPORT_HEADERS.map((header) => header.label);
+  worksheet.addRow(headers);
+  rows.forEach((row) => {
+    worksheet.addRow(headers.map((header) => row[header] ?? ''));
   });
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Assets');
-  const workbookBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+  const workbookBuffer = await workbook.xlsx.writeBuffer();
   const buffer = Buffer.isBuffer(workbookBuffer)
     ? workbookBuffer
     : Buffer.from(workbookBuffer as ArrayBuffer);
@@ -323,20 +325,48 @@ const parseCsvRows = (file: Express.Multer.File) => {
   return parsed.data;
 };
 
-const parseWorkbookRows = (file: Express.Multer.File) => {
-  const workbook = XLSX.read(file.buffer, { type: 'buffer' });
-  const sheetName = workbook.SheetNames[0];
-  if (!sheetName) {
+const normalizeWorkbookValue = (value: ExcelJS.CellValue | undefined | null): string | number | undefined => {
+  if (value === null || value === undefined) return '';
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === 'object') {
+    if ('text' in value && typeof value.text === 'string') return value.text;
+    if ('richText' in value) return value.richText.map((entry) => entry.text).join('');
+    if ('formula' in value) return value.result as string | number | undefined;
+    if ('result' in value) return value.result as string | number | undefined;
+    if ('hyperlink' in value) return value.text ?? value.hyperlink;
+  }
+  return value as string | number;
+};
+
+const parseWorkbookRows = async (file: Express.Multer.File) => {
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(file.buffer);
+  const worksheet = workbook.worksheets[0];
+  if (!worksheet) {
     throw new ImportExportError('The uploaded workbook does not have any sheets.');
   }
-  const worksheet = workbook.Sheets[sheetName];
-  if (!worksheet) {
-    throw new ImportExportError('Unable to access the first worksheet in the workbook.');
+  const headerRow = worksheet.getRow(1);
+  const headers = headerRow.values
+    .slice(1)
+    .map((value) => trimValue(value));
+  if (headers.length === 0) {
+    throw new ImportExportError('The uploaded workbook does not have any headers.');
   }
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, {
-    defval: '',
-    blankrows: false,
-  });
+  const rows: Record<string, unknown>[] = [];
+  for (let rowIndex = 2; rowIndex <= worksheet.rowCount; rowIndex += 1) {
+    const row = worksheet.getRow(rowIndex);
+    const rowData: Record<string, unknown> = {};
+    headers.forEach((header, index) => {
+      if (!header) return;
+      rowData[header] = normalizeWorkbookValue(row.getCell(index + 1).value);
+    });
+    const hasValues = Object.values(rowData).some(
+      (value) => value !== '' && value !== null && value !== undefined,
+    );
+    if (hasValues) {
+      rows.push(rowData);
+    }
+  }
   return rows;
 };
 
@@ -345,7 +375,10 @@ const detectFormat = (file: Express.Multer.File): 'csv' | 'xlsx' => {
   if (name.endsWith('.csv') || file.mimetype.includes('csv')) {
     return 'csv';
   }
-  if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+  if (name.endsWith('.xls')) {
+    throw new ImportExportError('Only .xlsx workbooks are supported for Excel imports.');
+  }
+  if (name.endsWith('.xlsx')) {
     return 'xlsx';
   }
   if (/spreadsheet|excel/.test(file.mimetype)) {
@@ -378,12 +411,12 @@ const ALIASES_BY_ENTITY: { [K in ImportEntity]: ColumnAliases<ImportRowMap[K]> }
 const getAliasesForEntity = <T extends ImportEntity>(entity: T): ColumnAliases<ImportRowMap[T]> =>
   ALIASES_BY_ENTITY[entity];
 
-export const parseImportFile = <T extends ImportEntity>(
+export const parseImportFile = async <T extends ImportEntity>(
   file: Express.Multer.File,
   entity: T,
-): { rows: Array<Partial<ImportRowMap[T]>>; format: 'csv' | 'xlsx'; columns: string[] } => {
+): Promise<{ rows: Array<Partial<ImportRowMap[T]>>; format: 'csv' | 'xlsx'; columns: string[] }> => {
   const format = detectFormat(file);
-  const rawRows = format === 'csv' ? parseCsvRows(file) : parseWorkbookRows(file);
+  const rawRows = format === 'csv' ? parseCsvRows(file) : await parseWorkbookRows(file);
   type RawRow = Record<string, unknown>;
   const columns: string[] = Array.from(
     new Set(rawRows.flatMap((row: RawRow) => Object.keys(row ?? {}))),
@@ -601,8 +634,8 @@ const validateByEntity = <T extends ImportEntity>(
   return validatePartRows(rows as Array<Partial<ImportPartRow>>);
 };
 
-export const summarizeImport = (file: Express.Multer.File, entity: ImportEntity): ImportSummary => {
-  const { rows, format, columns } = parseImportFile(file, entity);
+export const summarizeImport = async (file: Express.Multer.File, entity: ImportEntity): Promise<ImportSummary> => {
+  const { rows, format, columns } = await parseImportFile(file, entity);
   const { errors, valid } = validateByEntity(entity, rows);
   return {
     totalRows: rows.length,

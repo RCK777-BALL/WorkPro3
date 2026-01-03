@@ -27,6 +27,7 @@ declare global {
       siteId?: string;
       departmentId?: string;
       plantId?: string;
+      vendorId?: string;
       permissions?: Permission[];
     }
   }

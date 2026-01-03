@@ -5,7 +5,7 @@
 import type { RequestHandler } from 'express';
 import type { Types } from 'mongoose';
 
-import type { AuthedRequest } from '../../types/http';
+import type { AuthedRequest, AuthedRequestWithUser } from '../../types/http';
 import {
   formatPermission,
   type Permission,
@@ -24,14 +24,12 @@ const toPermissionKey = <C extends PermissionCategory>(
   return String(scopeOrPermission) as Permission;
 };
 
-const resolvePermissionsForRequest = async (
-  req: AuthedRequest,
-): Promise<{ permissions: Permission[]; roles: string[] }> => {
-  const user = req.user;
-  if (!user) {
-    throw Object.assign(new Error('Unauthorized'), { status: 401 });
-  }
+const hasAuthedUser = (req: AuthedRequest): req is AuthedRequestWithUser => Boolean(req.user);
 
+const resolvePermissionsForRequest = async (
+  req: AuthedRequestWithUser,
+): Promise<{ permissions: Permission[]; roles: string[] }> => {
+  const { user } = req;
   const userId = user.id;
   if (!userId) {
     throw Object.assign(new Error('Unauthorized'), { status: 401 });
@@ -44,7 +42,7 @@ const resolvePermissionsForRequest = async (
 
   const tenantId = req.tenantId ?? user.tenantId;
   const siteId = req.siteId ?? user.siteId;
-  const departmentId = (req as AuthedRequest).departmentId;
+  const departmentId = req.departmentId;
   const fallbackRoles = user.roles;
 
   const result = await resolveUserPermissions({
@@ -55,8 +53,8 @@ const resolvePermissionsForRequest = async (
     ...(fallbackRoles ? { fallbackRoles } : {}),
   });
 
-  (req.user as { permissions?: Permission[] | string[] }).permissions = result.permissions;
-  (req.user as { roles?: Array<string> }).roles = result.roles;
+  req.user.permissions = result.permissions;
+  req.user.roles = result.roles;
   req.permissions = result.permissions;
   return result;
 };
@@ -70,14 +68,14 @@ export function requirePermission<C extends PermissionCategory>(
   scopeOrPermission: Permission | C,
   action?: PermissionAction<C>,
 ): RequestHandler {
-  return async (req, res, next): Promise<void> => {
+  return async (req: AuthedRequest, res, next): Promise<void> => {
     try {
-      if (!req.user) {
+      if (!hasAuthedUser(req)) {
         res.status(401).json({ message: 'Unauthorized' });
         return;
       }
       const permission = toPermissionKey(scopeOrPermission, action);
-      const { permissions } = await resolvePermissionsForRequest(req as AuthedRequest);
+      const { permissions } = await resolvePermissionsForRequest(req);
 
       if (!hasPermission(permissions, permission)) {
         res.status(403).json({ message: 'Forbidden' });
@@ -106,6 +104,11 @@ export async function assertPermission<C extends PermissionCategory>(
   scopeOrPermission: Permission | C,
   action?: PermissionAction<C>,
 ): Promise<void> {
+  if (!hasAuthedUser(req)) {
+    const error = new Error('Unauthorized');
+    (error as { status?: number }).status = 401;
+    throw error;
+  }
   const permission = toPermissionKey(scopeOrPermission, action);
   const { permissions } = await resolvePermissionsForRequest(req);
   if (!hasPermission(permissions, permission)) {

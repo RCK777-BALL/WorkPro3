@@ -340,15 +340,14 @@ const normalizeWorkbookValue = (value: ExcelJS.CellValue | undefined | null): st
 
 const parseWorkbookRows = async (file: Express.Multer.File) => {
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(file.buffer);
+  await workbook.xlsx.load(Buffer.from(file.buffer));
   const worksheet = workbook.worksheets[0];
   if (!worksheet) {
     throw new ImportExportError('The uploaded workbook does not have any sheets.');
   }
   const headerRow = worksheet.getRow(1);
-  const headers = headerRow.values
-    .slice(1)
-    .map((value) => trimValue(value));
+  const headerValues = Array.isArray(headerRow.values) ? headerRow.values : [];
+  const headers = headerValues.slice(1).map((value) => trimValue(value));
   if (headers.length === 0) {
     throw new ImportExportError('The uploaded workbook does not have any headers.');
   }

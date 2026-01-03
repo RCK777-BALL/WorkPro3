@@ -1,26 +1,37 @@
-export interface WorkOrderSnapshot {
+import type { WorkOrderDocument } from '../../../models/WorkOrder';
+
+export type WorkOrderPayload = Record<string, unknown> | WorkOrderDocument;
+
+const normalizePayload = (payload: WorkOrderPayload): Record<string, unknown> => {
+  if (payload && typeof payload === 'object') {
+    return payload as Record<string, unknown>;
+  }
+  return {};
+};
+
+export interface WorkOrderSnapshot<TPayload extends WorkOrderPayload = WorkOrderPayload> {
   id: string;
   version: number;
-  payload: Record<string, unknown>;
+  payload: TPayload;
 }
 
-export interface WorkOrderTimestampSnapshot {
+export interface WorkOrderTimestampSnapshot<TPayload extends WorkOrderPayload = WorkOrderPayload> {
   id: string;
   updatedAt: Date;
-  payload: Record<string, unknown>;
+  payload: TPayload;
 }
 
-export interface WorkOrderChange {
+export interface WorkOrderChange<TPayload extends WorkOrderPayload = WorkOrderPayload> {
   id: string;
   version: number;
-  payload: Record<string, unknown>;
+  payload: TPayload;
   media?: { name: string; type: string; dataUrl: string; capturedAt: number }[];
 }
 
-export interface WorkOrderTimestampChange {
+export interface WorkOrderTimestampChange<TPayload extends WorkOrderPayload = WorkOrderPayload> {
   id: string;
   clientUpdatedAt: Date;
-  payload: Record<string, unknown>;
+  payload: TPayload;
 }
 
 export interface ConflictResolution {
@@ -38,14 +49,16 @@ export function resolveWorkOrderConflict(
   snapshot: WorkOrderSnapshot,
   change: WorkOrderChange
 ): ConflictResolution {
+  const snapshotPayload = normalizePayload(snapshot.payload);
+  const changePayload = normalizePayload(change.payload);
   if (change.version >= snapshot.version) {
-    return { merged: { ...snapshot.payload, ...change.payload }, conflicts: [], applyChange: true };
+    return { merged: { ...snapshotPayload, ...changePayload }, conflicts: [], applyChange: true };
   }
 
   const conflicts: string[] = [];
-  const merged: Record<string, unknown> = { ...snapshot.payload };
-  Object.entries(change.payload).forEach(([key, value]) => {
-    const serverValue = snapshot.payload[key];
+  const merged: Record<string, unknown> = { ...snapshotPayload };
+  Object.entries(changePayload).forEach(([key, value]) => {
+    const serverValue = snapshotPayload[key];
     if (serverValue !== value) {
       conflicts.push(key);
     }
@@ -63,14 +76,16 @@ export function resolveWorkOrderTimestampConflict(
   snapshot: WorkOrderTimestampSnapshot,
   change: WorkOrderTimestampChange
 ): ConflictResolution {
+  const snapshotPayload = normalizePayload(snapshot.payload);
+  const changePayload = normalizePayload(change.payload);
   if (change.clientUpdatedAt >= snapshot.updatedAt) {
-    return { merged: { ...snapshot.payload, ...change.payload }, conflicts: [], applyChange: true };
+    return { merged: { ...snapshotPayload, ...changePayload }, conflicts: [], applyChange: true };
   }
 
   const conflicts: string[] = [];
-  const merged: Record<string, unknown> = { ...snapshot.payload };
-  Object.entries(change.payload).forEach(([key, value]) => {
-    const serverValue = snapshot.payload[key];
+  const merged: Record<string, unknown> = { ...snapshotPayload };
+  Object.entries(changePayload).forEach(([key, value]) => {
+    const serverValue = snapshotPayload[key];
     if (serverValue !== value) {
       conflicts.push(key);
     }

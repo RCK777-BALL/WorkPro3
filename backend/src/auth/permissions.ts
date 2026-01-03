@@ -78,6 +78,10 @@ export function requirePermission<C extends PermissionCategory>(
 ): RequestHandler {
   return async (req, res, next): Promise<void> => {
     try {
+      if (!req.user) {
+        res.status(401).json({ message: 'Unauthorized' });
+        return;
+      }
       const permission = toPermissionKey(scopeOrPermission, action);
       const { permissions } = await resolvePermissionsForRequest(req as AuthedRequest);
 

@@ -290,8 +290,8 @@ const isObjectIdValue = (
   value: unknown,
 ): value is string | number | Types.ObjectId | Uint8Array<ArrayBufferLike> => {
   if (typeof value === 'string' || typeof value === 'number') return true;
-  if (value instanceof Types.ObjectId) return true;
-  return value instanceof Uint8Array;
+  if (typeof value === 'object' && value !== null && value instanceof Types.ObjectId) return true;
+  return typeof value === 'object' && value !== null && value instanceof Uint8Array;
 };
 
 const formatRowValue = (value: unknown): string | number | null => {
@@ -497,7 +497,7 @@ const resolveTenantId = (req: AuthedRequest): Types.ObjectId | string => {
   if (typeof userTenantId === 'string') {
     return userTenantId;
   }
-  if (userTenantId instanceof Types.ObjectId) {
+  if (typeof userTenantId === 'object' && userTenantId !== null && userTenantId instanceof Types.ObjectId) {
     return userTenantId;
   }
   throw Object.assign(new Error('Tenant context is required'), { status: 400 });

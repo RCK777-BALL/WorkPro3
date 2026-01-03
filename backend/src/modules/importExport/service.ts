@@ -340,9 +340,7 @@ const normalizeWorkbookValue = (value: ExcelJS.CellValue | undefined | null): st
 
 const parseWorkbookRows = async (file: Express.Multer.File) => {
   const workbook = new ExcelJS.Workbook();
-  const workbookBuffer = Buffer.isBuffer(file.buffer)
-    ? file.buffer
-    : Buffer.from(file.buffer as ArrayBuffer);
+  const workbookBuffer = Buffer.from(file.buffer);
   await workbook.xlsx.load(workbookBuffer);
   const worksheet = workbook.worksheets[0];
   if (!worksheet) {

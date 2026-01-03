@@ -108,7 +108,7 @@ export const importEntities: AuthedRequestHandler<ImportParams> = async (
   }
 
   try {
-    const summary = summarizeImport(file, entity);
+    const summary = await summarizeImport(file, entity);
     res.json({ success: true, data: summary });
   } catch (err) {
     handleError(err, res, next);

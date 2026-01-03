@@ -4,8 +4,8 @@
 
 import fs from 'fs/promises';
 import path from 'path';
+import ExcelJS from 'exceljs';
 import { Parser } from 'json2csv';
-import * as XLSX from 'xlsx';
 
 import ExportJob from '../models/ExportJob';
 import WorkOrder from '../models/WorkOrder';
@@ -55,11 +55,17 @@ const writeCsv = async (rows: Record<string, unknown>[], filePath: string) => {
 };
 
 const writeXlsx = async (rows: Record<string, unknown>[], filePath: string) => {
-  const worksheet = XLSX.utils.json_to_sheet(rows);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Export');
-  const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-  await fs.writeFile(filePath, buffer);
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Export');
+  const headers = rows.length > 0 ? Object.keys(rows[0]) : [];
+  if (headers.length > 0) {
+    worksheet.addRow(headers);
+    rows.forEach((row) => {
+      worksheet.addRow(headers.map((header) => row[header] ?? ''));
+    });
+  }
+  const buffer = await workbook.xlsx.writeBuffer();
+  await fs.writeFile(filePath, Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer as ArrayBuffer));
 };
 
 const processJob = async (jobId: string) => {

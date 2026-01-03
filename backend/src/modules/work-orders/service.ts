@@ -15,7 +15,7 @@ import { resolveWorkOrderTimestampConflict } from './conflict';
 import { notifyWorkOrderSlaBreach, notifyWorkOrderSlaEscalation } from '../notifications';
 
 const toWorkOrderPayload = (workOrder: WorkOrderDocument): Record<string, unknown> =>
-  workOrder.toObject({ depopulate: true }) as Record<string, unknown>;
+  workOrder.toObject({ depopulate: true }) as unknown as Record<string, unknown>;
 
 const ensureTimeline = (
   workOrder: WorkOrderDocument,

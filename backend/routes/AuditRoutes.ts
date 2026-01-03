@@ -10,7 +10,7 @@ import { requireAuth } from '../middleware/authMiddleware';
 import validateObjectId from '../middleware/validateObjectId';
 import AuditLog, { type AuditLogDocument, type AuditLogDiffEntry } from '../models/AuditLog';
 import type { AuthedRequest } from '../types/http';
-import { ensureTenantContext, scopeQueryToTenant, withPolicyGuard } from '../src/auth/accessControl';
+import { ensureTenantContext, scopeQueryToTenant, withPolicyGuard, type TenantScopedRequest } from '../src/auth/accessControl';
 import { requirePermission } from '../src/auth/permissions';
 
 const MAX_LIMIT = 200;
@@ -43,9 +43,11 @@ const toObjectId = (value: unknown) => {
   return undefined;
 };
 
-const buildMatch = (req: AuthedRequest): FilterQuery<AuditLogDocument> => {
-  const tenantId = ensureTenantContext(req);
-  const match: FilterQuery<AuditLogDocument> = tenantId ? scopeQueryToTenant({}, tenantId, req.siteId) : {};
+const hasTenantContext = (req: AuthedRequest): req is TenantScopedRequest =>
+  typeof req.tenantId === 'string' && req.tenantId.trim().length > 0;
+
+const buildMatch = (req: TenantScopedRequest): FilterQuery<AuditLogDocument> => {
+  const match: FilterQuery<AuditLogDocument> = scopeQueryToTenant({}, req.tenantId, req.siteId);
   const entityTypes = toStringArray(req.query?.entityType);
   if (entityTypes.length) {
     match.entityType = entityTypes.length === 1 ? entityTypes[0] : { $in: entityTypes };
@@ -133,7 +135,12 @@ router.use(...withPolicyGuard({ permissions: 'audit.read' }));
 
 router.get('/', async (req, res, next) => {
   try {
-    const match = buildMatch(req as AuthedRequest);
+    ensureTenantContext(req as TenantScopedRequest);
+    if (!hasTenantContext(req as AuthedRequest)) {
+      res.status(400).json({ message: 'Tenant context is required' });
+      return;
+    }
+    const match = buildMatch(req);
     const limit = parseLimit(req.query?.limit);
     const cursor = parseDate(req.query?.cursor);
     if (cursor) {
@@ -159,7 +166,12 @@ router.get('/', async (req, res, next) => {
 
 router.get('/export', async (req, res, next) => {
   try {
-    const match = buildMatch(req as AuthedRequest);
+    ensureTenantContext(req as TenantScopedRequest);
+    if (!hasTenantContext(req as AuthedRequest)) {
+      res.status(400).json({ message: 'Tenant context is required' });
+      return;
+    }
+    const match = buildMatch(req);
     const limit = Math.min(parseLimit(req.query?.limit), 1000);
     const logs = await AuditLog.find(match)
       .sort({ ts: -1, _id: -1 })

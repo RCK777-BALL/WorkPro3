@@ -159,7 +159,7 @@ export const requireRole = (...allowed: UserRole[]) =>
     }
 
     const roles = Array.isArray(authedReq.user.roles)
-      ? authedReq.user.roles.map((role) => String(role))
+      ? authedReq.user.roles.map((role: UserRole | string) => String(role))
       : [];
     if (!allowed.some((role) => roles.includes(role))) {
       res.status(403).json({ message: 'Forbidden' });

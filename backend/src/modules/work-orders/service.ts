@@ -14,6 +14,9 @@ import { applySlaPolicyToWorkOrder } from '../../../services/slaPolicyService';
 import { resolveWorkOrderTimestampConflict } from './conflict';
 import { notifyWorkOrderSlaBreach, notifyWorkOrderSlaEscalation } from '../notifications/service';
 
+const toWorkOrderPayload = (workOrder: WorkOrderDocument): Record<string, unknown> =>
+  workOrder.toObject({ depopulate: true }) as Record<string, unknown>;
+
 const ensureTimeline = (
   workOrder: WorkOrderDocument,
 ): NonNullable<WorkOrderDocument['timeline']> => {
@@ -60,7 +63,7 @@ export const reconcileWorkOrderUpdate = async (
 
   if (clientUpdatedAt) {
     const serverUpdatedAt = workOrder.updatedAt ?? workOrder.createdAt ?? new Date(0);
-    const snapshot = workOrder.toObject({ depopulate: true }) as Record<string, unknown>;
+    const snapshot = toWorkOrderPayload(workOrder);
     const resolution = resolveWorkOrderTimestampConflict(
       {
         id: workOrderId,

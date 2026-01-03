@@ -2,8 +2,13 @@
  * SPDX-License-Identifier: MIT
  */
 
+import type { JwtPayload } from 'jsonwebtoken';
 import type { Permission } from '../shared/permissions';
 import type { UserRole } from '../types/auth';
+
+type ThirdPartyAuth =
+  | { type: 'api-key'; key: string }
+  | { type: 'oauth2'; payload: string | JwtPayload };
 
 declare global {
   namespace Express {
@@ -29,6 +34,7 @@ declare global {
       plantId?: string;
       vendorId?: string;
       permissions?: Permission[];
+      thirdParty?: ThirdPartyAuth;
     }
   }
 }

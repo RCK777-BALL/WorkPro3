@@ -8,6 +8,7 @@ import jwt from 'jsonwebtoken';
 import Vendor from '../models/Vendor';
 import PurchaseOrder from '../models/PurchaseOrder';
 import { requireVendorAuth } from '../middleware/vendorAuth';
+import type { VendorScopedRequest } from '../types/http';
 import { getJwtSecret } from '../utils/getJwtSecret';
 import { assertEmail } from '../utils/assert';
 
@@ -78,7 +79,7 @@ router.get('/pos', listVendorPurchaseOrders);
 router.get(
   '/purchase-orders/:id',
   async (
-    req: Request,
+    req: VendorScopedRequest,
     res: Response,
     next: NextFunction,
   ) => {

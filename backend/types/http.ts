@@ -60,3 +60,13 @@ export type TenantScopedRequest<
 > = AuthedRequestWithUser<P, ResBody, ReqBody, ReqQuery, Locals> & {
   tenantId: string;
 };
+
+export type VendorScopedRequest<
+  P extends ParamsDictionary = ParamsDictionary,
+  ResBody = unknown,
+  ReqBody = unknown,
+  ReqQuery extends ParsedQs = ParsedQs,
+  Locals extends Record<string, unknown> = Record<string, unknown>,
+> = AuthedRequest<P, ResBody, ReqBody, ReqQuery, Locals> & {
+  vendorId?: string | undefined;
+};

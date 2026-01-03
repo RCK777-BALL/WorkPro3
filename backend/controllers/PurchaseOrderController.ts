@@ -10,6 +10,7 @@ import StockHistory from '../models/StockHistory';
 import StockItem from '../models/StockItem';
 import type { VendorResponse } from '../services/vendorService';
 import { getVendor, VendorNotFoundError } from '../services/vendorService';
+import type { VendorScopedRequest } from '../types/http';
 import { writeAuditLog, sendResponse } from '../utils';
 
 const toPlainObject = (value: unknown): Record<string, unknown> | undefined => {
@@ -182,7 +183,7 @@ export const getPurchaseOrder = async (
 };
 
 export const listVendorPurchaseOrders = async (
-  req: Request,
+  req: VendorScopedRequest,
   res: Response,
   next: NextFunction,
 ): Promise<Response | void> => {
@@ -314,7 +315,7 @@ export const receivePurchaseOrder = async (
 };
 
 export const updateVendorPurchaseOrder = async (
-  req: Request,
+  req: VendorScopedRequest,
   res: Response,
   next: NextFunction,
 ): Promise<Response | void> => {

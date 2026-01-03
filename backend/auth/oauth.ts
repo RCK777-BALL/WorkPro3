@@ -6,8 +6,10 @@ import type { Request } from 'express';
 import passport from 'passport';
 import type { Profile as OAuthProfile } from 'passport';
 import type { VerifyCallback } from 'passport-oauth2';
+import type OAuth2Strategy from 'passport-oauth2';
 import {
   Strategy as GoogleStrategy,
+  type GoogleCallbackParameters,
   type StrategyOptions as GoogleStrategyOptions,
 } from 'passport-google-oauth20';
 import {
@@ -35,11 +37,11 @@ import { resolveTenantContext } from './tenantContext';
 
 // ---- Types ----
 
-type OAuthVerifier = (
-  ...args:
-    | [Request, string, string, OAuthProfile, VerifyCallback]
-    | [Request, string, string, Record<string, unknown>, OAuthProfile, VerifyCallback]
-) => void | Promise<void>;
+type OAuthCallbackParams = GoogleCallbackParameters | Record<string, unknown>;
+type OAuthVerifierArgs =
+  | [Request, string, string, OAuthProfile, VerifyCallback]
+  | [Request, string, string, OAuthCallbackParams, OAuthProfile, VerifyCallback];
+type OAuthVerifier = OAuth2Strategy.VerifyFunctionWithRequest<OAuthProfile, OAuthCallbackParams>;
 
 /**
  * Normalize both possible Passport verify callback signatures:
@@ -47,10 +49,10 @@ type OAuthVerifier = (
  *  - (req, accessToken, refreshToken, params, profile, done)
  */
 const normalizeOAuthArgs = (
-  profileOrParams: unknown,
-  maybeProfileOrDone: unknown,
-  maybeDone?: unknown
-): { profile: OAuthProfile; done: VerifyCallback; params: unknown | null } => {
+  profileOrParams: OAuthProfile | OAuthCallbackParams,
+  maybeProfileOrDone: OAuthProfile | VerifyCallback,
+  maybeDone?: VerifyCallback
+): { profile: OAuthProfile; done: VerifyCallback; params: OAuthCallbackParams | null } => {
   const hasParams = typeof maybeDone === 'function';
   const params = hasParams ? profileOrParams : null;
   const profile = (hasParams ? maybeProfileOrDone : profileOrParams) as OAuthProfile;
@@ -82,7 +84,7 @@ async function findOrCreateOAuthUser(_args: {
   refreshToken: string;
   profile: OAuthProfile;
   req: Request;
-  params: unknown | null;
+  params: OAuthCallbackParams | null;
 }): Promise<OAuthUser | false> {
   // Example data you can use:
   // const providerId = _args.profile.id;
@@ -133,7 +135,8 @@ async function findOrCreateOAuthUser(_args: {
 
 const oauthVerifier =
   (provider: 'google' | 'github'): OAuthVerifier =>
-  async (req, accessToken, refreshToken, profileOrParams, maybeProfileOrDone, maybeDone) => {
+  async (...args: OAuthVerifierArgs) => {
+    const [req, accessToken, refreshToken, profileOrParams, maybeProfileOrDone, maybeDone] = args;
     const { profile, done, params } = normalizeOAuthArgs(profileOrParams, maybeProfileOrDone, maybeDone);
 
     if (typeof done !== 'function') {

@@ -139,7 +139,7 @@ export const requireAuth: AuthedRequestHandler = async (req, res, next) => {
       req.siteId = siteId;
     }
     if (permissions && permissions.length > 0) {
-      authedReq.permissions = permissions;
+      req.permissions = permissions;
     }
 
     next();

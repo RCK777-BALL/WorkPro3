@@ -13,6 +13,7 @@ declare global {
       tenantId?: string;
       siteId?: string;
       plantId?: string;
+      role?: UserRole | string;
       roles?: UserRole[] | string[];
       permissions?: Permission[];
       scopes?: string[];
@@ -26,7 +27,7 @@ declare global {
       siteId?: string;
       departmentId?: string;
       plantId?: string;
-      permissions?: string[];
+      permissions?: Permission[];
     }
   }
 }

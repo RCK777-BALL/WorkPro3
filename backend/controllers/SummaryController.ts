@@ -2,7 +2,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
 import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 
@@ -267,11 +266,7 @@ export const calculateSummary = async (
   };
 };
 
-export const getSummary: AuthedRequestHandler = async (
-  req: AuthedRequest,
-  res: Response,
-  next: NextFunction,
-) => {
+export const getSummary: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId =
       typeof req.query.tenantId === 'string'
@@ -392,11 +387,7 @@ export const getSummary: AuthedRequestHandler = async (
   }
 };
 
-export const getSummaryTrends: AuthedRequestHandler = async (
-  req: AuthedRequest,
-  res: Response,
-  next: NextFunction,
-) => {
+export const getSummaryTrends: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId =
       typeof req.query.tenantId === 'string'
@@ -438,11 +429,7 @@ export const getSummaryTrends: AuthedRequestHandler = async (
   }
 };
 
-export const getAssetSummary: AuthedRequestHandler = async (
-  req: AuthedRequest,
-  res: Response,
-  next: NextFunction,
-) => {
+export const getAssetSummary: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = getTenantId(req);
     const match = tenantId ? { tenantId } : {};
@@ -457,11 +444,7 @@ export const getAssetSummary: AuthedRequestHandler = async (
   }
 };
 
-export const getWorkOrderSummary: AuthedRequestHandler = async (
-  req: AuthedRequest,
-  res: Response,
-  next: NextFunction,
-) => {
+export const getWorkOrderSummary: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = getTenantId(req);
     const match = tenantId ? { tenantId } : {};
@@ -476,11 +459,7 @@ export const getWorkOrderSummary: AuthedRequestHandler = async (
   }
 };
 
-export const getUpcomingMaintenance: AuthedRequestHandler = async (
-  req: AuthedRequest,
-  res: Response,
-  next: NextFunction,
-) => {
+export const getUpcomingMaintenance: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = getTenantId(req);
     const match: any = tenantId ? { tenantId } : {};
@@ -498,11 +477,7 @@ export const getUpcomingMaintenance: AuthedRequestHandler = async (
   }
 };
 
-export const getCriticalAlerts: AuthedRequestHandler = async (
-  req: AuthedRequest,
-  res: Response,
-  next: NextFunction,
-) => {
+export const getCriticalAlerts: AuthedRequestHandler = async (req, res, next) => {
   try {
     const tenantId = getTenantId(req);
     const match: any = tenantId ? { tenantId } : {};

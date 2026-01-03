@@ -493,7 +493,7 @@ export const exportCustomReport = async (
 
 const resolveTenantId = (req: AuthedRequest): Types.ObjectId | string => {
   if (req.tenantId) return req.tenantId;
-  const userTenantId = req.user?.tenantId;
+  const userTenantId = req.user?.tenantId as unknown;
   if (typeof userTenantId === 'string') {
     return userTenantId;
   }

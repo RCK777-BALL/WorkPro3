@@ -27,17 +27,11 @@ const toPermissionKey = <C extends PermissionCategory>(
 const resolvePermissionsForRequest = async (
   req: AuthedRequest,
 ): Promise<{ permissions: Permission[]; roles: string[] }> => {
-  if (!req.user) {
+  const user = req.user;
+  if (!user) {
     throw Object.assign(new Error('Unauthorized'), { status: 401 });
   }
 
-  const user = req.user as {
-    id?: string | Types.ObjectId;
-    permissions?: Permission[] | string[];
-    roles?: string[];
-    tenantId?: string;
-    siteId?: string;
-  };
   const userId = user.id;
   if (!userId) {
     throw Object.assign(new Error('Unauthorized'), { status: 401 });
@@ -62,7 +56,7 @@ const resolvePermissionsForRequest = async (
   });
 
   (req.user as { permissions?: Permission[] | string[] }).permissions = result.permissions;
-  (req.user as { roles?: string[] }).roles = result.roles;
+  (req.user as { roles?: Array<string> }).roles = result.roles;
   req.permissions = result.permissions;
   return result;
 };

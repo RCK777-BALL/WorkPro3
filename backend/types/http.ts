@@ -6,7 +6,7 @@ import type { Permission } from '../shared/permissions';
 export type { ApiResult } from '../../shared/types/http';
 
 type AuthedUser = User & {
-  roles?: UserRole[] | string[] | undefined;
+  roles?: Array<UserRole | string> | undefined;
   permissions?: Permission[] | string[] | undefined;
   tenantId?: string | null | undefined;
   siteId?: string | null | undefined;

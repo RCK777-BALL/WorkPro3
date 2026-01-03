@@ -16,7 +16,10 @@ export type TenantScopedRequest = AuthedRequest & {
   siteId?: string | null;
   departmentId?: string | null;
   user?:
-    | (NonNullable<AuthedRequest['user']> & { siteId?: string | null; roles?: UserRole[] | string[] })
+    | (NonNullable<AuthedRequest['user']> & {
+        siteId?: string | null;
+        roles?: Array<UserRole | string>;
+      })
     | undefined;
 };
 

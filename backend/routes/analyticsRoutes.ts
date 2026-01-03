@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Router } from 'express';
+import { Router, type RequestHandler } from 'express';
 import { requireAuth, requireRole } from '../middleware/authMiddleware';
 import tenantScope from '../middleware/tenantScope';
 import {
@@ -30,7 +30,7 @@ import {
 } from '../controllers/AnalyticsController';
 import Site from '../models/Site';
 import WorkOrder from '../models/WorkOrder';
-import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
+import type { AuthedRequest } from '../types/http';
 import { Types } from 'mongoose';
 import type { UserRole } from '../models/User';
 import { buildPmCompletionAnalytics } from '../services/pmAnalytics';
@@ -65,18 +65,19 @@ router.get('/dashboard/pm-compliance', dashboardPmComplianceJson);
 router.get('/dashboard/work-order-volume', dashboardWorkOrderVolumeJson);
 router.get('/pm-optimization/what-if', pmWhatIfSimulationsJson);
 
-const pmCompletionsHandler: AuthedRequestHandler = (req: AuthedRequest, res, next) => {
+const pmCompletionsHandler: RequestHandler = (req, res, next) => {
   void (async () => {
-    const tenantId = req.tenantId;
+    const authedReq = req as AuthedRequest;
+    const tenantId = authedReq.tenantId;
     if (!tenantId || !Types.ObjectId.isValid(tenantId)) {
       res.status(400).json({ error: 'Tenant context required' });
       return;
     }
 
-    const months = typeof req.query.months === 'string' ? Number(req.query.months) : undefined;
+    const months = typeof authedReq.query.months === 'string' ? Number(authedReq.query.months) : undefined;
     const siteId =
-      req.siteId && Types.ObjectId.isValid(req.siteId)
-        ? new Types.ObjectId(req.siteId)
+      authedReq.siteId && Types.ObjectId.isValid(authedReq.siteId)
+        ? new Types.ObjectId(authedReq.siteId)
         : undefined;
 
     const options = {
@@ -91,9 +92,10 @@ const pmCompletionsHandler: AuthedRequestHandler = (req: AuthedRequest, res, nex
 
 router.get('/pm/completions', pmCompletionsHandler);
 
-const globalAnalyticsHandler: AuthedRequestHandler = (req: AuthedRequest, res, next) => {
+const globalAnalyticsHandler: RequestHandler = (req, res, next) => {
   void (async () => {
-    const tenantId = req.tenantId;
+    const authedReq = req as AuthedRequest;
+    const tenantId = authedReq.tenantId;
     if (!tenantId) {
       res.status(400).json({ error: 'Tenant context required' });
       return;

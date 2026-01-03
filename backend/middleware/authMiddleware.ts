@@ -152,8 +152,16 @@ export const requireAuth: AuthedRequestHandler = async (req, res, next) => {
 
 export const requireRole = (...allowed: UserRole[]) =>
   (req: Request, res: Response, next: NextFunction): void => {
-    const roles = ((req as AuthedRequest).user as any)?.roles as UserRole[] | undefined;
-    if (!roles || !allowed.some((role) => roles.includes(role))) {
+    const authedReq = req as AuthedRequest;
+    if (!authedReq.user) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+
+    const roles = Array.isArray(authedReq.user.roles)
+      ? authedReq.user.roles.map((role) => String(role))
+      : [];
+    if (!allowed.some((role) => roles.includes(role))) {
       res.status(403).json({ message: 'Forbidden' });
       return;
     }

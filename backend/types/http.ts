@@ -7,6 +7,7 @@ export type { ApiResult } from '../../shared/types/http';
 
 type AuthedUser = User & {
   roles?: UserRole[] | string[] | undefined;
+  permissions?: Permission[] | string[] | undefined;
   tenantId?: string | null | undefined;
   siteId?: string | null | undefined;
   departmentId?: string | null | undefined;
@@ -25,7 +26,7 @@ export type AuthedRequest<
   siteId?: string | undefined;
   departmentId?: string | undefined;
   plantId?: string | undefined;
-  permissions?: Permission[] | undefined;
+  permissions?: Permission[] | string[] | undefined;
 };
 
 export type AuthedRequestHandler<

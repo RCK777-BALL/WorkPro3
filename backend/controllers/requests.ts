@@ -2,7 +2,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
 import { z } from 'zod';
 
@@ -60,11 +59,7 @@ const resolveUserObjectId = (req: AuthedRequest): Types.ObjectId | undefined => 
   return candidate instanceof Types.ObjectId ? candidate : toObjectId(candidate);
 };
 
-export const createRequest: AuthedRequestHandler = async (
-  req: AuthedRequest,
-  res: Response,
-  next: NextFunction,
-) => {
+export const createRequest: AuthedRequestHandler = async (req, res, next) => {
   try {
     const body = (req.body ?? {}) as Record<string, unknown>;
     const parse = internalSubmissionSchema.safeParse({ ...body });
@@ -150,11 +145,7 @@ export const summarizeRequests: AuthedRequestHandler = async (req, res, next) =>
   }
 };
 
-export const updateRequestStatus: AuthedRequestHandler = async (
-  req: AuthedRequest,
-  res: Response,
-  next: NextFunction,
-) => {
+export const updateRequestStatus: AuthedRequestHandler = async (req, res, next) => {
   try {
     const parse = statusUpdateSchema.safeParse(req.body);
     if (!parse.success) {
@@ -203,11 +194,7 @@ export const updateRequestStatus: AuthedRequestHandler = async (
   }
 };
 
-export const convertRequestToWorkOrder: AuthedRequestHandler = async (
-  req: AuthedRequest,
-  res: Response,
-  next: NextFunction,
-) => {
+export const convertRequestToWorkOrder: AuthedRequestHandler = async (req, res, next) => {
   try {
     const parse = workRequestConversionSchema.safeParse(req.body ?? {});
     if (!parse.success) {

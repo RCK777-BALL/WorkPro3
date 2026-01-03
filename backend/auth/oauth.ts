@@ -4,8 +4,7 @@
 
 import type { Request } from 'express';
 import passport from 'passport';
-import type { Profile as OAuthProfile } from 'passport';
-import type { VerifyCallback } from 'passport-oauth2';
+import type { Profile as OAuthProfile, VerifyCallback } from 'passport-oauth2';
 import {
   Strategy as GoogleStrategy,
   type StrategyOptions as GoogleStrategyOptions,
@@ -103,12 +102,13 @@ async function findOrCreateOAuthUser(_args: {
       ? (_args.params as Record<string, unknown>)
       : undefined;
 
+  const profileData = _args.profile as unknown as Record<string, unknown>;
   const tenantContext = await resolveTenantContext({
     provider: _args.provider,
     email: normalizedEmail,
     domain,
     claims,
-    profile: _args.profile as Record<string, unknown>,
+    profile: profileData,
   });
 
   const user = await User.findOne({ email: normalizedEmail })

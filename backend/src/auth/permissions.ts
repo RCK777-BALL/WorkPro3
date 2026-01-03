@@ -33,7 +33,7 @@ const resolvePermissionsForRequest = async (
 
   const user = req.user as {
     id?: string | Types.ObjectId;
-    permissions?: Permission[];
+    permissions?: Permission[] | string[];
     roles?: string[];
     tenantId?: string;
     siteId?: string;
@@ -61,7 +61,7 @@ const resolvePermissionsForRequest = async (
     ...(fallbackRoles ? { fallbackRoles } : {}),
   });
 
-  (req.user as { permissions?: Permission[] }).permissions = result.permissions;
+  (req.user as { permissions?: Permission[] | string[] }).permissions = result.permissions;
   (req.user as { roles?: string[] }).roles = result.roles;
   req.permissions = result.permissions;
   return result;

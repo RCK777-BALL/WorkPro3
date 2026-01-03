@@ -12,7 +12,7 @@ import { resolveUserId } from './middleware';
 import { notifyUser } from '../../../utils';
 import { applySlaPolicyToWorkOrder } from '../../../services/slaPolicyService';
 import { resolveWorkOrderTimestampConflict } from './conflict';
-import { notifyWorkOrderSlaBreach, notifyWorkOrderSlaEscalation } from '../notifications';
+import { notifyWorkOrderSlaBreach, notifyWorkOrderSlaEscalation } from '../notifications/service';
 
 const toWorkOrderPayload = (workOrder: WorkOrderDocument): Record<string, unknown> =>
   workOrder.toObject({ depopulate: true }) as unknown as Record<string, unknown>;

@@ -66,8 +66,6 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/cookie-parser": "^1.4.9",
     "@types/express": "^5.0.6",
-    "@types/express-rate-limit": "^6.0.2",
-    "@types/express-validator": "^3.0.2",
     "@types/helmet": "^0.0.48",
     "@types/ioredis": "^4.28.10",
     "@types/json2csv": "^5.0.7",

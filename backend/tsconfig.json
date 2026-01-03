@@ -17,7 +17,8 @@
     }
   },
   "include": [
-    "./**/*.ts",
+    "src/**/*.ts",
+    "types/**/*.d.ts",
     "../shared/types/**/*.ts"
   ],
   "exclude": [

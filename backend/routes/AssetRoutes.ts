@@ -71,8 +71,8 @@ const handleUploads: RequestHandler = (req, res, next) => {
   });
 };
 
-const assetValidationHandlers = assetValidators as RequestHandler[];
-const assetUpdateValidationHandlers = assetUpdateValidators as RequestHandler[];
+const assetValidationHandlers = assetValidators as unknown as RequestHandler[];
+const assetUpdateValidationHandlers = assetUpdateValidators as unknown as RequestHandler[];
 
 router.use(requireAuth);
 router.use(tenantScope);

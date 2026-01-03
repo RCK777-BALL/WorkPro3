@@ -71,6 +71,9 @@ const handleUploads: RequestHandler = (req, res, next) => {
   });
 };
 
+const assetValidationHandlers = assetValidators as RequestHandler[];
+const assetUpdateValidationHandlers = assetUpdateValidators as RequestHandler[];
+
 router.use(requireAuth);
 router.use(tenantScope);
 
@@ -79,13 +82,20 @@ router.get('/search', requirePermission('assets.read'), searchAssets);
 router.get('/tree', requirePermission('assets.read'), getAssetTree);
 router.get('/:id', validateObjectId('id'), requirePermission('assets.read'), getAssetById);
 
-router.post('/', requirePermission('assets.write'), handleUploads, ...assetValidators, validate, createAsset);
+router.post(
+  '/',
+  requirePermission('assets.write'),
+  handleUploads,
+  ...assetValidationHandlers,
+  validate,
+  createAsset,
+);
 router.put(
   '/:id',
   validateObjectId('id'),
   requirePermission('assets.write'),
   handleUploads,
-  ...assetUpdateValidators,
+  ...assetUpdateValidationHandlers,
   validate,
   updateAsset,
 );

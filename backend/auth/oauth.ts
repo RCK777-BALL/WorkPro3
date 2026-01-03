@@ -4,7 +4,8 @@
 
 import type { Request } from 'express';
 import passport from 'passport';
-import type { Profile as OAuthProfile, VerifyCallback } from 'passport-oauth2';
+import type { Profile as OAuthProfile } from 'passport';
+import type { VerifyCallback } from 'passport-oauth2';
 import {
   Strategy as GoogleStrategy,
   type StrategyOptions as GoogleStrategyOptions,

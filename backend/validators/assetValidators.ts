@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+import type { RequestHandler } from 'express';
 import { body } from 'express-validator';
 
 const allowedTypes = ['Electrical', 'Mechanical', 'Tooling', 'Interface'] as const;
@@ -41,7 +42,7 @@ const sharedOptionalFields = [
     .withMessage('invalid status'),
 ];
 
-export const assetValidators = [
+export const assetValidators: RequestHandler[] = [
   body('name').notEmpty().withMessage('name is required'),
   body('type')
     .notEmpty()
@@ -51,7 +52,7 @@ export const assetValidators = [
   ...sharedOptionalFields,
 ];
 
-export const assetUpdateValidators = [
+export const assetUpdateValidators: RequestHandler[] = [
   body()
     .custom((value, { req }) => {
       if (value && typeof value === 'object') {

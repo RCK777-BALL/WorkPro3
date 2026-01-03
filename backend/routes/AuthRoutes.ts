@@ -27,7 +27,7 @@ import { assertEmail } from '../utils/assert';
 import { getOAuthScope, type OAuthProvider } from '../config/oauthScopes';
 import { me, refresh, logout } from '../controllers/authController';
 import sendResponse from '../utils/sendResponse';
-import { configureOAuth } from '../auth/oauth';
+import { configureOAuth } from '../src/auth/oauth';
 import { configureOIDC, type Provider as OIDCProvider } from '../auth/oidc';
 import { getOidcProviderConfigs, type OIDCProviderConfig } from '../config/ssoProviders';
 import { getSamlMetadata, samlRedirectPlaceholder, samlResponseHandler } from '../auth/saml';

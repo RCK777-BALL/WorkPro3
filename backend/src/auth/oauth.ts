@@ -15,8 +15,8 @@ import {
   type StrategyOptions as GithubStrategyOptions,
 } from 'passport-github2';
 
-import User from '../models/User';
-import { resolveTenantContext } from './tenantContext';
+import User from '../../models/User';
+import { resolveTenantContext } from '../../auth/tenantContext';
 
 /**
  * IMPORTANT:

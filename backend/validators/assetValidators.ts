@@ -2,8 +2,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { RequestHandler } from 'express';
+import type { Request } from 'express';
 import { body } from 'express-validator';
+import type { ValidationChain } from 'express-validator';
 
 const allowedTypes = ['Electrical', 'Mechanical', 'Tooling', 'Interface'] as const;
 const allowedStatuses = ['Active', 'Offline', 'In Repair'] as const;
@@ -23,7 +24,8 @@ const sharedOptionalFields = [
     .isString()
     .bail()
     .custom((val, { req }) => {
-      req.body.modelName = val;
+      const request = req as Request;
+      request.body.modelName = val;
       return true;
     }),
   body('modelName').optional().isString(),
@@ -42,7 +44,7 @@ const sharedOptionalFields = [
     .withMessage('invalid status'),
 ];
 
-export const assetValidators: RequestHandler[] = [
+export const assetValidators: ValidationChain[] = [
   body('name').notEmpty().withMessage('name is required'),
   body('type')
     .notEmpty()
@@ -52,11 +54,12 @@ export const assetValidators: RequestHandler[] = [
   ...sharedOptionalFields,
 ];
 
-export const assetUpdateValidators: RequestHandler[] = [
+export const assetUpdateValidators: ValidationChain[] = [
   body()
     .custom((value, { req }) => {
       if (value && typeof value === 'object') {
-        const payload = req.body as Record<string, unknown>;
+        const request = req as Request;
+        const payload = request.body as Record<string, unknown>;
         const updatableKeys = [
           'name',
           'type',

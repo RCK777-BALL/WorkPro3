@@ -1,38 +1,27 @@
-/*
- * SPDX-License-Identifier: MIT
- */
+import type { Request, Response, NextFunction, RequestHandler } from 'express';
 
-import type { NextFunction, Request, RequestHandler, Response } from 'express';
-import type { ParamsDictionary, User } from 'express-serve-static-core';
-import type { ParsedQs } from 'qs';
-export type { ApiResult } from '../../shared/types/http';
-
-export type AuthedRequest<
-  P extends ParamsDictionary = ParamsDictionary,
-  ResBody = unknown,
-  ReqBody = unknown,
-  ReqQuery extends ParsedQs = ParsedQs,
-  Locals extends Record<string, any> = Record<string, any>,
-> = Omit<Request<P, ResBody, ReqBody, ReqQuery, Locals>, 'user'> & {
-  user?: User | undefined;
-  tenantId?: string | undefined;
-  tenantDomain?: string | undefined;
-  siteId?: string | undefined;
-  departmentId?: string | undefined;
-  plantId?: string | undefined;
-  permissions?: string[] | undefined;
-};
-
-export interface AuthedRequestHandler<
-  P extends ParamsDictionary = ParamsDictionary,
-  ResBody = unknown,
-  ReqBody = unknown,
-  ReqQuery extends ParsedQs = ParsedQs,
-  Locals extends Record<string, any> = Record<string, any>,
-> extends RequestHandler<P, ResBody, ReqBody, ReqQuery, Locals> {
-  (
-    req: AuthedRequest<P, ResBody, ReqBody, ReqQuery, Locals>,
-    res: Response<ResBody, Locals>,
-    next: NextFunction,
-  ): void | Promise<void>;
+export interface AuthedRequest<
+  TParams = any,
+  TResBody = any,
+  TReqBody = any,
+  TQuery = any
+> extends Request<TParams, TResBody, TReqBody, TQuery> {
+  user?: {
+    id: string;
+    email?: string;
+    roles?: string[];
+  };
+  tenantId?: string;
+  siteId?: string;
 }
+
+export type AuthedRequestHandler<
+  TParams = any,
+  TResBody = any,
+  TReqBody = any,
+  TQuery = any
+> = (
+  req: AuthedRequest<TParams, TResBody, TReqBody, TQuery>,
+  res: Response<TResBody>,
+  next: NextFunction
+) => Promise<any> | void;

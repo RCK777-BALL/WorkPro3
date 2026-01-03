@@ -7,7 +7,9 @@
     "skipLibCheck": true,
     "moduleResolution": "node",
     "target": "ES2020",
-    "lib": ["ES2022"],
+    "lib": [
+      "ES2022"
+    ],
     "module": "commonjs",
     "baseUrl": ".",
     "resolveJsonModule": true,
@@ -16,8 +18,12 @@
       "./backend/node_modules/@types"
     ],
     "paths": {
-      "@shared/*": ["shared/types/*"],
-      "@backend-shared/*": ["backend/shared/*"]
+      "@shared/*": [
+        "shared/types/*"
+      ],
+      "@backend-shared/*": [
+        "backend/shared/*"
+      ]
     }
   },
   "include": [
@@ -25,7 +31,6 @@
     "backend/types/**/*.d.ts",
     "dev-server/**/*.ts",
     "shared/types/**/*.ts"
-
   ],
   "exclude": [
     "backend/tests",

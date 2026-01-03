@@ -1,7 +1,15 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import type { ParamsDictionary, User } from 'express-serve-static-core';
 import type { ParsedQs } from 'qs';
+import type { UserRole } from './auth';
 export type { ApiResult } from '../../shared/types/http';
+
+type AuthedUser = User & {
+  roles?: UserRole[] | string[] | undefined;
+  tenantId?: string | null | undefined;
+  siteId?: string | null | undefined;
+  departmentId?: string | null | undefined;
+};
 
 export type AuthedRequest<
   P extends ParamsDictionary = ParamsDictionary,
@@ -10,7 +18,7 @@ export type AuthedRequest<
   ReqQuery extends ParsedQs = ParsedQs,
   Locals extends Record<string, unknown> = Record<string, unknown>,
 > = Omit<Request<P, ResBody, ReqBody, ReqQuery, Locals>, 'user'> & {
-  user?: User | undefined;
+  user?: AuthedUser | undefined;
   tenantId?: string | undefined;
   tenantDomain?: string | undefined;
   siteId?: string | undefined;
@@ -38,7 +46,7 @@ export type AuthedRequestWithUser<
   ReqQuery extends ParsedQs = ParsedQs,
   Locals extends Record<string, unknown> = Record<string, unknown>,
 > = AuthedRequest<P, ResBody, ReqBody, ReqQuery, Locals> & {
-  user: User;
+  user: AuthedUser;
 };
 
 export type TenantScopedRequest<

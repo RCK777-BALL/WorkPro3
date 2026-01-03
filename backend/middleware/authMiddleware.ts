@@ -8,7 +8,7 @@ import jwt from 'jsonwebtoken';
 
 import User from '../models/User';
 import type { UserDocument, UserRole } from '../models/User';
-import type { AuthedRequest } from '../types/http';
+import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import { resolveUserPermissions } from '../services/permissionService';
 import type { Permission } from '../shared/permissions';
 import { isSessionBindingValid, type SessionBinding } from '../utils/sessionBinding';
@@ -78,7 +78,7 @@ const toPlainUser = (user: HydratedDocument<UserDocument>, decoded: DecodedToken
   };
 };
 
-export const requireAuth: RequestHandler = async (req, res, next) => {
+export const requireAuth: AuthedRequestHandler = async (req, res, next) => {
   try {
     const rawAuthHeader = req.headers.authorization;
     const authHeader = Array.isArray(rawAuthHeader) ? rawAuthHeader[0] : rawAuthHeader;
@@ -112,11 +112,14 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
       return;
     }
 
-    const authedReq = req as AuthedRequest;
     const plainUser = toPlainUser(user, decoded) as any;
 
-    const tenantId = toStringOrUndefined(req.header('x-tenant-id')) ?? plainUser.tenantId;
-    const siteId = toStringOrUndefined(req.header('x-site-id')) ?? plainUser.siteId;
+    const tenantId = toStringOrUndefined(req.header('x-tenant-id')) ?? toStringOrUndefined(plainUser.tenantId);
+    if (!tenantId) {
+      res.status(401).json({ message: 'Tenant not found' });
+      return;
+    }
+    const siteId = toStringOrUndefined(req.header('x-site-id')) ?? toStringOrUndefined(plainUser.siteId);
 
     const { roles, permissions } = await resolveUserPermissions({
       userId: user._id,
@@ -130,12 +133,10 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
     }
     (plainUser as { permissions?: Permission[] }).permissions = permissions;
 
-    authedReq.user = plainUser;
-    if (plainUser.tenantId) {
-      authedReq.tenantId = String(plainUser.tenantId);
-    }
-    if (plainUser.siteId) {
-      authedReq.siteId = String(plainUser.siteId);
+    req.user = plainUser;
+    req.tenantId = tenantId;
+    if (siteId) {
+      req.siteId = siteId;
     }
     if (permissions && permissions.length > 0) {
       authedReq.permissions = permissions;

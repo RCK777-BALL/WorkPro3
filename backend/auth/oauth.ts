@@ -7,11 +7,11 @@ import type { VerifyCallback } from 'passport-oauth2';
 import type { Request } from 'express';
 import {
   Strategy as GoogleStrategy,
-  type StrategyOptionsWithRequest as GoogleStrategyOptionsWithRequest,
+  type StrategyOptions as GoogleStrategyOptions,
 } from 'passport-google-oauth20';
 import {
   Strategy as GithubStrategy,
-  type StrategyOptionsWithRequest as GithubStrategyOptionsWithRequest,
+  type StrategyOptions as GithubStrategyOptions,
 } from 'passport-github2';
 
 import type { OAuthProvider } from '../config/oauthScopes';
@@ -28,7 +28,7 @@ type DoneCallback = VerifyCallback;
 type OAuthVerifier = (
   ...args:
     | [Request, string, string, OAuthProfile, DoneCallback]
-    | [Request, string, string, OAuthProfile | unknown, OAuthProfile, DoneCallback]
+    | [Request, string, string, Record<string, unknown>, OAuthProfile, DoneCallback]
 ) => void | Promise<void>;
 
 type OAuthUser = {
@@ -49,10 +49,7 @@ const createOAuthVerifier =
   async (...args: Parameters<OAuthVerifier>) => {
     let doneCallback: DoneCallback | undefined;
     try {
-      const profile =
-        typeof args[4] === 'function'
-          ? (args[3] as OAuthProfile)
-          : (args[4] as OAuthProfile);
+      const profile = (typeof args[4] === 'function' ? args[3] : args[4]) as OAuthProfile;
       const done =
         typeof args[4] === 'function'
           ? (args[4] as DoneCallback)
@@ -100,7 +97,7 @@ export const configureOAuth = () => {
   const googleId = process.env.GOOGLE_CLIENT_ID;
   const googleSecret = process.env.GOOGLE_CLIENT_SECRET;
   if (googleId && googleSecret) {
-    const googleOptions: GoogleStrategyOptionsWithRequest = {
+    const googleOptions: GoogleStrategyOptions & { passReqToCallback: true } = {
       clientID: googleId,
       clientSecret: googleSecret,
       callbackURL: '/api/auth/oauth/google/callback',
@@ -118,7 +115,7 @@ export const configureOAuth = () => {
   const githubId = process.env.GITHUB_CLIENT_ID;
   const githubSecret = process.env.GITHUB_CLIENT_SECRET;
   if (githubId && githubSecret) {
-    const githubOptions: GithubStrategyOptionsWithRequest = {
+    const githubOptions: GithubStrategyOptions & { passReqToCallback: true } = {
       clientID: githubId,
       clientSecret: githubSecret,
       callbackURL: '/api/auth/oauth/github/callback',

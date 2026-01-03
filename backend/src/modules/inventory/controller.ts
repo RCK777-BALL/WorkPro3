@@ -52,6 +52,7 @@ import {
   inventoryTransferSchema,
   vendorInputSchema,
 } from './schemas';
+import type { ReorderAlertStatus } from './models/ReorderAlert';
 
 const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
   if (!req.tenantId) {
@@ -211,8 +212,13 @@ export const saveVendorHandler: AuthedRequestHandler<{ vendorId?: string }> = as
 
 export const listAlertsHandler: AuthedRequestHandler = async (req, res, next) => {
   try {
+    const rawStatus = typeof req.query.status === 'string' ? req.query.status : undefined;
+    const status =
+      rawStatus && ['open', 'approved', 'skipped', 'resolved'].includes(rawStatus)
+        ? (rawStatus as ReorderAlertStatus)
+        : undefined;
     const filters: ReorderAlertFilters = {
-      status: typeof req.query.status === 'string' ? (req.query.status as any) : undefined,
+      status,
       page: req.query.page ? Number(req.query.page) : undefined,
       pageSize: req.query.pageSize ? Number(req.query.pageSize) : undefined,
       siteId: typeof req.query.siteId === 'string' ? req.query.siteId : undefined,
@@ -237,7 +243,11 @@ export const transitionAlertHandler: AuthedRequestHandler<{ alertId: string }> =
     return;
   }
   try {
-    const data = await transitionAlertStatus(buildContext(req), req.params.alertId, action as any);
+    const data = await transitionAlertStatus(
+      buildContext(req),
+      req.params.alertId,
+      action as 'approve' | 'skip' | 'resolve',
+    );
     send(res, data);
   } catch (err) {
     handleError(err, res, next);

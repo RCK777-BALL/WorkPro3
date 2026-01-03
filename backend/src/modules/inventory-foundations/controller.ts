@@ -24,11 +24,19 @@ import {
   savePartStock,
   type InventoryFoundationContext,
 } from './service';
-const buildContext = (req: AuthedRequest): InventoryFoundationContext => ({
-  tenantId: req.tenantId!,
-  siteId: req.siteId ?? undefined,
-  userId: req.user?.id ?? (req.user as any)?._id,
-});
+const buildContext = (req: AuthedRequest): InventoryFoundationContext => {
+  const userId =
+    typeof req.user?.id === 'string'
+      ? req.user.id
+      : typeof req.user?._id === 'string'
+        ? req.user._id
+        : undefined;
+  return {
+    tenantId: req.tenantId!,
+    siteId: req.siteId ?? undefined,
+    userId,
+  };
+};
 
 const handleError = (err: unknown, res: Response, next: NextFunction) => {
   if (err instanceof InventoryFoundationError) {

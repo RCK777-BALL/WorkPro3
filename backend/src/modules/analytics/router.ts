@@ -30,6 +30,7 @@ import {
   slaPerformanceCsvHandler,
   slaPerformanceHandler,
   slaPerformancePdfHandler,
+  downtimeCostHandler,
   technicianUtilizationCsvHandler,
   technicianUtilizationHandler,
   technicianUtilizationPdfHandler,
@@ -73,5 +74,6 @@ router.get('/metrics/sla-performance.pdf', requirePermission('reports.export'), 
 router.get('/metrics/technician-utilization', requirePermission('reports.read'), technicianUtilizationHandler);
 router.get('/metrics/technician-utilization.csv', requirePermission('reports.export'), technicianUtilizationCsvHandler);
 router.get('/metrics/technician-utilization.pdf', requirePermission('reports.export'), technicianUtilizationPdfHandler);
+router.get('/metrics/downtime-cost', requirePermission('reports.read'), downtimeCostHandler);
 
 export default router;

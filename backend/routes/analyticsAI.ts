@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Router } from 'express';
+import { Router, type RequestHandler } from 'express';
 import { requireAuth } from '../middleware/authMiddleware';
 import Plant from '../models/Plant';
 import WorkOrder from '../models/WorkOrder';
@@ -38,16 +38,17 @@ const forecastTrend = (values: number[] = []): TrendResult => {
   return { trend: 'stable', slope };
 };
 
-router.get('/insights', async (req: AuthedRequest, res, next) => {
+const insightsHandler: RequestHandler = async (req, res, next) => {
   try {
-    const tenantId = req.tenantId;
+    const authedReq = req as AuthedRequest;
+    const tenantId = authedReq.tenantId;
     if (!tenantId) {
       res.status(400).json({ error: 'Tenant context required' });
       return;
     }
     const plantFilter = { tenantId } as Record<string, unknown>;
     const plants = await Plant.find(plantFilter).lean();
-    const io = req.app.get('io');
+    const io = authedReq.app.get('io');
 
     const insights = await Promise.all(
       plants.map(async (plant) => {
@@ -122,6 +123,8 @@ router.get('/insights', async (req: AuthedRequest, res, next) => {
   } catch (err) {
     next(err);
   }
-});
+};
+
+router.get('/insights', insightsHandler);
 
 export default router;

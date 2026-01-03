@@ -17,6 +17,7 @@ import {
   calculateReliabilityMetrics,
   calculateSlaPerformanceTrend,
   calculateTechnicianUtilization,
+  calculateDowntimeCost,
 } from './metricsService';
 
 const listQuerySchema = z.object({
@@ -164,6 +165,26 @@ export const technicianUtilizationHandler = async (req: AuthedRequest, res: Resp
 
   try {
     const result = await calculateTechnicianUtilization(req.tenantId, parsed.window);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const downtimeCostHandler = async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  const parsed = parseQuery(req);
+  if ('error' in parsed) {
+    fail(res, parsed.error ?? 'Invalid request', 400);
+    return;
+  }
+
+  if (!ensureTenant(req, res)) return;
+
+  const hourlyRate = typeof req.query.hourlyRate === 'string' ? Number(req.query.hourlyRate) : 0;
+  const normalizedRate = Number.isFinite(hourlyRate) ? hourlyRate : 0;
+
+  try {
+    const result = await calculateDowntimeCost(req.tenantId, parsed.window, normalizedRate);
     res.json({ success: true, data: result });
   } catch (err) {
     next(err);

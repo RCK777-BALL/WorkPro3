@@ -27,7 +27,11 @@ const toPermissionKey = <C extends PermissionCategory>(
 const resolvePermissionsForRequest = async (
   req: AuthedRequest,
 ): Promise<{ permissions: Permission[]; roles: string[] }> => {
-  const user = (req.user ?? {}) as {
+  if (!req.user) {
+    throw Object.assign(new Error('Unauthorized'), { status: 401 });
+  }
+
+  const user = req.user as {
     id?: string | Types.ObjectId;
     permissions?: Permission[];
     roles?: string[];

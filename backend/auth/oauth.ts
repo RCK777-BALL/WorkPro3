@@ -3,14 +3,19 @@
  */
 
 import type { Request } from 'express';
+import passport from 'passport';
+import type { Profile as OAuthProfile, VerifyCallback } from 'passport-oauth2';
 import {
   Strategy as GoogleStrategy,
   type StrategyOptions as GoogleStrategyOptions,
 } from 'passport-google-oauth20';
 import {
-  Strategy as GithubStrategy,
+  Strategy as GitHubStrategy,
   type StrategyOptions as GithubStrategyOptions,
 } from 'passport-github2';
+
+import User from '../models/User';
+import { resolveTenantContext } from './tenantContext';
 
 /**
  * IMPORTANT:
@@ -31,8 +36,8 @@ import {
 
 type OAuthVerifier = (
   ...args:
-    | [Request, string, string, OAuthProfile, DoneCallback]
-    | [Request, string, string, Record<string, unknown>, OAuthProfile, DoneCallback]
+    | [Request, string, string, OAuthProfile, VerifyCallback]
+    | [Request, string, string, Record<string, unknown>, OAuthProfile, VerifyCallback]
 ) => void | Promise<void>;
 
 /**
@@ -62,6 +67,8 @@ export type OAuthUser = {
   provider?: string;
   providerId?: string;
   tenantId?: string;
+  siteId?: string;
+  roles?: string[];
 };
 
 /**
@@ -83,7 +90,41 @@ async function findOrCreateOAuthUser(_args: {
   //
   // You probably want: tenantId from req (req.tenantId) or from state param, etc.
 
-  return false;
+  const email = _args.profile.emails?.[0]?.value;
+  if (!email) {
+    return false;
+  }
+
+  const normalizedEmail = email.toLowerCase();
+  const domain = normalizedEmail.split('@')[1] ?? null;
+  const claims =
+    _args.params && typeof _args.params === 'object'
+      ? (_args.params as Record<string, unknown>)
+      : undefined;
+
+  const tenantContext = await resolveTenantContext({
+    provider: _args.provider,
+    email: normalizedEmail,
+    domain,
+    claims,
+    profile: _args.profile as Record<string, unknown>,
+  });
+
+  const user = await User.findOne({ email: normalizedEmail })
+    .select('_id email tenantId siteId roles name')
+    .lean()
+    .exec();
+
+  return {
+    id: user?._id ? String(user._id) : normalizedEmail,
+    email: normalizedEmail,
+    name: user?.name ?? _args.profile.displayName,
+    provider: _args.provider,
+    providerId: _args.profile.id,
+    tenantId: tenantContext.tenantId ?? (user?.tenantId ? String(user.tenantId) : undefined),
+    siteId: tenantContext.siteId ?? (user?.siteId ? String(user.siteId) : undefined),
+    roles: tenantContext.roles ?? (user?.roles ? user.roles.map((role) => String(role)) : undefined),
+  };
 }
 
 // ---- Verifier ----
@@ -93,25 +134,12 @@ const oauthVerifier =
   async (req, accessToken, refreshToken, profileOrParams, maybeProfileOrDone, maybeDone) => {
     const { profile, done, params } = normalizeOAuthArgs(profileOrParams, maybeProfileOrDone, maybeDone);
 
+    if (typeof done !== 'function') {
+      return;
+    }
+
     try {
-      const profile = (typeof args[4] === 'function' ? args[3] : args[4]) as OAuthProfile;
-      const done =
-        typeof args[4] === 'function'
-          ? (args[4] as DoneCallback)
-          : (args[5] as DoneCallback | undefined);
-
-      if (!done) {
-        return;
-      }
-      doneCallback = done;
-
-      const email = profile?.emails?.[0]?.value;
-      if (!email) {
-        done(null, undefined);
-        return;
-      }
-
-      const tenantContext = await resolveTenantContext({
+      const user = await findOrCreateOAuthUser({
         provider,
         accessToken,
         refreshToken,
@@ -121,12 +149,13 @@ const oauthVerifier =
       });
 
       if (!user) {
-        return done(null, false);
+        done(null, false);
+        return;
       }
 
-      return done(null, user);
+      done(null, user);
     } catch (err) {
-      return done(err as any);
+      done(err as Error);
     }
   };
 

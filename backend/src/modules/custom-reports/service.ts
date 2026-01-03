@@ -494,13 +494,14 @@ export const exportCustomReport = async (
 const resolveTenantId = (req: AuthedRequest): Types.ObjectId | string => {
   if (req.tenantId) return req.tenantId;
   const userTenantId = req.user?.tenantId;
- 
-  if (
-  typeof userTenantId === 'string' ||
-  (typeof userTenantId === 'object' && userTenantId !== null && userTenantId instanceof Types.ObjectId)
-) {
-  // ... your existing logic unchanged
-}
+  if (typeof userTenantId === 'string') {
+    return userTenantId;
+  }
+  if (userTenantId instanceof Types.ObjectId) {
+    return userTenantId;
+  }
+  throw Object.assign(new Error('Tenant context is required'), { status: 400 });
+};
 
 const templateVisibleToUser = (doc: ReportTemplateDoc, req: AuthedRequest): boolean => {
   const userId = req.user?.id ?? req.user?._id;

@@ -60,11 +60,12 @@ export const reconcileWorkOrderUpdate = async (
 
   if (clientUpdatedAt) {
     const serverUpdatedAt = workOrder.updatedAt ?? workOrder.createdAt ?? new Date(0);
+    const snapshot = workOrder.toObject({ depopulate: true }) as Record<string, unknown>;
     const resolution = resolveWorkOrderTimestampConflict(
       {
         id: workOrderId,
         updatedAt: serverUpdatedAt,
-        payload: workOrder.toObject() as unknown as Record<string, unknown>,
+        payload: snapshot,
       },
       {
         id: workOrderId,
@@ -77,7 +78,7 @@ export const reconcileWorkOrderUpdate = async (
       return {
         status: 'conflict',
         conflicts: resolution.conflicts,
-        snapshot: workOrder.toObject() as unknown as Record<string, unknown>,
+        snapshot,
         serverUpdatedAt,
       };
     }
@@ -141,25 +142,25 @@ export const advanceApproval = async (
   active.approver = update.approverId ?? resolveUserId(user);
 
   const maxStep = Math.max(...workOrder.approvalSteps.map((step) => step.step));
-    if (update.approved && workOrder.currentApprovalStep && workOrder.currentApprovalStep < maxStep) {
-      workOrder.currentApprovalStep += 1;
-      const nextStep = findActiveApproval(workOrder);
-      if (nextStep?.approver) {
-        notifyUser(nextStep.approver, `Approval required for ${workOrder.title}`, {
-          title: 'Work order approval needed',
-        }).catch(() => undefined);
-      }
-    } else {
-      workOrder.approvalStatus = update.approved ? 'approved' : 'rejected';
-      recordApprovalState(workOrder, update.approved ? 'approved' : 'rejected', update.note, user);
+  if (update.approved && workOrder.currentApprovalStep && workOrder.currentApprovalStep < maxStep) {
+    workOrder.currentApprovalStep += 1;
+    const nextStep = findActiveApproval(workOrder);
+    if (nextStep?.approver) {
+      notifyUser(nextStep.approver, `Approval required for ${workOrder.title}`, {
+        title: 'Work order approval needed',
+      }).catch(() => undefined);
     }
+  } else {
+    workOrder.approvalStatus = update.approved ? 'approved' : 'rejected';
+    recordApprovalState(workOrder, update.approved ? 'approved' : 'rejected', update.note, user);
+  }
 
-    const timeline = ensureTimeline(workOrder);
-    timeline.push({
-      label: `Approval ${update.approved ? 'approved' : 'rejected'}`,
-      notes: update.note,
-      createdAt: new Date(),
-      type: 'approval',
+  const timeline = ensureTimeline(workOrder);
+  timeline.push({
+    label: `Approval ${update.approved ? 'approved' : 'rejected'}`,
+    notes: update.note,
+    createdAt: new Date(),
+    type: 'approval',
     createdBy: update.approverId ?? resolveUserId(user),
   });
 

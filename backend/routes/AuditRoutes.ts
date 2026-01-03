@@ -43,10 +43,15 @@ const toObjectId = (value: unknown) => {
   return undefined;
 };
 
-const hasTenantContext = (req: AuthedRequest): req is TenantScopedRequest =>
+type TenantContextRequest = AuthedRequest & {
+  tenantId: string;
+  siteId?: string | undefined;
+};
+
+const hasTenantContext = (req: AuthedRequest): req is TenantContextRequest =>
   typeof req.tenantId === 'string' && req.tenantId.trim().length > 0;
 
-const buildMatch = (req: TenantScopedRequest): FilterQuery<AuditLogDocument> => {
+const buildMatch = (req: TenantContextRequest): FilterQuery<AuditLogDocument> => {
   const match: FilterQuery<AuditLogDocument> = scopeQueryToTenant({}, req.tenantId, req.siteId);
   const entityTypes = toStringArray(req.query?.entityType);
   if (entityTypes.length) {
@@ -133,10 +138,10 @@ router.use(requireAuth);
 router.use(requirePermission('audit.read'));
 router.use(...withPolicyGuard({ permissions: 'audit.read' }));
 
-router.get('/', async (req, res, next) => {
+router.get('/', async (req: AuthedRequest, res, next) => {
   try {
     ensureTenantContext(req as TenantScopedRequest);
-    if (!hasTenantContext(req as AuthedRequest)) {
+    if (!hasTenantContext(req)) {
       res.status(400).json({ message: 'Tenant context is required' });
       return;
     }
@@ -164,10 +169,10 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-router.get('/export', async (req, res, next) => {
+router.get('/export', async (req: AuthedRequest, res, next) => {
   try {
     ensureTenantContext(req as TenantScopedRequest);
-    if (!hasTenantContext(req as AuthedRequest)) {
+    if (!hasTenantContext(req)) {
       res.status(400).json({ message: 'Tenant context is required' });
       return;
     }
@@ -188,8 +193,13 @@ router.get('/export', async (req, res, next) => {
   }
 });
 
-router.get('/:id', validateObjectId('id'), async (req, res, next) => {
+router.get('/:id', validateObjectId('id'), async (req: AuthedRequest, res, next) => {
   try {
+    ensureTenantContext(req as TenantScopedRequest);
+    if (!hasTenantContext(req)) {
+      res.status(400).json({ message: 'Tenant context is required' });
+      return;
+    }
     const log = await AuditLog.findOne({ _id: req.params.id, tenantId: req.tenantId }).lean().exec();
     if (!log) {
       res.status(404).json({ success: false, error: 'Not found' });

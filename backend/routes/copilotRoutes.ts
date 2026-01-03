@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Router } from 'express';
+import { Router, type RequestHandler } from 'express';
 import type { ParamsDictionary } from 'express-serve-static-core';
 import { requireAuth } from '../middleware/authMiddleware';
 import type { AuthedRequest } from '../types/http';
@@ -19,25 +19,27 @@ interface CopilotRequestBody {
   assetId?: string;
 }
 
-router.post('/copilot', async (req: AuthedRequest<ParamsDictionary, unknown, CopilotRequestBody>, res, next) => {
+const copilotHandler: RequestHandler = async (req, res, next) => {
   try {
-    const tenantId = req.tenantId;
+    const authedReq = req as AuthedRequest<ParamsDictionary, unknown, CopilotRequestBody>;
+    const tenantId = authedReq.tenantId;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant context required', 400);
       return;
     }
-    const query = typeof req.body?.query === 'string' ? req.body.query.trim() : '';
+    const query = typeof authedReq.body?.query === 'string' ? authedReq.body.query.trim() : '';
     if (!query) {
       sendResponse(res, null, 'query is required', 400);
       return;
     }
-    const workOrderId = typeof req.body?.workOrderId === 'string' ? req.body.workOrderId : undefined;
-    const assetId = typeof req.body?.assetId === 'string' ? req.body.assetId : undefined;
+    const workOrderId =
+      typeof authedReq.body?.workOrderId === 'string' ? authedReq.body.workOrderId : undefined;
+    const assetId = typeof authedReq.body?.assetId === 'string' ? authedReq.body.assetId : undefined;
     if (!workOrderId && !assetId) {
       sendResponse(res, null, 'workOrderId or assetId is required', 400);
       return;
     }
-    const plantId = req.plantId ?? req.siteId;
+    const plantId = authedReq.plantId ?? authedReq.siteId;
     const result = await runCopilotRag({
       tenantId,
       ...(plantId ? { plantId } : {}),
@@ -53,6 +55,8 @@ router.post('/copilot', async (req: AuthedRequest<ParamsDictionary, unknown, Cop
     }
     next(err);
   }
-});
+};
+
+router.post('/copilot', copilotHandler);
 
 export default router;

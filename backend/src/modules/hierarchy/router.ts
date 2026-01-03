@@ -43,75 +43,75 @@ router.use(tenantScope);
 router.use(authorizeTenantSite());
 router.use(auditDataAccess('hierarchy', { entityIdParams: ['assetId', 'departmentId', 'lineId', 'stationId'] }));
 
-router.get('/', requirePermission('hierarchy', 'read' as any), getHierarchy);
-router.get('/assets/:assetId', requirePermission('hierarchy', 'read' as any), getAssetDetails);
+router.get('/', requirePermission('hierarchy', 'read'), getHierarchy);
+router.get('/assets/:assetId', requirePermission('hierarchy', 'read'), getAssetDetails);
 
-router.post('/departments', requirePermission('hierarchy', 'write' as any), createDepartmentHandler);
-router.put('/departments/:departmentId', requirePermission('hierarchy', 'write' as any), updateDepartmentHandler);
+router.post('/departments', requirePermission('hierarchy', 'write'), createDepartmentHandler);
+router.put('/departments/:departmentId', requirePermission('hierarchy', 'write'), updateDepartmentHandler);
 router.delete(
   '/departments/:departmentId',
-  requirePermission('hierarchy', 'delete' as any),
+  requirePermission('hierarchy', 'delete'),
   deleteDepartmentHandler,
 );
 
-router.post('/lines', requirePermission('hierarchy', 'write' as any), createLineHandler);
-router.put('/lines/:lineId', requirePermission('hierarchy', 'write' as any), updateLineHandler);
-router.delete('/lines/:lineId', requirePermission('hierarchy', 'delete' as any), deleteLineHandler);
+router.post('/lines', requirePermission('hierarchy', 'write'), createLineHandler);
+router.put('/lines/:lineId', requirePermission('hierarchy', 'write'), updateLineHandler);
+router.delete('/lines/:lineId', requirePermission('hierarchy', 'delete'), deleteLineHandler);
 
 router.post(
   '/departments/:departmentId/lines',
-  requirePermission('hierarchy', 'write' as any),
+  requirePermission('hierarchy', 'write'),
   createLineForDepartmentHandler,
 );
 router.put(
   '/departments/:departmentId/lines/:lineId',
-  requirePermission('hierarchy', 'write' as any),
+  requirePermission('hierarchy', 'write'),
   updateLineForDepartmentHandler,
 );
 router.delete(
   '/departments/:departmentId/lines/:lineId',
-  requirePermission('hierarchy', 'delete' as any),
+  requirePermission('hierarchy', 'delete'),
   deleteLineForDepartmentHandler,
 );
 
-router.post('/stations', requirePermission('hierarchy', 'write' as any), createStationHandler);
-router.put('/stations/:stationId', requirePermission('hierarchy', 'write' as any), updateStationHandler);
-router.delete('/stations/:stationId', requirePermission('hierarchy', 'delete' as any), deleteStationHandler);
+router.post('/stations', requirePermission('hierarchy', 'write'), createStationHandler);
+router.put('/stations/:stationId', requirePermission('hierarchy', 'write'), updateStationHandler);
+router.delete('/stations/:stationId', requirePermission('hierarchy', 'delete'), deleteStationHandler);
 
 router.post(
   '/departments/:departmentId/lines/:lineId/stations',
-  requirePermission('hierarchy', 'write' as any),
+  requirePermission('hierarchy', 'write'),
   createStationForLineHandler,
 );
 router.put(
   '/departments/:departmentId/lines/:lineId/stations/:stationId',
-  requirePermission('hierarchy', 'write' as any),
+  requirePermission('hierarchy', 'write'),
   updateStationForLineHandler,
 );
 router.delete(
   '/departments/:departmentId/lines/:lineId/stations/:stationId',
-  requirePermission('hierarchy', 'delete' as any),
+  requirePermission('hierarchy', 'delete'),
   deleteStationForLineHandler,
 );
 
-router.post('/assets', requirePermission('hierarchy', 'write' as any), createAssetHandler);
-router.put('/assets/:assetId', requirePermission('hierarchy', 'write' as any), updateAssetHandler);
-router.post('/assets/:assetId/duplicate', requirePermission('hierarchy', 'write' as any), duplicateAssetHandler);
-router.delete('/assets/:assetId', requirePermission('hierarchy', 'delete' as any), deleteAssetHandler);
+router.post('/assets', requirePermission('hierarchy', 'write'), createAssetHandler);
+router.put('/assets/:assetId', requirePermission('hierarchy', 'write'), updateAssetHandler);
+router.post('/assets/:assetId/duplicate', requirePermission('hierarchy', 'write'), duplicateAssetHandler);
+router.delete('/assets/:assetId', requirePermission('hierarchy', 'delete'), deleteAssetHandler);
 
 router.post(
   '/departments/:departmentId/lines/:lineId/stations/:stationId/assets',
-  requirePermission('hierarchy', 'write' as any),
+  requirePermission('hierarchy', 'write'),
   createAssetForStationHandler,
 );
 router.put(
   '/departments/:departmentId/lines/:lineId/stations/:stationId/assets/:assetId',
-  requirePermission('hierarchy', 'write' as any),
+  requirePermission('hierarchy', 'write'),
   updateAssetForStationHandler,
 );
 router.delete(
   '/departments/:departmentId/lines/:lineId/stations/:stationId/assets/:assetId',
-  requirePermission('hierarchy', 'delete' as any),
+  requirePermission('hierarchy', 'delete'),
   deleteAssetForStationHandler,
 );
 

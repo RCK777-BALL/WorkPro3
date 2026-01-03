@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Router } from 'express';
+import { Router, type RequestHandler } from 'express';
 import { requireAuth } from '../middleware/authMiddleware';
 import Plant from '../models/Plant';
 import type { AuthedRequest } from '../types/http';
@@ -10,25 +10,27 @@ import type { AuthedRequest } from '../types/http';
 const router = Router();
 router.use(requireAuth);
 
-router.get('/', async (req: AuthedRequest, res, next) => {
+const listPlantsHandler: RequestHandler = async (req, res, next) => {
   try {
-    const tenantId = req.tenantId;
+    const authedReq = req as AuthedRequest;
+    const tenantId = authedReq.tenantId;
     const filter = tenantId ? { tenantId } : {};
     const plants = await Plant.find(filter).sort({ name: 1 }).lean();
     res.json(plants.map((plant) => ({ ...plant, _id: plant._id.toString() })));
   } catch (err) {
     next(err);
   }
-});
+};
 
-router.post('/', async (req: AuthedRequest, res, next) => {
+const createPlantHandler: RequestHandler = async (req, res, next) => {
   try {
-    const tenantId = req.tenantId;
+    const authedReq = req as AuthedRequest;
+    const tenantId = authedReq.tenantId;
     if (!tenantId) {
       res.status(400).json({ error: 'Tenant ID required' });
       return;
     }
-    const { name, location, description } = req.body as {
+    const { name, location, description } = authedReq.body as {
       name?: string;
       location?: string | null;
       description?: string | null;
@@ -53,17 +55,18 @@ router.post('/', async (req: AuthedRequest, res, next) => {
   } catch (err) {
     next(err);
   }
-});
+};
 
-router.put('/:id', async (req: AuthedRequest, res, next) => {
+const updatePlantHandler: RequestHandler = async (req, res, next) => {
   try {
-    const tenantId = req.tenantId;
+    const authedReq = req as AuthedRequest;
+    const tenantId = authedReq.tenantId;
     if (!tenantId) {
       res.status(400).json({ error: 'Tenant ID required' });
       return;
     }
 
-  const { name, location, description } = req.body as {
+    const { name, location, description } = authedReq.body as {
       name?: string;
       location?: string | null;
       description?: string | null;
@@ -81,7 +84,7 @@ router.put('/:id', async (req: AuthedRequest, res, next) => {
       setOperations.name = trimmedName;
     }
 
-    if (Object.prototype.hasOwnProperty.call(req.body, 'location')) {
+    if (Object.prototype.hasOwnProperty.call(authedReq.body, 'location')) {
       if (typeof location === 'string') {
         setOperations.location = location.trim();
       } else if (location === null) {
@@ -89,7 +92,7 @@ router.put('/:id', async (req: AuthedRequest, res, next) => {
       }
     }
 
-    if (Object.prototype.hasOwnProperty.call(req.body, 'description')) {
+    if (Object.prototype.hasOwnProperty.call(authedReq.body, 'description')) {
       if (typeof description === 'string') {
         setOperations.description = description.trim();
       } else if (description === null) {
@@ -111,7 +114,7 @@ router.put('/:id', async (req: AuthedRequest, res, next) => {
     }
 
     const plant = await Plant.findOneAndUpdate(
-      { _id: req.params.id, tenantId },
+      { _id: authedReq.params.id, tenantId },
       updateOps,
       { new: true },
     );
@@ -125,6 +128,10 @@ router.put('/:id', async (req: AuthedRequest, res, next) => {
   } catch (err) {
     next(err);
   }
-});
+};
+
+router.get('/', listPlantsHandler);
+router.post('/', createPlantHandler);
+router.put('/:id', updatePlantHandler);
 
 export default router;

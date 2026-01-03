@@ -2,10 +2,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { NextFunction, Request, Response } from "express";
+import type { Response } from "express";
 import logger from "../utils/logger";
 import Site from "../models/Site";
 import Tenant from "../models/Tenant";
+import type { AuthedRequestHandler } from "../types/http";
 
 const tenantSiteCache = new Map<string, string>();
 
@@ -42,7 +43,7 @@ const toStringOrUndefined = (value: unknown): MaybeString => {
   return undefined;
 };
 
-const tenantScope = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+const tenantScope: AuthedRequestHandler = async (req, res: Response, next): Promise<void> => {
   const headerTenant = req.header("x-tenant-id");
   const userTenant = toStringOrUndefined(req.user?.tenantId);
   const resolvedTenantFromResolver = toStringOrUndefined((res.locals as { tenantId?: string }).tenantId);

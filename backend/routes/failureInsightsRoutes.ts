@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Router } from 'express';
+import { Router, type RequestHandler } from 'express';
 import type { ParamsDictionary } from 'express-serve-static-core';
 
 import { buildFailurePrediction, buildWorkOrderCopilot } from '../services/failureInsights';
@@ -14,18 +14,19 @@ const router = Router();
 
 router.use(requireAuth);
 
-router.get('/failure-prediction', async (req: AuthedRequest, res, next) => {
+const failurePredictionHandler: RequestHandler = async (req, res, next) => {
   try {
-    const tenantId = req.tenantId;
+    const authedReq = req as AuthedRequest;
+    const tenantId = authedReq.tenantId;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant context required', 400);
       return;
     }
 
-    const { assetId, workOrderId } = req.query as { assetId?: string; workOrderId?: string };
+    const { assetId, workOrderId } = authedReq.query as { assetId?: string; workOrderId?: string };
     const result = await buildFailurePrediction({
       tenantId,
-      siteId: req.siteId,
+      siteId: authedReq.siteId,
       assetId,
       workOrderId,
     });
@@ -33,26 +34,25 @@ router.get('/failure-prediction', async (req: AuthedRequest, res, next) => {
   } catch (err) {
     next(err);
   }
-});
+};
 
-router.post('/work-orders/:id/copilot', async (
-  req: AuthedRequest<ParamsDictionary, unknown, unknown>,
-  res,
-  next,
-) => {
+const workOrderCopilotHandler: RequestHandler = async (req, res, next) => {
   try {
-    const tenantId = req.tenantId;
+    const authedReq = req as AuthedRequest<ParamsDictionary, unknown, unknown>;
+    const tenantId = authedReq.tenantId;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant context required', 400);
       return;
     }
-    const workOrderId = req.params.id;
-    const result = await buildWorkOrderCopilot({ tenantId, siteId: req.siteId, workOrderId });
+    const workOrderId = authedReq.params.id;
+    const result = await buildWorkOrderCopilot({ tenantId, siteId: authedReq.siteId, workOrderId });
     sendResponse(res, result);
   } catch (err) {
     next(err);
   }
-});
+};
+
+router.get('/failure-prediction', failurePredictionHandler);
+router.post('/work-orders/:id/copilot', workOrderCopilotHandler);
 
 export default router;
-

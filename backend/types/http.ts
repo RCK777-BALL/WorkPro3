@@ -2,6 +2,7 @@ import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import type { ParamsDictionary, User } from 'express-serve-static-core';
 import type { ParsedQs } from 'qs';
 import type { UserRole } from './auth';
+import type { Permission } from '../shared/permissions';
 export type { ApiResult } from '../../shared/types/http';
 
 type AuthedUser = User & {
@@ -24,7 +25,7 @@ export type AuthedRequest<
   siteId?: string | undefined;
   departmentId?: string | undefined;
   plantId?: string | undefined;
-  permissions?: string[] | undefined;
+  permissions?: Permission[] | undefined;
 };
 
 export type AuthedRequestHandler<

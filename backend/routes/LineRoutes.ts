@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Router } from 'express';
+import { Router, type RequestHandler } from 'express';
 import type { FilterQuery, Types } from 'mongoose';
 
 import { requireAuth } from '../middleware/authMiddleware';
@@ -41,6 +41,9 @@ const toLinePayload = (line: LineLike) => ({
 const router = Router();
 router.use(requireAuth);
 router.use(tenantScope);
+
+const lineValidationHandlers = lineValidators as unknown as RequestHandler[];
+const lineUpdateValidationHandlers = lineUpdateValidators as unknown as RequestHandler[];
 
 const resolvePlantId = (req: { plantId?: string | undefined; siteId?: string | undefined }): string | undefined =>
   req.plantId ?? req.siteId ?? undefined;
@@ -237,8 +240,8 @@ const deleteLine: AuthedRequestHandler<{ id: string }> = async (req, res, next) 
 
 router.get('/', listLines);
 router.get('/:id', getLine);
-router.post('/', ...lineValidators, validate, createLine);
-router.put('/:id', ...lineUpdateValidators, validate, updateLine);
+router.post('/', ...lineValidationHandlers, validate, createLine);
+router.put('/:id', ...lineUpdateValidationHandlers, validate, updateLine);
 router.delete('/:id', deleteLine);
 
 export { listLines, getLine, createLine, updateLine, deleteLine };

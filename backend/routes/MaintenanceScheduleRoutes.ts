@@ -20,11 +20,11 @@ const router = express.Router();
 router.use(requireAuth);
 router.get('/', listMaintenanceSchedules);
 router.get('/:id', validateObjectId('id'), getMaintenanceSchedule);
-router.post('/', ...maintenanceScheduleValidators, validate, createMaintenanceSchedule);
+router.post('/', maintenanceScheduleValidators, validate, createMaintenanceSchedule);
 router.put(
   '/:id',
   validateObjectId('id'),
-  ...maintenanceScheduleValidators,
+  maintenanceScheduleValidators,
   validate,
   updateMaintenanceSchedule,
 );

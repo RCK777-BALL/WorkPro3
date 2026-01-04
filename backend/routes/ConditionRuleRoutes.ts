@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import express from 'express';
+import express, { type RequestHandler } from 'express';
 import {
   getAllConditionRules,
   getConditionRuleById,
@@ -16,6 +16,7 @@ import { validate } from '../middleware/validationMiddleware';
 import { conditionRuleValidators } from '../validators/conditionRuleValidators';
 
 const router = express.Router();
+const conditionRuleValidationHandlers = conditionRuleValidators as unknown as RequestHandler[];
 
 router.use(requireAuth);
 router.get('/', getAllConditionRules);
@@ -24,7 +25,7 @@ router.get('/:id', getConditionRuleById);
 router.post(
   '/',
   requireRoles(['general_manager', 'assistant_general_manager', 'admin', 'supervisor']),
-  ...conditionRuleValidators,
+  ...conditionRuleValidationHandlers,
   validate,
   createConditionRule
 );
@@ -32,7 +33,7 @@ router.post(
 router.put(
   '/:id',
   requireRoles(['general_manager', 'assistant_general_manager', 'admin', 'supervisor']),
-  ...conditionRuleValidators,
+  ...conditionRuleValidationHandlers,
   validate,
   updateConditionRule
 );

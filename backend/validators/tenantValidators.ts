@@ -1,7 +1,7 @@
-import type { RequestHandler } from 'express';
 import { body } from 'express-validator';
+import type { ValidationChain } from 'express-validator';
 
-export const tenantValidators = [
+export const tenantValidators: ValidationChain[] = [
   body('name').notEmpty().withMessage('name is required'),
   body('sso')
     .optional()
@@ -44,6 +44,6 @@ export const tenantValidators = [
   body('sandbox.enabled').optional().isBoolean(),
   body('sandbox.expiresAt').optional().isISO8601().toDate(),
   body('sandbox.provisionedBy').optional().isMongoId(),
-] as RequestHandler[];
+];
 
 export default tenantValidators;

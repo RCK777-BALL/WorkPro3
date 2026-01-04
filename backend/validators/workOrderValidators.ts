@@ -33,12 +33,12 @@ export const workOrderValidators = [
   body('checklists.*.done').optional().isBoolean(),
   body('partsUsed').optional().isArray(),
   body('partsUsed.*.partId').isMongoId(),
-  body('partsUsed.*.qty').isNumeric(),
-  body('partsUsed.*.cost').isNumeric(),
+  body('partsUsed.*.qty').isFloat(),
+  body('partsUsed.*.cost').isFloat(),
   body('signatures').optional().isArray(),
   body('signatures.*.by').isMongoId(),
   body('signatures.*.ts').optional().isISO8601().toDate(),
-  body('timeSpentMin').optional().isNumeric(),
+  body('timeSpentMin').optional().isFloat(),
   body('photos').optional().isArray(),
   body('photos.*')
     .isString()

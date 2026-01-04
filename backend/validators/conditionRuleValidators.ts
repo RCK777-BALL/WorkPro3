@@ -11,7 +11,7 @@ export const conditionRuleValidators = [
     .optional()
     .isIn(['>', '<', '>=', '<=', '=='])
     .withMessage('invalid operator'),
-  body('threshold').isNumeric().withMessage('threshold must be number'),
+  body('threshold').isFloat().withMessage('threshold must be number'),
   body('workOrderTitle').notEmpty().withMessage('workOrderTitle is required'),
   body('workOrderDescription').optional().isString(),
   body('active').optional().isBoolean(),

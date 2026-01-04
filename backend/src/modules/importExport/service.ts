@@ -304,7 +304,11 @@ export const generateAssetExport = async (
   const workbookBuffer = await workbook.xlsx.writeBuffer();
   const buffer = Buffer.isBuffer(workbookBuffer)
     ? workbookBuffer
-    : Buffer.from(workbookBuffer as ArrayBuffer);
+    : Buffer.from(
+        workbookBuffer instanceof ArrayBuffer
+          ? workbookBuffer
+          : new Uint8Array(workbookBuffer),
+      );
 
   return {
     buffer,

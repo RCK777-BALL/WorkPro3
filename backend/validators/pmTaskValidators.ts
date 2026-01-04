@@ -11,17 +11,37 @@ export const pmTaskValidators = [
     .withMessage('rule.type is required')
     .isIn(['calendar', 'meter']),
   body('rule.cron')
-    .if(body('rule.type').equals('calendar'))
-    .notEmpty()
-    .withMessage('cron is required for calendar tasks'),
+    .custom((value, { req }) => {
+      if (req.body?.rule?.type === 'calendar' && !value) {
+        throw new Error('cron is required for calendar tasks');
+      }
+
+      return true;
+    }),
   body('rule.meterName')
-    .if(body('rule.type').equals('meter'))
-    .notEmpty()
-    .withMessage('meterName is required for meter tasks'),
+    .custom((value, { req }) => {
+      if (req.body?.rule?.type === 'meter' && !value) {
+        throw new Error('meterName is required for meter tasks');
+      }
+
+      return true;
+    }),
   body('rule.threshold')
-    .if(body('rule.type').equals('meter'))
-    .isFloat()
-    .withMessage('threshold must be a number'),
+    .custom((value, { req }) => {
+      if (req.body?.rule?.type !== 'meter') {
+        return true;
+      }
+
+      if (value === undefined || value === null || value === '') {
+        throw new Error('threshold must be a number');
+      }
+
+      if (Number.isNaN(Number(value))) {
+        throw new Error('threshold must be a number');
+      }
+
+      return true;
+    }),
   body('active').optional().isBoolean(),
   body('lastGeneratedAt').optional().isISO8601().toDate(),
   body('asset').optional().isMongoId(),

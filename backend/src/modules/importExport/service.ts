@@ -358,7 +358,7 @@ const parseWorkbookRows = async (file: Express.Multer.File): Promise<Record<stri
    * Using `file.buffer.buffer.slice(...)` produces an ArrayBuffer that can cause
    * TS Buffer<ArrayBuffer> mismatch and also subtle content issues.
    */
-  await workbook.xlsx.load(file.buffer);
+  await workbook.xlsx.load(toNodeBuffer(file.buffer));
 
   const worksheet = workbook.worksheets[0];
   if (!worksheet) throw new ImportExportError('The uploaded workbook does not have any sheets.');

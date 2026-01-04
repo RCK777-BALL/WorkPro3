@@ -278,19 +278,21 @@ const buildExportRows = (assets: Array<Pick<AssetDoc, (typeof EXPORT_HEADERS)[nu
  * ArrayBuffer-backed Node Buffer.
  */
 const toNodeBuffer = (data: unknown): NodeBuffer => {
-  if (NodeBuffer.isBuffer(data)) return NodeBuffer.from(data);
+  const fromUint8 = (bytes: Uint8Array): NodeBuffer => NodeBuffer.from(Uint8Array.from(bytes));
+
+  if (NodeBuffer.isBuffer(data)) return fromUint8(data);
 
   if (data instanceof ArrayBuffer) return NodeBuffer.from(new Uint8Array(data));
   if (typeof SharedArrayBuffer !== 'undefined' && data instanceof SharedArrayBuffer) {
-    return NodeBuffer.from(new Uint8Array(data));
+    return fromUint8(new Uint8Array(data));
   }
-  if (data instanceof Uint8Array) return NodeBuffer.from(data);
+  if (data instanceof Uint8Array) return fromUint8(data);
 
   // Some libs type this as "ArrayBufferLike" or unknown; handle safely
   if (data && typeof data === 'object' && 'buffer' in (data as any) && (data as any).buffer instanceof ArrayBuffer) {
     const typed = data as { buffer: ArrayBuffer; byteOffset?: number; byteLength?: number };
     if (typeof typed.byteOffset === 'number' && typeof typed.byteLength === 'number') {
-      return NodeBuffer.from(typed.buffer.slice(typed.byteOffset, typed.byteOffset + typed.byteLength));
+      return NodeBuffer.from(new Uint8Array(typed.buffer, typed.byteOffset, typed.byteLength));
     }
     return NodeBuffer.from(new Uint8Array(typed.buffer));
   }
@@ -363,7 +365,7 @@ const parseWorkbookRows = async (file: Express.Multer.File): Promise<Record<stri
    * Using `file.buffer.buffer.slice(...)` produces an ArrayBuffer that can cause
    * TS Buffer<ArrayBuffer> mismatch and also subtle content issues.
    */
-  await workbook.xlsx.load(file.buffer);
+  await workbook.xlsx.load(toNodeBuffer(file.buffer));
 
   const worksheet = workbook.worksheets[0];
   if (!worksheet) throw new ImportExportError('The uploaded workbook does not have any sheets.');

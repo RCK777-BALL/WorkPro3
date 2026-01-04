@@ -6,6 +6,7 @@ import type { Express } from 'express';
 import type { FilterQuery } from 'mongoose';
 import ExcelJS from 'exceljs';
 import Papa from 'papaparse';
+import { Buffer as NodeBuffer } from 'node:buffer';
 
 import Asset, { type AssetDoc } from '../../../models/Asset';
 
@@ -80,7 +81,7 @@ export interface ImportSummary {
 }
 
 export interface ExportPayload {
-  buffer: Buffer;
+  buffer: NodeBuffer;
   filename: string;
   mimeType: string;
 }
@@ -196,29 +197,23 @@ const normalizeRowWithAliases = <TRow extends Record<string, unknown>>(
 
   for (const [rawKey, rawValue] of Object.entries(row)) {
     if (rawValue === undefined || rawValue === null) continue;
-    const trimmedValue = trimValue(rawValue);
-    if (!trimmedValue) continue;
-    const normalizedKey = aliases[normalizeKey(rawKey)];
-    if (!normalizedKey) continue;
-    (normalized as Record<keyof TRow & string, string | number>)[normalizedKey] = trimmedValue;
+    const trimmed = trimValue(rawValue);
+    if (!trimmed) continue;
+
+    const mappedKey = aliases[normalizeKey(rawKey)];
+    if (!mappedKey) continue;
+
+    (normalized as Record<string, unknown>)[mappedKey] = trimmed;
     hasValue = true;
   }
 
-  if (!hasValue) {
-    return null;
-  }
-
-  return normalized;
+  return hasValue ? normalized : null;
 };
 
 const buildAssetFilter = (context: Context): FilterQuery<AssetDoc> => {
   const filter: FilterQuery<AssetDoc> = { tenantId: context.tenantId };
-  if (context.plantId) {
-    (filter as Record<string, unknown>).plant = context.plantId as unknown;
-  }
-  if (context.siteId) {
-    (filter as Record<string, unknown>).siteId = context.siteId as unknown;
-  }
+  if (context.plantId) (filter as any).plant = context.plantId;
+  if (context.siteId) (filter as any).siteId = context.siteId;
   return filter;
 };
 
@@ -277,10 +272,28 @@ const buildExportRows = (assets: Array<Pick<AssetDoc, (typeof EXPORT_HEADERS)[nu
   }));
 };
 
-export const generateAssetExport = async (
-  context: Context,
-  format: ExportFormat,
-): Promise<ExportPayload> => {
+/**
+ * Converts ExcelJS buffer outputs (which may be ArrayBuffer/Uint8Array/etc) into a Node Buffer.
+ * This also prevents TS mismatches like Buffer<ArrayBuffer> vs Buffer.
+ */
+const toNodeBuffer = (data: unknown): NodeBuffer => {
+  if (NodeBuffer.isBuffer(data)) return data;
+
+  if (data instanceof ArrayBuffer) return NodeBuffer.from(new Uint8Array(data));
+  if (typeof SharedArrayBuffer !== 'undefined' && data instanceof SharedArrayBuffer) {
+    return NodeBuffer.from(new Uint8Array(data));
+  }
+  if (data instanceof Uint8Array) return NodeBuffer.from(data);
+
+  // Some libs type this as "ArrayBufferLike" or unknown; handle safely
+  if (data && typeof data === 'object' && 'buffer' in (data as any) && (data as any).buffer instanceof ArrayBuffer) {
+    return NodeBuffer.from(new Uint8Array((data as any).buffer));
+  }
+
+  throw new ImportExportError('Unable to convert workbook buffer to a Node Buffer.');
+};
+
+export const generateAssetExport = async (context: Context, format: ExportFormat): Promise<ExportPayload> => {
   const filter = buildAssetFilter(context);
   const assets = await Asset.find(filter).sort({ updatedAt: -1 }).limit(1000).lean();
   const rows = buildExportRows(assets);
@@ -288,7 +301,7 @@ export const generateAssetExport = async (
   if (format === 'csv') {
     const csv = Papa.unparse(rows, { header: true, skipEmptyLines: true });
     return {
-      buffer: Buffer.from(csv, 'utf8'),
+      buffer: NodeBuffer.from(csv, 'utf8'),
       filename: 'assets.csv',
       mimeType: 'text/csv',
     };
@@ -296,13 +309,13 @@ export const generateAssetExport = async (
 
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Assets');
-  const headers = EXPORT_HEADERS.map((header) => header.label);
+  const headers = EXPORT_HEADERS.map((h) => h.label);
+
   worksheet.addRow(headers);
-  rows.forEach((row) => {
-    worksheet.addRow(headers.map((header) => row[header] ?? ''));
-  });
-  const workbookBuffer = await workbook.xlsx.writeBuffer();
-  const buffer = toBuffer(workbookBuffer);
+  rows.forEach((row) => worksheet.addRow(headers.map((header) => row[header] ?? '')));
+
+  const wb = await workbook.xlsx.writeBuffer();
+  const buffer = toNodeBuffer(wb);
 
   return {
     buffer,
@@ -311,20 +324,10 @@ export const generateAssetExport = async (
   };
 };
 
-const toBuffer = (data: ArrayBuffer | SharedArrayBuffer | Uint8Array | Buffer): Buffer => {
-  if (Buffer.isBuffer(data)) return data;
-  if (data instanceof ArrayBuffer || data instanceof SharedArrayBuffer) {
-    return Buffer.from(new Uint8Array(data));
-  }
-  return Buffer.from(data);
-};
-
-const parseCsvRows = (file: Express.Multer.File) => {
+const parseCsvRows = (file: Express.Multer.File): Record<string, unknown>[] => {
   const csv = file.buffer.toString('utf8');
-  const parsed = Papa.parse<Record<string, unknown>>(csv, {
-    header: true,
-    skipEmptyLines: 'greedy',
-  });
+  const parsed = Papa.parse<Record<string, unknown>>(csv, { header: true, skipEmptyLines: 'greedy' });
+
   if (parsed.errors.length > 0) {
     throw new ImportExportError(`Unable to parse CSV: ${parsed.errors[0]?.message ?? 'unknown error'}`);
   }
@@ -334,65 +337,63 @@ const parseCsvRows = (file: Express.Multer.File) => {
 const normalizeWorkbookValue = (value: ExcelJS.CellValue | undefined | null): string | number | undefined => {
   if (value === null || value === undefined) return '';
   if (value instanceof Date) return value.toISOString();
+
   if (typeof value === 'object') {
     if ('text' in value && typeof value.text === 'string') return value.text;
     if ('richText' in value) return value.richText.map((entry) => entry.text).join('');
     if ('formula' in value) return value.result as string | number | undefined;
     if ('result' in value) return value.result as string | number | undefined;
-    if ('hyperlink' in value) return value.text ?? value.hyperlink;
+    if ('hyperlink' in value) return (value as any).text ?? (value as any).hyperlink;
   }
+
   return value as string | number;
 };
 
-const parseWorkbookRows = async (file: Express.Multer.File) => {
+const parseWorkbookRows = async (file: Express.Multer.File): Promise<Record<string, unknown>[]> => {
   const workbook = new ExcelJS.Workbook();
-  const workbookBuffer = file.buffer.buffer.slice(
-    file.buffer.byteOffset,
-    file.buffer.byteOffset + file.buffer.byteLength,
-  );
-  await workbook.xlsx.load(workbookBuffer);
+
+  /**
+   * IMPORTANT LOGIC FIX:
+   * ExcelJS accepts a Node Buffer directly.
+   * Using `file.buffer.buffer.slice(...)` produces an ArrayBuffer that can cause
+   * TS Buffer<ArrayBuffer> mismatch and also subtle content issues.
+   */
+  await workbook.xlsx.load(file.buffer);
+
   const worksheet = workbook.worksheets[0];
-  if (!worksheet) {
-    throw new ImportExportError('The uploaded workbook does not have any sheets.');
-  }
+  if (!worksheet) throw new ImportExportError('The uploaded workbook does not have any sheets.');
+
   const headerRow = worksheet.getRow(1);
   const headerValues = Array.isArray(headerRow.values) ? headerRow.values : [];
-  const headers = headerValues.slice(1).map((value) => trimValue(value));
-  if (headers.length === 0) {
-    throw new ImportExportError('The uploaded workbook does not have any headers.');
-  }
+  const headers = headerValues.slice(1).map((v) => trimValue(v)).filter(Boolean);
+
+  if (headers.length === 0) throw new ImportExportError('The uploaded workbook does not have any headers.');
+
   const rows: Record<string, unknown>[] = [];
+
   for (let rowIndex = 2; rowIndex <= worksheet.rowCount; rowIndex += 1) {
     const row = worksheet.getRow(rowIndex);
     const rowData: Record<string, unknown> = {};
+
     headers.forEach((header, index) => {
-      if (!header) return;
       rowData[header] = normalizeWorkbookValue(row.getCell(index + 1).value);
     });
-    const hasValues = Object.values(rowData).some(
-      (value) => value !== '' && value !== null && value !== undefined,
-    );
-    if (hasValues) {
-      rows.push(rowData);
-    }
+
+    const hasValues = Object.values(rowData).some((v) => v !== '' && v !== null && v !== undefined);
+    if (hasValues) rows.push(rowData);
   }
+
   return rows;
 };
 
 const detectFormat = (file: Express.Multer.File): 'csv' | 'xlsx' => {
   const name = file.originalname.toLowerCase();
-  if (name.endsWith('.csv') || file.mimetype.includes('csv')) {
-    return 'csv';
-  }
-  if (name.endsWith('.xls')) {
-    throw new ImportExportError('Only .xlsx workbooks are supported for Excel imports.');
-  }
-  if (name.endsWith('.xlsx')) {
-    return 'xlsx';
-  }
-  if (/spreadsheet|excel/.test(file.mimetype)) {
-    return 'xlsx';
-  }
+
+  if (name.endsWith('.csv') || file.mimetype.includes('csv')) return 'csv';
+  if (name.endsWith('.xls')) throw new ImportExportError('Only .xlsx workbooks are supported for Excel imports.');
+  if (name.endsWith('.xlsx')) return 'xlsx';
+  if (/spreadsheet|excel/.test(file.mimetype)) return 'xlsx';
+
   throw new ImportExportError('Only CSV or Excel files are supported for imports.');
 };
 
@@ -403,9 +404,7 @@ const normalizeRows = <TRow extends Record<string, unknown>>(
   const rows: Partial<TRow>[] = [];
   for (const row of rawRows) {
     const normalized = normalizeRowWithAliases<TRow>(row, aliases);
-    if (normalized) {
-      rows.push(normalized);
-    }
+    if (normalized) rows.push(normalized);
   }
   return rows;
 };
@@ -426,14 +425,12 @@ export const parseImportFile = async <T extends ImportEntity>(
 ): Promise<{ rows: Array<Partial<ImportRowMap[T]>>; format: 'csv' | 'xlsx'; columns: string[] }> => {
   const format = detectFormat(file);
   const rawRows = format === 'csv' ? parseCsvRows(file) : await parseWorkbookRows(file);
-  type RawRow = Record<string, unknown>;
-  const columns: string[] = Array.from(
-    new Set(rawRows.flatMap((row: RawRow) => Object.keys(row ?? {}))),
-  );
+
+  const columns = Array.from(new Set(rawRows.flatMap((row) => Object.keys(row ?? {}))));
   const rows = normalizeRows(rawRows, getAliasesForEntity(entity));
-  if (!rows.length) {
-    throw new ImportExportError('No valid rows were detected in the uploaded file.');
-  }
+
+  if (!rows.length) throw new ImportExportError('No valid rows were detected in the uploaded file.');
+
   return { rows, format, columns };
 };
 
@@ -445,7 +442,7 @@ export const validateAssetRows = (
   const serials = new Set<string>();
 
   rows.forEach((row, index) => {
-    const rowNumber = index + 2; // header row offset
+    const rowNumber = index + 2;
     const issues: ImportValidationError[] = [];
 
     const normalized: ImportAssetRow = {
@@ -468,11 +465,7 @@ export const validateAssetRows = (
     }
 
     if (normalized.status && !STATUS_VALUES.has(normalized.status)) {
-      issues.push({
-        row: rowNumber,
-        field: 'status',
-        message: 'Status must be Active, Offline, or In Repair.',
-      });
+      issues.push({ row: rowNumber, field: 'status', message: 'Status must be Active, Offline, or In Repair.' });
     }
 
     if (normalized.serialNumber) {
@@ -488,10 +481,7 @@ export const validateAssetRows = (
       return;
     }
 
-    validRows.push({
-      ...normalized,
-      status: normalized.status ?? 'Active',
-    });
+    validRows.push({ ...normalized, status: normalized.status ?? 'Active' });
   });
 
   return { errors, valid: validRows };
@@ -511,13 +501,8 @@ export const validatePmRows = (
     const interval = row.interval?.toString().trim();
     const priority = row.priority?.toString().toLowerCase();
 
-    if (!title) {
-      issues.push({ row: rowNumber, field: 'title', message: 'Title is required.' });
-    }
-
-    if (!interval) {
-      issues.push({ row: rowNumber, field: 'interval', message: 'Interval is required.' });
-    }
+    if (!title) issues.push({ row: rowNumber, field: 'title', message: 'Title is required.' });
+    if (!interval) issues.push({ row: rowNumber, field: 'interval', message: 'Interval is required.' });
 
     if (priority && !PM_PRIORITY_VALUES.has(priority)) {
       issues.push({ row: rowNumber, field: 'priority', message: 'Priority must be low, medium, or high.' });
@@ -551,18 +536,24 @@ export const validateWorkOrderRows = (
     const issues: ImportValidationError[] = [];
 
     const title = row.title?.toString().trim() ?? '';
-    if (!title) {
-      issues.push({ row: rowNumber, field: 'title', message: 'Title is required.' });
-    }
+    if (!title) issues.push({ row: rowNumber, field: 'title', message: 'Title is required.' });
 
     const status = row.status ? toTitle(row.status.toString()) : undefined;
     if (status && !WORK_ORDER_STATUS_VALUES.has(status)) {
-      issues.push({ row: rowNumber, field: 'status', message: 'Status must be Open, In Progress, Completed, or Cancelled.' });
+      issues.push({
+        row: rowNumber,
+        field: 'status',
+        message: 'Status must be Open, In Progress, Completed, or Cancelled.',
+      });
     }
 
     const priority = row.priority ? toTitle(row.priority.toString()) : undefined;
     if (priority && !WORK_ORDER_PRIORITY_VALUES.has(priority)) {
-      issues.push({ row: rowNumber, field: 'priority', message: 'Priority must be Low, Medium, High, or Critical.' });
+      issues.push({
+        row: rowNumber,
+        field: 'priority',
+        message: 'Priority must be Low, Medium, High, or Critical.',
+      });
     }
 
     if (issues.length) {
@@ -600,9 +591,7 @@ export const validatePartRows = (
     const issues: ImportValidationError[] = [];
 
     const name = row.name?.toString().trim() ?? '';
-    if (!name) {
-      issues.push({ row: rowNumber, field: 'name', message: 'Name is required.' });
-    }
+    if (!name) issues.push({ row: rowNumber, field: 'name', message: 'Name is required.' });
 
     const quantity = parseNumber(row.quantity);
     const reorderThreshold = parseNumber(row.reorderThreshold);
@@ -646,6 +635,7 @@ const validateByEntity = <T extends ImportEntity>(
 export const summarizeImport = async (file: Express.Multer.File, entity: ImportEntity): Promise<ImportSummary> => {
   const { rows, format, columns } = await parseImportFile(file, entity);
   const { errors, valid } = validateByEntity(entity, rows);
+
   return {
     totalRows: rows.length,
     validRows: valid.length,

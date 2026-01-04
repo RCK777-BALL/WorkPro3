@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+import type { RequestHandler } from 'express';
 import { body } from 'express-validator';
 
 export const conditionRuleValidators = [
@@ -15,4 +16,4 @@ export const conditionRuleValidators = [
   body('workOrderTitle').notEmpty().withMessage('workOrderTitle is required'),
   body('workOrderDescription').optional().isString(),
   body('active').optional().isBoolean(),
-];
+] as RequestHandler[];

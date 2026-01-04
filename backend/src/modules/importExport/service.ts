@@ -346,7 +346,11 @@ const normalizeWorkbookValue = (value: ExcelJS.CellValue | undefined | null): st
 
 const parseWorkbookRows = async (file: Express.Multer.File) => {
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(file.buffer);
+  const workbookBuffer = file.buffer.buffer.slice(
+    file.buffer.byteOffset,
+    file.buffer.byteOffset + file.buffer.byteLength,
+  );
+  await workbook.xlsx.load(workbookBuffer);
   const worksheet = workbook.worksheets[0];
   if (!worksheet) {
     throw new ImportExportError('The uploaded workbook does not have any sheets.');

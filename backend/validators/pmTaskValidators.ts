@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+import type { Request } from 'express';
 import { body } from 'express-validator';
 
 export const pmTaskValidators = [
@@ -11,7 +12,7 @@ export const pmTaskValidators = [
     .withMessage('rule.type is required')
     .isIn(['calendar', 'meter']),
   body('rule.cron')
-    .custom((value, { req }) => {
+    .custom((value, { req }: { req: Request }) => {
       if (req.body?.rule?.type === 'calendar' && !value) {
         throw new Error('cron is required for calendar tasks');
       }
@@ -19,7 +20,7 @@ export const pmTaskValidators = [
       return true;
     }),
   body('rule.meterName')
-    .custom((value, { req }) => {
+    .custom((value, { req }: { req: Request }) => {
       if (req.body?.rule?.type === 'meter' && !value) {
         throw new Error('meterName is required for meter tasks');
       }
@@ -27,7 +28,7 @@ export const pmTaskValidators = [
       return true;
     }),
   body('rule.threshold')
-    .custom((value, { req }) => {
+    .custom((value, { req }: { req: Request }) => {
       if (req.body?.rule?.type !== 'meter') {
         return true;
       }

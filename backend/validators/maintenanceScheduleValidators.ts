@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+import type { RequestHandler } from 'express';
 import { body } from 'express-validator';
 
 const repeatConfigValidators = [
@@ -25,7 +26,7 @@ const repeatConfigValidators = [
     .toInt(),
 ];
 
-export const maintenanceScheduleValidators = [
+export const maintenanceScheduleValidators: RequestHandler[] = [
   body('title').isString().notEmpty().withMessage('title is required'),
   body('description').optional().isString(),
   body('assetId').optional().isString(),

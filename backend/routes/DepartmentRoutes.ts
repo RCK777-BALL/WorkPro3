@@ -105,6 +105,7 @@ interface DepartmentNode {
 }
 
 const router = Router();
+const departmentValidationHandlers = departmentValidators as unknown as RequestHandler[];
 router.use(requireAuth);
 router.use(tenantScope);
 
@@ -2048,9 +2049,9 @@ router.get('/', listDepartments);
 router.get('/export', exportDepartmentsToExcel);
 router.get('/plant/:plantId', listDepartmentsByPlant);
 router.get('/:id', getDepartment);
-router.post('/', departmentValidators, validate, createDepartment);
+router.post('/', ...departmentValidationHandlers, validate, createDepartment);
 router.post('/import', handleExcelUpload, importDepartmentsFromExcel);
-router.put('/:id', departmentValidators, validate, updateDepartment);
+router.put('/:id', ...departmentValidationHandlers, validate, updateDepartment);
 router.delete('/:id', deleteDepartment);
 router.post('/:deptId/lines', createLineForDepartment);
 router.put('/:deptId/lines/:lineId', updateLineForDepartment);

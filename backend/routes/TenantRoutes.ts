@@ -23,8 +23,8 @@ router.use(requireRoles(['general_manager', 'admin']));
 
 router.get('/', getAllTenants);
 router.get('/:id', validateObjectId('id'), getTenantById);
-router.post('/', tenantValidators, validate, createTenant);
-router.put('/:id', validateObjectId('id'), tenantValidators, validate, updateTenant);
+router.post('/', ...tenantValidators, validate, createTenant);
+router.put('/:id', validateObjectId('id'), ...tenantValidators, validate, updateTenant);
 router.delete('/:id', validateObjectId('id'), deleteTenant);
 
 export default router;

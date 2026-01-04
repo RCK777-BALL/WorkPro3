@@ -288,10 +288,10 @@ const buildColumnMeta = (
 
 const isObjectIdValue = (
   value: unknown,
-): value is string | number | Types.ObjectId | Uint8Array<ArrayBufferLike> => {
+): value is string | number | Types.ObjectId | Buffer => {
   if (typeof value === 'string' || typeof value === 'number') return true;
   if (typeof value === 'object' && value !== null && value instanceof Types.ObjectId) return true;
-  return typeof value === 'object' && value !== null && value instanceof Uint8Array;
+  return typeof value === 'object' && value !== null && Buffer.isBuffer(value);
 };
 
 const formatRowValue = (value: unknown): string | number | null => {

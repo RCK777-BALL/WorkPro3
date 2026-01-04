@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Router } from 'express';
+import { Router, type RequestHandler } from 'express';
 import type { FilterQuery, Types } from 'mongoose';
 
 import { requireAuth } from '../middleware/authMiddleware';
@@ -41,6 +41,9 @@ const toStationPayload = (station: StationLike) => ({
 const router = Router();
 router.use(requireAuth);
 router.use(tenantScope);
+
+const stationValidationHandlers = stationValidators as unknown as RequestHandler[];
+const stationUpdateValidationHandlers = stationUpdateValidators as unknown as RequestHandler[];
 
 const resolvePlantId = (req: { plantId?: string | undefined; siteId?: string | undefined }): string | undefined =>
   req.plantId ?? req.siteId ?? undefined;
@@ -245,8 +248,8 @@ const deleteStation: AuthedRequestHandler<{ id: string }> = async (req, res, nex
 
 router.get('/', listStations);
 router.get('/:id', getStation);
-router.post('/', ...stationValidators, validate, createStation);
-router.put('/:id', ...stationUpdateValidators, validate, updateStation);
+router.post('/', ...stationValidationHandlers, validate, createStation);
+router.put('/:id', ...stationUpdateValidationHandlers, validate, updateStation);
 router.delete('/:id', deleteStation);
 
 export { listStations, getStation, createStation, updateStation, deleteStation };

@@ -302,19 +302,21 @@ export const generateAssetExport = async (
     worksheet.addRow(headers.map((header) => row[header] ?? ''));
   });
   const workbookBuffer = await workbook.xlsx.writeBuffer();
-  const buffer = Buffer.isBuffer(workbookBuffer)
-    ? workbookBuffer
-    : Buffer.from(
-        workbookBuffer instanceof ArrayBuffer
-          ? workbookBuffer
-          : new Uint8Array(workbookBuffer),
-      );
+  const buffer = toBuffer(workbookBuffer);
 
   return {
     buffer,
     filename: 'assets.xlsx',
     mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   };
+};
+
+const toBuffer = (data: ArrayBuffer | SharedArrayBuffer | Uint8Array | Buffer): Buffer => {
+  if (Buffer.isBuffer(data)) return data;
+  if (data instanceof ArrayBuffer || data instanceof SharedArrayBuffer) {
+    return Buffer.from(new Uint8Array(data));
+  }
+  return Buffer.from(data);
 };
 
 const parseCsvRows = (file: Express.Multer.File) => {
@@ -344,11 +346,7 @@ const normalizeWorkbookValue = (value: ExcelJS.CellValue | undefined | null): st
 
 const parseWorkbookRows = async (file: Express.Multer.File) => {
   const workbook = new ExcelJS.Workbook();
-  const workbookBuffer = file.buffer.buffer.slice(
-    file.buffer.byteOffset,
-    file.buffer.byteOffset + file.buffer.byteLength,
-  );
-  await workbook.xlsx.load(workbookBuffer);
+  await workbook.xlsx.load(file.buffer);
   const worksheet = workbook.worksheets[0];
   if (!worksheet) {
     throw new ImportExportError('The uploaded workbook does not have any sheets.');

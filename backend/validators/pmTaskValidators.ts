@@ -20,7 +20,7 @@ export const pmTaskValidators = [
     .withMessage('meterName is required for meter tasks'),
   body('rule.threshold')
     .if(body('rule.type').equals('meter'))
-    .isNumeric()
+    .isFloat()
     .withMessage('threshold must be a number'),
   body('active').optional().isBoolean(),
   body('lastGeneratedAt').optional().isISO8601().toDate(),

@@ -12,24 +12,27 @@ export const pmTaskValidators = [
     .withMessage('rule.type is required')
     .isIn(['calendar', 'meter']),
   body('rule.cron')
-    .custom((value, { req }: { req: Request }) => {
-      if (req.body?.rule?.type === 'calendar' && !value) {
+    .custom((value, { req }) => {
+      const request = req as Request;
+      if (request.body?.rule?.type === 'calendar' && !value) {
         throw new Error('cron is required for calendar tasks');
       }
 
       return true;
     }),
   body('rule.meterName')
-    .custom((value, { req }: { req: Request }) => {
-      if (req.body?.rule?.type === 'meter' && !value) {
+    .custom((value, { req }) => {
+      const request = req as Request;
+      if (request.body?.rule?.type === 'meter' && !value) {
         throw new Error('meterName is required for meter tasks');
       }
 
       return true;
     }),
   body('rule.threshold')
-    .custom((value, { req }: { req: Request }) => {
-      if (req.body?.rule?.type !== 'meter') {
+    .custom((value, { req }) => {
+      const request = req as Request;
+      if (request.body?.rule?.type !== 'meter') {
         return true;
       }
 

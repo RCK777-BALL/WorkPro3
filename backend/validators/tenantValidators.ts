@@ -14,12 +14,18 @@ export const tenantValidators = [
   body('localization.timezone').optional().isString(),
   body('localization.unitSystem').optional().isIn(['metric', 'imperial']),
   body('customFields').optional().isObject(),
-  body('customFields.workOrders').optional().isArray(),
+  body('customFields.workOrders')
+    .optional()
+    .custom((value) => Array.isArray(value))
+    .withMessage('customFields.workOrders must be an array'),
   body('customFields.workOrders.*.key').optional().isString(),
   body('customFields.workOrders.*.label').optional().isString(),
   body('customFields.workOrders.*.type').optional().isString(),
   body('customFields.workOrders.*.required').optional().isBoolean(),
-  body('customFields.assets').optional().isArray(),
+  body('customFields.assets')
+    .optional()
+    .custom((value) => Array.isArray(value))
+    .withMessage('customFields.assets must be an array'),
   body('customFields.assets.*.key').optional().isString(),
   body('customFields.assets.*.label').optional().isString(),
   body('customFields.assets.*.type').optional().isString(),

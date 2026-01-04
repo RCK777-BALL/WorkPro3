@@ -35,7 +35,9 @@ export const maintenanceScheduleValidators = [
   body('instructions').optional().isString(),
   body('type').isString().notEmpty(),
   ...repeatConfigValidators,
-  body('parts').isArray(),
+  body('parts')
+    .custom((value) => Array.isArray(value))
+    .withMessage('parts must be an array'),
   body('parts.*').isString(),
   body('lastCompleted').optional().isISO8601().toDate(),
   body('lastCompletedBy').optional().isString(),

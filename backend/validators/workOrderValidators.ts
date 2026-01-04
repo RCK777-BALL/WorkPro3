@@ -26,20 +26,35 @@ export const workOrderValidators = [
   body('type')
     .optional()
     .isIn(['corrective', 'preventive', 'inspection', 'calibration', 'safety']),
-  body('assignees').optional().isArray(),
+  body('assignees')
+    .optional()
+    .custom((value) => Array.isArray(value))
+    .withMessage('assignees must be an array'),
   body('assignees.*').isMongoId(),
-  body('checklists').optional().isArray(),
+  body('checklists')
+    .optional()
+    .custom((value) => Array.isArray(value))
+    .withMessage('checklists must be an array'),
   body('checklists.*.text').isString(),
   body('checklists.*.done').optional().isBoolean(),
-  body('partsUsed').optional().isArray(),
+  body('partsUsed')
+    .optional()
+    .custom((value) => Array.isArray(value))
+    .withMessage('partsUsed must be an array'),
   body('partsUsed.*.partId').isMongoId(),
   body('partsUsed.*.qty').isFloat(),
   body('partsUsed.*.cost').isFloat(),
-  body('signatures').optional().isArray(),
+  body('signatures')
+    .optional()
+    .custom((value) => Array.isArray(value))
+    .withMessage('signatures must be an array'),
   body('signatures.*.by').isMongoId(),
   body('signatures.*.ts').optional().isISO8601().toDate(),
   body('timeSpentMin').optional().isFloat(),
-  body('photos').optional().isArray(),
+  body('photos')
+    .optional()
+    .custom((value) => Array.isArray(value))
+    .withMessage('photos must be an array'),
   body('photos.*')
     .isString()
     .custom((val) => /^https?:\/\//.test(val) || val.startsWith('/static/')),

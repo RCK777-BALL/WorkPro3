@@ -18,7 +18,8 @@
     ],
     "typeRoots": [
       "./node_modules/@types",
-      "./backend/node_modules/@types"
+      "./backend/node_modules/@types",
+      "./backend/types"
     ],
     "paths": {
       "@shared/*": [

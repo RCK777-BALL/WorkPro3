@@ -24,7 +24,7 @@ router.get('/:id', getConditionRuleById);
 router.post(
   '/',
   requireRoles(['general_manager', 'assistant_general_manager', 'admin', 'supervisor']),
-  conditionRuleValidators,
+  ...conditionRuleValidators,
   validate,
   createConditionRule
 );
@@ -32,7 +32,7 @@ router.post(
 router.put(
   '/:id',
   requireRoles(['general_manager', 'assistant_general_manager', 'admin', 'supervisor']),
-  conditionRuleValidators,
+  ...conditionRuleValidators,
   validate,
   updateConditionRule
 );

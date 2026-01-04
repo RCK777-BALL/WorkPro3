@@ -274,10 +274,11 @@ const buildExportRows = (assets: Array<Pick<AssetDoc, (typeof EXPORT_HEADERS)[nu
 
 /**
  * Converts ExcelJS buffer outputs (which may be ArrayBuffer/Uint8Array/etc) into a Node Buffer.
- * This also prevents TS mismatches like Buffer<ArrayBuffer> vs Buffer.
+ * This also prevents TS mismatches like Buffer<ArrayBufferLike> vs Buffer by ensuring an
+ * ArrayBuffer-backed Node Buffer.
  */
-const toNodeBuffer = (data: unknown): NodeBuffer => {
-  if (NodeBuffer.isBuffer(data)) return data;
+const toNodeBuffer = (data: unknown): NodeBuffer<ArrayBuffer> => {
+  if (NodeBuffer.isBuffer(data)) return NodeBuffer.from(data);
 
   if (data instanceof ArrayBuffer) return NodeBuffer.from(new Uint8Array(data));
   if (typeof SharedArrayBuffer !== 'undefined' && data instanceof SharedArrayBuffer) {
@@ -287,7 +288,11 @@ const toNodeBuffer = (data: unknown): NodeBuffer => {
 
   // Some libs type this as "ArrayBufferLike" or unknown; handle safely
   if (data && typeof data === 'object' && 'buffer' in (data as any) && (data as any).buffer instanceof ArrayBuffer) {
-    return NodeBuffer.from(new Uint8Array((data as any).buffer));
+    const typed = data as { buffer: ArrayBuffer; byteOffset?: number; byteLength?: number };
+    if (typeof typed.byteOffset === 'number' && typeof typed.byteLength === 'number') {
+      return NodeBuffer.from(typed.buffer.slice(typed.byteOffset, typed.byteOffset + typed.byteLength));
+    }
+    return NodeBuffer.from(new Uint8Array(typed.buffer));
   }
 
   throw new ImportExportError('Unable to convert workbook buffer to a Node Buffer.');

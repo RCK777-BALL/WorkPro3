@@ -2,10 +2,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { RequestHandler } from 'express';
-import { body } from 'express-validator';
+import { body, type ValidationChain } from 'express-validator';
 
-export const conditionRuleValidators = [
+export const conditionRuleValidators: ValidationChain[] = [
   body('asset').isMongoId().withMessage('asset is required'),
   body('metric').notEmpty().withMessage('metric is required'),
   body('operator')
@@ -16,4 +15,4 @@ export const conditionRuleValidators = [
   body('workOrderTitle').notEmpty().withMessage('workOrderTitle is required'),
   body('workOrderDescription').optional().isString(),
   body('active').optional().isBoolean(),
-] as RequestHandler[];
+];

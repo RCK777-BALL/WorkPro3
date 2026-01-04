@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import express from 'express';
+import express, { type RequestHandler } from 'express';
 import {
   listMaintenanceSchedules,
   getMaintenanceSchedule,
@@ -17,14 +17,17 @@ import { maintenanceScheduleValidators } from '../validators/maintenanceSchedule
 
 const router = express.Router();
 
+const maintenanceScheduleValidationHandlers =
+  maintenanceScheduleValidators as unknown as RequestHandler[];
+
 router.use(requireAuth);
 router.get('/', listMaintenanceSchedules);
 router.get('/:id', validateObjectId('id'), getMaintenanceSchedule);
-router.post('/', ...maintenanceScheduleValidators, validate, createMaintenanceSchedule);
+router.post('/', ...maintenanceScheduleValidationHandlers, validate, createMaintenanceSchedule);
 router.put(
   '/:id',
   validateObjectId('id'),
-  ...maintenanceScheduleValidators,
+  ...maintenanceScheduleValidationHandlers,
   validate,
   updateMaintenanceSchedule,
 );

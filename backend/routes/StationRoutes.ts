@@ -245,8 +245,8 @@ const deleteStation: AuthedRequestHandler<{ id: string }> = async (req, res, nex
 
 router.get('/', listStations);
 router.get('/:id', getStation);
-router.post('/', stationValidators, validate, createStation);
-router.put('/:id', stationUpdateValidators, validate, updateStation);
+router.post('/', ...stationValidators, validate, createStation);
+router.put('/:id', ...stationUpdateValidators, validate, updateStation);
 router.delete('/:id', deleteStation);
 
 export { listStations, getStation, createStation, updateStation, deleteStation };

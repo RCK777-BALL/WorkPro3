@@ -23,8 +23,8 @@ router.use(requireAuth);
 router.use(tenantScope);
 router.get('/', requirePermission('pm.read'), getAllPMTasks);
 router.get('/:id', requirePermission('pm.read'), getPMTaskById);
-router.post('/', requirePermission('pm.write'), pmTaskValidators, validate, createPMTask);
-router.put('/:id', requirePermission('pm.write'), pmTaskValidators, validate, updatePMTask);
+router.post('/', requirePermission('pm.write'), ...pmTaskValidators, validate, createPMTask);
+router.put('/:id', requirePermission('pm.write'), ...pmTaskValidators, validate, updatePMTask);
 router.delete('/:id', requirePermission('pm.delete'), deletePMTask);
 router.post('/generate', requirePermission('pm.write'), generatePMWorkOrders);
 

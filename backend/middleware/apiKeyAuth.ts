@@ -75,8 +75,7 @@ export const apiKeyRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
-    const ipAddress = req.ip ?? req.socket.remoteAddress ?? 'unknown';
-    return req.apiKey?._id?.toString() ?? ipAddress;
+    return req.apiKey?._id?.toString() ?? rateLimit.ipKeyGenerator(req);
   },
 });
 

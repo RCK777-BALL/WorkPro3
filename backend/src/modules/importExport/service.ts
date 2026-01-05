@@ -277,12 +277,17 @@ const buildExportRows = (assets: Array<Pick<AssetDoc, (typeof EXPORT_HEADERS)[nu
  * This also prevents TS mismatches like Buffer<ArrayBufferLike> vs Buffer by ensuring an
  * ArrayBuffer-backed Node Buffer.
  */
-const toNodeBuffer = (data: unknown): NodeBuffer<ArrayBuffer> => {
-  const fromUint8 = (bytes: Uint8Array): NodeBuffer<ArrayBuffer> => NodeBuffer.from(Uint8Array.from(bytes));
+type WorkbookBuffer = NodeBuffer<ArrayBuffer>;
+
+const toNodeBuffer = (data: unknown): WorkbookBuffer => {
+  const fromUint8 = (bytes: Uint8Array): WorkbookBuffer => {
+    const slice = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+    return NodeBuffer.from(slice);
+  };
 
   if (NodeBuffer.isBuffer(data)) return fromUint8(data);
 
-  if (data instanceof ArrayBuffer) return NodeBuffer.from(new Uint8Array(data));
+  if (data instanceof ArrayBuffer) return NodeBuffer.from(data);
   if (typeof SharedArrayBuffer !== 'undefined' && data instanceof SharedArrayBuffer) {
     return fromUint8(new Uint8Array(data));
   }
@@ -291,10 +296,9 @@ const toNodeBuffer = (data: unknown): NodeBuffer<ArrayBuffer> => {
   // Some libs type this as "ArrayBufferLike" or unknown; handle safely
   if (data && typeof data === 'object' && 'buffer' in (data as any) && (data as any).buffer instanceof ArrayBuffer) {
     const typed = data as { buffer: ArrayBuffer; byteOffset?: number; byteLength?: number };
-    if (typeof typed.byteOffset === 'number' && typeof typed.byteLength === 'number') {
-      return NodeBuffer.from(new Uint8Array(typed.buffer, typed.byteOffset, typed.byteLength));
-    }
-    return NodeBuffer.from(new Uint8Array(typed.buffer));
+    const byteOffset = typeof typed.byteOffset === 'number' ? typed.byteOffset : 0;
+    const byteLength = typeof typed.byteLength === 'number' ? typed.byteLength : typed.buffer.byteLength;
+    return NodeBuffer.from(typed.buffer.slice(byteOffset, byteOffset + byteLength));
   }
 
   throw new ImportExportError('Unable to convert workbook buffer to a Node Buffer.');

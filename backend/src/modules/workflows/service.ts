@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Types } from 'mongoose';
+import { Types, type LeanDocument } from 'mongoose';
 import WorkflowDefinition, { type WorkflowDefinitionDocument } from '../../../models/WorkflowDefinition';
 import WorkflowInstance, { type WorkflowInstanceDocument } from '../../../models/WorkflowInstance';
 import SlaPolicy, { type SlaPolicyDocument } from '../../../models/SlaPolicy';
@@ -35,7 +35,9 @@ const toObjectId = (value?: string): Types.ObjectId | undefined => {
   return new Types.ObjectId(value);
 };
 
-export const listDefinitions = async (context: WorkflowContext): Promise<WorkflowDefinitionDocument[]> => {
+export const listDefinitions = async (
+  context: WorkflowContext,
+): Promise<LeanDocument<WorkflowDefinitionDocument>[]> => {
   const tenantId = toObjectId(context.tenantId);
   if (!tenantId) return [];
   return WorkflowDefinition.find({ tenantId }).sort({ createdAt: -1 }).lean();
@@ -56,7 +58,9 @@ export const createDefinition = async (
   });
 };
 
-export const listInstances = async (context: WorkflowContext): Promise<WorkflowInstanceDocument[]> => {
+export const listInstances = async (
+  context: WorkflowContext,
+): Promise<LeanDocument<WorkflowInstanceDocument>[]> => {
   const tenantId = toObjectId(context.tenantId);
   if (!tenantId) return [];
   return WorkflowInstance.find({ tenantId }).sort({ createdAt: -1 }).lean();
@@ -78,7 +82,9 @@ export const createInstance = async (
   });
 };
 
-export const listSlaPolicies = async (context: WorkflowContext): Promise<SlaPolicyDocument[]> => {
+export const listSlaPolicies = async (
+  context: WorkflowContext,
+): Promise<LeanDocument<SlaPolicyDocument>[]> => {
   const tenantId = toObjectId(context.tenantId);
   if (!tenantId) return [];
   return SlaPolicy.find({ tenantId }).sort({ createdAt: -1 }).lean();

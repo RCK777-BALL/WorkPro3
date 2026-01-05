@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Types } from 'mongoose';
+import { Types, type LeanDocument } from 'mongoose';
 import Site, { type SiteDocument } from '../../../models/Site';
 
 export interface SiteContext {
@@ -20,7 +20,7 @@ const toObjectId = (value?: string): Types.ObjectId | undefined => {
   return new Types.ObjectId(value);
 };
 
-export const listSites = async (context: SiteContext): Promise<SiteDocument[]> => {
+export const listSites = async (context: SiteContext): Promise<LeanDocument<SiteDocument>[]> => {
   const tenantId = toObjectId(context.tenantId);
   if (!tenantId) return [];
   return Site.find({ tenantId }).sort({ name: 1 }).lean();

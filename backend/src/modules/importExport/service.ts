@@ -82,7 +82,7 @@ export interface ImportSummary {
 }
 
 export interface ExportPayload {
-  buffer: NodeBuffer<ArrayBuffer>;
+  buffer: NodeBuffer;
   filename: string;
   mimeType: string;
 }

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Router } from 'express';
+import { Router, type RequestHandler } from 'express';
 import { requireAuth, requireRole } from '../middleware/authMiddleware';
 import tenantScope from '../middleware/tenantScope';
 import validateObjectId from '../middleware/validateObjectId';
@@ -35,6 +35,7 @@ import {
 } from '../controllers/WorkOrderPartsController';
 
 const router = Router();
+const workOrderValidationHandlers = workOrderValidators as unknown as RequestHandler[];
 
 const APPROVAL_ROLES = [
   'global_admin',
@@ -61,7 +62,13 @@ router.get('/search', requirePermission('workorders.read'), searchWorkOrders);
 router.patch('/bulk', requirePermission('workorders.write'), bulkUpdateWorkOrders);
 
 router.get('/:id', validateObjectId('id'), requirePermission('workorders.read'), getWorkOrderById);
-router.post('/', requirePermission('workorders.write'), ...workOrderValidators, validate, createWorkOrder);
+router.post(
+  '/',
+  requirePermission('workorders.write'),
+  ...workOrderValidationHandlers,
+  validate,
+  createWorkOrder,
+);
 router.put('/:id', validateObjectId('id'), requirePermission('workorders.write'), updateWorkOrder);
 router.delete('/:id', validateObjectId('id'), requirePermission('workorders.write'), deleteWorkOrder);
 

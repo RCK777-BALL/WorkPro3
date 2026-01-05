@@ -1,7 +1,6 @@
-import type { RequestHandler } from 'express';
-import { body } from 'express-validator';
+import { body, type ValidationChain } from 'express-validator';
 
-export const tenantValidators: RequestHandler[] = [
+export const tenantValidators: ValidationChain[] = [
   body('name').notEmpty().withMessage('name is required'),
   body('sso')
     .optional()

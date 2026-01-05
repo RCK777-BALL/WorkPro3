@@ -3,7 +3,7 @@
  */
 
 import type { RequestHandler } from 'express';
-import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
+import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
 
 import ApiKey, { type ApiKeyDocument } from '../models/ApiKey';
@@ -76,7 +76,7 @@ export const apiKeyRateLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => {
     const ipAddress = req.ip ?? req.socket.remoteAddress ?? 'unknown';
-    return req.apiKey?._id?.toString() ?? ipKeyGenerator(ipAddress);
+    return req.apiKey?._id?.toString() ?? ipAddress;
   },
 });
 

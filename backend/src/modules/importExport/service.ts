@@ -6,6 +6,7 @@ import type { Express } from 'express';
 import type { FilterQuery } from 'mongoose';
 import ExcelJS from 'exceljs';
 import Papa from 'papaparse';
+
 import { Buffer as NodeBuffer } from 'buffer';
 
 import Asset, { type AssetDoc } from '../../../models/Asset';
@@ -359,42 +360,60 @@ const normalizeWorkbookValue = (value: ExcelJS.CellValue | undefined | null): st
   return value as string | number;
 };
 
-const parseWorkbookRows = async (file: Express.Multer.File): Promise<Record<string, unknown>[]> => {
+// ExcelJS typings can lag behind newer @types/node Buffer generics.
+// We normalize to a Node Buffer and cast ONLY at the ExcelJS boundary.
+const toExcelJsLoadInput = (data: unknown): ArrayBuffer | Uint8Array | Buffer => {
+  if (Buffer.isBuffer(data)) return data;
+  if (data instanceof ArrayBuffer) return new Uint8Array(data);
+  if (data instanceof Uint8Array) return data;
+
+  // Some multer setups may give { buffer: ArrayBuffer } or similar
+  if (data && typeof data === 'object') {
+    const anyData = data as any;
+    if (Buffer.isBuffer(anyData.buffer)) return anyData.buffer;
+    if (anyData.buffer instanceof ArrayBuffer) return new Uint8Array(anyData.buffer);
+    if (anyData.buffer instanceof Uint8Array) return anyData.buffer;
+  }
+
+  throw new Error('Unsupported upload buffer type for Excel import.');
+};
+
+const parseWorkbookRows = async (file: Express.Multer.File) => {
   const workbook = new ExcelJS.Workbook();
 
-  /**
-   * IMPORTANT LOGIC FIX:
-   * ExcelJS accepts a Node Buffer directly.
-   * Using `file.buffer.buffer.slice(...)` produces an ArrayBuffer that can cause
-   * TS Buffer<ArrayBuffer> mismatch and also subtle content issues.
-   */
-  //await workbook.xlsx.load(toNodeBuffer(file.buffer));
+  // Multer gives Node Buffer. ExcelJS runtime accepts Buffer/Uint8Array/ArrayBuffer,
+  // but its TS types may not accept Buffer<ArrayBuffer>. So we cast at the call site.
+  const input = toExcelJsLoadInput(file.buffer);
 
-  // Multer’s file.buffer can be typed as Buffer<ArrayBuffer>; normalize to a fresh Node Buffer
-  const input = NodeBuffer.from(file.buffer);
-  await workbook.xlsx.load(input);
-
+  await workbook.xlsx.load(input as any);
 
   const worksheet = workbook.worksheets[0];
-  if (!worksheet) throw new ImportExportError('The uploaded workbook does not have any sheets.');
+  if (!worksheet) {
+    throw new Error('The uploaded workbook does not have any sheets.');
+  }
 
   const headerRow = worksheet.getRow(1);
   const headerValues = Array.isArray(headerRow.values) ? headerRow.values : [];
-  const headers = headerValues.slice(1).map((v) => trimValue(v)).filter(Boolean);
+  const headers = headerValues.slice(1).map((v) => String(v ?? '').trim());
 
-  if (headers.length === 0) throw new ImportExportError('The uploaded workbook does not have any headers.');
+  if (headers.length === 0) {
+    throw new Error('The uploaded workbook does not have any headers.');
+  }
 
   const rows: Record<string, unknown>[] = [];
-
   for (let rowIndex = 2; rowIndex <= worksheet.rowCount; rowIndex += 1) {
     const row = worksheet.getRow(rowIndex);
     const rowData: Record<string, unknown> = {};
 
     headers.forEach((header, index) => {
-      rowData[header] = normalizeWorkbookValue(row.getCell(index + 1).value);
+      if (!header) return;
+      rowData[header] = row.getCell(index + 1).value ?? '';
     });
 
-    const hasValues = Object.values(rowData).some((v) => v !== '' && v !== null && v !== undefined);
+    const hasValues = Object.values(rowData).some(
+      (value) => value !== '' && value !== null && value !== undefined,
+    );
+
     if (hasValues) rows.push(rowData);
   }
 

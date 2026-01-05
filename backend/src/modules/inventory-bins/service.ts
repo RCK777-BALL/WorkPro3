@@ -23,13 +23,22 @@ const toObjectId = (value?: string): Types.ObjectId | undefined => {
   return new Types.ObjectId(value);
 };
 
-export const listBins = async (context: InventoryBinContext): Promise<InventoryBinDocument[]> => {
-  const tenantId = toObjectId(context.tenantId);
-  if (!tenantId) return [];
-  return InventoryBin.find({ tenantId, ...(context.siteId ? { siteId: toObjectId(context.siteId) } : {}) })
-    .sort({ label: 1 })
-    .lean();
-};
+
+
+
+export type InventoryBinLean = Record<string, any>; // we’ll tighten this below
+
+export async function listInventoryBins(context: InventoryBinContext) {
+  const tenantId = context.tenantId;
+
+  return InventoryBin.find({
+    tenantId,
+    ...(context.siteId ? { siteId: toObjectId(context.siteId) } : {}),
+  })
+    .lean()
+    .exec();
+}
+
 
 export const createBin = async (
   context: InventoryBinContext,

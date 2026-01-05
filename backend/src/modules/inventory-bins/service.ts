@@ -28,7 +28,7 @@ const toObjectId = (value?: string): Types.ObjectId | undefined => {
 
 export type InventoryBinLean = Record<string, any>; // we’ll tighten this below
 
-export async function listInventoryBins(context: InventoryBinContext) {
+export async function listBins(context: InventoryBinContext) {
   const tenantId = context.tenantId;
 
   return InventoryBin.find({

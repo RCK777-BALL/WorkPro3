@@ -6,7 +6,7 @@ import type { Express } from 'express';
 import type { FilterQuery } from 'mongoose';
 import ExcelJS from 'exceljs';
 import Papa from 'papaparse';
-import { Buffer as NodeBuffer } from 'node:buffer';
+import { Buffer as NodeBuffer } from 'buffer';
 
 import Asset, { type AssetDoc } from '../../../models/Asset';
 
@@ -368,7 +368,12 @@ const parseWorkbookRows = async (file: Express.Multer.File): Promise<Record<stri
    * Using `file.buffer.buffer.slice(...)` produces an ArrayBuffer that can cause
    * TS Buffer<ArrayBuffer> mismatch and also subtle content issues.
    */
-  await workbook.xlsx.load(toNodeBuffer(file.buffer));
+  //await workbook.xlsx.load(toNodeBuffer(file.buffer));
+
+  // Multer’s file.buffer can be typed as Buffer<ArrayBuffer>; normalize to a fresh Node Buffer
+  const input = NodeBuffer.from(file.buffer);
+  await workbook.xlsx.load(input);
+
 
   const worksheet = workbook.worksheets[0];
   if (!worksheet) throw new ImportExportError('The uploaded workbook does not have any sheets.');

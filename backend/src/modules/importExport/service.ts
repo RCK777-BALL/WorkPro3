@@ -81,7 +81,7 @@ export interface ImportSummary {
 }
 
 export interface ExportPayload {
-  buffer: NodeBuffer;
+  buffer: NodeBuffer<ArrayBuffer>;
   filename: string;
   mimeType: string;
 }
@@ -277,12 +277,13 @@ const buildExportRows = (assets: Array<Pick<AssetDoc, (typeof EXPORT_HEADERS)[nu
  * This also prevents TS mismatches like Buffer<ArrayBufferLike> vs Buffer by ensuring an
  * ArrayBuffer-backed Node Buffer.
  */
-const toNodeBuffer = (data: unknown): NodeBuffer => {
-  const fromUint8 = (bytes: Uint8Array): NodeBuffer => NodeBuffer.from(Uint8Array.from(bytes));
+const toNodeBuffer = (data: unknown): NodeBuffer<ArrayBuffer> => {
+  const fromUint8 = (bytes: Uint8Array): NodeBuffer<ArrayBuffer> =>
+    NodeBuffer.from(Uint8Array.from(bytes)) as NodeBuffer<ArrayBuffer>;
 
   if (NodeBuffer.isBuffer(data)) return fromUint8(data);
 
-  if (data instanceof ArrayBuffer) return NodeBuffer.from(data);
+  if (data instanceof ArrayBuffer) return NodeBuffer.from(new Uint8Array(data)) as NodeBuffer<ArrayBuffer>;
   if (typeof SharedArrayBuffer !== 'undefined' && data instanceof SharedArrayBuffer) {
     return fromUint8(new Uint8Array(data));
   }
@@ -291,9 +292,12 @@ const toNodeBuffer = (data: unknown): NodeBuffer => {
   // Some libs type this as "ArrayBufferLike" or unknown; handle safely
   if (data && typeof data === 'object' && 'buffer' in (data as any) && (data as any).buffer instanceof ArrayBuffer) {
     const typed = data as { buffer: ArrayBuffer; byteOffset?: number; byteLength?: number };
-    const byteOffset = typeof typed.byteOffset === 'number' ? typed.byteOffset : 0;
-    const byteLength = typeof typed.byteLength === 'number' ? typed.byteLength : typed.buffer.byteLength;
-    return NodeBuffer.from(typed.buffer.slice(byteOffset, byteOffset + byteLength));
+    if (typeof typed.byteOffset === 'number' && typeof typed.byteLength === 'number') {
+      return NodeBuffer.from(
+        new Uint8Array(typed.buffer, typed.byteOffset, typed.byteLength),
+      ) as NodeBuffer<ArrayBuffer>;
+    }
+    return NodeBuffer.from(new Uint8Array(typed.buffer)) as NodeBuffer<ArrayBuffer>;
   }
 
   throw new ImportExportError('Unable to convert workbook buffer to a Node Buffer.');

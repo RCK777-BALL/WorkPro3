@@ -34,7 +34,7 @@ export const listPurchaseRequests = async (
 ): Promise<PurchaseRequestDocument[]> => {
   const tenantId = toObjectId(context.tenantId);
   if (!tenantId) return [];
-  return PurchaseRequest.find({ tenantId }).sort({ createdAt: -1 }).lean();
+  return PurchaseRequest.find({ tenantId }).sort({ createdAt: -1 });
 };
 
 export const createPurchaseRequest = async (

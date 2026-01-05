@@ -277,13 +277,8 @@ const buildExportRows = (assets: Array<Pick<AssetDoc, (typeof EXPORT_HEADERS)[nu
  * This also prevents TS mismatches like Buffer<ArrayBufferLike> vs Buffer by ensuring an
  * ArrayBuffer-backed Node Buffer.
  */
-type WorkbookBuffer = NodeBuffer<ArrayBuffer>;
-
-const toNodeBuffer = (data: unknown): WorkbookBuffer => {
-  const fromUint8 = (bytes: Uint8Array): WorkbookBuffer => {
-    const slice = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
-    return NodeBuffer.from(slice);
-  };
+const toNodeBuffer = (data: unknown): NodeBuffer => {
+  const fromUint8 = (bytes: Uint8Array): NodeBuffer => NodeBuffer.from(Uint8Array.from(bytes));
 
   if (NodeBuffer.isBuffer(data)) return fromUint8(data);
 

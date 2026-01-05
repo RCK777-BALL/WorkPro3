@@ -61,7 +61,7 @@ router.get('/search', requirePermission('workorders.read'), searchWorkOrders);
 router.patch('/bulk', requirePermission('workorders.write'), bulkUpdateWorkOrders);
 
 router.get('/:id', validateObjectId('id'), requirePermission('workorders.read'), getWorkOrderById);
-router.post('/', requirePermission('workorders.write'), workOrderValidators, validate, createWorkOrder);
+router.post('/', requirePermission('workorders.write'), ...workOrderValidators, validate, createWorkOrder);
 router.put('/:id', validateObjectId('id'), requirePermission('workorders.write'), updateWorkOrder);
 router.delete('/:id', validateObjectId('id'), requirePermission('workorders.write'), deleteWorkOrder);
 

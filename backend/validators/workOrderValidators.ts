@@ -57,7 +57,11 @@ export const workOrderValidators = [
     .withMessage('photos must be an array'),
   body('photos.*')
     .isString()
-    .custom((val) => /^https?:\/\//.test(val) || val.startsWith('/static/')),
+    .custom(
+      (val) =>
+        typeof val === 'string' &&
+        (/^https?:\/\//.test(val) || val.startsWith('/static/')),
+    ),
   body('failureCode').optional().isString(),
   body('complianceProcedureId').optional().isString(),
   body('calibrationIntervalDays').optional().isInt({ min: 1 }).toInt(),

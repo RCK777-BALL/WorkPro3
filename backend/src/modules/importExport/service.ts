@@ -278,13 +278,12 @@ const buildExportRows = (assets: Array<Pick<AssetDoc, (typeof EXPORT_HEADERS)[nu
  * This also prevents TS mismatches like Buffer<ArrayBufferLike> vs Buffer by ensuring an
  * ArrayBuffer-backed Node Buffer.
  */
-const toNodeBuffer = (data: unknown): NodeBuffer<ArrayBuffer> => {
-  const fromUint8 = (bytes: Uint8Array): NodeBuffer<ArrayBuffer> =>
-    NodeBuffer.from(Uint8Array.from(bytes)) as NodeBuffer<ArrayBuffer>;
+const toNodeBuffer = (data: unknown): NodeBuffer => {
+  const fromUint8 = (bytes: Uint8Array): NodeBuffer => NodeBuffer.from(Uint8Array.from(bytes));
 
   if (NodeBuffer.isBuffer(data)) return fromUint8(data);
 
-  if (data instanceof ArrayBuffer) return NodeBuffer.from(new Uint8Array(data)) as NodeBuffer<ArrayBuffer>;
+  if (data instanceof ArrayBuffer) return NodeBuffer.from(new Uint8Array(data));
   if (typeof SharedArrayBuffer !== 'undefined' && data instanceof SharedArrayBuffer) {
     return fromUint8(new Uint8Array(data));
   }
@@ -294,11 +293,9 @@ const toNodeBuffer = (data: unknown): NodeBuffer<ArrayBuffer> => {
   if (data && typeof data === 'object' && 'buffer' in (data as any) && (data as any).buffer instanceof ArrayBuffer) {
     const typed = data as { buffer: ArrayBuffer; byteOffset?: number; byteLength?: number };
     if (typeof typed.byteOffset === 'number' && typeof typed.byteLength === 'number') {
-      return NodeBuffer.from(
-        new Uint8Array(typed.buffer, typed.byteOffset, typed.byteLength),
-      ) as NodeBuffer<ArrayBuffer>;
+      return NodeBuffer.from(new Uint8Array(typed.buffer, typed.byteOffset, typed.byteLength));
     }
-    return NodeBuffer.from(new Uint8Array(typed.buffer)) as NodeBuffer<ArrayBuffer>;
+    return NodeBuffer.from(new Uint8Array(typed.buffer));
   }
 
   throw new ImportExportError('Unable to convert workbook buffer to a Node Buffer.');

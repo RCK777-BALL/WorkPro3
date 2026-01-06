@@ -22,10 +22,10 @@ const toObjectId = (value?: string): Types.ObjectId | undefined => {
   return new Types.ObjectId(value);
 };
 
-export const listSites = async (context: SiteContext): Promise<LeanDocument<SiteDocument>[]> => {
+export const listSites = async (context: SiteContext): Promise<SiteDocument[]> => {
   const tenantId = toObjectId(context.tenantId);
   if (!tenantId) return [];
-  return Site.find({ tenantId }).sort({ name: 1 }).lean();
+  return Site.find({ tenantId }).sort({ name: 1 });
 };
 
 export const createSite = async (context: SiteContext, input: SiteInput): Promise<SiteDocument> => {

@@ -39,10 +39,10 @@ const toObjectId = (value?: string): Types.ObjectId | undefined => {
 
 export const listDefinitions = async (
   context: WorkflowContext,
-): Promise<LeanDocument<WorkflowDefinitionDocument>[]> => {
+): Promise<WorkflowDefinitionDocument[]> => {
   const tenantId = toObjectId(context.tenantId);
   if (!tenantId) return [];
-  return WorkflowDefinition.find({ tenantId }).sort({ createdAt: -1 }).lean();
+  return WorkflowDefinition.find({ tenantId }).sort({ createdAt: -1 });
 };
 
 export const createDefinition = async (
@@ -62,10 +62,10 @@ export const createDefinition = async (
 
 export const listInstances = async (
   context: WorkflowContext,
-): Promise<LeanDocument<WorkflowInstanceDocument>[]> => {
+): Promise<WorkflowInstanceDocument[]> => {
   const tenantId = toObjectId(context.tenantId);
   if (!tenantId) return [];
-  return WorkflowInstance.find({ tenantId }).sort({ createdAt: -1 }).lean();
+  return WorkflowInstance.find({ tenantId }).sort({ createdAt: -1 });
 };
 
 export const createInstance = async (
@@ -86,10 +86,10 @@ export const createInstance = async (
 
 export const listSlaPolicies = async (
   context: WorkflowContext,
-): Promise<LeanDocument<SlaPolicyDocument>[]> => {
+): Promise<SlaPolicyDocument[]> => {
   const tenantId = toObjectId(context.tenantId);
   if (!tenantId) return [];
-  return SlaPolicy.find({ tenantId }).sort({ createdAt: -1 }).lean();
+  return SlaPolicy.find({ tenantId }).sort({ createdAt: -1 });
 };
 
 export const createSlaPolicy = async (

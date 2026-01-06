@@ -15,6 +15,7 @@ export interface SiteInput {
 }
 
 type LeanDocument<T> = T extends Document ? Omit<T, keyof Document> : T;
+type SiteListResult = Awaited<ReturnType<typeof Site.find>>;
 
 const toObjectId = (value?: string): Types.ObjectId | undefined => {
   if (!value) return undefined;
@@ -22,7 +23,7 @@ const toObjectId = (value?: string): Types.ObjectId | undefined => {
   return new Types.ObjectId(value);
 };
 
-export const listSites = async (context: SiteContext): Promise<SiteDocument[]> => {
+export const listSites = async (context: SiteContext): Promise<SiteListResult> => {
   const tenantId = toObjectId(context.tenantId);
   if (!tenantId) return [];
   return Site.find({ tenantId }).sort({ name: 1 });

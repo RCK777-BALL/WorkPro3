@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Types } from 'mongoose';
+import { Types, type Document } from 'mongoose';
 import Site, { type SiteDocument } from '../../../models/Site';
 
 export interface SiteContext {
@@ -13,6 +13,8 @@ export interface SiteInput {
   name: string;
   description?: string;
 }
+
+type LeanDocument<T> = T extends Document ? Omit<T, keyof Document> : T;
 
 const toObjectId = (value?: string): Types.ObjectId | undefined => {
   if (!value) return undefined;

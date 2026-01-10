@@ -1,11 +1,11 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
-import type { ParamsDictionary, User } from 'express-serve-static-core';
+import type { ParamsDictionary } from 'express-serve-static-core';
 import type { ParsedQs } from 'qs';
 import type { UserRole } from './auth';
 import type { Permission } from '../shared/permissions';
 export type { ApiResult } from '../../shared/types/http';
 
-type AuthedUser = User & {
+type AuthedUser = Express.User & {
   roles?: Array<UserRole | string> | undefined;
   permissions?: Permission[] | string[] | undefined;
   tenantId?: string | null | undefined;

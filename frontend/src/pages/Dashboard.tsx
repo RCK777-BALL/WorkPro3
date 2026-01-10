@@ -162,10 +162,11 @@ const FILTER_STORAGE_KEY = "operations-dashboard-filters";
 
 const VALID_STATUS_VALUES = new Set(STATUS_FILTERS.map((option) => option.value));
 
-type DashboardTabKey = "overview" | "analytics" | "activity";
+type DashboardTabKey = "overview" | "setup" | "analytics" | "activity";
 
 const DASHBOARD_TABS: Array<{ key: DashboardTabKey; label: string }> = [
   { key: "overview", label: "Overview" },
+  { key: "setup", label: "Setup" },
   { key: "analytics", label: "Analytics" },
   { key: "activity", label: "Activity" },
 ];
@@ -1507,10 +1508,7 @@ export default function Dashboard() {
 
         {activeTab === "overview" ? (
           <>
-            <div className="grid gap-4 lg:grid-cols-[2fr,1fr]">
-              <OnboardingWizard />
-              <HelpCenterViewer />
-            </div>
+            <HelpCenterViewer />
 
             <DashboardFilters
               filters={filters}
@@ -1552,6 +1550,12 @@ export default function Dashboard() {
               onNavigate={navigateTo}
             />
           </>
+        ) : null}
+
+        {activeTab === "setup" ? (
+          <div className="max-w-4xl">
+            <OnboardingWizard />
+          </div>
         ) : null}
 
         {activeTab === "analytics" ? (

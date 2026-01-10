@@ -6,6 +6,7 @@ import TeamMember, { ITeamMember } from '../models/TeamMember';
 import type { Request, Response, NextFunction } from 'express';
 import { Error as MongooseError, Types } from 'mongoose';
 import { writeAuditLog, toEntityId, sendResponse } from '../utils';
+import { MEMBER_ONBOARDING_PLAN } from '../data/memberOnboardingPlan';
 
 type TeamRole =
   | 'general_manager'
@@ -336,5 +337,17 @@ export const deleteTeamMember = async (
     return;
   } catch (err) {
     return next(err);
+  }
+};
+
+export const getMemberOnboardingPlan = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    sendResponse(res, MEMBER_ONBOARDING_PLAN);
+  } catch (err) {
+    next(err);
   }
 };

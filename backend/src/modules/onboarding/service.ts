@@ -13,6 +13,7 @@ import Site from '../../../models/Site';
 import Asset from '../../../models/Asset';
 import PMTask from '../../../models/PMTask';
 import User from '../../../models/User';
+import TeamMember from '../../../models/TeamMember';
 import Department from '../../../models/Department';
 import Role from '../../../models/Role';
 import InventoryItem from '../../../models/InventoryItem';
@@ -97,7 +98,7 @@ const ensureState = (state?: TenantOnboardingState): TenantOnboardingState => {
 };
 
 const collectSignals = async (tenantId: Types.ObjectId) => {
-  const [hasSite, hasDepartment, hasAsset, hasPmTask, userCount, roleCount, hasInventory] = await Promise.all([
+  const [hasSite, hasDepartment, hasAsset, hasPmTask, userCount, roleCount, hasInventory, teamMemberCount] = await Promise.all([
     Site.exists({ tenantId }),
     Department.exists({ tenantId }),
     Asset.exists({ tenantId }),
@@ -105,6 +106,7 @@ const collectSignals = async (tenantId: Types.ObjectId) => {
     User.countDocuments({ tenantId }),
     Role.countDocuments({ tenantId }),
     InventoryItem.exists({ tenantId }),
+    TeamMember.countDocuments({ tenantId }),
   ]);
   return {
     site: Boolean(hasSite),
@@ -113,7 +115,7 @@ const collectSignals = async (tenantId: Types.ObjectId) => {
     assets: Boolean(hasAsset),
     starterData: Boolean(hasPmTask || hasInventory),
     pmTemplates: Boolean(hasPmTask),
-    users: (userCount ?? 0) > 1,
+    users: (teamMemberCount ?? 0) > 0 || (userCount ?? 0) > 1,
   } satisfies Record<OnboardingStepKey, boolean>;
 };
 

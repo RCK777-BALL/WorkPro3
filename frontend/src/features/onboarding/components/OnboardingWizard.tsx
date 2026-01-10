@@ -92,7 +92,9 @@ export const OnboardingWizard = () => {
 
   const steps = data?.steps ?? [];
   const remaining = steps.filter((step) => !step.completed).length;
-  const showWizard = steps.some((step) => !step.completed);
+  const hasSteps = steps.length > 0;
+  const allComplete = hasSteps && steps.every((step) => step.completed);
+  const showWizard = hasSteps && !allComplete;
   const completionPct = steps.length ? Math.round(((steps.length - remaining) / steps.length) * 100) : 0;
 
   useEffect(() => {
@@ -139,7 +141,28 @@ export const OnboardingWizard = () => {
   }
 
   if (!showWizard || !activeStep) {
-    return null;
+    if (!allComplete) {
+      return null;
+    }
+
+    return (
+      <section className="rounded-3xl border border-emerald-400/30 bg-emerald-500/10 p-6 text-white shadow-xl">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-emerald-100/70">Workspace onboarding</p>
+            <h2 className="text-xl font-semibold">All steps complete</h2>
+            <p className="mt-2 text-sm text-emerald-50/70">
+              You&apos;re ready to go. Revisit any step from the main navigation whenever you need.
+            </p>
+          </div>
+          <CheckCircle2 className="h-8 w-8 text-emerald-300" />
+        </div>
+        <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+          <div className="h-full rounded-full bg-emerald-400" style={{ width: '100%' }} />
+        </div>
+        <p className="mt-1 text-xs text-emerald-100/70">100% complete</p>
+      </section>
+    );
   }
 
   const handleDismissReminder = async () => {

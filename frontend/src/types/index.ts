@@ -67,6 +67,12 @@ export type {
   InspectionFormTemplate,
 } from '../../../shared/types/onboarding';
 export type {
+  MemberOnboardingPlan,
+  MemberOnboardingResource,
+  MemberOnboardingStep,
+  MemberOnboardingStepStatus,
+} from '../../../shared/types/teamOnboarding';
+export type {
   PMTemplate,
   PMTemplateAssignment,
   PMTemplateChecklistItem,

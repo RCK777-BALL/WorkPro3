@@ -26,7 +26,6 @@ import Button from "@common/Button";
 import AlertBanner from "@/components/layout/AlertBanner";
 import { DashboardAnalyticsPanel } from "@/features/dashboards";
 import { HelpCenterViewer } from "@/features/help-center";
-import { OnboardingWizard } from "@/features/onboarding";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
 import { usePmCompletionAnalytics } from "@/hooks/usePmAnalytics";
 
@@ -162,11 +161,10 @@ const FILTER_STORAGE_KEY = "operations-dashboard-filters";
 
 const VALID_STATUS_VALUES = new Set(STATUS_FILTERS.map((option) => option.value));
 
-type DashboardTabKey = "overview" | "setup" | "analytics" | "activity";
+type DashboardTabKey = "overview" | "analytics" | "activity";
 
 const DASHBOARD_TABS: Array<{ key: DashboardTabKey; label: string }> = [
   { key: "overview", label: "Overview" },
-  { key: "setup", label: "Setup" },
   { key: "analytics", label: "Analytics" },
   { key: "activity", label: "Activity" },
 ];
@@ -1550,12 +1548,6 @@ export default function Dashboard() {
               onNavigate={navigateTo}
             />
           </>
-        ) : null}
-
-        {activeTab === "setup" ? (
-          <div className="max-w-4xl">
-            <OnboardingWizard />
-          </div>
         ) : null}
 
         {activeTab === "analytics" ? (

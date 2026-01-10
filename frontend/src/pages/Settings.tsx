@@ -30,6 +30,7 @@ import type {
 import { useToast } from '@/context/ToastContext';
 import http from '@/lib/http';
 import SettingsLayout from '@/components/settings/SettingsLayout';
+import { OnboardingWizard } from '@/features/onboarding';
 
 type DocumentEntry = {
   id?: string;
@@ -643,161 +644,169 @@ const Settings: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* General Settings */}
-          <Card title="General Settings" icon={<Sliders className="h-5 w-5 text-neutral-500" />}>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
-                  Company Name
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
-                  value={general.companyName}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGeneral({ companyName: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
-                  Timezone
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
-                  value={general.timezone}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGeneral({ timezone: e.target.value })}
-                >
-                  <option value="America/New_York">Eastern Time (ET)</option>
-                  <option value="America/Chicago">Central Time (CT)</option>
-                  <option value="America/Denver">Mountain Time (MT)</option>
-                  <option value="America/Los_Angeles">Pacific Time (PT)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
-                  Date Format
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
-                  value={general.dateFormat}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGeneral({ dateFormat: e.target.value })}
-                >
-                  <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                  <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                  <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
-                  Language
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
-                  value={general.language}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGeneral({ language: e.target.value })}
-                >
-                  <option value="en-US">English (US)</option>
-                  <option value="es-ES">Español</option>
-                  <option value="fr-FR">Français</option>
-                  <option value="de-DE">Deutsch</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
-                  Company Email Domain
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
-                  value={general.emailDomain}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setGeneral({ emailDomain: e.target.value })
-                  }
-                  placeholder="Enter your company email domain (e.g., cmms.com)"
-                />
-                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                  Use this domain to automatically create employee email addresses.
-                </p>
-              </div>
-
-              <div className="space-y-3 rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-900/30">
-                <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
-                  Email structure preview
-                </p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                  Enter a first and last name to preview the generated address.
-                </p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1" htmlFor="preview-first-name">
-                      First name
-                    </label>
-                    <input
-                      id="preview-first-name"
-                      type="text"
-                      className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
-                      value={emailPreview.firstName}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setEmailPreview((prev) => ({ ...prev, firstName: e.target.value }))
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1" htmlFor="preview-last-name">
-                      Last name
-                    </label>
-                    <input
-                      id="preview-last-name"
-                      type="text"
-                      className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
-                      value={emailPreview.lastName}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setEmailPreview((prev) => ({ ...prev, lastName: e.target.value }))
-                      }
-                    />
-                  </div>
-                </div>
-                <div className="rounded-md bg-white px-3 py-2 text-sm font-mono text-neutral-800 shadow-sm dark:bg-neutral-800 dark:text-neutral-100">
-                  {generatedEmailPreview || 'Enter a name to preview the email address'}
-                </div>
-              </div>
+        {/* General Settings */}
+        <Card title="General Settings" icon={<Sliders className="h-5 w-5 text-neutral-500" />}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
+                Company Name
+              </label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                value={general.companyName}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGeneral({ companyName: e.target.value })}
+              />
             </div>
-          </Card>
 
-          <Card title="Theme Presets" icon={<Palette className="h-5 w-5 text-neutral-500" />}>
-            <div className="space-y-4">
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                Quickly switch between theme modes across the application.
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
+                Timezone
+              </label>
+              <select
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                value={general.timezone}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGeneral({ timezone: e.target.value })}
+              >
+                <option value="America/New_York">Eastern Time (ET)</option>
+                <option value="America/Chicago">Central Time (CT)</option>
+                <option value="America/Denver">Mountain Time (MT)</option>
+                <option value="America/Los_Angeles">Pacific Time (PT)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
+                Date Format
+              </label>
+              <select
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                value={general.dateFormat}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGeneral({ dateFormat: e.target.value })}
+              >
+                <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
+                Language
+              </label>
+              <select
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                value={general.language}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGeneral({ language: e.target.value })}
+              >
+                <option value="en-US">English (US)</option>
+                <option value="es-ES">Español</option>
+                <option value="fr-FR">Français</option>
+                <option value="de-DE">Deutsch</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
+                Company Email Domain
+              </label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                value={general.emailDomain}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setGeneral({ emailDomain: e.target.value })
+                }
+                placeholder="Enter your company email domain (e.g., cmms.com)"
+              />
+              <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                Use this domain to automatically create employee email addresses.
               </p>
-              <div className="grid gap-3 sm:grid-cols-3">
-                {themePresets.map(({ mode, label, description, icon }) => {
-                  const isActive = themeMode === mode;
-                  return (
-                    <Button
-                      key={mode}
-                      variant="outline"
-                      className={`flex h-full flex-col items-start gap-2 border-2 px-4 py-3 text-left transition-colors ${
-                        isActive
-                          ? 'border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-400 dark:bg-primary-900/20 dark:text-primary-200'
-                          : 'border-neutral-200 text-neutral-700 hover:border-primary-200 hover:text-primary-700 dark:border-neutral-700 dark:text-neutral-100 dark:hover:border-primary-400 dark:hover:text-primary-200'
-                      }`}
-                      onClick={() => handleThemeModeChange(mode)}
-                      disabled={isActive}
-                    >
-                      <span className="flex items-center gap-2 text-sm font-semibold">
-                        {icon}
-                        {label}
-                      </span>
-                      <span className="text-xs text-neutral-500 dark:text-neutral-400">{description}</span>
-                    </Button>
-                  );
-                })}
+            </div>
+
+            <div className="space-y-3 rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-900/30">
+              <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
+                Email structure preview
+              </p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                Enter a first and last name to preview the generated address.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1" htmlFor="preview-first-name">
+                    First name
+                  </label>
+                  <input
+                    id="preview-first-name"
+                    type="text"
+                    className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                    value={emailPreview.firstName}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setEmailPreview((prev) => ({ ...prev, firstName: e.target.value }))
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1" htmlFor="preview-last-name">
+                    Last name
+                  </label>
+                  <input
+                    id="preview-last-name"
+                    type="text"
+                    className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                    value={emailPreview.lastName}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setEmailPreview((prev) => ({ ...prev, lastName: e.target.value }))
+                    }
+                  />
+                </div>
+              </div>
+              <div className="rounded-md bg-white px-3 py-2 text-sm font-mono text-neutral-800 shadow-sm dark:bg-neutral-800 dark:text-neutral-100">
+                {generatedEmailPreview || 'Enter a name to preview the email address'}
               </div>
             </div>
+          </div>
+        </Card>
+
+        <div className="lg:col-span-2">
+          <Card title="Setup" icon={<Book className="h-5 w-5 text-neutral-500" />}>
+            <div className="max-w-4xl">
+              <OnboardingWizard />
+            </div>
           </Card>
+        </div>
+
+        <Card title="Theme Presets" icon={<Palette className="h-5 w-5 text-neutral-500" />}>
+          <div className="space-y-4">
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              Quickly switch between theme modes across the application.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {themePresets.map(({ mode, label, description, icon }) => {
+                const isActive = themeMode === mode;
+                return (
+                  <Button
+                    key={mode}
+                    variant="outline"
+                    className={`flex h-full flex-col items-start gap-2 border-2 px-4 py-3 text-left transition-colors ${
+                      isActive
+                        ? 'border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-400 dark:bg-primary-900/20 dark:text-primary-200'
+                        : 'border-neutral-200 text-neutral-700 hover:border-primary-200 hover:text-primary-700 dark:border-neutral-700 dark:text-neutral-100 dark:hover:border-primary-400 dark:hover:text-primary-200'
+                    }`}
+                    onClick={() => handleThemeModeChange(mode)}
+                    disabled={isActive}
+                  >
+                    <span className="flex items-center gap-2 text-sm font-semibold">
+                      {icon}
+                      {label}
+                    </span>
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400">{description}</span>
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+        </Card>
 
           {/* Theme Settings */}
           <Card title="Theme Settings" icon={<Palette className="h-5 w-5 text-neutral-500" />}>

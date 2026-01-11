@@ -43,13 +43,17 @@ body {
   --app-background-color: #050a1a;
   --app-surface-color: #0f172a;
   --app-border-color: #1e293b;
-  --app-text-color: #e2e8f0;
+  --app-text-color: #ffffff;
 }
 
 .dark body,
 .light body {
   background-color: var(--app-background-color);
   color: var(--app-text-color);
+}
+
+.dark :where(*) {
+  color: #ffffff;
 }
 
 body.dense-mode {

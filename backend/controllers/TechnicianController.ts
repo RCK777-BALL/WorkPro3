@@ -44,7 +44,7 @@ const resolveUserObjectId = (
   const raw = req.user?._id ?? req.user?.id;
   if (!raw) return undefined;
   if (typeof raw === 'string') return toObjectId(raw);
-  if (raw && typeof raw === 'object' && raw instanceof Types.ObjectId) return toObjectId(raw);
+  if (raw && typeof raw === 'object' && Types.ObjectId.isValid(raw)) return toObjectId(raw as Types.ObjectId);
   return undefined;
 };
 

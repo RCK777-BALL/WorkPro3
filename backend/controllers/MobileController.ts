@@ -20,7 +20,7 @@ import {
 import { emitTelemetry } from '../services/telemetryService';
 import { upsertDeviceTelemetry, type DeviceTelemetryInput } from '../services/mobileSyncAdminService';
 import { listScanHistory, recordScanHistory } from '../services/mobileScanHistoryService';
-import { writeAuditLog, type AuditActor } from '../utils';
+import { toEntityId, writeAuditLog, type AuditActor } from '../utils';
 import type { MobileOfflineActionStatus } from '../models/MobileOfflineAction';
 
 const DEFAULT_PAGE = 1;
@@ -50,10 +50,8 @@ const toAuditActor = (user?: AuthedRequest['user']): AuditActor | undefined => {
   if (!user) return undefined;
   const actor: AuditActor = {};
   const id = user._id ?? user.id;
-  if (typeof id === 'string') actor.id = id;
-  if (!actor.id && id && typeof id === 'object') {
-    if (id instanceof Types.ObjectId) actor.id = id;
-  }
+  const resolvedId = toEntityId(id);
+  if (resolvedId) actor.id = resolvedId;
   const name = typeof (user as any).name === 'string' ? (user as any).name.trim() : undefined;
   if (name) actor.name = name;
   const email = typeof (user as any).email === 'string' ? (user as any).email.trim() : undefined;

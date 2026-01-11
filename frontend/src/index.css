@@ -56,6 +56,14 @@ body {
   color: #ffffff;
 }
 
+.dark [class*='bg-white'] {
+  color: #0f172a;
+}
+
+.dark [class*='bg-white'] :where(*) {
+  color: inherit;
+}
+
 body.dense-mode {
   font-size: 0.95rem;
 }

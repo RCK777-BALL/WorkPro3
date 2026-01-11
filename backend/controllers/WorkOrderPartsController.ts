@@ -18,7 +18,9 @@ const resolveUserObjectId = (req: AuthedRequest): Types.ObjectId | undefined => 
   const raw = req.user?._id ?? req.user?.id;
   if (!raw) return undefined;
   if (typeof raw === 'string') return toObjectId(raw);
-  if (raw && typeof raw === 'object' && raw instanceof Types.ObjectId) return toObjectId(raw);
+  if (raw && typeof raw === 'object') {
+    if (raw instanceof Types.ObjectId) return toObjectId(raw);
+  }
   return undefined;
 };
 

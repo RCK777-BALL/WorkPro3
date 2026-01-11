@@ -3,10 +3,8 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
-import { Types } from 'mongoose';
-
 import FeatureFlag from '../models/FeatureFlag';
-import { writeAuditLog, toEntityId } from '../utils';
+import { writeAuditLog, toEntityId, toObjectId } from '../utils';
 import type { AuthedRequest } from '../types/http';
 import type { EntityIdLike } from '../utils';
 
@@ -21,10 +19,7 @@ const getTenantContext = (req: AuthedRequest) => {
 const resolveUserId = (req: AuthedRequest): EntityIdLike => {
   const candidate = req.user?.id ?? req.user?._id;
   if (typeof candidate === 'string') return candidate;
-  if (candidate && typeof candidate === 'object') {
-    if (candidate instanceof Types.ObjectId) return candidate;
-  }
-  return undefined;
+  return toObjectId(candidate);
 };
 
 export const listFeatureFlags = async (req: Request, res: Response, next: NextFunction) => {

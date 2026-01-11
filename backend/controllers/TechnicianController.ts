@@ -32,7 +32,7 @@ const toObjectId = (value: Types.ObjectId | string): Types.ObjectId =>
 const toMaybeString = (value: unknown): string | undefined => {
   if (!value) return undefined;
   if (typeof value === 'string') return value;
-  if (value instanceof Types.ObjectId) return value.toString();
+  if (typeof value === 'object' && value instanceof Types.ObjectId) return value.toString();
   return undefined;
 };
 
@@ -41,9 +41,8 @@ const resolveUserObjectId = (
 ): Types.ObjectId | undefined => {
   const raw = req.user?._id ?? req.user?.id;
   if (!raw) return undefined;
-  if (raw instanceof Types.ObjectId || typeof raw === 'string') {
-    return toObjectId(raw);
-  }
+  if (typeof raw === 'string') return toObjectId(raw);
+  if (raw && typeof raw === 'object' && raw instanceof Types.ObjectId) return toObjectId(raw);
   return undefined;
 };
 

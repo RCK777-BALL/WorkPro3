@@ -4,7 +4,6 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Bell, Book, Mail, Monitor, Moon, Palette, Sliders, Sun } from 'lucide-react';
-import { isAxiosError } from 'axios';
 import { useShallow } from 'zustand/react/shallow';
 import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';

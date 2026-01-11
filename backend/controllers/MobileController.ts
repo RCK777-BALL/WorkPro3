@@ -51,7 +51,9 @@ const toAuditActor = (user?: AuthedRequest['user']): AuditActor | undefined => {
   const actor: AuditActor = {};
   const id = user._id ?? user.id;
   if (typeof id === 'string') actor.id = id;
-  if (!actor.id && id && typeof id === 'object' && id instanceof Types.ObjectId) actor.id = id;
+  if (!actor.id && id && typeof id === 'object') {
+    if (id instanceof Types.ObjectId) actor.id = id;
+  }
   const name = typeof (user as any).name === 'string' ? (user as any).name.trim() : undefined;
   if (name) actor.name = name;
   const email = typeof (user as any).email === 'string' ? (user as any).email.trim() : undefined;

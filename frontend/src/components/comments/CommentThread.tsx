@@ -231,7 +231,15 @@ const CommentThread = ({ entityId, entityType }: CommentThreadProps) => {
 
   const renderTimestamp = (value: Comment['createdAt']) => {
     const date = typeof value === 'string' ? new Date(value) : value;
-    return date.toLocaleString();
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+      timeZone: 'UTC',
+    }).format(date);
   };
 
   const renderCommentNode = (comment: Comment | ThreadNode, depth = 0): JSX.Element => {
@@ -255,7 +263,7 @@ const CommentThread = ({ entityId, entityType }: CommentThreadProps) => {
               )}
             </div>
           </div>
-          <time className="text-xs text-neutral-500" dateTime={renderTimestamp(node.createdAt)}>
+          <time className="text-xs text-neutral-500" dateTime={new Date(node.createdAt).toISOString()}>
             {renderTimestamp(node.createdAt)}
           </time>
         </header>

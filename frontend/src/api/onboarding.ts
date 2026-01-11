@@ -75,13 +75,12 @@ export const fetchOnboardingState = async (): Promise<OnboardingState> => {
   } catch (error) {
     if (isAxiosError(error)) {
       const status = error.response?.status;
-      if (!status || status === 404 || status >= 500 || status === 401 || status === 403) {
+      if (!status || status === 404 || status >= 500) {
         console.warn('Onboarding API unavailable. Falling back to defaults.');
         return buildFallbackState();
       }
     }
-    console.warn('Unexpected onboarding error. Falling back to defaults.', error);
-    return buildFallbackState();
+    throw error;
   }
 };
 

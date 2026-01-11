@@ -20,9 +20,8 @@ const getTenantContext = (req: AuthedRequest) => {
 
 const resolveUserId = (req: AuthedRequest): EntityIdLike => {
   const candidate = req.user?.id ?? req.user?._id;
-  if (typeof candidate === 'string' || candidate instanceof Types.ObjectId) {
-    return candidate;
-  }
+  if (typeof candidate === 'string') return candidate;
+  if (candidate && typeof candidate === 'object' && candidate instanceof Types.ObjectId) return candidate;
   return undefined;
 };
 

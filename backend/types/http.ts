@@ -1,4 +1,5 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
+import type { Types } from 'mongoose';
 import type { ParamsDictionary } from 'express-serve-static-core';
 import type { ParsedQs } from 'qs';
 import type { UserRole } from './auth';
@@ -11,6 +12,10 @@ type AuthedUser = Express.User & {
   tenantId?: string | null | undefined;
   siteId?: string | null | undefined;
   departmentId?: string | null | undefined;
+  id?: string | Types.ObjectId | undefined;
+  _id?: string | Types.ObjectId | undefined;
+  email?: string | undefined;
+  name?: string | undefined;
 };
 
 export type AuthedRequest<

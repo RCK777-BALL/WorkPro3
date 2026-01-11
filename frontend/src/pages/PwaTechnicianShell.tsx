@@ -209,12 +209,12 @@ const PwaTechnicianShell: React.FC = () => {
 
   return (
     <div className="space-y-5 p-4 md:p-6">
-      <header className="space-y-2 rounded-2xl bg-gradient-to-r from-primary-900 via-primary-800 to-primary-600 px-5 py-6 text-white shadow-lg">
+      <header className="space-y-2 rounded-2xl app-hero px-5 py-6 shadow-lg">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-primary-200">PWA shell</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-primary-500 dark:text-primary-300">PWA shell</p>
             <h1 className="text-2xl font-bold">Technician mobile workspace</h1>
-            <p className="max-w-2xl text-sm text-primary-100">
+            <p className="max-w-2xl text-sm text-neutral-600 dark:text-neutral-300">
               Touch-first dashboard with offline cache, QR check-ins, photo markup, and install-ready service worker.
             </p>
           </div>
@@ -224,13 +224,13 @@ const PwaTechnicianShell: React.FC = () => {
           </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" onClick={() => void refreshAssignments()} className="flex items-center gap-2 text-white">
+          <Button size="sm" variant="outline" onClick={() => void refreshAssignments()} className="flex items-center gap-2">
             <Download className="h-4 w-4" /> Refresh & cache WOs
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => void syncManager.sync()} className="flex items-center gap-2 text-white/90">
+          <Button size="sm" variant="ghost" onClick={() => void syncManager.sync()} className="flex items-center gap-2">
             <Radio className="h-4 w-4" /> Sync now
           </Button>
-          <Button size="sm" variant="ghost" onClick={warmOfflineCaches} disabled={warmingCache} className="flex items-center gap-2 text-white/90">
+          <Button size="sm" variant="ghost" onClick={warmOfflineCaches} disabled={warmingCache} className="flex items-center gap-2">
             <ShieldCheck className="h-4 w-4" /> {warmingCache ? 'Caching…' : 'Cache PM / assets'}
           </Button>
           {installEvent && (

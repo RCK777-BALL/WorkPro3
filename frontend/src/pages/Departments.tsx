@@ -663,25 +663,25 @@ const Departments = () => {
 
   return (
     <div className="space-y-6">
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary-900 via-indigo-800 to-blue-700 p-6 text-white shadow">
-        <div className="absolute -right-24 top-1/2 hidden h-48 w-48 -translate-y-1/2 rounded-full bg-white/10 blur-3xl md:block" />
+      <div className="relative overflow-hidden rounded-3xl app-hero p-6">
+        <div className="absolute -right-24 top-1/2 hidden h-48 w-48 -translate-y-1/2 rounded-full bg-primary-500/10 blur-3xl md:block" />
         <div className="relative z-10 flex flex-col gap-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex items-start gap-4">
-              <span className="rounded-xl bg-white/20 p-3">
+              <span className="rounded-xl bg-primary-100/80 p-3 text-primary-700 dark:bg-primary-500/20 dark:text-primary-200">
                 <Building2 className="h-6 w-6" />
               </span>
               <div className="space-y-2">
                 <div>
                   <h1 className="text-2xl font-semibold">Departments</h1>
-                  <p className="mt-1 max-w-2xl text-sm text-white/80">
+                  <p className="mt-1 max-w-2xl text-sm text-neutral-600 dark:text-neutral-300">
                     Audit, enrich, and maintain the full production hierarchy so frontline teams always know where work lives.
                   </p>
                 </div>
                 {hasUnassignedDepartments && (
-                  <div className="flex items-start gap-2 rounded-xl border border-white/30 bg-white/10 p-3 text-sm backdrop-blur">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-300" />
-                    <p className="text-white/90">
+                  <div className="flex items-start gap-2 rounded-xl border border-amber-200/60 bg-amber-50/80 p-3 text-sm text-amber-900 dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-100">
+                    <AlertTriangle className="mt-0.5 h-4 w-4" />
+                    <p>
                       Some departments are not linked to a plant. Assign them to keep planning, maintenance, and reporting aligned.
                     </p>
                   </div>
@@ -693,7 +693,6 @@ const Departments = () => {
                 variant="secondary"
                 size="sm"
                 onClick={() => navigate('/plants')}
-                className="backdrop-blur-sm bg-white/15 text-white hover:bg-white/20"
               >
                 <Factory className="mr-2 h-4 w-4" />
                 Manage plants
@@ -702,7 +701,6 @@ const Departments = () => {
                 variant="primary"
                 size="sm"
                 onClick={startDepartmentCreation}
-                className="bg-white text-primary-700 hover:bg-white/90"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 New department
@@ -712,7 +710,6 @@ const Departments = () => {
                 size="sm"
                 onClick={handleImportClick}
                 loading={importing}
-                className="border-white/40 bg-white/10 text-white hover:bg-white/20"
               >
                 {!importing && <Upload className="mr-2 h-4 w-4" />}
                 Import Excel
@@ -722,7 +719,6 @@ const Departments = () => {
                 size="sm"
                 onClick={handleExport}
                 loading={exporting}
-                className="border-white/40 bg-white/10 text-white hover:bg-white/20"
               >
                 {!exporting && <Download className="mr-2 h-4 w-4" />}
                 Export Excel
@@ -766,13 +762,17 @@ const Departments = () => {
               }].map((stat) => (
                 <div
                   key={stat.label}
-                  className="flex items-center justify-between rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm backdrop-blur"
+                  className="flex items-center justify-between rounded-2xl app-subtle px-4 py-3 text-sm"
                 >
                   <div className="space-y-1">
-                    <span className="text-xs uppercase tracking-wide text-white/70">{stat.label}</span>
+                    <span className="text-xs uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                      {stat.label}
+                    </span>
                     <p className="text-lg font-semibold">{stat.value.toLocaleString()}</p>
                   </div>
-                  <span className="rounded-full bg-white/20 p-2 text-white">{stat.icon}</span>
+                  <span className="rounded-full bg-primary-100/80 p-2 text-primary-700 dark:bg-primary-500/20 dark:text-primary-100">
+                    {stat.icon}
+                  </span>
                 </div>
               ))}
             </div>
@@ -780,9 +780,9 @@ const Departments = () => {
         </div>
       </div>
 
-      <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+      <div className="rounded-3xl app-surface p-6 shadow-sm">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex flex-1 items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800">
+          <div className="flex flex-1 items-center gap-3 rounded-2xl app-subtle px-4 py-3">
             <Search className="h-4 w-4 text-neutral-500" />
             <input
               value={search}

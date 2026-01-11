@@ -146,21 +146,23 @@ export const OnboardingWizard = () => {
     }
 
     return (
-      <section className="rounded-3xl border border-emerald-400/30 bg-emerald-500/10 p-6 text-white shadow-xl">
+      <section className="rounded-3xl app-hero p-6 shadow-xl">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-widest text-emerald-100/70">Workspace onboarding</p>
+            <p className="text-xs uppercase tracking-widest text-emerald-600/80 dark:text-emerald-300">
+              Workspace onboarding
+            </p>
             <h2 className="text-xl font-semibold">All steps complete</h2>
-            <p className="mt-2 text-sm text-emerald-50/70">
+            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">
               You&apos;re ready to go. Revisit any step from the main navigation whenever you need.
             </p>
           </div>
-          <CheckCircle2 className="h-8 w-8 text-emerald-300" />
+          <CheckCircle2 className="h-8 w-8 text-emerald-500" />
         </div>
-        <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+        <div className="mt-4 h-2 overflow-hidden rounded-full bg-neutral-200/60 dark:bg-neutral-700/60">
           <div className="h-full rounded-full bg-emerald-400" style={{ width: '100%' }} />
         </div>
-        <p className="mt-1 text-xs text-emerald-100/70">100% complete</p>
+        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">100% complete</p>
       </section>
     );
   }
@@ -175,12 +177,14 @@ export const OnboardingWizard = () => {
   };
 
   return (
-    <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white shadow-xl">
+    <section className="rounded-3xl app-hero p-6 shadow-xl">
       <div className="flex flex-col gap-6 lg:flex-row">
         <div className="lg:w-1/3">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-widest text-white/60">Workspace onboarding</p>
+              <p className="text-xs uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
+                Workspace onboarding
+              </p>
               <h2 className="text-xl font-semibold">{remaining ? `${remaining} steps to go` : 'All done!'}</h2>
             </div>
             {data?.pendingReminder ? (
@@ -188,20 +192,20 @@ export const OnboardingWizard = () => {
                 type="button"
                 onClick={handleDismissReminder}
                 disabled={dismissReminder.isLoading}
-                className="text-xs text-amber-200 underline-offset-4 hover:underline disabled:opacity-60"
+                className="text-xs text-amber-600 underline-offset-4 hover:underline disabled:opacity-60 dark:text-amber-300"
               >
                 Remind me later
               </button>
             ) : null}
           </div>
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-neutral-200/60 dark:bg-neutral-700/60">
             <div
               className="h-full rounded-full bg-emerald-400 transition-all"
               style={{ width: `${completionPct}%` }}
             />
           </div>
-          <p className="mt-1 text-xs text-white/60">{completionPct}% complete</p>
-          <p className="mt-2 text-sm text-white/70">
+          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">{completionPct}% complete</p>
+          <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">
             {data?.reminderMessage ?? 'Complete these guided steps to unlock the full workspace.'}
           </p>
           <ol className="mt-4 space-y-3">

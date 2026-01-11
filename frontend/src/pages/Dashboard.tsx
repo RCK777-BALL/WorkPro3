@@ -345,7 +345,6 @@ type SummaryCardProps = {
   value: number;
   suffix?: string;
   icon: ComponentType<{ className?: string }>;
-  gradient: string;
   trend?: number[];
   loading: boolean;
   href?: string;
@@ -359,7 +358,6 @@ function SummaryCard({
   value,
   suffix,
   icon: Icon,
-  gradient,
   trend,
   loading,
   href,
@@ -367,31 +365,29 @@ function SummaryCard({
   decimals = 0,
 }: SummaryCardProps) {
   const cardClasses = clsx(
-    "relative block overflow-hidden rounded-3xl border border-white/10 p-5 text-white shadow-xl transition",
-    "hover:shadow-2xl hover:border-white/20",
-    "bg-gradient-to-br",
+    "relative block overflow-hidden rounded-3xl p-5 shadow-xl transition app-hero",
+    "hover:shadow-2xl hover:border-primary-400/40",
     href
-      ? "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+      ? "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
       : undefined,
-    gradient,
   );
 
   const content = (
     <>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-white/70">{title}</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-neutral-500 dark:text-neutral-400">{title}</p>
           {loading ? (
-            <div className="mt-3 h-8 w-24 animate-pulse rounded-full bg-white/30" />
+            <div className="mt-3 h-8 w-24 animate-pulse rounded-full bg-neutral-200/60 dark:bg-neutral-700/60" />
           ) : (
             <div className="mt-3 flex items-baseline gap-1 text-3xl font-semibold">
               <AnimatedNumber value={value} decimals={decimals} />
               {suffix ? <span className="text-base font-medium">{suffix}</span> : null}
             </div>
           )}
-          <p className="mt-2 text-sm text-white/80">{description}</p>
+          <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">{description}</p>
         </div>
-        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-white">
+        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-100/80 text-primary-700 dark:bg-primary-500/20 dark:text-primary-100">
           <Icon className="h-6 w-6" />
         </span>
       </div>
@@ -399,14 +395,14 @@ function SummaryCard({
         {trend && trend.length > 1 ? (
           <Sparkline
             data={trend}
-            color="rgba(255,255,255,0.75)"
+            color="rgba(99, 102, 241, 0.7)"
             className="h-12 w-32"
           />
         ) : (
-          <div className="h-12 w-32 rounded-lg border border-white/10" />
+          <div className="h-12 w-32 rounded-lg border border-neutral-200/60 dark:border-neutral-700/60" />
         )}
         {href ? (
-          <span className="inline-flex items-center text-sm font-semibold text-white/90 transition group-hover:translate-x-0.5">
+          <span className="inline-flex items-center text-sm font-semibold text-primary-600 transition group-hover:translate-x-0.5 dark:text-primary-300">
             View all
             <ArrowUpRight className="ml-1 h-4 w-4" />
           </span>
@@ -415,7 +411,7 @@ function SummaryCard({
             type="button"
             size="sm"
             variant="secondary"
-            className="rounded-full bg-white/20 text-white hover:bg-white/30"
+            className="rounded-full"
             onClick={onViewAll}
           >
             View all
@@ -522,19 +518,18 @@ function LivePulseSection({ metrics, loading, error, onRefresh, onNavigate }: Li
   };
 
   return (
-    <section className="rounded-3xl bg-gradient-to-br from-purple-800 via-indigo-700 to-blue-700 p-6 text-white shadow-xl">
+    <section className="rounded-3xl app-hero p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Live pulse</h2>
-          <p className="text-sm text-white/80">Real-time operational health indicators</p>
+          <p className="text-sm text-neutral-600 dark:text-neutral-300">Real-time operational health indicators</p>
         </div>
-        <div className="flex items-center gap-3 text-sm text-white/70">
+        <div className="flex items-center gap-3 text-sm text-neutral-500 dark:text-neutral-400">
           <span>Updated {updatedLabel}</span>
           <Button
             type="button"
             size="sm"
             variant="ghost"
-            className="text-white hover:bg-white/20"
             onClick={onRefresh}
             disabled={loading}
           >
@@ -544,7 +539,7 @@ function LivePulseSection({ metrics, loading, error, onRefresh, onNavigate }: Li
       </div>
 
       {error ? (
-        <div className="mt-4 rounded-2xl border border-red-300/60 bg-red-500/20 p-4 text-sm text-red-100">
+        <div className="mt-4 rounded-2xl border border-red-300/60 bg-red-100/80 p-4 text-sm text-red-800 dark:bg-red-500/20 dark:text-red-100">
           {error}
         </div>
       ) : null}
@@ -565,7 +560,7 @@ function LivePulseSection({ metrics, loading, error, onRefresh, onNavigate }: Li
                   tone,
                   loading && "animate-pulse",
                   isInteractive &&
-                    "cursor-pointer hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-white/80 focus:ring-offset-2 focus:ring-offset-indigo-700/60",
+                    "cursor-pointer hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-primary-400/80 focus:ring-offset-2 focus:ring-offset-transparent",
                 )}
                 role={isInteractive ? "button" : undefined}
                 tabIndex={isInteractive ? 0 : undefined}
@@ -575,19 +570,19 @@ function LivePulseSection({ metrics, loading, error, onRefresh, onNavigate }: Li
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-xs uppercase tracking-widest text-white/70">{title}</p>
+                    <p className="text-xs uppercase tracking-widest text-neutral-500 dark:text-neutral-400">{title}</p>
                     <div className="mt-2 flex items-baseline gap-1 text-2xl font-semibold">
                       {loading ? "–" : <AnimatedNumber value={value} decimals={decimals ?? 0} />}
                       {suffix ? <span className="text-sm font-medium">{suffix}</span> : null}
                     </div>
-                    <p className="mt-1 text-xs text-white/75">{detail}</p>
+                    <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-300">{detail}</p>
                   </div>
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100/80 text-primary-700 dark:bg-primary-500/20 dark:text-primary-100">
                     <Icon className="h-5 w-5" />
                   </span>
                 </div>
                 {isInteractive ? (
-                  <span className="mt-4 inline-flex items-center text-xs font-semibold text-white/80">
+                  <span className="mt-4 inline-flex items-center text-xs font-semibold text-primary-600 dark:text-primary-300">
                     View details
                     <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
                   </span>
@@ -619,17 +614,18 @@ function RecentActivitySection({ items, loading, error, onRefresh, onNavigate }:
   };
 
   return (
-    <section className="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-950 to-black p-6 text-white shadow-xl">
+    <section className="rounded-3xl app-surface p-6 shadow-xl">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold">Recent activity</h2>
-          <p className="text-sm text-white/70">Latest updates across work orders, permits, and compliance</p>
+          <p className="text-sm text-neutral-600 dark:text-neutral-300">
+            Latest updates across work orders, permits, and compliance
+          </p>
         </div>
         <Button
           type="button"
           size="sm"
           variant="outline"
-          className="border-white/20 bg-white/10 text-white hover:bg-white/20"
           onClick={onRefresh}
           disabled={loading}
         >
@@ -638,7 +634,7 @@ function RecentActivitySection({ items, loading, error, onRefresh, onNavigate }:
       </div>
 
       {error ? (
-        <div className="mt-4 rounded-2xl border border-red-400/40 bg-red-500/20 p-4 text-sm text-red-100">
+        <div className="mt-4 rounded-2xl border border-red-300/60 bg-red-100/80 p-4 text-sm text-red-800 dark:bg-red-500/20 dark:text-red-100">
           {error}
         </div>
       ) : null}
@@ -646,11 +642,13 @@ function RecentActivitySection({ items, loading, error, onRefresh, onNavigate }:
       <div className="mt-5 space-y-3">
         {loading && items.length === 0
           ? Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="h-14 animate-pulse rounded-2xl bg-white/10" />
+              <div key={index} className="h-14 animate-pulse rounded-2xl bg-neutral-200/60 dark:bg-neutral-800/60" />
             ))
           : null}
         {!loading && !items.length ? (
-          <p className="text-sm text-white/70">No activity recorded in the last 24 hours.</p>
+          <p className="text-sm text-neutral-600 dark:text-neutral-300">
+            No activity recorded in the last 24 hours.
+          </p>
         ) : null}
         {items.map((item) => {
           const Icon = resolveIcon(item.type);
@@ -660,28 +658,28 @@ function RecentActivitySection({ items, loading, error, onRefresh, onNavigate }:
               type="button"
               onClick={() => onNavigate(item.link)}
               className={clsx(
-                "w-full rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition",
-                item.link ? "hover:border-white/30 hover:bg-white/10" : "cursor-default",
+                "w-full rounded-2xl border border-neutral-200/60 bg-neutral-50/80 p-4 text-left transition dark:border-neutral-800 dark:bg-neutral-900/60",
+                item.link ? "hover:border-primary-200/70 hover:bg-primary-50/40 dark:hover:border-primary-500/30" : "cursor-default",
               )}
             >
               <div className="flex items-center gap-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
-                  <Icon className="h-5 w-5 text-white" />
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-100/70 text-primary-700 dark:bg-primary-500/20 dark:text-primary-100">
+                  <Icon className="h-5 w-5" />
                 </span>
                 <div className="flex flex-1 items-center justify-between gap-4">
                   <div>
-                    <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                    <div className="flex items-center gap-2 text-sm font-semibold">
                       <span>{item.type}</span>
                       {item.ref ? (
-                        <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white/80">
+                        <span className="rounded-full bg-primary-100/70 px-2 py-0.5 text-xs text-primary-700 dark:bg-primary-500/20 dark:text-primary-100">
                           {item.ref}
                         </span>
                       ) : null}
                     </div>
-                    <p className="mt-1 text-sm text-white/80">{item.action}</p>
-                    <p className="text-xs text-white/60">{item.user}</p>
+                    <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">{item.action}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{item.user}</p>
                   </div>
-                  <div className="whitespace-nowrap text-xs text-white/60">
+                  <div className="whitespace-nowrap text-xs text-neutral-500 dark:text-neutral-400">
                     {formatDistanceToNow(new Date(item.time), { addSuffix: true })}
                   </div>
                 </div>
@@ -702,14 +700,14 @@ type StatusSummaryProps = {
 
 function StatusSummary({ statuses, updatedAt, loading }: StatusSummaryProps) {
   return (
-    <section className="rounded-3xl border border-white/10 bg-slate-900/60 p-6 text-white shadow-xl">
+    <section className="rounded-3xl app-surface p-6 shadow-xl">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold">Status legend</h2>
-          <p className="text-sm text-white/70">Live status definitions across the platform</p>
+          <p className="text-sm text-neutral-600 dark:text-neutral-300">Live status definitions across the platform</p>
         </div>
         {updatedAt ? (
-          <span className="text-xs text-white/60">
+          <span className="text-xs text-neutral-500 dark:text-neutral-400">
             Updated {formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}
           </span>
         ) : null}
@@ -717,12 +715,12 @@ function StatusSummary({ statuses, updatedAt, loading }: StatusSummaryProps) {
       <div className="mt-4 flex flex-wrap gap-3">
         {loading
           ? Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="h-9 w-32 animate-pulse rounded-full bg-white/10" />
+              <div key={index} className="h-9 w-32 animate-pulse rounded-full bg-neutral-200/60 dark:bg-neutral-700/60" />
             ))
           : statuses.map((status) => (
               <div
                 key={status.label}
-                className="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-sm text-white"
+                className="flex items-center gap-2 rounded-full border border-neutral-200/60 bg-neutral-50/80 px-3 py-1.5 text-sm text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900/60 dark:text-neutral-100"
               >
                 <span className={clsx("h-2.5 w-2.5 rounded-full", mapStatusColorClass(status.color))} />
                 <StatusBadge status={status.label} size="sm" />
@@ -746,11 +744,11 @@ function AssetAvailabilityWidget({ overall, critical }: AssetAvailabilityProps) 
 
   const renderBar = (label: string, value: number, colorClass: string) => (
     <div key={label}>
-      <div className="flex items-center justify-between text-xs text-white/60">
+      <div className="flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400">
         <span>{label}</span>
         <span>{Math.round(clampPercent(value))}%</span>
       </div>
-      <div className="mt-1 h-3 w-full overflow-hidden rounded-full bg-white/10">
+      <div className="mt-1 h-3 w-full overflow-hidden rounded-full bg-neutral-200/70 dark:bg-neutral-800">
         <div
           className={clsx("h-full rounded-full", colorClass)}
           style={{ width: `${clampPercent(value)}%` }}
@@ -760,13 +758,13 @@ function AssetAvailabilityWidget({ overall, critical }: AssetAvailabilityProps) 
   );
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-      <p className="text-xs uppercase tracking-widest text-white/60">Asset availability</p>
+    <div className="rounded-2xl app-subtle p-4">
+      <p className="text-xs uppercase tracking-widest text-neutral-500 dark:text-neutral-400">Asset availability</p>
       <div className="mt-3 space-y-3">
         {renderBar("Overall fleet", overall, "bg-sky-400")}
         {renderBar("Critical assets", critical, "bg-rose-400")}
       </div>
-      <p className="mt-3 text-xs text-white/60">
+      <p className="mt-3 text-xs text-neutral-500 dark:text-neutral-400">
         Comparing uptime for all assets versus equipment marked as high criticality.
       </p>
     </div>
@@ -795,13 +793,13 @@ function DashboardFilters({ filters, departments, lines, loading, onChange }: Fi
     options: SelectOption[],
     field: keyof FilterState,
   ) => (
-    <label className="flex flex-col gap-1 text-sm text-white/80">
-      <span className="text-xs uppercase tracking-widest text-white/50">{label}</span>
+    <label className="flex flex-col gap-1 text-sm text-neutral-700 dark:text-neutral-200">
+      <span className="text-xs uppercase tracking-widest text-neutral-500 dark:text-neutral-400">{label}</span>
       <select
         value={value}
         onChange={(event) => onChange(field, event.target.value)}
         disabled={loading && options.length === 0}
-        className="w-full min-w-[10rem] rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white shadow-sm focus:border-white/40 focus:outline-none"
+        className="w-full min-w-[10rem] rounded-2xl border border-neutral-200/70 bg-white px-4 py-2 text-sm text-neutral-700 shadow-sm focus:border-primary-400 focus:outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value} className="text-slate-900">
@@ -1271,7 +1269,6 @@ export default function Dashboard() {
         description: "Currently active tasks awaiting completion",
         value: data.openWorkOrders,
         icon: ClipboardListIcon,
-        gradient: "from-indigo-900 via-indigo-800 to-indigo-600",
         trend: trends.woBacklog,
         href: "/workorders?status=open",
       },
@@ -1281,7 +1278,6 @@ export default function Dashboard() {
         description: "Items past their due dates",
         value: data.overdueWorkOrders,
         icon: AlertTriangleIcon,
-        gradient: "from-rose-900 via-rose-800 to-rose-600",
         trend: trends.woBacklog,
         href: "/workorders?status=overdue",
       },
@@ -1291,7 +1287,6 @@ export default function Dashboard() {
         description: "Preventive tasks scheduled this week",
         value: data.pmDueNext7Days,
         icon: CalendarClockIcon,
-        gradient: "from-amber-900 via-amber-700 to-amber-500",
         trend: trends.pmCompliance,
         href: "/pm?filter=upcoming",
       },
@@ -1302,7 +1297,6 @@ export default function Dashboard() {
         value: data.complianceScore,
         suffix: "%",
         icon: ShieldCheckIcon,
-        gradient: "from-emerald-900 via-emerald-700 to-emerald-500",
         trend: trends.pmCompliance.map((value) => {
           const numericValue = typeof value === "number" ? value : 0;
           return Number((numericValue * 100).toFixed(1));
@@ -1317,7 +1311,6 @@ export default function Dashboard() {
         value: data.mttr,
         suffix: "h",
         icon: TimerIcon,
-        gradient: "from-cyan-900 via-cyan-700 to-cyan-500",
         trend: trends.mttr,
         decimals: 1,
         href: "/analytics/maintenance?metric=mttr",
@@ -1329,7 +1322,6 @@ export default function Dashboard() {
         value: data.assetAvailability,
         suffix: "%",
         icon: GaugeCircleIcon,
-        gradient: "from-blue-900 via-blue-700 to-cyan-500",
         trend: trends.wrenchTimePct,
         decimals: 1,
         href: "/assets",
@@ -1340,7 +1332,6 @@ export default function Dashboard() {
         description: "Permits awaiting approval or closure",
         value: data.permitsOpen,
         icon: ActivityIcon,
-        gradient: "from-purple-900 via-purple-700 to-fuchsia-600",
         trend: trends.costMTD,
         href: "/permits",
       },
@@ -1348,17 +1339,17 @@ export default function Dashboard() {
   }, [summary, summaryTrends]);
 
   const maintenanceAnalyticsSection = (
-    <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white shadow-xl">
+    <section className="rounded-3xl app-surface p-6 shadow-xl">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Maintenance analytics</h2>
-          <p className="text-sm text-white/70">Preventive trend highlights</p>
+          <p className="text-sm text-neutral-600 dark:text-neutral-300">Preventive trend highlights</p>
         </div>
         <Button
           type="button"
           size="sm"
           variant="secondary"
-          className="rounded-full bg-white/15 text-white hover:bg-white/25 disabled:opacity-60"
+          className="rounded-full"
           onClick={handleExportPdf}
           disabled={exportingPdf}
         >
@@ -1366,73 +1357,77 @@ export default function Dashboard() {
           <FileDown className="ml-2 h-4 w-4" />
         </Button>
       </div>
-      {exportError ? <p className="mt-3 text-xs text-red-200">{exportError}</p> : null}
+      {exportError ? (
+        <p className="mt-3 text-xs text-red-600 dark:text-red-200">{exportError}</p>
+      ) : null}
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-xs uppercase tracking-widest text-white/60">PM compliance trend</p>
+        <div className="rounded-2xl app-subtle p-4">
+          <p className="text-xs uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
+            PM compliance trend
+          </p>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl font-semibold">
               {summary ? `${Math.round(summary.pmCompliance * 100)}%` : "–"}
             </span>
-            <span className="text-xs text-white/60">last 10 periods</span>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">last 10 periods</span>
           </div>
           <Sparkline
             data={(summaryTrends?.pmCompliance ?? []).map((value) => {
               const numericValue = typeof value === "number" ? value : 0;
               return Number((numericValue * 100).toFixed(1));
             })}
-            color="rgba(255,255,255,0.8)"
+            color="rgba(99, 102, 241, 0.7)"
             className="mt-4 h-16 w-full"
           />
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-xs uppercase tracking-widest text-white/60">SLA compliance</p>
+        <div className="rounded-2xl app-subtle p-4">
+          <p className="text-xs uppercase tracking-widest text-neutral-500 dark:text-neutral-400">SLA compliance</p>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl font-semibold">
               {summary
                 ? `${(summary.slaCompliance ?? SUMMARY_FALLBACK.slaCompliance).toFixed(1)}%`
                 : "–"}
             </span>
-            <span className="text-xs text-white/60">on-time commitments</span>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">on-time commitments</span>
           </div>
           <Sparkline
             data={summaryTrends?.slaCompliance ?? []}
-            color="rgba(255,255,255,0.8)"
+            color="rgba(99, 102, 241, 0.7)"
             className="mt-4 h-16 w-full"
           />
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-xs uppercase tracking-widest text-white/60">Wrench time %</p>
+        <div className="rounded-2xl app-subtle p-4">
+          <p className="text-xs uppercase tracking-widest text-neutral-500 dark:text-neutral-400">Wrench time %</p>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl font-semibold">
               {summary
                 ? `${(summary.wrenchTimePct ?? SUMMARY_FALLBACK.wrenchTimePct).toFixed(1)}%`
                 : "–"}
             </span>
-            <span className="text-xs text-white/60">labor utilisation</span>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">labor utilisation</span>
           </div>
           <Sparkline
             data={summaryTrends?.wrenchTimePct ?? []}
-            color="rgba(255,255,255,0.8)"
+            color="rgba(99, 102, 241, 0.7)"
             className="mt-4 h-16 w-full"
           />
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="rounded-2xl app-subtle p-4">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="text-xs uppercase tracking-widest text-white/60">PM completion</p>
+              <p className="text-xs uppercase tracking-widest text-neutral-500 dark:text-neutral-400">PM completion</p>
               <div className="mt-3 flex items-baseline gap-2">
                 <span className="text-2xl font-semibold">
                   {pmTotals ? `${(pmTotals.completionRate ?? 0).toFixed(1)}%` : "–"}
                 </span>
-                <span className="text-xs text-white/60">last 6 months</span>
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">last 6 months</span>
               </div>
             </div>
             <Button
               type="button"
               size="sm"
               variant="ghost"
-              className="rounded-full bg-white/10 text-white hover:bg-white/20"
+              className="rounded-full"
               onClick={() => navigateTo("/analytics/pm")}
             >
               View
@@ -1444,17 +1439,17 @@ export default function Dashboard() {
             color="rgba(59, 130, 246, 0.9)"
             className="mt-4 h-16 w-full"
           />
-          <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-white/70">
+          <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-neutral-500 dark:text-neutral-400">
             <div>
-              <span className="block text-[11px] uppercase text-white/50">On-time</span>
+              <span className="block text-[11px] uppercase text-neutral-400 dark:text-neutral-500">On-time</span>
               <span className="font-semibold">{pmTotals?.onTime ?? 0}</span>
             </div>
             <div>
-              <span className="block text-[11px] uppercase text-white/50">Late</span>
+              <span className="block text-[11px] uppercase text-neutral-400 dark:text-neutral-500">Late</span>
               <span className="font-semibold">{pmTotals?.late ?? 0}</span>
             </div>
             <div>
-              <span className="block text-[11px] uppercase text-white/50">Missed</span>
+              <span className="block text-[11px] uppercase text-neutral-400 dark:text-neutral-500">Missed</span>
               <span className="font-semibold">{pmTotals?.missed ?? 0}</span>
             </div>
           </div>
@@ -1468,11 +1463,11 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 p-6 text-white">
+    <div className="min-h-screen app-background p-6">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
         <header className="space-y-2">
           <h1 className="text-3xl font-semibold">Operations dashboard</h1>
-          <p className="text-sm text-white/70">
+          <p className="text-sm text-neutral-600 dark:text-neutral-300">
             Monitor maintenance workload, compliance, and live system health at a glance.
           </p>
         </header>
@@ -1482,7 +1477,7 @@ export default function Dashboard() {
         <div
           role="tablist"
           aria-label="Dashboard sections"
-          className="flex flex-wrap items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1 text-sm"
+          className="flex flex-wrap items-center gap-2 rounded-full app-subtle p-1 text-sm"
         >
           {DASHBOARD_TABS.map((tab) => {
             const isActive = activeTab === tab.key;
@@ -1495,7 +1490,9 @@ export default function Dashboard() {
                 onClick={() => setActiveTab(tab.key)}
                 className={clsx(
                   "rounded-full px-4 py-2 text-sm font-medium transition",
-                  isActive ? "bg-white/15 text-white" : "text-white/60 hover:bg-white/10 hover:text-white",
+                  isActive
+                    ? "bg-primary-100/80 text-primary-700 dark:bg-primary-500/20 dark:text-primary-100"
+                    : "text-neutral-500 hover:bg-neutral-100/70 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800/60 dark:hover:text-neutral-100",
                 )}
               >
                 {tab.label}
@@ -1517,7 +1514,7 @@ export default function Dashboard() {
             />
 
             {summaryError ? (
-              <div className="rounded-3xl border border-red-400/60 bg-red-500/20 p-4 text-sm text-red-100">
+              <div className="rounded-3xl border border-red-300/60 bg-red-100/80 p-4 text-sm text-red-800 dark:bg-red-500/20 dark:text-red-100">
                 {summaryError}
               </div>
             ) : null}
@@ -1531,7 +1528,6 @@ export default function Dashboard() {
                   value={card.value}
                   {...(card.suffix ? { suffix: card.suffix } : {})}
                   icon={card.icon}
-                  gradient={card.gradient}
                   trend={card.trend}
                   loading={summaryLoading}
                   decimals={card.decimals ?? 0}

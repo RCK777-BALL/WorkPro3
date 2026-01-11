@@ -55,21 +55,25 @@ const AssetDetails = () => {
     const downtimeMinutes = data.downtimeLogs?.reduce((sum, log) => sum + (log.durationMinutes ?? 0), 0) ?? 0;
     return (
       <div className="space-y-6">
-        <section className="rounded-3xl border border-neutral-800 bg-gradient-to-br from-neutral-950 to-neutral-900/70 p-6">
+        <section className="rounded-3xl app-hero p-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-wide text-indigo-300">Asset</p>
-              <h1 className="text-3xl font-bold text-white">{data.asset.name}</h1>
-              {data.asset.description && <p className="mt-2 text-sm text-neutral-300">{data.asset.description}</p>}
+              <p className="text-xs uppercase tracking-wide text-primary-500 dark:text-primary-300">Asset</p>
+              <h1 className="text-3xl font-bold">{data.asset.name}</h1>
+              {data.asset.description && (
+                <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">{data.asset.description}</p>
+              )}
             </div>
-            <dl className="grid grid-cols-2 gap-4 text-sm text-neutral-300">
+            <dl className="grid grid-cols-2 gap-4 text-sm text-neutral-600 dark:text-neutral-300">
               <div>
                 <dt className="text-xs uppercase text-neutral-500">Status</dt>
-                <dd className="text-lg font-semibold text-indigo-200">{formatField(data.asset.status)}</dd>
+                <dd className="text-lg font-semibold text-primary-600 dark:text-primary-300">
+                  {formatField(data.asset.status)}
+                </dd>
               </div>
               <div>
                 <dt className="text-xs uppercase text-neutral-500">Criticality</dt>
-                <dd className="text-lg font-semibold text-neutral-100">{formatField(data.asset.criticality)}</dd>
+                <dd className="text-lg font-semibold">{formatField(data.asset.criticality)}</dd>
               </div>
               <div>
                 <dt className="text-xs uppercase text-neutral-500">Type</dt>
@@ -81,7 +85,7 @@ const AssetDetails = () => {
               </div>
             </dl>
           </div>
-          <dl className="mt-6 grid gap-4 text-sm text-neutral-300 md:grid-cols-2 lg:grid-cols-3">
+          <dl className="mt-6 grid gap-4 text-sm text-neutral-600 dark:text-neutral-300 md:grid-cols-2 lg:grid-cols-3">
             <div>
               <dt className="text-xs uppercase text-neutral-500">Serial number</dt>
               <dd>{formatField(data.asset.serialNumber)}</dd>

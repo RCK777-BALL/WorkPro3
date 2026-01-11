@@ -355,7 +355,7 @@ const Messages = () => {
   );
 
   return (
-    <div className="flex h-full min-h-screen bg-gradient-to-br from-gray-950 via-gray-950/80 to-gray-900">
+    <div className="flex h-full min-h-screen app-background">
       <ChatSidebar
         activeTab={sidebarTab}
         onTabChange={setSidebarTab}

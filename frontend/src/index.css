@@ -108,5 +108,29 @@ body.high-contrast select option {
   color: var(--app-text-color) !important;
 }
 
+.app-background {
+  background-color: var(--app-background-color);
+  color: var(--app-text-color);
+}
+
+.app-surface {
+  background-color: var(--app-surface-color);
+  border: 1px solid var(--app-border-color);
+  color: var(--app-text-color);
+}
+
+.app-hero {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.18), rgba(56, 189, 248, 0.12)), var(--app-surface-color);
+  border: 1px solid var(--app-border-color);
+  color: var(--app-text-color);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.35);
+}
+
+.app-subtle {
+  background-color: color-mix(in srgb, var(--app-surface-color) 88%, transparent);
+  border: 1px solid var(--app-border-color);
+  color: var(--app-text-color);
+}
+
 /* (optional) theme tokens – remove if not using */
 /* @theme inline; */

@@ -578,7 +578,7 @@ function SortableSidebarItem({ item, collapsed, isActive }: SortableSidebarItemP
             collapsed ? "justify-center" : "gap-3",
             linkActive
               ? "bg-primary-600 text-white shadow"
-              : "text-white hover:bg-white/10 dark:text-white dark:hover:bg-white/10",
+              : "text-neutral-700 hover:bg-neutral-100/80 dark:text-neutral-200 dark:hover:bg-white/10",
             (isDragging || isActive) && "ring-2 ring-primary-400 dark:ring-primary-500",
           )
         }
@@ -588,7 +588,9 @@ function SortableSidebarItem({ item, collapsed, isActive }: SortableSidebarItemP
           <span className="flex items-center gap-2 font-medium">
             {item.label}
             {item.badge ? (
-              <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold text-white">{item.badge}</span>
+              <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-xs font-semibold text-neutral-700 dark:bg-white/20 dark:text-white">
+                {item.badge}
+              </span>
             ) : null}
           </span>
         )}

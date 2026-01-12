@@ -421,7 +421,7 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
   }, [sidebarOrder, can, navBadges]);
 
   const containerClasses = clsx(
-    "hidden shrink-0 border-r border-neutral-200 bg-white/60 backdrop-blur-lg transition-all duration-300 dark:border-neutral-800 dark:bg-neutral-900/60 lg:flex",
+    "hidden shrink-0 border-r border-neutral-800 bg-black text-white transition-all duration-300 lg:flex",
     collapsed ? "w-20" : "w-64",
   );
 
@@ -468,7 +468,7 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
       <div className={clsx("flex h-full w-full flex-col gap-6 py-6", collapsed ? "px-3" : "px-5")}>
         <div
           className={clsx(
-            "flex items-center gap-2 text-neutral-900 dark:text-neutral-100 transition-all",
+            "flex items-center gap-2 text-white transition-all",
             collapsed && "flex-col gap-1",
           )}
         >
@@ -477,8 +477,8 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
           </span>
           {!collapsed && (
             <div>
-              <p className="text-sm font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">WorkPro</p>
-              <p className="text-lg font-semibold">Command Center</p>
+              <p className="text-sm font-semibold uppercase tracking-wide text-white/60">WorkPro</p>
+              <p className="text-lg font-semibold text-white">Command Center</p>
             </div>
           )}
         </div>
@@ -495,7 +495,7 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
             {groups.map((group) => (
               <div key={group.id} className={clsx("space-y-3", collapsed && "space-y-2")}>
                 {!collapsed && (
-                  <p className="px-2 text-xs font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+                  <p className="px-2 text-xs font-medium uppercase tracking-wider text-white/50">
                     {group.title}
                   </p>
                 )}
@@ -526,7 +526,7 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
               "flex w-full items-center rounded-xl px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500",
               collapsed ? "justify-center" : "gap-3",
               isAuthenticated
-                ? "bg-neutral-100 text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
+                ? "bg-neutral-900 text-white hover:bg-neutral-800"
                 : "bg-primary-600 text-white hover:bg-primary-700",
             )}
             aria-label={authLabel}
@@ -537,9 +537,9 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
           </button>
 
           {!collapsed && (
-            <div className="rounded-2xl border border-neutral-200 bg-white p-4 text-sm shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
-              <p className="font-medium text-neutral-900 dark:text-neutral-100">Need help?</p>
-              <p className="mt-1 text-neutral-500 dark:text-neutral-400">
+            <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4 text-sm shadow-sm">
+              <p className="font-medium text-white">Need help?</p>
+              <p className="mt-1 text-white/60">
                 Visit the documentation or contact support to keep the operation running smoothly.
               </p>
             </div>
@@ -577,9 +577,9 @@ function SortableSidebarItem({ item, collapsed, isActive }: SortableSidebarItemP
             "flex items-center rounded-xl px-3 py-2 transition cursor-grab active:cursor-grabbing touch-manipulation",
             collapsed ? "justify-center" : "gap-3",
             linkActive
-              ? "bg-primary-600 text-white shadow"
-              : "text-neutral-700 hover:bg-neutral-100/80 dark:text-neutral-200 dark:hover:bg-white/10",
-            (isDragging || isActive) && "ring-2 ring-primary-400 dark:ring-primary-500",
+              ? "bg-blue-600 text-white shadow"
+              : "text-white/80 hover:bg-blue-900/40 hover:text-white",
+            (isDragging || isActive) && "ring-2 ring-blue-400",
           )
         }
       >
@@ -588,7 +588,7 @@ function SortableSidebarItem({ item, collapsed, isActive }: SortableSidebarItemP
           <span className="flex items-center gap-2 font-medium">
             {item.label}
             {item.badge ? (
-              <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-xs font-semibold text-neutral-700 dark:bg-white/20 dark:text-white">
+              <span className="rounded-full bg-blue-800/60 px-2 py-0.5 text-xs font-semibold text-white">
                 {item.badge}
               </span>
             ) : null}

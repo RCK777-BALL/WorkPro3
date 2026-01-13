@@ -4,7 +4,7 @@
   "main": "server.ts",
   "type": "commonjs",
   "scripts": {
-    "dev": "ts-node --files server.ts",
+    "dev": "ts-node --transpile-only --files server.ts",
     "seed": "ts-node seed.ts",
     "seed:admin": "ts-node scripts/seedAdmin.ts",
     "seed:default-admin": "ts-node scripts/seedDefaultAdmin.ts",

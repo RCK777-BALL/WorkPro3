@@ -515,42 +515,40 @@ export default function PermitsPage() {
       </Card>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card className="app-hero">
+        <Card className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-neutral-500 dark:text-neutral-400">Total permits</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-white/70">Total permits</p>
               <p className="mt-2 text-3xl font-semibold">{summary.total}</p>
             </div>
-            <CheckCircle2 className="h-10 w-10 text-primary-500" />
+            <CheckCircle2 className="h-10 w-10 text-white/70" />
           </div>
         </Card>
-        <Card className="app-hero">
+        <Card className="bg-gradient-to-br from-amber-500 to-orange-600 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-neutral-500 dark:text-neutral-400">
-                Pending approvals
-              </p>
+              <p className="text-xs uppercase tracking-[0.3em] text-white/70">Pending approvals</p>
               <p className="mt-2 text-3xl font-semibold">{summary.pending}</p>
             </div>
-            <AlertCircle className="h-10 w-10 text-primary-500" />
+            <AlertCircle className="h-10 w-10 text-white/70" />
           </div>
         </Card>
-        <Card className="app-hero">
+        <Card className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-neutral-500 dark:text-neutral-400">Active permits</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-white/70">Active permits</p>
               <p className="mt-2 text-3xl font-semibold">{summary.active}</p>
             </div>
-            <CheckCircle2 className="h-10 w-10 text-primary-500" />
+            <CheckCircle2 className="h-10 w-10 text-white/70" />
           </div>
         </Card>
-        <Card className="app-hero">
+        <Card className="bg-gradient-to-br from-rose-500 to-pink-600 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-neutral-500 dark:text-neutral-400">Escalated</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-white/70">Escalated</p>
               <p className="mt-2 text-3xl font-semibold">{summary.escalated}</p>
             </div>
-            <AlertCircle className="h-10 w-10 text-primary-500" />
+            <AlertCircle className="h-10 w-10 text-white/70" />
           </div>
         </Card>
       </section>
@@ -637,3 +635,4 @@ export default function PermitsPage() {
     </div>
   );
 }
+

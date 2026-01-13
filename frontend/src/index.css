@@ -56,11 +56,11 @@ body {
   color: #ffffff;
 }
 
-.dark :where([class*='bg-white'], [class*='bg-gray'], [class*='bg-neutral'], [class*='bg-slate'], [class*='bg-zinc']) {
+.dark [class*='bg-white'] {
   color: #0f172a;
 }
 
-.dark :where([class*='bg-white'], [class*='bg-gray'], [class*='bg-neutral'], [class*='bg-slate'], [class*='bg-zinc']) :where(*) {
+.dark [class*='bg-white'] :where(*) {
   color: inherit;
 }
 

@@ -118,6 +118,42 @@ The following tickets refine the roadmap epics into implementation-ready tasks. 
 - Dependencies: Test tenants/fixtures, middleware/policy layers.
 - Complexity: S
 
+## Epic: Design System Modernization
+### Expand Neutral and Surface Tokens
+- Description: Add neutral color ramps and surface tokens for layered backgrounds, borders, and muted text; wire them into theme configuration and ensure parity across light/dark schemes.
+- Acceptance Criteria: Neutral ramp provides at least 8 steps; surface tokens cover primary/secondary/tertiary surfaces; dark mode uses low-contrast neutrals; existing components updated to consume new tokens.
+- Affected Components: frontend
+- Dependencies: Design-system token updates, theme configuration, component audit.
+- Complexity: M
+
+### Add Semantic Status Colors and State Variants
+- Description: Introduce semantic tokens for success/warning/error/info plus hover/active/disabled state variants; apply to badges, alerts, and status indicators.
+- Acceptance Criteria: Semantic colors defined for light/dark; state variants documented; UI components use semantic tokens instead of hardcoded colors; visual regression review completed.
+- Affected Components: frontend
+- Dependencies: Design-system tokens, component styling pass.
+- Complexity: M
+
+### Extend Typography Scale and Text Styles
+- Description: Add larger sizes and weight definitions for headings, body, and captions; define reusable text styles in the theme for consistent hierarchy.
+- Acceptance Criteria: Typography scale includes at least 2 new sizes above 24px; font weights documented and applied; headings/body styles standardized in core layouts and components.
+- Affected Components: frontend
+- Dependencies: Design-system typography tokens, component audit.
+- Complexity: S
+
+### Dark Mode Layering and Muted Text Pass
+- Description: Define layered dark surfaces and muted text tokens; update layouts/cards/sidebars to use layered surfaces and muted labels where appropriate.
+- Acceptance Criteria: Dark surfaces applied to at least top-level layout, cards, and modals; muted text token used for secondary labels; contrast checks documented.
+- Affected Components: frontend
+- Dependencies: Neutral/surface tokens, component updates.
+- Complexity: M
+
+### Spacing Scale Extension and Layout Guidelines
+- Description: Extend spacing scale for larger layout needs and document spacing guidelines for core components (cards, panels, tables, forms).
+- Acceptance Criteria: Spacing tokens include 40/48/64; documented usage guidance added; top 5 core pages updated to adhere to spacing guidelines.
+- Affected Components: frontend, docs
+- Dependencies: Spacing tokens, design-system documentation, UI audits.
+- Complexity: M
+
 ## Epic: PM Engine Enhancements (Compliance / EHS)
 ### WO Auto-Generation Engine (Time + Usage Based)
 - Description: Extend PM engine to generate WOs based on calendar schedules and meter/usage thresholds; include backfill logic to avoid missed cycles and de-duplication safeguards.

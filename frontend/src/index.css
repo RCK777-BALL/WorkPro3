@@ -56,11 +56,11 @@ body {
   color: #ffffff;
 }
 
-.dark [class*='bg-white'] {
+.dark [class*='bg-white']:not([class*='dark:bg-']) {
   color: #0f172a;
 }
 
-.dark [class*='bg-white'] :where(*) {
+.dark [class*='bg-white']:not([class*='dark:bg-']) :where(*) {
   color: inherit;
 }
 

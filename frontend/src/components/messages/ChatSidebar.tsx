@@ -53,10 +53,10 @@ const ChatSidebar = ({
   }, [channels, directs, searchTerm]);
 
   return (
-    <div className="flex h-full w-80 flex-col app-surface">
-      <div className="border-b border-neutral-200/70 px-4 py-4 dark:border-neutral-800">
+    <div className="flex h-full w-80 flex-col border-r border-gray-900 bg-gradient-to-b from-gray-950 via-gray-950/80 to-gray-900">
+      <div className="border-b border-gray-900 px-4 py-4">
         <Group justify="space-between" align="center">
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">WorkPro Messenger</h2>
+          <h2 className="text-lg font-semibold text-white">WorkPro Messenger</h2>
           <Button size="xs" leftSection={<PlusCircle size={16} />} onClick={onNewChat}>
             New chat
           </Button>
@@ -66,11 +66,11 @@ const ChatSidebar = ({
           placeholder="Search messages or people"
           value={searchTerm}
           onChange={(event) => onSearchTermChange(event.currentTarget.value)}
-          leftSection={<Search size={16} className="text-neutral-400" />}
+          leftSection={<Search size={16} className="text-gray-400" />}
         />
       </div>
       <Tabs value={activeTab} onChange={(value) => onTabChange((value as SidebarTab) ?? 'channels')} className="flex-1">
-        <Tabs.List className="border-b border-neutral-200/70 bg-neutral-50/80 px-4 dark:border-neutral-800 dark:bg-neutral-900/60">
+        <Tabs.List className="border-b border-gray-900 bg-gray-950/60 px-4">
           {[
             { value: 'channels' as const, label: 'Channels', icon: <MessageSquare size={14} /> },
             { value: 'direct' as const, label: 'Direct', icon: <Users size={14} /> },
@@ -110,8 +110,8 @@ const ChatSidebar = ({
         </Tabs.Panel>
         <Tabs.Panel value="teams" className="flex-1">
           <ScrollArea className="h-full px-4 pb-4">
-            <div className="mt-3 flex items-center justify-between px-2 text-xs uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-              <Text size="xs" className="font-semibold text-neutral-700 dark:text-neutral-200">
+            <div className="mt-3 flex items-center justify-between px-2 text-xs uppercase tracking-wide text-gray-400">
+              <Text size="xs" className="font-semibold text-gray-300">
                 All employees
               </Text>
               <Badge size="xs" variant="outline" color="gray">

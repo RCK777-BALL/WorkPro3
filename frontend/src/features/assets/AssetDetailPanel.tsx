@@ -242,43 +242,37 @@ const AssetDetailPanel = ({ assetSummary, assetDetails, hierarchy, isLoading, on
 
   return (
     <div className="space-y-4">
-      <section className="rounded-2xl app-hero p-6">
+      <section className="rounded-2xl border border-neutral-800 bg-gradient-to-br from-neutral-900/80 to-neutral-900/40 p-6">
         {asset ? (
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-sm uppercase tracking-wide text-neutral-500 dark:text-neutral-400">Asset</p>
-              <h2 className="text-2xl font-bold">{asset.name}</h2>
-              <div className="mt-2 flex flex-wrap gap-3 text-sm text-neutral-600 dark:text-neutral-300">
+              <p className="text-sm uppercase tracking-wide text-neutral-400">Asset</p>
+              <h2 className="text-2xl font-bold text-white">{asset.name}</h2>
+              <div className="mt-2 flex flex-wrap gap-3 text-sm text-neutral-300">
                 {hierarchyHints.department && (
-                  <span className="rounded-full bg-primary-100/70 px-3 py-1 text-primary-700 dark:bg-primary-500/20 dark:text-primary-100">
-                    Department: {hierarchyHints.department}
-                  </span>
+                  <span className="rounded-full bg-neutral-800/70 px-3 py-1">Department: {hierarchyHints.department}</span>
                 )}
                 {hierarchyHints.line && (
-                  <span className="rounded-full bg-primary-100/70 px-3 py-1 text-primary-700 dark:bg-primary-500/20 dark:text-primary-100">
-                    Line: {hierarchyHints.line}
-                  </span>
+                  <span className="rounded-full bg-neutral-800/70 px-3 py-1">Line: {hierarchyHints.line}</span>
                 )}
                 {hierarchyHints.station && (
-                  <span className="rounded-full bg-primary-100/70 px-3 py-1 text-primary-700 dark:bg-primary-500/20 dark:text-primary-100">
-                    Station: {hierarchyHints.station}
-                  </span>
+                  <span className="rounded-full bg-neutral-800/70 px-3 py-1">Station: {hierarchyHints.station}</span>
                 )}
               </div>
             </div>
             <div className="flex gap-4 text-sm">
               <div>
                 <p className="text-xs uppercase text-neutral-500">Status</p>
-                <p className="font-semibold text-primary-600 dark:text-primary-300">{asset.status ?? 'Active'}</p>
+                <p className="font-semibold text-indigo-300">{asset.status ?? 'Active'}</p>
               </div>
               <div>
                 <p className="text-xs uppercase text-neutral-500">Criticality</p>
-                <p className="font-semibold">{asset.criticality ?? 'medium'}</p>
+                <p className="font-semibold text-neutral-200">{asset.criticality ?? 'medium'}</p>
               </div>
             </div>
           </div>
         ) : (
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">Loading asset details…</p>
+          <p className="text-sm text-neutral-400">Loading asset details…</p>
         )}
       </section>
 

@@ -242,11 +242,14 @@ export default function PublicRequestPage() {
   };
 
   const hasFiles = files && files.length > 0;
+  const inputClassName =
+    "mt-1 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100";
+  const labelClassName = "text-sm font-medium text-neutral-700";
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 md:flex-row">
-        <section className="flex-1 rounded-2xl bg-white p-6 shadow-lg">
+      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 lg:flex-row">
+        <section className="flex-1 rounded-3xl border border-neutral-100 bg-white p-8 shadow-xl">
           <h1 className="text-2xl font-semibold text-neutral-900">
             Work Request Portal
           </h1>
@@ -257,16 +260,13 @@ export default function PublicRequestPage() {
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label
-                  htmlFor="title"
-                  className="text-sm font-medium text-neutral-700"
-                >
+                <label htmlFor="title" className={labelClassName}>
                   Title
                 </label>
                 <input
                   id="title"
                   name="title"
-                  className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+                  className={inputClassName}
                   value={values.title}
                   onChange={handleChange}
                   required
@@ -276,16 +276,13 @@ export default function PublicRequestPage() {
                 )}
               </div>
               <div>
-                <label
-                  htmlFor="priority"
-                  className="text-sm font-medium text-neutral-700"
-                >
+                <label htmlFor="priority" className={labelClassName}>
                   Priority
                 </label>
                 <select
                   id="priority"
                   name="priority"
-                  className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+                  className={inputClassName}
                   value={values.priority}
                   onChange={handleChange}
                 >
@@ -298,16 +295,13 @@ export default function PublicRequestPage() {
               </div>
             </div>
             <div>
-              <label
-                htmlFor="description"
-                className="text-sm font-medium text-neutral-700"
-              >
+              <label htmlFor="description" className={labelClassName}>
                 Description
               </label>
               <textarea
                 id="description"
                 name="description"
-                className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+                className={inputClassName}
                 rows={4}
                 value={values.description}
                 onChange={handleChange}
@@ -321,16 +315,13 @@ export default function PublicRequestPage() {
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label
-                  htmlFor="requesterName"
-                  className="text-sm font-medium text-neutral-700"
-                >
+                <label htmlFor="requesterName" className={labelClassName}>
                   Your name
                 </label>
                 <input
                   id="requesterName"
                   name="requesterName"
-                  className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+                  className={inputClassName}
                   value={values.requesterName}
                   onChange={handleChange}
                   required
@@ -342,17 +333,14 @@ export default function PublicRequestPage() {
                 )}
               </div>
               <div>
-                <label
-                  htmlFor="requesterEmail"
-                  className="text-sm font-medium text-neutral-700"
-                >
+                <label htmlFor="requesterEmail" className={labelClassName}>
                   Email
                 </label>
                 <input
                   id="requesterEmail"
                   name="requesterEmail"
                   type="email"
-                  className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+                  className={inputClassName}
                   value={values.requesterEmail ?? ""}
                   onChange={handleChange}
                 />
@@ -365,31 +353,25 @@ export default function PublicRequestPage() {
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label
-                  htmlFor="requesterPhone"
-                  className="text-sm font-medium text-neutral-700"
-                >
+                <label htmlFor="requesterPhone" className={labelClassName}>
                   Phone
                 </label>
                 <input
                   id="requesterPhone"
                   name="requesterPhone"
-                  className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+                  className={inputClassName}
                   value={values.requesterPhone ?? ""}
                   onChange={handleChange}
                 />
               </div>
               <div>
-                <label
-                  htmlFor="location"
-                  className="text-sm font-medium text-neutral-700"
-                >
+                <label htmlFor="location" className={labelClassName}>
                   Location
                 </label>
                 <input
                   id="location"
                   name="location"
-                  className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+                  className={inputClassName}
                   value={values.location ?? ""}
                   onChange={handleChange}
                   placeholder="Building, floor, or area"
@@ -398,32 +380,26 @@ export default function PublicRequestPage() {
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label
-                  htmlFor="assetTag"
-                  className="text-sm font-medium text-neutral-700"
-                >
+                <label htmlFor="assetTag" className={labelClassName}>
                   Asset tag (free text)
                 </label>
                 <input
                   id="assetTag"
                   name="assetTag"
-                  className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+                  className={inputClassName}
                   value={values.assetTag ?? ""}
                   onChange={handleChange}
                   placeholder="e.g. Pump-14"
                 />
               </div>
               <div>
-                <label
-                  className="text-sm font-medium text-neutral-700"
-                  htmlFor="asset"
-                >
+                <label className={labelClassName} htmlFor="asset">
                   Link to asset (search)
                 </label>
                 <input
                   id="asset"
                   name="asset"
-                  className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+                  className={inputClassName}
                   value={assetSearch}
                   onChange={(evt) => setAssetSearch(evt.target.value)}
                   placeholder="Start typing to search assets"
@@ -457,26 +433,23 @@ export default function PublicRequestPage() {
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label
-                  htmlFor="category"
-                  className="text-sm font-medium text-neutral-700"
-                >
+                <label htmlFor="category" className={labelClassName}>
                   Category
                 </label>
                 <input
                   id="category"
                   name="category"
-                  className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+                  className={inputClassName}
                   value={values.category ?? ""}
                   onChange={handleChange}
                   placeholder="Safety, Facilities, etc."
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-neutral-700">
+                <label className={labelClassName}>
                   Tags
                 </label>
-                <div className="mt-1 rounded-lg border border-neutral-300 px-3 py-2">
+                <div className="mt-1 rounded-lg border border-neutral-200 bg-white px-3 py-2 shadow-sm">
                   <div className="flex flex-wrap gap-2">
                     {(values.tags ?? []).map((tag) => (
                       <span
@@ -494,7 +467,7 @@ export default function PublicRequestPage() {
                       </span>
                     ))}
                     <input
-                      className="flex-1 min-w-[120px] border-none text-sm focus:outline-none"
+                      className="flex-1 min-w-[120px] border-none bg-transparent text-sm focus:outline-none"
                       value={tagInput}
                       onChange={(evt) => setTagInput(evt.target.value)}
                       onKeyDown={(evt) => {
@@ -513,10 +486,7 @@ export default function PublicRequestPage() {
               </div>
             </div>
             <div>
-              <label
-                htmlFor="photos"
-                className="text-sm font-medium text-neutral-700"
-              >
+              <label htmlFor="photos" className={labelClassName}>
                 Attachments
               </label>
               <input
@@ -540,7 +510,7 @@ export default function PublicRequestPage() {
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button
               type="submit"
-              className="w-full rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-700 disabled:opacity-70"
+              className="w-full rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700 disabled:opacity-70"
               disabled={!isFormValid || submitting}
             >
               {submitting ? "Submitting…" : "Submit request"}
@@ -567,7 +537,7 @@ export default function PublicRequestPage() {
           </form>
         </section>
 
-        <section className="w-full max-w-xl space-y-4 rounded-2xl border border-neutral-200 bg-white p-6 shadow-lg">
+        <section className="w-full max-w-xl space-y-4 rounded-3xl border border-neutral-100 bg-white p-8 shadow-xl">
           <div>
             <h2 className="text-lg font-semibold text-neutral-900">
               Check status
@@ -577,29 +547,26 @@ export default function PublicRequestPage() {
             </p>
           </div>
           <form className="space-y-3" onSubmit={handleStatusLookup}>
-            <label
-              className="text-sm font-medium text-neutral-700"
-              htmlFor="statusToken"
-            >
+            <label className={labelClassName} htmlFor="statusToken">
               Request token
             </label>
             <input
               id="statusToken"
               name="statusToken"
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+              className={inputClassName}
               value={statusToken}
               onChange={(evt) => setStatusToken(evt.target.value)}
               placeholder="Enter your token"
             />
             <button
               type="submit"
-              className="w-full rounded-full border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-50"
+              className="w-full rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 shadow-sm transition hover:bg-neutral-50"
             >
               Check status
             </button>
           </form>
           {statusResult && (
-            <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+            <div className="rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
               <p className="text-xs uppercase tracking-wide text-neutral-500">
                 Current status
               </p>

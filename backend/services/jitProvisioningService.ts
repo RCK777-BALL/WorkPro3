@@ -12,15 +12,15 @@ import { writeAuditLog } from '../utils/audit';
 
 const policy = getSecurityPolicy();
 
-const normalizeRoles = (roles?: unknown): UserRole[] => {
-  if (!roles) return [];
+const normalizeRoles = (roles?: unknown): UserRole[] | undefined => {
+  if (!roles) return undefined;
   const rawList = Array.isArray(roles) ? roles : [roles];
   const normalized = rawList
     .filter((role): role is string => typeof role === 'string')
     .map((role) => role.trim().toLowerCase())
     .filter((role): role is UserRole => (ROLES as readonly string[]).includes(role));
 
-  return normalized.length ? normalized : ['tech'];
+  return normalized.length ? normalized : undefined;
 };
 
 export interface ProvisioningInput {
@@ -56,23 +56,26 @@ export const provisionUserFromIdentity = async (
     throw new Error('Just-in-time provisioning is disabled');
   }
 
-  const userPayload: Partial<UserDocument> = {
-    name: input.name || normalizedEmail.split('@')[0],
-    email: normalizedEmail,
-    tenantId: tenantObjectId,
-    siteId: input.siteId && Types.ObjectId.isValid(input.siteId) ? new Types.ObjectId(input.siteId) : undefined,
-    employeeId: input.employeeId || `jit-${randomUUID()}`,
-    roles: normalizeRoles(input.roles),
-    passwordHash: randomUUID(),
-    passwordExpired: true,
-    bootstrapAccount: true,
-    mfaEnabled: policy.mfa.enforced && !input.skipMfa,
-    active: true,
-  };
+  const resolvedRoles = normalizeRoles(input.roles);
+  const resolvedSiteId =
+    input.siteId && Types.ObjectId.isValid(input.siteId) ? new Types.ObjectId(input.siteId) : undefined;
+  const enforcedMfa = policy.mfa.enforced && !input.skipMfa;
 
   let created = false;
   if (!existingUser) {
-    const user = new User(userPayload);
+    const user = new User({
+      name: input.name || normalizedEmail.split('@')[0],
+      email: normalizedEmail,
+      tenantId: tenantObjectId,
+      siteId: resolvedSiteId,
+      employeeId: input.employeeId || `jit-${randomUUID()}`,
+      roles: resolvedRoles ?? ['tech'],
+      passwordHash: randomUUID(),
+      passwordExpired: true,
+      bootstrapAccount: true,
+      mfaEnabled: enforcedMfa,
+      active: true,
+    });
     await user.save();
     await writeAuditLog({
       tenantId: input.tenantId,
@@ -85,7 +88,24 @@ export const provisionUserFromIdentity = async (
     return { user, created: true };
   }
 
-  Object.assign(existingUser, userPayload, { active: true });
+  const updates: Partial<UserDocument> = {
+    roles: resolvedRoles,
+  };
+  if (input.name) {
+    updates.name = input.name;
+  }
+  if (resolvedSiteId) {
+    updates.siteId = resolvedSiteId;
+  }
+  if (enforcedMfa && !existingUser.mfaEnabled) {
+    updates.mfaEnabled = true;
+  }
+
+  Object.entries(updates).forEach(([key, value]) => {
+    if (value !== undefined) {
+      (existingUser as Record<string, unknown>)[key] = value;
+    }
+  });
   existingUser.tokenVersion = (existingUser.tokenVersion ?? 0) + 1;
   await existingUser.save();
 

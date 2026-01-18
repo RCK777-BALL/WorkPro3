@@ -101,11 +101,12 @@ export const provisionUserFromIdentity = async (
     updates.mfaEnabled = true;
   }
 
-  Object.entries(updates).forEach(([key, value]) => {
-    if (value !== undefined) {
-      (existingUser as Record<string, unknown>)[key] = value;
-    }
-  });
+  const resolvedUpdates = Object.fromEntries(
+    Object.entries(updates).filter(([, value]) => value !== undefined),
+  ) as Partial<UserDocument>;
+  if (Object.keys(resolvedUpdates).length > 0) {
+    existingUser.set(resolvedUpdates);
+  }
   existingUser.tokenVersion = (existingUser.tokenVersion ?? 0) + 1;
   await existingUser.save();
 

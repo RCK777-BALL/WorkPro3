@@ -42,37 +42,40 @@ export default function RightPanel() {
   );
 
   return (
-    <aside className="hidden w-80 shrink-0 border-l border-neutral-200 bg-white/50 px-5 py-6 backdrop-blur-md transition-colors dark:border-neutral-800 dark:bg-neutral-900/60 xl:flex">
+    <aside className="hidden w-80 shrink-0 border-l border-white/10 bg-slate-950/70 px-5 py-6 text-white backdrop-blur-md transition-colors xl:flex">
       <div className="flex w-full flex-col gap-5">
-        <section className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
-          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Live plant status</h2>
-          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+        <section className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 shadow-sm">
+          <h2 className="text-sm font-semibold text-white/90">Live plant status</h2>
+          <p className="mt-1 text-xs text-white/60">
             Updated every 60 seconds from the command center.
           </p>
           <dl className="mt-4 space-y-3 text-sm">
             {insights.map((insight) => (
-              <div key={insight.id} className="rounded-xl border border-neutral-100 bg-neutral-50 px-3 py-2 dark:border-neutral-800 dark:bg-neutral-800/60">
-                <dt className="text-xs uppercase tracking-wide text-neutral-500">{insight.label}</dt>
-                <dd className="mt-1 flex items-center gap-2 text-base font-semibold text-neutral-900 dark:text-neutral-100">
+              <div
+                key={insight.id}
+                className="rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2"
+              >
+                <dt className="text-xs uppercase tracking-wide text-white/50">{insight.label}</dt>
+                <dd className="mt-1 flex items-center gap-2 text-base font-semibold text-white">
                   <span>{insight.value}</span>
                   {insight.tone === "success" ? (
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                   ) : insight.tone === "info" ? (
-                    <Activity className="h-4 w-4 text-sky-500" />
+                    <Activity className="h-4 w-4 text-sky-400" />
                   ) : null}
                 </dd>
-                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">{insight.description}</p>
+                <p className="mt-1 text-xs text-white/60">{insight.description}</p>
               </div>
             ))}
           </dl>
         </section>
 
-        <section className="rounded-2xl border border-primary-100 bg-primary-50 p-4 text-sm shadow-sm dark:border-primary-500/20 dark:bg-primary-500/10">
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-primary-800 dark:text-primary-100">
-            <TrendingUp className="h-4 w-4" />
+        <section className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-sm shadow-sm">
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-white/90">
+            <TrendingUp className="h-4 w-4 text-sky-300" />
             Performance insight
           </h3>
-          <p className="mt-2 text-primary-700 dark:text-primary-100/80">
+          <p className="mt-2 text-white/70">
             Preventive maintenance compliance has exceeded the target for three consecutive weeks. Keep schedules tight to sustain performance.
           </p>
         </section>

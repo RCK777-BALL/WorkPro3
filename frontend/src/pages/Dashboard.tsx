@@ -1467,113 +1467,115 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 p-6 text-white dark">
+    <div className="text-white">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
-        <header className="space-y-2">
-          <h1 className="text-3xl font-semibold">Operations dashboard</h1>
-          <p className="text-sm text-white/70">
-            Monitor maintenance workload, compliance, and live system health at a glance.
-          </p>
-        </header>
+        <section className="space-y-6 rounded-3xl border border-slate-800/80 bg-slate-900/60 p-6 shadow-xl backdrop-blur">
+          <header className="space-y-2">
+            <h1 className="text-3xl font-semibold">Operations dashboard</h1>
+            <p className="text-sm text-white/70">
+              Monitor maintenance workload, compliance, and live system health at a glance.
+            </p>
+          </header>
 
-        <AlertBanner />
+          <AlertBanner />
 
-        <div
-          role="tablist"
-          aria-label="Dashboard sections"
-          className="flex flex-wrap items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1 text-sm text-white"
-        >
-          {DASHBOARD_TABS.map((tab) => {
-            const isActive = activeTab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                onClick={() => setActiveTab(tab.key)}
-                className={clsx(
-                  "rounded-full px-4 py-2 text-sm font-medium text-white transition",
-                  isActive
-                    ? "bg-white/15 text-white"
-                    : "text-white/80 hover:bg-white/10 hover:text-white",
-                )}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {activeTab === "overview" ? (
-          <>
-            <DashboardFilters
-              filters={filters}
-              departments={departments}
-              lines={lines}
-              loading={optionsLoading}
-              onChange={handleFilterChange}
-            />
-
-            {summaryError ? (
-              <div className="rounded-3xl border border-red-400/60 bg-red-500/20 p-4 text-sm text-red-100">
-                {summaryError}
-              </div>
-            ) : null}
-
-            <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {summaryCards.map((card) => (
-                <SummaryCard
-                  key={card.key}
-                  title={card.title}
-                  description={card.description}
-                  value={card.value}
-                  {...(card.suffix ? { suffix: card.suffix } : {})}
-                  icon={card.icon}
-                  gradient={card.gradient}
-                  trend={card.trend}
-                  loading={summaryLoading}
-                  decimals={card.decimals ?? 0}
-                  href={card.href}
-                />
-              ))}
-            </section>
-
-            <LivePulseSection
-              metrics={livePulse}
-              loading={livePulseLoading}
-              error={livePulseError}
-              onRefresh={fetchLivePulse}
-              onNavigate={navigateTo}
-            />
-          </>
-        ) : null}
-
-        {activeTab === "analytics" ? (
-          <div className="space-y-6">
-            <DashboardAnalyticsPanel />
-            {maintenanceAnalyticsSection}
+          <div
+            role="tablist"
+            aria-label="Dashboard sections"
+            className="flex flex-wrap items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1 text-sm text-white"
+          >
+            {DASHBOARD_TABS.map((tab) => {
+              const isActive = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={clsx(
+                    "rounded-full px-4 py-2 text-sm font-medium text-white transition",
+                    isActive
+                      ? "bg-white/15 text-white"
+                      : "text-white/80 hover:bg-white/10 hover:text-white",
+                  )}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
-        ) : null}
 
-        {activeTab === "activity" ? (
-          <div className="grid gap-4 lg:grid-cols-2">
-            <RecentActivitySection
-              items={recentActivity}
-              loading={activityLoading}
-              error={activityError}
-              onRefresh={fetchActivity}
-              onNavigate={(link) => {
-                if (link) navigateTo(link);
-              }}
-            />
-            <StatusSummary
-              statuses={statusLegend.statuses}
-              updatedAt={statusLegend.updatedAt}
-              loading={statusLoading}
-            />
-          </div>
-        ) : null}
+          {activeTab === "overview" ? (
+            <>
+              <DashboardFilters
+                filters={filters}
+                departments={departments}
+                lines={lines}
+                loading={optionsLoading}
+                onChange={handleFilterChange}
+              />
+
+              {summaryError ? (
+                <div className="rounded-3xl border border-red-400/60 bg-red-500/20 p-4 text-sm text-red-100">
+                  {summaryError}
+                </div>
+              ) : null}
+
+              <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {summaryCards.map((card) => (
+                  <SummaryCard
+                    key={card.key}
+                    title={card.title}
+                    description={card.description}
+                    value={card.value}
+                    {...(card.suffix ? { suffix: card.suffix } : {})}
+                    icon={card.icon}
+                    gradient={card.gradient}
+                    trend={card.trend}
+                    loading={summaryLoading}
+                    decimals={card.decimals ?? 0}
+                    href={card.href}
+                  />
+                ))}
+              </section>
+
+              <LivePulseSection
+                metrics={livePulse}
+                loading={livePulseLoading}
+                error={livePulseError}
+                onRefresh={fetchLivePulse}
+                onNavigate={navigateTo}
+              />
+            </>
+          ) : null}
+
+          {activeTab === "analytics" ? (
+            <div className="space-y-6">
+              <DashboardAnalyticsPanel />
+              {maintenanceAnalyticsSection}
+            </div>
+          ) : null}
+
+          {activeTab === "activity" ? (
+            <div className="grid gap-4 lg:grid-cols-2">
+              <RecentActivitySection
+                items={recentActivity}
+                loading={activityLoading}
+                error={activityError}
+                onRefresh={fetchActivity}
+                onNavigate={(link) => {
+                  if (link) navigateTo(link);
+                }}
+              />
+              <StatusSummary
+                statuses={statusLegend.statuses}
+                updatedAt={statusLegend.updatedAt}
+                loading={statusLoading}
+              />
+            </div>
+          ) : null}
+        </section>
       </div>
     </div>
   );

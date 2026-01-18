@@ -1481,7 +1481,7 @@ export default function Dashboard() {
         <div
           role="tablist"
           aria-label="Dashboard sections"
-          className="flex flex-wrap items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1 text-sm"
+          className="flex flex-wrap items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1 text-sm text-white"
         >
           {DASHBOARD_TABS.map((tab) => {
             const isActive = activeTab === tab.key;

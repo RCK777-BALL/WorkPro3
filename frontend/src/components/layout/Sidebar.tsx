@@ -22,6 +22,7 @@ import {
   Globe2,
   Inbox,
   LayoutDashboard,
+  LifeBuoy,
   LogIn,
   LogOut,
   Bell,
@@ -326,6 +327,13 @@ const navItems: Record<NavItemId, NavItem> = {
     label: "Messages",
     to: "/messages",
     icon: MessageSquare,
+    section: "management",
+  },
+  "help-center": {
+    id: "help-center",
+    label: "Help Center",
+    to: "/help",
+    icon: LifeBuoy,
     section: "management",
   },
   "documentation-getting-started": {

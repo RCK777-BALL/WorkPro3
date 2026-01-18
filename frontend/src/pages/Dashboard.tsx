@@ -1495,7 +1495,7 @@ export default function Dashboard() {
                 className={clsx(
                   "rounded-full px-4 py-2 text-sm font-medium text-white transition",
                   isActive
-                    ? "bg-white/15 text-white"
+                    ? "bg-black/15 text-white"
                     : "text-white/80 hover:bg-white/10 hover:text-white",
                 )}
               >

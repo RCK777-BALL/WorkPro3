@@ -1431,7 +1431,7 @@ export default function Dashboard() {
               type="button"
               size="sm"
               variant="ghost"
-              className="rounded-full bg-white/10 text-white hover:bg-white/100"
+              className="rounded-full bg-black/10 text-white hover:bg-white/100"
               onClick={() => navigateTo("/analytics/pm")}
             >
               View

@@ -38,6 +38,7 @@ export type NavItemId =
   | 'purchase-orders'
   | 'vendors'
   | 'messages'
+  | 'help-center'
   | 'documentation-getting-started'
   | 'documentation-asset-management'
   | 'notification-settings'
@@ -77,6 +78,7 @@ const defaultOrder: NavItemId[] = [
   'purchase-orders',
   'vendors',
   'messages',
+  'help-center',
   'documentation-getting-started',
   'documentation-asset-management',
   'notification-settings',

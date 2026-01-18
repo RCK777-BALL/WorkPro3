@@ -50,6 +50,7 @@ import WorkflowRulesAdmin from "@/pages/WorkflowRulesAdmin";
 import Messages from "@/pages/Messages";
 import RoleManagementPage from "@/pages/RoleManagement";
 import FeatureFlagsPage from "@/pages/FeatureFlags";
+import HelpCenter from "@/pages/HelpCenter";
 import Documentation from "@/pages/Documentation";
 import AssetManagementGuide from "@/pages/AssetManagementGuide";
 import AssetManagementAssetsGuide from "@/pages/AssetManagementAssetsGuide";
@@ -403,6 +404,7 @@ export default function App() {
           <Route path="/notifications/settings" element={<NotificationSettings />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/messages" element={<Messages />} />
+          <Route path="/help" element={<HelpCenter />} />
           <Route path="/documentation" element={<Documentation />} />
           <Route path="/documentation/asset-management" element={<AssetManagementGuide />} />
           <Route

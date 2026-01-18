@@ -1467,7 +1467,7 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 p-6 text-white">
+    <div className="min-h-screen bg-slate-950 p-6 text-white dark">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
         <header className="space-y-2">
           <h1 className="text-3xl font-semibold">Operations dashboard</h1>

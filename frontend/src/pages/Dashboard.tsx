@@ -25,7 +25,6 @@ import StatusBadge from "@/components/common/StatusBadge";
 import Button from "@common/Button";
 import AlertBanner from "@/components/layout/AlertBanner";
 import { DashboardAnalyticsPanel } from "@/features/dashboards";
-import { HelpCenterViewer } from "@/features/help-center";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
 import { usePmCompletionAnalytics } from "@/hooks/usePmAnalytics";
 
@@ -1506,8 +1505,6 @@ export default function Dashboard() {
 
         {activeTab === "overview" ? (
           <>
-            <HelpCenterViewer />
-
             <DashboardFilters
               filters={filters}
               departments={departments}

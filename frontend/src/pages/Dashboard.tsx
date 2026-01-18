@@ -1493,8 +1493,10 @@ export default function Dashboard() {
                 aria-selected={isActive}
                 onClick={() => setActiveTab(tab.key)}
                 className={clsx(
-                  "rounded-full px-4 py-2 text-sm font-medium transition",
-                  isActive ? "bg-white/15 text-white" : "text-white hover:bg-white/10 hover:text-white",
+                  "rounded-full px-4 py-2 text-sm font-medium text-white transition",
+                  isActive
+                    ? "bg-white/15 text-white"
+                    : "text-white/80 hover:bg-white/10 hover:text-white",
                 )}
               >
                 {tab.label}

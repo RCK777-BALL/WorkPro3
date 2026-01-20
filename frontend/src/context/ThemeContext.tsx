@@ -27,12 +27,12 @@ const TEXT_STORAGE_KEY = 'theme.textColor';
 
 const DEFAULT_THEME_COLORS: Record<Exclude<ThemeMode, 'system'>, ThemeColors> = {
   light: {
-    background: '#050a1a',
-    text: '#e2e8f0',
+    background: '#000000',
+    text: '#ffffff',
   },
   dark: {
-    background: '#050a1a',
-    text: '#e2e8f0',
+    background: '#000000',
+    text: '#ffffff',
   },
 };
 

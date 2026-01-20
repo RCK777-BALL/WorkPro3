@@ -67,8 +67,8 @@ const OrgChart: React.FC<OrgChartProps> = ({ onSelect }) => {
   const renderNode: RenderCustomNodeElementFn = ({ nodeDatum }) => {
     const typedNode = nodeDatum as TreeNodeDatum & { member: TeamMember };
     const isSelected = typedNode.member.id === selectedId;
-    const fill = isSelected ? '#3b82f6' : '#fff';
-    const textColor = isSelected ? '#1e40af' : '#000';
+    const fill = isSelected ? '#3b82f6' : '#000000';
+    const textColor = '#ffffff';
 
     return (
       <g onClick={() => handleClick(typedNode)}>

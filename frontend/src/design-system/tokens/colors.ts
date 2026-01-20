@@ -16,8 +16,8 @@ export const colors = {
       '#1971c2',
       '#1864ab',
     ],
-    background: '#ffffff',
-    text: '#000000',
+    background: '#000000',
+    text: '#ffffff',
   },
   dark: {
     brand: [

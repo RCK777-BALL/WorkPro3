@@ -83,7 +83,7 @@ const TeamTable: React.FC<TeamTableProps> = ({
   const containerBackground = useMemo(() => {
     const baseColor = colorScheme === 'dark' ? theme.colors.dark?.[6] : theme.colors.gray?.[0];
     const alpha = colorScheme === 'dark' ? 0.55 : 0.9;
-    return toRgba(baseColor, alpha, colorScheme === 'dark' ? '#1a1b1e' : '#ffffff');
+    return toRgba(baseColor, alpha, colorScheme === 'dark' ? '#1a1b1e' : '#000000');
   }, [colorScheme, theme]);
 
   const headerBackground = useMemo(() => {

@@ -46,6 +46,13 @@ The following tickets refine the roadmap epics into implementation-ready tasks. 
 - Dependencies: Vendor records, part catalog, auth/roles, inventory service.
 - Complexity: L
 
+### Fix Purchase Order Creation Error
+- Description: Investigate and resolve the error encountered when creating purchase orders, ensuring validation, tenant/site scoping, and required fields align across API, service, and UI.
+- Acceptance Criteria: PO creation succeeds with valid payloads; validation errors return actionable messages; tenant/site scoping verified; integration test added for PO create flow.
+- Affected Components: backend, API, frontend
+- Dependencies: Purchase order service/controller, validation schemas, auth/tenant middleware.
+- Complexity: M
+
 ### Part Availability in WO Planning UI
 - Description: Embed availability/reservation widget in WO planning UI showing on-hand, allocated, and incoming PO quantities; allow planners to reserve parts against WOs and release reservations.
 - Acceptance Criteria: Availability reflects real-time counts; reservations decrement available; conflicts flagged; incoming POs linked; UI updates without refresh.

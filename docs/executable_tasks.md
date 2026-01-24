@@ -118,6 +118,14 @@ The following tickets refine the roadmap epics into implementation-ready tasks. 
 - Dependencies: Analytics metrics pipeline, auth for site scoping.
 - Complexity: M
 
+## Epic: Observability & Monitoring
+### Align Prometheus Scrape Configuration with Exposed Metrics
+- Description: Resolve the mismatch between Kubernetes Prometheus scrape annotations and the backend/frontend capabilities by either adding a `/metrics` endpoint (preferred) or updating annotations to target available endpoints/disable scraping until metrics are implemented.
+- Acceptance Criteria: Prometheus scrapes succeed without 404s; backend exposes `/metrics` or annotations are updated to the correct path/port; deployment manifests and documentation reflect the chosen approach.
+- Affected Components: infra, k8s, backend
+- Dependencies: Metrics library selection (e.g., prom-client), deployment rollout plan.
+- Complexity: S
+
 ## Epic: Centralized Multi-Tenant Guardrails
 ### Tenant-Scoped Middleware for HTTP/WebSocket
 - Description: Implement middleware that extracts tenant/site context from auth tokens for REST/WebSocket; reject requests without valid context; propagate to services/DB queries.

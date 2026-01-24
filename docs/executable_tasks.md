@@ -24,6 +24,14 @@ The following tickets refine the roadmap epics into implementation-ready tasks. 
 - Dependencies: Infrastructure provider, backup storage, scheduling.
 - Complexity: L
 
+## Epic: Container Image Hardening & Immutability
+### Pin Dockerfile and Kubernetes Images to Immutable Digests
+- Description: Replace floating Dockerfile base tags (e.g., `node:18-alpine`, `nginx:alpine`) with digest-pinned images and update Kubernetes manifests to use immutable image references instead of `:latest` for backend/frontend deployments.
+- Acceptance Criteria: All Dockerfiles use digest-pinned base images; Kubernetes manifests reference immutable tags/digests; documentation notes update process for future image refreshes; CI validation checks for unpinned images.
+- Affected Components: infra, docker, k8s, docs
+- Dependencies: Approved base image digests, image registry access, CI linting update.
+- Complexity: S
+
 ## Epic: Offline/Mobile Technician Execution
 ### Build Offline-First Mobile WO Execution with Pending-Sync Queue
 - Description: Deliver a mobile WO execution experience that fully functions offline. Cache WO steps, asset metadata, parts, and technician assignments locally; enqueue mutations (start, step updates, complete, labor logs) in a pending-sync queue that retries with backoff and exposes item states in UI.

@@ -24,6 +24,13 @@ The following tickets refine the roadmap epics into implementation-ready tasks. 
 - Dependencies: Infrastructure provider, backup storage, scheduling.
 - Complexity: L
 
+### Implement MongoDB Replica Set + Backup Automation in Kubernetes
+- Description: Replace the single-replica Mongo deployment with a replica set (StatefulSet or managed operator) and add scheduled backup/restore automation (CronJob or managed backup policy) to satisfy HA/DR requirements.
+- Acceptance Criteria: MongoDB runs as a replica set with at least 3 members; pods recover from node loss without data loss; backup job runs on schedule and stores artifacts in durable storage; documented restore runbook validated in staging.
+- Affected Components: infra, k8s, ops
+- Dependencies: StorageClass with zone redundancy, backup storage bucket, secrets management for backup credentials.
+- Complexity: L
+
 ## Epic: Offline/Mobile Technician Execution
 ### Build Offline-First Mobile WO Execution with Pending-Sync Queue
 - Description: Deliver a mobile WO execution experience that fully functions offline. Cache WO steps, asset metadata, parts, and technician assignments locally; enqueue mutations (start, step updates, complete, labor logs) in a pending-sync queue that retries with backoff and exposes item states in UI.

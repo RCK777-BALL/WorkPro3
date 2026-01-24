@@ -242,6 +242,21 @@ The following tickets refine the roadmap epics into implementation-ready tasks. 
 - Dependencies: HR/identity data, WO assignment flow, notification service.
 - Complexity: M
 
+## Epic: Infrastructure & Deployment Hygiene
+### Parameterize Domain and TLS Hostnames for Kubernetes Manifests
+- Description: Replace hard-coded placeholder domains in Ingress, TLS, and application URL config with configurable values (Helm/Kustomize vars or environment overrides) so production deployments can supply real DNS names without editing manifests.
+- Acceptance Criteria: Ingress hosts, TLS hosts, and configmap values render from a single configurable domain value; defaults remain safe for local/dev; no `workpro.local` placeholders remain in rendered output.
+- Affected Components: infra, k8s, docs
+- Dependencies: Deployment tooling choice (Helm/Kustomize), environment variable conventions.
+- Complexity: S
+
+### Document Production Domain/TLS Setup and Secret Management
+- Description: Add deployment guidance covering DNS, TLS issuer/secret configuration (e.g., cert-manager), and required URL env vars for backend/frontend so operators can provision HTTPS correctly.
+- Acceptance Criteria: Documentation includes domain/TLS prerequisites, sample values files or env overrides, and secret naming conventions; onboarding checklist added.
+- Affected Components: docs, infra
+- Dependencies: Cluster TLS issuer strategy, secret management process.
+- Complexity: S
+
 ## Execution Tasks to Complete the Backlog
 
 ### Offline/Mobile Technician Execution
@@ -274,6 +289,10 @@ The following tickets refine the roadmap epics into implementation-ready tasks. 
 - Add overdue escalation rules and SLA monitoring for PM/WOs with notifications and breach tracking.
 - Create permit-to-work/LOTO checklists with signature capture and gating of WO start/close until completion.
 - Persist technician certifications with expiry, enforce against WO requirements during assignment, and surface warnings/reports for expiring certs.
+
+### Infrastructure & Deployment Hygiene
+- Parameterize Ingress/TLS/app URL hostnames using Helm/Kustomize variables or env overrides; remove hard-coded `workpro.local` placeholders from rendered manifests.
+- Document production domain/TLS setup (DNS, cert issuer/secret configuration) and required URL env vars for backend/frontend.
 
 ## Tracker-specific task breakdown (BGT-021 → BGT-040)
 Use the following slices to open tracker tickets. Each item is grouped by API, Validation, Data Access, UI, and Tests to align contributors across stacks.
@@ -484,6 +503,22 @@ Use the following slices to open tracker tickets. Each item is grouped by API, V
 - **Data Access**: Staging tables for inbound files, audit trails for row-level changes, and job history with file references in object storage (`shared/data-pipelines`).
 - **UI**: Job wizard to define schedules, mappings, dry-run previews, and delivery channels (email/SFTP/HTTP); include quick-start templates for Zapier and Power Automate (`frontend/src/modules/integrations/data-pipelines`).
 - **Tests**: E2E import/export flows with sample files, SFTP connection mocks, and regression coverage for mapping templates.
+
+## Infrastructure & Deployment Hygiene (BGT-066 → BGT-067)
+
+### BGT-066: Parameterize domain and TLS hostnames for Kubernetes manifests
+- **API**: N/A.
+- **Validation**: Ensure Ingress hosts, TLS hosts, and app URLs are derived from a single configurable value (Helm values, Kustomize vars, or env var overrides) with a sane default for local/dev.
+- **Data Access**: N/A.
+- **UI**: N/A.
+- **Tests**: Manifest template/unit checks that render with custom domains and confirm no hard-coded placeholders remain (`workpro.local`).
+
+### BGT-067: Document production domain/TLS setup and secret management
+- **API**: N/A.
+- **Validation**: Provide a deployment checklist that covers DNS, TLS issuer/secret configuration (e.g., cert-manager), and required env var overrides for frontend/backend URLs.
+- **Data Access**: N/A.
+- **UI**: N/A.
+- **Tests**: Doc review checklist and optional CI lint to ensure TLS secret names/annotations are aligned with cluster conventions.
 
 ## Enterprise RBAC and Audit (BGT-051 → BGT-055)
 

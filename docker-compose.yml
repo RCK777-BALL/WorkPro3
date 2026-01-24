@@ -4,19 +4,41 @@ services:
     image: mongo:6
     ports:
       - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME:-workpro_root}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD:-change-me}
+      - MONGO_INITDB_DATABASE=${MONGO_APP_DB:-workpro}
+      - MONGO_APP_USER=${MONGO_APP_USER:-workpro_app}
+      - MONGO_APP_PASSWORD=${MONGO_APP_PASSWORD:-change-me}
+      - MONGO_APP_DB=${MONGO_APP_DB:-workpro}
     volumes:
       - mongo-data:/data/db
+      - ./docker/mongo/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+      - ./docker/mongo/tls:/etc/mongo/tls:ro
+    command:
+      [
+        "mongod",
+        "--auth",
+        "--tlsMode",
+        "requireTLS",
+        "--tlsCertificateKeyFile",
+        "/etc/mongo/tls/tls.pem",
+        "--tlsCAFile",
+        "/etc/mongo/tls/ca.crt"
+      ]
 
   backend:
     build: ./backend
     ports:
       - "5010:5010"
     environment:
-      - MONGO_URI=mongodb://mongo:27017/workpro
+      - MONGO_URI=mongodb://${MONGO_APP_USER:-workpro_app}:${MONGO_APP_PASSWORD:-change-me}@mongo:27017/workpro?authSource=workpro&tls=true&tlsCAFile=/etc/mongo/tls/ca.crt
       - JWT_SECRET=${JWT_SECRET}
       - CORS_ORIGIN=http://localhost:5173
     depends_on:
       - mongo
+    volumes:
+      - ./docker/mongo/tls/ca.crt:/etc/mongo/tls/ca.crt:ro
 
   frontend:
     build: ./frontend

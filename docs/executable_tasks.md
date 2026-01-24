@@ -10,6 +10,20 @@ The following tickets refine the roadmap epics into implementation-ready tasks. 
 - Dependencies: StorageClass in cluster, container image registry access.
 - Complexity: M
 
+### Harden Docker Compose MongoDB with Auth + TLS Defaults
+- Description: Update docker-compose MongoDB service to enable authentication and TLS by default (root/user credentials, keyfile, certs) and wire backend connection strings to use credentials and TLS settings in local/dev overrides.
+- Acceptance Criteria: MongoDB starts with auth enabled; backend connects via authenticated URI; TLS certs mounted/validated; compose docs describe rotating credentials and disabling TLS only for local dev.
+- Affected Components: infra, docker-compose, backend, docs
+- Dependencies: Local cert/key generation guidance, env var management.
+- Complexity: M
+
+### Secure Kubernetes MongoDB Manifest with Auth + TLS Secrets
+- Description: Extend Kubernetes MongoDB deployment/statefulset to configure authentication, TLS, and keyfile secrets; update backend manifests to consume credentialed MONGO_URI and CA bundles from secrets/configmaps.
+- Acceptance Criteria: MongoDB pod enforces auth and TLS; secrets define username/password and TLS assets; backend connects with credentialed URI and validates CA; manifests document secret rotation steps.
+- Affected Components: infra, k8s, backend, docs
+- Dependencies: Secret management process, TLS issuance, rollout strategy.
+- Complexity: M
+
 ### Add Managed MongoDB Connection Secret + Deployment Wiring
 - Description: Provide a Kubernetes secret for MONGO_URI and wire backend deployment to consume it, enabling swapping between in-cluster MongoDB and managed DB providers without manifest edits.
 - Acceptance Criteria: Backend reads MONGO_URI from secret; rotating the secret updates backend connection; documented default points to in-cluster service.

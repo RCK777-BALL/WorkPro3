@@ -25,3 +25,6 @@ backend-legacy/**/*.js
 
 # MongoDB playground files
 playground-*.mongodb.js
+
+# Local Mongo TLS assets
+docker/mongo/tls/

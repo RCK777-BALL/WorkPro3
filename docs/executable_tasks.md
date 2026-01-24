@@ -565,3 +565,53 @@ Use the following slices to open tracker tickets. Each item is grouped by API, V
 - **Data Access**: Sample payload fixtures and verification snippets stored for reference.
 - **UI**: Developer documentation linking to API key and webhook screens plus “How to test” covering key creation, webhook verification, and export download.
 - **Tests**: Documentation lints and links validation; ensure seed data for API key/webhook/export jobs is referenced in docs.
+
+## Epic: Kubernetes Production Hardening
+### Add TLS Termination + Certificate Management
+- Description: Enable TLS on the ingress with cert-manager (or external LB termination) and provision a certificate secret for production hostnames.
+- Acceptance Criteria: Ingress defines TLS hosts and secret; cert-manager Certificate/Issuer references are present; HTTPS is enforced at the edge.
+- Affected Components: infra, k8s
+- Dependencies: cert-manager or managed TLS termination in the cluster.
+- Complexity: S
+
+### Define Resource Requests/Limits + Horizontal Pod Autoscalers
+- Description: Add CPU/memory requests and limits for backend/frontend workloads and define HPAs to scale based on utilization.
+- Acceptance Criteria: Deployments specify requests/limits; HPAs target CPU/memory; min replicas > 1 for HA.
+- Affected Components: infra, k8s, backend, frontend
+- Dependencies: Metrics Server or equivalent autoscaling metrics provider.
+- Complexity: S
+
+### Apply Container Security Hardening Defaults
+- Description: Enforce securityContext defaults (runAsNonRoot, readOnly root filesystem, drop capabilities, disallow privilege escalation) and mount writable temp paths where required.
+- Acceptance Criteria: Deployments include pod/container securityContext; workloads start without elevated privileges; writable paths are explicitly provisioned.
+- Affected Components: infra, k8s
+- Dependencies: Base images compatible with non-root execution.
+- Complexity: M
+
+### Document ConfigMap/Secret Strategy for Production Config
+- Description: Provide ConfigMaps/Secrets for production-critical settings (SMTP, OAuth, Kafka, Redis, AI integrations) and wire them into workloads.
+- Acceptance Criteria: Backend/Frontend env vars read from config/secret sources; secrets are not hardcoded; documented configuration map exists.
+- Affected Components: infra, k8s, backend, frontend
+- Dependencies: Secrets management process.
+- Complexity: M
+
+### Enable Frontend Runtime Environment Injection
+- Description: Pass runtime environment variables to the frontend deployment (API URLs, WebSocket endpoints) so the same image can run across environments.
+- Acceptance Criteria: Frontend deployment consumes runtime env vars; configuration is not baked into the image.
+- Affected Components: infra, k8s, frontend
+- Dependencies: Runtime config mechanism for static frontend container.
+- Complexity: S
+
+### Add Observability Hooks (Metrics/Logging)
+- Description: Add Prometheus scraping annotations or ServiceMonitor resources and define logging destinations for structured output and alerting hooks.
+- Acceptance Criteria: Workloads expose/annotate metrics endpoints; logging configuration documented; alerting integration points identified.
+- Affected Components: infra, k8s, ops
+- Dependencies: Monitoring stack (Prometheus/Grafana) and log aggregation tooling.
+- Complexity: M
+
+### Add Network Policies for Least-Privilege Traffic
+- Description: Define NetworkPolicies to restrict ingress/egress between frontend, backend, and data services.
+- Acceptance Criteria: Default deny policy exists; explicit allow rules for ingress controller, frontend→backend, backend→mongo/DNS.
+- Affected Components: infra, k8s
+- Dependencies: CNI plugin with NetworkPolicy support.
+- Complexity: S

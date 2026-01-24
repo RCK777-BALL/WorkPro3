@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workpro-backend-config
+data:
+  CORS_ORIGIN: "https://workpro.local"
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+  FRONTEND_URL: "https://workpro.local"
+  RATE_LIMIT_WINDOW_MS: "60000"
+  RATE_LIMIT_MAX: "100"
+  MOBILE_RATE_LIMIT_WINDOW_MS: "60000"
+  MOBILE_RATE_LIMIT_MAX: "120"
+  PM_SCHEDULER_CRON: "*/5 * * * *"
+  PM_SCHEDULER_TASK: "./tasks/PMSchedulerTask"
+  LABOR_RATE: "50"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workpro-frontend-config
+data:
+  VITE_API_URL: "https://workpro.local/api"
+  VITE_WS_URL: "wss://workpro.local"
+  VITE_SOCKET_PATH: "/socket.io"
+  VITE_HTTP_ORIGIN: "https://workpro.local"

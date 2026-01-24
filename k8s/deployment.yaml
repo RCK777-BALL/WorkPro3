@@ -60,6 +60,9 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            - name: mongo-ca
+              mountPath: /etc/mongo/tls
+              readOnly: true
           livenessProbe:
             httpGet:
               path: /api/health
@@ -75,6 +78,9 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
+        - name: mongo-ca
+          secret:
+            secretName: mongo-tls
 ---
 apiVersion: apps/v1
 kind: Deployment

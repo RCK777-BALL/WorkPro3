@@ -9,7 +9,9 @@ const envSchema = z.object({
   JWT_SECRET: z.string().optional(),
   MONGO_URI: z
     .string()
-    .default('mongodb://localhost:27017/workpro'),
+    .default(
+      'mongodb://workpro_app:change-me@localhost:27017/workpro?authSource=workpro&tls=true&tlsCAFile=./docker/mongo/tls/ca.crt',
+    ),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
   PORT: z.string().default('5010'),
   LABOR_RATE: z.string().default('50'),
@@ -71,4 +73,3 @@ export function validateEnv(): EnvVars {
     JWT_SECRET: env.JWT_SECRET ?? 'development-secret',
   };
 }
-

@@ -2,6 +2,28 @@
 
 The following tickets refine the roadmap epics into implementation-ready tasks. They are formatted for direct import into issue trackers.
 
+## Epic: Production Database & Managed MongoDB
+### Ship Kubernetes MongoDB Deployment + Service + PVC
+- Description: Add first-class MongoDB manifests for production (deployment/statefulset, service, and persistent volume claim) so the backend MONGO_URI resolves in-cluster and data persists across pod restarts.
+- Acceptance Criteria: MongoDB runs in-cluster; backend connects via MONGO_URI; PVC bound with requested storage; liveness/readiness probes pass.
+- Affected Components: infra, k8s
+- Dependencies: StorageClass in cluster, container image registry access.
+- Complexity: M
+
+### Add Managed MongoDB Connection Secret + Deployment Wiring
+- Description: Provide a Kubernetes secret for MONGO_URI and wire backend deployment to consume it, enabling swapping between in-cluster MongoDB and managed DB providers without manifest edits.
+- Acceptance Criteria: Backend reads MONGO_URI from secret; rotating the secret updates backend connection; documented default points to in-cluster service.
+- Affected Components: infra, k8s, backend
+- Dependencies: Secrets management process, rollout strategy.
+- Complexity: S
+
+### Define Production HA & Backup Strategy for MongoDB
+- Description: Document/implement a production-ready MongoDB HA topology (replica set or managed service) with backup/restore automation and retention policy.
+- Acceptance Criteria: HA plan specified; backup job or managed backup policy defined; restore steps documented and validated in staging.
+- Affected Components: infra, ops
+- Dependencies: Infrastructure provider, backup storage, scheduling.
+- Complexity: L
+
 ## Epic: Offline/Mobile Technician Execution
 ### Build Offline-First Mobile WO Execution with Pending-Sync Queue
 - Description: Deliver a mobile WO execution experience that fully functions offline. Cache WO steps, asset metadata, parts, and technician assignments locally; enqueue mutations (start, step updates, complete, labor logs) in a pending-sync queue that retries with backoff and exposes item states in UI.

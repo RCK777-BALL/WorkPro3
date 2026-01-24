@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: workpro-backend
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: workpro-backend
@@ -11,7 +11,16 @@ spec:
     metadata:
       labels:
         app: workpro-backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5010"
+        prometheus.io/path: "/metrics"
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
       containers:
         - name: backend
           image: workpro-backend:latest
@@ -30,6 +39,27 @@ spec:
                   key: JWT_SECRET
             - name: CORS_ORIGIN
               value: http://workpro.local
+          envFrom:
+            - configMapRef:
+                name: workpro-backend-config
+            - secretRef:
+                name: workpro-backend-secrets
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           livenessProbe:
             httpGet:
               path: /api/health
@@ -42,13 +72,16 @@ spec:
               port: 5010
             initialDelaySeconds: 5
             periodSeconds: 10
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: workpro-frontend
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: workpro-frontend
@@ -56,12 +89,49 @@ spec:
     metadata:
       labels:
         app: workpro-frontend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "80"
+        prometheus.io/path: "/metrics"
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
       containers:
         - name: frontend
           image: workpro-frontend:latest
           ports:
             - containerPort: 80
+          envFrom:
+            - configMapRef:
+                name: workpro-frontend-config
+            - secretRef:
+                name: workpro-frontend-secrets
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: nginx-run
+              mountPath: /var/run
+            - name: frontend-env
+              mountPath: /usr/share/nginx/html/env-config.js
+              subPath: env-config.js
           livenessProbe:
             httpGet:
               path: /
@@ -74,3 +144,16 @@ spec:
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 10
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-run
+          emptyDir: {}
+        - name: frontend-env
+          configMap:
+            name: workpro-frontend-config
+            items:
+              - key: env-config.js
+                path: env-config.js

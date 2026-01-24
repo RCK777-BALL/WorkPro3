@@ -129,9 +129,6 @@ spec:
               mountPath: /var/cache/nginx
             - name: nginx-run
               mountPath: /var/run
-            - name: frontend-env
-              mountPath: /usr/share/nginx/html/env-config.js
-              subPath: env-config.js
           livenessProbe:
             httpGet:
               path: /
@@ -151,9 +148,3 @@ spec:
           emptyDir: {}
         - name: nginx-run
           emptyDir: {}
-        - name: frontend-env
-          configMap:
-            name: workpro-frontend-config
-            items:
-              - key: env-config.js
-                path: env-config.js

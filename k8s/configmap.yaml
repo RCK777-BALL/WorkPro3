@@ -24,10 +24,3 @@ data:
   VITE_WS_URL: "wss://workpro.local"
   VITE_SOCKET_PATH: "/socket.io"
   VITE_HTTP_ORIGIN: "https://workpro.local"
-  env-config.js: |
-    window.__ENV__ = {
-      VITE_API_URL: "https://workpro.local/api",
-      VITE_WS_URL: "wss://workpro.local",
-      VITE_SOCKET_PATH: "/socket.io",
-      VITE_HTTP_ORIGIN: "https://workpro.local"
-    };

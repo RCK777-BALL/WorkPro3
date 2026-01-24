@@ -7,7 +7,7 @@ The application uses the following environment variables. All names use `UPPER_S
 | Variable | Description | Default |
 | --- | --- | --- |
 | `JWT_SECRET` | Secret used to sign JWT tokens | required |
-| `MONGO_URI` | MongoDB connection string | `mongodb://localhost:27017/workpro` |
+| `MONGO_URI` | MongoDB connection string (supports auth/TLS options). | `mongodb://workpro_app:change-me@localhost:27017/workpro?authSource=workpro&tls=true&tlsCAFile=./docker/mongo/tls/ca.crt` |
 | `CORS_ORIGIN` | Allowed CORS origin | `http://localhost:5173` |
 | `PORT` | Port the server listens on | `5010` |
 | `RATE_LIMIT_WINDOW_MS` | Rate limiter window in ms | `900000` |
@@ -23,6 +23,16 @@ The application uses the following environment variables. All names use `UPPER_S
 | `ENABLE_SCIM_API` | Enable SCIM provisioning endpoints | `false` |
 | `ENABLE_NOTIFICATION_EMAIL` | Enable notification email delivery | `true` |
 | `SCIM_BEARER_TOKEN` | Token expected in `Authorization: Bearer` for SCIM | optional |
+
+### MongoDB bootstrap (Docker Compose/Kubernetes)
+
+| Variable | Description | Default |
+| --- | --- | --- |
+| `MONGO_INITDB_ROOT_USERNAME` | Root user created by the MongoDB container on first boot. | `workpro_root` |
+| `MONGO_INITDB_ROOT_PASSWORD` | Root password created by the MongoDB container on first boot. | `change-me` |
+| `MONGO_APP_USER` | Application user created for the `workpro` database. | `workpro_app` |
+| `MONGO_APP_PASSWORD` | Application user password for the `workpro` database. | `change-me` |
+| `MONGO_APP_DB` | Database name used for the WorkPro app. | `workpro` |
 
 ## Frontend
 

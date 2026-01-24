@@ -370,7 +370,7 @@ below along with its default value if one exists.
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
-| `MONGO_URI` | MongoDB connection string. | `mongodb://localhost:27017/workpro` |
+| `MONGO_URI` | MongoDB connection string (auth/TLS supported). | `mongodb://workpro_app:change-me@localhost:27017/workpro?authSource=workpro&tls=true&tlsCAFile=./docker/mongo/tls/ca.crt` |
 | `PORT` | HTTP port the server listens on. | `5010` |
 | `NODE_ENV` | Environment name controlling secure cookies when `COOKIE_SECURE` is unset. | `development` |
 | `JWT_SECRET` | Secret key used to sign JWT tokens. Required for authentication. | *(none)* |

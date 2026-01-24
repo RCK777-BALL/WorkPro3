@@ -71,11 +71,19 @@ queued in `localStorage` under `offline-queue`. Once the WebSocket defined by `V
 ## Docker development
 
 The project includes Dockerfiles for the backend and frontend. Before starting
-the stack, define `JWT_SECRET` in your environment or in a `.env` file so Docker
-Compose can pass it to the backend container:
+the stack, generate local MongoDB TLS material and define secrets in a `.env`
+file so Docker Compose can pass them to the backend container:
 
 ```bash
-echo "JWT_SECRET=change_me" > .env
+./scripts/generate-mongo-tls.sh
+cat <<EOF > .env
+JWT_SECRET=change_me
+MONGO_INITDB_ROOT_USERNAME=workpro_root
+MONGO_INITDB_ROOT_PASSWORD=change-me
+MONGO_APP_USER=workpro_app
+MONGO_APP_PASSWORD=change-me
+MONGO_APP_DB=workpro
+EOF
 docker compose up --build
 ```
 
@@ -85,10 +93,19 @@ The API URL is configured via the `VITE_API_URL` environment variable, and the w
 ### Kubernetes manifests
 
 Sample manifests live in the `k8s/` folder. Create a secret containing
-`JWT_SECRET` before applying the manifests:
+`JWT_SECRET`, plus MongoDB auth/TLS secrets, before applying the manifests:
 
 ```bash
 kubectl create secret generic jwt-secret --from-literal=JWT_SECRET=change_me
+kubectl create secret generic mongo-auth \
+  --from-literal=MONGO_INITDB_ROOT_USERNAME=workpro_root \
+  --from-literal=MONGO_INITDB_ROOT_PASSWORD=change-me \
+  --from-literal=MONGO_APP_USER=workpro_app \
+  --from-literal=MONGO_APP_PASSWORD=change-me \
+  --from-literal=MONGO_APP_DB=workpro
+kubectl create secret generic mongo-tls \
+  --from-file=ca.crt=./docker/mongo/tls/ca.crt \
+  --from-file=tls.pem=./docker/mongo/tls/tls.pem
 kubectl apply -f k8s/
 ```
 

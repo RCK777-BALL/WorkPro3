@@ -10,6 +10,20 @@ The following tickets refine the roadmap epics into implementation-ready tasks. 
 - Dependencies: StorageClass in cluster, container image registry access.
 - Complexity: M
 
+### Harden Docker Compose MongoDB with Auth + TLS Defaults
+- Description: Update docker-compose MongoDB service to enable authentication and TLS by default (root/user credentials, keyfile, certs) and wire backend connection strings to use credentials and TLS settings in local/dev overrides.
+- Acceptance Criteria: MongoDB starts with auth enabled; backend connects via authenticated URI; TLS certs mounted/validated; compose docs describe rotating credentials and disabling TLS only for local dev.
+- Affected Components: infra, docker-compose, backend, docs
+- Dependencies: Local cert/key generation guidance, env var management.
+- Complexity: M
+
+### Secure Kubernetes MongoDB Manifest with Auth + TLS Secrets
+- Description: Extend Kubernetes MongoDB deployment/statefulset to configure authentication, TLS, and keyfile secrets; update backend manifests to consume credentialed MONGO_URI and CA bundles from secrets/configmaps.
+- Acceptance Criteria: MongoDB pod enforces auth and TLS; secrets define username/password and TLS assets; backend connects with credentialed URI and validates CA; manifests document secret rotation steps.
+- Affected Components: infra, k8s, backend, docs
+- Dependencies: Secret management process, TLS issuance, rollout strategy.
+- Complexity: M
+
 ### Add Managed MongoDB Connection Secret + Deployment Wiring
 - Description: Provide a Kubernetes secret for MONGO_URI and wire backend deployment to consume it, enabling swapping between in-cluster MongoDB and managed DB providers without manifest edits.
 - Acceptance Criteria: Backend reads MONGO_URI from secret; rotating the secret updates backend connection; documented default points to in-cluster service.
@@ -24,12 +38,13 @@ The following tickets refine the roadmap epics into implementation-ready tasks. 
 - Dependencies: Infrastructure provider, backup storage, scheduling.
 - Complexity: L
 
-### Implement MongoDB Replica Set + Backup Automation in Kubernetes
-- Description: Replace the single-replica Mongo deployment with a replica set (StatefulSet or managed operator) and add scheduled backup/restore automation (CronJob or managed backup policy) to satisfy HA/DR requirements.
-- Acceptance Criteria: MongoDB runs as a replica set with at least 3 members; pods recover from node loss without data loss; backup job runs on schedule and stores artifacts in durable storage; documented restore runbook validated in staging.
-- Affected Components: infra, k8s, ops
-- Dependencies: StorageClass with zone redundancy, backup storage bucket, secrets management for backup credentials.
-- Complexity: L
+## Epic: Container Image Hardening & Immutability
+### Pin Dockerfile and Kubernetes Images to Immutable Digests
+- Description: Replace floating Dockerfile base tags (e.g., `node:18-alpine`, `nginx:alpine`) with digest-pinned images and update Kubernetes manifests to use immutable image references instead of `:latest` for backend/frontend deployments.
+- Acceptance Criteria: All Dockerfiles use digest-pinned base images; Kubernetes manifests reference immutable tags/digests; documentation notes update process for future image refreshes; CI validation checks for unpinned images.
+- Affected Components: infra, docker, k8s, docs
+- Dependencies: Approved base image digests, image registry access, CI linting update.
+- Complexity: S
 
 ## Epic: Offline/Mobile Technician Execution
 ### Build Offline-First Mobile WO Execution with Pending-Sync Queue
@@ -124,6 +139,14 @@ The following tickets refine the roadmap epics into implementation-ready tasks. 
 - Affected Components: backend, API, frontend
 - Dependencies: Analytics metrics pipeline, auth for site scoping.
 - Complexity: M
+
+## Epic: Observability & Monitoring
+### Align Prometheus Scrape Configuration with Exposed Metrics
+- Description: Resolve the mismatch between Kubernetes Prometheus scrape annotations and the backend/frontend capabilities by either adding a `/metrics` endpoint (preferred) or updating annotations to target available endpoints/disable scraping until metrics are implemented.
+- Acceptance Criteria: Prometheus scrapes succeed without 404s; backend exposes `/metrics` or annotations are updated to the correct path/port; deployment manifests and documentation reflect the chosen approach.
+- Affected Components: infra, k8s, backend
+- Dependencies: Metrics library selection (e.g., prom-client), deployment rollout plan.
+- Complexity: S
 
 ## Epic: Centralized Multi-Tenant Guardrails
 ### Tenant-Scoped Middleware for HTTP/WebSocket

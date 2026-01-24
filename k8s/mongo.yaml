@@ -4,7 +4,48 @@ metadata:
   name: mongo-connection
 type: Opaque
 stringData:
-  MONGO_URI: mongodb://mongo:27017/workpro
+  MONGO_URI: mongodb://workpro_app:change-me@mongo:27017/workpro?authSource=workpro&tls=true&tlsCAFile=/etc/mongo/tls/ca.crt
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mongo-auth
+type: Opaque
+stringData:
+  MONGO_INITDB_ROOT_USERNAME: workpro_root
+  MONGO_INITDB_ROOT_PASSWORD: change-me
+  MONGO_APP_USER: workpro_app
+  MONGO_APP_PASSWORD: change-me
+  MONGO_APP_DB: workpro
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mongo-tls
+type: Opaque
+stringData:
+  ca.crt: |
+    REPLACE_WITH_CA_CERT
+  tls.pem: |
+    REPLACE_WITH_TLS_PEM
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongo-init
+data:
+  init-mongo.js: |
+    const appDb = process.env.MONGO_APP_DB || 'workpro';
+    const appUser = process.env.MONGO_APP_USER || 'workpro_app';
+    const appPassword = process.env.MONGO_APP_PASSWORD || 'change-me';
+
+    db = db.getSiblingDB(appDb);
+
+    db.createUser({
+      user: appUser,
+      pwd: appPassword,
+      roles: [{ role: 'readWrite', db: appDb }],
+    });
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -44,6 +85,39 @@ spec:
           env:
             - name: MONGO_INITDB_DATABASE
               value: workpro
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-auth
+                  key: MONGO_INITDB_ROOT_USERNAME
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-auth
+                  key: MONGO_INITDB_ROOT_PASSWORD
+            - name: MONGO_APP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-auth
+                  key: MONGO_APP_USER
+            - name: MONGO_APP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-auth
+                  key: MONGO_APP_PASSWORD
+            - name: MONGO_APP_DB
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-auth
+                  key: MONGO_APP_DB
+          args:
+            - "--auth"
+            - "--tlsMode"
+            - "requireTLS"
+            - "--tlsCertificateKeyFile"
+            - "/etc/mongo/tls/tls.pem"
+            - "--tlsCAFile"
+            - "/etc/mongo/tls/ca.crt"
           resources:
             requests:
               cpu: "250m"
@@ -60,6 +134,13 @@ spec:
           volumeMounts:
             - name: mongo-data
               mountPath: /data/db
+            - name: mongo-init
+              mountPath: /docker-entrypoint-initdb.d/init-mongo.js
+              subPath: init-mongo.js
+              readOnly: true
+            - name: mongo-tls
+              mountPath: /etc/mongo/tls
+              readOnly: true
           livenessProbe:
             tcpSocket:
               port: 27017
@@ -74,6 +155,12 @@ spec:
         - name: mongo-data
           persistentVolumeClaim:
             claimName: mongo-data
+        - name: mongo-init
+          configMap:
+            name: mongo-init
+        - name: mongo-tls
+          secret:
+            secretName: mongo-tls
 ---
 apiVersion: v1
 kind: Service

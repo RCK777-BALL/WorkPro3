@@ -161,19 +161,21 @@ export default function Layout() {
           <div className="flex flex-1 flex-col overflow-hidden">
             <CommandPalette />
             <Header />
-            <main
-              className={clsx(
-                'flex-1 overflow-y-auto',
-                denseMode ? 'px-4 pb-6 pt-4 md:px-6' : 'px-6 pb-10 pt-6 md:px-10',
-              )}
-            >
-              <div className="mx-auto flex w-full flex-col gap-6">
-                <ContextBreadcrumbs />
-                <Outlet />
-              </div>
-            </main>
+            <div className="flex min-h-0 flex-1 overflow-hidden">
+              <main
+                className={clsx(
+                  'flex-1 overflow-y-auto',
+                  denseMode ? 'px-4 pb-6 pt-4 md:px-6' : 'px-6 pb-10 pt-6 md:px-10',
+                )}
+              >
+                <div className="mx-auto flex w-full flex-col gap-6">
+                  <ContextBreadcrumbs />
+                  <Outlet />
+                </div>
+              </main>
+              <RightPanel />
+            </div>
           </div>
-          <RightPanel />
         </div>
       </div>
     </ScopeProvider>

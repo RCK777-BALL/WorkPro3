@@ -7,10 +7,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - workpro.local
+        - workpro.example
       secretName: workpro-tls
   rules:
-    - host: workpro.local
+    - host: workpro.example
       http:
         paths:
           - path: /api

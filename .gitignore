@@ -28,3 +28,6 @@ playground-*.mongodb.js
 
 # Local Mongo TLS assets
 docker/mongo/tls/
+
+# Kubernetes secrets (local overrides)
+k8s/secrets.yaml

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workpro-backend-config
+data:
+  CORS_ORIGIN: "https://workpro.local"
+  FRONTEND_URL: "https://workpro.local"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workpro-frontend-config
+data:
+  VITE_API_URL: "https://workpro.local/api"
+  VITE_WS_URL: "wss://workpro.local"
+  VITE_HTTP_ORIGIN: "https://workpro.local"

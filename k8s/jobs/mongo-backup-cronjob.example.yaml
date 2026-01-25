@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mongo-backup
+spec:
+  schedule: "0 2 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: mongodump
+              image: mongo:7.0.14
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  mongodump --uri="$MONGO_URI" --archive=/backup/mongo.archive.gz --gzip
+                  aws s3 cp /backup/mongo.archive.gz s3://your-backup-bucket/workpro/"$(date +%F)"/mongo.archive.gz
+              env:
+                - name: MONGO_URI
+                  valueFrom:
+                    secretKeyRef:
+                      name: workpro-app-secrets
+                      key: MONGO_URI
+              volumeMounts:
+                - name: backup
+                  mountPath: /backup
+          volumes:
+            - name: backup
+              emptyDir: {}

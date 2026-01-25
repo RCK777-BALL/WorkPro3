@@ -5,7 +5,7 @@ metadata:
 spec:
   secretName: workpro-tls
   dnsNames:
-    - workpro.local
+    - workpro.example
   issuerRef:
     name: letsencrypt-prod
     kind: ClusterIssuer

@@ -12,6 +12,7 @@ import { createServer } from "http";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import path from "path";
+import client from "prom-client";
 
 import { initKafka, sendKafkaEvent } from "./utils/kafka";
 import { initMQTTFromConfig } from "./iot/mqttClient";
@@ -159,6 +160,9 @@ const MONGO_URI = env.MONGO_URI;
 const RATE_LIMIT_WINDOW_MS = parseInt(env.RATE_LIMIT_WINDOW_MS, 10);
 const RATE_LIMIT_MAX = parseInt(env.RATE_LIMIT_MAX, 10);
 
+const metricsRegistry = new client.Registry();
+client.collectDefaultMetrics({ register: metricsRegistry });
+
 const normalizeOrigin = (origin: string | undefined) => origin?.trim().replace(/\/+$/, "").toLowerCase();
 
 const allowedOrigins = new Set<string>(
@@ -213,6 +217,10 @@ app.use(mongoSanitize());
 setupSwagger(app, "/api/docs/ui", apiAccessMiddleware);
 app.get("/api-docs", (_req: Request, res: Response) => {
   res.redirect(301, "/api/docs/ui");
+});
+app.get("/metrics", async (_req: Request, res: Response) => {
+  res.set("Content-Type", metricsRegistry.contentType);
+  res.end(await metricsRegistry.metrics());
 });
 
 const dev = env.NODE_ENV !== "production";

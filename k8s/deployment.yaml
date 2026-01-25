@@ -23,22 +23,20 @@ spec:
         fsGroup: 10001
       containers:
         - name: backend
-          image: workpro-backend:latest
+          image: workpro-backend:1.0.0
           ports:
             - containerPort: 5010
           env:
             - name: MONGO_URI
               valueFrom:
                 secretKeyRef:
-                  name: mongo-connection
+                  name: workpro-app-secrets
                   key: MONGO_URI
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: jwt-secret
+                  name: workpro-app-secrets
                   key: JWT_SECRET
-            - name: CORS_ORIGIN
-              value: http://workpro.local
           envFrom:
             - configMapRef:
                 name: workpro-backend-config
@@ -95,10 +93,6 @@ spec:
     metadata:
       labels:
         app: workpro-frontend
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "80"
-        prometheus.io/path: "/metrics"
     spec:
       securityContext:
         runAsNonRoot: true
@@ -107,7 +101,7 @@ spec:
         fsGroup: 10001
       containers:
         - name: frontend
-          image: workpro-frontend:latest
+          image: workpro-frontend:1.0.0
           ports:
             - containerPort: 80
           envFrom:

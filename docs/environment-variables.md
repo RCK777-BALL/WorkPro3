@@ -6,9 +6,9 @@ The application uses the following environment variables. All names use `UPPER_S
 
 | Variable | Description | Default |
 | --- | --- | --- |
-| `JWT_SECRET` | Secret used to sign JWT tokens | required |
-| `MONGO_URI` | MongoDB connection string (supports auth/TLS options). | `mongodb://workpro_app:change-me@localhost:27017/workpro?authSource=workpro&tls=true&tlsCAFile=./docker/mongo/tls/ca.crt` |
-| `CORS_ORIGIN` | Allowed CORS origin | `http://localhost:5173` |
+| `JWT_SECRET` | Secret used to sign JWT tokens (>= 32 chars required in production). | required |
+| `MONGO_URI` | MongoDB connection string (supports auth/TLS options; required in production). | `mongodb://workpro_app:change-me@localhost:27017/workpro?authSource=workpro&tls=true&tlsCAFile=./docker/mongo/tls/ca.crt` |
+| `CORS_ORIGIN` | Allowed CORS origins (comma-separated) | `http://localhost:5173` |
 | `PORT` | Port the server listens on | `5010` |
 | `RATE_LIMIT_WINDOW_MS` | Rate limiter window in ms | `900000` |
 | `RATE_LIMIT_MAX` | Max requests per window | `100` |
@@ -17,6 +17,7 @@ The application uses the following environment variables. All names use `UPPER_S
 | `PM_SCHEDULER_CRON` | CRON schedule for PM tasks | `*/5 * * * *` |
 | `PM_SCHEDULER_TASK` | Path to PM scheduler task | `./tasks/PMSchedulerTask` |
 | `LABOR_RATE` | Hourly labor rate for cost calculations | `50` |
+| `FRONTEND_URL` | Base URL used for links in notifications | optional |
 | `DEFAULT_TENANT_ID` | Default tenant identifier | optional |
 | `ENABLE_OIDC_SSO` | Enable built-in OIDC providers (Okta/Azure) | `true` |
 | `ENABLE_SAML_SSO` | Enable SAML endpoints | `false` |
@@ -28,11 +29,12 @@ The application uses the following environment variables. All names use `UPPER_S
 
 | Variable | Description | Default |
 | --- | --- | --- |
-| `MONGO_INITDB_ROOT_USERNAME` | Root user created by the MongoDB container on first boot. | `workpro_root` |
-| `MONGO_INITDB_ROOT_PASSWORD` | Root password created by the MongoDB container on first boot. | `change-me` |
+| `MONGO_ROOT_USER` | Root user created by the MongoDB container on first boot. | `workpro_root` |
+| `MONGO_ROOT_PASS` | Root password created by the MongoDB container on first boot. | `change-me` |
 | `MONGO_APP_USER` | Application user created for the `workpro` database. | `workpro_app` |
-| `MONGO_APP_PASSWORD` | Application user password for the `workpro` database. | `change-me` |
-| `MONGO_APP_DB` | Database name used for the WorkPro app. | `workpro` |
+| `MONGO_APP_PASS` | Application user password for the `workpro` database. | `change-me` |
+| `MONGO_DB` | Database name used for the WorkPro app. | `workpro` |
+| `MONGO_AUTH_DB` | Auth source database used by clients. | `workpro` |
 
 ## Frontend
 

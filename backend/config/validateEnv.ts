@@ -57,12 +57,24 @@ export function validateEnv(): EnvVars {
   }
 
   const env = parsed.data;
+  const isProd = env.NODE_ENV === 'production';
+  const jwtSecret = env.JWT_SECRET?.trim();
+  const mongoUriRaw = process.env.MONGO_URI?.trim();
+  const corsOriginRaw = process.env.CORS_ORIGIN?.trim();
 
-  if (!env.JWT_SECRET) {
-    if (env.NODE_ENV === 'production') {
-      throw new Error('JWT_SECRET environment variable is required in production');
+  if (isProd) {
+    if (!jwtSecret || jwtSecret.length < 32) {
+      throw new Error('JWT_SECRET must be set and at least 32 characters in production');
     }
+    if (!mongoUriRaw) {
+      throw new Error('MONGO_URI environment variable is required in production');
+    }
+    if (!corsOriginRaw) {
+      throw new Error('CORS_ORIGIN environment variable is required in production');
+    }
+  }
 
+  if (!jwtSecret) {
     logger.warn(
       'Using default JWT secret for development. Set JWT_SECRET to override the default value.',
     );
@@ -70,6 +82,6 @@ export function validateEnv(): EnvVars {
 
   return {
     ...env,
-    JWT_SECRET: env.JWT_SECRET ?? 'development-secret',
+    JWT_SECRET: jwtSecret ?? 'development-secret',
   };
 }

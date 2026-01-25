@@ -98,8 +98,6 @@ export default function CustomReportBuilder({ canExport, canBuild }: CustomRepor
 
   const { can } = usePermissions();
   const canRead = can('reports', 'read');
-  const canExport = can('reports', 'export');
-  const canBuild = can('reports', 'build');
 
   const customReport = useCustomReport();
   const exportReport = useExportCustomReport();

@@ -20,7 +20,11 @@ export const useCustomReport = () => useMutation((payload: ReportQueryRequest) =
 export const useExportCustomReport = () =>
   useMutation((payload: ReportQueryRequest & { format: 'csv' | 'pdf' }) => exportCustomReport(payload));
 
-export const useReportTemplates = () => useQuery<ReportTemplate[]>(REPORT_TEMPLATES_QUERY_KEY, listReportTemplates, { staleTime: 60_000 });
+export const useReportTemplates = (enabled = true) =>
+  useQuery<ReportTemplate[]>(REPORT_TEMPLATES_QUERY_KEY, listReportTemplates, {
+    staleTime: 60_000,
+    enabled,
+  });
 
 export const useReportTemplate = (id: string | undefined) =>
   useQuery<ReportTemplate | undefined>(

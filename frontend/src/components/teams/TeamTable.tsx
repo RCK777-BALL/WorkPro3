@@ -4,16 +4,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  ColorInput,
-  Group,
-  NumberInput,
-  Slider,
-  Stack,
-  Text,
-  useComputedColorScheme,
-  useMantineTheme,
-} from '@mantine/core';
+import { useComputedColorScheme, useMantineTheme } from '@mantine/core';
 import Badge from '@common/Badge';
 import Avatar from '@common/Avatar';
 import Button from '@common/Button';
@@ -62,7 +53,7 @@ const TeamTable: React.FC<TeamTableProps> = ({
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const theme = useMantineTheme();
   const colorScheme = useComputedColorScheme('dark');
-  const { borderConfig, updateBorderConfig, resetBorderConfig } = useBorderPreferences();
+  const { borderConfig } = useBorderPreferences();
 
   const departmentNameById = useMemo(() => {
     return departments.reduce<Record<string, string>>((acc, department) => {
@@ -209,68 +200,6 @@ const TeamTable: React.FC<TeamTableProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm border border-dashed border-neutral-200 dark:border-neutral-700">
-        <div className="p-4">
-          <Group align="flex-end" gap="lg" wrap="wrap">
-            <Stack gap={6} style={{ minWidth: 200 }}>
-              <Text size="sm" fw={600} c="dimmed">
-                Border color
-              </Text>
-              <ColorInput
-                format="hex"
-                value={borderColor}
-                size="sm"
-                onChange={(value) => updateBorderConfig({ color: value })}
-                swatches={['#2b2d42', '#6366f1', '#22c55e', '#f97316', '#ec4899']}
-              />
-            </Stack>
-            <Stack gap={6} style={{ minWidth: 140 }}>
-              <Text size="sm" fw={600} c="dimmed">
-                Border width (px)
-              </Text>
-              <NumberInput
-                value={borderWidth}
-                min={0}
-                max={12}
-                step={0.5}
-                size="sm"
-                hideControls
-                onChange={(value) =>
-                  updateBorderConfig({
-                    width:
-                      typeof value === 'number'
-                        ? value
-                        : Number.parseFloat(value) || 0,
-                  })
-                }
-              />
-            </Stack>
-            <Stack gap={6} style={{ minWidth: 220 }}>
-              <Group justify="space-between" gap={4} wrap="nowrap">
-                <Text size="sm" fw={600} c="dimmed">
-                  Border radius
-                </Text>
-                <Text size="sm" c="dimmed">
-                  {Math.round(borderRadius)}px
-                </Text>
-              </Group>
-              <Slider
-                value={borderRadius}
-                min={0}
-                max={48}
-                step={1}
-                onChange={(value) => updateBorderConfig({ radius: value })}
-                label={(value) => `${Math.round(value)}px`}
-              />
-            </Stack>
-            <div className="ml-auto flex items-center">
-              <Button variant="outline" size="sm" onClick={resetBorderConfig}>
-                Reset
-              </Button>
-            </div>
-          </Group>
-        </div>
-      </div>
       <div
         className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm"
         style={borderStyles.container}

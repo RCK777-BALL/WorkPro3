@@ -2,12 +2,15 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'react-hot-toast';
+import { isAxiosError } from 'axios';
 
 import type { WorkRequestItem, WorkRequestStatus, WorkRequestSummary } from '@/api/workRequests';
 import { convertWorkRequest, fetchWorkRequestSummary, fetchWorkRequests } from '@/api/workRequests';
+import { useScopeContext } from '@/context/ScopeContext';
+import { usePermissions } from '@/auth/usePermissions';
 
 const statusLabels: Record<WorkRequestStatus, string> = {
   new: 'New',
@@ -57,8 +60,26 @@ export default function WorkRequestDashboard() {
   const [error, setError] = useState<string>();
   const [refreshing, setRefreshing] = useState(false);
   const [converting, setConverting] = useState<Record<string, boolean>>({});
+  const { activeTenant, activePlant, loadingPlants, loadingTenants } = useScopeContext();
+  const { can } = usePermissions();
 
-  const loadData = async () => {
+  const canReadRequests = can('workrequests.read');
+  const canConvertRequests = can('workrequests.convert');
+
+  const resolveErrorMessage = (err: unknown) => {
+    if (isAxiosError(err)) {
+      const status = err.response?.status;
+      if (status === 403) {
+        return 'Access to work requests is restricted for the selected tenant or site.';
+      }
+      if (status === 401) {
+        return 'Your session has expired. Please sign in again.';
+      }
+    }
+    return err instanceof Error ? err.message : 'Unable to load work requests.';
+  };
+
+  const loadData = useCallback(async () => {
     setStatusLoading(true);
     setError(undefined);
     try {
@@ -66,18 +87,39 @@ export default function WorkRequestDashboard() {
       setSummary(summaryData);
       setRequests(listData.items);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unable to load work requests.';
-      setError(message);
+      setError(resolveErrorMessage(err));
     } finally {
       setStatusLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    if (!canReadRequests) {
+      setStatusLoading(false);
+      setError('You do not have permission to view work requests.');
+      return;
+    }
+
+    if (loadingTenants || loadingPlants) {
+      return;
+    }
+
+    if (!activeTenant || !activePlant) {
+      setStatusLoading(false);
+      setError('Select an active tenant and site to view work requests.');
+      return;
+    }
+
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [
+    activePlant,
+    activeTenant,
+    canReadRequests,
+    loadData,
+    loadingPlants,
+    loadingTenants,
+  ]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -85,6 +127,10 @@ export default function WorkRequestDashboard() {
   };
 
   const handleConvert = async (requestId: string) => {
+    if (!canConvertRequests) {
+      toast.error('You do not have permission to convert work requests.');
+      return;
+    }
     setConverting((prev) => ({ ...prev, [requestId]: true }));
     try {
       const result = await convertWorkRequest(requestId);
@@ -198,7 +244,7 @@ export default function WorkRequestDashboard() {
                         type="button"
                         className="inline-flex items-center rounded-full bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-primary-700 disabled:opacity-60"
                         onClick={() => handleConvert(request._id)}
-                        disabled={converting[request._id] || request.status === 'converted'}
+                        disabled={!canConvertRequests || converting[request._id] || request.status === 'converted'}
                       >
                         {converting[request._id] ? 'Converting…' : 'Convert'}
                       </button>

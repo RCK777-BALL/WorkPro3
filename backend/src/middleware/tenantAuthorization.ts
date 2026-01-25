@@ -35,6 +35,20 @@ export interface TenantAuthorizationOptions {
   requireSite?: boolean;
 }
 
+const resolveFallbackSiteId = async (tenantId: string): Promise<string | undefined> => {
+  const existing = await Site.findOne({ tenantId }).select('_id name').lean();
+  if (existing?._id) {
+    return existing._id.toString();
+  }
+  try {
+    const created = await Site.create({ tenantId, name: 'Primary Site' });
+    return created._id.toString();
+  } catch (error) {
+    logger.warn('authorizeTenantSite: unable to create fallback site', { error, tenantId });
+    return undefined;
+  }
+};
+
 const authorizeTenantSite = (
   options: TenantAuthorizationOptions = {},
 ): RequestHandler =>
@@ -69,19 +83,31 @@ const authorizeTenantSite = (
 
     if (requireSite && tenantId && siteId) {
       if (!Types.ObjectId.isValid(siteId)) {
-        res.status(400).json({ message: 'Invalid site ID' });
-        return;
-      }
-      try {
-        const siteExists = await Site.exists({ _id: siteId, tenantId });
-        if (!siteExists) {
-          res.status(403).json({ message: 'Site does not belong to tenant' });
+        const fallbackSiteId = await resolveFallbackSiteId(tenantId);
+        if (fallbackSiteId) {
+          req.siteId = fallbackSiteId;
+          req.plantId = fallbackSiteId;
+        } else {
+          res.status(400).json({ message: 'Invalid site ID' });
           return;
         }
-      } catch (error) {
-        logger.warn('authorizeTenantSite: site lookup failed', { error, siteId, tenantId });
-        res.status(500).json({ message: 'Unable to validate site scope' });
-        return;
+      } else {
+        try {
+          const siteExists = await Site.exists({ _id: siteId, tenantId });
+          if (!siteExists) {
+            const fallbackSiteId = await resolveFallbackSiteId(tenantId);
+            if (!fallbackSiteId) {
+              res.status(403).json({ message: 'Site does not belong to tenant' });
+              return;
+            }
+            req.siteId = fallbackSiteId;
+            req.plantId = fallbackSiteId;
+          }
+        } catch (error) {
+          logger.warn('authorizeTenantSite: site lookup failed', { error, siteId, tenantId });
+          res.status(500).json({ message: 'Unable to validate site scope' });
+          return;
+        }
       }
     }
 

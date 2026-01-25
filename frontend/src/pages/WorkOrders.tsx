@@ -150,9 +150,11 @@ export default function WorkOrders() {
     [endDate, priorityFilter, search, startDate, statusFilter],
   );
 
+  const columnIds = useMemo(() => columnMetadata.map((col) => col.id), [columnMetadata]);
+
   const tableLayout = useTableLayout({
     tableKey: 'workorders-table',
-    columnIds: columnMetadata.map((col) => col.id),
+    columnIds,
     userId: user?.id,
     defaultFilters: currentFilters,
   });

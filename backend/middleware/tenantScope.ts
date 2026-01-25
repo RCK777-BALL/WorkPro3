@@ -3,6 +3,8 @@
  */
 
 import type { Response } from "express";
+import { Types } from "mongoose";
+
 import logger from "../utils/logger";
 import Site from "../models/Site";
 import Tenant from "../models/Tenant";
@@ -31,6 +33,33 @@ const ensureTenantSite = async (tenantId: string): Promise<string> => {
   return resolved;
 };
 
+const ensureTenant = async (tenantId: string): Promise<string> => {
+  if (Types.ObjectId.isValid(tenantId)) {
+    const existing = await Tenant.exists({ _id: tenantId });
+    if (!existing) {
+      await Tenant.create({ _id: tenantId, name: "Default Tenant" });
+    }
+    return tenantId;
+  }
+
+  const created = await Tenant.create({ name: "Default Tenant" });
+  return created._id.toString();
+};
+
+const resolveSiteForTenant = async (
+  tenantId: string,
+  siteId?: string,
+): Promise<string> => {
+  if (siteId && Types.ObjectId.isValid(siteId)) {
+    const existing = await Site.exists({ _id: siteId, tenantId });
+    if (existing) {
+      return siteId;
+    }
+  }
+
+  return ensureTenantSite(tenantId);
+};
+
 type MaybeString = string | undefined;
 
 const toStringOrUndefined = (value: unknown): MaybeString => {
@@ -50,7 +79,7 @@ const tenantScope: AuthedRequestHandler = async (req, res: Response, next): Prom
   const existingTenant = toStringOrUndefined(req.tenantId);
   const envTenant = toStringOrUndefined(process.env.DEFAULT_TENANT_ID);
 
-  const resolvedTenant =
+  let resolvedTenant =
     existingTenant ||
     resolvedTenantFromResolver ||
     toStringOrUndefined(headerTenant) ||
@@ -63,6 +92,17 @@ const tenantScope: AuthedRequestHandler = async (req, res: Response, next): Prom
       method: req.method,
     });
     res.status(400).json({ message: "Tenant ID is required" });
+    return;
+  }
+
+  try {
+    resolvedTenant = await ensureTenant(resolvedTenant);
+  } catch (error) {
+    logger.error("tenantScope: unable to resolve tenant context", {
+      tenantId: resolvedTenant,
+      error,
+    });
+    res.status(500).json({ message: "Unable to resolve tenant context" });
     return;
   }
 
@@ -106,6 +146,18 @@ const tenantScope: AuthedRequestHandler = async (req, res: Response, next): Prom
         error,
       });
       res.status(500).json({ message: "Unable to resolve site context" });
+      return;
+    }
+  } else {
+    try {
+      resolvedSiteId = await resolveSiteForTenant(resolvedTenant, resolvedSiteId);
+    } catch (error) {
+      logger.error("tenantScope: unable to validate site context", {
+        tenantId: resolvedTenant,
+        siteId: resolvedSiteId,
+        error,
+      });
+      res.status(500).json({ message: "Unable to validate site context" });
       return;
     }
   }

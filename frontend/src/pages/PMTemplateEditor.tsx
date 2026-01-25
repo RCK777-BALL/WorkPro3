@@ -107,12 +107,10 @@ export default function PMTemplateEditor() {
 
     if (!payload.name || !payload.category) {
       addToast("Name and category are required.", "error");
-      setSubmitError("Name and category are required.");
       return;
     }
 
     try {
-      setSubmitError(null);
       if (isEditing && templateId) {
         await updateMutation.mutateAsync({ templateId, payload });
         addToast("PM template updated.", "success");
@@ -122,9 +120,7 @@ export default function PMTemplateEditor() {
       }
       navigate("/pm/templates");
     } catch (error) {
-      const message = getErrorMessage(error) || "Unable to save PM template. Please try again.";
-      addToast(message, "error");
-      setSubmitError(message);
+      addToast("Unable to save PM template. Please try again.", "error");
       return;
     }
   };

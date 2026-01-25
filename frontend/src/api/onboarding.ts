@@ -85,11 +85,9 @@ export const fetchOnboardingState = async (): Promise<OnboardingState> => {
     if (isAxiosError(error)) {
       const status = error.response?.status;
       if (status === 401 || status === 403) {
-        console.warn('Onboarding API not permitted. Hiding onboarding checklist.');
         return buildEmptyState();
       }
       if (!status || status === 404 || status >= 500) {
-        console.warn('Onboarding API unavailable. Falling back to defaults.');
         return buildFallbackState();
       }
     }

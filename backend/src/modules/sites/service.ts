@@ -11,7 +11,11 @@ export interface SiteContext {
 
 export interface SiteInput {
   name: string;
+  code?: string;
   description?: string;
+  timezone?: string;
+  country?: string;
+  region?: string;
 }
 
 type LeanDocument<T> = T extends Document ? Omit<T, keyof Document> : T;
@@ -32,5 +36,13 @@ export const listSites = async (context: SiteContext): Promise<SiteListResult> =
 export const createSite = async (context: SiteContext, input: SiteInput): Promise<SiteDocument> => {
   const tenantId = toObjectId(context.tenantId);
   if (!tenantId) throw new Error('Tenant context required');
-  return Site.create({ tenantId, name: input.name, description: input.description });
+  return Site.create({
+    tenantId,
+    name: input.name,
+    ...(input.code ? { code: input.code } : {}),
+    ...(input.description ? { description: input.description } : {}),
+    ...(input.timezone ? { timezone: input.timezone } : {}),
+    ...(input.country ? { country: input.country } : {}),
+    ...(input.region ? { region: input.region } : {}),
+  });
 };

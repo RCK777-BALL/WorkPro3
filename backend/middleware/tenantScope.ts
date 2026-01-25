@@ -4,7 +4,6 @@
 
 import type { Response } from "express";
 import { Types } from "mongoose";
-
 import logger from "../utils/logger";
 import Site from "../models/Site";
 import Tenant from "../models/Tenant";
@@ -31,19 +30,6 @@ const ensureTenantSite = async (tenantId: string): Promise<string> => {
   const resolved = site._id.toString();
   tenantSiteCache.set(tenantId, resolved);
   return resolved;
-};
-
-const ensureTenant = async (tenantId: string): Promise<string> => {
-  if (Types.ObjectId.isValid(tenantId)) {
-    const existing = await Tenant.exists({ _id: tenantId });
-    if (!existing) {
-      await Tenant.create({ _id: tenantId, name: "Default Tenant" });
-    }
-    return tenantId;
-  }
-
-  const created = await Tenant.create({ name: "Default Tenant" });
-  return created._id.toString();
 };
 
 const resolveSiteForTenant = async (

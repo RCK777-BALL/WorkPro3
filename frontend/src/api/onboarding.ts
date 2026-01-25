@@ -5,6 +5,7 @@
 import { isAxiosError } from 'axios';
 import http from '@/lib/http';
 import type { OnboardingReminderResponse, OnboardingState } from '@/types';
+import { FEATURE_SUPPORT_KEYS, setFeatureSupported } from '@/utils/featureSupport';
 
 const fallbackSteps: OnboardingState['steps'] = [
   {
@@ -84,7 +85,11 @@ export const fetchOnboardingState = async (): Promise<OnboardingState> => {
   } catch (error) {
     if (isAxiosError(error)) {
       const status = error.response?.status;
-      if (status === 401 || status === 403) {
+      if (status === 401) {
+        return buildEmptyState();
+      }
+      if (status === 403 || status === 404) {
+        setFeatureSupported(FEATURE_SUPPORT_KEYS.onboarding, false);
         return buildEmptyState();
       }
       if (!status || status === 404 || status >= 500) {

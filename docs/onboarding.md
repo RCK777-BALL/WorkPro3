@@ -138,24 +138,6 @@ cd ../frontend && npm run test:coverage
 - Visit `/docs` on the backend to confirm API documentation loads.
 - Confirm Socket.IO updates by modifying a record and watching the UI refresh.
 
-## Onboarding checklist
-
-Use this list as a quick, repeatable confirmation for every new environment.
-
-- [ ] Dependencies installed in `backend/` and `frontend/`.
-- [ ] `.env` created from `.env.sample` with `JWT_SECRET`, `MONGO_URI`,
-      `CORS_ORIGIN`, and `FRONTEND_URL` set.
-- [ ] `.env.local` created for the frontend with `VITE_API_URL`, `VITE_WS_URL`,
-      and `VITE_SOCKET_PATH` aligned to the backend.
-- [ ] MongoDB running and reachable via `MONGO_URI`.
-- [ ] `npm run seed:admin` and `npm run seed` executed successfully.
-- [ ] Backend reachable at `http://localhost:5010` and `/docs` loads.
-- [ ] Frontend reachable at `http://localhost:5173` and login works with seeded
-      credentials.
-- [ ] Work order + inventory pages load without console errors.
-- [ ] Socket.IO updates work (edit a record and confirm UI refresh).
-- [ ] Tests run locally when needed (`npm run test:coverage` in both packages).
-
 ## Troubleshooting quick hits
 
 - **Auth failures**: Ensure `JWT_SECRET` is set and consistent with your backend

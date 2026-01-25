@@ -314,6 +314,9 @@ export const useTableLayout = ({
   const updateFilters = useCallback(
     (filters: Record<string, string>) => {
       setPersistedState((prev) => {
+        if (areFiltersEqual(prev.preferences.filters, filters)) {
+          return prev;
+        }
         const nextState: PersistedLayoutState = {
           ...prev,
           preferences: {

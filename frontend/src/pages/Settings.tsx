@@ -30,6 +30,7 @@ import { useToast } from '@/context/ToastContext';
 import http from '@/lib/http';
 import SettingsLayout from '@/components/settings/SettingsLayout';
 import { OnboardingWizard } from '@/features/onboarding';
+import { FEATURE_SUPPORT_KEYS, isFeatureSupported, setFeatureSupported } from '@/utils/featureSupport';
 
 type DocumentEntry = {
   id?: string;
@@ -79,7 +80,9 @@ const Settings: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
-  const [documentsSupported, setDocumentsSupported] = useState(true);
+  const [documentsSupported, setDocumentsSupported] = useState(() =>
+    isFeatureSupported(FEATURE_SUPPORT_KEYS.documents),
+  );
   const [emailPreview, setEmailPreview] = useState({
     firstName: 'Ricardo',
     lastName: 'Edwards',
@@ -206,6 +209,12 @@ const Settings: React.FC = () => {
     },
   ] satisfies { label: string; description: string; key: ThemeOptionKey }[];
 
+  const markDocumentsUnsupported = () => {
+    setFeatureSupported(FEATURE_SUPPORT_KEYS.documents, false);
+    setDocumentsSupported(false);
+    setDocuments([]);
+  };
+
   const handleDocumentUpload = async (files: File[]) => {
     if (!documentsSupported) {
       addToast('Documentation library is not available in this environment.', 'error');
@@ -295,7 +304,7 @@ const Settings: React.FC = () => {
         } catch (error) {
           const status = (error as { response?: { status?: number } }).response?.status;
           if (status === 404 || status === 401 || status === 403) {
-            setDocumentsSupported(false);
+            markDocumentsUnsupported();
             addToast('Documentation library is not available in this environment.', 'error');
             break;
           }
@@ -405,6 +414,10 @@ const Settings: React.FC = () => {
   };
 
   useEffect(() => {
+    if (!documentsSupported) {
+      return undefined;
+    }
+
     let isMounted = true;
 
     const loadDocuments = async () => {
@@ -457,8 +470,7 @@ const Settings: React.FC = () => {
         const status = (error as { response?: { status?: number } }).response?.status;
         if (status === 404 || status === 401 || status === 403) {
           if (isMounted) {
-            setDocumentsSupported(false);
-            setDocuments([]);
+            markDocumentsUnsupported();
           }
         } else {
           console.error('Error loading documents:', error);
@@ -478,7 +490,7 @@ const Settings: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [addToast]);
+  }, [addToast, documentsSupported]);
 
   useEffect(() => {
     settingsEffectActiveRef.current = true;

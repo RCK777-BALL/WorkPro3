@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 
 import { usePermissions } from '@/auth/usePermissions';
 import type { OnboardingStep, OnboardingStepKey } from '@/types';
+import { FEATURE_SUPPORT_KEYS, isFeatureSupported } from '@/utils/featureSupport';
 import TemplateLibrary from './TemplateLibrary';
 import {
   useDismissOnboardingReminder,
@@ -89,13 +90,25 @@ const StepContent = ({ step }: { step: OnboardingStep }) => {
 export const OnboardingWizard = () => {
   const { can } = usePermissions();
   const canViewOnboarding = can('sites', 'read');
+  const [onboardingSupported, setOnboardingSupported] = useState(() =>
+    isFeatureSupported(FEATURE_SUPPORT_KEYS.onboarding),
+  );
   const { data, isLoading, isError, refetch } = useOnboardingState({
-    enabled: canViewOnboarding,
+    enabled: canViewOnboarding && onboardingSupported,
   });
   const dismissReminder = useDismissOnboardingReminder();
   const [activeKey, setActiveKey] = useState<OnboardingStepKey | null>(null);
 
-  if (!canViewOnboarding) {
+  useEffect(() => {
+    if (onboardingSupported) {
+      const supported = isFeatureSupported(FEATURE_SUPPORT_KEYS.onboarding);
+      if (!supported) {
+        setOnboardingSupported(false);
+      }
+    }
+  }, [onboardingSupported, data, isError]);
+
+  if (!canViewOnboarding || !onboardingSupported) {
     return null;
   }
 

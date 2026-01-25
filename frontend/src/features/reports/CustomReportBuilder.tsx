@@ -70,9 +70,17 @@ const derivePayloadFilters = (
 
 const defaultFields: ReportField[] = ['title', 'status', 'priority', 'assetName', 'assigneeName'];
 
-type EditableTemplate = Pick<ReportTemplateInput, 'name' | 'description' | 'fields' | 'filters' | 'groupBy' | 'dateRange'>;
+type EditableTemplate = Pick<
+  ReportTemplateInput,
+  'name' | 'description' | 'fields' | 'filters' | 'groupBy' | 'dateRange'
+>;
 
-export default function CustomReportBuilder() {
+type CustomReportBuilderProps = {
+  canExport: boolean;
+  canBuild: boolean;
+};
+
+export default function CustomReportBuilder({ canExport, canBuild }: CustomReportBuilderProps) {
   const [selectedFields, setSelectedFields] = useState<ReportField[]>(defaultFields);
   const [groupBy, setGroupBy] = useState<ReportField[]>([]);
   const [filters, setFilters] = useState<Array<ReportFilter & { value: string | number | (string | number)[] }>>(defaultFilters);

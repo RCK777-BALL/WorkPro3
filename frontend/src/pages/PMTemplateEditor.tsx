@@ -99,6 +99,7 @@ export default function PMTemplateEditor() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    setSubmitError(null);
     const payload: PMTemplateUpsertInput = {
       ...form,
       tasks: (form.tasks ?? []).map((task) => task.trim()).filter(Boolean),
@@ -120,7 +121,9 @@ export default function PMTemplateEditor() {
       }
       navigate("/pm/templates");
     } catch (error) {
-      addToast("Unable to save PM template. Please try again.", "error");
+      const message = getErrorMessage(error);
+      setSubmitError(message);
+      addToast(message || "Unable to save PM template. Please try again.", "error");
       return;
     }
   };

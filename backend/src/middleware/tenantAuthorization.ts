@@ -62,12 +62,12 @@ const authorizeTenantSite = (
 
     const requestedSiteId =
       resolveRequestValue(req, 'siteId') ?? resolveRequestValue(req, 'plantId');
-    if (requestedSiteId && siteId && requestedSiteId !== siteId) {
+    if (requireSite && requestedSiteId && siteId && requestedSiteId !== siteId) {
       res.status(403).json({ message: 'Cross-site access denied' });
       return;
     }
 
-    if (tenantId && siteId) {
+    if (requireSite && tenantId && siteId) {
       if (!Types.ObjectId.isValid(siteId)) {
         res.status(400).json({ message: 'Invalid site ID' });
         return;

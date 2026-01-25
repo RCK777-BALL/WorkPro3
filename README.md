@@ -77,12 +77,14 @@ file so Docker Compose can pass them to the backend container:
 ```bash
 ./scripts/generate-mongo-tls.sh
 cat <<EOF > .env
-JWT_SECRET=change_me
-MONGO_INITDB_ROOT_USERNAME=workpro_root
-MONGO_INITDB_ROOT_PASSWORD=change-me
+JWT_SECRET=change_me_change_me_change_me_change_me
+MONGO_ROOT_USER=workpro_root
+MONGO_ROOT_PASS=change-me
 MONGO_APP_USER=workpro_app
-MONGO_APP_PASSWORD=change-me
-MONGO_APP_DB=workpro
+MONGO_APP_PASS=change-me
+MONGO_DB=workpro
+MONGO_AUTH_DB=workpro
+MONGO_URI=mongodb://workpro_app:change-me@localhost:27017/workpro?authSource=workpro&tls=true&tlsCAFile=./docker/mongo/tls/ca.crt
 EOF
 docker compose up --build
 ```
@@ -92,24 +94,17 @@ The API URL is configured via the `VITE_API_URL` environment variable, and the w
 
 ### Kubernetes manifests
 
-Sample manifests live in the `k8s/` folder. Create a secret containing
-`JWT_SECRET`, plus MongoDB auth/TLS secrets, before applying the manifests:
+Sample manifests live in the `k8s/` folder. Use the secrets template in
+`k8s/secrets.example.yaml` to provision secrets, then apply an overlay that sets
+the ingress host and TLS secret:
 
 ```bash
-kubectl create secret generic jwt-secret --from-literal=JWT_SECRET=change_me
-kubectl create secret generic mongo-auth \
-  --from-literal=MONGO_INITDB_ROOT_USERNAME=workpro_root \
-  --from-literal=MONGO_INITDB_ROOT_PASSWORD=change-me \
-  --from-literal=MONGO_APP_USER=workpro_app \
-  --from-literal=MONGO_APP_PASSWORD=change-me \
-  --from-literal=MONGO_APP_DB=workpro
-kubectl create secret generic mongo-tls \
-  --from-file=ca.crt=./docker/mongo/tls/ca.crt \
-  --from-file=tls.pem=./docker/mongo/tls/tls.pem
-kubectl apply -f k8s/
+kubectl apply -f k8s/secrets.example.yaml
+kubectl apply -k k8s/overlays/dev
 ```
 
-This will deploy the backend, frontend and ingress resources.
+See [k8s/README-production.md](k8s/README-production.md) for production-specific
+guidance on secrets, TLS, images, and MongoDB availability/backups.
 
 ## Running tests
 
@@ -132,6 +127,14 @@ they can be merged. The testing matrix and workflow are described in
 The frontend stores any API requests made while offline in local storage. When
 the browser regains connectivity, the queued requests are automatically sent
 using the browser's `online` event even if the WebSocket defined by `VITE_WS_URL` and `VITE_SOCKET_PATH` fails to reconnect.
+
+## Production deployment checklist
+
+- [ ] Create `workpro-app-secrets` and `workpro-mongo-secrets` (see `k8s/README-production.md`).
+- [ ] Set ingress host and TLS secret via `k8s/overlays/prod`.
+- [ ] Update image tags/digests in `k8s/overlays/prod` (or use your CD pipeline).
+- [ ] Confirm `/metrics` is scraped by Prometheus.
+- [ ] Choose MongoDB strategy (managed Atlas or self-hosted replica set + backups).
 
 ## License
 

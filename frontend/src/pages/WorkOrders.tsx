@@ -100,6 +100,13 @@ function assignIfDefined<T, K extends keyof T>(target: T, key: K, value: T[K] | 
   }
 }
 
+const areFiltersEqual = (left: Record<string, string>, right: Record<string, string>) => {
+  const leftEntries = Object.entries(left);
+  const rightEntries = Object.entries(right);
+  if (leftEntries.length !== rightEntries.length) return false;
+  return leftEntries.every(([key, value]) => right[key] === value);
+};
+
 export default function WorkOrders() {
   const [searchParams, setSearchParams] = useSearchParams();
   const searchKey = searchParams.toString();
@@ -167,9 +174,11 @@ export default function WorkOrders() {
       if (filters.priority) params.set('priority', filters.priority);
       if (filters.startDate) params.set('startDate', filters.startDate);
       if (filters.endDate) params.set('endDate', filters.endDate);
-      setSearchParams(params);
+      if (params.toString() !== searchParams.toString()) {
+        setSearchParams(params);
+      }
     },
-    [setSearchParams],
+    [searchParams, setSearchParams],
   );
 
   const resolveConflict = async (choice: 'local' | 'server') => {
@@ -189,8 +198,10 @@ export default function WorkOrders() {
   };
 
   useEffect(() => {
-    updateLayoutFilters(currentFilters);
-  }, [currentFilters, updateLayoutFilters]);
+    if (!areFiltersEqual(currentFilters, tableLayout.filters ?? {})) {
+      updateLayoutFilters(currentFilters);
+    }
+  }, [currentFilters, tableLayout.filters, updateLayoutFilters]);
 
   useEffect(() => {
     const params = new URLSearchParams(searchKey);

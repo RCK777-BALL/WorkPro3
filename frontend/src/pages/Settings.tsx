@@ -79,6 +79,7 @@ const Settings: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
+  const [documentsSupported, setDocumentsSupported] = useState(true);
   const [emailPreview, setEmailPreview] = useState({
     firstName: 'Ricardo',
     lastName: 'Edwards',
@@ -206,6 +207,10 @@ const Settings: React.FC = () => {
   ] satisfies { label: string; description: string; key: ThemeOptionKey }[];
 
   const handleDocumentUpload = async (files: File[]) => {
+    if (!documentsSupported) {
+      addToast('Documentation library is not available in this environment.', 'error');
+      return;
+    }
     if (!files.length) {
       return;
     }
@@ -288,6 +293,12 @@ const Settings: React.FC = () => {
             },
           });
         } catch (error) {
+          const status = (error as { response?: { status?: number } }).response?.status;
+          if (status === 404 || status === 401 || status === 403) {
+            setDocumentsSupported(false);
+            addToast('Documentation library is not available in this environment.', 'error');
+            break;
+          }
           console.error('Error uploading document:', error);
           addToast(`Failed to upload ${file.name}`, 'error');
         }
@@ -328,6 +339,10 @@ const Settings: React.FC = () => {
   };
 
   const handleDocumentDownload = async (doc: DocumentEntry) => {
+    if (!documentsSupported) {
+      addToast('Documentation library is not available in this environment.', 'error');
+      return;
+    }
     const mimeType = doc.metadata.mimeType ?? getMimeTypeForType(doc.metadata.type);
 
     if (doc.content) {
@@ -360,6 +375,10 @@ const Settings: React.FC = () => {
   };
 
   const handleRemoveDocument = async (documentId?: string) => {
+    if (!documentsSupported) {
+      addToast('Documentation library is not available in this environment.', 'error');
+      return;
+    }
     if (!documentId) {
       return;
     }
@@ -435,9 +454,17 @@ const Settings: React.FC = () => {
 
         setDocuments(fetched);
       } catch (error) {
-        console.error('Error loading documents:', error);
-        if (isMounted) {
-          addToast('Failed to load documents', 'error');
+        const status = (error as { response?: { status?: number } }).response?.status;
+        if (status === 404 || status === 401 || status === 403) {
+          if (isMounted) {
+            setDocumentsSupported(false);
+            setDocuments([]);
+          }
+        } else {
+          console.error('Error loading documents:', error);
+          if (isMounted) {
+            addToast('Failed to load documents', 'error');
+          }
         }
       } finally {
         if (isMounted) {
@@ -955,18 +982,26 @@ const Settings: React.FC = () => {
               <div>
                 <h3 className="text-lg font-medium text-neutral-900 dark:text-white mb-2">Upload Documentation</h3>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-                  Upload PDF, Word, or Excel documents to add to the documentation library
+                  Upload PDF, Word, or Excel documents to add to the documentation library.
                 </p>
-                <DocumentUploader onUpload={handleDocumentUpload} />
-                {(isUploadingDocuments || isLoadingDocuments) && (
-                  <div className="flex items-center gap-2 mt-3 text-sm text-neutral-500 dark:text-neutral-400">
-                    <LoadingSpinner fullscreen={false} size="sm" />
-                    <span>{isUploadingDocuments ? 'Uploading documents…' : 'Loading documents…'}</span>
+                {documentsSupported ? (
+                  <>
+                    <DocumentUploader onUpload={handleDocumentUpload} />
+                    {(isUploadingDocuments || isLoadingDocuments) && (
+                      <div className="flex items-center gap-2 mt-3 text-sm text-neutral-500 dark:text-neutral-400">
+                        <LoadingSpinner fullscreen={false} size="sm" />
+                        <span>{isUploadingDocuments ? 'Uploading documents…' : 'Loading documents…'}</span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
+                    Documentation uploads are not available in this environment yet.
                   </div>
                 )}
               </div>
 
-              {documents.length > 0 ? (
+              {documentsSupported && documents.length > 0 ? (
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium text-neutral-900 dark:text-white">Uploaded Documents</h3>
                   {documents.map((doc) => (
@@ -980,7 +1015,7 @@ const Settings: React.FC = () => {
                   ))}
                 </div>
               ) : (
-                !isLoadingDocuments && !isUploadingDocuments && (
+                documentsSupported && !isLoadingDocuments && !isUploadingDocuments && (
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
                     No documents uploaded yet.
                   </p>

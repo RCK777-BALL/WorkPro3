@@ -68,13 +68,25 @@ const buildFallbackState = (): OnboardingState => {
   };
 };
 
+const buildEmptyState = (): OnboardingState => ({
+  steps: [],
+  pendingReminder: false,
+  nextStepKey: null,
+});
+
 export const fetchOnboardingState = async (): Promise<OnboardingState> => {
   try {
-    const res = await http.get<OnboardingState>('/onboarding');
+    const res = await http.get<{ data: OnboardingState } | OnboardingState>('/onboarding');
+    if ('data' in res.data) {
+      return res.data.data;
+    }
     return res.data;
   } catch (error) {
     if (isAxiosError(error)) {
       const status = error.response?.status;
+      if (status === 401 || status === 403) {
+        return buildEmptyState();
+      }
       if (!status || status === 404 || status >= 500) {
         console.warn('Onboarding API unavailable. Falling back to defaults.');
         return buildFallbackState();

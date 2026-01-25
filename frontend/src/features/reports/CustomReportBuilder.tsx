@@ -69,9 +69,17 @@ const derivePayloadFilters = (
 
 const defaultFields: ReportField[] = ['title', 'status', 'priority', 'assetName', 'assigneeName'];
 
-type EditableTemplate = Pick<ReportTemplateInput, 'name' | 'description' | 'fields' | 'filters' | 'groupBy' | 'dateRange'>;
+type EditableTemplate = Pick<
+  ReportTemplateInput,
+  'name' | 'description' | 'fields' | 'filters' | 'groupBy' | 'dateRange'
+>;
 
-export default function CustomReportBuilder() {
+type CustomReportBuilderProps = {
+  canExport: boolean;
+  canBuild: boolean;
+};
+
+export default function CustomReportBuilder({ canExport, canBuild }: CustomReportBuilderProps) {
   const [selectedFields, setSelectedFields] = useState<ReportField[]>(defaultFields);
   const [groupBy, setGroupBy] = useState<ReportField[]>([]);
   const [filters, setFilters] = useState<Array<ReportFilter & { value: string | number | (string | number)[] }>>(defaultFilters);
@@ -383,6 +391,7 @@ export default function CustomReportBuilder() {
             icon={<Download className="h-4 w-4" />}
             onClick={() => handleExport('csv')}
             loading={exportReport.isLoading}
+            disabled={!canExport}
           >
             Export CSV
           </Button>
@@ -391,6 +400,7 @@ export default function CustomReportBuilder() {
             icon={<Download className="h-4 w-4" />}
             onClick={() => handleExport('pdf')}
             loading={exportReport.isLoading}
+            disabled={!canExport}
           >
             Export PDF
           </Button>
@@ -399,6 +409,7 @@ export default function CustomReportBuilder() {
             icon={<Save className="h-4 w-4" />}
             onClick={persistTemplate}
             loading={saveTemplate.isLoading || updateTemplate.isLoading}
+            disabled={!canBuild}
           >
             {activeTemplate ? 'Update template' : 'Save template'}
           </Button>

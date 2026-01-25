@@ -65,7 +65,7 @@ const tenantScope: AuthedRequestHandler = async (req, res: Response, next): Prom
   const existingTenant = toStringOrUndefined(req.tenantId);
   const envTenant = toStringOrUndefined(process.env.DEFAULT_TENANT_ID);
 
-  const resolvedTenant =
+  let resolvedTenant =
     existingTenant ||
     resolvedTenantFromResolver ||
     toStringOrUndefined(headerTenant) ||
@@ -78,6 +78,17 @@ const tenantScope: AuthedRequestHandler = async (req, res: Response, next): Prom
       method: req.method,
     });
     res.status(400).json({ message: "Tenant ID is required" });
+    return;
+  }
+
+  try {
+    resolvedTenant = await ensureTenant(resolvedTenant);
+  } catch (error) {
+    logger.error("tenantScope: unable to resolve tenant context", {
+      tenantId: resolvedTenant,
+      error,
+    });
+    res.status(500).json({ message: "Unable to resolve tenant context" });
     return;
   }
 

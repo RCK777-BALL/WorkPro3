@@ -3,6 +3,7 @@
  */
 
 import type { Response } from "express";
+import { Types } from "mongoose";
 import logger from "../utils/logger";
 import Site from "../models/Site";
 import Tenant from "../models/Tenant";
@@ -29,6 +30,20 @@ const ensureTenantSite = async (tenantId: string): Promise<string> => {
   const resolved = site._id.toString();
   tenantSiteCache.set(tenantId, resolved);
   return resolved;
+};
+
+const resolveSiteForTenant = async (
+  tenantId: string,
+  siteId?: string,
+): Promise<string> => {
+  if (siteId && Types.ObjectId.isValid(siteId)) {
+    const existing = await Site.exists({ _id: siteId, tenantId });
+    if (existing) {
+      return siteId;
+    }
+  }
+
+  return ensureTenantSite(tenantId);
 };
 
 type MaybeString = string | undefined;
@@ -106,6 +121,18 @@ const tenantScope: AuthedRequestHandler = async (req, res: Response, next): Prom
         error,
       });
       res.status(500).json({ message: "Unable to resolve site context" });
+      return;
+    }
+  } else {
+    try {
+      resolvedSiteId = await resolveSiteForTenant(resolvedTenant, resolvedSiteId);
+    } catch (error) {
+      logger.error("tenantScope: unable to validate site context", {
+        tenantId: resolvedTenant,
+        siteId: resolvedSiteId,
+        error,
+      });
+      res.status(500).json({ message: "Unable to validate site context" });
       return;
     }
   }

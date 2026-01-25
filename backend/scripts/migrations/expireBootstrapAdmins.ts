@@ -8,7 +8,7 @@ import logger from '../../utils/logger';
 const DEFAULT_ADMIN_EMAILS = ['admin@cmms.com', 'admin@example.com'];
 
 async function run() {
-  const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/workpro';
+  const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/WorkPro3';
   const client = new MongoClient(uri);
 
   try {

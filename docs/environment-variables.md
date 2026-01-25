@@ -7,7 +7,7 @@ The application uses the following environment variables. All names use `UPPER_S
 | Variable | Description | Default |
 | --- | --- | --- |
 | `JWT_SECRET` | Secret used to sign JWT tokens (>= 32 chars required in production). | required |
-| `MONGO_URI` | MongoDB connection string (supports auth/TLS options; required in production). | `mongodb://workpro_app:change-me@localhost:27017/workpro?authSource=workpro&tls=true&tlsCAFile=./docker/mongo/tls/ca.crt` |
+| `MONGO_URI` | MongoDB connection string (supports auth/TLS options; required in production). | `mongodb://localhost:27017/WorkPro3` |
 | `CORS_ORIGIN` | Allowed CORS origins (comma-separated) | `http://localhost:5173` |
 | `PORT` | Port the server listens on | `5010` |
 | `RATE_LIMIT_WINDOW_MS` | Rate limiter window in ms | `900000` |

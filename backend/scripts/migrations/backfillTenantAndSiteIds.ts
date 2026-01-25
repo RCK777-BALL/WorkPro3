@@ -10,7 +10,7 @@ import logger from '../../utils/logger';
 
 dotenv.config();
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/workpro';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/WorkPro3';
 
 const toObjectId = (value: string): Types.ObjectId => {
   if (!Types.ObjectId.isValid(value)) {

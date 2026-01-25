@@ -96,6 +96,8 @@ export const OnboardingWizard = () => {
   const allComplete = hasSteps && steps.every((step) => step.completed);
   const showWizard = hasSteps && !allComplete;
   const completionPct = steps.length ? Math.round(((steps.length - remaining) / steps.length) * 100) : 0;
+  const nextStep = steps.find((step) => !step.completed) ?? steps[0];
+  const nextStepHref = nextStep?.href?.startsWith('/') ? nextStep.href : nextStep?.href ? `/${nextStep.href}` : null;
 
   useEffect(() => {
     if (!steps.length) {
@@ -204,6 +206,15 @@ export const OnboardingWizard = () => {
           <p className="mt-2 text-sm text-white/70">
             {data?.reminderMessage ?? 'Complete these guided steps to unlock the full workspace.'}
           </p>
+          {nextStepHref ? (
+            <Link
+              to={nextStepHref}
+              className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-300/60 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-100 transition hover:bg-emerald-500/20"
+            >
+              Continue onboarding
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          ) : null}
           <ol className="mt-4 space-y-3">
             {steps.map((step, index) => (
               <StepperItem key={step.key} step={step} index={index} active={activeStep.key === step.key} onSelect={setActiveKey} />

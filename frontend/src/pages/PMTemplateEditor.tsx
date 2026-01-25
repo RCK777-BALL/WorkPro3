@@ -10,6 +10,7 @@ import Button from "@/components/common/Button";
 import Card from "@/components/common/Card";
 import Input from "@/components/common/Input";
 import TextArea from "@/components/common/TextArea";
+import { useToast } from "@/context/ToastContext";
 import { useCreatePmTemplate, usePmTemplate, useUpdatePmTemplate } from "@/features/pm/hooks";
 import type { PMTemplateUpsertInput } from "@/types";
 
@@ -69,6 +70,7 @@ const TaskList = ({
 export default function PMTemplateEditor() {
   const { templateId } = useParams();
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const isEditing = Boolean(templateId && templateId !== "new");
 
   const templateQuery = usePmTemplate(isEditing ? templateId : undefined);
@@ -101,14 +103,24 @@ export default function PMTemplateEditor() {
       estimatedMinutes: form.estimatedMinutes ? Number(form.estimatedMinutes) : undefined,
     };
 
-    if (!payload.name || !payload.category) return;
-
-    if (isEditing && templateId) {
-      await updateMutation.mutateAsync({ templateId, payload });
-    } else {
-      await createMutation.mutateAsync(payload);
+    if (!payload.name || !payload.category) {
+      addToast("Name and category are required.", "error");
+      return;
     }
-    navigate("/pm/templates");
+
+    try {
+      if (isEditing && templateId) {
+        await updateMutation.mutateAsync({ templateId, payload });
+        addToast("PM template updated.", "success");
+      } else {
+        await createMutation.mutateAsync(payload);
+        addToast("PM template created.", "success");
+      }
+      navigate("/pm/templates");
+    } catch (error) {
+      addToast("Unable to save PM template. Please try again.", "error");
+      return;
+    }
   };
 
   if (isEditing && templateQuery.isLoading) {
@@ -182,7 +194,11 @@ export default function PMTemplateEditor() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button type="submit" loading={createMutation.isLoading || updateMutation.isLoading}>
+            <Button
+              type="submit"
+              loading={createMutation.isLoading || updateMutation.isLoading}
+              disabled={!form.name.trim() || !form.category.trim()}
+            >
               {isEditing ? "Save changes" : "Create template"}
             </Button>
             <Button type="button" variant="ghost" onClick={() => navigate("/pm/templates")}>Cancel</Button>

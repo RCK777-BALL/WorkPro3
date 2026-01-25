@@ -10,6 +10,7 @@ export interface SiteDocument extends Document {
   name: string;
   code?: string;
   slug: string;
+  description?: string;
   timezone?: string;
   country?: string;
   region?: string;
@@ -20,6 +21,7 @@ const siteSchema = new Schema<SiteDocument>(
     name: { type: String, required: true, trim: true },
     code: { type: String, trim: true, uppercase: true },
     slug: { type: String, required: true, lowercase: true, trim: true },
+    description: { type: String, trim: true },
     timezone: { type: String, trim: true },
     country: { type: String, trim: true },
     region: { type: String, trim: true },

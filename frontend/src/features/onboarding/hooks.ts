@@ -14,8 +14,13 @@ export const ONBOARDING_QUERY_KEY = ['onboarding', 'state'] as const;
 export const PM_TEMPLATE_LIBRARY_QUERY_KEY = ['templates', 'library'] as const;
 export const INSPECTION_LIBRARY_QUERY_KEY = ['templates', 'inspections'] as const;
 
-export const useOnboardingState = () =>
-  useQuery({ queryKey: ONBOARDING_QUERY_KEY, queryFn: fetchOnboardingState, staleTime: 30_000 });
+export const useOnboardingState = (options?: { enabled?: boolean }) =>
+  useQuery({
+    queryKey: ONBOARDING_QUERY_KEY,
+    queryFn: fetchOnboardingState,
+    staleTime: 30_000,
+    enabled: options?.enabled ?? true,
+  });
 
 export const usePmTemplateLibrary = () =>
   useQuery({ queryKey: PM_TEMPLATE_LIBRARY_QUERY_KEY, queryFn: fetchTemplateLibrary, staleTime: 60_000 });

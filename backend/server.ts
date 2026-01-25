@@ -35,6 +35,7 @@ import {
   authRoutes,
   calendarRoutes,
   chatRoutes,
+  documentRoutes,
   partsRoutes,
   complianceRoutes,
   conditionRuleRoutes,
@@ -341,6 +342,7 @@ app.use("/api/workorders", workOrdersRoutes);
 app.use("/api/permits", permitRoutes);
 app.use("/api/inspections", inspectionRoutes);
 app.use("/api/assets", assetsRoutes);
+app.use("/api/documents", documentRoutes);
 app.use("/api/downtime-logs", downtimeLogRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/assets", assetInsightsRouter);

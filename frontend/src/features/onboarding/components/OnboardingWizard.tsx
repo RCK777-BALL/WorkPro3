@@ -8,6 +8,7 @@ import clsx from 'clsx';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
+import { usePermissions } from '@/auth/usePermissions';
 import type { OnboardingStep, OnboardingStepKey } from '@/types';
 import TemplateLibrary from './TemplateLibrary';
 import {
@@ -86,9 +87,17 @@ const StepContent = ({ step }: { step: OnboardingStep }) => {
 };
 
 export const OnboardingWizard = () => {
-  const { data, isLoading, isError, refetch } = useOnboardingState();
+  const { can } = usePermissions();
+  const canViewOnboarding = can('sites', 'read');
+  const { data, isLoading, isError, refetch } = useOnboardingState({
+    enabled: canViewOnboarding,
+  });
   const dismissReminder = useDismissOnboardingReminder();
   const [activeKey, setActiveKey] = useState<OnboardingStepKey | null>(null);
+
+  if (!canViewOnboarding) {
+    return null;
+  }
 
   const steps = data?.steps ?? [];
   const remaining = steps.filter((step) => !step.completed).length;

@@ -11,7 +11,7 @@ type PlantRef = { _id: ObjectId; tenantId?: ObjectId | null };
 
 type WorkOrderRef = { _id: ObjectId; tenantId?: ObjectId | null; plant?: ObjectId | null; siteId?: ObjectId | null };
 
-const DEFAULT_URI = 'mongodb://localhost:27017/workpro';
+const DEFAULT_URI = 'mongodb://localhost:27017/WorkPro3';
 
 async function resolveFallbackTenant(db: Db): Promise<ObjectId> {
   const existing = await db.collection('tenants').findOne();

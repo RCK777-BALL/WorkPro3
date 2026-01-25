@@ -35,7 +35,7 @@ not committed to the repository.
    ```
    Update the required environment variables such as `MONGO_URI`, `JWT_SECRET`,
    and `CORS_ORIGIN`. The example connection string uses
-   `mongodb://localhost:27017/workpro`.
+   `mongodb://localhost:27017/WorkPro3`.
  
 3. Seed the database with a tenant and admin account:
    ```bash
@@ -82,9 +82,9 @@ MONGO_ROOT_USER=workpro_root
 MONGO_ROOT_PASS=change-me
 MONGO_APP_USER=workpro_app
 MONGO_APP_PASS=change-me
-MONGO_DB=workpro
-MONGO_AUTH_DB=workpro
-MONGO_URI=mongodb://workpro_app:change-me@localhost:27017/workpro?authSource=workpro&tls=true&tlsCAFile=./docker/mongo/tls/ca.crt
+MONGO_DB=WorkPro3
+MONGO_AUTH_DB=WorkPro3
+MONGO_URI=mongodb://workpro_app:change-me@localhost:27017/WorkPro3?authSource=WorkPro3&tls=true&tlsCAFile=./docker/mongo/tls/ca.crt
 EOF
 docker compose up --build
 ```

@@ -11,7 +11,7 @@ Recommended approach (manual):
 ```bash
 kubectl create secret generic workpro-app-secrets \
   --from-literal=JWT_SECRET='<32+ char secret>' \
-  --from-literal=MONGO_URI='mongodb://workpro_app:<app-pass>@mongo:27017/workpro?authSource=workpro&tls=true&tlsCAFile=/etc/mongo/tls/ca.crt'
+  --from-literal=MONGO_URI='mongodb://workpro_app:<app-pass>@mongo:27017/WorkPro3?authSource=WorkPro3&tls=true&tlsCAFile=/etc/mongo/tls/ca.crt'
 
 kubectl create secret generic workpro-mongo-secrets \
   --from-literal=MONGO_INITDB_ROOT_USERNAME='workpro_root' \

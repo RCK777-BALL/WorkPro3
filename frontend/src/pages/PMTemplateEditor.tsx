@@ -12,6 +12,7 @@ import Input from "@/components/common/Input";
 import TextArea from "@/components/common/TextArea";
 import { useToast } from "@/context/ToastContext";
 import { useCreatePmTemplate, usePmTemplate, useUpdatePmTemplate } from "@/features/pm/hooks";
+import { getErrorMessage } from "@/lib/api";
 import type { PMTemplateUpsertInput } from "@/types";
 
 const emptyTemplate: PMTemplateUpsertInput = {
@@ -78,6 +79,7 @@ export default function PMTemplateEditor() {
   const updateMutation = useUpdatePmTemplate();
 
   const [form, setForm] = React.useState<PMTemplateUpsertInput>(emptyTemplate);
+  const [submitError, setSubmitError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (templateQuery.data && isEditing) {
@@ -203,6 +205,7 @@ export default function PMTemplateEditor() {
             </Button>
             <Button type="button" variant="ghost" onClick={() => navigate("/pm/templates")}>Cancel</Button>
           </div>
+          {submitError ? <p className="text-sm text-error-500">{submitError}</p> : null}
         </form>
       </Card>
     </div>

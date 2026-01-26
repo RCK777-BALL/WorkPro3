@@ -958,36 +958,6 @@ const Settings: React.FC = () => {
             </div>
           </Card>
 
-          {/* Theme Customization */}
-          <Card title="Theme Customization" icon={<Palette className="h-5 w-5 text-neutral-500" />}>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-              Choose how WorkPro looks for you.
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => handleThemeModeChange('light')}
-                disabled={themeMode === 'light'}
-              >
-                Light
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => handleThemeModeChange('dark')}
-                disabled={themeMode === 'dark'}
-              >
-                Dark
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => handleThemeModeChange('system')}
-                disabled={themeMode === 'system'}
-              >
-                System
-              </Button>
-            </div>
-          </Card>
-
           {/* Documentation Upload */}
           <Card title="Documentation" icon={<Book className="h-5 w-5 text-neutral-500" />} className="lg:col-span-2">
             <div className="space-y-6">

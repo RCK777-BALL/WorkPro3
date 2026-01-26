@@ -814,40 +814,38 @@ const Settings: React.FC = () => {
           </Card>
         </div>
 
-        <Card title="Theme Presets" icon={<Palette className="h-5 w-5 text-neutral-500" />}>
-          <div className="space-y-4">
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
-              Quickly switch between theme modes across the application.
-            </p>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {themePresets.map(({ mode, label, description, icon }) => {
-                const isActive = themeMode === mode;
-                return (
-                  <Button
-                    key={mode}
-                    variant="outline"
-                    className={`flex h-full flex-col items-start gap-2 border-2 px-4 py-3 text-left transition-colors ${
-                      isActive
-                        ? 'border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-400 dark:bg-primary-900/20 dark:text-primary-200'
-                        : 'border-neutral-200 text-neutral-700 hover:border-primary-200 hover:text-primary-700 dark:border-neutral-700 dark:text-neutral-100 dark:hover:border-primary-400 dark:hover:text-primary-200'
-                    }`}
-                    onClick={() => handleThemeModeChange(mode)}
-                    disabled={isActive}
-                  >
-                    <span className="flex items-center gap-2 text-sm font-semibold">
-                      {icon}
-                      {label}
-                    </span>
-                    <span className="text-xs text-neutral-500 dark:text-neutral-400">{description}</span>
-                  </Button>
-                );
-              })}
+        <Card title="Theme" icon={<Palette className="h-5 w-5 text-neutral-500" />}>
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                Quickly switch between theme modes across the application.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {themePresets.map(({ mode, label, description, icon }) => {
+                  const isActive = themeMode === mode;
+                  return (
+                    <Button
+                      key={mode}
+                      variant="outline"
+                      className={`flex h-full flex-col items-start gap-2 border-2 px-4 py-3 text-left transition-colors ${
+                        isActive
+                          ? 'border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-400 dark:bg-primary-900/20 dark:text-primary-200'
+                          : 'border-neutral-200 text-neutral-700 hover:border-primary-200 hover:text-primary-700 dark:border-neutral-700 dark:text-neutral-100 dark:hover:border-primary-400 dark:hover:text-primary-200'
+                      }`}
+                      onClick={() => handleThemeModeChange(mode)}
+                      disabled={isActive}
+                    >
+                      <span className="flex items-center gap-2 text-sm font-semibold">
+                        {icon}
+                        {label}
+                      </span>
+                      <span className="text-xs text-neutral-500 dark:text-neutral-400">{description}</span>
+                    </Button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        </Card>
 
-          {/* Theme Settings */}
-          <Card title="Theme Settings" icon={<Palette className="h-5 w-5 text-neutral-500" />}>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200 mb-1">
@@ -906,7 +904,8 @@ const Settings: React.FC = () => {
                 </div>
               ))}
             </div>
-          </Card>
+          </div>
+        </Card>
 
           {/* Notification Settings */}
           <Card title="Notification Settings" icon={<Bell className="h-5 w-5 text-neutral-500" />}>

@@ -8,6 +8,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -27,12 +28,12 @@ const TEXT_STORAGE_KEY = 'theme.textColor';
 
 const DEFAULT_THEME_COLORS: Record<Exclude<ThemeMode, 'system'>, ThemeColors> = {
   light: {
-    background: '#000000',
-    text: '#ffffff',
+    background: '#ffffff',
+    text: '#0f172a',
   },
   dark: {
-    background: '#000000',
-    text: '#ffffff',
+    background: '#0f172a',
+    text: '#f8fafc',
   },
 };
 
@@ -58,7 +59,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setThemeState] = useState<ThemeMode>(() => {
     if (typeof window === 'undefined') return 'dark';
     const stored = safeLocalStorage.getItem(THEME_STORAGE_KEY) as ThemeMode | null;
-    return stored ?? 'dark';
+    return stored ?? 'system';
   });
 
   const [backgroundColor, setBackgroundColorState] = useState<string>(() => {
@@ -82,6 +83,20 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       storedTheme === 'system' ? getSystemTheme() : (storedTheme as Exclude<ThemeMode, 'system'>);
     return DEFAULT_THEME_COLORS[resolvedTheme].text;
   });
+
+  const resolvedThemeRef = useRef<Exclude<ThemeMode, 'system'>>(
+    theme === 'system' ? getSystemTheme() : theme,
+  );
+  const backgroundColorRef = useRef(backgroundColor);
+  const textColorRef = useRef(textColor);
+
+  useEffect(() => {
+    backgroundColorRef.current = backgroundColor;
+  }, [backgroundColor]);
+
+  useEffect(() => {
+    textColorRef.current = textColor;
+  }, [textColor]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -109,13 +124,35 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       root.style.colorScheme = value;
     };
 
+    const syncColors = (prevTheme: Exclude<ThemeMode, 'system'>, nextTheme: Exclude<ThemeMode, 'system'>) => {
+      const prevDefaults = DEFAULT_THEME_COLORS[prevTheme];
+      const nextDefaults = DEFAULT_THEME_COLORS[nextTheme];
+
+      if (backgroundColorRef.current === prevDefaults.background) {
+        setBackgroundColorState(nextDefaults.background);
+      }
+
+      if (textColorRef.current === prevDefaults.text) {
+        setTextColorState(nextDefaults.text);
+      }
+    };
+
     const resolvedTheme = theme === 'system' ? (media.matches ? 'dark' : 'light') : theme;
     apply(resolvedTheme);
+    if (resolvedThemeRef.current !== resolvedTheme) {
+      syncColors(resolvedThemeRef.current, resolvedTheme);
+      resolvedThemeRef.current = resolvedTheme;
+    }
 
     if (theme !== 'system') return;
 
     const handler = (event: MediaQueryListEvent) => {
-      apply(event.matches ? 'dark' : 'light');
+      const nextTheme = event.matches ? 'dark' : 'light';
+      apply(nextTheme);
+      if (resolvedThemeRef.current !== nextTheme) {
+        syncColors(resolvedThemeRef.current, nextTheme);
+        resolvedThemeRef.current = nextTheme;
+      }
     };
 
     media.addEventListener('change', handler);

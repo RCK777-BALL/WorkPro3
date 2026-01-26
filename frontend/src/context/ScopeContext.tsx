@@ -25,6 +25,7 @@ type ScopeContextValue = {
   plants: ScopeOption[];
   activeTenant: ScopeOption | null;
   activePlant: ScopeOption | null;
+  independentSelection: boolean;
   loadingTenants: boolean;
   loadingPlants: boolean;
   switchingTenant: boolean;
@@ -34,9 +35,11 @@ type ScopeContextValue = {
   refreshPlants: () => Promise<void>;
   switchTenant: (tenantId: string) => Promise<void>;
   switchPlant: (plantId: string) => Promise<void>;
+  setIndependentSelection: (enabled: boolean) => void;
 };
 
 const ScopeContext = createContext<ScopeContextValue | undefined>(undefined);
+const INDEPENDENT_SELECTION_KEY = 'auth:scopeIndependent';
 
 const normalizeOptions = (items: Array<{ _id?: string; id?: string; name?: string }>): ScopeOption[] =>
   items
@@ -56,6 +59,9 @@ export const ScopeProvider = ({ children }: { children: React.ReactNode }) => {
   );
   const [activePlantId, setActivePlantId] = useState<string | null>(
     safeLocalStorage.getItem(SITE_KEY) ?? user?.siteId ?? null,
+  );
+  const [independentSelection, setIndependentSelectionState] = useState<boolean>(
+    safeLocalStorage.getItem(INDEPENDENT_SELECTION_KEY) === 'true',
   );
   const [loadingTenants, setLoadingTenants] = useState(true);
   const [loadingPlants, setLoadingPlants] = useState(true);
@@ -104,6 +110,7 @@ export const ScopeProvider = ({ children }: { children: React.ReactNode }) => {
     if (!tenantId) {
       setPlants([]);
       setActivePlantId(null);
+      safeLocalStorage.removeItem(SITE_KEY);
       setErrors((prev) => ({ ...prev, plant: undefined }));
       setLoadingPlants(false);
       return;
@@ -123,11 +130,17 @@ export const ScopeProvider = ({ children }: { children: React.ReactNode }) => {
       const resolvedActive =
         candidatePlant && options.some((plant) => plant.id === candidatePlant)
           ? candidatePlant
-          : options[0]?.id ?? null;
+          : null;
 
       if (resolvedActive) {
         safeLocalStorage.setItem(SITE_KEY, resolvedActive);
         setActivePlantId(resolvedActive);
+      } else if (!independentSelection && options[0]?.id) {
+        safeLocalStorage.setItem(SITE_KEY, options[0].id);
+        setActivePlantId(options[0].id);
+      } else {
+        safeLocalStorage.removeItem(SITE_KEY);
+        setActivePlantId(null);
       }
     } catch (error) {
       console.error('Failed to load plant settings', error);
@@ -135,7 +148,7 @@ export const ScopeProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       setLoadingPlants(false);
     }
-  }, [activePlantId, resolveTenantId, t]);
+  }, [activePlantId, independentSelection, resolveTenantId, t]);
 
   useEffect(() => {
     refreshTenants();
@@ -143,7 +156,16 @@ export const ScopeProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     refreshPlants();
-  }, [refreshPlants, activeTenantId]);
+  }, [refreshPlants, activeTenantId, independentSelection]);
+
+  const setIndependentSelection = useCallback((enabled: boolean) => {
+    setIndependentSelectionState(enabled);
+    if (enabled) {
+      safeLocalStorage.setItem(INDEPENDENT_SELECTION_KEY, 'true');
+    } else {
+      safeLocalStorage.removeItem(INDEPENDENT_SELECTION_KEY);
+    }
+  }, []);
 
   const switchTenant = useCallback(
     async (tenantId: string) => {
@@ -198,10 +220,12 @@ export const ScopeProvider = ({ children }: { children: React.ReactNode }) => {
       switchingTenant,
       switchingPlant,
       errors,
+      independentSelection,
       refreshTenants,
       refreshPlants,
       switchTenant,
       switchPlant,
+      setIndependentSelection,
     }),
     [
       tenants,
@@ -213,10 +237,12 @@ export const ScopeProvider = ({ children }: { children: React.ReactNode }) => {
       switchingTenant,
       switchingPlant,
       errors,
+      independentSelection,
       refreshTenants,
       refreshPlants,
       switchTenant,
       switchPlant,
+      setIndependentSelection,
     ],
   );
 

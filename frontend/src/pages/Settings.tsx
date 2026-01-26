@@ -806,13 +806,11 @@ const Settings: React.FC = () => {
           </div>
         </Card>
 
-        <div className="lg:col-span-2">
-          <Card title="Setup" icon={<Book className="h-5 w-5 text-neutral-500" />}>
-            <div className="max-w-4xl">
-              <OnboardingWizard />
-            </div>
-          </Card>
-        </div>
+        <Card title="Setup" icon={<Book className="h-5 w-5 text-neutral-500" />}>
+          <div className="max-w-4xl">
+            <OnboardingWizard />
+          </div>
+        </Card>
 
         <Card title="Theme" icon={<Palette className="h-5 w-5 text-neutral-500" />}>
           <div className="space-y-6">

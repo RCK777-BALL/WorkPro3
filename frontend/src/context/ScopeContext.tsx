@@ -63,6 +63,15 @@ export const ScopeProvider = ({ children }: { children: React.ReactNode }) => {
   const [switchingPlant, setSwitchingPlant] = useState(false);
   const [errors, setErrors] = useState<ScopeErrors>({});
 
+  const resolveTenantId = useCallback(() => {
+    return (
+      activeTenantId ??
+      safeLocalStorage.getItem(TENANT_KEY) ??
+      user?.tenantId ??
+      null
+    );
+  }, [activeTenantId, user?.tenantId]);
+
   const refreshTenants = useCallback(async () => {
     setLoadingTenants(true);
     setErrors((prev) => ({ ...prev, tenant: undefined }));
@@ -91,6 +100,14 @@ export const ScopeProvider = ({ children }: { children: React.ReactNode }) => {
   }, [activeTenantId, t, user?.tenantId]);
 
   const refreshPlants = useCallback(async () => {
+    const tenantId = resolveTenantId();
+    if (!tenantId) {
+      setPlants([]);
+      setActivePlantId(null);
+      setErrors((prev) => ({ ...prev, plant: undefined }));
+      setLoadingPlants(false);
+      return;
+    }
     setLoadingPlants(true);
     setErrors((prev) => ({ ...prev, plant: undefined }));
     try {
@@ -118,7 +135,7 @@ export const ScopeProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       setLoadingPlants(false);
     }
-  }, [activePlantId, t]);
+  }, [activePlantId, resolveTenantId, t]);
 
   useEffect(() => {
     refreshTenants();
@@ -126,7 +143,7 @@ export const ScopeProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     refreshPlants();
-  }, [refreshPlants]);
+  }, [refreshPlants, activeTenantId]);
 
   const switchTenant = useCallback(
     async (tenantId: string) => {

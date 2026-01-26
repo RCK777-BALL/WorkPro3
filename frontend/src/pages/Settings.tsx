@@ -3,8 +3,9 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Bell, Book, Mail, Monitor, Moon, Palette, Sliders, Sun } from 'lucide-react';
+import { Bell, Book, Building2, Mail, Monitor, Moon, Palette, Sliders, Sun } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
+import { Link } from 'react-router-dom';
 import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -157,6 +158,24 @@ const Settings: React.FC = () => {
       description: 'Send immediately when critical issues occur',
     },
   ] satisfies { label: string; description: string; key: EmailPreferenceKey }[];
+
+  const tenantSetupSteps = [
+    {
+      title: 'Create your tenant profile',
+      description: 'Add tenant branding, time zone, and default contact details.',
+      status: 'Required',
+    },
+    {
+      title: 'Define sites and departments',
+      description: 'Organize assets and teams so work orders land in the right place.',
+      status: 'Recommended',
+    },
+    {
+      title: 'Invite users and assign roles',
+      description: 'Provision admins, supervisors, and technicians with the right access.',
+      status: 'Recommended',
+    },
+  ];
 
   const [documents, setDocuments] = useState<DocumentEntry[]>([]);
 
@@ -806,9 +825,42 @@ const Settings: React.FC = () => {
           </div>
         </Card>
 
-        <Card title="Setup" icon={<Book className="h-5 w-5 text-neutral-500" />}>
+        <Card title="Setup" icon={<Book className="h-5 w-5 text-neutral-500" />} id="setup">
           <div className="max-w-4xl">
             <OnboardingWizard />
+          </div>
+        </Card>
+
+        <Card title="Tenant Setup" icon={<Building2 className="h-5 w-5 text-neutral-500" />}>
+          <div className="space-y-4">
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              Complete these tasks to get your tenant ready for daily operations.
+            </p>
+            <div className="space-y-3">
+              {tenantSetupSteps.map((step) => (
+                <div className="flex items-start justify-between gap-4" key={step.title}>
+                  <div>
+                    <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
+                      {step.title}
+                    </p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                      {step.description}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-neutral-100 px-2 py-1 text-xs font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+                    {step.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button as={Link} to="/admin/tenants" variant="outline" size="sm">
+                Manage tenants
+              </Button>
+              <Button as="a" href="#setup" variant="ghost" size="sm">
+                Open setup wizard
+              </Button>
+            </div>
           </div>
         </Card>
 

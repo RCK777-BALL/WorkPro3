@@ -15,6 +15,7 @@ import TemplateLibrary from './TemplateLibrary';
 import {
   useDismissOnboardingReminder,
   useOnboardingState,
+  useResetOnboardingState,
   useStepActionLabel,
 } from '../hooks';
 
@@ -90,6 +91,7 @@ const StepContent = ({ step }: { step: OnboardingStep }) => {
 export const OnboardingWizard = () => {
   const { can } = usePermissions();
   const canViewOnboarding = can('sites', 'read');
+  const canManageOnboarding = can('sites', 'manage');
   const [onboardingSupported, setOnboardingSupported] = useState(() =>
     isFeatureSupported(FEATURE_SUPPORT_KEYS.onboarding),
   );
@@ -97,6 +99,7 @@ export const OnboardingWizard = () => {
     enabled: canViewOnboarding && onboardingSupported,
   });
   const dismissReminder = useDismissOnboardingReminder();
+  const resetOnboarding = useResetOnboardingState();
   const [activeKey, setActiveKey] = useState<OnboardingStepKey | null>(null);
 
   useEffect(() => {
@@ -220,7 +223,19 @@ export const OnboardingWizard = () => {
               You&apos;re ready to go. Revisit any step from the main navigation whenever you need.
             </p>
           </div>
-          <CheckCircle2 className="h-8 w-8 text-emerald-300" />
+          <div className="flex flex-col items-end gap-2">
+            {canManageOnboarding ? (
+              <button
+                type="button"
+                onClick={handleResetOnboarding}
+                className="text-xs text-emerald-100 underline-offset-4 hover:underline disabled:opacity-60"
+                disabled={resetOnboarding.isLoading}
+              >
+                Reset checklist
+              </button>
+            ) : null}
+            <CheckCircle2 className="h-8 w-8 text-emerald-300" />
+          </div>
         </div>
         <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
           <div className="h-full rounded-full bg-emerald-400" style={{ width: '100%' }} />
@@ -239,6 +254,17 @@ export const OnboardingWizard = () => {
     }
   };
 
+  const handleResetOnboarding = async () => {
+    const confirmed = window.confirm('Reset onboarding progress for this tenant?');
+    if (!confirmed) return;
+    try {
+      await resetOnboarding.mutateAsync();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to reset onboarding';
+      toast.error(message);
+    }
+  };
+
   return (
     <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white shadow-xl">
       <div className="flex flex-col gap-6 lg:flex-row">
@@ -248,16 +274,28 @@ export const OnboardingWizard = () => {
               <p className="text-xs uppercase tracking-widest text-white/60">Workspace onboarding</p>
               <h2 className="text-xl font-semibold">{remaining ? `${remaining} steps to go` : 'All done!'}</h2>
             </div>
-            {data?.pendingReminder ? (
-              <button
-                type="button"
-                onClick={handleDismissReminder}
-                disabled={dismissReminder.isLoading}
-                className="text-xs text-amber-200 underline-offset-4 hover:underline disabled:opacity-60"
-              >
-                Remind me later
-              </button>
-            ) : null}
+            <div className="flex flex-col items-end gap-1">
+              {data?.pendingReminder ? (
+                <button
+                  type="button"
+                  onClick={handleDismissReminder}
+                  disabled={dismissReminder.isLoading}
+                  className="text-xs text-amber-200 underline-offset-4 hover:underline disabled:opacity-60"
+                >
+                  Remind me later
+                </button>
+              ) : null}
+              {canManageOnboarding ? (
+                <button
+                  type="button"
+                  onClick={handleResetOnboarding}
+                  disabled={resetOnboarding.isLoading}
+                  className="text-xs text-white/70 underline-offset-4 hover:underline disabled:opacity-60"
+                >
+                  Reset checklist
+                </button>
+              ) : null}
+            </div>
           </div>
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
             <div

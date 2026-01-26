@@ -22,6 +22,7 @@ export interface TenantOnboardingState {
   steps: Record<OnboardingStepKey, TenantOnboardingStepState>;
   lastReminderAt?: Date | undefined;
   reminderDismissedAt?: Date | undefined;
+  resetAt?: Date | undefined;
 }
 
 export interface TenantSSOConfig {
@@ -82,6 +83,7 @@ const onboardingSchema = new Schema<TenantOnboardingState>(
     },
     lastReminderAt: { type: Date },
     reminderDismissedAt: { type: Date },
+    resetAt: { type: Date },
   },
   { _id: false },
 );

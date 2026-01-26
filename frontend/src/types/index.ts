@@ -63,6 +63,7 @@ export type {
   OnboardingStep,
   OnboardingStepKey,
   OnboardingReminderResponse,
+  OnboardingResetResponse,
   PMTemplateLibraryItem,
   InspectionFormTemplate,
 } from '../../../shared/types/onboarding';

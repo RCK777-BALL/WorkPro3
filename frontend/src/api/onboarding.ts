@@ -4,7 +4,7 @@
 
 import { isAxiosError } from 'axios';
 import http from '@/lib/http';
-import type { OnboardingReminderResponse, OnboardingState } from '@/types';
+import type { OnboardingReminderResponse, OnboardingResetResponse, OnboardingState } from '@/types';
 import { FEATURE_SUPPORT_KEYS, setFeatureSupported } from '@/utils/featureSupport';
 
 const fallbackSteps: OnboardingState['steps'] = [
@@ -102,5 +102,10 @@ export const fetchOnboardingState = async (): Promise<OnboardingState> => {
 
 export const dismissOnboardingReminder = async (): Promise<OnboardingReminderResponse> => {
   const res = await http.post<OnboardingReminderResponse>('/onboarding/reminder/dismiss');
+  return res.data;
+};
+
+export const resetOnboardingState = async (): Promise<OnboardingResetResponse> => {
+  const res = await http.post<OnboardingResetResponse>('/onboarding/reset');
   return res.data;
 };

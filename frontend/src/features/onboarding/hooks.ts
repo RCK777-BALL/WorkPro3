@@ -5,7 +5,7 @@
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 import toast from 'react-hot-toast';
 
-import { dismissOnboardingReminder, fetchOnboardingState } from '@/api/onboarding';
+import { dismissOnboardingReminder, fetchOnboardingState, resetOnboardingState } from '@/api/onboarding';
 import { cloneTemplateIntoTenant, fetchInspectionForms, fetchTemplateLibrary } from '@/api/templates';
 import { PM_TEMPLATES_QUERY_KEY } from '@/features/pm/hooks';
 import type { OnboardingStepKey, PMTemplateLibraryItem } from '@/types';
@@ -46,6 +46,17 @@ export const useDismissOnboardingReminder = () => {
     onSuccess: () => {
       void queryClient.invalidateQueries(ONBOARDING_QUERY_KEY);
       toast.success('Reminder snoozed for 12 hours.');
+    },
+  });
+};
+
+export const useResetOnboardingState = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: resetOnboardingState,
+    onSuccess: () => {
+      void queryClient.invalidateQueries(ONBOARDING_QUERY_KEY);
+      toast.success('Onboarding checklist has been reset.');
     },
   });
 };

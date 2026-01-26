@@ -93,20 +93,22 @@ const ensureState = (state?: TenantOnboardingState): TenantOnboardingState => {
     },
     lastReminderAt: state?.lastReminderAt,
     reminderDismissedAt: state?.reminderDismissedAt,
+    resetAt: state?.resetAt,
   };
   return next as TenantOnboardingState;
 };
 
-const collectSignals = async (tenantId: Types.ObjectId) => {
+const collectSignals = async (tenantId: Types.ObjectId, resetAt?: Date) => {
+  const createdAtFilter = resetAt ? { createdAt: { $gte: resetAt } } : {};
   const [hasSite, hasDepartment, hasAsset, hasPmTask, userCount, roleCount, hasInventory, teamMemberCount] = await Promise.all([
-    Site.exists({ tenantId }),
-    Department.exists({ tenantId }),
-    Asset.exists({ tenantId }),
-    PMTask.exists({ tenantId }),
-    User.countDocuments({ tenantId }),
-    Role.countDocuments({ tenantId }),
-    InventoryItem.exists({ tenantId }),
-    TeamMember.countDocuments({ tenantId }),
+    Site.exists({ tenantId, ...createdAtFilter }),
+    Department.exists({ tenantId, ...createdAtFilter }),
+    Asset.exists({ tenantId, ...createdAtFilter }),
+    PMTask.exists({ tenantId, ...createdAtFilter }),
+    User.countDocuments({ tenantId, ...createdAtFilter }),
+    Role.countDocuments({ tenantId, ...createdAtFilter }),
+    InventoryItem.exists({ tenantId, ...createdAtFilter }),
+    TeamMember.countDocuments({ tenantId, ...createdAtFilter }),
   ]);
   return {
     site: Boolean(hasSite),
@@ -121,7 +123,7 @@ const collectSignals = async (tenantId: Types.ObjectId) => {
 
 const refreshState = async (tenant: TenantDocument): Promise<TenantOnboardingState> => {
   const tenantId = tenant._id instanceof Types.ObjectId ? tenant._id : new Types.ObjectId(tenant._id);
-  const completion = await collectSignals(tenantId);
+  const completion = await collectSignals(tenantId, tenant.onboarding?.resetAt);
   const nextState = ensureState(tenant.onboarding);
   let changed = false;
 
@@ -200,4 +202,20 @@ export const dismissOnboardingReminder = async (tenantId: string) => {
   tenant.onboarding = state;
   await tenant.save();
   return { lastReminderAt: now.toISOString() };
+};
+
+export const resetOnboardingState = async (tenantId: string) => {
+  const tenant = await ensureTenant(tenantId);
+  const resetState = ensureState();
+  const now = new Date();
+  for (const step of Object.values(resetState.steps)) {
+    step.completed = false;
+    delete step.completedAt;
+  }
+  resetState.lastReminderAt = undefined;
+  resetState.reminderDismissedAt = undefined;
+  resetState.resetAt = now;
+  tenant.onboarding = resetState;
+  await tenant.save();
+  return { resetAt: now.toISOString() };
 };

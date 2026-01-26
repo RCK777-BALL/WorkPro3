@@ -9,7 +9,7 @@ import tenantScope from '../../../middleware/tenantScope';
 import { requirePermission } from '../../auth/permissions';
 import authorizeTenantSite from '../../middleware/tenantAuthorization';
 import { auditDataAccess } from '../audit';
-import { dismissOnboardingReminderHandler, getOnboardingStateHandler } from './controller';
+import { dismissOnboardingReminderHandler, getOnboardingStateHandler, resetOnboardingStateHandler } from './controller';
 
 const router = Router();
 
@@ -20,5 +20,6 @@ router.use(auditDataAccess('onboarding'));
 
 router.get('/', requirePermission('sites.read'), getOnboardingStateHandler);
 router.post('/reminder/dismiss', requirePermission('sites.manage'), dismissOnboardingReminderHandler);
+router.post('/reset', requirePermission('sites.manage'), resetOnboardingStateHandler);
 
 export default router;

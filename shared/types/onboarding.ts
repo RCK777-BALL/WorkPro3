@@ -28,6 +28,10 @@ export interface OnboardingReminderResponse {
   lastReminderAt: string;
 }
 
+export interface OnboardingResetResponse {
+  resetAt: string;
+}
+
 export interface PMTemplateLibraryRule {
   type: 'calendar' | 'meter';
   cron?: string | undefined;

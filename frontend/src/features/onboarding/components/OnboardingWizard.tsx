@@ -164,6 +164,47 @@ export const OnboardingWizard = () => {
     );
   }
 
+  if (!hasSteps) {
+    return (
+      <section className="rounded-3xl border border-white/10 bg-slate-900/60 p-6 text-white shadow-xl">
+        <div className="flex flex-wrap items-start gap-4">
+          <AlertCircle className="h-6 w-6 text-amber-300" />
+          <div className="flex-1">
+            <p className="text-xs uppercase tracking-widest text-white/60">Workspace onboarding</p>
+            <h2 className="text-xl font-semibold">Setup details unavailable</h2>
+            <p className="mt-2 text-sm text-white/70">
+              No onboarding checklist is configured for this tenant yet. Admins can continue setup using the Tenant
+              Setup checklist below and by completing core settings like sites, roles, and team invitations.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                to="/plants"
+                className="inline-flex items-center gap-2 rounded-full border border-white/30 px-4 py-2 text-sm text-white/90 transition hover:bg-white/10"
+              >
+                Add a site
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+              <Link
+                to="/settings/roles"
+                className="inline-flex items-center gap-2 rounded-full border border-white/30 px-4 py-2 text-sm text-white/90 transition hover:bg-white/10"
+              >
+                Review roles
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+              <Link
+                to="/teams"
+                className="inline-flex items-center gap-2 rounded-full border border-white/30 px-4 py-2 text-sm text-white/90 transition hover:bg-white/10"
+              >
+                Invite users
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   if (!showWizard || !activeStep) {
     if (!allComplete) {
       return null;

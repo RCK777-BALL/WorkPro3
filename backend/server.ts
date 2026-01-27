@@ -128,6 +128,7 @@ import { setupSwagger } from "./utils/swagger";
 import mongoose from "mongoose";
 import errorHandler from "./middleware/errorHandler";
 import { validateEnv, type EnvVars } from "./config/validateEnv";
+import { assertProductionEnv } from "./src/config/env";
 import { initChatSocket } from "./socket/chatSocket";
 import { initSocket } from "./socket";
 import User from "./models/User";
@@ -142,6 +143,7 @@ import type {
 import scimRoutes from "./routes/scimRoutes";
 
 dotenv.config();
+assertProductionEnv();
 
 let env: EnvVars;
 try {

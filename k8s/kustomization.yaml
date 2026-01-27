@@ -11,6 +11,6 @@ resources:
   - tls.yaml
 images:
   - name: workpro-backend
-    newTag: "1.0.0"
+    newTag: "0.0.0"
   - name: workpro-frontend
-    newTag: "1.0.0"
+    newTag: "0.0.0"

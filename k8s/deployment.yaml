@@ -23,7 +23,7 @@ spec:
         fsGroup: 10001
       containers:
         - name: backend
-          image: workpro-backend:1.0.0
+          image: workpro-backend:0.0.0
           ports:
             - containerPort: 5010
           env:
@@ -37,6 +37,16 @@ spec:
                 secretKeyRef:
                   name: workpro-app-secrets
                   key: JWT_SECRET
+            - name: CORS_ORIGIN
+              valueFrom:
+                secretKeyRef:
+                  name: workpro-app-secrets
+                  key: CORS_ORIGIN
+            - name: FRONTEND_URL
+              valueFrom:
+                secretKeyRef:
+                  name: workpro-app-secrets
+                  key: FRONTEND_URL
           envFrom:
             - configMapRef:
                 name: workpro-backend-config
@@ -101,7 +111,7 @@ spec:
         fsGroup: 10001
       containers:
         - name: frontend
-          image: workpro-frontend:1.0.0
+          image: workpro-frontend:0.0.0
           ports:
             - containerPort: 80
           envFrom:

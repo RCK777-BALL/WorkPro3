@@ -11,7 +11,9 @@ Recommended approach (manual):
 ```bash
 kubectl create secret generic workpro-app-secrets \
   --from-literal=JWT_SECRET='<32+ char secret>' \
-  --from-literal=MONGO_URI='mongodb://workpro_app:<app-pass>@mongo:27017/WorkPro3?authSource=WorkPro3&tls=true&tlsCAFile=/etc/mongo/tls/ca.crt'
+  --from-literal=MONGO_URI='mongodb://workpro_app:<app-pass>@mongo:27017/WorkPro3?authSource=WorkPro3&tls=true&tlsCAFile=/etc/mongo/tls/ca.crt' \
+  --from-literal=CORS_ORIGIN='https://app.example.com,https://admin.example.com' \
+  --from-literal=FRONTEND_URL='https://app.example.com'
 
 kubectl create secret generic workpro-mongo-secrets \
   --from-literal=MONGO_INITDB_ROOT_USERNAME='workpro_root' \
@@ -20,6 +22,12 @@ kubectl create secret generic workpro-mongo-secrets \
   --from-literal=MONGO_APP_PASS='<app-pass>' \
   --from-literal=MONGO_DB='workpro' \
   --from-literal=MONGO_AUTH_DB='workpro'
+
+kubectl create secret generic workpro-backup-secrets \
+  --from-literal=AWS_ACCESS_KEY_ID='<access-key>' \
+  --from-literal=AWS_SECRET_ACCESS_KEY='<secret-key>' \
+  --from-literal=AWS_DEFAULT_REGION='us-east-1' \
+  --from-literal=BACKUP_BUCKET='workpro-backups'
 ```
 
 Optional backend/third-party secrets can be created from the template:
@@ -30,6 +38,8 @@ kubectl apply -f k8s/secrets.example.yaml
 
 > **Note:** The example manifest includes placeholders. Do **not** apply it to production without replacing values.
 
+Frontend runtime configuration (VITE_API_URL, VITE_WS_URL, VITE_SOCKET_PATH) is provided via `ConfigMap` (`workpro-frontend-config`) rather than secrets.
+
 ## Domains + TLS
 
 The base ingress uses placeholder hosts. Use overlays or patches to set real hosts and TLS secrets:
@@ -39,14 +49,43 @@ kubectl apply -k k8s/overlays/dev
 kubectl apply -k k8s/overlays/prod
 ```
 
+Update `k8s/overlays/prod/patch-ingress.yaml` with your production hostname and TLS secret before applying.
+
 TLS options:
 
 - **Recommended:** [cert-manager](https://cert-manager.io/) with Let’s Encrypt (set `cert-manager.io/cluster-issuer`).
 - **Bring your own:** create a Kubernetes TLS secret and update the ingress `secretName` in your overlay.
 
+Example manual TLS secret:
+
+```bash
+kubectl create secret tls workpro-prod-tls \
+  --cert=/path/to/tls.crt \
+  --key=/path/to/tls.key
+```
+
 ## Images and tags
 
-Base manifests use `workpro-backend:1.0.0` and `workpro-frontend:1.0.0`. Overlays can override tags via kustomize `images`.
+Base manifests use placeholder tags (`0.0.0`). Production overlays should pin immutable digests so the cluster never pulls mutable tags.
+
+Example production update flow:
+
+1. Build + push images (CI/CD):
+   - `workpro-backend` → registry
+   - `workpro-frontend` → registry
+2. Capture digests:
+   - `docker buildx imagetools inspect <image>:<tag>` or registry UI.
+3. Update `k8s/overlays/prod/kustomization.yaml`:
+
+```yaml
+images:
+  - name: workpro-backend
+    digest: sha256:<backend-digest>
+  - name: workpro-frontend
+    digest: sha256:<frontend-digest>
+```
+
+> **Note:** Production manifests must never reference `:latest`.
 
 ## Metrics (/metrics)
 
@@ -66,11 +105,13 @@ A reference StatefulSet is provided under `k8s/mongo-replicaset.example/`. It is
 - A PVC per replica
 - Anti-affinity and PodDisruptionBudget
 - TLS certificates and `--tlsMode requireTLS`
+- A keyfile secret for internal replication auth (`mongo-keyfile`)
+- Secrets for root/app users and TLS/keyfile materials (see `k8s/mongo-replicaset.example/secrets.example.yaml`)
 
 ### Backups
 
 - **Managed:** use Atlas scheduled snapshots + PITR.
-- **Self-hosted:** schedule `mongodump` via CronJob. Example manifest: `k8s/jobs/mongo-backup-cronjob.example.yaml`.
+- **Self-hosted:** schedule `mongodump` via CronJob. Example manifest: `k8s/jobs/mongo-backup-cronjob.example.yaml` (requires `workpro-backup-secrets` for S3-compatible storage).
 
 ## External Secrets (optional)
 

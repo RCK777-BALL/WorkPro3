@@ -8,6 +8,6 @@ patches:
   - path: patch-certificate.yaml
 images:
   - name: workpro-backend
-    newTag: "1.0.0"
+    digest: sha256:1111111111111111111111111111111111111111111111111111111111111111
   - name: workpro-frontend
-    newTag: "1.0.0"
+    digest: sha256:2222222222222222222222222222222222222222222222222222222222222222

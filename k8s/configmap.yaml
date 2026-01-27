@@ -3,10 +3,8 @@ kind: ConfigMap
 metadata:
   name: workpro-backend-config
 data:
-  CORS_ORIGIN: "https://workpro.example"
   NODE_ENV: "production"
   LOG_LEVEL: "info"
-  FRONTEND_URL: "https://workpro.example"
   RATE_LIMIT_WINDOW_MS: "60000"
   RATE_LIMIT_MAX: "100"
   MOBILE_RATE_LIMIT_WINDOW_MS: "60000"

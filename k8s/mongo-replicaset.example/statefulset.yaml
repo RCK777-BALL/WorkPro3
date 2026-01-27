@@ -39,6 +39,8 @@ spec:
             - "--replSet"
             - "rs0"
             - "--auth"
+            - "--keyFile"
+            - "/etc/mongo/keyfile/keyfile"
             - "--tlsMode"
             - "requireTLS"
             - "--tlsCertificateKeyFile"
@@ -62,10 +64,16 @@ spec:
             - name: mongo-tls
               mountPath: /etc/mongo/tls
               readOnly: true
+            - name: mongo-keyfile
+              mountPath: /etc/mongo/keyfile
+              readOnly: true
       volumes:
         - name: mongo-tls
           secret:
             secretName: mongo-tls
+        - name: mongo-keyfile
+          secret:
+            secretName: mongo-keyfile
   volumeClaimTemplates:
     - metadata:
         name: mongo-data

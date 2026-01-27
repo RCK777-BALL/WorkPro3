@@ -10,6 +10,7 @@ import type {
 } from 'axios';
 import { safeLocalStorage } from '@/utils/safeLocalStorage';
 import { unwrapApiPayload, type ApiPayload } from '@/utils/apiPayload';
+import { API_URL } from '@/config/env';
 
 const DEFAULT_API_BASE_URL = 'http://localhost:5010/api';
 
@@ -32,7 +33,7 @@ const resolveBaseUrl = (value?: string) => {
   return `${normalized}/api`;
 };
 
-const baseUrl = resolveBaseUrl(import.meta.env.VITE_API_URL);
+const baseUrl = resolveBaseUrl(API_URL);
 
 export const TOKEN_KEY = 'auth:token';
 export const TENANT_KEY = 'auth:tenantId';

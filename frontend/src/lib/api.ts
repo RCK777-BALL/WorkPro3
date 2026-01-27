@@ -11,6 +11,7 @@ import {
 } from "./http";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
 import { unwrapApiPayload, type ApiPayload } from "@/utils/apiPayload";
+import { API_URL } from "@/config/env";
 
 const DEFAULT_API_BASE_URL = "http://localhost:5010/api";
 
@@ -33,7 +34,7 @@ const resolveBaseUrl = (value?: string) => {
   return `${normalized}/api`;
 };
 
-const baseURL = resolveBaseUrl(import.meta.env.VITE_API_URL ?? import.meta.env.VITE_API_BASE_URL);
+const baseURL = resolveBaseUrl(API_URL);
 
 const clearAuthStorage = () => {
   [TOKEN_KEY, TENANT_KEY, SITE_KEY, FALLBACK_TOKEN_KEY, USER_STORAGE_KEY].forEach((key) => {

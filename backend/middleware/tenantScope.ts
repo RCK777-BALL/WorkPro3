@@ -82,7 +82,7 @@ const tenantScope: AuthedRequestHandler = async (req, res: Response, next): Prom
   }
 
   try {
-    resolvedTenant = await ensureTenant(resolvedTenant);
+    resolvedTenant = await ensureTenantSite(resolvedTenant);
   } catch (error) {
     logger.error("tenantScope: unable to resolve tenant context", {
       tenantId: resolvedTenant,

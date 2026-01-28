@@ -581,6 +581,7 @@ function SortableSidebarItem({ item, collapsed, isActive }: SortableSidebarItemP
     <li ref={setNodeRef} style={style} className="group relative">
       <NavLink
         to={item.to}
+        ref={setActivatorNodeRef}
         title={collapsed ? item.label : undefined}
         className={({ isActive: linkActive }) =>
           clsx(
@@ -590,8 +591,11 @@ function SortableSidebarItem({ item, collapsed, isActive }: SortableSidebarItemP
               ? "bg-blue-600 text-white shadow"
               : "text-white/80 hover:bg-blue-900/40 hover:text-white",
             (isDragging || isActive) && "ring-2 ring-blue-400",
+            isDragging ? "cursor-grabbing" : "cursor-grab",
           )
         }
+        {...attributes}
+        {...listeners}
       >
         <item.icon className="h-5 w-5" />
         {!collapsed && (
@@ -605,16 +609,11 @@ function SortableSidebarItem({ item, collapsed, isActive }: SortableSidebarItemP
           </span>
         )}
         <span
-          ref={setActivatorNodeRef}
-          {...attributes}
-          {...listeners}
           className={clsx(
             "ml-auto rounded-md p-1 text-white/40 transition group-hover:text-white",
             collapsed ? "hidden" : "opacity-60",
           )}
-          role="button"
-          tabIndex={0}
-          aria-label={`Reorder ${item.label}`}
+          aria-hidden="true"
         >
           <GripVertical className="h-4 w-4" />
         </span>

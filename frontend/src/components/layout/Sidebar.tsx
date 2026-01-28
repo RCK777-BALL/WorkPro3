@@ -582,9 +582,6 @@ function SortableSidebarItem({ item, collapsed, isActive }: SortableSidebarItemP
       <NavLink
         to={item.to}
         title={collapsed ? item.label : undefined}
-        ref={setActivatorNodeRef}
-        {...attributes}
-        {...listeners}
         className={({ isActive: linkActive }) =>
           clsx(
             "flex items-center rounded-xl px-3 py-2 transition touch-manipulation",
@@ -608,11 +605,16 @@ function SortableSidebarItem({ item, collapsed, isActive }: SortableSidebarItemP
           </span>
         )}
         <span
+          ref={setActivatorNodeRef}
+          {...attributes}
+          {...listeners}
           className={clsx(
             "ml-auto rounded-md p-1 text-white/40 transition group-hover:text-white",
             collapsed ? "hidden" : "opacity-60",
           )}
-          aria-hidden="true"
+          role="button"
+          tabIndex={0}
+          aria-label={`Reorder ${item.label}`}
         >
           <GripVertical className="h-4 w-4" />
         </span>

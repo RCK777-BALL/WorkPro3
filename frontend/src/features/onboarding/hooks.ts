@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from 'react-query';
 import toast from 'react-hot-toast';
 
 import { dismissOnboardingReminder, fetchOnboardingState, resetOnboardingState } from '@/api/onboarding';
+import { useScopeContext } from '@/context/ScopeContext';
 import { cloneTemplateIntoTenant, fetchInspectionForms, fetchTemplateLibrary } from '@/api/templates';
 import { PM_TEMPLATES_QUERY_KEY } from '@/features/pm/hooks';
 import type { OnboardingStepKey, PMTemplateLibraryItem } from '@/types';
@@ -14,13 +15,16 @@ export const ONBOARDING_QUERY_KEY = ['onboarding', 'state'] as const;
 export const PM_TEMPLATE_LIBRARY_QUERY_KEY = ['templates', 'library'] as const;
 export const INSPECTION_LIBRARY_QUERY_KEY = ['templates', 'inspections'] as const;
 
-export const useOnboardingState = (options?: { enabled?: boolean }) =>
-  useQuery({
-    queryKey: ONBOARDING_QUERY_KEY,
+export const useOnboardingState = (options?: { enabled?: boolean }) => {
+  const { activeTenant } = useScopeContext();
+  const tenantId = activeTenant?.id ?? null;
+  return useQuery({
+    queryKey: [...ONBOARDING_QUERY_KEY, tenantId],
     queryFn: fetchOnboardingState,
     staleTime: 30_000,
     enabled: options?.enabled ?? true,
   });
+};
 
 export const usePmTemplateLibrary = () =>
   useQuery({ queryKey: PM_TEMPLATE_LIBRARY_QUERY_KEY, queryFn: fetchTemplateLibrary, staleTime: 60_000 });

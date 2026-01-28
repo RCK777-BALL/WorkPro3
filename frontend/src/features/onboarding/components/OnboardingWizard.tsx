@@ -140,6 +140,26 @@ export const OnboardingWizard = () => {
 
   const activeStep = useMemo(() => steps.find((step) => step.key === activeKey) ?? steps[0], [activeKey, steps]);
 
+  const handleDismissReminder = async () => {
+    try {
+      await dismissReminder.mutateAsync();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to snooze reminder';
+      toast.error(message);
+    }
+  };
+
+  const handleResetOnboarding = async () => {
+    const confirmed = window.confirm('Reset onboarding progress for this tenant?');
+    if (!confirmed) return;
+    try {
+      await resetOnboarding.mutateAsync();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to reset onboarding';
+      toast.error(message);
+    }
+  };
+
   if (isLoading) {
     return (
       <section className="rounded-3xl border border-white/10 bg-slate-900/60 p-6 text-white">
@@ -244,26 +264,6 @@ export const OnboardingWizard = () => {
       </section>
     );
   }
-
-  const handleDismissReminder = async () => {
-    try {
-      await dismissReminder.mutateAsync();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to snooze reminder';
-      toast.error(message);
-    }
-  };
-
-  const handleResetOnboarding = async () => {
-    const confirmed = window.confirm('Reset onboarding progress for this tenant?');
-    if (!confirmed) return;
-    try {
-      await resetOnboarding.mutateAsync();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to reset onboarding';
-      toast.error(message);
-    }
-  };
 
   return (
     <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white shadow-xl">

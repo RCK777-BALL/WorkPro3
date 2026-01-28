@@ -566,15 +566,8 @@ type SortableSidebarItemProps = {
 };
 
 function SortableSidebarItem({ item, collapsed, isActive }: SortableSidebarItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    setActivatorNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: item.id });
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
+    useSortable({ id: item.id });
   const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -589,6 +582,9 @@ function SortableSidebarItem({ item, collapsed, isActive }: SortableSidebarItemP
       <NavLink
         to={item.to}
         title={collapsed ? item.label : undefined}
+        ref={setActivatorNodeRef}
+        {...attributes}
+        {...listeners}
         className={({ isActive: linkActive }) =>
           clsx(
             "flex items-center rounded-xl px-3 py-2 transition touch-manipulation",
@@ -611,20 +607,16 @@ function SortableSidebarItem({ item, collapsed, isActive }: SortableSidebarItemP
             ) : null}
           </span>
         )}
+        <span
+          className={clsx(
+            "ml-auto rounded-md p-1 text-white/40 transition group-hover:text-white",
+            collapsed ? "hidden" : "opacity-60",
+          )}
+          aria-hidden="true"
+        >
+          <GripVertical className="h-4 w-4" />
+        </span>
       </NavLink>
-      <button
-        type="button"
-        ref={setActivatorNodeRef}
-        {...attributes}
-        {...listeners}
-        className={clsx(
-          "absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-white/40 transition hover:text-white",
-          collapsed ? "opacity-0 group-hover:opacity-100" : "opacity-60",
-        )}
-        aria-label={`Reorder ${item.label}`}
-      >
-        <GripVertical className="h-4 w-4" />
-      </button>
     </li>
   );
 }

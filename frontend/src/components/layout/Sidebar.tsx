@@ -606,9 +606,10 @@ function SortableSidebarItem({ item, collapsed, isActive }: SortableSidebarItemP
           </span>
         )}
         <span className="ml-auto">
-          <button
-            type="button"
+          <span
             ref={setActivatorNodeRef}
+            role="button"
+            tabIndex={0}
             className={clsx(
               "rounded-md p-1 text-white/40 transition group-hover:text-white",
               collapsed ? "hidden" : "opacity-60",
@@ -623,7 +624,7 @@ function SortableSidebarItem({ item, collapsed, isActive }: SortableSidebarItemP
             {...listeners}
           >
             <GripVertical className="h-4 w-4" />
-          </button>
+          </span>
         </span>
       </NavLink>
     </li>

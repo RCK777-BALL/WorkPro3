@@ -18,7 +18,7 @@
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
     "swagger:check": "ts-node utils/swagger.ts",
     "lint": "eslint .",
-    "prepare": "husky install || true",
+    "prepare": "husky",
     "fix:backend": "node ../fixWorkPro.js backend"
   },
   "dependencies": {
@@ -109,7 +109,8 @@
   "overrides": {
     "qs": "6.14.1",
     "rollup": "4.46.2",
-    "@rollup/*": "4.46.2"
+    "@rollup/*": "4.46.2",
+    "fast-xml-parser": "^5.3.4"
   },
   "engines": {
     "node": ">=18"

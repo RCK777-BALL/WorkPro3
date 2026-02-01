@@ -8,6 +8,7 @@ import {
   type Response,
   type NextFunction,
 } from 'express';
+import { randomUUID } from 'crypto';
 import rateLimit from 'express-rate-limit';
 import passport from 'passport';
 import bcrypt from 'bcryptjs';
@@ -132,15 +133,18 @@ const sanitizeRedirect = (value: string | undefined): string | undefined => {
   if (!trimmed.startsWith('/')) {
     return undefined;
   }
+  if (trimmed.startsWith('/login') || trimmed.startsWith('/auth/callback')) {
+    return undefined;
+  }
   return trimmed;
 };
 
-const getRequestedState = (req: Request): string | undefined => {
+const getRequestedRedirect = (req: Request): string | undefined => {
   if (typeof req.query.state === 'string') {
-    return req.query.state;
+    return sanitizeRedirect(req.query.state);
   }
   if (typeof req.query.redirect === 'string') {
-    return req.query.redirect;
+    return sanitizeRedirect(req.query.redirect);
   }
   return undefined;
 };
@@ -163,42 +167,19 @@ const recordAuthEvent = async ({
     details,
   });
 
-const buildRedirectUrl = (
-  token: string,
-  meta: {
-    email: string;
-    tenantId?: string | undefined;
-    siteId?: string | undefined;
-    roles?: string[] | undefined;
-    userId?: string | undefined;
-    redirect?: string | undefined;
-  },
-): string => {
-  const base = process.env.FRONTEND_URL || 'http://localhost:5173/login';
+const buildFrontendCallbackUrl = (token: string): string => {
+  const base = process.env.FRONTEND_URL || 'http://localhost:5173';
   let url: URL;
   try {
     url = new URL(base);
   } catch {
-    url = new URL('http://localhost:5173/login');
+    url = new URL('http://localhost:5173');
   }
 
-  url.searchParams.set('token', token);
-  url.searchParams.set('email', meta.email);
-  if (meta.tenantId) {
-    url.searchParams.set('tenantId', meta.tenantId);
-  }
-  if (meta.siteId) {
-    url.searchParams.set('siteId', meta.siteId);
-  }
-  if (meta.roles && meta.roles.length > 0) {
-    url.searchParams.set('roles', meta.roles.join(','));
-  }
-  if (meta.userId) {
-    url.searchParams.set('userId', meta.userId);
-  }
-  if (meta.redirect) {
-    url.searchParams.set('redirect', meta.redirect);
-  }
+  url.pathname = '/auth/callback';
+  url.search = '';
+  url.hash = '';
+  url.searchParams.set('ssoToken', token);
   return url.toString();
 };
 
@@ -208,14 +189,6 @@ const extractPassportRoles = (user: unknown): string[] => {
   }
   const payload = user as { roles?: unknown; role?: unknown };
   return normalizeRoles(payload.roles ?? payload.role);
-};
-
-const extractPassportId = (user: unknown): string | undefined => {
-  if (!user || typeof user !== 'object') {
-    return undefined;
-  }
-  const payload = user as { id?: unknown; _id?: unknown };
-  return toStringId(payload.id) ?? toStringId(payload._id);
 };
 
 const loginLimiter = rateLimit({
@@ -272,6 +245,10 @@ const bootstrapRotationSchema = z.object({
   mfaToken: z.string().min(1, 'MFA token is required'),
 });
 
+const ssoCallbackSchema = z.object({
+  token: z.string().min(1, 'SSO token is required'),
+});
+
 const FAKE_PASSWORD_HASH = bcrypt.hashSync('invalid-password', 10);
 
 const AUTH_COOKIE_NAME = 'auth';
@@ -280,6 +257,10 @@ const SECURITY_POLICY = getSecurityPolicy();
 const SHORT_SESSION_MS = SECURITY_POLICY.sessions.shortTtlMs;
 const LONG_SESSION_MS = SECURITY_POLICY.sessions.longTtlMs;
 const ROTATION_TOKEN_PURPOSE = 'bootstrap-rotation';
+const STATE_TOKEN_PURPOSE = 'oauth-state';
+const STATE_TOKEN_TTL = '10m';
+const SSO_CALLBACK_TOKEN_PURPOSE = 'sso-callback';
+const SSO_CALLBACK_TOKEN_TTL = '5m';
 
 type AuthUser = {
   tenantId?: string;
@@ -336,12 +317,7 @@ const decodeRotationToken = (token: string): { id: string } | null => {
   }
 };
 
-const sendAuthSuccess = (
-  res: Response,
-  authUser: AuthUser,
-  token: string,
-  remember: boolean,
-): void => {
+const setAuthCookie = (res: Response, token: string, remember: boolean): void => {
   const maxAge = remember ? LONG_SESSION_MS : SHORT_SESSION_MS;
 
   res.cookie(AUTH_COOKIE_NAME, token, {
@@ -350,17 +326,104 @@ const sendAuthSuccess = (
     secure: isCookieSecure(),
     maxAge,
   });
+};
+
+const sendAuthSuccess = (
+  res: Response,
+  authUser: AuthUser,
+  token: string,
+  remember: boolean,
+  extra?: Record<string, unknown>,
+): void => {
+  setAuthCookie(res, token, remember);
 
   sendResponse(
     res,
     {
       token,
       user: authUser,
+      ...(extra ?? {}),
     },
     null,
     200,
     'Login successful',
   );
+};
+
+type OAuthStatePayload = {
+  purpose: typeof STATE_TOKEN_PURPOSE;
+  redirect?: string;
+  nonce: string;
+};
+
+type SsoCallbackPayload = {
+  purpose: typeof SSO_CALLBACK_TOKEN_PURPOSE;
+  id: string;
+  tenantId: string;
+  siteId?: string;
+  redirect?: string;
+  provider?: string;
+};
+
+const signStateToken = (redirect?: string): string | null => {
+  try {
+    const secret = getJwtSecret();
+    const payload: OAuthStatePayload = {
+      purpose: STATE_TOKEN_PURPOSE,
+      redirect: redirect ?? undefined,
+      nonce: randomUUID(),
+    };
+    return jwt.sign(payload, secret, { expiresIn: STATE_TOKEN_TTL });
+  } catch (error) {
+    logger.error('Unable to sign OAuth state token', error);
+    return null;
+  }
+};
+
+const verifyStateToken = (token: string | undefined): OAuthStatePayload | null => {
+  if (!token) return null;
+  try {
+    const secret = getJwtSecret();
+    const payload = jwt.verify(token, secret) as Partial<OAuthStatePayload>;
+    if (payload.purpose !== STATE_TOKEN_PURPOSE || !payload.nonce) {
+      return null;
+    }
+    return payload as OAuthStatePayload;
+  } catch (error) {
+    logger.warn('Invalid OAuth state token', error);
+    return null;
+  }
+};
+
+const signSsoCallbackToken = (payload: Omit<SsoCallbackPayload, 'purpose'>): string | null => {
+  try {
+    const secret = getJwtSecret();
+    return jwt.sign(
+      {
+        ...payload,
+        purpose: SSO_CALLBACK_TOKEN_PURPOSE,
+      },
+      secret,
+      { expiresIn: SSO_CALLBACK_TOKEN_TTL },
+    );
+  } catch (error) {
+    logger.error('Unable to sign SSO callback token', error);
+    return null;
+  }
+};
+
+const verifySsoCallbackToken = (token: string): SsoCallbackPayload | null => {
+  try {
+    const secret = getJwtSecret();
+    const payload = jwt.verify(token, secret) as Partial<SsoCallbackPayload>;
+    if (payload.purpose !== SSO_CALLBACK_TOKEN_PURPOSE || !payload.id || !payload.tenantId) {
+      return null;
+    }
+    return payload as SsoCallbackPayload;
+  } catch (error) {
+    logger.warn('Invalid SSO callback token', error);
+    return null;
+  }
 };
 
 const setupMfa = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -616,6 +679,71 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
   }
 });
 
+router.post('/sso/callback', loginLimiter, async (req: Request, res: Response, next: NextFunction) => {
+  const parsed = ssoCallbackSchema.safeParse(req.body);
+  if (!parsed.success) {
+    sendResponse(res, null, 'Invalid request.', 400);
+    return;
+  }
+
+  const payload = verifySsoCallbackToken(parsed.data.token);
+  if (!payload) {
+    sendResponse(res, null, 'Invalid or expired SSO token.', 401);
+    return;
+  }
+
+  try {
+    const user = await User.findById(payload.id).select(
+      '+tenantId +tokenVersion +email +name +roles +role +siteId +active',
+    );
+
+    if (!user || user.active === false) {
+      sendResponse(res, null, 'User is disabled', 403);
+      return;
+    }
+
+    const userTenantId = toStringId(user.tenantId);
+    if (userTenantId && payload.tenantId && userTenantId !== payload.tenantId) {
+      sendResponse(res, null, 'Invalid tenant for user', 403);
+      return;
+    }
+
+    let secret: string;
+    try {
+      secret = getJwtSecret();
+    } catch {
+      sendResponse(res, null, 'Server configuration issue', 500);
+      return;
+    }
+
+    const authUser = toAuthUser(user);
+    const emailForToken = typeof authUser.email === 'string' ? authUser.email : user.email ?? '';
+    const token = jwt.sign(
+      {
+        id: authUser.id,
+        email: emailForToken,
+        tenantId: authUser.tenantId,
+        tokenVersion: user.tokenVersion,
+        session: buildSessionBinding(req),
+      },
+      secret,
+      { expiresIn: TOKEN_TTL },
+    );
+
+    await recordAuthEvent({
+      user,
+      action: 'sso_callback_success',
+      tenantId: authUser.tenantId,
+      details: { provider: payload.provider },
+    });
+
+    sendAuthSuccess(res, authUser, token, false, { redirect: payload.redirect });
+  } catch (err) {
+    logger.error('SSO callback error:', err);
+    next(err);
+  }
+});
+
 router.post('/bootstrap/rotate', async (req: Request, res: Response, next: NextFunction) => {
   const parsed = bootstrapRotationSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -764,11 +892,18 @@ router.get('/oauth/:provider', async (req: Request, res: Response, next: NextFun
     return;
   }
 
+  const redirect = getRequestedRedirect(req);
+  const state = signStateToken(redirect);
+  if (!state) {
+    sendResponse(res, null, 'Unable to initiate SSO', 500);
+    return;
+  }
+
   try {
     await new Promise<void>((resolve, reject) => {
       const auth = passport.authenticate(provider, {
         scope: getOAuthScope(provider),
-        state: getRequestedState(req),
+        state,
       });
       auth(req, res, (err: unknown) => (err ? reject(err) : resolve()));
     });
@@ -823,11 +958,18 @@ router.get('/oidc/:provider', async (req: Request, res: Response, next: NextFunc
     return;
   }
 
+  const redirect = getRequestedRedirect(req);
+  const state = signStateToken(redirect);
+  if (!state) {
+    sendResponse(res, null, 'Unable to initiate SSO', 500);
+    return;
+  }
+
   try {
     await new Promise<void>((resolve, reject) => {
       const auth = passport.authenticate(provider, {
         scope: ['openid', 'profile', 'email'],
-        state: getRequestedState(req),
+        state,
       });
       auth(req, res, (err: unknown) => (err ? reject(err) : resolve()));
     });
@@ -876,36 +1018,30 @@ router.post('/saml/:tenantId/acs', async (req: Request, res: Response, next: Nex
       return;
     }
 
-    const tokenPayload = {
-      id: user._id.toString(),
-      email: user.email,
-      tenantId,
-      roles: user.roles,
-      tokenVersion: user.tokenVersion,
-      session: buildSessionBinding(req),
-    } as const;
-
-    const token = jwt.sign(tokenPayload, getJwtSecret(), { expiresIn: TOKEN_TTL });
-
     await recordAuthEvent({
       user,
       action: 'saml_login_success',
       details: { relayState: assertion.relayState },
     });
 
-    const redirectUrl = buildRedirectUrl(token, {
-      email: user.email,
+    const redirect = sanitizeRedirect(assertion.relayState);
+    const ssoToken = signSsoCallbackToken({
+      id: user._id.toString(),
       tenantId,
       siteId: toStringId(user.siteId),
-      roles: user.roles,
-      userId: user._id.toString(),
-      redirect: sanitizeRedirect(assertion.relayState),
+      redirect,
+      provider: 'saml',
     });
+    if (!ssoToken) {
+      sendResponse(res, null, 'Server configuration issue', 500);
+      return;
+    }
+
+    const redirectUrl = buildFrontendCallbackUrl(ssoToken);
 
     sendResponse(
       res,
       {
-        token,
         redirectUrl,
       },
       null,
@@ -934,20 +1070,11 @@ const handlePassportCallback = (
         return;
       }
 
-      let secret: string;
-      try {
-        secret = getJwtSecret();
-      } catch {
-        sendResponse(res, null, 'Server configuration issue', 500);
-        return;
-      }
-
       const email = (user as { email?: unknown }).email;
       assertEmail(email);
 
       const tenantId = toStringId((user as { tenantId?: unknown }).tenantId);
       const siteId = toStringId((user as { siteId?: unknown }).siteId);
-      const userId = extractPassportId(user);
       const roles = extractPassportRoles(user);
 
       if (!tenantId) {
@@ -972,25 +1099,25 @@ const handlePassportCallback = (
         return;
       }
 
-      const tokenPayload: Record<string, unknown> = {
-        email,
-        tenantId,
-        id: provisionedUser._id.toString(),
-        roles: provisionedUser.roles,
-        siteId: toStringId(provisionedUser.siteId) ?? siteId,
-        tokenVersion: provisionedUser.tokenVersion,
-      };
-
-      const token = jwt.sign(
-        {
-          ...tokenPayload,
-          session: buildSessionBinding(req),
-        },
-        secret,
-        {
-          expiresIn: TOKEN_TTL,
-        },
+      const statePayload = verifyStateToken(
+        typeof req.query.state === 'string' ? req.query.state : undefined,
       );
+      if (!statePayload) {
+        sendResponse(res, null, 'Invalid state parameter', 400);
+        return;
+      }
+
+      const ssoToken = signSsoCallbackToken({
+        id: provisionedUser._id.toString(),
+        tenantId,
+        siteId: toStringId(provisionedUser.siteId) ?? siteId,
+        redirect: statePayload.redirect,
+        provider,
+      });
+      if (!ssoToken) {
+        sendResponse(res, null, 'Server configuration issue', 500);
+        return;
+      }
 
       void recordAuthEvent({
         action: 'sso_login_success',
@@ -999,22 +1126,7 @@ const handlePassportCallback = (
         details: { provider, email, roles: provisionedUser.roles, created },
       });
 
-      const stateValue =
-        typeof req.query.state === 'string'
-          ? req.query.state
-          : typeof req.query.redirect === 'string'
-            ? req.query.redirect
-            : undefined;
-      const redirectHint = sanitizeRedirect(stateValue);
-
-      const redirectUrl = buildRedirectUrl(token, {
-        email,
-        tenantId,
-        siteId,
-        roles,
-        userId,
-        redirect: redirectHint,
-      });
+      const redirectUrl = buildFrontendCallbackUrl(ssoToken);
       res.redirect(redirectUrl);
     } catch (error) {
       next(error);

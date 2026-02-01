@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useComputedColorScheme, useMantineTheme } from '@mantine/core';
 import Badge from '@common/Badge';
@@ -10,9 +10,10 @@ import Avatar from '@common/Avatar';
 import Button from '@common/Button';
 import WorkHistoryCard from './WorkHistoryCard';
 import { Users } from 'lucide-react';
-import type { Department, TeamMember, WorkHistory, WorkHistoryEntry } from '@/types';
+import type { Department, TeamMember, WorkHistory, WorkHistoryEntry, WorkHistoryMetrics } from '@/types';
 import { getTeamRoleLabel, normalizeTeamRole } from '@/constants/teamRoles';
 import { useBorderPreferences } from '@/context/BorderPreferencesContext';
+import { fetchWorkHistoryByMember } from '@/api/workHistory';
 
 interface TeamTableProps {
   teamMembers: TeamMember[];
@@ -51,6 +52,9 @@ const TeamTable: React.FC<TeamTableProps> = ({
   onRowClick,
 }) => {
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [workHistoryByMemberId, setWorkHistoryByMemberId] = useState<Record<string, WorkHistory | null>>({});
+  const [workHistoryErrors, setWorkHistoryErrors] = useState<Record<string, string>>({});
+  const [workHistoryLoading, setWorkHistoryLoading] = useState<string | null>(null);
   const theme = useMantineTheme();
   const colorScheme = useComputedColorScheme('dark');
   const { borderConfig } = useBorderPreferences();
@@ -138,65 +142,72 @@ const TeamTable: React.FC<TeamTableProps> = ({
     }
   };
 
-  // Updated work history data to match the WorkHistoryCard interface
-  const sampleWorkHistory: WorkHistory = {
-    metrics: {
-      safety: {
-        incidentRate: 0.5,
-        lastIncidentDate: '2024-01-15',
-        safetyCompliance: 98,
-        nearMisses: 3,
-        safetyMeetingsAttended: 12
-      },
-      people: {
-        attendanceRate: 97,
-        teamCollaboration: 4.5,
-        trainingHours: 24,
-        certifications: ['Safety Protocol', 'Equipment Operation'],
-        mentorshipHours: 8
-      },
-      productivity: {
-        completedTasks: 45,
-        onTimeCompletion: 92,
-        averageResponseTime: '1.8h',
-        overtimeHours: 12,
-        taskEfficiencyRate: 95
-      },
-      improvement: {
-        costSavings: 15000,
-        suggestionsSubmitted: 4,
-        suggestionsImplemented: 3,
-        processImprovements: 2
-      }
+  const emptyMetrics: WorkHistoryMetrics = {
+    safety: {
+      incidentRate: 0,
+      lastIncidentDate: '',
+      safetyCompliance: 0,
+      nearMisses: 0,
+      safetyMeetingsAttended: 0,
     },
-    recentWork: [
-      {
-        id: '1',
-        date: '2024-03-15',
-        type: 'work_order',
-        title: 'HVAC System Maintenance',
-        status: 'completed',
-        duration: 3,
-        notes: 'Completed ahead of schedule'
-      },
-      {
-        id: '2',
-        date: '2024-03-14',
-        type: 'maintenance',
-        title: 'Conveyor Belt Inspection',
-        status: 'completed',
-        duration: 2
-      },
-      {
-        id: '3',
-        date: '2024-03-13',
-        type: 'training',
-        title: 'Safety Protocol Training',
-        status: 'completed',
-        duration: 4
-      }
-    ] as WorkHistoryEntry[]
+    people: {
+      attendanceRate: 0,
+      teamCollaboration: 0,
+      trainingHours: 0,
+      certifications: [],
+      mentorshipHours: 0,
+    },
+    productivity: {
+      completedTasks: 0,
+      onTimeCompletion: 0,
+      averageResponseTime: '',
+      overtimeHours: 0,
+      taskEfficiencyRate: 0,
+    },
+    improvement: {
+      costSavings: 0,
+      suggestionsSubmitted: 0,
+      suggestionsImplemented: 0,
+      processImprovements: 0,
+    },
   };
+
+  useEffect(() => {
+    const memberId = selectedMember?.id;
+    if (!memberId) return;
+    if (workHistoryByMemberId[memberId] !== undefined || workHistoryLoading === memberId) {
+      return;
+    }
+
+    setWorkHistoryLoading(memberId);
+    setWorkHistoryErrors((prev) => {
+      if (!prev[memberId]) return prev;
+      const next = { ...prev };
+      delete next[memberId];
+      return next;
+    });
+
+    fetchWorkHistoryByMember(memberId)
+      .then((data) => {
+        setWorkHistoryByMemberId((prev) => ({
+          ...prev,
+          [memberId]: data,
+        }));
+      })
+      .catch(() => {
+        setWorkHistoryErrors((prev) => ({
+          ...prev,
+          [memberId]: 'Unable to load work history.',
+        }));
+        setWorkHistoryByMemberId((prev) => ({
+          ...prev,
+          [memberId]: null,
+        }));
+      })
+      .finally(() => {
+        setWorkHistoryLoading((current) => (current === memberId ? null : current));
+      });
+  }, [selectedMember?.id, workHistoryByMemberId, workHistoryLoading]);
 
   return (
     <div className="space-y-6">
@@ -327,10 +338,29 @@ const TeamTable: React.FC<TeamTableProps> = ({
                   {selectedMember?.id === member.id && (
                     <tr>
                       <td colSpan={6} className="px-6 py-4" style={borderStyles.bodyCell}>
-                        <WorkHistoryCard
-                          metrics={sampleWorkHistory.metrics}
-                          recentWork={sampleWorkHistory.recentWork}
-                        />
+                        {workHistoryLoading === member.id && (
+                          <div className="text-sm text-neutral-500 dark:text-neutral-300">
+                            Loading work history...
+                          </div>
+                        )}
+                        {workHistoryErrors[member.id] && (
+                          <div className="text-sm text-error-500">
+                            {workHistoryErrors[member.id]}
+                          </div>
+                        )}
+                        {workHistoryByMemberId[member.id] && (
+                          <WorkHistoryCard
+                            metrics={workHistoryByMemberId[member.id]?.metrics ?? emptyMetrics}
+                            recentWork={workHistoryByMemberId[member.id]?.recentWork ?? ([] as WorkHistoryEntry[])}
+                          />
+                        )}
+                        {workHistoryByMemberId[member.id] === null &&
+                          workHistoryLoading !== member.id &&
+                          !workHistoryErrors[member.id] && (
+                          <div className="rounded-md border border-dashed border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600 dark:border-neutral-700 dark:bg-neutral-900/60 dark:text-neutral-300">
+                            No work history available yet for this team member.
+                          </div>
+                        )}
                       </td>
                     </tr>
                   )}

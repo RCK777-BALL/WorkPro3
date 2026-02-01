@@ -35,7 +35,7 @@ type RawAuthUser = {
   permissions?: string[];
 };
 
-const AUTH_ROUTE_PREFIXES = ['/login', '/register', '/forgot'];
+const AUTH_ROUTE_PREFIXES = ['/login', '/register', '/forgot', '/auth/callback'];
 
 const allowedRoles: AuthUser['role'][] = [
   'global_admin',
@@ -249,6 +249,7 @@ const clearAuthStorage = () => persistAuthStorage(null);
 interface AuthContextType {
   user: AuthUser | null;
   setUser: (user: AuthUser | null) => void;
+  completeAuthSession: (session: { user: unknown; token?: string }) => AuthSession;
   login: (
     email: string,
     password: string,
@@ -337,6 +338,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [handleSetUser, isAuthRoute, pathname]);
 
+  const applyAuthSession = useCallback(
+    (rawUser: unknown, token?: string) => {
+      if (!rawUser || typeof rawUser !== 'object') {
+        throw new Error('Invalid login response');
+      }
+
+      const rawUserRecord = rawUser as Record<string, unknown>;
+      const hasExplicitAuthShape =
+        typeof rawUserRecord.email === 'string' &&
+        (('name' in rawUserRecord && 'role' in rawUserRecord) || 'roles' in rawUserRecord);
+
+      const userInput = hasExplicitAuthShape
+        ? (rawUserRecord as AuthUserInput)
+        : toAuthUser(rawUserRecord as unknown as RawAuthUser);
+
+      const normalizedUser = normalizeAuthUser(userInput);
+
+      const session: AuthSession = {
+        user: normalizedUser,
+        ...(token ? { token } : {}),
+      };
+
+      handleSetUser(normalizedUser);
+
+      persistAuthStorage(normalizedUser, session.token);
+
+      return session;
+    },
+    [handleSetUser],
+  );
+
   const login = useCallback(
     async (email: string, password: string, remember = false) => {
       const response = await api.post<unknown>('/auth/login', {
@@ -392,33 +424,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         token?: string;
       };
 
-      if (!rawUser || typeof rawUser !== 'object') {
-        throw new Error('Invalid login response');
-      }
-
-      const rawUserRecord = rawUser as Record<string, unknown>;
-      const hasExplicitAuthShape =
-        typeof rawUserRecord.email === 'string' &&
-        (('name' in rawUserRecord && 'role' in rawUserRecord) || 'roles' in rawUserRecord);
-
-      const userInput = hasExplicitAuthShape
-        ? (rawUserRecord as AuthUserInput)
-        : toAuthUser(rawUserRecord as unknown as RawAuthUser);
-
-      const normalizedUser = normalizeAuthUser(userInput);
-
-      const session: AuthSession = {
-        user: normalizedUser,
-        ...(token ? { token } : {}),
-      };
-
-      handleSetUser(normalizedUser);
-
-      persistAuthStorage(normalizedUser, session.token);
-
-      return session;
+      return applyAuthSession(rawUser, token);
     },
-    [handleSetUser]
+    [applyAuthSession]
+  );
+
+  const completeAuthSession = useCallback(
+    (session: { user: unknown; token?: string }) => applyAuthSession(session.user, session.token),
+    [applyAuthSession],
   );
 
   const resetAuthState = useCallback(() => {
@@ -443,7 +456,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, setUser: handleSetUser, login, logout, resetAuthState, loading }}
+      value={{ user, setUser: handleSetUser, completeAuthSession, login, logout, resetAuthState, loading }}
     >
       {children}
     </AuthContext.Provider>

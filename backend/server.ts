@@ -175,8 +175,14 @@ const allowedOrigins = new Set<string>(
     .filter((origin: string | undefined): origin is string => Boolean(origin)),
 );
 
-const devOrigins = ["http://localhost:5173", "http://127.0.0.1:5173", "http://0.0.0.0:5173"];
-devOrigins.forEach((origin) => allowedOrigins.add(normalizeOrigin(origin) as string));
+if (env.NODE_ENV !== "production") {
+  const devOrigins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://0.0.0.0:5173",
+  ];
+  devOrigins.forEach((origin) => allowedOrigins.add(normalizeOrigin(origin) as string));
+}
 
 type CorsOriginCallback = (err: Error | null, allow?: boolean) => void;
 
@@ -410,8 +416,57 @@ app.use((_req: Request, res: Response) => {
 
 app.use(errorHandler);
 
+const shutdown = async (reason: string, err?: Error) => {
+  if (err) {
+    logger.error(`Shutdown triggered by ${reason}`, err);
+  } else {
+    logger.warn(`Shutdown triggered by ${reason}`);
+  }
+
+  const exit = (code: number) => {
+    logger.info(`Exiting process with code ${code}`);
+    process.exit(code);
+  };
+
+  const forceExit = setTimeout(() => exit(1), 10_000);
+  forceExit.unref();
+
+  try {
+    await new Promise<void>((resolve) => {
+      httpServer.close(() => resolve());
+    });
+  } catch (closeError) {
+    logger.error("Error closing HTTP server", closeError);
+  }
+
+  try {
+    await mongoose.connection.close();
+  } catch (mongoError) {
+    logger.error("Error closing MongoDB connection", mongoError);
+  }
+
+  exit(err ? 1 : 0);
+};
+
+const registerShutdownHandlers = () => {
+  ["SIGTERM", "SIGINT"].forEach((signal) => {
+    process.on(signal, () => {
+      void shutdown(signal);
+    });
+  });
+
+  process.on("unhandledRejection", (err) => {
+    void shutdown("unhandledRejection", err as Error);
+  });
+
+  process.on("uncaughtException", (err) => {
+    void shutdown("uncaughtException", err);
+  });
+};
+
 // --- Mongo + server start ---
 if (env.NODE_ENV !== "test") {
+  registerShutdownHandlers();
   mongoose
     .connect(MONGO_URI)
     .then(async () => {
@@ -439,6 +494,7 @@ if (env.NODE_ENV !== "test") {
     })
     .catch((err) => {
       logger.error("MongoDB connection error:", err);
+      void shutdown("mongoConnectionError", err);
     });
 }
 

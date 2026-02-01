@@ -17,6 +17,7 @@ import { normalizeInventoryCollection } from "@/utils/parts";
 import { useDepartmentStore } from "@/store/departmentStore";
 import { useToast } from "@/context/ToastContext";
 import { useFailurePrediction } from "@/hooks/useAiInsights";
+import { useFeatureFlagStatus } from "@/hooks/useFeatureFlags";
 import {
   mapChecklistsFromApi,
   mapChecklistsToApi,
@@ -153,7 +154,12 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
   const stations = lineId ? stationsMap[lineId] || [] : [];
   const assetIdValue = watch("assetId") || workOrder?.assetId || initialData?.assetId;
   const descriptionValue = watch("description") || '';
-  const aiPrediction = useFailurePrediction({ workOrderId: workOrder?.id, assetId: assetIdValue });
+  const aiInsightsFlag = useFeatureFlagStatus('ai_insights_enabled');
+  const aiInsightsEnabled = Boolean(aiInsightsFlag.data?.enabled);
+  const aiPrediction = useFailurePrediction(
+    { workOrderId: workOrder?.id, assetId: assetIdValue },
+    { enabled: aiInsightsEnabled },
+  );
 
   const mergeFailureModes = (existing: string[], incoming: string[]): string[] => {
     const seen = new Map(existing.map((tag) => [tag.toLowerCase(), tag]));
@@ -622,7 +628,7 @@ const WorkOrderModal: React.FC<WorkOrderModalProps> = ({
               </div>
             </div>
           )}
-          {(workOrder?.id || assetIdValue) && (
+          {(workOrder?.id || assetIdValue) && aiInsightsEnabled && (
             <FailureInsightCard
               title="AI maintenance insights"
               insight={aiPrediction.data}

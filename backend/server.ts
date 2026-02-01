@@ -79,6 +79,7 @@ import {
   vendorRoutes,
   webhooksRoutes,
   workOrdersRoutes,
+  workHistoryRoutes,
   mobileSyncRoutes,
   inspectionRoutes,
 
@@ -381,6 +382,7 @@ app.use("/api/v1/analytics", analyticsRoutes);
 app.use("/api/ai", analyticsAIRoutes);
 app.use("/api/ai", copilotRoutes);
 app.use("/api/team", teamRoutes);
+app.use("/api/work-history", workHistoryRoutes);
 app.use("/api/theme", ThemeRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/alerts", alertRoutes);

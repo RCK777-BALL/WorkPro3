@@ -16,11 +16,14 @@ export const aiQueryKeys = {
   workOrderCopilot: (workOrderId?: string) => ['ai', 'copilot', workOrderId ?? ''],
 };
 
-export const useFailurePrediction = (params: FailurePredictionParams) =>
+export const useFailurePrediction = (
+  params: FailurePredictionParams,
+  options?: { enabled?: boolean },
+) =>
   useQuery({
     queryKey: aiQueryKeys.failurePrediction(params),
     queryFn: () => fetchFailurePrediction(params),
-    enabled: Boolean(params.workOrderId || params.assetId),
+    enabled: Boolean(params.workOrderId || params.assetId) && (options?.enabled ?? true),
     staleTime: 30_000,
   });
 
@@ -31,4 +34,3 @@ export const useWorkOrderCopilot = (workOrderId?: string) =>
     enabled: Boolean(workOrderId),
     staleTime: 30_000,
   });
-

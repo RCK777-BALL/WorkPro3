@@ -20,6 +20,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { saveAs } from 'file-saver';
 import Button from '@/components/common/Button';
+import ConfirmDialog from '@/components/common/ConfirmDialog';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import DepartmentTable from '@/components/departments/DepartmentTable';
 import DepartmentModal, { type DepartmentFormValues } from '@/components/departments/DepartmentModal';
@@ -89,6 +90,10 @@ const Departments = () => {
     line: LineWithStations | null;
   } | null>(null);
   const [lineSaving, setLineSaving] = useState(false);
+  const [lineDeleteState, setLineDeleteState] = useState<{
+    department: DepartmentHierarchy;
+    line: LineWithStations;
+  } | null>(null);
 
   const [stationModalState, setStationModalState] = useState<{
     department: DepartmentHierarchy;
@@ -463,7 +468,10 @@ const Departments = () => {
     if (!lineModalState) return;
     setLineSaving(true);
     try {
-      const plantId = lineModalState.department.plant.id;
+      const plantId =
+        lineModalState.department.plant?.id && lineModalState.department.plant.id !== 'unassigned'
+          ? lineModalState.department.plant.id
+          : undefined;
       const updated = lineModalState.line
         ? await updateLine(
             lineModalState.department.id,
@@ -483,15 +491,30 @@ const Departments = () => {
     }
   };
 
-  const handleLineDelete = async () => {
-    if (!lineModalState?.line) return;
+  const handleLineDelete = async (
+    target?: { department: DepartmentHierarchy; line: LineWithStations } | null,
+  ) => {
+    const fallback =
+      lineModalState?.line && lineModalState.department
+        ? { department: lineModalState.department, line: lineModalState.line }
+        : null;
+    const current = target ?? fallback;
+    if (!current) return;
     setLineSaving(true);
     try {
-      const plantId = lineModalState.department.plant.id;
-      const updated = await deleteLine(lineModalState.department.id, lineModalState.line.id, { plantId });
+      const plantId =
+        current.department.plant?.id && current.department.plant.id !== 'unassigned'
+          ? current.department.plant.id
+          : undefined;
+      const updated = await deleteLine(current.department.id, current.line.id, { plantId });
       replaceDepartment(updated);
       addToast('Line deleted', 'success');
-      setLineModalState(null);
+      setLineModalState((prev) =>
+        prev?.line?.id === current.line.id ? null : prev,
+      );
+      setLineDeleteState((prev) =>
+        prev?.line.id === current.line.id ? null : prev,
+      );
     } catch (err) {
       console.error('Failed to delete line', err);
       addToast('Failed to delete line', 'error');
@@ -905,7 +928,7 @@ const Departments = () => {
               }}
               onAddLine={(department) => setLineModalState({ department, line: null })}
               onEditLine={(department, line) => setLineModalState({ department, line })}
-              onDeleteLine={(department, line) => setLineModalState({ department, line })}
+              onDeleteLine={(department, line) => setLineDeleteState({ department, line })}
               onAddStation={(department, line) =>
                 setStationModalState({ department, line, station: null })
               }
@@ -979,8 +1002,21 @@ const Departments = () => {
           setLineModalState(null);
         }}
         onSave={handleLineSave}
-        {...(lineModalState?.line ? { onDelete: handleLineDelete } : {})}
+        {...(lineModalState?.line ? { onDelete: () => handleLineDelete() } : {})}
         {...(lineModalState?.line ? { onAddStation: handleSwitchToAddStation } : {})}
+      />
+
+      <ConfirmDialog
+        open={Boolean(lineDeleteState)}
+        title="Delete line?"
+        message={
+          lineDeleteState
+            ? `Deleting "${lineDeleteState.line.name}" will remove all stations and assets tied to this line.`
+            : undefined
+        }
+        confirmText="Delete line"
+        onClose={() => setLineDeleteState(null)}
+        onConfirm={() => handleLineDelete(lineDeleteState)}
       />
 
       <StationModal

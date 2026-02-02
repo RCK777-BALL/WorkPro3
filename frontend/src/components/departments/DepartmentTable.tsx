@@ -260,8 +260,9 @@ const DepartmentTable = ({
                                               variant="ghost"
                                               size="sm"
                                               onClick={() => onDeleteLine(department, line)}
+                                              className="text-error-600 hover:text-error-700 dark:text-error-400 dark:hover:text-error-300"
                                             >
-                                              <Trash2 className="mr-2 h-4 w-4" />Remove
+                                              <Trash2 className="mr-2 h-4 w-4" />Delete
                                             </Button>
                                           </div>
                                         </div>

@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from 'react';
 
+import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
 import http from '@/lib/http';
 
@@ -48,11 +49,16 @@ const Lines: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <header>
-        <h1 className="text-2xl font-semibold text-neutral-100">Plant Lines</h1>
-        <p className="text-sm text-neutral-400">
-          Review departments and associated production lines for the active plant.
-        </p>
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-neutral-100">Plant Lines</h1>
+          <p className="text-sm text-neutral-400">
+            Review departments and associated production lines for the active plant.
+          </p>
+        </div>
+        <Button size="sm" variant="primary">
+          Add Line
+        </Button>
       </header>
       <Card title="Lines overview">
         {error ? (
@@ -65,12 +71,13 @@ const Lines: React.FC = () => {
                   <th className="px-3 py-2 text-left font-medium">Line</th>
                   <th className="px-3 py-2 text-left font-medium">Department</th>
                   <th className="px-3 py-2 text-left font-medium">Stations</th>
+                  <th className="px-3 py-2 text-left font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-800">
                 {loading ? (
                   <tr>
-                    <td className="px-3 py-3" colSpan={3}>
+                    <td className="px-3 py-3" colSpan={4}>
                       Loading lines…
                     </td>
                   </tr>
@@ -80,12 +87,22 @@ const Lines: React.FC = () => {
                       <td className="px-3 py-3 font-medium text-white">{line.name}</td>
                       <td className="px-3 py-3">{line.departmentId}</td>
                       <td className="px-3 py-3">{line.stations.length}</td>
+                      <td className="px-3 py-3">
+                        <div className="flex flex-wrap gap-2">
+                          <Button size="xs" variant="outline">
+                            Edit
+                          </Button>
+                          <Button size="xs" variant="destructive">
+                            Delete
+                          </Button>
+                        </div>
+                      </td>
                     </tr>
                   ))
                 )}
                 {!loading && lines.length === 0 && !error ? (
                   <tr>
-                    <td className="px-3 py-3" colSpan={3}>
+                    <td className="px-3 py-3" colSpan={4}>
                       No lines available for this plant.
                     </td>
                   </tr>

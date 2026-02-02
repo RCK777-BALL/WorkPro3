@@ -199,6 +199,28 @@ The following tickets refine the roadmap epics into implementation-ready tasks. 
 - Dependencies: Design-system typography tokens, component audit.
 - Complexity: S
 
+## Epic: Frontend Interaction Reliability
+### Add Loading/Disabled Guards to Async Action Buttons
+- Description: Introduce consistent loading, disabled, and error feedback for async button actions (exports, webhook creation, API key creation/revocation, goods receipt submission) to prevent duplicate requests and clarify action state.
+- Acceptance Criteria: Buttons disable while requests are in-flight; loading indicators or status text appear; duplicate submissions are prevented; errors are surfaced to the user.
+- Affected Components: frontend
+- Dependencies: Shared button patterns or state hooks for async actions.
+- Complexity: S
+
+### Replace Stale Async List Updates with Functional State Setters
+- Description: Update async handlers that prepend or update list state (export jobs, webhook subscriptions, API keys) to use functional state updates, preventing race conditions and dropped items when actions occur in quick succession.
+- Acceptance Criteria: List updates use functional `setState` patterns; concurrent actions keep all items; regression tests or manual checks confirm no dropped entries.
+- Affected Components: frontend
+- Dependencies: None.
+- Complexity: S
+
+### Normalize Button Type Usage Outside Forms
+- Description: Ensure non-submit buttons explicitly declare `type="button"` in components like OIDC login and goods receipt, preventing accidental form submissions if these components are embedded in forms.
+- Acceptance Criteria: All non-submit buttons include explicit type; linting or review checklist updated to enforce button type usage; no functional regressions in login or purchasing flows.
+- Affected Components: frontend
+- Dependencies: UI linting/standards update (if applicable).
+- Complexity: XS
+
 ### Dark Mode Layering and Muted Text Pass
 - Description: Define layered dark surfaces and muted text tokens; update layouts/cards/sidebars to use layered surfaces and muted labels where appropriate.
 - Acceptance Criteria: Dark surfaces applied to at least top-level layout, cards, and modals; muted text token used for secondary labels; contrast checks documented.

@@ -319,7 +319,9 @@ export const refresh: ExpressRequestHandler = requestHandler(async (req, res) =>
 
   let decoded: JwtUser | null = null;
   try {
-    decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET ?? '') as JwtUser;
+    const refreshSecret =
+      process.env.JWT_REFRESH_SECRET ?? process.env.JWT_ACCESS_SECRET ?? process.env.JWT_SECRET ?? '';
+    decoded = jwt.verify(token, refreshSecret) as JwtUser;
   } catch (err) {
     logger.warn('Failed to refresh token', err);
   }
@@ -355,10 +357,18 @@ export const refresh: ExpressRequestHandler = requestHandler(async (req, res) =>
     payload.client = decoded.client;
   }
 
+  if ((decoded as { tokenVersion?: number }).tokenVersion !== undefined) {
+    payload.tokenVersion = (decoded as { tokenVersion?: number }).tokenVersion;
+  }
+
+  if ((decoded as { session?: unknown }).session !== undefined) {
+    payload.session = (decoded as { session?: unknown }).session;
+  }
+
   const access = signAccess(payload);
   const refreshToken = signRefresh(payload);
   setAuthCookies(res, access, refreshToken, { remember: true });
-  res.json({ data: { user: payload } });
+  res.json({ data: { user: payload, token: access } });
 }, 'refresh');
 
 export const logout: ExpressRequestHandler = requestHandler(async (_req, res) => {

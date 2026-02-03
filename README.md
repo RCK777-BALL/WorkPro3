@@ -106,6 +106,7 @@ kubectl apply -k k8s/overlays/dev
 
 See [k8s/README-production.md](k8s/README-production.md) for production-specific
 guidance on secrets, TLS, images, and MongoDB availability/backups.
+See [docs/production-readiness.md](docs/production-readiness.md) for the full production readiness checklist.
 
 ## Running tests
 
@@ -135,7 +136,11 @@ using the browser's `online` event even if the WebSocket defined by `VITE_WS_URL
 - [ ] Set ingress host and TLS secret via `k8s/overlays/prod`.
 - [ ] Update image tags/digests in `k8s/overlays/prod` (or use your CD pipeline).
 - [ ] Confirm `/metrics` is scraped by Prometheus.
+- [ ] Confirm `/api/health/live` and `/api/health/ready` probes are wired in Kubernetes.
 - [ ] Choose MongoDB strategy (managed Atlas or self-hosted replica set + backups).
+- [ ] Enable login lockouts, short-lived JWT access tokens, and refresh-token rotation (`LOGIN_LOCKOUT_*`, `JWT_*`).
+- [ ] Ensure idempotency keys are sent by offline clients (`Idempotency-Key`) to avoid duplicate updates.
+- [ ] Apply PodDisruptionBudgets and HPA manifests (`k8s/pdb.yaml`, `k8s/hpa.yaml`).
 
 ## License
 

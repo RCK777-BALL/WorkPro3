@@ -24,7 +24,7 @@ interface CookieOptions {
 const isProduction = () => process.env.NODE_ENV === 'production';
 
 const getAccessSecret = (): Secret => {
-  const secret = process.env.JWT_SECRET ?? process.env.JWT_ACCESS_SECRET;
+  const secret = process.env.JWT_ACCESS_SECRET ?? process.env.JWT_SECRET;
   if (!secret) {
     throw new Error('JWT secret is not configured');
   }

@@ -11,6 +11,8 @@ Recommended approach (manual):
 ```bash
 kubectl create secret generic workpro-app-secrets \
   --from-literal=JWT_SECRET='<32+ char secret>' \
+  --from-literal=JWT_ACCESS_SECRET='<optional separate access secret>' \
+  --from-literal=JWT_REFRESH_SECRET='<optional separate refresh secret>' \
   --from-literal=MONGO_URI='mongodb://workpro_app:<app-pass>@mongo:27017/WorkPro3?authSource=WorkPro3&tls=true&tlsCAFile=/etc/mongo/tls/ca.crt' \
   --from-literal=CORS_ORIGIN='https://app.example.com,https://admin.example.com' \
   --from-literal=FRONTEND_URL='https://app.example.com'
@@ -50,6 +52,8 @@ kubectl apply -k k8s/overlays/prod
 ```
 
 Update `k8s/overlays/prod/patch-ingress.yaml` with your production hostname and TLS secret before applying.
+
+Each overlay now defines a namespace (`workpro-dev` / `workpro-prod`). Make sure your secrets and configmaps live in the same namespace.
 
 TLS options:
 
@@ -91,6 +95,13 @@ images:
 
 The backend exposes Prometheus-compatible metrics at `/metrics` on port `5010`. Ensure your Prometheus scrape configuration uses this endpoint. The frontend does **not** expose metrics.
 
+The API liveness/readiness endpoints live at:
+
+- `/api/health/live`
+- `/api/health/ready` (returns 503 until Mongo is connected)
+
+Kubernetes probes in `k8s/deployment.yaml` use these paths.
+
 ## MongoDB strategy (HA + backups)
 
 ### Option A — Managed MongoDB (recommended)
@@ -112,6 +123,11 @@ A reference StatefulSet is provided under `k8s/mongo-replicaset.example/`. It is
 
 - **Managed:** use Atlas scheduled snapshots + PITR.
 - **Self-hosted:** schedule `mongodump` via CronJob. Example manifest: `k8s/jobs/mongo-backup-cronjob.example.yaml` (requires `workpro-backup-secrets` for S3-compatible storage).
+
+## Availability protections
+
+- PodDisruptionBudgets are defined in `k8s/pdb.yaml` to keep at least one backend and frontend pod available during node drains.
+- HorizontalPodAutoscalers are defined in `k8s/hpa.yaml` (CPU + memory).
 
 ## External Secrets (optional)
 

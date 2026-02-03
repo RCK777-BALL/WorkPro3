@@ -14,11 +14,11 @@ const resolveRouteLabel = (req: Request): string => {
 
 const requestMetrics = (req: Request, res: Response, next: NextFunction): void => {
   const start = Date.now();
-  const route = resolveRouteLabel(req);
 
   res.on('finish', () => {
     const duration = Date.now() - start;
     const status = res.statusCode?.toString() ?? '0';
+    const route = resolveRouteLabel(req);
     httpRequestDurationMs.labels(req.method, route, status).observe(duration);
     httpRequestsTotal.labels(req.method, route, status).inc();
   });

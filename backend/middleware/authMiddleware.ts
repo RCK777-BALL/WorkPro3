@@ -21,6 +21,7 @@ type DecodedToken = {
   scopes?: unknown;
   client?: string;
   session?: SessionBinding;
+  tokenVersion?: number;
 };
 
 const normalizeScopes = (input: unknown): string[] => {
@@ -110,6 +111,13 @@ export const requireAuth: AuthedRequestHandler = async (req, res, next) => {
     if (!user || user.active === false) {
       res.status(401).json({ message: 'User not found' });
       return;
+    }
+
+    if (decoded.tokenVersion !== undefined && user.tokenVersion !== undefined) {
+      if (decoded.tokenVersion !== user.tokenVersion) {
+        res.status(401).json({ message: 'Session expired' });
+        return;
+      }
     }
 
     const plainUser = toPlainUser(user, decoded) as any;

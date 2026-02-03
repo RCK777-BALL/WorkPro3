@@ -52,6 +52,35 @@ export const api = axios.create({
   withCredentials: true,
 });
 
+const refreshClient = axios.create({
+  baseURL,
+  withCredentials: true,
+});
+
+let refreshPromise: Promise<string | null> | null = null;
+
+const attemptRefresh = async (): Promise<string | null> => {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = refreshClient
+    .post("/auth/refresh")
+    .then((res) => {
+      const token =
+        (res.data as { data?: { token?: string } })?.data?.token ??
+        (res.data as { token?: string })?.token ??
+        null;
+      if (token) {
+        safeLocalStorage.setItem(TOKEN_KEY, token);
+        safeLocalStorage.setItem(FALLBACK_TOKEN_KEY, token);
+      }
+      return token;
+    })
+    .catch(() => null)
+    .finally(() => {
+      refreshPromise = null;
+    });
+  return refreshPromise;
+};
+
 api.interceptors.request.use((config) => {
   if (config.baseURL && typeof config.url === "string" && !/^https?:\/\//i.test(config.url)) {
     const baseHasTrailingSlash = config.baseURL.endsWith("/");
@@ -93,8 +122,28 @@ api.interceptors.response.use(
     typedResponse.data = unwrapApiPayload(response.data);
     return typedResponse;
   },
-  (error) => {
-    if (error.response?.status === 401) {
+  async (error) => {
+    const status = error.response?.status;
+    const originalRequest = error.config as (typeof error.config & { _retry?: boolean }) | undefined;
+    const requestUrl = typeof originalRequest?.url === "string" ? originalRequest.url : "";
+    const isAuthCall = requestUrl.includes("/auth/login") || requestUrl.includes("/auth/refresh");
+
+    if (status === 401 && originalRequest && !originalRequest._retry && !isAuthCall) {
+      originalRequest._retry = true;
+      const token = await attemptRefresh();
+      if (token) {
+        originalRequest.headers = {
+          ...(originalRequest.headers ?? {}),
+          Authorization: `Bearer ${token}`,
+        };
+        return api(originalRequest);
+      }
+      clearAuthStorage();
+      triggerUnauthorized();
+      return Promise.reject(error);
+    }
+
+    if (status === 401) {
       clearAuthStorage();
       triggerUnauthorized();
     }

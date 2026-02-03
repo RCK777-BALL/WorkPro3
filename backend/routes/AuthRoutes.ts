@@ -365,6 +365,9 @@ const clearLockoutState = (user: UserDocument) => {
 };
 
 const registerFailedLogin = async (user: UserDocument) => {
+  if (LOGIN_POLICY.maxAttempts <= 0) {
+    return;
+  }
   const now = Date.now();
   const lastFailed = user.lastFailedLoginAt?.getTime() ?? 0;
   const withinWindow = now - lastFailed <= LOGIN_POLICY.windowMs;
@@ -598,6 +601,10 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
       });
       sendResponse(res, null, 'Account temporarily locked. Try again later.', 423);
       return;
+    }
+    if (user.lockoutUntil) {
+      clearLockoutState(user);
+      await user.save();
     }
 
     const requestTenantId = resolveRequestTenant(req);

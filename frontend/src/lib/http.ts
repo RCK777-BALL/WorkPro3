@@ -55,6 +55,35 @@ const http = axios.create({
   withCredentials: true,
 });
 
+const refreshClient = axios.create({
+  baseURL: baseUrl,
+  withCredentials: true,
+});
+
+let refreshPromise: Promise<string | null> | null = null;
+
+const attemptRefresh = async (): Promise<string | null> => {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = refreshClient
+    .post('/auth/refresh')
+    .then((res) => {
+      const token =
+        (res.data as { data?: { token?: string } })?.data?.token ??
+        (res.data as { token?: string })?.token ??
+        null;
+      if (token) {
+        safeLocalStorage.setItem(TOKEN_KEY, token);
+        safeLocalStorage.setItem(FALLBACK_TOKEN_KEY, token);
+      }
+      return token;
+    })
+    .catch(() => null)
+    .finally(() => {
+      refreshPromise = null;
+    });
+  return refreshPromise;
+};
+
 const hasHeader = (headers: AxiosRequestHeaders, name: string): boolean => {
   const normalized = name.toLowerCase();
   const headerBag = headers as { has?: (header: string) => boolean };
@@ -97,8 +126,26 @@ http.interceptors.response.use(
     typedResponse.data = unwrapApiPayload(response.data);
     return typedResponse;
   },
-  (err: AxiosError) => {
-    if (err?.response?.status === 401) {
+  async (err: AxiosError) => {
+    const status = err?.response?.status;
+    const originalRequest = err.config as (typeof err.config & { _retry?: boolean }) | undefined;
+    const requestUrl = typeof originalRequest?.url === 'string' ? originalRequest.url : '';
+    const isAuthCall = requestUrl.includes('/auth/login') || requestUrl.includes('/auth/refresh');
+
+    if (status === 401 && originalRequest && !originalRequest._retry && !isAuthCall) {
+      originalRequest._retry = true;
+      const token = await attemptRefresh();
+      if (token) {
+        originalRequest.headers = {
+          ...(originalRequest.headers ?? {}),
+          Authorization: `Bearer ${token}`,
+        };
+        return http(originalRequest);
+      }
+      unauthorizedCallback?.();
+    }
+
+    if (status === 401 && isAuthCall) {
       unauthorizedCallback?.();
     }
     return Promise.reject(err);

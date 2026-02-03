@@ -20,7 +20,7 @@ const domainFromTenant = (tenant: { _id: ObjectId; slug?: string; name?: string;
   return `tenant-${tenant._id.toString().slice(-6)}.local`;
 };
 
-async function run() {
+export async function run() {
   const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/WorkPro3';
   const client = new MongoClient(uri);
 
@@ -54,7 +54,10 @@ async function run() {
   }
 }
 
-run().catch((err) => {
-  logger.error(err);
-  process.exit(1);
-});
+if (require.main === module) {
+  run().catch((err) => {
+    logger.error(err);
+    process.exit(1);
+  });
+}
+

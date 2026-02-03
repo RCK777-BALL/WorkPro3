@@ -27,8 +27,9 @@ This repo now includes production-grade defaults plus the additional guardrails 
   - Managed: Atlas snapshots + PITR.
   - Self-hosted: `k8s/jobs/mongo-backup-cronjob.example.yaml`.
 - Migrations:
-  - Existing one-off scripts live in `Backend/scripts/migrations`.
-  - New migrations should be versioned and tracked in change management; do not run ad-hoc in production without recording the run/rollback plan.
+  - Migration runner: `cd backend && npm run migrate` (supports `--dry-run` and `--list`).
+  - Existing scripts live in `Backend/scripts/migrations` and now export `run()` so they are tracked in the `migrations` collection.
+  - Do not run ad-hoc in production without a recorded run/rollback plan.
 
 ## 4) Observability (must-have)
 

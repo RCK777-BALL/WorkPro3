@@ -141,6 +141,7 @@ using the browser's `online` event even if the WebSocket defined by `VITE_WS_URL
 - [ ] Enable login lockouts, short-lived JWT access tokens, and refresh-token rotation (`LOGIN_LOCKOUT_*`, `JWT_*`).
 - [ ] Ensure idempotency keys are sent by offline clients (`Idempotency-Key`) to avoid duplicate updates.
 - [ ] Apply PodDisruptionBudgets and HPA manifests (`k8s/pdb.yaml`, `k8s/hpa.yaml`).
+- [ ] Run `cd backend && npm run migrate` (and record the migration run).
 
 ## License
 

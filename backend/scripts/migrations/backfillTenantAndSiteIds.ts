@@ -79,7 +79,7 @@ const backfillCollection = async (
   });
 };
 
-async function run() {
+export async function run() {
   await mongoose.connect(MONGO_URI);
   logger.info('Connected to MongoDB for backfill');
 
@@ -95,8 +95,10 @@ async function run() {
   await mongoose.disconnect();
 }
 
-run().catch(async (error) => {
-  logger.error('Backfill failed', error);
-  await mongoose.disconnect();
-  process.exit(1);
-});
+if (require.main === module) {
+  run().catch((err) => {
+    logger.error(err);
+    process.exit(1);
+  });
+}
+

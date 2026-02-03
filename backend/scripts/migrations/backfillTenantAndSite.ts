@@ -92,7 +92,7 @@ async function backfillMissingTenant(
   }
 }
 
-async function run() {
+export async function run() {
   const uri = process.env.MONGO_URI || DEFAULT_URI;
   const client = new MongoClient(uri);
 
@@ -143,7 +143,10 @@ async function run() {
   }
 }
 
-run().catch((err) => {
-  logger.error(err);
-  process.exit(1);
-});
+if (require.main === module) {
+  run().catch((err) => {
+    logger.error(err);
+    process.exit(1);
+  });
+}
+

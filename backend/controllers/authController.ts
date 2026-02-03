@@ -363,5 +363,6 @@ export const refresh: ExpressRequestHandler = requestHandler(async (req, res) =>
 
 export const logout: ExpressRequestHandler = requestHandler(async (_req, res) => {
   clearAuthCookies(res);
+  res.clearCookie('auth');
   res.json({ data: { ok: true } });
 }, 'logout');

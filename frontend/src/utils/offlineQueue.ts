@@ -8,6 +8,7 @@ export type SyncItemStatus = 'pending' | 'in-progress' | 'synced' | 'retrying' |
 
 export interface QueuedRequest<T = unknown> {
   id?: string;
+  idempotencyKey?: string;
   method: 'post' | 'put' | 'delete';
   url: string;
   data?: T;
@@ -64,9 +65,11 @@ export const loadQueue = <T = unknown>(): QueuedRequest<T>[] => {
     const parsed = JSON.parse(raw) as QueuedRequest<T>[];
     let needsSave = false;
     const withIds = parsed.map((entry) => {
-      if (entry.id) return entry;
+      const id = entry.id ?? generateRequestId();
+      const idempotencyKey = entry.idempotencyKey ?? id;
+      if (entry.id && entry.idempotencyKey) return entry;
       needsSave = true;
-      return { ...entry, id: generateRequestId() };
+      return { ...entry, id, idempotencyKey };
     });
     if (needsSave) {
       saveQueue(withIds);
@@ -120,7 +123,13 @@ const saveQueue = <T = unknown>(queue: QueuedRequest<T>[]) => {
 
 export const addToQueue = <T = unknown>(req: QueuedRequest<T>) => {
   const queue = loadQueue<T>();
-  queue.push({ ...req, id: req.id ?? generateRequestId(), retries: req.retries ?? 0 });
+  const id = req.id ?? generateRequestId();
+  queue.push({
+    ...req,
+    id,
+    idempotencyKey: req.idempotencyKey ?? id,
+    retries: req.retries ?? 0,
+  });
   saveQueue(queue);
 };
 
@@ -198,7 +207,12 @@ import http from '@/lib/http';
 
 type HttpClientResponse = { data?: unknown } | void;
 // allow tests to inject a mock http client
-type HttpClient = (args: { method: string; url: string; data?: unknown }) => Promise<HttpClientResponse>;
+type HttpClient = (args: {
+  method: string;
+  url: string;
+  data?: unknown;
+  headers?: Record<string, string>;
+}) => Promise<HttpClientResponse>;
 let httpClient: HttpClient = http as unknown as HttpClient;
 export const setHttpClient = (client: HttpClient) => {
   httpClient = client;
@@ -358,8 +372,12 @@ export const flushQueue = async (
     for (let i = 0; i < queue.length; i += 1) {
       const req = queue[i];
       const requestId = req.id ?? generateRequestId();
+      const idempotencyKey = req.idempotencyKey ?? requestId;
       if (!req.id) {
         req.id = requestId;
+      }
+      if (!req.idempotencyKey) {
+        req.idempotencyKey = idempotencyKey;
       }
       if (useBackoff && req.nextAttempt && req.nextAttempt > now) {
         remaining.push(req);
@@ -369,7 +387,12 @@ export const flushQueue = async (
       }
       notifyStatus(requestId, { status: 'in-progress' });
       try {
-        await httpClient({ method: req.method, url: req.url, data: req.data });
+        await httpClient({
+          method: req.method,
+          url: req.url,
+          data: req.data,
+          headers: { 'Idempotency-Key': idempotencyKey },
+        });
       } catch (err: unknown) {
         if ((err as { response?: { status?: number } })?.response?.status === 409) {
           try {

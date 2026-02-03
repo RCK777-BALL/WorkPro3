@@ -12,7 +12,8 @@ import { createServer } from "http";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import path from "path";
-import client from "prom-client";
+import requestId from "./middleware/requestId";
+import requestMetrics from "./middleware/requestMetrics";
 
 import { initKafka, sendKafkaEvent } from "./utils/kafka";
 import { initMQTTFromConfig } from "./iot/mqttClient";
@@ -132,6 +133,7 @@ import { validateEnv, type EnvVars } from "./config/validateEnv";
 import { assertProductionEnv } from "./src/config/env";
 import { initChatSocket } from "./socket/chatSocket";
 import { initSocket } from "./socket";
+import { getMetricsRegistry, socketConnections } from "./utils/metrics";
 import User from "./models/User";
 import { requireAuth } from "./middleware/authMiddleware";
 import tenantScope from "./middleware/tenantScope";
@@ -164,8 +166,7 @@ const MONGO_URI = env.MONGO_URI;
 const RATE_LIMIT_WINDOW_MS = parseInt(env.RATE_LIMIT_WINDOW_MS, 10);
 const RATE_LIMIT_MAX = parseInt(env.RATE_LIMIT_MAX, 10);
 
-const metricsRegistry = new client.Registry();
-client.collectDefaultMetrics({ register: metricsRegistry });
+const metricsRegistry = getMetricsRegistry();
 
 const normalizeOrigin = (origin: string | undefined) => origin?.trim().replace(/\/+$/, "").toLowerCase();
 
@@ -205,20 +206,25 @@ const corsOptions: CorsOptions = {
     "Content-Type",
     "Authorization",
     "authorization",
+    "Idempotency-Key",
+    "X-Request-Id",
+    "x-request-id",
     "x-tenant-id",
     "X-Tenant-Id",
     "x-site-id",
     "X-Site-Id",
   ],
-  exposedHeaders: ["x-tenant-id"],
+  exposedHeaders: ["x-tenant-id", "x-request-id"],
 };
 
 const corsMiddleware = cors(corsOptions) as unknown as RequestHandler;
 
 app.use(cookieParser());
+app.use(requestId);
 app.use(corsMiddleware);
 app.options("*", corsMiddleware);
 app.use(helmet());
+app.use(requestMetrics);
 app.use(requestLog);
 app.use(tenantResolver);
 app.use(auditLogMiddleware);
@@ -268,12 +274,14 @@ app.set('io', io);
 initChatSocket(io);
 
 io.on("connection", (socket) => {
+  socketConnections.inc();
   logger.info("socket connected", {
     id: socket.id,
     origin: socket.handshake.headers.origin,
   });
   socket.on("ping", () => socket.emit("pong"));
   socket.on("disconnect", (reason) => {
+    socketConnections.dec();
     logger.info("socket disconnected", { id: socket.id, reason });
   });
 });
@@ -469,8 +477,17 @@ const registerShutdownHandlers = () => {
 // --- Mongo + server start ---
 if (env.NODE_ENV !== "test") {
   registerShutdownHandlers();
+  mongoose.set("strictQuery", true);
+  const mongoOptions: mongoose.ConnectOptions = {
+    maxPoolSize: parseInt(env.MONGO_MAX_POOL_SIZE, 10),
+    minPoolSize: parseInt(env.MONGO_MIN_POOL_SIZE, 10),
+    serverSelectionTimeoutMS: parseInt(env.MONGO_SERVER_SELECTION_TIMEOUT_MS, 10),
+    socketTimeoutMS: parseInt(env.MONGO_SOCKET_TIMEOUT_MS, 10),
+    connectTimeoutMS: parseInt(env.MONGO_CONNECT_TIMEOUT_MS, 10),
+    maxIdleTimeMS: parseInt(env.MONGO_MAX_IDLE_TIME_MS, 10),
+  };
   mongoose
-    .connect(MONGO_URI)
+    .connect(MONGO_URI, mongoOptions)
     .then(async () => {
       logger.info("MongoDB connected");
       httpServer.listen(PORT, () =>

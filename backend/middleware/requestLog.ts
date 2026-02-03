@@ -12,6 +12,7 @@ type RequestMeta = {
   path: string;
   status: number;
   durationMs: number;
+  requestId?: MaybeString;
   tenantId?: MaybeString;
   siteId?: MaybeString;
   userId?: MaybeString;
@@ -34,6 +35,7 @@ const requestLog = (req: Request, res: Response, next: NextFunction): void => {
       path: req.originalUrl || req.url,
       status: res.statusCode,
       durationMs,
+      requestId: (req as Request & { requestId?: string }).requestId,
       tenantId: req.tenantId ?? resolveHeader(req.headers["x-tenant-id"]),
       siteId: req.siteId ?? resolveHeader(req.headers["x-site-id"]),
       userId: req.user && typeof req.user.id === "string" ? req.user.id : undefined,

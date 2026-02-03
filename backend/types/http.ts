@@ -26,6 +26,7 @@ export type AuthedRequest<
   Locals extends Record<string, unknown> = Record<string, unknown>,
 > = Omit<Request<P, ResBody, ReqBody, ReqQuery, Locals>, 'user'> & {
   user?: AuthedUser | undefined;
+  requestId?: string | undefined;
   tenantId?: string | undefined;
   tenantDomain?: string | undefined;
   siteId?: string | undefined;

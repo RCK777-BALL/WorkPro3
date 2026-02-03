@@ -41,6 +41,7 @@ import { getSecurityPolicy } from '../config/securityPolicies';
 import { buildSessionBinding } from '../utils/sessionBinding';
 import { provisionUserFromIdentity } from '../services/jitProvisioningService';
 import { writeAuditLog } from '../utils/audit';
+import { setAuthCookies, signAccess, signRefresh } from '../utils/jwt';
 
 configureOAuth();
 if (isFeatureEnabled('oidc')) {
@@ -256,6 +257,7 @@ const TOKEN_TTL = '7d';
 const SECURITY_POLICY = getSecurityPolicy();
 const SHORT_SESSION_MS = SECURITY_POLICY.sessions.shortTtlMs;
 const LONG_SESSION_MS = SECURITY_POLICY.sessions.longTtlMs;
+const LOGIN_POLICY = SECURITY_POLICY.login;
 const ROTATION_TOKEN_PURPOSE = 'bootstrap-rotation';
 const STATE_TOKEN_PURPOSE = 'oauth-state';
 const STATE_TOKEN_TTL = '10m';
@@ -348,6 +350,35 @@ const sendAuthSuccess = (
     200,
     'Login successful',
   );
+};
+
+const isAccountLocked = (user: UserDocument) => {
+  if (!user.lockoutUntil) {
+    return false;
+  }
+  return user.lockoutUntil.getTime() > Date.now();
+};
+
+const clearLockoutState = (user: UserDocument) => {
+  user.failedLoginCount = 0;
+  user.lastFailedLoginAt = undefined;
+  user.lockoutUntil = undefined;
+};
+
+const registerFailedLogin = async (user: UserDocument) => {
+  const now = Date.now();
+  const lastFailed = user.lastFailedLoginAt?.getTime() ?? 0;
+  const withinWindow = now - lastFailed <= LOGIN_POLICY.windowMs;
+  const nextCount = withinWindow ? (user.failedLoginCount ?? 0) + 1 : 1;
+  user.failedLoginCount = nextCount;
+  user.lastFailedLoginAt = new Date(now);
+
+  if (nextCount >= LOGIN_POLICY.maxAttempts) {
+    user.lockoutUntil = new Date(now + LOGIN_POLICY.lockoutMs);
+    user.failedLoginCount = 0;
+  }
+
+  await user.save();
 };
 
 type OAuthStatePayload = {
@@ -553,12 +584,22 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
 
   try {
     const user = await User.findOne({ email: normalizedEmail }).select(
-      '+passwordHash +mfaEnabled +tenantId +tokenVersion +email +name +roles +role +siteId +passwordExpired +bootstrapAccount +mfaSecret +active',
+      '+passwordHash +mfaEnabled +tenantId +tokenVersion +email +name +roles +role +siteId +passwordExpired +bootstrapAccount +mfaSecret +active +failedLoginCount +lastFailedLoginAt +lockoutUntil +lastLoginAt',
     );
 
     if (!user || user.active === false) {
       await bcrypt.compare(password, FAKE_PASSWORD_HASH);
       sendResponse(res, null, 'Invalid email or password.', 400);
+      return;
+    }
+
+    if (isAccountLocked(user)) {
+      await recordAuthEvent({
+        user,
+        action: 'login_locked',
+        details: { lockoutUntil: user.lockoutUntil },
+      });
+      sendResponse(res, null, 'Account temporarily locked. Try again later.', 423);
       return;
     }
 
@@ -583,6 +624,7 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
 
     const valid = await bcrypt.compare(password, hashed);
     if (!valid) {
+      await registerFailedLogin(user);
       await recordAuthEvent({
         user,
         action: 'login_failed',
@@ -591,6 +633,10 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
       sendResponse(res, null, 'Invalid email or password.', 400);
       return;
     }
+
+    clearLockoutState(user);
+    user.lastLoginAt = new Date();
+    await user.save();
 
     if (user.passwordExpired || user.bootstrapAccount) {
       const secret = user.mfaSecret || speakeasy.generateSecret({ length: 20 }).base32;
@@ -654,17 +700,17 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
     const authUser = toAuthUser(user);
     const emailForToken = typeof authUser.email === 'string' ? authUser.email : normalizedEmail;
 
-    const token = jwt.sign(
-      {
-        id: authUser.id,
-        email: emailForToken,
-        tenantId: authUser.tenantId,
-        tokenVersion: user.tokenVersion,
-        session: buildSessionBinding(req),
-      },
-      secret,
-      { expiresIn: TOKEN_TTL },
-    );
+    const tokenPayload = {
+      id: authUser.id,
+      email: emailForToken,
+      tenantId: authUser.tenantId,
+      tokenVersion: user.tokenVersion,
+      session: buildSessionBinding(req),
+    };
+
+    const token = signAccess(tokenPayload);
+    const refreshToken = signRefresh(tokenPayload);
+    setAuthCookies(res, token, refreshToken, { remember });
 
     await recordAuthEvent({
       user,

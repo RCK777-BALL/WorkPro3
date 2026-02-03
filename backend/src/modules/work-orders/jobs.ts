@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import WorkOrder from '../../../models/WorkOrder';
 import { notifyUser } from '../../../utils';
 import { evaluateSla, markSlaBreach } from './service';
+import { runWithJobLock } from '../../../utils/jobLock';
 
 const UPCOMING_WINDOW_MINUTES = 30;
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
@@ -58,7 +59,10 @@ export const processBreachedSlas = async () => {
 
 export const startWorkOrderReminderJobs = () => {
   setInterval(() => {
-    detectUpcomingDeadlines().catch(() => undefined);
-    processBreachedSlas().catch(() => undefined);
+    const ttlMs = parseInt(process.env.REMINDER_JOB_LOCK_TTL_MS ?? process.env.JOB_LOCK_TTL_MS ?? '600000', 10);
+    runWithJobLock('work-orders-reminders', ttlMs, async () => {
+      await detectUpcomingDeadlines();
+      await processBreachedSlas();
+    }).catch(() => undefined);
   }, POLL_INTERVAL_MS);
 };

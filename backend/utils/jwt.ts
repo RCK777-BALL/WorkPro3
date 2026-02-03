@@ -13,6 +13,8 @@ export interface JwtUser {
   siteId?: string;
   scopes?: string[];
   client?: string;
+  tokenVersion?: number;
+  session?: unknown;
 }
 
 interface CookieOptions {

@@ -5,6 +5,7 @@
 import mongoose from 'mongoose';
 import WorkRequest from '../../../models/WorkRequest';
 import { notifyUser } from '../../../utils';
+import { runWithJobLock } from '../../../utils/jobLock';
 
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
 const UPCOMING_WINDOW_MINUTES = 30;
@@ -49,6 +50,9 @@ const notifyUpcomingDeadlines = async () => {
 
 export const startWorkRequestReminderJobs = () => {
   setInterval(() => {
-    notifyUpcomingDeadlines().catch(() => undefined);
+    const ttlMs = parseInt(process.env.REMINDER_JOB_LOCK_TTL_MS ?? process.env.JOB_LOCK_TTL_MS ?? '600000', 10);
+    runWithJobLock('work-requests-reminders', ttlMs, async () => {
+      await notifyUpcomingDeadlines();
+    }).catch(() => undefined);
   }, POLL_INTERVAL_MS);
 };

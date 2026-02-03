@@ -401,7 +401,6 @@ const DepartmentModal = ({
               size="sm"
               onClick={handleAddLine}
               className="-mr-2"
-              disabled={loading}
             >
               Add Line
             </Button>
@@ -455,7 +454,6 @@ const DepartmentModal = ({
                         variant="ghost"
                         size="sm"
                         onClick={() => handleAddStation(index)}
-                        disabled={loading}
                       >
                         Add Station
                       </Button>

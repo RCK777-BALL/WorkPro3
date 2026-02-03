@@ -253,7 +253,6 @@ const ssoCallbackSchema = z.object({
 const FAKE_PASSWORD_HASH = bcrypt.hashSync('invalid-password', 10);
 
 const AUTH_COOKIE_NAME = 'auth';
-const TOKEN_TTL = '7d';
 const SECURITY_POLICY = getSecurityPolicy();
 const SHORT_SESSION_MS = SECURITY_POLICY.sessions.shortTtlMs;
 const LONG_SESSION_MS = SECURITY_POLICY.sessions.longTtlMs;
@@ -532,9 +531,8 @@ const validateMfaToken = async (
     user.mfaEnabled = true;
     await user.save();
 
-    let secret: string;
     try {
-      secret = getJwtSecret();
+      getJwtSecret();
     } catch {
       sendResponse(res, null, 'Server configuration issue', 500);
       return;
@@ -544,17 +542,16 @@ const validateMfaToken = async (
     const emailForToken =
       typeof authUser.email === 'string' ? authUser.email : user.email ?? '';
 
-    const signed = jwt.sign(
-      {
-        id: authUser.id,
-        email: emailForToken,
-        tenantId: authUser.tenantId,
-        tokenVersion: user.tokenVersion,
-        session: buildSessionBinding(req),
-      },
-      secret,
-      { expiresIn: TOKEN_TTL },
-    );
+    const tokenPayload = {
+      id: authUser.id,
+      email: emailForToken,
+      tenantId: authUser.tenantId,
+      tokenVersion: user.tokenVersion,
+      session: buildSessionBinding(req),
+    };
+    const signed = signAccess(tokenPayload);
+    const refreshToken = signRefresh(tokenPayload);
+    setAuthCookies(res, signed, refreshToken, { remember });
 
     await recordAuthEvent({
       user,
@@ -689,9 +686,8 @@ router.post('/login', loginLimiter, async (req: Request, res: Response, next: Ne
       return;
     }
 
-    let secret: string;
     try {
-      secret = getJwtSecret();
+      getJwtSecret();
     } catch {
       sendResponse(res, null, 'Server configuration issue', 500);
       return;
@@ -754,9 +750,8 @@ router.post('/sso/callback', loginLimiter, async (req: Request, res: Response, n
       return;
     }
 
-    let secret: string;
     try {
-      secret = getJwtSecret();
+      getJwtSecret();
     } catch {
       sendResponse(res, null, 'Server configuration issue', 500);
       return;
@@ -764,17 +759,16 @@ router.post('/sso/callback', loginLimiter, async (req: Request, res: Response, n
 
     const authUser = toAuthUser(user);
     const emailForToken = typeof authUser.email === 'string' ? authUser.email : user.email ?? '';
-    const token = jwt.sign(
-      {
-        id: authUser.id,
-        email: emailForToken,
-        tenantId: authUser.tenantId,
-        tokenVersion: user.tokenVersion,
-        session: buildSessionBinding(req),
-      },
-      secret,
-      { expiresIn: TOKEN_TTL },
-    );
+    const tokenPayload = {
+      id: authUser.id,
+      email: emailForToken,
+      tenantId: authUser.tenantId,
+      tokenVersion: user.tokenVersion,
+      session: buildSessionBinding(req),
+    };
+    const token = signAccess(tokenPayload);
+    const refreshToken = signRefresh(tokenPayload);
+    setAuthCookies(res, token, refreshToken, { remember: false });
 
     await recordAuthEvent({
       user,

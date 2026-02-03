@@ -34,13 +34,13 @@ export const assertProductionEnv = (): void => {
   }
 
   const errors: string[] = [];
-  const jwtSecret = process.env.JWT_SECRET;
+  const jwtSecret = process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET;
   const mongoUri = process.env.MONGO_URI;
   const corsOrigins = parseOrigins(process.env.CORS_ORIGIN);
   const frontendUrl = process.env.FRONTEND_URL;
 
   if (!jwtSecret || jwtSecret.trim().length < 32 || isWeakValue(jwtSecret)) {
-    errors.push("JWT_SECRET must be at least 32 characters and not a placeholder.");
+    errors.push("JWT_SECRET or JWT_ACCESS_SECRET must be at least 32 characters and not a placeholder.");
   }
 
   if (!mongoUri || isWeakValue(mongoUri)) {

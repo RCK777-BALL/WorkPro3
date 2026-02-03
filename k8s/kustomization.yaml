@@ -6,6 +6,7 @@ resources:
   - ingress.yaml
   - mongo.yaml
   - hpa.yaml
+  - pdb.yaml
   - networkpolicy.yaml
   - service.yaml
   - tls.yaml

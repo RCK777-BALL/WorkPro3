@@ -21,7 +21,7 @@
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
     "swagger:check": "ts-node utils/swagger.ts",
     "lint": "eslint .",
-    "prepare": "husky",
+    "prepare": "husky || true",
     "fix:backend": "node ../fixWorkPro.js backend"
   },
   "dependencies": {
@@ -113,7 +113,8 @@
     "qs": "6.14.1",
     "rollup": "4.46.2",
     "@rollup/*": "4.46.2",
-    "fast-xml-parser": "^5.3.4"
+    "fast-xml-parser": "^5.3.4",
+    "@isaacs/brace-expansion": "5.0.1"
   },
   "engines": {
     "node": ">=18"

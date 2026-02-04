@@ -6,5 +6,6 @@ export {
   assertPermission,
   requirePermission,
   type Permission,
-  type PermissionCategory,
 } from '../auth/permissions';
+
+export type { PermissionCategory } from '../../shared/permissions';

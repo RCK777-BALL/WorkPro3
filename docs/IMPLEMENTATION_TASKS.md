@@ -1,11 +1,11 @@
-# WorkPro3 Implementation Board Tasks (EPICs 0–9)
+# WorkPro3 Implementation Board Tasks
 
-This document breaks the board into discrete tasks with clear deliverables. Use it as a checklist for sequencing foundational work from repo standards through core backend domains and production readiness.
+This document breaks the end-to-end implementation board into discrete tasks with clear deliverables. It is intended to be used as a checklist for sequencing work from “feature build” to production-ready.
 
 ## EPIC 0 — Repo Baseline & Standards
 - **WPB-0001 — Lock repo conventions**
   - Add `/docs/ARCHITECTURE.md` with folder structure and system context.
-  - Add `/docs/CONTRIBUTING.md` with local dev setup + PR checklist.
+  - Add `/docs/CONTRIBUTING.md` with local dev + PR checklist.
   - Add `/docs/CODING_STANDARDS.md` with linting, formatting, and naming rules.
 - **WPB-0002 — Shared contracts to stop API/TS drift**
   - Create `/shared/validators/*.ts` for DTO validation (Zod optional).
@@ -81,48 +81,39 @@ This document breaks the board into discrete tasks with clear deliverables. Use 
 ## EPIC 4 — Frontend Feature Completion (Top-5 UX)
 - **WPB-0401 — API client + auth interceptors**
   - Add `frontend/src/api/client.ts` and `/api/endpoints/*.ts`.
-  - Implement token attach/refresh handling + standard error mapping.
 - **WPB-0402 — Dashboard KPIs + charts**
   - Add `frontend/src/components/KpiCards.tsx`.
-  - Add `backend/src/routes/summary.routes.ts` for KPI data.
+  - Add `backend/src/routes/summary.routes.ts`.
 - **WPB-0403 — Assets page + detail view**
   - Add `Assets.tsx`, `AssetDetail.tsx`, `AssetModal.tsx`, `UploadDropzone.tsx`.
-  - Support search/filter/pagination and downloadable attachments.
 - **WPB-0410 — Work Orders list + detail view**
   - Add `WorkOrderDetail.tsx`, `WorkOrderModal.tsx`, `DataTable.tsx`, `FiltersBar.tsx`.
-  - Support filter by dept/line/asset/status/priority/date.
 - **WPB-0420 — PM Scheduler UI**
   - Add `PreventiveMaintenance.tsx` and `PMModal.tsx`.
-  - Support cadence preview and next-run calculation.
 - **WPB-0430 — Inventory + Vendors + PO Lite UI**
   - Add `Vendors.tsx`, `PurchaseOrders.tsx`, `VendorModal.tsx`, `POModal.tsx`.
-  - Support PO lifecycle (create, send, receive, close).
 - **WPB-0440 — Admin: users/roles/permissions**
-  - Add `Admin.tsx` and extend `Settings.tsx` for role management.
-  - Support tenant/site assignment if enabled.
+  - Add `Admin.tsx`, extend `Settings.tsx` role management.
 
 ## EPIC 5 — Offline Mode (Enterprise-Grade)
 - **WPB-0501 — Offline action queue**
   - Add `/frontend/src/offline/queue.ts`, `sync.ts`, `conflicts.ts`, `ui/SyncStatus.tsx`.
-  - Implement retry/backoff with per-action status + user retry.
+  - Retry/backoff + per-action status.
 - **WPB-0502 — Server-side idempotency + sync endpoints**
   - Add `backend/src/models/OfflineAction.ts`.
   - Add `backend/src/routes/sync.routes.ts`, `controllers`, `services`.
-  - Document conflict rules and enforce idempotency keys.
 
 ## EPIC 6 — Observability & Reliability
 - **WPB-0601 — Logging + request IDs**
   - Add `backend/src/config/logger.ts` + `middleware/requestId.ts`.
-  - Ensure requestId, userId, tenantId logged on every request.
 - **WPB-0602 — Health checks for k8s**
-  - Add `backend/src/routes/health.routes.ts` with `/health/live` and `/health/ready`.
+  - Add `backend/src/routes/health.routes.ts`.
 - **WPB-0603 — Metrics**
   - Add `backend/src/metrics/metrics.ts` + `routes/metrics.routes.ts`.
-  - Expose latency, errors, and job runtimes.
 
 ## EPIC 7 — CI/CD & Quality Gates
 - **WPB-0701 — CI workflow (lint/test/build)**
-  - Verify `.github/workflows/ci.yml` fails on lint/test/build failures.
+  - Verify `.github/workflows/ci.yml` stays aligned with lint/test/build gates.
 - **WPB-0702 — Docker build + push pipeline**
   - Add `.github/workflows/release.yml`.
   - Ensure `backend/Dockerfile`, `frontend/Dockerfile`, `.dockerignore` are complete.
@@ -131,13 +122,11 @@ This document breaks the board into discrete tasks with clear deliverables. Use 
 
 ## EPIC 8 — Kubernetes “Real Production” Setup
 - **WPB-0801 — Ingress + TLS**
-  - Confirm `k8s/ingress.yaml` hostnames and TLS configuration.
-  - Add `docs/DEPLOYMENT.md` guidance.
+  - Confirm `k8s/ingress.yaml` + add `docs/DEPLOYMENT.md` guidance.
 - **WPB-0802 — Resource limits + autoscaling**
-  - Verify `k8s/hpa.yaml` and `k8s/pdb.yaml` align with deployment manifests.
-  - Ensure requests/limits are set.
+  - Verify `k8s/hpa.yaml` and `k8s/pdb.yaml` with requests/limits in deployment manifests.
 - **WPB-0803 — Mongo production posture**
-  - Add `docs/MONGO_PRODUCTION.md` for backups and index strategy.
+  - Add `docs/MONGO_PRODUCTION.md`.
 
 ## EPIC 9 — Production Documentation & Runbooks
 - **WPB-0901 — Deployment runbook**

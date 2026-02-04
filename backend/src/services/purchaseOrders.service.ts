@@ -39,7 +39,7 @@ export const listPurchaseOrders = async (
 };
 
 const buildPurchaseOrderLines = (input: PurchaseOrderInput) =>
-  input.lines.map((line) => ({
+  input.lines.map((line: PurchaseOrderInput['lines'][number]) => ({
     partId: new Types.ObjectId(line.partId),
     description: line.description,
     quantityOrdered: line.quantity,
@@ -50,7 +50,10 @@ const buildPurchaseOrderLines = (input: PurchaseOrderInput) =>
   }));
 
 const calculateSubtotal = (input: PurchaseOrderInput) =>
-  input.lines.reduce((sum, line) => sum + line.quantity * line.unitCost, 0);
+  input.lines.reduce(
+    (sum: number, line: PurchaseOrderInput['lines'][number]) => sum + line.quantity * line.unitCost,
+    0,
+  );
 
 export const createPurchaseOrder = async (tenantId: string, input: PurchaseOrderInput) => {
   const poNumber = `PO-${Date.now()}`;
@@ -61,8 +64,14 @@ export const createPurchaseOrder = async (tenantId: string, input: PurchaseOrder
     status: input.status ?? 'draft',
     lines: buildPurchaseOrderLines(input),
     subtotal: calculateSubtotal(input),
-    taxTotal: input.lines.reduce((sum, line) => sum + (line.tax ?? 0), 0),
-    shippingTotal: input.lines.reduce((sum, line) => sum + (line.fees ?? 0), 0),
+    taxTotal: input.lines.reduce(
+      (sum: number, line: PurchaseOrderInput['lines'][number]) => sum + (line.tax ?? 0),
+      0,
+    ),
+    shippingTotal: input.lines.reduce(
+      (sum: number, line: PurchaseOrderInput['lines'][number]) => sum + (line.fees ?? 0),
+      0,
+    ),
     notes: input.notes,
     expectedAt: input.expectedDate ? new Date(input.expectedDate) : undefined,
   });
@@ -85,7 +94,7 @@ export const updatePurchaseOrder = async (tenantId: string, id: string, input: P
   if (input.expectedDate) patch.expectedAt = new Date(input.expectedDate);
 
   if (input.lines) {
-    patch.lines = input.lines.map((line) => ({
+    patch.lines = input.lines.map((line: PurchaseOrderInput['lines'][number]) => ({
       partId: new Types.ObjectId(line.partId),
       description: line.description,
       quantityOrdered: line.quantity,

@@ -16,6 +16,10 @@ import {
   deletePurchaseOrder,
 } from '../services/purchaseOrders.service';
 
+type ReceivePurchaseOrderBody = {
+  receipts?: Array<{ partId: string; quantity: number }>;
+};
+
 const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
   if (!req.tenantId) {
     res.status(401).json({ message: 'Missing tenant scope' });
@@ -68,14 +72,14 @@ export const updatePurchaseOrderHandler: AuthedRequestHandler<{ purchaseOrderId:
   }
 };
 
-export const receivePurchaseOrderHandler: AuthedRequestHandler<{ purchaseOrderId: string }> = async (
-  req,
-  res,
-  next,
-) => {
+export const receivePurchaseOrderHandler: AuthedRequestHandler<
+  { purchaseOrderId: string },
+  unknown,
+  ReceivePurchaseOrderBody
+> = async (req, res, next) => {
   try {
     if (!ensureTenant(req, res)) return;
-    const receipts = (req.body?.receipts ?? []) as Array<{ partId: string; quantity: number }>;
+    const receipts = req.body?.receipts ?? [];
     const po = await receivePurchaseOrder(req.tenantId, req.params.purchaseOrderId, receipts);
     if (!po) {
       res.status(404).json({ message: 'Purchase order not found' });

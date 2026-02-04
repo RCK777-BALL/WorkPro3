@@ -79,7 +79,7 @@ export const receivePurchaseOrderHandler: AuthedRequestHandler<
 > = async (req, res, next) => {
   try {
     if (!ensureTenant(req, res)) return;
-    const receipts = req.body?.receipts ?? [];
+    const { receipts = [] } = req.body as ReceivePurchaseOrderBody;
     const po = await receivePurchaseOrder(req.tenantId, req.params.purchaseOrderId, receipts);
     if (!po) {
       res.status(404).json({ message: 'Purchase order not found' });

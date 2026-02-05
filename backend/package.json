@@ -30,7 +30,7 @@
     "arima": "0.2.5",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
-    "cron-parser": "^4.9.0",
+    "cron-parser": "^5.5.0",
     "cors": "^2.8.5",
     "csv-parse": "^5.5.0",
     "dotenv": "^16.6.1",

@@ -11,7 +11,7 @@ type SyncActionsRequestBody = {
   actions?: SyncActionInput[];
 };
 
-const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string } => {
+const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string; user: { _id: string } } => {
   if (!req.tenantId || !req.user?._id) {
     res.status(401).json({ message: 'Missing tenant scope' });
     return false;

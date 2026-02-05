@@ -73,7 +73,7 @@
     "@types/bcryptjs": "^3.0.0",
     "@types/cookie-parser": "^1.4.9",
     "@types/express": "^5.0.6",
-    "@types/helmet": "^0.0.48",
+    "@types/helmet": "^4.0.0",
     "@types/ioredis": "^4.28.10",
     "@types/json2csv": "^5.0.7",
     "@types/jsonwebtoken": "^9.0.10",

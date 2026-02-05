@@ -43,7 +43,7 @@ export const getPreventiveMaintenance = async (tenantId: string, id: string) =>
 
 export const createPreventiveMaintenance = async (tenantId: string, input: PreventiveMaintenanceInput) => {
   const rule = buildRule(input.schedule);
-  const assignments = input.assetIds.map((assetId) => ({
+  const assignments = input.assetIds.map((assetId: string) => ({
     asset: new Types.ObjectId(assetId),
     trigger: { type: input.schedule.cadenceType },
     nextDue: input.nextRunAt ? new Date(input.nextRunAt) : undefined,
@@ -73,7 +73,7 @@ export const updatePreventiveMaintenance = async (
   if (input.active !== undefined) patch.active = input.active;
   if (input.schedule) patch.rule = buildRule(input.schedule);
   if (input.assetIds) {
-    patch.assignments = input.assetIds.map((assetId) => ({
+    patch.assignments = input.assetIds.map((assetId: string) => ({
       asset: new Types.ObjectId(assetId),
       trigger: { type: input.schedule?.cadenceType ?? 'time' },
       nextDue: input.nextRunAt ? new Date(input.nextRunAt) : undefined,

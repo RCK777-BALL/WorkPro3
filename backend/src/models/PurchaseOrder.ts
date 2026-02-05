@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import PurchaseOrderModel, { type PurchaseOrderDocument } from './purchaseOrder';
+import PurchaseOrderModel, { type IPurchaseOrder } from '../../models/PurchaseOrder';
 
-export type { PurchaseOrderDocument };
+export type PurchaseOrderDocument = IPurchaseOrder;
 export default PurchaseOrderModel;

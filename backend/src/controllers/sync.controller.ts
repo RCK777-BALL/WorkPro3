@@ -3,6 +3,7 @@
  */
 
 import type { Response } from 'express';
+<<<<<<< Updated upstream
 import type { ParamsDictionary } from 'express-serve-static-core';
 import type { AuthedRequest, AuthedRequestHandler } from '../../types/http';
 import { recordSyncActions, type SyncActionInput } from '../services/sync.service';
@@ -12,6 +13,15 @@ type SyncActionsRequestBody = {
 };
 
 const ensureTenant = (req: AuthedRequest, res: Response): req is AuthedRequest & { tenantId: string; user: { _id: string } } => {
+=======
+import type { AuthedRequest, AuthedRequestHandler, AuthedRequestWithUser } from '../../types/http';
+import { recordSyncActions, type SyncActionInput } from '../services/sync.service';
+
+const ensureTenant = (
+  req: AuthedRequest,
+  res: Response,
+): req is AuthedRequestWithUser & { tenantId: string } => {
+>>>>>>> Stashed changes
   if (!req.tenantId || !req.user?._id) {
     res.status(401).json({ message: 'Missing tenant scope' });
     return false;
@@ -26,7 +36,7 @@ export const syncActionsHandler: AuthedRequestHandler<
 > = async (req, res, next) => {
   try {
     if (!ensureTenant(req, res)) return;
-    const actions = (req.body?.actions ?? []) as SyncActionInput[];
+    const actions = ((req.body as { actions?: SyncActionInput[] } | undefined)?.actions ?? []) as SyncActionInput[];
     const results = await recordSyncActions(req.tenantId, String(req.user._id), actions);
     res.json({ results });
   } catch (error) {

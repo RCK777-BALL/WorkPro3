@@ -2,6 +2,13 @@
 
 The following task list tracks the remaining gaps called out in the readiness audit. Each section contains concrete tasks that should be owned and completed before go-live.
 
+## 0) Task tracking & ownership
+
+- [ ] Assign an owner and backup for each readiness section.
+- [ ] Add target completion dates and Jira/Linear ticket links for every task.
+- [ ] Confirm each task has an acceptance checklist and sign-off criteria.
+- [ ] Review progress weekly and mark items done with a linked evidence artifact (run logs, screenshots, or config snippets).
+
 ## 1) Secrets & environment configuration
 
 - [ ] Provision production secrets in a secrets manager or Kubernetes Secrets (`JWT_SECRET`, `MONGO_URI`, `CORS_ORIGIN`, `FRONTEND_URL`).

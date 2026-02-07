@@ -6,6 +6,7 @@ import type { Response } from 'express';
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 import type { ParamsDictionary } from 'express-serve-static-core';
 import type { AuthedRequest, AuthedRequestHandler } from '../../types/http';
 import { recordSyncActions, type SyncActionInput } from '../services/sync.service';
@@ -29,12 +30,20 @@ import type { AuthedRequest, AuthedRequestHandler, AuthedRequestWithUser } from 
 import { recordSyncActions, type SyncActionInput } from '../services/sync.service';
 
 >>>>>>> Stashed changes
+=======
+import type { AuthedRequest, AuthedRequestHandler, AuthedRequestWithUser } from '../../types/http';
+import { recordSyncActions, type SyncActionInput } from '../services/sync.service';
+
+>>>>>>> Stashed changes
 const ensureTenant = (
   req: AuthedRequest,
   res: Response,
 ): req is AuthedRequestWithUser & { tenantId: string } => {
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes

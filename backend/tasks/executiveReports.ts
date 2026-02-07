@@ -27,7 +27,7 @@ const shouldSendReport = (
 ): boolean => {
   const cronExpr = schedule.cron || DEFAULT_EXECUTIVE_CRON;
   try {
-    const interval = new parser(cronExpr, {
+    const interval = parser.parseExpression(cronExpr, {
       currentDate: schedule.lastRunAt ?? new Date(0),
       tz: schedule.timezone ?? undefined,
     });

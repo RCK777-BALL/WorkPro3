@@ -58,3 +58,10 @@ The following task list tracks the remaining gaps called out in the readiness au
 - [ ] Ensure CI runs `npm run test:coverage` for both backend and frontend.
 - [ ] Verify the 80% coverage thresholds are enforced in CI.
 - [ ] Add build/lint/typecheck steps to CI if they are missing.
+
+## 7) Readiness completion plan
+
+- [ ] Convert every unchecked item in sections 0–6 into a tracked ticket with a due date and owner.
+- [ ] Schedule a readiness review meeting to validate evidence artifacts for each completed task.
+- [ ] Capture sign-off for each section (0–6) and link approvals in this document.
+- [ ] Publish a final readiness status update summarizing remaining risks and blockers.

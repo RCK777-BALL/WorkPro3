@@ -20,6 +20,6 @@ export const validateWorkOrderUpdate: RequestHandler = (req, _res, next) => {
 };
 
 export const validateWorkOrderQuery: RequestHandler = (req, _res, next) => {
-  req.query = workOrderQuerySchema.parse(req.query);
+  req.query = workOrderQuerySchema.parse(req.query) as any;
   next();
 };

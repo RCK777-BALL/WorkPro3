@@ -16,6 +16,6 @@ export const validateAssetUpdate: RequestHandler = (req, _res, next) => {
 };
 
 export const validateAssetQuery: RequestHandler = (req, _res, next) => {
-  req.query = assetQuerySchema.parse(req.query);
+  req.query = assetQuerySchema.parse(req.query) as any;
   next();
 };

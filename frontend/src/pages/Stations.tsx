@@ -10,7 +10,7 @@ import Card from '@/components/common/Card';
 import SlideOver from '@/components/common/SlideOver';
 import { useScopeContext } from '@/context/ScopeContext';
 import { useToast } from '@/context/ToastContext';
-import { createStation, listDepartments, listLines } from '@/api/departments';
+import { createStation, deleteStation, listDepartments, listLines, updateStation } from '@/api/departments';
 import http from '@/lib/http';
 
 interface StationResponse {
@@ -48,6 +48,7 @@ const Stations: React.FC = () => {
   const [selectedLineId, setSelectedLineId] = useState('');
   const [stationTouched, setStationTouched] = useState(false);
   const [stationSaving, setStationSaving] = useState(false);
+  const [editingStation, setEditingStation] = useState<StationResponse | null>(null);
 
   const fetchStations = useCallback(async () => {
     setLoading(true);
@@ -127,6 +128,7 @@ const Stations: React.FC = () => {
     setSelectedLineId('');
     setStationTouched(false);
     setLines([]);
+    setEditingStation(null);
   }, []);
 
   const handleStationSave = async () => {
@@ -137,21 +139,56 @@ const Stations: React.FC = () => {
 
     setStationSaving(true);
     try {
-      await createStation(
-        selectedDepartmentId,
-        selectedLineId,
-        { name: stationName.trim(), notes: stationNotes.trim() || undefined },
-        { plantId: activePlant?.id },
-      );
-      addToast('Station created', 'success');
+      if (editingStation) {
+        await updateStation(
+          editingStation.departmentId,
+          editingStation.lineId,
+          editingStation._id,
+          { name: stationName.trim(), notes: stationNotes.trim() || undefined },
+          { plantId: activePlant?.id },
+        );
+        addToast('Station updated', 'success');
+      } else {
+        await createStation(
+          selectedDepartmentId,
+          selectedLineId,
+          { name: stationName.trim(), notes: stationNotes.trim() || undefined },
+          { plantId: activePlant?.id },
+        );
+        addToast('Station created', 'success');
+      }
       setStationModalOpen(false);
       resetStationForm();
       void fetchStations();
     } catch (err) {
-      console.error('Failed to create station', err);
-      addToast('Unable to create station', 'error');
+      console.error(`Failed to ${editingStation ? 'update' : 'create'} station`, err);
+      addToast(`Unable to ${editingStation ? 'update' : 'create'} station`, 'error');
     } finally {
       setStationSaving(false);
+    }
+  };
+
+  const handleStationEdit = (station: StationResponse) => {
+    setEditingStation(station);
+    setStationName(station.name);
+    setStationNotes(station.notes ?? '');
+    setSelectedDepartmentId(station.departmentId);
+    setSelectedLineId(station.lineId);
+    setStationTouched(false);
+    setStationModalOpen(true);
+  };
+
+  const handleStationDelete = async (station: StationResponse) => {
+    const confirmed = window.confirm(`Delete the ${station.name} station? This cannot be undone.`);
+    if (!confirmed) return;
+
+    try {
+      await deleteStation(station.departmentId, station.lineId, station._id, { plantId: activePlant?.id });
+      addToast('Station deleted', 'success');
+      void fetchStations();
+    } catch (err) {
+      console.error('Failed to delete station', err);
+      addToast('Unable to delete station', 'error');
     }
   };
 
@@ -220,10 +257,24 @@ const Stations: React.FC = () => {
                       <td className="px-3 py-3">{station.departmentId}</td>
                       <td className="px-3 py-3">
                         <div className="flex flex-wrap gap-2">
-                          <Button size="xs" variant="outline">
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            type="button"
+                            title={`Edit ${station.name}`}
+                            aria-label={`Edit ${station.name}`}
+                            onClick={() => handleStationEdit(station)}
+                          >
                             Edit
                           </Button>
-                          <Button size="xs" variant="destructive">
+                          <Button
+                            size="xs"
+                            variant="destructive"
+                            type="button"
+                            title={`Delete ${station.name}`}
+                            aria-label={`Delete ${station.name}`}
+                            onClick={() => void handleStationDelete(station)}
+                          >
                             Delete
                           </Button>
                         </div>
@@ -246,7 +297,7 @@ const Stations: React.FC = () => {
 
       <SlideOver
         open={stationModalOpen}
-        title="Add Station"
+        title={editingStation ? 'Edit Station' : 'Add Station'}
         onClose={() => {
           if (stationSaving) return;
           setStationModalOpen(false);
@@ -257,7 +308,7 @@ const Stations: React.FC = () => {
               Cancel
             </Button>
             <Button variant="primary" size="sm" onClick={handleStationSave} loading={stationSaving}>
-              Save
+              {editingStation ? 'Update' : 'Save'}
             </Button>
           </div>
         }
@@ -280,7 +331,7 @@ const Stations: React.FC = () => {
                 setSelectedLineId('');
               }}
               onBlur={() => setStationTouched(true)}
-              disabled={departmentsLoading}
+              disabled={departmentsLoading || Boolean(editingStation)}
               className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
             >
               <option value="">Select department</option>
@@ -300,7 +351,7 @@ const Stations: React.FC = () => {
               value={selectedLineId}
               onChange={(event) => setSelectedLineId(event.target.value)}
               onBlur={() => setStationTouched(true)}
-              disabled={!selectedDepartmentId || linesLoading}
+              disabled={!selectedDepartmentId || linesLoading || Boolean(editingStation)}
               className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
             >
               <option value="">

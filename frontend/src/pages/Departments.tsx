@@ -121,6 +121,14 @@ const Departments = () => {
     [navigate],
   );
 
+  const resolvePlantId = useCallback(
+    (department: DepartmentHierarchy) =>
+      department.plant?.id && department.plant.id !== 'unassigned'
+        ? department.plant.id
+        : undefined,
+    [],
+  );
+
   const replaceDepartment = useCallback((updated: DepartmentHierarchy) => {
     setDepartments((prev) =>
       prev.map((department) => (department.id === updated.id ? updated : department)),
@@ -468,10 +476,7 @@ const Departments = () => {
     if (!lineModalState) return;
     setLineSaving(true);
     try {
-      const plantId =
-        lineModalState.department.plant?.id && lineModalState.department.plant.id !== 'unassigned'
-          ? lineModalState.department.plant.id
-          : undefined;
+      const plantId = resolvePlantId(lineModalState.department);
       const updated = lineModalState.line
         ? await updateLine(
             lineModalState.department.id,
@@ -502,10 +507,7 @@ const Departments = () => {
     if (!current) return;
     setLineSaving(true);
     try {
-      const plantId =
-        current.department.plant?.id && current.department.plant.id !== 'unassigned'
-          ? current.department.plant.id
-          : undefined;
+      const plantId = resolvePlantId(current.department);
       const updated = await deleteLine(current.department.id, current.line.id, { plantId });
       replaceDepartment(updated);
       addToast('Line deleted', 'success');
@@ -527,7 +529,7 @@ const Departments = () => {
     if (!stationModalState) return;
     setStationSaving(true);
     try {
-      const plantId = stationModalState.department.plant.id;
+      const plantId = resolvePlantId(stationModalState.department);
       const updated = stationModalState.station
         ? await updateStation(
             stationModalState.department.id,
@@ -557,7 +559,7 @@ const Departments = () => {
     if (!stationModalState?.station) return;
     setStationSaving(true);
     try {
-      const plantId = stationModalState.department.plant.id;
+      const plantId = resolvePlantId(stationModalState.department);
       const updated = await deleteStation(
         stationModalState.department.id,
         stationModalState.line.id,
@@ -602,7 +604,7 @@ const Departments = () => {
     setAssetSaving(true);
     try {
       const { department, line, station, asset } = assetModalState;
-      const plantId = department.plant.id;
+      const plantId = resolvePlantId(department);
       const updated = asset
         ? await updateAsset(department.id, line.id, station.id, asset.id, values, { plantId })
         : await createAsset(department.id, line.id, station.id, values, { plantId });
@@ -622,7 +624,7 @@ const Departments = () => {
     setAssetSaving(true);
     try {
       const { department, line, station, asset } = assetModalState;
-      const plantId = department.plant.id;
+      const plantId = resolvePlantId(department);
       const updated = await deleteAsset(department.id, line.id, station.id, asset.id, { plantId });
       replaceDepartment(updated);
       addToast('Asset deleted', 'success');

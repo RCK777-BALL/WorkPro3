@@ -2,10 +2,15 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Plus } from 'lucide-react';
 
 import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
+import SlideOver from '@/components/common/SlideOver';
+import { useScopeContext } from '@/context/ScopeContext';
+import { useToast } from '@/context/ToastContext';
+import { createLine, listDepartments } from '@/api/departments';
 import http from '@/lib/http';
 
 interface LineResponse {
@@ -16,36 +21,108 @@ interface LineResponse {
   stations: string[];
 }
 
+interface DepartmentOption {
+  id: string;
+  name: string;
+}
+
 const Lines: React.FC = () => {
+  const { addToast } = useToast();
+  const { activePlant } = useScopeContext();
   const [lines, setLines] = useState<LineResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [departments, setDepartments] = useState<DepartmentOption[]>([]);
+  const [departmentsLoading, setDepartmentsLoading] = useState(false);
+  const [lineModalOpen, setLineModalOpen] = useState(false);
+  const [lineName, setLineName] = useState('');
+  const [lineNotes, setLineNotes] = useState('');
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState('');
+  const [lineTouched, setLineTouched] = useState(false);
+  const [lineSaving, setLineSaving] = useState(false);
+
+  const fetchLines = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await http.get<LineResponse[]>('/lines');
+      setLines(response.data);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to load lines', err);
+      setError('Unable to load production lines');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchDepartments = useCallback(async () => {
+    setDepartmentsLoading(true);
+    try {
+      const response = await listDepartments();
+      setDepartments(
+        response.map((department) => ({
+          id: department._id,
+          name: department.name,
+        })),
+      );
+    } catch (err) {
+      console.error('Failed to load departments', err);
+      addToast('Unable to load departments', 'error');
+    } finally {
+      setDepartmentsLoading(false);
+    }
+  }, [addToast]);
 
   useEffect(() => {
-    let mounted = true;
-    const fetchLines = async () => {
-      setLoading(true);
-      try {
-        const response = await http.get<LineResponse[]>('/lines');
-        if (!mounted) return;
-        setLines(response.data);
-        setError(null);
-      } catch (err) {
-        if (!mounted) return;
-        console.error('Failed to load lines', err);
-        setError('Unable to load production lines');
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
+    void fetchLines();
+  }, [fetchLines]);
 
-    fetchLines();
-    return () => {
-      mounted = false;
-    };
+  useEffect(() => {
+    if (!lineModalOpen) return;
+    void fetchDepartments();
+  }, [fetchDepartments, lineModalOpen]);
+
+  const resetLineForm = useCallback(() => {
+    setLineName('');
+    setLineNotes('');
+    setSelectedDepartmentId('');
+    setLineTouched(false);
   }, []);
+
+  const handleLineSave = async () => {
+    if (!lineName.trim() || !selectedDepartmentId) {
+      setLineTouched(true);
+      return;
+    }
+
+    setLineSaving(true);
+    try {
+      await createLine(
+        selectedDepartmentId,
+        { name: lineName.trim(), notes: lineNotes.trim() || undefined },
+        { plantId: activePlant?.id },
+      );
+      addToast('Line created', 'success');
+      setLineModalOpen(false);
+      resetLineForm();
+      void fetchLines();
+    } catch (err) {
+      console.error('Failed to create line', err);
+      addToast('Unable to create line', 'error');
+    } finally {
+      setLineSaving(false);
+    }
+  };
+
+  const departmentError = useMemo(() => {
+    if (!lineTouched) return null;
+    return selectedDepartmentId ? null : 'Department is required';
+  }, [lineTouched, selectedDepartmentId]);
+
+  const lineNameError = useMemo(() => {
+    if (!lineTouched) return null;
+    return lineName.trim() ? null : 'Line name is required';
+  }, [lineName, lineTouched]);
 
   return (
     <div className="space-y-4">
@@ -56,7 +133,15 @@ const Lines: React.FC = () => {
             Review departments and associated production lines for the active plant.
           </p>
         </div>
-        <Button size="sm" variant="primary">
+        <Button
+          size="sm"
+          variant="primary"
+          onClick={() => {
+            setLineModalOpen(true);
+            resetLineForm();
+          }}
+        >
+          <Plus className="mr-2 h-4 w-4" />
           Add Line
         </Button>
       </header>
@@ -112,6 +197,79 @@ const Lines: React.FC = () => {
           </div>
         )}
       </Card>
+
+      <SlideOver
+        open={lineModalOpen}
+        title="Add Line"
+        onClose={() => {
+          if (lineSaving) return;
+          setLineModalOpen(false);
+        }}
+        footer={
+          <div className="flex w-full justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setLineModalOpen(false)} disabled={lineSaving}>
+              Cancel
+            </Button>
+            <Button variant="primary" size="sm" onClick={handleLineSave} loading={lineSaving}>
+              Save
+            </Button>
+          </div>
+        }
+      >
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void handleLineSave();
+          }}
+        >
+          <div>
+            <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">
+              Department
+            </label>
+            <select
+              value={selectedDepartmentId}
+              onChange={(event) => setSelectedDepartmentId(event.target.value)}
+              onBlur={() => setLineTouched(true)}
+              disabled={departmentsLoading}
+              className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+            >
+              <option value="">Select department</option>
+              {departments.map((department) => (
+                <option key={department.id} value={department.id}>
+                  {department.name}
+                </option>
+              ))}
+            </select>
+            {departmentError && <p className="mt-1 text-sm text-error-600">{departmentError}</p>}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">
+              Line name
+            </label>
+            <input
+              value={lineName}
+              onChange={(event) => setLineName(event.target.value)}
+              onBlur={() => setLineTouched(true)}
+              className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+              placeholder="Packaging Line"
+            />
+            {lineNameError && <p className="mt-1 text-sm text-error-600">{lineNameError}</p>}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">
+              Notes
+            </label>
+            <textarea
+              value={lineNotes}
+              onChange={(event) => setLineNotes(event.target.value)}
+              className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+              rows={3}
+              placeholder="Optional context for the line"
+            />
+          </div>
+        </form>
+      </SlideOver>
     </div>
   );
 };

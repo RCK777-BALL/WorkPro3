@@ -16,6 +16,8 @@ interface AssetModalProps {
   open: boolean;
   initial?: Asset | null;
   loading?: boolean;
+  assetOptions?: Array<{ id: string; name: string }>;
+  assetsLoading?: boolean;
   onClose: () => void;
   onSave: (values: {
     name: string;
@@ -29,7 +31,16 @@ interface AssetModalProps {
   onDelete?: () => void | Promise<void>;
 }
 
-const AssetModal = ({ open, initial, loading = false, onClose, onSave, onDelete }: AssetModalProps) => {
+const AssetModal = ({
+  open,
+  initial,
+  loading = false,
+  assetOptions = [],
+  assetsLoading = false,
+  onClose,
+  onSave,
+  onDelete,
+}: AssetModalProps) => {
   const [name, setName] = useState('');
   const [type, setType] = useState<Asset['type']>('Electrical');
   const [status, setStatus] = useState('Active');
@@ -68,6 +79,7 @@ const AssetModal = ({ open, initial, loading = false, onClose, onSave, onDelete 
   };
 
   const error = touched && !name.trim() ? 'Asset name is required' : null;
+  const hasAssetOptions = assetOptions.length > 0;
 
   return (
     <SlideOver
@@ -112,13 +124,26 @@ const AssetModal = ({ open, initial, loading = false, onClose, onSave, onDelete 
             <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100">
               Asset name
             </label>
-            <input
+            <select
               value={name}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => setName(event.target.value)}
+              onChange={(event: ChangeEvent<HTMLSelectElement>) => setName(event.target.value)}
               onBlur={() => setTouched(true)}
+              disabled={assetsLoading || !hasAssetOptions}
               className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-neutral-700 dark:bg-neutral-900"
-              placeholder="Asset name"
-            />
+            >
+              <option value="">
+                {assetsLoading
+                  ? 'Loading assets...'
+                  : hasAssetOptions
+                    ? 'Select asset'
+                    : 'No assets available'}
+              </option>
+              {assetOptions.map((asset) => (
+                <option key={asset.id} value={asset.name}>
+                  {asset.name}
+                </option>
+              ))}
+            </select>
             <p className="mt-1 text-xs text-neutral-500">
               Suggested format: {assetNameTemplate}
             </p>

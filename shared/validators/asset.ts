@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const assetBaseSchema = z.object({
   name: z.string().min(1),
-  type: z.enum(['Electrical', 'Mechanical', 'Tooling', 'Interface']).optional(),
+  type: z.enum(['Electrical', 'Mechanical', 'Tooling', 'Interface', 'Welding']).optional(),
   qrCode: z.string().optional(),
   location: z.string().optional(),
   notes: z.string().optional(),

@@ -7,7 +7,7 @@ import SlideOver from '@/components/common/SlideOver';
 import Button from '@/components/common/Button';
 import type { Asset } from '@/types';
 
-const assetTypes: Asset['type'][] = ['Electrical', 'Mechanical', 'Tooling', 'Interface'];
+const assetTypes: Asset['type'][] = ['Electrical', 'Mechanical', 'Tooling', 'Interface', 'Welding'];
 const statusOptions = ['Active', 'Offline', 'In Repair'];
 const assetNameTemplate =
   'Manufacturer + Model | Short description | Station / install | Line | Department | Serial | Plant or $ | Date installed | Warranty | Criticality | Asset type';

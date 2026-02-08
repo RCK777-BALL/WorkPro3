@@ -24,7 +24,7 @@ interface Props {
   ) => void;
 }
 
-const assetTypes: Asset['type'][] = ['Electrical', 'Mechanical', 'Tooling', 'Interface'];
+const assetTypes: Asset['type'][] = ['Electrical', 'Mechanical', 'Tooling', 'Interface', 'Welding'];
 
 const DepartmentHierarchyGrid: React.FC<Props> = ({
   department,

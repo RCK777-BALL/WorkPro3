@@ -10,8 +10,17 @@ import Card from '@/components/common/Card';
 import SlideOver from '@/components/common/SlideOver';
 import { useScopeContext } from '@/context/ScopeContext';
 import { useToast } from '@/context/ToastContext';
-import { createStation, deleteStation, listDepartments, listLines, updateStation } from '@/api/departments';
+import {
+  createAsset,
+  createStation,
+  deleteStation,
+  listDepartments,
+  listLines,
+  updateStation,
+} from '@/api/departments';
 import http from '@/lib/http';
+import AssetModal from '@/components/departments/AssetModal';
+import type { Asset } from '@/types';
 
 interface StationResponse {
   _id: string;
@@ -49,6 +58,9 @@ const Stations: React.FC = () => {
   const [stationTouched, setStationTouched] = useState(false);
   const [stationSaving, setStationSaving] = useState(false);
   const [editingStation, setEditingStation] = useState<StationResponse | null>(null);
+  const [assetModalOpen, setAssetModalOpen] = useState(false);
+  const [assetSaving, setAssetSaving] = useState(false);
+  const [assetStation, setAssetStation] = useState<StationResponse | null>(null);
 
   const fetchStations = useCallback(async () => {
     setLoading(true);
@@ -192,6 +204,41 @@ const Stations: React.FC = () => {
     }
   };
 
+  const handleAssetAdd = (station: StationResponse) => {
+    setAssetStation(station);
+    setAssetModalOpen(true);
+  };
+
+  const handleAssetSave = async (values: {
+    name: string;
+    type: Asset['type'];
+    status?: string;
+    description?: string;
+    notes?: string;
+    location?: string;
+    lastServiced?: string;
+  }) => {
+    if (!assetStation) return;
+    setAssetSaving(true);
+    try {
+      await createAsset(
+        assetStation.departmentId,
+        assetStation.lineId,
+        assetStation._id,
+        values,
+        { plantId: activePlant?.id },
+      );
+      addToast('Asset added to station', 'success');
+      setAssetModalOpen(false);
+      setAssetStation(null);
+    } catch (err) {
+      console.error('Failed to add asset to station', err);
+      addToast('Unable to add asset to station', 'error');
+    } finally {
+      setAssetSaving(false);
+    }
+  };
+
   const departmentError = useMemo(() => {
     if (!stationTouched) return null;
     return selectedDepartmentId ? null : 'Department is required';
@@ -260,6 +307,9 @@ const Stations: React.FC = () => {
                           <Button size="xs" variant="outline" onClick={() => handleStationEdit(station)}>
                             Edit
                           </Button>
+                          <Button size="xs" variant="outline" onClick={() => handleAssetAdd(station)}>
+                            Add Asset
+                          </Button>
                           <Button size="xs" variant="destructive" onClick={() => void handleStationDelete(station)}>
                             Delete
                           </Button>
@@ -280,6 +330,17 @@ const Stations: React.FC = () => {
           </div>
         )}
       </Card>
+
+      <AssetModal
+        open={assetModalOpen}
+        loading={assetSaving}
+        onClose={() => {
+          if (assetSaving) return;
+          setAssetModalOpen(false);
+          setAssetStation(null);
+        }}
+        onSave={handleAssetSave}
+      />
 
       <SlideOver
         open={stationModalOpen}

@@ -57,15 +57,25 @@ The following task list tracks the remaining gaps called out in the readiness au
 
 - [ ] Ensure CI runs `npm run test:coverage` for both backend and frontend.
 - [ ] Verify the 80% coverage thresholds are enforced in CI.
-- [ ] Add build/lint/typecheck steps to CI if they are missing.
+- [ ] Add build, lint, and typecheck steps to CI if they are missing.
+- [ ] Enforce lint/typecheck/build as blocking quality gates (fail the pipeline on errors).
+- [ ] Capture evidence links to the last green CI run for each gate (lint, typecheck, build, coverage).
 
-## 7) Readiness completion plan
+## 7) Dashboard acceptance validation
 
-- [ ] Convert every unchecked item in sections 0–6 into a tracked ticket with a due date and owner.
+- [ ] Validate dashboards against real data sets (production-like volume, multi-tenant, multi-site).
+- [ ] Confirm live updates via sockets and verify polling fallback when sockets are disabled.
+- [ ] Test exports (CSV/PDF) for accuracy, formatting, and permission filtering.
+- [ ] Validate layout persistence across reloads and user sessions.
+- [ ] Verify drill-through filters propagate correctly from dashboard widgets to underlying records.
+
+## 8) Readiness completion plan
+
+- [ ] Convert every unchecked item in sections 0–7 into a tracked ticket with a due date and owner.
 - [ ] Schedule a readiness review meeting to validate evidence artifacts for each completed task.
-- [ ] Capture sign-off for each section (0–6) and link approvals in this document.
+- [ ] Capture sign-off for each section (0–7) and link approvals in this document.
 - [ ] Publish a final readiness status update summarizing remaining risks and blockers.
 
-## 8) High-level gap closure plan (items 1–6)
+## 9) High-level gap closure plan (items 1–7)
 
-- [ ] **Production readiness gap closure (items 1–6)**: Execute the remaining must-have items across secrets/config, security hardening, reliability/data durability, observability, background jobs resilience, and offline readiness. Track owners and evidence for each area, verify production configuration values, validate staging tests (CORS/websocket smoke, migration rehearsal, restore test), confirm observability endpoints and log shipping, and document operational runbooks for lock TTLs and conflict/idempotency handling.
+- [ ] **Production readiness gap closure (items 1–7)**: Execute the remaining must-have items across secrets/config, security hardening, reliability/data durability, observability, background jobs resilience, offline readiness, and dashboard validation. Track owners and evidence for each area, verify production configuration values, validate staging tests (CORS/websocket smoke, migration rehearsal, restore test), confirm observability endpoints and log shipping, and document operational runbooks for lock TTLs and conflict/idempotency handling.

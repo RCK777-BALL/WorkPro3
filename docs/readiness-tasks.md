@@ -65,3 +65,7 @@ The following task list tracks the remaining gaps called out in the readiness au
 - [ ] Schedule a readiness review meeting to validate evidence artifacts for each completed task.
 - [ ] Capture sign-off for each section (0–6) and link approvals in this document.
 - [ ] Publish a final readiness status update summarizing remaining risks and blockers.
+
+## 8) High-level gap closure plan (items 1–6)
+
+- [ ] **Production readiness gap closure (items 1–6)**: Execute the remaining must-have items across secrets/config, security hardening, reliability/data durability, observability, background jobs resilience, and offline readiness. Track owners and evidence for each area, verify production configuration values, validate staging tests (CORS/websocket smoke, migration rehearsal, restore test), confirm observability endpoints and log shipping, and document operational runbooks for lock TTLs and conflict/idempotency handling.

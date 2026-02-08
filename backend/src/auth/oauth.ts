@@ -16,8 +16,12 @@ import {
   type StrategyOptions as GithubStrategyOptions,
 } from 'passport-github2';
 
+import { randomUUID } from 'crypto';
+import { Types } from 'mongoose';
 import User from '../../models/User';
 import { resolveTenantContext } from '../../auth/tenantContext';
+import { getSecurityPolicy } from '../../config/securityPolicies';
+import { ROLES, type UserRole } from '../../types/auth';
 
 /**
  * IMPORTANT:
@@ -80,10 +84,22 @@ export type OAuthUser = {
   roles?: string[];
 };
 
-/**
- * TODO: Replace this with your real "upsert/find user by provider profile" logic.
- * This stub compiles but returns `false` (no login).
- */
+const normalizeRoles = (value: unknown): UserRole[] => {
+  if (!value) return [];
+  const roles = Array.isArray(value) ? value : [value];
+  return roles
+    .filter((entry): entry is string => typeof entry === 'string')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter((entry): entry is UserRole => (ROLES as readonly string[]).includes(entry));
+};
+
+const resolveObjectId = (value: string | undefined): Types.ObjectId | undefined => {
+  if (!value || !Types.ObjectId.isValid(value)) {
+    return undefined;
+  }
+  return new Types.ObjectId(value);
+};
+
 async function findOrCreateOAuthUser(_args: {
   provider: 'google' | 'github';
   accessToken: string;
@@ -124,6 +140,45 @@ async function findOrCreateOAuthUser(_args: {
     .select('_id email tenantId siteId roles name')
     .lean()
     .exec();
+
+  if (!user) {
+    const securityPolicy = getSecurityPolicy();
+    if (!securityPolicy.provisioning.jitProvisioningEnabled) {
+      return false;
+    }
+
+    const tenantObjectId = resolveObjectId(tenantContext.tenantId);
+    if (!tenantObjectId) {
+      return false;
+    }
+
+    const siteObjectId = resolveObjectId(tenantContext.siteId);
+    const displayName = _args.profile.displayName ?? normalizedEmail.split('@')[0];
+    const roles = normalizeRoles(tenantContext.roles);
+    const employeeId = _args.profile.id || `${_args.provider}-${normalizedEmail}`;
+
+    const newUser = await User.create({
+      name: displayName,
+      email: normalizedEmail,
+      employeeId,
+      tenantId: tenantObjectId,
+      ...(siteObjectId ? { siteId: siteObjectId } : {}),
+      roles: roles.length ? roles : ['tech'],
+      passwordHash: randomUUID(),
+      mfaEnabled: securityPolicy.mfa.enforced,
+    });
+
+    return {
+      id: newUser._id.toString(),
+      email: normalizedEmail,
+      name: newUser.name,
+      provider: _args.provider,
+      providerId: _args.profile.id,
+      tenantId: tenantObjectId.toString(),
+      siteId: siteObjectId?.toString(),
+      roles: newUser.roles,
+    };
+  }
 
   return {
     id: user?._id ? String(user._id) : normalizedEmail,

@@ -64,6 +64,7 @@ const ASSET_TYPE_OPTIONS: Array<{ value: AssetCategory; label: string }> = [
   { value: 'Mechanical', label: 'Mechanical' },
   { value: 'Tooling', label: 'Tooling' },
   { value: 'Interface', label: 'Interface' },
+  { value: 'Welding', label: 'Welding' },
 ];
 
 const Departments = () => {

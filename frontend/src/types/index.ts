@@ -106,7 +106,7 @@ export interface Asset {
   siteId?: string;
   plantId?: string;
   name: string;
-  type?: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface';
+  type?: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface' | 'Welding';
   qrCode?: string;
   location?: string;
   notes?: string;

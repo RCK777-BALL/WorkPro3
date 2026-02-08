@@ -7,7 +7,7 @@ import mongoose, { Schema, type Document, type Types } from 'mongoose';
 export interface AssetDoc extends Document {
   _id: Types.ObjectId;
   name: string;
-  type: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface';
+  type: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface' | 'Welding';
   qrCode?: string;
   location?: string;
   departmentId?: Types.ObjectId;
@@ -53,7 +53,7 @@ const assetSchema = new Schema<AssetDoc>(
     name: { type: String, required: true },
     type: {
       type: String,
-      enum: ['Electrical', 'Mechanical', 'Tooling', 'Interface'],
+      enum: ['Electrical', 'Mechanical', 'Tooling', 'Interface', 'Welding'],
       required: true,
     },
     location: { type: String, required: false },

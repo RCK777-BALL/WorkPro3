@@ -17,7 +17,7 @@ export const assetSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string(),
   serialNumber: z.string().min(1, 'Serial number is required'),
-  type: z.enum(['Electrical', 'Mechanical', 'Tooling', 'Interface']),
+  type: z.enum(['Electrical', 'Mechanical', 'Tooling', 'Interface', 'Welding']),
   location: z.string().min(1, 'Location is required'),
   status: z.enum(['Active', 'Offline', 'In Repair']),
 });

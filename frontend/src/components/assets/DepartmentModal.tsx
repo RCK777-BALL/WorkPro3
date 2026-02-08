@@ -366,6 +366,7 @@ const DepartmentModal: React.FC<Props> = ({
                                 <option value="Mechanical">Mechanical</option>
                                 <option value="Tooling">Tooling</option>
                                 <option value="Interface">Interface</option>
+                                <option value="Welding">Welding</option>
                               </select>
                               <input
                                 type="text"

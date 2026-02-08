@@ -40,6 +40,17 @@ interface LineOption {
   name: string;
 }
 
+interface AssetOption {
+  id: string;
+  name: string;
+}
+
+interface AssetOptionResponse {
+  _id?: string;
+  id?: string;
+  name?: string;
+}
+
 const Stations: React.FC = () => {
   const { addToast } = useToast();
   const { activePlant } = useScopeContext();
@@ -61,6 +72,8 @@ const Stations: React.FC = () => {
   const [assetModalOpen, setAssetModalOpen] = useState(false);
   const [assetSaving, setAssetSaving] = useState(false);
   const [assetStation, setAssetStation] = useState<StationResponse | null>(null);
+  const [assetOptions, setAssetOptions] = useState<AssetOption[]>([]);
+  const [assetOptionsLoading, setAssetOptionsLoading] = useState(false);
 
   const fetchStations = useCallback(async () => {
     setLoading(true);
@@ -119,6 +132,32 @@ const Stations: React.FC = () => {
     [addToast],
   );
 
+  const fetchAssetOptions = useCallback(async () => {
+    if (!activePlant?.id) {
+      setAssetOptions([]);
+      return;
+    }
+    setAssetOptionsLoading(true);
+    try {
+      const response = await http.get<AssetOptionResponse[] | { items: AssetOptionResponse[] }>(
+        '/assets',
+        { params: { plantId: activePlant.id } },
+      );
+      const payload = Array.isArray(response.data) ? response.data : response.data.items ?? [];
+      const normalized = payload.flatMap((asset) => {
+        const id = asset._id ?? asset.id;
+        if (!id || !asset.name) return [] as AssetOption[];
+        return [{ id, name: asset.name }];
+      });
+      setAssetOptions(normalized);
+    } catch (err) {
+      console.error('Failed to load assets', err);
+      addToast('Unable to load assets', 'error');
+    } finally {
+      setAssetOptionsLoading(false);
+    }
+  }, [activePlant?.id, addToast]);
+
   useEffect(() => {
     void fetchStations();
   }, [fetchStations]);
@@ -132,6 +171,11 @@ const Stations: React.FC = () => {
     if (!stationModalOpen || !selectedDepartmentId) return;
     void fetchLines(selectedDepartmentId);
   }, [fetchLines, selectedDepartmentId, stationModalOpen]);
+
+  useEffect(() => {
+    if (!assetModalOpen) return;
+    void fetchAssetOptions();
+  }, [assetModalOpen, fetchAssetOptions]);
 
   const resetStationForm = useCallback(() => {
     setStationName('');
@@ -334,6 +378,8 @@ const Stations: React.FC = () => {
       <AssetModal
         open={assetModalOpen}
         loading={assetSaving}
+        assetOptions={assetOptions}
+        assetsLoading={assetOptionsLoading}
         onClose={() => {
           if (assetSaving) return;
           setAssetModalOpen(false);

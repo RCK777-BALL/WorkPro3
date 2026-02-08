@@ -190,6 +190,22 @@ const Departments = () => {
     };
   }, [departments]);
 
+  const assetOptions = useMemo(() => {
+    const uniqueAssets = new Map<string, string>();
+    departments.forEach((department) => {
+      department.lines.forEach((line) => {
+        line.stations.forEach((station) => {
+          station.assets.forEach((asset) => {
+            if (!uniqueAssets.has(asset.id)) {
+              uniqueAssets.set(asset.id, asset.name);
+            }
+          });
+        });
+      });
+    });
+    return Array.from(uniqueAssets, ([id, name]) => ({ id, name }));
+  }, [departments]);
+
   const filteredDepartments = useMemo(() => {
     return departments.filter((department) => {
       const plantName = department.plant?.name?.toLowerCase() ?? '';
@@ -1038,6 +1054,7 @@ const Departments = () => {
         open={Boolean(assetModalState)}
         initial={assetModalState?.asset ?? null}
         loading={assetSaving}
+        assetOptions={assetOptions}
         onClose={() => {
           if (assetSaving) return;
           setAssetModalState(null);

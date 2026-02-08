@@ -133,3 +133,77 @@ This document breaks the end-to-end implementation board into discrete tasks wit
   - Add `docs/DEPLOYMENT.md` and `docs/RUNBOOK.md`.
 - **WPB-0902 — API & permissions documentation**
   - Add `docs/API.md`, `docs/ROLE_PERMISSIONS.md`, `docs/OFFLINE_SYNC.md`.
+
+## EPIC 10 — UX/UI Parity with Top CMMS Layouts
+- **WPB-1001 — Design persistent “Create” CTA in header**
+  - Define CTA placement, label, and iconography in the header layout.
+  - Align CTA styling with existing primary button tokens and dark theme.
+  - Document CTA visibility rules for authenticated pages.
+- **WPB-1002 — Wire “Create” CTA to work order creation flow**
+  - Connect CTA to the existing Work Order create route or modal.
+  - Add telemetry/analytics event for CTA usage.
+  - Verify permission gating for create actions.
+- **WPB-1003 — Validate responsive behavior for header CTA**
+  - Confirm CTA remains discoverable on small breakpoints.
+  - Add overflow handling in header when switchers or search are present.
+  - Update QA checklist for responsive header testing.
+- **WPB-1004 — Define right-panel context mapping**
+  - Create a route-to-widget mapping for assets, PM, inventory, and work orders.
+  - Specify fallback content for routes without a defined panel.
+  - Ensure widgets use existing data sources or placeholders.
+- **WPB-1005 — Add right-panel collapse/expand control**
+  - Add a toggle control in the layout to collapse the right panel.
+  - Ensure layout reflows when the panel is hidden.
+  - Provide keyboard accessibility for the toggle.
+- **WPB-1006 — Persist right-panel visibility preference**
+  - Store the panel state in user settings or local storage.
+  - Restore visibility on page reload and across sessions.
+  - Add default behavior for first-time users.
+- **WPB-1007 — Audit and update Operations navigation order**
+  - Inventory all Operations links and their current usage frequency.
+  - Prioritize Work Orders and Work Requests at the top.
+  - Confirm permission gating and badges are unaffected.
+- **WPB-1008 — Consolidate Inventory nav structure**
+  - Group parts and locations under a single Inventory node.
+  - Adjust routes/labels to reduce duplication and scanning time.
+  - Update any associated onboarding/help text.
+- **WPB-1009 — Validate navigation IA with stakeholders**
+  - Run a quick card sort or feedback review with Ops/Dispatcher roles.
+  - Capture required tweaks to labels or grouping.
+  - Finalize updated navigation order in config.
+- **WPB-1010 — Build a shared page header component**
+  - Create a reusable header block (title, description, actions, filter summary).
+  - Add prop support for secondary actions and status badges.
+  - Document usage guidelines for new pages.
+- **WPB-1011 — Apply page header to key list pages**
+  - Work Orders list: include primary “Create WO” action and filters.
+  - Assets list: include add asset action and asset status summary.
+  - Inventory/PM list: include filters, export, and quick actions.
+- **WPB-1012 — Integrate filter chips into page header**
+  - Show active filter chips inline with quick clear/reset actions.
+  - Add compact filter summary for dense mode layouts.
+  - Ensure chips are accessible and keyboard navigable.
+- **WPB-1013 — Define Saved Views/Favorites data model**
+  - Specify how favorites and saved views are stored per user.
+  - Determine integration with existing navigation ordering store.
+  - Add migration plan for legacy favorites if applicable.
+- **WPB-1014 — Add “Pinned/Recent” entry point in navigation**
+  - Add a top-level sidebar group for favorites/recents.
+  - Render recent entities with last-accessed timestamps.
+  - Provide quick remove/unpin actions.
+- **WPB-1015 — Implement saved view creation UX**
+  - Add “Save view” actions on list pages with filters applied.
+  - Allow renaming and sharing saved views where permissions allow.
+  - Provide a management screen for saved views.
+- **WPB-1016 — Componentize dashboard KPI widgets**
+  - Split KPIs into independent widget components with shared styling.
+  - Add enable/disable controls per widget.
+  - Ensure widgets support empty/loading states.
+- **WPB-1017 — Add role-based dashboard presets**
+  - Define default widget layouts for Technician vs Manager.
+  - Provide a reset-to-default option per role.
+  - Document the preset mapping in product docs.
+- **WPB-1018 — Persist dashboard layout preferences**
+  - Store widget order and visibility per user.
+  - Apply preferences on login and across devices.
+  - Add fallback for users without stored preferences.

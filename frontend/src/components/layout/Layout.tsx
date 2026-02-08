@@ -75,9 +75,14 @@ export default function Layout() {
   const { pathname } = location;
   const { t } = useTranslation();
   const { backgroundColor, textColor } = useTheme();
-  const { sidebarCollapsed, denseMode, highContrast, colorScheme = 'default' } = useSettingsStore(
-    (state) => state.theme,
-  );
+  const {
+    sidebarCollapsed,
+    denseMode,
+    highContrast,
+    rightPanelCollapsed,
+    colorScheme = 'default',
+  } = useSettingsStore((state) => state.theme);
+  const setTheme = useSettingsStore((state) => state.setTheme);
   const unauthorizedHandledKeyRef = useRef<string | null>(null);
   const accent = useMemo(() => COLOR_SCHEMES[colorScheme] ?? COLOR_SCHEMES.default, [colorScheme]);
   const accentBackground = useMemo(
@@ -173,10 +178,20 @@ export default function Layout() {
                   <Outlet />
                 </div>
               </main>
-              <RightPanel />
+              {!rightPanelCollapsed && <RightPanel />}
             </div>
           </div>
         </div>
+        {rightPanelCollapsed && (
+          <button
+            type="button"
+            className="absolute right-2 top-28 rounded-full border border-white/10 bg-slate-900/80 px-3 py-2 text-xs font-semibold text-white shadow-lg transition hover:bg-slate-800"
+            onClick={() => setTheme({ rightPanelCollapsed: false })}
+            aria-label="Show insights panel"
+          >
+            Show insights
+          </button>
+        )}
       </div>
     </ScopeProvider>
   );

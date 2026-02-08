@@ -19,6 +19,7 @@ import { usePermissions } from '@/auth/usePermissions';
 import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
 import Input from '@/components/common/Input';
+import PageHeader from '@/components/layout/PageHeader';
 
 const StatCard = ({ label, value, icon: Icon }: { label: string; value: string; icon: typeof Package2 }) => (
   <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
@@ -46,22 +47,22 @@ const Inventory = () => {
 
   return (
     <div className="space-y-6">
-      <header className="space-y-3">
-        <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Inventory intelligence</h1>
-          <p className="text-sm text-neutral-500">
-            Track parts, see which assets rely on them, and generate purchase orders without leaving this page.
-          </p>
-          <div className="pt-2">
-            <InventoryAlertIndicator />
-          </div>
-        </div>
+      <div className="space-y-3">
+        <PageHeader
+          title="Inventory intelligence"
+          description="Track parts, see which assets rely on them, and generate purchase orders without leaving this page."
+          actions={
+            <div className="pt-2">
+              <InventoryAlertIndicator />
+            </div>
+          }
+        />
         <div className="grid gap-3 md:grid-cols-3">
           <StatCard label="Active parts" value={partsCount.toString()} icon={Package2} />
           <StatCard label="Linked assets" value={linkedAssets.toString()} icon={ClipboardList} />
           <StatCard label="Alerts" value={lowStockCount.toString()} icon={ShieldAlert} />
         </div>
-      </header>
+      </div>
 
       <AlertsPanel />
 

@@ -33,6 +33,7 @@ import { useScopeContext } from '@/context/ScopeContext';
 import { useToast } from '@/context/ToastContext';
 import { useAuthStore } from '@/store/authStore';
 import { uploadImport, type ImportSummary } from '@/api/importExport';
+import PageHeader from '@/components/layout/PageHeader';
 
 const ASSET_CACHE_KEY = 'offline-assets';
 const FILTER_STORAGE_VERSION = 1;
@@ -426,60 +427,71 @@ const AssetsPage: React.FC = () => {
   return (
     <>
       <div className="space-y-6 p-4 sm:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <p className="text-sm text-neutral-600">Assets</p>
-            <h1 className="text-3xl font-bold text-neutral-900">Asset catalog</h1>
-            <p className="text-neutral-600 mt-1">
-              Browse the list of assets, make quick edits, and add new equipment to your hierarchy.
-            </p>
-          </div>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
-            <Button
-              variant="primary"
-              size="lg"
-              className="w-full sm:w-auto"
-              onClick={() => navigate('/assets/scan')}
-              aria-label="Scan an asset QR or barcode"
-            >
-              <Scan className="w-5 h-5 mr-2" />
-              Scan QR/Barcode
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-full sm:w-auto"
-              onClick={fetchAssets}
-              disabled={isLoading || isSampleDataActive}
-            >
-              <RefreshCcw className="w-5 h-5 mr-2" />
-              {isLoading ? 'Refreshing...' : 'Refresh'}
-            </Button>
-            <Button
-              variant="primary"
-              size="lg"
-              className="w-full sm:w-auto"
-              onClick={() => {
-                setSelected(null);
-                setModalOpen(true);
-              }}
-              disabled={actionsDisabled}
-              aria-disabled={actionsDisabled}
-              title={
-                !canManageAssets
-                  ? t('assets.permissionWarning')
-                  : isSampleDataActive
-                    ? 'Turn off sample data to add live assets'
-                    : !activePlant
-                      ? 'Select a plant to create assets'
-                      : undefined
-              }
-            >
-              <PlusCircle className="w-4 h-4 mr-2" />
-              Add asset
-            </Button>
-          </div>
-        </div>
+        <PageHeader
+          title="Asset catalog"
+          description="Browse the list of assets, make quick edits, and add new equipment to your hierarchy."
+          actions={
+            <>
+              <Button
+                variant="primary"
+                size="lg"
+                className="w-full sm:w-auto"
+                onClick={() => navigate('/assets/scan')}
+                aria-label="Scan an asset QR or barcode"
+              >
+                <Scan className="w-5 h-5 mr-2" />
+                Scan QR/Barcode
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full sm:w-auto"
+                onClick={fetchAssets}
+                disabled={isLoading || isSampleDataActive}
+              >
+                <RefreshCcw className="w-5 h-5 mr-2" />
+                {isLoading ? 'Refreshing...' : 'Refresh'}
+              </Button>
+              <Button
+                variant="primary"
+                size="lg"
+                className="w-full sm:w-auto"
+                onClick={() => {
+                  setSelected(null);
+                  setModalOpen(true);
+                }}
+                disabled={actionsDisabled}
+                aria-disabled={actionsDisabled}
+                title={
+                  !canManageAssets
+                    ? t('assets.permissionWarning')
+                    : isSampleDataActive
+                      ? 'Turn off sample data to add live assets'
+                      : !activePlant
+                        ? 'Select a plant to create assets'
+                        : undefined
+                }
+              >
+                <PlusCircle className="w-4 h-4 mr-2" />
+                Add asset
+              </Button>
+            </>
+          }
+          filters={[
+            {
+              id: 'status',
+              label: 'Status',
+              value: statusFilter || undefined,
+              onClear: statusFilter ? () => setStatusFilter('') : undefined,
+            },
+            {
+              id: 'criticality',
+              label: 'Criticality',
+              value: criticalityFilter || undefined,
+              onClear: criticalityFilter ? () => setCriticalityFilter('') : undefined,
+            },
+          ]}
+        />
 
         {!canManageAssets && (
           <div

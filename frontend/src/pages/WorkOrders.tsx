@@ -27,6 +27,7 @@ import { useTableLayout } from '@/hooks/useTableLayout';
 import { useAuth } from '@/context/AuthContext';
 import { loadWorkOrderCache, saveWorkOrderCache } from '@/hooks/useWorkOrderCache';
 import { useSyncStore } from '@/store/syncStore';
+import PageHeader from '@/components/layout/PageHeader';
 
 const OPTIONAL_WORK_ORDER_KEYS: (keyof WorkOrder)[] = [
   'description',
@@ -477,11 +478,18 @@ export default function WorkOrders() {
     const priorityParam = params.get('priority') ?? '';
     const startParam = params.get('startDate') ?? '';
     const endParam = params.get('endDate') ?? '';
+    const shouldCreate = params.get('create') === '1';
 
     setStatusFilter((prev) => (prev === statusParam ? prev : statusParam));
     setPriorityFilter((prev) => (prev === priorityParam ? prev : priorityParam));
     setStartDate((prev) => (prev === startParam ? prev : startParam));
     setEndDate((prev) => (prev === endParam ? prev : endParam));
+
+    if (shouldCreate) {
+      openCreateModal();
+      params.delete('create');
+      setSearchParams(params, { replace: true });
+    }
 
     fetchWorkOrders({
       status: statusParam || undefined,
@@ -489,7 +497,7 @@ export default function WorkOrders() {
       startDate: startParam || undefined,
       endDate: endParam || undefined,
     });
-  }, [fetchWorkOrders, searchKey]);
+  }, [fetchWorkOrders, searchKey, setSearchParams]);
 
   const filteredOrders = workOrders.filter((wo) => {
     const matchesSearch = Object.values(wo).some((value) =>
@@ -747,31 +755,57 @@ export default function WorkOrders() {
   return (
     <>
       <div className="space-y-6 p-4 sm:p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Work Orders</h1>
-            <p className="text-sm text-neutral-500">Mobile-ready list of active and offline work orders.</p>
-          </div>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            <Button
-              variant="primary"
-              size="lg"
-              className="w-full sm:w-auto"
-              onClick={() => navigate('/assets/scan')}
-            >
-              <Scan className="mr-2 h-5 w-5" />
-              Scan QR/Barcode
-            </Button>
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={openCreateModal}
-              className="w-full border border-primary-700 sm:w-auto"
-            >
-              Create Work Order
-            </Button>
-          </div>
-        </div>
+        <PageHeader
+          title="Work Orders"
+          description="Mobile-ready list of active and offline work orders."
+          actions={
+            <>
+              <Button
+                variant="primary"
+                size="lg"
+                className="w-full sm:w-auto"
+                onClick={() => navigate('/assets/scan')}
+              >
+                <Scan className="mr-2 h-5 w-5" />
+                Scan QR/Barcode
+              </Button>
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={openCreateModal}
+                className="w-full border border-primary-700 sm:w-auto"
+              >
+                Create Work Order
+              </Button>
+            </>
+          }
+          filters={[
+            {
+              id: 'status',
+              label: 'Status',
+              value: statusFilter || undefined,
+              onClear: statusFilter ? () => setStatusFilter('') : undefined,
+            },
+            {
+              id: 'priority',
+              label: 'Priority',
+              value: priorityFilter || undefined,
+              onClear: priorityFilter ? () => setPriorityFilter('') : undefined,
+            },
+            {
+              id: 'start-date',
+              label: 'Start',
+              value: startDate || undefined,
+              onClear: startDate ? () => setStartDate('') : undefined,
+            },
+            {
+              id: 'end-date',
+              label: 'End',
+              value: endDate || undefined,
+              onClear: endDate ? () => setEndDate('') : undefined,
+            },
+          ]}
+        />
 
         <WorkOrderQueuePanel />
 

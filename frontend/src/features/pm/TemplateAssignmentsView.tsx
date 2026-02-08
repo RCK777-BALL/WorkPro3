@@ -5,6 +5,7 @@
 import { useMemo, useState } from 'react';
 
 import Button from '@/components/common/Button';
+import PageHeader from '@/components/layout/PageHeader';
 import type { PMTemplate, PMTemplateAssignment } from '@/types';
 import AssignmentForm from './AssignmentForm';
 import {
@@ -50,12 +51,17 @@ const TemplateAssignmentsView = () => {
   };
 
   return (
-    <div className="grid gap-6 p-6 lg:grid-cols-[280px,1fr]">
-      <aside className="rounded-lg border border-neutral-200 bg-white shadow-sm">
-        <div className="border-b border-neutral-100 px-4 py-3">
-          <p className="text-sm font-semibold text-neutral-800">PM templates</p>
-          <p className="text-xs text-neutral-500">Select a template to review assignments.</p>
-        </div>
+    <div className="space-y-6 p-6">
+      <PageHeader
+        title="Preventive maintenance schedules"
+        description="Review PM templates and manage asset assignments in one place."
+      />
+      <div className="grid gap-6 lg:grid-cols-[280px,1fr]">
+        <aside className="rounded-lg border border-neutral-200 bg-white shadow-sm">
+          <div className="border-b border-neutral-100 px-4 py-3">
+            <p className="text-sm font-semibold text-neutral-800">PM templates</p>
+            <p className="text-xs text-neutral-500">Select a template to review assignments.</p>
+          </div>
         <div className="divide-y divide-neutral-100">
           {isLoading && <p className="px-4 py-3 text-sm text-neutral-500">Loading templates...</p>}
           {isError && <p className="px-4 py-3 text-sm text-error-500">Failed to load templates</p>}
@@ -155,6 +161,7 @@ const TemplateAssignmentsView = () => {
         </div>
       </section>
     </div>
+  </div>
   );
 };
 

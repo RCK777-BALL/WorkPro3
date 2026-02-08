@@ -17,6 +17,7 @@ Last updated: 2025-02-14
 | LR-006 | TBD | TBD | not-started | [docs/evidence/LR-006.log](evidence/LR-006.log) |
 | LR-007 | TBD | TBD | not-started | [docs/evidence/LR-007.log](evidence/LR-007.log) |
 | LR-008 | TBD | TBD | not-started | [docs/evidence/LR-008.log](evidence/LR-008.log) |
+| LR-009 | TBD | TBD | not-started | [docs/evidence/LR-009.log](evidence/LR-009.log) |
 
 ## CMMS Parity (CP)
 | Task ID | Owner | Due Date | Status | Evidence |

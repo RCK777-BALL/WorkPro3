@@ -212,6 +212,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
     setError(null);
 
     const { departmentId: formDepartmentId, lineId: formLineId, stationId: formStationId, ...rest } = data;
+    const resolvedSiteId = activePlant?.id ?? asset?.plantId ?? asset?.siteId ?? undefined;
 
     const payload: Record<string, any> = {
       ...rest,
@@ -226,9 +227,11 @@ const AssetModal: React.FC<AssetModalProps> = ({
       lineId: formLineId || undefined,
       stationId: formStationId || undefined,
       plantId: activePlant?.id ?? asset?.plantId ?? undefined,
-      siteId: activePlant?.id ?? asset?.siteId ?? undefined,
+      siteId: resolvedSiteId ?? undefined,
       ...(tenantId ? { tenantId } : {}),
     };
+
+    const requestConfig = resolvedSiteId ? { headers: { "x-site-id": resolvedSiteId } } : undefined;
 
     try {
       const raw = await submitAssetRequest({
@@ -236,6 +239,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
         files,
         payload,
         httpClient: assetHttpClient,
+        requestConfig,
       });
 
       const fallback: Partial<Asset> = {

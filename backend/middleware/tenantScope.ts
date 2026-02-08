@@ -82,7 +82,13 @@ const tenantScope: AuthedRequestHandler = async (req, res: Response, next): Prom
   }
 
   try {
-    resolvedTenant = await ensureTenantSite(resolvedTenant);
+    if (Types.ObjectId.isValid(resolvedTenant)) {
+      const tenantExists = await Tenant.exists({ _id: resolvedTenant });
+      if (!tenantExists) {
+        res.status(403).json({ message: "Tenant does not exist" });
+        return;
+      }
+    }
   } catch (error) {
     logger.error("tenantScope: unable to resolve tenant context", {
       tenantId: resolvedTenant,

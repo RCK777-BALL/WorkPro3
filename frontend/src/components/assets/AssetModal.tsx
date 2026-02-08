@@ -11,7 +11,6 @@ import http from "@/lib/http";
 import { useToast } from "@/context/ToastContext";
 import { useScopeContext } from "@/context/ScopeContext";
 import { useDepartmentStore } from "@/store/departmentStore";
-import { useAuthStore, type AuthState } from "@/store/authStore";
 import type { Asset, Department, Line, Station } from "@/types";
 import AssetQRCode from "@/components/qr/AssetQRCode";
 import {
@@ -146,7 +145,6 @@ const AssetModal: React.FC<AssetModalProps> = ({
   const fetchDepartments = useDepartmentStore((s) => s.fetchDepartments);
   const fetchLines = useDepartmentStore((s) => s.fetchLines);
   const fetchStations = useDepartmentStore((s) => s.fetchStations);
-  const tenantId = useAuthStore((s: AuthState) => s.user?.tenantId);
   const departmentId = watch("departmentId");
   const lineId = watch("lineId");
   const stationId = watch("stationId");
@@ -233,7 +231,6 @@ const AssetModal: React.FC<AssetModalProps> = ({
         : {}),
       plantId: activePlant?.id ?? asset?.plantId ?? undefined,
       siteId: resolvedSiteId ?? undefined,
-      ...(tenantId ? { tenantId } : {}),
     };
 
     const requestConfig = resolvedSiteId ? { headers: { "x-site-id": resolvedSiteId } } : undefined;

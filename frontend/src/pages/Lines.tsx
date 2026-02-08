@@ -10,7 +10,7 @@ import Card from '@/components/common/Card';
 import SlideOver from '@/components/common/SlideOver';
 import { useScopeContext } from '@/context/ScopeContext';
 import { useToast } from '@/context/ToastContext';
-import { createLine, listDepartments } from '@/api/departments';
+import { createLine, deleteLine, listDepartments, updateLine } from '@/api/departments';
 import http from '@/lib/http';
 
 interface LineResponse {
@@ -40,6 +40,7 @@ const Lines: React.FC = () => {
   const [selectedDepartmentId, setSelectedDepartmentId] = useState('');
   const [lineTouched, setLineTouched] = useState(false);
   const [lineSaving, setLineSaving] = useState(false);
+  const [editingLine, setEditingLine] = useState<LineResponse | null>(null);
 
   const fetchLines = useCallback(async () => {
     setLoading(true);
@@ -87,6 +88,7 @@ const Lines: React.FC = () => {
     setLineNotes('');
     setSelectedDepartmentId('');
     setLineTouched(false);
+    setEditingLine(null);
   }, []);
 
   const handleLineSave = async () => {
@@ -97,20 +99,53 @@ const Lines: React.FC = () => {
 
     setLineSaving(true);
     try {
-      await createLine(
-        selectedDepartmentId,
-        { name: lineName.trim(), notes: lineNotes.trim() || undefined },
-        { plantId: activePlant?.id },
-      );
-      addToast('Line created', 'success');
+      if (editingLine) {
+        await updateLine(
+          editingLine.departmentId,
+          editingLine._id,
+          { name: lineName.trim(), notes: lineNotes.trim() || undefined },
+          { plantId: activePlant?.id },
+        );
+        addToast('Line updated', 'success');
+      } else {
+        await createLine(
+          selectedDepartmentId,
+          { name: lineName.trim(), notes: lineNotes.trim() || undefined },
+          { plantId: activePlant?.id },
+        );
+        addToast('Line created', 'success');
+      }
       setLineModalOpen(false);
       resetLineForm();
       void fetchLines();
     } catch (err) {
-      console.error('Failed to create line', err);
-      addToast('Unable to create line', 'error');
+      console.error(`Failed to ${editingLine ? 'update' : 'create'} line`, err);
+      addToast(`Unable to ${editingLine ? 'update' : 'create'} line`, 'error');
     } finally {
       setLineSaving(false);
+    }
+  };
+
+  const handleLineEdit = (line: LineResponse) => {
+    setEditingLine(line);
+    setLineName(line.name);
+    setLineNotes(line.notes ?? '');
+    setSelectedDepartmentId(line.departmentId);
+    setLineTouched(false);
+    setLineModalOpen(true);
+  };
+
+  const handleLineDelete = async (line: LineResponse) => {
+    const confirmed = window.confirm(`Delete the ${line.name} line? This cannot be undone.`);
+    if (!confirmed) return;
+
+    try {
+      await deleteLine(line.departmentId, line._id, { plantId: activePlant?.id });
+      addToast('Line deleted', 'success');
+      void fetchLines();
+    } catch (err) {
+      console.error('Failed to delete line', err);
+      addToast('Unable to delete line', 'error');
     }
   };
 
@@ -174,10 +209,10 @@ const Lines: React.FC = () => {
                       <td className="px-3 py-3">{line.stations.length}</td>
                       <td className="px-3 py-3">
                         <div className="flex flex-wrap gap-2">
-                          <Button size="xs" variant="outline">
+                          <Button size="xs" variant="outline" onClick={() => handleLineEdit(line)}>
                             Edit
                           </Button>
-                          <Button size="xs" variant="destructive">
+                          <Button size="xs" variant="destructive" onClick={() => void handleLineDelete(line)}>
                             Delete
                           </Button>
                         </div>
@@ -200,7 +235,7 @@ const Lines: React.FC = () => {
 
       <SlideOver
         open={lineModalOpen}
-        title="Add Line"
+        title={editingLine ? 'Edit Line' : 'Add Line'}
         onClose={() => {
           if (lineSaving) return;
           setLineModalOpen(false);
@@ -211,7 +246,7 @@ const Lines: React.FC = () => {
               Cancel
             </Button>
             <Button variant="primary" size="sm" onClick={handleLineSave} loading={lineSaving}>
-              Save
+              {editingLine ? 'Update' : 'Save'}
             </Button>
           </div>
         }
@@ -231,7 +266,7 @@ const Lines: React.FC = () => {
               value={selectedDepartmentId}
               onChange={(event) => setSelectedDepartmentId(event.target.value)}
               onBlur={() => setLineTouched(true)}
-              disabled={departmentsLoading}
+              disabled={departmentsLoading || Boolean(editingLine)}
               className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
             >
               <option value="">Select department</option>

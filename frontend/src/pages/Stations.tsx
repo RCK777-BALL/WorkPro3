@@ -257,24 +257,10 @@ const Stations: React.FC = () => {
                       <td className="px-3 py-3">{station.departmentId}</td>
                       <td className="px-3 py-3">
                         <div className="flex flex-wrap gap-2">
-                          <Button
-                            size="xs"
-                            variant="outline"
-                            type="button"
-                            title={`Edit ${station.name}`}
-                            aria-label={`Edit ${station.name}`}
-                            onClick={() => handleStationEdit(station)}
-                          >
+                          <Button size="xs" variant="outline" onClick={() => handleStationEdit(station)}>
                             Edit
                           </Button>
-                          <Button
-                            size="xs"
-                            variant="destructive"
-                            type="button"
-                            title={`Delete ${station.name}`}
-                            aria-label={`Delete ${station.name}`}
-                            onClick={() => void handleStationDelete(station)}
-                          >
+                          <Button size="xs" variant="destructive" onClick={() => void handleStationDelete(station)}>
                             Delete
                           </Button>
                         </div>

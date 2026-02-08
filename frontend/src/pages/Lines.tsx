@@ -209,24 +209,10 @@ const Lines: React.FC = () => {
                       <td className="px-3 py-3">{line.stations.length}</td>
                       <td className="px-3 py-3">
                         <div className="flex flex-wrap gap-2">
-                          <Button
-                            size="xs"
-                            variant="outline"
-                            type="button"
-                            title={`Edit ${line.name}`}
-                            aria-label={`Edit ${line.name}`}
-                            onClick={() => handleLineEdit(line)}
-                          >
+                          <Button size="xs" variant="outline" onClick={() => handleLineEdit(line)}>
                             Edit
                           </Button>
-                          <Button
-                            size="xs"
-                            variant="destructive"
-                            type="button"
-                            title={`Delete ${line.name}`}
-                            aria-label={`Delete ${line.name}`}
-                            onClick={() => void handleLineDelete(line)}
-                          >
+                          <Button size="xs" variant="destructive" onClick={() => void handleLineDelete(line)}>
                             Delete
                           </Button>
                         </div>

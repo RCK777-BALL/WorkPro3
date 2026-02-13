@@ -1,0 +1,148 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongo-init
+data:
+  init-mongo.js: |
+    const appDb = process.env.MONGO_DB || 'workpro';
+    const appUser = process.env.MONGO_APP_USER || 'workpro_app';
+    const appPassword = process.env.MONGO_APP_PASS || 'change-me';
+
+    const targetDb = db.getSiblingDB(appDb);
+
+    targetDb.createUser({
+      user: appUser,
+      pwd: appPassword,
+      roles: [{ role: 'readWrite', db: appDb }],
+    });
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo
+  annotations:
+    workpro.dev/ha: "false"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+      containers:
+        - name: mongo
+          image: mongo:7.0.14
+          ports:
+            - containerPort: 27017
+          env:
+            - name: MONGO_INITDB_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: workpro-mongo-secrets
+                  key: MONGO_DB
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: workpro-mongo-secrets
+                  key: MONGO_INITDB_ROOT_USERNAME
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: workpro-mongo-secrets
+                  key: MONGO_INITDB_ROOT_PASSWORD
+            - name: MONGO_APP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: workpro-mongo-secrets
+                  key: MONGO_APP_USER
+            - name: MONGO_APP_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: workpro-mongo-secrets
+                  key: MONGO_APP_PASS
+            - name: MONGO_DB
+              valueFrom:
+                secretKeyRef:
+                  name: workpro-mongo-secrets
+                  key: MONGO_DB
+          args:
+            - "--auth"
+            - "--tlsMode"
+            - "requireTLS"
+            - "--tlsCertificateKeyFile"
+            - "/etc/mongo/tls/tls.pem"
+            - "--tlsCAFile"
+            - "/etc/mongo/tls/ca.crt"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "2Gi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: mongo-data
+              mountPath: /data/db
+            - name: mongo-init
+              mountPath: /docker-entrypoint-initdb.d/init-mongo.js
+              subPath: init-mongo.js
+              readOnly: true
+            - name: mongo-tls
+              mountPath: /etc/mongo/tls
+              readOnly: true
+          livenessProbe:
+            tcpSocket:
+              port: 27017
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 27017
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: mongo-data
+          persistentVolumeClaim:
+            claimName: mongo-data
+        - name: mongo-init
+          configMap:
+            name: mongo-init
+        - name: mongo-tls
+          secret:
+            secretName: mongo-tls
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+spec:
+  selector:
+    app: mongo
+  ports:
+    - port: 27017
+      targetPort: 27017

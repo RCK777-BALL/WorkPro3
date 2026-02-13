@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workpro-backend-config
+data:
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+  RATE_LIMIT_WINDOW_MS: "60000"
+  RATE_LIMIT_MAX: "100"
+  MOBILE_RATE_LIMIT_WINDOW_MS: "60000"
+  MOBILE_RATE_LIMIT_MAX: "120"
+  PM_SCHEDULER_CRON: "*/5 * * * *"
+  PM_SCHEDULER_TASK: "./tasks/PMSchedulerTask"
+  JWT_ACCESS_EXPIRES_IN: "15m"
+  JWT_REFRESH_EXPIRES_IN: "7d"
+  LOGIN_LOCKOUT_THRESHOLD: "5"
+  LOGIN_LOCKOUT_WINDOW_MS: "900000"
+  LOGIN_LOCKOUT_DURATION_MS: "1800000"
+  IDEMPOTENCY_TTL_MS: "86400000"
+  JOB_LOCK_TTL_MS: "600000"
+  PM_SCHEDULER_LOCK_TTL_MS: "600000"
+  REMINDER_JOB_LOCK_TTL_MS: "600000"
+  LABOR_RATE: "50"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workpro-frontend-config
+data:
+  VITE_API_URL: "https://workpro.example/api"
+  VITE_WS_URL: "wss://workpro.example"
+  VITE_SOCKET_PATH: "/socket.io"
+  VITE_HTTP_ORIGIN: "https://workpro.example"

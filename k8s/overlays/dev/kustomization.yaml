@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../
+  - namespace.yaml
+namespace: workpro-dev
+patches:
+  - path: patch-ingress.yaml
+  - path: patch-configmap.yaml
+  - path: patch-certificate.yaml
+images:
+  - name: workpro-backend
+    newTag: "1.0.0-dev"
+  - name: workpro-frontend
+    newTag: "1.0.0-dev"

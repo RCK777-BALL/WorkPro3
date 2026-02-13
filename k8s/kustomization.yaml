@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - configmap.yaml
+  - deployment.yaml
+  - ingress.yaml
+  - mongo.yaml
+  - hpa.yaml
+  - pdb.yaml
+  - networkpolicy.yaml
+  - service.yaml
+  - tls.yaml
+images:
+  - name: workpro-backend
+    newTag: "0.0.0"
+  - name: workpro-frontend
+    newTag: "0.0.0"

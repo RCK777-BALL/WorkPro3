@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-replica
+spec:
+  clusterIP: None
+  selector:
+    app: mongo-replica
+  ports:
+    - port: 27017
+      targetPort: 27017
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo-replica
+spec:
+  serviceName: mongo-replica
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mongo-replica
+  template:
+    metadata:
+      labels:
+        app: mongo-replica
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+      containers:
+        - name: mongo
+          image: mongo:7.0.14
+          ports:
+            - containerPort: 27017
+          args:
+            - "--replSet"
+            - "rs0"
+            - "--auth"
+            - "--keyFile"
+            - "/etc/mongo/keyfile/keyfile"
+            - "--tlsMode"
+            - "requireTLS"
+            - "--tlsCertificateKeyFile"
+            - "/etc/mongo/tls/tls.pem"
+            - "--tlsCAFile"
+            - "/etc/mongo/tls/ca.crt"
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: workpro-mongo-secrets
+                  key: MONGO_INITDB_ROOT_USERNAME
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: workpro-mongo-secrets
+                  key: MONGO_INITDB_ROOT_PASSWORD
+          volumeMounts:
+            - name: mongo-data
+              mountPath: /data/db
+            - name: mongo-tls
+              mountPath: /etc/mongo/tls
+              readOnly: true
+            - name: mongo-keyfile
+              mountPath: /etc/mongo/keyfile
+              readOnly: true
+      volumes:
+        - name: mongo-tls
+          secret:
+            secretName: mongo-tls
+        - name: mongo-keyfile
+          secret:
+            secretName: mongo-keyfile
+  volumeClaimTemplates:
+    - metadata:
+        name: mongo-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 20Gi

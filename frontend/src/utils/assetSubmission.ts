@@ -56,11 +56,15 @@ export const submitAssetRequest = async ({
   }
 
   if (isEdit && targetId) {
-    const response = await httpClient.put(endpoint, payload, requestConfig);
+    const response = requestConfig
+      ? await httpClient.put(endpoint, payload, requestConfig)
+      : await httpClient.put(endpoint, payload);
     return response.data;
   }
 
-  const response = await httpClient.post(endpoint, payload, requestConfig);
+  const response = requestConfig
+    ? await httpClient.post(endpoint, payload, requestConfig)
+    : await httpClient.post(endpoint, payload);
   return response.data;
 };
 

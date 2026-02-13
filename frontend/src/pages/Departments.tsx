@@ -192,19 +192,19 @@ const Departments = () => {
   }, [departments]);
 
   const assetOptions = useMemo(() => {
-    const uniqueAssets = new Map<string, string>();
+    const uniqueAssets = new Map<string, { name: string; type?: Asset['type'] }>();
     departments.forEach((department) => {
       department.lines.forEach((line) => {
         line.stations.forEach((station) => {
           station.assets.forEach((asset) => {
             if (!uniqueAssets.has(asset.id)) {
-              uniqueAssets.set(asset.id, asset.name);
+              uniqueAssets.set(asset.id, { name: asset.name, type: asset.type });
             }
           });
         });
       });
     });
-    return Array.from(uniqueAssets, ([id, name]) => ({ id, name }));
+    return Array.from(uniqueAssets, ([id, asset]) => ({ id, name: asset.name, type: asset.type }));
   }, [departments]);
 
   const filteredDepartments = useMemo(() => {

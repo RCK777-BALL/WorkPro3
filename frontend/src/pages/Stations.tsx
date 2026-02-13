@@ -43,12 +43,14 @@ interface LineOption {
 interface AssetOption {
   id: string;
   name: string;
+  type?: Asset['type'];
 }
 
 interface AssetOptionResponse {
   _id?: string;
   id?: string;
   name?: string;
+  type?: Asset['type'];
 }
 
 const Stations: React.FC = () => {
@@ -147,7 +149,7 @@ const Stations: React.FC = () => {
       const normalized = payload.flatMap((asset) => {
         const id = asset._id ?? asset.id;
         if (!id || !asset.name) return [] as AssetOption[];
-        return [{ id, name: asset.name }];
+        return [{ id, name: asset.name, type: asset.type }];
       });
       setAssetOptions(normalized);
     } catch (err) {

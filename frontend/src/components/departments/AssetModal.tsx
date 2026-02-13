@@ -2,12 +2,14 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { type ChangeEvent, type FormEvent, useEffect, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from 'react';
 import SlideOver from '@/components/common/SlideOver';
 import Button from '@/components/common/Button';
 import type { Asset } from '@/types';
 
-const assetTypes: Asset['type'][] = ['Electrical', 'Mechanical', 'Tooling', 'Interface', 'Welding'];
+type AssetType = NonNullable<Asset['type']>;
+
+const assetTypes: AssetType[] = ['Electrical', 'Mechanical', 'Tooling', 'Interface', 'Welding'];
 const statusOptions = ['Active', 'Offline', 'In Repair'];
 const assetNameTemplate =
   'Manufacturer + Model | Short description | Station / install | Line | Department | Serial | Plant or $ | Date installed | Warranty | Criticality | Asset type';
@@ -16,12 +18,12 @@ interface AssetModalProps {
   open: boolean;
   initial?: Asset | null;
   loading?: boolean;
-  assetOptions?: Array<{ id: string; name: string }>;
+  assetOptions?: Array<{ id: string; name: string; type?: AssetType }>;
   assetsLoading?: boolean;
   onClose: () => void;
   onSave: (values: {
     name: string;
-    type: Asset['type'];
+    type: AssetType;
     status?: string;
     description?: string;
     notes?: string;
@@ -42,7 +44,7 @@ const AssetModal = ({
   onDelete,
 }: AssetModalProps) => {
   const [name, setName] = useState('');
-  const [type, setType] = useState<Asset['type']>('Electrical');
+  const [type, setType] = useState<AssetType>('Electrical');
   const [status, setStatus] = useState('Active');
   const [description, setDescription] = useState('');
   const [notes, setNotes] = useState('');
@@ -79,7 +81,19 @@ const AssetModal = ({
   };
 
   const error = touched && !name.trim() ? 'Asset name is required' : null;
-  const hasAssetOptions = assetOptions.length > 0;
+  const filteredAssetOptions = useMemo(
+    () => assetOptions.filter((asset) => !asset.type || asset.type === type),
+    [assetOptions, type],
+  );
+  const hasAssetOptions = filteredAssetOptions.length > 0;
+
+  useEffect(() => {
+    if (!name) return;
+    const stillValid = filteredAssetOptions.some((asset) => asset.name === name);
+    if (!stillValid) {
+      setName('');
+    }
+  }, [filteredAssetOptions, name]);
 
   return (
     <SlideOver
@@ -135,10 +149,10 @@ const AssetModal = ({
                 {assetsLoading
                   ? 'Loading assets...'
                   : hasAssetOptions
-                    ? 'Select asset'
-                    : 'No assets available'}
+                    ? `Select ${type.toLowerCase()} asset`
+                    : `No ${type.toLowerCase()} assets available`}
               </option>
-              {assetOptions.map((asset) => (
+              {filteredAssetOptions.map((asset) => (
                 <option key={asset.id} value={asset.name}>
                   {asset.name}
                 </option>
@@ -154,7 +168,7 @@ const AssetModal = ({
             <select
               value={type}
               onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-                setType(event.target.value as Asset['type'])
+                setType(event.target.value as AssetType)
               }
               className="mt-1 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-neutral-700 dark:bg-neutral-900"
             >

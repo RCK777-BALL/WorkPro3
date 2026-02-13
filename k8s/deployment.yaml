@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: workpro-backend
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: workpro-backend
@@ -11,91 +11,41 @@ spec:
     metadata:
       labels:
         app: workpro-backend
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "5010"
-        prometheus.io/path: "/metrics"
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 10001
-        runAsGroup: 10001
-        fsGroup: 10001
       containers:
         - name: backend
-          image: workpro-backend:0.0.0
+          image: workpro-backend:latest
           ports:
             - containerPort: 5010
           env:
             - name: MONGO_URI
-              valueFrom:
-                secretKeyRef:
-                  name: workpro-app-secrets
-                  key: MONGO_URI
+              value: mongodb://mongo:27017/workpro
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: workpro-app-secrets
+                  name: jwt-secret
                   key: JWT_SECRET
             - name: CORS_ORIGIN
-              valueFrom:
-                secretKeyRef:
-                  name: workpro-app-secrets
-                  key: CORS_ORIGIN
-            - name: FRONTEND_URL
-              valueFrom:
-                secretKeyRef:
-                  name: workpro-app-secrets
-                  key: FRONTEND_URL
-          envFrom:
-            - configMapRef:
-                name: workpro-backend-config
-            - secretRef:
-                name: workpro-backend-secrets
-          resources:
-            requests:
-              cpu: "250m"
-              memory: "512Mi"
-            limits:
-              cpu: "1"
-              memory: "1Gi"
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop:
-                - ALL
-          volumeMounts:
-            - name: tmp
-              mountPath: /tmp
-            - name: mongo-ca
-              mountPath: /etc/mongo/tls
-              readOnly: true
+              value: http://workpro.local
           livenessProbe:
             httpGet:
-              path: /api/health/live
+              path: /api/health
               port: 5010
             initialDelaySeconds: 5
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /api/health/ready
+              path: /api/health
               port: 5010
             initialDelaySeconds: 5
             periodSeconds: 10
-      volumes:
-        - name: tmp
-          emptyDir: {}
-        - name: mongo-ca
-          secret:
-            secretName: mongo-tls
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: workpro-frontend
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: workpro-frontend
@@ -104,41 +54,11 @@ spec:
       labels:
         app: workpro-frontend
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 10001
-        runAsGroup: 10001
-        fsGroup: 10001
       containers:
         - name: frontend
-          image: workpro-frontend:0.0.0
+          image: workpro-frontend:latest
           ports:
             - containerPort: 80
-          envFrom:
-            - configMapRef:
-                name: workpro-frontend-config
-            - secretRef:
-                name: workpro-frontend-secrets
-          resources:
-            requests:
-              cpu: "100m"
-              memory: "128Mi"
-            limits:
-              cpu: "500m"
-              memory: "256Mi"
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop:
-                - ALL
-          volumeMounts:
-            - name: tmp
-              mountPath: /tmp
-            - name: nginx-cache
-              mountPath: /var/cache/nginx
-            - name: nginx-run
-              mountPath: /var/run
           livenessProbe:
             httpGet:
               path: /
@@ -151,10 +71,3 @@ spec:
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 10
-      volumes:
-        - name: tmp
-          emptyDir: {}
-        - name: nginx-cache
-          emptyDir: {}
-        - name: nginx-run
-          emptyDir: {}

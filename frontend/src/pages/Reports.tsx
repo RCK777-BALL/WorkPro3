@@ -20,7 +20,6 @@ import {
   type ChartOptions,
 } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
-import { usePermissions } from '@/auth/usePermissions';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend);
 
@@ -182,10 +181,6 @@ export default function Reports() {
   const [scheduleSaving, setScheduleSaving] = useState(false);
   const [scheduleMessage, setScheduleMessage] = useState<string | null>(null);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
-  const { can } = usePermissions();
-  const canReadCustomReports = can('reports', 'read');
-  const canExportCustomReports = can('reports', 'export');
-  const canBuildCustomReports = can('reports', 'build');
 
   const handleScheduleChange = <K extends keyof ScheduleFormState>(
     key: K,
@@ -519,22 +514,7 @@ export default function Reports() {
         </div>
       </div>
 
-      {canReadCustomReports ? (
-        <CustomReportBuilder
-          canExport={canExportCustomReports}
-          canBuild={canBuildCustomReports}
-        />
-      ) : (
-        <Card
-          title="Custom report builder"
-          subtitle="Create, save, and export ad-hoc maintenance reports with your own filters."
-          className="border border-neutral-200 shadow-sm"
-        >
-          <p className="text-sm text-neutral-600">
-            You do not have permission to view or run custom reports. Contact an administrator for access.
-          </p>
-        </Card>
-      )}
+      <CustomReportBuilder />
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <KpiExportButtons query={query} />

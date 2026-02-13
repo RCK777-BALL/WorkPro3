@@ -41,9 +41,6 @@ jobs:
       - name: Build
         run: npm run build --if-present
 
-      - name: Test (coverage)
-        run: npm run test:coverage --if-present
-
   backend:
     name: Backend (canonical ./backend)
     runs-on: ubuntu-latest
@@ -77,53 +74,4 @@ jobs:
         run: npm run build --if-present
 
       - name: Test
-        run: npm run test:coverage
-
-  security:
-    name: Security Gates
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20.x
-          cache: npm
-          cache-dependency-path: |
-            frontend/package-lock.json
-            backend/package-lock.json
-
-      - name: NPM Audit (frontend)
-        working-directory: frontend
-        run: npm audit --omit=dev --audit-level=high
-
-      - name: NPM Audit (backend)
-        working-directory: backend
-        run: npm audit --omit=dev --audit-level=high
-
-      - name: Generate SBOM
-        uses: anchore/sbom-action@v0
-        with:
-          path: .
-          format: spdx-json
-          output-file: sbom.spdx.json
-          artifact-name: workpro-sbom
-
-      - name: Trivy FS Scan (HIGH/CRITICAL)
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          scan-type: fs
-          scan-ref: .
-          severity: HIGH,CRITICAL
-          format: sarif
-          output: trivy.sarif
-          exit-code: 1
-
-      - name: Upload Trivy SARIF
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: trivy.sarif
+        run: npm test

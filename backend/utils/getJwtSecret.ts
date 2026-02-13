@@ -7,8 +7,8 @@ export const getJwtSecret = (
   includeVendor = false,
 ): string => {
   const secret = includeVendor
-    ? env.VENDOR_JWT_SECRET || env.JWT_ACCESS_SECRET || env.JWT_SECRET
-    : env.JWT_ACCESS_SECRET || env.JWT_SECRET;
+    ? env.VENDOR_JWT_SECRET || env.JWT_SECRET
+    : env.JWT_SECRET;
 
   if (!secret) {
     throw new Error('Server configuration issue');

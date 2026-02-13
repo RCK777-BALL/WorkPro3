@@ -17,7 +17,6 @@ import type {
   ReportTemplate,
   ReportTemplateInput,
 } from '@/types';
-import { usePermissions } from '@/auth/usePermissions';
 import {
   useCustomReport,
   useExportCustomReport,
@@ -70,17 +69,9 @@ const derivePayloadFilters = (
 
 const defaultFields: ReportField[] = ['title', 'status', 'priority', 'assetName', 'assigneeName'];
 
-type EditableTemplate = Pick<
-  ReportTemplateInput,
-  'name' | 'description' | 'fields' | 'filters' | 'groupBy' | 'dateRange'
->;
+type EditableTemplate = Pick<ReportTemplateInput, 'name' | 'description' | 'fields' | 'filters' | 'groupBy' | 'dateRange'>;
 
-type CustomReportBuilderProps = {
-  canExport: boolean;
-  canBuild: boolean;
-};
-
-export default function CustomReportBuilder({ canExport, canBuild }: CustomReportBuilderProps) {
+export default function CustomReportBuilder() {
   const [selectedFields, setSelectedFields] = useState<ReportField[]>(defaultFields);
   const [groupBy, setGroupBy] = useState<ReportField[]>([]);
   const [filters, setFilters] = useState<Array<ReportFilter & { value: string | number | (string | number)[] }>>(defaultFilters);
@@ -96,12 +87,9 @@ export default function CustomReportBuilder({ canExport, canBuild }: CustomRepor
   const [activeTemplateId, setActiveTemplateId] = useState<string | undefined>(undefined);
   const [reportData, setReportData] = useState<CustomReportResponse | null>(null);
 
-  const { can } = usePermissions();
-  const canRead = can('reports', 'read');
-
   const customReport = useCustomReport();
   const exportReport = useExportCustomReport();
-  const templatesQuery = useReportTemplates(canRead);
+  const templatesQuery = useReportTemplates();
   const saveTemplate = useSaveReportTemplate();
   const updateTemplate = useUpdateReportTemplate();
 
@@ -229,20 +217,6 @@ export default function CustomReportBuilder({ canExport, canBuild }: CustomRepor
       })),
     [reportData?.columns],
   );
-
-  if (!canRead) {
-    return (
-      <Card
-        title="Custom report builder"
-        subtitle="Create, save, and export ad-hoc maintenance reports with your own filters."
-        className="border border-neutral-200 shadow-sm"
-      >
-        <p className="text-sm text-neutral-600">
-          You do not have permission to view or run custom reports. Contact an administrator for access.
-        </p>
-      </Card>
-    );
-  }
 
   return (
     <Card
@@ -409,7 +383,6 @@ export default function CustomReportBuilder({ canExport, canBuild }: CustomRepor
             icon={<Download className="h-4 w-4" />}
             onClick={() => handleExport('csv')}
             loading={exportReport.isLoading}
-            disabled={!canExport}
           >
             Export CSV
           </Button>
@@ -418,7 +391,6 @@ export default function CustomReportBuilder({ canExport, canBuild }: CustomRepor
             icon={<Download className="h-4 w-4" />}
             onClick={() => handleExport('pdf')}
             loading={exportReport.isLoading}
-            disabled={!canExport}
           >
             Export PDF
           </Button>
@@ -427,7 +399,6 @@ export default function CustomReportBuilder({ canExport, canBuild }: CustomRepor
             icon={<Save className="h-4 w-4" />}
             onClick={persistTemplate}
             loading={saveTemplate.isLoading || updateTemplate.isLoading}
-            disabled={!canBuild}
           >
             {activeTemplate ? 'Update template' : 'Save template'}
           </Button>

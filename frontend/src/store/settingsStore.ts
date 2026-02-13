@@ -41,7 +41,6 @@ export interface ThemeSettings {
   sidebarCollapsed: boolean;
   denseMode: boolean;
   highContrast: boolean;
-  rightPanelCollapsed: boolean;
   colorScheme: string | undefined;
   mode: 'light' | 'dark' | 'system' | undefined;
 }
@@ -99,7 +98,6 @@ const createDefaultTheme = (): ThemeSettings => ({
   sidebarCollapsed: false,
   denseMode: false,
   highContrast: false,
-  rightPanelCollapsed: false,
   colorScheme: 'default',
 });
 
@@ -224,10 +222,6 @@ const sanitizeThemeState = (value: unknown): ThemeSettings => {
       typeof record['highContrast'] === 'boolean'
         ? (record['highContrast'] as boolean)
         : defaults.highContrast,
-    rightPanelCollapsed:
-      typeof record['rightPanelCollapsed'] === 'boolean'
-        ? (record['rightPanelCollapsed'] as boolean)
-        : defaults.rightPanelCollapsed,
     colorScheme: typeof colorSchemeValue === 'string' ? (colorSchemeValue as string) : defaults.colorScheme,
     mode:
       modeValue === 'light' || modeValue === 'dark' || modeValue === 'system'
@@ -367,9 +361,6 @@ const sanitizeThemeUpdate = (value: Partial<ThemeSettings> | null | undefined): 
   }
   if (typeof value.highContrast === 'boolean') {
     updates.highContrast = value.highContrast;
-  }
-  if (typeof value.rightPanelCollapsed === 'boolean') {
-    updates.rightPanelCollapsed = value.rightPanelCollapsed;
   }
   if (typeof value.colorScheme === 'string') {
     updates.colorScheme = value.colorScheme;

@@ -20,7 +20,6 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { saveAs } from 'file-saver';
 import Button from '@/components/common/Button';
-import ConfirmDialog from '@/components/common/ConfirmDialog';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import DepartmentTable from '@/components/departments/DepartmentTable';
 import DepartmentModal, { type DepartmentFormValues } from '@/components/departments/DepartmentModal';
@@ -64,7 +63,6 @@ const ASSET_TYPE_OPTIONS: Array<{ value: AssetCategory; label: string }> = [
   { value: 'Mechanical', label: 'Mechanical' },
   { value: 'Tooling', label: 'Tooling' },
   { value: 'Interface', label: 'Interface' },
-  { value: 'Welding', label: 'Welding' },
 ];
 
 const Departments = () => {
@@ -91,10 +89,6 @@ const Departments = () => {
     line: LineWithStations | null;
   } | null>(null);
   const [lineSaving, setLineSaving] = useState(false);
-  const [lineDeleteState, setLineDeleteState] = useState<{
-    department: DepartmentHierarchy;
-    line: LineWithStations;
-  } | null>(null);
 
   const [stationModalState, setStationModalState] = useState<{
     department: DepartmentHierarchy;
@@ -120,14 +114,6 @@ const Departments = () => {
       navigate(`/plants?plantId=${plant.id}`);
     },
     [navigate],
-  );
-
-  const resolvePlantId = useCallback(
-    (department: DepartmentHierarchy) =>
-      department.plant?.id && department.plant.id !== 'unassigned'
-        ? department.plant.id
-        : undefined,
-    [],
   );
 
   const replaceDepartment = useCallback((updated: DepartmentHierarchy) => {
@@ -189,22 +175,6 @@ const Departments = () => {
       stations,
       assets,
     };
-  }, [departments]);
-
-  const assetOptions = useMemo(() => {
-    const uniqueAssets = new Map<string, { name: string; type?: Asset['type'] }>();
-    departments.forEach((department) => {
-      department.lines.forEach((line) => {
-        line.stations.forEach((station) => {
-          station.assets.forEach((asset) => {
-            if (!uniqueAssets.has(asset.id)) {
-              uniqueAssets.set(asset.id, { name: asset.name, type: asset.type });
-            }
-          });
-        });
-      });
-    });
-    return Array.from(uniqueAssets, ([id, asset]) => ({ id, name: asset.name, type: asset.type }));
   }, [departments]);
 
   const filteredDepartments = useMemo(() => {
@@ -493,7 +463,7 @@ const Departments = () => {
     if (!lineModalState) return;
     setLineSaving(true);
     try {
-      const plantId = resolvePlantId(lineModalState.department);
+      const plantId = lineModalState.department.plant.id;
       const updated = lineModalState.line
         ? await updateLine(
             lineModalState.department.id,
@@ -513,27 +483,15 @@ const Departments = () => {
     }
   };
 
-  const handleLineDelete = async (
-    target?: { department: DepartmentHierarchy; line: LineWithStations } | null,
-  ) => {
-    const fallback =
-      lineModalState?.line && lineModalState.department
-        ? { department: lineModalState.department, line: lineModalState.line }
-        : null;
-    const current = target ?? fallback;
-    if (!current) return;
+  const handleLineDelete = async () => {
+    if (!lineModalState?.line) return;
     setLineSaving(true);
     try {
-      const plantId = resolvePlantId(current.department);
-      const updated = await deleteLine(current.department.id, current.line.id, { plantId });
+      const plantId = lineModalState.department.plant.id;
+      const updated = await deleteLine(lineModalState.department.id, lineModalState.line.id, { plantId });
       replaceDepartment(updated);
       addToast('Line deleted', 'success');
-      setLineModalState((prev) =>
-        prev?.line?.id === current.line.id ? null : prev,
-      );
-      setLineDeleteState((prev) =>
-        prev?.line.id === current.line.id ? null : prev,
-      );
+      setLineModalState(null);
     } catch (err) {
       console.error('Failed to delete line', err);
       addToast('Failed to delete line', 'error');
@@ -546,7 +504,7 @@ const Departments = () => {
     if (!stationModalState) return;
     setStationSaving(true);
     try {
-      const plantId = resolvePlantId(stationModalState.department);
+      const plantId = stationModalState.department.plant.id;
       const updated = stationModalState.station
         ? await updateStation(
             stationModalState.department.id,
@@ -576,7 +534,7 @@ const Departments = () => {
     if (!stationModalState?.station) return;
     setStationSaving(true);
     try {
-      const plantId = resolvePlantId(stationModalState.department);
+      const plantId = stationModalState.department.plant.id;
       const updated = await deleteStation(
         stationModalState.department.id,
         stationModalState.line.id,
@@ -621,7 +579,7 @@ const Departments = () => {
     setAssetSaving(true);
     try {
       const { department, line, station, asset } = assetModalState;
-      const plantId = resolvePlantId(department);
+      const plantId = department.plant.id;
       const updated = asset
         ? await updateAsset(department.id, line.id, station.id, asset.id, values, { plantId })
         : await createAsset(department.id, line.id, station.id, values, { plantId });
@@ -641,7 +599,7 @@ const Departments = () => {
     setAssetSaving(true);
     try {
       const { department, line, station, asset } = assetModalState;
-      const plantId = resolvePlantId(department);
+      const plantId = department.plant.id;
       const updated = await deleteAsset(department.id, line.id, station.id, asset.id, { plantId });
       replaceDepartment(updated);
       addToast('Asset deleted', 'success');
@@ -947,7 +905,7 @@ const Departments = () => {
               }}
               onAddLine={(department) => setLineModalState({ department, line: null })}
               onEditLine={(department, line) => setLineModalState({ department, line })}
-              onDeleteLine={(department, line) => setLineDeleteState({ department, line })}
+              onDeleteLine={(department, line) => setLineModalState({ department, line })}
               onAddStation={(department, line) =>
                 setStationModalState({ department, line, station: null })
               }
@@ -1021,21 +979,8 @@ const Departments = () => {
           setLineModalState(null);
         }}
         onSave={handleLineSave}
-        {...(lineModalState?.line ? { onDelete: () => handleLineDelete() } : {})}
+        {...(lineModalState?.line ? { onDelete: handleLineDelete } : {})}
         {...(lineModalState?.line ? { onAddStation: handleSwitchToAddStation } : {})}
-      />
-
-      <ConfirmDialog
-        open={Boolean(lineDeleteState)}
-        title="Delete line?"
-        message={
-          lineDeleteState
-            ? `Deleting "${lineDeleteState.line.name}" will remove all stations and assets tied to this line.`
-            : undefined
-        }
-        confirmText="Delete line"
-        onClose={() => setLineDeleteState(null)}
-        onConfirm={() => handleLineDelete(lineDeleteState)}
       />
 
       <StationModal
@@ -1055,7 +1000,6 @@ const Departments = () => {
         open={Boolean(assetModalState)}
         initial={assetModalState?.asset ?? null}
         loading={assetSaving}
-        assetOptions={assetOptions}
         onClose={() => {
           if (assetSaving) return;
           setAssetModalState(null);

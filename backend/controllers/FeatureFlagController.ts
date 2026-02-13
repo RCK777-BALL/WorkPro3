@@ -3,8 +3,10 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
+import { Types } from 'mongoose';
+
 import FeatureFlag from '../models/FeatureFlag';
-import { writeAuditLog, toEntityId, toObjectId } from '../utils';
+import { writeAuditLog, toEntityId } from '../utils';
 import type { AuthedRequest } from '../types/http';
 import type { EntityIdLike } from '../utils';
 
@@ -18,11 +20,11 @@ const getTenantContext = (req: AuthedRequest) => {
 
 const resolveUserId = (req: AuthedRequest): EntityIdLike => {
   const candidate = req.user?.id ?? req.user?._id;
-  if (typeof candidate === 'string') return candidate;
-  return toObjectId(candidate);
+  if (typeof candidate === 'string' || candidate instanceof Types.ObjectId) {
+    return candidate;
+  }
+  return undefined;
 };
-
-const PUBLIC_FEATURE_FLAGS = new Set(['ai_insights_enabled']);
 
 export const listFeatureFlags = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -30,28 +32,6 @@ export const listFeatureFlags = async (req: Request, res: Response, next: NextFu
     const siteId = (req as AuthedRequest).siteId ?? null;
     const flags = await FeatureFlag.find({ tenantId, siteId }).sort({ key: 1 }).lean();
     res.json(flags);
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const getFeatureFlagStatus = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const tenantId = getTenantContext(req as AuthedRequest);
-    const siteId = (req as AuthedRequest).siteId ?? null;
-    const key = typeof req.params.key === 'string' ? req.params.key.trim() : '';
-
-    if (!key || !PUBLIC_FEATURE_FLAGS.has(key)) {
-      res.status(404).json({ message: 'Feature flag not found.' });
-      return;
-    }
-
-    let flag = await FeatureFlag.findOne({ tenantId, siteId, key }).lean();
-    if (!flag && siteId) {
-      flag = await FeatureFlag.findOne({ tenantId, siteId: null, key }).lean();
-    }
-
-    res.json({ key, enabled: Boolean(flag?.enabled) });
   } catch (error) {
     next(error);
   }

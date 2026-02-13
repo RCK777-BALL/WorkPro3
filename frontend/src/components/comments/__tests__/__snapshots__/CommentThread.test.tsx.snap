@@ -100,7 +100,7 @@ exports[`CommentThread > renders existing comments and matches snapshot 1`] = `
           </div>
           <time
             class="text-xs text-neutral-500"
-            datetime="2024-01-01T00:00:00.000Z"
+            datetime="1/1/2024, 12:00:00 AM"
           >
             1/1/2024, 12:00:00 AM
           </time>

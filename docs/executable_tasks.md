@@ -2,50 +2,6 @@
 
 The following tickets refine the roadmap epics into implementation-ready tasks. They are formatted for direct import into issue trackers.
 
-## Epic: Production Database & Managed MongoDB
-### Ship Kubernetes MongoDB Deployment + Service + PVC
-- Description: Add first-class MongoDB manifests for production (deployment/statefulset, service, and persistent volume claim) so the backend MONGO_URI resolves in-cluster and data persists across pod restarts.
-- Acceptance Criteria: MongoDB runs in-cluster; backend connects via MONGO_URI; PVC bound with requested storage; liveness/readiness probes pass.
-- Affected Components: infra, k8s
-- Dependencies: StorageClass in cluster, container image registry access.
-- Complexity: M
-
-### Harden Docker Compose MongoDB with Auth + TLS Defaults
-- Description: Update docker-compose MongoDB service to enable authentication and TLS by default (root/user credentials, keyfile, certs) and wire backend connection strings to use credentials and TLS settings in local/dev overrides.
-- Acceptance Criteria: MongoDB starts with auth enabled; backend connects via authenticated URI; TLS certs mounted/validated; compose docs describe rotating credentials and disabling TLS only for local dev.
-- Affected Components: infra, docker-compose, backend, docs
-- Dependencies: Local cert/key generation guidance, env var management.
-- Complexity: M
-
-### Secure Kubernetes MongoDB Manifest with Auth + TLS Secrets
-- Description: Extend Kubernetes MongoDB deployment/statefulset to configure authentication, TLS, and keyfile secrets; update backend manifests to consume credentialed MONGO_URI and CA bundles from secrets/configmaps.
-- Acceptance Criteria: MongoDB pod enforces auth and TLS; secrets define username/password and TLS assets; backend connects with credentialed URI and validates CA; manifests document secret rotation steps.
-- Affected Components: infra, k8s, backend, docs
-- Dependencies: Secret management process, TLS issuance, rollout strategy.
-- Complexity: M
-
-### Add Managed MongoDB Connection Secret + Deployment Wiring
-- Description: Provide a Kubernetes secret for MONGO_URI and wire backend deployment to consume it, enabling swapping between in-cluster MongoDB and managed DB providers without manifest edits.
-- Acceptance Criteria: Backend reads MONGO_URI from secret; rotating the secret updates backend connection; documented default points to in-cluster service.
-- Affected Components: infra, k8s, backend
-- Dependencies: Secrets management process, rollout strategy.
-- Complexity: S
-
-### Define Production HA & Backup Strategy for MongoDB
-- Description: Document/implement a production-ready MongoDB HA topology (replica set or managed service) with backup/restore automation and retention policy.
-- Acceptance Criteria: HA plan specified; backup job or managed backup policy defined; restore steps documented and validated in staging.
-- Affected Components: infra, ops
-- Dependencies: Infrastructure provider, backup storage, scheduling.
-- Complexity: L
-
-## Epic: Container Image Hardening & Immutability
-### Pin Dockerfile and Kubernetes Images to Immutable Digests
-- Description: Replace floating Dockerfile base tags (e.g., `node:18-alpine`, `nginx:alpine`) with digest-pinned images and update Kubernetes manifests to use immutable image references instead of `:latest` for backend/frontend deployments.
-- Acceptance Criteria: All Dockerfiles use digest-pinned base images; Kubernetes manifests reference immutable tags/digests; documentation notes update process for future image refreshes; CI validation checks for unpinned images.
-- Affected Components: infra, docker, k8s, docs
-- Dependencies: Approved base image digests, image registry access, CI linting update.
-- Complexity: S
-
 ## Epic: Offline/Mobile Technician Execution
 ### Build Offline-First Mobile WO Execution with Pending-Sync Queue
 - Description: Deliver a mobile WO execution experience that fully functions offline. Cache WO steps, asset metadata, parts, and technician assignments locally; enqueue mutations (start, step updates, complete, labor logs) in a pending-sync queue that retries with backoff and exposes item states in UI.
@@ -90,13 +46,6 @@ The following tickets refine the roadmap epics into implementation-ready tasks. 
 - Dependencies: Vendor records, part catalog, auth/roles, inventory service.
 - Complexity: L
 
-### Fix Purchase Order Creation Error
-- Description: Investigate and resolve the error encountered when creating purchase orders, ensuring validation, tenant/site scoping, and required fields align across API, service, and UI.
-- Acceptance Criteria: PO creation succeeds with valid payloads; validation errors return actionable messages; tenant/site scoping verified; integration test added for PO create flow.
-- Affected Components: backend, API, frontend
-- Dependencies: Purchase order service/controller, validation schemas, auth/tenant middleware.
-- Complexity: M
-
 ### Part Availability in WO Planning UI
 - Description: Embed availability/reservation widget in WO planning UI showing on-hand, allocated, and incoming PO quantities; allow planners to reserve parts against WOs and release reservations.
 - Acceptance Criteria: Availability reflects real-time counts; reservations decrement available; conflicts flagged; incoming POs linked; UI updates without refresh.
@@ -140,14 +89,6 @@ The following tickets refine the roadmap epics into implementation-ready tasks. 
 - Dependencies: Analytics metrics pipeline, auth for site scoping.
 - Complexity: M
 
-## Epic: Observability & Monitoring
-### Align Prometheus Scrape Configuration with Exposed Metrics
-- Description: Resolve the mismatch between Kubernetes Prometheus scrape annotations and the backend/frontend capabilities by either adding a `/metrics` endpoint (preferred) or updating annotations to target available endpoints/disable scraping until metrics are implemented.
-- Acceptance Criteria: Prometheus scrapes succeed without 404s; backend exposes `/metrics` or annotations are updated to the correct path/port; deployment manifests and documentation reflect the chosen approach.
-- Affected Components: infra, k8s, backend
-- Dependencies: Metrics library selection (e.g., prom-client), deployment rollout plan.
-- Complexity: S
-
 ## Epic: Centralized Multi-Tenant Guardrails
 ### Tenant-Scoped Middleware for HTTP/WebSocket
 - Description: Implement middleware that extracts tenant/site context from auth tokens for REST/WebSocket; reject requests without valid context; propagate to services/DB queries.
@@ -177,64 +118,6 @@ The following tickets refine the roadmap epics into implementation-ready tasks. 
 - Dependencies: Test tenants/fixtures, middleware/policy layers.
 - Complexity: S
 
-## Epic: Design System Modernization
-### Expand Neutral and Surface Tokens
-- Description: Add neutral color ramps and surface tokens for layered backgrounds, borders, and muted text; wire them into theme configuration and ensure parity across light/dark schemes.
-- Acceptance Criteria: Neutral ramp provides at least 8 steps; surface tokens cover primary/secondary/tertiary surfaces; dark mode uses low-contrast neutrals; existing components updated to consume new tokens.
-- Affected Components: frontend
-- Dependencies: Design-system token updates, theme configuration, component audit.
-- Complexity: M
-
-### Add Semantic Status Colors and State Variants
-- Description: Introduce semantic tokens for success/warning/error/info plus hover/active/disabled state variants; apply to badges, alerts, and status indicators.
-- Acceptance Criteria: Semantic colors defined for light/dark; state variants documented; UI components use semantic tokens instead of hardcoded colors; visual regression review completed.
-- Affected Components: frontend
-- Dependencies: Design-system tokens, component styling pass.
-- Complexity: M
-
-### Extend Typography Scale and Text Styles
-- Description: Add larger sizes and weight definitions for headings, body, and captions; define reusable text styles in the theme for consistent hierarchy.
-- Acceptance Criteria: Typography scale includes at least 2 new sizes above 24px; font weights documented and applied; headings/body styles standardized in core layouts and components.
-- Affected Components: frontend
-- Dependencies: Design-system typography tokens, component audit.
-- Complexity: S
-
-## Epic: Frontend Interaction Reliability
-### Add Loading/Disabled Guards to Async Action Buttons
-- Description: Introduce consistent loading, disabled, and error feedback for async button actions (exports, webhook creation, API key creation/revocation, goods receipt submission) to prevent duplicate requests and clarify action state.
-- Acceptance Criteria: Buttons disable while requests are in-flight; loading indicators or status text appear; duplicate submissions are prevented; errors are surfaced to the user.
-- Affected Components: frontend
-- Dependencies: Shared button patterns or state hooks for async actions.
-- Complexity: S
-
-### Replace Stale Async List Updates with Functional State Setters
-- Description: Update async handlers that prepend or update list state (export jobs, webhook subscriptions, API keys) to use functional state updates, preventing race conditions and dropped items when actions occur in quick succession.
-- Acceptance Criteria: List updates use functional `setState` patterns; concurrent actions keep all items; regression tests or manual checks confirm no dropped entries.
-- Affected Components: frontend
-- Dependencies: None.
-- Complexity: S
-
-### Normalize Button Type Usage Outside Forms
-- Description: Ensure non-submit buttons explicitly declare `type="button"` in components like OIDC login and goods receipt, preventing accidental form submissions if these components are embedded in forms.
-- Acceptance Criteria: All non-submit buttons include explicit type; linting or review checklist updated to enforce button type usage; no functional regressions in login or purchasing flows.
-- Affected Components: frontend
-- Dependencies: UI linting/standards update (if applicable).
-- Complexity: XS
-
-### Dark Mode Layering and Muted Text Pass
-- Description: Define layered dark surfaces and muted text tokens; update layouts/cards/sidebars to use layered surfaces and muted labels where appropriate.
-- Acceptance Criteria: Dark surfaces applied to at least top-level layout, cards, and modals; muted text token used for secondary labels; contrast checks documented.
-- Affected Components: frontend
-- Dependencies: Neutral/surface tokens, component updates.
-- Complexity: M
-
-### Spacing Scale Extension and Layout Guidelines
-- Description: Extend spacing scale for larger layout needs and document spacing guidelines for core components (cards, panels, tables, forms).
-- Acceptance Criteria: Spacing tokens include 40/48/64; documented usage guidance added; top 5 core pages updated to adhere to spacing guidelines.
-- Affected Components: frontend, docs
-- Dependencies: Spacing tokens, design-system documentation, UI audits.
-- Complexity: M
-
 ## Epic: PM Engine Enhancements (Compliance / EHS)
 ### WO Auto-Generation Engine (Time + Usage Based)
 - Description: Extend PM engine to generate WOs based on calendar schedules and meter/usage thresholds; include backfill logic to avoid missed cycles and de-duplication safeguards.
@@ -263,21 +146,6 @@ The following tickets refine the roadmap epics into implementation-ready tasks. 
 - Affected Components: backend, DB, API, frontend
 - Dependencies: HR/identity data, WO assignment flow, notification service.
 - Complexity: M
-
-## Epic: Infrastructure & Deployment Hygiene
-### Parameterize Domain and TLS Hostnames for Kubernetes Manifests
-- Description: Replace hard-coded placeholder domains in Ingress, TLS, and application URL config with configurable values (Helm/Kustomize vars or environment overrides) so production deployments can supply real DNS names without editing manifests.
-- Acceptance Criteria: Ingress hosts, TLS hosts, and configmap values render from a single configurable domain value; defaults remain safe for local/dev; no `workpro.local` placeholders remain in rendered output.
-- Affected Components: infra, k8s, docs
-- Dependencies: Deployment tooling choice (Helm/Kustomize), environment variable conventions.
-- Complexity: S
-
-### Document Production Domain/TLS Setup and Secret Management
-- Description: Add deployment guidance covering DNS, TLS issuer/secret configuration (e.g., cert-manager), and required URL env vars for backend/frontend so operators can provision HTTPS correctly.
-- Acceptance Criteria: Documentation includes domain/TLS prerequisites, sample values files or env overrides, and secret naming conventions; onboarding checklist added.
-- Affected Components: docs, infra
-- Dependencies: Cluster TLS issuer strategy, secret management process.
-- Complexity: S
 
 ## Execution Tasks to Complete the Backlog
 
@@ -311,10 +179,6 @@ The following tickets refine the roadmap epics into implementation-ready tasks. 
 - Add overdue escalation rules and SLA monitoring for PM/WOs with notifications and breach tracking.
 - Create permit-to-work/LOTO checklists with signature capture and gating of WO start/close until completion.
 - Persist technician certifications with expiry, enforce against WO requirements during assignment, and surface warnings/reports for expiring certs.
-
-### Infrastructure & Deployment Hygiene
-- Parameterize Ingress/TLS/app URL hostnames using Helm/Kustomize variables or env overrides; remove hard-coded `workpro.local` placeholders from rendered manifests.
-- Document production domain/TLS setup (DNS, cert issuer/secret configuration) and required URL env vars for backend/frontend.
 
 ## Tracker-specific task breakdown (BGT-021 → BGT-040)
 Use the following slices to open tracker tickets. Each item is grouped by API, Validation, Data Access, UI, and Tests to align contributors across stacks.
@@ -526,22 +390,6 @@ Use the following slices to open tracker tickets. Each item is grouped by API, V
 - **UI**: Job wizard to define schedules, mappings, dry-run previews, and delivery channels (email/SFTP/HTTP); include quick-start templates for Zapier and Power Automate (`frontend/src/modules/integrations/data-pipelines`).
 - **Tests**: E2E import/export flows with sample files, SFTP connection mocks, and regression coverage for mapping templates.
 
-## Infrastructure & Deployment Hygiene (BGT-066 → BGT-067)
-
-### BGT-066: Parameterize domain and TLS hostnames for Kubernetes manifests
-- **API**: N/A.
-- **Validation**: Ensure Ingress hosts, TLS hosts, and app URLs are derived from a single configurable value (Helm values, Kustomize vars, or env var overrides) with a sane default for local/dev.
-- **Data Access**: N/A.
-- **UI**: N/A.
-- **Tests**: Manifest template/unit checks that render with custom domains and confirm no hard-coded placeholders remain (`workpro.local`).
-
-### BGT-067: Document production domain/TLS setup and secret management
-- **API**: N/A.
-- **Validation**: Provide a deployment checklist that covers DNS, TLS issuer/secret configuration (e.g., cert-manager), and required env var overrides for frontend/backend URLs.
-- **Data Access**: N/A.
-- **UI**: N/A.
-- **Tests**: Doc review checklist and optional CI lint to ensure TLS secret names/annotations are aligned with cluster conventions.
-
 ## Enterprise RBAC and Audit (BGT-051 → BGT-055)
 
 ### BGT-051: Role/permission matrix and enforcement middleware
@@ -652,53 +500,3 @@ Use the following slices to open tracker tickets. Each item is grouped by API, V
 - **Data Access**: Sample payload fixtures and verification snippets stored for reference.
 - **UI**: Developer documentation linking to API key and webhook screens plus “How to test” covering key creation, webhook verification, and export download.
 - **Tests**: Documentation lints and links validation; ensure seed data for API key/webhook/export jobs is referenced in docs.
-
-## Epic: Kubernetes Production Hardening
-### Add TLS Termination + Certificate Management
-- Description: Enable TLS on the ingress with cert-manager (or external LB termination) and provision a certificate secret for production hostnames.
-- Acceptance Criteria: Ingress defines TLS hosts and secret; cert-manager Certificate/Issuer references are present; HTTPS is enforced at the edge.
-- Affected Components: infra, k8s
-- Dependencies: cert-manager or managed TLS termination in the cluster.
-- Complexity: S
-
-### Define Resource Requests/Limits + Horizontal Pod Autoscalers
-- Description: Add CPU/memory requests and limits for backend/frontend workloads and define HPAs to scale based on utilization.
-- Acceptance Criteria: Deployments specify requests/limits; HPAs target CPU/memory; min replicas > 1 for HA.
-- Affected Components: infra, k8s, backend, frontend
-- Dependencies: Metrics Server or equivalent autoscaling metrics provider.
-- Complexity: S
-
-### Apply Container Security Hardening Defaults
-- Description: Enforce securityContext defaults (runAsNonRoot, readOnly root filesystem, drop capabilities, disallow privilege escalation) and mount writable temp paths where required.
-- Acceptance Criteria: Deployments include pod/container securityContext; workloads start without elevated privileges; writable paths are explicitly provisioned.
-- Affected Components: infra, k8s
-- Dependencies: Base images compatible with non-root execution.
-- Complexity: M
-
-### Document ConfigMap/Secret Strategy for Production Config
-- Description: Provide ConfigMaps/Secrets for production-critical settings (SMTP, OAuth, Kafka, Redis, AI integrations) and wire them into workloads.
-- Acceptance Criteria: Backend/Frontend env vars read from config/secret sources; secrets are not hardcoded; documented configuration map exists.
-- Affected Components: infra, k8s, backend, frontend
-- Dependencies: Secrets management process.
-- Complexity: M
-
-### Enable Frontend Runtime Environment Injection
-- Description: Pass runtime environment variables to the frontend deployment (API URLs, WebSocket endpoints) so the same image can run across environments.
-- Acceptance Criteria: Frontend deployment consumes runtime env vars; configuration is not baked into the image.
-- Affected Components: infra, k8s, frontend
-- Dependencies: Runtime config mechanism for static frontend container.
-- Complexity: S
-
-### Add Observability Hooks (Metrics/Logging)
-- Description: Add Prometheus scraping annotations or ServiceMonitor resources and define logging destinations for structured output and alerting hooks.
-- Acceptance Criteria: Workloads expose/annotate metrics endpoints; logging configuration documented; alerting integration points identified.
-- Affected Components: infra, k8s, ops
-- Dependencies: Monitoring stack (Prometheus/Grafana) and log aggregation tooling.
-- Complexity: M
-
-### Add Network Policies for Least-Privilege Traffic
-- Description: Define NetworkPolicies to restrict ingress/egress between frontend, backend, and data services.
-- Acceptance Criteria: Default deny policy exists; explicit allow rules for ingress controller, frontend→backend, backend→mongo/DNS.
-- Affected Components: infra, k8s
-- Dependencies: CNI plugin with NetworkPolicy support.
-- Complexity: S

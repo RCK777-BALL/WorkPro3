@@ -55,4 +55,3 @@ This tracker captures the executable tasks derived from the CMMS audit gap analy
 | BGT-049 | Integrations | Ship webhook framework for WO/asset/inventory events with signed deliveries, retries, and replay tools.【F:docs/executable_tasks.md†L378-L384】 | Sprint 24.34 | Scheduled |
 | BGT-050 | Integrations | Provide CSV/SFTP import-export schedules plus Zapier/Power Automate starter connectors with safe mappings.【F:docs/executable_tasks.md†L386-L392】 | Sprint 24.35 | Scheduled |
 | BGT-051 | Testing | Restore Jest/Vitest tooling so backend/frontend test suites run and fix any surfaced failures.【F:docs/test-suite-remediation-task.md†L1-L19】 | Sprint 24.10 | Proposed |
-| BGT-052 | Testing | Ensure CI runs frontend `npm run test:coverage` to match documentation and enforce coverage on PRs.【F:docs/ci-frontend-test-coverage-task.md†L1-L15】 | Sprint 24.10 | Proposed |

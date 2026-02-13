@@ -6,7 +6,7 @@ export interface Asset extends TenantScoped {
   siteId?: string | undefined;
   plantId?: string | undefined;
   name: string;
-  type?: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface' | 'Welding' | undefined;
+  type?: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface' | undefined;
   qrCode?: string | undefined;
   location?: string | undefined;
   notes?: string | undefined;

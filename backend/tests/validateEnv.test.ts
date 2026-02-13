@@ -27,7 +27,7 @@ describe('validateEnv logging', () => {
     process.env = {
       ...process.env,
       JWT_SECRET: 'secret',
-      MONGO_URI: 'mongodb://localhost:27017/WorkPro3',
+      MONGO_URI: 'mongodb://localhost:27017/workpro',
       ENABLE_OIDC: undefined as any,
       ENABLE_SAML: undefined as any,
       ENABLE_SCIM: undefined as any,

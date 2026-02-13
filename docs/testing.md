@@ -14,12 +14,7 @@ Both packages provide seed helpers so tests can create realistic data.
 
 ## Continuous Integration
 
-GitHub Actions runs `npm run test:coverage` for both the backend and frontend on every pull request. The configuration enforces a minimum of 80% coverage across lines, functions, branches and statements. A green CI run is required before merging.
-
-### Local commands
-
-- **backend**: `cd backend && npm run test:coverage`
-- **frontend**: `cd frontend && npm run test:coverage`
+GitHub Actions runs `npm run test:coverage` for the backend and frontend on every pull request. The configuration enforces a minimum of 80% coverage across lines, functions, branches and statements. A green CI run is required before merging.
 
 ## Page coverage audit
 

@@ -25,11 +25,3 @@ backend-legacy/**/*.js
 
 # MongoDB playground files
 playground-*.mongodb.js
-
-# Local Mongo TLS assets
-docker/mongo/tls/
-
-# Kubernetes secrets (local overrides)
-k8s/secrets.yaml
-k8s/overlays/prod/secrets.yaml
-*.secret.yaml

@@ -50,7 +50,6 @@ import WorkflowRulesAdmin from "@/pages/WorkflowRulesAdmin";
 import Messages from "@/pages/Messages";
 import RoleManagementPage from "@/pages/RoleManagement";
 import FeatureFlagsPage from "@/pages/FeatureFlags";
-import HelpCenter from "@/pages/HelpCenter";
 import Documentation from "@/pages/Documentation";
 import AssetManagementGuide from "@/pages/AssetManagementGuide";
 import AssetManagementAssetsGuide from "@/pages/AssetManagementAssetsGuide";
@@ -82,7 +81,6 @@ import GlobalAnalyticsDashboard from "@/pages/GlobalAnalyticsDashboard";
 import AIDashboard from "@/pages/AIDashboard";
 import TechnicianConsole from "@/pages/TechnicianConsole";
 import Login from "@/pages/Login";
-import AuthCallback from "@/pages/AuthCallback";
 import PMAnalytics from "@/pages/PMAnalytics";
 import RegisterPage from "@/pages/RegisterPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
@@ -118,10 +116,7 @@ export default function App() {
   }, [navigate, resetAuthState]);
 
   const isAuthRoute =
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/register") ||
-    pathname.startsWith("/forgot") ||
-    pathname.startsWith("/auth/callback");
+    pathname.startsWith("/login") || pathname.startsWith("/register") || pathname.startsWith("/forgot");
 
   React.useEffect(() => {
     if (isAuthRoute) return;
@@ -132,7 +127,6 @@ export default function App() {
     <ErrorBoundary>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot" element={<ForgotPasswordPage />} />
         <Route path="/admin/setup" element={<BootstrapSetupPage />} />
@@ -409,7 +403,6 @@ export default function App() {
           <Route path="/notifications/settings" element={<NotificationSettings />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/messages" element={<Messages />} />
-          <Route path="/help" element={<HelpCenter />} />
           <Route path="/documentation" element={<Documentation />} />
           <Route path="/documentation/asset-management" element={<AssetManagementGuide />} />
           <Route

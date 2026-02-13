@@ -16,7 +16,6 @@ export interface SubmitAssetRequestOptions {
   files: Array<File | Blob>;
   payload: Record<string, unknown>;
   httpClient: AssetRequestClient;
-  requestConfig?: AxiosRequestConfig;
 }
 
 export const submitAssetRequest = async ({
@@ -24,7 +23,6 @@ export const submitAssetRequest = async ({
   files,
   payload,
   httpClient,
-  requestConfig,
 }: SubmitAssetRequestOptions): Promise<unknown> => {
   const isEdit = Boolean(asset?.id);
   const targetId = asset?.id?.trim?.() ?? '';
@@ -40,13 +38,7 @@ export const submitAssetRequest = async ({
       formData.append('files', file);
     });
 
-    const config: AxiosRequestConfig = {
-      ...(requestConfig ?? {}),
-      headers: {
-        ...(requestConfig?.headers ?? {}),
-        'Content-Type': 'multipart/form-data',
-      },
-    };
+    const config = { headers: { 'Content-Type': 'multipart/form-data' } };
     if (isEdit && targetId) {
       const response = await httpClient.put(endpoint, formData, config);
       return response.data;
@@ -56,15 +48,11 @@ export const submitAssetRequest = async ({
   }
 
   if (isEdit && targetId) {
-    const response = requestConfig
-      ? await httpClient.put(endpoint, payload, requestConfig)
-      : await httpClient.put(endpoint, payload);
+    const response = await httpClient.put(endpoint, payload);
     return response.data;
   }
 
-  const response = requestConfig
-    ? await httpClient.post(endpoint, payload, requestConfig)
-    : await httpClient.post(endpoint, payload);
+  const response = await httpClient.post(endpoint, payload);
   return response.data;
 };
 
@@ -96,3 +84,4 @@ export const normalizeAssetData = (
 
   return normalized;
 };
+

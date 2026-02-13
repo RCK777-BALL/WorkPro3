@@ -2,15 +2,9 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: workpro-ingress
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
-  tls:
-    - hosts:
-        - workpro.example
-      secretName: workpro-tls
   rules:
-    - host: workpro.example
+    - host: workpro.local
       http:
         paths:
           - path: /api

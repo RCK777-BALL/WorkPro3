@@ -11,11 +11,9 @@
     "module": "commonjs",
     "baseUrl": ".",
     "resolveJsonModule": true,
-    "paths": {
+    "paths": { 
       "@shared/*": ["../shared/types/*"],
-      "@backend-shared/*": ["shared/*"],
-      "zod": ["node_modules/zod"],
-      "zod/*": ["node_modules/zod/*"]
+      "@backend-shared/*": ["shared/*"]
     }
   },
   "include": [

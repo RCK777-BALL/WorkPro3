@@ -2,15 +2,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'react-hot-toast';
-import { isAxiosError } from 'axios';
 
 import type { WorkRequestItem, WorkRequestStatus, WorkRequestSummary } from '@/api/workRequests';
 import { convertWorkRequest, fetchWorkRequestSummary, fetchWorkRequests } from '@/api/workRequests';
-import { useScopeContext } from '@/context/ScopeContext';
-import { usePermissions } from '@/auth/usePermissions';
 
 const statusLabels: Record<WorkRequestStatus, string> = {
   new: 'New',
@@ -23,26 +20,26 @@ const statusLabels: Record<WorkRequestStatus, string> = {
 };
 
 const statusColors: Record<WorkRequestStatus, string> = {
-  new: 'bg-blue-600 text-white',
-  reviewing: 'bg-amber-500 text-white',
-  accepted: 'bg-emerald-600 text-white',
-  converted: 'bg-emerald-600 text-white',
-  closed: 'bg-slate-600 text-white',
-  rejected: 'bg-rose-600 text-white',
-  deleted: 'bg-neutral-700 text-white',
+  new: 'bg-blue-100 text-blue-800',
+  reviewing: 'bg-amber-100 text-amber-800',
+  accepted: 'bg-emerald-100 text-emerald-800',
+  converted: 'bg-emerald-100 text-emerald-800',
+  closed: 'bg-gray-200 text-gray-800',
+  rejected: 'bg-rose-100 text-rose-800',
+  deleted: 'bg-neutral-200 text-neutral-500',
 };
 
 const priorityColors: Record<WorkRequestItem['priority'], string> = {
-  low: 'text-emerald-300',
-  medium: 'text-amber-300',
-  high: 'text-orange-300',
-  critical: 'text-red-300',
+  low: 'text-emerald-600',
+  medium: 'text-amber-600',
+  high: 'text-orange-600',
+  critical: 'text-red-600',
 };
 
 const SummaryCard = ({ title, value, subtitle }: { title: string; value: number | string; subtitle: string }) => (
-  <div className="rounded-xl border border-neutral-800 bg-black/80 p-4 shadow-sm">
-    <p className="text-sm text-neutral-300">{title}</p>
-    <p className="mt-2 text-2xl font-semibold text-white">{value}</p>
+  <div className="rounded-xl border border-neutral-200/60 bg-white/70 p-4 shadow-sm">
+    <p className="text-sm text-neutral-500">{title}</p>
+    <p className="mt-2 text-2xl font-semibold text-neutral-900">{value}</p>
     <p className="text-xs text-neutral-400">{subtitle}</p>
   </div>
 );
@@ -60,26 +57,8 @@ export default function WorkRequestDashboard() {
   const [error, setError] = useState<string>();
   const [refreshing, setRefreshing] = useState(false);
   const [converting, setConverting] = useState<Record<string, boolean>>({});
-  const { activeTenant, activePlant, loadingPlants, loadingTenants } = useScopeContext();
-  const { can } = usePermissions();
 
-  const canReadRequests = can('workrequests.read');
-  const canConvertRequests = can('workrequests.convert');
-
-  const resolveErrorMessage = (err: unknown) => {
-    if (isAxiosError(err)) {
-      const status = err.response?.status;
-      if (status === 403) {
-        return 'Access to work requests is restricted for the selected tenant or site.';
-      }
-      if (status === 401) {
-        return 'Your session has expired. Please sign in again.';
-      }
-    }
-    return err instanceof Error ? err.message : 'Unable to load work requests.';
-  };
-
-  const loadData = useCallback(async () => {
+  const loadData = async () => {
     setStatusLoading(true);
     setError(undefined);
     try {
@@ -87,39 +66,18 @@ export default function WorkRequestDashboard() {
       setSummary(summaryData);
       setRequests(listData.items);
     } catch (err) {
-      setError(resolveErrorMessage(err));
+      const message = err instanceof Error ? err.message : 'Unable to load work requests.';
+      setError(message);
     } finally {
       setStatusLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    if (!canReadRequests) {
-      setStatusLoading(false);
-      setError('You do not have permission to view work requests.');
-      return;
-    }
-
-    if (loadingTenants || loadingPlants) {
-      return;
-    }
-
-    if (!activeTenant || !activePlant) {
-      setStatusLoading(false);
-      setError('Select an active tenant and site to view work requests.');
-      return;
-    }
-
     loadData();
-  }, [
-    activePlant,
-    activeTenant,
-    canReadRequests,
-    loadData,
-    loadingPlants,
-    loadingTenants,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -127,10 +85,6 @@ export default function WorkRequestDashboard() {
   };
 
   const handleConvert = async (requestId: string) => {
-    if (!canConvertRequests) {
-      toast.error('You do not have permission to convert work requests.');
-      return;
-    }
     setConverting((prev) => ({ ...prev, [requestId]: true }));
     try {
       const result = await convertWorkRequest(requestId);
@@ -153,15 +107,15 @@ export default function WorkRequestDashboard() {
   );
 
   return (
-    <div className="space-y-6 text-white">
+    <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-white">Work Requests</h1>
-          <p className="text-sm text-neutral-300">Monitor submissions from the public portal and convert them into work orders.</p>
+          <h1 className="text-2xl font-semibold text-neutral-900">Work Requests</h1>
+          <p className="text-sm text-neutral-500">Monitor submissions from the public portal and convert them into work orders.</p>
         </div>
         <button
           type="button"
-          className="inline-flex items-center rounded-full border border-neutral-600 px-4 py-2 text-sm font-medium text-neutral-100 transition hover:bg-neutral-800"
+          className="inline-flex items-center rounded-full border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50"
           onClick={handleRefresh}
           disabled={refreshing}
         >
@@ -169,7 +123,7 @@ export default function WorkRequestDashboard() {
         </button>
       </header>
 
-      {error && <div className="rounded-lg border border-red-700 bg-red-950/80 p-3 text-sm text-red-200">{error}</div>}
+      {error && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
       <section>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -183,13 +137,13 @@ export default function WorkRequestDashboard() {
 
       <section className="space-y-4">
         <div>
-          <h2 className="text-lg font-semibold text-white">Recent activity</h2>
-          <p className="text-sm text-neutral-300">Newest requests appear first. Use convert to promote directly into a work order.</p>
+          <h2 className="text-lg font-semibold text-neutral-900">Recent activity</h2>
+          <p className="text-sm text-neutral-500">Newest requests appear first. Use convert to promote directly into a work order.</p>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-neutral-800 bg-black">
-            <thead className="bg-neutral-900">
-              <tr className="text-left text-xs font-semibold uppercase tracking-wide text-neutral-300">
+          <table className="min-w-full divide-y divide-neutral-200 bg-white">
+            <thead className="bg-neutral-50">
+              <tr className="text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
                 <th className="px-4 py-3">Requester</th>
                 <th className="px-4 py-3">Title</th>
                 <th className="px-4 py-3">Priority</th>
@@ -199,25 +153,25 @@ export default function WorkRequestDashboard() {
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-800 text-sm">
+            <tbody className="divide-y divide-neutral-100 text-sm">
               {requests.map((request) => (
                 <tr key={request._id}>
                   <td className="px-4 py-3">
-                    <div className="font-medium text-white">{request.requesterName}</div>
-                    <div className="text-xs text-neutral-400">{request.requesterEmail ?? request.requesterPhone ?? '—'}</div>
+                    <div className="font-medium text-neutral-900">{request.requesterName}</div>
+                    <div className="text-xs text-neutral-500">{request.requesterEmail ?? request.requesterPhone ?? '—'}</div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="font-medium text-white">{request.title}</div>
-                    <p className="text-xs text-neutral-400">{request.description ?? 'No description provided.'}</p>
+                    <div className="font-medium text-neutral-900">{request.title}</div>
+                    <p className="text-xs text-neutral-500">{request.description ?? 'No description provided.'}</p>
                   </td>
                   <td className={`px-4 py-3 font-semibold ${priorityColors[request.priority]}`}>{request.priority}</td>
                   <td className="px-4 py-3">
                     <StatusBadge status={request.status} />
                   </td>
-                  <td className="px-4 py-3 text-neutral-400">
+                  <td className="px-4 py-3 text-neutral-500">
                     {request.createdAt ? formatDistanceToNow(new Date(request.createdAt), { addSuffix: true }) : '—'}
                   </td>
-                  <td className="px-4 py-3 text-neutral-400">
+                  <td className="px-4 py-3 text-neutral-500">
                     {request.photos && request.photos.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
                         {request.photos.map((photo) => (
@@ -226,7 +180,7 @@ export default function WorkRequestDashboard() {
                             href={`/static/uploads/${photo}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="rounded-full border border-neutral-700 px-2 py-1 text-xs text-neutral-200 hover:border-neutral-500"
+                            className="rounded-full border border-neutral-200 px-2 py-1 text-xs text-neutral-600 hover:border-neutral-400"
                           >
                             View
                           </a>
@@ -238,13 +192,13 @@ export default function WorkRequestDashboard() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     {request.workOrder ? (
-                      <span className="text-xs text-neutral-400">WO #{request.workOrder}</span>
+                      <span className="text-xs text-neutral-500">WO #{request.workOrder}</span>
                     ) : (
                       <button
                         type="button"
                         className="inline-flex items-center rounded-full bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-primary-700 disabled:opacity-60"
                         onClick={() => handleConvert(request._id)}
-                        disabled={!canConvertRequests || converting[request._id] || request.status === 'converted'}
+                        disabled={converting[request._id] || request.status === 'converted'}
                       >
                         {converting[request._id] ? 'Converting…' : 'Convert'}
                       </button>
@@ -255,17 +209,17 @@ export default function WorkRequestDashboard() {
             </tbody>
           </table>
           {statusLoading && (
-            <p className="px-4 py-3 text-sm text-neutral-400">Loading work requests…</p>
+            <p className="px-4 py-3 text-sm text-neutral-500">Loading work requests…</p>
           )}
           {!statusLoading && requests.length === 0 && (
-            <p className="px-4 py-6 text-center text-sm text-neutral-400">No requests yet.</p>
+            <p className="px-4 py-6 text-center text-sm text-neutral-500">No requests yet.</p>
           )}
         </div>
       </section>
 
-      <section className="rounded-xl border border-neutral-800 bg-black/80 p-4">
-        <h3 className="text-lg font-semibold text-white">Open queue</h3>
-        <p className="text-sm text-neutral-300">{openRequests.length} request(s) awaiting review.</p>
+      <section className="rounded-xl border border-neutral-200/80 bg-white/70 p-4">
+        <h3 className="text-lg font-semibold text-neutral-900">Open queue</h3>
+        <p className="text-sm text-neutral-500">{openRequests.length} request(s) awaiting review.</p>
       </section>
     </div>
   );

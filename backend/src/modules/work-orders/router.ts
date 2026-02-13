@@ -5,7 +5,6 @@
 import { Router } from 'express';
 
 import { requireAuth, requireRole } from '../../../middleware/authMiddleware';
-import idempotency from '../../../middleware/idempotency';
 import tenantScope from '../../../middleware/tenantScope';
 import { requirePermission } from '../../auth/permissions';
 import authorizeTenantSite from '../../middleware/tenantAuthorization';
@@ -57,7 +56,6 @@ router.patch(
 router.put(
   '/:workOrderId/reconcile',
   requirePermission('workorders.write'),
-  idempotency,
   workOrderParamValidator,
   enforceSafetyControls,
   reconcileOfflineUpdateHandler,

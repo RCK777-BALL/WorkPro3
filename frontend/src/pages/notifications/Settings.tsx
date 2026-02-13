@@ -102,11 +102,9 @@ const NotificationSettingsPage = () => {
         payload.webhookUrl = form.teamsWebhookUrl;
       }
       const result = await sendNotificationTest(payload);
-      setTestState({
-        result: `Delivered at ${result.deliveredAt}${result.target ? ` to ${result.target}` : ''}`,
-      });
+      setTestState({ provider, result: `Delivered at ${result.deliveredAt}${result.target ? ` to ${result.target}` : ''}` });
     } catch (err) {
-      setTestState({ error: 'Failed to send test notification' });
+      setTestState({ provider, error: 'Failed to send test notification' });
       console.error(err);
     }
   };
@@ -331,7 +329,7 @@ const NotificationSettingsPage = () => {
             <Button
               variant="ghost"
               onClick={() => sendTest('smtp')}
-              disabled={!form.emailTarget || testState.provider === 'smtp'}
+              disabled={testState.provider === 'smtp'}
               icon={<Send className="h-4 w-4" />}
             >
               Email test
@@ -339,7 +337,7 @@ const NotificationSettingsPage = () => {
             <Button
               variant="ghost"
               onClick={() => sendTest('twilio')}
-              disabled={!form.smsTarget || testState.provider === 'twilio'}
+              disabled={testState.provider === 'twilio'}
               icon={<Phone className="h-4 w-4" />}
             >
               SMS test

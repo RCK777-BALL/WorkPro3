@@ -161,13 +161,13 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
   };
 
   const controls = (
-    <div className="flex flex-col gap-3 text-white sm:flex-row sm:items-center">
-      <label className="flex items-center gap-2 text-sm text-white">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <label className="flex items-center gap-2 text-sm text-slate-300">
         Range
         <select
           value={range}
           onChange={(event) => setRange(event.target.value as DashboardRangeKey)}
-          className="rounded-md border border-white/10 bg-slate-950 px-3 py-1 text-sm text-white focus:border-primary-400 focus:outline-none"
+          className="rounded-md border border-white/10 bg-slate-900/60 px-3 py-1 text-sm text-white focus:border-primary-400 focus:outline-none"
         >
           {DASHBOARD_RANGE_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -188,11 +188,11 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
             Export {format.label}
           </Button>
         ))}
-        <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-slate-950 px-2 py-1 text-xs text-white">
+        <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-white/80">
           <input
             value={scheduleEmail}
             onChange={(event) => setScheduleEmail(event.target.value)}
-            className="w-44 rounded bg-slate-900 px-2 py-1 text-xs text-white placeholder:text-white/70 focus:outline-none"
+            className="w-44 rounded bg-transparent px-2 py-1 text-xs focus:outline-none"
             placeholder="delivery@example.com"
           />
           <Button size="xs" variant="primary" onClick={handleSchedule}>
@@ -210,10 +210,10 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
       headerActions={controls}
       className={clsx('border-white/10 bg-slate-900/80 text-white backdrop-blur', className)}
     >
-      {exportError ? <p className="mb-4 text-sm text-white">{exportError}</p> : null}
-      {scheduleMessage ? <p className="mb-4 text-xs text-white">{scheduleMessage}</p> : null}
+      {exportError ? <p className="mb-4 text-sm text-red-300">{exportError}</p> : null}
+      {scheduleMessage ? <p className="mb-4 text-xs text-emerald-200">{scheduleMessage}</p> : null}
       {error ? (
-        <div className="flex flex-col gap-3 rounded-xl border border-red-400/50 bg-red-500/10 p-4 text-sm text-white">
+        <div className="flex flex-col gap-3 rounded-xl border border-red-400/50 bg-red-500/10 p-4 text-sm text-red-100">
           <p>{error}</p>
           <div>
             <Button size="sm" variant="outline" onClick={refetch}>
@@ -226,10 +226,10 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
         <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-wider text-white">Status distribution</p>
-              <p className="text-sm text-white">Work order mix by state</p>
+              <p className="text-xs uppercase tracking-wider text-white/60">Status distribution</p>
+              <p className="text-sm text-white/80">Work order mix by state</p>
             </div>
-            {loading && !kpis ? <span className="text-xs text-white">Loading…</span> : null}
+            {loading && !kpis ? <span className="text-xs text-white/60">Loading…</span> : null}
           </div>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <SimplePieChart data={statusData} className="h-48" />
@@ -243,17 +243,19 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
                   <span className="font-semibold">{numberFormatter.format(item.value)}</span>
                 </li>
               ))}
-              {!statusData.length && !loading ? <li className="text-sm text-white">No work orders in range.</li> : null}
+              {!statusData.length && !loading ? (
+                <li className="text-sm text-white/60">No work orders in range.</li>
+              ) : null}
             </ul>
           </div>
         </section>
         <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-wider text-white">Downtime & reliability</p>
-              <p className="text-sm text-white">MTTR, MTBF, and downtime hours</p>
+              <p className="text-xs uppercase tracking-wider text-white/60">Downtime & reliability</p>
+              <p className="text-sm text-white/80">MTTR, MTBF, and downtime hours</p>
             </div>
-            {loading && !kpis ? <span className="text-xs text-white">Loading…</span> : null}
+            {loading && !kpis ? <span className="text-xs text-white/60">Loading…</span> : null}
           </div>
           <div className="mt-4 h-48">
             <SimpleBarChart data={performanceData} className="h-full" />
@@ -263,23 +265,23 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
       <section className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-wider text-white">Summary</p>
-            <p className="text-sm text-white">Key KPI values for the selected period</p>
+            <p className="text-xs uppercase tracking-wider text-white/60">Summary</p>
+            <p className="text-sm text-white/80">Key KPI values for the selected period</p>
           </div>
-          {loading && kpis ? <span className="text-xs text-white">Refreshing…</span> : null}
+          {loading && kpis ? <span className="text-xs text-white/60">Refreshing…</span> : null}
         </div>
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-sm">
             <tbody>
               {summaryRows.map((row) => (
                 <tr key={row.label} className="border-b border-white/10 last:border-none">
-                  <td className="py-2 pr-4 text-white">{row.label}</td>
+                  <td className="py-2 pr-4 text-white/70">{row.label}</td>
                   <td className="py-2 text-right font-semibold text-white">{row.value}</td>
                 </tr>
               ))}
               {!summaryRows.length && !loading ? (
                 <tr>
-                  <td className="py-4 text-sm text-white" colSpan={2}>
+                  <td className="py-4 text-sm text-white/60" colSpan={2}>
                     No KPI data available for the selected range.
                   </td>
                 </tr>
@@ -289,14 +291,14 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
         </div>
         {pmCompliance ? (
           <div className="mt-4">
-            <p className="text-xs uppercase tracking-wider text-white">PM compliance trend</p>
+            <p className="text-xs uppercase tracking-wider text-white/60">PM compliance trend</p>
             <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10">
               <div
                 className="h-full rounded-full bg-emerald-400"
                 style={{ width: `${Math.min(pmCompliance.percentage, 100).toFixed(1)}%` }}
               />
             </div>
-            <p className="mt-1 text-xs text-white">
+            <p className="mt-1 text-xs text-white/70">
               {formatPercent(pmCompliance.percentage)} compliance across {numberFormatter.format(pmCompliance.total)} PM orders
             </p>
           </div>
@@ -305,8 +307,8 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
       <section className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-wider text-white">Drill-down links</p>
-            <p className="text-sm text-white">Open filtered work orders or tasks from each widget</p>
+            <p className="text-xs uppercase tracking-wider text-white/60">Drill-down links</p>
+            <p className="text-sm text-white/80">Open filtered work orders or tasks from each widget</p>
           </div>
         </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -371,11 +373,11 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
         <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-wider text-white">MTBF trend</p>
-              <p className="text-sm text-white">Mean time between failures over time</p>
+              <p className="text-xs uppercase tracking-wider text-white/60">MTBF trend</p>
+              <p className="text-sm text-white/80">Mean time between failures over time</p>
             </div>
             {data?.mtbf ? (
-              <span className="text-xs text-white">{data.mtbf.value.toFixed(2)} h</span>
+              <span className="text-xs text-white/70">{data.mtbf.value.toFixed(2)} h</span>
             ) : null}
           </div>
           <div className="mt-4 h-48">
@@ -385,18 +387,18 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
         <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-wider text-white">PM compliance</p>
-              <p className="text-sm text-white">Completion rate for preventive work</p>
+              <p className="text-xs uppercase tracking-wider text-white/60">PM compliance</p>
+              <p className="text-sm text-white/80">Completion rate for preventive work</p>
             </div>
             {pmCompliance ? (
-              <span className="text-xs text-white">{formatPercent(pmCompliance.percentage)}</span>
+              <span className="text-xs text-emerald-200">{formatPercent(pmCompliance.percentage)}</span>
             ) : null}
           </div>
           <div className="mt-4 h-48">
             <SimpleLineChart data={pmTrend} className="h-full" stroke="#34d399" showDots />
           </div>
           {pmCompliance ? (
-            <p className="mt-3 text-xs text-white">
+            <p className="mt-3 text-xs text-white/70">
               {numberFormatter.format(pmCompliance.completed)} of {numberFormatter.format(pmCompliance.total)} PM orders completed
               in range
             </p>
@@ -405,11 +407,11 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
         <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-wider text-white">Work order volume</p>
-              <p className="text-sm text-white">Daily creation trend and status mix</p>
+              <p className="text-xs uppercase tracking-wider text-white/60">Work order volume</p>
+              <p className="text-sm text-white/80">Daily creation trend and status mix</p>
             </div>
             {workOrderVolume ? (
-              <span className="text-xs text-white">{numberFormatter.format(workOrderVolume.total)} total</span>
+              <span className="text-xs text-white/70">{numberFormatter.format(workOrderVolume.total)} total</span>
             ) : null}
           </div>
           <div className="mt-4 h-48">
@@ -417,7 +419,7 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
           </div>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             {workOrderStatusBreakdown.map((entry) => (
-              <div key={entry.label} className="flex items-center justify-between text-xs text-white">
+              <div key={entry.label} className="flex items-center justify-between text-xs text-white/80">
                 <span className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
                   {entry.label}
@@ -425,7 +427,9 @@ export function DashboardAnalyticsPanel({ className }: DashboardAnalyticsPanelPr
                 <span className="font-semibold text-white">{numberFormatter.format(entry.value)}</span>
               </div>
             ))}
-            {!workOrderStatusBreakdown.length && !loading ? <p className="text-xs text-white">No work order volume in range.</p> : null}
+            {!workOrderStatusBreakdown.length && !loading ? (
+              <p className="text-xs text-white/60">No work order volume in range.</p>
+            ) : null}
           </div>
         </section>
       </div>

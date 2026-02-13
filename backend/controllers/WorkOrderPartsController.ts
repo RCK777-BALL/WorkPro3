@@ -17,8 +17,9 @@ const toObjectId = (value: string | Types.ObjectId): Types.ObjectId =>
 const resolveUserObjectId = (req: AuthedRequest): Types.ObjectId | undefined => {
   const raw = req.user?._id ?? req.user?.id;
   if (!raw) return undefined;
-  if (typeof raw === 'string') return toObjectId(raw);
-  if (Types.ObjectId.isValid(raw)) return toObjectId(raw);
+  if (raw instanceof Types.ObjectId || typeof raw === 'string') {
+    return toObjectId(raw);
+  }
   return undefined;
 };
 

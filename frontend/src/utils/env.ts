@@ -3,18 +3,8 @@
  */
 
 type ViteEnv = Record<string, string | undefined>;
-type RuntimeEnv = Record<string, string | undefined>;
-
-const getRuntimeEnv = (): RuntimeEnv | undefined =>
-  typeof window === 'undefined' ? undefined : (window as { __ENV__?: RuntimeEnv }).__ENV__;
-
-const normalizeEnvValue = (value: string | undefined): string | undefined => {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : undefined;
-};
-
 const getEnvVar = (key: string): string | undefined =>
-  normalizeEnvValue(getRuntimeEnv()?.[key] ?? (import.meta.env as unknown as ViteEnv)?.[key]);
+  (import.meta.env as unknown as ViteEnv)?.[key];
 
 export const config = {
   // Base server URL (without trailing /api)

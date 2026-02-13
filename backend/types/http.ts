@@ -1,21 +1,16 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
-import type { Types } from 'mongoose';
-import type { ParamsDictionary } from 'express-serve-static-core';
+import type { ParamsDictionary, User } from 'express-serve-static-core';
 import type { ParsedQs } from 'qs';
 import type { UserRole } from './auth';
 import type { Permission } from '../shared/permissions';
 export type { ApiResult } from '../../shared/types/http';
 
-type AuthedUser = Express.User & {
+type AuthedUser = User & {
   roles?: Array<UserRole | string> | undefined;
   permissions?: Permission[] | string[] | undefined;
   tenantId?: string | null | undefined;
   siteId?: string | null | undefined;
   departmentId?: string | null | undefined;
-  id?: string | Types.ObjectId | undefined;
-  _id?: string | Types.ObjectId | undefined;
-  email?: string | undefined;
-  name?: string | undefined;
 };
 
 export type AuthedRequest<
@@ -26,7 +21,6 @@ export type AuthedRequest<
   Locals extends Record<string, unknown> = Record<string, unknown>,
 > = Omit<Request<P, ResBody, ReqBody, ReqQuery, Locals>, 'user'> & {
   user?: AuthedUser | undefined;
-  requestId?: string | undefined;
   tenantId?: string | undefined;
   tenantDomain?: string | undefined;
   siteId?: string | undefined;

@@ -20,8 +20,6 @@ export interface SiteSummary {
   tenantId: string;
   name: string;
   code?: string | undefined;
-  description?: string | undefined;
-  slug?: string | undefined;
   timezone?: string | undefined;
   country?: string | undefined;
   region?: string | undefined;

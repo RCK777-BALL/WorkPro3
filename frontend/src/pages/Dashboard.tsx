@@ -16,9 +16,6 @@ import {
   ShieldCheck as ShieldCheckLucide,
   Timer as TimerLucide,
   Wrench as WrenchLucide,
-  SlidersHorizontal,
-  ChevronUp,
-  ChevronDown,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -28,10 +25,10 @@ import StatusBadge from "@/components/common/StatusBadge";
 import Button from "@common/Button";
 import AlertBanner from "@/components/layout/AlertBanner";
 import { DashboardAnalyticsPanel } from "@/features/dashboards";
+import { HelpCenterViewer } from "@/features/help-center";
+import { OnboardingWizard } from "@/features/onboarding";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
 import { usePmCompletionAnalytics } from "@/hooks/usePmAnalytics";
-import { useDashboardLayoutStore } from "@/store/dashboardLayoutStore";
-import { useAuthStore } from "@/store/authStore";
 
 type SummaryResponse = {
   openWorkOrders: number;
@@ -164,25 +161,6 @@ const DEFAULT_FILTERS: FilterState = { department: "all", line: "all", status: "
 const FILTER_STORAGE_KEY = "operations-dashboard-filters";
 
 const VALID_STATUS_VALUES = new Set(STATUS_FILTERS.map((option) => option.value));
-
-type DashboardTabKey = "overview" | "analytics" | "activity";
-
-const DASHBOARD_TABS: Array<{ key: DashboardTabKey; label: string }> = [
-  { key: "overview", label: "Overview" },
-  { key: "analytics", label: "Analytics" },
-  { key: "activity", label: "Activity" },
-];
-
-const DASHBOARD_WIDGET_LABELS = {
-  open: "Open work orders",
-  overdue: "Overdue work orders",
-  pmDue: "PM due in 7 days",
-  compliance: "Compliance score",
-  mttr: "Mean time to repair",
-  asset: "Asset availability",
-  permits: "Open permits",
-  livePulse: "Live pulse",
-} as const;
 
 const loadSavedFilters = (): FilterState => {
   if (typeof window === "undefined") {
@@ -847,17 +825,7 @@ function DashboardFilters({ filters, departments, lines, loading, onChange }: Fi
 }
 export default function Dashboard() {
   const navigate = useNavigate();
-  const user = useAuthStore((state) => state.user);
-  const {
-    widgetOrder,
-    hiddenWidgets,
-    toggleWidget,
-    moveWidget,
-    applyPreset,
-    hasCustomLayout,
-  } = useDashboardLayoutStore();
   const [filters, setFilters] = useState<FilterState>(() => loadSavedFilters());
-  const [activeTab, setActiveTab] = useState<DashboardTabKey>("overview");
   const [departments, setDepartments] = useState<SelectOption[]>([]);
   const [lines, setLines] = useState<LineOption[]>([]);
   const [optionsLoading, setOptionsLoading] = useState(true);
@@ -884,7 +852,6 @@ export default function Dashboard() {
   const [isTechnician, setIsTechnician] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
-  const [showWidgetControls, setShowWidgetControls] = useState(false);
 
   const mountedRef = useRef(true);
   const livePulseRef = useRef<LivePulseMetrics | null>(null);
@@ -895,20 +862,6 @@ export default function Dashboard() {
       mountedRef.current = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (hasCustomLayout) return;
-    const role = user?.role?.toLowerCase() ?? '';
-    const roles = user?.roles?.map((value) => value.toLowerCase()) ?? [];
-    const allRoles = [role, ...roles].filter(Boolean);
-    const preset =
-      allRoles.some((value) => value.includes('tech'))
-        ? 'technician'
-        : allRoles.some((value) => value.includes('manager') || value.includes('supervisor'))
-          ? 'manager'
-          : 'default';
-    applyPreset(preset);
-  }, [applyPreset, hasCustomLayout, user]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -1385,349 +1338,201 @@ export default function Dashboard() {
       },
     ];
   }, [summary, summaryTrends]);
-
-  const summaryCardMap = useMemo(
-    () => new Map(summaryCards.map((card) => [card.key, card])),
-    [summaryCards],
-  );
-
-  const visibleSummaryCards = useMemo(
-    () =>
-      widgetOrder
-        .filter((id) => id !== "livePulse")
-        .filter((id) => !hiddenWidgets.includes(id))
-        .map((id) => summaryCardMap.get(id))
-        .filter((card): card is NonNullable<typeof summaryCards[number]> => Boolean(card)),
-    [hiddenWidgets, summaryCardMap, widgetOrder],
-  );
-
-  const isLivePulseVisible = !hiddenWidgets.includes("livePulse");
-
-  const maintenanceAnalyticsSection = (
-    <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white shadow-xl">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold">Maintenance analytics</h2>
-          <p className="text-sm text-white/70">Preventive trend highlights</p>
-        </div>
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          className="rounded-full bg-white/15 text-white hover:bg-white/25 disabled:opacity-60"
-          onClick={handleExportPdf}
-          disabled={exportingPdf}
-        >
-          {exportingPdf ? "Exporting…" : "Export PDF"}
-          <FileDown className="ml-2 h-4 w-4" />
-        </Button>
-      </div>
-      {exportError ? <p className="mt-3 text-xs text-red-200">{exportError}</p> : null}
-      <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-xs uppercase tracking-widest text-white/60">PM compliance trend</p>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-semibold">
-              {summary ? `${Math.round(summary.pmCompliance * 100)}%` : "–"}
-            </span>
-            <span className="text-xs text-white/60">last 10 periods</span>
-          </div>
-          <Sparkline
-            data={(summaryTrends?.pmCompliance ?? []).map((value) => {
-              const numericValue = typeof value === "number" ? value : 0;
-              return Number((numericValue * 100).toFixed(1));
-            })}
-            color="rgba(255,255,255,0.8)"
-            className="mt-4 h-16 w-full"
-          />
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-xs uppercase tracking-widest text-white/60">SLA compliance</p>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-semibold">
-              {summary
-                ? `${(summary.slaCompliance ?? SUMMARY_FALLBACK.slaCompliance).toFixed(1)}%`
-                : "–"}
-            </span>
-            <span className="text-xs text-white/60">on-time commitments</span>
-          </div>
-          <Sparkline
-            data={summaryTrends?.slaCompliance ?? []}
-            color="rgba(255,255,255,0.8)"
-            className="mt-4 h-16 w-full"
-          />
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-xs uppercase tracking-widest text-white/60">Wrench time %</p>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-semibold">
-              {summary
-                ? `${(summary.wrenchTimePct ?? SUMMARY_FALLBACK.wrenchTimePct).toFixed(1)}%`
-                : "–"}
-            </span>
-            <span className="text-xs text-white/60">labor utilisation</span>
-          </div>
-          <Sparkline
-            data={summaryTrends?.wrenchTimePct ?? []}
-            color="rgba(255,255,255,0.8)"
-            className="mt-4 h-16 w-full"
-          />
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="text-xs uppercase tracking-widest text-white/60">PM completion</p>
-              <div className="mt-3 flex items-baseline gap-2">
-                <span className="text-2xl font-semibold">
-                  {pmTotals ? `${(pmTotals.completionRate ?? 0).toFixed(1)}%` : "–"}
-                </span>
-                <span className="text-xs text-white/60">last 6 months</span>
-              </div>
-            </div>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="rounded-full bg-black/10 text-white hover:bg-white/100"
-              onClick={() => navigateTo("/analytics/pm")}
-            >
-              View
-              <ArrowUpRight className="ml-1 h-4 w-4" />
-            </Button>
-          </div>
-          <Sparkline
-            data={pmCompletionSparkline}
-            color="rgba(59, 130, 246, 0.9)"
-            className="mt-4 h-16 w-full"
-          />
-          <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-white/70">
-            <div>
-              <span className="block text-[11px] uppercase text-white/50">On-time</span>
-              <span className="font-semibold">{pmTotals?.onTime ?? 0}</span>
-            </div>
-            <div>
-              <span className="block text-[11px] uppercase text-white/50">Late</span>
-              <span className="font-semibold">{pmTotals?.late ?? 0}</span>
-            </div>
-            <div>
-              <span className="block text-[11px] uppercase text-white/50">Missed</span>
-              <span className="font-semibold">{pmTotals?.missed ?? 0}</span>
-            </div>
-          </div>
-        </div>
-        <AssetAvailabilityWidget
-          overall={summary?.assetAvailability ?? 0}
-          critical={summary?.assetAvailabilityCritical ?? 0}
-        />
-      </div>
-    </section>
-  );
-
   return (
-    <div className="text-white">
+    <div className="min-h-screen bg-slate-950 p-6 text-white">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
-        <section className="space-y-6 rounded-3xl border border-slate-800/80 bg-slate-900/60 p-6 shadow-xl backdrop-blur">
-          <header className="flex flex-wrap items-start justify-between gap-3">
-            <div className="space-y-2">
-              <h1 className="text-3xl font-semibold">Operations dashboard</h1>
-              <p className="text-sm text-white/70">
-                Monitor maintenance workload, compliance, and live system health at a glance.
-              </p>
-            </div>
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              className="rounded-full bg-white/15 text-white hover:bg-white/25"
-              onClick={() => setShowWidgetControls((prev) => !prev)}
-            >
-              <SlidersHorizontal className="mr-2 h-4 w-4" />
-              Customize widgets
-            </Button>
-          </header>
+        <header className="space-y-2">
+          <h1 className="text-3xl font-semibold">Operations dashboard</h1>
+          <p className="text-sm text-white/70">
+            Monitor maintenance workload, compliance, and live system health at a glance.
+          </p>
+        </header>
 
-          <AlertBanner />
+        <AlertBanner />
 
-          <div
-            role="tablist"
-            aria-label="Dashboard sections"
-            className="flex flex-wrap items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1 text-sm text-white"
-          >
-            {DASHBOARD_TABS.map((tab) => {
-              const isActive = activeTab === tab.key;
-              return (
-                <button
-                  key={tab.key}
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={clsx(
-                    "rounded-full px-4 py-2 text-sm font-medium text-white transition",
-                    isActive
-                      ? "bg-white/15 text-white"
-                      : "text-white/80 hover:bg-white/10 hover:text-white",
-                  )}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
+        <div className="grid gap-4 lg:grid-cols-[2fr,1fr]">
+          <OnboardingWizard />
+          <HelpCenterViewer />
+        </div>
+
+        <DashboardFilters
+          filters={filters}
+          departments={departments}
+          lines={lines}
+          loading={optionsLoading}
+          onChange={handleFilterChange}
+        />
+
+        {summaryError ? (
+          <div className="rounded-3xl border border-red-400/60 bg-red-500/20 p-4 text-sm text-red-100">
+            {summaryError}
           </div>
+        ) : null}
 
-          {activeTab === "overview" ? (
-            <>
-              {showWidgetControls && (
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-white">Widget preferences</p>
-                      <p className="text-xs text-white/60">
-                        Toggle or reorder KPI widgets. Presets reset to role defaults.
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        type="button"
-                        size="xs"
-                        variant="secondary"
-                        className="rounded-full bg-white/20 text-white hover:bg-white/30"
-                        onClick={() => applyPreset("technician")}
-                      >
-                        Technician preset
-                      </Button>
-                      <Button
-                        type="button"
-                        size="xs"
-                        variant="secondary"
-                        className="rounded-full bg-white/20 text-white hover:bg-white/30"
-                        onClick={() => applyPreset("manager")}
-                      >
-                        Manager preset
-                      </Button>
-                      <Button
-                        type="button"
-                        size="xs"
-                        variant="secondary"
-                        className="rounded-full bg-white/20 text-white hover:bg-white/30"
-                        onClick={() => applyPreset("default")}
-                      >
-                        Default preset
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    {widgetOrder.map((widgetId) => {
-                      const label = DASHBOARD_WIDGET_LABELS[widgetId];
-                      const isHidden = hiddenWidgets.includes(widgetId);
-                      return (
-                        <div
-                          key={widgetId}
-                          className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2"
-                        >
-                          <label className="flex items-center gap-2 text-xs font-medium text-white/80">
-                            <input
-                              type="checkbox"
-                              checked={!isHidden}
-                              onChange={() => toggleWidget(widgetId)}
-                              className="h-4 w-4 rounded border-white/20 bg-transparent text-white"
-                            />
-                            {label}
-                          </label>
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => moveWidget(widgetId, "up")}
-                              className="rounded-md p-1 text-white/60 hover:text-white"
-                              aria-label={`Move ${label} up`}
-                            >
-                              <ChevronUp className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => moveWidget(widgetId, "down")}
-                              className="rounded-md p-1 text-white/60 hover:text-white"
-                              aria-label={`Move ${label} down`}
-                            >
-                              <ChevronDown className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-              <DashboardFilters
-                filters={filters}
-                departments={departments}
-                lines={lines}
-                loading={optionsLoading}
-                onChange={handleFilterChange}
-              />
+        <DashboardAnalyticsPanel />
 
-              {summaryError ? (
-                <div className="rounded-3xl border border-red-400/60 bg-red-500/20 p-4 text-sm text-red-100">
-                  {summaryError}
-                </div>
-              ) : null}
-
-              <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {visibleSummaryCards.map((card) => (
-                  <SummaryCard
-                    key={card.key}
-                    title={card.title}
-                    description={card.description}
-                    value={card.value}
-                    {...(card.suffix ? { suffix: card.suffix } : {})}
-                    icon={card.icon}
-                    gradient={card.gradient}
-                    trend={card.trend}
-                    loading={summaryLoading}
-                    decimals={card.decimals ?? 0}
-                    href={card.href}
-                  />
-                ))}
-              </section>
-
-              {isLivePulseVisible && (
-                <LivePulseSection
-                  metrics={livePulse}
-                  loading={livePulseLoading}
-                  error={livePulseError}
-                  onRefresh={fetchLivePulse}
-                  onNavigate={navigateTo}
-                />
-              )}
-            </>
-          ) : null}
-
-          {activeTab === "analytics" ? (
-            <div className="space-y-6">
-              <DashboardAnalyticsPanel />
-              {maintenanceAnalyticsSection}
-            </div>
-          ) : null}
-
-          {activeTab === "activity" ? (
-            <div className="grid gap-4 lg:grid-cols-2">
-              <RecentActivitySection
-                items={recentActivity}
-                loading={activityLoading}
-                error={activityError}
-                onRefresh={fetchActivity}
-                onNavigate={(link) => {
-                  if (link) navigateTo(link);
-                }}
-              />
-              <StatusSummary
-                statuses={statusLegend.statuses}
-                updatedAt={statusLegend.updatedAt}
-                loading={statusLoading}
-              />
-            </div>
-          ) : null}
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {summaryCards.map((card) => (
+            <SummaryCard
+              key={card.key}
+              title={card.title}
+              description={card.description}
+              value={card.value}
+              {...(card.suffix ? { suffix: card.suffix } : {})}
+              icon={card.icon}
+              gradient={card.gradient}
+              trend={card.trend}
+              loading={summaryLoading}
+              decimals={card.decimals ?? 0}
+              href={card.href}
+            />
+          ))}
         </section>
+
+        <LivePulseSection
+          metrics={livePulse}
+          loading={livePulseLoading}
+          error={livePulseError}
+          onRefresh={fetchLivePulse}
+          onNavigate={navigateTo}
+        />
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <RecentActivitySection
+            items={recentActivity}
+            loading={activityLoading}
+            error={activityError}
+            onRefresh={fetchActivity}
+            onNavigate={(link) => {
+              if (link) navigateTo(link);
+            }}
+          />
+          <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white shadow-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold">Maintenance analytics</h2>
+                <p className="text-sm text-white/70">Preventive trend highlights</p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="rounded-full bg-white/15 text-white hover:bg-white/25 disabled:opacity-60"
+                onClick={handleExportPdf}
+                disabled={exportingPdf}
+              >
+                {exportingPdf ? "Exporting…" : "Export PDF"}
+                <FileDown className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+            {exportError ? (
+              <p className="mt-3 text-xs text-red-200">{exportError}</p>
+            ) : null}
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs uppercase tracking-widest text-white/60">PM compliance trend</p>
+                <div className="mt-3 flex items-baseline gap-2">
+                  <span className="text-2xl font-semibold">
+                    {summary ? `${Math.round(summary.pmCompliance * 100)}%` : "–"}
+                  </span>
+                  <span className="text-xs text-white/60">last 10 periods</span>
+                </div>
+                <Sparkline
+                  data={(summaryTrends?.pmCompliance ?? []).map((value) => {
+                    const numericValue = typeof value === "number" ? value : 0;
+                    return Number((numericValue * 100).toFixed(1));
+                  })}
+                  color="rgba(255,255,255,0.8)"
+                  className="mt-4 h-16 w-full"
+                />
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs uppercase tracking-widest text-white/60">SLA compliance</p>
+                <div className="mt-3 flex items-baseline gap-2">
+                  <span className="text-2xl font-semibold">
+                    {summary
+                      ? `${(summary.slaCompliance ?? SUMMARY_FALLBACK.slaCompliance).toFixed(1)}%`
+                      : "–"}
+                  </span>
+                  <span className="text-xs text-white/60">on-time commitments</span>
+                </div>
+                <Sparkline
+                  data={summaryTrends?.slaCompliance ?? []}
+                  color="rgba(255,255,255,0.8)"
+                  className="mt-4 h-16 w-full"
+                />
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs uppercase tracking-widest text-white/60">Wrench time %</p>
+                <div className="mt-3 flex items-baseline gap-2">
+                  <span className="text-2xl font-semibold">
+                    {summary
+                      ? `${(summary.wrenchTimePct ?? SUMMARY_FALLBACK.wrenchTimePct).toFixed(1)}%`
+                      : "–"}
+                  </span>
+                  <span className="text-xs text-white/60">labor utilisation</span>
+                </div>
+                <Sparkline
+                  data={summaryTrends?.wrenchTimePct ?? []}
+                  color="rgba(255,255,255,0.8)"
+                  className="mt-4 h-16 w-full"
+                />
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-xs uppercase tracking-widest text-white/60">PM completion</p>
+                    <div className="mt-3 flex items-baseline gap-2">
+                      <span className="text-2xl font-semibold">
+                        {pmTotals ? `${(pmTotals.completionRate ?? 0).toFixed(1)}%` : "–"}
+                      </span>
+                      <span className="text-xs text-white/60">last 6 months</span>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="rounded-full bg-white/10 text-white hover:bg-white/20"
+                    onClick={() => navigateTo("/analytics/pm")}
+                  >
+                    View
+                    <ArrowUpRight className="ml-1 h-4 w-4" />
+                  </Button>
+                </div>
+                <Sparkline
+                  data={pmCompletionSparkline}
+                  color="rgba(59, 130, 246, 0.9)"
+                  className="mt-4 h-16 w-full"
+                />
+                <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-white/70">
+                  <div>
+                    <span className="block text-[11px] uppercase text-white/50">On-time</span>
+                    <span className="font-semibold">{pmTotals?.onTime ?? 0}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[11px] uppercase text-white/50">Late</span>
+                    <span className="font-semibold">{pmTotals?.late ?? 0}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[11px] uppercase text-white/50">Missed</span>
+                    <span className="font-semibold">{pmTotals?.missed ?? 0}</span>
+                  </div>
+                </div>
+              </div>
+              <AssetAvailabilityWidget
+                overall={summary?.assetAvailability ?? 0}
+                critical={summary?.assetAvailabilityCritical ?? 0}
+              />
+            </div>
+          </section>
+        </div>
+
+        <StatusSummary
+          statuses={statusLegend.statuses}
+          updatedAt={statusLegend.updatedAt}
+          loading={statusLoading}
+        />
       </div>
     </div>
   );

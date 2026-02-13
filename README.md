@@ -22,7 +22,6 @@ WorkPro/
 - [IoT Gateway Ingestion](docs/iot-gateway.md) – MQTT/HTTP payload formats, storage pipeline, and automated alert/work-order flows for `/iot/ingest`.
 - [Work Request Portal](docs/work-requests.md) – public intake, triage, and convert-to-work-order endpoints plus testing guidance.
 - [Inventory module](docs/inventory.md) – models, endpoints, permissions, costing, and test walkthrough for stock control and reorder alerts.
-- [Project onboarding](docs/onboarding.md) – audit summary plus end-to-end onboarding steps.
 
 Run `npm install` inside each folder before development. Node modules are
 not committed to the repository.
@@ -36,7 +35,7 @@ not committed to the repository.
    ```
    Update the required environment variables such as `MONGO_URI`, `JWT_SECRET`,
    and `CORS_ORIGIN`. The example connection string uses
-   `mongodb://localhost:27017/WorkPro3`.
+   `mongodb://localhost:27017/workpro`.
  
 3. Seed the database with a tenant and admin account:
    ```bash
@@ -72,21 +71,11 @@ queued in `localStorage` under `offline-queue`. Once the WebSocket defined by `V
 ## Docker development
 
 The project includes Dockerfiles for the backend and frontend. Before starting
-the stack, generate local MongoDB TLS material and define secrets in a `.env`
-file so Docker Compose can pass them to the backend container:
+the stack, define `JWT_SECRET` in your environment or in a `.env` file so Docker
+Compose can pass it to the backend container:
 
 ```bash
-./scripts/generate-mongo-tls.sh
-cat <<EOF > .env
-JWT_SECRET=change_me_change_me_change_me_change_me
-MONGO_ROOT_USER=workpro_root
-MONGO_ROOT_PASS=change-me
-MONGO_APP_USER=workpro_app
-MONGO_APP_PASS=change-me
-MONGO_DB=WorkPro3
-MONGO_AUTH_DB=WorkPro3
-MONGO_URI=mongodb://workpro_app:change-me@localhost:27017/WorkPro3?authSource=WorkPro3&tls=true&tlsCAFile=./docker/mongo/tls/ca.crt
-EOF
+echo "JWT_SECRET=change_me" > .env
 docker compose up --build
 ```
 
@@ -95,18 +84,15 @@ The API URL is configured via the `VITE_API_URL` environment variable, and the w
 
 ### Kubernetes manifests
 
-Sample manifests live in the `k8s/` folder. Use the secrets template in
-`k8s/secrets.example.yaml` to provision secrets, then apply an overlay that sets
-the ingress host and TLS secret:
+Sample manifests live in the `k8s/` folder. Create a secret containing
+`JWT_SECRET` before applying the manifests:
 
 ```bash
-kubectl apply -f k8s/secrets.example.yaml
-kubectl apply -k k8s/overlays/dev
+kubectl create secret generic jwt-secret --from-literal=JWT_SECRET=change_me
+kubectl apply -f k8s/
 ```
 
-See [k8s/README-production.md](k8s/README-production.md) for production-specific
-guidance on secrets, TLS, images, and MongoDB availability/backups.
-See [docs/production-readiness.md](docs/production-readiness.md) for the full production readiness checklist.
+This will deploy the backend, frontend and ingress resources.
 
 ## Running tests
 
@@ -129,19 +115,6 @@ they can be merged. The testing matrix and workflow are described in
 The frontend stores any API requests made while offline in local storage. When
 the browser regains connectivity, the queued requests are automatically sent
 using the browser's `online` event even if the WebSocket defined by `VITE_WS_URL` and `VITE_SOCKET_PATH` fails to reconnect.
-
-## Production deployment checklist
-
-- [ ] Create `workpro-app-secrets` and `workpro-mongo-secrets` (see `k8s/README-production.md`).
-- [ ] Set ingress host and TLS secret via `k8s/overlays/prod`.
-- [ ] Update image tags/digests in `k8s/overlays/prod` (or use your CD pipeline).
-- [ ] Confirm `/metrics` is scraped by Prometheus.
-- [ ] Confirm `/api/health/live` and `/api/health/ready` probes are wired in Kubernetes.
-- [ ] Choose MongoDB strategy (managed Atlas or self-hosted replica set + backups).
-- [ ] Enable login lockouts, short-lived JWT access tokens, and refresh-token rotation (`LOGIN_LOCKOUT_*`, `JWT_*`).
-- [ ] Ensure idempotency keys are sent by offline clients (`Idempotency-Key`) to avoid duplicate updates.
-- [ ] Apply PodDisruptionBudgets and HPA manifests (`k8s/pdb.yaml`, `k8s/hpa.yaml`).
-- [ ] Run `cd backend && npm run migrate` (and record the migration run).
 
 ## License
 

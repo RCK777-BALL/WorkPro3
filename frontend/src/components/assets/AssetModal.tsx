@@ -11,6 +11,7 @@ import http from "@/lib/http";
 import { useToast } from "@/context/ToastContext";
 import { useScopeContext } from "@/context/ScopeContext";
 import { useDepartmentStore } from "@/store/departmentStore";
+import { useAuthStore, type AuthState } from "@/store/authStore";
 import type { Asset, Department, Line, Station } from "@/types";
 import AssetQRCode from "@/components/qr/AssetQRCode";
 import {
@@ -128,7 +129,6 @@ const AssetModal: React.FC<AssetModalProps> = ({
   onUpdate,
 }) => {
   const [files, setFiles] = useState<File[]>([]);
-  const isEditing = Boolean(asset);
   const {
     register,
     handleSubmit,
@@ -145,6 +145,7 @@ const AssetModal: React.FC<AssetModalProps> = ({
   const fetchDepartments = useDepartmentStore((s) => s.fetchDepartments);
   const fetchLines = useDepartmentStore((s) => s.fetchLines);
   const fetchStations = useDepartmentStore((s) => s.fetchStations);
+  const tenantId = useAuthStore((s: AuthState) => s.user?.tenantId);
   const departmentId = watch("departmentId");
   const lineId = watch("lineId");
   const stationId = watch("stationId");
@@ -211,7 +212,6 @@ const AssetModal: React.FC<AssetModalProps> = ({
     setError(null);
 
     const { departmentId: formDepartmentId, lineId: formLineId, stationId: formStationId, ...rest } = data;
-    const resolvedSiteId = activePlant?.id ?? asset?.plantId ?? asset?.siteId ?? undefined;
 
     const payload: Record<string, any> = {
       ...rest,
@@ -222,18 +222,13 @@ const AssetModal: React.FC<AssetModalProps> = ({
       replacementDate: rest.replacementDate || undefined,
       purchaseDate: rest.purchaseDate || undefined,
       installationDate: rest.installationDate || undefined,
-      ...(isEditing
-        ? {
-            departmentId: formDepartmentId || undefined,
-            lineId: formLineId || undefined,
-            stationId: formStationId || undefined,
-          }
-        : {}),
+      departmentId: formDepartmentId || undefined,
+      lineId: formLineId || undefined,
+      stationId: formStationId || undefined,
       plantId: activePlant?.id ?? asset?.plantId ?? undefined,
-      siteId: resolvedSiteId ?? undefined,
+      siteId: activePlant?.id ?? asset?.siteId ?? undefined,
+      ...(tenantId ? { tenantId } : {}),
     };
-
-    const requestConfig = resolvedSiteId ? { headers: { "x-site-id": resolvedSiteId } } : undefined;
 
     try {
       const raw = await submitAssetRequest({
@@ -241,7 +236,6 @@ const AssetModal: React.FC<AssetModalProps> = ({
         files,
         payload,
         httpClient: assetHttpClient,
-        requestConfig,
       });
 
       const fallback: Partial<Asset> = {
@@ -457,90 +451,83 @@ const AssetModal: React.FC<AssetModalProps> = ({
                 <option value="Mechanical">Mechanical</option>
                 <option value="Tooling">Tooling</option>
                 <option value="Interface">Interface</option>
-                <option value="Welding">Welding</option>
               </select>
             </div>
           </div>
 
-          {isEditing ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
-                  Department
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
-                  value={departmentId}
-                  onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
-                    departmentField.onChange(event);
-                    setValue("lineId", "", { shouldDirty: true, shouldValidate: true });
-                    setValue("stationId", "", { shouldDirty: true, shouldValidate: true });
-                  }}
-                  onBlur={departmentField.onBlur}
-                  name={departmentField.name}
-                  ref={departmentField.ref}
-                >
-                  <option value="">Select Department</option>
-                  {departments.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
-                  Line
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
-                  value={lineId}
-                  onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
-                    lineField.onChange(event);
-                    setValue("stationId", "", { shouldDirty: true, shouldValidate: true });
-                  }}
-                  onBlur={lineField.onBlur}
-                  name={lineField.name}
-                  ref={lineField.ref}
-                  disabled={!departmentId}
-                >
-                  <option value="">Select Line</option>
-                  {lines.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {l.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
-                  Station
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
-                  value={stationId}
-                  onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
-                    stationField.onChange(event);
-                  }}
-                  onBlur={stationField.onBlur}
-                  name={stationField.name}
-                  ref={stationField.ref}
-                  disabled={!lineId}
-                >
-                  <option value="">Select Station</option>
-                  {stations.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+                Department
+              </label>
+              <select
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                value={departmentId}
+                onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
+                  departmentField.onChange(event);
+                  setValue("lineId", "", { shouldDirty: true, shouldValidate: true });
+                  setValue("stationId", "", { shouldDirty: true, shouldValidate: true });
+                }}
+                onBlur={departmentField.onBlur}
+                name={departmentField.name}
+                ref={departmentField.ref}
+              >
+                <option value="">Select Department</option>
+                {departments.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
             </div>
-          ) : (
-            <div className="rounded-md border border-dashed border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600 dark:border-neutral-700 dark:bg-neutral-900/60 dark:text-neutral-300">
-              Create the asset first, then assign it to a department, line, or station later as an add-on.
+            <div>
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+                Line
+              </label>
+              <select
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                value={lineId}
+                onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
+                  lineField.onChange(event);
+                  setValue("stationId", "", { shouldDirty: true, shouldValidate: true });
+                }}
+                onBlur={lineField.onBlur}
+                name={lineField.name}
+                ref={lineField.ref}
+                disabled={!departmentId}
+              >
+                <option value="">Select Line</option>
+                {lines.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </select>
             </div>
-          )}
+            <div>
+              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+                Station
+              </label>
+              <select
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md text-neutral-900 dark:text-neutral-100 bg-white dark:bg-neutral-800"
+                value={stationId}
+                onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
+                  stationField.onChange(event);
+                }}
+                onBlur={stationField.onBlur}
+                name={stationField.name}
+                ref={stationField.ref}
+                disabled={!lineId}
+              >
+                <option value="">Select Station</option>
+                {stations.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>

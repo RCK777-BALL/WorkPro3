@@ -31,19 +31,12 @@ export interface ProvisioningPolicy {
   jitProvisioningEnabled: boolean;
 }
 
-export interface LoginLockoutPolicy {
-  maxAttempts: number;
-  windowMs: number;
-  lockoutMs: number;
-}
-
 export interface SecurityPolicy {
   password: PasswordPolicy;
   mfa: MfaPolicy;
   audit: AuditPolicy;
   sessions: SessionPolicy;
   provisioning: ProvisioningPolicy;
-  login: LoginLockoutPolicy;
 }
 
 const parseNumber = (value: string | undefined, fallback: number): number => {
@@ -87,11 +80,6 @@ export const getSecurityPolicy = (): SecurityPolicy => ({
   },
   provisioning: {
     jitProvisioningEnabled: parseBoolean(process.env.ENABLE_JIT_PROVISIONING, false),
-  },
-  login: {
-    maxAttempts: parseNumber(process.env.LOGIN_LOCKOUT_THRESHOLD, 5),
-    windowMs: parseDurationMs(process.env.LOGIN_LOCKOUT_WINDOW_MS, 1000 * 60 * 15),
-    lockoutMs: parseDurationMs(process.env.LOGIN_LOCKOUT_DURATION_MS, 1000 * 60 * 30),
   },
 });
 

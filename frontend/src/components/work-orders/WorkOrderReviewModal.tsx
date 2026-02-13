@@ -9,7 +9,6 @@ import type { WorkOrder } from '@/types';
 import { useAuthStore, isAdmin as selectIsAdmin, isSupervisor as selectIsSupervisor } from '@/store/authStore';
 import FailureInsightCard from '@/components/ai/FailureInsightCard';
 import { useFailurePrediction } from '@/hooks/useAiInsights';
-import { useFeatureFlagStatus } from '@/hooks/useFeatureFlags';
 import CopilotPanel, { type CopilotSuggestion } from '@/workorders/CopilotPanel';
 import http from '@/lib/http';
 
@@ -41,15 +40,10 @@ const WorkOrderReviewModal: React.FC<Props> = ({
   const isSupervisor = useAuthStore(selectIsSupervisor);
   const [status, setStatus] = useState<WorkOrder['status']>('requested');
   const [currentOrder, setCurrentOrder] = useState<WorkOrder | null>(workOrder);
-  const aiInsightsFlag = useFeatureFlagStatus('ai_insights_enabled');
-  const aiInsightsEnabled = Boolean(aiInsightsFlag.data?.enabled);
-  const aiPrediction = useFailurePrediction(
-    {
-      workOrderId: currentOrder?.id,
-      assetId: currentOrder?.assetId,
-    },
-    { enabled: aiInsightsEnabled },
-  );
+  const aiPrediction = useFailurePrediction({
+    workOrderId: currentOrder?.id,
+    assetId: currentOrder?.assetId,
+  });
 
 
   useEffect(() => {
@@ -287,15 +281,13 @@ const WorkOrderReviewModal: React.FC<Props> = ({
               </ul>
             </div>
           )}
-          {aiInsightsEnabled && (
-            <FailureInsightCard
-              title="AI maintenance insights"
-              insight={aiPrediction.data}
-              loading={aiPrediction.isLoading}
-              error={aiPrediction.error}
-              onRetry={() => aiPrediction.refetch()}
-            />
-          )}
+          <FailureInsightCard
+            title="AI maintenance insights"
+            insight={aiPrediction.data}
+            loading={aiPrediction.isLoading}
+            error={aiPrediction.error}
+            onRetry={() => aiPrediction.refetch()}
+          />
           <CopilotPanel
             workOrderId={currentOrder.id}
             assetId={currentOrder.assetId}

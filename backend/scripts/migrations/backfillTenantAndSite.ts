@@ -11,7 +11,7 @@ type PlantRef = { _id: ObjectId; tenantId?: ObjectId | null };
 
 type WorkOrderRef = { _id: ObjectId; tenantId?: ObjectId | null; plant?: ObjectId | null; siteId?: ObjectId | null };
 
-const DEFAULT_URI = 'mongodb://localhost:27017/WorkPro3';
+const DEFAULT_URI = 'mongodb://localhost:27017/workpro';
 
 async function resolveFallbackTenant(db: Db): Promise<ObjectId> {
   const existing = await db.collection('tenants').findOne();
@@ -92,7 +92,7 @@ async function backfillMissingTenant(
   }
 }
 
-export async function run() {
+async function run() {
   const uri = process.env.MONGO_URI || DEFAULT_URI;
   const client = new MongoClient(uri);
 
@@ -143,10 +143,7 @@ export async function run() {
   }
 }
 
-if (require.main === module) {
-  run().catch((err) => {
-    logger.error(err);
-    process.exit(1);
-  });
-}
-
+run().catch((err) => {
+  logger.error(err);
+  process.exit(1);
+});

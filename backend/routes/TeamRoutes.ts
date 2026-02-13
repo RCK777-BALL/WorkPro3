@@ -8,7 +8,6 @@ import {
   createTeamMember,
   updateTeamMember,
   deleteTeamMember,
-  getMemberOnboardingPlan,
 } from '../controllers/TeamMemberController';
 import { requireAuth } from '../middleware/authMiddleware';
 import tenantScope from '../middleware/tenantScope';
@@ -21,7 +20,6 @@ router.use(requireAuth);
 router.use(tenantScope);
 
 router.get('/', getTeamMembers);
-router.get('/onboarding', getMemberOnboardingPlan);
 router.post(
   '/',
   requireRoles([

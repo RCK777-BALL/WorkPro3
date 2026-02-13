@@ -6,7 +6,7 @@ import type { Request } from 'express';
 import { body } from 'express-validator';
 import type { ValidationChain } from 'express-validator';
 
-const allowedTypes = ['Electrical', 'Mechanical', 'Tooling', 'Interface', 'Welding'] as const;
+const allowedTypes = ['Electrical', 'Mechanical', 'Tooling', 'Interface'] as const;
 const allowedStatuses = ['Active', 'Offline', 'In Repair'] as const;
 const allowedCriticality = ['high', 'medium', 'low'] as const;
 

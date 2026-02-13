@@ -6,10 +6,10 @@
 
 :root {
   color-scheme: dark;
-  --app-background-color: #000000;
-  --app-surface-color: #000000;
-  --app-border-color: #1f2937;
-  --app-text-color: #ffffff;
+  --app-background-color: #050a1a;
+  --app-surface-color: #0f172a;
+  --app-border-color: #1e293b;
+  --app-text-color: #e2e8f0;
   --accent-color: #4f46e5;
   --accent-color-strong: #4338ca;
   --accent-color-light: #3730a3;
@@ -26,10 +26,10 @@ body {
 
 .light {
   color-scheme: light;
-  --app-background-color: #000000;
-  --app-surface-color: #000000;
-  --app-border-color: #1f2937;
-  --app-text-color: #ffffff;
+  --app-background-color: #f8fafc;
+  --app-surface-color: #ffffff;
+  --app-border-color: #e2e8f0;
+  --app-text-color: #0f172a;
   --accent-color: #4f46e5;
   --accent-color-strong: #4338ca;
   --accent-color-light: #e0e7ff;
@@ -40,40 +40,16 @@ body {
 
 .dark {
   color-scheme: dark;
-  --app-background-color: #000000;
-  --app-surface-color: #000000;
-  --app-border-color: #1f2937;
-  --app-text-color: #ffffff;
+  --app-background-color: #050a1a;
+  --app-surface-color: #0f172a;
+  --app-border-color: #1e293b;
+  --app-text-color: #e2e8f0;
 }
 
 .dark body,
 .light body {
   background-color: var(--app-background-color);
   color: var(--app-text-color);
-}
-
-body :where(*) {
-  color: var(--app-text-color);
-}
-
-.dark :where(*) {
-  color: #ffffff;
-}
-
-.dark :where([class*='bg-white']),
-.light :where([class*='bg-white']),
-:where([class*='bg-white']) {
-  background-color: #000000 !important;
-  color: #ffffff !important;
-}
-
-.dark [class*='bg-white']:not([class*='dark:bg-']) {
-  background-color: #000000;
-  color: #ffffff;
-}
-
-.dark [class*='bg-white']:not([class*='dark:bg-']) :where(*) {
-  color: inherit;
 }
 
 body.dense-mode {

@@ -88,41 +88,6 @@ const normalizeLayout = (
   };
 };
 
-const areStringArraysEqual = (left: string[], right: string[]) =>
-  left.length === right.length && left.every((value, index) => value === right[index]);
-
-const areFiltersEqual = (left?: Record<string, string>, right?: Record<string, string>) => {
-  const leftEntries = Object.entries(left ?? {});
-  const rightEntries = Object.entries(right ?? {});
-  if (leftEntries.length !== rightEntries.length) return false;
-  return leftEntries.every(([key, value]) => right?.[key] === value);
-};
-
-const areSortEqual = (left?: TableSortState | null, right?: TableSortState | null) => {
-  if (!left && !right) return true;
-  if (!left || !right) return false;
-  return left.columnId === right.columnId && left.direction === right.direction;
-};
-
-const isLayoutEqual = (left: TableLayoutState, right: TableLayoutState) =>
-  areStringArraysEqual(left.columnOrder, right.columnOrder)
-  && areStringArraysEqual(left.hiddenColumns, right.hiddenColumns)
-  && areSortEqual(left.sort, right.sort)
-  && areFiltersEqual(left.filters, right.filters);
-
-const areSavedLayoutsEqual = (left: SavedTableLayout[], right: SavedTableLayout[]) =>
-  left.length === right.length
-  && left.every((layout, index) => {
-    const other = right[index];
-    if (!other) return false;
-    return (
-      layout.id === other.id
-      && layout.name === other.name
-      && layout.updatedAt === other.updatedAt
-      && isLayoutEqual(layout.state, other.state)
-    );
-  });
-
 export const useTableLayout = ({
   tableKey,
   columnIds,
@@ -212,18 +177,11 @@ export const useTableLayout = ({
       state: normalizeLayout(layout.state, columnIds, defaultSort ?? undefined, defaultFilters ?? {}),
     }));
 
-    setPersistedState((prev) => {
-      const preferencesEqual = isLayoutEqual(prev.preferences, normalizedPreferences);
-      const savedEqual = areSavedLayoutsEqual(prev.saved, normalizedSaved);
-      if (preferencesEqual && savedEqual) {
-        return prev;
-      }
-      return {
-        ...prev,
-        preferences: normalizedPreferences,
-        saved: normalizedSaved,
-      };
-    });
+    setPersistedState((prev) => ({
+      ...prev,
+      preferences: normalizedPreferences,
+      saved: normalizedSaved,
+    }));
   }, [columnIds, defaultFilters, defaultSort, persistedState.saved, preferences]);
 
   const visibleColumnOrder = preferences.columnOrder.filter(
@@ -314,9 +272,6 @@ export const useTableLayout = ({
   const updateFilters = useCallback(
     (filters: Record<string, string>) => {
       setPersistedState((prev) => {
-        if (areFiltersEqual(prev.preferences.filters, filters)) {
-          return prev;
-        }
         const nextState: PersistedLayoutState = {
           ...prev,
           preferences: {

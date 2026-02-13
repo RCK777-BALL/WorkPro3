@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "clean": "rimraf node_modules .vite .turbo dist && git clean -fdX -- .vite dist || exit 0",
-    "fix:frontend": "node ../fixWorkPro.js frontend"
+    "fix:frontend": "node ../fixWorkPro.js frontend",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@dnd-kit/core": "6.3.1",

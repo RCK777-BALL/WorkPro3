@@ -235,9 +235,8 @@ const resolveUserObjectId = (
 ): Types.ObjectId | undefined => {
   const raw = req.user?._id ?? req.user?.id;
   if (!raw) return undefined;
-  if (raw instanceof Types.ObjectId || typeof raw === 'string') {
-    return toOptionalObjectId(raw);
-  }
+  if (typeof raw === 'string') return toOptionalObjectId(raw);
+  if (typeof raw === 'object' && raw instanceof Types.ObjectId) return toOptionalObjectId(raw);
   return undefined;
 };
 

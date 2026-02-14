@@ -233,10 +233,17 @@ type ChecklistEntry = {
 const resolveUserObjectId = (
   req: RequestWithOptionalUser,
 ): Types.ObjectId | undefined => {
-  const raw = req.user?._id ?? req.user?.id;
+  const raw: unknown = req.user?._id ?? req.user?.id;
   if (!raw) return undefined;
-  if (typeof raw === 'string') return toOptionalObjectId(raw);
-  if (typeof raw === 'object' && raw instanceof Types.ObjectId) return toOptionalObjectId(raw);
+
+  if (typeof raw === 'string') {
+    return Types.ObjectId.isValid(raw) ? new Types.ObjectId(raw) : undefined;
+  }
+
+  if (typeof raw === 'object' && raw instanceof Types.ObjectId) {
+    return raw;
+  }
+
   return undefined;
 };
 

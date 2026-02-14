@@ -14,6 +14,9 @@ const activeLineItemFilter = { deletedAt: { $exists: false } } as const;
 const toObjectId = (raw: unknown): Types.ObjectId | null => {
   if (raw == null) return null;
   if (!mongoose.isValidObjectId(raw)) return null;
+  if (Types.ObjectId.isValid(raw) && typeof raw === 'object' && raw !== null && 'toHexString' in raw) {
+    return raw as Types.ObjectId;
+  }
   return new Types.ObjectId(String(raw));
 };
 

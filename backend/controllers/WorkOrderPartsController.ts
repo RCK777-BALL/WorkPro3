@@ -11,19 +11,19 @@ import { sendResponse } from '../utils';
 
 const activeLineItemFilter = { deletedAt: { $exists: false } } as const;
 
-const toObjectId = (value: string | Types.ObjectId): Types.ObjectId =>
-  value instanceof Types.ObjectId ? value : new Types.ObjectId(value);
+const toObjectId = (raw: unknown): Types.ObjectId | null => {
+  if (raw == null) return null;
+  if (!mongoose.isValidObjectId(raw)) return null;
+  if (Types.ObjectId.isValid(raw) && typeof raw === 'object' && raw !== null && 'toHexString' in raw) {
+    return raw as Types.ObjectId;
+  }
+  return new Types.ObjectId(String(raw));
+};
 
 const resolveUserObjectId = (req: AuthedRequest): Types.ObjectId | undefined => {
   const raw = req.user?._id ?? req.user?.id;
-  if (!raw) return undefined;
-  if (raw instanceof Types.ObjectId) {
-    return raw;
-  }
-  if (typeof raw === 'string' && Types.ObjectId.isValid(raw)) {
-    return toObjectId(raw);
-  }
-  return undefined;
+  const objectId = toObjectId(raw);
+  return objectId ?? undefined;
 };
 
 const resolveUnitCost = async (

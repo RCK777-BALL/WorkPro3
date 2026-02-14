@@ -20,7 +20,7 @@ const resolveUserObjectId = (req: AuthedRequest): Types.ObjectId | undefined => 
   if (typeof raw === 'string') {
     return toObjectId(raw);
   }
-  if (typeof raw === 'object' && raw instanceof Types.ObjectId) {
+  if (raw instanceof Types.ObjectId) {
     return raw;
   }
   return undefined;

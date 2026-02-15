@@ -180,7 +180,7 @@ export async function runPMScheduler(): Promise<void> {
               await WorkOrder.create({
                 title: `PM: ${task.title}`,
                 description: task.notes || '',
-                status: 'open',
+                status: 'requested',
                 asset: assignment.asset,
                 pmTask: task._id,
                 department: task.department,
@@ -236,7 +236,7 @@ export async function runPMScheduler(): Promise<void> {
             await WorkOrder.create({
               title: `PM: ${task.title}`,
               description: task.notes || '',
-              status: 'open',
+              status: 'requested',
               asset: assignment.asset,
               pmTask: task._id,
               department: task.department,
@@ -281,7 +281,7 @@ export async function runPMScheduler(): Promise<void> {
           await WorkOrder.create({
             title: `PM: ${task.title}`,
             description: task.notes || '',
-            status: 'open',
+            status: 'requested',
             asset: task.asset,
             pmTask: task._id,
             department: task.department,
@@ -313,7 +313,7 @@ export async function runPMScheduler(): Promise<void> {
           await WorkOrder.create({
             title: `Meter PM: ${task.title}`,
             description: task.notes || '',
-            status: 'open',
+            status: 'requested',
             asset: meter.asset,
             pmTask: task._id,
             department: task.department,

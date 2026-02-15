@@ -27,13 +27,68 @@ const TEXT_STORAGE_KEY = 'theme.textColor';
 
 const DEFAULT_THEME_COLORS: Record<Exclude<ThemeMode, 'system'>, ThemeColors> = {
   light: {
-    background: '#050a1a',
-    text: '#e2e8f0',
+    background: '#f8fafc',
+    text: '#0f172a',
   },
   dark: {
     background: '#050a1a',
     text: '#e2e8f0',
   },
+};
+
+const hexToRgb = (value: string): { r: number; g: number; b: number } | null => {
+  const raw = value.trim().replace('#', '');
+  if (!/^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$/.test(raw)) return null;
+  const normalized =
+    raw.length === 3
+      ? raw
+          .split('')
+          .map((ch) => `${ch}${ch}`)
+          .join('')
+      : raw;
+  const r = Number.parseInt(normalized.slice(0, 2), 16);
+  const g = Number.parseInt(normalized.slice(2, 4), 16);
+  const b = Number.parseInt(normalized.slice(4, 6), 16);
+  return { r, g, b };
+};
+
+const relativeLuminance = (value: string): number => {
+  const rgb = hexToRgb(value);
+  if (!rgb) return 0;
+  const transform = (channel: number) => {
+    const srgb = channel / 255;
+    return srgb <= 0.03928 ? srgb / 12.92 : ((srgb + 0.055) / 1.055) ** 2.4;
+  };
+  const r = transform(rgb.r);
+  const g = transform(rgb.g);
+  const b = transform(rgb.b);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+
+const contrastRatio = (foreground: string, background: string): number => {
+  const l1 = relativeLuminance(foreground);
+  const l2 = relativeLuminance(background);
+  const lighter = Math.max(l1, l2);
+  const darker = Math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
+};
+
+const pickReadableTextColor = (background: string): string => {
+  const darkText = '#0f172a';
+  const lightText = '#f8fafc';
+  return contrastRatio(darkText, background) >= contrastRatio(lightText, background)
+    ? darkText
+    : lightText;
+};
+
+const ensureReadableColors = (background: string, text: string): ThemeColors => {
+  if (contrastRatio(text, background) >= 4.5) {
+    return { background, text };
+  }
+  return {
+    background,
+    text: pickReadableTextColor(background),
+  };
 };
 
 const getSystemTheme = (): Exclude<ThemeMode, 'system'> =>
@@ -83,6 +138,11 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     return DEFAULT_THEME_COLORS[resolvedTheme].text;
   });
 
+  const safeThemeColors = useMemo(
+    () => ensureReadableColors(backgroundColor, textColor),
+    [backgroundColor, textColor],
+  );
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     safeLocalStorage.setItem(THEME_STORAGE_KEY, theme);
@@ -90,13 +150,13 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    safeLocalStorage.setItem(BACKGROUND_STORAGE_KEY, backgroundColor);
-  }, [backgroundColor]);
+    safeLocalStorage.setItem(BACKGROUND_STORAGE_KEY, safeThemeColors.background);
+  }, [safeThemeColors.background]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    safeLocalStorage.setItem(TEXT_STORAGE_KEY, textColor);
-  }, [textColor]);
+    safeLocalStorage.setItem(TEXT_STORAGE_KEY, safeThemeColors.text);
+  }, [safeThemeColors.text]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -125,11 +185,11 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const root = window.document.documentElement;
-    root.style.setProperty('--app-background-color', backgroundColor);
-    root.style.setProperty('--app-text-color', textColor);
-    window.document.body.style.backgroundColor = backgroundColor;
-    window.document.body.style.color = textColor;
-  }, [backgroundColor, textColor]);
+    root.style.setProperty('--app-background-color', safeThemeColors.background);
+    root.style.setProperty('--app-text-color', safeThemeColors.text);
+    window.document.body.style.backgroundColor = safeThemeColors.background;
+    window.document.body.style.color = safeThemeColors.text;
+  }, [safeThemeColors.background, safeThemeColors.text]);
 
   const setTheme = useCallback((nextTheme: ThemeMode) => {
     setThemeState(nextTheme);
@@ -154,13 +214,21 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     () => ({
       theme,
       setTheme,
-      backgroundColor,
+      backgroundColor: safeThemeColors.background,
       setBackgroundColor,
-      textColor,
+      textColor: safeThemeColors.text,
       setTextColor,
       resetColors,
     }),
-    [theme, setTheme, backgroundColor, setBackgroundColor, textColor, setTextColor, resetColors],
+    [
+      theme,
+      setTheme,
+      safeThemeColors.background,
+      setBackgroundColor,
+      safeThemeColors.text,
+      setTextColor,
+      resetColors,
+    ],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

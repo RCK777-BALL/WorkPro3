@@ -170,20 +170,6 @@ export const useTableLayout = ({
     [storageKey],
   );
 
-  useEffect(() => {
-    const normalizedPreferences = normalizeLayout(preferences, columnIds, defaultSort ?? undefined, defaultFilters ?? {});
-    const normalizedSaved = persistedState.saved.map((layout) => ({
-      ...layout,
-      state: normalizeLayout(layout.state, columnIds, defaultSort ?? undefined, defaultFilters ?? {}),
-    }));
-
-    setPersistedState((prev) => ({
-      ...prev,
-      preferences: normalizedPreferences,
-      saved: normalizedSaved,
-    }));
-  }, [columnIds, defaultFilters, defaultSort, persistedState.saved, preferences]);
-
   const visibleColumnOrder = preferences.columnOrder.filter(
     (id) => !preferences.hiddenColumns.includes(id) && columnIds.includes(id),
   );

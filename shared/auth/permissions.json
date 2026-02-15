@@ -44,6 +44,42 @@
       "admin"
     ]
   },
+  "sites": {
+    "read": [
+      "global_admin",
+      "plant_admin",
+      "general_manager",
+      "assistant_general_manager",
+      "operations_manager",
+      "department_leader",
+      "assistant_department_leader",
+      "area_leader",
+      "team_leader",
+      "admin",
+      "team_member",
+      "technical_team_member",
+      "manager",
+      "supervisor",
+      "planner",
+      "tech",
+      "technician",
+      "viewer"
+    ],
+    "manage": [
+      "global_admin",
+      "plant_admin",
+      "general_manager",
+      "assistant_general_manager",
+      "operations_manager",
+      "department_leader",
+      "assistant_department_leader",
+      "area_leader",
+      "team_leader",
+      "manager",
+      "supervisor",
+      "admin"
+    ]
+  },
   "inventory": {
     "read": [
       "global_admin",

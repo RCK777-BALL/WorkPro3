@@ -13,6 +13,7 @@ import TemplateLibrary from './TemplateLibrary';
 import {
   useDismissOnboardingReminder,
   useOnboardingState,
+  useRestartOnboarding,
   useStepActionLabel,
 } from '../hooks';
 
@@ -88,6 +89,7 @@ const StepContent = ({ step }: { step: OnboardingStep }) => {
 export const OnboardingWizard = () => {
   const { data, isLoading, isError, refetch } = useOnboardingState();
   const dismissReminder = useDismissOnboardingReminder();
+  const restartOnboarding = useRestartOnboarding();
   const [activeKey, setActiveKey] = useState<OnboardingStepKey | null>(null);
 
   const steps = data?.steps ?? [];
@@ -124,15 +126,25 @@ export const OnboardingWizard = () => {
   if (isError) {
     return (
       <section className="rounded-3xl border border-red-500/30 bg-red-500/10 p-6 text-red-100">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <p>Unable to load onboarding status.</p>
-          <button
-            type="button"
-            onClick={() => refetch()}
-            className="rounded-full border border-white/30 px-4 py-2 text-sm text-white"
-          >
-            Retry
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => restartOnboarding.mutate()}
+              disabled={restartOnboarding.isLoading}
+              className="rounded-full border border-white/30 px-4 py-2 text-sm text-white disabled:opacity-60"
+            >
+              Restart onboarding
+            </button>
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="rounded-full border border-white/30 px-4 py-2 text-sm text-white"
+            >
+              Retry
+            </button>
+          </div>
         </div>
       </section>
     );
@@ -160,16 +172,26 @@ export const OnboardingWizard = () => {
               <p className="text-xs uppercase tracking-widest text-white/60">Workspace onboarding</p>
               <h2 className="text-xl font-semibold">{remaining ? `${remaining} steps to go` : 'All done!'}</h2>
             </div>
-            {data?.pendingReminder ? (
+            <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={handleDismissReminder}
-                disabled={dismissReminder.isLoading}
-                className="text-xs text-amber-200 underline-offset-4 hover:underline disabled:opacity-60"
+                onClick={() => restartOnboarding.mutate()}
+                disabled={restartOnboarding.isLoading}
+                className="rounded-full border border-white/30 px-3 py-1.5 text-xs text-white/90 transition hover:bg-white/10 disabled:opacity-60"
               >
-                Remind me later
+                Restart onboarding
               </button>
-            ) : null}
+              {data?.pendingReminder ? (
+                <button
+                  type="button"
+                  onClick={handleDismissReminder}
+                  disabled={dismissReminder.isLoading}
+                  className="text-xs text-amber-200 underline-offset-4 hover:underline disabled:opacity-60"
+                >
+                  Remind me later
+                </button>
+              ) : null}
+            </div>
           </div>
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
             <div

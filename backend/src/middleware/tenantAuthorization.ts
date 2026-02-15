@@ -6,6 +6,7 @@ import type { RequestHandler } from 'express';
 import { Types } from 'mongoose';
 
 import Site from '../../models/Site';
+import Plant from '../../models/Plant';
 import logger from '../../utils/logger';
 
 const toOptionalString = (value: unknown): string | undefined => {
@@ -73,8 +74,11 @@ const authorizeTenantSite = (
         return;
       }
       try {
-        const siteExists = await Site.exists({ _id: siteId, tenantId });
-        if (!siteExists) {
+        const [siteExists, plantExists] = await Promise.all([
+          Site.exists({ _id: siteId, tenantId }),
+          Plant.exists({ _id: siteId, tenantId }),
+        ]);
+        if (!siteExists && !plantExists) {
           res.status(403).json({ message: 'Site does not belong to tenant' });
           return;
         }

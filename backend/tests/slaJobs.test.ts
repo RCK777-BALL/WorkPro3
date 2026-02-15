@@ -42,6 +42,7 @@ describe('SLA breach handling', () => {
       passwordHash: 'hash',
       tenantId,
       roles: ['technician'],
+      employeeId: 'SLA-EMP-001',
     });
     const escalated = await User.create({
       name: 'Escalation Target',
@@ -49,6 +50,7 @@ describe('SLA breach handling', () => {
       passwordHash: 'hash',
       tenantId,
       roles: ['admin'],
+      employeeId: 'SLA-EMP-002',
     });
 
     const now = new Date();

@@ -34,6 +34,7 @@ describe('IoT ingestion threshold logic', () => {
       type: 'Mechanical',
       location: 'Area 1',
       tenantId,
+      plant: new mongoose.Types.ObjectId(),
     });
     await ConditionRule.create({
       asset: asset._id,

@@ -41,6 +41,7 @@ describe('meter based PM generation', () => {
       location: 'L1',
       tenantId,
       siteId,
+      plant: siteId,
     });
     const meter = await Meter.create({
       asset: asset._id,
@@ -56,6 +57,8 @@ describe('meter based PM generation', () => {
       title: 'Meter Task',
       tenantId,
       asset: asset._id,
+      siteId,
+      rule: { type: 'meter', meterName: 'Run Hours', threshold: 100 },
       assignments: [
         {
           asset: asset._id,

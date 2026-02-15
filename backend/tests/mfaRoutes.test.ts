@@ -50,17 +50,17 @@ describe('MFA Routes', () => {
       .send({ userId: user._id.toString() })
       .expect(200);
 
-    expect(res.body.secret).toBeDefined();
-    expect(res.body.token).toBeDefined();
+    expect(res.body.data.secret).toBeDefined();
+    expect(res.body.data.token).toBeDefined();
 
     const updated = await User.findById(user._id);
-    expect(updated?.mfaSecret).toBe(res.body.secret);
+    expect(updated?.mfaSecret).toBe(res.body.data.secret);
     expect(updated?.mfaEnabled).toBe(false);
 
     const valid = speakeasy.totp.verify({
-      secret: res.body.secret,
+      secret: res.body.data.secret,
       encoding: 'base32',
-      token: res.body.token,
+      token: res.body.data.token,
     });
     expect(valid).toBe(true);
   });
@@ -89,7 +89,7 @@ describe('MFA Routes', () => {
       .expect(200);
 
     const token = speakeasy.totp({
-      secret: setup.body.secret,
+      secret: setup.body.data.secret,
       encoding: 'base32',
     });
 
@@ -98,9 +98,9 @@ describe('MFA Routes', () => {
       .send({ userId: user._id.toString(), token })
       .expect(200);
 
-    expect(res.body.token).toBeDefined();
-    expect(res.body.user.mfaEnabled).toBe(true);
-    const payload = jwt.verify(res.body.token, process.env.JWT_SECRET!) as jwt.JwtPayload;
+    expect(res.body.data.token).toBeDefined();
+    expect(res.body.data.user.mfaEnabled).toBe(true);
+    const payload = jwt.verify(res.body.data.token, process.env.JWT_SECRET!) as jwt.JwtPayload;
     expect(payload.id).toBe(user._id.toString());
 
     const updated = await User.findById(user._id);
@@ -123,7 +123,7 @@ describe('MFA Routes', () => {
       .expect(200);
 
     const validToken = speakeasy.totp({
-      secret: setup.body.secret,
+      secret: setup.body.data.secret,
       encoding: 'base32',
     });
     const invalidToken = (Number(validToken) + 1).toString().padStart(validToken.length, '0');

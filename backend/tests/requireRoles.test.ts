@@ -43,8 +43,12 @@ beforeEach(async () => {
     passwordHash: 'pass123',
     roles: ['admin'],
     tenantId: new mongoose.Types.ObjectId(),
+    employeeId: 'EMP-REQROLE-ADMIN',
   });
-  tokenAdmin = jwt.sign({ id: admin._id.toString() }, process.env.JWT_SECRET!);
+  tokenAdmin = jwt.sign(
+    { id: admin._id.toString(), tenantId: admin.tenantId.toString(), roles: admin.roles },
+    process.env.JWT_SECRET!,
+  );
 
   const generalManager = await User.create({
     name: 'GM',
@@ -52,8 +56,16 @@ beforeEach(async () => {
     passwordHash: 'pass123',
     roles: ['general_manager'],
     tenantId: new mongoose.Types.ObjectId(),
+    employeeId: 'EMP-REQROLE-GM',
   });
-  tokenGeneralManager = jwt.sign({ id: generalManager._id.toString() }, process.env.JWT_SECRET!);
+  tokenGeneralManager = jwt.sign(
+    {
+      id: generalManager._id.toString(),
+      tenantId: generalManager.tenantId.toString(),
+      roles: generalManager.roles,
+    },
+    process.env.JWT_SECRET!,
+  );
 
   const planner = await User.create({
     name: 'Planner',
@@ -61,8 +73,12 @@ beforeEach(async () => {
     passwordHash: 'pass123',
     roles: ['planner'],
     tenantId: new mongoose.Types.ObjectId(),
+    employeeId: 'EMP-REQROLE-PLN',
   });
-  tokenPlanner = jwt.sign({ id: planner._id.toString() }, process.env.JWT_SECRET!);
+  tokenPlanner = jwt.sign(
+    { id: planner._id.toString(), tenantId: planner.tenantId.toString(), roles: planner.roles },
+    process.env.JWT_SECRET!,
+  );
 });
 
 describe('requireRoles middleware', () => {

@@ -49,8 +49,14 @@ beforeAll(async () => {
     tenantId: tenantB,
     employeeId: 'B1',
   }));
-  tokenA = jwt.sign({ id: userA._id.toString(), roles: userA.roles }, process.env.JWT_SECRET!);
-  tokenB = jwt.sign({ id: userB._id.toString(), roles: userB.roles }, process.env.JWT_SECRET!);
+  tokenA = jwt.sign(
+    { id: userA._id.toString(), roles: userA.roles, tenantId: tenantA.toString() },
+    process.env.JWT_SECRET!,
+  );
+  tokenB = jwt.sign(
+    { id: userB._id.toString(), roles: userB.roles, tenantId: tenantB.toString() },
+    process.env.JWT_SECRET!,
+  );
 });
 
 afterAll(async () => {
@@ -91,10 +97,10 @@ describe('Notification Routes', () => {
 
     expect(res.body.data.message).toBe('hello');
     expect(res.body.data.tenantId).toBe(tenantA.toString());
-    expect(io.emit).toHaveBeenCalledWith(
-      'notification',
-      expect.objectContaining({ _id: res.body.data._id }),
-    );
+    expect(io.emit).toHaveBeenCalledTimes(1);
+    const [eventName, payload] = io.emit.mock.calls[0];
+    expect(eventName).toBe('notification');
+    expect(payload._id.toString()).toBe(res.body.data._id);
   });
 
   it('retrieves notifications scoped to tenant', async () => {

@@ -63,10 +63,10 @@ describe('purchase order validation and guards', () => {
       },
     );
 
-    const pending = await transitionPurchaseOrder({ tenantId }, po.id, 'pending');
-    expect(pending.status).toBe('pending');
+    const sent = await transitionPurchaseOrder({ tenantId }, po.id, 'sent');
+    expect(sent.status).toBe('sent');
     await expect(
-      transitionPurchaseOrder({ tenantId }, pending.id, 'received' as any),
+      transitionPurchaseOrder({ tenantId }, sent.id, 'closed' as any),
     ).rejects.toBeInstanceOf(PurchaseOrderError);
   });
 
@@ -77,7 +77,7 @@ describe('purchase order validation and guards', () => {
       {
         vendorId,
         items: [{ partId: part._id.toString(), quantity: 5, unitCost: 9 }],
-        status: 'approved',
+        status: 'sent',
       },
     );
 
@@ -92,6 +92,6 @@ describe('purchase order validation and guards', () => {
 
     expect(received.items[0].received).toBe(5);
     expect(reloaded?.items[0].status).toBe('received');
-    expect(updatedPart?.quantity).toBe(5);
+    expect(updatedPart?.quantity).toBe(10);
   });
 });

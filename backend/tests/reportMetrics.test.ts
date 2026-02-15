@@ -40,9 +40,13 @@ beforeEach(async () => {
     passwordHash: 'pass123',
     roles: ['supervisor'],
     tenantId: new mongoose.Types.ObjectId(),
+    employeeId: 'REPORT-EMP-001',
   });
   tenantId = user.tenantId;
-  token = jwt.sign({ id: user._id.toString(), roles: user.roles }, process.env.JWT_SECRET!);
+  token = jwt.sign(
+    { id: user._id.toString(), roles: user.roles, tenantId: tenantId.toString() },
+    process.env.JWT_SECRET!,
+  );
 
   base = new Date('2023-01-15T00:00:00Z');
   const invId = new mongoose.Types.ObjectId();
@@ -51,18 +55,20 @@ beforeEach(async () => {
     name: 'Part',
     unitCost: 5,
     quantity: 1,
-    tenantId,
+    tenantId: tenantId.toString(),
     createdAt: base,
     updatedAt: base,
   });
   await mongoose.connection.collection('workhistories').insertOne({
-    tenantId,
+    tenantId: tenantId.toString(),
     timeSpentHours: 4,
+    memberId: 'REPORT-MEMBER-1',
+    recentWork: [],
     materialsUsed: [invId],
     completedAt: base,
   });
   await mongoose.connection.collection('timesheets').insertOne({
-    tenantId,
+    tenantId: tenantId.toString(),
     date: base,
     totalHours: 8,
   });

@@ -19,18 +19,22 @@ app.use('/api/theme', ThemeRoutes);
 let mongo: MongoMemoryServer;
 let token: string;
 let user: Awaited<ReturnType<typeof User.create>>;
+let tenantId: mongoose.Types.ObjectId;
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'testsecret';
   mongo = await MongoMemoryServer.create();
   await mongoose.connect(mongo.getUri());
+  tenantId = new mongoose.Types.ObjectId();
   user = await User.create({
     name: 'Tester',
     email: 'tester@example.com',
     passwordHash: 'pass123',
-    roles: ['planner']
+    roles: ['planner'],
+    tenantId,
+    employeeId: 'THEME-EMP-001',
   });
-  token = jwt.sign({ id: user._id.toString() }, process.env.JWT_SECRET!);
+  token = jwt.sign({ id: user._id.toString(), tenantId: tenantId.toString(), roles: user.roles }, process.env.JWT_SECRET!);
 });
 
 afterAll(async () => {
@@ -45,10 +49,12 @@ beforeEach(async () => {
     email: 'tester@example.com',
     passwordHash: 'pass123',
     roles: ['planner'],
+    tenantId,
+    employeeId: 'THEME-EMP-001',
     theme: 'light',
     colorScheme: 'default'
   });
-  token = jwt.sign({ id: user._id.toString() }, process.env.JWT_SECRET!);
+  token = jwt.sign({ id: user._id.toString(), tenantId: tenantId.toString(), roles: user.roles }, process.env.JWT_SECRET!);
 });
 
 describe('Theme Routes', () => {
@@ -57,14 +63,16 @@ describe('Theme Routes', () => {
       .get('/api/theme')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
-    expect(getRes.body.theme).toBe('light');
+    const getData = getRes.body.data ?? getRes.body;
+    expect(getData.theme).toBe('light');
 
     const updateRes = await request(app)
       .put('/api/theme')
       .set('Authorization', `Bearer ${token}`)
       .send({ theme: 'dark', colorScheme: 'teal' })
       .expect(200);
-    expect(updateRes.body.theme).toBe('dark');
-    expect(updateRes.body.colorScheme).toBe('teal');
+    const updateData = updateRes.body.data ?? updateRes.body;
+    expect(updateData.theme).toBe('dark');
+    expect(updateData.colorScheme).toBe('teal');
   });
 });

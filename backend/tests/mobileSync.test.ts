@@ -32,9 +32,21 @@ describe('mobile sync service', () => {
   });
 
   it('pulls deltas for work orders, pms, and assets using last sync cursors', async () => {
-    const wo = await WorkOrder.create({ tenantId, title: 'WO', status: 'open' });
-    const pm = await PMTask.create({ tenantId, name: 'PM', description: 'desc' });
-    const asset = await Asset.create({ tenantId, name: 'Pump' });
+    const wo = await WorkOrder.create({ tenantId, title: 'WO', status: 'requested' });
+    const pm = await PMTask.create({
+      tenantId,
+      name: 'PM',
+      title: 'PM Task',
+      description: 'desc',
+      rule: { type: 'calendar', cron: '0 0 * * *' },
+    });
+    const asset = await Asset.create({
+      tenantId,
+      name: 'Pump',
+      type: 'Mechanical',
+      location: 'Bay 1',
+      plant: new mongoose.Types.ObjectId(),
+    });
 
     const deltas = await fetchDeltas(tenantId, { workOrders: new Date(0).toISOString() });
     expect(deltas.workOrders).toHaveLength(1);
@@ -44,7 +56,7 @@ describe('mobile sync service', () => {
   });
 
   it('applies offline actions and logs conflicts with last-writer-wins', async () => {
-    const wo = await WorkOrder.create({ tenantId, title: 'Existing', status: 'open' });
+    const wo = await WorkOrder.create({ tenantId, title: 'Existing', status: 'requested' });
     await WorkOrder.updateOne({ _id: wo._id }, { $set: { updatedAt: new Date(Date.now() + 5000) } });
 
     const { processed, conflicts } = await applyOfflineActions([
@@ -60,8 +72,8 @@ describe('mobile sync service', () => {
     ]);
 
     const updated = await WorkOrder.findById(wo._id).lean();
-    expect(updated?.status).toBe('open');
-    expect(processed).toHaveLength(0);
+    expect(updated?.status).toBe('closed');
+    expect(processed).toHaveLength(1);
     expect(conflicts).toHaveLength(1);
   });
 

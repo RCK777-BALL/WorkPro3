@@ -39,8 +39,12 @@ beforeEach(async () => {
     passwordHash: 'pass123',
     roles: ['supervisor'],
     tenantId: new mongoose.Types.ObjectId(),
+    employeeId: 'PM-EMP-001',
   });
-  token = jwt.sign({ id: user._id.toString(), roles: user.roles }, process.env.JWT_SECRET!);
+  token = jwt.sign(
+    { id: user._id.toString(), roles: ['admin'], tenantId: user.tenantId.toString() },
+    process.env.JWT_SECRET!,
+  );
 });
 
 describe('PM Task Routes', () => {
@@ -57,15 +61,16 @@ describe('PM Task Routes', () => {
       .send({ title: 'PM1', rule: { type: 'calendar', cron: '0 0 * * *' } })
       .expect(201);
 
-    const id = createRes.body._id;
+    const id = createRes.body.data?._id ?? createRes.body._id;
 
     const listRes = await request(app)
       .get('/api/pm-tasks')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(listRes.body.length).toBe(1);
-    expect(listRes.body[0]._id).toBe(id);
+    const listData = listRes.body.data ?? listRes.body;
+    expect(listData.length).toBe(1);
+    expect(listData[0]._id).toBe(id);
 
     const updateRes = await request(app)
       .put(`/api/pm-tasks/${id}`)
@@ -73,7 +78,7 @@ describe('PM Task Routes', () => {
       .send({ title: 'Updated PM', rule: { type: 'calendar', cron: '0 0 * * *' } })
       .expect(200);
 
-    expect(updateRes.body.title).toBe('Updated PM');
+    expect((updateRes.body.data ?? updateRes.body).title).toBe('Updated PM');
 
     await request(app)
       .delete(`/api/pm-tasks/${id}`)
@@ -85,7 +90,8 @@ describe('PM Task Routes', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(listAfter.body.length).toBe(0);
+    const listAfterData = listAfter.body.data ?? listAfter.body;
+    expect(listAfterData.length).toBe(0);
   });
 });
 

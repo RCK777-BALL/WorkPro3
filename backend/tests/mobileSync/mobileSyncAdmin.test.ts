@@ -50,6 +50,7 @@ beforeEach(async () => {
     passwordHash: 'hash',
     roles: ['admin'],
     tenantId,
+    employeeId: 'EMP-MOBILE-ADMIN',
   });
   token = jwt.sign(
     {
@@ -67,6 +68,8 @@ describe('mobile sync admin routes', () => {
     await MobileOfflineAction.create({
       tenantId,
       userId,
+      entityType: 'WorkOrder',
+      operation: 'update',
       type: 'wo',
       payload: { ref: 'WO-1', deviceId: 'device-1' },
       status: 'pending',

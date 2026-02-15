@@ -51,7 +51,8 @@ describe('Station asset references', () => {
       lineId,
       stationId,
       status: 'Active',
-      tenantId: new mongoose.Types.ObjectId(),
+      tenantId,
+      plant: department.plant,
     });
 
     department.lines[0].stations[0].assets.push(asset._id);

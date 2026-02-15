@@ -14,6 +14,7 @@ import Site from '../models/Site';
 import WorkRequest from '../models/WorkRequest';
 
 const app = express();
+app.set('trust proxy', true);
 app.use(express.json());
 app.use('/api/request-portal', requestPortalRoutes);
 
@@ -37,7 +38,7 @@ beforeEach(async () => {
 const seedForm = async (slug = 'test') => {
   const tenant = await Tenant.create({ name: 'Acme Corp' });
   const site = await Site.create({ name: 'Main Plant', tenantId: tenant._id });
-  await RequestForm.create({ slug, schema: [], siteId: site._id });
+  await RequestForm.create({ slug, schema: [], siteId: site._id, tenantId: tenant._id });
 };
 
 const baseFields = {
@@ -51,6 +52,7 @@ describe('Request Portal', () => {
     await seedForm();
     await request(app)
       .post('/api/request-portal/test')
+      .set('X-Forwarded-For', '203.0.113.10')
       .field('title', baseFields.title)
       .field('description', baseFields.description)
       .field('requesterName', baseFields.requesterName)
@@ -64,17 +66,21 @@ describe('Request Portal', () => {
     for (let i = 0; i < 5; i++) {
       await agent
         .post('/api/request-portal/test')
+        .set('X-Forwarded-For', '203.0.113.20')
         .field('title', `${baseFields.title} ${i}`)
         .field('description', baseFields.description)
         .field('requesterName', baseFields.requesterName)
+        .field('requesterEmail', `throttle-${i}@example.com`)
         .field('captcha', 'valid-captcha')
         .expect(201);
     }
     await agent
       .post('/api/request-portal/test')
+      .set('X-Forwarded-For', '203.0.113.20')
       .field('title', baseFields.title)
       .field('description', baseFields.description)
       .field('requesterName', baseFields.requesterName)
+      .field('requesterEmail', 'throttle-final@example.com')
       .field('captcha', 'valid-captcha')
       .expect(429);
   });
@@ -83,6 +89,7 @@ describe('Request Portal', () => {
     await seedForm();
     const res = await request(app)
       .post('/api/request-portal/test')
+      .set('X-Forwarded-For', '203.0.113.30')
       .field('title', baseFields.title)
       .field('description', baseFields.description)
       .field('requesterName', baseFields.requesterName)

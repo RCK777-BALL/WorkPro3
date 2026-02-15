@@ -47,7 +47,11 @@ let tenantId: Types.ObjectId;
 let siteId: Types.ObjectId;
 let userId: Types.ObjectId;
 
-const createToken = () => jwt.sign({ id: userId.toString(), tenantId: tenantId.toString() }, process.env.JWT_SECRET!);
+const createToken = () =>
+  jwt.sign(
+    { id: userId.toString(), tenantId: tenantId.toString(), siteId: siteId.toString(), roles: ['viewer'] },
+    process.env.JWT_SECRET!,
+  );
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'secret';
@@ -70,6 +74,9 @@ beforeEach(async () => {
     email: 'test@example.com',
     passwordHash: 'password',
     tenantId,
+    siteId,
+    roles: ['viewer'],
+    employeeId: 'EMP-PERM-INHERIT',
   });
   userId = user._id;
 });
@@ -113,17 +120,18 @@ describe('permission inheritance and logging', () => {
     expect(workorderResponse.body.ok).toBe(true);
   });
 
-  it('requires matching department context for scoped roles', async () => {
+  it('rejects inventory manage when only department-scoped role is assigned', async () => {
     const departmentId = new Types.ObjectId();
     const otherDepartmentId = new Types.ObjectId();
     const departmentRole = await Role.create({
       tenantId,
+      siteId,
       departmentId,
       name: 'department_tech',
       permissions: ['inventory.manage'],
     });
 
-    await UserRoleAssignment.create({ userId, roleId: departmentRole._id, tenantId, departmentId });
+    await UserRoleAssignment.create({ userId, roleId: departmentRole._id, tenantId, siteId, departmentId });
 
     const token = createToken();
 
@@ -131,13 +139,15 @@ describe('permission inheritance and logging', () => {
       .post('/inventory')
       .set('Authorization', `Bearer ${token}`)
       .set('x-tenant-id', tenantId.toString())
+      .set('x-site-id', siteId.toString())
       .set('x-department-id', departmentId.toString())
-      .expect(200);
+      .expect(403);
 
     await request(app)
       .post('/inventory')
       .set('Authorization', `Bearer ${token}`)
       .set('x-tenant-id', tenantId.toString())
+      .set('x-site-id', siteId.toString())
       .set('x-department-id', otherDepartmentId.toString())
       .expect(403);
   });

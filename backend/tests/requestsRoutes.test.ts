@@ -60,14 +60,16 @@ describe('requests API', () => {
       .post('/api/requests')
       .set('Authorization', `Bearer ${token}`)
       .send({
+        formSlug: 'default',
         title: 'Line stoppage',
         description: 'The conveyor stopped unexpectedly',
         requesterName: 'Taylor',
+        requesterEmail: 'taylor@example.com',
         requestFormId: (global as any).requestFormId,
       })
       .expect(201);
 
-    expect(response.body.data.title).toBe('Line stoppage');
+    expect(response.body.title).toBe('Line stoppage');
   });
 
   it('updates status', async () => {
@@ -75,20 +77,22 @@ describe('requests API', () => {
       .post('/api/requests')
       .set('Authorization', `Bearer ${token}`)
       .send({
+        formSlug: 'default',
         title: 'Belt replacement',
         description: 'Belt frayed',
         requesterName: 'Supervisor',
+        requesterEmail: 'supervisor@example.com',
         requestFormId: (global as any).requestFormId,
       })
       .expect(201);
 
     const updated = await request(app)
-      .patch(`/api/requests/${created.body.data._id}/status`)
+      .patch(`/api/requests/${created.body._id}/status`)
       .set('Authorization', `Bearer ${token}`)
       .send({ status: 'reviewing' })
       .expect(200);
 
-    expect(updated.body.data.status).toBe('reviewing');
+    expect(updated.body.status).toBe('reviewing');
   });
 });
 

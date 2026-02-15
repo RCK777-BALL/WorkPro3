@@ -42,8 +42,12 @@ beforeEach(async () => {
     passwordHash: 'pass123',
     roles: ['admin'],
     tenantId: new mongoose.Types.ObjectId(),
+    employeeId: 'EMP-AUTH-ADMIN',
   });
-  tokenAdmin = jwt.sign({ id: admin._id.toString() }, process.env.JWT_SECRET!);
+  tokenAdmin = jwt.sign(
+    { id: admin._id.toString(), tenantId: admin.tenantId.toString(), roles: admin.roles },
+    process.env.JWT_SECRET!,
+  );
 
   const planner = await User.create({
     name: 'Planner',
@@ -51,8 +55,12 @@ beforeEach(async () => {
     passwordHash: 'pass123',
     roles: ['planner'],
     tenantId: new mongoose.Types.ObjectId(),
+    employeeId: 'EMP-AUTH-PLANNER',
   });
-  tokenPlanner = jwt.sign({ id: planner._id.toString() }, process.env.JWT_SECRET!);
+  tokenPlanner = jwt.sign(
+    { id: planner._id.toString(), tenantId: planner.tenantId.toString(), roles: planner.roles },
+    process.env.JWT_SECRET!,
+  );
 });
 
 describe('authorize middleware', () => {

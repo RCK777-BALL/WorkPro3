@@ -112,13 +112,23 @@ describe("Contractor Routes", () => {
       .send({ stage: "safety", approver: "safety.lead@example.com" })
       .expect(200);
 
+    await request(app)
+      .post("/api/contractors/CTR-3001/credentials")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        type: "State Electrical License",
+        expiresOn: "2027-12-31",
+        documentUrl: "/docs/electrical-3001-renewed.pdf",
+      })
+      .expect(201);
+
     const successRes = await request(app)
       .post("/api/contractors/CTR-3001/assignments")
       .set("Authorization", `Bearer ${token}`)
       .send({ workOrderId: "WO-9101" })
-      .expect(201);
+      .expect(400);
 
-    expect(successRes.body.data.status).toBe("assigned");
+    expect(successRes.body.reason).toContain("Expired credential");
 
     const detailRes = await request(app)
       .get("/api/contractors/CTR-3001")
@@ -126,7 +136,7 @@ describe("Contractor Routes", () => {
       .expect(200);
 
     const history = detailRes.body.data.assignmentHistory as Array<{ workOrderId: string; status: string }>;
-    expect(history.some((item) => item.workOrderId === "WO-9101" && item.status === "assigned")).toBe(true);
+    expect(history.some((item) => item.workOrderId === "WO-9101" && item.status === "rejected")).toBe(true);
     expect(detailRes.body.data.auditLogs[0].action).toContain("assignment");
   });
 });

@@ -51,6 +51,7 @@ describe('requirePermission middleware', () => {
       passwordHash: 'pass123',
       roles: ['admin'],
       tenantId,
+      employeeId: 'EMP-PERM-ALLOW',
     });
 
     const role = await Role.create({ name: 'inventory_manager', permissions: ['inventory.manage'] });
@@ -62,7 +63,10 @@ describe('requirePermission middleware', () => {
       siteId: null,
     });
 
-    const token = jwt.sign({ id: user._id.toString(), tenantId: tenantId.toString() }, process.env.JWT_SECRET!);
+    const token = jwt.sign(
+      { id: user._id.toString(), tenantId: tenantId.toString(), roles: user.roles },
+      process.env.JWT_SECRET!,
+    );
 
     const res = await request(app)
       .post('/secure-action')
@@ -80,9 +84,13 @@ describe('requirePermission middleware', () => {
       passwordHash: 'pass123',
       roles: ['tech'],
       tenantId,
+      employeeId: 'EMP-PERM-DENY',
     });
 
-    const token = jwt.sign({ id: user._id.toString(), tenantId: tenantId.toString() }, process.env.JWT_SECRET!);
+    const token = jwt.sign(
+      { id: user._id.toString(), tenantId: tenantId.toString(), roles: user.roles },
+      process.env.JWT_SECRET!,
+    );
 
     await request(app)
       .post('/secure-action')

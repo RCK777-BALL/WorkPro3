@@ -12,8 +12,10 @@ import nodemailer from 'nodemailer';
 
 vi.mock('nodemailer', () => {
   const sendMail = vi.fn().mockResolvedValue(true);
+  const createTransport = vi.fn(() => ({ sendMail }));
   return {
-    createTransport: vi.fn(() => ({ sendMail })),
+    default: { createTransport },
+    createTransport,
     __esModule: true,
   };
 });

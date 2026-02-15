@@ -31,8 +31,11 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
       roles: string[];
       tenantId: string;
     };
-    (req as any).user = { id, roles, tenantId };
-    (req as any).tenantId = tenantId;
+    const resolvedTenantId = mongoose.Types.ObjectId.isValid(tenantId)
+      ? new mongoose.Types.ObjectId(tenantId)
+      : tenantId;
+    (req as any).user = { id, roles, tenantId: resolvedTenantId };
+    (req as any).tenantId = resolvedTenantId;
     next();
   } catch {
     return res.status(401).json({ message: 'Invalid token' });
@@ -55,6 +58,7 @@ beforeAll(async () => {
     passwordHash: 'pass123',
     roles: ['supervisor'],
     tenantId: new mongoose.Types.ObjectId(),
+    employeeId: 'DEPT-EMP-001',
   })) as unknown as UserDocument;
   token = jwt.sign(
     { id: user._id.toString(), roles: user.roles, tenantId: user.tenantId.toString() },
@@ -75,6 +79,7 @@ beforeEach(async () => {
     passwordHash: 'pass123',
     roles: ['supervisor'],
     tenantId: new mongoose.Types.ObjectId(),
+    employeeId: 'DEPT-EMP-001',
   })) as unknown as UserDocument;
   token = jwt.sign(
     { id: user._id.toString(), roles: user.roles, tenantId: user.tenantId.toString() },
@@ -115,10 +120,11 @@ describe('Department Routes', () => {
       .send(payload)
       .expect(201);
 
-    expect(res.body.name).toBe(payload.name);
-    expect(res.body.lines.length).toBe(payload.lines.length);
+    const created = res.body.data ?? res.body;
+    expect(created.name).toBe(payload.name);
+    expect(created.lines.length).toBe(payload.lines.length);
     payload.lines.forEach((line, i) => {
-      const rLine = res.body.lines[i];
+      const rLine = created.lines[i];
       expect(rLine.name).toBe(line.name);
       expect(rLine.stations.length).toBe(line.stations.length);
       line.stations.forEach((station, j) => {
@@ -135,7 +141,7 @@ describe('Department Routes', () => {
       .send({ name: 'Dept1' })
       .expect(201);
 
-    const id = createRes.body._id;
+    const id = (createRes.body.data ?? createRes.body)._id;
 
     await request(app)
       .put(`/api/departments/${id}`)
@@ -151,7 +157,7 @@ describe('Department Routes', () => {
       .send({ name: 'Dept1' })
       .expect(201);
 
-    const id = createRes.body._id;
+    const id = (createRes.body.data ?? createRes.body)._id;
 
     const updateRes = await request(app)
       .put(`/api/departments/${id}`)
@@ -159,7 +165,7 @@ describe('Department Routes', () => {
       .send({ name: 'Updated Dept' })
       .expect(200);
 
-    expect(updateRes.body.name).toBe('Updated Dept');
+    expect((updateRes.body.data ?? updateRes.body).name).toBe('Updated Dept');
 
     await request(app)
       .delete(`/api/departments/${id}`)
@@ -171,7 +177,8 @@ describe('Department Routes', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(listAfter.body.length).toBe(0);
+    const listData = listAfter.body.data ?? listAfter.body;
+    expect(listData.length).toBe(0);
   });
 
   it('returns 500 when JWT secret is missing', async () => {
@@ -191,7 +198,7 @@ describe('Department Routes', () => {
       .send({ name: 'Dept1' })
       .expect(201);
 
-    const deptId = deptRes.body._id;
+    const deptId = (deptRes.body.data ?? deptRes.body)._id;
 
     const lineRes = await request(app)
       .post(`/api/departments/${deptId}/lines`)
@@ -199,8 +206,9 @@ describe('Department Routes', () => {
       .send({ name: 'LineA' })
       .expect(200);
 
-    expect(lineRes.body.lines.length).toBe(1);
-    const lineId = lineRes.body.lines[0]._id;
+    const lineData = lineRes.body.data ?? lineRes.body;
+    expect(lineData.lines.length).toBe(1);
+    const lineId = lineData.lines[0]._id;
 
     const stationRes = await request(app)
       .post(`/api/departments/${deptId}/lines/${lineId}/stations`)
@@ -208,8 +216,9 @@ describe('Department Routes', () => {
       .send({ name: 'StationA' })
       .expect(200);
 
-    expect(stationRes.body.lines[0].stations.length).toBe(1);
-    const stationId = stationRes.body.lines[0].stations[0]._id;
+    const stationData = stationRes.body.data ?? stationRes.body;
+    expect(stationData.lines[0].stations.length).toBe(1);
+    const stationId = stationData.lines[0].stations[0]._id;
 
     const stationUpdate = await request(app)
       .put(
@@ -218,14 +227,14 @@ describe('Department Routes', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ name: 'StationA2' })
       .expect(200);
-    expect(stationUpdate.body.lines[0].stations[0].name).toBe('StationA2');
+    expect((stationUpdate.body.data ?? stationUpdate.body).lines[0].stations[0].name).toBe('StationA2');
 
     const lineUpdate = await request(app)
       .put(`/api/departments/${deptId}/lines/${lineId}`)
       .set('Authorization', `Bearer ${token}`)
       .send({ name: 'LineB' })
       .expect(200);
-    expect(lineUpdate.body.lines[0].name).toBe('LineB');
+    expect((lineUpdate.body.data ?? lineUpdate.body).lines[0].name).toBe('LineB');
 
     const stationDelete = await request(app)
       .delete(
@@ -233,13 +242,13 @@ describe('Department Routes', () => {
       )
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
-    expect(stationDelete.body.lines[0].stations.length).toBe(0);
+    expect((stationDelete.body.data ?? stationDelete.body).lines[0].stations.length).toBe(0);
 
     const lineDelete = await request(app)
       .delete(`/api/departments/${deptId}/lines/${lineId}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
-    expect(lineDelete.body.lines.length).toBe(0);
+    expect((lineDelete.body.data ?? lineDelete.body).lines.length).toBe(0);
   });
 
   it('lists departments with asset counts', async () => {
@@ -247,7 +256,9 @@ describe('Department Routes', () => {
       .post('/api/departments')
       .set('Authorization', `Bearer ${token}`)
       .send({ name: 'Dept1' })
-      .then((r) => r.body);
+      .then((r) => r.body.data ?? r.body);
+
+    const deptPlantId = dept?.plant?._id;
 
     await Asset.create({
       name: 'A1',
@@ -255,6 +266,7 @@ describe('Department Routes', () => {
       location: 'Loc',
       departmentId: dept._id,
       tenantId: user.tenantId,
+      plant: deptPlantId ? new mongoose.Types.ObjectId(deptPlantId) : new mongoose.Types.ObjectId(),
     });
     await Asset.create({
       name: 'A2',
@@ -262,6 +274,7 @@ describe('Department Routes', () => {
       location: 'Loc',
       departmentId: dept._id,
       tenantId: user.tenantId,
+      plant: deptPlantId ? new mongoose.Types.ObjectId(deptPlantId) : new mongoose.Types.ObjectId(),
     });
 
     const res = await request(app)
@@ -269,6 +282,7 @@ describe('Department Routes', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(res.body[0].assetCount).toBe(2);
+    const payload = res.body.data ?? res.body;
+    expect(payload[0].assetCount).toBe(2);
   });
 });

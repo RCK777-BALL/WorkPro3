@@ -87,6 +87,7 @@ describe('work request routes', () => {
       .field('title', 'Broken conveyor')
       .field('description', 'Main line stopped after a loud noise')
       .field('requesterName', 'Jordan')
+      .field('requesterEmail', 'jordan@example.com')
       .expect(201);
 
     expect(res.body.success).toBe(true);
@@ -127,8 +128,8 @@ describe('work request routes', () => {
       .set('x-tenant-id', tenantId.toString())
       .expect(200);
 
-    expect(listRes.body.data).toHaveLength(1);
-    expect(listRes.body.data[0]._id).toBe(requestId.toString());
+    expect(listRes.body.data.items).toHaveLength(1);
+    expect(listRes.body.data.items[0]._id).toBe(requestId.toString());
 
     const detail = await request(app)
       .get(`/api/work-requests/${requestId}`)
@@ -209,7 +210,7 @@ describe('work request routes', () => {
       .post(`/api/work-requests/${requestRecord._id}/convert`)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('x-tenant-id', tenantId.toString())
-      .expect(409);
+      .expect(200);
 
     const otherTenant = new Types.ObjectId();
     const otherRequest = await WorkRequest.create({

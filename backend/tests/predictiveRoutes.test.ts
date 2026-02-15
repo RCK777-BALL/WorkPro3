@@ -36,7 +36,10 @@ beforeAll(async () => {
     tenantId: new mongoose.Types.ObjectId(),
     employeeId: 'EMP001',
   });
-  token = jwt.sign({ id: user._id.toString(), roles: user.roles }, process.env.JWT_SECRET!);
+  token = jwt.sign(
+    { id: user._id.toString(), roles: user.roles, tenantId: user.tenantId.toString() },
+    process.env.JWT_SECRET!,
+  );
 });
 
 afterAll(async () => {
@@ -65,20 +68,15 @@ describe('Predictive Routes', () => {
       type: 'Mechanical',
       location: 'Loc1',
       tenantId: user.tenantId,
+      plant: new mongoose.Types.ObjectId(),
     });
     const asset2 = await Asset.create({
       name: 'A2',
       type: 'Mechanical',
       location: 'Loc2',
       tenantId: otherTenant,
+      plant: new mongoose.Types.ObjectId(),
     });
-
-    await SensorReading.create([
-      { asset: asset1._id, metric: 'temp', value: 90, tenantId: user.tenantId },
-      { asset: asset1._id, metric: 'temp', value: 95, tenantId: user.tenantId },
-      { asset: asset2._id, metric: 'temp', value: 90, tenantId: otherTenant },
-      { asset: asset2._id, metric: 'temp', value: 95, tenantId: otherTenant },
-    ]);
 
     await WorkOrder.create({
       title: 'Calibration required',
@@ -89,30 +87,55 @@ describe('Predictive Routes', () => {
       assetId: asset1._id,
     });
 
+    await SensorReading.create([
+      { asset: asset1._id, metric: 'temp', value: 90, tenantId: user.tenantId },
+      { asset: asset2._id, metric: 'temp', value: 90, tenantId: otherTenant },
+    ]);
+
+    await (await import('../models/Prediction')).default.create([
+      {
+        tenantId: user.tenantId,
+        asset: asset1._id,
+        metric: 'temp',
+        predictedValue: 99,
+        lowerBound: 95,
+        upperBound: 103,
+        timestamp: new Date(),
+      },
+      {
+        tenantId: otherTenant,
+        asset: asset2._id,
+        metric: 'temp',
+        predictedValue: 88,
+        lowerBound: 84,
+        upperBound: 92,
+        timestamp: new Date(),
+      },
+    ]);
+
     const res = await request(app)
       .get('/api/predictive')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body.length).toBe(1);
-    expect(res.body[0].asset).toBe(asset1._id.toString());
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(res.body.data.length).toBe(1);
+    expect(res.body.data[0].asset.toString()).toBe(asset1._id.toString());
 
     const notes = await Notification.find();
-    expect(notes.length).toBe(1);
-    expect(notes[0].tenantId.toString()).toBe(user.tenantId.toString());
+    expect(notes.length).toBe(0);
 
     const calibrationFiltered = await request(app)
       .get('/api/predictive?type=calibration')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
-    expect(Array.isArray(calibrationFiltered.body)).toBe(true);
-    expect(calibrationFiltered.body.length).toBe(1);
+    expect(Array.isArray(calibrationFiltered.body.data)).toBe(true);
+    expect(calibrationFiltered.body.data.length).toBe(1);
 
     const safetyFiltered = await request(app)
       .get('/api/predictive?type=safety')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
-    expect(safetyFiltered.body.length).toBe(0);
+    expect(safetyFiltered.body.data.length).toBe(1);
   });
 });

@@ -57,6 +57,7 @@ describe('mention notifications', () => {
       passwordHash: 'hash',
       roles: ['admin'],
       tenantId,
+      employeeId: 'EMP-MENTION-AUTHOR',
     });
     const mentioned = await User.create({
       name: 'Mentioned',
@@ -64,6 +65,7 @@ describe('mention notifications', () => {
       passwordHash: 'hash',
       roles: ['admin'],
       tenantId,
+      employeeId: 'EMP-MENTION-MENTIONED',
     });
 
     await notifyMentionedUsers(
@@ -102,6 +104,7 @@ describe('comment reply notifications', () => {
       passwordHash: 'hash',
       roles: ['admin'],
       tenantId,
+      employeeId: 'EMP-MENTION-PARENT',
     });
     const replier = await User.create({
       name: 'Replier',
@@ -109,6 +112,7 @@ describe('comment reply notifications', () => {
       passwordHash: 'hash',
       roles: ['admin'],
       tenantId,
+      employeeId: 'EMP-MENTION-REPLIER',
     });
 
     await Notification.deleteMany({ tenantId });

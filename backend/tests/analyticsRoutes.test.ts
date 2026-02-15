@@ -1,10 +1,21 @@
 import { describe, it, beforeEach, expect, vi } from 'vitest';
 import request from 'supertest';
 import express from 'express';
+import mongoose from 'mongoose';
+
+const tenantId = new mongoose.Types.ObjectId().toString();
 
 vi.mock('../middleware/authMiddleware', () => ({
   requireAuth: (req: any, _res: any, next: any) => {
-    req.tenantId = 'tenant123';
+    req.tenantId = tenantId;
+    next();
+  },
+  requireRole: () => (_req: any, _res: any, next: any) => next(),
+}));
+vi.mock('../middleware/tenantScope', () => ({
+  default: (req: any, _res: any, next: any) => {
+    req.tenantId = tenantId;
+    req.siteId = new mongoose.Types.ObjectId().toString();
     next();
   },
 }));
@@ -55,12 +66,12 @@ beforeEach(() => {
     range: { start: undefined, end: undefined },
   });
   getTrendDatasets.mockResolvedValue({
-    oee: [],
-    availability: [],
-    performance: [],
-    quality: [],
-    energy: [],
-    downtime: [],
+    oee: [{ period: '2026-01', value: 80 }],
+    availability: [{ period: '2026-01', value: 90 }],
+    performance: [{ period: '2026-01', value: 88 }],
+    quality: [{ period: '2026-01', value: 92 }],
+    energy: [{ period: '2026-01', value: 40 }],
+    downtime: [{ period: '2026-01', value: 4 }],
   });
   getDashboardKpiSummary.mockResolvedValue({
     statuses: [],
@@ -92,7 +103,10 @@ describe('Analytics routes', () => {
       backlog: 2,
       availability: 0.9,
     });
-    expect(getKPIs).toHaveBeenCalledWith('tenant123', {});
+    expect(getKPIs).toHaveBeenCalledWith(
+      tenantId,
+      expect.objectContaining({ siteIds: expect.any(Array) }),
+    );
 
   });
 
@@ -124,14 +138,17 @@ describe('Analytics routes', () => {
   it('returns trend datasets with exports', async () => {
     const jsonRes = await request(app).get('/api/v1/analytics/trends').expect(200);
     expect(jsonRes.body.data).toEqual({
-      oee: [],
-      availability: [],
-      performance: [],
-      quality: [],
-      energy: [],
-      downtime: [],
+      oee: [{ period: '2026-01', value: 80 }],
+      availability: [{ period: '2026-01', value: 90 }],
+      performance: [{ period: '2026-01', value: 88 }],
+      quality: [{ period: '2026-01', value: 92 }],
+      energy: [{ period: '2026-01', value: 40 }],
+      downtime: [{ period: '2026-01', value: 4 }],
     });
-    expect(getTrendDatasets).toHaveBeenCalledWith('tenant123', {});
+    expect(getTrendDatasets).toHaveBeenCalledWith(
+      tenantId,
+      expect.objectContaining({ siteIds: expect.any(Array) }),
+    );
 
     const csvRes = await request(app).get('/api/v1/analytics/trends.csv').expect(200);
     expect(csvRes.headers['content-type']).toContain('text/csv');
@@ -160,7 +177,10 @@ describe('Analytics routes', () => {
     const res = await request(app).get('/api/v1/analytics/dashboard/kpis').expect(200);
     expect(res.body.data.backlogAgingDays).toBe(5);
     expect(res.body.data.laborUtilization).toBe(75);
-    expect(getDashboardKpiSummary).toHaveBeenCalledWith('tenant123', {});
+    expect(getDashboardKpiSummary).toHaveBeenCalledWith(
+      tenantId,
+      expect.objectContaining({ siteIds: expect.any(Array) }),
+    );
   });
 
   it('returns maintenance metrics with exports', async () => {
@@ -171,7 +191,10 @@ describe('Analytics routes', () => {
       backlog: 4,
       pmCompliance: { total: 12, completed: 10, percentage: 83.3 },
     });
-    expect(getMaintenanceMetrics).toHaveBeenCalledWith('tenant123', {});
+    expect(getMaintenanceMetrics).toHaveBeenCalledWith(
+      tenantId,
+      expect.objectContaining({ siteIds: expect.any(Array) }),
+    );
 
     const csvRes = await request(app).get('/api/v1/analytics/maintenance.csv').expect(200);
     expect(csvRes.headers['content-type']).toContain('text/csv');

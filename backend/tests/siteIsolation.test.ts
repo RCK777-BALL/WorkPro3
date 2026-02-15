@@ -9,7 +9,9 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
-const AssetRoutes: any = require('../routes/AssetRoutes');
+import Site from '../models/Site';
+const AssetRoutesModule: any = require('../routes/AssetRoutes');
+const AssetRoutes: any = AssetRoutesModule.default ?? AssetRoutesModule;
 
 const app = express();
 app.use(express.json());
@@ -18,6 +20,8 @@ app.use('/api/assets', AssetRoutes);
 let mongo: MongoMemoryServer;
 let token: string;
 let user: any;
+let siteA: mongoose.Types.ObjectId;
+let siteB: mongoose.Types.ObjectId;
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'testsecret';
@@ -42,23 +46,29 @@ beforeEach(async () => {
   });
   await createdUser.save();
   user = createdUser;
-  token = jwt.sign({ id: user._id.toString(), roles: user.roles }, process.env.JWT_SECRET!);
+  token = jwt.sign(
+    { id: user._id.toString(), roles: user.roles, tenantId: user.tenantId.toString() },
+    process.env.JWT_SECRET!,
+  );
+  siteA = new mongoose.Types.ObjectId();
+  siteB = new mongoose.Types.ObjectId();
+  await Site.create({ _id: siteA, tenantId: user.tenantId, name: 'Site A', slug: `site-a-${Date.now()}` });
+  await Site.create({ _id: siteB, tenantId: user.tenantId, name: 'Site B', slug: `site-b-${Date.now()}` });
 });
 
 describe('Site isolation', () => {
   it('returns assets scoped to site header', async () => {
-    const siteA = new mongoose.Types.ObjectId();
-    const siteB = new mongoose.Types.ObjectId();
-
     await request(app)
       .post('/api/assets')
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'A', type: 'Mechanical', location: 'L', siteId: siteA })
+      .set('x-site-id', siteA.toString())
+      .send({ name: 'A', type: 'Mechanical', location: 'L', siteId: siteA, plant: siteA })
       .expect(201);
     await request(app)
       .post('/api/assets')
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'B', type: 'Mechanical', location: 'L', siteId: siteB })
+      .set('x-site-id', siteB.toString())
+      .send({ name: 'B', type: 'Mechanical', location: 'L', siteId: siteB, plant: siteB })
       .expect(201);
 
     const res = await request(app)

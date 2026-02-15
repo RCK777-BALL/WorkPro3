@@ -3,23 +3,24 @@ import express from 'express';
 import request from 'supertest';
 import { cache } from '../middleware/cache';
 
-// In-memory mock for Redis with TTL support
-const store = new Map<string, { value: string; expireAt: number }>();
-
-const redisMock = {
-  get: vi.fn(async (key: string) => {
-    const entry = store.get(key);
-    if (!entry) return null;
-    if (entry.expireAt < Date.now()) {
-      store.delete(key);
-      return null;
-    }
-    return entry.value;
-  }),
-  set: vi.fn(async (key: string, value: string, _mode: string, ttl: number) => {
-    store.set(key, { value, expireAt: Date.now() + ttl * 1000 });
-  }),
-};
+const { store, redisMock } = vi.hoisted(() => {
+  const hoistedStore = new Map<string, { value: string; expireAt: number }>();
+  const hoistedRedisMock = {
+    get: vi.fn(async (key: string) => {
+      const entry = hoistedStore.get(key);
+      if (!entry) return null;
+      if (entry.expireAt < Date.now()) {
+        hoistedStore.delete(key);
+        return null;
+      }
+      return entry.value;
+    }),
+    set: vi.fn(async (key: string, value: string, _mode: string, ttl: number) => {
+      hoistedStore.set(key, { value, expireAt: Date.now() + ttl * 1000 });
+    }),
+  };
+  return { store: hoistedStore, redisMock: hoistedRedisMock };
+});
 
 vi.mock('../utils/redisClient', () => ({ default: redisMock }));
 

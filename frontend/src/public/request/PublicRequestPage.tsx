@@ -26,6 +26,16 @@ type SubmissionResponse = {
   status: WorkRequestStatus;
 };
 
+type RecentRequestEntry = {
+  token: string;
+  requestId?: string;
+  title?: string;
+  status?: WorkRequestStatus;
+  lastViewedAt: string;
+};
+
+const RECENT_REQUESTS_STORAGE_KEY = "public-request.recent";
+
 const optionalString = z
   .union([z.string(), z.undefined(), z.null()])
   .transform((value) => {
@@ -131,6 +141,21 @@ export default function PublicRequestPage() {
     Array<{ id: string; name: string }>
   >([]);
   const [assetSearching, setAssetSearching] = useState(false);
+  const [recentRequests, setRecentRequests] = useState<RecentRequestEntry[]>([]);
+
+  const upsertRecentRequest = (entry: Omit<RecentRequestEntry, "lastViewedAt">) => {
+    const now = new Date().toISOString();
+    setRecentRequests((prev) => {
+      const next = [
+        { ...entry, lastViewedAt: now },
+        ...prev.filter((item) => item.token !== entry.token),
+      ].slice(0, 8);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(RECENT_REQUESTS_STORAGE_KEY, JSON.stringify(next));
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (assetSearch.trim().length < 2) {
@@ -153,6 +178,22 @@ export default function PublicRequestPage() {
       cancelled = true;
     };
   }, [assetSearch]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(RECENT_REQUESTS_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as RecentRequestEntry[];
+      if (!Array.isArray(parsed)) return;
+      const sanitized = parsed
+        .filter((item) => typeof item?.token === "string" && item.token.trim().length > 0)
+        .slice(0, 8);
+      setRecentRequests(sanitized);
+    } catch {
+      setRecentRequests([]);
+    }
+  }, []);
 
   useEffect(() => {
     if (!copyMessage) return;
@@ -273,6 +314,11 @@ export default function PublicRequestPage() {
       const submission: SubmissionResponse = payload.data ?? payload;
       setSubmissionResult(submission);
       setStatusToken(submission.token);
+      upsertRecentRequest({
+        token: submission.token,
+        requestId: submission.requestId,
+        status: submission.status,
+      });
       setValues(initialFormState);
       setFiles(null);
       if (fileInputRef.current) {
@@ -308,7 +354,14 @@ export default function PublicRequestPage() {
       if (!response.ok) {
         throw new Error(payload?.error ?? "Unable to find request.");
       }
-      setStatusResult(payload.data ?? payload);
+      const nextStatus = payload.data ?? payload;
+      setStatusResult(nextStatus);
+      upsertRecentRequest({
+        token: trimmed,
+        requestId: nextStatus.requestId,
+        title: nextStatus.title,
+        status: nextStatus.status,
+      });
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Unable to lookup request.";
@@ -343,6 +396,23 @@ export default function PublicRequestPage() {
       setFieldErrors((prev) => ({ ...prev, copy: "" }));
     } catch {
       setFieldErrors((prev) => ({ ...prev, copy: "Unable to copy to clipboard" }));
+    }
+  };
+
+  const removeRecentRequest = (token: string) => {
+    setRecentRequests((prev) => {
+      const next = prev.filter((item) => item.token !== token);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(RECENT_REQUESTS_STORAGE_KEY, JSON.stringify(next));
+      }
+      return next;
+    });
+  };
+
+  const clearRecentRequests = () => {
+    setRecentRequests([]);
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(RECENT_REQUESTS_STORAGE_KEY);
     }
   };
 
@@ -743,6 +813,53 @@ export default function PublicRequestPage() {
           {copyMessage && (
             <p className="text-xs text-emerald-700">{copyMessage}</p>
           )}
+          {recentRequests.length > 0 && (
+            <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral-600">
+                  Recent requests
+                </p>
+                <button
+                  type="button"
+                  onClick={clearRecentRequests}
+                  className="text-xs font-medium text-neutral-500 hover:text-neutral-700"
+                >
+                  Clear
+                </button>
+              </div>
+              <div className="space-y-2">
+                {recentRequests.map((item) => (
+                  <div
+                    key={item.token}
+                    className="flex items-center justify-between gap-2 rounded-lg bg-white p-2 text-xs"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStatusToken(item.token);
+                        setStatusResult(null);
+                        setStatusError(undefined);
+                      }}
+                      className="min-w-0 flex-1 text-left"
+                    >
+                      <p className="truncate font-mono text-neutral-700">{item.token}</p>
+                      <p className="truncate text-neutral-500">
+                        {item.title ?? item.requestId ?? "Request"}{item.status ? ` - ${statusLabelMap[item.status]}` : ""}
+                      </p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeRecentRequest(item.token)}
+                      className="rounded border border-neutral-200 px-2 py-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700"
+                      aria-label={`Remove ${item.token} from recent requests`}
+                    >
+                      x
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           {statusResult && (
             <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
               <p className="text-xs uppercase tracking-wide text-neutral-500">
@@ -818,6 +935,7 @@ export default function PublicRequestPage() {
     </div>
   );
 }
+
 
 
 

@@ -12,8 +12,6 @@ import { createServer } from "http";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import path from "path";
-import requestId from "./middleware/requestId";
-import requestMetrics from "./middleware/requestMetrics";
 
 import { initKafka, sendKafkaEvent } from "./utils/kafka";
 import { initMQTTFromConfig } from "./iot/mqttClient";
@@ -36,7 +34,6 @@ import {
   authRoutes,
   calendarRoutes,
   chatRoutes,
-  documentRoutes,
   partsRoutes,
   complianceRoutes,
   conditionRuleRoutes,
@@ -80,7 +77,6 @@ import {
   vendorRoutes,
   webhooksRoutes,
   workOrdersRoutes,
-  workHistoryRoutes,
   mobileSyncRoutes,
   inspectionRoutes,
 
@@ -130,10 +126,8 @@ import { setupSwagger } from "./utils/swagger";
 import mongoose from "mongoose";
 import errorHandler from "./middleware/errorHandler";
 import { validateEnv, type EnvVars } from "./config/validateEnv";
-import { assertProductionEnv } from "./src/config/env";
 import { initChatSocket } from "./socket/chatSocket";
 import { initSocket } from "./socket";
-import { getMetricsRegistry, socketConnections } from "./utils/metrics";
 import User from "./models/User";
 import { requireAuth } from "./middleware/authMiddleware";
 import tenantScope from "./middleware/tenantScope";
@@ -146,7 +140,6 @@ import type {
 import scimRoutes from "./routes/scimRoutes";
 
 dotenv.config();
-assertProductionEnv();
 
 let env: EnvVars;
 try {
@@ -166,8 +159,6 @@ const MONGO_URI = env.MONGO_URI;
 const RATE_LIMIT_WINDOW_MS = parseInt(env.RATE_LIMIT_WINDOW_MS, 10);
 const RATE_LIMIT_MAX = parseInt(env.RATE_LIMIT_MAX, 10);
 
-const metricsRegistry = getMetricsRegistry();
-
 const normalizeOrigin = (origin: string | undefined) => origin?.trim().replace(/\/+$/, "").toLowerCase();
 
 const allowedOrigins = new Set<string>(
@@ -177,14 +168,8 @@ const allowedOrigins = new Set<string>(
     .filter((origin: string | undefined): origin is string => Boolean(origin)),
 );
 
-if (env.NODE_ENV !== "production") {
-  const devOrigins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://0.0.0.0:5173",
-  ];
-  devOrigins.forEach((origin) => allowedOrigins.add(normalizeOrigin(origin) as string));
-}
+const devOrigins = ["http://localhost:5173", "http://127.0.0.1:5173", "http://0.0.0.0:5173"];
+devOrigins.forEach((origin) => allowedOrigins.add(normalizeOrigin(origin) as string));
 
 type CorsOriginCallback = (err: Error | null, allow?: boolean) => void;
 
@@ -206,25 +191,20 @@ const corsOptions: CorsOptions = {
     "Content-Type",
     "Authorization",
     "authorization",
-    "Idempotency-Key",
-    "X-Request-Id",
-    "x-request-id",
     "x-tenant-id",
     "X-Tenant-Id",
     "x-site-id",
     "X-Site-Id",
   ],
-  exposedHeaders: ["x-tenant-id", "x-request-id"],
+  exposedHeaders: ["x-tenant-id"],
 };
 
 const corsMiddleware = cors(corsOptions) as unknown as RequestHandler;
 
 app.use(cookieParser());
-app.use(requestId);
 app.use(corsMiddleware);
 app.options("*", corsMiddleware);
 app.use(helmet());
-app.use(requestMetrics);
 app.use(requestLog);
 app.use(tenantResolver);
 app.use(auditLogMiddleware);
@@ -233,10 +213,6 @@ app.use(mongoSanitize());
 setupSwagger(app, "/api/docs/ui", apiAccessMiddleware);
 app.get("/api-docs", (_req: Request, res: Response) => {
   res.redirect(301, "/api/docs/ui");
-});
-app.get("/metrics", async (_req: Request, res: Response) => {
-  res.set("Content-Type", metricsRegistry.contentType);
-  res.end(await metricsRegistry.metrics());
 });
 
 const dev = env.NODE_ENV !== "production";
@@ -274,14 +250,12 @@ app.set('io', io);
 initChatSocket(io);
 
 io.on("connection", (socket) => {
-  socketConnections.inc();
   logger.info("socket connected", {
     id: socket.id,
     origin: socket.handshake.headers.origin,
   });
   socket.on("ping", () => socket.emit("pong"));
   socket.on("disconnect", (reason) => {
-    socketConnections.dec();
     logger.info("socket disconnected", { id: socket.id, reason });
   });
 });
@@ -359,7 +333,6 @@ app.use("/api/workorders", workOrdersRoutes);
 app.use("/api/permits", permitRoutes);
 app.use("/api/inspections", inspectionRoutes);
 app.use("/api/assets", assetsRoutes);
-app.use("/api/documents", documentRoutes);
 app.use("/api/downtime-logs", downtimeLogRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/assets", assetInsightsRouter);
@@ -390,7 +363,6 @@ app.use("/api/v1/analytics", analyticsRoutes);
 app.use("/api/ai", analyticsAIRoutes);
 app.use("/api/ai", copilotRoutes);
 app.use("/api/team", teamRoutes);
-app.use("/api/work-history", workHistoryRoutes);
 app.use("/api/theme", ThemeRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/alerts", alertRoutes);
@@ -426,68 +398,10 @@ app.use((_req: Request, res: Response) => {
 
 app.use(errorHandler);
 
-const shutdown = async (reason: string, err?: Error) => {
-  if (err) {
-    logger.error(`Shutdown triggered by ${reason}`, err);
-  } else {
-    logger.warn(`Shutdown triggered by ${reason}`);
-  }
-
-  const exit = (code: number) => {
-    logger.info(`Exiting process with code ${code}`);
-    process.exit(code);
-  };
-
-  const forceExit = setTimeout(() => exit(1), 10_000);
-  forceExit.unref();
-
-  try {
-    await new Promise<void>((resolve) => {
-      httpServer.close(() => resolve());
-    });
-  } catch (closeError) {
-    logger.error("Error closing HTTP server", closeError);
-  }
-
-  try {
-    await mongoose.connection.close();
-  } catch (mongoError) {
-    logger.error("Error closing MongoDB connection", mongoError);
-  }
-
-  exit(err ? 1 : 0);
-};
-
-const registerShutdownHandlers = () => {
-  ["SIGTERM", "SIGINT"].forEach((signal) => {
-    process.on(signal, () => {
-      void shutdown(signal);
-    });
-  });
-
-  process.on("unhandledRejection", (err) => {
-    void shutdown("unhandledRejection", err as Error);
-  });
-
-  process.on("uncaughtException", (err) => {
-    void shutdown("uncaughtException", err);
-  });
-};
-
 // --- Mongo + server start ---
 if (env.NODE_ENV !== "test") {
-  registerShutdownHandlers();
-  mongoose.set("strictQuery", true);
-  const mongoOptions: mongoose.ConnectOptions = {
-    maxPoolSize: parseInt(env.MONGO_MAX_POOL_SIZE, 10),
-    minPoolSize: parseInt(env.MONGO_MIN_POOL_SIZE, 10),
-    serverSelectionTimeoutMS: parseInt(env.MONGO_SERVER_SELECTION_TIMEOUT_MS, 10),
-    socketTimeoutMS: parseInt(env.MONGO_SOCKET_TIMEOUT_MS, 10),
-    connectTimeoutMS: parseInt(env.MONGO_CONNECT_TIMEOUT_MS, 10),
-    maxIdleTimeMS: parseInt(env.MONGO_MAX_IDLE_TIME_MS, 10),
-  };
   mongoose
-    .connect(MONGO_URI, mongoOptions)
+    .connect(MONGO_URI)
     .then(async () => {
       logger.info("MongoDB connected");
       httpServer.listen(PORT, () =>
@@ -513,7 +427,6 @@ if (env.NODE_ENV !== "test") {
     })
     .catch((err) => {
       logger.error("MongoDB connection error:", err);
-      void shutdown("mongoConnectionError", err);
     });
 }
 

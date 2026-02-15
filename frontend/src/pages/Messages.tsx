@@ -3,19 +3,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ScrollArea,
-  Stack,
-  Text,
-  Group,
-  Badge,
-  Avatar,
-  Loader,
-  Modal,
-  Button,
-  TextInput,
-  Drawer,
-} from '@mantine/core';
+import { ScrollArea, Stack, Text, Group, Badge, Avatar, Loader } from '@mantine/core';
 import { motion } from 'framer-motion';
 import ChatSidebar from '@/components/messages/ChatSidebar';
 import ChatHeader from '@/components/messages/ChatHeader';
@@ -33,7 +21,6 @@ import {
   markChannelRead,
   markDirectRead,
   uploadChatFile,
-  createDirectConversation,
 } from '@/api/chat';
 import { useAuthStore } from '@/store/authStore';
 import { useTeamMembers } from '@/store/useTeamMembers';
@@ -73,10 +60,6 @@ const Messages = () => {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [presenceState, setPresenceState] = useState<Record<string, Set<string>>>({});
   const [typingState, setTypingState] = useState<Record<string, Record<string, number>>>({});
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const [newChatOpen, setNewChatOpen] = useState(false);
-  const [newChatSearch, setNewChatSearch] = useState('');
-  const [creatingChat, setCreatingChat] = useState(false);
 
   const activeConversationRef = useRef<ChatPreview | null>(null);
   const socketRef = useRef(getNotificationsSocket());
@@ -101,19 +84,16 @@ const Messages = () => {
   const loadPreviews = useCallback(async () => {
     try {
       const [channelData, directData] = await Promise.all([fetchChannelPreviews(), fetchDirectPreviews()]);
-      const normalizedDirects = ensureDirectNames(directData);
       setChannels(channelData);
-      setDirects(normalizedDirects);
+      setDirects(ensureDirectNames(directData));
       if (!activeConversationRef.current) {
-        const firstConversation = channelData[0] ?? normalizedDirects[0] ?? null;
+        const firstConversation = channelData[0] ?? ensureDirectNames(directData)[0] ?? null;
         if (firstConversation) {
           setActiveConversation(firstConversation);
         }
       }
-      return { channels: channelData, directs: normalizedDirects };
     } catch (error) {
       console.error('Failed to load chat previews', error);
-      return null;
     }
   }, [ensureDirectNames]);
 
@@ -296,50 +276,8 @@ const Messages = () => {
     };
   }, [activeConversation?.id]);
 
-  useEffect(() => {
-    setDetailsOpen(false);
-  }, [activeConversation?.id]);
-
   const handleSelectConversation = (conversation: ChatPreview) => {
     setActiveConversation(conversation);
-  };
-
-  const filteredTeamMembers = useMemo(() => {
-    const term = newChatSearch.trim().toLowerCase();
-    return teamMembers.filter((member) => {
-      if (member.id === currentUserId) return false;
-      if (!term) return true;
-      return `${member.name ?? ''} ${member.email ?? ''}`.toLowerCase().includes(term);
-    });
-  }, [currentUserId, newChatSearch, teamMembers]);
-
-  const handleCreateDirectChat = async (member: TeamMember) => {
-    if (creatingChat) return;
-    setCreatingChat(true);
-    try {
-      const created = await createDirectConversation(member.id);
-      const createdId = created.id ?? created._id ?? '';
-      const refreshed = await loadPreviews();
-      const updatedDirects = refreshed?.directs ?? [];
-      const target =
-        updatedDirects.find((item) => item.id === createdId) ??
-        updatedDirects.find((item) => item.isDirect && item.members.some((m) => m.id === member.id)) ??
-        null;
-      if (target) {
-        setActiveConversation(target);
-        setSidebarTab('direct');
-      }
-      setNewChatOpen(false);
-    } catch (error) {
-      console.error('Failed to create direct chat', error);
-    } finally {
-      setCreatingChat(false);
-    }
-  };
-
-  const handleOpenNewChat = () => {
-    setNewChatSearch('');
-    setNewChatOpen(true);
   };
 
   const handleSendMessage = useCallback(
@@ -417,217 +355,104 @@ const Messages = () => {
   );
 
   return (
-    <>
-      <div className="flex h-full min-h-screen bg-gradient-to-br from-gray-950 via-gray-950/80 to-gray-900">
-        <ChatSidebar
-          activeTab={sidebarTab}
-          onTabChange={setSidebarTab}
-          channels={channels}
-          directs={directs}
-          teamMembers={teamMembers}
-          searchTerm={searchTerm}
-          onSearchTermChange={setSearchTerm}
-          onSelectConversation={handleSelectConversation}
-          {...(activeConversation?.id ? { activeConversationId: activeConversation.id } : {})}
+    <div className="flex h-full min-h-screen bg-gradient-to-br from-gray-950 via-gray-950/80 to-gray-900">
+      <ChatSidebar
+        activeTab={sidebarTab}
+        onTabChange={setSidebarTab}
+        channels={channels}
+        directs={directs}
+        teamMembers={teamMembers}
+        searchTerm={searchTerm}
+        onSearchTermChange={setSearchTerm}
+        onSelectConversation={handleSelectConversation}
+        {...(activeConversation?.id ? { activeConversationId: activeConversation.id } : {})}
+        {...(currentUserId ? { currentUserId } : {})}
+        onNewChat={() => console.log('New chat coming soon')}
+      />
+      <div className="flex min-h-screen flex-1 flex-col">
+        <ChatHeader
+          conversation={activeConversation}
+          presence={presenceForActive}
           {...(currentUserId ? { currentUserId } : {})}
-          onNewChat={handleOpenNewChat}
+          onOpenDetails={() => console.log('Open details drawer')}
+          onTogglePin={(conversation) =>
+            setChannels((prev) =>
+              prev.map((item) =>
+                item.id === conversation.id ? { ...item, pinned: !item.pinned } : item,
+              ),
+            )
+          }
         />
-        <div className="flex min-h-screen flex-1 flex-col">
-          <ChatHeader
-            conversation={activeConversation}
-            presence={presenceForActive}
-            {...(currentUserId ? { currentUserId } : {})}
-            onOpenDetails={() => setDetailsOpen(true)}
-            onTogglePin={(conversation) =>
-              setChannels((prev) =>
-                prev.map((item) =>
-                  item.id === conversation.id ? { ...item, pinned: !item.pinned } : item,
-                ),
-              )
-            }
-          />
-          <div className="flex flex-1 overflow-hidden">
-            <div className="flex min-h-0 flex-1 flex-col">
-              {loadingMessages ? (
-                <div className="flex flex-1 items-center justify-center">
-                  <Loader color="indigo" />
-                </div>
-              ) : (
-                <MessageList
-                  messages={messages}
-                  typingUsers={typingUsers}
-                  {...(currentUserId ? { currentUserId } : {})}
-                  readReceiptLabel={readReceiptLabel}
-                />
-              )}
-              <MessageInput
-                onSend={handleSendMessage}
-                onTyping={() => {
-                  if (!activeConversationRef.current) return;
-                  socketRef.current.emit('chat:typing', { channelId: activeConversationRef.current.id });
-                }}
-                disabled={!activeConversation}
-              />
-            </div>
-            <div className="hidden w-80 border-l border-gray-900 bg-gray-950/40 lg:flex lg:flex-col">
-              <div className="border-b border-gray-900 px-5 py-4">
-                <Text className="text-sm font-semibold text-white">Participants</Text>
-                <Text size="xs" className="text-gray-400">
-                  Presence updates in real-time
-                </Text>
+        <div className="flex flex-1 overflow-hidden">
+          <div className="flex min-h-0 flex-1 flex-col">
+            {loadingMessages ? (
+              <div className="flex flex-1 items-center justify-center">
+                <Loader color="indigo" />
               </div>
-              <ScrollArea className="flex-1 px-4 py-4">
-                <Stack gap="sm">
-                  {presenceDetails.map(({ member, online }) => (
-                    <MotionDiv
-                      key={member.id}
-                      whileHover={{ scale: 1.01 }}
-                      transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                      className="rounded-xl border border-gray-900 bg-gray-900/60 px-3 py-2"
-                    >
-                      <Group gap="sm">
-                        <Avatar radius="xl" color={online ? 'green' : 'gray'} variant="filled">
-                          {member.name.charAt(0).toUpperCase()}
-                        </Avatar>
-                        <div className="flex flex-1 flex-col">
-                          <Text className="text-sm font-semibold text-white">{member.name}</Text>
-                          <Group gap="xs">
-                            <Badge color={online ? 'green' : 'gray'} variant="light" size="sm">
-                              {online ? 'Online' : 'Offline'}
-                            </Badge>
-                            {member.email && (
-                              <Text size="xs" className="text-gray-400">
-                                {member.email}
-                              </Text>
-                            )}
-                          </Group>
-                        </div>
-                      </Group>
-                    </MotionDiv>
-                  ))}
-                  {!presenceDetails.length && (
-                    <Text size="sm" className="text-gray-500">
-                      No participants available.
-                    </Text>
-                  )}
-                </Stack>
-              </ScrollArea>
-            </div>
+            ) : (
+            <MessageList
+              messages={messages}
+              typingUsers={typingUsers}
+              {...(currentUserId ? { currentUserId } : {})}
+              readReceiptLabel={readReceiptLabel}
+            />
+          )}
+            <MessageInput
+              onSend={handleSendMessage}
+              onTyping={() => {
+                if (!activeConversationRef.current) return;
+                socketRef.current.emit('chat:typing', { channelId: activeConversationRef.current.id });
+              }}
+              disabled={!activeConversation}
+            />
           </div>
-        </div>
-      </div>
-      <Modal
-        opened={newChatOpen}
-        onClose={() => setNewChatOpen(false)}
-        title="Start a new direct chat"
-        centered
-        size="md"
-      >
-        <Stack gap="sm">
-          <TextInput
-            placeholder="Search team members"
-            value={newChatSearch}
-            onChange={(event) => setNewChatSearch(event.currentTarget.value)}
-          />
-          <ScrollArea h={260} offsetScrollbars>
-            <Stack gap="xs">
-              {filteredTeamMembers.map((member) => (
-                <Button
-                  key={member.id}
-                  variant="light"
-                  fullWidth
-                  onClick={() => handleCreateDirectChat(member)}
-                  disabled={creatingChat}
-                >
-                  <div className="flex w-full items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar radius="xl" color="indigo" variant="filled">
-                        {member.name?.charAt(0).toUpperCase() ?? '?'}
-                      </Avatar>
-                      <div className="text-left">
-                        <Text className="text-sm font-semibold text-gray-900">{member.name}</Text>
-                        {member.email && (
-                          <Text size="xs" className="text-gray-500">
-                            {member.email}
-                          </Text>
-                        )}
-                      </div>
-                    </div>
-                    <Text size="xs" className="text-gray-500">
-                      Start chat
-                    </Text>
-                  </div>
-                </Button>
-              ))}
-              {!filteredTeamMembers.length && (
-                <Text size="sm" className="text-gray-500">
-                  No team members found.
-                </Text>
-              )}
-            </Stack>
-          </ScrollArea>
-          <Button variant="default" onClick={() => setNewChatOpen(false)}>
-            Cancel
-          </Button>
-        </Stack>
-      </Modal>
-      <Drawer
-        opened={detailsOpen}
-        onClose={() => setDetailsOpen(false)}
-        position="right"
-        title="Conversation details"
-        size="md"
-      >
-        {activeConversation ? (
-          <Stack gap="md">
-            <div>
-              <Text className="text-base font-semibold">{activeConversation.name}</Text>
-              {activeConversation.description && (
-                <Text size="sm" className="text-gray-500">
-                  {activeConversation.description}
-                </Text>
-              )}
-            </div>
-            <div>
-              <Text size="sm" className="text-gray-600">
-                Members ({activeConversation.members.length})
+          <div className="hidden w-80 border-l border-gray-900 bg-gray-950/40 lg:flex lg:flex-col">
+            <div className="border-b border-gray-900 px-5 py-4">
+              <Text className="text-sm font-semibold text-white">Participants</Text>
+              <Text size="xs" className="text-gray-400">
+                Presence updates in real-time
               </Text>
-              <Stack gap="sm" mt="sm">
+            </div>
+            <ScrollArea className="flex-1 px-4 py-4">
+              <Stack gap="sm">
                 {presenceDetails.map(({ member, online }) => (
-                  <Group key={member.id} justify="space-between">
+                  <MotionDiv
+                    key={member.id}
+                    whileHover={{ scale: 1.01 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                    className="rounded-xl border border-gray-900 bg-gray-900/60 px-3 py-2"
+                  >
                     <Group gap="sm">
                       <Avatar radius="xl" color={online ? 'green' : 'gray'} variant="filled">
                         {member.name.charAt(0).toUpperCase()}
                       </Avatar>
-                      <div>
-                        <Text className="text-sm font-medium">{member.name}</Text>
-                        {member.email && (
-                          <Text size="xs" className="text-gray-500">
-                            {member.email}
-                          </Text>
-                        )}
+                      <div className="flex flex-1 flex-col">
+                        <Text className="text-sm font-semibold text-white">{member.name}</Text>
+                        <Group gap="xs">
+                          <Badge color={online ? 'green' : 'gray'} variant="light" size="sm">
+                            {online ? 'Online' : 'Offline'}
+                          </Badge>
+                          {member.email && (
+                            <Text size="xs" className="text-gray-400">
+                              {member.email}
+                            </Text>
+                          )}
+                        </Group>
                       </div>
                     </Group>
-                    <Badge color={online ? 'green' : 'gray'} variant="light" size="sm">
-                      {online ? 'Online' : 'Offline'}
-                    </Badge>
-                  </Group>
+                  </MotionDiv>
                 ))}
                 {!presenceDetails.length && (
                   <Text size="sm" className="text-gray-500">
-                    No member details available.
+                    No participants available.
                   </Text>
                 )}
               </Stack>
-            </div>
-          </Stack>
-        ) : (
-          <Text size="sm" className="text-gray-500">
-            Select a conversation to view details.
-          </Text>
-        )}
-      </Drawer>
-    </>
+            </ScrollArea>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

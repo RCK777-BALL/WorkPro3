@@ -48,11 +48,13 @@ const resolveFormId = async (input: { formSlug?: string | undefined; requestForm
 const resolveUserId = (req: AuthedRequest): EntityIdLike => {
   const candidate = req.user?._id ?? req.user?.id;
   if (typeof candidate === 'string') return candidate;
-  return toObjectId(candidate);
+  if (candidate == null) return undefined;
+  return toObjectId(String(candidate));
 };
 
 const resolveUserObjectId = (req: AuthedRequest): Types.ObjectId | undefined => {
-  return toObjectId(resolveUserId(req));
+  const candidate = resolveUserId(req);
+  return toObjectId(candidate);
 };
 
 export const createRequest: AuthedRequestHandler = async (req, res, next) => {

@@ -294,7 +294,7 @@ export const deleteStationForLineHandler: AuthedRequestHandler<
 
 type AssetBody = {
   name?: string;
-  type?: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface' | 'Welding';
+  type?: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface';
   status?: string;
   notes?: string;
   description?: string;

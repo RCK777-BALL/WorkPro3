@@ -31,48 +31,6 @@ All routes are under `/purchase-orders` (`backend/src/modules/purchase-orders/ro
 - `POST /purchase-orders/:purchaseOrderId/status` – transition status using `statusInputSchema`.
 - `POST /purchase-orders/:purchaseOrderId/receive` – apply receipts using `receivePurchaseOrderSchema`.
 
-### Example payloads
-
-Create a purchase order with a dummy part ID:
-
-```json
-{
-  "vendorId": "64b8d4fd0b9e3d4b2c3a1111",
-  "items": [
-    {
-      "partId": "64b8d4fd0b9e3d4b2c3a2222",
-      "quantity": 5,
-      "unitCost": 12.5
-    }
-  ],
-  "status": "draft",
-  "notes": "Sample purchase order with a dummy part id."
-}
-```
-
-List response (example):
-
-```json
-[
-  {
-    "id": "64b8d4fd0b9e3d4b2c3a3333",
-    "vendorId": "64b8d4fd0b9e3d4b2c3a1111",
-    "status": "draft",
-    "items": [
-      {
-        "partId": "64b8d4fd0b9e3d4b2c3a2222",
-        "quantity": 5,
-        "unitCost": 12.5,
-        "received": 0,
-        "status": "open"
-      }
-    ],
-    "subtotal": 62.5,
-    "receivedTotal": 0
-  }
-]
-```
-
 ## Status transitions
 
 Allowed transitions are enforced in `service.ts`:

@@ -10,7 +10,7 @@ import logger from '../../utils/logger';
 
 dotenv.config();
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/WorkPro3';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/workpro';
 
 const toObjectId = (value: string): Types.ObjectId => {
   if (!Types.ObjectId.isValid(value)) {
@@ -79,7 +79,7 @@ const backfillCollection = async (
   });
 };
 
-export async function run() {
+async function run() {
   await mongoose.connect(MONGO_URI);
   logger.info('Connected to MongoDB for backfill');
 
@@ -95,10 +95,8 @@ export async function run() {
   await mongoose.disconnect();
 }
 
-if (require.main === module) {
-  run().catch((err) => {
-    logger.error(err);
-    process.exit(1);
-  });
-}
-
+run().catch(async (error) => {
+  logger.error('Backfill failed', error);
+  await mongoose.disconnect();
+  process.exit(1);
+});

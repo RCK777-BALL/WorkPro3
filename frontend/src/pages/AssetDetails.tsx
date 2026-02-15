@@ -241,7 +241,7 @@ const AssetDetails = () => {
               'rounded-full px-4 py-2 text-sm font-semibold transition',
               activeTab === tab.id
                 ? 'bg-indigo-500/90 text-white shadow'
-                : 'bg-neutral-900/60 text-white hover:text-white',
+                : 'bg-neutral-900/60 text-neutral-300 hover:text-white',
             )}
             onClick={() => setActiveTab(tab.id)}
           >

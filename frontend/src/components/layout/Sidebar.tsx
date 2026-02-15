@@ -22,7 +22,6 @@ import {
   Globe2,
   Inbox,
   LayoutDashboard,
-  LifeBuoy,
   LogIn,
   LogOut,
   Bell,
@@ -33,13 +32,9 @@ import {
   Scan,
   Send,
   Settings,
-  GripVertical,
   TrendingUp,
   Users,
   Warehouse,
-  Star,
-  ChevronDown,
-  ChevronRight,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -88,7 +83,6 @@ type NavItem = {
   permission?: Permission;
   badge?: number;
 };
-
 
 const sections: { id: NavSection; title: string }[] = [
   { id: "plant", title: "Plant Management" },
@@ -208,7 +202,7 @@ const navItems: Record<NavItemId, NavItem> = {
   },
   inventory: {
     id: "inventory",
-    label: "Inventory Hub",
+    label: "Inventory",
     to: "/inventory",
     icon: MapPin,
     section: "operations",
@@ -334,13 +328,6 @@ const navItems: Record<NavItemId, NavItem> = {
     icon: MessageSquare,
     section: "management",
   },
-  "help-center": {
-    id: "help-center",
-    label: "Help Center",
-    to: "/help",
-    icon: LifeBuoy,
-    section: "management",
-  },
   "documentation-getting-started": {
     id: "documentation-getting-started",
     label: "Getting Started",
@@ -391,20 +378,11 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const isAuthenticated = Boolean(user);
-  const {
-    sidebarOrder,
-    moveSidebarItem,
-    pinnedItems,
-    recentItems,
-    pinItem,
-    unpinItem,
-    addRecentItem,
-  } = useNavigationStore();
+  const { sidebarOrder, moveSidebarItem } = useNavigationStore();
   const { can } = usePermissions();
   const alertsQuery = useAlertsQuery();
 
   const [activeId, setActiveId] = useState<NavItemId | null>(null);
-  const [inventoryExpanded, setInventoryExpanded] = useState(true);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -429,7 +407,6 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
       ...uniqueOrder,
       ...defaultOrder.filter((id) => !uniqueOrder.includes(id)),
     ];
-    const hiddenInMainNav = new Set<NavItemId>(["parts", "inventory-locations"]);
 
     return sections.map((section) => ({
       ...section,
@@ -439,42 +416,12 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
           ...(navBadges[id] !== undefined ? { badge: navBadges[id] } : {}),
         }))
         .filter((item) => item && item.section === section.id)
-        .filter((item) => !hiddenInMainNav.has(item.id))
         .filter((item) => !item.permission || can(item.permission)),
     }));
   }, [sidebarOrder, can, navBadges]);
 
-  const inventoryChildren = useMemo<NavItem[]>(() => {
-    const childIds: NavItemId[] = ["parts", "inventory-locations"];
-    return childIds
-      .map((id) => ({
-        ...navItems[id],
-        ...(navBadges[id] !== undefined ? { badge: navBadges[id] } : {}),
-      }))
-      .filter((item) => !item.permission || can(item.permission));
-  }, [can, navBadges]);
-
-  const pinnedNavItems = useMemo(
-    () =>
-      pinnedItems
-        .map((id) => navItems[id])
-        .filter((item): item is NavItem => Boolean(item))
-        .filter((item) => !item.permission || can(item.permission)),
-    [pinnedItems, can],
-  );
-
-  const recentNavItems = useMemo(
-    () =>
-      recentItems
-        .filter((id) => !pinnedItems.includes(id))
-        .map((id) => navItems[id])
-        .filter((item): item is NavItem => Boolean(item))
-        .filter((item) => !item.permission || can(item.permission)),
-    [recentItems, pinnedItems, can],
-  );
-
   const containerClasses = clsx(
-    "hidden shrink-0 border-r border-neutral-800 bg-black text-white transition-all duration-300 lg:flex",
+    "hidden shrink-0 border-r border-neutral-200 bg-white/60 backdrop-blur-lg transition-all duration-300 dark:border-neutral-800 dark:bg-neutral-900/60 lg:flex",
     collapsed ? "w-20" : "w-64",
   );
 
@@ -521,7 +468,7 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
       <div className={clsx("flex h-full w-full flex-col gap-6 py-6", collapsed ? "px-3" : "px-5")}>
         <div
           className={clsx(
-            "flex items-center gap-2 text-white transition-all",
+            "flex items-center gap-2 text-neutral-900 dark:text-neutral-100 transition-all",
             collapsed && "flex-col gap-1",
           )}
         >
@@ -530,50 +477,13 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
           </span>
           {!collapsed && (
             <div>
-              <p className="text-sm font-semibold uppercase tracking-wide text-white/60">WorkPro</p>
-              <p className="text-lg font-semibold text-white">Command Center</p>
+              <p className="text-sm font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">WorkPro</p>
+              <p className="text-lg font-semibold">Command Center</p>
             </div>
           )}
         </div>
 
         <nav className={clsx("flex-1 text-sm", collapsed ? "space-y-6" : "space-y-8")}>
-          {(pinnedNavItems.length > 0 || recentNavItems.length > 0) && (
-            <div className={clsx("space-y-4", collapsed && "space-y-3")}>
-              {!collapsed && (
-                <p className="px-2 text-xs font-medium uppercase tracking-wider text-white/50">
-                  Pinned & recent
-                </p>
-              )}
-              {pinnedNavItems.length > 0 && (
-                <ul className={clsx("space-y-1", collapsed && "space-y-1.5")}>
-                  {pinnedNavItems.map((item) => (
-                    <SidebarNavItem
-                      key={`pinned-${item.id}`}
-                      item={item}
-                      collapsed={collapsed}
-                      pinned
-                      onNavigate={(id) => addRecentItem(id)}
-                      onTogglePin={(id) => unpinItem(id)}
-                    />
-                  ))}
-                </ul>
-              )}
-              {recentNavItems.length > 0 && (
-                <ul className={clsx("space-y-1", collapsed && "space-y-1.5")}>
-                  {recentNavItems.map((item) => (
-                    <SidebarNavItem
-                      key={`recent-${item.id}`}
-                      item={item}
-                      collapsed={collapsed}
-                      pinned={false}
-                      onNavigate={(id) => addRecentItem(id)}
-                      onTogglePin={(id) => pinItem(id)}
-                    />
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -585,7 +495,7 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
             {groups.map((group) => (
               <div key={group.id} className={clsx("space-y-3", collapsed && "space-y-2")}>
                 {!collapsed && (
-                  <p className="px-2 text-xs font-medium uppercase tracking-wider text-white/50">
+                  <p className="px-2 text-xs font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
                     {group.title}
                   </p>
                 )}
@@ -597,15 +507,6 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
                         item={item}
                         collapsed={collapsed}
                         isActive={activeId === item.id}
-                        pinned={pinnedItems.includes(item.id)}
-                        isPinned={(id) => pinnedItems.includes(id)}
-                        onNavigate={(id) => addRecentItem(id)}
-                        onTogglePin={(id) =>
-                          pinnedItems.includes(id) ? unpinItem(id) : pinItem(id)
-                        }
-                        inventoryChildren={item.id === "inventory" ? inventoryChildren : undefined}
-                        inventoryExpanded={inventoryExpanded}
-                        onToggleInventory={() => setInventoryExpanded((prev) => !prev)}
                       />
                     ))}
                   </ul>
@@ -625,7 +526,7 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
               "flex w-full items-center rounded-xl px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500",
               collapsed ? "justify-center" : "gap-3",
               isAuthenticated
-                ? "bg-neutral-900 text-white hover:bg-neutral-800"
+                ? "bg-neutral-100 text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
                 : "bg-primary-600 text-white hover:bg-primary-700",
             )}
             aria-label={authLabel}
@@ -636,9 +537,9 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
           </button>
 
           {!collapsed && (
-            <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4 text-sm shadow-sm">
-              <p className="font-medium text-white">Need help?</p>
-              <p className="mt-1 text-white/60">
+            <div className="rounded-2xl border border-neutral-200 bg-white p-4 text-sm shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+              <p className="font-medium text-neutral-900 dark:text-neutral-100">Need help?</p>
+              <p className="mt-1 text-neutral-500 dark:text-neutral-400">
                 Visit the documentation or contact support to keep the operation running smoothly.
               </p>
             </div>
@@ -653,29 +554,10 @@ type SortableSidebarItemProps = {
   item: NavItem;
   collapsed: boolean;
   isActive: boolean;
-  pinned: boolean;
-  isPinned: (id: NavItemId) => boolean;
-  onNavigate: (id: NavItemId) => void;
-  onTogglePin: (id: NavItemId) => void;
-  inventoryChildren?: NavItem[];
-  inventoryExpanded?: boolean;
-  onToggleInventory?: () => void;
 };
 
-function SortableSidebarItem({
-  item,
-  collapsed,
-  isActive,
-  pinned,
-  isPinned,
-  onNavigate,
-  onTogglePin,
-  inventoryChildren,
-  inventoryExpanded = false,
-  onToggleInventory,
-}: SortableSidebarItemProps) {
-  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
-    useSortable({ id: item.id });
+function SortableSidebarItem({ item, collapsed, isActive }: SortableSidebarItemProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -686,20 +568,18 @@ function SortableSidebarItem({
   }
 
   return (
-    <li ref={setNodeRef} style={style} className="group relative space-y-1">
+    <li ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <NavLink
         to={item.to}
         title={collapsed ? item.label : undefined}
-        onClick={() => onNavigate(item.id)}
         className={({ isActive: linkActive }) =>
           clsx(
-            "flex items-center rounded-xl px-3 py-2 transition touch-manipulation",
+            "flex items-center rounded-xl px-3 py-2 transition cursor-grab active:cursor-grabbing touch-manipulation",
             collapsed ? "justify-center" : "gap-3",
             linkActive
-              ? "bg-blue-600 text-white shadow"
-              : "text-white/80 hover:bg-blue-900/40 hover:text-white",
-            (isDragging || isActive) && "ring-2 ring-blue-400",
-            isDragging ? "cursor-grabbing" : "cursor-pointer",
+              ? "bg-primary-600 text-white shadow"
+              : "text-white hover:bg-white/10 dark:text-white dark:hover:bg-white/10",
+            (isDragging || isActive) && "ring-2 ring-primary-400 dark:ring-primary-500",
           )
         }
       >
@@ -708,163 +588,8 @@ function SortableSidebarItem({
           <span className="flex items-center gap-2 font-medium">
             {item.label}
             {item.badge ? (
-              <span className="rounded-full bg-blue-800/60 px-2 py-0.5 text-xs font-semibold text-white">
-                {item.badge}
-              </span>
+              <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold text-white">{item.badge}</span>
             ) : null}
-          </span>
-        )}
-        {!collapsed && inventoryChildren && (
-          <button
-            type="button"
-            className="ml-auto rounded-md p-1 text-white/60 transition hover:text-white"
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              onToggleInventory?.();
-            }}
-            aria-label={inventoryExpanded ? "Collapse inventory links" : "Expand inventory links"}
-          >
-            {inventoryExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </button>
-        )}
-        {!collapsed && !inventoryChildren && (
-          <span className="ml-auto flex items-center gap-1">
-            <button
-              type="button"
-              className={clsx(
-                "rounded-md p-1 text-white/40 transition hover:text-white",
-                pinned && "text-yellow-300",
-              )}
-              aria-label={pinned ? `Unpin ${item.label}` : `Pin ${item.label}`}
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                onTogglePin(item.id);
-              }}
-            >
-              <Star className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              ref={setActivatorNodeRef}
-              className={clsx(
-                "rounded-md p-1 text-white/40 transition group-hover:text-white",
-                isDragging ? "cursor-grabbing" : "cursor-grab",
-              )}
-              aria-label={`Reorder ${item.label}`}
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-              }}
-              {...attributes}
-              {...listeners}
-            >
-              <GripVertical className="h-4 w-4" />
-            </button>
-          </span>
-        )}
-        {collapsed && (
-          <span className="ml-auto">
-            <button
-              type="button"
-              ref={setActivatorNodeRef}
-              className={clsx(
-                "rounded-md p-1 text-white/40 transition group-hover:text-white",
-                isDragging ? "cursor-grabbing" : "cursor-grab",
-              )}
-              aria-label={`Reorder ${item.label}`}
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-              }}
-              {...attributes}
-              {...listeners}
-            >
-              <GripVertical className="h-4 w-4" />
-            </button>
-          </span>
-        )}
-      </NavLink>
-      {!collapsed && inventoryChildren && inventoryExpanded && (
-        <ul className="ml-8 space-y-1">
-          {inventoryChildren.map((child) => (
-            <SidebarNavItem
-              key={child.id}
-              item={child}
-              collapsed={false}
-              pinned={isPinned(child.id)}
-              onNavigate={onNavigate}
-              onTogglePin={onTogglePin}
-              nested
-            />
-          ))}
-        </ul>
-      )}
-    </li>
-  );
-}
-
-type SidebarNavItemProps = {
-  item: NavItem;
-  collapsed: boolean;
-  pinned: boolean;
-  nested?: boolean;
-  onNavigate: (id: NavItemId) => void;
-  onTogglePin: (id: NavItemId) => void;
-};
-
-function SidebarNavItem({
-  item,
-  collapsed,
-  pinned,
-  nested = false,
-  onNavigate,
-  onTogglePin,
-}: SidebarNavItemProps) {
-  return (
-    <li className={clsx("group relative", nested && "pl-1")}>
-      <NavLink
-        to={item.to}
-        title={collapsed ? item.label : undefined}
-        onClick={() => onNavigate(item.id)}
-        className={({ isActive }) =>
-          clsx(
-            "flex items-center rounded-xl px-3 py-2 transition",
-            collapsed ? "justify-center" : "gap-3",
-            isActive ? "bg-blue-600 text-white shadow" : "text-white/80 hover:bg-blue-900/40 hover:text-white",
-            nested && "text-sm",
-          )
-        }
-      >
-        <item.icon className={clsx("h-4 w-4", nested ? "opacity-70" : "h-5 w-5")} />
-        {!collapsed && (
-          <span className="flex items-center gap-2 font-medium">
-            {item.label}
-            {item.badge ? (
-              <span className="rounded-full bg-blue-800/60 px-2 py-0.5 text-xs font-semibold text-white">
-                {item.badge}
-              </span>
-            ) : null}
-          </span>
-        )}
-        {!collapsed && (
-          <span className="ml-auto flex items-center gap-1">
-            <button
-              type="button"
-              className={clsx(
-                "rounded-md p-1 text-white/40 transition hover:text-white",
-                pinned && "text-yellow-300",
-              )}
-              aria-label={pinned ? `Unpin ${item.label}` : `Pin ${item.label}`}
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                onTogglePin(item.id);
-              }}
-            >
-              <Star className="h-4 w-4" />
-            </button>
           </span>
         )}
       </NavLink>

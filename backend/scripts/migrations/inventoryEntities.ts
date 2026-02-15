@@ -12,8 +12,8 @@ async function ensureCollection(db: Db, name: string) {
   }
 }
 
-export async function run() {
-  const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/WorkPro3';
+async function run() {
+  const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/workpro';
   const client = new MongoClient(uri);
 
   try {
@@ -56,10 +56,7 @@ export async function run() {
   }
 }
 
-if (require.main === module) {
-  run().catch((err) => {
-    logger.error(err);
-    process.exit(1);
-  });
-}
-
+run().catch((err) => {
+  logger.error(err);
+  process.exit(1);
+});

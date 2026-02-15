@@ -127,10 +127,6 @@ export const getVendorHandler: AuthedRequestHandler<{ id: string }> = async (req
       sendResponse(res, null, 'Tenant context required', 400);
       return;
     }
-    if (!Types.ObjectId.isValid(req.params.id)) {
-      sendResponse(res, null, 'Invalid vendor id', 400);
-      return;
-    }
 
     const includeDeleted = booleanFromQuery((req.query as ListVendorsQuery).includeDeleted) ?? false;
 
@@ -186,10 +182,6 @@ export const updateVendorHandler: AuthedRequestHandler<{ id: string }> = async (
       sendResponse(res, null, 'Tenant context required', 400);
       return;
     }
-    if (!Types.ObjectId.isValid(req.params.id)) {
-      sendResponse(res, null, 'Invalid vendor id', 400);
-      return;
-    }
 
     const parsed = vendorInputSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -221,10 +213,6 @@ export const deleteVendorHandler: AuthedRequestHandler<{ id: string }> = async (
       sendResponse(res, null, 'Tenant context required', 400);
       return;
     }
-    if (!Types.ObjectId.isValid(req.params.id)) {
-      sendResponse(res, null, 'Invalid vendor id', 400);
-      return;
-    }
 
     const result = await Vendor.findOneAndUpdate(
       { _id: toObjectId(req.params.id, 'vendor id'), tenantId: toObjectId(tenantId, 'tenant id'), deletedAt: { $in: [null, undefined] } },
@@ -247,10 +235,6 @@ export const vendorSpendHandler: AuthedRequestHandler<{ id: string }> = async (r
     const tenantId = (req as AuthedRequest).tenantId;
     if (!tenantId) {
       sendResponse(res, null, 'Tenant context required', 400);
-      return;
-    }
-    if (!Types.ObjectId.isValid(req.params.id)) {
-      sendResponse(res, null, 'Invalid vendor id', 400);
       return;
     }
 

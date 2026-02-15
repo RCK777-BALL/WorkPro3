@@ -14,29 +14,19 @@ import {
   type PurchaseOrderInput,
   type PurchaseOrderStatus,
 } from '@/api/purchasing';
-import { usePermissions } from '@/auth/usePermissions';
 
 export const PURCHASE_ORDERS_QUERY_KEY = ['purchasing', 'orders'] as const;
 
-export const usePurchaseOrders = () => {
-  const { can } = usePermissions();
-  return useQuery({
-    queryKey: PURCHASE_ORDERS_QUERY_KEY,
-    queryFn: listPurchaseOrders,
-    staleTime: 15_000,
-    enabled: can('inventory.read'),
-  });
-};
+export const usePurchaseOrders = () =>
+  useQuery({ queryKey: PURCHASE_ORDERS_QUERY_KEY, queryFn: listPurchaseOrders, staleTime: 15_000 });
 
-export const usePurchaseOrder = (id?: string) => {
-  const { can } = usePermissions();
-  return useQuery({
-    enabled: Boolean(id) && can('inventory.read'),
+export const usePurchaseOrder = (id?: string) =>
+  useQuery({
+    enabled: Boolean(id),
     queryKey: [...PURCHASE_ORDERS_QUERY_KEY, id],
     queryFn: () => fetchPurchaseOrder(id ?? ''),
     staleTime: 10_000,
   });
-};
 
 export const useCreatePurchaseOrder = () => {
   const queryClient = useQueryClient();

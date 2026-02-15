@@ -7,7 +7,6 @@ import { useEffect, useMemo, useState } from 'react';
 import Button from '@/components/common/Button';
 import FailureInsightCard from '@/components/ai/FailureInsightCard';
 import { useFailurePrediction } from '@/hooks/useAiInsights';
-import { useFeatureFlagStatus } from '@/hooks/useFeatureFlags';
 import { useToast } from '@/context/ToastContext';
 import type { PMTemplateAssignment, ProcedureTemplateSummary } from '@/types';
 import { useQuery } from 'react-query';
@@ -66,12 +65,8 @@ const AssignmentForm = ({ templateId, assignment, assets, partOptions, onSuccess
     })) ?? [],
   );
   const procedureTemplatesQuery = useQuery(['pm', 'procedures'], fetchProcedureTemplates);
-  const aiInsightsFlag = useFeatureFlagStatus('ai_insights_enabled');
-  const aiInsightsEnabled = Boolean(aiInsightsFlag.data?.enabled);
-  const aiPrediction = useFailurePrediction({ assetId }, { enabled: aiInsightsEnabled });
-  const showAiInsight = Boolean(
-    aiInsightsEnabled && (assetId || aiPrediction.isLoading || aiPrediction.error),
-  );
+  const aiPrediction = useFailurePrediction({ assetId });
+  const showAiInsight = Boolean(assetId || aiPrediction.isLoading || aiPrediction.error);
 
   const resolveIntervalFromDays = (days?: number) => {
     if (!days) return interval;

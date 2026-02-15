@@ -63,16 +63,9 @@ export type {
   OnboardingStep,
   OnboardingStepKey,
   OnboardingReminderResponse,
-  OnboardingResetResponse,
   PMTemplateLibraryItem,
   InspectionFormTemplate,
 } from '../../../shared/types/onboarding';
-export type {
-  MemberOnboardingPlan,
-  MemberOnboardingResource,
-  MemberOnboardingStep,
-  MemberOnboardingStepStatus,
-} from '../../../shared/types/teamOnboarding';
 export type {
   PMTemplate,
   PMTemplateAssignment,
@@ -106,7 +99,7 @@ export interface Asset {
   siteId?: string;
   plantId?: string;
   name: string;
-  type?: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface' | 'Welding';
+  type?: 'Electrical' | 'Mechanical' | 'Tooling' | 'Interface';
   qrCode?: string;
   location?: string;
   notes?: string;

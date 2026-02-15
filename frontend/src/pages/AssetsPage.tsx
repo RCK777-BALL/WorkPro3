@@ -28,12 +28,12 @@ import { duplicateAsset } from '@/utils/duplicate';
 import ConflictResolver from '@/components/offline/ConflictResolver';
 import { safeLocalStorage } from '@/utils/safeLocalStorage';
 import { usePermissions } from '@/auth/usePermissions';
+import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useScopeContext } from '@/context/ScopeContext';
 import { useToast } from '@/context/ToastContext';
 import { useAuthStore } from '@/store/authStore';
 import { uploadImport, type ImportSummary } from '@/api/importExport';
-import PageHeader from '@/components/layout/PageHeader';
 
 const ASSET_CACHE_KEY = 'offline-assets';
 const FILTER_STORAGE_VERSION = 1;
@@ -119,8 +119,6 @@ const AssetsPage: React.FC = () => {
   const isFetching = useRef(false);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const navigate = useNavigate();
-  const canUseSampleData = import.meta.env.MODE !== 'production';
-  const isSampleDataActive = canUseSampleData && showSampleData;
 
   const filterPreferenceKey = useMemo(
     () => `assets.filters.v${FILTER_STORAGE_VERSION}:${user?.id ?? 'guest'}`,
@@ -136,7 +134,7 @@ const AssetsPage: React.FC = () => {
   }, [activePlant, assets]);
 
   const filteredAssets = useMemo(() => {
-    const sourceAssets = isSampleDataActive ? SAMPLE_ASSETS : scopedAssets;
+    const sourceAssets = showSampleData ? SAMPLE_ASSETS : scopedAssets;
     const matchesSearch = (asset: Asset) => {
       if (!search.trim()) return true;
       return Object.values(asset).some((value) =>
@@ -155,7 +153,7 @@ const AssetsPage: React.FC = () => {
     });
 
     return filtered.slice().sort((a, b) => a.name.localeCompare(b.name));
-  }, [criticalityFilter, scopedAssets, search, isSampleDataActive, statusFilter]);
+  }, [criticalityFilter, scopedAssets, search, showSampleData, statusFilter]);
 
   const applySavedView = useCallback(
     (viewId: string) => {
@@ -328,7 +326,7 @@ const AssetsPage: React.FC = () => {
   }, [searchParams, setSearchParams]);
 
   const handleSave = (asset: Asset) => {
-    if (isSampleDataActive) {
+    if (showSampleData) {
       blockSampleEdits('add or edit assets');
       return;
     }
@@ -350,7 +348,7 @@ const AssetsPage: React.FC = () => {
   };
 
   const handleDuplicate = async (asset: Asset) => {
-    if (isSampleDataActive) {
+    if (showSampleData) {
       blockSampleEdits('duplicate assets');
       return;
     }
@@ -370,7 +368,7 @@ const AssetsPage: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (isSampleDataActive) {
+    if (showSampleData) {
       blockSampleEdits('delete assets');
       return;
     }
@@ -421,77 +419,66 @@ const AssetsPage: React.FC = () => {
     }
   };
 
-  const displayError = isSampleDataActive ? null : error;
-  const actionsDisabled = !canManageAssets || !activePlant || isSampleDataActive;
+  const displayError = showSampleData ? null : error;
+  const actionsDisabled = !canManageAssets || !activePlant || showSampleData;
 
   return (
     <>
       <div className="space-y-6 p-4 sm:p-6">
-        <PageHeader
-          title="Asset catalog"
-          description="Browse the list of assets, make quick edits, and add new equipment to your hierarchy."
-          actions={
-            <>
-              <Button
-                variant="primary"
-                size="lg"
-                className="w-full sm:w-auto"
-                onClick={() => navigate('/assets/scan')}
-                aria-label="Scan an asset QR or barcode"
-              >
-                <Scan className="w-5 h-5 mr-2" />
-                Scan QR/Barcode
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full sm:w-auto"
-                onClick={fetchAssets}
-                disabled={isLoading || isSampleDataActive}
-              >
-                <RefreshCcw className="w-5 h-5 mr-2" />
-                {isLoading ? 'Refreshing...' : 'Refresh'}
-              </Button>
-              <Button
-                variant="primary"
-                size="lg"
-                className="w-full sm:w-auto"
-                onClick={() => {
-                  setSelected(null);
-                  setModalOpen(true);
-                }}
-                disabled={actionsDisabled}
-                aria-disabled={actionsDisabled}
-                title={
-                  !canManageAssets
-                    ? t('assets.permissionWarning')
-                    : isSampleDataActive
-                      ? 'Turn off sample data to add live assets'
-                      : !activePlant
-                        ? 'Select a plant to create assets'
-                        : undefined
-                }
-              >
-                <PlusCircle className="w-4 h-4 mr-2" />
-                Add asset
-              </Button>
-            </>
-          }
-          filters={[
-            {
-              id: 'status',
-              label: 'Status',
-              value: statusFilter || undefined,
-              onClear: statusFilter ? () => setStatusFilter('') : undefined,
-            },
-            {
-              id: 'criticality',
-              label: 'Criticality',
-              value: criticalityFilter || undefined,
-              onClear: criticalityFilter ? () => setCriticalityFilter('') : undefined,
-            },
-          ]}
-        />
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-sm text-neutral-600">Assets</p>
+            <h1 className="text-3xl font-bold text-neutral-900">Asset catalog</h1>
+            <p className="text-neutral-600 mt-1">
+              Browse the list of assets, make quick edits, and add new equipment to your hierarchy.
+            </p>
+          </div>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
+            <Button
+              variant="primary"
+              size="lg"
+              className="w-full sm:w-auto"
+              onClick={() => navigate('/assets/scan')}
+              aria-label="Scan an asset QR or barcode"
+            >
+              <Scan className="w-5 h-5 mr-2" />
+              Scan QR/Barcode
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full sm:w-auto"
+              onClick={fetchAssets}
+              disabled={isLoading}
+            >
+              <RefreshCcw className="w-5 h-5 mr-2" />
+              {isLoading ? 'Refreshing...' : 'Refresh'}
+            </Button>
+            <Button
+              variant="primary"
+              size="lg"
+              className="w-full sm:w-auto"
+              onClick={() => {
+                setSelected(null);
+                setModalOpen(true);
+              }}
+              disabled={actionsDisabled}
+              aria-disabled={actionsDisabled}
+              title={
+                !canManageAssets
+                  ? t('assets.permissionWarning')
+                  : showSampleData
+                    ? 'Turn off sample data to add live assets'
+                    : !activePlant
+                      ? 'Select a plant to create assets'
+                      : undefined
+              }
+            >
+              <PlusCircle className="w-4 h-4 mr-2" />
+              Add asset
+            </Button>
+          </div>
+        </div>
 
         {!canManageAssets && (
           <div
@@ -506,36 +493,34 @@ const AssetsPage: React.FC = () => {
           </div>
         )}
 
-        {canUseSampleData && (
-          <div className="flex flex-col gap-3 rounded-lg border border-dashed border-neutral-300 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
-                <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-neutral-800 dark:text-neutral-100">
-                  <input
-                    type="checkbox"
-                    checked={showSampleData}
-                    onChange={(event) => {
-                      setShowSampleData(event.target.checked);
-                      if (event.target.checked) {
-                        setError(null);
-                      }
-                    }}
-                    className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-                  />
-                  Enable sample data for demos & training
-                </label>
-                {showSampleData && (
-                  <span className="rounded-full bg-primary-50 px-2.5 py-1 text-xs font-semibold text-primary-700 dark:bg-primary-900/40 dark:text-primary-100">
-                    Read-only mode
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Sample assets stay local to your session so you can demo search, filtering, and table actions without touching live data.
-              </p>
+        <div className="flex flex-col gap-3 rounded-lg border border-dashed border-neutral-300 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-neutral-800 dark:text-neutral-100">
+                <input
+                  type="checkbox"
+                  checked={showSampleData}
+                  onChange={(event) => {
+                    setShowSampleData(event.target.checked);
+                    if (event.target.checked) {
+                      setError(null);
+                    }
+                  }}
+                  className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                />
+                Enable sample data for demos & training
+              </label>
+              {showSampleData && (
+                <span className="rounded-full bg-primary-50 px-2.5 py-1 text-xs font-semibold text-primary-700 dark:bg-primary-900/40 dark:text-primary-100">
+                  Read-only mode
+                </span>
+              )}
             </div>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              Sample assets stay local to your session so you can demo search, filtering, and table actions without touching live data.
+            </p>
           </div>
-        )}
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
@@ -621,7 +606,7 @@ const AssetsPage: React.FC = () => {
           </div>
         </div>
 
-        {!activePlant && !loadingPlants && !isSampleDataActive && (
+        {!activePlant && !loadingPlants && !showSampleData && (
           <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100" role="alert">
             <span className="mt-0.5 text-amber-300">⚠️</span>
             <div>
@@ -641,7 +626,7 @@ const AssetsPage: React.FC = () => {
                   Quickly jump back into an asset to review details or make changes.
                 </p>
               </div>
-              <Button variant="outline" onClick={fetchAssets} disabled={isLoading || isSampleDataActive}>
+              <Button variant="outline" onClick={fetchAssets} disabled={isLoading}>
                 <RefreshCcw className="mr-2 h-4 w-4" />
                 {isLoading ? 'Refreshing...' : 'Refresh list'}
               </Button>
@@ -671,17 +656,17 @@ const AssetsPage: React.FC = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => {
-                        if (isSampleDataActive) {
+                        if (showSampleData) {
                           blockSampleEdits('edit assets');
                           return;
                         }
                         setSelected(asset);
                         setModalOpen(true);
                       }}
-                      disabled={!canManageAssets || isSampleDataActive}
-                      aria-disabled={!canManageAssets || isSampleDataActive}
+                      disabled={!canManageAssets || showSampleData}
+                      aria-disabled={!canManageAssets || showSampleData}
                       title={
-                        isSampleDataActive
+                        showSampleData
                           ? 'Turn off sample data to edit live assets'
                           : !canManageAssets
                             ? t('assets.permissionWarning')
@@ -695,10 +680,10 @@ const AssetsPage: React.FC = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => handleDuplicate(asset)}
-                      disabled={!canManageAssets || isSampleDataActive}
-                      aria-disabled={!canManageAssets || isSampleDataActive}
+                      disabled={!canManageAssets || showSampleData}
+                      aria-disabled={!canManageAssets || showSampleData}
                       title={
-                        isSampleDataActive
+                        showSampleData
                           ? 'Turn off sample data to duplicate live assets'
                           : !canManageAssets
                             ? t('assets.permissionWarning')
@@ -712,10 +697,10 @@ const AssetsPage: React.FC = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => handleDelete(asset.id)}
-                      disabled={!canDeleteAssets || isSampleDataActive}
-                      aria-disabled={!canDeleteAssets || isSampleDataActive}
+                      disabled={!canDeleteAssets || showSampleData}
+                      aria-disabled={!canDeleteAssets || showSampleData}
                       title={
-                        isSampleDataActive
+                        showSampleData
                           ? 'Turn off sample data to delete live assets'
                           : !canDeleteAssets
                             ? t('assets.permissionWarning')
@@ -750,7 +735,7 @@ const AssetsPage: React.FC = () => {
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Add asset
               </Button>
-              <Button variant="outline" onClick={fetchAssets} disabled={isLoading || isSampleDataActive}>
+              <Button variant="outline" onClick={fetchAssets} disabled={isLoading || showSampleData}>
                 <RefreshCcw className="mr-2 h-4 w-4" />
                 Refresh list
               </Button>
@@ -794,18 +779,18 @@ const AssetsPage: React.FC = () => {
           onDuplicate={handleDuplicate}
           onDelete={(a) => handleDelete(a.id)}
           onCreateWorkOrder={(a) => {
-            if (isSampleDataActive) {
+            if (showSampleData) {
               blockSampleEdits('create work orders from sample assets');
               return;
             }
             setWoAsset(a);
             setShowWO(true);
           }}
-          canEdit={canManageAssets && !isSampleDataActive}
-          canDelete={canDeleteAssets && !isSampleDataActive}
-          canCreateWorkOrder={canCreateWorkOrders && !isSampleDataActive}
+          canEdit={canManageAssets && !showSampleData}
+          canDelete={canDeleteAssets && !showSampleData}
+          canCreateWorkOrder={canCreateWorkOrders && !showSampleData}
           readOnlyReason={
-            isSampleDataActive
+            showSampleData
               ? 'Sample data is read-only. Turn off the toggle to edit live assets.'
               : t('assets.permissionWarning')
           }

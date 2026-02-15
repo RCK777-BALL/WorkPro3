@@ -15,6 +15,7 @@ declare global {
     interface User {
       id?: string;
       _id?: string;
+      email?: string;
       tenantId?: string;
       siteId?: string;
       plantId?: string;

@@ -13,8 +13,6 @@ export interface JwtUser {
   siteId?: string;
   scopes?: string[];
   client?: string;
-  tokenVersion?: number;
-  session?: unknown;
 }
 
 interface CookieOptions {
@@ -24,7 +22,7 @@ interface CookieOptions {
 const isProduction = () => process.env.NODE_ENV === 'production';
 
 const getAccessSecret = (): Secret => {
-  const secret = process.env.JWT_ACCESS_SECRET ?? process.env.JWT_SECRET;
+  const secret = process.env.JWT_SECRET ?? process.env.JWT_ACCESS_SECRET;
   if (!secret) {
     throw new Error('JWT secret is not configured');
   }

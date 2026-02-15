@@ -530,22 +530,18 @@ const Documentation: React.FC = () => {
                     variant="ghost"
                     size="sm"
                     icon={<Edit2 size={16} />}
-                    aria-label={`Edit ${category.title}`}
                     onClick={() => {
                       setNewCategory({
                         title: category.title,
                         description: category.description,
                       });
                       setShowCategoryModal(true);
-                    }}
-                  />
+                    } } children={undefined}                  />
                   <Button
                     variant="ghost"
                     size="sm"
                     icon={<Trash2 size={16} />}
-                    aria-label={`Delete ${category.title}`}
-                    onClick={() => handleDeleteCategory(category.id)}
-                  />
+                    onClick={() => handleDeleteCategory(category.id)} children={undefined}                  />
                 </div>
               </div>
 
@@ -571,10 +567,8 @@ const Documentation: React.FC = () => {
                         variant="ghost"
                         size="sm"
                         icon={<Trash2 size={16} />}
-                        aria-label={`Delete ${article.title}`}
                         onClick={() => handleDeleteArticle(index, articleIndex)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-                      />
+                        className="opacity-0 group-hover:opacity-100 transition-opacity duration-150" children={undefined}                      />
                       <ChevronRight size={16} className="text-neutral-400 group-hover:text-primary-600 transition-colors duration-150" />
                     </div>
                   </div>

@@ -10,7 +10,6 @@ import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
 import DataTable from '@/components/common/DataTable';
 import Input from '@/components/common/Input';
-import { usePermissions } from '@/auth/usePermissions';
 import { usePurchaseOrders } from '@/hooks/usePurchaseOrders';
 import { useVendors } from '@/hooks/useVendors';
 import type { PurchaseOrder } from '@/api/purchasing';
@@ -46,10 +45,8 @@ const statusVariant: Record<PurchaseOrder['status'], 'info' | 'success' | 'warni
 const PurchaseOrderListPage = () => {
   const { data: orders, isLoading } = usePurchaseOrders();
   const { data: vendors } = useVendors();
-  const { can } = usePermissions();
   const [status, setStatus] = useState<'all' | PurchaseOrder['status']>('all');
   const [search, setSearch] = useState('');
-  const canPurchase = can('inventory.purchase');
 
   const vendorLookup = useMemo(() => new Map((vendors ?? []).map((vendor) => [vendor.id, vendor.name])), [vendors]);
 
@@ -73,15 +70,9 @@ const PurchaseOrderListPage = () => {
           <h1 className="text-2xl font-semibold text-neutral-900">Purchase Orders</h1>
           <p className="text-sm text-neutral-500">Track ordering lifecycle from draft through receipt.</p>
         </div>
-        {canPurchase ? (
-          <Button as={Link} to="/purchasing/purchase-orders/new" variant="primary">
-            New purchase order
-          </Button>
-        ) : (
-          <Button variant="primary" disabled>
-            New purchase order
-          </Button>
-        )}
+        <Button as={Link} to="/purchasing/purchase-orders/new" variant="primary">
+          New purchase order
+        </Button>
       </div>
 
       <Card className="space-y-3" title="Filters">

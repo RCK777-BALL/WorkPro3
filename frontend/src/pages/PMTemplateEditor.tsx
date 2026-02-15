@@ -10,9 +10,7 @@ import Button from "@/components/common/Button";
 import Card from "@/components/common/Card";
 import Input from "@/components/common/Input";
 import TextArea from "@/components/common/TextArea";
-import { useToast } from "@/context/ToastContext";
 import { useCreatePmTemplate, usePmTemplate, useUpdatePmTemplate } from "@/features/pm/hooks";
-import { getErrorMessage } from "@/lib/api";
 import type { PMTemplateUpsertInput } from "@/types";
 
 const emptyTemplate: PMTemplateUpsertInput = {
@@ -71,7 +69,6 @@ const TaskList = ({
 export default function PMTemplateEditor() {
   const { templateId } = useParams();
   const navigate = useNavigate();
-  const { addToast } = useToast();
   const isEditing = Boolean(templateId && templateId !== "new");
 
   const templateQuery = usePmTemplate(isEditing ? templateId : undefined);
@@ -79,7 +76,6 @@ export default function PMTemplateEditor() {
   const updateMutation = useUpdatePmTemplate();
 
   const [form, setForm] = React.useState<PMTemplateUpsertInput>(emptyTemplate);
-  const [submitError, setSubmitError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (templateQuery.data && isEditing) {
@@ -99,33 +95,20 @@ export default function PMTemplateEditor() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setSubmitError(null);
     const payload: PMTemplateUpsertInput = {
       ...form,
       tasks: (form.tasks ?? []).map((task) => task.trim()).filter(Boolean),
       estimatedMinutes: form.estimatedMinutes ? Number(form.estimatedMinutes) : undefined,
     };
 
-    if (!payload.name || !payload.category) {
-      addToast("Name and category are required.", "error");
-      return;
-    }
+    if (!payload.name || !payload.category) return;
 
-    try {
-      if (isEditing && templateId) {
-        await updateMutation.mutateAsync({ templateId, payload });
-        addToast("PM template updated.", "success");
-      } else {
-        await createMutation.mutateAsync(payload);
-        addToast("PM template created.", "success");
-      }
-      navigate("/pm/templates");
-    } catch (error) {
-      const message = getErrorMessage(error);
-      setSubmitError(message);
-      addToast(message || "Unable to save PM template. Please try again.", "error");
-      return;
+    if (isEditing && templateId) {
+      await updateMutation.mutateAsync({ templateId, payload });
+    } else {
+      await createMutation.mutateAsync(payload);
     }
+    navigate("/pm/templates");
   };
 
   if (isEditing && templateQuery.isLoading) {
@@ -199,16 +182,11 @@ export default function PMTemplateEditor() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button
-              type="submit"
-              loading={createMutation.isLoading || updateMutation.isLoading}
-              disabled={!form.name.trim() || !form.category.trim()}
-            >
+            <Button type="submit" loading={createMutation.isLoading || updateMutation.isLoading}>
               {isEditing ? "Save changes" : "Create template"}
             </Button>
             <Button type="button" variant="ghost" onClick={() => navigate("/pm/templates")}>Cancel</Button>
           </div>
-          {submitError ? <p className="text-sm text-error-500">{submitError}</p> : null}
         </form>
       </Card>
     </div>

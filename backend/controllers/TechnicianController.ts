@@ -32,19 +32,18 @@ const toObjectId = (value: Types.ObjectId | string): Types.ObjectId =>
 const toMaybeString = (value: unknown): string | undefined => {
   if (!value) return undefined;
   if (typeof value === 'string') return value;
-  if (typeof value === 'object') {
-    if (value instanceof Types.ObjectId) return value.toString();
-  }
+  if (value instanceof Types.ObjectId) return value.toString();
   return undefined;
 };
 
 const resolveUserObjectId = (
   req: Pick<AuthedRequest, 'user'>,
 ): Types.ObjectId | undefined => {
-  const raw = req.user?._id ?? req.user?.id;
+  const raw: unknown = req.user?._id ?? req.user?.id;
   if (!raw) return undefined;
-  if (typeof raw === 'string') return toObjectId(raw);
-  if (raw && typeof raw === 'object' && Types.ObjectId.isValid(raw)) return toObjectId(raw as Types.ObjectId);
+  if (typeof raw === 'string' || (typeof raw === 'object' && raw instanceof Types.ObjectId)) {
+    return toObjectId(raw);
+  }
   return undefined;
 };
 
@@ -489,3 +488,5 @@ export const uploadTechnicianAttachments: AuthedRequestHandler<{ id: string }> =
     next(err);
   }
 };
+
+

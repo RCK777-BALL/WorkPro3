@@ -6,6 +6,7 @@ import type { RequestHandler } from 'express';
 import { Types } from 'mongoose';
 
 import Site from '../../models/Site';
+import Plant from '../../models/Plant';
 import logger from '../../utils/logger';
 
 const toOptionalString = (value: unknown): string | undefined => {
@@ -35,20 +36,6 @@ export interface TenantAuthorizationOptions {
   requireSite?: boolean;
 }
 
-const resolveFallbackSiteId = async (tenantId: string): Promise<string | undefined> => {
-  const existing = await Site.findOne({ tenantId }).select('_id name').lean();
-  if (existing?._id) {
-    return existing._id.toString();
-  }
-  try {
-    const created = await Site.create({ tenantId, name: 'Primary Site' });
-    return created._id.toString();
-  } catch (error) {
-    logger.warn('authorizeTenantSite: unable to create fallback site', { error, tenantId });
-    return undefined;
-  }
-};
-
 const authorizeTenantSite = (
   options: TenantAuthorizationOptions = {},
 ): RequestHandler =>
@@ -76,38 +63,29 @@ const authorizeTenantSite = (
 
     const requestedSiteId =
       resolveRequestValue(req, 'siteId') ?? resolveRequestValue(req, 'plantId');
-    if (requireSite && requestedSiteId && siteId && requestedSiteId !== siteId) {
+    if (requestedSiteId && siteId && requestedSiteId !== siteId) {
       res.status(403).json({ message: 'Cross-site access denied' });
       return;
     }
 
-    if (requireSite && tenantId && siteId) {
+    if (tenantId && siteId) {
       if (!Types.ObjectId.isValid(siteId)) {
-        const fallbackSiteId = await resolveFallbackSiteId(tenantId);
-        if (fallbackSiteId) {
-          req.siteId = fallbackSiteId;
-          req.plantId = fallbackSiteId;
-        } else {
-          res.status(400).json({ message: 'Invalid site ID' });
+        res.status(400).json({ message: 'Invalid site ID' });
+        return;
+      }
+      try {
+        const [siteExists, plantExists] = await Promise.all([
+          Site.exists({ _id: siteId, tenantId }),
+          Plant.exists({ _id: siteId, tenantId }),
+        ]);
+        if (!siteExists && !plantExists) {
+          res.status(403).json({ message: 'Site does not belong to tenant' });
           return;
         }
-      } else {
-        try {
-          const siteExists = await Site.exists({ _id: siteId, tenantId });
-          if (!siteExists) {
-            const fallbackSiteId = await resolveFallbackSiteId(tenantId);
-            if (!fallbackSiteId) {
-              res.status(403).json({ message: 'Site does not belong to tenant' });
-              return;
-            }
-            req.siteId = fallbackSiteId;
-            req.plantId = fallbackSiteId;
-          }
-        } catch (error) {
-          logger.warn('authorizeTenantSite: site lookup failed', { error, siteId, tenantId });
-          res.status(500).json({ message: 'Unable to validate site scope' });
-          return;
-        }
+      } catch (error) {
+        logger.warn('authorizeTenantSite: site lookup failed', { error, siteId, tenantId });
+        res.status(500).json({ message: 'Unable to validate site scope' });
+        return;
       }
     }
 

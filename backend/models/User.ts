@@ -36,10 +36,6 @@ export interface UserDocument extends Document {
   mfaSecret?: string;
   active: boolean;
   tokenVersion: number;
-  failedLoginCount?: number;
-  lastFailedLoginAt?: Date;
-  lockoutUntil?: Date;
-  lastLoginAt?: Date;
   comparePassword(candidate: string): Promise<boolean>;
 }
 
@@ -95,10 +91,6 @@ const userSchema = new Schema<UserDocument>(
     mfaSecret: { type: String },
     active: { type: Boolean, default: true, index: true },
     tokenVersion: { type: Number, default: 0 },
-    failedLoginCount: { type: Number, default: 0 },
-    lastFailedLoginAt: { type: Date },
-    lockoutUntil: { type: Date, index: true },
-    lastLoginAt: { type: Date },
   },
   { timestamps: true }
 );

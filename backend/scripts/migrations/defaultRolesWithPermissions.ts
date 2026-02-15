@@ -116,7 +116,7 @@ async function backfillAssignments() {
   }
 }
 
-export async function run() {
+async function run() {
   await mongoose.connect(MONGO_URI);
   logger.info('Connected to MongoDB for default role migration');
 
@@ -130,10 +130,8 @@ export async function run() {
   logger.info('Migration complete');
 }
 
-if (require.main === module) {
-  run().catch((err) => {
-    logger.error(err);
-    process.exit(1);
-  });
-}
-
+run().catch((error) => {
+  logger.error('Failed to run defaultRolesWithPermissions migration', error);
+  void mongoose.disconnect();
+  process.exit(1);
+});

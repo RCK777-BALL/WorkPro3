@@ -11,7 +11,6 @@ import {
 } from "./http";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
 import { unwrapApiPayload, type ApiPayload } from "@/utils/apiPayload";
-import { API_URL } from "@/config/env";
 
 const DEFAULT_API_BASE_URL = "http://localhost:5010/api";
 
@@ -34,7 +33,7 @@ const resolveBaseUrl = (value?: string) => {
   return `${normalized}/api`;
 };
 
-const baseURL = resolveBaseUrl(API_URL);
+const baseURL = resolveBaseUrl(import.meta.env.VITE_API_URL ?? import.meta.env.VITE_API_BASE_URL);
 
 const clearAuthStorage = () => {
   [TOKEN_KEY, TENANT_KEY, SITE_KEY, FALLBACK_TOKEN_KEY, USER_STORAGE_KEY].forEach((key) => {
@@ -51,35 +50,6 @@ export const api = axios.create({
   baseURL,
   withCredentials: true,
 });
-
-const refreshClient = axios.create({
-  baseURL,
-  withCredentials: true,
-});
-
-let refreshPromise: Promise<string | null> | null = null;
-
-const attemptRefresh = async (): Promise<string | null> => {
-  if (refreshPromise) return refreshPromise;
-  refreshPromise = refreshClient
-    .post("/auth/refresh")
-    .then((res) => {
-      const token =
-        (res.data as { data?: { token?: string } })?.data?.token ??
-        (res.data as { token?: string })?.token ??
-        null;
-      if (token) {
-        safeLocalStorage.setItem(TOKEN_KEY, token);
-        safeLocalStorage.setItem(FALLBACK_TOKEN_KEY, token);
-      }
-      return token;
-    })
-    .catch(() => null)
-    .finally(() => {
-      refreshPromise = null;
-    });
-  return refreshPromise;
-};
 
 api.interceptors.request.use((config) => {
   if (config.baseURL && typeof config.url === "string" && !/^https?:\/\//i.test(config.url)) {
@@ -122,28 +92,8 @@ api.interceptors.response.use(
     typedResponse.data = unwrapApiPayload(response.data);
     return typedResponse;
   },
-  async (error) => {
-    const status = error.response?.status;
-    const originalRequest = error.config as (typeof error.config & { _retry?: boolean }) | undefined;
-    const requestUrl = typeof originalRequest?.url === "string" ? originalRequest.url : "";
-    const isAuthCall = requestUrl.includes("/auth/login") || requestUrl.includes("/auth/refresh");
-
-    if (status === 401 && originalRequest && !originalRequest._retry && !isAuthCall) {
-      originalRequest._retry = true;
-      const token = await attemptRefresh();
-      if (token) {
-        originalRequest.headers = {
-          ...(originalRequest.headers ?? {}),
-          Authorization: `Bearer ${token}`,
-        };
-        return api(originalRequest);
-      }
-      clearAuthStorage();
-      triggerUnauthorized();
-      return Promise.reject(error);
-    }
-
-    if (status === 401) {
+  (error) => {
+    if (error.response?.status === 401) {
       clearAuthStorage();
       triggerUnauthorized();
     }

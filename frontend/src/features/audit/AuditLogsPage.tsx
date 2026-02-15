@@ -166,8 +166,8 @@ export default function AuditLogsPage() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-black p-4 shadow-lg shadow-black/40">
-        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
+      <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4 shadow-lg shadow-slate-900/40">
+        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-200">
           <Filter className="h-4 w-4" /> Filters
         </div>
         <form
@@ -178,80 +178,80 @@ export default function AuditLogsPage() {
           }}
         >
           <div className="grid gap-4 md:grid-cols-3">
-            <label className="flex flex-col gap-1 text-sm text-white/80">
+            <label className="flex flex-col gap-1 text-sm text-slate-300">
               Entity
               <select
-                className="rounded-xl border border-white/20 bg-black px-3 py-2 text-white focus:border-white/40 focus:outline-none"
+                className="rounded-xl border border-slate-700 bg-transparent px-3 py-2"
                 value={draftFilters.entityType ?? ''}
                 onChange={(event) => handleInput('entityType', event.target.value)}
               >
-                <option value="" className="bg-black text-white">All entities</option>
+                <option value="">All entities</option>
                 {ENTITY_OPTIONS.map((option) => (
-                  <option key={option} value={option} className="bg-black text-white">
+                  <option key={option} value={option}>
                     {option}
                   </option>
                 ))}
               </select>
             </label>
-            <label className="flex flex-col gap-1 text-sm text-white/80">
+            <label className="flex flex-col gap-1 text-sm text-slate-300">
               Action
               <select
-                className="rounded-xl border border-white/20 bg-black px-3 py-2 text-white focus:border-white/40 focus:outline-none"
+                className="rounded-xl border border-slate-700 bg-transparent px-3 py-2"
                 value={draftFilters.action ?? ''}
                 onChange={(event) => handleInput('action', event.target.value)}
               >
-                <option value="" className="bg-black text-white">All actions</option>
+                <option value="">All actions</option>
                 {ACTION_OPTIONS.map((option) => (
-                  <option key={option} value={option} className="bg-black text-white">
+                  <option key={option} value={option}>
                     {option}
                   </option>
                 ))}
               </select>
             </label>
-            <label className="flex flex-col gap-1 text-sm text-white/80">
+            <label className="flex flex-col gap-1 text-sm text-slate-300">
               Actor
               <input
                 type="text"
                 placeholder="Name or email"
-                className="rounded-xl border border-white/20 bg-black px-3 py-2 text-white placeholder:text-white/40 focus:border-white/40 focus:outline-none"
+                className="rounded-xl border border-slate-700 bg-transparent px-3 py-2"
                 value={draftFilters.actor ?? ''}
                 onChange={(event) => handleInput('actor', event.target.value)}
               />
             </label>
-            <label className="flex flex-col gap-1 text-sm text-white/80">
+            <label className="flex flex-col gap-1 text-sm text-slate-300">
               Site
               <input
                 type="text"
                 placeholder="Optional site filter"
-                className="rounded-xl border border-white/20 bg-black px-3 py-2 text-white placeholder:text-white/40 focus:border-white/40 focus:outline-none"
+                className="rounded-xl border border-slate-700 bg-transparent px-3 py-2"
                 value={draftFilters.siteId ?? ''}
                 onChange={(event) => handleInput('siteId', event.target.value)}
               />
             </label>
-            <label className="flex flex-col gap-1 text-sm text-white/80">
+            <label className="flex flex-col gap-1 text-sm text-slate-300">
               Entity ID
               <input
                 type="text"
                 placeholder="e.g. 12345"
-                className="rounded-xl border border-white/20 bg-black px-3 py-2 text-white placeholder:text-white/40 focus:border-white/40 focus:outline-none"
+                className="rounded-xl border border-slate-700 bg-transparent px-3 py-2"
                 value={draftFilters.entityId ?? ''}
                 onChange={(event) => handleInput('entityId', event.target.value)}
               />
             </label>
-            <label className="flex flex-col gap-1 text-sm text-white/80">
+            <label className="flex flex-col gap-1 text-sm text-slate-300">
               Start date
               <input
                 type="date"
-                className="rounded-xl border border-white/20 bg-black px-3 py-2 text-white focus:border-white/40 focus:outline-none"
+                className="rounded-xl border border-slate-700 bg-transparent px-3 py-2"
                 value={draftFilters.start ?? ''}
                 onChange={(event) => handleInput('start', event.target.value)}
               />
             </label>
-            <label className="flex flex-col gap-1 text-sm text-white/80">
+            <label className="flex flex-col gap-1 text-sm text-slate-300">
               End date
               <input
                 type="date"
-                className="rounded-xl border border-white/20 bg-black px-3 py-2 text-white focus:border-white/40 focus:outline-none"
+                className="rounded-xl border border-slate-700 bg-transparent px-3 py-2"
                 value={draftFilters.end ?? ''}
                 onChange={(event) => handleInput('end', event.target.value)}
               />
@@ -261,13 +261,13 @@ export default function AuditLogsPage() {
             <button
               type="button"
               onClick={handleResetFilters}
-              className="rounded-xl border border-white/20 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+              className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-slate-800"
             >
               Reset
             </button>
             <button
               type="submit"
-              className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black shadow-lg shadow-white/20 transition hover:bg-white/90"
+              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-600/30 transition hover:bg-indigo-500"
             >
               Apply
             </button>

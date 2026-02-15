@@ -3,9 +3,8 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 
 import Avatar from '@/components/common/Avatar';
 import NotificationMenu from './NotificationMenu';
@@ -15,15 +14,11 @@ import PlantSwitcher from './PlantSwitcher';
 import TenantSwitcher from './TenantSwitcher';
 import { useScopeContext } from '@/context/ScopeContext';
 import SyncStatusIndicator from '@/components/offline/SyncStatusIndicator';
-import Button from '@/components/common/Button';
-import { usePermissions } from '@/auth/usePermissions';
 
 const Header: React.FC = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const user = useAuthStore((s: AuthState) => s.user);
   const { activeTenant, activePlant, loadingTenants, loadingPlants } = useScopeContext();
-  const { can } = usePermissions();
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -74,17 +69,6 @@ const Header: React.FC = () => {
         </kbd>
       </button>
       <div className="flex flex-wrap items-center gap-3 md:ml-4 md:flex-nowrap md:gap-4">
-        {can('workOrders', 'write') && (
-          <Button
-            type="button"
-            size="sm"
-            className="w-full md:w-auto"
-            onClick={() => navigate('/work-orders?create=1')}
-            icon={<Plus className="h-4 w-4" />}
-          >
-            Create WO
-          </Button>
-        )}
         <div
           className="hidden items-center gap-2 rounded-md border border-slate-700/80 bg-slate-900/60 px-3 py-2 text-xs text-slate-200 md:flex"
           aria-live="polite"
@@ -116,3 +100,4 @@ const Header: React.FC = () => {
 };
 
 export default Header;
+

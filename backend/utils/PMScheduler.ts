@@ -2,7 +2,6 @@
 import cron from 'node-cron';
 import path from 'path';
 import logger from './logger';
-import { runWithJobLock } from './jobLock';
 
 interface StartOpts {
   cronExpr?: string; // cron string
@@ -38,22 +37,19 @@ export const startPMScheduler = (id: string, opts: StartOpts = {}) => {
 
   const task = cron.schedule(cronExpr, async () => {
     try {
-      const lockTtlMs = parseInt(process.env.PM_SCHEDULER_LOCK_TTL_MS ?? process.env.JOB_LOCK_TTL_MS ?? '600000', 10);
-      await runWithJobLock(`pm-scheduler:${id}`, lockTtlMs, async () => {
-        const taskModule = await import(resolved);
-        const fn =
-          typeof taskModule.default === 'function'
-            ? taskModule.default
-            : typeof taskModule.run === 'function'
-            ? taskModule.run
-            : null;
+      const taskModule = await import(resolved);
+      const fn =
+        typeof taskModule.default === 'function'
+          ? taskModule.default
+          : typeof taskModule.run === 'function'
+          ? taskModule.run
+          : null;
 
-        if (!fn) {
-          throw new Error('Task module missing default or named `run` function.');
-        }
+      if (!fn) {
+        throw new Error('Task module missing default or named `run` function.');
+      }
 
-        await fn();
-      });
+      await fn();
     } catch (err) {
       logger.error('Error running PM Scheduler task:', err);
     }

@@ -44,6 +44,42 @@
       "admin"
     ]
   },
+  "sites": {
+    "read": [
+      "global_admin",
+      "plant_admin",
+      "general_manager",
+      "assistant_general_manager",
+      "operations_manager",
+      "department_leader",
+      "assistant_department_leader",
+      "area_leader",
+      "team_leader",
+      "admin",
+      "team_member",
+      "technical_team_member",
+      "manager",
+      "supervisor",
+      "planner",
+      "tech",
+      "technician",
+      "viewer"
+    ],
+    "manage": [
+      "global_admin",
+      "plant_admin",
+      "general_manager",
+      "assistant_general_manager",
+      "operations_manager",
+      "department_leader",
+      "assistant_department_leader",
+      "area_leader",
+      "team_leader",
+      "manager",
+      "supervisor",
+      "admin"
+    ]
+  },
   "inventory": {
     "read": [
       "global_admin",
@@ -82,12 +118,7 @@
       "global_admin",
       "plant_admin",
       "general_manager",
-      "assistant_general_manager",
       "operations_manager",
-      "department_leader",
-      "assistant_department_leader",
-      "area_leader",
-      "team_leader",
       "manager",
       "supervisor",
       "planner",
@@ -213,57 +244,6 @@
       "general_manager",
       "assistant_general_manager",
       "operations_manager"
-    ]
-  },
-  "reports": {
-    "read": [
-      "global_admin",
-      "plant_admin",
-      "general_manager",
-      "assistant_general_manager",
-      "operations_manager",
-      "department_leader",
-      "assistant_department_leader",
-      "area_leader",
-      "team_leader",
-      "manager",
-      "supervisor",
-      "planner",
-      "tech",
-      "technician",
-      "team_member",
-      "technical_team_member",
-      "admin"
-    ],
-    "build": [
-      "global_admin",
-      "plant_admin",
-      "general_manager",
-      "assistant_general_manager",
-      "operations_manager",
-      "department_leader",
-      "assistant_department_leader",
-      "area_leader",
-      "team_leader",
-      "manager",
-      "supervisor",
-      "planner",
-      "admin"
-    ],
-    "export": [
-      "global_admin",
-      "plant_admin",
-      "general_manager",
-      "assistant_general_manager",
-      "operations_manager",
-      "department_leader",
-      "assistant_department_leader",
-      "area_leader",
-      "team_leader",
-      "manager",
-      "supervisor",
-      "planner",
-      "admin"
     ]
   },
   "audit": {

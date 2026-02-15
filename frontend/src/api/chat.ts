@@ -11,9 +11,6 @@ export const fetchChannelPreviews = () =>
 export const fetchDirectPreviews = () =>
   http.get<ChatPreview[]>('/chat/direct').then((res) => res.data);
 
-export const createDirectConversation = (userId: string) =>
-  http.post<{ id?: string; _id?: string }>('/chat/direct', { userId }).then((res) => res.data);
-
 export const fetchChannelMessages = (channelId: string, query?: { q?: string; before?: string; limit?: number }) =>
   http
     .get<ChatMessage[]>(`/chat/channels/${channelId}/messages`, { params: query })

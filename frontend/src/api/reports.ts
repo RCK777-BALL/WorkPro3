@@ -24,19 +24,8 @@ export const exportCustomReport = async (
 };
 
 export const listReportTemplates = async (): Promise<ReportTemplate[]> => {
-  try {
-    const res = await http.get<ReportTemplate[]>('/custom-reports/templates');
-    return res.data;
-  } catch (error) {
-    const status =
-      error && typeof error === 'object' && 'response' in error
-        ? (error as { response?: { status?: number } }).response?.status
-        : undefined;
-    if (status === 403) {
-      return [];
-    }
-    throw error;
-  }
+  const res = await http.get<ReportTemplate[]>('/custom-reports/templates');
+  return res.data;
 };
 
 export const saveReportTemplate = async (payload: ReportTemplateInput): Promise<ReportTemplate> => {

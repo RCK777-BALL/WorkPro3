@@ -118,7 +118,7 @@ type ImportRowMap = {
 
 const STATUS_VALUES = new Set(['Active', 'Offline', 'In Repair']);
 const CRITICALITY_VALUES = new Set(['high', 'medium', 'low']);
-const TYPE_VALUES = new Set(['Electrical', 'Mechanical', 'Tooling', 'Interface', 'Welding']);
+const TYPE_VALUES = new Set(['Electrical', 'Mechanical', 'Tooling', 'Interface']);
 const PM_PRIORITY_VALUES = new Set(['low', 'medium', 'high']);
 const WORK_ORDER_STATUS_VALUES = new Set(['Open', 'In Progress', 'Completed', 'Cancelled']);
 const WORK_ORDER_PRIORITY_VALUES = new Set(['Low', 'Medium', 'High', 'Critical']);

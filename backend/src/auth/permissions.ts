@@ -125,4 +125,4 @@ export default {
 
 export { hasPermission } from '../../services/permissionService';
 
-export type { Permission, PermissionCategory } from '../../shared/permissions';
+export type { Permission } from '../../shared/permissions';

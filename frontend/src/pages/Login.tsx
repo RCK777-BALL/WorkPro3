@@ -2,11 +2,20 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 import { useAuth } from '@/context/AuthContext';
+import type { AuthRole, AuthUser } from '@/types';
+import {
+  FALLBACK_TOKEN_KEY,
+  SITE_KEY,
+  TENANT_KEY,
+  TOKEN_KEY,
+  USER_STORAGE_KEY,
+} from '@/lib/http';
+import { safeLocalStorage } from '@/utils/safeLocalStorage';
 
 const sanitizeRedirect = (value: string | null): string => {
   if (!value || !value.startsWith('/')) {
@@ -22,12 +31,58 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login: authLogin } = useAuth();
+  const { login: authLogin, setUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const redirectTarget = useMemo(() => sanitizeRedirect(new URLSearchParams(location.search).get('redirect')), [location.search]);
   const stateQuery = `?state=${encodeURIComponent(redirectTarget)}`;
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const token = params.get('token');
+    if (!token) return;
+
+    const emailParam = params.get('email');
+    const tenantId = params.get('tenantId') || undefined;
+    const siteId = params.get('siteId') || undefined;
+    const rolesParam = params.get('roles');
+    const roles = rolesParam
+      ? (rolesParam
+          .split(',')
+          .map((role) => role.trim().toLowerCase())
+          .filter(Boolean) as AuthRole[])
+      : [];
+    const primaryRole = (roles[0] ?? 'tech') as AuthRole;
+    const userId = params.get('userId') || emailParam || 'sso-user';
+    const normalizedEmail = emailParam && emailParam.includes('@') ? emailParam : `${userId}@workspace.local`;
+    const user: AuthUser = {
+      id: userId,
+      name: normalizedEmail.split('@')[0] ?? normalizedEmail,
+      email: normalizedEmail,
+      role: primaryRole,
+      roles: roles.length > 0 ? Array.from(new Set<AuthRole>(roles)) : [primaryRole],
+      ...(tenantId ? { tenantId } : {}),
+      ...(siteId ? { siteId } : {}),
+    };
+
+    safeLocalStorage.setItem(TOKEN_KEY, token);
+    safeLocalStorage.setItem(FALLBACK_TOKEN_KEY, token);
+    if (tenantId) {
+      safeLocalStorage.setItem(TENANT_KEY, tenantId);
+    } else {
+      safeLocalStorage.removeItem(TENANT_KEY);
+    }
+    if (siteId) {
+      safeLocalStorage.setItem(SITE_KEY, siteId);
+    } else {
+      safeLocalStorage.removeItem(SITE_KEY);
+    }
+    safeLocalStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    setUser(user);
+    const redirect = sanitizeRedirect(params.get('redirect'));
+    navigate(redirect, { replace: true });
+  }, [location.search, navigate, setUser]);
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

@@ -21,7 +21,6 @@ type DecodedToken = {
   scopes?: unknown;
   client?: string;
   session?: SessionBinding;
-  tokenVersion?: number;
 };
 
 const normalizeScopes = (input: unknown): string[] => {
@@ -113,15 +112,7 @@ export const requireAuth: AuthedRequestHandler = async (req, res, next) => {
       return;
     }
 
-    if (decoded.tokenVersion !== undefined && user.tokenVersion !== undefined) {
-      if (decoded.tokenVersion !== user.tokenVersion) {
-        res.status(401).json({ message: 'Session expired' });
-        return;
-      }
-    }
-
     const plainUser = toPlainUser(user, decoded) as any;
-    const authedReq = req as AuthedRequest;
 
     const tenantId = toStringOrUndefined(req.header('x-tenant-id')) ?? toStringOrUndefined(plainUser.tenantId);
     if (!tenantId) {
@@ -142,13 +133,13 @@ export const requireAuth: AuthedRequestHandler = async (req, res, next) => {
     }
     (plainUser as { permissions?: Permission[] }).permissions = permissions;
 
-    authedReq.user = plainUser;
-    authedReq.tenantId = tenantId;
+    req.user = plainUser;
+    req.tenantId = tenantId;
     if (siteId) {
-      authedReq.siteId = siteId;
+      req.siteId = siteId;
     }
     if (permissions && permissions.length > 0) {
-      authedReq.permissions = permissions;
+      req.permissions = permissions;
     }
 
     next();

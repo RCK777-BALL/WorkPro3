@@ -38,7 +38,7 @@ const router = Router();
 
 router.use(requireAuth);
 router.use(tenantScope);
-router.use(authorizeTenantSite({ requireSite: false }));
+router.use(authorizeTenantSite());
 router.use(auditDataAccess('pm', { entityIdParams: ['templateId', 'assignmentId', 'versionId'] }));
 
 router.get('/', requirePermission('pm', 'read'), listTemplatesHandler);

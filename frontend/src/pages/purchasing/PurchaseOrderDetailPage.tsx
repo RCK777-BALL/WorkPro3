@@ -4,7 +4,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { isAxiosError } from 'axios';
 
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
@@ -12,7 +11,6 @@ import Card from '@/components/common/Card';
 import DataTable from '@/components/common/DataTable';
 import Input from '@/components/common/Input';
 import TextArea from '@/components/common/TextArea';
-import { usePermissions } from '@/auth/usePermissions';
 import { usePurchaseOrder, useUpdatePurchaseOrder, useCreatePurchaseOrder } from '@/hooks/usePurchaseOrders';
 import { useVendors } from '@/hooks/useVendors';
 import type { PurchaseOrder, PurchaseOrderInput, PurchaseOrderLineInput } from '@/api/purchasing';
@@ -56,7 +54,6 @@ const PurchaseOrderDetailPage = () => {
   const { data: purchaseOrder } = usePurchaseOrder(isNew ? undefined : poId);
   const create = useCreatePurchaseOrder();
   const update = useUpdatePurchaseOrder(poId);
-  const { can } = usePermissions();
   const [openReceive, setOpenReceive] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -80,10 +77,6 @@ const PurchaseOrderDetailPage = () => {
   }, [purchaseOrder]);
 
   const isDraft = purchaseOrder?.status === 'draft' || isNew;
-  const canPurchase = can('inventory.purchase');
-  const canEditDraftFields = canPurchase && isDraft;
-  const canEditNotes = canPurchase && (isDraft || ['sent', 'partially_received'].includes(purchaseOrder?.status ?? 'draft'));
-  const canSave = canPurchase && (isDraft || ['sent', 'partially_received'].includes(purchaseOrder?.status ?? 'draft'));
   const vendorOptions = useMemo(() => vendors ?? [], [vendors]);
 
   const orderedLines = useMemo(() => purchaseOrder?.lines ?? [], [purchaseOrder]);
@@ -103,20 +96,11 @@ const PurchaseOrderDetailPage = () => {
     }));
   };
 
-  const addLine = () =>
-    setForm((prev) => ({ ...prev, lines: [...prev.lines, { ...emptyLine, part: '' }] }));
+  const addLine = () => setForm((prev) => ({ ...prev, lines: [...prev.lines, { ...emptyLine, part: '' }] }));
 
   const handleSave = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
-    if (!canPurchase) {
-      setError(isNew ? 'You do not have permission to create purchase orders.' : 'You do not have permission to update purchase orders.');
-      return;
-    }
-    if (!canSave) {
-      setError('This purchase order cannot be edited in its current status.');
-      return;
-    }
     const hasValidLine = form.lines.some((line) => line.part && line.qtyOrdered > 0);
     if (!form.vendorId) {
       setError('Vendor is required.');
@@ -134,15 +118,6 @@ const PurchaseOrderDetailPage = () => {
       }
       await update.mutateAsync(form);
     } catch (err) {
-      if (isAxiosError(err)) {
-        const responseData = err.response?.data as { error?: string | { message?: string }; message?: string } | undefined;
-        const apiMessage =
-          typeof responseData?.error === 'string'
-            ? responseData.error
-            : responseData?.error?.message ?? responseData?.message;
-        setError(apiMessage ?? err.message);
-        return;
-      }
       setError(err instanceof Error ? err.message : 'Unable to save purchase order.');
     }
   };
@@ -173,11 +148,7 @@ const PurchaseOrderDetailPage = () => {
           )}
           {purchaseOrder &&
             ['sent', 'partially_received'].includes(purchaseOrder.status) && (
-            <Button
-              variant="outline"
-              onClick={() => setOpenReceive(true)}
-              disabled={!backordered.length || !canPurchase}
-            >
+            <Button variant="outline" onClick={() => setOpenReceive(true)} disabled={!backordered.length}>
               Receive items
             </Button>
           )}
@@ -227,7 +198,7 @@ const PurchaseOrderDetailPage = () => {
                   onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
                     setForm((prev) => ({ ...prev, vendorId: event.target.value }))
                   }
-                  disabled={!canEditDraftFields}
+                  disabled={!isDraft}
                   required
                 >
                   <option value="">Select vendor…</option>
@@ -244,7 +215,7 @@ const PurchaseOrderDetailPage = () => {
                 onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
                   setForm((prev) => ({ ...prev, poNumber: event.target.value }))
                 }
-                disabled={!canEditDraftFields}
+                disabled={!isDraft}
               />
               <Input
                 label="Expected date"
@@ -253,7 +224,7 @@ const PurchaseOrderDetailPage = () => {
                 onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
                   setForm((prev) => ({ ...prev, expectedDate: event.target.value }))
                 }
-                disabled={!canEditDraftFields}
+                disabled={!isDraft}
               />
               <TextArea
                 label="Notes"
@@ -261,14 +232,13 @@ const PurchaseOrderDetailPage = () => {
                 onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) =>
                   setForm((prev) => ({ ...prev, notes: event.target.value }))
                 }
-                disabled={!canEditNotes}
               />
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-neutral-800">Line items</p>
-                {canEditDraftFields && (
+                {isDraft && (
                   <Button size="sm" variant="outline" onClick={addLine}>
                     Add line
                   </Button>
@@ -283,7 +253,7 @@ const PurchaseOrderDetailPage = () => {
                       onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
                         handleLineChange(index, { part: event.target.value })
                       }
-                      disabled={!canEditDraftFields}
+                      disabled={!isDraft}
                     />
                     <Input
                       label="Quantity ordered"
@@ -292,7 +262,7 @@ const PurchaseOrderDetailPage = () => {
                       onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
                         handleLineChange(index, { qtyOrdered: Number(event.target.value) })
                       }
-                      disabled={!canEditDraftFields}
+                      disabled={!isDraft}
                     />
                     <Input
                       label="Unit cost"
@@ -301,7 +271,7 @@ const PurchaseOrderDetailPage = () => {
                       onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
                         handleLineChange(index, { price: Number(event.target.value) })
                       }
-                      disabled={!canEditDraftFields}
+                      disabled={!isDraft}
                     />
                     <Input
                       label="Received"
@@ -317,13 +287,10 @@ const PurchaseOrderDetailPage = () => {
               <Button variant="outline" as={Link} to="/purchasing/purchase-orders">
                 Cancel
               </Button>
-              <Button type="submit" disabled={!canSave} loading={create.isLoading || update.isLoading}>
+              <Button type="submit" disabled={!isDraft} loading={create.isLoading || update.isLoading}>
                 {isNew ? 'Create PO' : 'Save changes'}
               </Button>
             </div>
-            {!canPurchase && (
-              <p className="text-sm text-neutral-500">You do not have permission to create or update purchase orders.</p>
-            )}
             {error && <p className="text-sm text-error-600">{error}</p>}
           </form>
         </Card>

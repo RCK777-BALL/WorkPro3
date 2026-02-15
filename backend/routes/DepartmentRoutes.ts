@@ -813,7 +813,6 @@ const createLineForDepartment: AuthedRequestHandler<
       notes: typeof req.body?.notes === 'string' ? req.body.notes : undefined,
       departmentId: department._id,
       tenantId,
-      plant: department.plant ?? req.plantId ?? req.siteId,
       siteId: department.siteId ?? req.siteId,
     });
 
@@ -1008,8 +1007,7 @@ const createStationForLine: AuthedRequestHandler<
       tenantId,
       departmentId: department._id,
       lineId: line._id,
-      plant: line.plant ?? department.plant ?? req.plantId ?? req.siteId,
-      siteId: line.siteId ?? department.siteId ?? req.siteId,
+      siteId: department.siteId ?? req.siteId,
     });
 
     await Line.updateOne(

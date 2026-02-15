@@ -23,7 +23,7 @@ const FailureInsightCard = ({ title = 'AI insights', insight, loading, error, on
       <div className="flex items-center justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{title}</p>
-          <p className="text-xs text-neutral-500">AI insights based on recent maintenance signals.</p>
+          <p className="text-xs text-neutral-500">Predictive stub using recent downtime and meter data.</p>
         </div>
         {onRetry && (
           <button

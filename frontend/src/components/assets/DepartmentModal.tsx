@@ -41,33 +41,6 @@ const defaultDepartment: DepartmentHierarchy = {
   lines: [],
 };
 
-const buildId = () => `${Date.now()}-${Math.random()}`;
-
-const buildLine = (departmentId: string) => ({
-  id: buildId(),
-  name: '',
-  department: departmentId,
-  stations: [],
-});
-
-const buildStation = (lineId: string, name: string) => ({
-  id: buildId(),
-  name,
-  line: lineId,
-  assets: [],
-});
-
-const buildAsset = (lineId: string, stationId: string): Asset => ({
-  id: buildId(),
-  name: '',
-  tenantId: 'temp-tenant',
-  line: lineId,
-  station: stationId,
-  type: 'Electrical',
-  location: '',
-  status: 'Active',
-});
-
 
 interface Props {
   isOpen: boolean;
@@ -96,7 +69,13 @@ const DepartmentModal: React.FC<Props> = ({
   }, [department]);
 
   const addLine = () => {
-    setFormData({ ...formData, lines: [...formData.lines, buildLine(formData.id)] });
+    const newLine = {
+      id: `${Date.now()}-${Math.random()}`,
+      name: '',
+      department: formData.id,
+      stations: [],
+    };
+    setFormData({ ...formData, lines: [...formData.lines, newLine] });
   };
 
   const removeLine = (lineIndex: number) => {
@@ -146,7 +125,12 @@ const DepartmentModal: React.FC<Props> = ({
       existingNames.add(candidateName.toLowerCase());
       nextNumber = candidateNumber + 1;
 
-      return buildStation(line.id, candidateName);
+      return {
+        id: `${Date.now()}-${Math.random()}`,
+        name: candidateName,
+        line: line.id,
+        assets: [],
+      };
     });
 
     const lines = [...formData.lines];
@@ -169,7 +153,16 @@ const DepartmentModal: React.FC<Props> = ({
   const addAsset = (lineIndex: number, stationIndex: number) => {
     const lines = [...formData.lines];
     const station = lines[lineIndex].stations[stationIndex];
-    const newAsset = buildAsset(lines[lineIndex].id, station.id);
+    const newAsset: Asset = {
+      id: `${Date.now()}-${Math.random()}`,
+      name: '',
+      tenantId: 'temp-tenant',
+      line: lines[lineIndex].id,
+      station: station.id,
+      type: 'Electrical',
+      location: '',
+      status: 'Active',
+    };
     station.assets = [...station.assets, newAsset];
     lines[lineIndex].stations[stationIndex] = station;
     setFormData({ ...formData, lines });
@@ -201,15 +194,7 @@ const DepartmentModal: React.FC<Props> = ({
     e.preventDefault();
 
     for (const line of formData.lines) {
-      if (!line.name || line.name.trim() === '') {
-        addToast('Line name is required', 'error');
-        return;
-      }
       for (const station of line.stations) {
-        if (!station.name || station.name.trim() === '') {
-          addToast('Station name is required', 'error');
-          return;
-        }
         for (const asset of station.assets) {
           if (!asset.name || asset.name.trim() === '') {
             addToast('Asset name is required', 'error');
@@ -358,15 +343,14 @@ const DepartmentModal: React.FC<Props> = ({
                               <select
                                 className="px-3 py-1.5 border border-neutral-300 rounded-md"
                                 value={a.type}
-                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                                  updateAsset(li, si, ai, { type: e.target.value as Asset['type'] })
-                                }
+                              //onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateAsset(li, si, ai, { type: e.target.value})}
+
+
                               >
                                 <option value="Electrical">Electrical</option>
                                 <option value="Mechanical">Mechanical</option>
                                 <option value="Tooling">Tooling</option>
                                 <option value="Interface">Interface</option>
-                                <option value="Welding">Welding</option>
                               </select>
                               <input
                                 type="text"
@@ -380,9 +364,9 @@ const DepartmentModal: React.FC<Props> = ({
                               <select
                                 className="px-3 py-1.5 border border-neutral-300 rounded-md"
                                 value={a.status}
-                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                                  updateAsset(li, si, ai, { status: e.target.value as Asset['status'] })
-                                }
+                              //onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateAsset(li, si, ai, { status: e.target.value})}
+
+
                               >
                                 <option value="Active">Active</option>
                                 <option value="Offline">Offline</option>
@@ -412,7 +396,7 @@ const DepartmentModal: React.FC<Props> = ({
 
           <div className="flex justify-end pt-4 space-x-3 border-t border-neutral-200">
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              Cancel1
             </Button>
             <Button type="submit" variant="primary" >
               {department ? 'Update' : 'Create'}

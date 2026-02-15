@@ -216,80 +216,80 @@ export default function AnalyticsDashboardV2() {
         </div>
       </header>
 
-      <Card className="space-y-4 border border-white/10 bg-black text-white">
+      <Card className="space-y-4">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-white/80">Range</label>
+            <label className="text-xs font-semibold text-neutral-600">Range</label>
             <select
-              className="w-full rounded-md border border-white/20 bg-black px-3 py-2 text-sm text-white focus:border-white/40 focus:outline-none"
+              className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm"
               value={rangeDays}
               onChange={(event) => setRangeDays(Number(event.target.value))}
             >
               {RANGE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value} className="bg-black text-white">
+                <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
             </select>
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-white/80">Granularity</label>
+            <label className="text-xs font-semibold text-neutral-600">Granularity</label>
             <select
-              className="w-full rounded-md border border-white/20 bg-black px-3 py-2 text-sm text-white focus:border-white/40 focus:outline-none"
+              className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm"
               value={granularity}
               onChange={(event) => setGranularity(event.target.value as 'day' | 'month')}
             >
-              <option value="day" className="bg-black text-white">Daily</option>
-              <option value="month" className="bg-black text-white">Monthly</option>
+              <option value="day">Daily</option>
+              <option value="month">Monthly</option>
             </select>
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-white/80">Site</label>
+            <label className="text-xs font-semibold text-neutral-600">Site</label>
             <select
-              className="w-full rounded-md border border-white/20 bg-black px-3 py-2 text-sm text-white focus:border-white/40 focus:outline-none"
+              className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm"
               value={siteId}
               onChange={(event) => setSiteId(event.target.value)}
             >
-              <option value="all" className="bg-black text-white">All sites</option>
+              <option value="all">All sites</option>
               {filterOptions.sites.map((site) => (
-                <option key={site.id} value={site.id} className="bg-black text-white">
+                <option key={site.id} value={site.id}>
                   {site.name ?? site.id}
                 </option>
               ))}
             </select>
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-white/80">Line</label>
+            <label className="text-xs font-semibold text-neutral-600">Line</label>
             <select
-              className="w-full rounded-md border border-white/20 bg-black px-3 py-2 text-sm text-white focus:border-white/40 focus:outline-none"
+              className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm"
               value={lineId}
               onChange={(event) => setLineId(event.target.value)}
             >
-              <option value="all" className="bg-black text-white">All lines</option>
+              <option value="all">All lines</option>
               {filterOptions.lines.map((line) => (
-                <option key={line.id} value={line.id} className="bg-black text-white">
+                <option key={line.id} value={line.id}>
                   {line.name ?? line.id}
                 </option>
               ))}
             </select>
           </div>
           <div className="space-y-2 md:col-span-2 lg:col-span-4 xl:col-span-2">
-            <label className="text-xs font-semibold text-white/80">Asset</label>
+            <label className="text-xs font-semibold text-neutral-600">Asset</label>
             <select
-              className="w-full rounded-md border border-white/20 bg-black px-3 py-2 text-sm text-white focus:border-white/40 focus:outline-none"
+              className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm"
               value={assetId}
               onChange={(event) => setAssetId(event.target.value)}
             >
-              <option value="all" className="bg-black text-white">All assets</option>
+              <option value="all">All assets</option>
               {filterOptions.assets.map((asset) => (
-                <option key={asset.id} value={asset.id} className="bg-black text-white">
+                <option key={asset.id} value={asset.id}>
                   {asset.name ?? asset.id}
                 </option>
               ))}
             </select>
           </div>
         </div>
-        {error ? <p className="text-sm text-red-300">{error}</p> : null}
+        {error ? <p className="text-sm text-red-600">{error}</p> : null}
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

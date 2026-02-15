@@ -157,7 +157,7 @@ export default function InventoryParts() {
         <div>
           <p className="text-sm text-neutral-500">Inventory</p>
           <h1 className="text-2xl font-semibold text-neutral-900">Parts library</h1>
-          <p className="text-sm text-neutral-400">Search, filter, and manage stock across all stores.</p>
+          <p className="text-sm text-neutral-600">Search, filter, and manage stock across all stores.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button icon={<Package className="h-4 w-4" />} onClick={() => navigate("/inventory/items")}>View stock</Button>
@@ -184,13 +184,13 @@ export default function InventoryParts() {
                   setPage(1);
                 }}
                 placeholder="Search parts, vendors, tags"
-                className="min-w-[220px] rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 pl-8 text-sm text-neutral-100 placeholder:text-neutral-500"
+                className="min-w-[220px] rounded-md border border-neutral-300 px-3 py-2 pl-8 text-sm"
               />
             </div>
-            <label className="text-sm text-neutral-300">
+            <label className="text-sm text-neutral-700">
               <span className="mr-2 font-medium">Tag</span>
               <select
-                className="rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm text-neutral-100"
+                className="rounded-md border border-neutral-300 px-2 py-1 text-sm"
                 value={tagFilter}
                 onChange={(event) => {
                   setTagFilter(event.target.value);
@@ -207,36 +207,36 @@ export default function InventoryParts() {
         </Card.Header>
         <Card.Content>
           {partsQuery.isLoading ? (
-            <p className="text-sm text-neutral-400">Loading parts…</p>
+            <p className="text-sm text-neutral-500">Loading parts…</p>
           ) : partsQuery.error ? (
             <p className="text-sm text-error-600">Unable to load parts.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-neutral-800 text-sm">
-                <thead className="bg-neutral-900">
+              <table className="min-w-full divide-y divide-neutral-200 text-sm">
+                <thead className="bg-neutral-50">
                   <tr>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-200">Part</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-200">Number</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-200">Stock</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-200">Reorder point</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-200">Status</th>
-                    <th className="px-3 py-2 text-left font-medium text-neutral-200">Actions</th>
+                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Part</th>
+                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Number</th>
+                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Stock</th>
+                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Reorder point</th>
+                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Status</th>
+                    <th className="px-3 py-2 text-left font-medium text-neutral-700">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-neutral-800">
+                <tbody className="divide-y divide-neutral-100">
                   {filteredParts.map((part) => {
                     const severity = part.alertState?.severity ?? "ok";
                     const badgeColor = severity === "critical" ? "error" : severity === "warning" ? "warning" : "success";
                     return (
-                      <tr key={part.id} className="hover:bg-neutral-900/60">
-                        <td className="px-3 py-2 text-neutral-100">
+                      <tr key={part.id} className="hover:bg-neutral-50">
+                        <td className="px-3 py-2 text-neutral-900">
                           <div className="font-semibold">{part.name}</div>
-                          <p className="text-xs text-neutral-400">Vendor: {part.vendor?.name ?? "—"}</p>
+                          <p className="text-xs text-neutral-500">Vendor: {part.vendor?.name ?? "—"}</p>
                         </td>
-                        <td className="px-3 py-2 text-neutral-200">{part.partNo ?? part.partNumber ?? "—"}</td>
-                        <td className="px-3 py-2 text-neutral-200">{part.quantity}</td>
-                        <td className="px-3 py-2 text-neutral-200">{part.reorderPoint}</td>
-                        <td className="px-3 py-2 text-neutral-200">
+                        <td className="px-3 py-2 text-neutral-700">{part.partNo ?? part.partNumber ?? "—"}</td>
+                        <td className="px-3 py-2 text-neutral-700">{part.quantity}</td>
+                        <td className="px-3 py-2 text-neutral-700">{part.reorderPoint}</td>
+                        <td className="px-3 py-2 text-neutral-700">
                           <div className="flex flex-wrap gap-2">
                             <Badge text={severity} color={badgeColor} />
                             {part.alertState?.needsReorder && (
@@ -244,7 +244,7 @@ export default function InventoryParts() {
                             )}
                           </div>
                         </td>
-                        <td className="px-3 py-2 text-neutral-200">
+                        <td className="px-3 py-2 text-neutral-700">
                           <div className="flex flex-wrap gap-2">
                             <Button size="sm" variant="outline" onClick={() => navigate(`/inventory/parts/${part.id}`)}>
                               View
@@ -264,7 +264,7 @@ export default function InventoryParts() {
                   })}
                   {!filteredParts.length && (
                     <tr>
-                      <td className="px-3 py-6 text-center text-neutral-400" colSpan={6}>
+                      <td className="px-3 py-6 text-center text-neutral-500" colSpan={6}>
                         No parts match the selected filters.
                       </td>
                     </tr>
@@ -274,7 +274,7 @@ export default function InventoryParts() {
             </div>
           )}
         </Card.Content>
-        <Card.Footer className="flex items-center justify-between text-sm text-neutral-300">
+        <Card.Footer className="flex items-center justify-between text-sm text-neutral-700">
           <div>
             Page {page} of {totalPages}
           </div>
@@ -306,7 +306,7 @@ export default function InventoryParts() {
             required
             onBlur={(event) => event.target.value && handleSave({ name: event.target.value })}
           />
-          <div className="flex items-center gap-2 text-sm text-neutral-400">
+          <div className="flex items-center gap-2 text-sm text-neutral-600">
             <CheckCircle className="h-4 w-4 text-success-600" />
             <span>Save a name to create the record, then enrich details on the detail page.</span>
           </div>

@@ -3,7 +3,7 @@
  */
 
 import type { AuthedRequest, AuthedRequestHandler } from '../../../types/http';
-import { dismissOnboardingReminder, getOnboardingState, resetOnboardingState } from './service';
+import { dismissOnboardingReminder, getOnboardingState, restartOnboardingState } from './service';
 
 export const getOnboardingStateHandler: AuthedRequestHandler = async (req, res, next) => {
   try {
@@ -23,9 +23,9 @@ export const dismissOnboardingReminderHandler: AuthedRequestHandler = async (req
   }
 };
 
-export const resetOnboardingStateHandler: AuthedRequestHandler = async (req, res, next) => {
+export const restartOnboardingStateHandler: AuthedRequestHandler = async (req, res, next) => {
   try {
-    const data = await resetOnboardingState(req.tenantId!);
+    const data = await restartOnboardingState(req.tenantId!);
     res.json({ success: true, data });
   } catch (err) {
     next(err);

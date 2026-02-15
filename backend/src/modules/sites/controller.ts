@@ -28,31 +28,13 @@ export const listSitesHandler: AuthedRequestHandler = async (req, res, next) => 
 
 export const createSiteHandler: AuthedRequestHandler = async (req, res, next) => {
   if (!ensureTenant(req, res)) return;
-  const body = req.body as {
-    name?: string;
-    code?: string;
-    description?: string;
-    timezone?: string;
-    country?: string;
-    region?: string;
-  };
-  if (!body.name || typeof body.name !== 'string' || !body.name.trim()) {
+  const body = req.body as { name?: string; description?: string };
+  if (!body.name || typeof body.name !== 'string') {
     fail(res, 'name is required', 400);
     return;
   }
-  const normalize = (value?: string) => (typeof value === 'string' ? value.trim() || undefined : undefined);
   try {
-    const data = await createSite(
-      { tenantId: req.tenantId! },
-      {
-        name: body.name.trim(),
-        code: normalize(body.code),
-        description: normalize(body.description),
-        timezone: normalize(body.timezone),
-        country: normalize(body.country),
-        region: normalize(body.region),
-      },
-    );
+    const data = await createSite({ tenantId: req.tenantId! }, { name: body.name, description: body.description });
     res.status(201).json({ success: true, data });
   } catch (err) {
     next(err);

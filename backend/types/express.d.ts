@@ -36,6 +36,7 @@ declare global {
       vendorId?: string;
       permissions?: Permission[];
       thirdParty?: ThirdPartyAuth;
+      requestId?: string;
     }
   }
 }

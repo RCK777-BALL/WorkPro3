@@ -502,6 +502,10 @@ const workOrderSchema = new Schema<WorkOrder>(
   { timestamps: true }
 );
 
+workOrderSchema.index({ tenantId: 1, status: 1, createdAt: -1 });
+workOrderSchema.index({ tenantId: 1, assetId: 1, createdAt: -1 });
+workOrderSchema.index({ tenantId: 1, line: 1, createdAt: -1 });
+
 workOrderSchema.pre('save', function handleCosts() {
   if (
     this.isModified('laborCost') ||

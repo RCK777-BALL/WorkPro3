@@ -10,12 +10,14 @@ import mongoSanitize from "./middleware/mongoSanitize";
 import dotenv from "dotenv";
 import { createServer } from "http";
 import helmet from "helmet";
+import client from "prom-client";
 import rateLimit from "express-rate-limit";
 import path from "path";
 
 import { initKafka, sendKafkaEvent } from "./utils/kafka";
 import { initMQTTFromConfig } from "./iot/mqttClient";
 import logger from "./utils/logger";
+import requestId from "./middleware/requestId";
 import requestLog from "./middleware/requestLog";
 import tenantResolver from "./middleware/tenantResolver";
 import auditLogMiddleware from "./middleware/auditLogMiddleware";
@@ -202,9 +204,10 @@ const corsOptions: CorsOptions = {
 const corsMiddleware = cors(corsOptions) as unknown as RequestHandler;
 
 app.use(cookieParser());
+app.use(requestId);
 app.use(corsMiddleware);
 app.options("*", corsMiddleware);
-app.use(helmet());
+app.use(helmet({ contentSecurityPolicy: env.NODE_ENV === "production" ? undefined : false }));
 app.use(requestLog);
 app.use(tenantResolver);
 app.use(auditLogMiddleware);
@@ -243,6 +246,8 @@ const burstFriendly = rateLimit({
   legacyHeaders: false,
 });
 
+client.collectDefaultMetrics();
+
 export const io = initSocket(httpServer, Array.from(allowedOrigins));
 
 app.set('io', io);
@@ -266,6 +271,16 @@ app.get("/", (_req: Request, res: Response) => {
 
 app.get("/health", (_req: Request, res: Response) => {
   res.status(200).json({ ok: true, port: PORT, timestamp: new Date().toISOString() });
+});
+
+app.get("/ready", (_req: Request, res: Response) => {
+  const connected = mongoose.connection.readyState === 1;
+  res.status(connected ? 200 : 503).json({ ok: connected, database: connected ? "connected" : "disconnected" });
+});
+
+app.get("/metrics", async (_req: Request, res: Response) => {
+  res.set("Content-Type", client.register.contentType);
+  res.end(await client.register.metrics());
 });
 
 app.use("/static/uploads", express.static(path.join(process.cwd(), "uploads")));

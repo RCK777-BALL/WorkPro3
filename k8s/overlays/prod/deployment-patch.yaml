@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workpro-backend
+spec:
+  replicas: 3
+  template:
+    spec:
+      containers:
+        - name: backend
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: workpro-secrets
+                  key: JWT_SECRET
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workpro-frontend
+spec:
+  replicas: 2

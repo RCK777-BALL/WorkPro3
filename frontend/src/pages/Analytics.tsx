@@ -123,9 +123,9 @@ export default function Analytics() {
           http.get<DowntimeRecord[]>('/reports/downtime'),
           http.get<CostRecord[]>('/reports/cost-by-asset'),
         ]);
-        setPm(pmRes.data);
-        setDowntime(downRes.data);
-        setCost(costRes.data);
+        setPm(Array.isArray(pmRes.data) ? pmRes.data : []);
+        setDowntime(Array.isArray(downRes.data) ? downRes.data : []);
+        setCost(Array.isArray(costRes.data) ? costRes.data : []);
       } catch (err) {
         console.error('Failed to load analytics', err);
       }

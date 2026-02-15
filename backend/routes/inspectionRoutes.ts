@@ -219,6 +219,10 @@ router.post('/records/:recordId/complete', async (req, res, next) => {
       sendResponse(res, null, body.error.flatten(), 400);
       return;
     }
+    if (body.data.completedBy && !Types.ObjectId.isValid(body.data.completedBy)) {
+      sendResponse(res, null, 'Invalid completedBy id', 400);
+      return;
+    }
 
     const record = await InspectionRecord.findOne({
       _id: req.params.recordId,
@@ -234,9 +238,11 @@ router.post('/records/:recordId/complete', async (req, res, next) => {
     record.status = 'completed';
     record.responses = (body.data.responses ?? record.responses) as typeof record.responses;
     record.summary = body.data.summary ?? record.summary;
-    record.completedBy = body.data.completedBy
-      ? new Types.ObjectId(body.data.completedBy)
-      : (req.user?._id as Types.ObjectId | undefined);
+    const fallbackCompletedBy = req.user?._id ? String(req.user._id) : undefined;
+    const completedBy = body.data.completedBy ?? fallbackCompletedBy;
+    record.completedBy = completedBy && Types.ObjectId.isValid(completedBy)
+      ? new Types.ObjectId(completedBy)
+      : undefined;
     record.completedAt = new Date();
     await record.save();
 

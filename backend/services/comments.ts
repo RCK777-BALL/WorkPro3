@@ -52,7 +52,7 @@ export const ensureEntityBelongsToTenant = async (
   tenantId: Types.ObjectId,
 ): Promise<void> => {
   const Model = getEntityModel(entityType);
-  const exists = await Model.exists({ _id: entityId, tenantId });
+  const exists = await Model.exists({ _id: entityId, tenantId } as any);
   if (!exists) {
     const error = new Error('Entity not found or inaccessible');
     // @ts-expect-error augment

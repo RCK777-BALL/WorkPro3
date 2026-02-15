@@ -1005,7 +1005,7 @@ export const getAssetDetail = async (context: Context, assetId: string): Promise
         { assignments: { $elemMatch: { asset: assetId } } },
         { _id: { $in: Array.from(asset.pmTemplateIds ?? []) } },
       ],
-    })
+    } as any)
       .select('title active assignments')
       .lean(),
     WorkOrderModel.find({ tenantId: context.tenantId, assetId }).sort({ updatedAt: -1 }).limit(20).lean(),

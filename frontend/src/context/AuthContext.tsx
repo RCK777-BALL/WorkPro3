@@ -14,16 +14,15 @@ import {
 import { useInRouterContext, useLocation } from 'react-router-dom';
 import { useAuthStore, type AuthState } from '@/store/authStore';
 import type { AuthLoginResponse, AuthRole, AuthSession, AuthUser, RoleAssignment } from '@/types';
-import {
-  FALLBACK_TOKEN_KEY,
-  SITE_KEY,
-  TENANT_KEY,
-  TOKEN_KEY,
-  USER_STORAGE_KEY,
-} from '@/lib/http';
 import { safeLocalStorage } from '@/utils/safeLocalStorage';
 import { emitToast } from './ToastContext';
 import { api, getErrorMessage } from '@/lib/api';
+
+const TOKEN_KEY = 'auth:token';
+const TENANT_KEY = 'auth:tenantId';
+const SITE_KEY = 'auth:siteId';
+const FALLBACK_TOKEN_KEY = 'token';
+const USER_STORAGE_KEY = 'user';
 
 type RawAuthUser = {
   id: string;
@@ -255,6 +254,7 @@ interface AuthContextType {
     remember?: boolean,
   ) => Promise<AuthLoginResponse>;
   logout: () => Promise<void>;
+  completeAuthSession: (session: { user: unknown; token?: string | undefined }) => void;
   /**
    * Clears all authentication state without making a network request.
    * Useful when the server responds with 401 and we need to locally
@@ -427,6 +427,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     storeLogout();
   }, [handleSetUser, storeLogout]);
 
+  const completeAuthSession = useCallback((session: { user: unknown; token?: string }) => {
+    if (!session?.user || typeof session.user !== 'object') {
+      throw new Error('Invalid auth session user payload');
+    }
+
+    const rawUserRecord = session.user as Record<string, unknown>;
+    const hasExplicitAuthShape =
+      typeof rawUserRecord.email === 'string' &&
+      (('name' in rawUserRecord && 'role' in rawUserRecord) || 'roles' in rawUserRecord);
+
+    const userInput = hasExplicitAuthShape
+      ? (rawUserRecord as AuthUserInput)
+      : toAuthUser(rawUserRecord as unknown as RawAuthUser);
+
+    const normalizedUser = normalizeAuthUser(userInput);
+    handleSetUser(normalizedUser);
+    persistAuthStorage(normalizedUser, session.token);
+  }, [handleSetUser]);
+
   const logout = useCallback(async () => {
     try {
       await api.post('/auth/logout');
@@ -443,7 +462,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, setUser: handleSetUser, login, logout, resetAuthState, loading }}
+      value={{
+        user,
+        setUser: handleSetUser,
+        login,
+        logout,
+        completeAuthSession,
+        resetAuthState,
+        loading,
+      }}
     >
       {children}
     </AuthContext.Provider>

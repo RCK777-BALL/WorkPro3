@@ -4,6 +4,7 @@
 
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import VendorsPage from '@/pages/VendorsPage';
@@ -18,6 +19,12 @@ vi.mock('@/hooks/useVendors', () => ({
 }));
 
 describe('VendorsPage', () => {
+  const renderPage = () => render(
+    <MemoryRouter>
+      <VendorsPage />
+    </MemoryRouter>,
+  );
+
   beforeEach(() => {
     mockUseVendors.mockReset();
     mockMutateAsync.mockReset();
@@ -26,13 +33,13 @@ describe('VendorsPage', () => {
 
   it('loads and displays vendors', async () => {
     mockUseVendors.mockReturnValue({ data: [{ id: '1', name: 'Vendor A' }], isLoading: false, error: null });
-    render(<VendorsPage />);
+    renderPage();
     expect(await screen.findByText('Vendor A')).toBeInTheDocument();
   });
 
   it('deletes vendor', async () => {
     mockUseVendors.mockReturnValue({ data: [{ id: '1', name: 'Vendor A' }], isLoading: false, error: null });
-    render(<VendorsPage />);
+    renderPage();
     await screen.findByText('Vendor A');
     await userEvent.click(screen.getByRole('button', { name: /delete/i }));
     expect(mockMutateAsync).toHaveBeenCalledWith('1');

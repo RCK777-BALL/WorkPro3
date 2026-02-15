@@ -4,7 +4,7 @@
 
 import { Types } from 'mongoose';
 
-import PMTemplate from '../../../models/PMTemplate';
+import PMTemplate, { type PMTemplateDocument } from '../../../models/PMTemplate';
 import type { PMContext, PMTemplateResponse } from '../pm/service';
 import { PMTemplateError } from '../pm/service';
 import { inspectionFormLibrary, pmTemplateLibrary } from './library';
@@ -36,7 +36,7 @@ export const cloneTemplateFromLibrary = async (
   }
 
   const tenantId = toObjectId(context.tenantId, 'tenant id');
-  const doc = await PMTemplate.create({
+  const doc = (await PMTemplate.create({
     name: template.title,
     category: template.category,
     description: `${template.description}\n${template.impact}`.trim(),
@@ -44,7 +44,7 @@ export const cloneTemplateFromLibrary = async (
     estimatedMinutes: template.estimatedMinutes ?? 0,
     tenantId,
     assignments: [],
-  });
+  } as any)) as PMTemplateDocument;
 
   const id = (doc._id as Types.ObjectId).toString();
 

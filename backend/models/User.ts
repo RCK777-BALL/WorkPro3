@@ -96,15 +96,9 @@ const userSchema = new Schema<UserDocument>(
 );
 
 // ✅ Password hashing
-userSchema.pre<UserDocument>('save', async function (next) {
-  if (!this.isModified('passwordHash')) return next();
-
-  try {
-    this.passwordHash = await bcrypt.hash(this.passwordHash, SALT_ROUNDS);
-    next();
-  } catch (err) {
-    next(err as Error);
-  }
+userSchema.pre<UserDocument>('save', async function () {
+  if (!this.isModified('passwordHash')) return;
+  this.passwordHash = await bcrypt.hash(this.passwordHash, SALT_ROUNDS);
 });
 
 userSchema.methods.comparePassword = async function comparePassword(this: UserDocument, candidate: string) {

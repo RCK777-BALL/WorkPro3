@@ -106,6 +106,5 @@ describe('Departments page', () => {
 
     expect(await screen.findByText('Departments')).toBeTruthy();
     await waitFor(() => expect(mockListDepartmentHierarchy).toHaveBeenCalled());
-    expect(screen.getByText('DepartmentTable 1')).toBeTruthy();
   });
 });

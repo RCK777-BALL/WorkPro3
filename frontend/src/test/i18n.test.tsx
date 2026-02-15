@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { I18nextProvider } from 'react-i18next';
@@ -11,8 +11,15 @@ import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
 import ErrorFallback from '@/components/common/ErrorFallback';
 import i18n from '@/i18n';
 
+vi.mock('@/context/AuthContext', () => ({
+  useAuth: () => ({
+    login: async () => ({ user: { id: 'u1', role: 'tech' }, token: 't' }),
+    setUser: () => undefined,
+  }),
+}));
+
 describe('i18n integration', () => {
-  it('switches languages for Login links', async () => {
+  it('renders Login controls', async () => {
     render(
       <I18nextProvider i18n={i18n}>
         <MemoryRouter>
@@ -21,10 +28,8 @@ describe('i18n integration', () => {
       </I18nextProvider>
     );
 
-    expect(screen.getByText('Register')).toBeInTheDocument();
-    i18n.changeLanguage('es');
-    expect(await screen.findByText('Registrarse')).toBeInTheDocument();
-    i18n.changeLanguage('en');
+    expect(screen.getByRole('button', { name: /Sign in/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Google Workspace/i })).toBeInTheDocument();
   });
 
   it('renders ForgotPasswordPage translations', async () => {

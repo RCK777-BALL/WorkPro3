@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Types, type HydratedDocument } from 'mongoose';
+import { Types } from 'mongoose';
 
 import Vendor, { type VendorDocument } from '../models/Vendor';
 
@@ -39,7 +39,7 @@ const toObjectId = (value: string, label: string): Types.ObjectId => {
   return new Types.ObjectId(value);
 };
 
-const serializeVendor = (vendor: HydratedDocument<VendorDocument>): VendorResponse => {
+const serializeVendor = (vendor: VendorDocument): VendorResponse => {
   const payload: VendorResponse = {
     id: vendor._id.toString(),
     tenantId: vendor.tenantId.toString(),
@@ -82,7 +82,7 @@ export const getVendor = async (
   const vendor = await Vendor.findOne({
     _id: toObjectId(vendorId, 'vendor id'),
     tenantId: scope,
-    ...(includeDeleted ? {} : { deletedAt: { $in: [null, undefined] } }),
+    ...(includeDeleted ? {} : { deletedAt: { $in: [null] } }),
   });
   if (!vendor) {
     throw new VendorNotFoundError();
@@ -109,8 +109,8 @@ export const updateVendor = async (
   input: VendorInput,
 ): Promise<VendorResponse> => {
   const scope = toObjectId(tenantId, 'tenant id');
-  const vendor = await Vendor.findOneAndUpdate(
-    { _id: toObjectId(vendorId, 'vendor id'), tenantId: scope, deletedAt: { $in: [null, undefined] } },
+  const vendor = (await Vendor.findOneAndUpdate(
+    { _id: toObjectId(vendorId, 'vendor id'), tenantId: scope, deletedAt: { $in: [null] } } as any,
     {
       name: input.name,
       email: input.email ?? undefined,
@@ -119,7 +119,7 @@ export const updateVendor = async (
       ...(typeof input.isActive === 'boolean' ? { isActive: input.isActive } : {}),
     },
     { new: true, runValidators: true },
-  );
+  )) as VendorDocument | null;
   if (!vendor) {
     throw new VendorNotFoundError();
   }
@@ -132,8 +132,8 @@ export const deleteVendor = async (tenantId: string, vendorId: string): Promise<
     {
       _id: toObjectId(vendorId, 'vendor id'),
       tenantId: scope,
-      deletedAt: { $in: [null, undefined] },
-    },
+      deletedAt: { $in: [null] },
+    } as any,
     { deletedAt: new Date(), isActive: false },
   );
   if (!deleted) {

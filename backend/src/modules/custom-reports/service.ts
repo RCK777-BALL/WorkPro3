@@ -4,7 +4,7 @@
 
 import PDFDocument from 'pdfkit';
 import { Parser as Json2csvParser } from 'json2csv';
-import type { AccumulatorOperator, PipelineStage, FilterQuery, Model as MongooseModel } from 'mongoose';
+import type { AccumulatorOperator, PipelineStage, Model as MongooseModel } from 'mongoose';
 import { Types } from 'mongoose';
 
 import WorkOrder from '../../../models/WorkOrder';
@@ -218,9 +218,9 @@ const buildMatchQuery = (
   filters: ReportFilter[] | undefined,
   dateRange: ReportQueryRequest['dateRange'],
   config: ModelConfig,
-): FilterQuery<unknown> => {
+): Record<string, unknown> => {
   const tenantField = config.tenantField ?? 'tenantId';
-  const query: FilterQuery<unknown> = { [tenantField]: new Types.ObjectId(tenantId) };
+  const query: Record<string, unknown> = { [tenantField]: new Types.ObjectId(tenantId) };
 
   const applyComparison = (field: string, operator: ReportFilter['operator'], rawValue: ReportFilter['value']) => {
     const value = normalizeFilterValue(rawValue);
@@ -297,7 +297,13 @@ const isObjectIdValue = (
 const formatRowValue = (value: unknown): string | number | null => {
   if (value === undefined || value === null) return null;
   if (value instanceof Date) return value.toISOString();
-  if (isObjectIdValue(value) && Types.ObjectId.isValid(value)) return String(value);
+  if (
+    isObjectIdValue(value) &&
+    (typeof value === 'string' || value instanceof Types.ObjectId || Buffer.isBuffer(value)) &&
+    Types.ObjectId.isValid(value)
+  ) {
+    return String(value);
+  }
   return typeof value === 'string' || typeof value === 'number' ? value : JSON.stringify(value);
 };
 

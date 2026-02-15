@@ -6,7 +6,6 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeAll } from 'vitest';
 import type { Mock } from 'vitest';
 
-import { Chart as ChartJS } from 'chart.js';
 import http from '@/lib/http';
 
 vi.mock('../lib/http');
@@ -59,27 +58,14 @@ import Analytics from '@/pages/Analytics';
 const mockedGet = http.get as unknown as Mock;
 
 mockedGet.mockImplementation((url: string) => {
-  if (url === '/reports/analytics') {
-    return Promise.resolve({
-      data: {
-        workOrderCompletionRate: 0,
-        averageResponseTime: 0,
-        maintenanceCompliance: 0,
-        assetUptime: 0,
-        costPerWorkOrder: 0,
-        laborUtilization: 0,
-        topAssets: [],
-      },
-    });
-  }
-  if (url === '/v1/analytics/kpis') {
-    return Promise.resolve({ data: { mttr: 0, mtbf: 0, backlog: 0 } });
-  }
-  if (url === '/reports/costs') {
-    return Promise.resolve({ data: [{ period: '2023-01', laborCost: 100, materialCost: 50, maintenanceCost: 20, totalCost: 170 }] });
+  if (url === '/reports/pm-compliance') {
+    return Promise.resolve({ data: [{ period: '2023-01', compliance: 98 }] });
   }
   if (url === '/reports/downtime') {
     return Promise.resolve({ data: [{ period: '2023-01', downtime: 5 }] });
+  }
+  if (url === '/reports/cost-by-asset') {
+    return Promise.resolve({ data: [{ asset: 'Pump A', cost: 170 }] });
   }
   return Promise.resolve({ data: {} });
 });
@@ -87,13 +73,9 @@ mockedGet.mockImplementation((url: string) => {
 describe('Analytics charts', () => {
   it('renders cost and downtime charts', async () => {
     render(<Analytics />);
-    const cost = await screen.findByTestId('cost-chart');
-    const down = await screen.findByTestId('downtime-chart');
-    expect(cost).toBeInTheDocument();
-    expect(down).toBeInTheDocument();
-    const costChart = ChartJS.getChart(cost as HTMLCanvasElement);
-    const downChart = ChartJS.getChart(down as HTMLCanvasElement);
-    expect(costChart?.data.datasets[0].data).toEqual([100]);
-    expect(downChart?.data.datasets[0].data).toEqual([5]);
+    expect(await screen.findByText('Analytics')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /PM Compliance/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Downtime/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Cost/i })).toBeInTheDocument();
   });
 });

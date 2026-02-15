@@ -19,7 +19,10 @@ export default function Integrations() {
       body: JSON.stringify({ query: '{ integrationHooks { _id name type } }' }),
     })
       .then((res) => res.json())
-      .then((res) => setHooks(res.data.integrationHooks as IntegrationHook[]));
+      .then((res) => {
+        const hooksData = res?.data?.integrationHooks;
+        setHooks(Array.isArray(hooksData) ? (hooksData as IntegrationHook[]) : []);
+      });
   }, []);
 
   return (

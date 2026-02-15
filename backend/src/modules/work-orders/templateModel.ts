@@ -51,11 +51,10 @@ const templateSchema = new Schema<WorkOrderTemplate>(
   { timestamps: true }
 );
 
-templateSchema.pre('save', function bumpVersion(next) {
+templateSchema.pre('save', function bumpVersion() {
   if (!this.isNew && this.isModified()) {
     this.version = (this.version ?? 1) + 1;
   }
-  next();
 });
 
 const WorkOrderTemplateModel = mongoose.model<WorkOrderTemplate>('WorkOrderTemplate', templateSchema);

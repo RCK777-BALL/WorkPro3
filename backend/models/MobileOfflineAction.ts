@@ -69,7 +69,7 @@ MobileOfflineActionSchema.index({ tenantId: 1, status: 1 });
 MobileOfflineActionSchema.index({ tenantId: 1, etag: 1 });
 MobileOfflineActionSchema.index({ tenantId: 1, status: 1, nextAttemptAt: 1 });
 
-MobileOfflineActionSchema.pre('save', function handleVersioning(next) {
+MobileOfflineActionSchema.pre('save', function handleVersioning() {
   if (this.isNew) {
     this.version = this.version ?? 1;
     this.nextAttemptAt = this.nextAttemptAt ?? new Date();
@@ -84,7 +84,6 @@ MobileOfflineActionSchema.pre('save', function handleVersioning(next) {
     this.lastSyncedAt = new Date();
   }
 
-  next();
 });
 
 const MobileOfflineActionModel: Model<MobileOfflineAction> = mongoose.model<MobileOfflineAction>(

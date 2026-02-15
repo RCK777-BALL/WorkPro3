@@ -32,11 +32,10 @@ LineSchema.index({ tenantId: 1, plant: 1, name: 1 });
 LineSchema.index({ tenantId: 1, departmentId: 1 });
 LineSchema.index({ tenantId: 1, siteId: 1 });
 
-LineSchema.pre('validate', function (next) {
+LineSchema.pre('validate', function () {
   if (!this.plant && this.siteId) {
     this.plant = this.siteId as Types.ObjectId;
   }
-  next();
 });
 
 const Line = model<LineDoc>('Line', LineSchema);

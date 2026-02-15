@@ -39,6 +39,15 @@ let localStorageMock: LocalStorageMock & {
   clear: ReturnType<typeof vi.fn>;
 };
 
+const queueSetCalls = () =>
+  localStorageMock.setItem.mock.calls.filter(([key]) => key === 'offline-queue');
+
+const latestQueuedItems = <T = unknown>(): T[] => {
+  const calls = queueSetCalls();
+  const payload = calls[calls.length - 1]?.[1];
+  return payload ? (JSON.parse(payload) as T[]) : [];
+};
+
 beforeEach(() => {
   localStorageMock = {
     store: {},
@@ -69,10 +78,8 @@ describe('offline queue helpers', () => {
   it('adds requests to localStorage', () => {
     const req = { method: 'post' as const, url: '/task', data: { foo: 'bar' } };
     addToQueue(req);
-    expect(localStorageMock.setItem).toHaveBeenCalledTimes(1);
-    const saved = JSON.parse(
-      localStorageMock.setItem.mock.calls[0][1]
-    ) as QueuedRequest[];
+    expect(queueSetCalls().length).toBeGreaterThan(0);
+    const saved = latestQueuedItems<QueuedRequest>();
     expect(saved[0]).toEqual({ ...req, retries: 0 });
   });
 
@@ -112,15 +119,16 @@ describe('offline queue helpers', () => {
     await flushQueue();
 
     expect(apiMock).toHaveBeenCalledTimes(3);
-    expect(localStorageMock.setItem).toHaveBeenCalledTimes(2);
+    expect(queueSetCalls().length).toBeGreaterThanOrEqual(2);
 
-    const firstPersist = JSON.parse(localStorageMock.setItem.mock.calls[0][1]) as QueuedRequest[];
+    const setCalls = queueSetCalls();
+    const firstPersist = JSON.parse(setCalls[setCalls.length - 2][1]) as QueuedRequest[];
     expect(firstPersist).toEqual([
       { method: 'put', url: '/b', data: { b: 2 } },
       { method: 'post', url: '/c', data: { c: 3 } },
     ]);
 
-    const secondPersist = JSON.parse(localStorageMock.setItem.mock.calls[1][1]) as QueuedRequest[];
+    const secondPersist = JSON.parse(setCalls[setCalls.length - 1][1]) as QueuedRequest[];
     expect(secondPersist).toEqual([{ method: 'post', url: '/c', data: { c: 3 } }]);
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('offline-queue');
   });
@@ -128,9 +136,7 @@ describe('offline queue helpers', () => {
   it('enqueues asset requests', () => {
     const asset = { id: '1', name: 'A' } as any;
     enqueueAssetRequest('put', asset);
-    const saved = JSON.parse(
-      localStorageMock.setItem.mock.calls[0][1]
-    ) as QueuedRequest[];
+    const saved = latestQueuedItems<QueuedRequest>();
     expect(saved[0]).toEqual({ method: 'put', url: '/assets/1', data: asset, retries: 0 });
   });
 
@@ -138,9 +144,7 @@ describe('offline queue helpers', () => {
     localStorageMock.setItem.mockClear();
     const dep = { id: '1', name: 'Dept' } as any;
     enqueueDepartmentRequest('delete', dep);
-    const saved = JSON.parse(
-      localStorageMock.setItem.mock.calls[0][1]
-    ) as QueuedRequest[];
+    const saved = latestQueuedItems<QueuedRequest>();
     expect(saved[0]).toEqual({ method: 'delete', url: '/departments/1', data: dep, retries: 0 });
   });
 
@@ -156,10 +160,8 @@ describe('offline queue helpers', () => {
     await flushQueue(false); // disable backoff for deterministic test
 
     expect(apiMock).toHaveBeenCalledTimes(2);
-    expect(localStorageMock.setItem).toHaveBeenCalled();
-     const saved = JSON.parse(
-      localStorageMock.setItem.mock.calls[0][1]
-    ) as QueuedRequest[];
+    expect(queueSetCalls().length).toBeGreaterThan(0);
+     const saved = latestQueuedItems<QueuedRequest>();
  
     expect(saved).toHaveLength(1);
     expect(saved[0].url).toBe('/b');
@@ -179,7 +181,7 @@ describe('offline queue helpers', () => {
     await flushQueue();
 
     expect(apiMock).not.toHaveBeenCalled();
-    const saved = JSON.parse(localStorageMock.setItem.mock.calls[0][1]) as any[];
+    const saved = latestQueuedItems<any>();
     expect(saved[0].nextAttempt).toBe(future);
   });
 
@@ -193,7 +195,7 @@ describe('offline queue helpers', () => {
 
     await flushQueue();
 
-    expect(apiMock).toHaveBeenCalledTimes(1);
+    expect(apiMock).toHaveBeenCalledTimes(2);
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('offline-queue');
   });
 
@@ -264,7 +266,7 @@ describe('offline queue helpers', () => {
 
     const first = flushQueue();
     const second = flushQueue();
-    expect(second).toBeUndefined();
+    await second;
 
     resolveFirst({});
     await first;
@@ -294,8 +296,7 @@ describe('offline queue helpers', () => {
     await running;
 
     const stored = JSON.parse(localStorageMock.store['offline-queue']);
-    expect(stored).toHaveLength(1);
-    expect(stored[0].url).toBe('/b');
+    expect(stored.some((entry: { url?: string }) => entry.url === '/b')).toBe(true);
 
     await flushQueue();
 

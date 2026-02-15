@@ -140,7 +140,7 @@ export const createMaintenanceSchedule: AuthedRequestHandler<
       siteId: req.siteId ? new Types.ObjectId(req.siteId) : undefined,
     };
 
-    const schedule = await MaintenanceSchedule.create(payload);
+    const schedule = await MaintenanceSchedule.create(payload as any);
     sendResponse(res, schedule, null, 201);
   } catch (err) {
     next(err);

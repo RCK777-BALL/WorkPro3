@@ -127,6 +127,20 @@ const formatMember = (member: Types.ObjectId | UserDocument) =>
     ? { id: String(member._id), name: member.name, email: member.email }
     : { id: String(member), name: 'Unknown', email: undefined };
 
+const normalizeMemberIds = (
+  memberIds: Array<string | Types.ObjectId | undefined | null>,
+): Types.ObjectId[] => {
+  const normalized = memberIds
+    .map((memberId) => {
+      if (!memberId) return null;
+      if (memberId instanceof Types.ObjectId) return memberId;
+      return Types.ObjectId.isValid(memberId) ? new Types.ObjectId(memberId) : null;
+    })
+    .filter((memberId): memberId is Types.ObjectId => memberId instanceof Types.ObjectId);
+
+  return Array.from(new Map(normalized.map((id) => [id.toString(), id])).values());
+};
+
 const isPinnedByUser = (channel: ChannelDocument, userId?: Types.ObjectId) => {
   if (!userId) return false;
   const metadata = channel.metadata as { pinnedBy?: Types.ObjectId[] } | undefined;
@@ -257,10 +271,11 @@ async function createChannel(
     if (!ids) return;
     const { userId, tenantId } = ids;
     const { name, description, members = [] } = req.body;
+    const normalizedMembers = normalizeMemberIds([userId, ...members]);
     const channel: ChannelDocument = await Channel.create({
       name,
       description,
-      members: Array.from(new Set([userId, ...members])),
+      members: normalizedMembers,
       createdBy: userId,
       tenantId,
       isDirect: false,
@@ -563,7 +578,7 @@ async function createDirectMessage(
     if (!ids) return;
     const { userId, tenantId } = ids;
     const otherId = req.body.userId;
-    const members = [userId, otherId];
+    const members = normalizeMemberIds([userId, otherId]);
     const existing: ChannelDocument | null = await Channel.findOne({
       tenantId,
       isDirect: true,

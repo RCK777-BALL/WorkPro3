@@ -14,3 +14,8 @@ export const dismissOnboardingReminder = async (): Promise<OnboardingReminderRes
   const res = await http.post<OnboardingReminderResponse>('/onboarding/reminder/dismiss');
   return res.data;
 };
+
+export const restartOnboarding = async (): Promise<OnboardingState> => {
+  const res = await http.post<OnboardingState>('/onboarding/restart');
+  return res.data;
+};

@@ -49,8 +49,8 @@ const getDeviceContext = (req: AuthedRequest) => ({
 const toAuditActor = (user?: AuthedRequest['user']): AuditActor | undefined => {
   if (!user) return undefined;
   const actor: AuditActor = {};
-  const id = user._id ?? user.id;
-  if (typeof id === 'string' || id instanceof Types.ObjectId) {
+  const id: unknown = user._id ?? user.id;
+  if (typeof id === 'string' || (typeof id === 'object' && id instanceof Types.ObjectId)) {
     actor.id = id;
   }
   const name = typeof (user as any).name === 'string' ? (user as any).name.trim() : undefined;
@@ -611,3 +611,4 @@ export const getOfflineActionStatus: AuthedRequestHandler = async (req, res) => 
   setEntityVersionHeaders(res, action);
   res.json({ data: serializeOfflineActionStatus(action) });
 };
+

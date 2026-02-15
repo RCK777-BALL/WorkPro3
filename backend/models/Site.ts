@@ -58,6 +58,8 @@ siteSchema.pre('save', async function () {
   }
 });
 
-const Site: Model<SiteDocument> = mongoose.model<SiteDocument>('Site', siteSchema);
+const Site: Model<SiteDocument> =
+  (mongoose.models.Site as Model<SiteDocument> | undefined) ??
+  mongoose.model<SiteDocument>('Site', siteSchema);
 
 export default Site;

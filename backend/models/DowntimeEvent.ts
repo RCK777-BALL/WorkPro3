@@ -76,16 +76,13 @@ async function hasOverlap(
   return Boolean(overlap);
 }
 
-downtimeEventSchema.pre('save', async function validateOverlap(next) {
+downtimeEventSchema.pre('save', async function validateOverlap() {
   const model = this.constructor as Model<DowntimeEventDocument>;
   const conflict = await hasOverlap(model, this as DowntimeEventDocument);
 
   if (conflict) {
-    next(new Error('Downtime events may not overlap for the same asset'));
-    return;
+    throw new Error('Downtime events may not overlap for the same asset');
   }
-
-  next();
 });
 
 const DowntimeEvent = mongoose.model<DowntimeEventDocument>('DowntimeEvent', downtimeEventSchema);

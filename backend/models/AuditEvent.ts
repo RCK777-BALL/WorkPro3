@@ -27,21 +27,15 @@ const auditEventSchema = new Schema<AuditEventDocument>(
 );
 
 // Prevent any updates after initial save
-auditEventSchema.pre('save', function (next) {
+auditEventSchema.pre('save', function () {
   if (!this.isNew) {
-    next(new Error('AuditEvent is immutable'));
-  } else {
-    next();
+    throw new Error('AuditEvent is immutable');
   }
 });
 
-const reject = (next: (err?: Error) => void) => {
-  next(new Error('AuditEvent is immutable'));
-};
-
-['updateOne', 'findOneAndUpdate', 'deleteOne', 'deleteMany', 'findOneAndDelete', 'remove'].forEach((hook) => {
-  auditEventSchema.pre(hook as any, function (next) {
-    reject(next);
+(['updateOne', 'findOneAndUpdate', 'deleteOne', 'deleteMany', 'findOneAndDelete', 'remove'] as const).forEach((hook) => {
+  (auditEventSchema.pre as any)(hook, function () {
+    throw new Error('AuditEvent is immutable');
   });
 });
 

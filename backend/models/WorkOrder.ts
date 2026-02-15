@@ -502,7 +502,7 @@ const workOrderSchema = new Schema<WorkOrder>(
   { timestamps: true }
 );
 
-workOrderSchema.pre('save', function handleCosts(next) {
+workOrderSchema.pre('save', function handleCosts() {
   if (
     this.isModified('laborCost') ||
     this.isModified('partsCost') ||
@@ -518,7 +518,6 @@ workOrderSchema.pre('save', function handleCosts(next) {
     this.miscCost = this.miscCost ?? this.miscellaneousCost ?? 0;
     this.totalCost = labor + parts + misc;
   }
-  next();
 });
 
 workOrderSchema.virtual('isSLABreached').get(function isSLABreached(this: WorkOrder) {
@@ -535,14 +534,13 @@ workOrderSchema.virtual('isSLABreached').get(function isSLABreached(this: WorkOr
   return false;
 });
 
-workOrderSchema.pre('save', function updateSlaBreach(next) {
+workOrderSchema.pre('save', function updateSlaBreach() {
   if (this.isSLABreached && !this.slaBreachAt) {
     this.slaBreachAt = new Date();
   }
-  next();
 });
 
-workOrderSchema.pre('save', function handleVersioning(next) {
+workOrderSchema.pre('save', function handleVersioning() {
   if (this.isNew) {
     this.version = this.version ?? 1;
   } else if (this.isModified()) {
@@ -556,7 +554,6 @@ workOrderSchema.pre('save', function handleVersioning(next) {
     this.lastSyncedAt = new Date();
   }
 
-  next();
 });
 
 const WorkOrder: Model<WorkOrder> = mongoose.model<WorkOrder>('WorkOrder', workOrderSchema);

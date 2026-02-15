@@ -119,11 +119,10 @@ const assetSchema = new Schema<AssetDoc>(
   { timestamps: true }
 );
 
-assetSchema.pre('validate', function (this: AssetDoc, next) {
+assetSchema.pre('validate', function (this: AssetDoc) {
   if (!this.plant && this.siteId) {
     this.plant = this.siteId as Types.ObjectId;
   }
-  next();
 });
 
 assetSchema.index({ tenantId: 1, plant: 1, name: 1 });

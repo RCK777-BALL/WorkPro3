@@ -48,6 +48,10 @@ vi.mock('@/store/authStore', () => ({
   useAuthStore: (selector: (state: any) => any) => selector({ user: { tenantId: 'tenant-123' } }),
 }));
 
+vi.mock('@/context/ScopeContext', () => ({
+  useScopeContext: () => ({ activePlant: { id: 'site-1' } }),
+}));
+
 vi.mock('@/components/qr/AssetQRCode', () => ({
   default: () => <div data-testid="asset-qr" />,
 }));
@@ -86,9 +90,9 @@ describe('AssetModal form submission', () => {
 
     await waitFor(() => expect(mockPost).toHaveBeenCalled());
     expect(mockPut).not.toHaveBeenCalled();
-    expect(mockPost).toHaveBeenCalledWith(
-      '/assets',
-      expect.objectContaining({ name: 'Created Asset' }),
+    expect(mockPost.mock.calls[0]?.[0]).toBe('/assets');
+    expect(mockPost.mock.calls[0]?.[1]).toEqual(
+      expect.objectContaining({ name: 'Created Asset', tenantId: 'tenant-123' }),
     );
     expect(onUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'asset-1', name: 'Created Asset' }) as Asset,
@@ -118,9 +122,9 @@ describe('AssetModal form submission', () => {
 
     await waitFor(() => expect(mockPut).toHaveBeenCalled());
     expect(mockPost).not.toHaveBeenCalled();
-    expect(mockPut).toHaveBeenCalledWith(
-      '/assets/asset-2',
-      expect.objectContaining({ name: 'Updated Asset' }),
+    expect(mockPut.mock.calls[0]?.[0]).toBe('/assets/asset-2');
+    expect(mockPut.mock.calls[0]?.[1]).toEqual(
+      expect.objectContaining({ name: 'Updated Asset', tenantId: 'tenant-123' }),
     );
     expect(onUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'asset-2', name: 'Updated Asset' }) as Asset,

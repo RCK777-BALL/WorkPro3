@@ -209,28 +209,22 @@ workRequestSchema.index({ tenantId: 1, siteId: 1, createdAt: -1 });
 workRequestSchema.index({ tenantId: 1, workOrder: 1 });
 workRequestSchema.index({ title: 'text', description: 'text', category: 'text' });
 
-workRequestSchema.pre('save', async function handleAutoConversion(next) {
+workRequestSchema.pre('save', async function handleAutoConversion() {
   if (this.isModified('approvalStatus') && this.approvalStatus === 'approved' && !this.workOrder) {
-    try {
-      const workOrder = await WorkOrder.create({
-        title: this.title,
-        description: this.description,
-        tenantId: this.tenantId,
-        priority: this.priority ?? 'medium',
-        status: 'requested',
-        type: 'corrective',
-        plant: this.siteId,
-        siteId: this.siteId,
-        requestId: this._id,
-      });
-      this.workOrder = workOrder._id;
-      this.status = 'converted';
-    } catch (err) {
-      next(err as Error);
-      return;
-    }
+    const workOrder = await WorkOrder.create({
+      title: this.title,
+      description: this.description,
+      tenantId: this.tenantId,
+      priority: this.priority ?? 'medium',
+      status: 'requested',
+      type: 'corrective',
+      plant: this.siteId,
+      siteId: this.siteId,
+      requestId: this._id,
+    });
+    this.workOrder = workOrder._id;
+    this.status = 'converted';
   }
-  next();
 });
 
 const WorkRequest: Model<WorkRequestDocument> = mongoose.model<WorkRequestDocument>(

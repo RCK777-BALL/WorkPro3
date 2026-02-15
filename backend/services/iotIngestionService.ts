@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { FilterQuery, Types } from 'mongoose';
+import type { Types } from 'mongoose';
 
 import SensorReading from '../models/SensorReading';
 import ConditionRule from '../models/ConditionRule';
@@ -308,7 +308,7 @@ const createWorkOrderFromTrigger = async (
     tenantId,
     triggerId: trigger._id,
     workOrderId: created._id,
-    asset: created.assetId ?? created.set,
+    asset: created.assetId,
     metric,
     value,
     triggeredAt: context?.timestamp ?? new Date(),
@@ -468,7 +468,7 @@ const triggerMeterPmFromMeter = async (
       title: `Meter PM: ${task.title}`,
       description: task.notes || '',
       status: 'requested',
-      asset: meter.asset,
+      assetId: meter.asset,
       pmTask: task._id,
       department: task.department,
       dueDate: observedAt,
@@ -562,7 +562,7 @@ export async function ingestTelemetryBatch({
 
     const cacheKey = `${tenantId}:${assetId}:${metric}`;
     if (!ruleCache.has(cacheKey)) {
-      const query: FilterQuery<Record<string, unknown>> = {
+      const query = {
         tenantId,
         asset: doc.asset,
         metric,
@@ -585,7 +585,7 @@ export async function ingestTelemetryBatch({
       if (rule.pmTemplateId) {
         const templateKey = rule.pmTemplateId.toString();
         if (!templateCache.has(templateKey)) {
-          const found = await PMTemplate.findOne({ _id: rule.pmTemplateId, tenantId })
+          const found = await PMTemplate.findOne({ _id: rule.pmTemplateId as any, tenantId: tenantId as any } as any)
             .select('name description tasks assignments')
             .lean();
           templateCache.set(templateKey, (found as TemplateLean | null) ?? null);
@@ -612,7 +612,7 @@ export async function ingestTelemetryBatch({
     }
 
     if (!triggerCache.has(cacheKey)) {
-      const query: FilterQuery<Record<string, unknown>> = {
+      const query = {
         tenantId,
         asset: doc.asset,
         metric,

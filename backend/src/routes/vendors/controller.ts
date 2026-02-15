@@ -133,8 +133,8 @@ export const getVendorHandler: AuthedRequestHandler<{ id: string }> = async (req
     const vendor = await Vendor.findOne({
       _id: toObjectId(req.params.id, 'vendor id'),
       tenantId: toObjectId(tenantId, 'tenant id'),
-      ...(includeDeleted ? {} : { deletedAt: { $in: [null, undefined] } }),
-    });
+      ...(includeDeleted ? {} : { deletedAt: { $in: [null] } }),
+    } as any);
 
     if (!vendor) {
       sendResponse(res, null, 'Vendor not found', 404);
@@ -190,7 +190,7 @@ export const updateVendorHandler: AuthedRequestHandler<{ id: string }> = async (
     }
 
     const vendor = await Vendor.findOneAndUpdate(
-      { _id: toObjectId(req.params.id, 'vendor id'), tenantId: toObjectId(tenantId, 'tenant id'), deletedAt: { $in: [null, undefined] } },
+      { _id: toObjectId(req.params.id, 'vendor id'), tenantId: toObjectId(tenantId, 'tenant id'), deletedAt: { $in: [null] } } as any,
       { $set: { ...parsed.data, tags: parsed.data.tags ?? [], deletedAt: null } },
       { new: true, runValidators: true },
     );
@@ -215,7 +215,7 @@ export const deleteVendorHandler: AuthedRequestHandler<{ id: string }> = async (
     }
 
     const result = await Vendor.findOneAndUpdate(
-      { _id: toObjectId(req.params.id, 'vendor id'), tenantId: toObjectId(tenantId, 'tenant id'), deletedAt: { $in: [null, undefined] } },
+      { _id: toObjectId(req.params.id, 'vendor id'), tenantId: toObjectId(tenantId, 'tenant id'), deletedAt: { $in: [null] } } as any,
       { deletedAt: new Date(), isActive: false },
     );
 
@@ -241,7 +241,7 @@ export const vendorSpendHandler: AuthedRequestHandler<{ id: string }> = async (r
     const vendorId = toObjectId(req.params.id, 'vendor id');
     const tenantObjectId = toObjectId(tenantId, 'tenant id');
 
-    const vendor = await Vendor.findOne({ _id: vendorId, tenantId: tenantObjectId, deletedAt: { $in: [null, undefined] } });
+    const vendor = await Vendor.findOne({ _id: vendorId, tenantId: tenantObjectId, deletedAt: { $in: [null] } } as any);
     if (!vendor) {
       sendResponse(res, null, 'Vendor not found', 404);
       return;

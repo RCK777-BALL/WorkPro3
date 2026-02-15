@@ -32,5 +32,5 @@ export const listSites = async (context: SiteContext): Promise<SiteListResult> =
 export const createSite = async (context: SiteContext, input: SiteInput): Promise<SiteDocument> => {
   const tenantId = toObjectId(context.tenantId);
   if (!tenantId) throw new Error('Tenant context required');
-  return Site.create({ tenantId, name: input.name, description: input.description });
+  return Site.create({ tenantId, name: input.name });
 };

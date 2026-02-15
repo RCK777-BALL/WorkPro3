@@ -73,11 +73,10 @@ const DepartmentSchema = new Schema<DepartmentDoc>(
 DepartmentSchema.index({ tenantId: 1, plant: 1, name: 1 });
 DepartmentSchema.index({ tenantId: 1, siteId: 1 });
 
-DepartmentSchema.pre('validate', function (next) {
+DepartmentSchema.pre('validate', function () {
   if (!this.plant && this.siteId) {
     this.plant = this.siteId as Types.ObjectId;
   }
-  next();
 });
 
 const Department = model<DepartmentDoc>('Department', DepartmentSchema);

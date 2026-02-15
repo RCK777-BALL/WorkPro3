@@ -19,7 +19,7 @@ export default function WebhookSubscriptionsPanel({ apiBase = '/api/webhooks/v2'
   const loadHooks = () => {
     fetch(`${apiBase}/subscriptions`)
       .then((res) => res.json())
-      .then((res) => setHooks(res.data ?? []));
+      .then((res) => setHooks(Array.isArray(res?.data) ? res.data : []));
   };
 
   useEffect(() => {
@@ -88,7 +88,7 @@ export default function WebhookSubscriptionsPanel({ apiBase = '/api/webhooks/v2'
       <ul>
         {hooks.map((hook) => (
           <li key={hook._id}>
-            {hook.name} - {hook.url} ({hook.events.join(', ')})
+            {hook.name} - {hook.url} ({Array.isArray(hook.events) ? hook.events.join(', ') : ''})
             <button type="button" onClick={() => deleteHook(hook._id)}>
               Delete
             </button>

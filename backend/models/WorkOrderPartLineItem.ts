@@ -40,11 +40,10 @@ workOrderPartLineItemSchema.index(
   { unique: true, partialFilterExpression: { deletedAt: { $exists: false } } },
 );
 
-workOrderPartLineItemSchema.pre('save', function computeTotals(next) {
+workOrderPartLineItemSchema.pre('save', function computeTotals() {
   const qtyIssued = Number(this.qtyIssued ?? 0) || 0;
   const unitCost = Number(this.unitCost ?? 0) || 0;
   this.totalCost = qtyIssued * unitCost;
-  next();
 });
 
 export default model<WorkOrderPartLineItemDocument>('WorkOrderPartLineItem', workOrderPartLineItemSchema);

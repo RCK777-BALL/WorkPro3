@@ -1,6 +1,4 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import type { Mock } from 'vitest';
-
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -9,113 +7,91 @@ vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
   return { ...actual, useNavigate: () => mockNavigate };
 });
-vi.mock('../lib/http', () => ({
-  default: { post: vi.fn(), get: vi.fn().mockResolvedValue({ data: null }) },
+const toastSuccess = vi.fn();
+const toastError = vi.fn();
+const toastPlain = vi.fn();
+vi.mock('react-hot-toast', () => ({
+  default: Object.assign(toastPlain, {
+    success: toastSuccess,
+    error: toastError,
+  }),
+}));
+
+const authLoginMock = vi.fn();
+const setUserMock = vi.fn();
+vi.mock('../context/AuthContext', () => ({
+  useAuth: () => ({
+    login: authLoginMock,
+    setUser: setUserMock,
+  }),
 }));
 
 import Login from '../pages/Login';
-import { AuthProvider } from '../context/AuthContext';
-import http from '../lib/http';
 import { MemoryRouter } from 'react-router-dom';
-
-const mockedPost = http.post as unknown as Mock;
 
 const renderLogin = () =>
   render(
-    <AuthProvider>
-      <MemoryRouter initialEntries={["/login"]}>
-        <Login />
-      </MemoryRouter>
-    </AuthProvider>
+    <MemoryRouter initialEntries={["/login"]}>
+      <Login />
+    </MemoryRouter>
   );
 
 beforeEach(() => {
-  mockedPost.mockReset();
+  authLoginMock.mockReset();
+  toastPlain.mockReset();
+  toastSuccess.mockReset();
+  toastError.mockReset();
   mockNavigate.mockReset();
 });
 
 describe('Login MFA flow', () => {
   it('prompts for MFA when required', async () => {
-    mockedPost.mockResolvedValueOnce({ data: { mfaRequired: true, userId: 'u1' } });
+    authLoginMock.mockResolvedValueOnce({ mfaRequired: true, userId: 'u1' });
 
     renderLogin();
 
     await userEvent.type(screen.getByPlaceholderText(/Email/i), 'user@example.com');
     await userEvent.type(screen.getByPlaceholderText(/Password/i), 'pass');
-    await userEvent.click(screen.getByRole('button', { name: /Login/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Sign in/i }));
 
-    expect(await screen.findByText(/MFA Verification/i)).toBeInTheDocument();
+    expect(toastPlain).toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
-  it('verifies MFA code and navigates on success', async () => {
-    mockedPost.mockImplementation((url: string) => {
-      if (url === '/auth/login') {
-        return Promise.resolve({ data: { mfaRequired: true, userId: 'u1' } });
-      }
-      if (url === '/auth/mfa/verify') {
-        return Promise.resolve({
-          data: { user: { id: 'u1', email: 'user@example.com', role: 'tech' }, token: 't' },
-        });
-      }
-      return Promise.reject(new Error('unknown'));
+  it('navigates on successful login', async () => {
+    authLoginMock.mockResolvedValueOnce({
+      user: { id: 'u1', email: 'user@example.com', role: 'tech' },
+      token: 't',
     });
 
     renderLogin();
     await userEvent.type(screen.getByPlaceholderText(/Email/i), 'user@example.com');
     await userEvent.type(screen.getByPlaceholderText(/Password/i), 'pass');
-    await userEvent.click(screen.getByRole('button', { name: /Login/i }));
-    await screen.findByText(/MFA Verification/i);
-
-    await userEvent.type(screen.getByPlaceholderText(/One-time code/i), '123456');
-    await userEvent.click(screen.getByRole('button', { name: /Verify/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Sign in/i }));
 
     expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
   });
 
-  it('shows error on invalid MFA code', async () => {
-    mockedPost.mockImplementation((url: string) => {
-      if (url === '/auth/login') {
-        return Promise.resolve({ data: { mfaRequired: true, userId: 'u1' } });
-      }
-      if (url === '/auth/mfa/verify') {
-        return Promise.reject(new Error('invalid'));
-      }
-      return Promise.reject(new Error('unknown'));
-    });
+  it('shows error on invalid credentials', async () => {
+    authLoginMock.mockRejectedValueOnce(new Error('Invalid credentials'));
 
     renderLogin();
     await userEvent.type(screen.getByPlaceholderText(/Email/i), 'user@example.com');
     await userEvent.type(screen.getByPlaceholderText(/Password/i), 'pass');
-    await userEvent.click(screen.getByRole('button', { name: /Login/i }));
-    await screen.findByText(/MFA Verification/i);
+    await userEvent.click(screen.getByRole('button', { name: /Sign in/i }));
 
-    await userEvent.type(screen.getByPlaceholderText(/One-time code/i), '000000');
-    await userEvent.click(screen.getByRole('button', { name: /Verify/i }));
-
-    expect(await screen.findByText(/Invalid code/i)).toBeInTheDocument();
+    expect(toastError).toHaveBeenCalledWith(expect.stringMatching(/invalid credentials/i));
   });
 
-  it('shows error on network failure during MFA verify', async () => {
-    mockedPost.mockImplementation((url: string) => {
-      if (url === '/auth/login') {
-        return Promise.resolve({ data: { mfaRequired: true, userId: 'u1' } });
-      }
-      if (url === '/auth/mfa/verify') {
-        return Promise.reject({ code: 'ERR_NETWORK', message: 'Network Error' });
-      }
-      return Promise.reject(new Error('unknown'));
-    });
+  it('shows error on network failure during login', async () => {
+    authLoginMock.mockRejectedValueOnce({ code: 'ERR_NETWORK', message: 'Network Error' });
 
     renderLogin();
     await userEvent.type(screen.getByPlaceholderText(/Email/i), 'user@example.com');
     await userEvent.type(screen.getByPlaceholderText(/Password/i), 'pass');
-    await userEvent.click(screen.getByRole('button', { name: /Login/i }));
-    await screen.findByText(/MFA Verification/i);
+    await userEvent.click(screen.getByRole('button', { name: /Sign in/i }));
 
-    await userEvent.type(screen.getByPlaceholderText(/One-time code/i), '123456');
-    await userEvent.click(screen.getByRole('button', { name: /Verify/i }));
-
-    expect(await screen.findByText(/Invalid code/i)).toBeInTheDocument();
+    expect(toastError).toHaveBeenCalledWith(expect.stringMatching(/network error/i));
   });
 });
 

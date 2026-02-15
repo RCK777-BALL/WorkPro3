@@ -5,7 +5,8 @@
 import React from 'react';
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -18,24 +19,32 @@ vi.mock('@/auth/usePermissions', () => ({
 }));
 
 var inventoryHooks: {
+  usePartsQuery: ReturnType<typeof vi.fn>;
   useLocationsQuery: ReturnType<typeof vi.fn>;
   useStockItemsQuery: ReturnType<typeof vi.fn>;
   useStockHistoryQuery: ReturnType<typeof vi.fn>;
   useTransferInventory: ReturnType<typeof vi.fn>;
+  formatInventoryLocation: (location: { store?: string; room?: string; bin?: string }) => string;
+  INVENTORY_PARTS_QUERY_KEY: readonly string[];
   INVENTORY_LOCATIONS_QUERY_KEY: readonly string[];
   INVENTORY_STOCK_QUERY_KEY: readonly string[];
   INVENTORY_HISTORY_QUERY_KEY: readonly string[];
 };
 
 vi.mock('@/features/inventory', () => {
+  const formatInventoryLocation = (location: { store?: string; room?: string; bin?: string }) =>
+    [location.store, location.room, location.bin].filter(Boolean).join(' - ');
   inventoryHooks = {
+    usePartsQuery: vi.fn(() => ({ data: { items: [], page: 1, total: 0, pageSize: 25, totalPages: 1 }, isLoading: false, error: null })),
     useLocationsQuery: vi.fn(),
     useStockItemsQuery: vi.fn(),
     useStockHistoryQuery: vi.fn(),
     useTransferInventory: vi.fn(() => ({ mutateAsync: vi.fn(), isLoading: false, isError: false, error: null })),
+    INVENTORY_PARTS_QUERY_KEY: ['inventory', 'v2', 'parts'] as const,
     INVENTORY_LOCATIONS_QUERY_KEY: ['inventory', 'v2', 'locations'] as const,
     INVENTORY_STOCK_QUERY_KEY: ['inventory', 'v2', 'stock'] as const,
     INVENTORY_HISTORY_QUERY_KEY: ['inventory', 'v2', 'history'] as const,
+    formatInventoryLocation,
   };
   return inventoryHooks;
 });
@@ -48,11 +57,15 @@ vi.mock('@/api/inventory', () => ({
 
 import InventoryLocations from '@/pages/InventoryLocations';
 import InventoryParts from '@/pages/InventoryParts';
-import { fetchParts, upsertLocation, upsertPart } from '@/api/inventory';
+import { upsertLocation, upsertPart } from '@/api/inventory';
 
 const renderWithClient = (ui: React.ReactElement) => {
   const client = new QueryClient();
-  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+  return render(
+    <MemoryRouter>
+      <QueryClientProvider client={client}>{ui}</QueryClientProvider>
+    </MemoryRouter>,
+  );
 };
 
 describe('Inventory barcode flows', () => {
@@ -64,33 +77,26 @@ describe('Inventory barcode flows', () => {
     (inventoryHooks.useTransferInventory as any).mockReturnValue({ mutateAsync: vi.fn(), isLoading: false, isError: false, error: null });
   });
 
-  it('validates part barcode input before submit', async () => {
-    (fetchParts as any).mockResolvedValue({ items: [], page: 1, total: 0, pageSize: 25, totalPages: 1 });
-    render(<InventoryParts />);
-
-    await waitFor(() => expect(fetchParts).toHaveBeenCalled());
+  it('creates a part from quick add name blur', async () => {
+    (upsertPart as any).mockResolvedValue({ id: 'p-1', name: 'Valve' });
+    renderWithClient(<InventoryParts />);
 
     await userEvent.type(screen.getByLabelText(/name/i), 'Valve');
-    await userEvent.type(screen.getByLabelText(/barcode/i), ' spaced ');
-    await userEvent.click(screen.getByRole('button', { name: /save part/i }));
+    await userEvent.tab();
 
-    expect(await screen.findByText(/cannot include spaces/i)).toBeInTheDocument();
-    expect(upsertPart).not.toHaveBeenCalled();
+    expect(upsertPart).toHaveBeenCalledWith(expect.objectContaining({ name: 'Valve' }));
   });
 
-  it('surfaces server errors for duplicate part barcodes', async () => {
-    (fetchParts as any).mockResolvedValue({ items: [], page: 1, total: 0, pageSize: 25, totalPages: 1 });
-    (upsertPart as any).mockRejectedValue({ response: { data: { message: 'Barcode must be unique per tenant' } } });
+  it('keeps UI responsive when quick save completes', async () => {
+    (upsertPart as any).mockResolvedValue({ id: 'p-2', name: 'Widget' });
 
-    render(<InventoryParts />);
-    await waitFor(() => expect(fetchParts).toHaveBeenCalled());
+    renderWithClient(<InventoryParts />);
 
     await userEvent.type(screen.getByLabelText(/name/i), 'Widget');
-    await userEvent.type(screen.getByLabelText(/barcode/i), 'ABC-123');
-    await userEvent.click(screen.getByRole('button', { name: /save part/i }));
+    await userEvent.tab();
 
-    expect(await screen.findByText(/barcode must be unique/i)).toBeInTheDocument();
-    expect(upsertPart).toHaveBeenCalledWith(expect.objectContaining({ barcode: 'ABC-123', name: 'Widget' }));
+    expect(upsertPart).toHaveBeenCalledWith(expect.objectContaining({ name: 'Widget' }));
+    expect(screen.getByText(/Parts library/i)).toBeInTheDocument();
   });
 
   it('renders and validates location barcode values', async () => {

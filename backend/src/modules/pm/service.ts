@@ -85,7 +85,7 @@ const toObjectId = (value: string | Types.ObjectId, label: string): Types.Object
 };
 
 const ensureTemplate = async (context: PMContext, templateId: string): Promise<PMTemplateDocument> => {
-  const template = await PMTemplate.findOne({ _id: templateId, tenantId: context.tenantId });
+  const template = await PMTemplate.findOne({ _id: templateId, tenantId: context.tenantId } as any);
   if (!template) {
     throw new PMTemplateError('Template not found', 404);
   }
@@ -93,7 +93,7 @@ const ensureTemplate = async (context: PMContext, templateId: string): Promise<P
 };
 
 const ensureAsset = async (context: PMContext, assetId: string): Promise<AssetDoc> => {
-  const asset = await Asset.findOne({ _id: assetId, tenantId: context.tenantId });
+  const asset = await Asset.findOne({ _id: assetId, tenantId: context.tenantId } as any);
   if (!asset) {
     throw new PMTemplateError('Asset not found', 404);
   }
@@ -108,7 +108,7 @@ const ensureProcedureTemplate = async (
   if (!Types.ObjectId.isValid(templateId)) {
     throw new PMTemplateError('Invalid procedure template id', 400);
   }
-  const template = await ProcedureTemplate.findOne({ _id: templateId, tenantId: context.tenantId });
+  const template = await ProcedureTemplate.findOne({ _id: templateId, tenantId: context.tenantId } as any);
   if (!template) {
     throw new PMTemplateError('Procedure template not found', 404);
   }
@@ -283,7 +283,7 @@ export interface PMTemplateResponse {
 }
 
 export const listTemplates = async (context: PMContext): Promise<PMTemplateResponse[]> => {
-  const tasks = (await PMTemplate.find({ tenantId: context.tenantId })
+  const tasks = (await PMTemplate.find({ tenantId: context.tenantId } as any)
     .select('name category description tasks estimatedMinutes assignments createdAt updatedAt')
     .lean()) as unknown as PMTemplateLean[];
   const refs = await collectReferenceNames(tasks);
@@ -314,7 +314,7 @@ export const createTemplate = async (
   },
 ): Promise<PMTemplateResponse> => {
   const tenantId = toObjectId(context.tenantId, 'tenant id');
-  const doc = await PMTemplate.create({
+  const doc = (await PMTemplate.create({
     name: payload.name,
     category: payload.category,
     description: payload.description ?? '',
@@ -322,7 +322,7 @@ export const createTemplate = async (
     estimatedMinutes: payload.estimatedMinutes ?? 0,
     tenantId,
     assignments: [],
-  });
+  } as any)) as PMTemplateDocument;
 
   return {
     id: doc._id.toString(),
@@ -459,7 +459,7 @@ export const upsertAssignment = async (
     assignment = task.assignments[task.assignments.length - 1];
   }
   await task.save();
-  await linkTemplateToAsset(asset._id, task._id);
+  await linkTemplateToAsset(asset._id, task._id as Types.ObjectId);
 
   await notifyAssignmentChange(context, asset, task, assignmentId ? 'updated' : 'created');
 
@@ -467,7 +467,7 @@ export const upsertAssignment = async (
     assetNames: new Map([[asset._id.toString(), asset.name]]),
     partNames,
     procedureTemplates: new Map(
-      procedureTemplate ? [[procedureTemplate._id.toString(), procedureTemplate.name]] : [],
+      (procedureTemplate ? [[procedureTemplate._id.toString(), procedureTemplate.name]] : []) as [string, string][],
     ),
   });
 };

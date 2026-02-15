@@ -181,7 +181,7 @@ export async function runPMScheduler(): Promise<void> {
                 title: `PM: ${task.title}`,
                 description: task.notes || '',
                 status: 'requested',
-                asset: assignment.asset,
+                assetId: assignment.asset,
                 pmTask: task._id,
                 department: task.department,
                 dueDate: now,
@@ -202,7 +202,7 @@ export async function runPMScheduler(): Promise<void> {
                   ? { complianceCompletedAt: new Date() }
                   : {}),
                 partsUsed,
-              });
+              } as any);
               meter.lastWOValue = currentValue;
               await meter.save();
               assignment.lastGeneratedAt = now;
@@ -237,7 +237,7 @@ export async function runPMScheduler(): Promise<void> {
               title: `PM: ${task.title}`,
               description: task.notes || '',
               status: 'requested',
-              asset: assignment.asset,
+              assetId: assignment.asset,
               pmTask: task._id,
               department: task.department,
               dueDate: assignment.nextDue,
@@ -258,7 +258,7 @@ export async function runPMScheduler(): Promise<void> {
                 ? { complianceCompletedAt: new Date() }
                 : {}),
               partsUsed,
-            });
+            } as any);
             if (assignment.nextDue) {
               await notifyPmDue(task, assignment.nextDue);
             }
@@ -282,7 +282,7 @@ export async function runPMScheduler(): Promise<void> {
             title: `PM: ${task.title}`,
             description: task.notes || '',
             status: 'requested',
-            asset: task.asset,
+            assetId: task.asset,
             pmTask: task._id,
             department: task.department,
             dueDate: next,
@@ -296,7 +296,7 @@ export async function runPMScheduler(): Promise<void> {
                 }
               : {}),
             ...(partsUsed.length ? { partsUsed } : {}),
-          });
+          } as any);
           await notifyPmDue(task, next);
           task.lastGeneratedAt = now;
           await task.save();
@@ -314,7 +314,7 @@ export async function runPMScheduler(): Promise<void> {
             title: `Meter PM: ${task.title}`,
             description: task.notes || '',
             status: 'requested',
-            asset: meter.asset,
+            assetId: meter.asset,
             pmTask: task._id,
             department: task.department,
             dueDate: now,
@@ -328,7 +328,7 @@ export async function runPMScheduler(): Promise<void> {
                 }
               : {}),
             ...(partsUsed.length ? { partsUsed } : {}),
-          });
+          } as any);
           await notifyPmDue(task, now);
           meter.lastWOValue = meter.currentValue;
           await meter.save();
@@ -355,10 +355,10 @@ export async function runPMScheduler(): Promise<void> {
       if (reading && compare(reading.value, rule.operator, rule.threshold)) {
         await WorkOrder.create({
           title: rule.workOrderTitle,
-          description: rule.workOrderDescription,
-          asset: rule.asset,
+          description: rule.workOrderDescription ?? '',
+          assetId: rule.asset,
           tenantId: rule.tenantId,
-        });
+        } as any);
       }
     } catch (err) {
       logger.error('[PM Scheduler] Failed condition rule', err);

@@ -20,14 +20,14 @@ export default function ApiKeysPanel({ apiBase = '/api/integrations/v2' }: ApiKe
   const loadKeys = () => {
     fetch(`${apiBase}/api-keys`)
       .then((res) => res.json())
-      .then((res) => setKeys(res.data ?? []));
+      .then((res) => setKeys(Array.isArray(res?.data) ? res.data : []));
   };
 
   useEffect(() => {
     loadKeys();
     fetch(`${apiBase}/api-keys/scopes`)
       .then((res) => res.json())
-      .then((res) => setAvailableScopes(res.data ?? []));
+      .then((res) => setAvailableScopes(Array.isArray(res?.data) ? res.data : []));
   }, [apiBase]);
 
   const toggleScope = (scope: string) => {

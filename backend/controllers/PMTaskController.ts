@@ -168,7 +168,7 @@ export const createPMTask: AuthedRequestHandler<ParamsDictionary, PMTaskResponse
       siteId: req.siteId,
       ...(templateVersion ? { templateVersion } : {}),
     };
-    const task: PMTaskDocument = await PMTask.create(payload);
+    const task: PMTaskDocument = await PMTask.create(payload as any);
     const targetId: string | Types.ObjectId = (toEntityId(task._id as Types.ObjectId) ?? task._id) as string | Types.ObjectId;
     await auditAction(req as any, 'create', 'PMTask', targetId, undefined, task.toObject());
     sendResponse(res, task, null, 201);
@@ -332,7 +332,7 @@ export const generatePMWorkOrders: AuthedRequestHandler<ParamsDictionary, PMTask
             ...(templateDefaults.checklists ? { checklists: templateDefaults.checklists } : {}),
             complianceStatus: templateDefaults.status,
             ...(templateDefaults.status === 'not_required' ? { complianceCompletedAt: new Date() } : {}),
-          });
+          } as any);
           task.lastGeneratedAt = now;
           await task.save();
           count++;
@@ -370,7 +370,7 @@ export const generatePMWorkOrders: AuthedRequestHandler<ParamsDictionary, PMTask
             ...(templateDefaults.checklists ? { checklists: templateDefaults.checklists } : {}),
             complianceStatus: templateDefaults.status,
             ...(templateDefaults.status === 'not_required' ? { complianceCompletedAt: new Date() } : {}),
-          });
+          } as any);
           meter.lastWOValue = meter.currentValue;
           await meter.save();
           task.lastGeneratedAt = now;

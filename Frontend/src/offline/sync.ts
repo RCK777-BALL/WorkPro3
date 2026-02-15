@@ -3,6 +3,14 @@ import { syncOfflineActions } from '../api/endpoints/offline';
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+type SyncResult = { id: string; status: string; error?: string };
+
+const isSyncResult = (value: Record<string, unknown>): value is SyncResult => (
+  typeof value.id === 'string' &&
+  typeof value.status === 'string' &&
+  (value.error === undefined || typeof value.error === 'string')
+);
+
 export const syncQueue = async () => {
   const queue = listQueue();
   if (!queue.length) return;
@@ -17,7 +25,8 @@ export const syncQueue = async () => {
 
   try {
     const response = await syncOfflineActions(payload);
-    response.results.forEach((result: { id: string; status: string; error?: string }) => {
+    response.results.forEach((result) => {
+      if (!isSyncResult(result)) return;
       updateAction(result.id, {
         status: result.status === 'ok' ? 'succeeded' : 'failed',
         lastError: result.error,

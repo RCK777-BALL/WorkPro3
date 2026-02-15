@@ -12,16 +12,16 @@ describe('inspection template versioning', () => {
   let tenantId: mongoose.Types.ObjectId;
 
   beforeAll(async () => {
-    mongo = await MongoMemoryServer.create({
-      binary: { systemBinary: '/usr/bin/mongod', version: '6.0.26' },
-    });
+    mongo = await MongoMemoryServer.create();
     await mongoose.connect(mongo.getUri());
     tenantId = new mongoose.Types.ObjectId();
   });
 
   afterAll(async () => {
     await mongoose.disconnect();
-    await mongo.stop();
+    if (mongo) {
+      await mongo.stop();
+    }
   });
 
   beforeEach(async () => {

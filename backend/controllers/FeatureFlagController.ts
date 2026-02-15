@@ -20,7 +20,7 @@ const getTenantContext = (req: AuthedRequest) => {
 
 const resolveUserId = (req: AuthedRequest): EntityIdLike => {
   const candidate = req.user?.id ?? req.user?._id;
-  if (typeof candidate === 'string' || candidate instanceof Types.ObjectId) {
+  if (typeof candidate === 'string' || (typeof candidate === 'object' && (candidate as unknown) instanceof Types.ObjectId)) {
     return candidate;
   }
   return undefined;
@@ -128,3 +128,4 @@ export const updateFeatureFlag = async (req: Request, res: Response, next: NextF
     next(error);
   }
 };
+

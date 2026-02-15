@@ -96,6 +96,19 @@ const ensureState = (state?: TenantOnboardingState): TenantOnboardingState => {
   return next as TenantOnboardingState;
 };
 
+const buildRestartState = (): TenantOnboardingState =>
+  ({
+    steps: {
+      site: { completed: false },
+      roles: { completed: false },
+      departments: { completed: false },
+      assets: { completed: false },
+      starterData: { completed: false },
+      pmTemplates: { completed: false },
+      users: { completed: false },
+    },
+  }) as TenantOnboardingState;
+
 const collectSignals = async (tenantId: Types.ObjectId) => {
   const [hasSite, hasDepartment, hasAsset, hasPmTask, userCount, roleCount, hasInventory] = await Promise.all([
     Site.exists({ tenantId }),
@@ -198,4 +211,11 @@ export const dismissOnboardingReminder = async (tenantId: string) => {
   tenant.onboarding = state;
   await tenant.save();
   return { lastReminderAt: now.toISOString() };
+};
+
+export const restartOnboardingState = async (tenantId: string): Promise<OnboardingStateResponse> => {
+  const tenant = await ensureTenant(tenantId);
+  tenant.onboarding = buildRestartState();
+  await tenant.save();
+  return getOnboardingState(tenantId);
 };

@@ -17,12 +17,7 @@ describe('Work history API', () => {
   let tenantId: string;
 
   beforeAll(async () => {
-    mongo = await MongoMemoryServer.create({
-      binary: {
-        systemBinary: '/usr/bin/mongod',
-        version: '6.0.26',
-      },
-    });
+    mongo = await MongoMemoryServer.create();
     await mongoose.connect(mongo.getUri());
     await mongoose.connection.asPromise();
 
@@ -35,7 +30,9 @@ describe('Work history API', () => {
 
   afterAll(async () => {
     await mongoose.disconnect();
-    await mongo.stop();
+    if (mongo) {
+      await mongo.stop();
+    }
   });
 
   beforeEach(async () => {

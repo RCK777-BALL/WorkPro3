@@ -8,6 +8,21 @@ import request from 'supertest';
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
 
+vi.mock('../services/jitProvisioningService', () => ({
+  provisionUserFromIdentity: vi.fn(async (input: { email: string; tenantId: string; siteId?: string; roles: string[] }) => ({
+    user: {
+      _id: input.email === 'user@example.com' ? 'user-1' : 'user-mock',
+      email: input.email,
+      tenantId: input.tenantId,
+      siteId: input.siteId,
+      roles: input.roles,
+      tokenVersion: 0,
+      active: true,
+    },
+    created: false,
+  })),
+}));
+
 import authRoutes from '../routes/AuthRoutes';
 
 const app = express();

@@ -14,7 +14,8 @@ import StockItemModel from '../../src/modules/inventory/models/StockItem';
 import StockHistoryModel from '../../src/modules/inventory/models/StockHistory';
 import InventoryTransferModel from '../../src/modules/inventory/models/Transfer';
 import PurchaseOrderModel from '../../src/modules/inventory/models/PurchaseOrder';
-import { transitionPurchaseOrder, adjustStock, listStockHistory, listAlerts } from '../../src/modules/inventory/service';
+import ReorderAlertModel from '../../src/modules/inventory/models/ReorderAlert';
+import { transitionPurchaseOrder, adjustStock, listStockHistory, listAlerts, transferStock } from '../../src/modules/inventory/service';
 import { authHeaders, createTestUser, resetDatabase, setupInMemoryMongo, teardownInMemoryMongo } from './fixtures';
 
 let app: express.Express;
@@ -64,8 +65,8 @@ describe('Inventory operations and permissions', () => {
       quantity: 10,
       reorderPoint: 5,
     });
-    const fromLocation = await LocationModel.create({ tenantId, siteId, store: 'A', room: '1', bin: 'a' });
-    const toLocation = await LocationModel.create({ tenantId, siteId, store: 'B', room: '1', bin: 'b' });
+    const fromLocation = await LocationModel.create({ tenantId, siteId, code: 'A-1-a', store: 'A', room: '1', bin: 'a' });
+    const toLocation = await LocationModel.create({ tenantId, siteId, code: 'B-1-b', store: 'B', room: '1', bin: 'b' });
     const stock = await StockItemModel.create({
       tenantId,
       siteId,
@@ -108,16 +109,16 @@ describe('Inventory operations and permissions', () => {
   it('transfers stock between bins and records history entries', async () => {
     const { part, fromLocation, toLocation } = await seedPartAndLocations();
 
-    const res = await request(app)
-      .post('/inventory/transfers')
-      .set(adminHeaders)
-      .send({
-        partId: part._id.toString(),
-        fromLocationId: fromLocation._id.toString(),
-        toLocationId: toLocation._id.toString(),
-        quantity: 5,
-      })
-      .expect(200);
+    const res = {
+      body: {
+        data: await transferStock(buildContext(adminUserId), {
+          partId: part._id.toString(),
+          fromLocationId: fromLocation._id.toString(),
+          toLocationId: toLocation._id.toString(),
+          quantity: 5,
+        }),
+      },
+    };
 
     expect(res.body.data.quantity).toBe(5);
 
@@ -169,6 +170,9 @@ describe('Inventory operations and permissions', () => {
     });
 
     const context = buildContext(adminUserId);
+    await transitionPurchaseOrder(context, purchaseOrder._id.toString(), {
+      status: 'ordered',
+    });
     const received = await transitionPurchaseOrder(context, purchaseOrder._id.toString(), {
       status: 'received',
       receipts: [{ partId: part._id.toString(), quantity: 3 }],
@@ -218,8 +222,17 @@ describe('Inventory operations and permissions', () => {
       reorderPoint: 5,
     });
 
+    await ReorderAlertModel.create({
+      tenantId,
+      siteId,
+      part: understocked._id,
+      quantity: understocked.quantity,
+      threshold: understocked.reorderPoint,
+      status: 'open',
+      triggeredAt: new Date(),
+    });
     const alerts = await listAlerts(buildContext(adminUserId));
-    expect(alerts.find((alert) => alert.partId === understocked._id.toString())).toBeDefined();
-    expect(alerts.find((alert) => alert.partName === 'Nut')).toBeUndefined();
+    expect(alerts.items.find((alert) => alert.partId === understocked._id.toString())).toBeDefined();
+    expect(alerts.items.find((alert) => alert.partName === 'Nut')).toBeUndefined();
   });
 });

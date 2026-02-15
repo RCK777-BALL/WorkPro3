@@ -94,7 +94,7 @@ const ProcedureTemplateBuilder = () => {
       category: templateForm.category.trim() || undefined,
     });
     if (!result.success) {
-      setTemplateError(result.error.errors[0]?.message ?? 'Invalid template input');
+      setTemplateError(result.error.issues[0]?.message ?? 'Invalid template input');
       return;
     }
     setTemplateError(null);
@@ -119,7 +119,7 @@ const ProcedureTemplateBuilder = () => {
       notes: versionForm.notes.trim() || undefined,
     });
     if (!result.success) {
-      setVersionError(result.error.errors[0]?.message ?? 'Invalid version input');
+      setVersionError(result.error.issues[0]?.message ?? 'Invalid version input');
       return;
     }
     setVersionError(null);

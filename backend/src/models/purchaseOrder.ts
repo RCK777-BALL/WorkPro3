@@ -59,9 +59,8 @@ const purchaseOrderLineSchema = new Schema<PurchaseOrderLine>(
   { _id: false },
 );
 
-purchaseOrderLineSchema.pre('validate', function preValidate(next) {
+purchaseOrderLineSchema.pre('validate', function preValidate() {
   this.status = deriveLineStatus(this.quantityOrdered, this.quantityReceived);
-  next();
 });
 
 const purchaseOrderSchema = new Schema<PurchaseOrderDocument>(
@@ -94,7 +93,7 @@ purchaseOrderSchema.post('init', function postInit(doc) {
   doc.$locals.originalStatus = doc.status;
 });
 
-purchaseOrderSchema.pre('validate', function preValidate(next) {
+purchaseOrderSchema.pre('validate', function preValidate() {
   this.lines = (this.lines ?? []).map((line) => ({
     ...line,
     status: deriveLineStatus(line.quantityOrdered, line.quantityReceived),
@@ -115,7 +114,6 @@ purchaseOrderSchema.pre('validate', function preValidate(next) {
     const previousStatus = (this.$locals?.originalStatus ?? 'draft') as PurchaseOrderStatus;
     assertValidStatusTransition(previousStatus, this.status as PurchaseOrderStatus);
   }
-  next();
 });
 
 purchaseOrderSchema.index({ tenantId: 1, poNumber: 1 }, { unique: true });

@@ -26,6 +26,7 @@
   "exclude": [
     "**/*.test.ts",
     "**/*.spec.ts",
+    "seed.ts",
     "tests",
     "scripts",
     "seed",

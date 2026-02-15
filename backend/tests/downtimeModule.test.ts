@@ -1,6 +1,7 @@
 import express from 'express';
 import request from 'supertest';
 import { describe, it, beforeEach, expect, vi } from 'vitest';
+import { Types } from 'mongoose';
 
 vi.mock('../middleware/authMiddleware', () => ({
   requireAuth: (_req: any, _res: any, next: any) => next(),
@@ -10,6 +11,12 @@ vi.mock('../middleware/tenantScope', () => ({
     req.tenantId = 'tenant-1';
     next();
   },
+}));
+vi.mock('../src/middleware/tenantAuthorization', () => ({
+  default: () => (_req: any, _res: any, next: any) => next(),
+}));
+vi.mock('../src/auth/permissions', () => ({
+  requirePermission: () => (_req: any, _res: any, next: any) => next(),
 }));
 
 const listDowntimeLogs = vi.fn();
@@ -35,15 +42,17 @@ beforeEach(() => {
 });
 
 describe('Downtime module routes', () => {
+  const validAssetId = '656000000000000000000001';
+
   it('validates and lists downtime logs', async () => {
     listDowntimeLogs.mockResolvedValue([{ id: '1' }]);
 
-    const res = await request(app).get('/api/downtime?assetId=asset-1');
+    const res = await request(app).get(`/api/downtime?assetId=${validAssetId}`);
 
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual([{ id: '1' }]);
     expect(listDowntimeLogs).toHaveBeenCalledWith('tenant-1', {
-      assetId: 'asset-1',
+      assetId: validAssetId,
       start: undefined,
       end: undefined,
     });
@@ -61,9 +70,12 @@ describe('Downtime module routes', () => {
 
     const created = await request(app)
       .post('/api/downtime')
-      .send({ assetId: 'asset-1', start: new Date().toISOString(), reason: 'break' });
+      .send({ assetId: validAssetId, start: new Date().toISOString(), reason: 'break' });
     expect(created.status).toBe(201);
-    expect(createDowntimeLog).toHaveBeenCalledWith('tenant-1', expect.objectContaining({ assetId: 'asset-1' }));
+    expect(createDowntimeLog).toHaveBeenCalledWith(
+      'tenant-1',
+      expect.objectContaining({ assetId: expect.any(Types.ObjectId) }),
+    );
 
     const updated = await request(app)
       .put('/api/downtime/abc')

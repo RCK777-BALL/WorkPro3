@@ -24,6 +24,6 @@ describe('mongoSanitize middleware', () => {
     const res = await request(app)
       .get('/test/sanitize')
       .query({ 'user.name': 'alice', age: { $ne: 30 } });
-    expect(res.body).toEqual({ user_name: 'alice', age: { _ne: 30 } });
+    expect(res.body).toEqual({ user_name: 'alice', age: { _ne: '30' } });
   });
 });

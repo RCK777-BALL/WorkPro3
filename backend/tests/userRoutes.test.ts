@@ -40,7 +40,10 @@ beforeEach(async () => {
     tenantId: new mongoose.Types.ObjectId(),
     employeeId: 'ADMIN1',
   });
-  token = jwt.sign({ id: admin._id.toString(), roles: admin.roles }, process.env.JWT_SECRET!);
+  token = jwt.sign(
+    { id: admin._id.toString(), roles: admin.roles, tenantId: admin.tenantId.toString() },
+    process.env.JWT_SECRET!,
+  );
 });
 
 describe('User Routes', () => {
@@ -51,29 +54,29 @@ describe('User Routes', () => {
       .send({
         name: 'User One',
         email: 'user1@example.com',
-        password: 'pass123',
+        passwordHash: 'StrongPass123!',
         roles: ['planner'],
         employeeId: 'EMP1',
       })
       .expect(201);
 
-    expect(createRes.body.password).toBeUndefined();
+    expect(createRes.body.data.password).toBeUndefined();
 
-    const userId = createRes.body._id;
+    const userId = createRes.body.data._id;
 
     const listRes = await request(app)
       .get('/api/users')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(listRes.body[0].password).toBeUndefined();
+    expect(listRes.body.data[0].password).toBeUndefined();
 
     const getRes = await request(app)
       .get(`/api/users/${userId}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(getRes.body.password).toBeUndefined();
+    expect(getRes.body.data.password).toBeUndefined();
 
     const updateRes = await request(app)
       .put(`/api/users/${userId}`)
@@ -81,7 +84,7 @@ describe('User Routes', () => {
       .send({ name: 'Updated Name' })
       .expect(200);
 
-    expect(updateRes.body.password).toBeUndefined();
+    expect(updateRes.body.data.password).toBeUndefined();
   });
 });
 

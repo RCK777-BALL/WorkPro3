@@ -39,7 +39,10 @@ beforeEach(async () => {
     tenantId: new mongoose.Types.ObjectId(),
     employeeId: 'ADMIN1',
   });
-  token = jwt.sign({ id: admin._id.toString(), roles: admin.roles }, process.env.JWT_SECRET!);
+  token = jwt.sign(
+    { id: admin._id.toString(), roles: admin.roles, tenantId: admin.tenantId.toString() },
+    process.env.JWT_SECRET!,
+  );
 });
 
 describe('Tenant Routes', () => {
@@ -50,20 +53,20 @@ describe('Tenant Routes', () => {
       .send({ name: 'Tenant A' })
       .expect(201);
 
-    const id = createRes.body._id;
+    const id = createRes.body.data._id;
 
     const listRes = await request(app)
       .get('/api/tenants')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
-    expect(listRes.body).toHaveLength(1);
+    expect(listRes.body.data).toHaveLength(1);
 
     const updateRes = await request(app)
       .put(`/api/tenants/${id}`)
       .set('Authorization', `Bearer ${token}`)
       .send({ name: 'Tenant B' })
       .expect(200);
-    expect(updateRes.body.name).toBe('Tenant B');
+    expect(updateRes.body.data.name).toBe('Tenant B');
 
     await request(app)
       .delete(`/api/tenants/${id}`)
@@ -74,6 +77,6 @@ describe('Tenant Routes', () => {
       .get('/api/tenants')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
-    expect(finalList.body).toHaveLength(0);
+    expect(finalList.body.data).toHaveLength(0);
   });
 });

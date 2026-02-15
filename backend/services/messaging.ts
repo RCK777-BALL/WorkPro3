@@ -41,6 +41,34 @@ const retryStatePath = process.env.MESSAGING_RETRY_STATE_PATH || path.join(os.tm
 const chunkDir = process.env.MESSAGING_CHUNK_DIR || path.join(os.tmpdir(), 'messaging-chunks');
 const chunkTtlMs = parseNumber(process.env.MESSAGING_CHUNK_TTL_MS, 15 * 60 * 1_000);
 
+export interface MessagingConfig {
+  brokers: string[];
+  clientId: string;
+  groupId: string;
+  enabled: boolean;
+  queueLimit: number;
+  maxAttempts: number;
+  baseBackoffMs: number;
+  maxBackoffMs: number;
+  jitterRatio: number;
+  chunkSize: number;
+  retryPollIntervalMs: number;
+}
+
+const defaultMessagingConfig: MessagingConfig = {
+  brokers,
+  clientId,
+  groupId,
+  enabled,
+  queueLimit,
+  maxAttempts,
+  baseBackoffMs,
+  maxBackoffMs,
+  jitterRatio,
+  chunkSize,
+  retryPollIntervalMs,
+};
+
 export interface MessagingHealth {
   enabled: boolean;
   producerReady: boolean;
@@ -93,6 +121,7 @@ export class MessagingService {
   private backpressure = false;
   private lastFailure?: string;
   private readonly kafkaFactory: KafkaFactory;
+  private readonly config: MessagingConfig;
   private readonly queue: QueueMessage[] = [];
   private readonly retryStatePath: string;
   private readonly chunkAssembly = new Map<string, ChunkAssembly>();
@@ -100,21 +129,13 @@ export class MessagingService {
   private chunkCleanupTimer: NodeJS.Timeout | null = null;
 
   constructor(
-    private readonly config = {
-      brokers,
-      clientId,
-      groupId,
-      enabled,
-      queueLimit,
-      maxAttempts,
-      baseBackoffMs,
-      maxBackoffMs,
-      jitterRatio,
-      chunkSize,
-      retryPollIntervalMs,
-    },
+    config: Partial<MessagingConfig> = {},
     kafkaFactory: KafkaFactory = (cfg) => new Kafka({ ...cfg, logLevel: logLevel.ERROR }),
   ) {
+    this.config = {
+      ...defaultMessagingConfig,
+      ...config,
+    };
     this.kafkaFactory = kafkaFactory;
     this.retryStatePath = retryStatePath;
     if (!fs.existsSync(path.dirname(this.retryStatePath))) {
@@ -127,10 +148,10 @@ export class MessagingService {
 
     this.loadQueueState();
     this.startChunkCleanup();
-    if (config.enabled) {
-      this.kafka = this.kafkaFactory({ clientId: config.clientId, brokers: config.brokers });
+    if (this.config.enabled) {
+      this.kafka = this.kafkaFactory({ clientId: this.config.clientId, brokers: this.config.brokers });
       this.producer = this.kafka.producer();
-      this.consumer = this.kafka.consumer({ groupId: config.groupId });
+      this.consumer = this.kafka.consumer({ groupId: this.config.groupId });
     } else {
       this.kafka = null;
       this.producer = null;
@@ -279,7 +300,7 @@ export class MessagingService {
         message.lastError = (err as Error).message;
         this.lastFailure = message.lastError;
 
-        if (message.attempts > this.config.maxAttempts) {
+        if (message.attempts >= this.config.maxAttempts) {
           emitTelemetry('messaging.retry.deadletter', {
             id: message.id,
             topic: message.topic,

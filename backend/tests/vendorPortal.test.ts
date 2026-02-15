@@ -23,6 +23,7 @@ let vendor2: any;
 let token1: string;
 let token2: string;
 let po: any;
+let tenantId: mongoose.Types.ObjectId;
 
 beforeAll(async () => {
   process.env.VENDOR_JWT_SECRET = 'vendsecret';
@@ -37,13 +38,14 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await mongoose.connection.db.dropDatabase();
-  vendor1 = await Vendor.create({ name: 'Vendor1' });
-  vendor2 = await Vendor.create({ name: 'Vendor2' });
+  tenantId = new mongoose.Types.ObjectId();
+  vendor1 = await Vendor.create({ tenantId, name: 'Vendor1' });
+  vendor2 = await Vendor.create({ tenantId, name: 'Vendor2' });
   token1 = jwt.sign({ id: vendor1._id.toString() }, process.env.VENDOR_JWT_SECRET!);
   token2 = jwt.sign({ id: vendor2._id.toString() }, process.env.VENDOR_JWT_SECRET!);
   po = await PurchaseOrder.create({
     vendor: vendor1._id,
-    tenantId: new mongoose.Types.ObjectId(),
+    tenantId,
     items: [{ item: new mongoose.Types.ObjectId(), quantity: 1, received: 0 }],
   });
 });
@@ -54,7 +56,8 @@ describe('Vendor portal purchase orders', () => {
       .get('/api/vendor-portal/pos')
       .set('Authorization', `Bearer ${token1}`)
       .expect(200);
-    expect(listRes.body.length).toBe(1);
+    const list = Array.isArray(listRes.body.data) ? listRes.body.data : listRes.body;
+    expect(list.length).toBe(1);
 
     await request(app)
       .put(`/api/vendor-portal/pos/${po._id}`)

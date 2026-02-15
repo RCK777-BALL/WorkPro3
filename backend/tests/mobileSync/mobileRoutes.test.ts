@@ -143,7 +143,7 @@ describe('mobile offline queue backoff and telemetry', () => {
       .expect(200);
 
     expect(failureRes.body.data.attempts).toBe(1);
-    expect(failureRes.body.data.status).toBe('pending');
+    expect(failureRes.body.data.status).toBe('retrying');
     expect(failureRes.body.data.backoffSeconds).toBeGreaterThanOrEqual(5);
     expect(new Date(failureRes.body.data.nextAttemptAt).getTime()).toBeGreaterThan(Date.now());
 

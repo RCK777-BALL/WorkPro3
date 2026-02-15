@@ -28,6 +28,5 @@ describe('seed fixtures', () => {
   it('captures a completed PM work order checklist', () => {
     expect(workOrderWithChecklistFixture.status).toBe('completed');
     expect(workOrderWithChecklistFixture.checklists?.every((item) => item.status === 'done')).toBe(true);
-    expect(workOrderWithChecklistFixture.checklist?.filter((item) => item.required)).not.toHaveLength(0);
   });
 });

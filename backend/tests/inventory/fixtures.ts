@@ -1,8 +1,10 @@
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 
 import User from '../../models/User';
+import Site from '../../models/Site';
 import type { UserDocument } from '../../models/User';
 
 export interface TestUser {
@@ -13,12 +15,14 @@ export interface TestUser {
 }
 
 export async function setupInMemoryMongo() {
-  const mongo = await MongoMemoryServer.create();
+  const mongo = await MongoMemoryReplSet.create({
+    replSet: { count: 1 },
+  });
   await mongoose.connect(mongo.getUri());
   return mongo;
 }
 
-export async function teardownInMemoryMongo(mongo: MongoMemoryServer) {
+export async function teardownInMemoryMongo(mongo: MongoMemoryServer | MongoMemoryReplSet) {
   await mongoose.disconnect();
   await mongo.stop();
 }
@@ -35,6 +39,19 @@ export async function createTestUser(
   tenantId: mongoose.Types.ObjectId = new mongoose.Types.ObjectId(),
   siteId: mongoose.Types.ObjectId = new mongoose.Types.ObjectId(),
 ): Promise<TestUser> {
+  await Site.updateOne(
+    { _id: siteId },
+    {
+      $setOnInsert: {
+        _id: siteId,
+        tenantId,
+        name: `${role}-site`,
+        slug: `${role}-${siteId.toString().slice(-6)}`.toLowerCase(),
+      },
+    },
+    { upsert: true },
+  );
+
   const user = await User.create({
     name: `${role}-user`,
     email: `${role}-${tenantId.toString()}@example.com`,

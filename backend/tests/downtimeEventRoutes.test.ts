@@ -52,16 +52,20 @@ beforeEach(() => {
 });
 
 describe('Downtime event routes', () => {
+  const validTenantId = '656000000000000000000000';
+  const validAssetId = '656000000000000000000001';
+  const validEventId = '6560000000000000000000aa';
+
   it('lists downtime events with filters', async () => {
     listDowntimeEvents.mockResolvedValue([{ id: 'evt-1' }]);
 
     const res = await request(app)
-      .get('/api/downtime-events?assetId=asset-1&activeOnly=true&causeCode=ELEC&start=2024-01-01&end=2024-01-31')
+      .get(`/api/downtime-events?assetId=${validAssetId}&activeOnly=true&causeCode=ELEC&start=2024-01-01&end=2024-01-31`)
       .expect(200);
 
     expect(res.body.data).toEqual([{ id: 'evt-1' }]);
     expect(listDowntimeEvents).toHaveBeenCalledWith('tenant123', {
-      assetId: 'asset-1',
+      assetId: validAssetId,
       workOrderId: undefined,
       causeCode: 'ELEC',
       activeOnly: true,
@@ -71,18 +75,26 @@ describe('Downtime event routes', () => {
   });
 
   it('creates and updates downtime events', async () => {
-    createDowntimeEvent.mockResolvedValue({ _id: 'evt-1', assetId: 'asset-1' });
-    updateDowntimeEvent.mockResolvedValue({ _id: 'evt-1', causeCode: 'ELEC' });
-    getDowntimeEvent.mockResolvedValue({ _id: 'evt-1', toObject: () => ({ _id: 'evt-1' }) });
+    createDowntimeEvent.mockResolvedValue({
+      _id: validEventId,
+      assetId: validAssetId,
+      toObject: () => ({ _id: validEventId, assetId: validAssetId }),
+    });
+    updateDowntimeEvent.mockResolvedValue({
+      _id: validEventId,
+      causeCode: 'ELEC',
+      toObject: () => ({ _id: validEventId, causeCode: 'ELEC' }),
+    });
+    getDowntimeEvent.mockResolvedValue({ _id: validEventId, toObject: () => ({ _id: validEventId }) });
 
     const created = await request(app)
       .post('/api/downtime-events')
-      .send({ assetId: 'asset-1', start: new Date().toISOString(), causeCode: 'ELEC', reason: 'Fuse' })
+      .send({ assetId: validAssetId, start: new Date().toISOString(), causeCode: 'ELEC', reason: 'Fuse' })
       .expect(201);
-    expect(created.body.data._id).toBe('evt-1');
+    expect(created.body.data._id).toBe(validEventId);
 
     const updated = await request(app)
-      .put('/api/downtime-events/evt-1')
+      .put(`/api/downtime-events/${validEventId}`)
       .send({ causeCode: 'ELEC' })
       .expect(200);
     expect(updated.body.data.causeCode).toBe('ELEC');
@@ -91,7 +103,7 @@ describe('Downtime event routes', () => {
   it('deletes downtime events', async () => {
     deleteDowntimeEvent.mockResolvedValue({ _id: new Types.ObjectId() });
 
-    const res = await request(app).delete('/api/downtime-events/evt-1').expect(200);
+    const res = await request(app).delete(`/api/downtime-events/${validEventId}`).expect(200);
     expect(res.body.data.message).toBe('Deleted successfully');
   });
 
@@ -99,8 +111,8 @@ describe('Downtime event routes', () => {
     listDowntimeEvents.mockResolvedValue([
       {
         _id: new Types.ObjectId(),
-        tenantId: new Types.ObjectId('656000000000000000000000'),
-        assetId: new Types.ObjectId('656000000000000000000001'),
+        tenantId: new Types.ObjectId(validTenantId),
+        assetId: new Types.ObjectId(validAssetId),
         start: new Date('2024-01-05T10:00:00Z'),
         end: new Date('2024-01-05T11:00:00Z'),
         causeCode: 'ELEC',

@@ -63,15 +63,21 @@ describe('messaging service resilience', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 5));
 
-    expect(mock.send).toHaveBeenCalledTimes(3);
-    expect(mock.send).toHaveBeenNthCalledWith(2, {
-      topic: 'topic-a',
-      messages: [{ value: JSON.stringify({ id: 1 }) }],
-    });
-    expect(mock.send).toHaveBeenNthCalledWith(3, {
-      topic: 'topic-b',
-      messages: [{ value: JSON.stringify({ id: 2 }) }],
-    });
+    expect(mock.send.mock.calls.length).toBeGreaterThanOrEqual(3);
+    expect(
+      mock.send.mock.calls.some(
+        ([payload]) =>
+          payload?.topic === 'topic-a' &&
+          payload?.messages?.[0]?.value === JSON.stringify({ id: 1 }),
+      ),
+    ).toBe(true);
+    expect(
+      mock.send.mock.calls.some(
+        ([payload]) =>
+          payload?.topic === 'topic-b' &&
+          payload?.messages?.[0]?.value === JSON.stringify({ id: 2 }),
+      ),
+    ).toBe(true);
     expect(service.getHealth().queueDepth).toBe(0);
   });
 

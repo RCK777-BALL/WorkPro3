@@ -11,7 +11,10 @@ export default defineConfig({
     alias: {
       '@': resolve(__dirname, './src'),
       '@common': resolve(__dirname, './src/components/common'),
-      '@backend-shared': resolve(__dirname, '../backend/shared'),
+      '@backend-shared/permissions': resolve(__dirname, '../shared/types/permissions.ts'),
+      '@backend-shared/pmAnalytics': resolve(__dirname, '../Backend/shared/pmAnalytics.ts'),
+      '@backend-shared/reports': resolve(__dirname, '../Backend/shared/reports.ts'),
+      '@backend-shared': resolve(__dirname, '../Backend/shared'),
     }
   },
   server: {

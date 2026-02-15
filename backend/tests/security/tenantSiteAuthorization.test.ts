@@ -74,11 +74,12 @@ describe('authorizeTenantSite middleware', () => {
     });
     app.use(tenantScope);
     app.use(authorizeTenantSite());
-    app.get('/tenants/:tenantId', (_req, res) => res.json({ ok: true }));
+    app.post('/tenants/check', (_req, res) => res.json({ ok: true }));
 
     await request(app)
-      .get(`/tenants/${tenantB._id.toString()}`)
+      .post('/tenants/check')
       .set('x-tenant-id', tenantA._id.toString())
+      .send({ tenantId: tenantB._id.toString() })
       .expect(403);
   });
 

@@ -65,6 +65,8 @@ export interface DowntimeCostMetrics {
   currency: string;
 }
 
+const asArray = <T>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
+
 const buildDateRange = (field: string, window: TimeWindow): Record<string, unknown> => {
   const range: Record<string, unknown> = {};
   if (window.start) range.$gte = window.start;
@@ -384,10 +386,23 @@ export const calculateTechnicianUtilization = async (
   const start = window.start ?? new Date(end.getTime() - 1000 * 60 * 60 * 24 * 30);
   const rangeFilter = buildDateRange('completedAt', { start, end });
 
-  const entries = await WorkHistory.find({ tenantId, ...rangeFilter })
-    .select(['performedBy', 'timeSpentHours'])
-    .lean()
-    .exec();
+  const historyQuery = WorkHistory.find({ tenantId, ...rangeFilter }) as unknown as {
+    select?: (fields: string[]) => unknown;
+    lean?: () => unknown;
+    exec?: () => Promise<unknown>;
+  };
+  const selected = typeof historyQuery.select === 'function'
+    ? historyQuery.select(['performedBy', 'timeSpentHours'])
+    : historyQuery;
+  const leaned = typeof (selected as { lean?: () => unknown }).lean === 'function'
+    ? (selected as { lean: () => unknown }).lean()
+    : selected;
+  const entriesRaw = (
+    typeof (leaned as { exec?: () => Promise<unknown> }).exec === 'function'
+      ? await (leaned as { exec: () => Promise<unknown> }).exec()
+      : leaned
+  );
+  const entries = asArray<{ performedBy?: Types.ObjectId | string; timeSpentHours?: number }>(entriesRaw);
 
   const hoursByTech = new Map<string, number>();
   entries.forEach((entry) => {
@@ -406,9 +421,19 @@ export const calculateTechnicianUtilization = async (
   }
 
   const technicianIds = Array.from(hoursByTech.keys());
-  const technicians = await User.find({ tenantId, _id: { $in: technicianIds } })
-    .select(['_id', 'name', 'email'])
-    .lean();
+  const technicianQuery = User.find({ tenantId, _id: { $in: technicianIds } }) as unknown as {
+    select?: (fields: string[]) => unknown;
+    lean?: () => Promise<unknown> | unknown;
+  };
+  const selectedTechnicians = typeof technicianQuery.select === 'function'
+    ? technicianQuery.select(['_id', 'name', 'email'])
+    : technicianQuery;
+  const techniciansRaw = (
+    typeof (selectedTechnicians as { lean?: () => Promise<unknown> | unknown }).lean === 'function'
+      ? await (selectedTechnicians as { lean: () => Promise<unknown> | unknown }).lean()
+      : selectedTechnicians
+  );
+  const technicians = asArray<{ _id: Types.ObjectId | string; name?: string; email?: string }>(techniciansRaw);
 
   const nameMap = new Map(
     technicians.map((tech) => [tech._id.toString(), tech.name || tech.email || 'Technician']),

@@ -147,6 +147,7 @@ describe('Vendor Portal Routes', () => {
   it('generates invitation tokens and emails vendors', async () => {
     const res = await request(app)
       .post('/vendor-portal/invite')
+      .set('Authorization', `Bearer ${token}`)
       .send({ email: 'invitee@example.com' })
       .expect(200);
     const inviteToken = res.body.token;

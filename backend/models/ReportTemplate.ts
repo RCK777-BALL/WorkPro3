@@ -75,7 +75,7 @@ const reportTemplateSchema = new Schema<ReportTemplate>(
       roles: { type: [String], default: [] },
       _id: false,
     },
-    shareId: { type: String, default: nanoid },
+    shareId: { type: String, default: () => nanoid() },
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
     ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   },

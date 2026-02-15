@@ -42,8 +42,9 @@ const downtimeEventSchema = new Schema<DowntimeEventDocument>(
     end: {
       type: Date,
       validate: {
-        validator(this: DowntimeEventDocument, value?: Date) {
-          return !value || value > this.start;
+        validator(this: unknown, value?: Date) {
+          const start = (this as DowntimeEventDocument).start;
+          return !value || value > start;
         },
         message: 'End time must be after start time',
       },
@@ -78,7 +79,7 @@ async function hasOverlap(
 
 downtimeEventSchema.pre('save', async function validateOverlap() {
   const model = this.constructor as Model<DowntimeEventDocument>;
-  const conflict = await hasOverlap(model, this as DowntimeEventDocument);
+  const conflict = await hasOverlap(model, this as unknown as DowntimeEventDocument);
 
   if (conflict) {
     throw new Error('Downtime events may not overlap for the same asset');

@@ -179,7 +179,7 @@ export default function CustomReportBuilder() {
     setSelectedFields(template.fields);
     setGroupBy(template.groupBy ?? []);
     setFilters(
-      (template.filters ?? []).map((filter) => ({
+      (template.filters ?? []).map((filter: ReportFilter) => ({
         ...filter,
         value: Array.isArray(filter.value) ? filter.value.join(',') : filter.value ?? '',
       })),
@@ -202,7 +202,7 @@ export default function CustomReportBuilder() {
 
   const rowsWithIds = useMemo<CustomReportRow[]>(
     () =>
-      reportData?.rows.map((row, index) => ({
+      reportData?.rows.map((row: CustomReportResponse['rows'][number], index: number) => ({
         __id: `row-${index}`,
         ...row,
       })) ?? [],
@@ -211,7 +211,7 @@ export default function CustomReportBuilder() {
 
   const columns = useMemo<Array<{ header: string; accessor: keyof CustomReportRow }>>(
     () =>
-      (reportData?.columns ?? []).map((column) => ({
+      (reportData?.columns ?? []).map((column: CustomReportResponse['columns'][number]) => ({
         header: column.label,
         accessor: column.key as keyof CustomReportRow,
       })),

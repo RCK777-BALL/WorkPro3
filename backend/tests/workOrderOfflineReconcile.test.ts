@@ -39,11 +39,14 @@ beforeEach(async () => {
     name: 'Offline Tester',
     email: 'offline@example.com',
     passwordHash: 'pass123',
-    roles: ['supervisor'],
+    roles: ['admin'],
     tenantId: new mongoose.Types.ObjectId(),
     employeeId: 'EMP-OFF',
   });
-  token = jwt.sign({ id: user._id.toString(), roles: user.roles }, process.env.JWT_SECRET!);
+  token = jwt.sign(
+    { id: user._id.toString(), roles: user.roles, tenantId: user.tenantId.toString() },
+    process.env.JWT_SECRET!,
+  );
 });
 
 describe('work order offline reconcile', () => {

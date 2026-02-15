@@ -87,9 +87,8 @@ const vendorSchema = new Schema<VendorDocument>(
   { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } },
 );
 
-vendorSchema.pre('validate', function preValidate(next) {
+vendorSchema.pre('validate', function preValidate() {
   validateVendorFields(this.name, this.contact?.email);
-  next();
 });
 
 vendorSchema.index({ tenantId: 1, name: 1 });

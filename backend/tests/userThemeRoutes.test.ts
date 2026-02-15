@@ -37,8 +37,13 @@ beforeEach(async () => {
     email: 'tester@example.com',
     passwordHash: 'pass123',
     roles: ['planner'],
+    tenantId: new mongoose.Types.ObjectId(),
+    employeeId: 'EMP-THEME',
   });
-  token = jwt.sign({ id: user._id.toString(), roles: user.roles }, process.env.JWT_SECRET!);
+  token = jwt.sign(
+    { id: user._id.toString(), roles: user.roles, tenantId: user.tenantId.toString() },
+    process.env.JWT_SECRET!,
+  );
 });
 
 describe('User Theme Routes', () => {
@@ -54,6 +59,6 @@ describe('User Theme Routes', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(res.body.theme).toBe('dark');
+    expect(res.body.data.theme).toBe('dark');
   });
 });

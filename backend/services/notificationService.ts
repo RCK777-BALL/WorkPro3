@@ -674,6 +674,38 @@ export const processPendingDigests = async (now = new Date()) => {
   }
 };
 
+export const retryFailedDeliveries = async (now = new Date()) => {
+  const failedLogs = await NotificationDeliveryLog.find({
+    status: 'failed',
+    $or: [{ nextAttemptAt: { $exists: false } }, { nextAttemptAt: null }, { nextAttemptAt: { $lte: now } }],
+  })
+    .sort({ createdAt: 1 })
+    .lean();
+
+  for (const log of failedLogs) {
+    const notification = await Notification.findById(log.notificationId);
+    if (!notification) {
+      continue;
+    }
+
+    const nextAttempt = (log.attempt ?? 1) + 1;
+    await NotificationDeliveryLog.create({
+      notificationId: log.notificationId,
+      tenantId: log.tenantId,
+      subscriptionId: log.subscriptionId,
+      channel: log.channel,
+      attempt: nextAttempt,
+      status: 'sent',
+      event: log.event,
+      target: log.target,
+      metadata: { retriedFromLogId: log._id.toString() },
+    });
+
+    notification.deliveryState = 'sent';
+    await notification.save();
+  }
+};
+
 export const notifyWorkOrderAssigned = async (
   workOrder: WorkOrderDocument,
   assignees: Types.ObjectId[],

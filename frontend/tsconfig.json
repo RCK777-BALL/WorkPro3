@@ -5,7 +5,10 @@
     "paths": {
       "@/*": ["src/*"],
       "@common/*": ["src/components/common/*"],
-      "@backend-shared/*": ["../backend/shared/*"]
+      "@backend-shared/permissions": ["../shared/types/permissions.ts"],
+      "@backend-shared/pmAnalytics": ["../Backend/shared/pmAnalytics.ts"],
+      "@backend-shared/reports": ["../Backend/shared/reports.ts"],
+      "@backend-shared/*": ["../Backend/shared/*"]
     }
   },
   "include": ["src", "analytics"]

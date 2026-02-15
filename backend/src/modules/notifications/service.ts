@@ -6,7 +6,7 @@ import { Types } from 'mongoose';
 
 import type { WorkOrderDocument } from '../../../models/WorkOrder';
 import NotificationSubscription from '../../../models/NotificationSubscription';
-import { createNotification } from '../../../services/notificationService';
+import { createNotification, retryFailedDeliveries } from '../../../services/notificationService';
 import type { NotificationSubscriptionInput } from './schemas';
 
 const buildRecipients = (workOrder: WorkOrderDocument, override?: Types.ObjectId[]) => {
@@ -105,3 +105,5 @@ export const deleteUserSubscription = async (
   userId: Types.ObjectId,
   id: string,
 ) => NotificationSubscription.findOneAndDelete({ _id: id, tenantId, userId });
+
+export { retryFailedDeliveries };

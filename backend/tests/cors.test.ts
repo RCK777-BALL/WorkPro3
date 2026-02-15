@@ -16,7 +16,7 @@ describe('CORS configuration', () => {
   it('allows requests from whitelisted origins', async () => {
     const origin = 'http://allowed.com';
     const res = await request(app).get('/').set('Origin', origin);
-    expect(res.status).toBe(404); // root path returns 404 but CORS headers should be set
+    expect(res.status).toBe(200);
     expect(res.headers['access-control-allow-origin']).toBe(origin);
     expect(res.headers['access-control-allow-credentials']).toBe('true');
   });

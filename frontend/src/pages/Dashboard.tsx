@@ -30,6 +30,7 @@ import { OnboardingWizard } from "@/features/onboarding";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
 import { usePmCompletionAnalytics } from "@/hooks/usePmAnalytics";
 import { Card, SectionHeader } from "@/components/ui";
+import type { PmCompletionPoint } from "@backend-shared/pmAnalytics";
 
 type SummaryResponse = {
   openWorkOrders: number;
@@ -1210,7 +1211,10 @@ export default function Dashboard() {
   const pmAnalyticsQuery = usePmCompletionAnalytics(6);
   const pmTrend = pmAnalyticsQuery.data?.trend ?? [];
   const pmTotals = pmAnalyticsQuery.data?.totals;
-  const pmCompletionSparkline = useMemo(() => pmTrend.map((point) => Number(point.completionRate ?? 0)), [pmTrend]);
+  const pmCompletionSparkline = useMemo(
+    () => pmTrend.map((point: PmCompletionPoint) => Number(point.completionRate ?? 0)),
+    [pmTrend],
+  );
 
   const summaryCards = useMemo(() => {
     const trends: SummaryTrends = {

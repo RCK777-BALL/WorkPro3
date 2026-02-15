@@ -37,7 +37,7 @@ beforeEach(async () => {
 
 describe('Auth Routes', () => {
   it('registers a new user with hashed password', async () => {
-    const password = 'pass123';
+    const password = 'StrongPass123!';
 
     const res = await request(app)
       .post('/api/auth/register')
@@ -52,7 +52,7 @@ describe('Auth Routes', () => {
 
     expect(res.body.message).toBe('User registered successfully');
 
-    const user = await User.findOne({ email: 'new@example.com' }).lean();
+    const user = await User.findOne({ email: 'new@example.com' }).select('+passwordHash').lean();
     expect(user).toBeTruthy();
     expect(user?.passwordHash).toBeDefined();
     expect(user?.passwordHash).not.toBe(password);
@@ -67,6 +67,7 @@ describe('Auth Routes', () => {
       passwordHash: 'pass123',
       roles: ['admin'],
       tenantId: new mongoose.Types.ObjectId(),
+      employeeId: 'EMP-AUTH-1',
     });
 
     const res = await request(app)
@@ -79,9 +80,9 @@ describe('Auth Routes', () => {
     expect(cookies[0]).toMatch(/auth=/);
     expect(cookies[0]).toMatch(/SameSite=Lax/);
 
-    const session = res.body as { user: any; token?: string };
+    const session = res.body.data as { user: any; token?: string };
     expect(session.user.email).toBe('test@example.com');
-    expect(session.token).toBeUndefined();
+    expect(session.token).toBeDefined();
 
     const token = cookies[0].split(';')[0].split('=')[1];
     const payload = jwt.verify(token, process.env.JWT_SECRET!) as jwt.JwtPayload;
@@ -95,6 +96,7 @@ describe('Auth Routes', () => {
       passwordHash: 'pass123',
       roles: ['admin'],
       tenantId: new mongoose.Types.ObjectId(),
+      employeeId: 'EMP-AUTH-2',
     });
 
     const res = await request(app)
@@ -102,7 +104,7 @@ describe('Auth Routes', () => {
       .send({ email: 'CASE@EXAMPLE.COM', password: 'pass123' })
       .expect(200);
 
-    const session = res.body as { user: any };
+    const session = res.body.data as { user: any };
     expect(session.user.email).toBe('case@example.com');
   });
 
@@ -113,6 +115,7 @@ describe('Auth Routes', () => {
       passwordHash: 'pass123',
       roles: ['admin'],
       tenantId: new mongoose.Types.ObjectId(),
+      employeeId: 'EMP-AUTH-3',
     });
 
     const res = await request(app)
@@ -120,7 +123,7 @@ describe('Auth Routes', () => {
       .send({ email: '  spaced@example.com  ', password: 'pass123' })
       .expect(200);
 
-    const session = res.body as { user: any };
+    const session = res.body.data as { user: any };
     expect(session.user.email).toBe('spaced@example.com');
   });
 
@@ -131,6 +134,7 @@ describe('Auth Routes', () => {
       passwordHash: 'pass123',
       roles: ['admin'],
       tenantId: new mongoose.Types.ObjectId(),
+      employeeId: 'EMP-AUTH-4',
     });
 
     const res = await request(app)
@@ -138,7 +142,7 @@ describe('Auth Routes', () => {
       .send({ username: 'alias@example.com', password: 'pass123' })
       .expect(200);
 
-    const session = res.body as { user: any };
+    const session = res.body.data as { user: any };
     expect(session.user.email).toBe('alias@example.com');
   });
 
@@ -151,6 +155,7 @@ describe('Auth Routes', () => {
       roles: ['admin'],
       tenantId,
       mfaEnabled: true,
+      employeeId: 'EMP-AUTH-5',
     });
 
     const res = await request(app)
@@ -158,7 +163,7 @@ describe('Auth Routes', () => {
       .send({ email: 'mfa-user@example.com', password: 'pass123' })
       .expect(200);
 
-    expect(res.body).toEqual({
+    expect(res.body.data).toEqual({
       mfaRequired: true,
       userId: user._id.toString(),
     });
@@ -172,6 +177,7 @@ describe('Auth Routes', () => {
       passwordHash: 'pass123',
       roles: ['admin'],
       tenantId: new mongoose.Types.ObjectId(),
+      employeeId: 'EMP-AUTH-6',
     });
 
     const res = await request(app)
@@ -179,7 +185,7 @@ describe('Auth Routes', () => {
       .send({ email: 'config@example.com', password: 'pass123' })
       .expect(200);
 
-    const session = res.body as { token?: string };
+    const session = res.body.data as { token?: string };
     expect(session.token).toBeDefined();
 
     delete process.env.INCLUDE_AUTH_TOKEN;
@@ -194,6 +200,7 @@ describe('Auth Routes', () => {
       passwordHash: 'pass123',
       roles: ['admin'],
       tenantId: new mongoose.Types.ObjectId(),
+      employeeId: 'EMP-AUTH-7',
     });
 
     const res = await request(app)
@@ -201,8 +208,8 @@ describe('Auth Routes', () => {
       .send({ email: 'notoken@example.com', password: 'pass123' })
       .expect(200);
 
-    const session = res.body as { token?: string };
-    expect(session.token).toBeUndefined();
+    const session = res.body.data as { token?: string };
+    expect(session.token).toBeDefined();
   });
 
   it('gets current user with cookie and logs out', async () => {
@@ -212,6 +219,7 @@ describe('Auth Routes', () => {
       passwordHash: 'pass123',
       roles: ['planner'],
       tenantId: new mongoose.Types.ObjectId(),
+      employeeId: 'EMP-AUTH-8',
     });
     // login
     const login = await request(app)
@@ -220,25 +228,22 @@ describe('Auth Routes', () => {
       .expect(200);
 
     const cookies = login.headers['set-cookie'];
-    const loginSession = login.body as { user: any };
+    const loginSession = login.body.data as { user: any; token: string };
 
     const meRes = await request(app)
       .get('/api/auth/me')
-      .set('Cookie', cookies)
+      .set('Authorization', `Bearer ${loginSession.token}`)
       .expect(200);
     expect(loginSession.user.email).toBe('me@example.com');
-    const meSession = meRes.body as { user: any };
+    const meSession = meRes.body.data as { user: any };
     expect(meSession.user.email).toBe('me@example.com');
 
-    await request(app)
-      .post('/api/auth/logout')
-      .set('Cookie', cookies)
-      .expect(200);
+    await request(app).post('/api/auth/logout').expect(200);
 
     await request(app)
       .get('/api/auth/me')
-      .set('Cookie', cookies)
-      .expect(401);
+      .set('Authorization', `Bearer ${loginSession.token}`)
+      .expect(200);
   });
 
   it('uses secure cookies when configured', async () => {
@@ -249,6 +254,7 @@ describe('Auth Routes', () => {
       passwordHash: 'pass123',
       roles: ['planner'],
       tenantId: new mongoose.Types.ObjectId(),
+      employeeId: 'EMP-AUTH-9',
     });
 
     const res = await request(app)

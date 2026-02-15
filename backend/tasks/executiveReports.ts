@@ -3,7 +3,7 @@
  */
 
 import cron from 'node-cron';
-import parseExpression from 'cron-parser';
+import { parseExpression } from 'cron-parser';
 import nodemailer from 'nodemailer';
 
 import ExecutiveReportSchedule, {

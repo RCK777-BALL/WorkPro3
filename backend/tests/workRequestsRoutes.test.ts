@@ -34,16 +34,21 @@ let technicianToken: string;
 let viewerToken: string;
 
 const createUserToken = async (roles: string[]) => {
+  const primaryRole = roles[0] ?? 'viewer';
   const user = await User.create({
-    name: `${roles[0]} user`,
-    email: `${roles[0]}@example.com`,
+    name: `${primaryRole} user`,
+    email: `${primaryRole}@example.com`,
     passwordHash: 'hash',
     roles,
     tenantId,
     siteId,
     active: true,
+    employeeId: `EMP-${primaryRole}-${Date.now()}`,
   });
-  return jwt.sign({ id: user._id.toString(), tenantId: tenantId.toString(), role: roles[0], siteId: siteId.toString() }, jwtSecret);
+  return jwt.sign(
+    { id: user._id.toString(), tenantId: tenantId.toString(), role: primaryRole, roles, siteId: siteId.toString() },
+    jwtSecret,
+  );
 };
 
 const seedBase = async () => {
@@ -53,8 +58,8 @@ const seedBase = async () => {
   siteId = site._id;
   await RequestForm.create({ slug: 'default', name: 'Default form', schema: {}, tenantId, siteId });
   adminToken = await createUserToken(['admin']);
-  technicianToken = await createUserToken(['technician']);
-  viewerToken = await createUserToken(['guest']);
+  technicianToken = await createUserToken(['tech']);
+  viewerToken = await createUserToken(['viewer']);
 };
 
 beforeAll(async () => {

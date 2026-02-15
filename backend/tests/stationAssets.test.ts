@@ -30,6 +30,7 @@ describe('Station asset references', () => {
     const department = await Department.create({
       name: 'Prod',
       tenantId,
+      plant: new mongoose.Types.ObjectId(),
       lines: [
         {
           name: 'Line1',

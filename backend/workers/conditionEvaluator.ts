@@ -39,11 +39,18 @@ export async function evaluateCondition(reading: ConditionReading): Promise<void
 
   for (const rule of rules) {
     if (compare(reading.value, rule.operator, rule.threshold)) {
+      const title = (rule.workOrderTitle ?? '').trim() || `Condition alert: ${reading.metric}`;
+      const description =
+        (rule.workOrderDescription ?? '').trim() ||
+        `Metric ${reading.metric} crossed threshold ${rule.operator} ${rule.threshold}. Current value: ${reading.value}.`;
+
       await WorkOrder.create({
-        title: rule.workOrderTitle,
-        description: rule.workOrderDescription,
-        asset: reading.asset,
+        title,
+        description,
+        assetId: reading.asset,
         tenantId: reading.tenantId,
+        status: 'requested',
+        type: 'corrective',
       });
     }
   }

@@ -36,7 +36,7 @@ export interface NotificationDocument extends Document {
 const notificationSchema = new Schema<NotificationDocument>({
   title: { type: String, required: true },
   message: { type: String, required: true },
-  type: { type: String, enum: ['info', 'warning', 'critical'], required: true },
+  type: { type: String, enum: ['info', 'warning', 'critical'], required: true, default: 'info' },
   category: {
     type: String,
     enum: ['assigned', 'updated', 'overdue', 'pm_due', 'comment', 'request_submitted'],

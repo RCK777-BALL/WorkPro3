@@ -38,8 +38,16 @@ beforeEach(async () => {
   await mongoose.connection.db?.dropDatabase();
   const tenant = await Tenant.create({ name: 'TriCo' });
   const site = await Site.create({ name: 'Plant', tenantId: tenant._id });
-  const form = await RequestForm.create({ slug: 'default', schema: [], siteId: site._id });
-  const user = await User.create({ email: 'triage@example.com', passwordHash: 'hash', tenantId: tenant._id, siteId: site._id });
+  const form = await RequestForm.create({ slug: 'default', schema: [], siteId: site._id, tenantId: tenant._id });
+  const user = await User.create({
+    name: 'Triage User',
+    email: 'triage@example.com',
+    passwordHash: 'hash',
+    tenantId: tenant._id,
+    siteId: site._id,
+    roles: ['admin'],
+    employeeId: `EMP-REQ-${Date.now()}`,
+  });
   token = jwt.sign({ id: user._id.toString(), tenantId: tenant._id.toString(), siteId: site._id.toString() }, 'test-secret');
 
   // Attach helpers to request for later tests
@@ -59,7 +67,7 @@ describe('requests API', () => {
       })
       .expect(201);
 
-    expect(response.body.title).toBe('Line stoppage');
+    expect(response.body.data.title).toBe('Line stoppage');
   });
 
   it('updates status', async () => {
@@ -75,12 +83,12 @@ describe('requests API', () => {
       .expect(201);
 
     const updated = await request(app)
-      .patch(`/api/requests/${created.body._id}/status`)
+      .patch(`/api/requests/${created.body.data._id}/status`)
       .set('Authorization', `Bearer ${token}`)
       .send({ status: 'reviewing' })
       .expect(200);
 
-    expect(updated.body.status).toBe('reviewing');
+    expect(updated.body.data.status).toBe('reviewing');
   });
 });
 

@@ -26,12 +26,12 @@ const COLOR_SCHEMES: Record<
   }
 > = {
   default: {
-    accent: '#4f46e5',
-    accentStrong: '#4338ca',
-    accentLight: '#e0e7ff',
-    glow: 'rgba(99, 102, 241, 0.28)',
-    glowStrong: 'rgba(79, 70, 229, 0.22)',
-    halo: 'rgba(56, 189, 248, 0.14)',
+    accent: '#0d74c7',
+    accentStrong: '#0a5ea6',
+    accentLight: '#e6f2fc',
+    glow: 'rgba(13, 116, 199, 0.28)',
+    glowStrong: 'rgba(10, 94, 166, 0.22)',
+    halo: 'rgba(47, 154, 229, 0.14)',
   },
   teal: {
     accent: '#0f766e',
@@ -55,19 +55,14 @@ export default function Layout() {
   const location = useLocation();
   const { pathname } = location;
   const { t } = useTranslation();
-  const { backgroundColor, textColor, theme } = useTheme();
-  const { sidebarCollapsed, denseMode, highContrast, colorScheme = 'default' } = useSettingsStore(
+  const { backgroundColor, textColor, theme, setTheme } = useTheme();
+  const { sidebarCollapsed, denseMode, highContrast, colorScheme = 'default', mode } = useSettingsStore(
     (state) => state.theme,
   );
   const unauthorizedHandledKeyRef = useRef<string | null>(null);
   const accent = useMemo(() => COLOR_SCHEMES[colorScheme] ?? COLOR_SCHEMES.default, [colorScheme]);
   const semanticTheme = useMemo(() => {
-    const mode =
-      theme === 'system'
-        ? (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
-            ? 'dark'
-            : 'light')
-        : theme;
+    const mode = theme === 'system' ? 'light' : theme;
     return resolveTheme(mode === 'dark' ? 'dark' : 'light');
   }, [theme]);
 
@@ -104,6 +99,13 @@ export default function Layout() {
   useEffect(() => {
     applyThemeCssVariables(semanticTheme);
   }, [semanticTheme]);
+
+  useEffect(() => {
+    if (!mode) return;
+    if (theme !== mode) {
+      setTheme(mode);
+    }
+  }, [mode, setTheme, theme]);
 
   useEffect(() => {
     const state = (location.state as { unauthorized?: boolean; message?: string } | null) ?? null;

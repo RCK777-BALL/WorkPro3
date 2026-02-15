@@ -39,16 +39,150 @@ body {
 
 .light {
   color-scheme: light;
-  --app-background-color: #f8fafc;
+  --app-background-color: #f4f6f9;
   --app-surface-color: #ffffff;
-  --app-border-color: #e2e8f0;
-  --app-text-color: #0f172a;
-  --accent-color: #4f46e5;
-  --accent-color-strong: #4338ca;
-  --accent-color-light: #e0e7ff;
-  --accent-glow: rgba(99, 102, 241, 0.12);
-  --accent-glow-strong: rgba(79, 70, 229, 0.16);
-  --accent-halo: rgba(56, 189, 248, 0.08);
+  --app-border-color: #d6dfea;
+  --app-text-color: #000000;
+  --accent-color: #0d74c7;
+  --accent-color-strong: #0a5ea6;
+  --accent-color-light: #e6f2fc;
+  --accent-glow: rgba(13, 116, 199, 0.14);
+  --accent-glow-strong: rgba(10, 94, 166, 0.18);
+  --accent-halo: rgba(47, 154, 229, 0.1);
+}
+
+.system {
+  color-scheme: light;
+  --app-background-color: #0f5bac;
+  --app-surface-color: #ffffff;
+  --app-border-color: #c8d9ee;
+  --app-text-color: #000000;
+  --accent-color: #0d74c7;
+  --accent-color-strong: #0a5ea6;
+  --accent-color-light: #dbeeff;
+  --accent-glow: rgba(13, 116, 199, 0.14);
+  --accent-glow-strong: rgba(10, 94, 166, 0.18);
+  --accent-halo: rgba(47, 154, 229, 0.1);
+}
+
+.system .app-shell-root {
+  background:
+    linear-gradient(115deg, #0c4ca0 0%, #0f63af 38%, #0d8aa7 72%, #11a79d 100%);
+}
+
+.system .app-shell-overlay {
+  background:
+    radial-gradient(circle at 20% 120%, rgba(7, 52, 125, 0.45), transparent 38%),
+    radial-gradient(circle at 78% 10%, rgba(19, 185, 166, 0.22), transparent 42%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.03) 0px,
+      rgba(255, 255, 255, 0.03) 1px,
+      transparent 1px,
+      transparent 18px
+    );
+}
+
+.light body,
+.light main,
+.light section,
+.light article,
+.light aside,
+.light header,
+.light footer,
+.light nav,
+.light div {
+  color: #000000;
+}
+
+.light .bg-slate-950,
+.light .bg-slate-900,
+.light .bg-slate-900\/80,
+.light .bg-slate-900\/60,
+.light .bg-slate-800,
+.light .bg-slate-800\/60,
+.light .bg-neutral-900,
+.light .bg-neutral-900\/60,
+.light .bg-neutral-800,
+.light .bg-neutral-800\/60,
+.light .bg-black,
+.light .bg-black\/20,
+.light .bg-black\/40,
+.light .bg-black\/60 {
+  background-color: #ffffff !important;
+}
+
+.light .text-white,
+.light .text-slate-50,
+.light .text-slate-100,
+.light .text-slate-200,
+.light .text-slate-300,
+.light .text-slate-400,
+.light .text-neutral-50,
+.light .text-neutral-100,
+.light .text-neutral-200,
+.light .text-neutral-300,
+.light .text-neutral-400,
+.light .text-neutral-500,
+.light .text-neutral-600 {
+  color: #000000 !important;
+}
+
+.light [class*='text-white'],
+.light [class*='text-slate-'],
+.light [class*='text-neutral-'],
+.light [class*='text-zinc-'],
+.light [class*='text-gray-'],
+.system [class*='text-white'],
+.system [class*='text-slate-50'],
+.system [class*='text-slate-100'],
+.system [class*='text-slate-200'],
+.system [class*='text-slate-300'],
+.system [class*='text-neutral-50'],
+.system [class*='text-neutral-100'],
+.system [class*='text-neutral-200'],
+.system [class*='text-neutral-300'],
+.system [class*='text-zinc-50'],
+.system [class*='text-zinc-100'],
+.system [class*='text-zinc-200'],
+.system [class*='text-zinc-300'],
+.system [class*='text-gray-50'],
+.system [class*='text-gray-100'],
+.system [class*='text-gray-200'],
+.system [class*='text-gray-300'] {
+  color: #000000 !important;
+}
+
+.system [class*='text-slate-400'],
+.system [class*='text-slate-500'],
+.system [class*='text-slate-600'],
+.system [class*='text-neutral-400'],
+.system [class*='text-neutral-500'],
+.system [class*='text-neutral-600'],
+.system [class*='text-zinc-400'],
+.system [class*='text-zinc-500'],
+.system [class*='text-zinc-600'],
+.system [class*='text-gray-400'],
+.system [class*='text-gray-500'],
+.system [class*='text-gray-600'] {
+  color: #1f2937 !important;
+}
+
+.system .bg-slate-950,
+.system .bg-slate-900,
+.system .bg-slate-900\/80,
+.system .bg-slate-900\/60,
+.system .bg-slate-800,
+.system .bg-slate-800\/60,
+.system .bg-neutral-900,
+.system .bg-neutral-900\/60,
+.system .bg-neutral-800,
+.system .bg-neutral-800\/60,
+.system .bg-black,
+.system .bg-black\/20,
+.system .bg-black\/40,
+.system .bg-black\/60 {
+  background-color: #ffffff !important;
 }
 
 .dark {

@@ -28,12 +28,17 @@ const TEXT_STORAGE_KEY = 'theme.textColor';
 const DEFAULT_THEME_COLORS: Record<Exclude<ThemeMode, 'system'>, ThemeColors> = {
   light: {
     background: '#f8fafc',
-    text: '#0f172a',
+    text: '#000000',
   },
   dark: {
     background: '#050a1a',
     text: '#e2e8f0',
   },
+};
+
+const SYSTEM_THEME_COLORS: ThemeColors = {
+  background: '#eaf4ff',
+  text: '#000000',
 };
 
 const hexToRgb = (value: string): { r: number; g: number; b: number } | null => {
@@ -74,7 +79,7 @@ const contrastRatio = (foreground: string, background: string): number => {
 };
 
 const pickReadableTextColor = (background: string): string => {
-  const darkText = '#0f172a';
+  const darkText = '#000000';
   const lightText = '#f8fafc';
   return contrastRatio(darkText, background) >= contrastRatio(lightText, background)
     ? darkText
@@ -124,6 +129,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       (safeLocalStorage.getItem(THEME_STORAGE_KEY) as ThemeMode | null) ?? 'system';
     const resolvedTheme =
       storedTheme === 'system' ? getSystemTheme() : (storedTheme as Exclude<ThemeMode, 'system'>);
+    if (storedTheme === 'system') return SYSTEM_THEME_COLORS.background;
     return DEFAULT_THEME_COLORS[resolvedTheme].background;
   });
 
@@ -135,6 +141,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       (safeLocalStorage.getItem(THEME_STORAGE_KEY) as ThemeMode | null) ?? 'system';
     const resolvedTheme =
       storedTheme === 'system' ? getSystemTheme() : (storedTheme as Exclude<ThemeMode, 'system'>);
+    if (storedTheme === 'system') return SYSTEM_THEME_COLORS.text;
     return DEFAULT_THEME_COLORS[resolvedTheme].text;
   });
 
@@ -161,25 +168,14 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const root = window.document.documentElement;
-    const media = window.matchMedia('(prefers-color-scheme: dark)');
 
-    const apply = (value: Exclude<ThemeMode, 'system'>) => {
-      root.classList.remove('light', 'dark');
+    const apply = (value: ThemeMode) => {
+      root.classList.remove('light', 'dark', 'system');
       root.classList.add(value);
-      root.style.colorScheme = value;
+      root.style.colorScheme = value === 'dark' ? 'dark' : 'light';
     };
 
-    const resolvedTheme = theme === 'system' ? (media.matches ? 'dark' : 'light') : theme;
-    apply(resolvedTheme);
-
-    if (theme !== 'system') return;
-
-    const handler = (event: MediaQueryListEvent) => {
-      apply(event.matches ? 'dark' : 'light');
-    };
-
-    media.addEventListener('change', handler);
-    return () => media.removeEventListener('change', handler);
+    apply(theme);
   }, [theme]);
 
   useEffect(() => {
@@ -204,8 +200,12 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const resetColors = useCallback(() => {
-    const appliedTheme = theme === 'system' ? getSystemTheme() : theme;
-    const defaults = DEFAULT_THEME_COLORS[appliedTheme];
+    if (theme === 'system') {
+      setBackgroundColorState(SYSTEM_THEME_COLORS.background);
+      setTextColorState(SYSTEM_THEME_COLORS.text);
+      return;
+    }
+    const defaults = DEFAULT_THEME_COLORS[theme];
     setBackgroundColorState(defaults.background);
     setTextColorState(defaults.text);
   }, [theme]);

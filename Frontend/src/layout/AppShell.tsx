@@ -16,8 +16,8 @@ export default function AppShell({ children, sidebarCollapsed, denseMode = false
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="relative min-h-screen bg-[var(--wp-color-background)] text-[var(--wp-color-text)] transition-colors duration-300">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_-10%,rgba(217,93,57,0.14),transparent_30%),radial-gradient(circle_at_85%_0%,rgba(14,138,135,0.12),transparent_35%)]" />
+    <div className="app-shell-root relative min-h-screen bg-[var(--wp-color-background)] text-[var(--wp-color-text)] transition-colors duration-300">
+      <div className="app-shell-overlay pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_-10%,rgba(217,93,57,0.14),transparent_30%),radial-gradient(circle_at_85%_0%,rgba(14,138,135,0.12),transparent_35%)]" />
       <div className="relative z-10 flex min-h-screen">
         <Sidebar collapsed={sidebarCollapsed} mobileOpen={mobileOpen} onCloseMobile={() => setMobileOpen(false)} />
 

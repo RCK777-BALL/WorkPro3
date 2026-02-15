@@ -131,6 +131,7 @@ export default function WorkOrders() {
     ],
     [],
   );
+  const tableColumnIds = useMemo(() => columnMetadata.map((col) => col.id), [columnMetadata]);
 
   const currentFilters = useMemo(
     () => ({
@@ -145,7 +146,7 @@ export default function WorkOrders() {
 
   const tableLayout = useTableLayout({
     tableKey: 'workorders-table',
-    columnIds: columnMetadata.map((col) => col.id),
+    columnIds: tableColumnIds,
     userId: user?.id,
     defaultFilters: currentFilters,
   });

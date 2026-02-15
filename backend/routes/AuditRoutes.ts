@@ -9,9 +9,11 @@ import type { FilterQuery } from 'mongoose';
 import { requireAuth } from '../middleware/authMiddleware';
 import validateObjectId from '../middleware/validateObjectId';
 import AuditLog, { type AuditLogDocument, type AuditLogDiffEntry } from '../models/AuditLog';
+import { createNotification } from '../services/notificationService';
 import type { AuthedRequest } from '../types/http';
 import { ensureTenantContext, scopeQueryToTenant, withPolicyGuard, type TenantScopedRequest } from '../src/auth/accessControl';
 import { requirePermission } from '../src/auth/permissions';
+import logger from '../utils/logger';
 
 const MAX_LIMIT = 200;
 
@@ -41,6 +43,11 @@ const toObjectId = (value: unknown) => {
   if (value instanceof Types.ObjectId) return value;
   if (typeof value === 'string' && Types.ObjectId.isValid(value)) return new Types.ObjectId(value);
   return undefined;
+};
+
+const resolveUserObjectId = (req: AuthedRequest): Types.ObjectId | undefined => {
+  const raw = (req.user as { _id?: unknown; id?: unknown } | undefined)?._id ?? req.user?.id;
+  return toObjectId(raw);
 };
 
 type TenantContextRequest = AuthedRequest & {
@@ -185,6 +192,27 @@ router.get('/export', async (req: AuthedRequest, res, next) => {
       .exec();
 
     const csv = toCsv(logs);
+    const tenantObjectId = toObjectId(req.tenantId);
+    const userObjectId = resolveUserObjectId(req);
+    if (tenantObjectId) {
+      void createNotification({
+        tenantId: tenantObjectId,
+        userId: userObjectId,
+        category: 'updated',
+        type: 'info',
+        title: 'Audit export completed',
+        message: `Your audit export is ready (${logs.length} record${logs.length === 1 ? '' : 's'}).`,
+        event: 'audit.export.completed',
+        templateContext: {
+          recordCount: String(logs.length),
+        },
+      }).catch((err) => {
+        logger.warn('Failed to emit audit export completion notification', {
+          err: (err as Error).message,
+          tenantId: req.tenantId,
+        });
+      });
+    }
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename="audit-logs.csv"');
     res.send(csv);

@@ -28,6 +28,7 @@ import type {
   ThemeSettings,
 } from '@/store/settingsStore';
 import { useToast } from '@/context/ToastContext';
+import { useTheme } from '@/context/ThemeContext';
 import http from '@/lib/http';
 import SettingsLayout from '@/components/settings/SettingsLayout';
 
@@ -54,6 +55,7 @@ interface ApiDocumentResponse {
 }
 
 const Settings: React.FC = () => {
+  const { setTheme: setThemeContext, resetColors } = useTheme();
   const {
     general,
     notifications,
@@ -603,6 +605,8 @@ const Settings: React.FC = () => {
   }, [addToast]);
 
   const handleThemeModeChange = (mode: 'light' | 'dark' | 'system') => {
+    setThemeContext(mode);
+    resetColors();
     applyThemeSettings({ mode });
     void setThemeMode(mode);
   };
@@ -628,7 +632,7 @@ const Settings: React.FC = () => {
     {
       mode: 'system',
       label: 'System',
-      description: 'Follow your operating system preference',
+      description: 'WorkPro default with light blue background and black text',
       icon: <Monitor className="h-5 w-5" />,
     },
   ];

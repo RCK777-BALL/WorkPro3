@@ -18,6 +18,7 @@ import {
   Factory,
   FileStack,
   FolderKanban,
+  GripVertical,
   GitBranch,
   Globe2,
   Inbox,
@@ -568,31 +569,46 @@ function SortableSidebarItem({ item, collapsed, isActive }: SortableSidebarItemP
   }
 
   return (
-    <li ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <NavLink
-        to={item.to}
-        title={collapsed ? item.label : undefined}
-        className={({ isActive: linkActive }) =>
-          clsx(
-            "flex items-center rounded-xl px-3 py-2 transition cursor-grab active:cursor-grabbing touch-manipulation",
-            collapsed ? "justify-center" : "gap-3",
-            linkActive
-              ? "bg-primary-600 text-white shadow"
-              : "text-white hover:bg-white/10 dark:text-white dark:hover:bg-white/10",
-            (isDragging || isActive) && "ring-2 ring-primary-400 dark:ring-primary-500",
-          )
-        }
-      >
-        <item.icon className="h-5 w-5" />
-        {!collapsed && (
-          <span className="flex items-center gap-2 font-medium">
-            {item.label}
-            {item.badge ? (
-              <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold text-white">{item.badge}</span>
-            ) : null}
-          </span>
-        )}
-      </NavLink>
+    <li ref={setNodeRef} style={style}>
+      <div className="group flex items-center gap-1">
+        <NavLink
+          to={item.to}
+          title={collapsed ? item.label : undefined}
+          className={({ isActive: linkActive }) =>
+            clsx(
+              "flex flex-1 items-center rounded-xl px-3 py-2 transition touch-manipulation",
+              collapsed ? "justify-center" : "gap-3",
+              linkActive
+                ? "bg-primary-600 text-white shadow"
+                : "text-white hover:bg-white/10 dark:text-white dark:hover:bg-white/10",
+              (isDragging || isActive) && "ring-2 ring-primary-400 dark:ring-primary-500",
+            )
+          }
+        >
+          <item.icon className="h-5 w-5" />
+          {!collapsed && (
+            <span className="flex items-center gap-2 font-medium">
+              {item.label}
+              {item.badge ? (
+                <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold text-white">{item.badge}</span>
+              ) : null}
+            </span>
+          )}
+        </NavLink>
+        {!collapsed ? (
+          <button
+            type="button"
+            className="rounded-md p-1.5 text-white/50 opacity-0 transition hover:bg-white/10 hover:text-white group-hover:opacity-100"
+            aria-label={`Reorder ${item.label}`}
+            title={`Reorder ${item.label}`}
+            {...attributes}
+            {...listeners}
+            onClick={(event) => event.preventDefault()}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+        ) : null}
+      </div>
     </li>
   );
 }

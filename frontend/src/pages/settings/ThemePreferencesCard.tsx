@@ -25,7 +25,7 @@ const THEME_MODE_OPTIONS = [
   {
     value: 'system' as const,
     label: 'System',
-    description: 'Follow your operating system preference',
+    description: 'WorkPro default: light blue background with black text',
     icon: Monitor,
   },
 ];
@@ -33,8 +33,8 @@ const THEME_MODE_OPTIONS = [
 const COLOR_SCHEME_OPTIONS = [
   {
     value: 'default' as const,
-    label: 'Indigo',
-    swatch: ['#4338ca', '#6366f1'],
+    label: 'Blue',
+    swatch: ['#0a5ea6', '#0d74c7'],
   },
   {
     value: 'teal' as const,
@@ -77,7 +77,7 @@ const PREFERENCE_TOGGLES: Array<{
 type ThemeMode = (typeof THEME_MODE_OPTIONS)[number]['value'];
 
 export default function ThemePreferencesCard() {
-  const { setTheme: applyTheme } = useTheme();
+  const { setTheme: applyTheme, resetColors } = useTheme();
   const themeSettings = useSettingsStore((state) => state.theme);
   const setThemeSettings = useSettingsStore((state) => state.setTheme);
   const persistedThemeMode = useThemeStore((state) => state.theme);
@@ -92,9 +92,10 @@ export default function ThemePreferencesCard() {
     (mode: ThemeMode) => {
       setThemeSettings({ mode });
       applyTheme(mode);
+      resetColors();
       void setThemeStoreMode(mode);
     },
-    [applyTheme, setThemeSettings, setThemeStoreMode],
+    [applyTheme, resetColors, setThemeSettings, setThemeStoreMode],
   );
 
   const handleColorSchemeChange = useCallback(

@@ -45,7 +45,7 @@
     "mammoth": "^1.10.0",
     "nodejs": "^0.0.0",
     "pdfjs-dist": "^5.4.149",
-    "prettier": "^3.3.3",
+    "prettier": "^3.8.1",
     "qrcode": "^1.5.3",
     "qrcode.react": "^4.2.0",
     "react": "^18.2.0",

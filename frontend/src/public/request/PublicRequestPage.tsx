@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { z } from "zod";
 
@@ -90,17 +90,41 @@ const priorityOptions: Array<{
   { value: "critical", label: "Critical" },
 ];
 
+const statusLabelMap: Record<WorkRequestStatus, string> = {
+  new: "Submitted",
+  reviewing: "Reviewing",
+  accepted: "Accepted",
+  rejected: "Rejected",
+  converted: "Converted to work order",
+  closed: "Closed",
+  deleted: "Archived",
+};
+
+const statusToneMap: Record<WorkRequestStatus, string> = {
+  new: "bg-amber-100 text-amber-800",
+  reviewing: "bg-blue-100 text-blue-800",
+  accepted: "bg-emerald-100 text-emerald-800",
+  rejected: "bg-red-100 text-red-800",
+  converted: "bg-emerald-100 text-emerald-800",
+  closed: "bg-neutral-200 text-neutral-700",
+  deleted: "bg-neutral-200 text-neutral-700",
+};
+
 export default function PublicRequestPage() {
   const { slug = "default" } = useParams();
   const [values, setValues] = useState<RequestFormValues>(initialFormState);
   const [tagInput, setTagInput] = useState("");
   const [files, setFiles] = useState<FileList | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(false);
   const [statusToken, setStatusToken] = useState("");
   const [submissionResult, setSubmissionResult] =
     useState<SubmissionResponse | null>(null);
   const [statusResult, setStatusResult] = useState<PublicStatus | null>(null);
-  const [error, setError] = useState<string>();
+  const [submitError, setSubmitError] = useState<string>();
+  const [statusError, setStatusError] = useState<string>();
+  const [copyMessage, setCopyMessage] = useState<string>();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [assetSearch, setAssetSearch] = useState("");
   const [assetOptions, setAssetOptions] = useState<
@@ -130,6 +154,12 @@ export default function PublicRequestPage() {
     };
   }, [assetSearch]);
 
+  useEffect(() => {
+    if (!copyMessage) return;
+    const timer = window.setTimeout(() => setCopyMessage(undefined), 2400);
+    return () => window.clearTimeout(timer);
+  }, [copyMessage]);
+
   const isFormValid = useMemo(() => {
     const parsed = requestSchema.safeParse({ ...values, tags: values.tags });
     return parsed.success;
@@ -138,11 +168,17 @@ export default function PublicRequestPage() {
   const addTag = () => {
     const trimmed = tagInput.trim();
     if (!trimmed) return;
+    const normalized = trimmed.toLowerCase();
+    if ((values.tags ?? []).some((tag) => tag.toLowerCase() === normalized)) {
+      setFieldErrors((prev) => ({ ...prev, tags: "Tag already added" }));
+      return;
+    }
     if ((values.tags?.length ?? 0) >= 6) {
       setFieldErrors((prev) => ({ ...prev, tags: "Up to 6 tags allowed" }));
       return;
     }
     setValues((prev) => ({ ...prev, tags: [...(prev.tags ?? []), trimmed] }));
+    setFieldErrors((prev) => ({ ...prev, tags: "" }));
     setTagInput("");
   };
 
@@ -151,6 +187,7 @@ export default function PublicRequestPage() {
       ...prev,
       tags: (prev.tags ?? []).filter((item) => item !== tag),
     }));
+    setFieldErrors((prev) => ({ ...prev, tags: "" }));
   };
 
   const handleChange = (
@@ -160,10 +197,38 @@ export default function PublicRequestPage() {
   ) => {
     const { name, value } = event.target;
     setValues((prev) => ({ ...prev, [name]: value }));
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
   const handleFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setFiles(event.target.files);
+    const next = event.target.files;
+    if (!next) {
+      setFiles(null);
+      return;
+    }
+    if (next.length > 5) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        files: "Attach up to 5 files per request",
+      }));
+      event.target.value = "";
+      setFiles(null);
+      return;
+    }
+    const tooLarge = Array.from(next).find((file) => file.size > 10 * 1024 * 1024);
+    if (tooLarge) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        files: `File "${tooLarge.name}" exceeds 10MB`,
+      }));
+      event.target.value = "";
+      setFiles(null);
+      return;
+    }
+    setFieldErrors((prev) => ({ ...prev, files: "" }));
+    setFiles(next);
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -179,7 +244,8 @@ export default function PublicRequestPage() {
       return;
     }
     setSubmitting(true);
-    setError(undefined);
+    setSubmitError(undefined);
+    setStatusError(undefined);
     try {
       const formData = new FormData();
       Object.entries(parse.data).forEach(([key, value]) => {
@@ -198,7 +264,9 @@ export default function PublicRequestPage() {
         method: "POST",
         body: formData,
       });
-      const payload = await response.json();
+      const payload = await response
+        .json()
+        .catch(() => ({ error: "Unable to submit request." }));
       if (!response.ok) {
         throw new Error(payload?.error ?? "Unable to submit request.");
       }
@@ -207,12 +275,15 @@ export default function PublicRequestPage() {
       setStatusToken(submission.token);
       setValues(initialFormState);
       setFiles(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
       setAssetSearch("");
       setFieldErrors({});
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Unable to submit request.";
-      setError(message);
+      setSubmitError(message);
     } finally {
       setSubmitting(false);
     }
@@ -224,12 +295,16 @@ export default function PublicRequestPage() {
     event.preventDefault();
     const trimmed = statusToken.trim();
     if (!trimmed) return;
-    setError(undefined);
+    setStatusError(undefined);
+    setSubmitError(undefined);
+    setStatusLoading(true);
     try {
       const response = await fetch(
         `/api/public/work-requests/${encodeURIComponent(trimmed)}`,
       );
-      const payload = await response.json();
+      const payload = await response
+        .json()
+        .catch(() => ({ error: "Unable to find request." }));
       if (!response.ok) {
         throw new Error(payload?.error ?? "Unable to find request.");
       }
@@ -237,24 +312,52 @@ export default function PublicRequestPage() {
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Unable to lookup request.";
-      setError(message);
+      setStatusError(message);
+      setStatusResult(null);
+    } finally {
+      setStatusLoading(false);
     }
   };
 
   const hasFiles = files && files.length > 0;
 
+  const copyToClipboard = async (value: string, successMessage: string) => {
+    if (!value) return;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        const input = document.createElement("textarea");
+        input.value = value;
+        input.setAttribute("readonly", "true");
+        input.style.position = "absolute";
+        input.style.left = "-9999px";
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand("copy");
+        document.body.removeChild(input);
+      }
+      setSubmitError(undefined);
+      setStatusError(undefined);
+      setCopyMessage(successMessage);
+      setFieldErrors((prev) => ({ ...prev, copy: "" }));
+    } catch {
+      setFieldErrors((prev) => ({ ...prev, copy: "Unable to copy to clipboard" }));
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 md:flex-row">
-        <section className="flex-1 rounded-2xl bg-white p-6 shadow-lg">
+    <div className="min-h-screen bg-neutral-100 text-neutral-900">
+      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-3 py-6 sm:gap-6 sm:px-4 sm:py-8 md:flex-row md:items-start md:gap-8 md:py-10">
+        <section className="flex-1 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6">
           <h1 className="text-2xl font-semibold text-neutral-900">
             Work Request Portal
           </h1>
-          <p className="mt-1 text-sm text-neutral-500">
+          <p className="mt-1 text-sm text-neutral-600">
             Submit an issue for the maintenance team. Required fields are
             validated before sending.
           </p>
-          <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+          <form className="mt-5 space-y-4 sm:mt-6" onSubmit={handleSubmit}>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label
@@ -266,7 +369,7 @@ export default function PublicRequestPage() {
                 <input
                   id="title"
                   name="title"
-                  className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
                   value={values.title}
                   onChange={handleChange}
                   required
@@ -285,7 +388,7 @@ export default function PublicRequestPage() {
                 <select
                   id="priority"
                   name="priority"
-                  className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
                   value={values.priority}
                   onChange={handleChange}
                 >
@@ -307,7 +410,7 @@ export default function PublicRequestPage() {
               <textarea
                 id="description"
                 name="description"
-                className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
                 rows={4}
                 value={values.description}
                 onChange={handleChange}
@@ -330,7 +433,7 @@ export default function PublicRequestPage() {
                 <input
                   id="requesterName"
                   name="requesterName"
-                  className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
                   value={values.requesterName}
                   onChange={handleChange}
                   required
@@ -352,7 +455,7 @@ export default function PublicRequestPage() {
                   id="requesterEmail"
                   name="requesterEmail"
                   type="email"
-                  className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
                   value={values.requesterEmail ?? ""}
                   onChange={handleChange}
                 />
@@ -374,7 +477,7 @@ export default function PublicRequestPage() {
                 <input
                   id="requesterPhone"
                   name="requesterPhone"
-                  className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
                   value={values.requesterPhone ?? ""}
                   onChange={handleChange}
                 />
@@ -389,7 +492,7 @@ export default function PublicRequestPage() {
                 <input
                   id="location"
                   name="location"
-                  className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
                   value={values.location ?? ""}
                   onChange={handleChange}
                   placeholder="Building, floor, or area"
@@ -407,7 +510,7 @@ export default function PublicRequestPage() {
                 <input
                   id="assetTag"
                   name="assetTag"
-                  className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
                   value={values.assetTag ?? ""}
                   onChange={handleChange}
                   placeholder="e.g. Pump-14"
@@ -423,13 +526,17 @@ export default function PublicRequestPage() {
                 <input
                   id="asset"
                   name="asset"
-                  className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
                   value={assetSearch}
-                  onChange={(evt) => setAssetSearch(evt.target.value)}
+                  onChange={(evt) => {
+                    const next = evt.target.value;
+                    setAssetSearch(next);
+                    setValues((prev) => ({ ...prev, asset: undefined }));
+                  }}
                   placeholder="Start typing to search assets"
                 />
                 {assetSearching && (
-                  <p className="text-xs text-neutral-500">Searching assets…</p>
+                  <p className="text-xs text-neutral-500">Searching assets...</p>
                 )}
                 {assetOptions.length > 0 && (
                   <div className="mt-2 space-y-1 rounded-lg border border-neutral-200 bg-neutral-50 p-2 text-sm text-neutral-700">
@@ -466,7 +573,7 @@ export default function PublicRequestPage() {
                 <input
                   id="category"
                   name="category"
-                  className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
                   value={values.category ?? ""}
                   onChange={handleChange}
                   placeholder="Safety, Facilities, etc."
@@ -489,7 +596,7 @@ export default function PublicRequestPage() {
                           onClick={() => removeTag(tag)}
                           className="text-primary-700"
                         >
-                          ×
+                          x
                         </button>
                       </span>
                     ))}
@@ -513,13 +620,11 @@ export default function PublicRequestPage() {
               </div>
             </div>
             <div>
-              <label
-                htmlFor="photos"
-                className="text-sm font-medium text-neutral-700"
-              >
+              <label htmlFor="photos" className="text-sm font-medium text-neutral-700">
                 Attachments
               </label>
               <input
+                ref={fileInputRef}
                 id="photos"
                 name="photos"
                 type="file"
@@ -528,6 +633,9 @@ export default function PublicRequestPage() {
                 onChange={handleFiles}
                 className="mt-1 block w-full text-sm text-neutral-500"
               />
+              {fieldErrors.files && (
+                <p className="text-xs text-red-600">{fieldErrors.files}</p>
+              )}
               {hasFiles && (
                 <p className="text-xs text-neutral-500">
                   {files &&
@@ -537,20 +645,46 @@ export default function PublicRequestPage() {
                 </p>
               )}
             </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {submitError && <p className="text-sm text-red-600">{submitError}</p>}
             <button
               type="submit"
               className="w-full rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-700 disabled:opacity-70"
               disabled={!isFormValid || submitting}
             >
-              {submitting ? "Submitting…" : "Submit request"}
+              {submitting ? "Submitting..." : "Submit request"}
             </button>
             {submissionResult && (
               <div className="space-y-2 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">
-                <p>
+                <p className="break-all">
                   Thank you! Save this token to check status later:{" "}
                   <strong>{submissionResult.token}</strong>
                 </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void copyToClipboard(
+                        submissionResult.token,
+                        "Request token copied",
+                      )
+                    }
+                    className="rounded-full border border-emerald-300 bg-white px-3 py-1 text-xs font-semibold text-emerald-800 hover:bg-emerald-100"
+                  >
+                    Copy token
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void copyToClipboard(
+                        submissionResult.requestId,
+                        "Request ID copied",
+                      )
+                    }
+                    className="rounded-full border border-emerald-300 bg-white px-3 py-1 text-xs font-semibold text-emerald-800 hover:bg-emerald-100"
+                  >
+                    Copy request ID
+                  </button>
+                </div>
                 <p>
                   Your request ID is{" "}
                   <strong>{submissionResult.requestId}</strong>. You can open{" "}
@@ -564,10 +698,16 @@ export default function PublicRequestPage() {
                 </p>
               </div>
             )}
+            {copyMessage && (
+              <p className="text-xs text-emerald-700">{copyMessage}</p>
+            )}
+            {fieldErrors.copy && (
+              <p className="text-xs text-red-600">{fieldErrors.copy}</p>
+            )}
           </form>
         </section>
 
-        <section className="w-full max-w-xl space-y-4 rounded-2xl border border-neutral-200 bg-white p-6 shadow-lg">
+        <section className="w-full max-w-xl space-y-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6 md:sticky md:top-6">
           <div>
             <h2 className="text-lg font-semibold text-neutral-900">
               Check status
@@ -586,18 +726,23 @@ export default function PublicRequestPage() {
             <input
               id="statusToken"
               name="statusToken"
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+              className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
               value={statusToken}
               onChange={(evt) => setStatusToken(evt.target.value)}
               placeholder="Enter your token"
             />
             <button
               type="submit"
-              className="w-full rounded-full border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-50"
+              className="w-full rounded-full border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={statusLoading || !statusToken.trim()}
             >
-              Check status
+              {statusLoading ? "Checking..." : "Check status"}
             </button>
           </form>
+          {statusError && <p className="text-sm text-red-600">{statusError}</p>}
+          {copyMessage && (
+            <p className="text-xs text-emerald-700">{copyMessage}</p>
+          )}
           {statusResult && (
             <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
               <p className="text-xs uppercase tracking-wide text-neutral-500">
@@ -609,14 +754,41 @@ export default function PublicRequestPage() {
               <p className="text-sm text-neutral-600">
                 {statusResult.description}
               </p>
-              <p className="mt-2 text-sm font-semibold text-neutral-800">
-                {statusResult.status}
+              <p className="mt-2">
+                <span
+                  className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusToneMap[statusResult.status]}`}
+                >
+                  {statusLabelMap[statusResult.status]}
+                </span>
               </p>
               {statusResult.workOrderId && (
                 <p className="text-xs text-neutral-500">
                   Linked work order: {statusResult.workOrderId}
                 </p>
               )}
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => void copyToClipboard(statusToken, "Request token copied")}
+                  className="rounded-full border border-neutral-300 bg-white px-3 py-1 text-xs font-semibold text-neutral-700 hover:bg-neutral-100"
+                >
+                  Copy token
+                </button>
+                {statusResult.workOrderId ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void copyToClipboard(
+                        statusResult.workOrderId ?? "",
+                        "Work order ID copied",
+                      )
+                    }
+                    className="rounded-full border border-neutral-300 bg-white px-3 py-1 text-xs font-semibold text-neutral-700 hover:bg-neutral-100"
+                  >
+                    Copy work order ID
+                  </button>
+                ) : null}
+              </div>
               {statusResult.updates?.length ? (
                 <div className="mt-3 space-y-2 text-sm text-neutral-700">
                   {statusResult.updates.map((update, index) => (
@@ -629,7 +801,7 @@ export default function PublicRequestPage() {
                         <span className="text-xs text-neutral-500">
                           {update.timestamp
                             ? new Date(update.timestamp).toLocaleString()
-                            : "—"}
+                            : "--"}
                         </span>
                       </div>
                       <p className="text-sm text-neutral-600">
@@ -646,3 +818,6 @@ export default function PublicRequestPage() {
     </div>
   );
 }
+
+
+

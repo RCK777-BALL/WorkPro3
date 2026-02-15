@@ -6,6 +6,18 @@
 
 :root {
   color-scheme: dark;
+  --wp-color-primary: #d95d39;
+  --wp-color-primary-strong: #b34423;
+  --wp-color-secondary: #0e8a87;
+  --wp-color-background: #0f1420;
+  --wp-color-surface: #151c2b;
+  --wp-color-surface-elevated: #1a2438;
+  --wp-color-text: #ecf1fb;
+  --wp-color-text-muted: #a8b3ca;
+  --wp-color-border: #2a3650;
+  --wp-color-border-strong: #3a4b6a;
+  --wp-color-focus: #7db0ff;
+  --wp-radius-xxl: 24px;
   --app-background-color: #050a1a;
   --app-surface-color: #0f172a;
   --app-border-color: #1e293b;
@@ -21,6 +33,7 @@
 body {
   background-color: var(--app-background-color);
   color: var(--app-text-color);
+  font-family: 'Sora', 'Segoe UI', 'Helvetica Neue', sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 

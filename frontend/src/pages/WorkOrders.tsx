@@ -13,7 +13,6 @@ import {
 } from '@/utils/offlineQueue';
 import ConflictResolver from '@/components/offline/ConflictResolver';
 import WorkOrderQueuePanel from '@/components/offline/WorkOrderQueuePanel';
-import DataTable from '@/components/common/DataTable';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
 import { Scan, Search } from 'lucide-react';
@@ -21,6 +20,7 @@ import TableLayoutControls from '@/components/common/TableLayoutControls';
 import NewWorkOrderModal from '@/components/work-orders/NewWorkOrderModal';
 import WorkOrderReviewModal from '@/components/work-orders/WorkOrderReviewModal';
 import WorkOrderMobileCard from '@/components/work-orders/WorkOrderMobileCard';
+import { Card, EmptyState, FilterBar, FormField, SectionHeader, StatusPill, UiDataTable } from '@/components/ui';
 import type { WorkOrder } from '@/types';
 import { mapChecklistsFromApi, mapSignaturesFromApi } from '@/utils/workOrderTransforms';
 import { useTableLayout } from '@/hooks/useTableLayout';
@@ -528,7 +528,7 @@ export default function WorkOrders() {
         id: 'status',
         header: 'Status',
         accessor: (row: WorkOrder) => (
-          <Badge text={row.status} type="status" size="sm" />
+          <StatusPill value={row.status} />
         ),
       },
       {
@@ -734,90 +734,97 @@ export default function WorkOrders() {
   return (
     <>
       <div className="space-y-6 p-4 sm:p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Work Orders</h1>
-            <p className="text-sm text-neutral-500">Mobile-ready list of active and offline work orders.</p>
-          </div>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            <Button
-              variant="primary"
-              size="lg"
-              className="w-full sm:w-auto"
-              onClick={() => navigate('/assets/scan')}
-            >
-              <Scan className="mr-2 h-5 w-5" />
-              Scan QR/Barcode
-            </Button>
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={openCreateModal}
-              className="w-full border border-primary-700 sm:w-auto"
-            >
-              Create Work Order
-            </Button>
-          </div>
-        </div>
+        <SectionHeader
+          title="Work Orders"
+          subtitle="Mobile-ready list of active and offline work orders."
+          actions={
+            <>
+              <Button
+                variant="primary"
+                size="lg"
+                className="w-full sm:w-auto"
+                onClick={() => navigate('/assets/scan')}
+              >
+                <Scan className="mr-2 h-5 w-5" />
+                Scan QR/Barcode
+              </Button>
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={openCreateModal}
+                className="w-full border border-primary-700 sm:w-auto"
+              >
+                Create Work Order
+              </Button>
+            </>
+          }
+        />
 
         <WorkOrderQueuePanel />
 
         {error && <p className="text-red-600">{error}</p>}
 
-        <div className="flex flex-col items-center space-y-2 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm sm:flex-row sm:space-x-4 sm:space-y-0">
-          <Search className="text-neutral-500" size={20} />
-          <input
-            type="text"
-            placeholder="Search work orders..."
-            className="flex-1 bg-transparent border-none outline-none text-neutral-900 placeholder-neutral-400"
-            value={search}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-          />
-        </div>
+        <Card className="p-4">
+          <div className="flex flex-col items-center space-y-2 sm:flex-row sm:space-x-4 sm:space-y-0">
+            <Search className="text-neutral-500" size={20} />
+            <input
+              type="text"
+              placeholder="Search work orders..."
+              className="flex-1 bg-transparent border-none outline-none text-neutral-900 placeholder-neutral-400 dark:text-neutral-100"
+              value={search}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+            />
+          </div>
+        </Card>
 
-        <div className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-[1.2fr,1fr,1fr,1fr,auto] lg:items-end">
-          <select
-            className="w-full rounded border p-2"
-            value={statusFilter}
-            onChange={(e: ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value)}
-          >
-            <option value="">All Statuses</option>
-            <option value="requested">Requested</option>
-            <option value="assigned">Assigned</option>
-            <option value="in_progress">In Progress</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-          <select
-            className="w-full rounded border p-2"
-            value={priorityFilter}
-            onChange={(e: ChangeEvent<HTMLSelectElement>) => setPriorityFilter(e.target.value)}
-          >
-            <option value="">All Priorities</option>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-            <option value="critical">Critical</option>
-          </select>
-          <input
-            type="date"
-            className="w-full rounded border p-2"
-            value={startDate}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setStartDate(e.target.value)}
-          />
-          <input
-            type="date"
-            className="w-full rounded border p-2"
-            value={endDate}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setEndDate(e.target.value)}
-          />
-          <Button
-            variant="secondary"
-            onClick={applyFilters}
-          >
-            Filter
+        <FilterBar className="lg:grid-cols-[1.2fr,1fr,1fr,1fr]">
+          <FormField label="Status">
+            <select
+              className="w-full rounded-lg border border-[var(--wp-color-border)] bg-transparent px-3 py-2"
+              value={statusFilter}
+              onChange={(e: ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value)}
+            >
+              <option value="">All Statuses</option>
+              <option value="requested">Requested</option>
+              <option value="assigned">Assigned</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </FormField>
+          <FormField label="Priority">
+            <select
+              className="w-full rounded-lg border border-[var(--wp-color-border)] bg-transparent px-3 py-2"
+              value={priorityFilter}
+              onChange={(e: ChangeEvent<HTMLSelectElement>) => setPriorityFilter(e.target.value)}
+            >
+              <option value="">All Priorities</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
+            </select>
+          </FormField>
+          <FormField label="Start date">
+            <input
+              type="date"
+              className="w-full rounded-lg border border-[var(--wp-color-border)] bg-transparent px-3 py-2"
+              value={startDate}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setStartDate(e.target.value)}
+            />
+          </FormField>
+          <FormField label="End date">
+            <input
+              type="date"
+              className="w-full rounded-lg border border-[var(--wp-color-border)] bg-transparent px-3 py-2"
+              value={endDate}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setEndDate(e.target.value)}
+            />
+          </FormField>
+          <Button variant="secondary" onClick={applyFilters}>
+            Apply filters
           </Button>
-        </div>
+        </FilterBar>
 
         <TableLayoutControls
           columns={columnMetadata}
@@ -856,15 +863,26 @@ export default function WorkOrders() {
         </div>
 
         <div className="hidden sm:block">
-          <DataTable<WorkOrder>
-            columns={visibleColumns}
-            data={filteredOrders}
-            keyField="id"
-            onRowClick={openReview}
-            emptyMessage="No work orders available."
-            sortState={tableLayout.sort ?? undefined}
-            onSortChange={(state) => tableLayout.setSort(state ?? null)}
-          />
+          {filteredOrders.length === 0 ? (
+            <EmptyState
+              title="No work orders found"
+              description="Try adjusting filters or create a new work order."
+              action={
+                <Button variant="primary" onClick={openCreateModal}>
+                  Create Work Order
+                </Button>
+              }
+            />
+          ) : (
+            <UiDataTable<WorkOrder>
+              title="Work Orders"
+              columns={visibleColumns}
+              data={filteredOrders}
+              keyField="id"
+              stickyHeader
+              onRowClick={openReview}
+            />
+          )}
         </div>
         <NewWorkOrderModal
           isOpen={isModalOpen}

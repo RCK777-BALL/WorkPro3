@@ -29,6 +29,7 @@ import { HelpCenterViewer } from "@/features/help-center";
 import { OnboardingWizard } from "@/features/onboarding";
 import { safeLocalStorage } from "@/utils/safeLocalStorage";
 import { usePmCompletionAnalytics } from "@/hooks/usePmAnalytics";
+import { Card, SectionHeader } from "@/components/ui";
 
 type SummaryResponse = {
   openWorkOrders: number;
@@ -1339,14 +1340,11 @@ export default function Dashboard() {
     ];
   }, [summary, summaryTrends]);
   return (
-    <div className="min-h-screen bg-slate-950 p-6 text-white">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6">
-        <header className="space-y-2">
-          <h1 className="text-3xl font-semibold">Operations dashboard</h1>
-          <p className="text-sm text-white/70">
-            Monitor maintenance workload, compliance, and live system health at a glance.
-          </p>
-        </header>
+    <div className="space-y-6 text-[var(--wp-color-text)]">
+      <SectionHeader
+        title="Operations dashboard"
+        subtitle="Monitor maintenance workload, compliance, and live system health at a glance."
+      />
 
         <AlertBanner />
 
@@ -1407,7 +1405,7 @@ export default function Dashboard() {
               if (link) navigateTo(link);
             }}
           />
-          <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white shadow-xl">
+          <Card className="bg-gradient-to-br from-slate-900 to-slate-800 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold">Maintenance analytics</h2>
@@ -1525,7 +1523,7 @@ export default function Dashboard() {
                 critical={summary?.assetAvailabilityCritical ?? 0}
               />
             </div>
-          </section>
+          </Card>
         </div>
 
         <StatusSummary
@@ -1533,7 +1531,6 @@ export default function Dashboard() {
           updatedAt={statusLegend.updatedAt}
           loading={statusLoading}
         />
-      </div>
     </div>
   );
 }

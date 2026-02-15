@@ -96,6 +96,7 @@ import PwaTechnicianShell from "@/pages/PwaTechnicianShell";
 import RequestFormBuilder from "@/pages/RequestFormBuilder";
 import ReorderAlerts from "@/pages/ReorderAlerts";
 import ScanDeepLink from "@/routes/ScanDeepLink";
+import UiPlayground from "@/pages/UiPlayground";
 
 export default function App() {
   const navigate = useNavigate();
@@ -532,6 +533,7 @@ export default function App() {
             }
           />
           <Route path="/settings" element={<Settings />} />
+          {import.meta.env.DEV ? <Route path="/ui-playground" element={<UiPlayground />} /> : null}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>

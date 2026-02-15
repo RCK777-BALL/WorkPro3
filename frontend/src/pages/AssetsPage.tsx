@@ -34,6 +34,7 @@ import { useScopeContext } from '@/context/ScopeContext';
 import { useToast } from '@/context/ToastContext';
 import { useAuthStore } from '@/store/authStore';
 import { uploadImport, type ImportSummary } from '@/api/importExport';
+import { Card, FilterBar, FormField, SectionHeader, StatCard, StatusPill } from '@/components/ui';
 
 const ASSET_CACHE_KEY = 'offline-assets';
 const FILTER_STORAGE_VERSION = 1;
@@ -425,60 +426,57 @@ const AssetsPage: React.FC = () => {
   return (
     <>
       <div className="space-y-6 p-4 sm:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <p className="text-sm text-neutral-600">Assets</p>
-            <h1 className="text-3xl font-bold text-neutral-900">Asset catalog</h1>
-            <p className="text-neutral-600 mt-1">
-              Browse the list of assets, make quick edits, and add new equipment to your hierarchy.
-            </p>
-          </div>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
-            <Button
-              variant="primary"
-              size="lg"
-              className="w-full sm:w-auto"
-              onClick={() => navigate('/assets/scan')}
-              aria-label="Scan an asset QR or barcode"
-            >
-              <Scan className="w-5 h-5 mr-2" />
-              Scan QR/Barcode
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-full sm:w-auto"
-              onClick={fetchAssets}
-              disabled={isLoading}
-            >
-              <RefreshCcw className="w-5 h-5 mr-2" />
-              {isLoading ? 'Refreshing...' : 'Refresh'}
-            </Button>
-            <Button
-              variant="primary"
-              size="lg"
-              className="w-full sm:w-auto"
-              onClick={() => {
-                setSelected(null);
-                setModalOpen(true);
-              }}
-              disabled={actionsDisabled}
-              aria-disabled={actionsDisabled}
-              title={
-                !canManageAssets
-                  ? t('assets.permissionWarning')
-                  : showSampleData
-                    ? 'Turn off sample data to add live assets'
-                    : !activePlant
-                      ? 'Select a plant to create assets'
-                      : undefined
-              }
-            >
-              <PlusCircle className="w-4 h-4 mr-2" />
-              Add asset
-            </Button>
-          </div>
-        </div>
+        <SectionHeader
+          title="Asset catalog"
+          subtitle="Browse assets, make quick edits, and add new equipment to your hierarchy."
+          actions={
+            <>
+              <Button
+                variant="primary"
+                size="lg"
+                className="w-full sm:w-auto"
+                onClick={() => navigate('/assets/scan')}
+                aria-label="Scan an asset QR or barcode"
+              >
+                <Scan className="w-5 h-5 mr-2" />
+                Scan QR/Barcode
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full sm:w-auto"
+                onClick={fetchAssets}
+                disabled={isLoading}
+              >
+                <RefreshCcw className="w-5 h-5 mr-2" />
+                {isLoading ? 'Refreshing...' : 'Refresh'}
+              </Button>
+              <Button
+                variant="primary"
+                size="lg"
+                className="w-full sm:w-auto"
+                onClick={() => {
+                  setSelected(null);
+                  setModalOpen(true);
+                }}
+                disabled={actionsDisabled}
+                aria-disabled={actionsDisabled}
+                title={
+                  !canManageAssets
+                    ? t('assets.permissionWarning')
+                    : showSampleData
+                      ? 'Turn off sample data to add live assets'
+                      : !activePlant
+                        ? 'Select a plant to create assets'
+                        : undefined
+                }
+              >
+                <PlusCircle className="w-4 h-4 mr-2" />
+                Add asset
+              </Button>
+            </>
+          }
+        />
 
         {!canManageAssets && (
           <div
@@ -522,89 +520,92 @@ const AssetsPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
-            <p className="text-sm text-neutral-500">Total assets</p>
-            <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">{stats.total}</p>
-          </div>
-          <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
-            <p className="text-sm text-neutral-500">Active</p>
-            <p className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400">{stats.active}</p>
-          </div>
-          <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
-            <p className="text-sm text-neutral-500">Critical</p>
-            <p className="text-2xl font-semibold text-amber-600 dark:text-amber-400">{stats.critical}</p>
-          </div>
-        </div>
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StatCard label="Total assets" value={stats.total} />
+          <StatCard label="Active" value={stats.active} />
+          <StatCard label="Critical" value={stats.critical} />
+        </section>
 
         {displayError && <p className="text-red-600" role="alert">{displayError}</p>}
 
-        <div className="space-y-3 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
-          <div className="grid gap-3 md:grid-cols-[2fr,1fr,1fr,1fr] md:items-end">
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-neutral-700 dark:text-neutral-200">Search</span>
-              <input
-                type="text"
-                placeholder="Search assets..."
-                className="w-full rounded-md border border-neutral-300 bg-transparent px-3 py-2 text-neutral-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-neutral-600 dark:text-neutral-100 dark:placeholder:text-neutral-400"
-                value={search}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setSavedView('custom');
-                  setSearch(e.target.value);
-                }}
-              />
-            </label>
+        <FilterBar className="md:grid-cols-[2fr,1fr,1fr,1fr]">
+          <FormField label="Search">
+            <input
+              type="text"
+              placeholder="Search assets..."
+              className="w-full rounded-md border border-[var(--wp-color-border)] bg-transparent px-3 py-2"
+              value={search}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                setSavedView('custom');
+                setSearch(e.target.value);
+              }}
+            />
+          </FormField>
+          <FormField label="Saved view">
+            <select
+              value={savedView}
+              onChange={(event) => applySavedView(event.target.value)}
+              className="w-full rounded-md border border-[var(--wp-color-border)] bg-transparent px-3 py-2 text-sm"
+            >
+              {SAVED_VIEWS.map((view) => (
+                <option key={view.id} value={view.id}>
+                  {view.label}
+                </option>
+              ))}
+            </select>
+          </FormField>
+          <FormField label="Status">
+            <select
+              value={statusFilter}
+              onChange={(event) => {
+                setSavedView('custom');
+                setStatusFilter(event.target.value);
+              }}
+              className="w-full rounded-md border border-[var(--wp-color-border)] bg-transparent px-3 py-2 text-sm"
+            >
+              <option value="">All statuses</option>
+              <option value="Active">Active</option>
+              <option value="Offline">Offline</option>
+              <option value="In Repair">In Repair</option>
+            </select>
+          </FormField>
+          <FormField label="Criticality">
+            <select
+              value={criticalityFilter}
+              onChange={(event) => {
+                setSavedView('custom');
+                setCriticalityFilter(event.target.value);
+              }}
+              className="w-full rounded-md border border-[var(--wp-color-border)] bg-transparent px-3 py-2 text-sm"
+            >
+              <option value="">All levels</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </FormField>
+        </FilterBar>
 
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-neutral-700 dark:text-neutral-200">Saved view</span>
-              <select
-                value={savedView}
-                onChange={(event) => applySavedView(event.target.value)}
-                className="w-full rounded-md border border-neutral-300 bg-transparent px-3 py-2 text-sm text-neutral-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-neutral-600 dark:text-neutral-100"
-              >
-                {SAVED_VIEWS.map((view) => (
-                  <option key={view.id} value={view.id}>
-                    {view.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-neutral-700 dark:text-neutral-200">Status</span>
-              <select
-                value={statusFilter}
-                onChange={(event) => {
+        <Card className="p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-[var(--wp-color-text-muted)]">
+              Categories
+            </span>
+            {['Electrical', 'Mechanical', 'Tooling', 'Interface'].map((category) => (
+              <button
+                key={category}
+                type="button"
+                onClick={() => {
                   setSavedView('custom');
-                  setStatusFilter(event.target.value);
+                  setSearch(category);
                 }}
-                className="w-full rounded-md border border-neutral-300 bg-transparent px-3 py-2 text-sm text-neutral-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-neutral-600 dark:text-neutral-100"
+                className="rounded-full border border-[var(--wp-color-border)] px-3 py-1.5 text-xs font-medium hover:border-[var(--wp-color-primary)] hover:text-[var(--wp-color-primary)]"
               >
-                <option value="">All statuses</option>
-                <option value="Active">Active</option>
-                <option value="Offline">Offline</option>
-                <option value="In Repair">In Repair</option>
-              </select>
-            </label>
-
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-neutral-700 dark:text-neutral-200">Criticality</span>
-              <select
-                value={criticalityFilter}
-                onChange={(event) => {
-                  setSavedView('custom');
-                  setCriticalityFilter(event.target.value);
-                }}
-                className="w-full rounded-md border border-neutral-300 bg-transparent px-3 py-2 text-sm text-neutral-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-neutral-600 dark:text-neutral-100"
-              >
-                <option value="">All levels</option>
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
-              </select>
-            </label>
+                {category}
+              </button>
+            ))}
           </div>
-        </div>
+        </Card>
 
         {!activePlant && !loadingPlants && !showSampleData && (
           <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100" role="alert">
@@ -617,7 +618,7 @@ const AssetsPage: React.FC = () => {
         )}
 
         {filteredAssets.length > 0 && (
-          <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
+          <Card>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-neutral-600">Existing assets</p>
@@ -645,6 +646,7 @@ const AssetsPage: React.FC = () => {
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       <Badge text={`Criticality: ${formatCriticalityLabel(asset.criticality)}`} type="priority" size="sm" />
+                      <StatusPill value={asset.status ?? 'unknown'} />
                       <Badge text={`Health: ${asset.health ?? 'N/A'}`} type="status" size="sm" />
                       <Badge text={`Last maintenance: ${formatMaintenanceLabel(asset)}`} size="sm" />
                       <Badge text={formatOpenWorkOrdersLabel(asset.openWorkOrders)} size="sm" />
@@ -714,7 +716,7 @@ const AssetsPage: React.FC = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
         )}
 
         {!isLoading && filteredAssets.length === 0 && (

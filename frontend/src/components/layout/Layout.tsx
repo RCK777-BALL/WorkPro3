@@ -5,18 +5,14 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 
-import Header from './Header';
-import Sidebar from './Sidebar';
-import RightPanel from './RightPanel';
-import ContextBreadcrumbs from './ContextBreadcrumbs';
-import CommandPalette from '@/components/global/CommandPalette';
 import { useTheme } from '@/context/ThemeContext';
 import { useSettingsStore } from '@/store/settingsStore';
 import { ScopeProvider } from '@/context/ScopeContext';
 import { emitToast } from '@/context/ToastContext';
 import { useTranslation } from 'react-i18next';
-import clsx from 'clsx';
 import { syncManager } from '@/utils/syncManager';
+import AppShell from '@/layout/AppShell';
+import { applyThemeCssVariables, resolveTheme } from '@/theme/theme';
 
 const COLOR_SCHEMES: Record<
   string,
@@ -55,37 +51,25 @@ const COLOR_SCHEMES: Record<
   },
 };
 
-const hexToRgba = (hex: string, alpha: number) => {
-  let normalized = hex.replace('#', '');
-  if (normalized.length === 3) {
-    normalized = normalized
-      .split('')
-      .map((char) => char + char)
-      .join('');
-  }
-  const parsed = parseInt(normalized, 16);
-  const r = (parsed >> 16) & 255;
-  const g = (parsed >> 8) & 255;
-  const b = parsed & 255;
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
-
 export default function Layout() {
   const location = useLocation();
   const { pathname } = location;
   const { t } = useTranslation();
-  const { backgroundColor, textColor } = useTheme();
+  const { backgroundColor, textColor, theme } = useTheme();
   const { sidebarCollapsed, denseMode, highContrast, colorScheme = 'default' } = useSettingsStore(
     (state) => state.theme,
   );
   const unauthorizedHandledKeyRef = useRef<string | null>(null);
   const accent = useMemo(() => COLOR_SCHEMES[colorScheme] ?? COLOR_SCHEMES.default, [colorScheme]);
-  const accentBackground = useMemo(
-    () => ({
-      radial: `radial-gradient(circle at top, ${hexToRgba(accent.accent, 0.08)}, transparent 50%)`,
-    }),
-    [accent],
-  );
+  const semanticTheme = useMemo(() => {
+    const mode =
+      theme === 'system'
+        ? (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : 'light')
+        : theme;
+    return resolveTheme(mode === 'dark' ? 'dark' : 'light');
+  }, [theme]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -118,6 +102,10 @@ export default function Layout() {
   }, [accent, colorScheme]);
 
   useEffect(() => {
+    applyThemeCssVariables(semanticTheme);
+  }, [semanticTheme]);
+
+  useEffect(() => {
     const state = (location.state as { unauthorized?: boolean; message?: string } | null) ?? null;
     if (state?.unauthorized) {
       if (unauthorizedHandledKeyRef.current === location.key) return;
@@ -146,35 +134,10 @@ export default function Layout() {
 
   return (
     <ScopeProvider>
-      <div
-        className="relative min-h-screen bg-slate-950 text-slate-100 transition-colors duration-300"
-        style={{ backgroundColor, color: textColor }}
-      >
-        <div
-          className="pointer-events-none absolute inset-0 bg-slate-950"
-          style={{ background: accentBackground.radial }}
-        />
-
-        <div className={clsx('relative z-10 flex min-h-screen', denseMode ? 'gap-4' : undefined)}>
-          <Sidebar collapsed={sidebarCollapsed} />
-
-          <div className="flex flex-1 flex-col overflow-hidden">
-            <CommandPalette />
-            <Header />
-            <main
-              className={clsx(
-                'flex-1 overflow-y-auto',
-                denseMode ? 'px-4 pb-6 pt-4 md:px-6' : 'px-6 pb-10 pt-6 md:px-10',
-              )}
-            >
-              <div className="mx-auto flex w-full flex-col gap-6">
-                <ContextBreadcrumbs />
-                <Outlet />
-              </div>
-            </main>
-          </div>
-          <RightPanel />
-        </div>
+      <div style={{ backgroundColor, color: textColor }}>
+        <AppShell sidebarCollapsed={sidebarCollapsed} denseMode={denseMode}>
+          <Outlet />
+        </AppShell>
       </div>
     </ScopeProvider>
   );

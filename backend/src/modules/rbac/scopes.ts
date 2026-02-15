@@ -5,6 +5,7 @@
 import { Types } from 'mongoose';
 
 import Site from '../../../models/Site';
+import Plant from '../../../models/Plant';
 import { toObjectId, type EntityIdLike } from '../../../utils/ids';
 
 export interface RoleScopeInput {
@@ -32,8 +33,11 @@ export const normalizeRoleScope = (input: RoleScopeInput) => {
 
 export const assertSiteScope = async (tenantId: Types.ObjectId, siteId?: Types.ObjectId | null) => {
   if (!siteId) return;
-  const exists = await Site.exists({ _id: siteId, tenantId });
-  if (!exists) {
+  const [siteExists, plantExists] = await Promise.all([
+    Site.exists({ _id: siteId, tenantId }),
+    Plant.exists({ _id: siteId, tenantId }),
+  ]);
+  if (!siteExists && !plantExists) {
     const error = new Error('Site does not belong to tenant');
     (error as { status?: number }).status = 403;
     throw error;

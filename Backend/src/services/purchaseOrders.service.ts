@@ -3,7 +3,7 @@
  */
 
 import { Types } from 'mongoose';
-import PurchaseOrder from '../models/PurchaseOrder';
+import PurchaseOrder from '../models/purchaseOrder';
 import PartStock from '../models/PartStock';
 import type {
   PurchaseOrderInput,
@@ -40,10 +40,10 @@ export const listPurchaseOrders = async (
 
 const buildPurchaseOrderLines = (input: PurchaseOrderInput) =>
   input.lines.map((line: PurchaseOrderInput['lines'][number]) => ({
-    part: new Types.ObjectId(line.partId),
-    qtyOrdered: line.quantity,
-    qtyReceived: 0,
-    price: line.unitCost,
+    partId: new Types.ObjectId(line.partId),
+    quantityOrdered: line.quantity,
+    quantityReceived: 0,
+    unitCost: line.unitCost,
   }));
 
 const calculateSubtotal = (input: PurchaseOrderInput) =>
@@ -92,10 +92,10 @@ export const updatePurchaseOrder = async (tenantId: string, id: string, input: P
 
   if (input.lines) {
     patch.lines = input.lines.map((line: PurchaseOrderInput['lines'][number]) => ({
-      part: new Types.ObjectId(line.partId),
-      qtyOrdered: line.quantity,
-      qtyReceived: 0,
-      price: line.unitCost,
+      partId: new Types.ObjectId(line.partId),
+    quantityOrdered: line.quantity,
+    quantityReceived: 0,
+    unitCost: line.unitCost,
     }));
     patch.subtotal = calculateSubtotal({ ...input, lines: input.lines } as PurchaseOrderInput);
   }
@@ -128,13 +128,13 @@ export const receivePurchaseOrder = async (
   if (!purchaseOrder) return null;
 
   receipts.forEach((receipt) => {
-    const line = purchaseOrder.lines.find((entry) => entry.part.toString() === receipt.partId);
+    const line = purchaseOrder.lines.find((entry) => entry.partId.toString() === receipt.partId);
     if (!line) return;
-    const newReceived = line.qtyReceived + receipt.quantity;
-    if (newReceived > line.qtyOrdered) {
+    const newReceived = line.quantityReceived + receipt.quantity;
+    if (newReceived > line.quantityOrdered) {
       throw new Error('Cannot receive more than ordered');
     }
-    line.qtyReceived = newReceived;
+    line.quantityReceived = newReceived;
   });
 
   await purchaseOrder.save();
@@ -163,3 +163,4 @@ export const receivePurchaseOrder = async (
 export const deletePurchaseOrder = async (tenantId: string, id: string) => {
   await PurchaseOrder.deleteOne({ _id: id, tenantId: new Types.ObjectId(tenantId) });
 };
+

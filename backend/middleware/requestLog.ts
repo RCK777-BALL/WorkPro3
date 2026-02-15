@@ -8,6 +8,7 @@ import logger from "../utils/logger";
 type MaybeString = string | undefined;
 
 type RequestMeta = {
+  requestId?: MaybeString;
   method: string;
   path: string;
   status: number;
@@ -30,6 +31,7 @@ const requestLog = (req: Request, res: Response, next: NextFunction): void => {
   res.on("finish", () => {
     const durationMs = Date.now() - startTime;
     const meta: RequestMeta = {
+      requestId: req.requestId,
       method: req.method,
       path: req.originalUrl || req.url,
       status: res.statusCode,

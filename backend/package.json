@@ -19,7 +19,8 @@
     "swagger:check": "ts-node utils/swagger.ts",
     "lint": "eslint .",
     "prepare": "husky install",
-    "fix:backend": "node ../fixWorkPro.js backend"
+    "fix:backend": "node ../fixWorkPro.js backend",
+    "indexes:ensure": "ts-node scripts/ensure-indexes.ts"
   },
   "dependencies": {
     "@slack/webhook": "^7.0.6",

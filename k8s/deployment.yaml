@@ -29,16 +29,29 @@ spec:
               value: http://workpro.local
           livenessProbe:
             httpGet:
-              path: /api/health
+              path: /health
               port: 5010
             initialDelaySeconds: 5
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /api/health
+              path: /ready
               port: 5010
             initialDelaySeconds: 5
             periodSeconds: 10
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 5010
+            periodSeconds: 10
+            failureThreshold: 30
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -71,3 +84,16 @@ spec:
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 10
+          startupProbe:
+            httpGet:
+              path: /
+              port: 80
+            periodSeconds: 10
+            failureThreshold: 30
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "300m"
+              memory: "256Mi"

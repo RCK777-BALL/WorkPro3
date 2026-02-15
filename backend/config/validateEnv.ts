@@ -66,9 +66,23 @@ export function validateEnv(): EnvVars {
     );
   }
 
+
+  const insecureCors = env.CORS_ORIGIN.split(',').map((v) => v.trim()).some((v) => v === '*');
+  if (env.NODE_ENV === 'production' && insecureCors) {
+    throw new Error('CORS_ORIGIN must not contain wildcard (*) in production');
+  }
+
+  const effectiveJwtSecret = env.JWT_SECRET ?? 'development-secret';
+
+  if (env.NODE_ENV === 'production' && effectiveJwtSecret.length < 32) {
+    throw new Error('JWT_SECRET must be at least 32 characters in production');
+  }
+
   return {
     ...env,
-    JWT_SECRET: env.JWT_SECRET ?? 'development-secret',
+    JWT_SECRET: effectiveJwtSecret,
   };
 }
+
+
 

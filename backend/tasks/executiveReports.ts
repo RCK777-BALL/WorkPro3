@@ -3,7 +3,7 @@
  */
 
 import cron from 'node-cron';
-import { parseExpression } from 'cron-parser';
+import cronParser from 'cron-parser';
 import nodemailer from 'nodemailer';
 
 import ExecutiveReportSchedule, {
@@ -27,7 +27,7 @@ const shouldSendReport = (
 ): boolean => {
   const cronExpr = schedule.cron || DEFAULT_EXECUTIVE_CRON;
   try {
-    const interval = parseExpression(cronExpr, {
+    const interval = cronParser(cronExpr, {
       currentDate: schedule.lastRunAt ?? new Date(0),
       tz: schedule.timezone ?? undefined,
     });

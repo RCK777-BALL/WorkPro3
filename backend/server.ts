@@ -57,6 +57,7 @@ import {
   plantRoutes,
   contractorRoutes,
   commentRoutes,
+  calibrationRoutes,
   permitRoutes,
   pmTasksRoutes,
   publicRequestRoutes,
@@ -346,8 +347,10 @@ app.use("/api/departments", departmentRoutes);
 app.use("/api/departments", departmentRoutes);
 app.use("/api/workorders", workOrdersRoutes);
 app.use("/api/permits", permitRoutes);
+app.use("/api/calibration", calibrationRoutes);
 app.use("/api/inspections", inspectionRoutes);
 app.use("/api/assets", assetsRoutes);
+app.use("/api/condition-rules", conditionRuleRoutes);
 app.use("/api/downtime-logs", downtimeLogRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/assets", assetInsightsRouter);

@@ -71,6 +71,7 @@ import PMTasksPage from "@/pages/PMTasksPage";
 import PMTemplateList from "@/pages/PMTemplateList";
 import PMTemplateEditor from "@/pages/PMTemplateEditor";
 import PMProcedureTemplates from "@/pages/PMProcedureTemplates";
+import Calibration from "@/pages/Calibration";
 import AdminTenants from "@/pages/AdminTenants";
 import Imports from "@/pages/Imports";
 import ApiKeysPage from "@/pages/integrations/ApiKeysPage";
@@ -93,8 +94,11 @@ import RequestTriage from "@/pages/requests/RequestTriage";
 import AssetScan from "@/pages/AssetScan";
 import MobileWorkOrder from "@/pages/mobile/MobileWorkOrder";
 import PwaTechnicianShell from "@/pages/PwaTechnicianShell";
+import MobileStrategy from "@/pages/MobileStrategy";
 import RequestFormBuilder from "@/pages/RequestFormBuilder";
 import ReorderAlerts from "@/pages/ReorderAlerts";
+import ConditionAutomation from "@/pages/ConditionAutomation";
+import DispatchBoard from "@/pages/DispatchBoard";
 import ScanDeepLink from "@/routes/ScanDeepLink";
 import UiPlayground from "@/pages/UiPlayground";
 
@@ -425,6 +429,7 @@ export default function App() {
           <Route path="/plants" element={<Plants />} />
           <Route path="/technician" element={<TechnicianConsole />} />
           <Route path="/pwa/technician" element={<PwaTechnicianShell />} />
+          <Route path="/mobile" element={<MobileStrategy />} />
           <Route path="/team-members/:teamMemberId" element={<TeamMemberProfile />} />
           <Route
             path="/pm/scheduler"
@@ -471,6 +476,30 @@ export default function App() {
             element={
               <RequirePermission permission="pm.read">
                 <PMTasksPage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/calibration"
+            element={
+              <RequirePermission permission="pm.read">
+                <Calibration />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/automation/cbm"
+            element={
+              <RequirePermission permission="pm.write">
+                <ConditionAutomation />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/planning/dispatch"
+            element={
+              <RequirePermission permission="workorders.read">
+                <DispatchBoard />
               </RequirePermission>
             }
           />

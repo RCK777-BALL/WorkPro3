@@ -138,6 +138,8 @@ const WorkOrderDetail = () => {
     { type: 'reserve' | 'issue' | 'return' | 'unreserve'; partId: string; quantity: number } | null
   >(null);
   const [approvalNote, setApprovalNote] = useState('');
+  const [approvalReasonCode, setApprovalReasonCode] = useState('operational');
+  const [approverSignature, setApproverSignature] = useState('');
   const [approvalSubmitting, setApprovalSubmitting] = useState(false);
   const hasPartsError = Boolean(partsQuery.error);
 
@@ -197,17 +199,33 @@ const WorkOrderDetail = () => {
 
   const submitApproval = async (status: 'pending' | 'approved' | 'rejected') => {
     if (!id) return;
+    if (status !== 'pending' && approverSignature.trim().length < 3) {
+      addToast('Approver signature name is required.', 'error');
+      return;
+    }
+    if (status === 'rejected' && approvalReasonCode.trim().length === 0) {
+      addToast('Reason code is required for rejection.', 'error');
+      return;
+    }
     setApprovalSubmitting(true);
     try {
+      const composedNote = [
+        approvalReasonCode ? `Reason: ${approvalReasonCode}` : '',
+        approverSignature ? `Signed by: ${approverSignature}` : '',
+        approvalNote.trim(),
+      ]
+        .filter(Boolean)
+        .join(' | ');
       const res = await http.post<WorkOrderResponse>(`/workorders/${id}/approve`, {
         status,
-        ...(approvalNote.trim() ? { note: approvalNote.trim() } : {}),
+        ...(composedNote ? { note: composedNote } : {}),
       });
       const normalized = normalizeWorkOrder(res.data);
       if (normalized) {
         setWorkOrder(normalized);
       }
       setApprovalNote('');
+      setApproverSignature('');
       addToast(`Approval ${status === 'pending' ? 'requested' : status}`, 'success');
     } catch (err) {
       console.error(err);
@@ -590,6 +608,25 @@ const WorkOrderDetail = () => {
                 </div>
               )}
               <div className="space-y-2">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-neutral-300">Reason code</label>
+                  <select
+                    className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100"
+                    value={approvalReasonCode}
+                    onChange={(event) => setApprovalReasonCode(event.target.value)}
+                  >
+                    <option value="operational">Operational</option>
+                    <option value="safety">Safety</option>
+                    <option value="quality">Quality</option>
+                    <option value="compliance">Compliance</option>
+                    <option value="budget">Budget</option>
+                  </select>
+                </div>
+                <Input
+                  label="Approver signature (full name)"
+                  value={approverSignature}
+                  onChange={(event) => setApproverSignature(event.target.value)}
+                />
                 <Input
                   label="Approval note"
                   value={approvalNote}

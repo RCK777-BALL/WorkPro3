@@ -25,6 +25,9 @@ export type NavItemId =
   | 'reorder-alerts'
   | 'permits'
   | 'pm-templates'
+  | 'calibration'
+  | 'automation-cbm'
+  | 'planning-dispatch'
   | 'maintenance'
   | 'inventory'
   | 'inventory-analytics'
@@ -42,6 +45,7 @@ export type NavItemId =
   | 'documentation-asset-management'
   | 'notification-settings'
   | 'settings'
+  | 'mobile-program'
   | 'imports'
   | 'audit';
 
@@ -64,6 +68,9 @@ const defaultOrder: NavItemId[] = [
   'reorder-alerts',
   'permits',
   'pm-templates',
+  'calibration',
+  'automation-cbm',
+  'planning-dispatch',
   'maintenance',
   'inventory',
   'inventory-analytics',
@@ -80,6 +87,7 @@ const defaultOrder: NavItemId[] = [
   'documentation-getting-started',
   'documentation-asset-management',
   'notification-settings',
+  'mobile-program',
   'settings',
   'audit',
   'imports',

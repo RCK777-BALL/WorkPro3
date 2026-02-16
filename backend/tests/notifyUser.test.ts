@@ -21,6 +21,7 @@ beforeAll(async () => {
     passwordHash: 'pass',
     roles: ['admin'],
     tenantId: new mongoose.Types.ObjectId(),
+    employeeId: 'NOTIFY-EMP-001',
   });
   userId = user._id;
 });

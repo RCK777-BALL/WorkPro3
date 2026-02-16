@@ -43,6 +43,7 @@ beforeAll(async () => {
     type: 'Mechanical',
     location: 'Loc1',
     tenantId: user.tenantId,
+    plant: new mongoose.Types.ObjectId(),
   });
 });
 
@@ -68,6 +69,7 @@ beforeEach(async () => {
     type: 'Mechanical',
     location: 'Loc1',
     tenantId: user.tenantId,
+    plant: new mongoose.Types.ObjectId(),
   });
 });
 
@@ -114,7 +116,7 @@ describe('Condition rules', () => {
       })
       .expect(201);
 
-    const ruleId = createRes.body._id;
+    const ruleId = (createRes.body.data ?? createRes.body)._id;
 
     await evaluateCondition({
       asset: asset._id.toString(),

@@ -13,7 +13,7 @@ import WorkOrderChecklistLog, { type WorkOrderChecklistLogDocument } from '../mo
 import InventoryItem from '../models/InventoryItem';
 import StockHistory from '../models/StockHistory';
 import Permit, { type PermitDocument } from '../models/Permit';
-import { emitWorkOrderUpdate } from '../server';
+import { getIO } from '../socket';
 import { applyWorkflowToWorkOrder } from '../services/workflowEngine';
 import { notifySlaBreach, notifyWorkOrderAssigned } from '../services/notificationService';
 import { AIAssistResult, getWorkOrderAssistance } from '../services/aiCopilot';
@@ -59,6 +59,14 @@ import {
   type RawChecklist,
   type RawSignature,
 } from '../src/utils/workOrder';
+
+const emitWorkOrderUpdate = (payload: WorkOrderUpdatePayload): void => {
+  try {
+    getIO().emit('workOrderUpdate', payload);
+  } catch {
+    // Socket may be unavailable in test/runtime contexts.
+  }
+};
 
 
 

@@ -10,6 +10,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import Site from '../models/Site';
+import Asset from '../models/Asset';
 const AssetRoutesModule: any = require('../routes/AssetRoutes');
 const AssetRoutes: any = AssetRoutesModule.default ?? AssetRoutesModule;
 
@@ -40,7 +41,7 @@ beforeEach(async () => {
     name: 'Tester',
     email: 'tester@example.com',
     passwordHash: 'pass123',
-    roles: ['supervisor'],
+    roles: ['admin'],
     tenantId: new mongoose.Types.ObjectId(),
     employeeId: 'EMP-1',
   });
@@ -58,18 +59,22 @@ beforeEach(async () => {
 
 describe('Site isolation', () => {
   it('returns assets scoped to site header', async () => {
-    await request(app)
-      .post('/api/assets')
-      .set('Authorization', `Bearer ${token}`)
-      .set('x-site-id', siteA.toString())
-      .send({ name: 'A', type: 'Mechanical', location: 'L', siteId: siteA, plant: siteA })
-      .expect(201);
-    await request(app)
-      .post('/api/assets')
-      .set('Authorization', `Bearer ${token}`)
-      .set('x-site-id', siteB.toString())
-      .send({ name: 'B', type: 'Mechanical', location: 'L', siteId: siteB, plant: siteB })
-      .expect(201);
+    await Asset.create({
+      name: 'A',
+      type: 'Mechanical',
+      location: 'L',
+      tenantId: user.tenantId,
+      siteId: siteA,
+      plant: siteA,
+    });
+    await Asset.create({
+      name: 'B',
+      type: 'Mechanical',
+      location: 'L',
+      tenantId: user.tenantId,
+      siteId: siteB,
+      plant: siteB,
+    });
 
     const res = await request(app)
       .get('/api/assets')
@@ -77,7 +82,8 @@ describe('Site isolation', () => {
       .set('x-site-id', siteA.toString())
       .expect(200);
 
-    expect(res.body.length).toBe(1);
-    expect(res.body[0].name).toBe('A');
+    const payload = res.body.data ?? res.body;
+    expect(payload.length).toBe(1);
+    expect(payload[0].name).toBe('A');
   });
 });

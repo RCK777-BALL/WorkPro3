@@ -30,8 +30,12 @@ beforeAll(async () => {
     passwordHash: 'pass123',
     roles: ['supervisor'],
     tenantId: new mongoose.Types.ObjectId(),
+    employeeId: 'TS-EMP-001',
   });
-  token = jwt.sign({ id: user._id.toString(), roles: user.roles }, process.env.JWT_SECRET!);
+  token = jwt.sign(
+    { id: user._id.toString(), roles: user.roles, tenantId: user.tenantId.toString() },
+    process.env.JWT_SECRET!,
+  );
 });
 
 afterAll(async () => {
@@ -48,6 +52,7 @@ beforeEach(async () => {
     passwordHash: user.passwordHash,
     roles: user.roles,
     tenantId: user.tenantId,
+    employeeId: user.employeeId,
   });
 });
 
@@ -74,16 +79,18 @@ describe('TimeSheet Routes', () => {
       .send(payload)
       .expect(201);
 
-    const id = createRes.body._id;
+    const created = createRes.body.data ?? createRes.body;
+    const id = created._id;
 
     const listRes = await request(app)
       .get('/api/timesheets')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(listRes.body.length).toBe(1);
-    expect(listRes.body[0]._id).toBe(id);
-    expect(listRes.body[0].user).toBe(String(user._id));
+    const rows = listRes.body.data ?? listRes.body;
+    expect(rows.length).toBe(1);
+    expect(rows[0]._id).toBe(id);
+    expect(rows[0].user).toBe(String(user._id));
   });
 
   it('fails validation for invalid user id', async () => {

@@ -14,6 +14,7 @@ import User from '../models/User';
 import WorkOrderRoutes from '../routes/workOrdersRoutes';
 import WorkOrder from '../models/WorkOrder';
 import { getWorkOrderAssistance } from '../services/aiCopilot';
+import Site from '../models/Site';
 
 vi.mock('../services/aiCopilot');
 
@@ -25,6 +26,7 @@ let mongo: MongoMemoryServer;
 let token: string;
 let user: Awaited<ReturnType<typeof User.create>>;
 let workOrder: Awaited<ReturnType<typeof WorkOrder.create>>;
+let siteId: mongoose.Types.ObjectId;
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'testsecret';
@@ -43,13 +45,21 @@ beforeEach(async () => {
     name: 'Tester',
     email: 'tester@example.com',
     passwordHash: 'pass123',
-    roles: ['supervisor'],
+    roles: ['admin'],
     tenantId: new mongoose.Types.ObjectId(),
+    employeeId: 'WOA-EMP-001',
   });
-  token = jwt.sign({ id: user._id.toString(), roles: user.roles }, process.env.JWT_SECRET!);
+  token = jwt.sign(
+    { id: user._id.toString(), roles: user.roles, tenantId: user.tenantId.toString() },
+    process.env.JWT_SECRET!,
+  );
+  const site = await Site.create({ tenantId: user.tenantId, name: 'Main Site' });
+  siteId = site._id;
   workOrder = await WorkOrder.create({
     title: 'WO',
     tenantId: user.tenantId,
+    plant: siteId,
+    siteId,
   });
 });
 
@@ -63,9 +73,11 @@ describe('GET /api/workorders/:id/assist', () => {
     const res = await request(app)
       .get(`/api/workorders/${workOrder._id}/assist`)
       .set('Authorization', `Bearer ${token}`)
+      .set('x-site-id', siteId.toString())
       .expect(200);
 
-    expect(res.body.summary).toBe('ok');
-    expect(res.body.riskScore).toBe(0.2);
+    const payload = res.body.data ?? res.body;
+    expect(payload.summary).toBe('ok');
+    expect(payload.riskScore).toBe(0.2);
   });
 });

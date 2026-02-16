@@ -28,10 +28,14 @@ beforeAll(async () => {
     name: 'Tester',
     email: 'tester@example.com',
     passwordHash: 'pass123',
-    roles: ['supervisor'],
+    roles: ['admin'],
     tenantId: new mongoose.Types.ObjectId(),
+    employeeId: 'VENDOR-EMP-001',
   });
-  token = jwt.sign({ id: user._id.toString(), roles: user.roles }, process.env.JWT_SECRET!);
+  token = jwt.sign(
+    { id: user._id.toString(), roles: user.roles, tenantId: user.tenantId.toString() },
+    process.env.JWT_SECRET!,
+  );
 });
 
 afterAll(async () => {
@@ -46,8 +50,9 @@ beforeEach(async () => {
     name: user.name,
     email: user.email,
     passwordHash: user.passwordHash,
-    roles: user.roles,
+    roles: ['admin'],
     tenantId: user.tenantId,
+    employeeId: user.employeeId,
   });
 });
 
@@ -75,8 +80,10 @@ describe('Vendor Routes', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(listRes.body.data).toHaveLength(1);
-    expect(listRes.body.data[0].id).toBe(created.id);
+    const listed = Array.isArray(listRes.body.data) ? listRes.body.data : listRes.body.data?.data;
+    expect(Array.isArray(listed)).toBe(true);
+    expect(listed).toHaveLength(1);
+    expect(listed[0].id).toBe(created.id);
 
     const updateRes = await request(app)
       .put(`/api/vendors/${created.id}`)

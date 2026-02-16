@@ -10,10 +10,18 @@ import type { Express, Response } from 'express';
 import WorkOrder, { type WorkOrderDocument, type WorkOrder as WorkOrderModel } from '../models/WorkOrder';
 import type { AuthedRequest, AuthedRequestHandler } from '../types/http';
 import { technicianStateSchema, technicianPartUsageSchema } from '../src/schemas/technician';
-import { emitWorkOrderUpdate } from '../server';
+import { getIO } from '../socket';
 import type { WorkOrderUpdatePayload } from '../types/Payloads';
 import type { UploadedFile } from '../../shared/types/uploads';
 import { sendResponse, writeAuditLog, normalizePartUsageCosts } from '../utils';
+
+const emitWorkOrderUpdate = (payload: WorkOrderUpdatePayload): void => {
+  try {
+    getIO().emit('workOrderUpdate', payload);
+  } catch {
+    // Socket may be unavailable in tests/runtime bootstrap.
+  }
+};
 
 const resolvePlantId = (
   req: Pick<AuthedRequest, 'plantId' | 'siteId'>,

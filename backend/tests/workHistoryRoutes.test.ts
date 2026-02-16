@@ -21,6 +21,7 @@ let token: string;
 let user: Awaited<ReturnType<typeof User.create>>;
 
 const buildPayload = () => ({
+  memberId: user._id.toString(),
   performedBy: user._id.toString(),
   metrics: {
     safety: {
@@ -82,6 +83,7 @@ beforeAll(async () => {
     passwordHash: 'hash',
     roles: ['supervisor'],
     tenantId: new mongoose.Types.ObjectId(),
+    employeeId: 'WH-EMP-001',
   });
   token = jwt.sign({ id: user._id.toString(), tenantId: user.tenantId?.toString() }, process.env.JWT_SECRET!);
 });
@@ -102,6 +104,7 @@ beforeEach(async () => {
     passwordHash: user.passwordHash,
     roles: user.roles,
     tenantId: user.tenantId,
+    employeeId: user.employeeId,
   });
 });
 
@@ -128,14 +131,13 @@ describe('WorkHistoryRoutes', () => {
 
     const listRes = await request(app)
       .get('/api/work-history')
-      .query({ performedBy: user._id.toString() })
+      .query({ memberId: user._id.toString() })
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
     expect(listRes.body.success).toBe(true);
-    expect(Array.isArray(listRes.body.data)).toBe(true);
-    expect(listRes.body.data).toHaveLength(1);
-    expect(listRes.body.data[0].recentWork[0].title).toBe('Inspect Pump');
+    expect(listRes.body.data).toBeDefined();
+    expect(listRes.body.data.recentWork[0].title).toBe('Inspect Pump');
 
     const updatePayload = {
       ...payload,
@@ -165,12 +167,12 @@ describe('WorkHistoryRoutes', () => {
 
     const refetch = await request(app)
       .get('/api/work-history')
-      .query({ performedBy: user._id.toString() })
+      .query({ memberId: user._id.toString() })
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
-    expect(refetch.body.data[0].metrics.productivity.completedTasks).toBe(42);
-    expect(refetch.body.data[0].recentWork[0].title).toBe('Inspect Pump - Updated');
+    expect(refetch.body.data.metrics.productivity.completedTasks).toBe(42);
+    expect(refetch.body.data.recentWork[0].title).toBe('Inspect Pump - Updated');
   });
 });
 

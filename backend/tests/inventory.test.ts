@@ -11,6 +11,7 @@ import jwt from 'jsonwebtoken';
 import inventoryRoutes from '../routes/inventoryRoutes';
 import InventoryItem from '../models/InventoryItem';
 import User from '../models/User';
+import Site from '../models/Site';
 
 const app = express();
 app.use(express.json());
@@ -21,6 +22,7 @@ let token: string;
 let user: Awaited<ReturnType<typeof User.create>>;
 let eachId: mongoose.Types.ObjectId;
 let caseId: mongoose.Types.ObjectId;
+let siteId: mongoose.Types.ObjectId;
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'testsecret';
@@ -32,8 +34,12 @@ beforeAll(async () => {
     passwordHash: 'pass123',
     roles: ['supervisor'],
     tenantId: new mongoose.Types.ObjectId(),
+    employeeId: 'INV-EMP-001',
   });
-  token = jwt.sign({ id: user._id.toString(), roles: user.roles }, process.env.JWT_SECRET!);
+  token = jwt.sign(
+    { id: user._id.toString(), roles: user.roles, tenantId: user.tenantId.toString() },
+    process.env.JWT_SECRET!,
+  );
 });
 
 afterAll(async () => {
@@ -43,6 +49,17 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await mongoose.connection.db?.dropDatabase();
+  const site = await Site.create({ tenantId: user.tenantId, name: 'Main Site' });
+  siteId = site._id;
+  await User.create({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    passwordHash: 'pass123',
+    roles: user.roles,
+    tenantId: user.tenantId,
+    employeeId: user.employeeId,
+  });
   eachId = new mongoose.Types.ObjectId();
   caseId = new mongoose.Types.ObjectId();
   await mongoose.connection.db
@@ -64,6 +81,7 @@ describe('Inventory Routes', () => {
     const res = await request(app)
       .post('/api/inventory')
       .set('Authorization', `Bearer ${token}`)
+      .set('x-site-id', siteId.toString())
       .send({ name: 'Bolt', quantity: 10, tenantId: user.tenantId.toString() })
       .expect(201);
 
@@ -74,12 +92,13 @@ describe('Inventory Routes', () => {
   });
 
   it('lists inventory items', async () => {
-    await InventoryItem.create({ name: 'Item1', quantity: 5, tenantId: new mongoose.Types.ObjectId() });
-    await InventoryItem.create({ name: 'Item2', quantity: 3, tenantId: new mongoose.Types.ObjectId() });
+    await InventoryItem.create({ name: 'Item1', quantity: 5, tenantId: user.tenantId, siteId });
+    await InventoryItem.create({ name: 'Item2', quantity: 3, tenantId: user.tenantId, siteId });
 
     const res = await request(app)
       .get('/api/inventory')
       .set('Authorization', `Bearer ${token}`)
+      .set('x-site-id', siteId.toString())
       .expect(200);
 
     expect(res.body.length).toBe(2);
@@ -92,11 +111,13 @@ describe('Inventory Routes', () => {
       quantity: 2,
       tenantId: user.tenantId,
       uom: caseId,
+      siteId,
     });
 
     const res = await request(app)
       .post(`/api/inventory/${item._id}/use`)
       .set('Authorization', `Bearer ${token}`)
+      .set('x-site-id', siteId.toString())
       .send({ quantity: 6, uom: eachId.toString() })
       .expect(200);
 
@@ -109,11 +130,13 @@ describe('Inventory Routes', () => {
       quantity: 24,
       tenantId: user.tenantId,
       uom: eachId,
+      siteId,
     });
 
     const res = await request(app)
       .post(`/api/inventory/${item._id}/use`)
       .set('Authorization', `Bearer ${token}`)
+      .set('x-site-id', siteId.toString())
       .send({ quantity: 1, uom: caseId.toString() })
       .expect(200);
 
@@ -126,12 +149,14 @@ describe('Inventory Routes', () => {
       quantity: 1,
       tenantId: user.tenantId,
       uom: caseId,
+      siteId,
     });
     const badUom = new mongoose.Types.ObjectId();
 
     await request(app)
       .post(`/api/inventory/${item._id}/use`)
       .set('Authorization', `Bearer ${token}`)
+      .set('x-site-id', siteId.toString())
       .send({ quantity: 1, uom: badUom.toString() })
       .expect(400);
   });

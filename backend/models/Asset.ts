@@ -131,4 +131,5 @@ assetSchema.index({ tenantId: 1, lineId: 1 });
 assetSchema.index({ tenantId: 1, stationId: 1 });
 assetSchema.index({ tenantId: 1, siteId: 1 });
 
-export default mongoose.model<AssetDoc>('Asset', assetSchema);
+export default (mongoose.models.Asset as mongoose.Model<AssetDoc> | undefined) ??
+  mongoose.model<AssetDoc>('Asset', assetSchema);

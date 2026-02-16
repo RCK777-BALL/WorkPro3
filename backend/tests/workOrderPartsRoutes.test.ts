@@ -6,7 +6,7 @@ import { describe, it, beforeAll, afterAll, beforeEach, expect } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import jwt from 'jsonwebtoken';
 import WorkOrderRoutes from '../routes/workOrdersRoutes';
 import WorkOrder from '../models/WorkOrder';
@@ -15,6 +15,7 @@ import PartStock from '../models/PartStock';
 import InventoryPart from '../src/modules/inventory/models/Part';
 import InventoryMovement from '../models/InventoryMovement';
 import WorkOrderPartLineItem from '../models/WorkOrderPartLineItem';
+import Site from '../models/Site';
 
 declare module 'vitest' {
   export interface ProvidedContext {
@@ -26,15 +27,16 @@ const app = express();
 app.use(express.json());
 app.use('/api/workorders', WorkOrderRoutes);
 
-let mongo: MongoMemoryServer;
+let mongo: MongoMemoryReplSet;
 let token: string;
 let tenantId: mongoose.Types.ObjectId;
 let workOrder: Awaited<ReturnType<typeof WorkOrder.create>>;
 let stock: Awaited<ReturnType<typeof PartStock.create>>;
+let siteId: mongoose.Types.ObjectId;
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'testsecret';
-  mongo = await MongoMemoryServer.create();
+  mongo = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
   await mongoose.connect(mongo.getUri());
 });
 
@@ -50,14 +52,20 @@ beforeEach(async () => {
     name: 'Tester',
     email: 'tester@example.com',
     passwordHash: 'pass123',
-    roles: ['supervisor'],
+    roles: ['admin'],
     tenantId,
     employeeId: 'EMP-1',
   });
-  token = jwt.sign({ id: user._id.toString(), roles: user.roles }, process.env.JWT_SECRET!);
+  token = jwt.sign(
+    { id: user._id.toString(), roles: ['admin'], tenantId: tenantId.toString() },
+    process.env.JWT_SECRET!,
+  );
+  const site = await Site.create({ tenantId, name: 'Main Site' });
+  siteId = site._id;
 
   const part = await InventoryPart.create({
     tenantId,
+    siteId,
     name: 'Bolt',
     quantity: 10,
     unitCost: 2,
@@ -65,6 +73,7 @@ beforeEach(async () => {
 
   stock = await PartStock.create({
     tenantId,
+    siteId,
     partId: part._id,
     onHand: 10,
     reserved: 0,
@@ -77,6 +86,8 @@ beforeEach(async () => {
     status: 'requested',
     priority: 'medium',
     type: 'corrective',
+    plant: siteId,
+    siteId,
   });
 });
 
@@ -85,6 +96,7 @@ describe('Work order parts endpoints', () => {
     const reserveRes = await request(app)
       .post(`/api/workorders/${workOrder._id.toString()}/parts/reserve`)
       .set('Authorization', `Bearer ${token}`)
+      .set('x-site-id', siteId.toString())
       .send({ stockId: stock._id.toString(), quantity: 3, unitCost: 5 })
       .expect(200);
 
@@ -96,6 +108,7 @@ describe('Work order parts endpoints', () => {
     const issueRes = await request(app)
       .post(`/api/workorders/${workOrder._id.toString()}/parts/issue`)
       .set('Authorization', `Bearer ${token}`)
+      .set('x-site-id', siteId.toString())
       .send({ stockId: stock._id.toString(), quantity: 2 })
       .expect(200);
 
@@ -106,6 +119,7 @@ describe('Work order parts endpoints', () => {
     await request(app)
       .post(`/api/workorders/${workOrder._id.toString()}/parts/return`)
       .set('Authorization', `Bearer ${token}`)
+      .set('x-site-id', siteId.toString())
       .send({ stockId: stock._id.toString(), quantity: 1 })
       .expect(200);
 
@@ -131,6 +145,7 @@ describe('Work order parts endpoints', () => {
     const badTenantRes = await request(app)
       .post(`/api/workorders/${workOrder._id.toString()}/parts/reserve`)
       .set('Authorization', `Bearer ${token}`)
+      .set('x-site-id', siteId.toString())
       .send({ stockId: otherStock._id.toString(), quantity: 1 })
       .expect(400);
 
@@ -139,6 +154,7 @@ describe('Work order parts endpoints', () => {
     const tooMuchRes = await request(app)
       .post(`/api/workorders/${workOrder._id.toString()}/parts/reserve`)
       .set('Authorization', `Bearer ${token}`)
+      .set('x-site-id', siteId.toString())
       .send({ stockId: stock._id.toString(), quantity: 50 })
       .expect(400);
     expect(tooMuchRes.body.success).toBe(false);
@@ -146,12 +162,14 @@ describe('Work order parts endpoints', () => {
     await request(app)
       .post(`/api/workorders/${workOrder._id.toString()}/parts/reserve`)
       .set('Authorization', `Bearer ${token}`)
+      .set('x-site-id', siteId.toString())
       .send({ stockId: stock._id.toString(), quantity: 1 })
       .expect(200);
 
     const overIssueRes = await request(app)
       .post(`/api/workorders/${workOrder._id.toString()}/parts/issue`)
       .set('Authorization', `Bearer ${token}`)
+      .set('x-site-id', siteId.toString())
       .send({ stockId: stock._id.toString(), quantity: 3 })
       .expect(400);
     expect(overIssueRes.body.success).toBe(false);
@@ -161,6 +179,7 @@ describe('Work order parts endpoints', () => {
     const reserveRes = await request(app)
       .post(`/api/workorders/${workOrder._id.toString()}/parts/reserve`)
       .set('Authorization', `Bearer ${token}`)
+      .set('x-site-id', siteId.toString())
       .send({ stockId: stock._id.toString(), quantity: 2 })
       .expect(200);
 
@@ -170,6 +189,7 @@ describe('Work order parts endpoints', () => {
     await request(app)
       .delete(`/api/workorders/${workOrder._id.toString()}/parts/${lineItemId.toString()}`)
       .set('Authorization', `Bearer ${token}`)
+      .set('x-site-id', siteId.toString())
       .expect(200);
 
     const deleted = await WorkOrderPartLineItem.findById(lineItemId).lean();
@@ -178,6 +198,7 @@ describe('Work order parts endpoints', () => {
     const listRes = await request(app)
       .get(`/api/workorders/${workOrder._id.toString()}/parts`)
       .set('Authorization', `Bearer ${token}`)
+      .set('x-site-id', siteId.toString())
       .expect(200);
     expect(listRes.body.data.length).toBe(0);
 

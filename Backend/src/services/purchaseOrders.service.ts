@@ -103,7 +103,7 @@ export const updatePurchaseOrder = async (tenantId: string, id: string, input: P
   const updated = await PurchaseOrder.findOneAndUpdate(
     { _id: id, tenantId: new Types.ObjectId(tenantId) },
     { $set: patch },
-    { new: true },
+    { returnDocument: 'after' },
   ).lean();
 
   if (updated) {
@@ -144,7 +144,7 @@ export const receivePurchaseOrder = async (
       PartStock.findOneAndUpdate(
         { tenantId: new Types.ObjectId(tenantId), partId: new Types.ObjectId(receipt.partId) },
         { $inc: { onHand: receipt.quantity } },
-        { upsert: true, new: true },
+        { upsert: true, returnDocument: 'after' },
       ),
     ),
   );

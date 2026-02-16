@@ -58,7 +58,7 @@ export const updateVideo = async (req: Request, res: Response, next: NextFunctio
     const existing = await Video.findById(req.params.id);
     if (!existing) return sendResponse(res, null, 'Not found', 404);
     const updated = await Video.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     });
     await writeAuditLog({

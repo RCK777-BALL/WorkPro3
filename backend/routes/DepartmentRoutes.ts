@@ -876,7 +876,7 @@ const updateLineForDepartment: AuthedRequestHandler<
     const line = await Line.findOneAndUpdate(
       { _id: req.params.lineId, tenantId, departmentId: req.params.deptId },
       { $set: updates },
-      { new: true },
+      { returnDocument: 'after' },
     );
 
     if (!line) {
@@ -1082,7 +1082,7 @@ const updateStationForLine: AuthedRequestHandler<
         departmentId: req.params.deptId,
       },
       { $set: updates },
-      { new: true },
+      { returnDocument: 'after' },
     );
 
     if (!station) {

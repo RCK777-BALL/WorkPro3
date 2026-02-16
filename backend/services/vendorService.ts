@@ -118,7 +118,7 @@ export const updateVendor = async (
       tags: input.tags ?? [],
       ...(typeof input.isActive === 'boolean' ? { isActive: input.isActive } : {}),
     },
-    { new: true, runValidators: true },
+    { returnDocument: 'after', runValidators: true },
   )) as VendorDocument | null;
   if (!vendor) {
     throw new VendorNotFoundError();

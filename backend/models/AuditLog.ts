@@ -79,7 +79,7 @@ const auditLogSchema = new Schema<AuditLogDocument>(
     after: { type: Schema.Types.Mixed },
     diff: { type: [diffSchema], default: void 0 },
     ts: { type: Date, required: true, default: () => new Date(), index: true },
-    expiresAt: { type: Date, index: true },
+    expiresAt: { type: Date },
   },
   {
     versionKey: false,

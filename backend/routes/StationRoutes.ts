@@ -179,7 +179,7 @@ const updateStation: AuthedRequestHandler<
     const station = await Station.findOneAndUpdate(
       query,
       { $set: update },
-      { new: true },
+      { returnDocument: 'after' },
     );
     if (!station) {
       sendResponse(res, null, 'Not found', 404);

@@ -310,7 +310,7 @@ async function updateChannel(
         members: userId,
       },
       update,
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (!channel) {
       sendResponse(res, null, 'Not found', 404);
@@ -486,7 +486,7 @@ async function updateMessage(
     const message: ChatMessageDocument | null = await ChatMessage.findOneAndUpdate(
       { _id: req.params.messageId, sender: userId },
       { content: req.body.content, updatedAt: new Date() },
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (!message) {
       sendResponse(res, null, 'Not found', 404);

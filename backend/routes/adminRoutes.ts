@@ -58,7 +58,7 @@ router.put('/auth-config/:provider', async (req, res, next) => {
     const updated = await IdentityProviderConfig.findOneAndUpdate(
       { tenantId: req.tenantId, protocol: payload.protocol, provider: payload.provider },
       payload,
-      { new: true, upsert: true },
+      { returnDocument: 'after', upsert: true },
     );
 
     await writeAuditLog({
@@ -106,7 +106,7 @@ router.put('/workflow-rules/:id', async (req, res, next) => {
     const updated = await WorkflowRule.findOneAndUpdate(
       { _id: req.params.id, tenantId: req.tenantId },
       req.body,
-      { new: true },
+      { returnDocument: 'after' },
     );
     if (!updated) {
       res.status(404).json({ success: false, error: 'Not found' });
@@ -147,7 +147,7 @@ router.put('/sla-policies/:id', async (req, res, next) => {
     const updated = await SlaPolicy.findOneAndUpdate(
       { _id: req.params.id, tenantId: req.tenantId },
       req.body,
-      { new: true },
+      { returnDocument: 'after' },
     );
     if (!updated) {
       res.status(404).json({ success: false, error: 'Not found' });

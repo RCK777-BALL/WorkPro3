@@ -51,7 +51,7 @@ router.post('/switch-plant', async (req, res, next) => {
     const settings = await Settings.findOneAndUpdate(
       query,
       update,
-      { new: true, upsert: true, setDefaultsOnInsert: true },
+      { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true },
     );
 
     sendResponse(res, {

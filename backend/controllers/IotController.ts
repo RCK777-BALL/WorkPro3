@@ -238,7 +238,7 @@ export const upsertSensorDevice: AuthedRequestHandler<
     const updated = await SensorDevice.findOneAndUpdate(
       { tenantId, deviceId },
       { ...payload, tenantId, deviceId },
-      { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true },
+      { returnDocument: 'after', upsert: true, runValidators: true, setDefaultsOnInsert: true },
     );
 
     sendResponse(res, updated, null, req.params?.id ? 200 : 201);

@@ -107,7 +107,7 @@ export const startExportWorker = () => {
     const job = await ExportJob.findOneAndUpdate(
       { status: 'queued' },
       { status: 'processing', startedAt: new Date() },
-      { sort: { createdAt: 1 }, new: true },
+      { sort: { createdAt: 1 }, returnDocument: 'after' },
     );
     if (job) {
       void processJob(job._id.toString());

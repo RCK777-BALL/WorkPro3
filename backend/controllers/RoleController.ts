@@ -152,7 +152,7 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
         : {},
     };
     const role = await Role.findOneAndUpdate(filter, payload, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     });
     const entityId = toEntityId(roleId) ?? roleId;

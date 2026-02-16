@@ -167,7 +167,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
       { _id: req.params.id, tenantId },
       update,
       {
-        new: true,
+        returnDocument: 'after',
         runValidators: true,
       }
     ).select('-passwordHash');
@@ -332,7 +332,7 @@ export const updateUserTheme = async (req: Request, res: Response, next: NextFun
     const user = await User.findByIdAndUpdate(
       req.params.id,
       { theme },
-      { new: true }
+      { returnDocument: 'after' }
     ).select('theme');
     if (!user) {
       sendResponse(res, null, 'Not found', 404);

@@ -673,7 +673,7 @@ async function updateAsset(
     update.qrCode = generateQrCodeValue({ type: 'asset', id, tenantId: tenantId.toString() });
     update.plant = plantId;
     const asset = await Asset.findOneAndUpdate(filter, update, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     });
     const previousLocation: AssetHierarchyLocation = {

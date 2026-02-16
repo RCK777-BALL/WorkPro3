@@ -90,7 +90,7 @@ const updateConditionRule: AuthedRequestHandler<
     const updated = await ConditionRule.findOneAndUpdate(
       { _id: req.params.id, tenantId },
       { ...req.body, tenantId },
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     );
     await writeAuditLog({
       tenantId,

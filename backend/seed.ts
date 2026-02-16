@@ -115,7 +115,7 @@ const ensureSeedPermissions = async () => {
           isSystem: true,
         },
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true },
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true },
     ).lean();
 
     if (permission?._id) {
@@ -131,7 +131,7 @@ const ensureSeedRoles = async () => {
     const role = await Role.findOneAndUpdate(
       { name: definition.name },
       { $set: { permissions: definition.permissions } },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     ).lean();
 
     if (role?._id) {

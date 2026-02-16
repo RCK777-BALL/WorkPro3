@@ -258,7 +258,7 @@ export async function updateInventoryItem(
     }
 
     const updateQuery = InventoryItem.findOneAndUpdate(filter, data, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     });
     if (updateQuery.getUpdate()) {

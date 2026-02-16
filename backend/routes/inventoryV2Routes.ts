@@ -130,7 +130,7 @@ router.put('/parts/:id', async (req, res, next) => {
       notes: (req.body as any).notes,
     };
     const updated = await Part.findOneAndUpdate({ ...scope, _id: id }, update, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     }).lean();
     if (!updated) {

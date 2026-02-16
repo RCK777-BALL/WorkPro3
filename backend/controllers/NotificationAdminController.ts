@@ -45,7 +45,7 @@ export const upsertTemplate: AuthedRequestHandler = async (req, res, next) => {
     const template = await NotificationTemplate.findOneAndUpdate(
       filter,
       { event, channel, subject, body, tenantId },
-      { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: true },
+      { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true, runValidators: true },
     );
     sendResponse(res, template, null, id ? 200 : 201);
   } catch (err) {
@@ -115,7 +115,7 @@ export const upsertSubscription: AuthedRequestHandler = async (req, res, next) =
         quietHours,
         digest,
       },
-      { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: true },
+      { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true, runValidators: true },
     );
     sendResponse(res, subscription, null, id ? 200 : 201);
   } catch (err) {

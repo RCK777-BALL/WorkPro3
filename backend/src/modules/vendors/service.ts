@@ -133,7 +133,7 @@ export const updateVendor = async (
         partsSupplied,
       },
     },
-    { new: true, runValidators: true },
+    { returnDocument: 'after', runValidators: true },
   );
   if (!vendor) {
     throw new Error('Vendor not found');

@@ -59,7 +59,7 @@ export const updateAsset = async (tenantId: string, id: string, input: AssetUpda
   const updated = await Asset.findOneAndUpdate(
     { _id: id, tenantId: new Types.ObjectId(tenantId) },
     { $set: input },
-    { new: true },
+    { returnDocument: 'after' },
   ).lean();
   return updated;
 };

@@ -145,7 +145,7 @@ const queueDigest = async (
       deliverAt,
       $push: { notificationIds: notification._id },
     },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: 'after' },
   );
   await recordDeliveryLog({
     notificationId: notification._id,

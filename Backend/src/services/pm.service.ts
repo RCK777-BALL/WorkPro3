@@ -83,7 +83,7 @@ export const updatePreventiveMaintenance = async (
   const updated = await PreventiveMaintenance.findOneAndUpdate(
     { _id: id, tenantId: new Types.ObjectId(tenantId) },
     { $set: patch },
-    { new: true },
+    { returnDocument: 'after' },
   ).lean();
 
   return updated;

@@ -97,7 +97,7 @@ export const upsertUserSubscription = async (
       quietHours: input.quietHours,
       digest: input.digest,
     },
-    { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: true },
+    { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true, runValidators: true },
   );
 
 export const deleteUserSubscription = async (

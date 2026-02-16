@@ -182,7 +182,7 @@ export const updateMaintenanceSchedule: AuthedRequestHandler<
     const schedule = await MaintenanceSchedule.findOneAndUpdate(
       filter,
       toUpdatePayload(req.body),
-      { new: true },
+      { returnDocument: 'after' },
     );
 
     if (!schedule) {

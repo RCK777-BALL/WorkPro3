@@ -253,7 +253,7 @@ router.patch("/:id", async (req, res, next) => {
     const updated = await InventoryItem.findOneAndUpdate(
       { ...scope, _id: id },
       payload,
-      { new: true, runValidators: true },
+      { returnDocument: 'after', runValidators: true },
     );
 
     if (!updated) {

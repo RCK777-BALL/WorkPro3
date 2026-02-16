@@ -372,7 +372,7 @@ const updateDocument: AuthedRequestHandler<
     }
 
     const updated = await Document.findByIdAndUpdate(objectId, updateData, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     });
     if (!updated) {

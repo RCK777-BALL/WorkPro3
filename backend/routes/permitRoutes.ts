@@ -150,7 +150,7 @@ router.patch('/:id', validateObjectId('id'), async (req, res, next) => {
     const permit = await Permit.findOneAndUpdate(
       { _id: req.params.id, tenantId: req.tenantId },
       normalized,
-      { new: true },
+      { returnDocument: 'after' },
     );
     if (!permit) {
       sendResponse(res, null, 'Not found', 404);

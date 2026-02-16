@@ -266,7 +266,7 @@ export const saveRequestFormHandler: AuthedRequestHandler<{ formSlug: string }> 
     const saved = await RequestForm.findOneAndUpdate(
       { slug: req.params.formSlug, tenantId },
       { $set: payload, $setOnInsert: { slug: req.params.formSlug, tenantId } },
-      { new: true, upsert: true },
+      { returnDocument: 'after', upsert: true },
     );
     send(res, saved, 200);
   } catch (err) {

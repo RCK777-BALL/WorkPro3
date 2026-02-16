@@ -60,7 +60,7 @@ const seedTeam = async () => {
         roles: ["admin"],
         tenantId: tenant._id,
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     );
     logger.info(`✅ Admin seeded: ${adminEmail} / ${adminPassword}`);
 
@@ -83,7 +83,7 @@ const seedTeam = async () => {
         employeeId: "DL001",
         tenantId: tenant._id,
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     );
 
     const areaLeader = await TeamMember.findOneAndUpdate(
@@ -97,7 +97,7 @@ const seedTeam = async () => {
         employeeId: "AL001",
         tenantId: tenant._id,
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     );
 
     const teamLeader = await TeamMember.findOneAndUpdate(
@@ -111,7 +111,7 @@ const seedTeam = async () => {
         employeeId: "TL001",
         tenantId: tenant._id,
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     );
 
     await TeamMember.findOneAndUpdate(
@@ -125,7 +125,7 @@ const seedTeam = async () => {
         employeeId: "TM001",
         tenantId: tenant._id,
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     );
 
     await TeamMember.findOneAndUpdate(
@@ -139,7 +139,7 @@ const seedTeam = async () => {
         employeeId: "TM002",
         tenantId: tenant._id,
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     );
 
     logger.info("✅ Team hierarchy seeded successfully");

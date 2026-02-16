@@ -136,7 +136,7 @@ router.post('/api-keys/:id/revoke', async (req, res, next) => {
     const key = await ApiKey.findOneAndUpdate(
       { _id: req.params.id, tenantId },
       { revokedAt: new Date() },
-      { new: true },
+      { returnDocument: 'after' },
     );
     if (!key) {
       res.status(404).json({ success: false, message: 'API key not found' });

@@ -563,7 +563,7 @@ export const updateReportTemplate = async (
   const doc = await ReportTemplate.findOneAndUpdate(
     { _id: templateId, tenantId },
     updatePayload,
-    { new: true, runValidators: true },
+    { returnDocument: 'after', runValidators: true },
   ).exec();
 
   if (!doc) {

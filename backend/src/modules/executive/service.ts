@@ -582,7 +582,7 @@ export async function saveExecutiveReportSchedule(
       },
       $setOnInsert: { tenantId: tenantObjectId },
     },
-    { upsert: true, new: true, setDefaultsOnInsert: true },
+    { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true },
   );
 
   return mapScheduleDoc(doc);

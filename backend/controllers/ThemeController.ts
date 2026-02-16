@@ -94,7 +94,7 @@ export const updateTheme: UpdateThemeHandler = async (req, res, next) => {
     const updated = await User.findByIdAndUpdate(
       userId,
       { theme, colorScheme },
-      { new: true, runValidators: true },
+      { returnDocument: 'after', runValidators: true },
     );
 
     if (!updated) {

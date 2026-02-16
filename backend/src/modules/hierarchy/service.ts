@@ -429,7 +429,7 @@ export const updateDepartment = async (
   const department = await Department.findOneAndUpdate(
     { _id: departmentId, tenantId: context.tenantId },
     { $set: update },
-    { new: true },
+    { returnDocument: 'after' },
   );
   if (!department) {
     throw new HierarchyError('Department not found', 404);
@@ -535,7 +535,7 @@ export const updateLine = async (
   const line = await Line.findOneAndUpdate(
     { _id: lineId, tenantId: context.tenantId },
     { $set: update },
-    { new: true },
+    { returnDocument: 'after' },
   );
   if (!line) {
     throw new HierarchyError('Line not found', 404);
@@ -641,7 +641,7 @@ export const updateStation = async (
   const station = await Station.findOneAndUpdate(
     { _id: stationId, tenantId: context.tenantId },
     { $set: update },
-    { new: true },
+    { returnDocument: 'after' },
   );
   if (!station) {
     throw new HierarchyError('Station not found', 404);
@@ -878,7 +878,7 @@ export const updateAsset = async (
   const asset = await Asset.findOneAndUpdate(
     { _id: assetId, tenantId: context.tenantId },
     { $set: update },
-    { new: true },
+    { returnDocument: 'after' },
   );
   if (!asset) {
     throw new HierarchyError('Asset not found', 404);

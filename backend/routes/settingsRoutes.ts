@@ -176,7 +176,7 @@ router.post('/', requirePermission('sites.manage'), async (req, res, next) => {
     }
 
     const settings = await Settings.findOneAndUpdate(query, update, {
-      new: true,
+      returnDocument: 'after',
       upsert: true,
       setDefaultsOnInsert: true,
     });
@@ -206,7 +206,7 @@ router.post('/notifications/preferences', requirePermission('sites.manage'), asy
     const updated = await User.findByIdAndUpdate(
       userId,
       { $set: { notifyByEmail, notifyBySms } },
-      { new: true },
+      { returnDocument: 'after' },
     ).select('notifyByEmail notifyBySms');
     res.json({ success: true, data: updated });
   } catch (err) {

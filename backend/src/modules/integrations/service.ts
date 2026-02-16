@@ -265,7 +265,7 @@ export const createApiKey = async ({
 };
 
 export const revokeApiKey = async (tenantId: string, id: string) =>
-  ApiKey.findOneAndUpdate({ _id: id, tenantId }, { revokedAt: new Date() }, { new: true });
+  ApiKey.findOneAndUpdate({ _id: id, tenantId }, { revokedAt: new Date() }, { returnDocument: 'after' });
 
 const buildAccountingResult = (
   provider: AccountingProvider,

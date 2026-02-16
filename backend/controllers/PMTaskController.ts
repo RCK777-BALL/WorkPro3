@@ -216,7 +216,7 @@ export const updatePMTask: AuthedRequestHandler<PMTaskParams, PMTaskResponse | n
         ...req.body,
         ...(templateVersion ? { templateVersion } : {}),
       },
-      { new: true, runValidators: true },
+      { returnDocument: 'after', runValidators: true },
     );
     if (!task) {
       sendResponse(res, null, 'Not found', 404);

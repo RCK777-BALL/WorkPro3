@@ -259,7 +259,7 @@ router.put('/:id', handleFormData, async (req: Request, res: Response, next: Nex
     }
 
     const updated = (await InventoryItem.findOneAndUpdate(filter, data, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
       lean: true,
     }).exec()) as LeanInventoryItem | null;

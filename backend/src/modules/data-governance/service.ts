@@ -116,7 +116,7 @@ export const updateTenantResidencyAndRetention = async (
       updatedBy: toObjectId(input.updatedBy) ?? undefined,
       updatedAt: new Date(),
     },
-    { new: true, upsert: true, setDefaultsOnInsert: true },
+    { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true },
   );
 
   return toPolicySnapshot(updated);

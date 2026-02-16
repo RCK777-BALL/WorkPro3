@@ -30,7 +30,7 @@ export const acquireJobLock = async (name: string, ttlMs: number): Promise<boole
       },
       {
         upsert: true,
-        new: true,
+        returnDocument: 'after',
       },
     );
 

@@ -61,7 +61,7 @@ export const createFeatureFlag = async (req: Request, res: Response, next: NextF
     const flag = await FeatureFlag.findOneAndUpdate(
       { tenantId, siteId, key: payload.key },
       { $set: payload },
-      { new: true, upsert: true, setDefaultsOnInsert: true },
+      { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true },
     );
 
     await writeAuditLog({
@@ -104,7 +104,7 @@ export const updateFeatureFlag = async (req: Request, res: Response, next: NextF
     const flag = await FeatureFlag.findOneAndUpdate(
       { _id: id, tenantId, siteId },
       { $set: update },
-      { new: true },
+      { returnDocument: 'after' },
     );
 
     if (!flag) {

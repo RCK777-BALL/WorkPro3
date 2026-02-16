@@ -376,7 +376,7 @@ export const markNotificationRead: AuthedRequestHandler<
       const updated = await Notification.findOneAndUpdate(
         { _id: authedReq.params.id, tenantId: tenantObjectId },
         { read: true },
-        { new: true },
+        { returnDocument: 'after' },
       ).exec();
       if (!updated) {
         sendResponse(res, null, 'Not found', 404);
@@ -443,7 +443,7 @@ export const updateNotification: AuthedRequestHandler<
         { _id: authedReq.params.id, tenantId: tenantObjectId },
         authedReq.body ?? {},
         {
-          new: true,
+          returnDocument: 'after',
           runValidators: true,
         },
       ).exec();

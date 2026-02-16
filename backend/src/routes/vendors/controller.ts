@@ -192,7 +192,7 @@ export const updateVendorHandler: AuthedRequestHandler<{ id: string }> = async (
     const vendor = await Vendor.findOneAndUpdate(
       { _id: toObjectId(req.params.id, 'vendor id'), tenantId: toObjectId(tenantId, 'tenant id'), deletedAt: { $in: [null] } } as any,
       { $set: { ...parsed.data, tags: parsed.data.tags ?? [], deletedAt: null } },
-      { new: true, runValidators: true },
+      { returnDocument: 'after', runValidators: true },
     );
 
     if (!vendor) {

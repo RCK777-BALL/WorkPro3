@@ -259,7 +259,7 @@ export const updateTeamMember = async (
       { _id: req.params.id, tenantId },
       payload,
       {
-        new: true,
+        returnDocument: 'after',
         runValidators: true,
       }
     );

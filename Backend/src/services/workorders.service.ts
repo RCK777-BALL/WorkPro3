@@ -77,7 +77,7 @@ export const updateWorkOrder = async (tenantId: string, id: string, input: WorkO
   const updated = await WorkOrder.findOneAndUpdate(
     { _id: id, tenantId: new Types.ObjectId(tenantId) },
     { $set: patch },
-    { new: true },
+    { returnDocument: 'after' },
   ).lean();
 
   return updated;

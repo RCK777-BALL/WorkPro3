@@ -41,7 +41,7 @@ const seedAdmin = async () => {
     const tenant = await Tenant.findOneAndUpdate(
       { name: DEFAULT_TENANT_NAME },
       { name: DEFAULT_TENANT_NAME },
-      { new: true, upsert: true }
+      { returnDocument: 'after', upsert: true }
     );
 
     if (!tenant) {

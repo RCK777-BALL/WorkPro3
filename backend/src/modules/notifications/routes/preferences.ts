@@ -46,7 +46,7 @@ router.put('/', requirePermission('sites.read'), async (req, res, next) => {
           ...(typeof body.muted === 'boolean' ? { muted: body.muted } : {}),
         },
       },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after' },
     )
       .lean()
       .exec();

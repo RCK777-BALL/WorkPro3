@@ -50,7 +50,7 @@ export const updateDowntimeLog = async (
   id: string,
   payload: Partial<DowntimeLogPayload>,
 ): Promise<LeanDowntimeLog | null> =>
-  DowntimeLog.findOneAndUpdate({ _id: id, tenantId }, payload, { new: true, runValidators: true })
+  DowntimeLog.findOneAndUpdate({ _id: id, tenantId }, payload, { returnDocument: 'after', runValidators: true })
     .lean<LeanDowntimeLog>()
     .exec();
 

@@ -116,7 +116,7 @@ const updatePlantHandler: RequestHandler = async (req, res, next) => {
     const plant = await Plant.findOneAndUpdate(
       { _id: authedReq.params.id, tenantId },
       updateOps,
-      { new: true },
+      { returnDocument: 'after' },
     );
 
     if (!plant) {

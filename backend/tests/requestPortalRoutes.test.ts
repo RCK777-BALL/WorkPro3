@@ -14,7 +14,7 @@ import Site from '../models/Site';
 import WorkRequest from '../models/WorkRequest';
 
 const app = express();
-app.set('trust proxy', true);
+app.set('trust proxy', 1);
 app.use(express.json());
 app.use('/api/request-portal', requestPortalRoutes);
 
@@ -100,7 +100,7 @@ describe('Request Portal', () => {
       .expect(201);
 
     expect(res.body.success).toBe(true);
-    expect(res.body.data.token).toMatch(/^[a-z0-9]+$/);
+    expect(res.body.data.token).toMatch(/^[a-z0-9_-]+$/);
 
     const stored = await WorkRequest.findOne({ token: res.body.data.token }).lean();
     expect(stored).toBeTruthy();

@@ -176,7 +176,7 @@ const updateLine: AuthedRequestHandler<
     const line = await Line.findOneAndUpdate(
       query,
       { $set: update },
-      { new: true },
+      { returnDocument: 'after' },
     );
     if (!line) {
       sendResponse(res, null, 'Not found', 404);

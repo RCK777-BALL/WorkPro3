@@ -164,7 +164,7 @@ export const updateMeter: AuthedRequestHandler<
     const meter = (await Meter.findOneAndUpdate(
       filter,
       (req.body ?? {}) as UpdateQuery<MeterUpdateBody>,
-      { new: true },
+      { returnDocument: 'after' },
     ).exec()) as MeterDocument | null;
     const userId = toEntityId((req.user as any)?._id ?? (req.user as any)?.id);
     await writeAuditLog({

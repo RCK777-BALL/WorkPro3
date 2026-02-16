@@ -133,7 +133,7 @@ export const updateWorkHistory = async (
       req.params.id,
       { ...req.body, tenantId },
       {
-        new: true,
+        returnDocument: 'after',
         runValidators: true,
       },
     );

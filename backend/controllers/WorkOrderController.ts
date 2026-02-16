@@ -1025,7 +1025,7 @@ export async function updateWorkOrder(
     const updated = await WorkOrder.findOneAndUpdate(
       filter,
       update,
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     ) as WorkOrderDocument | null;
     if (!updated) {
       sendResponse(res, null, 'Not found', 404);
@@ -1215,7 +1215,7 @@ export async function updateWorkOrderChecklist(
     const updated = await WorkOrder.findOneAndUpdate(
       withLocationScope({ _id: req.params.id, tenantId }, scope),
       { checklist: normalizedChecklist },
-      { new: true },
+      { returnDocument: 'after' },
     );
     if (!updated) {
       sendResponse(res, null, 'Not found', 404);

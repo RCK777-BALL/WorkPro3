@@ -7,9 +7,10 @@ import { z } from 'zod';
 import type { NotificationProvider } from './service';
 import { ALL_PERMISSIONS, type Permission } from '../../../shared/permissions';
 
-const providers: [NotificationProvider, NotificationProvider, NotificationProvider, NotificationProvider] = [
+const providers: [NotificationProvider, NotificationProvider, NotificationProvider, NotificationProvider, NotificationProvider] = [
   'twilio',
   'smtp',
+  'outlook',
   'slack',
   'teams',
 ];
@@ -30,7 +31,7 @@ export const notificationTestSchema = z
     webhookUrl: z.string().url().optional(),
   })
   .superRefine((value, ctx) => {
-    if ((value.provider === 'twilio' || value.provider === 'smtp') && !value.to) {
+    if ((value.provider === 'twilio' || value.provider === 'smtp' || value.provider === 'outlook') && !value.to) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['to'],

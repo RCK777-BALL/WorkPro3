@@ -123,6 +123,8 @@ type FilterState = {
   status: string;
 };
 
+type DashboardTab = "overview" | "analytics" | "activity";
+
 type SelectOption = {
   value: string;
   label: string;
@@ -852,6 +854,7 @@ export default function Dashboard() {
   const [statusLoading, setStatusLoading] = useState(false);
 
   const [isTechnician, setIsTechnician] = useState(false);
+  const [activeTab, setActiveTab] = useState<DashboardTab>("overview");
   const [exportingPdf, setExportingPdf] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
@@ -1350,65 +1353,92 @@ export default function Dashboard() {
         subtitle="Monitor maintenance workload, compliance, and live system health at a glance."
       />
 
-        <AlertBanner />
+      <AlertBanner />
 
-        <div className="grid gap-4 lg:grid-cols-[2fr,1fr]">
-          <OnboardingWizard />
-          <HelpCenterViewer />
-        </div>
-
-        <DashboardFilters
-          filters={filters}
-          departments={departments}
-          lines={lines}
-          loading={optionsLoading}
-          onChange={handleFilterChange}
-        />
-
-        {summaryError ? (
-          <div className="rounded-3xl border border-red-400/60 bg-red-500/20 p-4 text-sm text-red-100">
-            {summaryError}
-          </div>
-        ) : null}
-
-        <DashboardAnalyticsPanel />
-
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {summaryCards.map((card) => (
-            <SummaryCard
-              key={card.key}
-              title={card.title}
-              description={card.description}
-              value={card.value}
-              {...(card.suffix ? { suffix: card.suffix } : {})}
-              icon={card.icon}
-              gradient={card.gradient}
-              trend={card.trend}
-              loading={summaryLoading}
-              decimals={card.decimals ?? 0}
-              href={card.href}
-            />
+      <div className="rounded-2xl border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] p-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          {([
+            { key: "overview", label: "Overview" },
+            { key: "analytics", label: "Analytics" },
+            { key: "activity", label: "Activity" },
+          ] as const).map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key)}
+              className={clsx(
+                "rounded-xl px-4 py-2 text-sm font-semibold transition",
+                activeTab === tab.key
+                  ? "bg-[var(--wp-color-primary)] text-[var(--wp-color-primary-contrast)]"
+                  : "bg-transparent text-[var(--wp-color-text-muted)] hover:bg-[var(--wp-color-surface-hover)] hover:text-[var(--wp-color-text)]",
+              )}
+              aria-pressed={activeTab === tab.key}
+            >
+              {tab.label}
+            </button>
           ))}
-        </section>
+        </div>
+      </div>
 
-        <LivePulseSection
-          metrics={livePulse}
-          loading={livePulseLoading}
-          error={livePulseError}
-          onRefresh={fetchLivePulse}
-          onNavigate={navigateTo}
-        />
+      {activeTab === "overview" ? (
+        <>
+          <div className="grid gap-4 lg:grid-cols-[2fr,1fr]">
+            <OnboardingWizard />
+            <HelpCenterViewer />
+          </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <RecentActivitySection
-            items={recentActivity}
-            loading={activityLoading}
-            error={activityError}
-            onRefresh={fetchActivity}
-            onNavigate={(link) => {
-              if (link) navigateTo(link);
-            }}
+          <DashboardFilters
+            filters={filters}
+            departments={departments}
+            lines={lines}
+            loading={optionsLoading}
+            onChange={handleFilterChange}
           />
+
+          {summaryError ? (
+            <div className="rounded-3xl border border-red-400/60 bg-red-500/20 p-4 text-sm text-red-100">
+              {summaryError}
+            </div>
+          ) : null}
+
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {summaryCards.map((card) => (
+              <SummaryCard
+                key={card.key}
+                title={card.title}
+                description={card.description}
+                value={card.value}
+                {...(card.suffix ? { suffix: card.suffix } : {})}
+                icon={card.icon}
+                gradient={card.gradient}
+                trend={card.trend}
+                loading={summaryLoading}
+                decimals={card.decimals ?? 0}
+                href={card.href}
+              />
+            ))}
+          </section>
+
+          <LivePulseSection
+            metrics={livePulse}
+            loading={livePulseLoading}
+            error={livePulseError}
+            onRefresh={fetchLivePulse}
+            onNavigate={navigateTo}
+          />
+
+          <StatusSummary
+            statuses={statusLegend.statuses}
+            updatedAt={statusLegend.updatedAt}
+            loading={statusLoading}
+          />
+        </>
+      ) : null}
+
+      {activeTab === "analytics" ? (
+        <>
+          <DashboardAnalyticsPanel />
+
           <Card className="bg-gradient-to-br from-slate-900 to-slate-800 text-white">
             <div className="flex items-center justify-between">
               <div>
@@ -1423,19 +1453,17 @@ export default function Dashboard() {
                 onClick={handleExportPdf}
                 disabled={exportingPdf}
               >
-                {exportingPdf ? "Exporting…" : "Export PDF"}
+                {exportingPdf ? "Exporting..." : "Export PDF"}
                 <FileDown className="ml-2 h-4 w-4" />
               </Button>
             </div>
-            {exportError ? (
-              <p className="mt-3 text-xs text-red-200">{exportError}</p>
-            ) : null}
+            {exportError ? <p className="mt-3 text-xs text-red-200">{exportError}</p> : null}
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <p className="text-xs uppercase tracking-widest text-white/60">PM compliance trend</p>
                 <div className="mt-3 flex items-baseline gap-2">
                   <span className="text-2xl font-semibold">
-                    {summary ? `${Math.round(summary.pmCompliance * 100)}%` : "–"}
+                    {summary ? `${Math.round(summary.pmCompliance * 100)}%` : "--"}
                   </span>
                   <span className="text-xs text-white/60">last 10 periods</span>
                 </div>
@@ -1452,9 +1480,7 @@ export default function Dashboard() {
                 <p className="text-xs uppercase tracking-widest text-white/60">SLA compliance</p>
                 <div className="mt-3 flex items-baseline gap-2">
                   <span className="text-2xl font-semibold">
-                    {summary
-                      ? `${(summary.slaCompliance ?? SUMMARY_FALLBACK.slaCompliance).toFixed(1)}%`
-                      : "–"}
+                    {summary ? `${(summary.slaCompliance ?? SUMMARY_FALLBACK.slaCompliance).toFixed(1)}%` : "--"}
                   </span>
                   <span className="text-xs text-white/60">on-time commitments</span>
                 </div>
@@ -1468,9 +1494,7 @@ export default function Dashboard() {
                 <p className="text-xs uppercase tracking-widest text-white/60">Wrench time %</p>
                 <div className="mt-3 flex items-baseline gap-2">
                   <span className="text-2xl font-semibold">
-                    {summary
-                      ? `${(summary.wrenchTimePct ?? SUMMARY_FALLBACK.wrenchTimePct).toFixed(1)}%`
-                      : "–"}
+                    {summary ? `${(summary.wrenchTimePct ?? SUMMARY_FALLBACK.wrenchTimePct).toFixed(1)}%` : "--"}
                   </span>
                   <span className="text-xs text-white/60">labor utilisation</span>
                 </div>
@@ -1486,7 +1510,7 @@ export default function Dashboard() {
                     <p className="text-xs uppercase tracking-widest text-white/60">PM completion</p>
                     <div className="mt-3 flex items-baseline gap-2">
                       <span className="text-2xl font-semibold">
-                        {pmTotals ? `${(pmTotals.completionRate ?? 0).toFixed(1)}%` : "–"}
+                        {pmTotals ? `${(pmTotals.completionRate ?? 0).toFixed(1)}%` : "--"}
                       </span>
                       <span className="text-xs text-white/60">last 6 months</span>
                     </div>
@@ -1528,13 +1552,20 @@ export default function Dashboard() {
               />
             </div>
           </Card>
-        </div>
+        </>
+      ) : null}
 
-        <StatusSummary
-          statuses={statusLegend.statuses}
-          updatedAt={statusLegend.updatedAt}
-          loading={statusLoading}
+      {activeTab === "activity" ? (
+        <RecentActivitySection
+          items={recentActivity}
+          loading={activityLoading}
+          error={activityError}
+          onRefresh={fetchActivity}
+          onNavigate={(link) => {
+            if (link) navigateTo(link);
+          }}
         />
+      ) : null}
     </div>
   );
 }

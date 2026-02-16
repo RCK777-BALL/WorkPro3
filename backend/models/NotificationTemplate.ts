@@ -4,7 +4,7 @@
 
 import mongoose, { Schema, type Document, type Model, type Types } from 'mongoose';
 
-export type NotificationChannel = 'email' | 'push' | 'in_app' | 'webhook';
+export type NotificationChannel = 'email' | 'outlook' | 'push' | 'in_app' | 'webhook' | 'teams';
 
 export interface NotificationTemplateDocument extends Document {
   _id: Types.ObjectId;
@@ -21,7 +21,7 @@ const notificationTemplateSchema = new Schema<NotificationTemplateDocument>(
   {
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true },
     event: { type: String, required: true },
-    channel: { type: String, enum: ['email', 'push', 'in_app', 'webhook'], required: true },
+    channel: { type: String, enum: ['email', 'outlook', 'push', 'in_app', 'webhook', 'teams'], required: true },
     subject: { type: String },
     body: { type: String, required: true },
   },

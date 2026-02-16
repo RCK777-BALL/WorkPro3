@@ -42,7 +42,10 @@ const channelOptions: Array<{
 }> = [
   { key: 'in_app', label: 'In-app', description: 'Show alerts in the inbox.' },
   { key: 'email', label: 'Email', description: 'Send alerts to your email.' },
+  { key: 'outlook', label: 'Outlook', description: 'Send alerts through Outlook SMTP.' },
+  { key: 'teams', label: 'Teams', description: 'Send alerts to a Teams webhook.' },
   { key: 'push', label: 'Push', description: 'Browser or device push alerts.' },
+  { key: 'webhook', label: 'Webhook', description: 'Send alerts to webhook endpoints.' },
 ];
 
 const NotificationSettingsPage = () => {
@@ -94,6 +97,9 @@ const NotificationSettingsPage = () => {
       if (provider === 'smtp') {
         payload.to = form.emailTarget;
         payload.subject = 'WorkPro notification test';
+      } else if (provider === 'outlook') {
+        payload.to = form.emailTarget;
+        payload.subject = 'WorkPro Outlook notification test';
       } else if (provider === 'twilio') {
         payload.to = form.smsTarget;
       } else if (provider === 'slack') {
@@ -333,6 +339,14 @@ const NotificationSettingsPage = () => {
               icon={<Send className="h-4 w-4" />}
             >
               Email test
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => sendTest('outlook')}
+              disabled={testState.provider === 'outlook'}
+              icon={<Send className="h-4 w-4" />}
+            >
+              Outlook test
             </Button>
             <Button
               variant="ghost"

@@ -28,7 +28,7 @@ const notificationDeliveryLogSchema = new Schema<NotificationDeliveryLogDocument
     notificationId: { type: Schema.Types.ObjectId, ref: 'Notification', required: true },
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true },
     subscriptionId: { type: Schema.Types.ObjectId, ref: 'NotificationSubscription' },
-    channel: { type: String, enum: ['email', 'push', 'in_app', 'webhook'], required: true },
+    channel: { type: String, enum: ['email', 'outlook', 'push', 'in_app', 'webhook', 'teams'], required: true },
     attempt: { type: Number, required: true },
     status: { type: String, enum: ['pending', 'sent', 'failed', 'deferred', 'queued'], required: true },
     event: { type: String },

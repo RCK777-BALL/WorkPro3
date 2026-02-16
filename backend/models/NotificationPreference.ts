@@ -9,9 +9,13 @@ export interface NotificationPreferenceDocument extends Document {
   userId: Types.ObjectId;
   channels: {
     email?: boolean;
+    outlook?: boolean;
     sms?: boolean;
     push?: boolean;
+    teams?: boolean;
   };
+  outlookEmail?: string;
+  teamsWebhookUrl?: string;
   muted?: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -23,9 +27,13 @@ const notificationPreferenceSchema = new Schema<NotificationPreferenceDocument>(
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     channels: {
       email: { type: Boolean, default: true },
+      outlook: { type: Boolean, default: false },
       sms: { type: Boolean, default: false },
       push: { type: Boolean, default: false },
+      teams: { type: Boolean, default: false },
     },
+    outlookEmail: { type: String },
+    teamsWebhookUrl: { type: String },
     muted: { type: Boolean, default: false },
   },
   { timestamps: true },

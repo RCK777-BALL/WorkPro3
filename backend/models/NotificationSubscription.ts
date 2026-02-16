@@ -36,7 +36,7 @@ const notificationSubscriptionSchema = new Schema<NotificationSubscriptionDocume
     events: { type: [String], required: true },
     channels: {
       type: [String],
-      enum: ['email', 'push', 'in_app', 'webhook'],
+      enum: ['email', 'outlook', 'push', 'in_app', 'webhook', 'teams'],
       default: ['in_app'],
     },
     quietHours: {

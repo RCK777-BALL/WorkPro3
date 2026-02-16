@@ -37,12 +37,19 @@ router.put('/', requirePermission('sites.read'), async (req, res, next) => {
       res.status(400).json({ error: 'Tenant/user context required' });
       return;
     }
-    const body = authedReq.body as { channels?: { email?: boolean; sms?: boolean; push?: boolean }; muted?: boolean };
+    const body = authedReq.body as {
+      channels?: { email?: boolean; outlook?: boolean; sms?: boolean; push?: boolean; teams?: boolean };
+      outlookEmail?: string;
+      teamsWebhookUrl?: string;
+      muted?: boolean;
+    };
     const updated = await NotificationPreference.findOneAndUpdate(
       { tenantId: authedReq.tenantId, userId },
       {
         $set: {
           ...(body.channels ? { channels: body.channels } : {}),
+          ...(typeof body.outlookEmail === 'string' ? { outlookEmail: body.outlookEmail.trim() } : {}),
+          ...(typeof body.teamsWebhookUrl === 'string' ? { teamsWebhookUrl: body.teamsWebhookUrl.trim() } : {}),
           ...(typeof body.muted === 'boolean' ? { muted: body.muted } : {}),
         },
       },

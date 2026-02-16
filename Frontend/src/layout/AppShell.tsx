@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import CommandPalette from '@/components/global/CommandPalette';
 import RightPanel from '@/components/layout/RightPanel';
-import Breadcrumbs from './Breadcrumbs';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import PageContainer from './PageContainer';
@@ -26,10 +25,7 @@ export default function AppShell({ children, sidebarCollapsed, denseMode = false
           <Topbar onToggleMobileSidebar={() => setMobileOpen(true)} />
           <main className={`flex-1 overflow-y-auto ${denseMode ? 'py-2' : 'py-4'}`}>
             <PageContainer>
-              <div className="flex flex-col gap-6">
-                <Breadcrumbs />
-                {children}
-              </div>
+              <div className="flex flex-col gap-6">{children}</div>
             </PageContainer>
           </main>
         </div>

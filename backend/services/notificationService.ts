@@ -14,6 +14,7 @@ import NotificationTemplate, { type NotificationChannel } from '../models/Notifi
 import NotificationSubscription, { type NotificationSubscriptionDocument } from '../models/NotificationSubscription';
 import NotificationDeliveryLog from '../models/NotificationDeliveryLog';
 import NotificationDigestQueue from '../models/NotificationDigestQueue';
+import NotificationPreference from '../models/NotificationPreference';
 import User from '../models/User';
 import type { WorkOrderDocument } from '../models/WorkOrder';
 import type { IInventoryItem } from '../models/InventoryItem';
@@ -24,6 +25,7 @@ import { isNotificationEmailEnabled } from '../config/featureFlags';
 
 export interface NotificationChannels {
   email?: string;
+  outlookEmail?: string;
   sms?: string;
   webhookUrl?: string;
   slackWebhookUrl?: string;
@@ -166,8 +168,14 @@ const resolveChannelsForSubscription = (
   if (subscription.channels.includes('email')) {
     resolved.email = provided?.email ?? user?.email;
   }
+  if (subscription.channels.includes('outlook')) {
+    resolved.outlookEmail = provided?.outlookEmail ?? provided?.email ?? user?.email;
+  }
   if (subscription.channels.includes('webhook')) {
     resolved.webhookUrl = provided?.webhookUrl;
+  }
+  if (subscription.channels.includes('teams')) {
+    resolved.teamsWebhookUrl = provided?.teamsWebhookUrl ?? process.env.TEAMS_WEBHOOK_URL;
   }
   if (subscription.channels.includes('push')) {
     resolved.pushToken = provided?.pushToken;
@@ -181,27 +189,52 @@ const resolveChannelsForSubscription = (
   return resolved;
 };
 
-const sendEmail = async (to: string, subject: string, text: string) => {
+const sendEmail = async (
+  to: string,
+  subject: string,
+  text: string,
+  provider: 'smtp' | 'outlook' = 'smtp',
+) => {
   if (!isNotificationEmailEnabled()) {
     return;
   }
-  if (!process.env.SMTP_HOST || !(process.env.SMTP_FROM || process.env.SMTP_USER)) {
+
+  const smtpHost = process.env.SMTP_HOST;
+  const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+  const smtpFrom = process.env.SMTP_FROM || process.env.SMTP_USER;
+
+  const outlookHost = process.env.OUTLOOK_SMTP_HOST || 'smtp.office365.com';
+  const outlookPort = parseInt(process.env.OUTLOOK_SMTP_PORT || '587', 10);
+  const outlookUser = process.env.OUTLOOK_SMTP_USER || process.env.SMTP_USER;
+  const outlookPass = process.env.OUTLOOK_SMTP_PASS || process.env.SMTP_PASS;
+  const outlookFrom = process.env.OUTLOOK_SMTP_FROM || process.env.SMTP_FROM || process.env.SMTP_USER;
+
+  const selected =
+    provider === 'outlook'
+      ? { host: outlookHost, port: outlookPort, user: outlookUser, pass: outlookPass, from: outlookFrom }
+      : { host: smtpHost, port: smtpPort, user: smtpUser, pass: smtpPass, from: smtpFrom };
+
+  if (!selected.host || !selected.from) {
     return;
   }
+
   const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587', 10),
+    host: selected.host,
+    port: selected.port,
+    secure: selected.port === 465,
     auth:
-      process.env.SMTP_USER && process.env.SMTP_PASS
+      selected.user && selected.pass
         ? {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
+            user: selected.user,
+            pass: selected.pass,
           }
         : undefined,
   });
 
   const mailOptions = {
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    from: selected.from,
     to,
     subject,
     text,
@@ -372,7 +405,7 @@ export const deliverNotificationChannel = async (input: {
       context,
     );
     try {
-      await sendEmail(target, content.title, content.message);
+      await sendEmail(target, content.title, content.message, 'smtp');
       await recordDeliveryLog({
         notificationId: notification._id,
         tenantId: notification.tenantId,
@@ -390,6 +423,75 @@ export const deliverNotificationChannel = async (input: {
         tenantId: notification.tenantId,
         subscriptionId: subscription?._id,
         channel: 'email',
+        status: 'failed',
+        attempt,
+        event,
+        target,
+        nextAttemptAt: attempt < notificationMaxAttempts ? getNextNotificationRetryAt(attempt, new Date()) : undefined,
+        errorMessage: (err as Error)?.message,
+      });
+      return 'failed';
+    }
+  }
+
+  if (normalized === 'outlook') {
+    if (!isNotificationEmailEnabled()) {
+      await recordDeliveryLog({
+        notificationId: notification._id,
+        tenantId: notification.tenantId,
+        subscriptionId: subscription?._id,
+        channel: 'outlook',
+        status: 'failed',
+        attempt,
+        event,
+        target,
+        nextAttemptAt: attempt < notificationMaxAttempts ? getNextNotificationRetryAt(attempt, new Date()) : undefined,
+        errorMessage: 'Outlook delivery disabled',
+      });
+      return 'failed';
+    }
+    if (!target) {
+      await recordDeliveryLog({
+        notificationId: notification._id,
+        tenantId: notification.tenantId,
+        subscriptionId: subscription?._id,
+        channel: 'outlook',
+        status: 'failed',
+        attempt,
+        event,
+        target,
+        nextAttemptAt: attempt < notificationMaxAttempts ? getNextNotificationRetryAt(attempt, new Date()) : undefined,
+        errorMessage: 'Outlook email not configured',
+      });
+      return 'failed';
+    }
+    assertEmail(target);
+    const content = await resolveTemplate(
+      notification.tenantId as Types.ObjectId,
+      event,
+      'outlook',
+      { title: notification.title, message: notification.message },
+      context,
+    );
+    try {
+      await sendEmail(target, content.title, content.message, 'outlook');
+      await recordDeliveryLog({
+        notificationId: notification._id,
+        tenantId: notification.tenantId,
+        subscriptionId: subscription?._id,
+        channel: 'outlook',
+        status: 'sent',
+        attempt,
+        event,
+        target,
+      });
+      return 'sent';
+    } catch (err) {
+      await recordDeliveryLog({
+        notificationId: notification._id,
+        tenantId: notification.tenantId,
+        subscriptionId: subscription?._id,
+        channel: 'outlook',
         status: 'failed',
         attempt,
         event,
@@ -485,6 +587,54 @@ export const deliverNotificationChannel = async (input: {
     }
   }
 
+  if (normalized === 'teams') {
+    const teamsUrl = target || (metadata?.teamsWebhookUrl as string | undefined) || process.env.TEAMS_WEBHOOK_URL;
+    if (!teamsUrl) {
+      await recordDeliveryLog({
+        notificationId: notification._id,
+        tenantId: notification.tenantId,
+        subscriptionId: subscription?._id,
+        channel: 'teams',
+        status: 'failed',
+        attempt,
+        event,
+        target,
+        nextAttemptAt: attempt < notificationMaxAttempts ? getNextNotificationRetryAt(attempt, new Date()) : undefined,
+        errorMessage: 'Teams webhook not configured',
+      });
+      return 'failed';
+    }
+
+    try {
+      await postWebhook(teamsUrl, { text: `${notification.title}: ${notification.message}` });
+      await recordDeliveryLog({
+        notificationId: notification._id,
+        tenantId: notification.tenantId,
+        subscriptionId: subscription?._id,
+        channel: 'teams',
+        status: 'sent',
+        attempt,
+        event,
+        target: teamsUrl,
+      });
+      return 'sent';
+    } catch (err) {
+      await recordDeliveryLog({
+        notificationId: notification._id,
+        tenantId: notification.tenantId,
+        subscriptionId: subscription?._id,
+        channel: 'teams',
+        status: 'failed',
+        attempt,
+        event,
+        target: teamsUrl,
+        nextAttemptAt: attempt < notificationMaxAttempts ? getNextNotificationRetryAt(attempt, new Date()) : undefined,
+        errorMessage: (err as Error)?.message,
+      });
+      return 'failed';
+    }
+  }
+
   return 'failed';
 };
 
@@ -498,19 +648,28 @@ const deliver = async (
     subscription?: NotificationSubscriptionDocument;
   },
 ) => {
-  const channelsToSend = options?.channelsToSend ?? ['in_app'];
+  const channelsToSend =
+    options?.channelsToSend ??
+    ([
+      'in_app',
+      ...(channels?.email ? (['email'] as NotificationChannel[]) : []),
+      ...(channels?.outlookEmail ? (['outlook'] as NotificationChannel[]) : []),
+      ...(channels?.webhookUrl || channels?.slackWebhookUrl ? (['webhook'] as NotificationChannel[]) : []),
+      ...(channels?.teamsWebhookUrl ? (['teams'] as NotificationChannel[]) : []),
+    ] as NotificationChannel[]);
   const results: ('sent' | 'failed')[] = [];
   const webhookTargets = buildWebhookTargets(channels);
 
   for (const channel of channelsToSend) {
     const normalized = normalizeChannel(channel);
-    if (normalized === 'email') {
+    if (normalized === 'email' || normalized === 'outlook') {
+      const target = normalized === 'outlook' ? channels?.outlookEmail ?? channels?.email : channels?.email;
       let success = false;
       for (let attempt = 1; attempt <= 2; attempt += 1) {
         const result = await deliverNotificationChannel({
           notification,
-          channel: 'email',
-          target: channels?.email,
+          channel: normalized,
+          target,
           event: options?.event,
           context: options?.context,
           subscription: options?.subscription,
@@ -534,6 +693,20 @@ const deliver = async (
         context: options?.context,
         subscription: options?.subscription,
         metadata: { webhookUrls: webhookTargets },
+      });
+      results.push(result);
+      continue;
+    }
+
+    if (normalized === 'teams') {
+      const result = await deliverNotificationChannel({
+        notification,
+        channel: 'teams',
+        target: channels?.teamsWebhookUrl,
+        event: options?.event,
+        context: options?.context,
+        subscription: options?.subscription,
+        metadata: { teamsWebhookUrl: channels?.teamsWebhookUrl ?? process.env.TEAMS_WEBHOOK_URL },
       });
       results.push(result);
       continue;
@@ -576,6 +749,9 @@ export const createNotification = async (
   const eventKey = input.event ?? input.category;
   const now = new Date();
   const user = input.userId ? await User.findById(input.userId) : null;
+  const preference = input.userId
+    ? await NotificationPreference.findOne({ tenantId: input.tenantId, userId: input.userId }).lean()
+    : null;
   const subscriptions = await NotificationSubscription.find({
     tenantId: input.tenantId,
     ...(input.userId ? { userId: input.userId } : {}),
@@ -627,13 +803,22 @@ export const createNotification = async (
   if (subscriptions.length === 0) {
     const allowEmail = user?.notifyByEmail !== false;
     const allowSms = Boolean(user?.notifyBySms);
+    const allowOutlook = preference?.channels?.outlook !== false;
+    const allowTeams = Boolean(preference?.channels?.teams);
     const channels: NotificationChannels = { ...input.channels };
     if (user?.email && allowEmail) {
       channels.email = user.email;
     }
+    if (allowOutlook && (preference?.outlookEmail || user?.email)) {
+      channels.outlookEmail = preference?.outlookEmail || user?.email || undefined;
+    }
     const maybePhone = (user as unknown as { phone?: string })?.phone;
     if (maybePhone && allowSms) {
       channels.sms = maybePhone;
+    }
+    if (allowTeams && (preference?.teamsWebhookUrl || input.channels?.teamsWebhookUrl || process.env.TEAMS_WEBHOOK_URL)) {
+      channels.teamsWebhookUrl =
+        preference?.teamsWebhookUrl || input.channels?.teamsWebhookUrl || process.env.TEAMS_WEBHOOK_URL;
     }
     sent = await deliver(doc, channels, { event: eventKey, context: input.templateContext });
   }

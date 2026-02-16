@@ -2,7 +2,7 @@ import http from '@/lib/http';
 import type { NotificationType } from '@/types';
 
 export interface NotificationProviderStatus {
-  id: 'twilio' | 'smtp' | 'slack' | 'teams';
+  id: 'twilio' | 'smtp' | 'outlook' | 'slack' | 'teams';
   label: string;
   configured: boolean;
   supportsTarget: boolean;
@@ -34,7 +34,7 @@ export interface NotificationInboxResponse {
 export interface NotificationSubscription {
   id: string;
   events: string[];
-  channels: Array<'email' | 'push' | 'in_app' | 'webhook'>;
+  channels: Array<'email' | 'outlook' | 'push' | 'in_app' | 'webhook' | 'teams'>;
   quietHours?: { start?: string; end?: string };
   digest?: { enabled?: boolean; frequency?: 'hourly' | 'daily' | 'weekly' };
 }

@@ -11,7 +11,7 @@ import logger from '../../../utils/logger';
 import { generateApiKey } from '../../../utils/apiKeys';
 import type { Permission } from '../../../shared/permissions';
 
-export type NotificationProvider = 'twilio' | 'smtp' | 'slack' | 'teams';
+export type NotificationProvider = 'twilio' | 'smtp' | 'outlook' | 'slack' | 'teams';
 export type AccountingProvider = 'quickbooks' | 'xero';
 
 export interface NotificationTestInput {
@@ -70,6 +70,11 @@ const providerMeta: Record<NotificationProvider, { label: string; docsUrl: strin
   smtp: {
     label: 'SMTP email',
     docsUrl: 'https://nodemailer.com/smtp/',
+    supportsTarget: true,
+  },
+  outlook: {
+    label: 'Outlook email',
+    docsUrl: 'https://learn.microsoft.com/exchange/clients-and-mobile-in-exchange-online/authenticated-client-smtp-submission',
     supportsTarget: true,
   },
   slack: {
@@ -139,6 +144,35 @@ const sendViaSmtp = async (input: NotificationTestInput): Promise<NotificationRe
   return { provider: 'smtp', deliveredAt: new Date().toISOString(), target: to };
 };
 
+const sendViaOutlook = async (input: NotificationTestInput): Promise<NotificationResult> => {
+  const to = input.to?.trim();
+  if (!to) {
+    throw new IntegrationError('Destination email is required for Outlook notifications');
+  }
+  const host = process.env.OUTLOOK_SMTP_HOST || 'smtp.office365.com';
+  const port = Number(process.env.OUTLOOK_SMTP_PORT ?? '587');
+  const user = process.env.OUTLOOK_SMTP_USER ?? process.env.SMTP_USER;
+  const pass = process.env.OUTLOOK_SMTP_PASS ?? process.env.SMTP_PASS;
+  const from = process.env.OUTLOOK_SMTP_FROM ?? process.env.SMTP_FROM ?? user;
+  if (!from) {
+    throw new IntegrationError('OUTLOOK_SMTP_FROM is not configured', 500);
+  }
+  const transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465,
+    auth: user && pass ? { user, pass } : undefined,
+  });
+  await transporter.sendMail({
+    from,
+    to,
+    subject: input.subject ?? 'CMMS notification',
+    text: input.message,
+  });
+  logger.info('Sent Outlook notification to %s', to);
+  return { provider: 'outlook', deliveredAt: new Date().toISOString(), target: to };
+};
+
 const buildWebhookPayload = (input: NotificationTestInput) => {
   if (input.subject) {
     return `*${input.subject}*\n${input.message}`;
@@ -182,6 +216,8 @@ export const sendNotificationTest = async (
       return sendViaTwilio(input);
     case 'smtp':
       return sendViaSmtp(input);
+    case 'outlook':
+      return sendViaOutlook(input);
     case 'slack':
       return sendViaSlack(input);
     case 'teams':
@@ -211,6 +247,16 @@ export const listNotificationProviders = (): ProviderStatus[] => [
     docsUrl: providerMeta.smtp.docsUrl,
     supportsTarget: providerMeta.smtp.supportsTarget,
     configured: Boolean(process.env.SMTP_HOST && (process.env.SMTP_FROM || process.env.SMTP_USER)),
+  },
+  {
+    id: 'outlook',
+    label: providerMeta.outlook.label,
+    docsUrl: providerMeta.outlook.docsUrl,
+    supportsTarget: providerMeta.outlook.supportsTarget,
+    configured: Boolean(
+      (process.env.OUTLOOK_SMTP_FROM || process.env.OUTLOOK_SMTP_USER || process.env.SMTP_FROM || process.env.SMTP_USER) &&
+        (process.env.OUTLOOK_SMTP_HOST || process.env.SMTP_HOST),
+    ),
   },
   {
     id: 'slack',

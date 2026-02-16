@@ -36,15 +36,15 @@ const CardRoot: React.FC<CardProps> = ({
   return (
     <div
       {...rest}
-      className={`rounded-lg border border-slate-800 bg-slate-900 text-slate-100 shadow-sm ${noPadding ? 'p-0' : 'p-6'} ${className}`}
+      className={`rounded-lg border border-[var(--wp-color-border)] bg-[var(--wp-color-surface)] text-[var(--wp-color-text)] shadow-sm ${noPadding ? 'p-0' : 'p-6'} ${className}`}
     >
       {(title || subtitle || headerActions || icon) && (
         <div className="mb-4 flex items-start justify-between">
           <div className="flex items-start gap-2">
             {icon && <span className="mt-0.5">{icon}</span>}
             <div>
-              {title && <h3 className="text-lg font-semibold text-slate-100">{title}</h3>}
-              {subtitle && <p className="text-sm text-slate-300">{subtitle}</p>}
+              {title && <h3 className="text-lg font-semibold text-[var(--wp-color-text)]">{title}</h3>}
+              {subtitle && <p className="text-sm text-[var(--wp-color-text-muted)]">{subtitle}</p>}
             </div>
           </div>
           {headerActions && <div>{headerActions}</div>}
@@ -62,7 +62,7 @@ const CardHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
 }) => (
   <div
     {...rest}
-    className={`mb-3 flex flex-col gap-1 border-b border-slate-800 pb-3 ${className}`.trim()}
+    className={`mb-3 flex flex-col gap-1 border-b border-[var(--wp-color-border)] pb-3 ${className}`.trim()}
   >
     {children}
   </div>
@@ -83,7 +83,7 @@ const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({
   className = '',
   ...rest
 }) => (
-  <h3 {...rest} className={`text-lg font-semibold text-slate-100 ${className}`.trim()}>
+  <h3 {...rest} className={`text-lg font-semibold text-[var(--wp-color-text)] ${className}`.trim()}>
     {children}
   </h3>
 );
@@ -93,7 +93,7 @@ const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement>> = ({
   className = '',
   ...rest
 }) => (
-  <p {...rest} className={`text-sm text-slate-300 ${className}`.trim()}>
+  <p {...rest} className={`text-sm text-[var(--wp-color-text-muted)] ${className}`.trim()}>
     {children}
   </p>
 );
@@ -103,7 +103,7 @@ const CardFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   className = '',
   ...rest
 }) => (
-  <div {...rest} className={`border-t border-slate-800 pt-3 ${className}`.trim()}>
+  <div {...rest} className={`border-t border-[var(--wp-color-border)] pt-3 ${className}`.trim()}>
     {children}
   </div>
 );

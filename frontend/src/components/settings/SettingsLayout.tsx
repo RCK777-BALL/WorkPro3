@@ -75,9 +75,9 @@ const SettingsLayout: React.FC<SettingsLayoutProps> = ({
     <div className="space-y-6">
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">{title}</h2>
+          <h2 className="text-2xl font-bold text-[var(--wp-color-text)]">{title}</h2>
           {description ? (
-            <p className="text-neutral-500 dark:text-neutral-400">{description}</p>
+            <p className="text-[var(--wp-color-text-muted)]">{description}</p>
           ) : null}
         </div>
         {renderSaveButton()}
@@ -86,7 +86,7 @@ const SettingsLayout: React.FC<SettingsLayoutProps> = ({
       {children}
 
       <div className="sticky bottom-0 left-0 right-0 z-10 mt-6">
-        <div className="flex justify-end rounded-lg border border-neutral-200 bg-white/80 p-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:border-neutral-700 dark:bg-neutral-900/80 dark:supports-[backdrop-filter]:bg-neutral-900/60">
+        <div className="flex justify-end rounded-lg border border-[var(--wp-color-border)] bg-[color-mix(in_srgb,var(--wp-color-surface)_88%,transparent)] p-3 shadow-lg backdrop-blur">
           {renderSaveButton()}
         </div>
       </div>

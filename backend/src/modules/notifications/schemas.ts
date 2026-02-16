@@ -4,7 +4,7 @@
 
 import { z } from 'zod';
 
-export const notificationChannelSchema = z.enum(['email', 'push', 'in_app', 'webhook']);
+export const notificationChannelSchema = z.enum(['email', 'outlook', 'push', 'in_app', 'webhook', 'teams']);
 
 export const quietHoursSchema = z
   .object({
